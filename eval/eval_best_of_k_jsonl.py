@@ -30,6 +30,13 @@ class ExactTask:
     patterns: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class GenerationResult:
+    candidates: list[str]
+    diagnostics: dict[str, float]
+    generation_steps: int
+
+
 def read_tasks(path: str | Path) -> list[ExactTask]:
     tasks: list[ExactTask] = []
     for line in Path(path).read_text(encoding="utf-8").splitlines():
@@ -122,6 +129,31 @@ def _format_float(value: float | None) -> str:
     return f"{value:g}"
 
 
+def _metric_value(value: object) -> float | None:
+    if isinstance(value, torch.Tensor):
+        if value.numel() != 1:
+            return None
+        return float(value.detach().float().cpu().item())
+    if isinstance(value, (int, float)):
+        return float(value)
+    return None
+
+
+def _record_metric_history(history: dict[str, list[float]], metrics: dict[str, object]) -> None:
+    for key, value in metrics.items():
+        scalar = _metric_value(value)
+        if scalar is not None:
+            history.setdefault(key, []).append(scalar)
+
+
+def _mean_metric_history(history: dict[str, list[float]]) -> dict[str, float]:
+    return {
+        key: sum(values) / max(len(values), 1)
+        for key, values in sorted(history.items())
+        if values
+    }
+
+
 def phase2_run_descriptor(args: argparse.Namespace, *, seed: int | None = None, steps: int | None = None) -> str:
     parts = [
         f"mode={args.phase2_particle_update_mode}",
@@ -188,15 +220,18 @@ def generate_candidates(
     temperature: float,
     device: str,
     early_stop_patterns: tuple[str, ...] = (),
-) -> list[str]:
+) -> GenerationResult:
     encoded = tokenizer(prompt, return_tensors="pt").to(device)
     prompt_len = encoded["input_ids"].shape[-1]
     input_ids = encoded["input_ids"]
     attention_mask = encoded.get("attention_mask")
     particle_noise = particle_init_noise
+    metrics_history: dict[str, list[float]] = {}
+    generation_steps = 0
 
     with torch.no_grad():
         for step_idx in range(max_new_tokens):
+            generation_steps = step_idx + 1
             output = wrapper(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
@@ -214,6 +249,7 @@ def generate_candidates(
                 use_cache=False,
                 return_dict=True,
             )
+            _record_metric_history(metrics_history, output.metrics)
             next_token = _next_token(output, num_trajectories, temperature)
             if num_trajectories == 1:
                 input_ids = torch.cat([input_ids, next_token], dim=-1)
@@ -255,7 +291,19 @@ def generate_candidates(
         completions = input_ids[:, prompt_len:]
     else:
         completions = input_ids[:, :, prompt_len:].reshape(num_trajectories, -1)
-    return [trim_completion(text) for text in tokenizer.batch_decode(completions, skip_special_tokens=True)]
+    return GenerationResult(
+        candidates=[trim_completion(text) for text in tokenizer.batch_decode(completions, skip_special_tokens=True)],
+        diagnostics=_mean_metric_history(metrics_history),
+        generation_steps=generation_steps,
+    )
+
+
+def append_jsonl(path: str | Path, rows: list[dict[str, object]]) -> None:
+    if not rows:
+        return
+    with Path(path).open("a", encoding="utf-8") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
 def run_suite(
@@ -277,7 +325,7 @@ def run_suite(
     task_summaries: list[dict[str, int | str | bool]] = []
     print(f"\n=== {label} ===")
     for task in tasks:
-        outputs = generate_candidates(
+        result = generate_candidates(
             wrapper,
             tokenizer,
             task.prompt,
@@ -300,6 +348,7 @@ def run_suite(
             temperature=args.temperature,
             device=args.device,
         )
+        outputs = result.candidates
         hits = [matches_any(text, task.patterns) for text in outputs]
         unique_count = len({text.strip() for text in outputs})
         best_hit = any(hits)
@@ -320,6 +369,40 @@ def run_suite(
             for idx, (text, hit) in enumerate(zip(outputs, hits)):
                 print(f"--- traj {idx} hit={hit} ---")
                 print(text.strip())
+        if args.output_jsonl:
+            append_jsonl(
+                args.output_jsonl,
+                [
+                    {
+                        "label": label,
+                        "task": task.name,
+                        "prompt": task.prompt,
+                        "patterns": list(task.patterns),
+                        "seed": args.seed,
+                        "candidate_index": idx,
+                        "candidate": text,
+                        "hit": hit,
+                        "best_hit": best_hit,
+                        "task_candidate_hits": sum(hits),
+                        "task_candidate_count": len(outputs),
+                        "unique_count": unique_count,
+                        "generation_steps": result.generation_steps,
+                        "mode": particle_update_mode,
+                        "num_trajectories": num_trajectories,
+                        "sample_latents": sample_latents,
+                        "latent_injection_mode": latent_injection_mode,
+                        "temperature": args.temperature,
+                        "particle_init_noise": particle_init_noise,
+                        "particle_noise_every_step": args.particle_noise_every_step,
+                        "particle_noise_steps": args.particle_noise_steps,
+                        "svgd_eps": args.svgd_eps,
+                        "svgd_repulsion_scale": args.svgd_repulsion_scale,
+                        "svgd_repulsion_max_norm": args.svgd_repulsion_max_norm,
+                        "diagnostics": result.diagnostics,
+                    }
+                    for idx, (text, hit) in enumerate(zip(outputs, hits))
+                ],
+            )
     print(
         f"\n{label} summary: best_hits={best_hits}/{len(tasks)} "
         f"candidate_hits={candidate_hits}/{max(total_candidates, 1)}"
@@ -382,10 +465,16 @@ def main() -> int:
         default=True,
         help="Stop generation early when all candidates look like they reached an answer.",
     )
+    parser.add_argument("--output_jsonl", help="Optional path for per-candidate structured eval rows.")
     args = parser.parse_args()
 
     set_seed(args.seed)
     print(f"seed={args.seed}")
+
+    if args.output_jsonl:
+        output_path = Path(args.output_jsonl)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text("", encoding="utf-8")
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     if tokenizer.pad_token_id is None:
@@ -404,6 +493,7 @@ def main() -> int:
         print(f"phase2_config={phase2_run_descriptor(args)}")
         phase2 = load_wrapper(args, args.phase2_checkpoint)
         sweep_rows = []
+        original_seed = args.seed
         original_steps = args.particle_noise_steps
         original_repulsion = args.svgd_repulsion_scale
         for repulsion in sweep_repulsions:
@@ -411,6 +501,7 @@ def main() -> int:
             for steps in sweep_steps:
                 args.particle_noise_steps = steps
                 for seed in sweep_seeds:
+                    args.seed = seed
                     set_seed(seed)
                     descriptor = phase2_run_descriptor(args, seed=seed, steps=steps)
                     print(f"\n\n### {descriptor} ###")
@@ -427,6 +518,7 @@ def main() -> int:
                         particle_init_noise=args.particle_init_noise,
                     )
                     sweep_rows.append((repulsion, steps, seed, phase2_hits, phase2_candidate_hits, task_summaries))
+        args.seed = original_seed
         args.particle_noise_steps = original_steps
         args.svgd_repulsion_scale = original_repulsion
 

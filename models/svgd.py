@@ -16,7 +16,9 @@ class SVGDStats:
     bandwidth: torch.Tensor
     mean_pairwise_distance: torch.Tensor
     drift_rms: torch.Tensor
+    repulsion_rms_pre_clip: torch.Tensor
     repulsion_rms: torch.Tensor
+    repulsion_clip_fraction: torch.Tensor
     velocity_rms: torch.Tensor
 
 
@@ -53,7 +55,9 @@ def svgd_particle_update(
             bandwidth=zero,
             mean_pairwise_distance=zero,
             drift_rms=_rms((standard_state - previous_state).float()).to(device=standard_state.device),
+            repulsion_rms_pre_clip=zero,
             repulsion_rms=zero,
+            repulsion_clip_fraction=zero,
             velocity_rms=_rms((standard_state - previous_state).float()).to(device=standard_state.device),
         )
         if float(eps) == 1.0:
@@ -82,9 +86,15 @@ def svgd_particle_update(
     kernel = torch.exp(-sq_dist / h)
 
     attraction = torch.einsum("bij,bjtd->bitd", kernel, drift_particles) / float(num_particles)
-    repulsion = (2.0 / h) * (kernel.unsqueeze(-1) * diff).sum(dim=2) / float(num_particles)
-    repulsion = _clamp_repulsion(repulsion, repulsion_max_norm)
+    repulsion_pre_clip = (2.0 / h) * (kernel.unsqueeze(-1) * diff).sum(dim=2) / float(num_particles)
+    repulsion, clip_fraction = _clamp_repulsion(repulsion_pre_clip, repulsion_max_norm)
     repulsion_tokens = repulsion.unsqueeze(2).expand(batch_size, num_particles, seq_len, hidden_dim)
+    repulsion_tokens_pre_clip = repulsion_pre_clip.unsqueeze(2).expand(
+        batch_size,
+        num_particles,
+        seq_len,
+        hidden_dim,
+    )
 
     velocity = attraction + float(repulsion_scale) * repulsion_tokens
     updated = work_prev.view(batch_size, num_particles, seq_len, hidden_dim) + float(eps) * velocity
@@ -93,7 +103,9 @@ def svgd_particle_update(
         bandwidth=h.detach().reshape(()),
         mean_pairwise_distance=_mean_pairwise_distance(sq_dist, num_particles).detach(),
         drift_rms=_rms(drift_particles).detach(),
+        repulsion_rms_pre_clip=_rms(repulsion_tokens_pre_clip).detach(),
         repulsion_rms=_rms(repulsion_tokens).detach(),
+        repulsion_clip_fraction=clip_fraction.detach(),
         velocity_rms=_rms(velocity).detach(),
     )
     return updated.view(flat_batch, seq_len, hidden_dim).to(dtype=standard_state.dtype), stats
@@ -122,12 +134,13 @@ def _mean_pairwise_distance(sq_dist: torch.Tensor, num_particles: int) -> torch.
     return off_diag.clamp_min(0.0).sqrt().mean()
 
 
-def _clamp_repulsion(repulsion: torch.Tensor, max_norm: Optional[float]) -> torch.Tensor:
+def _clamp_repulsion(repulsion: torch.Tensor, max_norm: Optional[float]) -> tuple[torch.Tensor, torch.Tensor]:
     if max_norm is None or max_norm <= 0:
-        return repulsion
+        return repulsion, repulsion.new_zeros(())
     norm = repulsion.norm(dim=-1, keepdim=True).clamp_min(1e-8)
     scale = (float(max_norm) / norm).clamp_max(1.0)
-    return repulsion * scale
+    clip_fraction = (scale < 1.0).float().mean()
+    return repulsion * scale, clip_fraction
 
 
 def _rms(tensor: torch.Tensor) -> torch.Tensor:

@@ -476,8 +476,14 @@ class RecurrentQwenForCausalLM(nn.Module):
                         [item.mean_pairwise_distance for item in svgd_stats_history]
                     ).mean().detach(),
                     "svgd_drift_rms": torch.stack([item.drift_rms for item in svgd_stats_history]).mean().detach(),
+                    "svgd_repulsion_rms_pre_clip": torch.stack(
+                        [item.repulsion_rms_pre_clip for item in svgd_stats_history]
+                    ).mean().detach(),
                     "svgd_repulsion_rms": torch.stack(
                         [item.repulsion_rms for item in svgd_stats_history]
+                    ).mean().detach(),
+                    "svgd_repulsion_clip_fraction": torch.stack(
+                        [item.repulsion_clip_fraction for item in svgd_stats_history]
                     ).mean().detach(),
                     "svgd_velocity_rms": torch.stack([item.velocity_rms for item in svgd_stats_history]).mean().detach(),
                 }
