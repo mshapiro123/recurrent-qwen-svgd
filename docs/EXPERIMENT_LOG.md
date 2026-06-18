@@ -74,3 +74,33 @@ Open cautions:
 - Pharmacy and anagram tasks remain systematic failures and should not drive hyperparameter tuning alone.
 - Temperature-only has higher oracle than drift/noise, but much lower candidate density.
 - The current SVGD implementation uses learned recurrent drift plus kernel repulsion, not a verifier/log-probability posterior gradient.
+
+## 2026-06-18: Broader Exact Smoke Suite v2
+
+Task set:
+
+- `eval/smoke_exact_tasks_v2.jsonl`
+- 14 exact-pattern tasks
+- Seeds: `0,1,2`
+- Trajectories: `K=4`
+- Max generated tokens: `140`
+
+Results:
+
+| Method | Mean oracle best-of-K | Mean candidate hits |
+| --- | ---: | ---: |
+| Temperature-only, `temp=0.7` | `7.333/14` | `18.667/56` |
+| SVGD drift/noise, `repulsion=0` | `8.333/14` | `26.667/56` |
+| SVGD drift/noise/repulsion, `repulsion=1` | `8.667/14` | `28.667/56` |
+
+Interpretation:
+
+- The SVGD-style recurrent particle path generalizes beyond the original five-task smoke suite.
+- Candidate density is the clearest gain: `repulsion=1` improves from `18.667/56` to `28.667/56` versus temperature-only.
+- Repulsion still helps beyond drift/noise alone, but the v2 delta is modest: `26.667/56` to `28.667/56`.
+- Temperature-only remains broad but sparse; SVGD is less diverse textually, but yields a substantially higher fraction of usable candidates.
+
+Persistent failures:
+
+- `pharmacy tubs`, `rates word`, `n queens small`, and often `letter count` remain weak or unsolved.
+- These look like model/checkpoint capability or prompt pathology issues, not just trajectory-diversity issues.
