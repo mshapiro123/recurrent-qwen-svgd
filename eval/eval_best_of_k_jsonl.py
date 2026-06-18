@@ -110,6 +110,12 @@ def parse_seeds(value: str | None) -> list[int]:
     return [int(item.strip()) for item in value.split(",") if item.strip()]
 
 
+def parse_floats(value: str | None) -> list[float]:
+    if not value:
+        return []
+    return [float(item.strip()) for item in value.split(",") if item.strip()]
+
+
 def _format_float(value: float | None) -> str:
     if value is None:
         return "none"
@@ -338,6 +344,10 @@ def main() -> int:
         "--particle_noise_steps_sweep",
         help="Comma-separated particle_noise_steps values for a one-load Phase 2 sweep.",
     )
+    parser.add_argument(
+        "--svgd_repulsion_scale_sweep",
+        help="Comma-separated SVGD repulsion_scale values for a one-load Phase 2 sweep.",
+    )
     parser.add_argument("--compact", action="store_true", help="Print task summaries without candidate text.")
     parser.add_argument("--dtype", default="bfloat16")
     parser.add_argument("--attn_implementation", default="default")
@@ -384,8 +394,9 @@ def main() -> int:
     tasks = read_tasks(args.tasks_jsonl)
     sweep_seeds = parse_seeds(args.seeds)
     sweep_steps = parse_seeds(args.particle_noise_steps_sweep) or [args.particle_noise_steps]
+    sweep_repulsions = parse_floats(args.svgd_repulsion_scale_sweep) or [args.svgd_repulsion_scale]
 
-    if sweep_seeds or args.particle_noise_steps_sweep:
+    if sweep_seeds or args.particle_noise_steps_sweep or args.svgd_repulsion_scale_sweep:
         if not sweep_seeds:
             sweep_seeds = [args.seed]
         if not args.skip_phase1:
@@ -394,45 +405,54 @@ def main() -> int:
         phase2 = load_wrapper(args, args.phase2_checkpoint)
         sweep_rows = []
         original_steps = args.particle_noise_steps
-        for steps in sweep_steps:
-            args.particle_noise_steps = steps
-            for seed in sweep_seeds:
-                set_seed(seed)
-                descriptor = phase2_run_descriptor(args, seed=seed, steps=steps)
-                print(f"\n\n### {descriptor} ###")
-                phase2_hits, phase2_candidate_hits, task_summaries = run_suite(
-                    f"Phase 2 K={args.phase2_num_trajectories} {descriptor}",
-                    phase2,
-                    tokenizer,
-                    tasks,
-                    args,
-                    num_trajectories=args.phase2_num_trajectories,
-                    sample_latents=args.phase2_sample_latents,
-                    latent_injection_mode=args.phase2_latent_injection_mode,
-                    particle_update_mode=args.phase2_particle_update_mode,
-                    particle_init_noise=args.particle_init_noise,
-                )
-                sweep_rows.append((steps, seed, phase2_hits, phase2_candidate_hits, task_summaries))
+        original_repulsion = args.svgd_repulsion_scale
+        for repulsion in sweep_repulsions:
+            args.svgd_repulsion_scale = repulsion
+            for steps in sweep_steps:
+                args.particle_noise_steps = steps
+                for seed in sweep_seeds:
+                    set_seed(seed)
+                    descriptor = phase2_run_descriptor(args, seed=seed, steps=steps)
+                    print(f"\n\n### {descriptor} ###")
+                    phase2_hits, phase2_candidate_hits, task_summaries = run_suite(
+                        f"Phase 2 K={args.phase2_num_trajectories} {descriptor}",
+                        phase2,
+                        tokenizer,
+                        tasks,
+                        args,
+                        num_trajectories=args.phase2_num_trajectories,
+                        sample_latents=args.phase2_sample_latents,
+                        latent_injection_mode=args.phase2_latent_injection_mode,
+                        particle_update_mode=args.phase2_particle_update_mode,
+                        particle_init_noise=args.particle_init_noise,
+                    )
+                    sweep_rows.append((repulsion, steps, seed, phase2_hits, phase2_candidate_hits, task_summaries))
         args.particle_noise_steps = original_steps
+        args.svgd_repulsion_scale = original_repulsion
 
         print("\n=== SWEEP SUMMARY ===")
-        for steps, seed, best_hits, candidate_hits, _ in sweep_rows:
+        for repulsion, steps, seed, best_hits, candidate_hits, _ in sweep_rows:
+            args.svgd_repulsion_scale = repulsion
             descriptor = phase2_run_descriptor(args, seed=seed, steps=steps)
             print(
                 f"{descriptor} best_hits={best_hits}/{len(tasks)} "
                 f"candidate_hits={candidate_hits}/{len(tasks) * args.phase2_num_trajectories}"
             )
-        print("\n=== STEPS SUMMARY ===")
-        for steps in sweep_steps:
-            rows = [row for row in sweep_rows if row[0] == steps]
-            mean_best_for_steps = sum(row[2] for row in rows) / max(len(rows), 1)
-            mean_candidates_for_steps = sum(row[3] for row in rows) / max(len(rows), 1)
-            print(
-                f"steps={steps} mean_best_hits={mean_best_for_steps:.3f}/{len(tasks)} "
-                f"mean_candidate_hits={mean_candidates_for_steps:.3f}/{len(tasks) * args.phase2_num_trajectories}"
-            )
-        mean_best = sum(row[2] for row in sweep_rows) / max(len(sweep_rows), 1)
-        mean_candidates = sum(row[3] for row in sweep_rows) / max(len(sweep_rows), 1)
+        args.svgd_repulsion_scale = original_repulsion
+
+        print("\n=== REPULSION/STEPS SUMMARY ===")
+        for repulsion in sweep_repulsions:
+            for steps in sweep_steps:
+                rows = [row for row in sweep_rows if row[0] == repulsion and row[1] == steps]
+                mean_best_for_rows = sum(row[3] for row in rows) / max(len(rows), 1)
+                mean_candidates_for_rows = sum(row[4] for row in rows) / max(len(rows), 1)
+                print(
+                    f"repulsion={_format_float(repulsion)} steps={steps} "
+                    f"mean_best_hits={mean_best_for_rows:.3f}/{len(tasks)} "
+                    f"mean_candidate_hits={mean_candidates_for_rows:.3f}/{len(tasks) * args.phase2_num_trajectories}"
+                )
+        mean_best = sum(row[3] for row in sweep_rows) / max(len(sweep_rows), 1)
+        mean_candidates = sum(row[4] for row in sweep_rows) / max(len(sweep_rows), 1)
         print(f"mean_best_hits={mean_best:.3f}/{len(tasks)}")
         print(f"mean_candidate_hits={mean_candidates:.3f}/{len(tasks) * args.phase2_num_trajectories}")
         return 0
