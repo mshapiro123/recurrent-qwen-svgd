@@ -18,6 +18,8 @@ def setting_key(row: dict[str, Any]) -> tuple[Any, ...]:
         row.get("svgd_eps"),
         row.get("svgd_repulsion_scale"),
         row.get("svgd_repulsion_max_norm"),
+        row.get("svgd_kernel_projection_dim"),
+        row.get("svgd_projection_seed"),
     )
 
 
@@ -30,6 +32,8 @@ def format_key(key: tuple[Any, ...]) -> str:
         "eps",
         "repulsion",
         "max_norm",
+        "proj_dim",
+        "proj_seed",
     )
     return " ".join(f"{name}={value}" for name, value in zip(names, key))
 

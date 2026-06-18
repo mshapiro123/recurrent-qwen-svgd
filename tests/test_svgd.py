@@ -55,6 +55,24 @@ def test_svgd_repulsion_increases_spread_without_drift():
     assert final_spread > initial_spread * 2.0
 
 
+def test_svgd_projected_kernel_runs_and_preserves_shape():
+    torch.manual_seed(0)
+    previous = torch.randn(4, 2, 16)
+    standard = previous + 0.05 * torch.randn_like(previous)
+    updated, stats = svgd_particle_update(
+        previous,
+        standard,
+        attention_mask=torch.ones(4, 2),
+        num_particles=4,
+        eps=0.2,
+        kernel_projection_dim=4,
+        projection_seed=123,
+    )
+    assert updated.shape == previous.shape
+    assert torch.isfinite(stats.mean_pairwise_distance)
+    assert torch.isfinite(stats.repulsion_rms)
+
+
 def test_svgd_drift_moves_mean_toward_target_without_collapse():
     torch.manual_seed(1)
     state = 0.05 * torch.randn(4, 1, 2)

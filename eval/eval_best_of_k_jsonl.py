@@ -168,6 +168,7 @@ def phase2_run_descriptor(args: argparse.Namespace, *, seed: int | None = None, 
                 f"eps={_format_float(args.svgd_eps)}",
                 f"repulsion={_format_float(args.svgd_repulsion_scale)}",
                 f"max_norm={_format_float(args.svgd_repulsion_max_norm)}",
+                f"proj_dim={args.svgd_kernel_projection_dim or 0}",
             ]
         )
     if seed is not None:
@@ -214,6 +215,8 @@ def generate_candidates(
     svgd_bandwidth: str,
     svgd_bandwidth_floor: float,
     svgd_repulsion_max_norm: float | None,
+    svgd_kernel_projection_dim: int | None,
+    svgd_projection_seed: int,
     particle_noise_every_step: bool,
     particle_noise_steps: int,
     stop_on_final_answer: bool,
@@ -246,6 +249,8 @@ def generate_candidates(
                 svgd_bandwidth=svgd_bandwidth,
                 svgd_bandwidth_floor=svgd_bandwidth_floor,
                 svgd_repulsion_max_norm=svgd_repulsion_max_norm,
+                svgd_kernel_projection_dim=svgd_kernel_projection_dim,
+                svgd_projection_seed=svgd_projection_seed,
                 use_cache=False,
                 return_dict=True,
             )
@@ -341,6 +346,8 @@ def run_suite(
             svgd_bandwidth=args.svgd_bandwidth,
             svgd_bandwidth_floor=args.svgd_bandwidth_floor,
             svgd_repulsion_max_norm=args.svgd_repulsion_max_norm,
+            svgd_kernel_projection_dim=args.svgd_kernel_projection_dim,
+            svgd_projection_seed=args.svgd_projection_seed,
             particle_noise_every_step=args.particle_noise_every_step,
             particle_noise_steps=args.particle_noise_steps,
             stop_on_final_answer=args.stop_on_final_answer,
@@ -398,6 +405,8 @@ def run_suite(
                         "svgd_eps": args.svgd_eps,
                         "svgd_repulsion_scale": args.svgd_repulsion_scale,
                         "svgd_repulsion_max_norm": args.svgd_repulsion_max_norm,
+                        "svgd_kernel_projection_dim": args.svgd_kernel_projection_dim,
+                        "svgd_projection_seed": args.svgd_projection_seed,
                         "diagnostics": result.diagnostics,
                     }
                     for idx, (text, hit) in enumerate(zip(outputs, hits))
@@ -431,6 +440,10 @@ def main() -> int:
         "--svgd_repulsion_scale_sweep",
         help="Comma-separated SVGD repulsion_scale values for a one-load Phase 2 sweep.",
     )
+    parser.add_argument(
+        "--svgd_kernel_projection_dim_sweep",
+        help="Comma-separated SVGD kernel projection dims for a one-load sweep. Use 0 for raw hidden space.",
+    )
     parser.add_argument("--compact", action="store_true", help="Print task summaries without candidate text.")
     parser.add_argument("--dtype", default="bfloat16")
     parser.add_argument("--attn_implementation", default="default")
@@ -448,6 +461,17 @@ def main() -> int:
     parser.add_argument("--svgd_bandwidth", default="median")
     parser.add_argument("--svgd_bandwidth_floor", type=float, default=1e-6)
     parser.add_argument("--svgd_repulsion_max_norm", type=float)
+    parser.add_argument(
+        "--svgd_kernel_projection_dim",
+        type=int,
+        help="Compute the SVGD kernel in a fixed random projection of this hidden dimension.",
+    )
+    parser.add_argument(
+        "--svgd_projection_seed",
+        type=int,
+        default=0,
+        help="Seed for the fixed random SVGD kernel projection.",
+    )
     parser.add_argument(
         "--particle_noise_every_step",
         action="store_true",
@@ -484,8 +508,18 @@ def main() -> int:
     sweep_seeds = parse_seeds(args.seeds)
     sweep_steps = parse_seeds(args.particle_noise_steps_sweep) or [args.particle_noise_steps]
     sweep_repulsions = parse_floats(args.svgd_repulsion_scale_sweep) or [args.svgd_repulsion_scale]
+    sweep_projection_dims = (
+        parse_seeds(args.svgd_kernel_projection_dim_sweep)
+        if args.svgd_kernel_projection_dim_sweep
+        else [args.svgd_kernel_projection_dim or 0]
+    )
 
-    if sweep_seeds or args.particle_noise_steps_sweep or args.svgd_repulsion_scale_sweep:
+    if (
+        sweep_seeds
+        or args.particle_noise_steps_sweep
+        or args.svgd_repulsion_scale_sweep
+        or args.svgd_kernel_projection_dim_sweep
+    ):
         if not sweep_seeds:
             sweep_seeds = [args.seed]
         if not args.skip_phase1:
@@ -496,34 +530,49 @@ def main() -> int:
         original_seed = args.seed
         original_steps = args.particle_noise_steps
         original_repulsion = args.svgd_repulsion_scale
-        for repulsion in sweep_repulsions:
-            args.svgd_repulsion_scale = repulsion
-            for steps in sweep_steps:
-                args.particle_noise_steps = steps
-                for seed in sweep_seeds:
-                    args.seed = seed
-                    set_seed(seed)
-                    descriptor = phase2_run_descriptor(args, seed=seed, steps=steps)
-                    print(f"\n\n### {descriptor} ###")
-                    phase2_hits, phase2_candidate_hits, task_summaries = run_suite(
-                        f"Phase 2 K={args.phase2_num_trajectories} {descriptor}",
-                        phase2,
-                        tokenizer,
-                        tasks,
-                        args,
-                        num_trajectories=args.phase2_num_trajectories,
-                        sample_latents=args.phase2_sample_latents,
-                        latent_injection_mode=args.phase2_latent_injection_mode,
-                        particle_update_mode=args.phase2_particle_update_mode,
-                        particle_init_noise=args.particle_init_noise,
-                    )
-                    sweep_rows.append((repulsion, steps, seed, phase2_hits, phase2_candidate_hits, task_summaries))
+        original_projection_dim = args.svgd_kernel_projection_dim
+        for projection_dim in sweep_projection_dims:
+            args.svgd_kernel_projection_dim = projection_dim or None
+            for repulsion in sweep_repulsions:
+                args.svgd_repulsion_scale = repulsion
+                for steps in sweep_steps:
+                    args.particle_noise_steps = steps
+                    for seed in sweep_seeds:
+                        args.seed = seed
+                        set_seed(seed)
+                        descriptor = phase2_run_descriptor(args, seed=seed, steps=steps)
+                        print(f"\n\n### {descriptor} ###")
+                        phase2_hits, phase2_candidate_hits, task_summaries = run_suite(
+                            f"Phase 2 K={args.phase2_num_trajectories} {descriptor}",
+                            phase2,
+                            tokenizer,
+                            tasks,
+                            args,
+                            num_trajectories=args.phase2_num_trajectories,
+                            sample_latents=args.phase2_sample_latents,
+                            latent_injection_mode=args.phase2_latent_injection_mode,
+                            particle_update_mode=args.phase2_particle_update_mode,
+                            particle_init_noise=args.particle_init_noise,
+                        )
+                        sweep_rows.append(
+                            (
+                                projection_dim,
+                                repulsion,
+                                steps,
+                                seed,
+                                phase2_hits,
+                                phase2_candidate_hits,
+                                task_summaries,
+                            )
+                        )
         args.seed = original_seed
         args.particle_noise_steps = original_steps
         args.svgd_repulsion_scale = original_repulsion
+        args.svgd_kernel_projection_dim = original_projection_dim
 
         print("\n=== SWEEP SUMMARY ===")
-        for repulsion, steps, seed, best_hits, candidate_hits, _ in sweep_rows:
+        for projection_dim, repulsion, steps, seed, best_hits, candidate_hits, _ in sweep_rows:
+            args.svgd_kernel_projection_dim = projection_dim or None
             args.svgd_repulsion_scale = repulsion
             descriptor = phase2_run_descriptor(args, seed=seed, steps=steps)
             print(
@@ -531,20 +580,26 @@ def main() -> int:
                 f"candidate_hits={candidate_hits}/{len(tasks) * args.phase2_num_trajectories}"
             )
         args.svgd_repulsion_scale = original_repulsion
+        args.svgd_kernel_projection_dim = original_projection_dim
 
-        print("\n=== REPULSION/STEPS SUMMARY ===")
-        for repulsion in sweep_repulsions:
-            for steps in sweep_steps:
-                rows = [row for row in sweep_rows if row[0] == repulsion and row[1] == steps]
-                mean_best_for_rows = sum(row[3] for row in rows) / max(len(rows), 1)
-                mean_candidates_for_rows = sum(row[4] for row in rows) / max(len(rows), 1)
-                print(
-                    f"repulsion={_format_float(repulsion)} steps={steps} "
-                    f"mean_best_hits={mean_best_for_rows:.3f}/{len(tasks)} "
-                    f"mean_candidate_hits={mean_candidates_for_rows:.3f}/{len(tasks) * args.phase2_num_trajectories}"
-                )
-        mean_best = sum(row[3] for row in sweep_rows) / max(len(sweep_rows), 1)
-        mean_candidates = sum(row[4] for row in sweep_rows) / max(len(sweep_rows), 1)
+        print("\n=== PROJECTION/REPULSION/STEPS SUMMARY ===")
+        for projection_dim in sweep_projection_dims:
+            for repulsion in sweep_repulsions:
+                for steps in sweep_steps:
+                    rows = [
+                        row
+                        for row in sweep_rows
+                        if row[0] == projection_dim and row[1] == repulsion and row[2] == steps
+                    ]
+                    mean_best_for_rows = sum(row[4] for row in rows) / max(len(rows), 1)
+                    mean_candidates_for_rows = sum(row[5] for row in rows) / max(len(rows), 1)
+                    print(
+                        f"proj_dim={projection_dim or 0} repulsion={_format_float(repulsion)} steps={steps} "
+                        f"mean_best_hits={mean_best_for_rows:.3f}/{len(tasks)} "
+                        f"mean_candidate_hits={mean_candidates_for_rows:.3f}/{len(tasks) * args.phase2_num_trajectories}"
+                    )
+        mean_best = sum(row[4] for row in sweep_rows) / max(len(sweep_rows), 1)
+        mean_candidates = sum(row[5] for row in sweep_rows) / max(len(sweep_rows), 1)
         print(f"mean_best_hits={mean_best:.3f}/{len(tasks)}")
         print(f"mean_candidate_hits={mean_candidates:.3f}/{len(tasks) * args.phase2_num_trajectories}")
         return 0

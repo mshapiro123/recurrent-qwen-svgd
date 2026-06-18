@@ -209,6 +209,8 @@ class RecurrentQwenForCausalLM(nn.Module):
         svgd_bandwidth: str = "median",
         svgd_bandwidth_floor: float = 1e-6,
         svgd_repulsion_max_norm: Optional[float] = None,
+        svgd_kernel_projection_dim: Optional[int] = None,
+        svgd_projection_seed: int = 0,
         target_loop_counts: Optional[torch.Tensor] = None,
         target_loop_prior: Optional[torch.Tensor] = None,
         return_loop_logits: bool = False,
@@ -407,6 +409,8 @@ class RecurrentQwenForCausalLM(nn.Module):
                     bandwidth=svgd_bandwidth,
                     bandwidth_floor=svgd_bandwidth_floor,
                     repulsion_max_norm=svgd_repulsion_max_norm,
+                    kernel_projection_dim=svgd_kernel_projection_dim,
+                    projection_seed=svgd_projection_seed,
                 )
                 svgd_stats_history.append(svgd_stats)
 

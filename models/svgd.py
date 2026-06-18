@@ -32,6 +32,8 @@ def svgd_particle_update(
     bandwidth: str = "median",
     bandwidth_floor: float = 1e-6,
     repulsion_max_norm: Optional[float] = None,
+    kernel_projection_dim: Optional[int] = None,
+    projection_seed: int = 0,
 ) -> tuple[torch.Tensor, SVGDStats]:
     """Apply one learned-drift SVGD update to flattened particle states.
 
@@ -79,14 +81,23 @@ def svgd_particle_update(
 
     pooled = masked_mean(work_std, attention_mask).view(batch_size, num_particles, hidden_dim)
     drift_particles = drift.view(batch_size, num_particles, seq_len, hidden_dim)
+    projection = _projection_matrix(
+        hidden_dim=hidden_dim,
+        projection_dim=kernel_projection_dim,
+        seed=projection_seed,
+        device=work_std.device,
+    )
+    kernel_pooled = pooled @ projection if projection is not None else pooled
 
-    diff = pooled.unsqueeze(2) - pooled.unsqueeze(1)
+    diff = kernel_pooled.unsqueeze(2) - kernel_pooled.unsqueeze(1)
     sq_dist = diff.pow(2).sum(dim=-1)
     h = _resolve_bandwidth(sq_dist, num_particles, bandwidth, bandwidth_floor)
     kernel = torch.exp(-sq_dist / h)
 
     attraction = torch.einsum("bij,bjtd->bitd", kernel, drift_particles) / float(num_particles)
     repulsion_pre_clip = (2.0 / h) * (kernel.unsqueeze(-1) * diff).sum(dim=2) / float(num_particles)
+    if projection is not None:
+        repulsion_pre_clip = repulsion_pre_clip @ projection.t()
     repulsion, clip_fraction = _clamp_repulsion(repulsion_pre_clip, repulsion_max_norm)
     repulsion_tokens = repulsion.unsqueeze(2).expand(batch_size, num_particles, seq_len, hidden_dim)
     repulsion_tokens_pre_clip = repulsion_pre_clip.unsqueeze(2).expand(
@@ -132,6 +143,36 @@ def _off_diagonal_values(matrix: torch.Tensor, num_particles: int) -> torch.Tens
 def _mean_pairwise_distance(sq_dist: torch.Tensor, num_particles: int) -> torch.Tensor:
     off_diag = _off_diagonal_values(sq_dist, num_particles)
     return off_diag.clamp_min(0.0).sqrt().mean()
+
+
+_PROJECTION_CACHE: dict[tuple[str, int, int, int], torch.Tensor] = {}
+
+
+def _projection_matrix(
+    hidden_dim: int,
+    projection_dim: Optional[int],
+    seed: int,
+    device: torch.device,
+) -> Optional[torch.Tensor]:
+    if projection_dim is None or projection_dim <= 0 or projection_dim >= hidden_dim:
+        return None
+    key = (str(device), hidden_dim, int(projection_dim), int(seed))
+    cached = _PROJECTION_CACHE.get(key)
+    if cached is not None:
+        return cached
+
+    generator = torch.Generator(device=device)
+    generator.manual_seed(int(seed))
+    projection = torch.randn(
+        hidden_dim,
+        int(projection_dim),
+        generator=generator,
+        device=device,
+        dtype=torch.float32,
+    )
+    projection = projection / math.sqrt(float(projection_dim))
+    _PROJECTION_CACHE[key] = projection
+    return projection
 
 
 def _clamp_repulsion(repulsion: torch.Tensor, max_norm: Optional[float]) -> tuple[torch.Tensor, torch.Tensor]:
