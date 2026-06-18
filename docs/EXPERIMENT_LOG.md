@@ -42,6 +42,18 @@ SVGD repulsion result:
 - Mean candidate hits: `9.6/20`
 - Interpretation: kernel repulsion improves both oracle and candidate-density metrics relative to the no-repulsion control. This is the first clean positive signal that the SVGD-style update is doing useful work beyond stochastic decoding/noise.
 
+SVGD repulsion scale sweep:
+
+| Repulsion scale | Mean oracle best-of-K | Mean candidate hits |
+| --- | ---: | ---: |
+| `0.25` | `1.8/5` | `6.8/20` |
+| `0.5` | `1.8/5` | `7.2/20` |
+| `1.0` | `2.4/5` | `9.6/20` |
+| `1.5` | `2.2/5` | `8.6/20` |
+| `2.0` | `2.2/5` | `8.4/20` |
+
+Interpretation: `svgd_repulsion_scale=1.0` is the current smoke-suite winner. Larger values do not improve oracle score and reduce candidate density.
+
 Current best practical setting:
 
 ```text
@@ -62,4 +74,3 @@ Open cautions:
 - Pharmacy and anagram tasks remain systematic failures and should not drive hyperparameter tuning alone.
 - Temperature-only has higher oracle than drift/noise, but much lower candidate density.
 - The current SVGD implementation uses learned recurrent drift plus kernel repulsion, not a verifier/log-probability posterior gradient.
-
