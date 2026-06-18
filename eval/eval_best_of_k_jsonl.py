@@ -110,6 +110,33 @@ def parse_seeds(value: str | None) -> list[int]:
     return [int(item.strip()) for item in value.split(",") if item.strip()]
 
 
+def _format_float(value: float | None) -> str:
+    if value is None:
+        return "none"
+    return f"{value:g}"
+
+
+def phase2_run_descriptor(args: argparse.Namespace, *, seed: int | None = None, steps: int | None = None) -> str:
+    parts = [
+        f"mode={args.phase2_particle_update_mode}",
+        f"temp={_format_float(args.temperature)}",
+        f"noise={_format_float(args.particle_init_noise)}",
+    ]
+    if args.particle_noise_every_step or args.particle_noise_steps_sweep:
+        parts.append(f"noise_steps={steps if steps is not None else args.particle_noise_steps}")
+    if args.phase2_particle_update_mode == "svgd":
+        parts.extend(
+            [
+                f"eps={_format_float(args.svgd_eps)}",
+                f"repulsion={_format_float(args.svgd_repulsion_scale)}",
+                f"max_norm={_format_float(args.svgd_repulsion_max_norm)}",
+            ]
+        )
+    if seed is not None:
+        parts.append(f"seed={seed}")
+    return " ".join(parts)
+
+
 def _next_token(
     output: object,
     num_trajectories: int,
@@ -363,6 +390,7 @@ def main() -> int:
             sweep_seeds = [args.seed]
         if not args.skip_phase1:
             print("Multi-seed mode only runs Phase 2. Use --skip_phase1 to make that explicit.")
+        print(f"phase2_config={phase2_run_descriptor(args)}")
         phase2 = load_wrapper(args, args.phase2_checkpoint)
         sweep_rows = []
         original_steps = args.particle_noise_steps
@@ -370,9 +398,10 @@ def main() -> int:
             args.particle_noise_steps = steps
             for seed in sweep_seeds:
                 set_seed(seed)
-                print(f"\n\n### STEPS {steps} SEED {seed} ###")
+                descriptor = phase2_run_descriptor(args, seed=seed, steps=steps)
+                print(f"\n\n### {descriptor} ###")
                 phase2_hits, phase2_candidate_hits, task_summaries = run_suite(
-                    f"Phase 2 K={args.phase2_num_trajectories} steps={steps} seed={seed}",
+                    f"Phase 2 K={args.phase2_num_trajectories} {descriptor}",
                     phase2,
                     tokenizer,
                     tasks,
@@ -388,8 +417,9 @@ def main() -> int:
 
         print("\n=== SWEEP SUMMARY ===")
         for steps, seed, best_hits, candidate_hits, _ in sweep_rows:
+            descriptor = phase2_run_descriptor(args, seed=seed, steps=steps)
             print(
-                f"steps={steps} seed={seed} best_hits={best_hits}/{len(tasks)} "
+                f"{descriptor} best_hits={best_hits}/{len(tasks)} "
                 f"candidate_hits={candidate_hits}/{len(tasks) * args.phase2_num_trajectories}"
             )
         print("\n=== STEPS SUMMARY ===")
