@@ -47,6 +47,33 @@ def matches_any(text: str, patterns: Iterable[str]) -> bool:
     return any(re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE) for pattern in patterns)
 
 
+def trim_completion(text: str) -> str:
+    """Remove obvious prompt-continuation spillover from generated candidates."""
+
+    cut = len(text)
+    for marker in ("Human:", "<|im_start|>", "<|im_end|>"):
+        idx = text.find(marker)
+        if idx >= 0:
+            cut = min(cut, idx)
+    return text[:cut].strip()
+
+
+def has_final_answer_shape(text: str) -> bool:
+    """Heuristic early-stop signal for smoke tests, not a general verifier."""
+
+    text = trim_completion(text)
+    final_patterns = (
+        r"\bfinal answer\b",
+        r"\btherefore\b",
+        r"\bso,\s+the\b",
+        r"\banswer is\b",
+        r"\\boxed\{",
+        r"\b\d+\s*(miles per hour|mph)\b",
+        r"\b\d+\s*tubs?\b",
+    )
+    return any(re.search(pattern, text, flags=re.IGNORECASE) for pattern in final_patterns)
+
+
 def load_wrapper(args: argparse.Namespace, checkpoint: str | None) -> RecurrentQwenForCausalLM:
     model = AutoModelForCausalLM.from_pretrained(
         args.model_name,
@@ -112,6 +139,8 @@ def generate_candidates(
     svgd_bandwidth_floor: float,
     svgd_repulsion_max_norm: float | None,
     particle_noise_every_step: bool,
+    particle_noise_steps: int,
+    stop_on_final_answer: bool,
     temperature: float,
     device: str,
 ) -> list[str]:
@@ -122,7 +151,7 @@ def generate_candidates(
     particle_noise = particle_init_noise
 
     with torch.no_grad():
-        for _ in range(max_new_tokens):
+        for step_idx in range(max_new_tokens):
             output = wrapper(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
@@ -151,7 +180,19 @@ def generate_candidates(
             else:
                 input_ids = torch.cat([input_ids, next_token.unsqueeze(-1)], dim=-1)
                 attention_mask = torch.ones_like(input_ids)
-            particle_noise = particle_init_noise if particle_noise_every_step else 0.0
+            if particle_noise_every_step and step_idx + 1 < particle_noise_steps:
+                particle_noise = particle_init_noise
+            else:
+                particle_noise = 0.0
+
+            current = (
+                input_ids[:, prompt_len:]
+                if num_trajectories == 1
+                else input_ids[:, :, prompt_len:].reshape(num_trajectories, -1)
+            )
+            decoded_so_far = tokenizer.batch_decode(current, skip_special_tokens=True)
+            if stop_on_final_answer and all(has_final_answer_shape(text) for text in decoded_so_far):
+                break
 
             if next_token.eq(tokenizer.eos_token_id).all():
                 break
@@ -160,7 +201,7 @@ def generate_candidates(
         completions = input_ids[:, prompt_len:]
     else:
         completions = input_ids[:, :, prompt_len:].reshape(num_trajectories, -1)
-    return tokenizer.batch_decode(completions, skip_special_tokens=True)
+    return [trim_completion(text) for text in tokenizer.batch_decode(completions, skip_special_tokens=True)]
 
 
 def run_suite(
@@ -198,6 +239,8 @@ def run_suite(
             svgd_bandwidth_floor=args.svgd_bandwidth_floor,
             svgd_repulsion_max_norm=args.svgd_repulsion_max_norm,
             particle_noise_every_step=args.particle_noise_every_step,
+            particle_noise_steps=args.particle_noise_steps,
+            stop_on_final_answer=args.stop_on_final_answer,
             temperature=args.temperature,
             device=args.device,
         )
@@ -248,6 +291,18 @@ def main() -> int:
         "--particle_noise_every_step",
         action="store_true",
         help="Reapply particle_init_noise on each no-cache generation step for deterministic SVGD diagnostics.",
+    )
+    parser.add_argument(
+        "--particle_noise_steps",
+        type=int,
+        default=32,
+        help="Number of generated tokens that receive repeated particle noise when enabled.",
+    )
+    parser.add_argument(
+        "--stop_on_final_answer",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Stop generation early when all candidates look like they reached an answer.",
     )
     args = parser.parse_args()
 
