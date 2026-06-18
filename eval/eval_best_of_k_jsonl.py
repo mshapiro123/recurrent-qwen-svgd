@@ -98,6 +98,18 @@ def load_wrapper(args: argparse.Namespace, checkpoint: str | None) -> RecurrentQ
     return wrapper
 
 
+def set_seed(seed: int) -> None:
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
+def parse_seeds(value: str | None) -> list[int]:
+    if not value:
+        return []
+    return [int(item.strip()) for item in value.split(",") if item.strip()]
+
+
 def _next_token(
     output: object,
     num_trajectories: int,
@@ -225,10 +237,11 @@ def run_suite(
     latent_injection_mode: str,
     particle_update_mode: str,
     particle_init_noise: float,
-) -> tuple[int, int]:
+) -> tuple[int, int, list[dict[str, int | str | bool]]]:
     best_hits = 0
     candidate_hits = 0
     total_candidates = 0
+    task_summaries: list[dict[str, int | str | bool]] = []
     print(f"\n=== {label} ===")
     for task in tasks:
         outputs = generate_candidates(
@@ -260,15 +273,25 @@ def run_suite(
         best_hits += int(best_hit)
         candidate_hits += sum(hits)
         total_candidates += len(outputs)
+        task_summaries.append(
+            {
+                "task": task.name,
+                "best_hit": best_hit,
+                "candidate_hits": sum(hits),
+                "candidates": len(outputs),
+                "unique": unique_count,
+            }
+        )
         print(f"\n{task.name} best_of_{len(outputs)}={best_hit} hits={sum(hits)}/{len(outputs)} unique={unique_count}")
-        for idx, (text, hit) in enumerate(zip(outputs, hits)):
-            print(f"--- traj {idx} hit={hit} ---")
-            print(text.strip())
+        if not args.compact:
+            for idx, (text, hit) in enumerate(zip(outputs, hits)):
+                print(f"--- traj {idx} hit={hit} ---")
+                print(text.strip())
     print(
         f"\n{label} summary: best_hits={best_hits}/{len(tasks)} "
         f"candidate_hits={candidate_hits}/{max(total_candidates, 1)}"
     )
-    return best_hits, candidate_hits
+    return best_hits, candidate_hits, task_summaries
 
 
 def main() -> int:
@@ -283,6 +306,8 @@ def main() -> int:
     parser.add_argument("--max_new_tokens", type=int, default=64)
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--seeds", help="Comma-separated seeds for a multi-seed Phase 2 sweep.")
+    parser.add_argument("--compact", action="store_true", help="Print task summaries without candidate text.")
     parser.add_argument("--dtype", default="bfloat16")
     parser.add_argument("--attn_implementation", default="default")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
@@ -318,9 +343,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    torch.manual_seed(args.seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(args.seed)
+    set_seed(args.seed)
     print(f"seed={args.seed}")
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
@@ -328,11 +351,43 @@ def main() -> int:
         tokenizer.pad_token = tokenizer.eos_token
 
     tasks = read_tasks(args.tasks_jsonl)
+    sweep_seeds = parse_seeds(args.seeds)
+
+    if sweep_seeds:
+        if not args.skip_phase1:
+            print("Multi-seed mode only runs Phase 2. Use --skip_phase1 to make that explicit.")
+        phase2 = load_wrapper(args, args.phase2_checkpoint)
+        sweep_rows = []
+        for seed in sweep_seeds:
+            set_seed(seed)
+            print(f"\n\n### SEED {seed} ###")
+            phase2_hits, phase2_candidate_hits, task_summaries = run_suite(
+                f"Phase 2 K={args.phase2_num_trajectories} seed={seed}",
+                phase2,
+                tokenizer,
+                tasks,
+                args,
+                num_trajectories=args.phase2_num_trajectories,
+                sample_latents=args.phase2_sample_latents,
+                latent_injection_mode=args.phase2_latent_injection_mode,
+                particle_update_mode=args.phase2_particle_update_mode,
+                particle_init_noise=args.particle_init_noise,
+            )
+            sweep_rows.append((seed, phase2_hits, phase2_candidate_hits, task_summaries))
+
+        print("\n=== SWEEP SUMMARY ===")
+        for seed, best_hits, candidate_hits, _ in sweep_rows:
+            print(f"seed={seed} best_hits={best_hits}/{len(tasks)} candidate_hits={candidate_hits}/{len(tasks) * args.phase2_num_trajectories}")
+        mean_best = sum(row[1] for row in sweep_rows) / max(len(sweep_rows), 1)
+        mean_candidates = sum(row[2] for row in sweep_rows) / max(len(sweep_rows), 1)
+        print(f"mean_best_hits={mean_best:.3f}/{len(tasks)}")
+        print(f"mean_candidate_hits={mean_candidates:.3f}/{len(tasks) * args.phase2_num_trajectories}")
+        return 0
 
     phase1_hits: int | None = None
     if not args.skip_phase1:
         phase1 = load_wrapper(args, args.phase1_checkpoint)
-        phase1_hits, _ = run_suite(
+        phase1_hits, _, _ = run_suite(
             "Phase 1 K=1",
             phase1,
             tokenizer,
@@ -349,7 +404,7 @@ def main() -> int:
             torch.cuda.empty_cache()
 
     phase2 = load_wrapper(args, args.phase2_checkpoint)
-    phase2_hits, phase2_candidate_hits = run_suite(
+    phase2_hits, phase2_candidate_hits, _ = run_suite(
         f"Phase 2 K={args.phase2_num_trajectories}",
         phase2,
         tokenizer,
