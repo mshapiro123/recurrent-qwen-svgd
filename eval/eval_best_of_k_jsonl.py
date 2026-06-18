@@ -69,7 +69,6 @@ def has_final_answer_shape(text: str) -> bool:
         r"\banswer is\b",
         r"\\boxed\{",
         r"\b\d+\s*(miles per hour|mph)\b",
-        r"\b\d+\s*tubs?\b",
     )
     return any(re.search(pattern, text, flags=re.IGNORECASE) for pattern in final_patterns)
 
@@ -143,6 +142,7 @@ def generate_candidates(
     stop_on_final_answer: bool,
     temperature: float,
     device: str,
+    early_stop_patterns: tuple[str, ...] = (),
 ) -> list[str]:
     encoded = tokenizer(prompt, return_tensors="pt").to(device)
     prompt_len = encoded["input_ids"].shape[-1]
@@ -190,7 +190,12 @@ def generate_candidates(
                 if num_trajectories == 1
                 else input_ids[:, :, prompt_len:].reshape(num_trajectories, -1)
             )
-            decoded_so_far = tokenizer.batch_decode(current, skip_special_tokens=True)
+            decoded_so_far = [
+                trim_completion(text)
+                for text in tokenizer.batch_decode(current, skip_special_tokens=True)
+            ]
+            if early_stop_patterns and all(matches_any(text, early_stop_patterns) for text in decoded_so_far):
+                break
             if stop_on_final_answer and all(has_final_answer_shape(text) for text in decoded_so_far):
                 break
 
@@ -241,6 +246,7 @@ def run_suite(
             particle_noise_every_step=args.particle_noise_every_step,
             particle_noise_steps=args.particle_noise_steps,
             stop_on_final_answer=args.stop_on_final_answer,
+            early_stop_patterns=task.patterns,
             temperature=args.temperature,
             device=args.device,
         )
