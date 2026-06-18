@@ -1,0 +1,14 @@
+{"name": "train speed", "prompt": "Solve exactly. If a train travels 120 miles in 3 hours, what is its average speed?", "patterns": ["\\b40\\s*(mph|miles per hour|miles/hour)?\\b"]}
+{"name": "pharmacy tubs", "prompt": "Solve exactly. The pharmacy has 20 tubs in storage and needs 100 total tubs for the week. It buys one quarter of the remaining needed tubs from a new vendor. How many tubs must it buy from the usual vendor?", "patterns": ["\\b60\\s*tubs?\\b", "\\b60\\b"]}
+{"name": "arithmetic add", "prompt": "Solve exactly. What is 17 + 28?", "patterns": ["\\b45\\b"]}
+{"name": "arithmetic multiply", "prompt": "Solve exactly. What is 7 times 8?", "patterns": ["\\b56\\b"]}
+{"name": "cookies division", "prompt": "Solve exactly. If 36 cookies are shared equally by 6 children, how many cookies does each child get?", "patterns": ["\\b6\\s*cookies?\\b", "\\b6\\b"]}
+{"name": "unit conversion", "prompt": "Solve exactly. How many minutes are in 2 hours?", "patterns": ["\\b120\\s*minutes?\\b", "\\b120\\b"]}
+{"name": "rectangle area", "prompt": "Solve exactly. A rectangle is 9 cm long and 6 cm wide. What is its area?", "patterns": ["\\b54\\s*(square\\s*)?(cm|centimeters|centimetres)\\b", "\\b54\\b"]}
+{"name": "discount price", "prompt": "Solve exactly. A $50 item is discounted by 20 percent. What is the sale price?", "patterns": ["\\$?\\s*40\\b", "\\b40\\s*dollars?\\b"]}
+{"name": "recipe scaling", "prompt": "Solve exactly. One batch of soup needs 2 cups of broth. How many cups are needed for 4 batches?", "patterns": ["\\b8\\s*cups?\\b", "\\b8\\b"]}
+{"name": "average simple", "prompt": "Solve exactly. What is the average of 10, 20, and 30?", "patterns": ["\\b20\\b"]}
+{"name": "letter count", "prompt": "Solve exactly. How many letters are in the word cat?", "patterns": ["\\b3\\b", "\\bthree\\b"]}
+{"name": "rates word", "prompt": "Give one valid 5-letter English word using exactly the letters R, A, T, E, S.", "patterns": ["\\b(stare|tears|rates|aster|tares)\\b"]}
+{"name": "sudoku strategy", "prompt": "Name one strategy for solving a Sudoku puzzle.", "patterns": ["\\b(elimination|candidate|scanning|backtracking|pencil marks?)\\b"]}
+{"name": "n queens small", "prompt": "Give one valid 4-queens placement as row positions for columns 1 through 4.", "patterns": ["\\b2\\s*,\\s*4\\s*,\\s*1\\s*,\\s*3\\b", "\\b3\\s*,\\s*1\\s*,\\s*4\\s*,\\s*2\\b", "\\[\\s*2\\s*,\\s*4\\s*,\\s*1\\s*,\\s*3\\s*\\]", "\\[\\s*3\\s*,\\s*1\\s*,\\s*4\\s*,\\s*2\\s*\\]"]}
