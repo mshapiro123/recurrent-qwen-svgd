@@ -307,6 +307,10 @@ def main() -> int:
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--seeds", help="Comma-separated seeds for a multi-seed Phase 2 sweep.")
+    parser.add_argument(
+        "--particle_noise_steps_sweep",
+        help="Comma-separated particle_noise_steps values for a one-load Phase 2 sweep.",
+    )
     parser.add_argument("--compact", action="store_true", help="Print task summaries without candidate text.")
     parser.add_argument("--dtype", default="bfloat16")
     parser.add_argument("--attn_implementation", default="default")
@@ -352,34 +356,53 @@ def main() -> int:
 
     tasks = read_tasks(args.tasks_jsonl)
     sweep_seeds = parse_seeds(args.seeds)
+    sweep_steps = parse_seeds(args.particle_noise_steps_sweep) or [args.particle_noise_steps]
 
-    if sweep_seeds:
+    if sweep_seeds or args.particle_noise_steps_sweep:
+        if not sweep_seeds:
+            sweep_seeds = [args.seed]
         if not args.skip_phase1:
             print("Multi-seed mode only runs Phase 2. Use --skip_phase1 to make that explicit.")
         phase2 = load_wrapper(args, args.phase2_checkpoint)
         sweep_rows = []
-        for seed in sweep_seeds:
-            set_seed(seed)
-            print(f"\n\n### SEED {seed} ###")
-            phase2_hits, phase2_candidate_hits, task_summaries = run_suite(
-                f"Phase 2 K={args.phase2_num_trajectories} seed={seed}",
-                phase2,
-                tokenizer,
-                tasks,
-                args,
-                num_trajectories=args.phase2_num_trajectories,
-                sample_latents=args.phase2_sample_latents,
-                latent_injection_mode=args.phase2_latent_injection_mode,
-                particle_update_mode=args.phase2_particle_update_mode,
-                particle_init_noise=args.particle_init_noise,
-            )
-            sweep_rows.append((seed, phase2_hits, phase2_candidate_hits, task_summaries))
+        original_steps = args.particle_noise_steps
+        for steps in sweep_steps:
+            args.particle_noise_steps = steps
+            for seed in sweep_seeds:
+                set_seed(seed)
+                print(f"\n\n### STEPS {steps} SEED {seed} ###")
+                phase2_hits, phase2_candidate_hits, task_summaries = run_suite(
+                    f"Phase 2 K={args.phase2_num_trajectories} steps={steps} seed={seed}",
+                    phase2,
+                    tokenizer,
+                    tasks,
+                    args,
+                    num_trajectories=args.phase2_num_trajectories,
+                    sample_latents=args.phase2_sample_latents,
+                    latent_injection_mode=args.phase2_latent_injection_mode,
+                    particle_update_mode=args.phase2_particle_update_mode,
+                    particle_init_noise=args.particle_init_noise,
+                )
+                sweep_rows.append((steps, seed, phase2_hits, phase2_candidate_hits, task_summaries))
+        args.particle_noise_steps = original_steps
 
         print("\n=== SWEEP SUMMARY ===")
-        for seed, best_hits, candidate_hits, _ in sweep_rows:
-            print(f"seed={seed} best_hits={best_hits}/{len(tasks)} candidate_hits={candidate_hits}/{len(tasks) * args.phase2_num_trajectories}")
-        mean_best = sum(row[1] for row in sweep_rows) / max(len(sweep_rows), 1)
-        mean_candidates = sum(row[2] for row in sweep_rows) / max(len(sweep_rows), 1)
+        for steps, seed, best_hits, candidate_hits, _ in sweep_rows:
+            print(
+                f"steps={steps} seed={seed} best_hits={best_hits}/{len(tasks)} "
+                f"candidate_hits={candidate_hits}/{len(tasks) * args.phase2_num_trajectories}"
+            )
+        print("\n=== STEPS SUMMARY ===")
+        for steps in sweep_steps:
+            rows = [row for row in sweep_rows if row[0] == steps]
+            mean_best_for_steps = sum(row[2] for row in rows) / max(len(rows), 1)
+            mean_candidates_for_steps = sum(row[3] for row in rows) / max(len(rows), 1)
+            print(
+                f"steps={steps} mean_best_hits={mean_best_for_steps:.3f}/{len(tasks)} "
+                f"mean_candidate_hits={mean_candidates_for_steps:.3f}/{len(tasks) * args.phase2_num_trajectories}"
+            )
+        mean_best = sum(row[2] for row in sweep_rows) / max(len(sweep_rows), 1)
+        mean_candidates = sum(row[3] for row in sweep_rows) / max(len(sweep_rows), 1)
         print(f"mean_best_hits={mean_best:.3f}/{len(tasks)}")
         print(f"mean_candidate_hits={mean_candidates:.3f}/{len(tasks) * args.phase2_num_trajectories}")
         return 0
