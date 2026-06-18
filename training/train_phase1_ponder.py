@@ -1,0 +1,135 @@
+"""Minimal Phase 1 deterministic PonderNet training loop."""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from functools import partial
+from pathlib import Path
+
+import torch
+import yaml
+from torch.utils.data import DataLoader
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from eval.eval_identity import model_load_kwargs, parse_split, resolve_dtype
+from models.lora import apply_lora_to_recurrent_block
+from models.recurrent_wrapper import RecurrentQwenForCausalLM
+from training.checkpointing import save_trainable_checkpoint
+from training.dataset import JsonlCausalDataset, collate_causal_batch
+from training.stability import (
+    assert_finite_trainable_gradients,
+    assert_finite_trainable_parameters,
+    assert_finite_training_state,
+)
+
+
+def load_config(path: str | Path) -> dict:
+    return yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config", default="config/qwen_0_5b_phase1.yaml")
+    parser.add_argument("--train_jsonl", required=True)
+    parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    args = parser.parse_args()
+    cfg = load_config(args.config)
+
+    tokenizer = AutoTokenizer.from_pretrained(cfg["model_name"])
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    model = AutoModelForCausalLM.from_pretrained(
+        cfg["model_name"],
+        **model_load_kwargs(cfg.get("dtype", "auto"), cfg.get("attn_implementation", "default")),
+    ).to(args.device)
+    wrapper = RecurrentQwenForCausalLM(
+        model,
+        layer_split=parse_split(cfg.get("layer_split", "auto")),
+        initial_halt_prob=cfg.get("initial_halt_prob", 0.25),
+    ).to(args.device)
+    adapter_dtype = resolve_dtype(cfg.get("adapter_dtype", "float32"))
+    lora_cfg = cfg.get("lora", {})
+    if lora_cfg.get("enabled", True):
+        replaced = apply_lora_to_recurrent_block(
+            wrapper,
+            rank=lora_cfg.get("rank", 8),
+            alpha=lora_cfg.get("alpha", 16),
+            dropout=lora_cfg.get("dropout", 0.0),
+            adapter_dtype=adapter_dtype,
+        )
+        print(f"lora_recurrent_modules={replaced}")
+    wrapper.freeze_base_model()
+    wrapper.set_latent_trainable(False)
+    wrapper.set_trainable_modules_dtype(adapter_dtype)
+    if cfg.get("resume_from"):
+        from training.checkpointing import load_trainable_checkpoint
+
+        load_info = load_trainable_checkpoint(wrapper, cfg["resume_from"])
+        print(f"loaded_checkpoint={cfg['resume_from']} loaded_keys={len(load_info['loaded_keys'])}")
+    assert_finite_trainable_parameters(wrapper, step=0)
+    wrapper.train()
+
+    dataset = JsonlCausalDataset(
+        args.train_jsonl,
+        tokenizer=tokenizer,
+        max_length=cfg.get("max_length", 1024),
+        max_train_loops=cfg.get("max_loops", 4),
+        train_on_prompt=cfg.get("train_on_prompt", False),
+    )
+    loader = DataLoader(
+        dataset,
+        batch_size=cfg.get("batch_size", 1),
+        shuffle=True,
+        collate_fn=partial(collate_causal_batch, pad_token_id=tokenizer.pad_token_id),
+    )
+    optimizer = torch.optim.AdamW(
+        wrapper.trainable_component_parameters(),
+        lr=cfg.get("learning_rate", 1e-4),
+        weight_decay=cfg.get("weight_decay", 0.0),
+    )
+
+    max_steps = int(cfg.get("max_steps", 100))
+    step = 0
+    while step < max_steps:
+        for batch in loader:
+            batch = {key: value.to(args.device) for key, value in batch.items()}
+            output = wrapper(
+                **batch,
+                max_loops=cfg.get("max_loops", 4),
+                beta=cfg.get("beta", 0.02),
+                use_cache=False,
+                return_dict=True,
+            )
+            assert_finite_training_state(wrapper, output.loss, output.metrics, step)
+            output.loss.backward()
+            assert_finite_trainable_gradients(wrapper, step)
+            torch.nn.utils.clip_grad_norm_(
+                wrapper.trainable_component_parameters(),
+                cfg.get("max_grad_norm", 1.0),
+                error_if_nonfinite=True,
+            )
+            optimizer.step()
+            optimizer.zero_grad(set_to_none=True)
+            assert_finite_trainable_parameters(wrapper, step + 1)
+
+            if step % cfg.get("log_every", 10) == 0:
+                metrics = " ".join(f"{key}={float(value):.4f}" for key, value in output.metrics.items())
+                print(f"step={step} {metrics}")
+            step += 1
+            if step >= max_steps:
+                break
+    output_dir = cfg.get("output_dir")
+    if output_dir:
+        checkpoint_path = save_trainable_checkpoint(wrapper, output_dir, "phase1", step, cfg)
+        print(f"saved_checkpoint={checkpoint_path}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

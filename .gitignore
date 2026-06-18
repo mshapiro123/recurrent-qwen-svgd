@@ -1,0 +1,16 @@
+__pycache__/
+.pytest_cache/
+.ipynb_checkpoints/
+.venv/
+.mypy_cache/
+.ruff_cache/
+*.pyc
+*.log
+*.zip
+*.pt
+*.pth
+*.safetensors
+outputs/
+checkpoints/
+data/
+wandb/

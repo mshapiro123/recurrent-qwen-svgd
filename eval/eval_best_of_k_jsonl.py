@@ -1,0 +1,300 @@
+"""Compare single-trajectory and best-of-K recurrent generation on exact tasks."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Iterable
+
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from eval.eval_identity import model_load_kwargs, parse_split, resolve_dtype
+from models.lora import apply_lora_to_recurrent_block
+from models.recurrent_wrapper import RecurrentQwenForCausalLM
+from training.checkpointing import load_trainable_checkpoint
+
+
+@dataclass(frozen=True)
+class ExactTask:
+    name: str
+    prompt: str
+    patterns: tuple[str, ...]
+
+
+def read_tasks(path: str | Path) -> list[ExactTask]:
+    tasks: list[ExactTask] = []
+    for line in Path(path).read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        patterns = tuple(row.get("patterns", ()))
+        if not patterns:
+            raise ValueError(f"Task has no patterns: {row}")
+        tasks.append(ExactTask(name=row["name"], prompt=row["prompt"], patterns=patterns))
+    return tasks
+
+
+def matches_any(text: str, patterns: Iterable[str]) -> bool:
+    return any(re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE) for pattern in patterns)
+
+
+def load_wrapper(args: argparse.Namespace, checkpoint: str | None) -> RecurrentQwenForCausalLM:
+    model = AutoModelForCausalLM.from_pretrained(
+        args.model_name,
+        **model_load_kwargs(args.dtype, args.attn_implementation),
+    ).to(args.device)
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=parse_split(args.split)).to(args.device)
+    adapter_dtype = resolve_dtype(args.adapter_dtype)
+    replaced = apply_lora_to_recurrent_block(
+        wrapper,
+        rank=args.lora_rank,
+        alpha=args.lora_alpha,
+        dropout=0.0,
+        adapter_dtype=adapter_dtype,
+    )
+    print(f"lora_recurrent_modules={replaced}")
+    wrapper.set_trainable_modules_dtype(adapter_dtype)
+    if checkpoint:
+        load_info = load_trainable_checkpoint(wrapper, checkpoint)
+        print(f"loaded_checkpoint={checkpoint} loaded_keys={len(load_info['loaded_keys'])}")
+        if load_info["skipped"]:
+            print(f"skipped_keys={len(load_info['skipped'])}")
+    wrapper.eval()
+    return wrapper
+
+
+def _next_token(
+    output: object,
+    num_trajectories: int,
+    temperature: float,
+) -> torch.Tensor:
+    if num_trajectories > 1:
+        logits = output.trajectory_logits[:, :, -1, :]
+        if temperature <= 0:
+            return logits.argmax(dim=-1)
+        probs = torch.softmax(logits.float() / temperature, dim=-1)
+        return torch.multinomial(probs.view(-1, probs.shape[-1]), num_samples=1).view(
+            logits.shape[0],
+            num_trajectories,
+        )
+
+    logits = output.logits[:, -1, :]
+    if temperature <= 0:
+        return logits.argmax(dim=-1, keepdim=True)
+    probs = torch.softmax(logits.float() / temperature, dim=-1)
+    return torch.multinomial(probs, num_samples=1)
+
+
+def generate_candidates(
+    wrapper: RecurrentQwenForCausalLM,
+    tokenizer: AutoTokenizer,
+    prompt: str,
+    *,
+    max_new_tokens: int,
+    max_loops: int,
+    num_trajectories: int,
+    sample_latents: bool,
+    latent_injection_mode: str,
+    particle_update_mode: str,
+    particle_init_noise: float,
+    svgd_eps: float,
+    svgd_repulsion_scale: float,
+    svgd_bandwidth: str,
+    svgd_bandwidth_floor: float,
+    svgd_repulsion_max_norm: float | None,
+    particle_noise_every_step: bool,
+    temperature: float,
+    device: str,
+) -> list[str]:
+    encoded = tokenizer(prompt, return_tensors="pt").to(device)
+    prompt_len = encoded["input_ids"].shape[-1]
+    input_ids = encoded["input_ids"]
+    attention_mask = encoded.get("attention_mask")
+    particle_noise = particle_init_noise
+
+    with torch.no_grad():
+        for _ in range(max_new_tokens):
+            output = wrapper(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                max_loops=max_loops,
+                num_trajectories=num_trajectories,
+                sample_latents=sample_latents,
+                latent_injection_mode=latent_injection_mode,
+                particle_update_mode=particle_update_mode,
+                particle_init_noise=particle_noise,
+                svgd_eps=svgd_eps,
+                svgd_repulsion_scale=svgd_repulsion_scale,
+                svgd_bandwidth=svgd_bandwidth,
+                svgd_bandwidth_floor=svgd_bandwidth_floor,
+                svgd_repulsion_max_norm=svgd_repulsion_max_norm,
+                use_cache=False,
+                return_dict=True,
+            )
+            next_token = _next_token(output, num_trajectories, temperature)
+            if num_trajectories == 1:
+                input_ids = torch.cat([input_ids, next_token], dim=-1)
+                attention_mask = torch.ones_like(input_ids)
+            elif input_ids.dim() == 2:
+                input_ids = input_ids[:, None, :].expand(-1, num_trajectories, -1).contiguous()
+                input_ids = torch.cat([input_ids, next_token.unsqueeze(-1)], dim=-1)
+                attention_mask = torch.ones_like(input_ids)
+            else:
+                input_ids = torch.cat([input_ids, next_token.unsqueeze(-1)], dim=-1)
+                attention_mask = torch.ones_like(input_ids)
+            particle_noise = particle_init_noise if particle_noise_every_step else 0.0
+
+            if next_token.eq(tokenizer.eos_token_id).all():
+                break
+
+    if num_trajectories == 1:
+        completions = input_ids[:, prompt_len:]
+    else:
+        completions = input_ids[:, :, prompt_len:].reshape(num_trajectories, -1)
+    return tokenizer.batch_decode(completions, skip_special_tokens=True)
+
+
+def run_suite(
+    label: str,
+    wrapper: RecurrentQwenForCausalLM,
+    tokenizer: AutoTokenizer,
+    tasks: list[ExactTask],
+    args: argparse.Namespace,
+    *,
+    num_trajectories: int,
+    sample_latents: bool,
+    latent_injection_mode: str,
+    particle_update_mode: str,
+    particle_init_noise: float,
+) -> tuple[int, int]:
+    best_hits = 0
+    candidate_hits = 0
+    total_candidates = 0
+    print(f"\n=== {label} ===")
+    for task in tasks:
+        outputs = generate_candidates(
+            wrapper,
+            tokenizer,
+            task.prompt,
+            max_new_tokens=args.max_new_tokens,
+            max_loops=args.max_loops,
+            num_trajectories=num_trajectories,
+            sample_latents=sample_latents,
+            latent_injection_mode=latent_injection_mode,
+            particle_update_mode=particle_update_mode,
+            particle_init_noise=particle_init_noise,
+            svgd_eps=args.svgd_eps,
+            svgd_repulsion_scale=args.svgd_repulsion_scale,
+            svgd_bandwidth=args.svgd_bandwidth,
+            svgd_bandwidth_floor=args.svgd_bandwidth_floor,
+            svgd_repulsion_max_norm=args.svgd_repulsion_max_norm,
+            particle_noise_every_step=args.particle_noise_every_step,
+            temperature=args.temperature,
+            device=args.device,
+        )
+        hits = [matches_any(text, task.patterns) for text in outputs]
+        unique_count = len({text.strip() for text in outputs})
+        best_hit = any(hits)
+        best_hits += int(best_hit)
+        candidate_hits += sum(hits)
+        total_candidates += len(outputs)
+        print(f"\n{task.name} best_of_{len(outputs)}={best_hit} hits={sum(hits)}/{len(outputs)} unique={unique_count}")
+        for idx, (text, hit) in enumerate(zip(outputs, hits)):
+            print(f"--- traj {idx} hit={hit} ---")
+            print(text.strip())
+    print(
+        f"\n{label} summary: best_hits={best_hits}/{len(tasks)} "
+        f"candidate_hits={candidate_hits}/{max(total_candidates, 1)}"
+    )
+    return best_hits, candidate_hits
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--model_name", default="Qwen/Qwen2.5-0.5B-Instruct")
+    parser.add_argument("--tasks_jsonl", default="eval/smoke_exact_tasks.jsonl")
+    parser.add_argument("--phase1_checkpoint", required=True)
+    parser.add_argument("--phase2_checkpoint", required=True)
+    parser.add_argument("--split", default="6,18")
+    parser.add_argument("--max_loops", type=int, default=4)
+    parser.add_argument("--phase2_num_trajectories", type=int, default=4)
+    parser.add_argument("--max_new_tokens", type=int, default=64)
+    parser.add_argument("--temperature", type=float, default=0.0)
+    parser.add_argument("--dtype", default="bfloat16")
+    parser.add_argument("--attn_implementation", default="default")
+    parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    parser.add_argument("--lora_rank", type=int, default=8)
+    parser.add_argument("--lora_alpha", type=int, default=16)
+    parser.add_argument("--adapter_dtype", default="float32")
+    parser.add_argument("--phase2_sample_latents", action="store_true")
+    parser.add_argument("--phase2_latent_injection_mode", default="post", choices=("pre", "post", "both"))
+    parser.add_argument("--phase2_particle_update_mode", default="none", choices=("none", "svgd"))
+    parser.add_argument("--particle_init_noise", type=float, default=0.0)
+    parser.add_argument("--svgd_eps", type=float, default=1.0)
+    parser.add_argument("--svgd_repulsion_scale", type=float, default=0.5)
+    parser.add_argument("--svgd_bandwidth", default="median")
+    parser.add_argument("--svgd_bandwidth_floor", type=float, default=1e-6)
+    parser.add_argument("--svgd_repulsion_max_norm", type=float)
+    parser.add_argument(
+        "--particle_noise_every_step",
+        action="store_true",
+        help="Reapply particle_init_noise on each no-cache generation step for deterministic SVGD diagnostics.",
+    )
+    args = parser.parse_args()
+
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    tasks = read_tasks(args.tasks_jsonl)
+
+    phase1 = load_wrapper(args, args.phase1_checkpoint)
+    phase1_hits, _ = run_suite(
+        "Phase 1 K=1",
+        phase1,
+        tokenizer,
+        tasks,
+        args,
+        num_trajectories=1,
+        sample_latents=False,
+        latent_injection_mode="pre",
+        particle_update_mode="none",
+        particle_init_noise=0.0,
+    )
+    del phase1
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+    phase2 = load_wrapper(args, args.phase2_checkpoint)
+    phase2_hits, phase2_candidate_hits = run_suite(
+        f"Phase 2 K={args.phase2_num_trajectories}",
+        phase2,
+        tokenizer,
+        tasks,
+        args,
+        num_trajectories=args.phase2_num_trajectories,
+        sample_latents=args.phase2_sample_latents,
+        latent_injection_mode=args.phase2_latent_injection_mode,
+        particle_update_mode=args.phase2_particle_update_mode,
+        particle_init_noise=args.particle_init_noise,
+    )
+    print(
+        "\n=== OVERALL ===\n"
+        f"phase1_k1_hits={phase1_hits}/{len(tasks)}\n"
+        f"phase2_best_of_k_hits={phase2_hits}/{len(tasks)}\n"
+        f"phase2_candidate_hits={phase2_candidate_hits}/{len(tasks) * args.phase2_num_trajectories}"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

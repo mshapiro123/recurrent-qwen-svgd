@@ -1,0 +1,37 @@
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+dtype: bfloat16
+adapter_dtype: float32
+layer_split: "6,18"
+max_length: 512
+max_loops: 4
+num_trajectories: 4
+sample_latents: false
+particle_update_mode: svgd
+particle_init_noise: 0.02
+svgd_eps: 1.0
+svgd_repulsion_scale: 0.5
+svgd_bandwidth: median
+svgd_bandwidth_floor: 0.000001
+svgd_repulsion_max_norm: 1.0
+latent_dim: 256
+latent_scale_init: 0.01
+latent_adapter_std: 0.0001
+latent_injection_mode: pre
+initial_halt_prob: 0.15
+beta: 0.08
+eta: 0.0
+rho: 0.001
+batch_size: 1
+learning_rate: 0.00001
+weight_decay: 0.0
+max_grad_norm: 0.3
+max_steps: 25
+log_every: 5
+train_on_prompt: false
+output_dir: outputs/qwen_0_5b_phase2_svgd_smoke25
+resume_from: outputs/qwen_0_5b_phase1_a100_beta008_continue_150/phase1_step_150.pt
+lora:
+  enabled: true
+  rank: 8
+  alpha: 16
+  dropout: 0.0
