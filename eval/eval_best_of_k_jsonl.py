@@ -196,7 +196,11 @@ def generate_candidates(
             ]
             if early_stop_patterns and all(matches_any(text, early_stop_patterns) for text in decoded_so_far):
                 break
-            if stop_on_final_answer and all(has_final_answer_shape(text) for text in decoded_so_far):
+            if (
+                not early_stop_patterns
+                and stop_on_final_answer
+                and all(has_final_answer_shape(text) for text in decoded_so_far)
+            ):
                 break
 
             if next_token.eq(tokenizer.eos_token_id).all():
@@ -278,6 +282,7 @@ def main() -> int:
     parser.add_argument("--phase2_num_trajectories", type=int, default=4)
     parser.add_argument("--max_new_tokens", type=int, default=64)
     parser.add_argument("--temperature", type=float, default=0.0)
+    parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--dtype", default="bfloat16")
     parser.add_argument("--attn_implementation", default="default")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
@@ -285,6 +290,7 @@ def main() -> int:
     parser.add_argument("--lora_alpha", type=int, default=16)
     parser.add_argument("--adapter_dtype", default="float32")
     parser.add_argument("--phase2_sample_latents", action="store_true")
+    parser.add_argument("--skip_phase1", action="store_true", help="Only run the Phase 2 suite to save GPU time.")
     parser.add_argument("--phase2_latent_injection_mode", default="post", choices=("pre", "post", "both"))
     parser.add_argument("--phase2_particle_update_mode", default="none", choices=("none", "svgd"))
     parser.add_argument("--particle_init_noise", type=float, default=0.0)
@@ -312,28 +318,35 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
+    print(f"seed={args.seed}")
+
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
 
     tasks = read_tasks(args.tasks_jsonl)
 
-    phase1 = load_wrapper(args, args.phase1_checkpoint)
-    phase1_hits, _ = run_suite(
-        "Phase 1 K=1",
-        phase1,
-        tokenizer,
-        tasks,
-        args,
-        num_trajectories=1,
-        sample_latents=False,
-        latent_injection_mode="pre",
-        particle_update_mode="none",
-        particle_init_noise=0.0,
-    )
-    del phase1
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
+    phase1_hits: int | None = None
+    if not args.skip_phase1:
+        phase1 = load_wrapper(args, args.phase1_checkpoint)
+        phase1_hits, _ = run_suite(
+            "Phase 1 K=1",
+            phase1,
+            tokenizer,
+            tasks,
+            args,
+            num_trajectories=1,
+            sample_latents=False,
+            latent_injection_mode="pre",
+            particle_update_mode="none",
+            particle_init_noise=0.0,
+        )
+        del phase1
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
     phase2 = load_wrapper(args, args.phase2_checkpoint)
     phase2_hits, phase2_candidate_hits = run_suite(
@@ -348,9 +361,10 @@ def main() -> int:
         particle_update_mode=args.phase2_particle_update_mode,
         particle_init_noise=args.particle_init_noise,
     )
+    phase1_summary = f"{phase1_hits}/{len(tasks)}" if phase1_hits is not None else "skipped"
     print(
         "\n=== OVERALL ===\n"
-        f"phase1_k1_hits={phase1_hits}/{len(tasks)}\n"
+        f"phase1_k1_hits={phase1_summary}\n"
         f"phase2_best_of_k_hits={phase2_hits}/{len(tasks)}\n"
         f"phase2_candidate_hits={phase2_candidate_hits}/{len(tasks) * args.phase2_num_trajectories}"
     )
