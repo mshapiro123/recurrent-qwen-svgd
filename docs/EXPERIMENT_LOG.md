@@ -104,3 +104,18 @@ Persistent failures:
 
 - `pharmacy tubs`, `rates word`, `n queens small`, and often `letter count` remain weak or unsolved.
 - These look like model/checkpoint capability or prompt pathology issues, not just trajectory-diversity issues.
+
+Structured diagnostics:
+
+| Setting | Best hits | Candidate hits | Drift RMS | Repulsion RMS | Clip fraction | Pairwise distance | Trajectory diversity |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `repulsion=0` | `25/42` | `80/168` | `0.570344` | `0.0056865` | `0.0045773` | `1.77413` | `0.00756361` |
+| `repulsion=1` | `26/42` | `86/168` | `0.569031` | `0.00326463` | `0.0` | `2.02359` | `0.00797702` |
+
+Interpretation:
+
+- The repulsion path is not being limited by the `max_norm=1.0` clip; clip fraction is effectively zero.
+- The repulsion vector is tiny relative to recurrent drift, roughly `0.6%` of drift RMS for `repulsion=1`.
+- Despite the small RMS, `repulsion=1` increases pairwise distance, trajectory diversity, best hits, and candidate hits.
+- This suggests the hidden-space kernel has a real but weak steering effect. More scale alone is unlikely to be the answer because the previous repulsion-scale sweep already degraded beyond `1.0`.
+- The next highest-value diagnostic is a low-dimensional projected kernel, not further tuning of raw hidden-space repulsion scale.
