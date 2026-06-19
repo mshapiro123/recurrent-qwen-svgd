@@ -119,3 +119,43 @@ Interpretation:
 - Despite the small RMS, `repulsion=1` increases pairwise distance, trajectory diversity, best hits, and candidate hits.
 - This suggests the hidden-space kernel has a real but weak steering effect. More scale alone is unlikely to be the answer because the previous repulsion-scale sweep already degraded beyond `1.0`.
 - The next highest-value diagnostic is a low-dimensional projected kernel, not further tuning of raw hidden-space repulsion scale.
+
+## 2026-06-19: Projected Hidden-Kernel Diagnostics
+
+Task set:
+
+- `eval/smoke_exact_tasks_v2.jsonl`
+- Seeds: `0,1,2`
+- Projection seed: `123`
+- Shared settings: `K=4`, `particle_init_noise=0.05`, `particle_noise_steps=16`, `temperature=0.0`
+
+Projection dimension sweep at `repulsion=1.0`:
+
+| Kernel projection | Best hits | Candidate hits | Repulsion/drift | Pairwise distance | Trajectory diversity | Clip fraction |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| raw hidden, `0` | `26/42` | `86/168` | `0.005737` | `2.02359` | `0.00797702` | `0.0` |
+| projected, `32` | `26/42` | `87/168` | `0.015364` | `3.22081` | `0.00820761` | `0.065191` |
+| projected, `64` | `23/42` | `78/168` | `0.013304` | `2.99058` | `0.00856586` | `0.0570577` |
+
+Interpretation:
+
+- A 32D random projection strengthens repulsion and slightly improves density.
+- 64D hurts quality despite stronger repulsion than raw hidden space.
+- Projection helps with force magnitude, but random projection alone is not a semantic breakthrough.
+
+32D projection, repulsion scale sweep:
+
+| Repulsion scale | Best hits | Candidate hits | Notes |
+| --- | ---: | ---: | --- |
+| `0.5` | `25/42` | `93/168` | Best density so far; lower oracle than raw baseline. |
+| `1.0` | `26/42` | `87/168` | Slight density gain over raw. |
+| `2.0` | `25/42` | `91/168` | Higher density, solves train speed strongly, loses some arithmetic. |
+| `4.0` | `27/42` | `90/168` | Best oracle so far; high density; solves some letter-count cases but hurts arithmetic add/multiply. |
+
+Interpretation:
+
+- Projected 32D kernels now clearly beat raw hidden-space density after scale tuning.
+- `repulsion=0.5` is the best density setting.
+- `repulsion=4.0` is the best oracle setting and may be the best selector-facing setting if majority/verifier can handle the changed task profile.
+- The effect is task-redistributive, not uniformly better: higher repulsion helps train speed and letter count but can damage arithmetic add/multiply.
+- Next step is a robustness sweep over seeds `0..4` for `proj_dim=32`, `repulsion=0.5` and `4.0`, with raw hidden `repulsion=1.0` retained as the baseline.
