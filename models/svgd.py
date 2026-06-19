@@ -33,6 +33,8 @@ def svgd_particle_update(
     bandwidth_floor: float = 1e-6,
     repulsion_max_norm: Optional[float] = None,
     kernel_projection_dim: Optional[int] = None,
+    kernel_projection: Optional[torch.Tensor] = None,
+    kernel_geometry: str = "euclidean",
     projection_seed: int = 0,
 ) -> tuple[torch.Tensor, SVGDStats]:
     """Apply one learned-drift SVGD update to flattened particle states.
@@ -50,6 +52,8 @@ def svgd_particle_update(
         raise ValueError("num_particles must be >= 1")
     if previous_state.shape != standard_state.shape:
         raise ValueError("previous_state and standard_state must have the same shape")
+    if kernel_geometry not in {"euclidean", "spherical"}:
+        raise ValueError("kernel_geometry must be one of: euclidean, spherical")
 
     if num_particles == 1:
         zero = standard_state.new_zeros(())
@@ -81,13 +85,16 @@ def svgd_particle_update(
 
     pooled = masked_mean(work_std, attention_mask).view(batch_size, num_particles, hidden_dim)
     drift_particles = drift.view(batch_size, num_particles, seq_len, hidden_dim)
-    projection = _projection_matrix(
+    projection = _resolve_projection(
         hidden_dim=hidden_dim,
         projection_dim=kernel_projection_dim,
+        projection=kernel_projection,
         seed=projection_seed,
         device=work_std.device,
     )
     kernel_pooled = pooled @ projection if projection is not None else pooled
+    if kernel_geometry == "spherical":
+        kernel_pooled = torch.nn.functional.normalize(kernel_pooled, p=2, dim=-1, eps=1e-8)
 
     diff = kernel_pooled.unsqueeze(2) - kernel_pooled.unsqueeze(1)
     sq_dist = diff.pow(2).sum(dim=-1)
@@ -146,6 +153,37 @@ def _mean_pairwise_distance(sq_dist: torch.Tensor, num_particles: int) -> torch.
 
 
 _PROJECTION_CACHE: dict[tuple[str, int, int, int], torch.Tensor] = {}
+
+
+def _resolve_projection(
+    hidden_dim: int,
+    projection_dim: Optional[int],
+    projection: Optional[torch.Tensor],
+    seed: int,
+    device: torch.device,
+) -> Optional[torch.Tensor]:
+    if projection is not None:
+        if projection.dim() != 2:
+            raise ValueError(f"kernel_projection must be rank-2, got shape={tuple(projection.shape)}")
+        if projection.shape[0] != hidden_dim:
+            raise ValueError(
+                "kernel_projection input dimension must match hidden size. "
+                f"Got projection={tuple(projection.shape)}, hidden_dim={hidden_dim}."
+            )
+        if projection_dim is not None and projection_dim > 0:
+            if projection_dim > projection.shape[1]:
+                raise ValueError(
+                    "kernel_projection_dim cannot exceed loaded projection width. "
+                    f"Got projection_dim={projection_dim}, projection={tuple(projection.shape)}."
+                )
+            projection = projection[:, : int(projection_dim)]
+        return projection.to(device=device, dtype=torch.float32)
+    return _projection_matrix(
+        hidden_dim=hidden_dim,
+        projection_dim=projection_dim,
+        seed=seed,
+        device=device,
+    )
 
 
 def _projection_matrix(

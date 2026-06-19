@@ -123,6 +123,14 @@ def parse_floats(value: str | None) -> list[float]:
     return [float(item.strip()) for item in value.split(",") if item.strip()]
 
 
+def parse_optional_float(value: str | None) -> float | None:
+    if value is None:
+        return None
+    if value.strip().lower() in {"", "none", "null"}:
+        return None
+    return float(value)
+
+
 def _format_float(value: float | None) -> str:
     if value is None:
         return "none"
@@ -169,8 +177,11 @@ def phase2_run_descriptor(args: argparse.Namespace, *, seed: int | None = None, 
                 f"repulsion={_format_float(args.svgd_repulsion_scale)}",
                 f"max_norm={_format_float(args.svgd_repulsion_max_norm)}",
                 f"proj_dim={args.svgd_kernel_projection_dim or 0}",
+                f"geom={args.svgd_kernel_geometry}",
             ]
         )
+        if args.svgd_kernel_projection_path:
+            parts.append(f"proj_path={Path(args.svgd_kernel_projection_path).stem}")
     if seed is not None:
         parts.append(f"seed={seed}")
     return " ".join(parts)
@@ -216,6 +227,8 @@ def generate_candidates(
     svgd_bandwidth_floor: float,
     svgd_repulsion_max_norm: float | None,
     svgd_kernel_projection_dim: int | None,
+    svgd_kernel_projection_path: str | None,
+    svgd_kernel_geometry: str,
     svgd_projection_seed: int,
     particle_noise_every_step: bool,
     particle_noise_steps: int,
@@ -250,6 +263,8 @@ def generate_candidates(
                 svgd_bandwidth_floor=svgd_bandwidth_floor,
                 svgd_repulsion_max_norm=svgd_repulsion_max_norm,
                 svgd_kernel_projection_dim=svgd_kernel_projection_dim,
+                svgd_kernel_projection_path=svgd_kernel_projection_path,
+                svgd_kernel_geometry=svgd_kernel_geometry,
                 svgd_projection_seed=svgd_projection_seed,
                 use_cache=False,
                 return_dict=True,
@@ -347,6 +362,8 @@ def run_suite(
             svgd_bandwidth_floor=args.svgd_bandwidth_floor,
             svgd_repulsion_max_norm=args.svgd_repulsion_max_norm,
             svgd_kernel_projection_dim=args.svgd_kernel_projection_dim,
+            svgd_kernel_projection_path=args.svgd_kernel_projection_path,
+            svgd_kernel_geometry=args.svgd_kernel_geometry,
             svgd_projection_seed=args.svgd_projection_seed,
             particle_noise_every_step=args.particle_noise_every_step,
             particle_noise_steps=args.particle_noise_steps,
@@ -406,6 +423,8 @@ def run_suite(
                         "svgd_repulsion_scale": args.svgd_repulsion_scale,
                         "svgd_repulsion_max_norm": args.svgd_repulsion_max_norm,
                         "svgd_kernel_projection_dim": args.svgd_kernel_projection_dim,
+                        "svgd_kernel_projection_path": args.svgd_kernel_projection_path,
+                        "svgd_kernel_geometry": args.svgd_kernel_geometry,
                         "svgd_projection_seed": args.svgd_projection_seed,
                         "diagnostics": result.diagnostics,
                     }
@@ -460,11 +479,21 @@ def main() -> int:
     parser.add_argument("--svgd_repulsion_scale", type=float, default=0.5)
     parser.add_argument("--svgd_bandwidth", default="median")
     parser.add_argument("--svgd_bandwidth_floor", type=float, default=1e-6)
-    parser.add_argument("--svgd_repulsion_max_norm", type=float)
+    parser.add_argument("--svgd_repulsion_max_norm", type=parse_optional_float)
     parser.add_argument(
         "--svgd_kernel_projection_dim",
         type=int,
-        help="Compute the SVGD kernel in a fixed random projection of this hidden dimension.",
+        help="Compute the SVGD kernel in a projection of this hidden dimension. With a loaded projection path, slices to this width.",
+    )
+    parser.add_argument(
+        "--svgd_kernel_projection_path",
+        help="Optional .pt file containing a calibrated projection tensor or dict with key 'projection'.",
+    )
+    parser.add_argument(
+        "--svgd_kernel_geometry",
+        default="euclidean",
+        choices=("euclidean", "spherical"),
+        help="Kernel geometry. 'spherical' L2-normalizes projected pooled vectors before the RBF.",
     )
     parser.add_argument(
         "--svgd_projection_seed",

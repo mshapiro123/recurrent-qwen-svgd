@@ -73,6 +73,60 @@ def test_svgd_projected_kernel_runs_and_preserves_shape():
     assert torch.isfinite(stats.repulsion_rms)
 
 
+def test_svgd_spherical_projected_kernel_runs_and_preserves_shape():
+    torch.manual_seed(0)
+    previous = torch.randn(4, 2, 16)
+    standard = previous + 0.05 * torch.randn_like(previous)
+    updated, stats = svgd_particle_update(
+        previous,
+        standard,
+        attention_mask=torch.ones(4, 2),
+        num_particles=4,
+        eps=0.2,
+        kernel_projection_dim=4,
+        kernel_geometry="spherical",
+        projection_seed=123,
+    )
+    assert updated.shape == previous.shape
+    assert torch.isfinite(stats.mean_pairwise_distance)
+    assert torch.isfinite(stats.repulsion_rms)
+
+
+def test_svgd_loaded_projection_can_be_sliced():
+    torch.manual_seed(0)
+    previous = torch.randn(4, 2, 16)
+    standard = previous + 0.05 * torch.randn_like(previous)
+    projection = torch.randn(16, 8)
+    updated, stats = svgd_particle_update(
+        previous,
+        standard,
+        attention_mask=torch.ones(4, 2),
+        num_particles=4,
+        eps=0.2,
+        kernel_projection=projection,
+        kernel_projection_dim=4,
+    )
+    assert updated.shape == previous.shape
+    assert torch.isfinite(stats.mean_pairwise_distance)
+    assert torch.isfinite(stats.repulsion_rms)
+
+
+def test_svgd_k1_recovers_standard_update_with_spherical_projection():
+    previous = torch.randn(2, 3, 4)
+    standard = torch.randn(2, 3, 4)
+    updated, stats = svgd_particle_update(
+        previous,
+        standard,
+        attention_mask=None,
+        num_particles=1,
+        eps=1.0,
+        kernel_projection_dim=2,
+        kernel_geometry="spherical",
+    )
+    assert torch.equal(updated, standard)
+    assert stats.repulsion_rms.item() == 0.0
+
+
 def test_svgd_drift_moves_mean_toward_target_without_collapse():
     torch.manual_seed(1)
     state = 0.05 * torch.randn(4, 1, 2)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Optional
 
 import torch
@@ -125,6 +126,7 @@ class RecurrentQwenForCausalLM(nn.Module):
             latent_scale_init,
             latent_adapter_std,
         )
+        self._svgd_projection_cache: dict[str, torch.Tensor] = {}
         self._align_auxiliary_modules_to_base()
 
     @property
@@ -182,6 +184,22 @@ class RecurrentQwenForCausalLM(nn.Module):
         )
         return params
 
+    def _load_svgd_projection(self, path: Optional[str]) -> Optional[torch.Tensor]:
+        if not path:
+            return None
+        resolved = str(Path(path).expanduser().resolve())
+        cached = self._svgd_projection_cache.get(resolved)
+        if cached is not None:
+            return cached
+
+        payload = torch.load(resolved, map_location="cpu")
+        projection = payload.get("projection") if isinstance(payload, dict) else payload
+        if not torch.is_tensor(projection):
+            raise TypeError(f"Projection file must contain a tensor or dict['projection']: {resolved}")
+        projection = projection.detach().float().contiguous()
+        self._svgd_projection_cache[resolved] = projection
+        return projection
+
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,
@@ -210,6 +228,8 @@ class RecurrentQwenForCausalLM(nn.Module):
         svgd_bandwidth_floor: float = 1e-6,
         svgd_repulsion_max_norm: Optional[float] = None,
         svgd_kernel_projection_dim: Optional[int] = None,
+        svgd_kernel_projection_path: Optional[str] = None,
+        svgd_kernel_geometry: str = "euclidean",
         svgd_projection_seed: int = 0,
         target_loop_counts: Optional[torch.Tensor] = None,
         target_loop_prior: Optional[torch.Tensor] = None,
@@ -410,6 +430,8 @@ class RecurrentQwenForCausalLM(nn.Module):
                     bandwidth_floor=svgd_bandwidth_floor,
                     repulsion_max_norm=svgd_repulsion_max_norm,
                     kernel_projection_dim=svgd_kernel_projection_dim,
+                    kernel_projection=self._load_svgd_projection(svgd_kernel_projection_path),
+                    kernel_geometry=svgd_kernel_geometry,
                     projection_seed=svgd_projection_seed,
                 )
                 svgd_stats_history.append(svgd_stats)

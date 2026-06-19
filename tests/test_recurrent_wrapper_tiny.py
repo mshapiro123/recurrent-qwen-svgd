@@ -179,6 +179,34 @@ def test_svgd_projected_kernel_runs_on_tiny_model():
     assert torch.isfinite(output.metrics["svgd_repulsion_rms"])
 
 
+def test_svgd_spherical_projected_kernel_runs_on_tiny_model():
+    torch.manual_seed(0)
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+
+    with torch.no_grad():
+        output = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=2,
+            num_trajectories=2,
+            sample_latents=False,
+            particle_update_mode="svgd",
+            particle_init_noise=0.01,
+            svgd_repulsion_scale=0.5,
+            svgd_kernel_projection_dim=4,
+            svgd_kernel_geometry="spherical",
+            use_cache=False,
+            return_dict=True,
+        )
+
+    assert output.logits.shape[:2] == input_ids.shape
+    assert torch.isfinite(output.metrics["svgd_pairwise_distance"])
+    assert torch.isfinite(output.metrics["svgd_repulsion_rms"])
+
+
 def test_svgd_k1_matches_standard_recurrent_path_on_tiny_model():
     torch.manual_seed(0)
     model = TinyCausalLM().eval()
