@@ -194,6 +194,10 @@ to Phase2. This runner defaults to `symbolic_program` traces; override with
 older prose-trace curriculum. It also defaults to
 `STAGE5_ARC_AGI_PROGRAM_PARSE_MODE=prefer`, so program execution is measured
 explicitly; set it to `fallback` for conservative grid-first scoring.
+It also generates a disjoint synthetic holdout controlled by
+`STAGE5_ARC_AGI_SYNTHETIC_EVAL_TASKS`, `STAGE5_ARC_AGI_SYNTHETIC_EVAL_SEED`,
+and `STAGE5_ARC_AGI_SYNTHETIC_EVAL_PARSE_MODES`. Use that section to separate
+operation-family generalization from public ARC evaluation noise.
 
 Run `colab/run_stage5_arc_agi_trace_sft_gate.py` to execute both controls under
 the same settings and write one comparison summary. By default it compares

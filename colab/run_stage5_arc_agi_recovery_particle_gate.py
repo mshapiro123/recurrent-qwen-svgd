@@ -42,6 +42,10 @@ SFT_RUN_ID = f"{RUN_ID}_synthetic_sft"
 SYNTHETIC_TASKS = int(os.environ.get("STAGE5_ARC_AGI_SYNTHETIC_TASKS", "200"))
 SYNTHETIC_SEED = int(os.environ.get("STAGE5_ARC_AGI_SYNTHETIC_SEED", "101"))
 SYNTHETIC_MODES = os.environ.get("STAGE5_ARC_AGI_SYNTHETIC_MODES", "all")
+SYNTHETIC_EVAL_TASKS = int(os.environ.get("STAGE5_ARC_AGI_SYNTHETIC_EVAL_TASKS", "20"))
+SYNTHETIC_EVAL_SEED = int(os.environ.get("STAGE5_ARC_AGI_SYNTHETIC_EVAL_SEED", str(SYNTHETIC_SEED + 100_000)))
+SYNTHETIC_EVAL_MODES = os.environ.get("STAGE5_ARC_AGI_SYNTHETIC_EVAL_MODES", SYNTHETIC_MODES)
+SYNTHETIC_EVAL_PARSE_MODES = os.environ.get("STAGE5_ARC_AGI_SYNTHETIC_EVAL_PARSE_MODES", "")
 TRACE_MODE = os.environ.get("STAGE5_ARC_AGI_RECOVERY_TRACE_MODE", "symbolic_program")
 TRACE_FILTER = os.environ.get("STAGE5_ARC_AGI_RECOVERY_TRACE_FILTER", "covered")
 TRAIN_STEPS = int(os.environ.get("STAGE5_ARC_AGI_TRAIN_STEPS", "300"))
@@ -62,6 +66,7 @@ PARTICLE_VARIANTS = os.environ.get(
     "STAGE5_ARC_AGI_PARTICLE_VARIANTS",
     "k4_noise0_rep0:0:0,k4_noise001_rep0:0.01:0,k4_noise001_rep05:0.01:0.5,k4_noise001_rep2:0.01:2",
 )
+SYNTHETIC_HOLDOUT_JSON = RUN_DIR / "synthetic_holdout_tasks.json"
 
 
 @dataclass(frozen=True)
@@ -131,6 +136,11 @@ def read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def resolve_path(value: str | Path) -> Path:
+    path = Path(value)
+    return path if path.is_absolute() else ROOT / path
+
+
 def metric(summary: dict[str, Any], key: str) -> int:
     return int(summary.get(key, 0))
 
@@ -146,6 +156,15 @@ def compare_summaries(candidate: dict[str, Any], reference: dict[str, Any]) -> d
         "first_delta": metric(candidate, "first_exact") - metric(reference, "first_exact"),
         "valid_rate_delta": rate(candidate, "valid_candidate_rate") - rate(reference, "valid_candidate_rate"),
     }
+
+
+def parse_csv(value: str) -> list[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def synthetic_eval_parse_modes() -> list[str]:
+    modes = parse_csv(SYNTHETIC_EVAL_PARSE_MODES)
+    return modes or [PROGRAM_PARSE_MODE]
 
 
 def decide_recovery(sft_summary: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
@@ -185,6 +204,26 @@ def decide_particle_value(
     return best_variant is not None, {"variants": rows, "best_non_negative_variant": best_variant}
 
 
+def summarize_holdout_recovery(holdout: dict[str, dict[str, dict[str, Any]]]) -> dict[str, Any]:
+    by_parse_mode: dict[str, Any] = {}
+    for parse_mode, rows in holdout.items():
+        tuned = rows["phase1_tuned"]["summary"]
+        start = rows["phase1_start"]["summary"]
+        base = rows["base"]["summary"]
+        by_parse_mode[parse_mode] = {
+            "phase1_tuned_vs_start": compare_summaries(tuned, start),
+            "phase1_tuned_vs_base": compare_summaries(tuned, base),
+            "base": base,
+            "phase1_start": start,
+            "phase1_tuned": tuned,
+            "parse_methods": {
+                name: row.get("parse_method_summary", {})
+                for name, row in rows.items()
+            },
+        }
+    return by_parse_mode
+
+
 def run_synthetic_sft() -> dict[str, Any]:
     summary_path = ROOT / "outputs" / "stage5" / SFT_RUN_ID / "summary.json"
     if summary_path.exists() and os.environ.get("STAGE5_ARC_AGI_RECOVERY_PARTICLE_RESUME", "1") in {
@@ -219,6 +258,133 @@ def run_synthetic_sft() -> dict[str, Any]:
     )
     run([sys.executable, "colab/run_stage5_arc_agi_sft.py"], env=env, log_name="synthetic_sft.log")
     return read_json(summary_path)
+
+
+def generate_synthetic_holdout() -> Path | None:
+    if SYNTHETIC_EVAL_TASKS <= 0:
+        return None
+    if SYNTHETIC_HOLDOUT_JSON.exists() and os.environ.get("STAGE5_ARC_AGI_RECOVERY_PARTICLE_RESUME", "1") in {
+        "1",
+        "true",
+        "yes",
+    }:
+        print(f"reusing_synthetic_holdout={SYNTHETIC_HOLDOUT_JSON}")
+        return SYNTHETIC_HOLDOUT_JSON
+    run(
+        [
+            sys.executable,
+            "training/generate_arc_agi_synthetic_tasks.py",
+            "--output_json",
+            path_for_cli(SYNTHETIC_HOLDOUT_JSON),
+            "--num_tasks",
+            str(SYNTHETIC_EVAL_TASKS),
+            "--seed",
+            str(SYNTHETIC_EVAL_SEED),
+            "--modes",
+            SYNTHETIC_EVAL_MODES,
+        ],
+        log_name="generate_synthetic_holdout.log",
+    )
+    return SYNTHETIC_HOLDOUT_JSON
+
+
+def eval_arc_variant(
+    *,
+    label: str,
+    mode: str,
+    tasks_path: Path,
+    checkpoint: Path | None,
+    program_parse_mode: str,
+) -> dict[str, Any]:
+    summary_json = RUN_DIR / f"{label}_summary.json"
+    summary_md = RUN_DIR / f"{label}_summary.md"
+    output_jsonl = RUN_DIR / f"{label}_candidates.jsonl"
+    if summary_json.exists() and os.environ.get("STAGE5_ARC_AGI_RECOVERY_PARTICLE_RESUME", "1") in {
+        "1",
+        "true",
+        "yes",
+    }:
+        print(f"reusing_eval_summary={summary_json}")
+        return read_json(summary_json)
+
+    cmd = [
+        sys.executable,
+        "eval/eval_arc_agi.py",
+        "--tasks_path",
+        str(tasks_path),
+        "--limit",
+        str(SYNTHETIC_EVAL_TASKS if tasks_path == SYNTHETIC_HOLDOUT_JSON else EVAL_TASK_LIMIT),
+        "--mode",
+        mode,
+        "--max_new_tokens",
+        str(MAX_NEW_TOKENS),
+        "--grid_format",
+        GRID_FORMAT,
+        "--program_parse_mode",
+        program_parse_mode,
+        "--dtype",
+        DTYPE,
+        "--adapter_dtype",
+        ADAPTER_DTYPE,
+        "--device",
+        DEVICE,
+        "--output_jsonl",
+        path_for_cli(output_jsonl),
+        "--summary_json",
+        path_for_cli(summary_json),
+        "--summary_md",
+        path_for_cli(summary_md),
+    ]
+    if mode != "base":
+        if checkpoint is None:
+            raise ValueError(f"checkpoint is required for mode={mode}")
+        cmd += [
+            "--checkpoint",
+            path_for_cli(checkpoint),
+            "--max_loops",
+            "4",
+            "--num_candidates",
+            "1",
+        ]
+    run(cmd, log_name=f"{label}.log")
+    return read_json(summary_json)
+
+
+def run_synthetic_holdout_evals(
+    *,
+    sft_summary: dict[str, Any],
+    tuned_checkpoint: Path,
+) -> dict[str, dict[str, dict[str, Any]]]:
+    holdout_path = generate_synthetic_holdout()
+    if holdout_path is None:
+        return {}
+    phase1_start = resolve_path(sft_summary["metadata"]["phase1_checkpoint"])
+    results: dict[str, dict[str, dict[str, Any]]] = {}
+    for parse_mode in synthetic_eval_parse_modes():
+        results[parse_mode] = {
+            "base": eval_arc_variant(
+                label=f"synthetic_holdout_{parse_mode}_base",
+                mode="base",
+                tasks_path=holdout_path,
+                checkpoint=None,
+                program_parse_mode=parse_mode,
+            ),
+            "phase1_start": eval_arc_variant(
+                label=f"synthetic_holdout_{parse_mode}_phase1_start",
+                mode="phase1",
+                tasks_path=holdout_path,
+                checkpoint=phase1_start,
+                program_parse_mode=parse_mode,
+            ),
+            "phase1_tuned": eval_arc_variant(
+                label=f"synthetic_holdout_{parse_mode}_phase1_tuned",
+                mode="phase1",
+                tasks_path=holdout_path,
+                checkpoint=tuned_checkpoint,
+                program_parse_mode=parse_mode,
+            ),
+        }
+    return results
 
 
 def eval_particle_variant(
@@ -342,9 +508,22 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Tuned vs start: `{recovery['evidence']['phase1_tuned_vs_start']}`",
         f"- Tuned vs base: `{recovery['evidence']['phase1_tuned_vs_base']}`",
         "",
-        "## Particle Evidence",
-        "",
     ]
+    holdout = recovery["evidence"].get("synthetic_holdout", {})
+    if holdout:
+        lines.extend(["## Synthetic Holdout Evidence", ""])
+        for parse_mode, row in holdout.items():
+            lines.extend(
+                [
+                    f"### Parse mode `{parse_mode}`",
+                    "",
+                    f"- Tuned vs start: `{row['phase1_tuned_vs_start']}`",
+                    f"- Tuned vs base: `{row['phase1_tuned_vs_base']}`",
+                    f"- Parse methods: `{row['parse_methods']}`",
+                    "",
+                ]
+            )
+    lines.extend(["## Particle Evidence", ""])
     for name, row in particle["evidence"]["variants"].items():
         lines.append(f"- `{name}` delta vs tuned: `{row['delta_vs_tuned']}` summary `{row['summary']}`")
     lines.extend(
@@ -367,12 +546,19 @@ def main() -> int:
     recovery_passed, recovery_evidence = decide_recovery(sft_summary)
 
     metadata = sft_summary["metadata"]
-    tasks_path = Path(metadata["eval_path"])
-    tuned_checkpoint = ROOT / sft_summary["tuned_checkpoint"]
+    tasks_path = resolve_path(metadata["eval_path"])
+    tuned_checkpoint = resolve_path(sft_summary["tuned_checkpoint"])
     if not tasks_path.exists():
         raise FileNotFoundError(tasks_path)
     if not tuned_checkpoint.exists():
         raise FileNotFoundError(tuned_checkpoint)
+
+    synthetic_holdout = run_synthetic_holdout_evals(
+        sft_summary=sft_summary,
+        tuned_checkpoint=tuned_checkpoint,
+    )
+    if synthetic_holdout:
+        recovery_evidence["synthetic_holdout"] = summarize_holdout_recovery(synthetic_holdout)
 
     particle_summaries = {
         variant.name: eval_particle_variant(variant=variant, tasks_path=tasks_path, checkpoint=tuned_checkpoint)
@@ -390,6 +576,10 @@ def main() -> int:
             "synthetic_tasks": SYNTHETIC_TASKS,
             "synthetic_seed": SYNTHETIC_SEED,
             "synthetic_modes": SYNTHETIC_MODES,
+            "synthetic_eval_tasks": SYNTHETIC_EVAL_TASKS,
+            "synthetic_eval_seed": SYNTHETIC_EVAL_SEED,
+            "synthetic_eval_modes": SYNTHETIC_EVAL_MODES,
+            "synthetic_eval_parse_modes": synthetic_eval_parse_modes(),
             "trace_mode": TRACE_MODE,
             "trace_filter": TRACE_FILTER,
             "train_steps": TRAIN_STEPS,
@@ -402,6 +592,7 @@ def main() -> int:
             "particle_variants": [variant.__dict__ for variant in particle_variants],
         },
         "sft_summary": sft_summary,
+        "synthetic_holdout": synthetic_holdout,
         "recovery_decision": {"passed": recovery_passed, "evidence": recovery_evidence},
         "particle_decision": {"passed": particle_passed, "evidence": particle_evidence},
     }

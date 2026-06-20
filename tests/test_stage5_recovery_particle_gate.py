@@ -5,6 +5,7 @@ from colab.run_stage5_arc_agi_recovery_particle_gate import (
     decide_particle_value,
     decide_recovery,
     parse_particle_variants,
+    summarize_holdout_recovery,
 )
 
 
@@ -72,3 +73,17 @@ def test_decide_particle_value_rejects_all_negative() -> None:
     decision, evidence = decide_particle_value({"bad": _summary(2, 2)}, _summary(2, 3))
     assert decision is False
     assert evidence["best_non_negative_variant"] is None
+
+
+def test_summarize_holdout_recovery_tracks_parse_modes_and_deltas() -> None:
+    holdout = {
+        "prefer": {
+            "base": {"summary": _summary(0, 1), "parse_method_summary": {"grid": {"count": 1}}},
+            "phase1_start": {"summary": _summary(1, 1), "parse_method_summary": {"grid": {"count": 1}}},
+            "phase1_tuned": {"summary": _summary(2, 3), "parse_method_summary": {"program": {"count": 3}}},
+        }
+    }
+    summary = summarize_holdout_recovery(holdout)
+    assert summary["prefer"]["phase1_tuned_vs_start"]["selected_delta"] == 1
+    assert summary["prefer"]["phase1_tuned_vs_start"]["best_of_k_delta"] == 2
+    assert summary["prefer"]["parse_methods"]["phase1_tuned"] == {"program": {"count": 3}}

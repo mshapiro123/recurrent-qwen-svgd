@@ -113,7 +113,10 @@ The older split notebooks are kept only as references:
    against the tuned recurrent checkpoint. It defaults to `symbolic_program`
    traces and `STAGE5_ARC_AGI_PROGRAM_PARSE_MODE=prefer`, so executable
    transformations are measured before final-grid formatting. Use its two
-   decisions to keep "training helped" separate from "particles helped."
+   decisions to keep "training helped" separate from "particles helped." It
+   also evaluates a disjoint synthetic holdout, configured by
+   `STAGE5_ARC_AGI_SYNTHETIC_EVAL_TASKS`, so we can see whether program-trace
+   training generalizes inside the taught operation family.
    For unattended A100 time, run `colab/run_stage5_arc_agi_autopilot.py`
    instead; it branches through those gates with explicit thresholds and writes
    one decision report.
