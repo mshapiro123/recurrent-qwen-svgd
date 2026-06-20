@@ -27,6 +27,7 @@ from eval.arc_agi_utils import (  # noqa: E402
     format_grid_completion,
     grid_to_json_text,
     inverse_geometry_transform,
+    leave_one_out_examples,
     load_arc_agi_examples,
     parse_grid_from_text,
     parse_geometry_augmentations,
@@ -678,6 +679,8 @@ def write_summary_md(path: str | Path | None, payload: dict[str, Any]) -> None:
         "",
         f"- Tasks path: `{payload['tasks_path']}`",
         f"- Grid format: `{payload['grid_format']}`",
+        f"- Include original test pairs: `{payload.get('include_original_test_pairs', True)}`",
+        f"- Include leave-one-out training pairs: `{payload.get('include_leave_one_out', False)}`",
         f"- Geometry TTA: `{payload.get('geometry_tta', 'none')}`",
         f"- Program parse mode: `{payload['program_parse_mode']}`",
         f"- Selection strategy: `{payload.get('selection_strategy', 'heuristic')}`",
@@ -730,11 +733,27 @@ def write_summary_md(path: str | Path | None, payload: dict[str, Any]) -> None:
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def select_eval_examples(
+    base_examples: list[ArcAgiExample],
+    *,
+    include_original_test_pairs: bool,
+    include_leave_one_out: bool,
+) -> list[ArcAgiExample]:
+    examples: list[ArcAgiExample] = []
+    if include_original_test_pairs:
+        examples.extend(base_examples)
+    if include_leave_one_out:
+        examples.extend(leave_one_out_examples(base_examples))
+    return examples
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tasks_path", required=True)
     parser.add_argument("--solutions_path")
     parser.add_argument("--limit", type=int)
+    parser.add_argument("--include_original_test_pairs", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--include_leave_one_out", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--mode", choices=("base", "phase1", "phase2"), default="base")
     parser.add_argument("--checkpoint")
     parser.add_argument("--output_jsonl")
@@ -831,11 +850,18 @@ def main() -> int:
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token = tokenizer.eos_token
 
-    examples = load_arc_agi_examples(
+    base_examples = load_arc_agi_examples(
         args.tasks_path,
         solutions_path=args.solutions_path,
         limit=args.limit,
     )
+    examples = select_eval_examples(
+        base_examples,
+        include_original_test_pairs=args.include_original_test_pairs,
+        include_leave_one_out=args.include_leave_one_out,
+    )
+    if not examples:
+        raise SystemExit("No ARC examples selected. Enable --include_original_test_pairs or --include_leave_one_out.")
     print(f"loaded_examples={len(examples)}")
 
     model_or_wrapper = None
@@ -936,6 +962,8 @@ def main() -> int:
         "tasks_path": args.tasks_path,
         "solutions_path": args.solutions_path,
         "limit": args.limit,
+        "include_original_test_pairs": args.include_original_test_pairs,
+        "include_leave_one_out": args.include_leave_one_out,
         "num_candidates": args.num_candidates,
         "num_trajectories": args.num_trajectories,
         "max_new_tokens": args.max_new_tokens,

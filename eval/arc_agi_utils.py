@@ -220,6 +220,38 @@ def load_arc_agi_examples(
     return examples
 
 
+def leave_one_out_examples(task_examples: Iterable[ArcAgiExample]) -> list[ArcAgiExample]:
+    """Create one query example from each training demonstration.
+
+    ARC task objects repeat the same training pairs for each test pair. This
+    de-duplicates by task id before holding out each training pair as the query
+    and using the remaining training pairs as demonstrations.
+    """
+
+    by_task: dict[str, ArcAgiExample] = {}
+    for example in task_examples:
+        by_task.setdefault(example.task_id, example)
+
+    generated: list[ArcAgiExample] = []
+    for task_id, example in sorted(by_task.items()):
+        train_pairs = list(example.train)
+        if len(train_pairs) < 2:
+            continue
+        for idx, heldout in enumerate(train_pairs):
+            assert heldout.output is not None
+            demonstrations = tuple(pair for j, pair in enumerate(train_pairs) if j != idx)
+            generated.append(
+                ArcAgiExample(
+                    task_id=f"{task_id}:loo{idx}",
+                    test_index=0,
+                    train=demonstrations,
+                    test_input=heldout.input,
+                    test_output=heldout.output,
+                )
+            )
+    return generated
+
+
 def grid_to_compact_text(grid: Grid) -> str:
     return "\n".join(" ".join(str(cell) for cell in row) for row in grid)
 

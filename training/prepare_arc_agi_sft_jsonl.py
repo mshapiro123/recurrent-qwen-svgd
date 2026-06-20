@@ -26,7 +26,6 @@ import random
 import sys
 from dataclasses import replace
 from pathlib import Path
-from typing import Iterable
 
 from transformers import AutoTokenizer
 
@@ -41,6 +40,7 @@ from eval.arc_agi_utils import (  # noqa: E402
     Grid,
     apply_geometry_transform,
     format_grid_completion,
+    leave_one_out_examples,
     load_arc_agi_examples,
     parse_geometry_augmentations,
     render_arc_prompt,
@@ -98,38 +98,6 @@ def random_color_permutation(rng: random.Random) -> list[int]:
 
 def identity_permutation() -> list[int]:
     return list(range(10))
-
-
-def leave_one_out_examples(task_examples: Iterable[ArcAgiExample]) -> list[ArcAgiExample]:
-    """Create held-out train-pair examples for each task.
-
-    ``load_arc_agi_examples`` returns one example per test pair. The training
-    demonstrations are repeated across those examples, so this function
-    de-duplicates by task id before making leave-one-out rows.
-    """
-
-    by_task: dict[str, ArcAgiExample] = {}
-    for example in task_examples:
-        by_task.setdefault(example.task_id, example)
-
-    generated: list[ArcAgiExample] = []
-    for task_id, example in sorted(by_task.items()):
-        train_pairs = list(example.train)
-        if len(train_pairs) < 2:
-            continue
-        for idx, heldout in enumerate(train_pairs):
-            assert heldout.output is not None
-            demonstrations = tuple(pair for j, pair in enumerate(train_pairs) if j != idx)
-            generated.append(
-                ArcAgiExample(
-                    task_id=f"{task_id}:loo{idx}",
-                    test_index=0,
-                    train=demonstrations,
-                    test_input=heldout.input,
-                    test_output=heldout.output,
-                )
-            )
-    return generated
 
 
 def render_chat_prompt(tokenizer, example: ArcAgiExample, output_format: str, trace_mode: str = "none") -> str:

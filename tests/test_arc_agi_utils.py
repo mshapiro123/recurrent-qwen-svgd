@@ -9,6 +9,7 @@ from eval.arc_agi_utils import (
     apply_geometry_transform,
     format_grid_completion,
     inverse_geometry_transform,
+    leave_one_out_examples,
     load_arc_agi_examples,
     parse_grid_from_text,
     parse_geometry_augmentations,
@@ -17,8 +18,8 @@ from eval.arc_agi_utils import (
     transform_arc_example,
     validate_grid,
 )
-from eval.eval_arc_agi import inferred_output_shapes, select_candidate_index
-from training.prepare_arc_agi_sft_jsonl import apply_color_permutation, leave_one_out_examples
+from eval.eval_arc_agi import inferred_output_shapes, select_candidate_index, select_eval_examples
+from training.prepare_arc_agi_sft_jsonl import apply_color_permutation
 
 
 def test_validate_grid_rejects_ragged_rows() -> None:
@@ -167,6 +168,48 @@ def test_leave_one_out_examples_hold_out_each_training_pair() -> None:
     assert generated[0].test_input == [[1]]
     assert generated[0].test_output == [[2]]
     assert [pair.input for pair in generated[0].train] == [[[3]], [[5]]]
+
+
+def test_select_eval_examples_can_add_leave_one_out_rows() -> None:
+    example = ArcAgiExample(
+        task_id="task",
+        test_index=0,
+        train=(
+            ArcPair(input=[[1]], output=[[2]]),
+            ArcPair(input=[[3]], output=[[4]]),
+        ),
+        test_input=[[5]],
+        test_output=[[6]],
+    )
+
+    selected = select_eval_examples(
+        [example],
+        include_original_test_pairs=True,
+        include_leave_one_out=True,
+    )
+
+    assert [item.task_id for item in selected] == ["task", "task:loo0", "task:loo1"]
+
+
+def test_select_eval_examples_can_use_leave_one_out_only() -> None:
+    example = ArcAgiExample(
+        task_id="task",
+        test_index=0,
+        train=(
+            ArcPair(input=[[1]], output=[[2]]),
+            ArcPair(input=[[3]], output=[[4]]),
+        ),
+        test_input=[[5]],
+        test_output=[[6]],
+    )
+
+    selected = select_eval_examples(
+        [example],
+        include_original_test_pairs=False,
+        include_leave_one_out=True,
+    )
+
+    assert [item.task_id for item in selected] == ["task:loo0", "task:loo1"]
 
 
 def test_shape_aware_candidate_selection_prefers_inferred_shape() -> None:

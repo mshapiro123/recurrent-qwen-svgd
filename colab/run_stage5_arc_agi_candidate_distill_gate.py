@@ -41,6 +41,14 @@ ARC_VERSION = os.environ.get("STAGE5_ARC_AGI_VERSION", "1")
 TRAIN_SPLIT = os.environ.get("STAGE5_ARC_AGI_TRAIN_SPLIT", "training")
 TRAIN_TASK_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_TRAIN_TASK_LIMIT", "100"))
 SOURCE_TASK_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_CANDIDATE_DISTILL_TASK_LIMIT", str(TRAIN_TASK_LIMIT)))
+SOURCE_INCLUDE_ORIGINAL = os.environ.get(
+    "STAGE5_ARC_AGI_CANDIDATE_DISTILL_INCLUDE_ORIGINAL",
+    "1",
+).strip().lower() in {"1", "true", "yes", "y"}
+SOURCE_INCLUDE_LEAVE_ONE_OUT = os.environ.get(
+    "STAGE5_ARC_AGI_CANDIDATE_DISTILL_INCLUDE_LEAVE_ONE_OUT",
+    "1",
+).strip().lower() in {"1", "true", "yes", "y"}
 GRID_FORMAT = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
 SOURCE_GEOMETRY_TTA = os.environ.get("STAGE5_ARC_AGI_CANDIDATE_DISTILL_GEOMETRY_TTA", "all")
 SOURCE_PROGRAM_PARSE_MODE = os.environ.get("STAGE5_ARC_AGI_CANDIDATE_DISTILL_PROGRAM_PARSE_MODE", "fallback")
@@ -212,6 +220,8 @@ def generate_candidate_source(train_path: Path) -> dict[str, Any]:
         str(train_path),
         "--limit",
         str(SOURCE_TASK_LIMIT),
+        "--include_original_test_pairs" if SOURCE_INCLUDE_ORIGINAL else "--no-include_original_test_pairs",
+        "--include_leave_one_out" if SOURCE_INCLUDE_LEAVE_ONE_OUT else "--no-include_leave_one_out",
         "--mode",
         SOURCE_MODE,
         "--max_new_tokens",
@@ -313,6 +323,8 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Candidate source checkpoint: `{payload['metadata']['source_checkpoint']}`",
         f"- Candidate source train split: `{payload['metadata']['train_path']}`",
         f"- Candidate source limit: `{SOURCE_TASK_LIMIT}`",
+        f"- Candidate source includes original test pairs: `{SOURCE_INCLUDE_ORIGINAL}`",
+        f"- Candidate source includes leave-one-out training pairs: `{SOURCE_INCLUDE_LEAVE_ONE_OUT}`",
         f"- Candidate source geometry TTA: `{SOURCE_GEOMETRY_TTA}`",
         f"- Candidate source include symbolic: `{SOURCE_INCLUDE_SYMBOLIC}`",
         f"- Candidate distill choice: `{DISTILL_CHOICE}`",
@@ -402,6 +414,8 @@ def main() -> int:
             "source_mode": SOURCE_MODE,
             "source_checkpoint": path_for_cli(source_checkpoint()) if source_checkpoint() is not None else None,
             "source_task_limit": SOURCE_TASK_LIMIT,
+            "source_include_original_test_pairs": SOURCE_INCLUDE_ORIGINAL,
+            "source_include_leave_one_out": SOURCE_INCLUDE_LEAVE_ONE_OUT,
             "source_geometry_tta": SOURCE_GEOMETRY_TTA,
             "source_program_parse_mode": SOURCE_PROGRAM_PARSE_MODE,
             "source_selection_strategy": SOURCE_SELECTION_STRATEGY,
