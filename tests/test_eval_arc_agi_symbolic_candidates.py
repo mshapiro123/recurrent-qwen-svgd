@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from eval.arc_agi_utils import ArcAgiExample, ArcPair
 from eval.arc_agi_symbolic import exact_symbolic_candidate
-from eval.eval_arc_agi import evaluate_example, format_symbolic_candidate_texts, summarize_program_verifier
+from eval.eval_arc_agi import (
+    evaluate_example,
+    format_symbolic_candidate_texts,
+    summarize_program_verifier,
+    summarize_task_families,
+    task_family,
+)
 
 
 def _constant_example() -> ArcAgiExample:
@@ -61,3 +67,39 @@ def test_symbolic_program_candidate_is_verified_and_selectable() -> None:
     assert verifier["candidates_with_program"] == 1
     assert verifier["candidates_program_fits_train"] == 1
     assert verifier["program_fit_selected_exact"] == 1
+
+
+def test_task_family_extracts_synthetic_family_names() -> None:
+    assert task_family("synthetic_move_recolor_000123") == "move_recolor"
+    assert task_family("synthetic_frame_object_000001:loo0") == "frame_object"
+    assert task_family("0d3d703e") == "arc"
+
+
+def test_summarize_task_families_tracks_family_exact_rates() -> None:
+    rows = [
+        {
+            "task_id": "synthetic_move_recolor_000001",
+            "has_target": True,
+            "first_exact": True,
+            "selected_exact": True,
+            "best_of_k_exact": True,
+            "valid_candidates": 1,
+            "num_candidates": 1,
+        },
+        {
+            "task_id": "synthetic_frame_object_000002",
+            "has_target": True,
+            "first_exact": False,
+            "selected_exact": False,
+            "best_of_k_exact": True,
+            "valid_candidates": 1,
+            "num_candidates": 2,
+        },
+    ]
+
+    summary = summarize_task_families(rows)
+
+    assert summary["move_recolor"]["selected_exact"] == 1
+    assert summary["move_recolor"]["task_solve_rate_best_of_k"] == 1.0
+    assert summary["frame_object"]["best_of_k_exact"] == 1
+    assert summary["frame_object"]["valid_candidate_rate"] == 0.5

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -381,6 +382,48 @@ def summarize_examples(example_summaries: list[dict[str, Any]]) -> dict[str, Any
     }
 
 
+def task_family(task_id: str) -> str:
+    synthetic_match = re.match(r"^synthetic_(.+)_\d{6}(?::.*)?$", task_id)
+    if synthetic_match:
+        return synthetic_match.group(1)
+    return "arc"
+
+
+def summarize_task_families(example_summaries: list[dict[str, Any]]) -> dict[str, Any]:
+    scored = [item for item in example_summaries if item["has_target"]]
+    by_family: dict[str, list[dict[str, Any]]] = {}
+    for item in scored:
+        by_family.setdefault(task_family(str(item["task_id"])), []).append(item)
+
+    summary: dict[str, Any] = {}
+    for family, items in sorted(by_family.items()):
+        first = sum(1 for item in items if item["first_exact"])
+        selected = sum(1 for item in items if item["selected_exact"])
+        best = sum(1 for item in items if item["best_of_k_exact"])
+        task_ids = sorted({item["task_id"] for item in items})
+        solved_tasks = 0
+        for task_id in task_ids:
+            task_items = [item for item in items if item["task_id"] == task_id]
+            if task_items and all(item["best_of_k_exact"] for item in task_items):
+                solved_tasks += 1
+        valid_candidates = sum(item["valid_candidates"] for item in items)
+        total_candidates = sum(item["num_candidates"] for item in items)
+        summary[family] = {
+            "examples_with_targets": len(items),
+            "first_exact": first,
+            "selected_exact": selected,
+            "best_of_k_exact": best,
+            "first_accuracy": first / max(len(items), 1),
+            "selected_accuracy": selected / max(len(items), 1),
+            "best_of_k_accuracy": best / max(len(items), 1),
+            "tasks_with_targets": len(task_ids),
+            "tasks_solved_best_of_k": solved_tasks,
+            "task_solve_rate_best_of_k": solved_tasks / max(len(task_ids), 1),
+            "valid_candidate_rate": valid_candidates / max(total_candidates, 1),
+        }
+    return summary
+
+
 def summarize_candidate_sources(rows: list[dict[str, Any]]) -> dict[str, Any]:
     by_source: dict[str, dict[str, int]] = {}
     for row in rows:
@@ -437,6 +480,7 @@ def write_summary_md(path: str | Path | None, payload: dict[str, Any]) -> None:
     source_summary = payload.get("candidate_source_summary", {})
     parse_summary = payload.get("parse_method_summary", {})
     program_verifier = payload.get("program_verifier_summary", {})
+    family_summary = payload.get("task_family_summary", {})
     lines = [
         f"# ARC-AGI Evaluation - {payload['mode']}",
         "",
@@ -460,6 +504,15 @@ def write_summary_md(path: str | Path | None, payload: dict[str, Any]) -> None:
                 f"- `{source}`: count `{stats['count']}`, valid `{stats['valid']}`, "
                 f"exact `{stats['exact']}`, selected `{stats['selected']}`, "
                 f"selected_exact `{stats['selected_exact']}`"
+            )
+    if family_summary:
+        lines += ["", "## Task Families"]
+        for family, stats in sorted(family_summary.items()):
+            lines.append(
+                f"- `{family}`: selected `{stats['selected_exact']}` / `{stats['examples_with_targets']}`, "
+                f"best `{stats['best_of_k_exact']}` / `{stats['examples_with_targets']}`, "
+                f"tasks `{stats['tasks_solved_best_of_k']}` / `{stats['tasks_with_targets']}`, "
+                f"valid_rate `{stats['valid_candidate_rate']}`"
             )
     if parse_summary:
         lines += ["", "## Parse Methods"]
@@ -664,6 +717,7 @@ def main() -> int:
         "symbolic_candidate_format": args.symbolic_candidate_format,
         "summary": summarize_examples(example_summaries),
         "candidate_source_summary": summarize_candidate_sources(all_rows),
+        "task_family_summary": summarize_task_families(example_summaries),
         "parse_method_summary": summarize_parse_methods(all_rows),
         "program_verifier_summary": summarize_program_verifier(all_rows),
         "examples": example_summaries,

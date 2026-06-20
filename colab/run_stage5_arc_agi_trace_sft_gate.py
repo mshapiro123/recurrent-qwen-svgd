@@ -109,7 +109,9 @@ def compact(summary: dict[str, Any]) -> dict[str, Any]:
     best_summary = best_checkpoint.get("summary") or tuned
     diagnostics = summary.get("eval_diagnostics", {}).get("phase1_arc_agi_tuned", {})
     verifier = diagnostics.get("program_verifier_summary", {})
+    family_summary = diagnostics.get("task_family_summary", {})
     best_verifier = (best_checkpoint.get("eval_diagnostics") or {}).get("program_verifier_summary", {})
+    best_family_summary = (best_checkpoint.get("eval_diagnostics") or {}).get("task_family_summary", family_summary)
     program_only = (summary.get("program_only_eval", {}).get("phase1_arc_agi_tuned") or {}).get("summary", {})
     return {
         "base_selected": summary["base"]["selected_exact"],
@@ -135,6 +137,8 @@ def compact(summary: dict[str, Any]) -> dict[str, Any]:
             "program_fit_selected_exact",
             verifier.get("program_fit_selected_exact", 0),
         ),
+        "tuned_task_family_summary": family_summary,
+        "best_task_family_summary": best_family_summary,
         "program_only_selected": program_only.get("selected_exact", 0),
         "program_only_best": program_only.get("best_of_k_exact", 0),
     }

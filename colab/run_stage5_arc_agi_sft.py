@@ -373,6 +373,7 @@ def eval_arc_agi(label: str, mode: str, tasks_path: Path, checkpoint: Path | Non
 def eval_diagnostics(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "candidate_source_summary": payload.get("candidate_source_summary", {}),
+        "task_family_summary": payload.get("task_family_summary", {}),
         "parse_method_summary": payload.get("parse_method_summary", {}),
         "program_verifier_summary": payload.get("program_verifier_summary", {}),
     }

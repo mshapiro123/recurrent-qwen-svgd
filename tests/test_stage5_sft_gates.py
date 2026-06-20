@@ -23,6 +23,9 @@ def _run_summary() -> dict[str, object]:
         "phase1_arc_agi_tuned": _summary(4, 4, valid_rate=0.4),
         "eval_diagnostics": {
             "phase1_arc_agi_tuned": {
+                "task_family_summary": {
+                    "move_recolor": {"selected_exact": 1},
+                },
                 "program_verifier_summary": {
                     "candidates_with_program": 2,
                     "candidates_program_fits_train": 1,
@@ -34,6 +37,9 @@ def _run_summary() -> dict[str, object]:
             "step": 150,
             "summary": _summary(5, 6, valid_rate=0.8),
             "eval_diagnostics": {
+                "task_family_summary": {
+                    "frame_object": {"selected_exact": 2},
+                },
                 "program_verifier_summary": {
                     "candidates_with_program": 4,
                     "candidates_program_fits_train": 3,
@@ -56,6 +62,8 @@ def test_distill_gate_compact_uses_best_checkpoint_when_available() -> None:
     assert row["best_best"] == 6
     assert row["best_valid_rate"] == 0.8
     assert row["best_program_fits"] == 3
+    assert row["tuned_task_family_summary"]["move_recolor"]["selected_exact"] == 1
+    assert row["best_task_family_summary"]["frame_object"]["selected_exact"] == 2
     assert row["program_only_selected"] == 3
 
 
@@ -66,6 +74,8 @@ def test_trace_gate_compact_uses_best_checkpoint_when_available() -> None:
     assert row["tasks_solved_best"] == 6
     assert row["tuned_program_fits"] == 1
     assert row["best_program_fit_selected_exact"] == 2
+    assert row["tuned_task_family_summary"]["move_recolor"]["selected_exact"] == 1
+    assert row["best_task_family_summary"]["frame_object"]["selected_exact"] == 2
     assert row["program_only_best"] == 4
 
 
