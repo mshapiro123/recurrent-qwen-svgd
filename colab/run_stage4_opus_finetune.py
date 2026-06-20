@@ -42,6 +42,7 @@ PHASE1_SAVE_EVERY = int(os.environ.get("STAGE4_PHASE1_SAVE_EVERY", "250"))
 PHASE2_STEPS = int(os.environ.get("STAGE4_PHASE2_STEPS", "100"))
 PHASE2_SAVE_EVERY = int(os.environ.get("STAGE4_PHASE2_SAVE_EVERY", "50"))
 ARC_LIMIT = int(os.environ.get("STAGE4_ARC_LIMIT", "128"))
+EXACT_SEEDS = os.environ.get("STAGE4_EXACT_SEEDS", "0,1,2")
 DEVICE = os.environ.get("DEVICE", "cuda")
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
@@ -263,6 +264,7 @@ def main() -> int:
         "phase1_steps": PHASE1_STEPS,
         "phase2_steps": PHASE2_STEPS,
         "arc_limit": ARC_LIMIT,
+        "exact_seeds": EXACT_SEEDS,
         "dtype": DTYPE,
         "adapter_dtype": ADAPTER_DTYPE,
     }
@@ -451,7 +453,7 @@ def main() -> int:
             "eval/smoke_exact_tasks_v2.jsonl",
             "--compact",
             "--seeds",
-            "0,1,2,3,4",
+            EXACT_SEEDS,
             "--phase1_checkpoint",
             str(phase1_ckpt.relative_to(ROOT)),
             "--phase2_checkpoint",
