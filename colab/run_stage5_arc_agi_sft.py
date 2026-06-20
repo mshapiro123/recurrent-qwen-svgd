@@ -235,6 +235,7 @@ def prepare_sft(train_path: Path) -> None:
         log_name="prepare_arc_agi_sft.log",
     )
     if SYNTHETIC_TASKS:
+        synthetic_trace_mode = TRACE_MODE if TRACE_MODE in {"symbolic", "symbolic_program"} else "symbolic"
         run(
             [
                 sys.executable,
@@ -267,7 +268,7 @@ def prepare_sft(train_path: Path) -> None:
                 "--grid_format",
                 GRID_FORMAT,
                 "--trace_mode",
-                "symbolic",
+                synthetic_trace_mode,
                 "--trace_filter",
                 "covered",
                 "--max_total_tokens",

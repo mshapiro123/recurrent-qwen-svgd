@@ -21,6 +21,7 @@ class SymbolicCandidate:
     name: str
     grid: Grid
     trace: tuple[str, ...] = ()
+    program: tuple[str, ...] = ()
 
 
 def grid_shape(grid: Grid) -> tuple[int, int]:
@@ -50,6 +51,11 @@ def color_map_trace(color_map: dict[int, int]) -> str:
         return "Color map: identity."
     pairs = ", ".join(f"{source}->{target}" for source, target in sorted(color_map.items()))
     return f"Color map: {pairs}."
+
+
+def color_map_program_literal(color_map: dict[int, int]) -> str:
+    pairs = ", ".join(f"{source}: {target}" for source, target in sorted(color_map.items()))
+    return "{" + pairs + "}"
 
 
 def all_outputs_equal(outputs: list[Grid]) -> bool:
@@ -82,6 +88,11 @@ def symbolic_candidates(example: ArcAgiExample) -> list[SymbolicCandidate]:
                 "constant_output",
                 [row[:] for row in outputs[0]],
                 ("Rule: all demonstrations share the same output grid.", "Action: copy that output grid."),
+                (
+                    "program:",
+                    "  grid = constant_output_from_demonstrations(train_outputs)",
+                    "  return grid",
+                ),
             )
         )
 
@@ -102,6 +113,12 @@ def symbolic_candidates(example: ArcAgiExample) -> list[SymbolicCandidate]:
                     color_map_trace(color_map),
                     "Action: apply the transform and color map to the test input.",
                 ),
+                (
+                    "program:",
+                    f"  grid = transform(test_input, {transform!r})",
+                    f"  grid = recolor(grid, {color_map_program_literal(color_map)})",
+                    "  return grid",
+                ),
             )
         )
 
@@ -119,4 +136,9 @@ def exact_symbolic_candidate(example: ArcAgiExample) -> SymbolicCandidate | None
 
 def format_symbolic_trace(candidate: SymbolicCandidate) -> str:
     lines = ["<think>", *candidate.trace, "</think>"]
+    return "\n".join(lines) + "\n"
+
+
+def format_symbolic_program_trace(candidate: SymbolicCandidate) -> str:
+    lines = ["<think>", *(candidate.program or candidate.trace), "</think>"]
     return "\n".join(lines) + "\n"

@@ -42,6 +42,8 @@ SFT_RUN_ID = f"{RUN_ID}_synthetic_sft"
 SYNTHETIC_TASKS = int(os.environ.get("STAGE5_ARC_AGI_SYNTHETIC_TASKS", "200"))
 SYNTHETIC_SEED = int(os.environ.get("STAGE5_ARC_AGI_SYNTHETIC_SEED", "101"))
 SYNTHETIC_MODES = os.environ.get("STAGE5_ARC_AGI_SYNTHETIC_MODES", "all")
+TRACE_MODE = os.environ.get("STAGE5_ARC_AGI_RECOVERY_TRACE_MODE", "symbolic_program")
+TRACE_FILTER = os.environ.get("STAGE5_ARC_AGI_RECOVERY_TRACE_FILTER", "covered")
 TRAIN_STEPS = int(os.environ.get("STAGE5_ARC_AGI_TRAIN_STEPS", "300"))
 TRAIN_TASK_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_TRAIN_TASK_LIMIT", "100"))
 EVAL_TASK_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_EVAL_TASK_LIMIT", "20"))
@@ -197,8 +199,8 @@ def run_synthetic_sft() -> dict[str, Any]:
         {
             "STAGE5_ARC_AGI_SFT_RUN_ID": SFT_RUN_ID,
             "STAGE5_ARC_AGI_SFT_PUSH": "0",
-            "STAGE5_ARC_AGI_TRACE_MODE": "symbolic",
-            "STAGE5_ARC_AGI_TRACE_FILTER": "covered",
+            "STAGE5_ARC_AGI_TRACE_MODE": TRACE_MODE,
+            "STAGE5_ARC_AGI_TRACE_FILTER": TRACE_FILTER,
             "STAGE5_ARC_AGI_SYNTHETIC_TASKS": str(SYNTHETIC_TASKS),
             "STAGE5_ARC_AGI_SYNTHETIC_SEED": str(SYNTHETIC_SEED),
             "STAGE5_ARC_AGI_SYNTHETIC_MODES": SYNTHETIC_MODES,
@@ -384,6 +386,8 @@ def main() -> int:
             "synthetic_tasks": SYNTHETIC_TASKS,
             "synthetic_seed": SYNTHETIC_SEED,
             "synthetic_modes": SYNTHETIC_MODES,
+            "trace_mode": TRACE_MODE,
+            "trace_filter": TRACE_FILTER,
             "train_steps": TRAIN_STEPS,
             "train_task_limit": TRAIN_TASK_LIMIT,
             "eval_task_limit": EVAL_TASK_LIMIT,

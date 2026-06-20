@@ -83,7 +83,8 @@ Initial harness files:
   preparation with leave-one-out task rows and safe color-permutation
   augmentation. It also supports `--trace_mode symbolic`, which prepends a
   compact `<think>` transformation trace when the small symbolic solver can
-  exactly explain the target grid.
+  exactly explain the target grid, and `--trace_mode symbolic_program`, which
+  emits a tiny program-style trace such as transform/recolor/return steps.
 - `training/generate_arc_agi_synthetic_tasks.py`: synthetic ARC-style task
   generator for geometry/color-map and constant-output tasks that are exactly
   covered by the symbolic trace solver. This is a controlled curriculum for
@@ -161,10 +162,11 @@ It then fine-tunes the recurrent Phase1 checkpoint and compares exact-grid
 generation against base and the pre-SFT recurrent checkpoint on the ARC-AGI
 evaluation split.
 
-Set `STAGE5_ARC_AGI_TRACE_MODE=symbolic` to train on explicit transformation
-traces for covered examples. Use `STAGE5_ARC_AGI_TRACE_FILTER=covered` for the
-clean curriculum arm, and keep `STAGE5_ARC_AGI_TRACE_MODE=none` as the grid-only
-control.
+Set `STAGE5_ARC_AGI_TRACE_MODE=symbolic_program` to train on explicit
+program-style transformation traces for covered examples. Use
+`STAGE5_ARC_AGI_TRACE_FILTER=covered` for the clean curriculum arm, and keep
+`STAGE5_ARC_AGI_TRACE_MODE=none` as the grid-only control. The older
+`symbolic` mode remains available for prose traces.
 
 Set `STAGE5_ARC_AGI_SYNTHETIC_TASKS=200` or higher to append symbolically covered
 synthetic ARC-style tasks to the public ARC SFT rows. This is the first
@@ -180,7 +182,9 @@ questions answered in one A100 session. Its report has two independent gates:
 
 Only treat particles as promising if the second gate clears. If only the first
 gate clears, keep improving deterministic recurrent training before returning
-to Phase2.
+to Phase2. This runner defaults to `symbolic_program` traces; override with
+`STAGE5_ARC_AGI_RECOVERY_TRACE_MODE=symbolic` only when comparing against the
+older prose-trace curriculum.
 
 Run `colab/run_stage5_arc_agi_trace_sft_gate.py` to execute both controls under
 the same settings and write one comparison summary. By default it compares

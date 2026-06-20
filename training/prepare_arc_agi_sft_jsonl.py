@@ -45,7 +45,11 @@ from eval.arc_agi_utils import (  # noqa: E402
     parse_geometry_augmentations,
     render_arc_prompt,
 )
-from eval.arc_agi_symbolic import exact_symbolic_candidate, format_symbolic_trace  # noqa: E402
+from eval.arc_agi_symbolic import (  # noqa: E402
+    exact_symbolic_candidate,
+    format_symbolic_program_trace,
+    format_symbolic_trace,
+)
 
 
 def apply_color_permutation(grid: Grid, permutation: list[int]) -> Grid:
@@ -155,10 +159,14 @@ def example_to_jsonl_row(
         return None
     trace = ""
     trace_source = None
-    if trace_mode == "symbolic":
+    if trace_mode in {"symbolic", "symbolic_program"}:
         candidate = exact_symbolic_candidate(example)
         if candidate is not None:
-            trace = format_symbolic_trace(candidate)
+            trace = (
+                format_symbolic_program_trace(candidate)
+                if trace_mode == "symbolic_program"
+                else format_symbolic_trace(candidate)
+            )
             trace_source = candidate.name
     elif trace_mode != "none":
         raise ValueError(f"Unknown trace_mode={trace_mode!r}")
@@ -215,7 +223,7 @@ def main() -> int:
     parser.add_argument("--shuffle_train_examples", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--append_eos", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--grid_format", default="json", choices=("json", "compact", "tagged"))
-    parser.add_argument("--trace_mode", default="none", choices=("none", "symbolic"))
+    parser.add_argument("--trace_mode", default="none", choices=("none", "symbolic", "symbolic_program"))
     parser.add_argument(
         "--trace_filter",
         default="all",
@@ -224,8 +232,8 @@ def main() -> int:
     )
     parser.add_argument("--max_total_tokens", type=int, default=4096)
     args = parser.parse_args()
-    if args.trace_filter != "all" and args.trace_mode != "symbolic":
-        raise SystemExit("--trace_filter requires --trace_mode symbolic")
+    if args.trace_filter != "all" and args.trace_mode not in {"symbolic", "symbolic_program"}:
+        raise SystemExit("--trace_filter requires --trace_mode symbolic or symbolic_program")
 
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name)
     base_examples = load_arc_agi_examples(args.tasks_path, solutions_path=args.solutions_path, limit=args.limit)
