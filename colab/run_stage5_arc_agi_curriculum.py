@@ -61,7 +61,7 @@ CANDIDATE_DISTILL_JSONLS = os.environ.get("STAGE5_ARC_AGI_CANDIDATE_DISTILL_JSON
 CANDIDATE_DISTILL_CHOICE = os.environ.get("STAGE5_ARC_AGI_CANDIDATE_DISTILL_CHOICE", "best_exact")
 CANDIDATE_DISTILL_COMPLETION_SOURCE = os.environ.get(
     "STAGE5_ARC_AGI_CANDIDATE_DISTILL_COMPLETION_SOURCE",
-    "candidate_text",
+    "trace_then_canonical_grid",
 )
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")

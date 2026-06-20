@@ -72,24 +72,37 @@ def completion_from_candidate(
     completion_source: str,
     output_format: str,
 ) -> str:
+    parsed = row.get("parsed_grid")
     if completion_source == "candidate_text":
         text = str(row.get("candidate_text", "")).strip()
         if text:
             return text
         completion_source = "canonical_grid"
     if completion_source == "canonical_grid":
-        parsed = row.get("parsed_grid")
         if parsed is None:
             raise ValueError("canonical_grid completion requires parsed_grid")
         return format_grid_completion(parsed, output_format=output_format)
+    if completion_source == "trace_then_canonical_grid":
+        if parsed is None:
+            raise ValueError("trace_then_canonical_grid completion requires parsed_grid")
+        trace = extract_think_trace(str(row.get("candidate_text", "")))
+        canonical = format_grid_completion(parsed, output_format=output_format)
+        return f"{trace}\n{canonical}" if trace else canonical
     raise ValueError(f"Unknown completion_source={completion_source!r}")
 
 
+def extract_think_trace(text: str) -> str:
+    stripped = text.strip()
+    start = stripped.find("<think>")
+    end = stripped.find("</think>", start + len("<think>")) if start >= 0 else -1
+    if start < 0 or end < 0:
+        return ""
+    return stripped[start : end + len("</think>")].strip()
+
+
 def cot_from_completion(completion: str) -> str:
-    stripped = completion.strip()
-    if stripped.startswith("<think>") and "</think>" in stripped:
-        return stripped.split("</think>", 1)[0] + "</think>"
-    return stripped
+    trace = extract_think_trace(completion)
+    return trace or completion.strip()
 
 
 def candidate_to_jsonl_row(
@@ -166,7 +179,11 @@ def main() -> int:
     parser.add_argument("--output_jsonl", required=True)
     parser.add_argument("--tokenizer_name", default="Qwen/Qwen2.5-0.5B-Instruct")
     parser.add_argument("--choice", default="best_exact", choices=("selected_exact", "best_exact", "all_exact"))
-    parser.add_argument("--completion_source", default="candidate_text", choices=("candidate_text", "canonical_grid"))
+    parser.add_argument(
+        "--completion_source",
+        default="trace_then_canonical_grid",
+        choices=("candidate_text", "canonical_grid", "trace_then_canonical_grid"),
+    )
     parser.add_argument("--output_format", default="compact", choices=("json", "compact", "tagged"))
     parser.add_argument("--append_eos", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--max_rows", type=int)

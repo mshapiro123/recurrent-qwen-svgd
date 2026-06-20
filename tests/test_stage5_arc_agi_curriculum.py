@@ -28,12 +28,12 @@ def test_candidate_distill_env_disables_empty_source() -> None:
 
 
 def test_candidate_distill_env_threads_nonempty_source_and_recipe() -> None:
-    env = candidate_distill_env("a.jsonl", choice="all_exact", completion_source="canonical_grid")
+    env = candidate_distill_env("a.jsonl", choice="all_exact", completion_source="trace_then_canonical_grid")
 
     assert env == {
         "STAGE5_ARC_AGI_CANDIDATE_DISTILL_JSONLS": "a.jsonl",
         "STAGE5_ARC_AGI_CANDIDATE_DISTILL_CHOICE": "all_exact",
-        "STAGE5_ARC_AGI_CANDIDATE_DISTILL_COMPLETION_SOURCE": "canonical_grid",
+        "STAGE5_ARC_AGI_CANDIDATE_DISTILL_COMPLETION_SOURCE": "trace_then_canonical_grid",
     }
 
 

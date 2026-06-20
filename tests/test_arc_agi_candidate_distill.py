@@ -4,6 +4,7 @@ from training.prepare_arc_agi_candidate_distill_jsonl import (
     build_distill_rows,
     choose_exact_candidates,
     completion_from_candidate,
+    extract_think_trace,
 )
 
 
@@ -99,6 +100,32 @@ def test_completion_from_candidate_can_emit_canonical_grid() -> None:
     assert completion_from_candidate(row, completion_source="canonical_grid", output_format="compact") == "12\n34"
 
 
+def test_extract_think_trace_finds_trace_inside_candidate_text() -> None:
+    text = "prefix\n<think>\nuse symmetry\n</think>\n12\n34"
+
+    assert extract_think_trace(text) == "<think>\nuse symmetry\n</think>"
+
+
+def test_completion_from_candidate_can_keep_trace_then_emit_clean_grid() -> None:
+    row = candidate_row(
+        0,
+        [[1, 2], [3, 4]],
+        exact=True,
+        candidate_text="Here is one answer.\n<think>\nuse symmetry\n</think>\nwrong looking clutter",
+    )
+
+    assert (
+        completion_from_candidate(row, completion_source="trace_then_canonical_grid", output_format="compact")
+        == "<think>\nuse symmetry\n</think>\n12\n34"
+    )
+
+
+def test_completion_from_candidate_trace_then_canonical_falls_back_to_grid_without_trace() -> None:
+    row = candidate_row(0, [[1, 2]], exact=True, candidate_text="The answer is 12.")
+
+    assert completion_from_candidate(row, completion_source="trace_then_canonical_grid", output_format="compact") == "12"
+
+
 def test_build_distill_rows_groups_candidates_and_writes_metadata() -> None:
     rows = [
         candidate_row(0, [[9]], exact=False, selected=True),
@@ -113,7 +140,7 @@ def test_build_distill_rows_groups_candidates_and_writes_metadata() -> None:
         FakeTokenizer(),
         rows,
         choice="best_exact",
-        completion_source="candidate_text",
+        completion_source="trace_then_canonical_grid",
         output_format="compact",
         append_eos=True,
         source_jsonl="candidates.jsonl",
@@ -123,6 +150,8 @@ def test_build_distill_rows_groups_candidates_and_writes_metadata() -> None:
     assert output_rows[0]["task_id"] == "task"
     assert output_rows[0]["candidate_index"] == 1
     assert str(output_rows[0]["completion"]).endswith("<eos>")
+    assert str(output_rows[0]["completion"]).startswith("<think>\ncopy\n</think>\n6")
     assert output_rows[0]["cot"] == "<think>\ncopy\n</think>"
+    assert output_rows[0]["completion_source"] == "trace_then_canonical_grid"
     assert output_rows[0]["source_dataset"] == "arc-agi-candidate-distill"
     assert output_rows[1]["task_id"] == "task2"
