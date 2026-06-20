@@ -14,6 +14,7 @@ PHASE1 = "outputs/qwen_0_5b_phase1_recreated_beta008_150/phase1_step_150.pt"
 PHASE2 = "outputs/qwen_0_5b_phase2_svgd_recreated_smoke25/phase2_step_25.pt"
 PROJ = "outputs/calibration/recreated_within_group_pca_projection.pt"
 OUTDIR = ROOT / "outputs" / "benchmarks"
+SCORE_TARGETS = ("label", "option_text", "label_and_text")
 
 
 def run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -44,20 +45,22 @@ def summarize_file(label: str, path: Path) -> list[str]:
     return lines
 
 
+def output_name(mode_label: str, score_target: str) -> str:
+    return f"mcq_smoke_{mode_label}_{score_target}.jsonl"
+
+
 def main() -> int:
     OUTDIR.mkdir(parents=True, exist_ok=True)
     for path in [DATA, PHASE1, PHASE2, PROJ]:
         assert (ROOT / path).exists(), f"missing required artifact: {path}"
 
-    common = [
+    common_base = [
         sys.executable,
         "eval/eval_mcq.py",
         "--data_jsonl",
         DATA,
         "--prompt_style",
         "with_options",
-        "--score_target",
-        "label",
         "--dtype",
         "bfloat16",
         "--adapter_dtype",
@@ -68,61 +71,66 @@ def main() -> int:
         "0",
     ]
 
-    jobs = [
-        (
-            "base",
-            OUTDIR / "mcq_smoke_base_label.jsonl",
-            common + ["--mode", "base", "--aggregate", "mean"],
-        ),
-        (
-            "phase1",
-            OUTDIR / "mcq_smoke_phase1_label.jsonl",
-            common
-            + [
-                "--mode",
-                "phase1",
-                "--checkpoint",
-                PHASE1,
-                "--max_loops",
-                "4",
-                "--num_trajectories",
-                "1",
-                "--aggregate",
-                "mean",
-            ],
-        ),
-        (
-            "phase2_svgd",
-            OUTDIR / "mcq_smoke_phase2_svgd_label.jsonl",
-            common
-            + [
-                "--mode",
-                "phase2",
-                "--checkpoint",
-                PHASE2,
-                "--max_loops",
-                "4",
-                "--num_trajectories",
-                "4",
-                "--aggregates",
-                "mean,max,vote",
-                "--particle_update_mode",
-                "svgd",
-                "--particle_init_noise",
-                "0.05",
-                "--svgd_kernel_geometry",
-                "euclidean",
-                "--svgd_kernel_projection_path",
-                PROJ,
-                "--svgd_kernel_projection_dim",
-                "8",
-                "--svgd_repulsion_scale",
-                "2",
-                "--svgd_repulsion_max_norm",
-                "none",
-            ],
-        ),
-    ]
+    jobs = []
+    for score_target in SCORE_TARGETS:
+        common = common_base + ["--score_target", score_target]
+        jobs.extend(
+            [
+                (
+                    f"base/{score_target}",
+                    OUTDIR / output_name("base", score_target),
+                    common + ["--mode", "base", "--aggregate", "mean"],
+                ),
+                (
+                    f"phase1/{score_target}",
+                    OUTDIR / output_name("phase1", score_target),
+                    common
+                    + [
+                        "--mode",
+                        "phase1",
+                        "--checkpoint",
+                        PHASE1,
+                        "--max_loops",
+                        "4",
+                        "--num_trajectories",
+                        "1",
+                        "--aggregate",
+                        "mean",
+                    ],
+                ),
+                (
+                    f"phase2_svgd/{score_target}",
+                    OUTDIR / output_name("phase2_svgd", score_target),
+                    common
+                    + [
+                        "--mode",
+                        "phase2",
+                        "--checkpoint",
+                        PHASE2,
+                        "--max_loops",
+                        "4",
+                        "--num_trajectories",
+                        "4",
+                        "--aggregates",
+                        "mean,max,vote",
+                        "--particle_update_mode",
+                        "svgd",
+                        "--particle_init_noise",
+                        "0.05",
+                        "--svgd_kernel_geometry",
+                        "euclidean",
+                        "--svgd_kernel_projection_path",
+                        PROJ,
+                        "--svgd_kernel_projection_dim",
+                        "8",
+                        "--svgd_repulsion_scale",
+                        "2",
+                        "--svgd_repulsion_max_norm",
+                        "none",
+                    ],
+                ),
+            ]
+        )
 
     for label, output_path, cmd in jobs:
         print("\n\n====", label, "====")
