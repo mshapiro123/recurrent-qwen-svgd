@@ -51,6 +51,7 @@ SAVE_EVERY = int(os.environ.get("STAGE5_ARC_AGI_SAVE_EVERY", "150"))
 LEARNING_RATE = float(os.environ.get("STAGE5_ARC_AGI_LR", "8e-6"))
 BETA = float(os.environ.get("STAGE5_ARC_AGI_BETA", "0.08"))
 MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
+GRID_FORMAT = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
 DEVICE = os.environ.get("DEVICE", "cuda")
@@ -180,6 +181,8 @@ def prepare_sft(train_path: Path) -> None:
             str(TRAIN_TASK_LIMIT),
             "--augment_color_permutations",
             str(COLOR_AUGS),
+            "--grid_format",
+            GRID_FORMAT,
             "--max_total_tokens",
             str(MAX_TOTAL_TOKENS),
         ],
@@ -200,6 +203,8 @@ def eval_arc_agi(label: str, mode: str, tasks_path: Path, checkpoint: Path | Non
         mode,
         "--max_new_tokens",
         str(MAX_NEW_TOKENS),
+        "--grid_format",
+        GRID_FORMAT,
         "--dtype",
         DTYPE,
         "--adapter_dtype",
@@ -317,6 +322,7 @@ def main() -> int:
         "color_augmentations": COLOR_AUGS,
         "train_steps": TRAIN_STEPS,
         "learning_rate": LEARNING_RATE,
+        "grid_format": GRID_FORMAT,
         "phase1_checkpoint": path_for_cli(PHASE1_CKPT),
         "train_path": str(train_path),
         "eval_path": str(eval_path),
@@ -347,6 +353,7 @@ def main() -> int:
         f"- Train task limit: `{TRAIN_TASK_LIMIT}`",
         f"- Eval task limit: `{EVAL_TASK_LIMIT}`",
         f"- Tuned checkpoint: `{path_for_cli(tuned_ckpt)}`",
+        f"- Grid format: `{GRID_FORMAT}`",
         "",
         "## Exact-Grid Results",
         f"- Base: `{base_summary}`",

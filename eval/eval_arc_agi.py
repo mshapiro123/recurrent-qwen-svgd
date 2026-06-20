@@ -175,6 +175,7 @@ def evaluate_example(
     *,
     diagnostics: dict[str, float],
     generation_steps: int,
+    output_format: str,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     any_exact = False
@@ -182,7 +183,7 @@ def evaluate_example(
     valid_count = 0
     target = example.test_output
     for idx, text in enumerate(candidates):
-        parsed = parse_grid_from_text(text)
+        parsed = parse_grid_from_text(text, output_format=output_format)
         score = score_grid_prediction(parsed, target)
         valid_count += int(bool(score["valid"]))
         exact = bool(score.get("exact"))
@@ -255,6 +256,7 @@ def write_summary_md(path: str | Path | None, payload: dict[str, Any]) -> None:
         f"# ARC-AGI Evaluation - {payload['mode']}",
         "",
         f"- Tasks path: `{payload['tasks_path']}`",
+        f"- Grid format: `{payload['grid_format']}`",
         f"- Examples with targets: `{summary['examples_with_targets']}`",
         f"- First-candidate exact: `{summary['first_exact']}` / `{summary['examples_with_targets']}` = `{summary['first_accuracy']}`",
         f"- Best-of-K exact: `{summary['best_of_k_exact']}` / `{summary['examples_with_targets']}` = `{summary['best_of_k_accuracy']}`",
@@ -285,6 +287,7 @@ def main() -> int:
     parser.add_argument("--num_trajectories", type=int, default=1)
     parser.add_argument("--max_new_tokens", type=int, default=512)
     parser.add_argument("--temperature", type=float, default=0.0)
+    parser.add_argument("--grid_format", default="json", choices=("json", "compact", "tagged"))
     parser.add_argument("--dtype", default="bfloat16")
     parser.add_argument("--attn_implementation", default="default")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
@@ -334,7 +337,7 @@ def main() -> int:
 
     example_summaries: list[dict[str, Any]] = []
     for idx, example in enumerate(examples):
-        prompt = render_arc_prompt(example)
+        prompt = render_arc_prompt(example, output_format=args.grid_format)
         if args.mode == "base":
             candidates = generate_base_candidates(
                 model_or_wrapper,
@@ -360,6 +363,7 @@ def main() -> int:
             candidates,
             diagnostics=diagnostics,
             generation_steps=generation_steps,
+            output_format=args.grid_format,
         )
         example_summaries.append(example_summary)
         for row in rows:
@@ -377,6 +381,7 @@ def main() -> int:
         "num_trajectories": args.num_trajectories,
         "max_new_tokens": args.max_new_tokens,
         "temperature": args.temperature,
+        "grid_format": args.grid_format,
         "summary": summarize_examples(example_summaries),
         "examples": example_summaries,
     }

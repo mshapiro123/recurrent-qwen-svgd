@@ -36,7 +36,7 @@ from eval.arc_agi_utils import (  # noqa: E402
     ArcAgiExample,
     ArcPair,
     Grid,
-    grid_to_json_text,
+    format_grid_completion,
     load_arc_agi_examples,
     render_arc_prompt,
 )
@@ -105,8 +105,8 @@ def leave_one_out_examples(task_examples: Iterable[ArcAgiExample]) -> list[ArcAg
     return generated
 
 
-def render_chat_prompt(tokenizer, example: ArcAgiExample) -> str:
-    user_prompt = render_arc_prompt(example)
+def render_chat_prompt(tokenizer, example: ArcAgiExample, output_format: str) -> str:
+    user_prompt = render_arc_prompt(example, output_format=output_format)
     return tokenizer.apply_chat_template(
         [{"role": "user", "content": user_prompt}],
         tokenize=False,
@@ -120,13 +120,14 @@ def example_to_jsonl_row(
     *,
     append_eos: bool,
     source: str,
+    output_format: str,
 ) -> dict[str, object] | None:
     if example.test_output is None:
         return None
-    completion = grid_to_json_text(example.test_output)
+    completion = format_grid_completion(example.test_output, output_format=output_format)
     if append_eos and tokenizer.eos_token:
         completion += tokenizer.eos_token
-    prompt = render_chat_prompt(tokenizer, example)
+    prompt = render_chat_prompt(tokenizer, example, output_format)
     cot_tokens = max(1, len(tokenizer(completion, add_special_tokens=False)["input_ids"]))
     return {
         "prompt": prompt,
@@ -163,6 +164,7 @@ def main() -> int:
     parser.add_argument("--include_leave_one_out", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--shuffle_train_examples", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--append_eos", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--grid_format", default="json", choices=("json", "compact", "tagged"))
     parser.add_argument("--max_total_tokens", type=int, default=4096)
     args = parser.parse_args()
 
@@ -192,7 +194,13 @@ def main() -> int:
             shuffled = list(working.train)
             rng.shuffle(shuffled)
             working = replace(working, train=tuple(shuffled))
-        row = example_to_jsonl_row(tokenizer, working, append_eos=args.append_eos, source=source)
+        row = example_to_jsonl_row(
+            tokenizer,
+            working,
+            append_eos=args.append_eos,
+            source=source,
+            output_format=args.grid_format,
+        )
         if row is None:
             skipped += 1
             continue
@@ -221,6 +229,7 @@ def main() -> int:
     print(f"train_rows={len(train_rows)}")
     print(f"val_rows={len(val_rows)}")
     print(f"skipped_rows={skipped}")
+    print(f"grid_format={args.grid_format}")
     return 0
 
 

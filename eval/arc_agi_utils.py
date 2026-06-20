@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
+import re
 from typing import Any, Iterable
 
 
@@ -142,15 +143,47 @@ def grid_to_compact_text(grid: Grid) -> str:
     return "\n".join(" ".join(str(cell) for cell in row) for row in grid)
 
 
+def grid_to_row_text(grid: Grid) -> str:
+    return "\n".join("".join(str(cell) for cell in row) for row in grid)
+
+
 def grid_to_json_text(grid: Grid) -> str:
     return json.dumps(grid, separators=(",", ":"))
 
 
-def render_arc_prompt(example: ArcAgiExample) -> str:
+def format_grid_completion(grid: Grid, output_format: str = "json") -> str:
+    if output_format == "json":
+        return grid_to_json_text(grid)
+    if output_format == "compact":
+        return grid_to_row_text(grid)
+    if output_format == "tagged":
+        return f"<grid>\n{grid_to_row_text(grid)}\n</grid>"
+    raise ValueError(f"Unknown output_format={output_format!r}")
+
+
+def render_arc_prompt(example: ArcAgiExample, output_format: str = "json") -> str:
+    if output_format == "json":
+        instruction = "Colors are integers 0 through 9. Return only the output grid as JSON, with no prose."
+        output_marker = "Output JSON grid:"
+    elif output_format == "compact":
+        instruction = (
+            "Colors are integers 0 through 9. Return only the output grid rows, "
+            "one row per line, using digits with no spaces and no prose."
+        )
+        output_marker = "Output grid rows:"
+    elif output_format == "tagged":
+        instruction = (
+            "Colors are integers 0 through 9. Return only the output grid rows between "
+            "<grid> and </grid>, using digits with no spaces."
+        )
+        output_marker = "Output tagged grid:"
+    else:
+        raise ValueError(f"Unknown output_format={output_format!r}")
+
     parts = [
         "You are solving an ARC-AGI grid transformation task.",
         "Infer the rule from the training examples and apply it to the test input.",
-        "Colors are integers 0 through 9. Return only the output grid as JSON, with no prose.",
+        instruction,
         "",
     ]
     for idx, pair in enumerate(example.train, start=1):
@@ -168,7 +201,7 @@ def render_arc_prompt(example: ArcAgiExample) -> str:
         [
             "Test input:",
             grid_to_compact_text(example.test_input),
-            "Output JSON grid:",
+            output_marker,
         ]
     )
     return "\n".join(parts)
@@ -186,7 +219,48 @@ def _candidate_json_regions(text: str) -> Iterable[str]:
                 yield chunk.strip()
 
 
-def parse_grid_from_text(text: str) -> Grid | None:
+def _candidate_text_regions(text: str) -> Iterable[str]:
+    stripped = text.strip()
+    yield stripped
+    for match in re.finditer(r"<grid>\s*(.*?)\s*</grid>", stripped, flags=re.IGNORECASE | re.DOTALL):
+        yield match.group(1).strip()
+    if "```" in stripped:
+        chunks = stripped.split("```")
+        for idx, chunk in enumerate(chunks):
+            if idx % 2 == 1:
+                lines = chunk.strip().splitlines()
+                if lines and lines[0].strip().lower() in {"text", "grid", "json"}:
+                    chunk = "\n".join(lines[1:])
+                yield chunk.strip()
+
+
+def _parse_compact_grid_region(region: str) -> Grid | None:
+    blocks: list[list[list[int]]] = []
+    current: list[list[int]] = []
+    for raw_line in region.splitlines():
+        line = raw_line.strip()
+        if not line:
+            if current:
+                blocks.append(current)
+                current = []
+            continue
+        if re.fullmatch(r"[0-9](?:\s*[0-9]){0,29}", line):
+            current.append([int(cell) for cell in re.findall(r"[0-9]", line)])
+        elif current:
+            blocks.append(current)
+            current = []
+    if current:
+        blocks.append(current)
+
+    for block in blocks:
+        try:
+            return validate_grid(block)
+        except ValueError:
+            continue
+    return None
+
+
+def _parse_json_grid_from_text(text: str) -> Grid | None:
     """Extract the first valid ARC grid from generated text."""
 
     decoder = json.JSONDecoder()
@@ -203,6 +277,20 @@ def parse_grid_from_text(text: str) -> Grid | None:
             except ValueError:
                 continue
     return None
+
+
+def parse_grid_from_text(text: str, output_format: str = "auto") -> Grid | None:
+    if output_format not in {"auto", "json", "compact", "tagged"}:
+        raise ValueError(f"Unknown output_format={output_format!r}")
+    if output_format == "json":
+        return _parse_json_grid_from_text(text) or parse_grid_from_text(text, "compact")
+    if output_format in {"compact", "tagged"}:
+        for region in _candidate_text_regions(text):
+            parsed = _parse_compact_grid_region(region)
+            if parsed is not None:
+                return parsed
+        return _parse_json_grid_from_text(text)
+    return _parse_json_grid_from_text(text) or parse_grid_from_text(text, "compact")
 
 
 def score_grid_prediction(prediction: Grid | None, target: Grid | None) -> dict[str, Any]:

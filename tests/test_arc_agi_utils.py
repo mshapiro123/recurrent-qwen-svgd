@@ -5,6 +5,7 @@ import json
 from eval.arc_agi_utils import (
     ArcAgiExample,
     ArcPair,
+    format_grid_completion,
     load_arc_agi_examples,
     parse_grid_from_text,
     render_arc_prompt,
@@ -33,6 +34,16 @@ def test_parse_grid_from_text_skips_invalid_arrays() -> None:
     assert parse_grid_from_text(text) == [[0], [9]]
 
 
+def test_parse_grid_from_text_extracts_compact_rows() -> None:
+    text = "012\n345\n678"
+    assert parse_grid_from_text(text, output_format="compact") == [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
+
+
+def test_parse_grid_from_text_extracts_tagged_rows() -> None:
+    text = "answer:\n<grid>\n90\n12\n</grid>"
+    assert parse_grid_from_text(text, output_format="tagged") == [[9, 0], [1, 2]]
+
+
 def test_load_arc_agi_directory_and_render_prompt(tmp_path) -> None:
     task = {
         "train": [
@@ -50,6 +61,8 @@ def test_load_arc_agi_directory_and_render_prompt(tmp_path) -> None:
     prompt = render_arc_prompt(examples[0])
     assert "Training example 1 input:" in prompt
     assert "Output JSON grid:" in prompt
+    compact_prompt = render_arc_prompt(examples[0], output_format="compact")
+    assert "Output grid rows:" in compact_prompt
 
 
 def test_load_arc_agi_combined_challenges_with_solutions(tmp_path) -> None:
@@ -74,6 +87,13 @@ def test_score_grid_prediction() -> None:
     assert score_grid_prediction([[1, 2]], [[1], [2]])["shape_match"] is False
     assert score_grid_prediction(None, [[1]])["valid"] is False
     assert score_grid_prediction([[1]], None)["has_target"] is False
+
+
+def test_format_grid_completion_variants() -> None:
+    grid = [[0, 1], [2, 3]]
+    assert format_grid_completion(grid, "json") == "[[0,1],[2,3]]"
+    assert format_grid_completion(grid, "compact") == "01\n23"
+    assert format_grid_completion(grid, "tagged") == "<grid>\n01\n23\n</grid>"
 
 
 def test_color_permutation_applies_to_every_cell() -> None:

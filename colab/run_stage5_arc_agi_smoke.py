@@ -36,6 +36,7 @@ ARC_VERSION = os.environ.get("STAGE5_ARC_AGI_VERSION", "1")
 ARC_SPLIT = os.environ.get("STAGE5_ARC_AGI_SPLIT", "evaluation")
 LIMIT = int(os.environ.get("STAGE5_ARC_AGI_LIMIT", "5"))
 MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
+GRID_FORMAT = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
 DEVICE = os.environ.get("DEVICE", "cuda")
@@ -170,6 +171,7 @@ def main() -> int:
         "limit": LIMIT,
         "tasks_path": str(tasks_path),
         "phase1_checkpoint": str(PHASE1_CKPT.relative_to(ROOT) if PHASE1_CKPT.is_relative_to(ROOT) else PHASE1_CKPT),
+        "grid_format": GRID_FORMAT,
         "dtype": DTYPE,
         "adapter_dtype": ADAPTER_DTYPE,
     }
@@ -190,6 +192,8 @@ def main() -> int:
             "base",
             "--max_new_tokens",
             str(MAX_NEW_TOKENS),
+            "--grid_format",
+            GRID_FORMAT,
             "--dtype",
             DTYPE,
             "--adapter_dtype",
@@ -223,6 +227,8 @@ def main() -> int:
             "1",
             "--max_new_tokens",
             str(MAX_NEW_TOKENS),
+            "--grid_format",
+            GRID_FORMAT,
             "--dtype",
             DTYPE,
             "--adapter_dtype",
@@ -251,6 +257,7 @@ def main() -> int:
         f"- Split: `{ARC_SPLIT}`",
         f"- Limit: `{LIMIT}`",
         f"- Tasks path: `{tasks_path}`",
+        f"- Grid format: `{GRID_FORMAT}`",
         "",
         "## Exact-Grid Results",
         f"- Base: `{summary['base']}`",

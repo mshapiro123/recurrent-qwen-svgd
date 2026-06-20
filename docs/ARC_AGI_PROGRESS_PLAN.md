@@ -77,6 +77,9 @@ Initial harness files:
 - `colab/run_stage5_arc_agi_sft.py`: smoke fine-tune runner for adapting
   recurrent Phase1 on public ARC-AGI training tasks and evaluating held-out
   ARC-AGI evaluation tasks.
+- Grid output formats: JSON, compact row strings, and tagged row strings are
+  supported. Colab ARC-AGI runners default to compact row strings because they
+  are shorter and easier for a 0.5B model to emit reliably.
 
 The harness should and now does:
 
