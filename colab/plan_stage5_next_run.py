@@ -63,6 +63,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
             "compact",
             "autopilot_compact",
             "best_by_label",
+            "recovery_decision",
         )
     ) or selector_rescore_payload(payload) is not None
 
@@ -122,6 +123,12 @@ def selector_rescore_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     if not isinstance(rows, list):
         return None
     if "best_by_label" in payload or {"source_run_dir", "strategies"} <= set(payload):
+        return payload
+    return None
+
+
+def recovery_particle_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    if isinstance(payload.get("recovery_decision"), dict) and isinstance(payload.get("particle_decision"), dict):
         return payload
     return None
 
@@ -435,11 +442,163 @@ def selector_rescore_actions(payload: dict[str, Any], *, source_summary: Path) -
     ]
 
 
+def recovery_particle_examples(payload: dict[str, Any]) -> int:
+    settings = payload.get("settings") or {}
+    if settings.get("eval_task_limit") is not None:
+        return int(settings.get("eval_task_limit") or 0)
+    evidence = ((payload.get("recovery_decision") or {}).get("evidence") or {})
+    tuned = evidence.get("phase1_tuned") or {}
+    return int(tuned.get("examples_with_targets") or tuned.get("examples") or 0)
+
+
+def recovery_particle_paths(payload: dict[str, Any]) -> dict[str, str]:
+    evidence = ((payload.get("recovery_decision") or {}).get("evidence") or {})
+    recovered = payload.get("recovered_checkpoint") or evidence.get("phase1_recovered") or {}
+    sft_metadata = ((payload.get("sft_summary") or {}).get("metadata") or {})
+    paths: dict[str, str] = {}
+    recovered_checkpoint = recovered.get("checkpoint")
+    phase1_checkpoint = sft_metadata.get("phase1_checkpoint")
+    if recovered_checkpoint:
+        paths["STAGE5_ARC_AGI_RECOVERED_CKPT"] = str(recovered_checkpoint).replace("\\", "/")
+    if phase1_checkpoint:
+        paths["STAGE5_PHASE1_CKPT"] = str(phase1_checkpoint).replace("\\", "/")
+    return paths
+
+
+def recovery_particle_recovered_benchmark_command(payload: dict[str, Any], limit: int | None) -> str | None:
+    paths = recovery_particle_paths(payload)
+    if "STAGE5_ARC_AGI_RECOVERED_CKPT" not in paths:
+        return None
+    settings = payload.get("settings") or {}
+    label = limit_label(limit)
+    assignments = {
+        **paths,
+        "STAGE5_ARC_AGI_LIMIT": label,
+        "STAGE5_ARC_AGI_RECOVERED_BENCHMARK_RUN_ID": f"{RUN_ID}_recovery_particle_benchmark_limit{label}",
+    }
+    optional_settings = {
+        "STAGE5_ARC_AGI_PROGRAM_PARSE_MODE": "program_parse_mode",
+        "STAGE5_ARC_AGI_SELECTION_STRATEGY": "selection_strategy",
+    }
+    for env_key, settings_key in optional_settings.items():
+        value = settings.get(settings_key)
+        if value:
+            assignments[env_key] = str(value)
+    return command_env(assignments, "python colab/run_stage5_arc_agi_recovered_benchmark.py")
+
+
+def recovery_particle_replicate_command(payload: dict[str, Any], limit: int | None) -> str:
+    settings = payload.get("settings") or {}
+    label = limit_label(limit)
+    assignments = {
+        "STAGE5_ARC_AGI_RECOVERY_PARTICLE_RUN_ID": f"{RUN_ID}_recovery_particle_replicate_limit{label}",
+        "STAGE5_ARC_AGI_EVAL_TASK_LIMIT": str(limit if limit is not None else FULL_SPLIT_AFTER_LIMIT),
+        "STAGE5_ARC_AGI_PARTICLE_SEEDS": "0,1,2,3,4",
+    }
+    for env_key, settings_key in {
+        "STAGE5_ARC_AGI_SYNTHETIC_TASKS": "synthetic_tasks",
+        "STAGE5_ARC_AGI_SYNTHETIC_MODES": "synthetic_modes",
+        "STAGE5_ARC_AGI_TRAIN_STEPS": "train_steps",
+        "STAGE5_ARC_AGI_TRAIN_TASK_LIMIT": "train_task_limit",
+        "STAGE5_ARC_AGI_TRACE_MODE": "trace_mode",
+        "STAGE5_ARC_AGI_TRACE_FILTER": "trace_filter",
+        "STAGE5_ARC_AGI_PROGRAM_PARSE_MODE": "program_parse_mode",
+        "STAGE5_ARC_AGI_SELECTION_STRATEGY": "selection_strategy",
+        "STAGE5_ARC_AGI_PARTICLE_VARIANTS": "particle_variants",
+    }.items():
+        value = settings.get(settings_key)
+        if not value:
+            continue
+        if settings_key == "particle_variants" and isinstance(value, list):
+            value = ",".join(
+                f"{item['name']}:{item['noise']}:{item['repulsion']}"
+                for item in value
+                if isinstance(item, dict) and {"name", "noise", "repulsion"} <= set(item)
+            )
+        assignments[env_key] = str(value)
+    return command_env(assignments, "python colab/run_stage5_arc_agi_recovery_particle_gate.py")
+
+
+def recovery_particle_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    recovery = payload.get("recovery_decision") or {}
+    particle = payload.get("particle_decision") or {}
+    recovery_evidence = recovery.get("evidence") or {}
+    particle_evidence = particle.get("evidence") or {}
+    examples = recovery_particle_examples(payload)
+    next_limit = next_validation_limit(examples)
+    next_label = limit_label(next_limit)
+
+    if not bool(recovery.get("passed")):
+        start_delta = recovery_evidence.get("phase1_tuned_vs_start") or {}
+        return [
+            make_action(
+                "Compare ARC trace-training targets",
+                "Deterministic recurrent recovery did not clear the non-negative gate; compare grid-only, symbolic-trace, and symbolic-program trace SFT before scaling particles. "
+                f"Recovered-vs-start evidence: `{start_delta}`.",
+                command_env(
+                    {
+                        "STAGE5_ARC_AGI_TRACE_SFT_GATE_RUN_ID": f"{RUN_ID}_trace_sft_gate",
+                    },
+                    "python colab/run_stage5_arc_agi_trace_sft_gate.py",
+                ),
+                10,
+            )
+        ]
+
+    actions: list[dict[str, Any]] = []
+    benchmark_command = recovery_particle_recovered_benchmark_command(payload, next_limit)
+    if benchmark_command:
+        actions.append(
+            make_action(
+                f"Benchmark recovered recurrent against base at ARC limit {next_label}",
+                "Deterministic recurrent recovery cleared its start-checkpoint gate; now measure how much of the original Qwen gap remains before attributing lift to particles.",
+                benchmark_command,
+                10,
+            )
+        )
+    else:
+        actions.append(
+            make_action(
+                "Inspect recovery-particle checkpoint metadata",
+                "Deterministic recovery passed, but the summary did not include a recovered checkpoint path for benchmark rerun.",
+                source_replan_command(payload, source_summary),
+                10,
+            )
+        )
+
+    best_particle = particle_evidence.get("best_replicated_variant")
+    if bool(particle.get("passed")):
+        actions.append(
+            make_action(
+                f"Replicate particle value `{best_particle}` at ARC limit {next_label}",
+                "Particle/SVGD cleared the replicated post-recovery gate; rerun with more tasks and five seeds before using particle behavior as a training signal.",
+                recovery_particle_replicate_command(payload, next_limit),
+                9,
+            )
+        )
+    else:
+        actions.append(
+            make_action(
+                "Defer particle/SVGD training pressure",
+                "Particle/SVGD did not clear the post-recovery gate; prioritize deterministic recurrent recovery and base-gap measurement.",
+                benchmark_command or source_replan_command(payload, source_summary),
+                8,
+            )
+        )
+    return actions
+
+
 def plan_next_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     actions: list[dict[str, Any]] = []
     selector_rescore = selector_rescore_payload(payload)
     if selector_rescore:
         return selector_rescore_actions(selector_rescore, source_summary=source_summary)
+    recovery_particle = recovery_particle_payload(payload)
+    if recovery_particle:
+        return sorted(
+            recovery_particle_actions(recovery_particle, source_summary=source_summary),
+            key=lambda action: (-int(action["priority"]), action["name"]),
+        )
 
     benchmark = benchmark_payload(payload)
     tta = tta_payload(payload)
@@ -733,6 +892,8 @@ def write_report(payload: dict[str, Any]) -> None:
 def source_kind(payload: dict[str, Any]) -> str:
     if selector_rescore_payload(payload):
         return "selector_rescore"
+    if recovery_particle_payload(payload):
+        return "recovery_particle_gate"
     if "recovered_benchmark" in payload or "tta_sweep" in payload:
         return "followup"
     if "compact" in payload:

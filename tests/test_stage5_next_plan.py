@@ -507,6 +507,107 @@ def test_selector_rescore_summary_without_paired_lift_replans_source(tmp_path) -
     assert "summary.json" in actions[0]["command"]
 
 
+def test_recovery_particle_gate_failed_recovery_recommends_trace_training_gate(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    payload = {
+        "settings": {"eval_task_limit": 20},
+        "recovery_decision": {
+            "passed": False,
+            "evidence": {
+                "phase1_tuned_vs_start": {"selected_delta": -1, "best_of_k_delta": 0},
+            },
+        },
+        "particle_decision": {"passed": False, "evidence": {}},
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Compare ARC trace-training targets"
+    assert "run_stage5_arc_agi_trace_sft_gate.py" in actions[0]["command"]
+    assert "selected_delta" in actions[0]["reason"]
+
+
+def test_recovery_particle_gate_recovery_without_particle_recommends_benchmark(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    payload = {
+        "settings": {
+            "eval_task_limit": 20,
+            "program_parse_mode": "prefer",
+            "selection_strategy": "self_consistency",
+        },
+        "sft_summary": {"metadata": {"phase1_checkpoint": "outputs/stage4/phase1.pt"}},
+        "recovered_checkpoint": {
+            "checkpoint": "outputs/stage5/recovered.pt",
+            "summary": _summary(4, 5),
+        },
+        "recovery_decision": {
+            "passed": True,
+            "evidence": {
+                "phase1_tuned_vs_start": {"selected_delta": 2, "best_of_k_delta": 3},
+                "phase1_tuned_vs_base": {"selected_delta": -4, "best_of_k_delta": -3},
+            },
+        },
+        "particle_decision": {"passed": False, "evidence": {"best_replicated_variant": None}},
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Benchmark recovered recurrent against base at ARC limit 100"
+    assert "STAGE5_ARC_AGI_RECOVERED_CKPT=outputs/stage5/recovered.pt" in actions[0]["command"]
+    assert "STAGE5_PHASE1_CKPT=outputs/stage4/phase1.pt" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_LIMIT=100" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_PROGRAM_PARSE_MODE=prefer" in actions[0]["command"]
+    assert actions[1]["name"] == "Defer particle/SVGD training pressure"
+
+
+def test_recovery_particle_gate_particle_pass_recommends_replicated_particle_gate(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    payload = {
+        "settings": {
+            "eval_task_limit": 100,
+            "synthetic_tasks": 200,
+            "synthetic_modes": "all",
+            "train_steps": 300,
+            "train_task_limit": 100,
+            "trace_mode": "symbolic_program",
+            "trace_filter": "covered",
+            "program_parse_mode": "prefer",
+            "selection_strategy": "heuristic",
+            "particle_variants": [
+                {"name": "k4_noise001_rep05", "noise": 0.01, "repulsion": 0.5},
+            ],
+        },
+        "sft_summary": {"metadata": {"phase1_checkpoint": "outputs/stage4/phase1.pt"}},
+        "recovered_checkpoint": {
+            "checkpoint": "outputs/stage5/recovered.pt",
+            "summary": _summary(4, 5),
+        },
+        "recovery_decision": {
+            "passed": True,
+            "evidence": {
+                "phase1_tuned_vs_start": {"selected_delta": 2, "best_of_k_delta": 3},
+                "phase1_tuned_vs_base": {"selected_delta": -4, "best_of_k_delta": -3},
+            },
+        },
+        "particle_decision": {
+            "passed": True,
+            "evidence": {"best_replicated_variant": "k4_noise001_rep05"},
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+    particle = next(action for action in actions if action["name"].startswith("Replicate particle value"))
+
+    assert "k4_noise001_rep05" in particle["name"]
+    assert "run_stage5_arc_agi_recovery_particle_gate.py" in particle["command"]
+    assert "STAGE5_ARC_AGI_EVAL_TASK_LIMIT=400" in particle["command"]
+    assert "STAGE5_ARC_AGI_PARTICLE_SEEDS=0,1,2,3,4" in particle["command"]
+    assert "STAGE5_ARC_AGI_PARTICLE_VARIANTS=k4_noise001_rep05:0.01:0.5" in particle["command"]
+
+
 def test_paired_metric_helpers_fall_back_to_aggregate() -> None:
     payload = {
         "deltas": {"recovered_vs_base": {"selected_exact_delta": 2}},
@@ -549,3 +650,4 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"recovered_benchmark": {}}) == "followup"
     assert source_kind({"compact": {}}) == "autopilot"
     assert source_kind({"best_by_label": {}, "rows": []}) == "selector_rescore"
+    assert source_kind({"recovery_decision": {}, "particle_decision": {}}) == "recovery_particle_gate"
