@@ -21,6 +21,7 @@ if str(ROOT) not in sys.path:
 
 from eval.arc_agi_utils import (  # noqa: E402
     ArcAgiExample,
+    Grid,
     grid_to_json_text,
     load_arc_agi_examples,
     parse_grid_from_text,
@@ -169,6 +170,60 @@ def append_jsonl(path: str | Path | None, row: dict[str, Any]) -> None:
         handle.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
+def grid_shape(grid: Grid) -> tuple[int, int]:
+    return len(grid), len(grid[0])
+
+
+def inferred_output_shapes(example: ArcAgiExample) -> list[tuple[int, int]]:
+    """Infer plausible output shapes from demonstrations without using target."""
+
+    shapes: list[tuple[int, int]] = []
+    train_pairs = [pair for pair in example.train if pair.output is not None]
+    if not train_pairs:
+        return shapes
+
+    input_shapes = [grid_shape(pair.input) for pair in train_pairs]
+    output_shapes = [grid_shape(pair.output) for pair in train_pairs if pair.output is not None]
+    test_shape = grid_shape(example.test_input)
+
+    if all(in_shape == out_shape for in_shape, out_shape in zip(input_shapes, output_shapes)):
+        shapes.append(test_shape)
+
+    if len(set(output_shapes)) == 1:
+        shapes.append(output_shapes[0])
+
+    deltas = [(out_h - in_h, out_w - in_w) for (in_h, in_w), (out_h, out_w) in zip(input_shapes, output_shapes)]
+    if len(set(deltas)) == 1:
+        delta_h, delta_w = deltas[0]
+        candidate = (test_shape[0] + delta_h, test_shape[1] + delta_w)
+        if 1 <= candidate[0] <= 30 and 1 <= candidate[1] <= 30:
+            shapes.append(candidate)
+
+    seen: set[tuple[int, int]] = set()
+    deduped = []
+    for shape in shapes:
+        if shape not in seen:
+            seen.add(shape)
+            deduped.append(shape)
+    return deduped
+
+
+def select_candidate_index(example: ArcAgiExample, candidate_rows: list[dict[str, Any]]) -> int:
+    preferred_shapes = set(inferred_output_shapes(example))
+    first_valid: int | None = None
+    for idx, row in enumerate(candidate_rows):
+        parsed = row["parsed_grid"]
+        if parsed is None:
+            continue
+        if first_valid is None:
+            first_valid = idx
+        if preferred_shapes and grid_shape(parsed) in preferred_shapes:
+            return idx
+    if first_valid is not None:
+        return first_valid
+    return 0
+
+
 def evaluate_example(
     example: ArcAgiExample,
     candidates: list[str],
@@ -180,6 +235,7 @@ def evaluate_example(
     rows: list[dict[str, Any]] = []
     any_exact = False
     first_exact = False
+    selected_exact = False
     valid_count = 0
     target = example.test_output
     for idx, text in enumerate(candidates):
@@ -204,11 +260,20 @@ def evaluate_example(
                 "generation_steps": generation_steps,
             }
         )
+    selected_index = select_candidate_index(example, rows) if rows else 0
+    if rows:
+        rows[selected_index]["selected"] = True
+        selected_exact = bool(rows[selected_index]["score"].get("exact"))
+        for idx, row in enumerate(rows):
+            row.setdefault("selected", idx == selected_index)
     summary = {
         "task_id": example.task_id,
         "test_index": example.test_index,
         "has_target": target is not None,
         "first_exact": first_exact if target is not None else None,
+        "selected_exact": selected_exact if target is not None else None,
+        "selected_index": selected_index,
+        "inferred_shapes": [list(shape) for shape in inferred_output_shapes(example)],
         "best_of_k_exact": any_exact if target is not None else None,
         "valid_candidates": valid_count,
         "num_candidates": len(candidates),
@@ -219,6 +284,7 @@ def evaluate_example(
 def summarize_examples(example_summaries: list[dict[str, Any]]) -> dict[str, Any]:
     scored = [item for item in example_summaries if item["has_target"]]
     first = sum(1 for item in scored if item["first_exact"])
+    selected = sum(1 for item in scored if item["selected_exact"])
     best = sum(1 for item in scored if item["best_of_k_exact"])
     task_ids = sorted({item["task_id"] for item in scored})
     solved_tasks = 0
@@ -229,8 +295,10 @@ def summarize_examples(example_summaries: list[dict[str, Any]]) -> dict[str, Any
     return {
         "examples_with_targets": len(scored),
         "first_exact": first,
+        "selected_exact": selected,
         "best_of_k_exact": best,
         "first_accuracy": first / max(len(scored), 1),
+        "selected_accuracy": selected / max(len(scored), 1),
         "best_of_k_accuracy": best / max(len(scored), 1),
         "tasks_with_targets": len(task_ids),
         "tasks_solved_best_of_k": solved_tasks,
@@ -259,6 +327,7 @@ def write_summary_md(path: str | Path | None, payload: dict[str, Any]) -> None:
         f"- Grid format: `{payload['grid_format']}`",
         f"- Examples with targets: `{summary['examples_with_targets']}`",
         f"- First-candidate exact: `{summary['first_exact']}` / `{summary['examples_with_targets']}` = `{summary['first_accuracy']}`",
+        f"- Selected-candidate exact: `{summary['selected_exact']}` / `{summary['examples_with_targets']}` = `{summary['selected_accuracy']}`",
         f"- Best-of-K exact: `{summary['best_of_k_exact']}` / `{summary['examples_with_targets']}` = `{summary['best_of_k_accuracy']}`",
         f"- Tasks solved best-of-K: `{summary['tasks_solved_best_of_k']}` / `{summary['tasks_with_targets']}` = `{summary['task_solve_rate_best_of_k']}`",
         f"- Valid candidate rate: `{summary['valid_candidate_rate']}`",

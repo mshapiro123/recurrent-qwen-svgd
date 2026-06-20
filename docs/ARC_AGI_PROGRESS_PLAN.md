@@ -80,6 +80,10 @@ Initial harness files:
 - Grid output formats: JSON, compact row strings, and tagged row strings are
   supported. Colab ARC-AGI runners default to compact row strings because they
   are shorter and easier for a 0.5B model to emit reliably.
+- Evaluation reports first-candidate, selected-candidate, and oracle best-of-K
+  exact-grid accuracy. Selected-candidate accuracy uses only demonstration
+  shape heuristics and valid-grid parsing; best-of-K is diagnostic, not a
+  deployable score.
 
 The harness should and now does:
 
@@ -106,6 +110,7 @@ This creates supervised rows from public ARC-AGI training tasks:
 - original task test pairs when outputs are public;
 - leave-one-out examples from the task's train pairs;
 - color-permutation augmentations applied consistently to every grid.
+- dihedral geometry augmentations applied consistently to every grid.
 
 It then fine-tunes the recurrent Phase1 checkpoint and compares exact-grid
 generation against base and the pre-SFT recurrent checkpoint on the ARC-AGI
@@ -115,6 +120,7 @@ Gate:
 
 - valid-grid rate should improve materially;
 - exact-grid score should not regress against recurrent Phase1;
+- selected-candidate score should be reported separately from oracle best-of-K;
 - if exact-grid remains near zero, next work is representation/traces, not more
   blind SFT steps.
 

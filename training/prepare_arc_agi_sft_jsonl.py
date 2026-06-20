@@ -11,6 +11,8 @@ For each task we can use:
   the remaining train examples become demonstrations;
 - safe color-permutation augmentation, applied consistently to every grid in
   a task instance.
+- safe dihedral geometry augmentation, applied consistently to every grid in
+  a task instance.
 
 This script should be used on public ARC-AGI training tasks first. Do not train
 on evaluation tasks you intend to report as held-out benchmark results.
@@ -46,10 +48,52 @@ def apply_color_permutation(grid: Grid, permutation: list[int]) -> Grid:
     return [[permutation[cell] for cell in row] for row in grid]
 
 
+GEOMETRY_TRANSFORMS = (
+    "identity",
+    "rot90",
+    "rot180",
+    "rot270",
+    "flip_h",
+    "flip_v",
+    "transpose",
+    "anti_transpose",
+)
+
+
+def apply_geometry_transform(grid: Grid, transform: str) -> Grid:
+    if transform == "identity":
+        return [row[:] for row in grid]
+    if transform == "rot90":
+        return [[grid[row][col] for row in range(len(grid) - 1, -1, -1)] for col in range(len(grid[0]))]
+    if transform == "rot180":
+        return [list(reversed(row)) for row in reversed(grid)]
+    if transform == "rot270":
+        return [[grid[row][col] for row in range(len(grid))] for col in range(len(grid[0]) - 1, -1, -1)]
+    if transform == "flip_h":
+        return [list(reversed(row)) for row in grid]
+    if transform == "flip_v":
+        return [row[:] for row in reversed(grid)]
+    if transform == "transpose":
+        return [[grid[row][col] for row in range(len(grid))] for col in range(len(grid[0]))]
+    if transform == "anti_transpose":
+        return [
+            [grid[row][col] for row in range(len(grid) - 1, -1, -1)]
+            for col in range(len(grid[0]) - 1, -1, -1)
+        ]
+    raise ValueError(f"Unknown geometry transform: {transform}")
+
+
 def permute_pair(pair: ArcPair, permutation: list[int]) -> ArcPair:
     return ArcPair(
         input=apply_color_permutation(pair.input, permutation),
         output=apply_color_permutation(pair.output, permutation) if pair.output is not None else None,
+    )
+
+
+def transform_pair(pair: ArcPair, transform: str) -> ArcPair:
+    return ArcPair(
+        input=apply_geometry_transform(pair.input, transform),
+        output=apply_geometry_transform(pair.output, transform) if pair.output is not None else None,
     )
 
 
@@ -63,6 +107,16 @@ def permute_example(example: ArcAgiExample, permutation: list[int], suffix: str)
     )
 
 
+def transform_example(example: ArcAgiExample, transform: str, suffix: str) -> ArcAgiExample:
+    return ArcAgiExample(
+        task_id=f"{example.task_id}:{suffix}",
+        test_index=example.test_index,
+        train=tuple(transform_pair(pair, transform) for pair in example.train),
+        test_input=apply_geometry_transform(example.test_input, transform),
+        test_output=apply_geometry_transform(example.test_output, transform) if example.test_output is not None else None,
+    )
+
+
 def random_color_permutation(rng: random.Random) -> list[int]:
     values = list(range(10))
     rng.shuffle(values)
@@ -71,6 +125,19 @@ def random_color_permutation(rng: random.Random) -> list[int]:
 
 def identity_permutation() -> list[int]:
     return list(range(10))
+
+
+def parse_geometry_augmentations(value: str) -> list[str]:
+    normalized = value.strip().lower()
+    if normalized in {"", "none", "0", "false"}:
+        return ["identity"]
+    if normalized == "all":
+        return list(GEOMETRY_TRANSFORMS)
+    transforms = [item.strip() for item in normalized.split(",") if item.strip()]
+    unknown = set(transforms) - set(GEOMETRY_TRANSFORMS)
+    if unknown:
+        raise ValueError(f"Unknown geometry transforms: {sorted(unknown)}")
+    return ["identity", *[item for item in transforms if item != "identity"]]
 
 
 def leave_one_out_examples(task_examples: Iterable[ArcAgiExample]) -> list[ArcAgiExample]:
@@ -160,6 +227,12 @@ def main() -> int:
     parser.add_argument("--val_fraction", type=float, default=0.05)
     parser.add_argument("--seed", type=int, default=13)
     parser.add_argument("--augment_color_permutations", type=int, default=0)
+    parser.add_argument(
+        "--augment_geometries",
+        default="none",
+        help="Geometry transforms to apply: none, all, or comma-separated values from "
+        f"{','.join(GEOMETRY_TRANSFORMS)}.",
+    )
     parser.add_argument("--include_original_test_pairs", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--include_leave_one_out", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--shuffle_train_examples", action=argparse.BooleanOptionalAction, default=True)
@@ -178,13 +251,22 @@ def main() -> int:
 
     rng = random.Random(args.seed)
     augmented: list[tuple[ArcAgiExample, str]] = []
+    geometry_transforms = parse_geometry_augmentations(args.augment_geometries)
     for example, source in examples:
-        augmented.append((example, source))
-        for aug_idx in range(args.augment_color_permutations):
-            permutation = random_color_permutation(rng)
-            if permutation == identity_permutation():
-                continue
-            augmented.append((permute_example(example, permutation, f"color{aug_idx}"), f"{source}:color"))
+        for transform in geometry_transforms:
+            transformed = example if transform == "identity" else transform_example(example, transform, transform)
+            geometry_source = source if transform == "identity" else f"{source}:geom:{transform}"
+            augmented.append((transformed, geometry_source))
+            for aug_idx in range(args.augment_color_permutations):
+                permutation = random_color_permutation(rng)
+                if permutation == identity_permutation():
+                    continue
+                augmented.append(
+                    (
+                        permute_example(transformed, permutation, f"color{aug_idx}"),
+                        f"{geometry_source}:color",
+                    )
+                )
 
     rows: list[dict[str, object]] = []
     skipped = 0
@@ -230,6 +312,7 @@ def main() -> int:
     print(f"val_rows={len(val_rows)}")
     print(f"skipped_rows={skipped}")
     print(f"grid_format={args.grid_format}")
+    print(f"geometry_transforms={','.join(geometry_transforms)}")
     return 0
 
 

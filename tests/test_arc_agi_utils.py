@@ -12,7 +12,9 @@ from eval.arc_agi_utils import (
     score_grid_prediction,
     validate_grid,
 )
+from eval.eval_arc_agi import inferred_output_shapes, select_candidate_index
 from training.prepare_arc_agi_sft_jsonl import apply_color_permutation, leave_one_out_examples
+from training.prepare_arc_agi_sft_jsonl import apply_geometry_transform, parse_geometry_augmentations
 
 
 def test_validate_grid_rejects_ragged_rows() -> None:
@@ -101,6 +103,23 @@ def test_color_permutation_applies_to_every_cell() -> None:
     assert apply_color_permutation([[0, 1, 9]], permutation) == [[9, 8, 0]]
 
 
+def test_geometry_transforms_handle_rectangular_grids() -> None:
+    grid = [[1, 2, 3], [4, 5, 6]]
+    assert apply_geometry_transform(grid, "rot90") == [[4, 1], [5, 2], [6, 3]]
+    assert apply_geometry_transform(grid, "rot180") == [[6, 5, 4], [3, 2, 1]]
+    assert apply_geometry_transform(grid, "rot270") == [[3, 6], [2, 5], [1, 4]]
+    assert apply_geometry_transform(grid, "flip_h") == [[3, 2, 1], [6, 5, 4]]
+    assert apply_geometry_transform(grid, "flip_v") == [[4, 5, 6], [1, 2, 3]]
+    assert apply_geometry_transform(grid, "transpose") == [[1, 4], [2, 5], [3, 6]]
+    assert apply_geometry_transform(grid, "anti_transpose") == [[6, 3], [5, 2], [4, 1]]
+
+
+def test_parse_geometry_augmentations() -> None:
+    assert parse_geometry_augmentations("none") == ["identity"]
+    assert "rot90" in parse_geometry_augmentations("all")
+    assert parse_geometry_augmentations("rot90,flip_h") == ["identity", "rot90", "flip_h"]
+
+
 def test_leave_one_out_examples_hold_out_each_training_pair() -> None:
     example = ArcAgiExample(
         task_id="task",
@@ -118,3 +137,22 @@ def test_leave_one_out_examples_hold_out_each_training_pair() -> None:
     assert generated[0].test_input == [[1]]
     assert generated[0].test_output == [[2]]
     assert [pair.input for pair in generated[0].train] == [[[3]], [[5]]]
+
+
+def test_shape_aware_candidate_selection_prefers_inferred_shape() -> None:
+    example = ArcAgiExample(
+        task_id="shape",
+        test_index=0,
+        train=(
+            ArcPair(input=[[1, 1]], output=[[2, 2]]),
+            ArcPair(input=[[3, 3]], output=[[4, 4]]),
+        ),
+        test_input=[[5, 5]],
+        test_output=[[6, 6]],
+    )
+    assert inferred_output_shapes(example)[0] == (1, 2)
+    rows = [
+        {"parsed_grid": [[0], [0]]},
+        {"parsed_grid": [[9, 9]]},
+    ]
+    assert select_candidate_index(example, rows) == 1

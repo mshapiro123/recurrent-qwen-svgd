@@ -44,6 +44,7 @@ EVAL_SPLIT = os.environ.get("STAGE5_ARC_AGI_EVAL_SPLIT", "evaluation")
 TRAIN_TASK_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_TRAIN_TASK_LIMIT", "100"))
 EVAL_TASK_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_EVAL_TASK_LIMIT", "10"))
 COLOR_AUGS = int(os.environ.get("STAGE5_ARC_AGI_COLOR_AUGS", "2"))
+GEOMETRY_AUGS = os.environ.get("STAGE5_ARC_AGI_GEOMETRY_AUGS", "all")
 MAX_LENGTH = int(os.environ.get("STAGE5_ARC_AGI_MAX_LENGTH", "1024"))
 MAX_TOTAL_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_TOTAL_TOKENS", "2048"))
 TRAIN_STEPS = int(os.environ.get("STAGE5_ARC_AGI_TRAIN_STEPS", "300"))
@@ -181,6 +182,8 @@ def prepare_sft(train_path: Path) -> None:
             str(TRAIN_TASK_LIMIT),
             "--augment_color_permutations",
             str(COLOR_AUGS),
+            "--augment_geometries",
+            GEOMETRY_AUGS,
             "--grid_format",
             GRID_FORMAT,
             "--max_total_tokens",
@@ -320,6 +323,7 @@ def main() -> int:
         "train_task_limit": TRAIN_TASK_LIMIT,
         "eval_task_limit": EVAL_TASK_LIMIT,
         "color_augmentations": COLOR_AUGS,
+        "geometry_augmentations": GEOMETRY_AUGS,
         "train_steps": TRAIN_STEPS,
         "learning_rate": LEARNING_RATE,
         "grid_format": GRID_FORMAT,
@@ -352,6 +356,7 @@ def main() -> int:
         f"- Eval split: `{eval_path}`",
         f"- Train task limit: `{TRAIN_TASK_LIMIT}`",
         f"- Eval task limit: `{EVAL_TASK_LIMIT}`",
+        f"- Geometry augmentations: `{GEOMETRY_AUGS}`",
         f"- Tuned checkpoint: `{path_for_cli(tuned_ckpt)}`",
         f"- Grid format: `{GRID_FORMAT}`",
         "",
