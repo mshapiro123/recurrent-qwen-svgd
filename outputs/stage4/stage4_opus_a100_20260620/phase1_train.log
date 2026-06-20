@@ -1,0 +1,26 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6337.39it/s]
+lora_recurrent_modules=84
+step=0 mean_expected_loops=3.1865 mean_halt_entropy=1.0875 expected_ce=3.6003 halting_kl=0.9222 loss=3.6741
+step=25 mean_expected_loops=3.1643 mean_halt_entropy=1.1050 expected_ce=4.0795 halting_kl=0.8915 loss=4.1509
+step=50 mean_expected_loops=3.1512 mean_halt_entropy=1.1160 expected_ce=4.0374 halting_kl=0.8726 loss=4.1072
+step=75 mean_expected_loops=3.1359 mean_halt_entropy=1.1275 expected_ce=3.9961 halting_kl=0.8520 loss=4.0642
+step=100 mean_expected_loops=3.1198 mean_halt_entropy=1.1385 expected_ce=3.2565 halting_kl=0.8314 loss=3.3231
+step=125 mean_expected_loops=3.0955 mean_halt_entropy=1.1566 expected_ce=3.9497 halting_kl=0.7987 loss=4.0136
+step=150 mean_expected_loops=3.0605 mean_halt_entropy=1.1809 expected_ce=2.9868 halting_kl=0.7535 loss=3.0471
+step=175 mean_expected_loops=3.0789 mean_halt_entropy=1.1674 expected_ce=3.1578 halting_kl=0.7780 loss=3.2201
+step=200 mean_expected_loops=3.0340 mean_halt_entropy=1.1965 expected_ce=3.8529 halting_kl=0.3017 loss=3.8770
+step=225 mean_expected_loops=3.0066 mean_halt_entropy=1.2108 expected_ce=3.7092 halting_kl=0.2895 loss=3.7324
+saved_checkpoint=outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_250.pt
+step=250 mean_expected_loops=3.0153 mean_halt_entropy=1.2102 expected_ce=4.4126 halting_kl=0.6972 loss=4.4684
+step=275 mean_expected_loops=2.9449 mean_halt_entropy=1.2448 expected_ce=2.7471 halting_kl=0.6204 loss=2.7967
+step=300 mean_expected_loops=2.9320 mean_halt_entropy=1.2539 expected_ce=3.6870 halting_kl=0.4079 loss=3.7196
+step=325 mean_expected_loops=2.8836 mean_halt_entropy=1.2750 expected_ce=2.1993 halting_kl=0.5537 loss=2.2436
+step=350 mean_expected_loops=2.8745 mean_halt_entropy=1.2816 expected_ce=3.2863 halting_kl=0.2186 loss=3.3038
+step=375 mean_expected_loops=2.8145 mean_halt_entropy=1.3065 expected_ce=3.6553 halting_kl=0.1952 loss=3.6709
+step=400 mean_expected_loops=2.8099 mean_halt_entropy=1.3098 expected_ce=2.2689 halting_kl=0.3020 loss=2.2931
+step=425 mean_expected_loops=2.7907 mean_halt_entropy=1.3137 expected_ce=2.2931 halting_kl=0.4594 loss=2.3298
+step=450 mean_expected_loops=2.7267 mean_halt_entropy=1.3348 expected_ce=2.4607 halting_kl=0.4000 loss=2.4927
+step=475 mean_expected_loops=2.8135 mean_halt_entropy=1.3066 expected_ce=3.1633 halting_kl=0.4801 loss=3.2017
+saved_checkpoint=outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt

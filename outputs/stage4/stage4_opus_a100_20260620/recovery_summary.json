@@ -1,0 +1,55 @@
+{
+  "run_id": "stage4_opus_a100_20260620",
+  "run_dir": "outputs/stage4/stage4_opus_a100_20260620",
+  "artifact_exists": {
+    "phase1_step_500": true,
+    "phase2_step_100": true,
+    "projection": true
+  },
+  "arc": {
+    "base": {
+      "mean": {
+        "correct": 72,
+        "total": 128,
+        "accuracy": 0.5625
+      }
+    },
+    "phase1_recurrent_baseline": {
+      "mean": {
+        "correct": 70,
+        "total": 128,
+        "accuracy": 0.546875
+      }
+    },
+    "phase2_recurrent_candidate": {
+      "max": {
+        "correct": 65,
+        "total": 128,
+        "accuracy": 0.5078125
+      },
+      "mean": {
+        "correct": 69,
+        "total": 128,
+        "accuracy": 0.5390625
+      },
+      "vote": {
+        "correct": 69,
+        "total": 128,
+        "accuracy": 0.5390625
+      }
+    }
+  },
+  "arc_ladder": {
+    "base_mean_accuracy": 0.5625,
+    "phase1_mean_accuracy": 0.546875,
+    "phase2_mean_accuracy": 0.5390625,
+    "phase2_max_accuracy": 0.5078125,
+    "phase2_vote_accuracy": 0.5390625,
+    "phase2_best_accuracy": 0.5390625,
+    "phase1_gap_to_base": -0.015625,
+    "phase2_best_lift_over_phase1": -0.0078125,
+    "phase2_best_gap_to_base": -0.0234375
+  },
+  "exact_rows": 156,
+  "drive_backup": null
+}

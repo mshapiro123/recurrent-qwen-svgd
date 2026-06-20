@@ -1,0 +1,14 @@
+{
+  "run_id": "stage4_opus_a100_20260620",
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "dataset_id": "lordx64/reasoning-distill-opus-4-7-max-sft",
+  "dataset_limit": 3000,
+  "val_fraction": 0.05,
+  "max_total_tokens": 1024,
+  "max_length": 512,
+  "phase1_steps": 500,
+  "phase2_steps": 100,
+  "arc_limit": 128,
+  "dtype": "bfloat16",
+  "adapter_dtype": "float32"
+}

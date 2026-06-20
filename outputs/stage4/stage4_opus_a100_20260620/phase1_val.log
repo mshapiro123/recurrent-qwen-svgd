@@ -1,0 +1,11 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6194.32it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt loaded_keys=173
+examples=104
+expected_ce=2.433245
+halting_kl=0.330305
+loss=2.459669
+mean_expected_loops=2.692036
+mean_halt_entropy=1.344400
