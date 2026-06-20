@@ -71,6 +71,12 @@ Initial harness files:
 - `eval/eval_arc_agi.py`: base/recurrent exact-grid evaluator.
 - `colab/run_stage5_arc_agi_smoke.py`: Colab smoke runner that can clone public
   ARC-AGI data and compare base Qwen against the recurrent Phase1 checkpoint.
+- `training/prepare_arc_agi_sft_jsonl.py`: supervised ARC-AGI JSONL
+  preparation with leave-one-out task rows and safe color-permutation
+  augmentation.
+- `colab/run_stage5_arc_agi_sft.py`: smoke fine-tune runner for adapting
+  recurrent Phase1 on public ARC-AGI training tasks and evaluating held-out
+  ARC-AGI evaluation tasks.
 
 The harness should and now does:
 
@@ -87,6 +93,27 @@ Next upgrades:
 - add a verifier/reranker for K candidates;
 - add synthetic ARC-style trace generation for recurrent fine-tuning;
 - report ARC-AGI-1 and ARC-AGI-2 separately.
+
+### Stage 5D: ARC-AGI SFT Smoke
+
+Run `colab/run_stage5_arc_agi_sft.py`.
+
+This creates supervised rows from public ARC-AGI training tasks:
+
+- original task test pairs when outputs are public;
+- leave-one-out examples from the task's train pairs;
+- color-permutation augmentations applied consistently to every grid.
+
+It then fine-tunes the recurrent Phase1 checkpoint and compares exact-grid
+generation against base and the pre-SFT recurrent checkpoint on the ARC-AGI
+evaluation split.
+
+Gate:
+
+- valid-grid rate should improve materially;
+- exact-grid score should not regress against recurrent Phase1;
+- if exact-grid remains near zero, next work is representation/traces, not more
+  blind SFT steps.
 
 ## Training Direction After 5A/5B
 

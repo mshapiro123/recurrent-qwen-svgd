@@ -3,12 +3,15 @@ from __future__ import annotations
 import json
 
 from eval.arc_agi_utils import (
+    ArcAgiExample,
+    ArcPair,
     load_arc_agi_examples,
     parse_grid_from_text,
     render_arc_prompt,
     score_grid_prediction,
     validate_grid,
 )
+from training.prepare_arc_agi_sft_jsonl import apply_color_permutation, leave_one_out_examples
 
 
 def test_validate_grid_rejects_ragged_rows() -> None:
@@ -71,3 +74,27 @@ def test_score_grid_prediction() -> None:
     assert score_grid_prediction([[1, 2]], [[1], [2]])["shape_match"] is False
     assert score_grid_prediction(None, [[1]])["valid"] is False
     assert score_grid_prediction([[1]], None)["has_target"] is False
+
+
+def test_color_permutation_applies_to_every_cell() -> None:
+    permutation = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+    assert apply_color_permutation([[0, 1, 9]], permutation) == [[9, 8, 0]]
+
+
+def test_leave_one_out_examples_hold_out_each_training_pair() -> None:
+    example = ArcAgiExample(
+        task_id="task",
+        test_index=0,
+        train=(
+            ArcPair(input=[[1]], output=[[2]]),
+            ArcPair(input=[[3]], output=[[4]]),
+            ArcPair(input=[[5]], output=[[6]]),
+        ),
+        test_input=[[7]],
+        test_output=[[8]],
+    )
+    generated = leave_one_out_examples([example])
+    assert len(generated) == 3
+    assert generated[0].test_input == [[1]]
+    assert generated[0].test_output == [[2]]
+    assert [pair.input for pair in generated[0].train] == [[[3]], [[5]]]
