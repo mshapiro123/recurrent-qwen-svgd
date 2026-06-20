@@ -4,6 +4,9 @@ import json
 
 from colab.plan_stage5_next_run import (
     best_recovered_tta_row,
+    evidence_fragment,
+    paired_delta_or_aggregate,
+    paired_metric,
     plan_next_actions,
     source_kind,
 )
@@ -15,6 +18,16 @@ def _summary(selected: int, best: int, examples: int = 50) -> dict[str, object]:
         "best_of_k_exact": best,
         "examples_with_targets": examples,
         "valid_candidate_rate": 1.0,
+    }
+
+
+def _paired(delta: int, wins: int, losses: int, ties: int) -> dict[str, object]:
+    return {
+        "delta_exact": delta,
+        "wins": wins,
+        "losses": losses,
+        "ties": ties,
+        "bootstrap_delta_accuracy_ci95": {"low": -0.1, "high": 0.2},
     }
 
 
@@ -66,6 +79,54 @@ def test_smoke_win_recommends_confirmation_and_export(tmp_path) -> None:
 
     assert any(name.startswith("Confirm recovered-vs-base") for name in names)
     assert "Export recovered adapter to Hugging Face" in names
+
+
+def test_paired_evidence_overrides_misleading_aggregate_win(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    payload = {
+        "autopilot_compact": {
+            "candidate_distillation_passed": True,
+            "final_checkpoint": "outputs/stage5/run/final.pt",
+            "particle_passed": False,
+        },
+        "recovered_benchmark": {
+            "base": {"summary": _summary(2, 3)},
+            "phase1_start": {"summary": _summary(1, 1)},
+            "recovered": {"summary": _summary(3, 4)},
+            "deltas": {
+                "recovered_vs_base": {
+                    "selected_exact_delta": 1,
+                    "best_of_k_exact_delta": 1,
+                },
+                "recovered_vs_start": {
+                    "selected_exact_delta": 2,
+                    "best_of_k_exact_delta": 3,
+                },
+            },
+            "paired_comparisons": {
+                "recovered_vs_base": {
+                    "metrics": {
+                        "selected_exact": _paired(-1, wins=0, losses=1, ties=49),
+                        "best_of_k_exact": _paired(-1, wins=0, losses=1, ties=49),
+                    }
+                },
+                "recovered_vs_start": {
+                    "metrics": {
+                        "selected_exact": _paired(2, wins=2, losses=0, ties=48),
+                        "best_of_k_exact": _paired(3, wins=3, losses=0, ties=47),
+                    }
+                },
+            },
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+    names = [action["name"] for action in actions]
+
+    assert not any(name.startswith("Confirm recovered-vs-base") for name in names)
+    assert actions[0]["name"] == "Scale deterministic curriculum"
+    assert "paired delta 2" in actions[0]["reason"]
 
 
 def test_partial_recovery_recommends_scaled_curriculum(tmp_path) -> None:
@@ -142,6 +203,82 @@ def test_best_recovered_tta_row_prefers_best_then_selected() -> None:
     }
 
     assert best_recovered_tta_row(tta)["tta_variant"] == "rotations"
+
+
+def test_tta_replicate_uses_paired_evidence_when_available(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    payload = {
+        "autopilot_compact": {
+            "candidate_distillation_passed": True,
+            "final_checkpoint": "outputs/stage5/run/final.pt",
+            "particle_passed": False,
+        },
+        "recovered_benchmark": {
+            "base": {"summary": _summary(8, 9)},
+            "phase1_start": {"summary": _summary(2, 2)},
+            "recovered": {"summary": _summary(4, 5)},
+            "deltas": {
+                "recovered_vs_base": {
+                    "selected_exact_delta": -4,
+                    "best_of_k_exact_delta": -4,
+                },
+                "recovered_vs_start": {
+                    "selected_exact_delta": 2,
+                    "best_of_k_exact_delta": 3,
+                },
+            },
+        },
+        "tta_sweep": {
+            "rows": [
+                {"arm": "recovered", "tta_variant": "none", "best_of_k_exact": 2, "selected_exact": 1},
+                {"arm": "recovered", "tta_variant": "all", "best_of_k_exact": 4, "selected_exact": 3},
+            ],
+            "paired_comparisons": {
+                "recovered__tta_all_vs_none": {
+                    "metrics": {
+                        "best_of_k_exact": _paired(-1, wins=0, losses=1, ties=49),
+                    }
+                }
+            },
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert not any(action["name"].startswith("Replicate recovered TTA") for action in actions)
+
+
+def test_paired_metric_helpers_fall_back_to_aggregate() -> None:
+    payload = {
+        "deltas": {"recovered_vs_base": {"selected_exact_delta": 2}},
+        "paired_comparisons": {
+            "recovered_vs_base": {"metrics": {"selected_exact": _paired(1, wins=2, losses=1, ties=47)}}
+        },
+    }
+
+    assert paired_metric(payload, "recovered_vs_base", "selected_exact")["delta_exact"] == 1
+    assert (
+        paired_delta_or_aggregate(
+            payload,
+            comparison="recovered_vs_base",
+            metric_name="selected_exact",
+            aggregate_group="recovered_vs_base",
+            aggregate_key="selected_exact_delta",
+        )
+        == 1
+    )
+    assert (
+        paired_delta_or_aggregate(
+            payload,
+            comparison="missing",
+            metric_name="selected_exact",
+            aggregate_group="recovered_vs_base",
+            aggregate_key="selected_exact_delta",
+        )
+        == 2
+    )
+    assert "paired delta 1" in evidence_fragment(paired_metric(payload, "recovered_vs_base", "selected_exact"), 2)
 
 
 def test_source_kind_classifies_followup_and_autopilot() -> None:

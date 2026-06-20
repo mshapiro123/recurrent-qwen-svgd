@@ -104,6 +104,52 @@ def delta_value(deltas: dict[str, Any] | None, group: str, key: str) -> int:
     return int((deltas.get(group) or {}).get(key, 0))
 
 
+def paired_metric(payload: dict[str, Any] | None, comparison: str, metric_name: str) -> dict[str, Any] | None:
+    if not payload:
+        return None
+    comparisons = payload.get("paired_comparisons") or {}
+    metrics = (comparisons.get(comparison) or {}).get("metrics") or {}
+    metric_payload = metrics.get(metric_name)
+    return metric_payload if isinstance(metric_payload, dict) else None
+
+
+def paired_delta_or_aggregate(
+    payload: dict[str, Any] | None,
+    *,
+    comparison: str,
+    metric_name: str,
+    aggregate_group: str,
+    aggregate_key: str,
+) -> int:
+    paired = paired_metric(payload, comparison, metric_name)
+    if paired is not None:
+        return int(paired.get("delta_exact", 0))
+    return delta_value((payload or {}).get("deltas") or {}, aggregate_group, aggregate_key)
+
+
+def paired_supports_nonnegative(stats: dict[str, Any] | None, fallback_delta: int) -> bool:
+    if stats is None:
+        return fallback_delta >= 0
+    return int(stats.get("delta_exact", 0)) >= 0 and int(stats.get("wins", 0)) >= int(stats.get("losses", 0))
+
+
+def paired_supports_positive(stats: dict[str, Any] | None, fallback_delta: int) -> bool:
+    if stats is None:
+        return fallback_delta > 0
+    return int(stats.get("delta_exact", 0)) > 0 and int(stats.get("wins", 0)) > int(stats.get("losses", 0))
+
+
+def evidence_fragment(stats: dict[str, Any] | None, fallback_delta: int) -> str:
+    if stats is None:
+        return f"aggregate delta {fallback_delta}"
+    ci = stats.get("bootstrap_delta_accuracy_ci95") or {}
+    return (
+        f"paired delta {stats.get('delta_exact', 0)} "
+        f"({stats.get('wins', 0)}/{stats.get('losses', 0)}/{stats.get('ties', 0)} W/L/T, "
+        f"CI95 [{ci.get('low')}, {ci.get('high')}])"
+    )
+
+
 def best_recovered_tta_row(tta: dict[str, Any] | None) -> dict[str, Any] | None:
     if not tta:
         return None
@@ -159,18 +205,50 @@ def plan_next_actions(payload: dict[str, Any], *, source_summary: Path) -> list[
         return actions
 
     if benchmark:
-        deltas = benchmark.get("deltas") or {}
-        recovered_vs_base_selected = delta_value(deltas, "recovered_vs_base", "selected_exact_delta")
-        recovered_vs_base_best = delta_value(deltas, "recovered_vs_base", "best_of_k_exact_delta")
-        recovered_vs_start_selected = delta_value(deltas, "recovered_vs_start", "selected_exact_delta")
-        recovered_vs_start_best = delta_value(deltas, "recovered_vs_start", "best_of_k_exact_delta")
+        recovered_vs_base_selected = paired_delta_or_aggregate(
+            benchmark,
+            comparison="recovered_vs_base",
+            metric_name="selected_exact",
+            aggregate_group="recovered_vs_base",
+            aggregate_key="selected_exact_delta",
+        )
+        recovered_vs_base_best = paired_delta_or_aggregate(
+            benchmark,
+            comparison="recovered_vs_base",
+            metric_name="best_of_k_exact",
+            aggregate_group="recovered_vs_base",
+            aggregate_key="best_of_k_exact_delta",
+        )
+        recovered_vs_start_selected = paired_delta_or_aggregate(
+            benchmark,
+            comparison="recovered_vs_start",
+            metric_name="selected_exact",
+            aggregate_group="recovered_vs_start",
+            aggregate_key="selected_exact_delta",
+        )
+        recovered_vs_start_best = paired_delta_or_aggregate(
+            benchmark,
+            comparison="recovered_vs_start",
+            metric_name="best_of_k_exact",
+            aggregate_group="recovered_vs_start",
+            aggregate_key="best_of_k_exact_delta",
+        )
+        recovered_vs_base_selected_stats = paired_metric(benchmark, "recovered_vs_base", "selected_exact")
+        recovered_vs_base_best_stats = paired_metric(benchmark, "recovered_vs_base", "best_of_k_exact")
+        recovered_vs_start_selected_stats = paired_metric(benchmark, "recovered_vs_start", "selected_exact")
+        recovered_vs_start_best_stats = paired_metric(benchmark, "recovered_vs_start", "best_of_k_exact")
         examples = metric((benchmark.get("base") or {}).get("summary"), "examples_with_targets")
 
-        if recovered_vs_base_selected >= 0 and recovered_vs_base_best >= 0:
+        if paired_supports_nonnegative(
+            recovered_vs_base_selected_stats,
+            recovered_vs_base_selected,
+        ) and paired_supports_nonnegative(recovered_vs_base_best_stats, recovered_vs_base_best):
             actions.append(
                 make_action(
                     f"Confirm recovered-vs-base at ARC limit {CONFIRM_LIMIT}",
-                    "Recovered recurrent matched or beat base on the current smoke comparison; validate at a larger held-out limit before claiming lift.",
+                    "Recovered recurrent matched or beat base on the current smoke comparison; validate at a larger held-out limit before claiming lift. "
+                    f"Selected evidence: {evidence_fragment(recovered_vs_base_selected_stats, recovered_vs_base_selected)}. "
+                    f"Best-of-K evidence: {evidence_fragment(recovered_vs_base_best_stats, recovered_vs_base_best)}.",
                     command_env(
                         {
                             "STAGE5_ARC_AGI_AUTOPILOT_SUMMARY": source_summary_cli,
@@ -196,11 +274,16 @@ def plan_next_actions(payload: dict[str, Any], *, source_summary: Path) -> list[
                     8,
                 )
             )
-        elif recovered_vs_start_selected >= MIN_RECOVERED_VS_START_DELTA or recovered_vs_start_best > 0:
+        elif recovered_vs_start_selected >= MIN_RECOVERED_VS_START_DELTA or paired_supports_positive(
+            recovered_vs_start_best_stats,
+            recovered_vs_start_best,
+        ):
             actions.append(
                 make_action(
                     "Scale deterministic curriculum",
-                    "Recovered recurrent improved over its start checkpoint but still trails base; spend GPU on more deterministic recovery before particle/SVGD training.",
+                    "Recovered recurrent improved over its start checkpoint but still trails base; spend GPU on more deterministic recovery before particle/SVGD training. "
+                    f"Selected evidence: {evidence_fragment(recovered_vs_start_selected_stats, recovered_vs_start_selected)}. "
+                    f"Best-of-K evidence: {evidence_fragment(recovered_vs_start_best_stats, recovered_vs_start_best)}.",
                     command_env(
                         {
                             "STAGE5_ARC_AGI_CURRICULUM_PARTICLE_AUTOPILOT_RUN_ID": f"{RUN_ID}_scaled_curriculum",
@@ -222,7 +305,9 @@ def plan_next_actions(payload: dict[str, Any], *, source_summary: Path) -> list[
             actions.append(
                 make_action(
                     "Run trace/candidate-distillation diagnostics before more SFT",
-                    "Recovered recurrent did not improve over the start checkpoint; diagnose training target quality instead of scaling the same recipe.",
+                    "Recovered recurrent did not improve over the start checkpoint; diagnose training target quality instead of scaling the same recipe. "
+                    f"Selected evidence: {evidence_fragment(recovered_vs_start_selected_stats, recovered_vs_start_selected)}. "
+                    f"Best-of-K evidence: {evidence_fragment(recovered_vs_start_best_stats, recovered_vs_start_best)}.",
                     command_env(
                         {
                             "STAGE5_ARC_AGI_CANDIDATE_DISTILL_GATE_RUN_ID": f"{RUN_ID}_candidate_distill_diagnostic",
@@ -266,11 +351,14 @@ def plan_next_actions(payload: dict[str, Any], *, source_summary: Path) -> list[
             if row.get("arm") == "recovered" and row.get("tta_variant") == "none"
         ]
         none_best = metric(none_rows[0], "best_of_k_exact") if none_rows else 0
-        if metric(best_tta, "best_of_k_exact") > none_best:
+        best_tta_delta = metric(best_tta, "best_of_k_exact") - none_best
+        tta_stats = paired_metric(tta, f"recovered__tta_{best_tta['tta_variant']}_vs_none", "best_of_k_exact")
+        if paired_supports_positive(tta_stats, best_tta_delta):
             actions.append(
                 make_action(
                     f"Replicate recovered TTA variant `{best_tta['tta_variant']}`",
-                    "TTA improved recovered best-of-K on the current sweep; replicate at a larger limit before baking it into default eval.",
+                    "TTA improved recovered best-of-K on the current sweep; replicate at a larger limit before baking it into default eval. "
+                    f"Evidence: {evidence_fragment(tta_stats, best_tta_delta)}.",
                     command_env(
                         {
                             "STAGE5_ARC_AGI_AUTOPILOT_SUMMARY": source_summary_cli,
