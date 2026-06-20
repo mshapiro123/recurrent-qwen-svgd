@@ -89,6 +89,8 @@ Initial harness files:
   ARC-AGI evaluation tasks.
 - `colab/run_stage5_arc_agi_trace_sft_gate.py`: matched two-arm SFT runner for
   grid-only supervision versus symbolic-trace supervision.
+- `colab/run_stage5_arc_agi_distill_sft_gate.py`: matched two-arm SFT runner
+  for base-logit distillation off versus on.
 - Grid output formats: JSON, compact row strings, and tagged row strings are
   supported. Colab ARC-AGI runners default to compact row strings because they
   are shorter and easier for a 0.5B model to emit reliably.
@@ -153,12 +155,19 @@ Run `colab/run_stage5_arc_agi_trace_sft_gate.py` to execute both controls under
 the same settings and write one comparison summary. By default it compares
 grid-only SFT against symbolic-trace SFT on trace-covered examples.
 
+Set `STAGE5_ARC_AGI_DISTILL=1` to add frozen-base next-token KL distillation
+inside `training/train_phase1_ponder.py`. Run
+`colab/run_stage5_arc_agi_distill_sft_gate.py` to compare the selected ARC SFT
+recipe with distillation off versus on.
+
 Gate:
 
 - valid-grid rate should improve materially;
 - exact-grid score should not regress against recurrent Phase1;
 - symbolic-trace SFT should beat or match grid-only SFT before scaling this
   recipe;
+- distillation should preserve or improve exact-grid results while reducing
+  recurrent-vs-base regression;
 - selected-candidate score should be reported separately from oracle best-of-K;
 - if exact-grid remains near zero, next work is representation/traces, not more
   blind SFT steps.

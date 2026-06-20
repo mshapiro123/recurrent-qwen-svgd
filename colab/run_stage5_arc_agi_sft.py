@@ -53,6 +53,10 @@ TRAIN_STEPS = int(os.environ.get("STAGE5_ARC_AGI_TRAIN_STEPS", "300"))
 SAVE_EVERY = int(os.environ.get("STAGE5_ARC_AGI_SAVE_EVERY", "150"))
 LEARNING_RATE = float(os.environ.get("STAGE5_ARC_AGI_LR", "8e-6"))
 BETA = float(os.environ.get("STAGE5_ARC_AGI_BETA", "0.08"))
+DISTILL_ENABLED = os.environ.get("STAGE5_ARC_AGI_DISTILL", "0").strip().lower() in {"1", "true", "yes", "y"}
+DISTILL_WEIGHT = float(os.environ.get("STAGE5_ARC_AGI_DISTILL_WEIGHT", "0.1"))
+DISTILL_TEMPERATURE = float(os.environ.get("STAGE5_ARC_AGI_DISTILL_TEMPERATURE", "1.0"))
+DISTILL_ON = os.environ.get("STAGE5_ARC_AGI_DISTILL_ON", "response")
 MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
 GRID_FORMAT = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
 INCLUDE_SYMBOLIC = os.environ.get("STAGE5_ARC_AGI_INCLUDE_SYMBOLIC", "0").strip().lower() in {
@@ -276,6 +280,12 @@ def train_phase1() -> Path:
         "output_dir": path_for_cli(RUN_DIR / "phase1_arc_agi"),
         "resume_from": path_for_cli(PHASE1_CKPT),
         "lora": {"enabled": True, "rank": 8, "alpha": 16, "dropout": 0.0},
+        "distillation": {
+            "enabled": DISTILL_ENABLED,
+            "weight": DISTILL_WEIGHT,
+            "temperature": DISTILL_TEMPERATURE,
+            "on": DISTILL_ON,
+        },
     }
     cfg_path = RUN_DIR / "phase1_arc_agi.yaml"
     write_yaml(cfg_path, cfg)
@@ -349,6 +359,12 @@ def main() -> int:
         "train_steps": TRAIN_STEPS,
         "learning_rate": LEARNING_RATE,
         "grid_format": GRID_FORMAT,
+        "distillation": {
+            "enabled": DISTILL_ENABLED,
+            "weight": DISTILL_WEIGHT,
+            "temperature": DISTILL_TEMPERATURE,
+            "on": DISTILL_ON,
+        },
         "include_symbolic_candidates": INCLUDE_SYMBOLIC,
         "symbolic_position": SYMBOLIC_POSITION if INCLUDE_SYMBOLIC else None,
         "phase1_checkpoint": path_for_cli(PHASE1_CKPT),
@@ -383,6 +399,7 @@ def main() -> int:
         f"- Geometry augmentations: `{GEOMETRY_AUGS}`",
         f"- Trace mode: `{TRACE_MODE}`",
         f"- Trace filter: `{TRACE_FILTER}`",
+        f"- Distillation: `{DISTILL_ENABLED}` weight `{DISTILL_WEIGHT}` temperature `{DISTILL_TEMPERATURE}` on `{DISTILL_ON}`",
         f"- Symbolic candidates: `{INCLUDE_SYMBOLIC}`",
         f"- Symbolic position: `{SYMBOLIC_POSITION if INCLUDE_SYMBOLIC else 'n/a'}`",
         f"- Tuned checkpoint: `{path_for_cli(tuned_ckpt)}`",

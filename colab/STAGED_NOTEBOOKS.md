@@ -98,5 +98,6 @@ The older split notebooks are kept only as references:
    symbolic-only, and hybrid candidate value before more particle tuning.
    If symbolic candidates help, run `colab/run_stage5_arc_agi_trace_sft_gate.py`
    to compare grid-only ARC SFT against symbolic-trace ARC SFT on trace-covered
-   examples.
+   examples. Then run `colab/run_stage5_arc_agi_distill_sft_gate.py` to test
+   whether frozen-base logit distillation preserves competence during ARC SFT.
 6. Write the report, model card, and release notes.
