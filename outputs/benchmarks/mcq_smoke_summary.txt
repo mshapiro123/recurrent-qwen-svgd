@@ -1,8 +1,24 @@
-base: outputs/benchmarks/mcq_smoke_base_label.jsonl
+base/label: outputs/benchmarks/mcq_smoke_base_label.jsonl
   aggregate=mean correct=4/8 accuracy=0.5000
-phase1: outputs/benchmarks/mcq_smoke_phase1_label.jsonl
+phase1/label: outputs/benchmarks/mcq_smoke_phase1_label.jsonl
   aggregate=mean correct=4/8 accuracy=0.5000
-phase2_svgd: outputs/benchmarks/mcq_smoke_phase2_svgd_label.jsonl
+phase2_svgd/label: outputs/benchmarks/mcq_smoke_phase2_svgd_label.jsonl
   aggregate=max correct=4/8 accuracy=0.5000
   aggregate=mean correct=5/8 accuracy=0.6250
   aggregate=vote correct=5/8 accuracy=0.6250
+base/option_text: outputs/benchmarks/mcq_smoke_base_option_text.jsonl
+  aggregate=mean correct=3/8 accuracy=0.3750
+phase1/option_text: outputs/benchmarks/mcq_smoke_phase1_option_text.jsonl
+  aggregate=mean correct=1/8 accuracy=0.1250
+phase2_svgd/option_text: outputs/benchmarks/mcq_smoke_phase2_svgd_option_text.jsonl
+  aggregate=max correct=2/8 accuracy=0.2500
+  aggregate=mean correct=2/8 accuracy=0.2500
+  aggregate=vote correct=3/8 accuracy=0.3750
+base/label_and_text: outputs/benchmarks/mcq_smoke_base_label_and_text.jsonl
+  aggregate=mean correct=4/8 accuracy=0.5000
+phase1/label_and_text: outputs/benchmarks/mcq_smoke_phase1_label_and_text.jsonl
+  aggregate=mean correct=1/8 accuracy=0.1250
+phase2_svgd/label_and_text: outputs/benchmarks/mcq_smoke_phase2_svgd_label_and_text.jsonl
+  aggregate=max correct=3/8 accuracy=0.3750
+  aggregate=mean correct=3/8 accuracy=0.3750
+  aggregate=vote correct=3/8 accuracy=0.3750
