@@ -101,6 +101,11 @@ Initial harness files:
 - `colab/run_stage5_arc_agi_autopilot.py`: overnight runner that executes the
   candidate gate, conditionally runs trace-SFT, and conditionally runs the
   distillation gate using configurable thresholds.
+- `colab/run_stage5_arc_agi_recovery_particle_gate.py`: controlled runner that
+  first executes synthetic symbolic ARC SFT for deterministic recurrent
+  recovery, then evaluates low-noise K-particle/SVGD variants on the tuned
+  checkpoint. Use this to separate "more targeted training helped the recurrent
+  model" from "particles add value over the recovered recurrent model."
 - Grid output formats: JSON, compact row strings, and tagged row strings are
   supported. Colab ARC-AGI runners default to compact row strings because they
   are shorter and easier for a 0.5B model to emit reliably.
@@ -166,6 +171,16 @@ synthetic ARC-style tasks to the public ARC SFT rows. This is the first
 controlled test for whether more targeted training can recover or improve the
 surgically altered recurrent model. Keep particle/SVGD claims separate until
 the deterministic recurrent baseline improves under this curriculum.
+
+Run `colab/run_stage5_arc_agi_recovery_particle_gate.py` when you want both
+questions answered in one A100 session. Its report has two independent gates:
+
+- deterministic recurrent recovery versus the pre-SFT recurrent checkpoint;
+- particle/SVGD lift versus the tuned recurrent checkpoint.
+
+Only treat particles as promising if the second gate clears. If only the first
+gate clears, keep improving deterministic recurrent training before returning
+to Phase2.
 
 Run `colab/run_stage5_arc_agi_trace_sft_gate.py` to execute both controls under
 the same settings and write one comparison summary. By default it compares

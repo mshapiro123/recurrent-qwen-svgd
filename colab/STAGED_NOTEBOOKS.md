@@ -107,6 +107,11 @@ The older split notebooks are kept only as references:
    `STAGE5_ARC_AGI_TRACE_FILTER=covered`. That tests whether targeted
    symbolic ARC traces improve the deterministic recurrent model before
    attributing value to particles/SVGD.
+   The most direct combined gate is
+   `colab/run_stage5_arc_agi_recovery_particle_gate.py`: it runs that synthetic
+   recurrent-recovery SFT first, then tests low-noise K-particle/SVGD variants
+   against the tuned recurrent checkpoint. Use its two decisions to keep
+   "training helped" separate from "particles helped."
    For unattended A100 time, run `colab/run_stage5_arc_agi_autopilot.py`
    instead; it branches through those gates with explicit thresholds and writes
    one decision report.
