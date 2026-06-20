@@ -1,0 +1,18 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5244.15it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/qwen_0_5b_phase2_svgd_recreated_smoke25/phase2_step_25.pt loaded_keys=173
+saved_projection=outputs/calibration/recreated_within_group_pca_projection.pt
+saved_metadata=outputs/calibration/recreated_within_group_pca_projection.json
+num_samples=280
+num_groups=70
+hidden_dim=896
+projection_dim=64
+calibration_centering=within_group
+recommended_dim=8
+radial_eta2_task=0.999862
+radial_eta2_seed=0.000003
+radial_eta2_group=0.999888
+within_group_capture= {'global_pca': {'8': 0.1204599142074585, '16': 0.5153855085372925, '32': 0.667340099811554, '64': 0.814683735370636}, 'within_task_pca': {'8': 0.5319280624389648, '16': 0.6101130843162537, '32': 0.7138683199882507, '64': 0.8412425518035889}, 'within_group_pca': {'8': 0.5328121185302734, '16': 0.610788106918335, '32': 0.7145689725875854, '64': 0.8419404625892639}}
+direction_eigenvalues_top16= [0.00020325, 2.793e-05, 1.714e-05, 1.403e-05, 1.145e-05, 8.82e-06, 8.41e-06, 8.24e-06, 7.3e-06, 6.56e-06, 5.99e-06, 5.91e-06, 5.77e-06, 5.12e-06, 5.07e-06, 4.51e-06]

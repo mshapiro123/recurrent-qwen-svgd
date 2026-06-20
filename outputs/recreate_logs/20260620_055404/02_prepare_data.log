@@ -1,0 +1,8 @@
+
+Generating train split:   0%|          | 0/7823 [00:00<?, ? examples/s]
+Generating train split: 100%|██████████| 7823/7823 [00:00<00:00, 52918.80 examples/s]
+Generating train split: 100%|██████████| 7823/7823 [00:00<00:00, 51545.06 examples/s]
+dataset_id=lordx64/reasoning-distill-opus-4-7-max-sft
+train_rows=937
+val_rows=49
+skipped_rows=14

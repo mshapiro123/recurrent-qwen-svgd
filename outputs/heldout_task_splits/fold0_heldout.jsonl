@@ -1,0 +1,7 @@
+{"name": "train speed", "prompt": "Solve exactly. If a train travels 120 miles in 3 hours, what is its average speed?", "patterns": ["\\b40\\s*(mph|miles per hour|miles/hour)?\\b"]}
+{"name": "arithmetic add", "prompt": "Solve exactly. What is 17 + 28?", "patterns": ["\\b45\\b"]}
+{"name": "cookies division", "prompt": "Solve exactly. If 36 cookies are shared equally by 6 children, how many cookies does each child get?", "patterns": ["\\b6\\s*cookies?\\b", "\\b6\\b"]}
+{"name": "rectangle area", "prompt": "Solve exactly. A rectangle is 9 cm long and 6 cm wide. What is its area?", "patterns": ["\\b54\\s*(square\\s*)?(cm|centimeters|centimetres)\\b", "\\b54\\b"]}
+{"name": "recipe scaling", "prompt": "Solve exactly. One batch of soup needs 2 cups of broth. How many cups are needed for 4 batches?", "patterns": ["\\b8\\s*cups?\\b", "\\b8\\b"]}
+{"name": "letter count", "prompt": "Solve exactly. How many letters are in the word cat?", "patterns": ["\\b3\\b", "\\bthree\\b"]}
+{"name": "sudoku strategy", "prompt": "Name one strategy for solving a Sudoku puzzle.", "patterns": ["\\b(elimination|candidate|scanning|backtracking|pencil marks?)\\b"]}

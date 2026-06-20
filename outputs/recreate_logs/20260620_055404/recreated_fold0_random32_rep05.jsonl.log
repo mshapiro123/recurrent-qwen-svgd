@@ -1,0 +1,124 @@
+seed=0
+phase2_config=mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6302.49it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/qwen_0_5b_phase2_svgd_recreated_smoke25/phase2_step_25.pt loaded_keys=173
+
+
+### mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=0 ###
+
+=== Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=0 ===
+
+train speed best_of_4=True hits=1/4 unique=2
+
+arithmetic add best_of_4=True hits=1/4 unique=2
+
+cookies division best_of_4=True hits=4/4 unique=1
+
+rectangle area best_of_4=False hits=0/4 unique=1
+
+recipe scaling best_of_4=True hits=3/4 unique=3
+
+letter count best_of_4=True hits=4/4 unique=1
+
+sudoku strategy best_of_4=True hits=4/4 unique=2
+
+Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=0 summary: best_hits=6/7 candidate_hits=17/28
+
+
+### mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=1 ###
+
+=== Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=1 ===
+
+train speed best_of_4=False hits=0/4 unique=1
+
+arithmetic add best_of_4=True hits=1/4 unique=2
+
+cookies division best_of_4=True hits=4/4 unique=1
+
+rectangle area best_of_4=True hits=1/4 unique=2
+
+recipe scaling best_of_4=True hits=4/4 unique=2
+
+letter count best_of_4=True hits=4/4 unique=1
+
+sudoku strategy best_of_4=True hits=4/4 unique=1
+
+Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=1 summary: best_hits=6/7 candidate_hits=18/28
+
+
+### mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=2 ###
+
+=== Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=2 ===
+
+train speed best_of_4=False hits=0/4 unique=1
+
+arithmetic add best_of_4=False hits=0/4 unique=3
+
+cookies division best_of_4=True hits=4/4 unique=2
+
+rectangle area best_of_4=False hits=0/4 unique=1
+
+recipe scaling best_of_4=True hits=4/4 unique=2
+
+letter count best_of_4=True hits=4/4 unique=1
+
+sudoku strategy best_of_4=True hits=3/4 unique=3
+
+Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=2 summary: best_hits=4/7 candidate_hits=15/28
+
+
+### mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=3 ###
+
+=== Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=3 ===
+
+train speed best_of_4=False hits=0/4 unique=1
+
+arithmetic add best_of_4=False hits=0/4 unique=2
+
+cookies division best_of_4=True hits=4/4 unique=1
+
+rectangle area best_of_4=False hits=0/4 unique=1
+
+recipe scaling best_of_4=True hits=4/4 unique=2
+
+letter count best_of_4=True hits=4/4 unique=1
+
+sudoku strategy best_of_4=True hits=4/4 unique=1
+
+Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=3 summary: best_hits=4/7 candidate_hits=16/28
+
+
+### mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=4 ###
+
+=== Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=4 ===
+
+train speed best_of_4=False hits=0/4 unique=1
+
+arithmetic add best_of_4=False hits=0/4 unique=3
+
+cookies division best_of_4=True hits=4/4 unique=1
+
+rectangle area best_of_4=False hits=0/4 unique=1
+
+recipe scaling best_of_4=True hits=1/4 unique=3
+
+letter count best_of_4=True hits=4/4 unique=1
+
+sudoku strategy best_of_4=True hits=3/4 unique=3
+
+Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=4 summary: best_hits=4/7 candidate_hits=12/28
+
+=== SWEEP SUMMARY ===
+mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=0 best_hits=6/7 candidate_hits=17/28
+mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=1 best_hits=6/7 candidate_hits=18/28
+mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=2 best_hits=4/7 candidate_hits=15/28
+mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=3 best_hits=4/7 candidate_hits=16/28
+mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=4 best_hits=4/7 candidate_hits=12/28
+
+=== PROJECTION/REPULSION/STEPS SUMMARY ===
+proj_dim=32 repulsion=0.5 steps=16 mean_best_hits=4.800/7 mean_candidate_hits=15.600/28
+mean_best_hits=4.800/7
+mean_candidate_hits=15.600/28

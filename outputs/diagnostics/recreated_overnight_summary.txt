@@ -1,0 +1,3 @@
+current: random32={'best_hits': 37, 'total_tasks': 70, 'candidate_hits': 126, 'total_candidates': 280} wg_dim8_rep2={'best_hits': 39, 'total_tasks': 70, 'candidate_hits': 119, 'total_candidates': 280} delta_best=2 delta_candidate=-7
+fold0: random32={'best_hits': 24, 'total_tasks': 35, 'candidate_hits': 78, 'total_candidates': 140} wg_dim8_rep2={'best_hits': 30, 'total_tasks': 35, 'candidate_hits': 83, 'total_candidates': 140} delta_best=6 delta_candidate=5
+fold1: random32={'best_hits': 11, 'total_tasks': 35, 'candidate_hits': 37, 'total_candidates': 140} wg_dim8_rep2={'best_hits': 14, 'total_tasks': 35, 'candidate_hits': 47, 'total_candidates': 140} delta_best=3 delta_candidate=10

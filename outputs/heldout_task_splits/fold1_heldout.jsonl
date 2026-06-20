@@ -1,0 +1,7 @@
+{"name": "pharmacy tubs", "prompt": "Solve exactly. The pharmacy has 20 tubs in storage and needs 100 total tubs for the week. It buys one quarter of the remaining needed tubs from a new vendor. How many tubs must it buy from the usual vendor?", "patterns": ["\\b60\\s*tubs?\\b", "\\b60\\b"]}
+{"name": "arithmetic multiply", "prompt": "Solve exactly. What is 7 times 8?", "patterns": ["\\b56\\b"]}
+{"name": "unit conversion", "prompt": "Solve exactly. How many minutes are in 2 hours?", "patterns": ["\\b120\\s*minutes?\\b", "\\b120\\b"]}
+{"name": "discount price", "prompt": "Solve exactly. A $50 item is discounted by 20 percent. What is the sale price?", "patterns": ["\\$?\\s*40\\b", "\\b40\\s*dollars?\\b"]}
+{"name": "average simple", "prompt": "Solve exactly. What is the average of 10, 20, and 30?", "patterns": ["\\b20\\b"]}
+{"name": "rates word", "prompt": "Give one valid 5-letter English word using exactly the letters R, A, T, E, S.", "patterns": ["\\b(stare|tears|rates|aster|tares)\\b"]}
+{"name": "n queens small", "prompt": "Give one valid 4-queens placement as row positions for columns 1 through 4.", "patterns": ["\\b2\\s*,\\s*4\\s*,\\s*1\\s*,\\s*3\\b", "\\b3\\s*,\\s*1\\s*,\\s*4\\s*,\\s*2\\b", "\\[\\s*2\\s*,\\s*4\\s*,\\s*1\\s*,\\s*3\\s*\\]", "\\[\\s*3\\s*,\\s*1\\s*,\\s*4\\s*,\\s*2\\s*\\]"]}
