@@ -18,6 +18,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 RUN_ID = os.environ.get("STAGE4_RUN_ID")
 PUSH_RESULTS = os.environ.get("STAGE4_RECOVERY_PUSH", "1").strip().lower() in {"1", "true", "yes", "y"}
+AUTO_MOUNT_DRIVE = os.environ.get("STAGE4_AUTO_MOUNT_DRIVE", "1").strip().lower() in {"1", "true", "yes", "y"}
 
 
 def run(cmd: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -99,6 +100,13 @@ def summarize_ladder(base: dict[str, Any], phase1: dict[str, Any], phase2: dict[
 
 def backup_to_drive(run_dir: Path, run_id: str) -> str | None:
     drive_root = Path(os.environ.get("DRIVE_BACKUP_DIR", "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts"))
+    if AUTO_MOUNT_DRIVE and not drive_root.parent.exists():
+        try:
+            from google.colab import drive  # type: ignore
+
+            drive.mount("/content/drive")
+        except Exception as exc:  # pragma: no cover - only available in Colab
+            print(f"Drive auto-mount failed: {exc}")
     if not drive_root.exists():
         print(f"Drive backup skipped; missing {drive_root}")
         return None
