@@ -55,7 +55,16 @@ def read_json(path: str | Path) -> dict[str, Any]:
 
 
 def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
-    return any(key in payload for key in ("recovered_benchmark", "tta_sweep", "compact", "autopilot_compact"))
+    return any(
+        key in payload
+        for key in (
+            "recovered_benchmark",
+            "tta_sweep",
+            "compact",
+            "autopilot_compact",
+            "best_by_label",
+        )
+    ) or selector_rescore_payload(payload) is not None
 
 
 def latest_summary() -> Path:
@@ -106,6 +115,15 @@ def recovery_analysis_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
         return benchmark["recovery_analysis"]
     analysis = payload.get("recovery_analysis")
     return analysis if isinstance(analysis, dict) else None
+
+
+def selector_rescore_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    rows = payload.get("rows")
+    if not isinstance(rows, list):
+        return None
+    if "best_by_label" in payload or {"source_run_dir", "strategies"} <= set(payload):
+        return payload
+    return None
 
 
 def compact_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -280,8 +298,149 @@ def selector_rescore_command(benchmark: dict[str, Any] | None, source_summary: P
     )
 
 
+def selector_source_summary_path(payload: dict[str, Any]) -> Path | None:
+    source_run_dir = payload.get("source_run_dir")
+    if not source_run_dir:
+        return None
+    summary_path = resolve_path(str(source_run_dir)) / "summary.json"
+    return summary_path if summary_path.exists() else None
+
+
+def source_summary_metadata(payload: dict[str, Any]) -> dict[str, Any]:
+    summary_path = selector_source_summary_path(payload)
+    if summary_path is None:
+        return {}
+    try:
+        source = read_json(summary_path)
+    except Exception:
+        return {}
+    metadata = source.get("metadata")
+    return metadata if isinstance(metadata, dict) else {}
+
+
+def selector_rescore_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    return [row for row in payload.get("rows", []) if isinstance(row, dict)]
+
+
+def best_selector_rescore_row(payload: dict[str, Any]) -> dict[str, Any] | None:
+    rows = [
+        row
+        for row in selector_rescore_rows(payload)
+        if not str(row.get("selection_strategy", "")).startswith("original:")
+    ]
+    recovered_rows = [row for row in rows if str(row.get("label", "")) == "recovered"]
+    if not recovered_rows:
+        recovered_rows = [row for row in rows if str(row.get("label", "")).startswith("recovered")]
+    if not recovered_rows:
+        recovered_rows = rows
+    if not recovered_rows:
+        return None
+    return max(
+        recovered_rows,
+        key=lambda row: (
+            metric(row, "selected_exact"),
+            metric(row, "best_of_k_exact"),
+            rate(row, "valid_candidate_rate"),
+            int(row.get("selected_delta_vs_source") or 0),
+        ),
+    )
+
+
+def selector_rescore_paired_stats(payload: dict[str, Any], row: dict[str, Any]) -> dict[str, Any] | None:
+    label = str(row.get("label", ""))
+    strategy = str(row.get("selection_strategy", ""))
+    return paired_metric(payload, f"{label}__selector_{strategy}_vs_source", "selected_exact")
+
+
+def selector_rerun_command(payload: dict[str, Any], row: dict[str, Any]) -> str | None:
+    metadata = source_summary_metadata(payload)
+    if not metadata:
+        return None
+    examples = metric(row, "examples")
+    limit = limit_label(next_validation_limit(examples))
+    strategy = str(row.get("selection_strategy", ""))
+    assignments = {
+        "STAGE5_ARC_AGI_SELECTION_STRATEGY": strategy,
+        "STAGE5_ARC_AGI_LIMIT": limit,
+        "STAGE5_ARC_AGI_RECOVERED_BENCHMARK_RUN_ID": f"{RUN_ID}_selector_{strategy}_limit{limit}",
+    }
+    optional_metadata_env = {
+        "STAGE5_ARC_AGI_CURRICULUM_SUMMARY": "curriculum_summary",
+        "STAGE5_PHASE1_CKPT": "phase1_start_checkpoint",
+        "STAGE5_ARC_AGI_RECOVERED_CKPT": "recovered_checkpoint",
+        "STAGE5_ARC_AGI_VERSION": "arc_version",
+        "STAGE5_ARC_AGI_SPLIT": "arc_split",
+        "STAGE5_ARC_AGI_GRID_FORMAT": "grid_format",
+        "STAGE5_ARC_AGI_PROGRAM_PARSE_MODE": "program_parse_mode",
+    }
+    for env_key, metadata_key in optional_metadata_env.items():
+        value = metadata.get(metadata_key)
+        if value:
+            assignments[env_key] = str(value).replace("\\", "/")
+    return command_env(assignments, "python colab/run_stage5_arc_agi_recovered_benchmark.py")
+
+
+def source_replan_command(payload: dict[str, Any], source_summary: Path) -> str:
+    summary_path = selector_source_summary_path(payload) or source_summary
+    return command_env(
+        {"STAGE5_ARC_AGI_NEXT_PLAN_SOURCE_SUMMARY": command_path(summary_path)},
+        "python colab/plan_stage5_next_run.py",
+    )
+
+
+def selector_rescore_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    best_row = best_selector_rescore_row(payload)
+    if best_row is None:
+        return [
+            make_action(
+                "Inspect selector-rescore summary",
+                "Selector-rescore output had no rescored rows; inspect the source run before spending GPU.",
+                source_replan_command(payload, source_summary),
+                10,
+            )
+        ]
+    fallback_delta = int(best_row.get("selected_delta_vs_source") or 0)
+    stats = selector_rescore_paired_stats(payload, best_row)
+    strategy = str(best_row.get("selection_strategy", ""))
+    label = str(best_row.get("label", ""))
+    if paired_supports_positive(stats, fallback_delta):
+        rerun = selector_rerun_command(payload, best_row)
+        if rerun:
+            return [
+                make_action(
+                    f"Promote selector `{strategy}` for `{label}` benchmark",
+                    "Selector rescoring improved selected exact accuracy; rerun the recovered-vs-base benchmark with that selector before training further. "
+                    f"Evidence: {evidence_fragment(stats, fallback_delta)}.",
+                    rerun,
+                    10,
+                )
+            ]
+        return [
+            make_action(
+                f"Promote selector `{strategy}` after restoring source benchmark metadata",
+                "Selector rescoring improved selected exact accuracy, but the source benchmark metadata was not available in this checkout. "
+                f"Evidence: {evidence_fragment(stats, fallback_delta)}.",
+                source_replan_command(payload, source_summary),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            "Defer selector changes and continue recovery plan",
+            "Selector rescoring did not show paired selected-accuracy lift; return to the source benchmark plan rather than adding selector complexity. "
+            f"Best selector `{strategy}` evidence: {evidence_fragment(stats, fallback_delta)}.",
+            source_replan_command(payload, source_summary),
+            10,
+        )
+    ]
+
+
 def plan_next_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     actions: list[dict[str, Any]] = []
+    selector_rescore = selector_rescore_payload(payload)
+    if selector_rescore:
+        return selector_rescore_actions(selector_rescore, source_summary=source_summary)
+
     benchmark = benchmark_payload(payload)
     tta = tta_payload(payload)
     analysis = recovery_analysis_payload(payload)
@@ -572,6 +731,8 @@ def write_report(payload: dict[str, Any]) -> None:
 
 
 def source_kind(payload: dict[str, Any]) -> str:
+    if selector_rescore_payload(payload):
+        return "selector_rescore"
     if "recovered_benchmark" in payload or "tta_sweep" in payload:
         return "followup"
     if "compact" in payload:

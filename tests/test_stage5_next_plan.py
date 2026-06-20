@@ -404,6 +404,109 @@ def test_tta_replicate_uses_paired_evidence_when_available(tmp_path) -> None:
     assert not any(action["name"].startswith("Replicate recovered TTA") for action in actions)
 
 
+def test_selector_rescore_summary_promotes_paired_lift(tmp_path) -> None:
+    source_run = tmp_path / "source_benchmark"
+    source_run.mkdir()
+    source_benchmark = {
+        "metadata": {
+            "curriculum_summary": "outputs/stage5/curriculum/summary.json",
+            "phase1_start_checkpoint": "outputs/stage4/phase1.pt",
+            "recovered_checkpoint": "outputs/stage5/recovered.pt",
+            "arc_version": "1",
+            "arc_split": "evaluation",
+            "grid_format": "compact",
+            "program_parse_mode": "fallback",
+        }
+    }
+    (source_run / "summary.json").write_text(json.dumps(source_benchmark), encoding="utf-8")
+    source = tmp_path / "selector_summary.json"
+    payload = {
+        "run_id": "selector_rescore",
+        "source_run_dir": str(source_run),
+        "strategies": ["self_consistency", "symbolic_priority"],
+        "rows": [
+            {
+                "label": "recovered",
+                "selection_strategy": "original:heuristic",
+                "examples": 50,
+                "selected_exact": 10,
+                "best_of_k_exact": 13,
+                "valid_candidate_rate": 0.9,
+                "selected_delta_vs_source": 0,
+            },
+            {
+                "label": "recovered",
+                "selection_strategy": "self_consistency",
+                "examples": 50,
+                "selected_exact": 12,
+                "best_of_k_exact": 13,
+                "valid_candidate_rate": 0.9,
+                "selected_delta_vs_source": 2,
+            },
+            {
+                "label": "recovered",
+                "selection_strategy": "symbolic_priority",
+                "examples": 50,
+                "selected_exact": 11,
+                "best_of_k_exact": 14,
+                "valid_candidate_rate": 1.0,
+                "selected_delta_vs_source": 1,
+            },
+        ],
+        "best_by_label": {},
+        "paired_comparisons": {
+            "recovered__selector_self_consistency_vs_source": {
+                "metrics": {"selected_exact": _paired(2, wins=2, losses=0, ties=48)}
+            }
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Promote selector `self_consistency` for `recovered` benchmark"
+    assert "STAGE5_ARC_AGI_SELECTION_STRATEGY=self_consistency" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_LIMIT=100" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_RECOVERED_CKPT=outputs/stage5/recovered.pt" in actions[0]["command"]
+    assert "colab/run_stage5_arc_agi_recovered_benchmark.py" in actions[0]["command"]
+    assert "paired delta 2" in actions[0]["reason"]
+
+
+def test_selector_rescore_summary_without_paired_lift_replans_source(tmp_path) -> None:
+    source_run = tmp_path / "source_benchmark"
+    source_run.mkdir()
+    (source_run / "summary.json").write_text(json.dumps({"recovered_benchmark": {}}), encoding="utf-8")
+    source = tmp_path / "selector_summary.json"
+    payload = {
+        "source_run_dir": str(source_run),
+        "strategies": ["self_consistency"],
+        "rows": [
+            {
+                "label": "recovered",
+                "selection_strategy": "self_consistency",
+                "examples": 100,
+                "selected_exact": 10,
+                "best_of_k_exact": 13,
+                "valid_candidate_rate": 0.9,
+                "selected_delta_vs_source": 0,
+            }
+        ],
+        "best_by_label": {},
+        "paired_comparisons": {
+            "recovered__selector_self_consistency_vs_source": {
+                "metrics": {"selected_exact": _paired(0, wins=0, losses=0, ties=50)}
+            }
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Defer selector changes and continue recovery plan"
+    assert "colab/plan_stage5_next_run.py" in actions[0]["command"]
+    assert "summary.json" in actions[0]["command"]
+
+
 def test_paired_metric_helpers_fall_back_to_aggregate() -> None:
     payload = {
         "deltas": {"recovered_vs_base": {"selected_exact_delta": 2}},
@@ -445,3 +548,4 @@ def test_next_validation_limit_graduates_smoke_to_confirm_to_full() -> None:
 def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"recovered_benchmark": {}}) == "followup"
     assert source_kind({"compact": {}}) == "autopilot"
+    assert source_kind({"best_by_label": {}, "rows": []}) == "selector_rescore"
