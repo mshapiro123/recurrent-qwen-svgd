@@ -22,6 +22,7 @@ def test_generate_tasks_are_symbolically_covered(tmp_path) -> None:
             "crop_recolor",
             "crop_transform_recolor",
             "move_recolor",
+            "frame_object",
         ],
     )
     path = tmp_path / "synthetic.json"
@@ -126,3 +127,22 @@ def test_generate_move_recolor_tasks_are_symbolically_covered(tmp_path) -> None:
     assert summary["examples_with_targets"] == 5
     assert summary["exact_symbolic"] == 5
     assert any(source.startswith("move_non_background_bg") for source in summary["exact_by_source"])
+
+
+def test_generate_frame_object_tasks_are_symbolically_covered(tmp_path) -> None:
+    tasks = generate_tasks(
+        num_tasks=5,
+        seed=103,
+        train_examples=3,
+        test_examples=1,
+        min_size=2,
+        max_size=5,
+        modes=["frame_object"],
+    )
+    path = tmp_path / "synthetic_frame_object.json"
+    path.write_text(json.dumps(tasks), encoding="utf-8")
+    examples = load_arc_agi_examples(path)
+    summary = analyze_examples(examples)["summary"]
+    assert summary["examples_with_targets"] == 5
+    assert summary["exact_symbolic"] == 5
+    assert any(source.startswith("frame_non_background_bg") for source in summary["exact_by_source"])

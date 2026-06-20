@@ -156,6 +156,63 @@ def test_symbolic_candidates_learn_move_recolor() -> None:
     assert "recolor(grid" in program_trace
 
 
+def test_symbolic_candidates_learn_frame_object() -> None:
+    example = ArcAgiExample(
+        task_id="frame-object",
+        test_index=0,
+        train=(
+            ArcPair(
+                input=[
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                output=[
+                    [0, 3, 3, 3, 0],
+                    [0, 3, 1, 3, 0],
+                    [0, 3, 3, 3, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+            ),
+            ArcPair(
+                input=[
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 2, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                output=[
+                    [0, 0, 0, 0, 0],
+                    [3, 3, 3, 0, 0],
+                    [3, 2, 3, 0, 0],
+                    [3, 3, 3, 0, 0],
+                ],
+            ),
+        ),
+        test_input=[
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 4, 0, 0],
+            [0, 0, 0, 0, 0],
+        ],
+        test_output=[
+            [0, 0, 0, 0, 0],
+            [0, 3, 3, 3, 0],
+            [0, 3, 4, 3, 0],
+            [0, 3, 3, 3, 0],
+        ],
+    )
+    exact = exact_symbolic_candidate(example)
+    assert exact is not None
+    assert exact.name == "frame_non_background_bg0_color3"
+    assert exact.grid == example.test_output
+    trace = format_symbolic_trace(exact)
+    assert "rectangular frame" in trace
+    program_trace = format_symbolic_program_trace(exact)
+    assert "frame_non_background(test_input, background=0, color=3)" in program_trace
+
+
 def test_evaluate_example_tracks_candidate_sources() -> None:
     example = ArcAgiExample(
         task_id="source",

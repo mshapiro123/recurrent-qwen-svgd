@@ -14,7 +14,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from eval.arc_agi_utils import GEOMETRY_TRANSFORMS, Grid, apply_geometry_transform  # noqa: E402
-from eval.arc_agi_symbolic import apply_color_map, crop_non_background, move_non_background  # noqa: E402
+from eval.arc_agi_symbolic import apply_color_map, crop_non_background, frame_non_background, move_non_background  # noqa: E402
 
 
 SHAPE_CHANGING_TRANSFORMS = ("rot90", "rot270", "transpose", "anti_transpose")
@@ -339,6 +339,53 @@ def generate_move_recolor_task(
     }
 
 
+def generate_frame_object_task(
+    rng: random.Random,
+    task_id: str,
+    *,
+    train_examples: int,
+    test_examples: int,
+    min_size: int,
+    max_size: int,
+) -> dict[str, Any]:
+    del task_id
+    background = rng.randrange(10)
+    object_palette = rng.sample([color for color in range(10) if color != background], rng.randint(1, 4))
+    frame_candidates = [color for color in range(10) if color != background and color not in object_palette]
+    frame_color = rng.choice(frame_candidates or [color for color in range(10) if color != background])
+    effective_max_size = max(max_size, min_size + 3, 5)
+
+    def make_pair(idx: int, *, is_train: bool) -> dict[str, Grid]:
+        for _ in range(200):
+            height = rng.randint(max(min_size + 3, 5), effective_max_size)
+            width = rng.randint(max(min_size + 3, 5), effective_max_size)
+            obj_h = rng.randint(1, max(1, height - 2))
+            obj_w = rng.randint(1, max(1, width - 2))
+            if is_train and idx == 0 and obj_h * obj_w < len(object_palette):
+                continue
+            row_start = rng.randint(1, height - obj_h - 1)
+            col_start = rng.randint(1, width - obj_w - 1)
+            grid = [[background for _ in range(width)] for _ in range(height)]
+            object_cells: list[tuple[int, int]] = []
+            for row in range(row_start, row_start + obj_h):
+                for col in range(col_start, col_start + obj_w):
+                    object_cells.append((row, col))
+                    grid[row][col] = rng.choice(object_palette)
+            if is_train and idx == 0:
+                rng.shuffle(object_cells)
+                for color, (row, col) in zip(object_palette, object_cells):
+                    grid[row][col] = color
+            framed = frame_non_background(grid, background, frame_color)
+            if framed is not None:
+                return {"input": grid, "output": framed}
+        raise RuntimeError("could not generate frame object task")
+
+    return {
+        "train": [make_pair(idx, is_train=True) for idx in range(train_examples)],
+        "test": [make_pair(idx, is_train=False) for idx in range(test_examples)],
+    }
+
+
 def generate_tasks(
     *,
     num_tasks: int,
@@ -408,6 +455,15 @@ def generate_tasks(
                 min_size=min_size,
                 max_size=max_size,
             )
+        elif mode == "frame_object":
+            tasks[task_id] = generate_frame_object_task(
+                rng,
+                task_id,
+                train_examples=train_examples,
+                test_examples=test_examples,
+                min_size=min_size,
+                max_size=max_size,
+            )
         else:
             raise ValueError(f"Unknown mode: {mode}")
     return tasks
@@ -422,6 +478,7 @@ def parse_modes(value: str) -> list[str]:
             "crop_recolor",
             "crop_transform_recolor",
             "move_recolor",
+            "frame_object",
         ]
     modes = [item.strip() for item in value.split(",") if item.strip()]
     unknown = set(modes) - {
@@ -431,6 +488,7 @@ def parse_modes(value: str) -> list[str]:
         "crop_recolor",
         "crop_transform_recolor",
         "move_recolor",
+        "frame_object",
     }
     if unknown:
         raise ValueError(f"Unknown synthetic modes: {sorted(unknown)}")

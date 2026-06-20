@@ -9,6 +9,7 @@ that can be inferred exactly from demonstrations:
 - non-background object bounding-box crops;
 - crop, then transform, then recolor compositions;
 - same-canvas non-background object moves, optionally with recoloring;
+- same-canvas one-cell frames around non-background objects;
 - constant-output tasks.
 """
 
@@ -50,6 +51,19 @@ def crop_non_background(grid: Grid, background: int) -> Grid | None:
     return [row[col_start : col_end + 1] for row in grid[row_start : row_end + 1]]
 
 
+def non_background_bbox(grid: Grid, background: int) -> tuple[int, int, int, int] | None:
+    rows: list[int] = []
+    cols: list[int] = []
+    for row_idx, row in enumerate(grid):
+        for col_idx, cell in enumerate(row):
+            if cell != background:
+                rows.append(row_idx)
+                cols.append(col_idx)
+    if not rows or not cols:
+        return None
+    return min(rows), max(rows), min(cols), max(cols)
+
+
 def move_non_background(grid: Grid, background: int, delta_row: int, delta_col: int) -> Grid | None:
     height, width = grid_shape(grid)
     moved = [[background for _ in range(width)] for _ in range(height)]
@@ -65,6 +79,29 @@ def move_non_background(grid: Grid, background: int, delta_row: int, delta_col: 
                 return None
             moved[out_row][out_col] = cell
     return moved if saw_foreground else None
+
+
+def frame_non_background(grid: Grid, background: int, color: int, margin: int = 1) -> Grid | None:
+    bbox = non_background_bbox(grid, background)
+    if bbox is None:
+        return None
+    row_start, row_end, col_start, col_end = bbox
+    frame_row_start = row_start - margin
+    frame_row_end = row_end + margin
+    frame_col_start = col_start - margin
+    frame_col_end = col_end + margin
+    height, width = grid_shape(grid)
+    if frame_row_start < 0 or frame_col_start < 0 or frame_row_end >= height or frame_col_end >= width:
+        return None
+
+    framed = [row[:] for row in grid]
+    for col in range(frame_col_start, frame_col_end + 1):
+        framed[frame_row_start][col] = color
+        framed[frame_row_end][col] = color
+    for row in range(frame_row_start, frame_row_end + 1):
+        framed[row][frame_col_start] = color
+        framed[row][frame_col_end] = color
+    return framed
 
 
 def learn_color_map(inputs: list[Grid], outputs: list[Grid]) -> dict[int, int] | None:
@@ -158,6 +195,19 @@ def learn_move_background_delta_and_color_map(
                 )
                 if is_nontrivial:
                     return background, delta_row, delta_col, color_map
+    return None
+
+
+def learn_frame_background_and_color(inputs: list[Grid], outputs: list[Grid]) -> tuple[int, int] | None:
+    if not inputs or any(grid_shape(input_grid) != grid_shape(output_grid) for input_grid, output_grid in zip(inputs, outputs)):
+        return None
+    for background in range(10):
+        for color in range(10):
+            if color == background:
+                continue
+            predicted = [frame_non_background(grid, background, color) for grid in inputs]
+            if all(item is not None for item in predicted) and predicted == outputs:
+                return background, color
     return None
 
 
@@ -290,6 +340,29 @@ def symbolic_candidates(example: ArcAgiExample) -> list[SymbolicCandidate]:
                             f"delta_row={delta_row}, delta_col={delta_col})"
                         ),
                         f"  grid = recolor(grid, {color_map_program_literal(color_map)})",
+                        "  return grid",
+                    ),
+                )
+            )
+
+    frame_object = learn_frame_background_and_color([pair.input for pair in train_pairs], outputs)
+    if frame_object is not None:
+        background, color = frame_object
+        framed_test = frame_non_background(example.test_input, background, color)
+        if framed_test is not None:
+            candidates.append(
+                SymbolicCandidate(
+                    f"frame_non_background_bg{background}_color{color}",
+                    framed_test,
+                    (
+                        f"Background color: {background}.",
+                        f"Frame color: {color}.",
+                        "Rule: draw a one-cell-margin rectangular frame around the non-background object.",
+                        "Action: frame the test input on the same canvas.",
+                    ),
+                    (
+                        "program:",
+                        f"  grid = frame_non_background(test_input, background={background}, color={color})",
                         "  return grid",
                     ),
                 )

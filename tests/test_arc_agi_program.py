@@ -151,6 +151,30 @@ def test_execute_arc_program_runs_move_non_background() -> None:
     assert arc_program_training_match_count(example, program) == (2, 2)
 
 
+def test_execute_arc_program_runs_frame_non_background() -> None:
+    example = ArcAgiExample(
+        task_id="frame",
+        test_index=0,
+        train=(
+            ArcPair(
+                input=[[0, 0, 0], [0, 1, 0], [0, 0, 0]],
+                output=[[3, 3, 3], [3, 1, 3], [3, 3, 3]],
+            ),
+        ),
+        test_input=[[0, 0, 0], [0, 2, 0], [0, 0, 0]],
+        test_output=[[3, 3, 3], [3, 2, 3], [3, 3, 3]],
+    )
+    program = "\n".join(
+        [
+            "program:",
+            "  grid = frame_non_background(test_input, background=0, color=3)",
+            "  return grid",
+        ]
+    )
+    assert execute_arc_program(example, program) == [[3, 3, 3], [3, 2, 3], [3, 3, 3]]
+    assert arc_program_training_match_count(example, program) == (1, 1)
+
+
 def test_parse_arc_program_from_text_extracts_think_region() -> None:
     example = ArcAgiExample(
         task_id="constant",

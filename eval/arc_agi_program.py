@@ -8,6 +8,7 @@ program lines emitted by ``format_symbolic_program_trace``:
     grid = transform(grid, 'rot90')
     grid = crop_non_background(test_input, background=0)
     grid = move_non_background(test_input, background=0, delta_row=1, delta_col=-1)
+    grid = frame_non_background(test_input, background=0, color=3)
     grid = recolor(grid, {1: 2, 0: 3})
     return grid
 """
@@ -17,7 +18,13 @@ from __future__ import annotations
 import re
 
 from eval.arc_agi_utils import ArcAgiExample, GEOMETRY_TRANSFORMS, Grid, apply_geometry_transform, validate_grid
-from eval.arc_agi_symbolic import all_outputs_equal, apply_color_map, crop_non_background, move_non_background
+from eval.arc_agi_symbolic import (
+    all_outputs_equal,
+    apply_color_map,
+    crop_non_background,
+    frame_non_background,
+    move_non_background,
+)
 
 
 _TRANSFORM_RE = re.compile(r"grid\s*=\s*transform\s*\(\s*(test_input|grid)\s*,\s*['\"]?([a-z0-9_]+)['\"]?\s*\)")
@@ -27,6 +34,9 @@ _CROP_RE = re.compile(r"grid\s*=\s*crop_non_background\s*\(\s*test_input\s*,\s*b
 _MOVE_RE = re.compile(
     r"grid\s*=\s*move_non_background\s*\(\s*test_input\s*,\s*background\s*=\s*([0-9])\s*,\s*"
     r"delta_row\s*=\s*(-?[0-9]+)\s*,\s*delta_col\s*=\s*(-?[0-9]+)\s*\)"
+)
+_FRAME_RE = re.compile(
+    r"grid\s*=\s*frame_non_background\s*\(\s*test_input\s*,\s*background\s*=\s*([0-9])\s*,\s*color\s*=\s*([0-9])\s*\)"
 )
 
 
@@ -102,6 +112,12 @@ def execute_arc_program(example: ArcAgiExample, program_text: str) -> Grid | Non
                 int(move_match.group(2)),
                 int(move_match.group(3)),
             )
+            if grid is None:
+                return None
+            continue
+        frame_match = _FRAME_RE.fullmatch(line)
+        if frame_match:
+            grid = frame_non_background(example.test_input, int(frame_match.group(1)), int(frame_match.group(2)))
             if grid is None:
                 return None
             continue
