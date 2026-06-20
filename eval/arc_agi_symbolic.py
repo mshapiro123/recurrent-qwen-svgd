@@ -86,6 +86,17 @@ def learn_crop_background(inputs: list[Grid], outputs: list[Grid]) -> int | None
     return None
 
 
+def learn_crop_background_and_color_map(inputs: list[Grid], outputs: list[Grid]) -> tuple[int, dict[int, int]] | None:
+    for background in range(10):
+        cropped = [crop_non_background(grid, background) for grid in inputs]
+        if any(item is None for item in cropped):
+            continue
+        color_map = learn_color_map([grid for grid in cropped if grid is not None], outputs)
+        if color_map is not None and any(source != target for source, target in color_map.items()):
+            return background, color_map
+    return None
+
+
 def dedupe_candidates(candidates: list[SymbolicCandidate]) -> list[SymbolicCandidate]:
     seen: set[str] = set()
     deduped: list[SymbolicCandidate] = []
@@ -136,6 +147,31 @@ def symbolic_candidates(example: ArcAgiExample) -> list[SymbolicCandidate]:
                     (
                         "program:",
                         f"  grid = crop_non_background(test_input, background={crop_background})",
+                        "  return grid",
+                    ),
+                )
+            )
+
+    crop_recolor = learn_crop_background_and_color_map([pair.input for pair in train_pairs], outputs)
+    if crop_recolor is not None:
+        crop_background, color_map = crop_recolor
+        cropped_test = crop_non_background(example.test_input, crop_background)
+        if cropped_test is not None:
+            predicted = apply_color_map(cropped_test, color_map)
+            candidates.append(
+                SymbolicCandidate(
+                    f"crop_non_background_bg{crop_background}+color_map",
+                    predicted,
+                    (
+                        f"Background color: {crop_background}.",
+                        "Rule: crop the minimal bounding box around non-background cells, then apply a consistent color map.",
+                        color_map_trace(color_map),
+                        "Action: crop and recolor the test input.",
+                    ),
+                    (
+                        "program:",
+                        f"  grid = crop_non_background(test_input, background={crop_background})",
+                        f"  grid = recolor(grid, {color_map_program_literal(color_map)})",
                         "  return grid",
                     ),
                 )

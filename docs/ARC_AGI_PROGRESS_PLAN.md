@@ -86,8 +86,8 @@ Initial harness files:
   exactly explain the target grid, and `--trace_mode symbolic_program`, which
   emits a tiny program-style trace such as transform/recolor/return steps.
 - `training/generate_arc_agi_synthetic_tasks.py`: synthetic ARC-style task
-  generator for geometry/color-map, non-background object crop, and
-  constant-output tasks that are exactly covered by the symbolic trace solver.
+  generator for geometry/color-map, non-background object crop, crop-then-recolor,
+  and constant-output tasks that are exactly covered by the symbolic trace solver.
   This is a controlled curriculum for testing whether the recurrent
   architecture can learn clean transformation traces before we spend more time
   on particle mechanisms.

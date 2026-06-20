@@ -44,6 +44,16 @@ def random_color_map(rng: random.Random, palette: list[int]) -> dict[int, int]:
     return dict(zip(palette, targets))
 
 
+def random_non_identity_color_map(rng: random.Random, palette: list[int]) -> dict[int, int]:
+    for _ in range(100):
+        color_map = random_color_map(rng, palette)
+        if any(source != target for source, target in color_map.items()):
+            return color_map
+    source = palette[0]
+    target = (source + 1) % 10
+    return {**{color: color for color in palette}, source: target}
+
+
 def random_object_grid(
     rng: random.Random,
     *,
@@ -51,17 +61,28 @@ def random_object_grid(
     max_size: int,
     background: int,
     object_palette: list[int],
+    ensure_object_palette: bool = False,
 ) -> Grid:
     height = rng.randint(max(min_size + 1, 3), max_size)
     width = rng.randint(max(min_size + 1, 3), max_size)
     grid = [[background for _ in range(width)] for _ in range(height)]
-    obj_h = rng.randint(1, max(1, height - 1))
-    obj_w = rng.randint(1, max(1, width - 1))
+    min_area = len(object_palette) if ensure_object_palette else 1
+    for _ in range(100):
+        obj_h = rng.randint(1, max(1, height - 1))
+        obj_w = rng.randint(1, max(1, width - 1))
+        if obj_h * obj_w >= min_area:
+            break
     row_start = rng.randint(0, height - obj_h)
     col_start = rng.randint(0, width - obj_w)
+    object_cells: list[tuple[int, int]] = []
     for row in range(row_start, row_start + obj_h):
         for col in range(col_start, col_start + obj_w):
+            object_cells.append((row, col))
             grid[row][col] = rng.choice(object_palette)
+    if ensure_object_palette:
+        rng.shuffle(object_cells)
+        for color, (row, col) in zip(object_palette, object_cells):
+            grid[row][col] = color
     return grid
 
 
@@ -153,6 +174,40 @@ def generate_crop_non_background_task(
     }
 
 
+def generate_crop_recolor_task(
+    rng: random.Random,
+    task_id: str,
+    *,
+    train_examples: int,
+    test_examples: int,
+    min_size: int,
+    max_size: int,
+) -> dict[str, Any]:
+    del task_id
+    background = rng.randrange(10)
+    object_palette = rng.sample([color for color in range(10) if color != background], rng.randint(1, 4))
+    color_map = random_non_identity_color_map(rng, object_palette)
+
+    def make_pair(idx: int, *, is_train: bool) -> dict[str, Grid]:
+        grid = random_object_grid(
+            rng,
+            min_size=min_size,
+            max_size=max(max_size, min_size + 1),
+            background=background,
+            object_palette=object_palette,
+            ensure_object_palette=is_train and idx == 0,
+        )
+        cropped = crop_non_background(grid, background)
+        if cropped is None:
+            raise RuntimeError("generated crop-recolor task without foreground")
+        return {"input": grid, "output": apply_color_map(cropped, color_map)}
+
+    return {
+        "train": [make_pair(idx, is_train=True) for idx in range(train_examples)],
+        "test": [make_pair(idx, is_train=False) for idx in range(test_examples)],
+    }
+
+
 def generate_tasks(
     *,
     num_tasks: int,
@@ -195,6 +250,15 @@ def generate_tasks(
                 min_size=min_size,
                 max_size=max_size,
             )
+        elif mode == "crop_recolor":
+            tasks[task_id] = generate_crop_recolor_task(
+                rng,
+                task_id,
+                train_examples=train_examples,
+                test_examples=test_examples,
+                min_size=min_size,
+                max_size=max_size,
+            )
         else:
             raise ValueError(f"Unknown mode: {mode}")
     return tasks
@@ -202,9 +266,9 @@ def generate_tasks(
 
 def parse_modes(value: str) -> list[str]:
     if value == "all":
-        return ["geometry_color", "constant_output", "crop_non_background"]
+        return ["geometry_color", "constant_output", "crop_non_background", "crop_recolor"]
     modes = [item.strip() for item in value.split(",") if item.strip()]
-    unknown = set(modes) - {"geometry_color", "constant_output", "crop_non_background"}
+    unknown = set(modes) - {"geometry_color", "constant_output", "crop_non_background", "crop_recolor"}
     if unknown:
         raise ValueError(f"Unknown synthetic modes: {sorted(unknown)}")
     return modes

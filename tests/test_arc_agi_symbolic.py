@@ -72,6 +72,34 @@ def test_symbolic_candidates_learn_crop_non_background() -> None:
     assert "crop_non_background(test_input, background=0)" in format_symbolic_program_trace(exact)
 
 
+def test_symbolic_candidates_learn_crop_recolor() -> None:
+    example = ArcAgiExample(
+        task_id="crop-recolor",
+        test_index=0,
+        train=(
+            ArcPair(
+                input=[[0, 0, 0, 0], [0, 1, 2, 0], [0, 3, 1, 0], [0, 0, 0, 0]],
+                output=[[6, 7], [8, 6]],
+            ),
+            ArcPair(
+                input=[[0, 0, 2, 0], [0, 0, 1, 0], [0, 0, 0, 0]],
+                output=[[7], [6]],
+            ),
+        ),
+        test_input=[[0, 0, 0, 0], [0, 3, 2, 0], [0, 1, 0, 0]],
+        test_output=[[8, 7], [6, 0]],
+    )
+    exact = exact_symbolic_candidate(example)
+    assert exact is not None
+    assert exact.name == "crop_non_background_bg0+color_map"
+    assert exact.grid == [[8, 7], [6, 0]]
+    trace = format_symbolic_trace(exact)
+    assert "crop and recolor" in trace
+    program_trace = format_symbolic_program_trace(exact)
+    assert "crop_non_background(test_input, background=0)" in program_trace
+    assert "recolor(grid" in program_trace
+
+
 def test_evaluate_example_tracks_candidate_sources() -> None:
     example = ArcAgiExample(
         task_id="source",
