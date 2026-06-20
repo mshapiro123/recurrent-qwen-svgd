@@ -1,0 +1,21 @@
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+dtype: bfloat16
+adapter_dtype: float32
+layer_split: "6,18"
+max_length: 512
+max_loops: 4
+initial_halt_prob: 0.15
+beta: 0.05
+batch_size: 1
+learning_rate: 0.00001
+weight_decay: 0.0
+max_grad_norm: 0.3
+max_steps: 50
+log_every: 10
+train_on_prompt: false
+output_dir: outputs/qwen_0_5b_phase1_recreated_50
+lora:
+  enabled: true
+  rank: 8
+  alpha: 16
+  dropout: 0.0
