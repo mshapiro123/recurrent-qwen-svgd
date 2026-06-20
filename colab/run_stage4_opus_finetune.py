@@ -53,10 +53,24 @@ ARC_JSONL = ROOT / "data" / f"{RUN_ID}_arc{ARC_LIMIT}.jsonl"
 
 def run(cmd: list[str], *, check: bool = True, log_name: str | None = None) -> subprocess.CompletedProcess[str]:
     print("$", " ".join(map(str, cmd)))
-    proc = subprocess.run(cmd, cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    print(proc.stdout)
+    process = subprocess.Popen(
+        cmd,
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
+    )
+    chunks: list[str] = []
+    assert process.stdout is not None
+    for line in process.stdout:
+        print(line, end="", flush=True)
+        chunks.append(line)
+    returncode = process.wait()
+    stdout = "".join(chunks)
+    proc = subprocess.CompletedProcess(cmd, returncode, stdout=stdout, stderr=None)
     if log_name:
-        (RUN_DIR / log_name).write_text(proc.stdout, encoding="utf-8")
+        (RUN_DIR / log_name).write_text(stdout, encoding="utf-8")
     if check and proc.returncode:
         raise RuntimeError(f"command failed: {' '.join(map(str, cmd))}")
     return proc
@@ -231,16 +245,9 @@ def backup_to_drive() -> None:
 
 
 def ensure_drive_mount() -> None:
-    if os.environ.get("STAGE4_MOUNT_DRIVE", "1") not in {"1", "true", "TRUE", "yes"}:
-        return
     if Path("/content/drive/MyDrive").exists():
         return
-    try:
-        from google.colab import drive  # type: ignore
-
-        drive.mount("/content/drive")
-    except Exception as exc:  # pragma: no cover - only relevant inside Colab.
-        print(f"Drive mount skipped: {exc}")
+    print("Drive is not mounted; checkpoint backup will be skipped unless the notebook mounts Drive before launch.")
 
 
 def main() -> int:

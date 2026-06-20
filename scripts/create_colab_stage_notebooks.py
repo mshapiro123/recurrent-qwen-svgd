@@ -330,6 +330,9 @@ Stage 3 implementation checklist:
                 r"""
 %cd /content/recurrent-qwen-svgd
 
+from google.colab import drive
+drive.mount('/content/drive')
+
 !python colab/run_stage4_opus_finetune.py
 """
             ),
@@ -496,6 +499,9 @@ Stage 3 implementation checklist:
             code(
                 r"""
 %cd /content/recurrent-qwen-svgd
+
+from google.colab import drive
+drive.mount('/content/drive')
 
 !python colab/run_stage4_opus_finetune.py
 """
