@@ -182,6 +182,11 @@ controlled test for whether more targeted training can recover or improve the
 surgically altered recurrent model. Keep particle/SVGD claims separate until
 the deterministic recurrent baseline improves under this curriculum.
 
+Set `STAGE5_ARC_AGI_EVAL_CHECKPOINT_LADDER=1` with a non-final
+`STAGE5_ARC_AGI_SAVE_EVERY` to evaluate every saved checkpoint. Use this when
+the question is how much targeted ARC SFT is needed before recurrent recovery
+peaks or crosses the base model on the chosen exact-grid slice.
+
 Run `colab/run_stage5_arc_agi_recovery_particle_gate.py` when you want both
 questions answered in one A100 session. Its report has two independent gates:
 

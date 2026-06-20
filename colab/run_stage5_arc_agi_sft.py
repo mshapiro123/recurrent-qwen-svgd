@@ -54,6 +54,12 @@ MAX_LENGTH = int(os.environ.get("STAGE5_ARC_AGI_MAX_LENGTH", "1024"))
 MAX_TOTAL_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_TOTAL_TOKENS", "2048"))
 TRAIN_STEPS = int(os.environ.get("STAGE5_ARC_AGI_TRAIN_STEPS", "300"))
 SAVE_EVERY = int(os.environ.get("STAGE5_ARC_AGI_SAVE_EVERY", "150"))
+EVAL_CHECKPOINT_LADDER = os.environ.get("STAGE5_ARC_AGI_EVAL_CHECKPOINT_LADDER", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 LEARNING_RATE = float(os.environ.get("STAGE5_ARC_AGI_LR", "8e-6"))
 BETA = float(os.environ.get("STAGE5_ARC_AGI_BETA", "0.08"))
 DISTILL_ENABLED = os.environ.get("STAGE5_ARC_AGI_DISTILL", "0").strip().lower() in {"1", "true", "yes", "y"}
@@ -330,6 +336,62 @@ def eval_arc_agi(label: str, mode: str, tasks_path: Path, checkpoint: Path | Non
     return read_summary(summary_json)["summary"]
 
 
+def checkpoint_step(path: Path) -> int:
+    try:
+        return int(path.stem.rsplit("_", 1)[1])
+    except (IndexError, ValueError):
+        return -1
+
+
+def checkpoint_delta(candidate: dict[str, Any], reference: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "first_exact_delta": int(candidate.get("first_exact", 0)) - int(reference.get("first_exact", 0)),
+        "selected_exact_delta": int(candidate.get("selected_exact", 0)) - int(reference.get("selected_exact", 0)),
+        "best_of_k_exact_delta": int(candidate.get("best_of_k_exact", 0)) - int(reference.get("best_of_k_exact", 0)),
+        "valid_candidate_rate_delta": float(candidate.get("valid_candidate_rate", 0.0))
+        - float(reference.get("valid_candidate_rate", 0.0)),
+    }
+
+
+def eval_checkpoint_ladder(
+    *,
+    eval_path: Path,
+    start_summary: dict[str, Any],
+    base_summary: dict[str, Any],
+) -> list[dict[str, Any]]:
+    checkpoint_dir = RUN_DIR / "phase1_arc_agi"
+    rows: list[dict[str, Any]] = []
+    for checkpoint in sorted(checkpoint_dir.glob("phase1_step_*.pt"), key=checkpoint_step):
+        step = checkpoint_step(checkpoint)
+        if step < 0:
+            continue
+        summary = eval_arc_agi(f"phase1_arc_agi_step_{step}", "phase1", eval_path, checkpoint)
+        rows.append(
+            {
+                "step": step,
+                "checkpoint": path_for_cli(checkpoint),
+                "summary": summary,
+                "delta_vs_start": checkpoint_delta(summary, start_summary),
+                "delta_vs_base": checkpoint_delta(summary, base_summary),
+            }
+        )
+    return rows
+
+
+def best_ladder_row(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
+    if not rows:
+        return None
+    return max(
+        rows,
+        key=lambda row: (
+            int(row["summary"].get("best_of_k_exact", 0)),
+            int(row["summary"].get("selected_exact", 0)),
+            float(row["summary"].get("valid_candidate_rate", 0.0)),
+            int(row["step"]),
+        ),
+    )
+
+
 def train_phase1() -> Path:
     cfg = {
         "model_name": MODEL_NAME,
@@ -431,9 +493,11 @@ def main() -> int:
         "synthetic_seed": SYNTHETIC_SEED,
         "synthetic_modes": SYNTHETIC_MODES,
         "train_steps": TRAIN_STEPS,
+        "save_every": SAVE_EVERY,
         "learning_rate": LEARNING_RATE,
         "grid_format": GRID_FORMAT,
         "program_parse_mode": PROGRAM_PARSE_MODE,
+        "eval_checkpoint_ladder": EVAL_CHECKPOINT_LADDER,
         "distillation": {
             "enabled": DISTILL_ENABLED,
             "weight": DISTILL_WEIGHT,
@@ -454,6 +518,12 @@ def main() -> int:
     start_summary = eval_arc_agi("phase1_start", "phase1", eval_path, PHASE1_CKPT)
     tuned_ckpt = train_phase1()
     tuned_summary = eval_arc_agi("phase1_arc_agi_tuned", "phase1", eval_path, tuned_ckpt)
+    checkpoint_ladder = (
+        eval_checkpoint_ladder(eval_path=eval_path, start_summary=start_summary, base_summary=base_summary)
+        if EVAL_CHECKPOINT_LADDER
+        else []
+    )
+    best_checkpoint = best_ladder_row(checkpoint_ladder)
 
     summary = {
         "metadata": metadata,
@@ -461,6 +531,8 @@ def main() -> int:
         "phase1_start": start_summary,
         "phase1_arc_agi_tuned": tuned_summary,
         "tuned_checkpoint": path_for_cli(tuned_ckpt),
+        "checkpoint_ladder": checkpoint_ladder,
+        "best_checkpoint": best_checkpoint,
     }
     (RUN_DIR / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     lines = [
@@ -471,6 +543,8 @@ def main() -> int:
         f"- Eval split: `{eval_path}`",
         f"- Train task limit: `{TRAIN_TASK_LIMIT}`",
         f"- Eval task limit: `{EVAL_TASK_LIMIT}`",
+        f"- Save every: `{SAVE_EVERY}`",
+        f"- Eval checkpoint ladder: `{EVAL_CHECKPOINT_LADDER}`",
         f"- Geometry augmentations: `{GEOMETRY_AUGS}`",
         f"- Trace mode: `{TRACE_MODE}`",
         f"- Trace filter: `{TRACE_FILTER}`",
@@ -487,8 +561,18 @@ def main() -> int:
         f"- Phase1 start: `{start_summary}`",
         f"- Phase1 ARC-AGI tuned: `{tuned_summary}`",
         "",
-        "This is still a smoke run. Use it to validate whether ARC-format SFT improves valid-grid and exact-grid rates before scaling.",
     ]
+    if checkpoint_ladder:
+        lines.extend(["## Checkpoint Ladder", ""])
+        for row in checkpoint_ladder:
+            lines.append(
+                f"- Step `{row['step']}`: summary `{row['summary']}`, "
+                f"delta_vs_start `{row['delta_vs_start']}`, delta_vs_base `{row['delta_vs_base']}`"
+            )
+        lines.extend(["", f"Best checkpoint: `{best_checkpoint}`", ""])
+    lines.append(
+        "This is still a smoke run. Use it to validate whether ARC-format SFT improves valid-grid and exact-grid rates before scaling."
+    )
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))
     backup_to_drive()
