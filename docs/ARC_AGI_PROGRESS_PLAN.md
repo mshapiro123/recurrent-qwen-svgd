@@ -97,9 +97,12 @@ Initial harness files:
   `STAGE5_ARC_AGI_SYNTHETIC_TASKS`, `STAGE5_ARC_AGI_SYNTHETIC_SEED`, and
   `STAGE5_ARC_AGI_SYNTHETIC_MODES`.
 - `colab/run_stage5_arc_agi_trace_sft_gate.py`: matched two-arm SFT runner for
-  grid-only supervision versus symbolic-trace supervision.
+  grid-only supervision versus symbolic-program trace supervision. It reports
+  the best checkpoint in each child SFT ladder when available, not only the
+  final checkpoint.
 - `colab/run_stage5_arc_agi_distill_sft_gate.py`: matched two-arm SFT runner
-  for base-logit distillation off versus on.
+  for base-logit distillation off versus on. It also compares best-in-ladder
+  checkpoints when child SFT runs enable checkpoint-ladder evaluation.
 - `colab/run_stage5_arc_agi_autopilot.py`: overnight runner that executes the
   candidate gate, conditionally runs trace-SFT, and conditionally runs the
   distillation gate using configurable thresholds.

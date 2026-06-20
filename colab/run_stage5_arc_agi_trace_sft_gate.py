@@ -35,7 +35,7 @@ PUSH_RESULTS = os.environ.get("STAGE5_ARC_AGI_TRACE_SFT_GATE_PUSH", "1").strip()
     "yes",
     "y",
 }
-DEFAULT_ARMS = "grid_only,symbolic_trace_covered"
+DEFAULT_ARMS = "grid_only,symbolic_program_trace_covered"
 
 
 def run(cmd: list[str], *, env: dict[str, str] | None = None, check: bool = True, log_name: str | None = None):
@@ -77,6 +77,8 @@ def available_arms() -> dict[str, tuple[str, str]]:
         "grid_only": ("none", "all"),
         "symbolic_trace_all": ("symbolic", "all"),
         "symbolic_trace_covered": ("symbolic", "covered"),
+        "symbolic_program_trace_all": ("symbolic_program", "all"),
+        "symbolic_program_trace_covered": ("symbolic_program", "covered"),
     }
 
 
@@ -103,6 +105,8 @@ def run_child(label: str, trace_mode: str, trace_filter: str) -> dict[str, Any]:
 def compact(summary: dict[str, Any]) -> dict[str, Any]:
     tuned = summary["phase1_arc_agi_tuned"]
     start = summary["phase1_start"]
+    best_checkpoint = summary.get("best_checkpoint") or {}
+    best_summary = best_checkpoint.get("summary") or tuned
     return {
         "base_selected": summary["base"]["selected_exact"],
         "base_best": summary["base"]["best_of_k_exact"],
@@ -111,9 +115,13 @@ def compact(summary: dict[str, Any]) -> dict[str, Any]:
         "tuned_selected": tuned["selected_exact"],
         "tuned_best": tuned["best_of_k_exact"],
         "tuned_valid_rate": tuned["valid_candidate_rate"],
+        "best_step": best_checkpoint.get("step"),
+        "best_selected": best_summary["selected_exact"],
+        "best_best": best_summary["best_of_k_exact"],
+        "best_valid_rate": best_summary["valid_candidate_rate"],
         "examples": tuned["examples_with_targets"],
-        "tasks_solved_best": tuned["tasks_solved_best_of_k"],
-        "tasks": tuned["tasks_with_targets"],
+        "tasks_solved_best": best_summary["tasks_solved_best_of_k"],
+        "tasks": best_summary["tasks_with_targets"],
     }
 
 
@@ -168,14 +176,17 @@ def main() -> int:
     lines = [
         f"# Stage 5 ARC-AGI Trace SFT Gate - {RUN_ID}",
         "",
-        "| Arm | Tuned selected | Tuned best | Tasks best | Valid rate |",
-        "|---|---:|---:|---:|---:|",
+        "| Arm | Final selected | Final best | Best step | Best selected | Best best | Tasks best | Best valid rate |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for label, row in rows.items():
+        best_step = row["best_step"] if row["best_step"] is not None else "final"
         lines.append(
             f"| `{label}` | {row['tuned_selected']}/{row['examples']} | "
-            f"{row['tuned_best']}/{row['examples']} | "
-            f"{row['tasks_solved_best']}/{row['tasks']} | {row['tuned_valid_rate']:.4f} |"
+            f"{row['tuned_best']}/{row['examples']} | {best_step} | "
+            f"{row['best_selected']}/{row['examples']} | "
+            f"{row['best_best']}/{row['examples']} | "
+            f"{row['tasks_solved_best']}/{row['tasks']} | {row['best_valid_rate']:.4f} |"
         )
     lines += [
         "",
