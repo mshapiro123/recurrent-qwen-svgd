@@ -196,6 +196,126 @@ def test_partial_recovery_recommends_scaled_curriculum(tmp_path) -> None:
     assert "STAGE5_ARC_AGI_TRAIN_TASK_LIMIT=160" in actions[0]["command"]
 
 
+def test_recovery_analysis_focuses_scaled_curriculum_on_worst_families(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    payload = {
+        "autopilot_compact": {
+            "candidate_distillation_passed": True,
+            "final_checkpoint": "outputs/stage5/run/final.pt",
+            "particle_passed": False,
+        },
+        "recovered_benchmark": {
+            "base": {"summary": _summary(8, 9)},
+            "phase1_start": {"summary": _summary(2, 2)},
+            "recovered": {"summary": _summary(4, 5)},
+            "deltas": {
+                "recovered_vs_base": {
+                    "selected_exact_delta": -4,
+                    "best_of_k_exact_delta": -4,
+                },
+                "recovered_vs_start": {
+                    "selected_exact_delta": 2,
+                    "best_of_k_exact_delta": 3,
+                },
+            },
+            "recovery_analysis": {
+                "recommendations": [{"area": "family_targeted_sft", "reason": "focus"}],
+                "family_gaps": {
+                    "recovered_vs_base": [
+                        {"family": "arc", "selected_delta": -10, "best_of_k_delta": -10, "paired_examples": 20},
+                        {"family": "move_recolor", "selected_delta": -3, "best_of_k_delta": -2, "paired_examples": 6},
+                        {"family": "frame_object", "selected_delta": -2, "best_of_k_delta": -2, "paired_examples": 4},
+                    ]
+                },
+            },
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+    scale = next(action for action in actions if action["name"] == "Scale deterministic curriculum")
+
+    assert "STAGE5_ARC_AGI_CURRICULUM_STAGES=focus:move_recolor,frame_object" in scale["command"]
+    assert "move_recolor, frame_object" in scale["reason"]
+
+
+def test_recovery_analysis_selector_miss_recommends_no_gpu_rescore(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    payload = {
+        "autopilot_compact": {
+            "candidate_distillation_passed": True,
+            "final_checkpoint": "outputs/stage5/run/final.pt",
+            "particle_passed": False,
+        },
+        "recovered_benchmark": {
+            "run_id": "bench_run",
+            "base": {"summary": _summary(8, 9)},
+            "phase1_start": {"summary": _summary(2, 2)},
+            "recovered": {"summary": _summary(4, 5)},
+            "deltas": {
+                "recovered_vs_base": {
+                    "selected_exact_delta": -4,
+                    "best_of_k_exact_delta": -4,
+                },
+                "recovered_vs_start": {
+                    "selected_exact_delta": 2,
+                    "best_of_k_exact_delta": 3,
+                },
+            },
+            "recovery_analysis": {
+                "recommendations": [{"area": "selector_or_tta", "reason": "selector misses found"}],
+                "family_gaps": {"recovered_vs_base": []},
+            },
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+    rescore = next(action for action in actions if action["name"] == "Rescore recovered candidates with selector variants")
+
+    assert "eval/rescore_arc_agi_candidates.py" in rescore["command"]
+    assert "outputs/stage5/bench_run/recovered_candidates.jsonl" in rescore["command"]
+    assert "--selection_strategy self_consistency" in rescore["command"]
+    assert "--selection_strategy symbolic_priority" in rescore["command"]
+
+
+def test_recovery_analysis_format_failures_recommend_format_branch(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    payload = {
+        "autopilot_compact": {
+            "candidate_distillation_passed": True,
+            "final_checkpoint": "outputs/stage5/run/final.pt",
+            "particle_passed": False,
+        },
+        "recovered_benchmark": {
+            "base": {"summary": _summary(8, 9)},
+            "phase1_start": {"summary": _summary(4, 5)},
+            "recovered": {"summary": _summary(3, 4)},
+            "deltas": {
+                "recovered_vs_base": {
+                    "selected_exact_delta": -5,
+                    "best_of_k_exact_delta": -5,
+                },
+                "recovered_vs_start": {
+                    "selected_exact_delta": -1,
+                    "best_of_k_exact_delta": -1,
+                },
+            },
+            "recovery_analysis": {
+                "recommendations": [{"area": "format_parse", "reason": "no valid grids"}],
+                "family_gaps": {"recovered_vs_base": []},
+            },
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+    format_action = next(action for action in actions if action["name"] == "Run output-format recovery curriculum")
+
+    assert "format:constant_output,geometry_color,crop_non_background" in format_action["command"]
+    assert "no valid grids" in format_action["reason"]
+
+
 def test_no_recovery_recommends_training_target_diagnostics(tmp_path) -> None:
     source = tmp_path / "summary.json"
     payload = {
