@@ -56,6 +56,7 @@ class Variant:
     mode: str
     include_symbolic: bool
     symbolic_position: str = "after_model"
+    symbolic_candidate_format: str = "grid"
     checkpoint: Path | None = None
 
 
@@ -164,10 +165,13 @@ def requested_variants() -> list[str] | None:
 def build_variants() -> list[Variant]:
     all_variants = [
         Variant("symbolic_only", "base", True, "only"),
+        Variant("symbolic_program_only", "base", True, "only", "program"),
         Variant("base_model_only", "base", False),
         Variant("base_hybrid_symbolic_first", "base", True, "before_model"),
+        Variant("base_hybrid_program_first", "base", True, "before_model", "program"),
         Variant("phase1_model_only", "phase1", False, checkpoint=PHASE1_CKPT),
         Variant("phase1_hybrid_symbolic_first", "phase1", True, "before_model", checkpoint=PHASE1_CKPT),
+        Variant("phase1_hybrid_program_first", "phase1", True, "before_model", "program", PHASE1_CKPT),
     ]
     names = requested_variants()
     if names is None:
@@ -218,7 +222,13 @@ def eval_variant(variant: Variant, tasks_path: Path) -> dict[str, Any]:
             "1",
         ]
     if variant.include_symbolic:
-        cmd += ["--include_symbolic_candidates", "--symbolic_position", variant.symbolic_position]
+        cmd += [
+            "--include_symbolic_candidates",
+            "--symbolic_position",
+            variant.symbolic_position,
+            "--symbolic_candidate_format",
+            variant.symbolic_candidate_format,
+        ]
     run(cmd, log_name=f"{variant.name}_eval.log")
     payload = read_summary(summary_json)
     return {
@@ -226,8 +236,11 @@ def eval_variant(variant: Variant, tasks_path: Path) -> dict[str, Any]:
         "mode": variant.mode,
         "include_symbolic_candidates": variant.include_symbolic,
         "symbolic_position": variant.symbolic_position if variant.include_symbolic else None,
+        "symbolic_candidate_format": variant.symbolic_candidate_format if variant.include_symbolic else None,
         "summary": payload["summary"],
         "candidate_source_summary": payload.get("candidate_source_summary", {}),
+        "parse_method_summary": payload.get("parse_method_summary", {}),
+        "program_verifier_summary": payload.get("program_verifier_summary", {}),
     }
 
 
@@ -343,7 +356,7 @@ def main() -> int:
     if any(arg in {"-h", "--help"} for arg in sys.argv[1:]):
         print(
             "Run from Colab. Optional STAGE5_ARC_AGI_GATE_VARIANTS can restrict "
-            "variants, e.g. symbolic_only,base_model_only,phase1_model_only."
+            "variants, e.g. symbolic_program_only,base_model_only,phase1_hybrid_program_first."
         )
         return 0
 

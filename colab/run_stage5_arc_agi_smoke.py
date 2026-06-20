@@ -44,6 +44,7 @@ INCLUDE_SYMBOLIC = os.environ.get("STAGE5_ARC_AGI_INCLUDE_SYMBOLIC", "0").strip(
     "y",
 }
 SYMBOLIC_POSITION = os.environ.get("STAGE5_ARC_AGI_SYMBOLIC_POSITION", "after_model")
+SYMBOLIC_CANDIDATE_FORMAT = os.environ.get("STAGE5_ARC_AGI_SYMBOLIC_CANDIDATE_FORMAT", "grid")
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
 DEVICE = os.environ.get("DEVICE", "cuda")
@@ -140,7 +141,13 @@ def read_summary(path: Path) -> dict[str, Any]:
 
 def add_symbolic_args(cmd: list[str]) -> list[str]:
     if INCLUDE_SYMBOLIC:
-        cmd += ["--include_symbolic_candidates", "--symbolic_position", SYMBOLIC_POSITION]
+        cmd += [
+            "--include_symbolic_candidates",
+            "--symbolic_position",
+            SYMBOLIC_POSITION,
+            "--symbolic_candidate_format",
+            SYMBOLIC_CANDIDATE_FORMAT,
+        ]
     return cmd
 
 
@@ -187,6 +194,7 @@ def main() -> int:
         "grid_format": GRID_FORMAT,
         "include_symbolic_candidates": INCLUDE_SYMBOLIC,
         "symbolic_position": SYMBOLIC_POSITION if INCLUDE_SYMBOLIC else None,
+        "symbolic_candidate_format": SYMBOLIC_CANDIDATE_FORMAT if INCLUDE_SYMBOLIC else None,
         "dtype": DTYPE,
         "adapter_dtype": ADAPTER_DTYPE,
     }
@@ -279,6 +287,7 @@ def main() -> int:
         f"- Grid format: `{GRID_FORMAT}`",
         f"- Symbolic candidates: `{INCLUDE_SYMBOLIC}`",
         f"- Symbolic position: `{SYMBOLIC_POSITION if INCLUDE_SYMBOLIC else 'n/a'}`",
+        f"- Symbolic candidate format: `{SYMBOLIC_CANDIDATE_FORMAT if INCLUDE_SYMBOLIC else 'n/a'}`",
         "",
         "## Exact-Grid Results",
         f"- Base: `{summary['base']}`",
