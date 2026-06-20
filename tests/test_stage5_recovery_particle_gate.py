@@ -5,6 +5,7 @@ from colab.run_stage5_arc_agi_recovery_particle_gate import (
     decide_particle_value,
     decide_recovery,
     parse_particle_variants,
+    select_recovered_checkpoint,
     summarize_holdout_recovery,
 )
 
@@ -56,6 +57,40 @@ def test_decide_recovery_rejects_selected_regression_even_if_best_matches() -> N
     decision, evidence = decide_recovery(payload)
     assert decision is False
     assert evidence["phase1_tuned_vs_start"]["selected_delta"] == -1
+
+
+def test_select_recovered_checkpoint_prefers_best_checkpoint() -> None:
+    payload = {
+        "tuned_checkpoint": "final.pt",
+        "phase1_arc_agi_tuned": _summary(1, 1),
+        "best_checkpoint": {
+            "step": 150,
+            "checkpoint": "best.pt",
+            "summary": _summary(3, 4),
+        },
+    }
+    recovered = select_recovered_checkpoint(payload)
+    assert recovered["source"] == "best_checkpoint"
+    assert recovered["checkpoint"] == "best.pt"
+    assert recovered["summary"]["best_of_k_exact"] == 4
+
+
+def test_decide_recovery_uses_best_checkpoint_when_available() -> None:
+    payload = {
+        "base": _summary(4, 4),
+        "phase1_start": _summary(1, 1),
+        "phase1_arc_agi_tuned": _summary(0, 0),
+        "tuned_checkpoint": "final.pt",
+        "best_checkpoint": {
+            "step": 150,
+            "checkpoint": "best.pt",
+            "summary": _summary(2, 2),
+        },
+    }
+    decision, evidence = decide_recovery(payload)
+    assert decision is True
+    assert evidence["phase1_recovered"]["checkpoint"] == "best.pt"
+    assert evidence["phase1_tuned_vs_start"]["selected_delta"] == 1
 
 
 def test_decide_particle_value_requires_non_negative_over_tuned() -> None:

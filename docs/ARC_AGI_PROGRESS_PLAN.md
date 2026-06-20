@@ -109,8 +109,10 @@ Initial harness files:
 - `colab/run_stage5_arc_agi_recovery_particle_gate.py`: controlled runner that
   first executes synthetic symbolic ARC SFT for deterministic recurrent
   recovery, then evaluates low-noise K-particle/SVGD variants on the tuned
-  checkpoint. Use this to separate "more targeted training helped the recurrent
-  model" from "particles add value over the recovered recurrent model."
+  checkpoint. When checkpoint-ladder evaluation is enabled, it selects the best
+  recovered checkpoint before running the particle arms. Use this to separate
+  "more targeted training helped the recurrent model" from "particles add value
+  over the recovered recurrent model."
 - Grid output formats: JSON, compact row strings, and tagged row strings are
   supported. Colab ARC-AGI runners default to compact row strings because they
   are shorter and easier for a 0.5B model to emit reliably.
@@ -207,6 +209,10 @@ It also generates a disjoint synthetic holdout controlled by
 `STAGE5_ARC_AGI_SYNTHETIC_EVAL_TASKS`, `STAGE5_ARC_AGI_SYNTHETIC_EVAL_SEED`,
 and `STAGE5_ARC_AGI_SYNTHETIC_EVAL_PARSE_MODES`. Use that section to separate
 operation-family generalization from public ARC evaluation noise.
+Set `STAGE5_ARC_AGI_EVAL_CHECKPOINT_LADDER=1` and a non-final
+`STAGE5_ARC_AGI_SAVE_EVERY` when using this combined runner; particle variants
+will then be evaluated against the best recovered checkpoint rather than the
+last training step.
 
 Run `colab/run_stage5_arc_agi_trace_sft_gate.py` to execute both controls under
 the same settings and write one comparison summary. By default it compares

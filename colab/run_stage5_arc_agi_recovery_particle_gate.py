@@ -49,6 +49,13 @@ SYNTHETIC_EVAL_PARSE_MODES = os.environ.get("STAGE5_ARC_AGI_SYNTHETIC_EVAL_PARSE
 TRACE_MODE = os.environ.get("STAGE5_ARC_AGI_RECOVERY_TRACE_MODE", "symbolic_program")
 TRACE_FILTER = os.environ.get("STAGE5_ARC_AGI_RECOVERY_TRACE_FILTER", "covered")
 TRAIN_STEPS = int(os.environ.get("STAGE5_ARC_AGI_TRAIN_STEPS", "300"))
+SAVE_EVERY = int(os.environ.get("STAGE5_ARC_AGI_SAVE_EVERY", str(max(TRAIN_STEPS, 1))))
+EVAL_CHECKPOINT_LADDER = os.environ.get("STAGE5_ARC_AGI_EVAL_CHECKPOINT_LADDER", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 TRAIN_TASK_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_TRAIN_TASK_LIMIT", "100"))
 EVAL_TASK_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_EVAL_TASK_LIMIT", "20"))
 MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
@@ -167,8 +174,28 @@ def synthetic_eval_parse_modes() -> list[str]:
     return modes or [PROGRAM_PARSE_MODE]
 
 
+def select_recovered_checkpoint(sft_summary: dict[str, Any]) -> dict[str, Any]:
+    """Return the checkpoint/summary that should represent recovered Phase1."""
+
+    best = sft_summary.get("best_checkpoint") or {}
+    if best.get("checkpoint") and best.get("summary"):
+        return {
+            "source": "best_checkpoint",
+            "checkpoint": best["checkpoint"],
+            "summary": best["summary"],
+            "step": best.get("step"),
+        }
+    return {
+        "source": "final_checkpoint",
+        "checkpoint": sft_summary.get("tuned_checkpoint"),
+        "summary": sft_summary["phase1_arc_agi_tuned"],
+        "step": None,
+    }
+
+
 def decide_recovery(sft_summary: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
-    tuned = sft_summary["phase1_arc_agi_tuned"]
+    recovered = select_recovered_checkpoint(sft_summary)
+    tuned = recovered["summary"]
     start = sft_summary["phase1_start"]
     base = sft_summary["base"]
     tuned_vs_start = compare_summaries(tuned, start)
@@ -179,6 +206,7 @@ def decide_recovery(sft_summary: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
         "phase1_tuned_vs_base": tuned_vs_base,
         "phase1_start": start,
         "phase1_tuned": tuned,
+        "phase1_recovered": recovered,
         "base": base,
         "recovery_non_negative": decision,
     }
@@ -245,7 +273,8 @@ def run_synthetic_sft() -> dict[str, Any]:
             "STAGE5_ARC_AGI_SYNTHETIC_SEED": str(SYNTHETIC_SEED),
             "STAGE5_ARC_AGI_SYNTHETIC_MODES": SYNTHETIC_MODES,
             "STAGE5_ARC_AGI_TRAIN_STEPS": str(TRAIN_STEPS),
-            "STAGE5_ARC_AGI_SAVE_EVERY": str(max(TRAIN_STEPS, 1)),
+            "STAGE5_ARC_AGI_SAVE_EVERY": str(SAVE_EVERY),
+            "STAGE5_ARC_AGI_EVAL_CHECKPOINT_LADDER": "1" if EVAL_CHECKPOINT_LADDER else "0",
             "STAGE5_ARC_AGI_TRAIN_TASK_LIMIT": str(TRAIN_TASK_LIMIT),
             "STAGE5_ARC_AGI_EVAL_TASK_LIMIT": str(EVAL_TASK_LIMIT),
             "STAGE5_ARC_AGI_MAX_NEW_TOKENS": str(MAX_NEW_TOKENS),
@@ -500,13 +529,14 @@ def write_report(payload: dict[str, Any]) -> None:
         "## Decisions",
         "",
         f"- Deterministic recurrent recovery non-negative: `{recovery['passed']}`",
-        f"- Particle/SVGD non-negative over tuned recurrent: `{particle['passed']}`",
+        f"- Particle/SVGD non-negative over recovered recurrent: `{particle['passed']}`",
         f"- Best non-negative particle variant: `{particle['evidence'].get('best_non_negative_variant')}`",
         "",
         "## Recovery Evidence",
         "",
-        f"- Tuned vs start: `{recovery['evidence']['phase1_tuned_vs_start']}`",
-        f"- Tuned vs base: `{recovery['evidence']['phase1_tuned_vs_base']}`",
+        f"- Recovered checkpoint: `{recovery['evidence']['phase1_recovered']}`",
+        f"- Recovered vs start: `{recovery['evidence']['phase1_tuned_vs_start']}`",
+        f"- Recovered vs base: `{recovery['evidence']['phase1_tuned_vs_base']}`",
         "",
     ]
     holdout = recovery["evidence"].get("synthetic_holdout", {})
@@ -517,8 +547,8 @@ def write_report(payload: dict[str, Any]) -> None:
                 [
                     f"### Parse mode `{parse_mode}`",
                     "",
-                    f"- Tuned vs start: `{row['phase1_tuned_vs_start']}`",
-                    f"- Tuned vs base: `{row['phase1_tuned_vs_base']}`",
+                    f"- Recovered vs start: `{row['phase1_tuned_vs_start']}`",
+                    f"- Recovered vs base: `{row['phase1_tuned_vs_base']}`",
                     f"- Parse methods: `{row['parse_methods']}`",
                     "",
                 ]
@@ -529,7 +559,7 @@ def write_report(payload: dict[str, Any]) -> None:
     lines.extend(
         [
             "",
-            "Interpretation: particle variants only count as promising if they are measured against the tuned recurrent baseline, not against the pre-SFT recurrent checkpoint.",
+            "Interpretation: particle variants only count as promising if they are measured against the selected recovered recurrent checkpoint, not against the pre-SFT recurrent checkpoint or an arbitrary final SFT endpoint.",
         ]
     )
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -544,10 +574,13 @@ def main() -> int:
     particle_variants = parse_particle_variants(PARTICLE_VARIANTS)
     sft_summary = run_synthetic_sft()
     recovery_passed, recovery_evidence = decide_recovery(sft_summary)
+    recovered = select_recovered_checkpoint(sft_summary)
 
     metadata = sft_summary["metadata"]
     tasks_path = resolve_path(metadata["eval_path"])
-    tuned_checkpoint = resolve_path(sft_summary["tuned_checkpoint"])
+    if not recovered.get("checkpoint"):
+        raise FileNotFoundError("Missing recovered checkpoint path in SFT summary.")
+    tuned_checkpoint = resolve_path(recovered["checkpoint"])
     if not tasks_path.exists():
         raise FileNotFoundError(tasks_path)
     if not tuned_checkpoint.exists():
@@ -566,7 +599,7 @@ def main() -> int:
     }
     particle_passed, particle_evidence = decide_particle_value(
         particle_summaries,
-        sft_summary["phase1_arc_agi_tuned"],
+        recovered["summary"],
     )
 
     payload = {
@@ -583,6 +616,8 @@ def main() -> int:
             "trace_mode": TRACE_MODE,
             "trace_filter": TRACE_FILTER,
             "train_steps": TRAIN_STEPS,
+            "save_every": SAVE_EVERY,
+            "eval_checkpoint_ladder": EVAL_CHECKPOINT_LADDER,
             "train_task_limit": TRAIN_TASK_LIMIT,
             "eval_task_limit": EVAL_TASK_LIMIT,
             "particle_trajectories": PARTICLE_TRAJECTORIES,
@@ -591,6 +626,7 @@ def main() -> int:
             "program_parse_mode": PROGRAM_PARSE_MODE,
             "particle_variants": [variant.__dict__ for variant in particle_variants],
         },
+        "recovered_checkpoint": recovered,
         "sft_summary": sft_summary,
         "synthetic_holdout": synthetic_holdout,
         "recovery_decision": {"passed": recovery_passed, "evidence": recovery_evidence},
