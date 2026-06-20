@@ -210,9 +210,14 @@ def score_completion(
             )
     logits = output.logits
     trajectory_logits = getattr(output, "trajectory_logits", None)
+    if args.num_trajectories > 1 and trajectory_logits is None:
+        raise RuntimeError("Expected trajectory_logits when num_trajectories > 1")
     if trajectory_logits is not None:
         logits = trajectory_logits.reshape(-1, *trajectory_logits.shape[2:])
-    return sequence_logprobs(logits, labels, normalize=args.normalize_option_score).cpu()
+    scores = sequence_logprobs(logits, labels, normalize=args.normalize_option_score).cpu()
+    if args.num_trajectories > 1 and scores.numel() != args.num_trajectories:
+        raise RuntimeError(f"Expected {args.num_trajectories} trajectory scores, got {scores.numel()}")
+    return scores
 
 
 def aggregate(scores: torch.Tensor, method: str) -> float:
