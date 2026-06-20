@@ -35,6 +35,7 @@ CURRICULUM_SUMMARY = os.environ.get("STAGE5_ARC_AGI_CURRICULUM_SUMMARY", "")
 TASKS_PATH_OVERRIDE = os.environ.get("STAGE5_ARC_AGI_POST_CURRICULUM_TASKS_PATH", "")
 EVAL_TASK_LIMIT_OVERRIDE = os.environ.get("STAGE5_ARC_AGI_EVAL_TASK_LIMIT", "")
 PROGRAM_PARSE_MODE_OVERRIDE = os.environ.get("STAGE5_ARC_AGI_PROGRAM_PARSE_MODE", "")
+SELECTION_STRATEGY_OVERRIDE = os.environ.get("STAGE5_ARC_AGI_SELECTION_STRATEGY", "")
 GRID_FORMAT_OVERRIDE = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "")
 MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
 DTYPE = os.environ.get("DTYPE", "bfloat16")
@@ -149,6 +150,7 @@ def curriculum_context(curriculum_summary_path: str | Path) -> dict[str, Any]:
         raise FileNotFoundError(tasks_path)
     eval_limit = int(EVAL_TASK_LIMIT_OVERRIDE or metadata.get("eval_task_limit", 20))
     program_parse_mode = PROGRAM_PARSE_MODE_OVERRIDE or metadata.get("program_parse_mode", "prefer")
+    selection_strategy = SELECTION_STRATEGY_OVERRIDE or metadata.get("selection_strategy", "heuristic")
     grid_format = GRID_FORMAT_OVERRIDE or metadata.get("grid_format", "compact")
     return {
         "curriculum_summary_path": path_for_cli(summary_path),
@@ -161,6 +163,7 @@ def curriculum_context(curriculum_summary_path: str | Path) -> dict[str, Any]:
         "tasks_path": tasks_path,
         "eval_limit": eval_limit,
         "program_parse_mode": program_parse_mode,
+        "selection_strategy": selection_strategy,
         "grid_format": grid_format,
     }
 
@@ -225,6 +228,8 @@ def eval_particle_variant(
             str(context["grid_format"]),
             "--program_parse_mode",
             str(context["program_parse_mode"]),
+            "--selection_strategy",
+            str(context["selection_strategy"]),
             "--dtype",
             DTYPE,
             "--adapter_dtype",
@@ -303,6 +308,7 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Tasks path: `{payload['context']['tasks_path']}`",
         f"- Eval limit: `{payload['context']['eval_limit']}`",
         f"- Program parse mode: `{payload['context']['program_parse_mode']}`",
+        f"- Selection strategy: `{payload['context']['selection_strategy']}`",
         f"- Particle decision passed: `{decision['passed']}`",
         f"- Best replicated variant: `{decision['evidence'].get('best_replicated_variant')}`",
         "",
@@ -353,6 +359,7 @@ def main() -> int:
             "tasks_path": str(context["tasks_path"]),
             "eval_limit": context["eval_limit"],
             "program_parse_mode": context["program_parse_mode"],
+            "selection_strategy": context["selection_strategy"],
             "grid_format": context["grid_format"],
             "final_stage": context["final_stage"],
         },

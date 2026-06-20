@@ -32,6 +32,7 @@ def test_curriculum_context_reads_final_checkpoint_and_eval_path(tmp_path) -> No
             "eval_path": str(tasks_path),
             "eval_task_limit": 12,
             "program_parse_mode": "prefer",
+            "selection_strategy": "self_consistency",
             "grid_format": "compact",
         }
     }
@@ -62,5 +63,6 @@ def test_curriculum_context_reads_final_checkpoint_and_eval_path(tmp_path) -> No
     assert context["tasks_path"] == tasks_path
     assert context["eval_limit"] == 12
     assert context["program_parse_mode"] == "prefer"
+    assert context["selection_strategy"] == "self_consistency"
     assert context["reference_summary"]["best_of_k_exact"] == 3
     assert context["reference_task_family_summary"]["move_recolor"]["selected_exact"] == 2

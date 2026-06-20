@@ -37,6 +37,7 @@ ARC_SPLIT = os.environ.get("STAGE5_ARC_AGI_SPLIT", "evaluation")
 LIMIT = int(os.environ.get("STAGE5_ARC_AGI_LIMIT", "5"))
 MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
 GRID_FORMAT = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
+SELECTION_STRATEGY = os.environ.get("STAGE5_ARC_AGI_SELECTION_STRATEGY", "heuristic")
 INCLUDE_SYMBOLIC = os.environ.get("STAGE5_ARC_AGI_INCLUDE_SYMBOLIC", "0").strip().lower() in {
     "1",
     "true",
@@ -192,6 +193,7 @@ def main() -> int:
         "tasks_path": str(tasks_path),
         "phase1_checkpoint": str(PHASE1_CKPT.relative_to(ROOT) if PHASE1_CKPT.is_relative_to(ROOT) else PHASE1_CKPT),
         "grid_format": GRID_FORMAT,
+        "selection_strategy": SELECTION_STRATEGY,
         "include_symbolic_candidates": INCLUDE_SYMBOLIC,
         "symbolic_position": SYMBOLIC_POSITION if INCLUDE_SYMBOLIC else None,
         "symbolic_candidate_format": SYMBOLIC_CANDIDATE_FORMAT if INCLUDE_SYMBOLIC else None,
@@ -218,6 +220,8 @@ def main() -> int:
             str(MAX_NEW_TOKENS),
             "--grid_format",
             GRID_FORMAT,
+            "--selection_strategy",
+            SELECTION_STRATEGY,
             "--dtype",
             DTYPE,
             "--adapter_dtype",
@@ -255,6 +259,8 @@ def main() -> int:
             str(MAX_NEW_TOKENS),
             "--grid_format",
             GRID_FORMAT,
+            "--selection_strategy",
+            SELECTION_STRATEGY,
             "--dtype",
             DTYPE,
             "--adapter_dtype",
@@ -285,6 +291,7 @@ def main() -> int:
         f"- Limit: `{LIMIT}`",
         f"- Tasks path: `{tasks_path}`",
         f"- Grid format: `{GRID_FORMAT}`",
+        f"- Selection strategy: `{SELECTION_STRATEGY}`",
         f"- Symbolic candidates: `{INCLUDE_SYMBOLIC}`",
         f"- Symbolic position: `{SYMBOLIC_POSITION if INCLUDE_SYMBOLIC else 'n/a'}`",
         f"- Symbolic candidate format: `{SYMBOLIC_CANDIDATE_FORMAT if INCLUDE_SYMBOLIC else 'n/a'}`",

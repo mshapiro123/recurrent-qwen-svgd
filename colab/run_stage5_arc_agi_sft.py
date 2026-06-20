@@ -69,6 +69,7 @@ DISTILL_ON = os.environ.get("STAGE5_ARC_AGI_DISTILL_ON", "response")
 MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
 GRID_FORMAT = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
 PROGRAM_PARSE_MODE = os.environ.get("STAGE5_ARC_AGI_PROGRAM_PARSE_MODE", "fallback")
+SELECTION_STRATEGY = os.environ.get("STAGE5_ARC_AGI_SELECTION_STRATEGY", "heuristic")
 PROGRAM_ONLY_EVAL = os.environ.get("STAGE5_ARC_AGI_PROGRAM_ONLY_EVAL", "0").strip().lower() in {
     "1",
     "true",
@@ -338,6 +339,8 @@ def eval_arc_agi_payload(
         GRID_FORMAT,
         "--program_parse_mode",
         parse_mode,
+        "--selection_strategy",
+        SELECTION_STRATEGY,
         "--dtype",
         DTYPE,
         "--adapter_dtype",
@@ -608,6 +611,7 @@ def main() -> int:
         "learning_rate": LEARNING_RATE,
         "grid_format": GRID_FORMAT,
         "program_parse_mode": PROGRAM_PARSE_MODE,
+        "selection_strategy": SELECTION_STRATEGY,
         "program_only_eval": PROGRAM_ONLY_EVAL,
         "program_only_checkpoint_ladder": PROGRAM_ONLY_CHECKPOINT_LADDER,
         "eval_checkpoint_ladder": EVAL_CHECKPOINT_LADDER,
@@ -685,6 +689,7 @@ def main() -> int:
         f"- Tuned checkpoint: `{path_for_cli(tuned_ckpt)}`",
         f"- Grid format: `{GRID_FORMAT}`",
         f"- Program parse mode: `{PROGRAM_PARSE_MODE}`",
+        f"- Selection strategy: `{SELECTION_STRATEGY}`",
         f"- Program-only eval: `{PROGRAM_ONLY_EVAL}`",
         "",
         "## Exact-Grid Results",

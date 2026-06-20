@@ -44,6 +44,7 @@ ARC_SPLIT = os.environ.get("STAGE5_ARC_AGI_SPLIT", "evaluation")
 LIMIT = int(os.environ.get("STAGE5_ARC_AGI_LIMIT", "20"))
 MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
 GRID_FORMAT = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
+SELECTION_STRATEGY = os.environ.get("STAGE5_ARC_AGI_SELECTION_STRATEGY", "heuristic")
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
 DEVICE = os.environ.get("DEVICE", "cuda")
@@ -198,6 +199,8 @@ def eval_variant(variant: Variant, tasks_path: Path) -> dict[str, Any]:
         str(MAX_NEW_TOKENS),
         "--grid_format",
         GRID_FORMAT,
+        "--selection_strategy",
+        SELECTION_STRATEGY,
         "--dtype",
         DTYPE,
         "--adapter_dtype",
@@ -290,6 +293,7 @@ def write_comparison(results: list[dict[str, Any]], metadata: dict[str, Any], co
         f"- Split: `{ARC_SPLIT}`",
         f"- Limit: `{LIMIT}`",
         f"- Grid format: `{GRID_FORMAT}`",
+        f"- Selection strategy: `{SELECTION_STRATEGY}`",
         f"- Phase1 checkpoint: `{path_for_cli(PHASE1_CKPT)}`",
         f"- Symbolic exact coverage: `{coverage['exact_symbolic']}` / `{coverage['examples_with_targets']}` = "
         f"`{coverage['exact_symbolic_rate']}`",
@@ -371,6 +375,7 @@ def main() -> int:
         "tasks_path": str(tasks_path),
         "phase1_checkpoint": path_for_cli(PHASE1_CKPT),
         "grid_format": GRID_FORMAT,
+        "selection_strategy": SELECTION_STRATEGY,
         "dtype": DTYPE,
         "adapter_dtype": ADAPTER_DTYPE,
         "variants": [variant.name for variant in variants],

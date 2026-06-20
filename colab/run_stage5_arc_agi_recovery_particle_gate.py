@@ -61,6 +61,7 @@ EVAL_TASK_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_EVAL_TASK_LIMIT", "20"))
 MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
 GRID_FORMAT = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
 PROGRAM_PARSE_MODE = os.environ.get("STAGE5_ARC_AGI_PROGRAM_PARSE_MODE", "prefer")
+SELECTION_STRATEGY = os.environ.get("STAGE5_ARC_AGI_SELECTION_STRATEGY", "heuristic")
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
 DEVICE = os.environ.get("DEVICE", "cuda")
@@ -463,6 +464,7 @@ def run_synthetic_sft() -> dict[str, Any]:
             "STAGE5_ARC_AGI_MAX_NEW_TOKENS": str(MAX_NEW_TOKENS),
             "STAGE5_ARC_AGI_GRID_FORMAT": GRID_FORMAT,
             "STAGE5_ARC_AGI_PROGRAM_PARSE_MODE": PROGRAM_PARSE_MODE,
+            "STAGE5_ARC_AGI_SELECTION_STRATEGY": SELECTION_STRATEGY,
             "DTYPE": DTYPE,
             "ADAPTER_DTYPE": ADAPTER_DTYPE,
             "DEVICE": DEVICE,
@@ -534,6 +536,8 @@ def eval_arc_variant(
         GRID_FORMAT,
         "--program_parse_mode",
         program_parse_mode,
+        "--selection_strategy",
+        SELECTION_STRATEGY,
         "--dtype",
         DTYPE,
         "--adapter_dtype",
@@ -659,6 +663,8 @@ def eval_particle_variant(
             GRID_FORMAT,
             "--program_parse_mode",
             PROGRAM_PARSE_MODE,
+            "--selection_strategy",
+            SELECTION_STRATEGY,
             "--dtype",
             DTYPE,
             "--adapter_dtype",
@@ -935,6 +941,7 @@ def main() -> int:
             "particle_projection_dim": PARTICLE_PROJECTION_DIM,
             "particle_checkpoint_ladder": PARTICLE_CHECKPOINT_LADDER,
             "program_parse_mode": PROGRAM_PARSE_MODE,
+            "selection_strategy": SELECTION_STRATEGY,
             "particle_variants": [variant.__dict__ for variant in particle_variants],
         },
         "recovered_checkpoint": recovered,

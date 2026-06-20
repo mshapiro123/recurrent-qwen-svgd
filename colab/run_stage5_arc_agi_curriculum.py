@@ -54,6 +54,7 @@ TRAIN_TASK_LIMIT = os.environ.get("STAGE5_ARC_AGI_TRAIN_TASK_LIMIT", "80")
 EVAL_TASK_LIMIT = os.environ.get("STAGE5_ARC_AGI_EVAL_TASK_LIMIT", "20")
 SAVE_EVERY = os.environ.get("STAGE5_ARC_AGI_SAVE_EVERY", "0")
 PROGRAM_PARSE_MODE = os.environ.get("STAGE5_ARC_AGI_PROGRAM_PARSE_MODE", "prefer")
+SELECTION_STRATEGY = os.environ.get("STAGE5_ARC_AGI_SELECTION_STRATEGY", "heuristic")
 TRACE_MODE = os.environ.get("STAGE5_ARC_AGI_RECOVERY_TRACE_MODE", "symbolic_program")
 TRACE_FILTER = os.environ.get("STAGE5_ARC_AGI_RECOVERY_TRACE_FILTER", "covered")
 DTYPE = os.environ.get("DTYPE", "bfloat16")
@@ -186,6 +187,7 @@ def run_stage(stage: CurriculumStage, stage_index: int, resume_checkpoint: Path)
             "STAGE5_ARC_AGI_TRAIN_TASK_LIMIT": TRAIN_TASK_LIMIT,
             "STAGE5_ARC_AGI_EVAL_TASK_LIMIT": EVAL_TASK_LIMIT,
             "STAGE5_ARC_AGI_PROGRAM_PARSE_MODE": PROGRAM_PARSE_MODE,
+            "STAGE5_ARC_AGI_SELECTION_STRATEGY": SELECTION_STRATEGY,
             "STAGE5_ARC_AGI_TRACE_MODE": TRACE_MODE,
             "STAGE5_ARC_AGI_TRACE_FILTER": TRACE_FILTER,
             "DTYPE": DTYPE,
@@ -256,6 +258,7 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Initial checkpoint: `{payload['initial_checkpoint']}`",
         f"- Final selected checkpoint: `{payload['final_checkpoint']}`",
         f"- Program parse mode: `{PROGRAM_PARSE_MODE}`",
+        f"- Selection strategy: `{SELECTION_STRATEGY}`",
         f"- Trace mode/filter: `{TRACE_MODE}` / `{TRACE_FILTER}`",
         "",
         "## Stages",
@@ -314,6 +317,7 @@ def main() -> int:
             "eval_task_limit": EVAL_TASK_LIMIT,
             "save_every": SAVE_EVERY,
             "program_parse_mode": PROGRAM_PARSE_MODE,
+            "selection_strategy": SELECTION_STRATEGY,
             "trace_mode": TRACE_MODE,
             "trace_filter": TRACE_FILTER,
         },
