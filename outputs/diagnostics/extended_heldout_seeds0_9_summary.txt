@@ -1,0 +1,11 @@
+fold0_seeds0_4_random32: {'best_hits': 24, 'total_tasks': 35, 'candidate_hits': 78, 'total_candidates': 140}
+fold0_seeds0_4_wg_dim8: {'best_hits': 30, 'total_tasks': 35, 'candidate_hits': 83, 'total_candidates': 140}
+fold1_seeds0_4_random32: {'best_hits': 11, 'total_tasks': 35, 'candidate_hits': 37, 'total_candidates': 140}
+fold1_seeds0_4_wg_dim8: {'best_hits': 14, 'total_tasks': 35, 'candidate_hits': 47, 'total_candidates': 140}
+fold0_seeds5_9_random32: {'best_hits': 27, 'total_tasks': 35, 'candidate_hits': 88, 'total_candidates': 140}
+fold0_seeds5_9_wg_dim8: {'best_hits': 28, 'total_tasks': 35, 'candidate_hits': 87, 'total_candidates': 140}
+fold1_seeds5_9_random32: {'best_hits': 15, 'total_tasks': 35, 'candidate_hits': 48, 'total_candidates': 140}
+fold1_seeds5_9_wg_dim8: {'best_hits': 17, 'total_tasks': 35, 'candidate_hits': 47, 'total_candidates': 140}
+heldout_seeds0_9_random32: {'best_hits': 77, 'total_tasks': 140, 'candidate_hits': 251, 'total_candidates': 560}
+heldout_seeds0_9_wg_dim8: {'best_hits': 89, 'total_tasks': 140, 'candidate_hits': 264, 'total_candidates': 560}
+heldout_delta_wg_minus_random32: {'best_hits': 12, 'candidate_hits': 13}

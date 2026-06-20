@@ -1,0 +1,124 @@
+seed=0
+phase2_config=mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5481.05it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/qwen_0_5b_phase2_svgd_recreated_smoke25/phase2_step_25.pt loaded_keys=173
+
+
+### mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=5 ###
+
+=== Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=5 ===
+
+pharmacy tubs best_of_4=False hits=0/4 unique=2
+
+arithmetic multiply best_of_4=False hits=0/4 unique=2
+
+unit conversion best_of_4=True hits=4/4 unique=2
+
+discount price best_of_4=False hits=0/4 unique=4
+
+average simple best_of_4=True hits=4/4 unique=1
+
+rates word best_of_4=False hits=0/4 unique=1
+
+n queens small best_of_4=False hits=0/4 unique=3
+
+Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=5 summary: best_hits=2/7 candidate_hits=8/28
+
+
+### mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=6 ###
+
+=== Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=6 ===
+
+pharmacy tubs best_of_4=False hits=0/4 unique=1
+
+arithmetic multiply best_of_4=True hits=1/4 unique=2
+
+unit conversion best_of_4=True hits=4/4 unique=2
+
+discount price best_of_4=False hits=0/4 unique=2
+
+average simple best_of_4=True hits=4/4 unique=1
+
+rates word best_of_4=False hits=0/4 unique=2
+
+n queens small best_of_4=False hits=0/4 unique=3
+
+Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=6 summary: best_hits=3/7 candidate_hits=9/28
+
+
+### mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=7 ###
+
+=== Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=7 ===
+
+pharmacy tubs best_of_4=False hits=0/4 unique=1
+
+arithmetic multiply best_of_4=True hits=1/4 unique=2
+
+unit conversion best_of_4=True hits=4/4 unique=3
+
+discount price best_of_4=True hits=3/4 unique=3
+
+average simple best_of_4=True hits=4/4 unique=1
+
+rates word best_of_4=False hits=0/4 unique=1
+
+n queens small best_of_4=False hits=0/4 unique=3
+
+Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=7 summary: best_hits=4/7 candidate_hits=12/28
+
+
+### mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=8 ###
+
+=== Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=8 ===
+
+pharmacy tubs best_of_4=False hits=0/4 unique=1
+
+arithmetic multiply best_of_4=False hits=0/4 unique=4
+
+unit conversion best_of_4=True hits=4/4 unique=2
+
+discount price best_of_4=True hits=3/4 unique=3
+
+average simple best_of_4=True hits=4/4 unique=1
+
+rates word best_of_4=False hits=0/4 unique=1
+
+n queens small best_of_4=False hits=0/4 unique=3
+
+Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=8 summary: best_hits=3/7 candidate_hits=11/28
+
+
+### mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=9 ###
+
+=== Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=9 ===
+
+pharmacy tubs best_of_4=False hits=0/4 unique=2
+
+arithmetic multiply best_of_4=False hits=0/4 unique=1
+
+unit conversion best_of_4=True hits=2/4 unique=4
+
+discount price best_of_4=True hits=2/4 unique=4
+
+average simple best_of_4=True hits=4/4 unique=1
+
+rates word best_of_4=False hits=0/4 unique=1
+
+n queens small best_of_4=False hits=0/4 unique=3
+
+Phase 2 K=4 mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=9 summary: best_hits=3/7 candidate_hits=8/28
+
+=== SWEEP SUMMARY ===
+mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=5 best_hits=2/7 candidate_hits=8/28
+mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=6 best_hits=3/7 candidate_hits=9/28
+mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=7 best_hits=4/7 candidate_hits=12/28
+mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=8 best_hits=3/7 candidate_hits=11/28
+mode=svgd temp=0 noise=0.05 noise_steps=16 eps=1 repulsion=0.5 max_norm=none proj_dim=32 geom=euclidean seed=9 best_hits=3/7 candidate_hits=8/28
+
+=== PROJECTION/REPULSION/STEPS SUMMARY ===
+proj_dim=32 repulsion=0.5 steps=16 mean_best_hits=3.000/7 mean_candidate_hits=9.600/28
+mean_best_hits=3.000/7
+mean_candidate_hits=9.600/28
