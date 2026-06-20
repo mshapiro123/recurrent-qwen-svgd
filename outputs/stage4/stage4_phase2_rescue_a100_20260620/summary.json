@@ -1,0 +1,210 @@
+{
+  "metadata": {
+    "run_id": "stage4_phase2_rescue_a100_20260620",
+    "base_run_id": "stage4_opus_a100_20260620",
+    "arc_limit": 128,
+    "arc_split": "validation",
+    "arc_seed": 0,
+    "phase1_checkpoint": "outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt",
+    "phase2_checkpoint": "outputs/stage4/stage4_opus_a100_20260620/phase2/phase2_step_100.pt",
+    "stage4_projection": "outputs/stage4/stage4_opus_a100_20260620/within_group_projection.pt"
+  },
+  "summaries": {
+    "base_label": {
+      "mean": {
+        "correct": 72,
+        "total": 128,
+        "accuracy": 0.5625
+      }
+    },
+    "phase1_label": {
+      "mean": {
+        "correct": 70,
+        "total": 128,
+        "accuracy": 0.546875
+      }
+    },
+    "phase1_particles_rep0_label": {
+      "max": {
+        "correct": 68,
+        "total": 128,
+        "accuracy": 0.53125
+      },
+      "mean": {
+        "correct": 67,
+        "total": 128,
+        "accuracy": 0.5234375
+      },
+      "vote": {
+        "correct": 66,
+        "total": 128,
+        "accuracy": 0.515625
+      }
+    },
+    "phase1_particles_rep05_label": {
+      "max": {
+        "correct": 68,
+        "total": 128,
+        "accuracy": 0.53125
+      },
+      "mean": {
+        "correct": 67,
+        "total": 128,
+        "accuracy": 0.5234375
+      },
+      "vote": {
+        "correct": 68,
+        "total": 128,
+        "accuracy": 0.53125
+      }
+    },
+    "phase1_particles_rep2_label": {
+      "max": {
+        "correct": 65,
+        "total": 128,
+        "accuracy": 0.5078125
+      },
+      "mean": {
+        "correct": 67,
+        "total": 128,
+        "accuracy": 0.5234375
+      },
+      "vote": {
+        "correct": 66,
+        "total": 128,
+        "accuracy": 0.515625
+      }
+    },
+    "phase2_stage4_rep2_label": {
+      "max": {
+        "correct": 65,
+        "total": 128,
+        "accuracy": 0.5078125
+      },
+      "mean": {
+        "correct": 69,
+        "total": 128,
+        "accuracy": 0.5390625
+      },
+      "vote": {
+        "correct": 69,
+        "total": 128,
+        "accuracy": 0.5390625
+      }
+    }
+  },
+  "ladder": {
+    "base_label": {
+      "summary": {
+        "mean": {
+          "correct": 72,
+          "total": 128,
+          "accuracy": 0.5625
+        }
+      },
+      "best_accuracy": 0.5625,
+      "lift_over_phase1": 0.015625,
+      "gap_to_base": 0.0
+    },
+    "phase1_label": {
+      "summary": {
+        "mean": {
+          "correct": 70,
+          "total": 128,
+          "accuracy": 0.546875
+        }
+      },
+      "best_accuracy": 0.546875,
+      "lift_over_phase1": 0.0,
+      "gap_to_base": -0.015625
+    },
+    "phase1_particles_rep0_label": {
+      "summary": {
+        "max": {
+          "correct": 68,
+          "total": 128,
+          "accuracy": 0.53125
+        },
+        "mean": {
+          "correct": 67,
+          "total": 128,
+          "accuracy": 0.5234375
+        },
+        "vote": {
+          "correct": 66,
+          "total": 128,
+          "accuracy": 0.515625
+        }
+      },
+      "best_accuracy": 0.53125,
+      "lift_over_phase1": -0.015625,
+      "gap_to_base": -0.03125
+    },
+    "phase1_particles_rep05_label": {
+      "summary": {
+        "max": {
+          "correct": 68,
+          "total": 128,
+          "accuracy": 0.53125
+        },
+        "mean": {
+          "correct": 67,
+          "total": 128,
+          "accuracy": 0.5234375
+        },
+        "vote": {
+          "correct": 68,
+          "total": 128,
+          "accuracy": 0.53125
+        }
+      },
+      "best_accuracy": 0.53125,
+      "lift_over_phase1": -0.015625,
+      "gap_to_base": -0.03125
+    },
+    "phase1_particles_rep2_label": {
+      "summary": {
+        "max": {
+          "correct": 65,
+          "total": 128,
+          "accuracy": 0.5078125
+        },
+        "mean": {
+          "correct": 67,
+          "total": 128,
+          "accuracy": 0.5234375
+        },
+        "vote": {
+          "correct": 66,
+          "total": 128,
+          "accuracy": 0.515625
+        }
+      },
+      "best_accuracy": 0.5234375,
+      "lift_over_phase1": -0.0234375,
+      "gap_to_base": -0.0390625
+    },
+    "phase2_stage4_rep2_label": {
+      "summary": {
+        "max": {
+          "correct": 65,
+          "total": 128,
+          "accuracy": 0.5078125
+        },
+        "mean": {
+          "correct": 69,
+          "total": 128,
+          "accuracy": 0.5390625
+        },
+        "vote": {
+          "correct": 69,
+          "total": 128,
+          "accuracy": 0.5390625
+        }
+      },
+      "best_accuracy": 0.5390625,
+      "lift_over_phase1": -0.0078125,
+      "gap_to_base": -0.0234375
+    }
+  }
+}
