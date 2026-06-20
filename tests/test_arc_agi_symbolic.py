@@ -128,6 +128,34 @@ def test_symbolic_candidates_learn_crop_transform_recolor() -> None:
     assert "recolor(grid" in program_trace
 
 
+def test_symbolic_candidates_learn_move_recolor() -> None:
+    example = ArcAgiExample(
+        task_id="move-recolor",
+        test_index=0,
+        train=(
+            ArcPair(
+                input=[[0, 0, 0, 0], [0, 1, 2, 0], [0, 0, 0, 0]],
+                output=[[0, 0, 0, 0], [0, 0, 0, 0], [0, 6, 7, 0]],
+            ),
+            ArcPair(
+                input=[[0, 3, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+                output=[[0, 0, 0, 0], [0, 8, 6, 0], [0, 0, 0, 0]],
+            ),
+        ),
+        test_input=[[0, 0, 0, 0], [0, 2, 3, 0], [0, 0, 0, 0]],
+        test_output=[[0, 0, 0, 0], [0, 0, 0, 0], [0, 7, 8, 0]],
+    )
+    exact = exact_symbolic_candidate(example)
+    assert exact is not None
+    assert exact.name.startswith("move_non_background_bg0_dr1_dc0")
+    assert exact.grid == [[0, 0, 0, 0], [0, 0, 0, 0], [0, 7, 8, 0]]
+    trace = format_symbolic_trace(exact)
+    assert "move every non-background cell" in trace
+    program_trace = format_symbolic_program_trace(exact)
+    assert "move_non_background(test_input, background=0, delta_row=1, delta_col=0)" in program_trace
+    assert "recolor(grid" in program_trace
+
+
 def test_evaluate_example_tracks_candidate_sources() -> None:
     example = ArcAgiExample(
         task_id="source",

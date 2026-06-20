@@ -8,6 +8,7 @@ that can be inferred exactly from demonstrations:
 - consistent per-color maps after a geometry transform;
 - non-background object bounding-box crops;
 - crop, then transform, then recolor compositions;
+- same-canvas non-background object moves, optionally with recoloring;
 - constant-output tasks.
 """
 
@@ -47,6 +48,23 @@ def crop_non_background(grid: Grid, background: int) -> Grid | None:
     row_start, row_end = min(rows), max(rows)
     col_start, col_end = min(cols), max(cols)
     return [row[col_start : col_end + 1] for row in grid[row_start : row_end + 1]]
+
+
+def move_non_background(grid: Grid, background: int, delta_row: int, delta_col: int) -> Grid | None:
+    height, width = grid_shape(grid)
+    moved = [[background for _ in range(width)] for _ in range(height)]
+    saw_foreground = False
+    for row_idx, row in enumerate(grid):
+        for col_idx, cell in enumerate(row):
+            if cell == background:
+                continue
+            saw_foreground = True
+            out_row = row_idx + delta_row
+            out_col = col_idx + delta_col
+            if not (0 <= out_row < height and 0 <= out_col < width):
+                return None
+            moved[out_row][out_col] = cell
+    return moved if saw_foreground else None
 
 
 def learn_color_map(inputs: list[Grid], outputs: list[Grid]) -> dict[int, int] | None:
@@ -112,6 +130,34 @@ def learn_crop_transform_and_color_map(inputs: list[Grid], outputs: list[Grid]) 
             is_nontrivial = transform != "identity" or any(source != target for source, target in color_map.items())
             if is_nontrivial:
                 return background, transform, color_map
+    return None
+
+
+def learn_move_background_delta_and_color_map(
+    inputs: list[Grid],
+    outputs: list[Grid],
+) -> tuple[int, int, int, dict[int, int]] | None:
+    if not inputs or any(grid_shape(input_grid) != grid_shape(output_grid) for input_grid, output_grid in zip(inputs, outputs)):
+        return None
+    max_height = max(len(grid) for grid in inputs)
+    max_width = max(len(grid[0]) for grid in inputs)
+    for background in range(10):
+        for delta_row in range(-(max_height - 1), max_height):
+            for delta_col in range(-(max_width - 1), max_width):
+                moved = [move_non_background(grid, background, delta_row, delta_col) for grid in inputs]
+                if any(item is None for item in moved):
+                    continue
+                moved_grids = [grid for grid in moved if grid is not None]
+                color_map = learn_color_map(moved_grids, outputs)
+                if color_map is None:
+                    continue
+                is_nontrivial = (
+                    delta_row != 0
+                    or delta_col != 0
+                    or any(source != target for source, target in color_map.items())
+                )
+                if is_nontrivial:
+                    return background, delta_row, delta_col, color_map
     return None
 
 
@@ -220,6 +266,34 @@ def symbolic_candidates(example: ArcAgiExample) -> list[SymbolicCandidate]:
                 ),
             )
         )
+
+    move_recolor = learn_move_background_delta_and_color_map([pair.input for pair in train_pairs], outputs)
+    if move_recolor is not None:
+        background, delta_row, delta_col, color_map = move_recolor
+        moved_test = move_non_background(example.test_input, background, delta_row, delta_col)
+        if moved_test is not None:
+            predicted = apply_color_map(moved_test, color_map)
+            candidates.append(
+                SymbolicCandidate(
+                    f"move_non_background_bg{background}_dr{delta_row}_dc{delta_col}+color_map",
+                    predicted,
+                    (
+                        f"Background color: {background}.",
+                        f"Rule: move every non-background cell by row offset {delta_row} and column offset {delta_col}.",
+                        color_map_trace(color_map),
+                        "Action: move and recolor the test input on the same canvas.",
+                    ),
+                    (
+                        "program:",
+                        (
+                            f"  grid = move_non_background(test_input, background={background}, "
+                            f"delta_row={delta_row}, delta_col={delta_col})"
+                        ),
+                        f"  grid = recolor(grid, {color_map_program_literal(color_map)})",
+                        "  return grid",
+                    ),
+                )
+            )
 
     crop_transform_recolor = learn_crop_transform_and_color_map([pair.input for pair in train_pairs], outputs)
     if crop_transform_recolor is not None:

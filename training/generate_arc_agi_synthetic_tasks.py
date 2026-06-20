@@ -14,7 +14,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from eval.arc_agi_utils import GEOMETRY_TRANSFORMS, Grid, apply_geometry_transform  # noqa: E402
-from eval.arc_agi_symbolic import apply_color_map, crop_non_background  # noqa: E402
+from eval.arc_agi_symbolic import apply_color_map, crop_non_background, move_non_background  # noqa: E402
 
 
 SHAPE_CHANGING_TRANSFORMS = ("rot90", "rot270", "transpose", "anti_transpose")
@@ -97,6 +97,10 @@ def random_object_grid(
 
 def transform_grid(grid: Grid, transform: str, color_map: dict[int, int]) -> Grid:
     return apply_color_map(apply_geometry_transform(grid, transform), color_map)
+
+
+def can_move_non_background(grid: Grid, background: int, delta_row: int, delta_col: int) -> bool:
+    return move_non_background(grid, background, delta_row, delta_col) is not None
 
 
 def generate_geometry_color_task(
@@ -269,6 +273,72 @@ def generate_crop_transform_recolor_task(
     }
 
 
+def generate_move_recolor_task(
+    rng: random.Random,
+    task_id: str,
+    *,
+    train_examples: int,
+    test_examples: int,
+    min_size: int,
+    max_size: int,
+) -> dict[str, Any]:
+    del task_id
+    background = rng.randrange(10)
+    object_palette = rng.sample([color for color in range(10) if color != background], rng.randint(1, 4))
+    color_map = random_non_identity_color_map(rng, [background, *object_palette])
+    delta_choices = [(dr, dc) for dr in range(-2, 3) for dc in range(-2, 3) if dr or dc]
+    delta_row, delta_col = rng.choice(delta_choices)
+    effective_max_size = max(max_size, min_size + 3, 5)
+
+    def random_movable_grid(*, ensure_object_palette: bool) -> Grid:
+        for _ in range(200):
+            height = rng.randint(max(min_size + 2, 4), effective_max_size)
+            width = rng.randint(max(min_size + 2, 4), effective_max_size)
+            max_obj_h = height - abs(delta_row)
+            max_obj_w = width - abs(delta_col)
+            if max_obj_h < 1 or max_obj_w < 1:
+                continue
+            obj_h = rng.randint(1, max_obj_h)
+            obj_w = rng.randint(1, max_obj_w)
+            if ensure_object_palette and obj_h * obj_w < len(object_palette):
+                continue
+
+            row_low = max(0, -delta_row)
+            row_high = min(height - obj_h, height - obj_h - delta_row)
+            col_low = max(0, -delta_col)
+            col_high = min(width - obj_w, width - obj_w - delta_col)
+            if row_low > row_high or col_low > col_high:
+                continue
+
+            row_start = rng.randint(row_low, row_high)
+            col_start = rng.randint(col_low, col_high)
+            grid = [[background for _ in range(width)] for _ in range(height)]
+            object_cells: list[tuple[int, int]] = []
+            for row in range(row_start, row_start + obj_h):
+                for col in range(col_start, col_start + obj_w):
+                    object_cells.append((row, col))
+                    grid[row][col] = rng.choice(object_palette)
+            if ensure_object_palette:
+                rng.shuffle(object_cells)
+                for color, (row, col) in zip(object_palette, object_cells):
+                    grid[row][col] = color
+            if can_move_non_background(grid, background, delta_row, delta_col):
+                return grid
+        raise RuntimeError("could not generate movable object grid")
+
+    def make_pair(idx: int, *, is_train: bool) -> dict[str, Grid]:
+        grid = random_movable_grid(ensure_object_palette=is_train and idx == 0)
+        moved = move_non_background(grid, background, delta_row, delta_col)
+        if moved is None:
+            raise RuntimeError("generated immovable object task")
+        return {"input": grid, "output": apply_color_map(moved, color_map)}
+
+    return {
+        "train": [make_pair(idx, is_train=True) for idx in range(train_examples)],
+        "test": [make_pair(idx, is_train=False) for idx in range(test_examples)],
+    }
+
+
 def generate_tasks(
     *,
     num_tasks: int,
@@ -329,6 +399,15 @@ def generate_tasks(
                 min_size=min_size,
                 max_size=max_size,
             )
+        elif mode == "move_recolor":
+            tasks[task_id] = generate_move_recolor_task(
+                rng,
+                task_id,
+                train_examples=train_examples,
+                test_examples=test_examples,
+                min_size=min_size,
+                max_size=max_size,
+            )
         else:
             raise ValueError(f"Unknown mode: {mode}")
     return tasks
@@ -336,7 +415,14 @@ def generate_tasks(
 
 def parse_modes(value: str) -> list[str]:
     if value == "all":
-        return ["geometry_color", "constant_output", "crop_non_background", "crop_recolor", "crop_transform_recolor"]
+        return [
+            "geometry_color",
+            "constant_output",
+            "crop_non_background",
+            "crop_recolor",
+            "crop_transform_recolor",
+            "move_recolor",
+        ]
     modes = [item.strip() for item in value.split(",") if item.strip()]
     unknown = set(modes) - {
         "geometry_color",
@@ -344,6 +430,7 @@ def parse_modes(value: str) -> list[str]:
         "crop_non_background",
         "crop_recolor",
         "crop_transform_recolor",
+        "move_recolor",
     }
     if unknown:
         raise ValueError(f"Unknown synthetic modes: {sorted(unknown)}")

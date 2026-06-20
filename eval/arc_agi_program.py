@@ -7,6 +7,7 @@ program lines emitted by ``format_symbolic_program_trace``:
     grid = transform(test_input, 'rot90')
     grid = transform(grid, 'rot90')
     grid = crop_non_background(test_input, background=0)
+    grid = move_non_background(test_input, background=0, delta_row=1, delta_col=-1)
     grid = recolor(grid, {1: 2, 0: 3})
     return grid
 """
@@ -16,13 +17,17 @@ from __future__ import annotations
 import re
 
 from eval.arc_agi_utils import ArcAgiExample, GEOMETRY_TRANSFORMS, Grid, apply_geometry_transform, validate_grid
-from eval.arc_agi_symbolic import all_outputs_equal, apply_color_map, crop_non_background
+from eval.arc_agi_symbolic import all_outputs_equal, apply_color_map, crop_non_background, move_non_background
 
 
 _TRANSFORM_RE = re.compile(r"grid\s*=\s*transform\s*\(\s*(test_input|grid)\s*,\s*['\"]?([a-z0-9_]+)['\"]?\s*\)")
 _RECOLOR_RE = re.compile(r"grid\s*=\s*recolor\s*\(\s*grid\s*,\s*\{([^}]*)\}\s*\)")
 _CONSTANT_RE = re.compile(r"grid\s*=\s*constant_output_from_demonstrations\s*\(\s*train_outputs\s*\)")
 _CROP_RE = re.compile(r"grid\s*=\s*crop_non_background\s*\(\s*test_input\s*,\s*background\s*=\s*([0-9])\s*\)")
+_MOVE_RE = re.compile(
+    r"grid\s*=\s*move_non_background\s*\(\s*test_input\s*,\s*background\s*=\s*([0-9])\s*,\s*"
+    r"delta_row\s*=\s*(-?[0-9]+)\s*,\s*delta_col\s*=\s*(-?[0-9]+)\s*\)"
+)
 
 
 def _program_regions(text: str) -> list[str]:
@@ -86,6 +91,17 @@ def execute_arc_program(example: ArcAgiExample, program_text: str) -> Grid | Non
         crop_match = _CROP_RE.fullmatch(line)
         if crop_match:
             grid = crop_non_background(example.test_input, int(crop_match.group(1)))
+            if grid is None:
+                return None
+            continue
+        move_match = _MOVE_RE.fullmatch(line)
+        if move_match:
+            grid = move_non_background(
+                example.test_input,
+                int(move_match.group(1)),
+                int(move_match.group(2)),
+                int(move_match.group(3)),
+            )
             if grid is None:
                 return None
             continue
