@@ -263,6 +263,29 @@ def compare_eval_summaries() -> dict[str, Any]:
     return comparisons
 
 
+def analyze_recovery_summaries() -> dict[str, Any]:
+    output_json = RUN_DIR / "recovery_analysis.json"
+    output_md = RUN_DIR / "recovery_analysis.md"
+    run(
+        [
+            sys.executable,
+            "eval/analyze_arc_agi_recovery.py",
+            "--base_summary_json",
+            path_for_cli(RUN_DIR / "base_summary.json"),
+            "--start_summary_json",
+            path_for_cli(RUN_DIR / "phase1_start_summary.json"),
+            "--recovered_summary_json",
+            path_for_cli(RUN_DIR / "recovered_summary.json"),
+            "--output_json",
+            path_for_cli(output_json),
+            "--output_md",
+            path_for_cli(output_md),
+        ],
+        log_name="recovery_analysis.log",
+    )
+    return read_json(output_json)
+
+
 def metric_delta(candidate: dict[str, Any], reference: dict[str, Any]) -> dict[str, Any]:
     keys = ("first_exact", "selected_exact", "best_of_k_exact", "tasks_solved_best_of_k")
     return {f"{key}_delta": int(candidate.get(key, 0)) - int(reference.get(key, 0)) for key in keys}
@@ -335,6 +358,12 @@ def write_report(payload: dict[str, Any]) -> None:
             f"best-of-K delta `{best['delta_exact']}` "
             f"({best['wins']}/{best['losses']}/{best['ties']} W/L/T, p `{best['sign_test_p_value']}`)"
         )
+    if payload.get("recovery_analysis"):
+        lines += ["", "## Recovery Diagnosis", ""]
+        for recommendation in payload["recovery_analysis"].get("recommendations", []):
+            lines.append(f"- `{recommendation['area']}`: {recommendation['reason']}")
+        lines.append("")
+        lines.append("See `recovery_analysis.md` for family gaps and regression examples.")
     lines += [
         "",
         "This is a true ARC exact-grid comparison. Use larger limits only after the smoke limit is stable.",
@@ -361,6 +390,7 @@ def main() -> int:
     phase1_start = eval_arc("phase1_start", mode="phase1", tasks_path=tasks_path, checkpoint=start_ckpt)
     recovered = eval_arc("recovered", mode="phase1", tasks_path=tasks_path, checkpoint=recovered_ckpt)
     paired_comparisons = compare_eval_summaries()
+    recovery_analysis = analyze_recovery_summaries()
 
     payload = {
         "run_id": RUN_ID,
@@ -386,6 +416,7 @@ def main() -> int:
             "recovered_vs_base": metric_delta(recovered["summary"], base["summary"]),
         },
         "paired_comparisons": paired_comparisons,
+        "recovery_analysis": recovery_analysis,
     }
     write_report(payload)
     backup_to_drive()
