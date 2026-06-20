@@ -1,0 +1,10 @@
+{
+  "run_id": "stage4_trajectory_invariance_a100_20260620",
+  "base_run_id": "stage4_opus_a100_20260620",
+  "arc_limit": 128,
+  "arc_split": "validation",
+  "arc_seed": 0,
+  "phase1_checkpoint": "outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt",
+  "dtype": "bfloat16",
+  "adapter_dtype": "float32"
+}

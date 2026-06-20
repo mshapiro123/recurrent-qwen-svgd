@@ -1,0 +1,381 @@
+{
+  "phase1_k1": {
+    "summary": {
+      "mean": {
+        "correct": 70,
+        "total": 128,
+        "accuracy": 0.546875
+      }
+    },
+    "comparison_to_phase1": null
+  },
+  "phase2path_k1_none": {
+    "summary": {
+      "mean": {
+        "correct": 70,
+        "total": 128,
+        "accuracy": 0.546875
+      }
+    },
+    "comparison_to_phase1": {
+      "mean": {
+        "aggregate": "mean",
+        "helped": 0,
+        "hurt": 0,
+        "tied": 128,
+        "prediction_changes": 0,
+        "changed_examples": [],
+        "mean_abs_score_delta": 0.0,
+        "max_abs_score_delta": 0.0
+      }
+    }
+  },
+  "phase2path_k4_none": {
+    "summary": {
+      "max": {
+        "correct": 69,
+        "total": 128,
+        "accuracy": 0.5390625
+      },
+      "mean": {
+        "correct": 69,
+        "total": 128,
+        "accuracy": 0.5390625
+      },
+      "vote": {
+        "correct": 69,
+        "total": 128,
+        "accuracy": 0.5390625
+      }
+    },
+    "comparison_to_phase1": {
+      "max": {
+        "aggregate": "max",
+        "helped": 2,
+        "hurt": 3,
+        "tied": 123,
+        "prediction_changes": 5,
+        "changed_examples": [
+          {
+            "id": "Mercury_7011270",
+            "reference_prediction": "A",
+            "test_prediction": "B",
+            "answer": "A",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_SC_400339",
+            "reference_prediction": "D",
+            "test_prediction": "C",
+            "answer": "D",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_7207410",
+            "reference_prediction": "D",
+            "test_prediction": "A",
+            "answer": "D",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_7135310",
+            "reference_prediction": "D",
+            "test_prediction": "B",
+            "answer": "B",
+            "reference_hit": false,
+            "test_hit": true
+          },
+          {
+            "id": "Mercury_7033653",
+            "reference_prediction": "A",
+            "test_prediction": "D",
+            "answer": "D",
+            "reference_hit": false,
+            "test_hit": true
+          }
+        ],
+        "mean_abs_score_delta": 0.01944594073529337,
+        "max_abs_score_delta": 0.07542634010314941
+      },
+      "mean": {
+        "aggregate": "mean",
+        "helped": 2,
+        "hurt": 3,
+        "tied": 123,
+        "prediction_changes": 5,
+        "changed_examples": [
+          {
+            "id": "Mercury_7011270",
+            "reference_prediction": "A",
+            "test_prediction": "B",
+            "answer": "A",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_SC_400339",
+            "reference_prediction": "D",
+            "test_prediction": "C",
+            "answer": "D",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_7207410",
+            "reference_prediction": "D",
+            "test_prediction": "A",
+            "answer": "D",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_7135310",
+            "reference_prediction": "D",
+            "test_prediction": "B",
+            "answer": "B",
+            "reference_hit": false,
+            "test_hit": true
+          },
+          {
+            "id": "Mercury_7033653",
+            "reference_prediction": "A",
+            "test_prediction": "D",
+            "answer": "D",
+            "reference_hit": false,
+            "test_hit": true
+          }
+        ],
+        "mean_abs_score_delta": 0.01944594073529337,
+        "max_abs_score_delta": 0.07542634010314941
+      },
+      "vote": {
+        "aggregate": "vote",
+        "helped": 2,
+        "hurt": 3,
+        "tied": 123,
+        "prediction_changes": 5,
+        "changed_examples": [
+          {
+            "id": "Mercury_7011270",
+            "reference_prediction": "A",
+            "test_prediction": "B",
+            "answer": "A",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_SC_400339",
+            "reference_prediction": "D",
+            "test_prediction": "C",
+            "answer": "D",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_7207410",
+            "reference_prediction": "D",
+            "test_prediction": "A",
+            "answer": "D",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_7135310",
+            "reference_prediction": "D",
+            "test_prediction": "B",
+            "answer": "B",
+            "reference_hit": false,
+            "test_hit": true
+          },
+          {
+            "id": "Mercury_7033653",
+            "reference_prediction": "A",
+            "test_prediction": "D",
+            "answer": "D",
+            "reference_hit": false,
+            "test_hit": true
+          }
+        ],
+        "mean_abs_score_delta": 0.01944594073529337,
+        "max_abs_score_delta": 0.07542634010314941
+      }
+    }
+  },
+  "phase2path_k4_svgd0": {
+    "summary": {
+      "max": {
+        "correct": 69,
+        "total": 128,
+        "accuracy": 0.5390625
+      },
+      "mean": {
+        "correct": 69,
+        "total": 128,
+        "accuracy": 0.5390625
+      },
+      "vote": {
+        "correct": 69,
+        "total": 128,
+        "accuracy": 0.5390625
+      }
+    },
+    "comparison_to_phase1": {
+      "max": {
+        "aggregate": "max",
+        "helped": 2,
+        "hurt": 3,
+        "tied": 123,
+        "prediction_changes": 5,
+        "changed_examples": [
+          {
+            "id": "Mercury_7011270",
+            "reference_prediction": "A",
+            "test_prediction": "B",
+            "answer": "A",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_SC_400339",
+            "reference_prediction": "D",
+            "test_prediction": "C",
+            "answer": "D",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_7207410",
+            "reference_prediction": "D",
+            "test_prediction": "A",
+            "answer": "D",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_7135310",
+            "reference_prediction": "D",
+            "test_prediction": "B",
+            "answer": "B",
+            "reference_hit": false,
+            "test_hit": true
+          },
+          {
+            "id": "Mercury_7033653",
+            "reference_prediction": "A",
+            "test_prediction": "D",
+            "answer": "D",
+            "reference_hit": false,
+            "test_hit": true
+          }
+        ],
+        "mean_abs_score_delta": 0.01944594073529337,
+        "max_abs_score_delta": 0.07542634010314941
+      },
+      "mean": {
+        "aggregate": "mean",
+        "helped": 2,
+        "hurt": 3,
+        "tied": 123,
+        "prediction_changes": 5,
+        "changed_examples": [
+          {
+            "id": "Mercury_7011270",
+            "reference_prediction": "A",
+            "test_prediction": "B",
+            "answer": "A",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_SC_400339",
+            "reference_prediction": "D",
+            "test_prediction": "C",
+            "answer": "D",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_7207410",
+            "reference_prediction": "D",
+            "test_prediction": "A",
+            "answer": "D",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_7135310",
+            "reference_prediction": "D",
+            "test_prediction": "B",
+            "answer": "B",
+            "reference_hit": false,
+            "test_hit": true
+          },
+          {
+            "id": "Mercury_7033653",
+            "reference_prediction": "A",
+            "test_prediction": "D",
+            "answer": "D",
+            "reference_hit": false,
+            "test_hit": true
+          }
+        ],
+        "mean_abs_score_delta": 0.01944594073529337,
+        "max_abs_score_delta": 0.07542634010314941
+      },
+      "vote": {
+        "aggregate": "vote",
+        "helped": 2,
+        "hurt": 3,
+        "tied": 123,
+        "prediction_changes": 5,
+        "changed_examples": [
+          {
+            "id": "Mercury_7011270",
+            "reference_prediction": "A",
+            "test_prediction": "B",
+            "answer": "A",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_SC_400339",
+            "reference_prediction": "D",
+            "test_prediction": "C",
+            "answer": "D",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_7207410",
+            "reference_prediction": "D",
+            "test_prediction": "A",
+            "answer": "D",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_7135310",
+            "reference_prediction": "D",
+            "test_prediction": "B",
+            "answer": "B",
+            "reference_hit": false,
+            "test_hit": true
+          },
+          {
+            "id": "Mercury_7033653",
+            "reference_prediction": "A",
+            "test_prediction": "D",
+            "answer": "D",
+            "reference_hit": false,
+            "test_hit": true
+          }
+        ],
+        "mean_abs_score_delta": 0.01944594073529337,
+        "max_abs_score_delta": 0.07542634010314941
+      }
+    }
+  }
+}

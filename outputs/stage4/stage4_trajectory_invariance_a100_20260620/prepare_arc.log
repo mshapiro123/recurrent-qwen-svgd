@@ -1,0 +1,5 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Challenge
+split=validation
+rows=128
+output_jsonl=data/stage4_trajectory_invariance_a100_20260620_arc128.jsonl
