@@ -202,6 +202,92 @@ def summarize_autopilot(
     }
 
 
+def recommended_next_actions(compact: dict[str, Any]) -> list[dict[str, str]]:
+    """Return concrete follow-up actions for the next Colab cell.
+
+    The parent autopilot is intentionally conservative: it gates candidate
+    distillation, then curriculum recovery, then particle value. These
+    recommendations make the outcome operational without requiring someone to
+    inspect nested child summaries by hand after a long run.
+    """
+    actions: list[dict[str, str]] = []
+    curriculum_summary = f"outputs/stage5/{child_run_id('curriculum')}/summary.json"
+
+    if not compact["candidate_distillation_passed"]:
+        actions.append(
+            {
+                "name": "Inspect candidate distillation gate",
+                "reason": "Candidate distillation did not clear the promotion gate; inspect whether it failed from too few exact candidates, lower selected accuracy, or lower valid rate.",
+                "command": f"cat outputs/stage5/{child_run_id('candidate_distill_gate')}/summary.md",
+            }
+        )
+        actions.append(
+            {
+                "name": "Run baseline curriculum without candidate distillation",
+                "reason": "This preserves A100 momentum if candidate distillation is not yet a useful training signal.",
+                "command": (
+                    "STAGE5_ARC_AGI_CURRICULUM_PARTICLE_AUTOPILOT_RUN_CANDIDATE_DISTILL_GATE=0 "
+                    f"STAGE5_ARC_AGI_CURRICULUM_PARTICLE_AUTOPILOT_RUN_ID={RUN_ID}_baseline_no_candidate_distill "
+                    "python colab/run_stage5_arc_agi_curriculum_particle_autopilot.py"
+                ),
+            }
+        )
+        return actions
+
+    final_checkpoint = compact.get("final_checkpoint")
+    if final_checkpoint:
+        actions.append(
+            {
+                "name": "Run recovered-vs-base ARC benchmark",
+                "reason": "The core question is whether curriculum tuning closes the gap from recurrent start to base Qwen and how much remains.",
+                "command": (
+                    f"STAGE5_ARC_AGI_CURRICULUM_SUMMARY={curriculum_summary} "
+                    "STAGE5_ARC_AGI_LIMIT=50 "
+                    f"STAGE5_ARC_AGI_RECOVERED_BENCHMARK_RUN_ID={RUN_ID}_recovered_benchmark_limit50 "
+                    "python colab/run_stage5_arc_agi_recovered_benchmark.py"
+                ),
+            }
+        )
+        actions.append(
+            {
+                "name": "Run recovered TTA and selector sweep",
+                "reason": "If recurrent recovery is real, TTA/selector sweeps identify whether inference-time structure adds value before more training.",
+                "command": (
+                    f"STAGE5_ARC_AGI_CURRICULUM_SUMMARY={curriculum_summary} "
+                    "STAGE5_ARC_AGI_LIMIT=50 "
+                    f"STAGE5_ARC_AGI_TTA_SWEEP_RUN_ID={RUN_ID}_tta_sweep_limit50 "
+                    "python colab/run_stage5_arc_agi_tta_sweep.py"
+                ),
+            }
+        )
+    else:
+        actions.append(
+            {
+                "name": "Inspect curriculum logs",
+                "reason": "Candidate distillation passed, but no final curriculum checkpoint was recorded.",
+                "command": f"cat outputs/stage5/{child_run_id('curriculum')}/summary.md",
+            }
+        )
+
+    if compact["particle_passed"]:
+        actions.append(
+            {
+                "name": "Replicate winning particle variant at larger limit",
+                "reason": "The particle gate passed; larger limits are needed before treating the replicated lift as reliable.",
+                "command": f"cat outputs/stage5/{child_run_id('post_curriculum_particle')}/summary.md",
+            }
+        )
+    else:
+        actions.append(
+            {
+                "name": "Defer particle/SVGD training",
+                "reason": "Particle inference did not clear the replicated gate; prioritize deterministic recurrent recovery and benchmark comparison.",
+                "command": f"cat outputs/stage5/{child_run_id('post_curriculum_particle')}/summary.md",
+            }
+        )
+    return actions
+
+
 def backup_to_drive() -> None:
     if not Path("/content/drive/MyDrive").exists():
         try:
@@ -261,6 +347,15 @@ def write_report(payload: dict[str, Any]) -> None:
     lines.extend(["", "## Particle Mean Deltas", ""])
     for name, delta in compact["particle_variant_mean_deltas"].items():
         lines.append(f"- `{name}`: `{delta}`")
+    lines.extend(["", "## Recommended Next Actions", ""])
+    for index, action in enumerate(compact.get("recommended_next_actions", []), start=1):
+        lines.extend(
+            [
+                f"{index}. **{action['name']}**",
+                f"   - Reason: {action['reason']}",
+                f"   - Command: `{action['command']}`",
+            ]
+        )
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))
 
@@ -297,6 +392,7 @@ def main() -> int:
                 "compact": summarize_autopilot(None, None, candidate_gate),
                 "stopped_after_candidate_distill_gate": True,
             }
+            payload["compact"]["recommended_next_actions"] = recommended_next_actions(payload["compact"])
             write_report(payload)
             backup_to_drive()
             if PUSH_RESULTS:
@@ -336,6 +432,7 @@ def main() -> int:
         "post_curriculum_particle": particle,
         "compact": summarize_autopilot(curriculum, particle, candidate_gate),
     }
+    payload["compact"]["recommended_next_actions"] = recommended_next_actions(payload["compact"])
     write_report(payload)
     backup_to_drive()
     if PUSH_RESULTS:

@@ -5,6 +5,7 @@ from colab.run_stage5_arc_agi_curriculum_particle_autopilot import (
     candidate_distill_rows,
     child_run_id,
     decide_candidate_distill_gate,
+    recommended_next_actions,
     summarize_autopilot,
 )
 
@@ -122,3 +123,38 @@ def test_summarize_autopilot_keeps_final_checkpoint_and_particle_decision() -> N
     assert compact["particle_passed"] is True
     assert compact["best_replicated_particle_variant"] == "k4_noise001_rep05"
     assert compact["particle_variant_mean_deltas"]["k4_noise001_rep05"]["best_of_k_delta"] == 2.0
+
+
+def test_recommended_next_actions_stop_on_failed_candidate_distill_gate() -> None:
+    compact = {
+        "candidate_distillation_passed": False,
+        "final_checkpoint": None,
+        "particle_passed": False,
+    }
+
+    actions = recommended_next_actions(compact)
+
+    assert [action["name"] for action in actions] == [
+        "Inspect candidate distillation gate",
+        "Run baseline curriculum without candidate distillation",
+    ]
+    assert "RUN_CANDIDATE_DISTILL_GATE=0" in actions[1]["command"]
+
+
+def test_recommended_next_actions_benchmark_recovered_checkpoint_then_particle_decision() -> None:
+    compact = {
+        "candidate_distillation_passed": True,
+        "final_checkpoint": "outputs/stage5/run/phase1_step_250.pt",
+        "particle_passed": False,
+    }
+
+    actions = recommended_next_actions(compact)
+
+    names = [action["name"] for action in actions]
+    assert names == [
+        "Run recovered-vs-base ARC benchmark",
+        "Run recovered TTA and selector sweep",
+        "Defer particle/SVGD training",
+    ]
+    assert "run_stage5_arc_agi_recovered_benchmark.py" in actions[0]["command"]
+    assert "run_stage5_arc_agi_tta_sweep.py" in actions[1]["command"]
