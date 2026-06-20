@@ -73,6 +73,9 @@ Initial harness files:
   simple geometry, consistent color-map, and constant-output transformations.
 - `colab/run_stage5_arc_agi_smoke.py`: Colab smoke runner that can clone public
   ARC-AGI data and compare base Qwen against the recurrent Phase1 checkpoint.
+- `colab/run_stage5_arc_agi_candidate_gate.py`: one-shot candidate-source
+  value gate for symbolic-only, model-only, and model+symbolic hybrid ARC-AGI
+  exact-grid evaluation.
 - `training/prepare_arc_agi_sft_jsonl.py`: supervised ARC-AGI JSONL
   preparation with leave-one-out task rows and safe color-permutation
   augmentation.
@@ -102,10 +105,18 @@ The harness should and now does:
 - score exact-grid accuracy,
 - support K candidates and verifier/reranker selection.
 
-Next upgrades:
+Next experiment:
 
-- run model-only, symbolic-only, and hybrid ARC-AGI smoke evaluations before
-  spending more GPU on particles;
+- run `colab/run_stage5_arc_agi_candidate_gate.py` before spending more GPU on
+  particles. This produces a compact table for:
+  - symbolic-only transform coverage;
+  - base Qwen model-only;
+  - base Qwen plus symbolic candidates;
+  - recurrent Phase1 model-only;
+  - recurrent Phase1 plus symbolic candidates.
+
+Next upgrades after that gate:
+
 - add programmatic grid-edit/action traces rather than plain text grid output;
 - add a verifier/reranker for K candidates;
 - add synthetic ARC-style trace generation for recurrent fine-tuning;

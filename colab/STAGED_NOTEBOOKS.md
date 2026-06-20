@@ -93,5 +93,7 @@ The older split notebooks are kept only as references:
 2. Build/validate the MCQ benchmark harness.
 3. Export and push adapter/controller package to Hugging Face.
 4. Fine-tune on modified Opus traces.
-5. Run base vs recurrent benchmarks.
+5. Run base vs recurrent benchmarks, then run
+   `colab/run_stage5_arc_agi_candidate_gate.py` to separate model-only,
+   symbolic-only, and hybrid candidate value before more particle tuning.
 6. Write the report, model card, and release notes.
