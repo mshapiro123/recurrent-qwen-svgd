@@ -41,6 +41,11 @@ def _run_summary() -> dict[str, object]:
                 }
             },
         },
+        "program_only_eval": {
+            "phase1_arc_agi_tuned": {
+                "summary": _summary(3, 4),
+            }
+        },
     }
 
 
@@ -51,6 +56,7 @@ def test_distill_gate_compact_uses_best_checkpoint_when_available() -> None:
     assert row["best_best"] == 6
     assert row["best_valid_rate"] == 0.8
     assert row["best_program_fits"] == 3
+    assert row["program_only_selected"] == 3
 
 
 def test_trace_gate_compact_uses_best_checkpoint_when_available() -> None:
@@ -60,6 +66,7 @@ def test_trace_gate_compact_uses_best_checkpoint_when_available() -> None:
     assert row["tasks_solved_best"] == 6
     assert row["tuned_program_fits"] == 1
     assert row["best_program_fit_selected_exact"] == 2
+    assert row["program_only_best"] == 4
 
 
 def test_trace_gate_supports_symbolic_program_arms() -> None:

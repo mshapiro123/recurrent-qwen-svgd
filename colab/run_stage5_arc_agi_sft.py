@@ -69,6 +69,21 @@ DISTILL_ON = os.environ.get("STAGE5_ARC_AGI_DISTILL_ON", "response")
 MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
 GRID_FORMAT = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
 PROGRAM_PARSE_MODE = os.environ.get("STAGE5_ARC_AGI_PROGRAM_PARSE_MODE", "fallback")
+PROGRAM_ONLY_EVAL = os.environ.get("STAGE5_ARC_AGI_PROGRAM_ONLY_EVAL", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
+PROGRAM_ONLY_CHECKPOINT_LADDER = os.environ.get(
+    "STAGE5_ARC_AGI_PROGRAM_ONLY_CHECKPOINT_LADDER",
+    "0",
+).strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 INCLUDE_SYMBOLIC = os.environ.get("STAGE5_ARC_AGI_INCLUDE_SYMBOLIC", "0").strip().lower() in {
     "1",
     "true",
@@ -298,8 +313,16 @@ def prepare_sft(train_path: Path) -> None:
         print(f"train_rows_after_synthetic={after} added={after - before}")
 
 
-def eval_arc_agi_payload(label: str, mode: str, tasks_path: Path, checkpoint: Path | None = None) -> dict[str, Any]:
+def eval_arc_agi_payload(
+    label: str,
+    mode: str,
+    tasks_path: Path,
+    checkpoint: Path | None = None,
+    *,
+    program_parse_mode: str | None = None,
+) -> dict[str, Any]:
     summary_json = RUN_DIR / f"{label}_summary.json"
+    parse_mode = program_parse_mode or PROGRAM_PARSE_MODE
     cmd = [
         sys.executable,
         "eval/eval_arc_agi.py",
@@ -314,7 +337,7 @@ def eval_arc_agi_payload(label: str, mode: str, tasks_path: Path, checkpoint: Pa
         "--grid_format",
         GRID_FORMAT,
         "--program_parse_mode",
-        PROGRAM_PARSE_MODE,
+        parse_mode,
         "--dtype",
         DTYPE,
         "--adapter_dtype",
@@ -362,6 +385,63 @@ def program_verifier_line(label: str, diagnostics: dict[str, Any]) -> str:
         f"fits_train `{verifier.get('candidates_program_fits_train', 0)}`, "
         f"fit_selected_exact `{verifier.get('program_fit_selected_exact', 0)}`"
     )
+
+
+def compact_eval_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "summary": payload["summary"],
+        "eval_diagnostics": eval_diagnostics(payload),
+    }
+
+
+def eval_program_only_payloads(
+    *,
+    eval_path: Path,
+    tuned_ckpt: Path,
+    checkpoint_ladder: list[dict[str, Any]],
+) -> dict[str, Any]:
+    if not PROGRAM_ONLY_EVAL:
+        return {}
+    rows: dict[str, Any] = {
+        "base": compact_eval_payload(eval_arc_agi_payload("base_program_only", "base", eval_path, program_parse_mode="program_only")),
+        "phase1_start": compact_eval_payload(
+            eval_arc_agi_payload(
+                "phase1_start_program_only",
+                "phase1",
+                eval_path,
+                PHASE1_CKPT,
+                program_parse_mode="program_only",
+            )
+        ),
+        "phase1_arc_agi_tuned": compact_eval_payload(
+            eval_arc_agi_payload(
+                "phase1_arc_agi_tuned_program_only",
+                "phase1",
+                eval_path,
+                tuned_ckpt,
+                program_parse_mode="program_only",
+            )
+        ),
+    }
+    if PROGRAM_ONLY_CHECKPOINT_LADDER:
+        rows["checkpoint_ladder"] = []
+        for row in checkpoint_ladder:
+            checkpoint = ROOT / row["checkpoint"]
+            payload = eval_arc_agi_payload(
+                f"phase1_arc_agi_step_{row['step']}_program_only",
+                "phase1",
+                eval_path,
+                checkpoint,
+                program_parse_mode="program_only",
+            )
+            rows["checkpoint_ladder"].append(
+                {
+                    "step": row["step"],
+                    "checkpoint": row["checkpoint"],
+                    **compact_eval_payload(payload),
+                }
+            )
+    return rows
 
 
 def checkpoint_step(path: Path) -> int:
@@ -527,6 +607,8 @@ def main() -> int:
         "learning_rate": LEARNING_RATE,
         "grid_format": GRID_FORMAT,
         "program_parse_mode": PROGRAM_PARSE_MODE,
+        "program_only_eval": PROGRAM_ONLY_EVAL,
+        "program_only_checkpoint_ladder": PROGRAM_ONLY_CHECKPOINT_LADDER,
         "eval_checkpoint_ladder": EVAL_CHECKPOINT_LADDER,
         "distillation": {
             "enabled": DISTILL_ENABLED,
@@ -558,6 +640,11 @@ def main() -> int:
         else []
     )
     best_checkpoint = best_ladder_row(checkpoint_ladder)
+    program_only_eval = eval_program_only_payloads(
+        eval_path=eval_path,
+        tuned_ckpt=tuned_ckpt,
+        checkpoint_ladder=checkpoint_ladder,
+    )
 
     summary = {
         "metadata": metadata,
@@ -569,6 +656,7 @@ def main() -> int:
             "phase1_start": eval_diagnostics(start_payload),
             "phase1_arc_agi_tuned": eval_diagnostics(tuned_payload),
         },
+        "program_only_eval": program_only_eval,
         "tuned_checkpoint": path_for_cli(tuned_ckpt),
         "checkpoint_ladder": checkpoint_ladder,
         "best_checkpoint": best_checkpoint,
@@ -596,6 +684,7 @@ def main() -> int:
         f"- Tuned checkpoint: `{path_for_cli(tuned_ckpt)}`",
         f"- Grid format: `{GRID_FORMAT}`",
         f"- Program parse mode: `{PROGRAM_PARSE_MODE}`",
+        f"- Program-only eval: `{PROGRAM_ONLY_EVAL}`",
         "",
         "## Exact-Grid Results",
         f"- Base: `{base_summary}`",
@@ -608,6 +697,17 @@ def main() -> int:
         program_verifier_line("Phase1 tuned", diagnostics["phase1_arc_agi_tuned"]),
         "",
     ]
+    if program_only_eval:
+        lines.extend(
+            [
+                "## Program-Only Evaluation",
+                f"- Base: `{program_only_eval['base']['summary']}`",
+                f"- Phase1 start: `{program_only_eval['phase1_start']['summary']}`",
+                f"- Phase1 tuned: `{program_only_eval['phase1_arc_agi_tuned']['summary']}`",
+                program_verifier_line("Program-only tuned", program_only_eval["phase1_arc_agi_tuned"]["eval_diagnostics"]),
+                "",
+            ]
+        )
     if checkpoint_ladder:
         lines.extend(["## Checkpoint Ladder", ""])
         for row in checkpoint_ladder:

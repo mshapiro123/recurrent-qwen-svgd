@@ -110,6 +110,7 @@ def compact(summary: dict[str, Any]) -> dict[str, Any]:
     diagnostics = summary.get("eval_diagnostics", {}).get("phase1_arc_agi_tuned", {})
     verifier = diagnostics.get("program_verifier_summary", {})
     best_verifier = (best_checkpoint.get("eval_diagnostics") or {}).get("program_verifier_summary", {})
+    program_only = (summary.get("program_only_eval", {}).get("phase1_arc_agi_tuned") or {}).get("summary", {})
     return {
         "base_selected": summary["base"]["selected_exact"],
         "base_best": summary["base"]["best_of_k_exact"],
@@ -134,6 +135,8 @@ def compact(summary: dict[str, Any]) -> dict[str, Any]:
             "program_fit_selected_exact",
             verifier.get("program_fit_selected_exact", 0),
         ),
+        "program_only_selected": program_only.get("selected_exact", 0),
+        "program_only_best": program_only.get("best_of_k_exact", 0),
     }
 
 
@@ -188,8 +191,8 @@ def main() -> int:
     lines = [
         f"# Stage 5 ARC-AGI Trace SFT Gate - {RUN_ID}",
         "",
-        "| Arm | Final selected | Final best | Best step | Best selected | Best best | Tasks best | Best valid rate | Program fits | Program fit selected exact |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| Arm | Final selected | Final best | Best step | Best selected | Best best | Tasks best | Best valid rate | Program fits | Program fit selected exact | Program-only selected | Program-only best |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for label, row in rows.items():
         best_step = row["best_step"] if row["best_step"] is not None else "final"
@@ -199,7 +202,8 @@ def main() -> int:
             f"{row['best_selected']}/{row['examples']} | "
             f"{row['best_best']}/{row['examples']} | "
             f"{row['tasks_solved_best']}/{row['tasks']} | {row['best_valid_rate']:.4f} | "
-            f"{row['best_program_fits']} | {row['best_program_fit_selected_exact']} |"
+            f"{row['best_program_fits']} | {row['best_program_fit_selected_exact']} | "
+            f"{row['program_only_selected']}/{row['examples']} | {row['program_only_best']}/{row['examples']} |"
         )
     lines += [
         "",
