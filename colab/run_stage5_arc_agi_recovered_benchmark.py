@@ -43,6 +43,7 @@ MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
 GRID_FORMAT = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
 GEOMETRY_TTA = os.environ.get("STAGE5_ARC_AGI_GEOMETRY_TTA", "none")
 PROGRAM_PARSE_MODE = os.environ.get("STAGE5_ARC_AGI_PROGRAM_PARSE_MODE", "fallback")
+SELECTION_STRATEGY = os.environ.get("STAGE5_ARC_AGI_SELECTION_STRATEGY", "heuristic")
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
 DEVICE = os.environ.get("DEVICE", "cuda")
@@ -193,6 +194,8 @@ def eval_arc(label: str, *, mode: str, tasks_path: Path, checkpoint: Path | None
         GEOMETRY_TTA,
         "--program_parse_mode",
         PROGRAM_PARSE_MODE,
+        "--selection_strategy",
+        SELECTION_STRATEGY,
         "--dtype",
         DTYPE,
         "--adapter_dtype",
@@ -267,6 +270,7 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Recovered checkpoint: `{payload['metadata']['recovered_checkpoint']}`",
         f"- Geometry TTA: `{GEOMETRY_TTA}`",
         f"- Program parse mode: `{PROGRAM_PARSE_MODE}`",
+        f"- Selection strategy: `{SELECTION_STRATEGY}`",
         "",
         "## Results",
         "",
@@ -317,6 +321,7 @@ def main() -> int:
             "grid_format": GRID_FORMAT,
             "geometry_tta": GEOMETRY_TTA,
             "program_parse_mode": PROGRAM_PARSE_MODE,
+            "selection_strategy": SELECTION_STRATEGY,
         },
         "base": base,
         "phase1_start": phase1_start,

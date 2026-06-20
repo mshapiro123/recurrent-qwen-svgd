@@ -204,3 +204,44 @@ def test_candidate_selection_prefers_verified_program_over_shape_heuristic() -> 
         {"parsed_grid": [[6], [6]], "parse_method": "program", "program_fits_train": True},
     ]
     assert select_candidate_index(example, rows) == 1
+
+
+def test_self_consistency_selection_prefers_repeated_grid_after_shape_filter() -> None:
+    example = ArcAgiExample(
+        task_id="vote",
+        test_index=0,
+        train=(
+            ArcPair(input=[[1, 1]], output=[[2, 2]]),
+            ArcPair(input=[[3, 3]], output=[[4, 4]]),
+        ),
+        test_input=[[5, 5]],
+        test_output=[[6, 6]],
+    )
+    rows = [
+        {"parsed_grid": [[9, 9]], "candidate_source": "model_tta_identity"},
+        {"parsed_grid": [[6, 6]], "candidate_source": "model_tta_rot90"},
+        {"parsed_grid": [[6, 6]], "candidate_source": "model_tta_rot180"},
+        {"parsed_grid": [[0], [0]], "candidate_source": "model_tta_flip_h"},
+        {"parsed_grid": [[0], [0]], "candidate_source": "model_tta_flip_v"},
+        {"parsed_grid": [[0], [0]], "candidate_source": "model_tta_transpose"},
+    ]
+
+    assert select_candidate_index(example, rows, selection_strategy="heuristic") == 0
+    assert select_candidate_index(example, rows, selection_strategy="self_consistency") == 1
+
+
+def test_self_consistency_selection_still_prefers_verified_program() -> None:
+    example = ArcAgiExample(
+        task_id="program-vote",
+        test_index=0,
+        train=(ArcPair(input=[[1]], output=[[2]]),),
+        test_input=[[3]],
+        test_output=[[4]],
+    )
+    rows = [
+        {"parsed_grid": [[9]], "parse_method": "grid", "program_fits_train": False, "candidate_source": "a"},
+        {"parsed_grid": [[9]], "parse_method": "grid", "program_fits_train": False, "candidate_source": "b"},
+        {"parsed_grid": [[4]], "parse_method": "program", "program_fits_train": True, "candidate_source": "program"},
+    ]
+
+    assert select_candidate_index(example, rows, selection_strategy="self_consistency") == 2

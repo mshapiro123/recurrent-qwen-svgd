@@ -330,8 +330,11 @@ def inferred_output_shapes(example: ArcAgiExample) -> list[tuple[int, int]]:
     return deduped
 
 
-def select_candidate_index(example: ArcAgiExample, candidate_rows: list[dict[str, Any]]) -> int:
-    preferred_shapes = set(inferred_output_shapes(example))
+def grid_vote_key(grid: Grid) -> str:
+    return json.dumps(grid, separators=(",", ":"))
+
+
+def verified_program_index(candidate_rows: list[dict[str, Any]]) -> int | None:
     for idx, row in enumerate(candidate_rows):
         if (
             row["parsed_grid"] is not None
@@ -339,7 +342,15 @@ def select_candidate_index(example: ArcAgiExample, candidate_rows: list[dict[str
             and row.get("program_fits_train")
         ):
             return idx
+    return None
 
+
+def select_heuristic_candidate_index(example: ArcAgiExample, candidate_rows: list[dict[str, Any]]) -> int:
+    verified_index = verified_program_index(candidate_rows)
+    if verified_index is not None:
+        return verified_index
+
+    preferred_shapes = set(inferred_output_shapes(example))
     first_valid: int | None = None
     for idx, row in enumerate(candidate_rows):
         parsed = row["parsed_grid"]
@@ -354,6 +365,55 @@ def select_candidate_index(example: ArcAgiExample, candidate_rows: list[dict[str
     return 0
 
 
+def select_self_consistency_candidate_index(example: ArcAgiExample, candidate_rows: list[dict[str, Any]]) -> int:
+    verified_index = verified_program_index(candidate_rows)
+    if verified_index is not None:
+        return verified_index
+
+    valid_rows: list[tuple[int, dict[str, Any]]] = [
+        (idx, row) for idx, row in enumerate(candidate_rows) if row["parsed_grid"] is not None
+    ]
+    if not valid_rows:
+        return 0
+
+    preferred_shapes = set(inferred_output_shapes(example))
+    shape_rows = [
+        (idx, row)
+        for idx, row in valid_rows
+        if preferred_shapes and grid_shape(row["parsed_grid"]) in preferred_shapes
+    ]
+    selection_pool = shape_rows or valid_rows
+
+    grid_counts: dict[str, int] = {}
+    grid_sources: dict[str, set[str]] = {}
+    for _idx, row in selection_pool:
+        key = grid_vote_key(row["parsed_grid"])
+        grid_counts[key] = grid_counts.get(key, 0) + 1
+        grid_sources.setdefault(key, set()).add(str(row.get("candidate_source", "unknown")))
+
+    return max(
+        selection_pool,
+        key=lambda item: (
+            grid_counts[grid_vote_key(item[1]["parsed_grid"])],
+            len(grid_sources[grid_vote_key(item[1]["parsed_grid"])]),
+            -item[0],
+        ),
+    )[0]
+
+
+def select_candidate_index(
+    example: ArcAgiExample,
+    candidate_rows: list[dict[str, Any]],
+    *,
+    selection_strategy: str = "heuristic",
+) -> int:
+    if selection_strategy == "heuristic":
+        return select_heuristic_candidate_index(example, candidate_rows)
+    if selection_strategy == "self_consistency":
+        return select_self_consistency_candidate_index(example, candidate_rows)
+    raise ValueError(f"Unknown selection_strategy={selection_strategy!r}")
+
+
 def evaluate_example(
     example: ArcAgiExample,
     candidates: list[str],
@@ -363,9 +423,12 @@ def evaluate_example(
     generation_steps: int,
     output_format: str,
     program_parse_mode: str = "fallback",
+    selection_strategy: str = "heuristic",
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     if program_parse_mode not in {"off", "fallback", "prefer", "program_only"}:
         raise ValueError(f"Unknown program_parse_mode={program_parse_mode!r}")
+    if selection_strategy not in {"heuristic", "self_consistency"}:
+        raise ValueError(f"Unknown selection_strategy={selection_strategy!r}")
     rows: list[dict[str, Any]] = []
     any_exact = False
     first_exact = False
@@ -406,7 +469,7 @@ def evaluate_example(
                 "generation_steps": generation_steps,
             }
         )
-    selected_index = select_candidate_index(example, rows) if rows else 0
+    selected_index = select_candidate_index(example, rows, selection_strategy=selection_strategy) if rows else 0
     if rows:
         rows[selected_index]["selected"] = True
         selected_exact = bool(rows[selected_index]["score"].get("exact"))
@@ -419,6 +482,7 @@ def evaluate_example(
         "first_exact": first_exact if target is not None else None,
         "selected_exact": selected_exact if target is not None else None,
         "selected_index": selected_index,
+        "selection_strategy": selection_strategy,
         "inferred_shapes": [list(shape) for shape in inferred_output_shapes(example)],
         "best_of_k_exact": any_exact if target is not None else None,
         "valid_candidates": valid_count,
@@ -588,6 +652,7 @@ def write_summary_md(path: str | Path | None, payload: dict[str, Any]) -> None:
         f"- Grid format: `{payload['grid_format']}`",
         f"- Geometry TTA: `{payload.get('geometry_tta', 'none')}`",
         f"- Program parse mode: `{payload['program_parse_mode']}`",
+        f"- Selection strategy: `{payload.get('selection_strategy', 'heuristic')}`",
         f"- Symbolic candidate format: `{payload.get('symbolic_candidate_format', 'grid')}`",
         f"- Examples with targets: `{summary['examples_with_targets']}`",
         f"- First-candidate exact: `{summary['first_exact']}` / `{summary['examples_with_targets']}` = `{summary['first_accuracy']}`",
@@ -672,6 +737,16 @@ def main() -> int:
             "How to use tiny symbolic_program traces during scoring: off=grid only, "
             "fallback=execute only if no grid parses, prefer=execute before grid parsing, "
             "program_only=ignore literal grids."
+        ),
+    )
+    parser.add_argument(
+        "--selection_strategy",
+        default="heuristic",
+        choices=("heuristic", "self_consistency"),
+        help=(
+            "How to pick the selected answer from candidates. heuristic preserves the legacy "
+            "program/shape/first-valid selector. self_consistency votes over identical parsed grids "
+            "after optional shape filtering."
         ),
     )
     parser.add_argument("--include_symbolic_candidates", action="store_true")
@@ -817,6 +892,7 @@ def main() -> int:
             generation_steps=generation_steps,
             output_format=args.grid_format,
             program_parse_mode=args.program_parse_mode,
+            selection_strategy=args.selection_strategy,
         )
         example_summaries.append(example_summary)
         for row in rows:
@@ -838,6 +914,7 @@ def main() -> int:
         "grid_format": args.grid_format,
         "geometry_tta": args.geometry_tta,
         "program_parse_mode": args.program_parse_mode,
+        "selection_strategy": args.selection_strategy,
         "include_symbolic_candidates": args.include_symbolic_candidates,
         "symbolic_position": args.symbolic_position,
         "symbolic_candidate_format": args.symbolic_candidate_format,

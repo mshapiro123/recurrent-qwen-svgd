@@ -70,6 +70,7 @@ def test_symbolic_program_candidate_is_verified_and_selectable() -> None:
     verifier = summarize_program_verifier(rows)
 
     assert summary["selected_exact"] is True
+    assert summary["selection_strategy"] == "heuristic"
     assert rows[0]["candidate_source"] == "symbolic_program"
     assert rows[0]["parse_method"] == "program"
     assert rows[0]["program_fits_train"] is True

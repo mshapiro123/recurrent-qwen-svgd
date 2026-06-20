@@ -43,6 +43,7 @@ LIMIT = int(os.environ.get("STAGE5_ARC_AGI_LIMIT", "10"))
 MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
 GRID_FORMAT = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
 PROGRAM_PARSE_MODE = os.environ.get("STAGE5_ARC_AGI_PROGRAM_PARSE_MODE", "fallback")
+SELECTION_STRATEGY = os.environ.get("STAGE5_ARC_AGI_SELECTION_STRATEGY", "self_consistency")
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
 DEVICE = os.environ.get("DEVICE", "cuda")
@@ -241,6 +242,8 @@ def eval_arm(arm: ModelArm, variant: TtaVariant, tasks_path: Path) -> dict[str, 
         variant.geometry_tta,
         "--program_parse_mode",
         PROGRAM_PARSE_MODE,
+        "--selection_strategy",
+        SELECTION_STRATEGY,
         "--dtype",
         DTYPE,
         "--adapter_dtype",
@@ -272,6 +275,7 @@ def summarize_arm_payload(arm: ModelArm, variant: TtaVariant, payload: dict[str,
         "mode": arm.mode,
         "geometry_tta": variant.geometry_tta,
         "tta_variant": variant.name,
+        "selection_strategy": payload.get("selection_strategy", SELECTION_STRATEGY),
         "checkpoint": path_for_cli(arm.checkpoint) if arm.checkpoint is not None else None,
         "first_exact": summary["first_exact"],
         "selected_exact": summary["selected_exact"],
@@ -341,6 +345,7 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Limit: `{LIMIT}`",
         f"- Tasks path: `{payload['metadata']['tasks_path']}`",
         f"- Program parse mode: `{PROGRAM_PARSE_MODE}`",
+        f"- Selection strategy: `{SELECTION_STRATEGY}`",
         f"- TTA variants: `{', '.join(payload['metadata']['tta_variants'])}`",
         f"- Model arms: `{', '.join(payload['metadata']['model_arms'])}`",
         "",
@@ -401,6 +406,7 @@ def main() -> int:
         "recovered_checkpoint": path_for_cli(recovered_ckpt),
         "grid_format": GRID_FORMAT,
         "program_parse_mode": PROGRAM_PARSE_MODE,
+        "selection_strategy": SELECTION_STRATEGY,
         "tta_variants": [variant.name for variant in variants],
         "model_arms": [arm.name for arm in arms],
     }
