@@ -3,13 +3,18 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA = "data/arc_challenge_validation_smoke32.jsonl"
+ARC_LIMIT = int(os.environ.get("ARC_LIMIT", "32"))
+ARC_SPLIT = os.environ.get("ARC_SPLIT", "validation")
+ARC_SEED = int(os.environ.get("ARC_SEED", "0"))
+ARC_TAG = os.environ.get("ARC_TAG", f"arc_challenge_{ARC_SPLIT}_smoke{ARC_LIMIT}")
+DATA = f"data/{ARC_TAG}.jsonl"
 PHASE1 = "outputs/qwen_0_5b_phase1_recreated_beta008_150/phase1_step_150.pt"
 PHASE2 = "outputs/qwen_0_5b_phase2_svgd_recreated_smoke25/phase2_step_25.pt"
 PROJ = "outputs/calibration/recreated_within_group_pca_projection.pt"
@@ -56,11 +61,11 @@ def main() -> int:
             "--config",
             "ARC-Challenge",
             "--split",
-            "validation",
+            ARC_SPLIT,
             "--limit",
-            "32",
+            str(ARC_LIMIT),
             "--seed",
-            "0",
+            str(ARC_SEED),
             "--output_jsonl",
             DATA,
         ]
@@ -89,12 +94,12 @@ def main() -> int:
     jobs = [
         (
             "base/label",
-            OUTDIR / "arc_challenge_smoke32_base_label.jsonl",
+            OUTDIR / f"{ARC_TAG}_base_label.jsonl",
             common + ["--mode", "base", "--aggregate", "mean"],
         ),
         (
             "phase1/label",
-            OUTDIR / "arc_challenge_smoke32_phase1_label.jsonl",
+            OUTDIR / f"{ARC_TAG}_phase1_label.jsonl",
             common
             + [
                 "--mode",
@@ -111,7 +116,7 @@ def main() -> int:
         ),
         (
             "phase2_svgd/label",
-            OUTDIR / "arc_challenge_smoke32_phase2_svgd_label.jsonl",
+            OUTDIR / f"{ARC_TAG}_phase2_svgd_label.jsonl",
             common
             + [
                 "--mode",
@@ -155,12 +160,12 @@ def main() -> int:
     lines = []
     for label, output_path, _ in jobs:
         lines.extend(summarize_file(label, output_path))
-    summary_path = OUTDIR / "arc_challenge_smoke32_summary.txt"
+    summary_path = OUTDIR / f"{ARC_TAG}_summary.txt"
     summary_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(summary_path.read_text(encoding="utf-8"))
 
     run(["git", "status", "-sb"])
-    run(["git", "add", "-f", "outputs/benchmarks/arc_challenge_smoke32*"])
+    run(["git", "add", "-f", f"outputs/benchmarks/{ARC_TAG}*"])
     status = run(["git", "diff", "--cached", "--quiet"], check=False)
     if status.returncode == 0:
         print("No benchmark outputs changed.")
