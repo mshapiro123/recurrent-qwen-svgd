@@ -1,10 +1,10 @@
 """Compare grid-only ARC-AGI SFT against symbolic-trace ARC-AGI SFT.
 
-This is the training counterpart to the candidate-source gate. It runs two
-matched `run_stage5_arc_agi_sft.py` child jobs:
+This is the training counterpart to the candidate-source gate. By default it
+runs two matched `run_stage5_arc_agi_sft.py` child jobs:
 
 1. `STAGE5_ARC_AGI_TRACE_MODE=none`
-2. `STAGE5_ARC_AGI_TRACE_MODE=symbolic`
+2. `STAGE5_ARC_AGI_TRACE_MODE=symbolic`, `STAGE5_ARC_AGI_TRACE_FILTER=covered`
 
 The goal is to determine whether explicit compact transformation traces are a
 better training target than final-grid-only supervision before scaling the ARC
@@ -35,6 +35,7 @@ PUSH_RESULTS = os.environ.get("STAGE5_ARC_AGI_TRACE_SFT_GATE_PUSH", "1").strip()
     "yes",
     "y",
 }
+DEFAULT_ARMS = "grid_only,symbolic_trace_covered"
 
 
 def run(cmd: list[str], *, env: dict[str, str] | None = None, check: bool = True, log_name: str | None = None):
@@ -71,10 +72,29 @@ def child_summary(label: str) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def run_child(label: str, trace_mode: str) -> dict[str, Any]:
+def available_arms() -> dict[str, tuple[str, str]]:
+    return {
+        "grid_only": ("none", "all"),
+        "symbolic_trace_all": ("symbolic", "all"),
+        "symbolic_trace_covered": ("symbolic", "covered"),
+    }
+
+
+def requested_arms() -> list[tuple[str, str, str]]:
+    names = [item.strip() for item in os.environ.get("STAGE5_ARC_AGI_TRACE_SFT_GATE_ARMS", DEFAULT_ARMS).split(",")]
+    names = [name for name in names if name]
+    arms = available_arms()
+    unknown = set(names) - set(arms)
+    if unknown:
+        raise ValueError(f"Unknown trace SFT gate arms: {sorted(unknown)}")
+    return [(name, *arms[name]) for name in names]
+
+
+def run_child(label: str, trace_mode: str, trace_filter: str) -> dict[str, Any]:
     env = os.environ.copy()
     env["STAGE5_ARC_AGI_SFT_RUN_ID"] = child_run_id(label)
     env["STAGE5_ARC_AGI_TRACE_MODE"] = trace_mode
+    env["STAGE5_ARC_AGI_TRACE_FILTER"] = trace_filter
     env["STAGE5_ARC_AGI_SFT_PUSH"] = "0"
     run([sys.executable, "colab/run_stage5_arc_agi_sft.py"], env=env, log_name=f"{label}.log")
     return child_summary(label)
@@ -113,7 +133,7 @@ def backup_to_drive() -> None:
     backup = drive_root / RUN_ID
     backup.mkdir(parents=True, exist_ok=True)
     shutil.copytree(RUN_DIR, backup / "run_dir", dirs_exist_ok=True)
-    for label in ["grid_only", "symbolic_trace"]:
+    for label, _, _ in requested_arms():
         child_dir = ROOT / "outputs" / "stage5" / child_run_id(label)
         if child_dir.exists():
             shutil.copytree(child_dir, backup / label, dirs_exist_ok=True)
@@ -135,16 +155,13 @@ def main() -> int:
         print("Run from Colab after Stage 5 checkpoints are available.")
         return 0
 
-    grid_only = run_child("grid_only", "none")
-    symbolic_trace = run_child("symbolic_trace", "symbolic")
+    arms = requested_arms()
+    results = {label: run_child(label, trace_mode, trace_filter) for label, trace_mode, trace_filter in arms}
     payload = {
         "run_id": RUN_ID,
-        "grid_only": grid_only,
-        "symbolic_trace": symbolic_trace,
-        "comparison": {
-            "grid_only": compact(grid_only),
-            "symbolic_trace": compact(symbolic_trace),
-        },
+        "arms": [{"label": label, "trace_mode": mode, "trace_filter": trace_filter} for label, mode, trace_filter in arms],
+        "results": results,
+        "comparison": {label: compact(summary) for label, summary in results.items()},
     }
     (RUN_DIR / "summary.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
     rows = payload["comparison"]
@@ -162,7 +179,8 @@ def main() -> int:
         )
     lines += [
         "",
-        "Gate: symbolic-trace SFT should beat or match grid-only SFT before scaling this recipe.",
+        "Gate: symbolic-trace SFT should beat or match grid-only SFT before scaling this recipe. "
+        "The default symbolic arm keeps only examples covered by exact symbolic traces.",
     ]
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))

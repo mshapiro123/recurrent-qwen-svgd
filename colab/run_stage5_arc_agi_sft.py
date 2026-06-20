@@ -46,6 +46,7 @@ EVAL_TASK_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_EVAL_TASK_LIMIT", "10"))
 COLOR_AUGS = int(os.environ.get("STAGE5_ARC_AGI_COLOR_AUGS", "2"))
 GEOMETRY_AUGS = os.environ.get("STAGE5_ARC_AGI_GEOMETRY_AUGS", "all")
 TRACE_MODE = os.environ.get("STAGE5_ARC_AGI_TRACE_MODE", "none")
+TRACE_FILTER = os.environ.get("STAGE5_ARC_AGI_TRACE_FILTER", "all")
 MAX_LENGTH = int(os.environ.get("STAGE5_ARC_AGI_MAX_LENGTH", "1024"))
 MAX_TOTAL_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_TOTAL_TOKENS", "2048"))
 TRAIN_STEPS = int(os.environ.get("STAGE5_ARC_AGI_TRAIN_STEPS", "300"))
@@ -202,6 +203,8 @@ def prepare_sft(train_path: Path) -> None:
             GRID_FORMAT,
             "--trace_mode",
             TRACE_MODE,
+            "--trace_filter",
+            TRACE_FILTER,
             "--max_total_tokens",
             str(MAX_TOTAL_TOKENS),
         ],
@@ -342,6 +345,7 @@ def main() -> int:
         "color_augmentations": COLOR_AUGS,
         "geometry_augmentations": GEOMETRY_AUGS,
         "trace_mode": TRACE_MODE,
+        "trace_filter": TRACE_FILTER,
         "train_steps": TRAIN_STEPS,
         "learning_rate": LEARNING_RATE,
         "grid_format": GRID_FORMAT,
@@ -378,6 +382,7 @@ def main() -> int:
         f"- Eval task limit: `{EVAL_TASK_LIMIT}`",
         f"- Geometry augmentations: `{GEOMETRY_AUGS}`",
         f"- Trace mode: `{TRACE_MODE}`",
+        f"- Trace filter: `{TRACE_FILTER}`",
         f"- Symbolic candidates: `{INCLUDE_SYMBOLIC}`",
         f"- Symbolic position: `{SYMBOLIC_POSITION if INCLUDE_SYMBOLIC else 'n/a'}`",
         f"- Tuned checkpoint: `{path_for_cli(tuned_ckpt)}`",

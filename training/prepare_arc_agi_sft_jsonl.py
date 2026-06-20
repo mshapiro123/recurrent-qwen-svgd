@@ -216,8 +216,16 @@ def main() -> int:
     parser.add_argument("--append_eos", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--grid_format", default="json", choices=("json", "compact", "tagged"))
     parser.add_argument("--trace_mode", default="none", choices=("none", "symbolic"))
+    parser.add_argument(
+        "--trace_filter",
+        default="all",
+        choices=("all", "covered", "uncovered"),
+        help="When trace_mode=symbolic, optionally keep only rows with or without an exact symbolic trace.",
+    )
     parser.add_argument("--max_total_tokens", type=int, default=4096)
     args = parser.parse_args()
+    if args.trace_filter != "all" and args.trace_mode != "symbolic":
+        raise SystemExit("--trace_filter requires --trace_mode symbolic")
 
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name)
     base_examples = load_arc_agi_examples(args.tasks_path, solutions_path=args.solutions_path, limit=args.limit)
@@ -248,6 +256,7 @@ def main() -> int:
 
     rows: list[dict[str, object]] = []
     skipped = 0
+    trace_filtered = 0
     for example, source in augmented:
         working = example
         if args.shuffle_train_examples and len(working.train) > 1:
@@ -264,6 +273,13 @@ def main() -> int:
         )
         if row is None:
             skipped += 1
+            continue
+        has_trace = bool(row.get("trace_source"))
+        if args.trace_filter == "covered" and not has_trace:
+            trace_filtered += 1
+            continue
+        if args.trace_filter == "uncovered" and has_trace:
+            trace_filtered += 1
             continue
         token_count = len(tokenizer(str(row["prompt"]) + str(row["completion"]), add_special_tokens=False)["input_ids"])
         if token_count > args.max_total_tokens:
@@ -292,6 +308,8 @@ def main() -> int:
     print(f"skipped_rows={skipped}")
     print(f"grid_format={args.grid_format}")
     print(f"trace_mode={args.trace_mode}")
+    print(f"trace_filter={args.trace_filter}")
+    print(f"trace_filtered_rows={trace_filtered}")
     print(f"symbolic_trace_rows={sum(1 for row in rows if row.get('trace_source'))}")
     print(f"geometry_transforms={','.join(geometry_transforms)}")
     return 0

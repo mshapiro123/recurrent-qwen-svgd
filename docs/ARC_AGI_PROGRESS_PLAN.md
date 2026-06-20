@@ -75,7 +75,10 @@ Initial harness files:
   ARC-AGI data and compare base Qwen against the recurrent Phase1 checkpoint.
 - `colab/run_stage5_arc_agi_candidate_gate.py`: one-shot candidate-source
   value gate for symbolic-only, model-only, and model+symbolic hybrid ARC-AGI
-  exact-grid evaluation.
+  exact-grid evaluation. It also writes symbolic coverage summaries before
+  running model inference.
+- `eval/analyze_arc_agi_symbolic.py`: cheap coverage analyzer for the small
+  symbolic candidate generator.
 - `training/prepare_arc_agi_sft_jsonl.py`: supervised ARC-AGI JSONL
   preparation with leave-one-out task rows and safe color-permutation
   augmentation. It also supports `--trace_mode symbolic`, which prepends a
@@ -142,11 +145,13 @@ generation against base and the pre-SFT recurrent checkpoint on the ARC-AGI
 evaluation split.
 
 Set `STAGE5_ARC_AGI_TRACE_MODE=symbolic` to train on explicit transformation
-traces for covered examples. Keep `STAGE5_ARC_AGI_TRACE_MODE=none` as the
-grid-only control.
+traces for covered examples. Use `STAGE5_ARC_AGI_TRACE_FILTER=covered` for the
+clean curriculum arm, and keep `STAGE5_ARC_AGI_TRACE_MODE=none` as the grid-only
+control.
 
 Run `colab/run_stage5_arc_agi_trace_sft_gate.py` to execute both controls under
-the same settings and write one comparison summary.
+the same settings and write one comparison summary. By default it compares
+grid-only SFT against symbolic-trace SFT on trace-covered examples.
 
 Gate:
 

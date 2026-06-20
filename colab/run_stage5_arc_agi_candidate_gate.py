@@ -245,9 +245,29 @@ def compact_row(result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def write_comparison(results: list[dict[str, Any]], metadata: dict[str, Any]) -> None:
+def analyze_symbolic_coverage(tasks_path: Path) -> dict[str, Any]:
+    summary_json = RUN_DIR / "symbolic_coverage.json"
+    run(
+        [
+            sys.executable,
+            "eval/analyze_arc_agi_symbolic.py",
+            "--tasks_path",
+            str(tasks_path),
+            "--limit",
+            str(LIMIT),
+            "--summary_json",
+            path_for_cli(summary_json),
+            "--summary_md",
+            path_for_cli(RUN_DIR / "symbolic_coverage.md"),
+        ],
+        log_name="symbolic_coverage.log",
+    )
+    return read_summary(summary_json)["summary"]
+
+
+def write_comparison(results: list[dict[str, Any]], metadata: dict[str, Any], coverage: dict[str, Any]) -> None:
     rows = [compact_row(result) for result in results]
-    payload = {"metadata": metadata, "rows": rows, "results": results}
+    payload = {"metadata": metadata, "symbolic_coverage": coverage, "rows": rows, "results": results}
     (RUN_DIR / "summary.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     lines = [
@@ -258,6 +278,10 @@ def write_comparison(results: list[dict[str, Any]], metadata: dict[str, Any]) ->
         f"- Limit: `{LIMIT}`",
         f"- Grid format: `{GRID_FORMAT}`",
         f"- Phase1 checkpoint: `{path_for_cli(PHASE1_CKPT)}`",
+        f"- Symbolic exact coverage: `{coverage['exact_symbolic']}` / `{coverage['examples_with_targets']}` = "
+        f"`{coverage['exact_symbolic_rate']}`",
+        f"- Symbolic task solve coverage: `{coverage['tasks_solved_symbolic']}` / `{coverage['tasks_with_targets']}` = "
+        f"`{coverage['task_solve_rate_symbolic']}`",
         "",
         "## Comparison",
         "",
@@ -341,8 +365,9 @@ def main() -> int:
     (RUN_DIR / "run_metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
     print(json.dumps(metadata, indent=2))
 
+    coverage = analyze_symbolic_coverage(tasks_path)
     results = [eval_variant(variant, tasks_path) for variant in variants]
-    write_comparison(results, metadata)
+    write_comparison(results, metadata, coverage)
     backup_to_drive()
     if PUSH_RESULTS:
         git_commit_results()

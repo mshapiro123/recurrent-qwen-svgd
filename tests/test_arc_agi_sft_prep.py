@@ -42,3 +42,27 @@ def test_example_to_jsonl_row_can_include_symbolic_trace() -> None:
     assert row["trace_mode"] == "symbolic"
     assert row["trace_source"] == "constant_output"
     assert int(row["cot_tokens"]) > 1
+
+
+def test_example_to_jsonl_row_symbolic_mode_can_leave_uncovered_rows_untraced() -> None:
+    example = ArcAgiExample(
+        task_id="uncovered",
+        test_index=0,
+        train=(
+            ArcPair(input=[[1]], output=[[2]]),
+            ArcPair(input=[[2]], output=[[4]]),
+        ),
+        test_input=[[3]],
+        test_output=[[9]],
+    )
+    row = example_to_jsonl_row(
+        FakeTokenizer(),
+        example,
+        append_eos=False,
+        source="unit",
+        output_format="compact",
+        trace_mode="symbolic",
+    )
+    assert row is not None
+    assert not str(row["completion"]).startswith("<think>")
+    assert row["trace_source"] is None
