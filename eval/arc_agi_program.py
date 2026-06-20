@@ -5,6 +5,7 @@ program lines emitted by ``format_symbolic_program_trace``:
 
     grid = constant_output_from_demonstrations(train_outputs)
     grid = transform(test_input, 'rot90')
+    grid = transform(grid, 'rot90')
     grid = crop_non_background(test_input, background=0)
     grid = recolor(grid, {1: 2, 0: 3})
     return grid
@@ -18,7 +19,7 @@ from eval.arc_agi_utils import ArcAgiExample, GEOMETRY_TRANSFORMS, Grid, apply_g
 from eval.arc_agi_symbolic import all_outputs_equal, apply_color_map, crop_non_background
 
 
-_TRANSFORM_RE = re.compile(r"grid\s*=\s*transform\s*\(\s*test_input\s*,\s*['\"]?([a-z0-9_]+)['\"]?\s*\)")
+_TRANSFORM_RE = re.compile(r"grid\s*=\s*transform\s*\(\s*(test_input|grid)\s*,\s*['\"]?([a-z0-9_]+)['\"]?\s*\)")
 _RECOLOR_RE = re.compile(r"grid\s*=\s*recolor\s*\(\s*grid\s*,\s*\{([^}]*)\}\s*\)")
 _CONSTANT_RE = re.compile(r"grid\s*=\s*constant_output_from_demonstrations\s*\(\s*train_outputs\s*\)")
 _CROP_RE = re.compile(r"grid\s*=\s*crop_non_background\s*\(\s*test_input\s*,\s*background\s*=\s*([0-9])\s*\)")
@@ -71,10 +72,16 @@ def execute_arc_program(example: ArcAgiExample, program_text: str) -> Grid | Non
             continue
         transform_match = _TRANSFORM_RE.fullmatch(line)
         if transform_match:
-            transform = transform_match.group(1)
+            source = transform_match.group(1)
+            transform = transform_match.group(2)
             if transform not in GEOMETRY_TRANSFORMS:
                 return None
-            grid = apply_geometry_transform(example.test_input, transform)
+            if source == "test_input":
+                grid = apply_geometry_transform(example.test_input, transform)
+            elif grid is not None:
+                grid = apply_geometry_transform(grid, transform)
+            else:
+                return None
             continue
         crop_match = _CROP_RE.fullmatch(line)
         if crop_match:

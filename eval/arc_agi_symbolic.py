@@ -7,6 +7,7 @@ that can be inferred exactly from demonstrations:
 - dihedral geometry transforms;
 - consistent per-color maps after a geometry transform;
 - non-background object bounding-box crops;
+- crop, then transform, then recolor compositions;
 - constant-output tasks.
 """
 
@@ -94,6 +95,23 @@ def learn_crop_background_and_color_map(inputs: list[Grid], outputs: list[Grid])
         color_map = learn_color_map([grid for grid in cropped if grid is not None], outputs)
         if color_map is not None and any(source != target for source, target in color_map.items()):
             return background, color_map
+    return None
+
+
+def learn_crop_transform_and_color_map(inputs: list[Grid], outputs: list[Grid]) -> tuple[int, str, dict[int, int]] | None:
+    for background in range(10):
+        cropped = [crop_non_background(grid, background) for grid in inputs]
+        if any(item is None for item in cropped):
+            continue
+        cropped_grids = [grid for grid in cropped if grid is not None]
+        for transform in GEOMETRY_TRANSFORMS:
+            transformed = [apply_geometry_transform(grid, transform) for grid in cropped_grids]
+            color_map = learn_color_map(transformed, outputs)
+            if color_map is None:
+                continue
+            is_nontrivial = transform != "identity" or any(source != target for source, target in color_map.items())
+            if is_nontrivial:
+                return background, transform, color_map
     return None
 
 
@@ -202,6 +220,34 @@ def symbolic_candidates(example: ArcAgiExample) -> list[SymbolicCandidate]:
                 ),
             )
         )
+
+    crop_transform_recolor = learn_crop_transform_and_color_map([pair.input for pair in train_pairs], outputs)
+    if crop_transform_recolor is not None:
+        crop_background, transform, color_map = crop_transform_recolor
+        cropped_test = crop_non_background(example.test_input, crop_background)
+        if cropped_test is not None:
+            transformed_test = apply_geometry_transform(cropped_test, transform)
+            predicted = apply_color_map(transformed_test, color_map)
+            candidates.append(
+                SymbolicCandidate(
+                    f"crop_non_background_bg{crop_background}+{transform}+color_map",
+                    predicted,
+                    (
+                        f"Background color: {crop_background}.",
+                        "Rule: crop the minimal bounding box around non-background cells.",
+                        f"Geometry transform after crop: {transform}.",
+                        color_map_trace(color_map),
+                        "Action: crop, transform, and recolor the test input.",
+                    ),
+                    (
+                        "program:",
+                        f"  grid = crop_non_background(test_input, background={crop_background})",
+                        f"  grid = transform(grid, {transform!r})",
+                        f"  grid = recolor(grid, {color_map_program_literal(color_map)})",
+                        "  return grid",
+                    ),
+                )
+            )
 
     return dedupe_candidates(candidates)
 

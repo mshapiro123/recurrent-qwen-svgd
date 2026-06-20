@@ -100,6 +100,34 @@ def test_symbolic_candidates_learn_crop_recolor() -> None:
     assert "recolor(grid" in program_trace
 
 
+def test_symbolic_candidates_learn_crop_transform_recolor() -> None:
+    example = ArcAgiExample(
+        task_id="crop-transform-recolor",
+        test_index=0,
+        train=(
+            ArcPair(
+                input=[[0, 0, 0, 0, 0], [0, 1, 2, 3, 0], [0, 4, 5, 6, 0], [0, 0, 0, 0, 0]],
+                output=[[7, 8], [9, 1], [2, 3]],
+            ),
+            ArcPair(
+                input=[[0, 1, 4, 2, 0], [0, 5, 3, 6, 0], [0, 0, 0, 0, 0]],
+                output=[[7, 1], [8, 2], [9, 3]],
+            ),
+        ),
+        test_input=[[0, 6, 5, 4, 0], [0, 3, 2, 1, 0], [0, 0, 0, 0, 0]],
+        test_output=[[3, 2], [1, 9], [8, 7]],
+    )
+    exact = exact_symbolic_candidate(example)
+    assert exact is not None
+    assert exact.name == "crop_non_background_bg0+transpose+color_map"
+    assert exact.grid == [[3, 2], [1, 9], [8, 7]]
+    trace = format_symbolic_trace(exact)
+    assert "crop, transform, and recolor" in trace
+    program_trace = format_symbolic_program_trace(exact)
+    assert "transform(grid, 'transpose')" in program_trace
+    assert "recolor(grid" in program_trace
+
+
 def test_evaluate_example_tracks_candidate_sources() -> None:
     example = ArcAgiExample(
         task_id="source",

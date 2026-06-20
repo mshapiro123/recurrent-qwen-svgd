@@ -17,6 +17,9 @@ from eval.arc_agi_utils import GEOMETRY_TRANSFORMS, Grid, apply_geometry_transfo
 from eval.arc_agi_symbolic import apply_color_map, crop_non_background  # noqa: E402
 
 
+SHAPE_CHANGING_TRANSFORMS = ("rot90", "rot270", "transpose", "anti_transpose")
+
+
 def random_palette(rng: random.Random, min_colors: int = 2, max_colors: int = 5) -> list[int]:
     count = rng.randint(min_colors, max_colors)
     return rng.sample(range(10), count)
@@ -62,16 +65,22 @@ def random_object_grid(
     background: int,
     object_palette: list[int],
     ensure_object_palette: bool = False,
+    object_shape: tuple[int, int] | None = None,
 ) -> Grid:
     height = rng.randint(max(min_size + 1, 3), max_size)
     width = rng.randint(max(min_size + 1, 3), max_size)
+    if object_shape is not None:
+        obj_h, obj_w = object_shape
+        height = max(height, obj_h + 1)
+        width = max(width, obj_w + 1)
     grid = [[background for _ in range(width)] for _ in range(height)]
-    min_area = len(object_palette) if ensure_object_palette else 1
-    for _ in range(100):
-        obj_h = rng.randint(1, max(1, height - 1))
-        obj_w = rng.randint(1, max(1, width - 1))
-        if obj_h * obj_w >= min_area:
-            break
+    if object_shape is None:
+        min_area = len(object_palette) if ensure_object_palette else 1
+        for _ in range(100):
+            obj_h = rng.randint(1, max(1, height - 1))
+            obj_w = rng.randint(1, max(1, width - 1))
+            if obj_h * obj_w >= min_area:
+                break
     row_start = rng.randint(0, height - obj_h)
     col_start = rng.randint(0, width - obj_w)
     object_cells: list[tuple[int, int]] = []
@@ -208,6 +217,58 @@ def generate_crop_recolor_task(
     }
 
 
+def generate_crop_transform_recolor_task(
+    rng: random.Random,
+    task_id: str,
+    *,
+    train_examples: int,
+    test_examples: int,
+    min_size: int,
+    max_size: int,
+) -> dict[str, Any]:
+    del task_id
+    background = rng.randrange(10)
+    object_palette = rng.sample([color for color in range(10) if color != background], rng.randint(1, 4))
+    color_map = random_non_identity_color_map(rng, object_palette)
+    transform = rng.choice(SHAPE_CHANGING_TRANSFORMS)
+    effective_max_size = max(max_size, min_size + 2, 4)
+    shape_limit = max(2, effective_max_size - 1)
+
+    def object_shape(idx: int) -> tuple[int, int]:
+        height = rng.randint(1, shape_limit)
+        width = rng.randint(1, shape_limit)
+        if height == width:
+            width = min(shape_limit, width + 1) if width < shape_limit else max(1, width - 1)
+        if idx == 0:
+            while height * width < len(object_palette):
+                width += 1
+                if width > shape_limit:
+                    height += 1
+                    width = 1
+        return height, width
+
+    def make_pair(idx: int, *, is_train: bool) -> dict[str, Grid]:
+        grid = random_object_grid(
+            rng,
+            min_size=min_size,
+            max_size=effective_max_size,
+            background=background,
+            object_palette=object_palette,
+            ensure_object_palette=is_train and idx == 0,
+            object_shape=object_shape(idx),
+        )
+        cropped = crop_non_background(grid, background)
+        if cropped is None:
+            raise RuntimeError("generated crop-transform-recolor task without foreground")
+        transformed = apply_geometry_transform(cropped, transform)
+        return {"input": grid, "output": apply_color_map(transformed, color_map)}
+
+    return {
+        "train": [make_pair(idx, is_train=True) for idx in range(train_examples)],
+        "test": [make_pair(idx, is_train=False) for idx in range(test_examples)],
+    }
+
+
 def generate_tasks(
     *,
     num_tasks: int,
@@ -259,6 +320,15 @@ def generate_tasks(
                 min_size=min_size,
                 max_size=max_size,
             )
+        elif mode == "crop_transform_recolor":
+            tasks[task_id] = generate_crop_transform_recolor_task(
+                rng,
+                task_id,
+                train_examples=train_examples,
+                test_examples=test_examples,
+                min_size=min_size,
+                max_size=max_size,
+            )
         else:
             raise ValueError(f"Unknown mode: {mode}")
     return tasks
@@ -266,9 +336,15 @@ def generate_tasks(
 
 def parse_modes(value: str) -> list[str]:
     if value == "all":
-        return ["geometry_color", "constant_output", "crop_non_background", "crop_recolor"]
+        return ["geometry_color", "constant_output", "crop_non_background", "crop_recolor", "crop_transform_recolor"]
     modes = [item.strip() for item in value.split(",") if item.strip()]
-    unknown = set(modes) - {"geometry_color", "constant_output", "crop_non_background", "crop_recolor"}
+    unknown = set(modes) - {
+        "geometry_color",
+        "constant_output",
+        "crop_non_background",
+        "crop_recolor",
+        "crop_transform_recolor",
+    }
     if unknown:
         raise ValueError(f"Unknown synthetic modes: {sorted(unknown)}")
     return modes

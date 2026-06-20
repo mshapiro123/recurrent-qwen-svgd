@@ -107,6 +107,28 @@ def test_execute_arc_program_runs_crop_recolor() -> None:
     assert execute_arc_program(example, "\n".join(candidate.program)) == [[8, 7], [6, 0]]
 
 
+def test_execute_arc_program_runs_transform_on_current_grid() -> None:
+    example = ArcAgiExample(
+        task_id="crop-transform",
+        test_index=0,
+        train=(
+            ArcPair(input=[[0, 1, 2], [0, 3, 4], [0, 0, 0]], output=[[3, 1], [4, 2]]),
+            ArcPair(input=[[0, 5, 6], [0, 7, 8], [0, 0, 0]], output=[[7, 5], [8, 6]]),
+        ),
+        test_input=[[0, 9, 1], [0, 2, 3], [0, 0, 0]],
+        test_output=[[2, 9], [3, 1]],
+    )
+    program = "\n".join(
+        [
+            "program:",
+            "  grid = crop_non_background(test_input, background=0)",
+            "  grid = transform(grid, 'transpose')",
+            "  return grid",
+        ]
+    )
+    assert execute_arc_program(example, program) == [[9, 2], [1, 3]]
+
+
 def test_parse_arc_program_from_text_extracts_think_region() -> None:
     example = ArcAgiExample(
         task_id="constant",
