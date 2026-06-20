@@ -100,4 +100,7 @@ The older split notebooks are kept only as references:
    to compare grid-only ARC SFT against symbolic-trace ARC SFT on trace-covered
    examples. Then run `colab/run_stage5_arc_agi_distill_sft_gate.py` to test
    whether frozen-base logit distillation preserves competence during ARC SFT.
+   For unattended A100 time, run `colab/run_stage5_arc_agi_autopilot.py`
+   instead; it branches through those gates with explicit thresholds and writes
+   one decision report.
 6. Write the report, model card, and release notes.

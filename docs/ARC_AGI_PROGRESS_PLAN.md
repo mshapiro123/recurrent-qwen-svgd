@@ -91,6 +91,9 @@ Initial harness files:
   grid-only supervision versus symbolic-trace supervision.
 - `colab/run_stage5_arc_agi_distill_sft_gate.py`: matched two-arm SFT runner
   for base-logit distillation off versus on.
+- `colab/run_stage5_arc_agi_autopilot.py`: overnight runner that executes the
+  candidate gate, conditionally runs trace-SFT, and conditionally runs the
+  distillation gate using configurable thresholds.
 - Grid output formats: JSON, compact row strings, and tagged row strings are
   supported. Colab ARC-AGI runners default to compact row strings because they
   are shorter and easier for a 0.5B model to emit reliably.
@@ -159,6 +162,15 @@ Set `STAGE5_ARC_AGI_DISTILL=1` to add frozen-base next-token KL distillation
 inside `training/train_phase1_ponder.py`. Run
 `colab/run_stage5_arc_agi_distill_sft_gate.py` to compare the selected ARC SFT
 recipe with distillation off versus on.
+
+For overnight runs, prefer `colab/run_stage5_arc_agi_autopilot.py`. It always
+runs the candidate gate, then proceeds to trace-SFT when symbolic coverage and
+hybrid best-of-K deltas clear thresholds, then proceeds to distillation when
+trace-SFT matches or beats grid-only SFT. Thresholds:
+
+- `STAGE5_ARC_AGI_AUTOPILOT_MIN_SYMBOLIC_EXACT` default `1`;
+- `STAGE5_ARC_AGI_AUTOPILOT_MIN_HYBRID_BEST_DELTA` default `0`;
+- `STAGE5_ARC_AGI_AUTOPILOT_MIN_TRACE_BEST_DELTA` default `0`.
 
 Gate:
 
