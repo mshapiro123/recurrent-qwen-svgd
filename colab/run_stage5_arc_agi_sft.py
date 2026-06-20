@@ -102,6 +102,12 @@ TRAIN_JSONL = ROOT / "data" / f"{RUN_ID}_train.jsonl"
 VAL_JSONL = ROOT / "data" / f"{RUN_ID}_val.jsonl"
 SYNTHETIC_TASKS_JSON = RUN_DIR / "synthetic_arc_tasks.json"
 SYNTHETIC_JSONL = ROOT / "data" / f"{RUN_ID}_synthetic_train.jsonl"
+CANDIDATE_DISTILL_JSONLS = os.environ.get("STAGE5_ARC_AGI_CANDIDATE_DISTILL_JSONLS", "")
+CANDIDATE_DISTILL_CHOICE = os.environ.get("STAGE5_ARC_AGI_CANDIDATE_DISTILL_CHOICE", "best_exact")
+CANDIDATE_DISTILL_COMPLETION_SOURCE = os.environ.get(
+    "STAGE5_ARC_AGI_CANDIDATE_DISTILL_COMPLETION_SOURCE",
+    "candidate_text",
+)
 
 
 def run(cmd: list[str], *, check: bool = True, log_name: str | None = None) -> subprocess.CompletedProcess[str]:
@@ -198,6 +204,17 @@ def resolve_split_path(repo_dir: Path, split: str) -> Path:
     raise FileNotFoundError(f"Could not find ARC-AGI split {split!r} under {repo_dir}")
 
 
+def candidate_distill_sources(value: str = CANDIDATE_DISTILL_JSONLS) -> list[Path]:
+    paths: list[Path] = []
+    for item in value.split(","):
+        item = item.strip()
+        if not item:
+            continue
+        path = Path(item)
+        paths.append(path if path.is_absolute() else ROOT / path)
+    return paths
+
+
 def write_yaml(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
@@ -234,7 +251,48 @@ def add_symbolic_args(cmd: list[str]) -> list[str]:
     return cmd
 
 
-def prepare_sft(train_path: Path) -> None:
+def append_candidate_distill_rows() -> list[dict[str, Any]]:
+    distill_info: list[dict[str, Any]] = []
+    for idx, source in enumerate(candidate_distill_sources()):
+        if not source.exists():
+            raise FileNotFoundError(f"Missing candidate distillation source: {source}")
+        output = RUN_DIR / f"candidate_distill_{idx:02d}_{source.stem}.jsonl"
+        run(
+            [
+                sys.executable,
+                "training/prepare_arc_agi_candidate_distill_jsonl.py",
+                "--candidates_jsonl",
+                path_for_cli(source),
+                "--output_jsonl",
+                path_for_cli(output),
+                "--tokenizer_name",
+                MODEL_NAME,
+                "--choice",
+                CANDIDATE_DISTILL_CHOICE,
+                "--completion_source",
+                CANDIDATE_DISTILL_COMPLETION_SOURCE,
+                "--output_format",
+                GRID_FORMAT,
+            ],
+            log_name=f"prepare_candidate_distill_{idx:02d}.log",
+        )
+        rows = count_jsonl(output)
+        before = count_jsonl(TRAIN_JSONL)
+        append_jsonl(TRAIN_JSONL, output)
+        after = count_jsonl(TRAIN_JSONL)
+        info = {
+            "source_jsonl": path_for_cli(source),
+            "output_jsonl": path_for_cli(output),
+            "rows": rows,
+            "train_rows_before_append": before,
+            "train_rows_after_append": after,
+        }
+        distill_info.append(info)
+        print(f"candidate_distill_jsonl={source} rows={rows} train_rows_after_append={after}")
+    return distill_info
+
+
+def prepare_sft(train_path: Path) -> list[dict[str, Any]]:
     run(
         [
             sys.executable,
@@ -312,6 +370,7 @@ def prepare_sft(train_path: Path) -> None:
         after = count_jsonl(TRAIN_JSONL)
         print(f"synthetic_jsonl_rows={count_jsonl(SYNTHETIC_JSONL)}")
         print(f"train_rows_after_synthetic={after} added={after - before}")
+    return append_candidate_distill_rows()
 
 
 def eval_arc_agi_payload(
@@ -606,6 +665,9 @@ def main() -> int:
         "synthetic_tasks": SYNTHETIC_TASKS,
         "synthetic_seed": SYNTHETIC_SEED,
         "synthetic_modes": SYNTHETIC_MODES,
+        "candidate_distill_jsonls": [path_for_cli(path) for path in candidate_distill_sources()],
+        "candidate_distill_choice": CANDIDATE_DISTILL_CHOICE,
+        "candidate_distill_completion_source": CANDIDATE_DISTILL_COMPLETION_SOURCE,
         "train_steps": TRAIN_STEPS,
         "save_every": SAVE_EVERY,
         "learning_rate": LEARNING_RATE,
@@ -631,7 +693,7 @@ def main() -> int:
     (RUN_DIR / "run_metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
     print(json.dumps(metadata, indent=2))
 
-    prepare_sft(train_path)
+    candidate_distill_info = prepare_sft(train_path)
     base_payload = eval_arc_agi_payload("base", "base", eval_path)
     base_summary = base_payload["summary"]
     start_payload = eval_arc_agi_payload("phase1_start", "phase1", eval_path, PHASE1_CKPT)
@@ -665,6 +727,7 @@ def main() -> int:
         "tuned_checkpoint": path_for_cli(tuned_ckpt),
         "checkpoint_ladder": checkpoint_ladder,
         "best_checkpoint": best_checkpoint,
+        "candidate_distill_info": candidate_distill_info,
     }
     diagnostics = summary["eval_diagnostics"]
     (RUN_DIR / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
@@ -682,6 +745,9 @@ def main() -> int:
         f"- Trace mode: `{TRACE_MODE}`",
         f"- Trace filter: `{TRACE_FILTER}`",
         f"- Synthetic tasks: `{SYNTHETIC_TASKS}` modes `{SYNTHETIC_MODES}`",
+        f"- Candidate distillation sources: `{metadata['candidate_distill_jsonls']}`",
+        f"- Candidate distillation choice: `{CANDIDATE_DISTILL_CHOICE}`",
+        f"- Candidate distillation completion source: `{CANDIDATE_DISTILL_COMPLETION_SOURCE}`",
         f"- Distillation: `{DISTILL_ENABLED}` weight `{DISTILL_WEIGHT}` temperature `{DISTILL_TEMPERATURE}` on `{DISTILL_ON}`",
         f"- Symbolic candidates: `{INCLUDE_SYMBOLIC}`",
         f"- Symbolic position: `{SYMBOLIC_POSITION if INCLUDE_SYMBOLIC else 'n/a'}`",
@@ -703,6 +769,14 @@ def main() -> int:
         program_verifier_line("Phase1 tuned", diagnostics["phase1_arc_agi_tuned"]),
         "",
     ]
+    if candidate_distill_info:
+        lines.extend(["## Candidate Distillation Rows", ""])
+        for item in candidate_distill_info:
+            lines.append(
+                f"- `{item['source_jsonl']}` -> `{item['output_jsonl']}` rows `{item['rows']}`, "
+                f"train rows `{item['train_rows_before_append']}` -> `{item['train_rows_after_append']}`"
+            )
+        lines.append("")
     if program_only_eval:
         lines.extend(
             [

@@ -4,6 +4,7 @@ from pathlib import Path
 
 from colab.run_stage5_arc_agi_sft import (
     best_ladder_row,
+    candidate_distill_sources,
     checkpoint_delta,
     checkpoint_step,
     compact_eval_payload,
@@ -24,6 +25,14 @@ def _summary(selected: int, best: int, first: int = 0, valid_rate: float = 1.0) 
 def test_checkpoint_step_parses_phase1_checkpoint_name() -> None:
     assert checkpoint_step(Path("phase1_step_150.pt")) == 150
     assert checkpoint_step(Path("not_a_checkpoint.pt")) == -1
+
+
+def test_candidate_distill_sources_parses_comma_separated_paths(tmp_path) -> None:
+    absolute = tmp_path / "candidates.jsonl"
+    sources = candidate_distill_sources(f"outputs/run/a_candidates.jsonl, {absolute},")
+
+    assert sources[0].as_posix().endswith("outputs/run/a_candidates.jsonl")
+    assert sources[1] == absolute
 
 
 def test_checkpoint_delta_tracks_recovery_against_reference() -> None:
