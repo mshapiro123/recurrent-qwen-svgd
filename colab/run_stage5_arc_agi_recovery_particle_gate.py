@@ -75,6 +75,7 @@ PARTICLE_CHECKPOINT_LADDER = os.environ.get("STAGE5_ARC_AGI_PARTICLE_CHECKPOINT_
     "yes",
     "y",
 }
+PARTICLE_SEEDS = os.environ.get("STAGE5_ARC_AGI_PARTICLE_SEEDS", "0")
 PARTICLE_VARIANTS = os.environ.get(
     "STAGE5_ARC_AGI_PARTICLE_VARIANTS",
     "k4_noise0_rep0:0:0,k4_noise001_rep0:0.01:0,k4_noise001_rep05:0.01:0.5,k4_noise001_rep2:0.01:2",
@@ -205,6 +206,11 @@ def parse_csv(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
+def parse_int_csv(value: str) -> list[int]:
+    seeds = [int(item) for item in parse_csv(value)]
+    return seeds or [0]
+
+
 def synthetic_eval_parse_modes() -> list[str]:
     modes = parse_csv(SYNTHETIC_EVAL_PARSE_MODES)
     return modes or [PROGRAM_PARSE_MODE]
@@ -285,6 +291,75 @@ def decide_particle_value(
             if best_variant is None or delta["best_of_k_delta"] > rows[best_variant]["delta_vs_tuned"]["best_of_k_delta"]:
                 best_variant = name
     return best_variant is not None, {"variants": rows, "best_non_negative_variant": best_variant}
+
+
+def mean_delta(rows: list[dict[str, Any]]) -> dict[str, float]:
+    keys = ("selected_delta", "best_of_k_delta", "first_delta", "valid_rate_delta")
+    return {
+        key: sum(float(row.get(key, 0.0)) for row in rows) / max(len(rows), 1)
+        for key in keys
+    }
+
+
+def decide_seeded_particle_value(
+    seeded_particle_summaries: dict[str, list[dict[str, Any]]],
+    tuned_summary: dict[str, Any],
+    tuned_task_family_summary: dict[str, Any] | None = None,
+) -> tuple[bool, dict[str, Any]]:
+    tuned_task_family_summary = tuned_task_family_summary or {}
+    variants: dict[str, Any] = {}
+    best_variant = None
+    for name, payloads in seeded_particle_summaries.items():
+        seed_rows: list[dict[str, Any]] = []
+        family_delta_rows: dict[str, list[dict[str, Any]]] = {}
+        for payload in payloads:
+            summary = summary_from_payload(payload)
+            delta = compare_summaries(summary, tuned_summary)
+            family_delta = compare_task_family_summaries(
+                task_family_summary_from_payload(payload),
+                tuned_task_family_summary,
+            )
+            for family, row in family_delta.items():
+                family_delta_rows.setdefault(family, []).append(row)
+            seed_rows.append(
+                {
+                    "seed": payload.get("seed"),
+                    "summary": summary,
+                    "delta_vs_tuned": delta,
+                    "task_family_delta_vs_tuned": family_delta,
+                    "non_negative": delta["best_of_k_delta"] >= 0 and delta["selected_delta"] >= 0,
+                }
+            )
+
+        mean = mean_delta([row["delta_vs_tuned"] for row in seed_rows])
+        non_negative_count = sum(1 for row in seed_rows if row["non_negative"])
+        family_mean_delta = {
+            family: mean_delta(rows)
+            for family, rows in sorted(family_delta_rows.items())
+        }
+        passed = (
+            non_negative_count > len(seed_rows) / 2
+            and mean["best_of_k_delta"] >= 0
+            and mean["selected_delta"] >= 0
+        )
+        variants[name] = {
+            "seeds": seed_rows,
+            "mean_delta_vs_tuned": mean,
+            "task_family_mean_delta_vs_tuned": family_mean_delta,
+            "non_negative_seed_count": non_negative_count,
+            "evaluated_seed_count": len(seed_rows),
+            "passed": passed,
+        }
+        if passed and (
+            best_variant is None
+            or mean["best_of_k_delta"] > variants[best_variant]["mean_delta_vs_tuned"]["best_of_k_delta"]
+            or (
+                mean["best_of_k_delta"] == variants[best_variant]["mean_delta_vs_tuned"]["best_of_k_delta"]
+                and mean["selected_delta"] > variants[best_variant]["mean_delta_vs_tuned"]["selected_delta"]
+            )
+        ):
+            best_variant = name
+    return best_variant is not None, {"variants": variants, "best_replicated_variant": best_variant}
 
 
 def summarize_particle_ladder(rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -529,9 +604,10 @@ def eval_particle_variant(
     variant: ParticleVariant,
     tasks_path: Path,
     checkpoint: Path,
+    seed: int = 0,
     label: str | None = None,
 ) -> dict[str, Any]:
-    label = label or variant.name
+    label = label or f"{variant.name}_seed{seed}"
     summary_json = RUN_DIR / f"{label}_summary.json"
     summary_md = RUN_DIR / f"{label}_summary.md"
     output_jsonl = RUN_DIR / f"{label}_candidates.jsonl"
@@ -541,7 +617,9 @@ def eval_particle_variant(
         "yes",
     }:
         print(f"reusing_particle_summary={summary_json}")
-        return read_json(summary_json)
+        payload = read_json(summary_json)
+        payload["seed"] = seed
+        return payload
     run(
         [
             sys.executable,
@@ -554,6 +632,8 @@ def eval_particle_variant(
             "phase2",
             "--checkpoint",
             path_for_cli(checkpoint),
+            "--seed",
+            str(seed),
             "--max_loops",
             "4",
             "--num_trajectories",
@@ -594,7 +674,31 @@ def eval_particle_variant(
         ],
         log_name=f"{label}.log",
     )
-    return read_json(summary_json)
+    payload = read_json(summary_json)
+    payload["seed"] = seed
+    return payload
+
+
+def eval_seeded_particle_variants(
+    *,
+    particle_variants: list[ParticleVariant],
+    tasks_path: Path,
+    checkpoint: Path,
+    seeds: list[int],
+) -> dict[str, list[dict[str, Any]]]:
+    return {
+        variant.name: [
+            eval_particle_variant(
+                variant=variant,
+                tasks_path=tasks_path,
+                checkpoint=checkpoint,
+                seed=seed,
+                label=f"{variant.name}_seed{seed}",
+            )
+            for seed in seeds
+        ]
+        for variant in particle_variants
+    }
 
 
 def eval_particle_checkpoint_ladder(
@@ -620,6 +724,7 @@ def eval_particle_checkpoint_ladder(
                 variant=variant,
                 tasks_path=tasks_path,
                 checkpoint=checkpoint,
+                seed=0,
                 label=label,
             )
             particle_summary_metrics = summary_from_payload(particle_summary)
@@ -685,7 +790,8 @@ def write_report(payload: dict[str, Any]) -> None:
         "",
         f"- Deterministic recurrent recovery non-negative: `{recovery['passed']}`",
         f"- Particle/SVGD non-negative over recovered recurrent: `{particle['passed']}`",
-        f"- Best non-negative particle variant: `{particle['evidence'].get('best_non_negative_variant')}`",
+        f"- Best replicated particle variant: `{particle['evidence'].get('best_replicated_variant')}`",
+        f"- First-seed particle decision: `{payload.get('first_seed_particle_decision', {}).get('passed')}`",
         "",
         "## Recovery Evidence",
         "",
@@ -710,8 +816,16 @@ def write_report(payload: dict[str, Any]) -> None:
             )
     lines.extend(["## Particle Evidence", ""])
     for name, row in particle["evidence"]["variants"].items():
-        lines.append(f"- `{name}` delta vs tuned: `{row['delta_vs_tuned']}` summary `{row['summary']}`")
-        family_delta = row.get("task_family_delta_vs_tuned", {})
+        if "mean_delta_vs_tuned" in row:
+            lines.append(
+                f"- `{name}` mean delta vs tuned: `{row['mean_delta_vs_tuned']}` "
+                f"non_negative_seeds `{row['non_negative_seed_count']}` / `{row['evaluated_seed_count']}` "
+                f"passed `{row['passed']}`"
+            )
+            family_delta = row.get("task_family_mean_delta_vs_tuned", {})
+        else:
+            lines.append(f"- `{name}` delta vs tuned: `{row['delta_vs_tuned']}` summary `{row['summary']}`")
+            family_delta = row.get("task_family_delta_vs_tuned", {})
         if family_delta:
             lines.append(f"  - task family deltas: `{family_delta}`")
     particle_ladder = payload.get("particle_checkpoint_ladder_summary", {})
@@ -742,6 +856,7 @@ def main() -> int:
         return 0
 
     particle_variants = parse_particle_variants(PARTICLE_VARIANTS)
+    particle_seeds = parse_int_csv(PARTICLE_SEEDS)
     sft_summary = run_synthetic_sft()
     recovery_passed, recovery_evidence = decide_recovery(sft_summary)
     recovered = select_recovered_checkpoint(sft_summary)
@@ -764,12 +879,24 @@ def main() -> int:
     if synthetic_holdout:
         recovery_evidence["synthetic_holdout"] = summarize_holdout_recovery(synthetic_holdout)
 
-    particle_summaries = {
-        variant.name: eval_particle_variant(variant=variant, tasks_path=tasks_path, checkpoint=tuned_checkpoint)
-        for variant in particle_variants
+    seeded_particle_summaries = eval_seeded_particle_variants(
+        particle_variants=particle_variants,
+        tasks_path=tasks_path,
+        checkpoint=tuned_checkpoint,
+        seeds=particle_seeds,
+    )
+    first_seed_particle_summaries = {
+        name: payloads[0]
+        for name, payloads in seeded_particle_summaries.items()
+        if payloads
     }
-    particle_passed, particle_evidence = decide_particle_value(
-        particle_summaries,
+    first_seed_particle_passed, first_seed_particle_evidence = decide_particle_value(
+        first_seed_particle_summaries,
+        recovered["summary"],
+        tuned_task_family_summary=recovered_family_summary,
+    )
+    particle_passed, particle_evidence = decide_seeded_particle_value(
+        seeded_particle_summaries,
         recovered["summary"],
         tuned_task_family_summary=recovered_family_summary,
     )
@@ -803,6 +930,7 @@ def main() -> int:
             "train_task_limit": TRAIN_TASK_LIMIT,
             "eval_task_limit": EVAL_TASK_LIMIT,
             "particle_trajectories": PARTICLE_TRAJECTORIES,
+            "particle_seeds": particle_seeds,
             "particle_noise_steps": PARTICLE_NOISE_STEPS,
             "particle_projection_dim": PARTICLE_PROJECTION_DIM,
             "particle_checkpoint_ladder": PARTICLE_CHECKPOINT_LADDER,
@@ -815,6 +943,11 @@ def main() -> int:
         "synthetic_holdout": synthetic_holdout,
         "recovery_decision": {"passed": recovery_passed, "evidence": recovery_evidence},
         "particle_decision": {"passed": particle_passed, "evidence": particle_evidence},
+        "first_seed_particle_decision": {
+            "passed": first_seed_particle_passed,
+            "evidence": first_seed_particle_evidence,
+        },
+        "seeded_particle_summaries": seeded_particle_summaries,
         "particle_checkpoint_ladder": particle_ladder_rows,
         "particle_checkpoint_ladder_summary": particle_ladder_summary,
     }

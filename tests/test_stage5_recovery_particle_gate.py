@@ -5,6 +5,8 @@ from colab.run_stage5_arc_agi_recovery_particle_gate import (
     compare_task_family_summaries,
     decide_particle_value,
     decide_recovery,
+    decide_seeded_particle_value,
+    parse_int_csv,
     parse_particle_variants,
     recovered_task_family_summary,
     select_recovered_checkpoint,
@@ -29,6 +31,11 @@ def test_parse_particle_variants() -> None:
     assert [variant.name for variant in variants] == ["control", "svgd"]
     assert variants[1].noise == 0.01
     assert variants[1].repulsion == 0.5
+
+
+def test_parse_int_csv_defaults_to_zero_for_empty_values() -> None:
+    assert parse_int_csv("1, 2,3") == [1, 2, 3]
+    assert parse_int_csv(" ") == [0]
 
 
 def test_compare_summaries_tracks_selected_best_and_valid_rate() -> None:
@@ -167,6 +174,56 @@ def test_decide_particle_value_reports_task_family_deltas_from_full_payloads() -
     assert decision is True
     assert evidence["variants"]["svgd"]["task_family_delta_vs_tuned"]["move_recolor"]["selected_delta"] == 1
     assert evidence["variants"]["svgd"]["task_family_delta_vs_tuned"]["move_recolor"]["best_of_k_delta"] == 2
+
+
+def test_decide_seeded_particle_value_requires_majority_non_negative_seeds() -> None:
+    tuned = _summary(2, 3)
+    tuned_families = {"move_recolor": _summary(1, 1)}
+    seeded = {
+        "lucky": [
+            {
+                "seed": 0,
+                "summary": _summary(2, 4),
+                "task_family_summary": {"move_recolor": _summary(2, 3)},
+            },
+            {
+                "seed": 1,
+                "summary": _summary(1, 2),
+                "task_family_summary": {"move_recolor": _summary(0, 0)},
+            },
+            {
+                "seed": 2,
+                "summary": _summary(1, 2),
+                "task_family_summary": {"move_recolor": _summary(0, 0)},
+            },
+        ],
+        "stable": [
+            {
+                "seed": 0,
+                "summary": _summary(2, 3),
+                "task_family_summary": {"move_recolor": _summary(1, 2)},
+            },
+            {
+                "seed": 1,
+                "summary": _summary(3, 4),
+                "task_family_summary": {"move_recolor": _summary(2, 2)},
+            },
+            {
+                "seed": 2,
+                "summary": _summary(2, 4),
+                "task_family_summary": {"move_recolor": _summary(1, 3)},
+            },
+        ],
+    }
+
+    decision, evidence = decide_seeded_particle_value(seeded, tuned, tuned_families)
+
+    assert decision is True
+    assert evidence["best_replicated_variant"] == "stable"
+    assert evidence["variants"]["lucky"]["passed"] is False
+    assert evidence["variants"]["stable"]["non_negative_seed_count"] == 3
+    assert evidence["variants"]["stable"]["mean_delta_vs_tuned"]["best_of_k_delta"] > 0
+    assert evidence["variants"]["stable"]["task_family_mean_delta_vs_tuned"]["move_recolor"]["best_of_k_delta"] > 0
 
 
 def test_decide_particle_value_rejects_all_negative() -> None:
