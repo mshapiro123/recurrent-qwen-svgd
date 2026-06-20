@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from colab.run_stage5_arc_agi_recovered_benchmark import (
+    comparison_specs,
     final_stage_row,
     metric_delta,
     recovered_checkpoint_from_curriculum,
@@ -58,3 +59,11 @@ def test_metric_delta_tracks_core_arc_metrics() -> None:
         "best_of_k_exact_delta": 2,
         "tasks_solved_best_of_k_delta": -2,
     }
+
+
+def test_comparison_specs_cover_base_start_and_recovered_pairs() -> None:
+    assert comparison_specs() == [
+        ("phase1_start_vs_base", "base", "phase1_start"),
+        ("recovered_vs_start", "phase1_start", "recovered"),
+        ("recovered_vs_base", "base", "recovered"),
+    ]

@@ -224,6 +224,42 @@ def eval_arc(label: str, *, mode: str, tasks_path: Path, checkpoint: Path | None
     return read_json(summary_json)
 
 
+def comparison_specs() -> list[tuple[str, str, str]]:
+    return [
+        ("phase1_start_vs_base", "base", "phase1_start"),
+        ("recovered_vs_start", "phase1_start", "recovered"),
+        ("recovered_vs_base", "base", "recovered"),
+    ]
+
+
+def compare_eval_summaries() -> dict[str, Any]:
+    comparisons: dict[str, Any] = {}
+    for label, reference, candidate in comparison_specs():
+        output_json = RUN_DIR / f"{label}_paired_comparison.json"
+        output_md = RUN_DIR / f"{label}_paired_comparison.md"
+        run(
+            [
+                sys.executable,
+                "eval/compare_arc_agi_runs.py",
+                "--reference_summary_json",
+                path_for_cli(RUN_DIR / f"{reference}_summary.json"),
+                "--candidate_summary_json",
+                path_for_cli(RUN_DIR / f"{candidate}_summary.json"),
+                "--reference_label",
+                reference,
+                "--candidate_label",
+                candidate,
+                "--output_json",
+                path_for_cli(output_json),
+                "--output_md",
+                path_for_cli(output_md),
+            ],
+            log_name=f"{label}_paired_comparison.log",
+        )
+        comparisons[label] = read_json(output_json)
+    return comparisons
+
+
 def metric_delta(candidate: dict[str, Any], reference: dict[str, Any]) -> dict[str, Any]:
     keys = ("first_exact", "selected_exact", "best_of_k_exact", "tasks_solved_best_of_k")
     return {f"{key}_delta": int(candidate.get(key, 0)) - int(reference.get(key, 0)) for key in keys}
@@ -284,6 +320,20 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Recovered vs start: `{payload['deltas']['recovered_vs_start']}`",
         f"- Recovered vs base: `{payload['deltas']['recovered_vs_base']}`",
         "",
+        "## Paired Evidence",
+        "",
+    ]
+    for name, comparison in payload.get("paired_comparisons", {}).items():
+        selected = comparison["metrics"]["selected_exact"]
+        best = comparison["metrics"]["best_of_k_exact"]
+        lines.append(
+            f"- `{name}` selected delta `{selected['delta_exact']}` "
+            f"({selected['wins']}/{selected['losses']}/{selected['ties']} W/L/T, p `{selected['sign_test_p_value']}`); "
+            f"best-of-K delta `{best['delta_exact']}` "
+            f"({best['wins']}/{best['losses']}/{best['ties']} W/L/T, p `{best['sign_test_p_value']}`)"
+        )
+    lines += [
+        "",
         "This is a true ARC exact-grid comparison. Use larger limits only after the smoke limit is stable.",
     ]
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -307,6 +357,7 @@ def main() -> int:
     base = eval_arc("base", mode="base", tasks_path=tasks_path)
     phase1_start = eval_arc("phase1_start", mode="phase1", tasks_path=tasks_path, checkpoint=start_ckpt)
     recovered = eval_arc("recovered", mode="phase1", tasks_path=tasks_path, checkpoint=recovered_ckpt)
+    paired_comparisons = compare_eval_summaries()
 
     payload = {
         "run_id": RUN_ID,
@@ -331,6 +382,7 @@ def main() -> int:
             "recovered_vs_start": metric_delta(recovered["summary"], phase1_start["summary"]),
             "recovered_vs_base": metric_delta(recovered["summary"], base["summary"]),
         },
+        "paired_comparisons": paired_comparisons,
     }
     write_report(payload)
     backup_to_drive()
