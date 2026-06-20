@@ -330,15 +330,7 @@ Stage 3 implementation checklist:
                 r"""
 %cd /content/recurrent-qwen-svgd
 
-print('''
-Stage 4 implementation checklist:
-1. Generate modified Opus JSONL with prompt/completion/cot_tokens.
-2. Validate token lengths and target-loop distribution.
-3. Run Phase 1 for 500-2000 steps with fp32 adapters.
-4. Validate CE, halting KL, expected loops, and exact smoke tasks.
-5. Train Phase 2/SVGD from the best Phase 1 checkpoint.
-6. Recalibrate within-group projection after Phase 2.
-''')
+!python colab/run_stage4_opus_finetune.py
 """
             ),
             md(
@@ -505,15 +497,7 @@ Stage 3 implementation checklist:
                 r"""
 %cd /content/recurrent-qwen-svgd
 
-print('''
-Stage 4 implementation checklist:
-1. Generate modified Opus JSONL with prompt/completion/cot_tokens.
-2. Validate token lengths and target-loop distribution.
-3. Run Phase 1 for 500-2000 steps with fp32 adapters.
-4. Validate CE, halting KL, expected loops, and exact smoke tasks.
-5. Train Phase 2/SVGD from the best Phase 1 checkpoint.
-6. Recalibrate within-group projection after Phase 2.
-''')
+!python colab/run_stage4_opus_finetune.py
 """
             ),
         ],

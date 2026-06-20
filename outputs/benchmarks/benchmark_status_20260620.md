@@ -3,6 +3,14 @@
 ## Main Result
 Current recurrent/SVGD checkpoints are diagnostically useful, but not ready to claim benchmark improvement over base Qwen 0.5B.
 
+The right scorecard has three roles:
+
+- **Base Qwen 0.5B**: the outer target we eventually need to match or beat.
+- **Phase1 deterministic recurrent**: the recurrent baseline after the architecture change.
+- **Phase2/SVGD recurrent**: the recurrent candidate that should first beat Phase1, then close the gap to base Qwen.
+
+Early regressions versus base are expected after changing the architecture. The near-term gate is whether Phase2 reliably improves over the deterministic recurrent baseline without destroying base-model competence.
+
 ## Completed Runs
 
 ### Exact-task SVGD heldout diagnostics
@@ -29,7 +37,7 @@ Current recurrent/SVGD checkpoints are diagnostically useful, but not ready to c
 - ARC-128 base: {'mean': '72/128 (56.2%)'}
 - ARC-128 phase1: {'mean': '66/128 (51.6%)'}
 - ARC-128 phase2: {'max': '68/128 (53.1%)', 'mean': '63/128 (49.2%)', 'vote': '63/128 (49.2%)'}
-- Interpretation: the current recurrent checkpoints regress versus base on ARC. Phase2 max aggregation recovers part of the Phase1 loss but still trails base.
+- Interpretation: the current recurrent checkpoints regress versus base on ARC. Phase2 max aggregation recovers part of the Phase1 loss but still trails base. This is an internal recurrent-model improvement signal, not yet a base-Qwen win.
 
 ## Blockers
 - GPQA-Diamond is gated on Hugging Face for the current token/account. The runner exists, but access must be approved before Colab can download it.
@@ -38,6 +46,9 @@ Current recurrent/SVGD checkpoints are diagnostically useful, but not ready to c
 ## Next Actions
 1. Treat current checkpoints as diagnostic baselines only.
 2. Build the modified Opus reasoning-trace fine-tuning pass with stronger heldout validation.
-3. Add benchmark-aware validation during fine-tuning: exact tasks, ARC subset, and GPQA once access is approved.
-4. Only package/push a Hugging Face adapter after it matches or beats base on at least one non-toy benchmark slice without collapsing exact-task diversity.
+3. During fine-tuning, report both internal recurrent lift and base-Qwen gap:
+   - Phase2 minus Phase1 on exact tasks and ARC/MCQ.
+   - best recurrent minus base Qwen on the same examples.
+4. Add benchmark-aware validation during fine-tuning: exact tasks, ARC subset, and GPQA once access is approved.
+5. Only package/push a Hugging Face adapter as a candidate release after it matches or beats base on at least one non-toy benchmark slice without collapsing exact-task diversity.
 

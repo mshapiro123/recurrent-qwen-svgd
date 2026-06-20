@@ -95,6 +95,7 @@ def main() -> int:
     )
 
     max_steps = int(cfg.get("max_steps", 100))
+    save_every = int(cfg.get("save_every", 0) or 0)
     step = 0
     while step < max_steps:
         for batch in loader:
@@ -122,6 +123,10 @@ def main() -> int:
                 metrics = " ".join(f"{key}={float(value):.4f}" for key, value in output.metrics.items())
                 print(f"step={step} {metrics}")
             step += 1
+            if output_dir := cfg.get("output_dir"):
+                if save_every and step % save_every == 0 and step < max_steps:
+                    checkpoint_path = save_trainable_checkpoint(wrapper, output_dir, "phase1", step, cfg)
+                    print(f"saved_checkpoint={checkpoint_path}")
             if step >= max_steps:
                 break
     output_dir = cfg.get("output_dir")
