@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from colab.run_stage5_arc_agi_curriculum import (
+    candidate_distill_env,
+    candidate_distill_jsonls,
+    candidate_distill_row_count,
     compact_family_summary,
     parse_curriculum_stages,
     stage_best_checkpoint,
@@ -14,6 +17,30 @@ def test_parse_curriculum_stages() -> None:
     assert stages[0].synthetic_modes == "constant_output,geometry_color"
     assert stages[0].synthetic_tasks == 10
     assert stages[1].train_steps == 40
+
+
+def test_candidate_distill_jsonls_parses_nonempty_items() -> None:
+    assert candidate_distill_jsonls("a.jsonl, b.jsonl,,") == ["a.jsonl", "b.jsonl"]
+
+
+def test_candidate_distill_env_disables_empty_source() -> None:
+    assert candidate_distill_env("")["STAGE5_ARC_AGI_CANDIDATE_DISTILL_JSONLS"] == ""
+
+
+def test_candidate_distill_env_threads_nonempty_source_and_recipe() -> None:
+    env = candidate_distill_env("a.jsonl", choice="all_exact", completion_source="canonical_grid")
+
+    assert env == {
+        "STAGE5_ARC_AGI_CANDIDATE_DISTILL_JSONLS": "a.jsonl",
+        "STAGE5_ARC_AGI_CANDIDATE_DISTILL_CHOICE": "all_exact",
+        "STAGE5_ARC_AGI_CANDIDATE_DISTILL_COMPLETION_SOURCE": "canonical_grid",
+    }
+
+
+def test_candidate_distill_row_count_sums_child_outputs() -> None:
+    summary = {"candidate_distill_info": [{"rows": 2}, {"rows": "3"}]}
+
+    assert candidate_distill_row_count(summary) == 5
 
 
 def test_stage_best_checkpoint_prefers_best_ladder_row() -> None:

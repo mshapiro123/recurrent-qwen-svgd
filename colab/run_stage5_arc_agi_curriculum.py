@@ -57,6 +57,12 @@ PROGRAM_PARSE_MODE = os.environ.get("STAGE5_ARC_AGI_PROGRAM_PARSE_MODE", "prefer
 SELECTION_STRATEGY = os.environ.get("STAGE5_ARC_AGI_SELECTION_STRATEGY", "heuristic")
 TRACE_MODE = os.environ.get("STAGE5_ARC_AGI_RECOVERY_TRACE_MODE", "symbolic_program")
 TRACE_FILTER = os.environ.get("STAGE5_ARC_AGI_RECOVERY_TRACE_FILTER", "covered")
+CANDIDATE_DISTILL_JSONLS = os.environ.get("STAGE5_ARC_AGI_CANDIDATE_DISTILL_JSONLS", "")
+CANDIDATE_DISTILL_CHOICE = os.environ.get("STAGE5_ARC_AGI_CANDIDATE_DISTILL_CHOICE", "best_exact")
+CANDIDATE_DISTILL_COMPLETION_SOURCE = os.environ.get(
+    "STAGE5_ARC_AGI_CANDIDATE_DISTILL_COMPLETION_SOURCE",
+    "candidate_text",
+)
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
 DEVICE = os.environ.get("DEVICE", "cuda")
@@ -133,6 +139,27 @@ def resolve_path(value: str | Path) -> Path:
     return path if path.is_absolute() else ROOT / path
 
 
+def candidate_distill_jsonls(value: str = CANDIDATE_DISTILL_JSONLS) -> list[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def candidate_distill_env(
+    value: str = CANDIDATE_DISTILL_JSONLS,
+    *,
+    choice: str = CANDIDATE_DISTILL_CHOICE,
+    completion_source: str = CANDIDATE_DISTILL_COMPLETION_SOURCE,
+) -> dict[str, str]:
+    if not candidate_distill_jsonls(value):
+        return {
+            "STAGE5_ARC_AGI_CANDIDATE_DISTILL_JSONLS": "",
+        }
+    return {
+        "STAGE5_ARC_AGI_CANDIDATE_DISTILL_JSONLS": value,
+        "STAGE5_ARC_AGI_CANDIDATE_DISTILL_CHOICE": choice,
+        "STAGE5_ARC_AGI_CANDIDATE_DISTILL_COMPLETION_SOURCE": completion_source,
+    }
+
+
 def read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -170,6 +197,10 @@ def stage_best_checkpoint(summary: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def candidate_distill_row_count(summary: dict[str, Any]) -> int:
+    return sum(int(item.get("rows", 0)) for item in summary.get("candidate_distill_info", []))
+
+
 def run_stage(stage: CurriculumStage, stage_index: int, resume_checkpoint: Path) -> dict[str, Any]:
     child_run_id = f"{RUN_ID}_{stage_index:02d}_{stage.name}"
     env = os.environ.copy()
@@ -193,6 +224,7 @@ def run_stage(stage: CurriculumStage, stage_index: int, resume_checkpoint: Path)
             "DTYPE": DTYPE,
             "ADAPTER_DTYPE": ADAPTER_DTYPE,
             "DEVICE": DEVICE,
+            **candidate_distill_env(),
         }
     )
     run([sys.executable, "colab/run_stage5_arc_agi_sft.py"], env=env, log_name=f"{stage_index:02d}_{stage.name}.log")
@@ -214,6 +246,8 @@ def run_stage(stage: CurriculumStage, stage_index: int, resume_checkpoint: Path)
         "eval_diagnostics": summary.get("eval_diagnostics", {}),
         "best_checkpoint": summary.get("best_checkpoint"),
         "program_only_eval": summary.get("program_only_eval", {}),
+        "candidate_distill_info": summary.get("candidate_distill_info", []),
+        "candidate_distill_rows": candidate_distill_row_count(summary),
     }
 
 
@@ -260,6 +294,9 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Program parse mode: `{PROGRAM_PARSE_MODE}`",
         f"- Selection strategy: `{SELECTION_STRATEGY}`",
         f"- Trace mode/filter: `{TRACE_MODE}` / `{TRACE_FILTER}`",
+        f"- Candidate distillation JSONLs: `{payload['settings']['candidate_distill_jsonls']}`",
+        f"- Candidate distillation choice: `{payload['settings']['candidate_distill_choice']}`",
+        f"- Candidate distillation completion source: `{payload['settings']['candidate_distill_completion_source']}`",
         "",
         "## Stages",
         "",
@@ -278,6 +315,7 @@ def write_report(payload: dict[str, Any]) -> None:
                 f"- Train steps: `{row['stage']['train_steps']}`",
                 f"- Resume checkpoint: `{row['resume_checkpoint']}`",
                 f"- Selected checkpoint: `{row['selected_checkpoint']}`",
+                f"- Candidate distillation rows: `{row.get('candidate_distill_rows', 0)}`",
                 f"- Base: `{row['base']}`",
                 f"- Phase1 start: `{row['phase1_start']}`",
                 f"- Tuned: `{row['phase1_arc_agi_tuned']}`",
@@ -320,6 +358,9 @@ def main() -> int:
             "selection_strategy": SELECTION_STRATEGY,
             "trace_mode": TRACE_MODE,
             "trace_filter": TRACE_FILTER,
+            "candidate_distill_jsonls": candidate_distill_jsonls(),
+            "candidate_distill_choice": CANDIDATE_DISTILL_CHOICE,
+            "candidate_distill_completion_source": CANDIDATE_DISTILL_COMPLETION_SOURCE,
         },
         "initial_checkpoint": path_for_cli(INITIAL_PHASE1_CKPT),
         "final_checkpoint": path_for_cli(resume_checkpoint),
