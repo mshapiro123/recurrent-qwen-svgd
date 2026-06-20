@@ -117,7 +117,10 @@ Initial harness files:
 - Evaluation can execute the tiny `symbolic_program` DSL as a fallback when a
   candidate does not contain a directly parseable output grid. Reports include
   a parse-method summary so literal-grid exactness and program-executed
-  exactness remain visible.
+  exactness remain visible. Use `--program_parse_mode fallback` for conservative
+  grid-first scoring, and `--program_parse_mode prefer` when diagnosing whether
+  the model learned executable transformations before it learned reliable final
+  grid formatting.
 - Evaluation can optionally include symbolic candidates with
   `--include_symbolic_candidates`. Colab runners expose this as
   `STAGE5_ARC_AGI_INCLUDE_SYMBOLIC=1` and
@@ -188,7 +191,9 @@ Only treat particles as promising if the second gate clears. If only the first
 gate clears, keep improving deterministic recurrent training before returning
 to Phase2. This runner defaults to `symbolic_program` traces; override with
 `STAGE5_ARC_AGI_RECOVERY_TRACE_MODE=symbolic` only when comparing against the
-older prose-trace curriculum.
+older prose-trace curriculum. It also defaults to
+`STAGE5_ARC_AGI_PROGRAM_PARSE_MODE=prefer`, so program execution is measured
+explicitly; set it to `fallback` for conservative grid-first scoring.
 
 Run `colab/run_stage5_arc_agi_trace_sft_gate.py` to execute both controls under
 the same settings and write one comparison summary. By default it compares

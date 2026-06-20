@@ -62,6 +62,7 @@ DISTILL_TEMPERATURE = float(os.environ.get("STAGE5_ARC_AGI_DISTILL_TEMPERATURE",
 DISTILL_ON = os.environ.get("STAGE5_ARC_AGI_DISTILL_ON", "response")
 MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
 GRID_FORMAT = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
+PROGRAM_PARSE_MODE = os.environ.get("STAGE5_ARC_AGI_PROGRAM_PARSE_MODE", "fallback")
 INCLUDE_SYMBOLIC = os.environ.get("STAGE5_ARC_AGI_INCLUDE_SYMBOLIC", "0").strip().lower() in {
     "1",
     "true",
@@ -299,6 +300,8 @@ def eval_arc_agi(label: str, mode: str, tasks_path: Path, checkpoint: Path | Non
         str(MAX_NEW_TOKENS),
         "--grid_format",
         GRID_FORMAT,
+        "--program_parse_mode",
+        PROGRAM_PARSE_MODE,
         "--dtype",
         DTYPE,
         "--adapter_dtype",
@@ -430,6 +433,7 @@ def main() -> int:
         "train_steps": TRAIN_STEPS,
         "learning_rate": LEARNING_RATE,
         "grid_format": GRID_FORMAT,
+        "program_parse_mode": PROGRAM_PARSE_MODE,
         "distillation": {
             "enabled": DISTILL_ENABLED,
             "weight": DISTILL_WEIGHT,
@@ -476,6 +480,7 @@ def main() -> int:
         f"- Symbolic position: `{SYMBOLIC_POSITION if INCLUDE_SYMBOLIC else 'n/a'}`",
         f"- Tuned checkpoint: `{path_for_cli(tuned_ckpt)}`",
         f"- Grid format: `{GRID_FORMAT}`",
+        f"- Program parse mode: `{PROGRAM_PARSE_MODE}`",
         "",
         "## Exact-Grid Results",
         f"- Base: `{base_summary}`",

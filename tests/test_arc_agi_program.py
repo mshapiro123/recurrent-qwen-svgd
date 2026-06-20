@@ -69,3 +69,43 @@ def test_evaluate_example_falls_back_to_program_execution() -> None:
     assert summary["best_of_k_exact"] is True
     assert rows[0]["parse_method"] == "program"
     assert rows[0]["parsed_grid"] == [[9, 9]]
+
+
+def test_evaluate_example_can_prefer_program_over_wrong_literal_grid() -> None:
+    example = ArcAgiExample(
+        task_id="constant",
+        test_index=0,
+        train=(
+            ArcPair(input=[[1]], output=[[9, 9]]),
+            ArcPair(input=[[2]], output=[[9, 9]]),
+        ),
+        test_input=[[3]],
+        test_output=[[9, 9]],
+    )
+    candidate = exact_symbolic_candidate(example)
+    assert candidate is not None
+    text = "00\n" + format_symbolic_program_trace(candidate)
+
+    fallback_rows, fallback_summary = evaluate_example(
+        example,
+        [text],
+        candidate_sources=["model"],
+        diagnostics={},
+        generation_steps=1,
+        output_format="compact",
+        program_parse_mode="fallback",
+    )
+    assert fallback_summary["best_of_k_exact"] is False
+    assert fallback_rows[0]["parse_method"] == "grid"
+
+    prefer_rows, prefer_summary = evaluate_example(
+        example,
+        [text],
+        candidate_sources=["model"],
+        diagnostics={},
+        generation_steps=1,
+        output_format="compact",
+        program_parse_mode="prefer",
+    )
+    assert prefer_summary["best_of_k_exact"] is True
+    assert prefer_rows[0]["parse_method"] == "program"

@@ -234,7 +234,10 @@ def evaluate_example(
     diagnostics: dict[str, float],
     generation_steps: int,
     output_format: str,
+    program_parse_mode: str = "fallback",
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    if program_parse_mode not in {"off", "fallback", "prefer", "program_only"}:
+        raise ValueError(f"Unknown program_parse_mode={program_parse_mode!r}")
     rows: list[dict[str, Any]] = []
     any_exact = False
     first_exact = False
@@ -243,11 +246,12 @@ def evaluate_example(
     target = example.test_output
     sources = candidate_sources or ["model"] * len(candidates)
     for idx, text in enumerate(candidates):
-        parsed = parse_grid_from_text(text, output_format=output_format)
-        parse_method = "grid" if parsed is not None else "none"
-        if parsed is None:
-            parsed = parse_arc_program_from_text(example, text)
-            parse_method = "program" if parsed is not None else "none"
+        parsed, parse_method = parse_candidate_grid(
+            example,
+            text,
+            output_format=output_format,
+            program_parse_mode=program_parse_mode,
+        )
         score = score_grid_prediction(parsed, target)
         valid_count += int(bool(score["valid"]))
         exact = bool(score.get("exact"))
@@ -289,6 +293,34 @@ def evaluate_example(
         "num_candidates": len(candidates),
     }
     return rows, summary
+
+
+def parse_candidate_grid(
+    example: ArcAgiExample,
+    text: str,
+    *,
+    output_format: str,
+    program_parse_mode: str,
+) -> tuple[Grid | None, str]:
+    if program_parse_mode == "program_only":
+        program_grid = parse_arc_program_from_text(example, text)
+        return program_grid, "program" if program_grid is not None else "none"
+
+    if program_parse_mode == "prefer":
+        program_grid = parse_arc_program_from_text(example, text)
+        if program_grid is not None:
+            return program_grid, "program"
+
+    grid = parse_grid_from_text(text, output_format=output_format)
+    if grid is not None:
+        return grid, "grid"
+
+    if program_parse_mode == "fallback":
+        program_grid = parse_arc_program_from_text(example, text)
+        if program_grid is not None:
+            return program_grid, "program"
+
+    return None, "none"
 
 
 def summarize_examples(example_summaries: list[dict[str, Any]]) -> dict[str, Any]:
@@ -364,6 +396,7 @@ def write_summary_md(path: str | Path | None, payload: dict[str, Any]) -> None:
         "",
         f"- Tasks path: `{payload['tasks_path']}`",
         f"- Grid format: `{payload['grid_format']}`",
+        f"- Program parse mode: `{payload['program_parse_mode']}`",
         f"- Examples with targets: `{summary['examples_with_targets']}`",
         f"- First-candidate exact: `{summary['first_exact']}` / `{summary['examples_with_targets']}` = `{summary['first_accuracy']}`",
         f"- Selected-candidate exact: `{summary['selected_exact']}` / `{summary['examples_with_targets']}` = `{summary['selected_accuracy']}`",
@@ -411,6 +444,16 @@ def main() -> int:
     parser.add_argument("--max_new_tokens", type=int, default=512)
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--grid_format", default="json", choices=("json", "compact", "tagged"))
+    parser.add_argument(
+        "--program_parse_mode",
+        default="fallback",
+        choices=("off", "fallback", "prefer", "program_only"),
+        help=(
+            "How to use tiny symbolic_program traces during scoring: off=grid only, "
+            "fallback=execute only if no grid parses, prefer=execute before grid parsing, "
+            "program_only=ignore literal grids."
+        ),
+    )
     parser.add_argument("--include_symbolic_candidates", action="store_true")
     parser.add_argument(
         "--symbolic_position",
@@ -533,6 +576,7 @@ def main() -> int:
             diagnostics=diagnostics,
             generation_steps=generation_steps,
             output_format=args.grid_format,
+            program_parse_mode=args.program_parse_mode,
         )
         example_summaries.append(example_summary)
         for row in rows:
@@ -552,6 +596,7 @@ def main() -> int:
         "max_new_tokens": args.max_new_tokens,
         "temperature": args.temperature,
         "grid_format": args.grid_format,
+        "program_parse_mode": args.program_parse_mode,
         "include_symbolic_candidates": args.include_symbolic_candidates,
         "symbolic_position": args.symbolic_position,
         "summary": summarize_examples(example_summaries),

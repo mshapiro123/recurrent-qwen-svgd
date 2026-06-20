@@ -49,6 +49,7 @@ TRAIN_TASK_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_TRAIN_TASK_LIMIT", "100"))
 EVAL_TASK_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_EVAL_TASK_LIMIT", "20"))
 MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
 GRID_FORMAT = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
+PROGRAM_PARSE_MODE = os.environ.get("STAGE5_ARC_AGI_PROGRAM_PARSE_MODE", "prefer")
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
 DEVICE = os.environ.get("DEVICE", "cuda")
@@ -210,6 +211,7 @@ def run_synthetic_sft() -> dict[str, Any]:
             "STAGE5_ARC_AGI_EVAL_TASK_LIMIT": str(EVAL_TASK_LIMIT),
             "STAGE5_ARC_AGI_MAX_NEW_TOKENS": str(MAX_NEW_TOKENS),
             "STAGE5_ARC_AGI_GRID_FORMAT": GRID_FORMAT,
+            "STAGE5_ARC_AGI_PROGRAM_PARSE_MODE": PROGRAM_PARSE_MODE,
             "DTYPE": DTYPE,
             "ADAPTER_DTYPE": ADAPTER_DTYPE,
             "DEVICE": DEVICE,
@@ -270,6 +272,8 @@ def eval_particle_variant(
             str(MAX_NEW_TOKENS),
             "--grid_format",
             GRID_FORMAT,
+            "--program_parse_mode",
+            PROGRAM_PARSE_MODE,
             "--dtype",
             DTYPE,
             "--adapter_dtype",
@@ -394,6 +398,7 @@ def main() -> int:
             "particle_trajectories": PARTICLE_TRAJECTORIES,
             "particle_noise_steps": PARTICLE_NOISE_STEPS,
             "particle_projection_dim": PARTICLE_PROJECTION_DIM,
+            "program_parse_mode": PROGRAM_PARSE_MODE,
             "particle_variants": [variant.__dict__ for variant in particle_variants],
         },
         "sft_summary": sft_summary,

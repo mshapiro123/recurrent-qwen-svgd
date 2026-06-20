@@ -111,8 +111,9 @@ The older split notebooks are kept only as references:
    `colab/run_stage5_arc_agi_recovery_particle_gate.py`: it runs that synthetic
    recurrent-recovery SFT first, then tests low-noise K-particle/SVGD variants
    against the tuned recurrent checkpoint. It defaults to `symbolic_program`
-   traces. Use its two decisions to keep "training helped" separate from
-   "particles helped."
+   traces and `STAGE5_ARC_AGI_PROGRAM_PARSE_MODE=prefer`, so executable
+   transformations are measured before final-grid formatting. Use its two
+   decisions to keep "training helped" separate from "particles helped."
    For unattended A100 time, run `colab/run_stage5_arc_agi_autopilot.py`
    instead; it branches through those gates with explicit thresholds and writes
    one decision report.
