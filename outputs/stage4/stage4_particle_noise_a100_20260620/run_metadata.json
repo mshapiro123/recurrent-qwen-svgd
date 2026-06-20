@@ -1,0 +1,52 @@
+{
+  "run_id": "stage4_particle_noise_a100_20260620",
+  "base_run_id": "stage4_opus_a100_20260620",
+  "arc_limit": 128,
+  "arc_split": "validation",
+  "arc_seed": 0,
+  "phase1_checkpoint": "outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt",
+  "variants": [
+    {
+      "label": "phase1_k4_noise0_rep0",
+      "k": 4,
+      "noise": 0.0,
+      "repulsion": 0.0
+    },
+    {
+      "label": "phase1_k2_noise005_rep05",
+      "k": 2,
+      "noise": 0.005,
+      "repulsion": 0.5
+    },
+    {
+      "label": "phase1_k2_noise01_rep05",
+      "k": 2,
+      "noise": 0.01,
+      "repulsion": 0.5
+    },
+    {
+      "label": "phase1_k4_noise005_rep05",
+      "k": 4,
+      "noise": 0.005,
+      "repulsion": 0.5
+    },
+    {
+      "label": "phase1_k4_noise01_rep05",
+      "k": 4,
+      "noise": 0.01,
+      "repulsion": 0.5
+    },
+    {
+      "label": "phase1_k4_noise02_rep05",
+      "k": 4,
+      "noise": 0.02,
+      "repulsion": 0.5
+    },
+    {
+      "label": "phase1_k4_noise005_rep2",
+      "k": 4,
+      "noise": 0.005,
+      "repulsion": 2.0
+    }
+  ]
+}
