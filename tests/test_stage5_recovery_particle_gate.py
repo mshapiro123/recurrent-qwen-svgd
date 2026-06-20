@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from colab.run_stage5_arc_agi_recovery_particle_gate import (
     compare_summaries,
+    compare_task_family_summaries,
     decide_particle_value,
     decide_recovery,
     parse_particle_variants,
+    recovered_task_family_summary,
     select_recovered_checkpoint,
     summarize_particle_ladder,
     summarize_holdout_recovery,
+    summary_from_payload,
+    task_family_summary_from_payload,
 )
 
 
@@ -35,6 +39,31 @@ def test_compare_summaries_tracks_selected_best_and_valid_rate() -> None:
         "first_delta": -1,
         "valid_rate_delta": 0.30000000000000004,
     }
+
+
+def test_payload_helpers_accept_full_eval_payloads_and_compact_diagnostics() -> None:
+    payload = {
+        "summary": _summary(2, 3),
+        "task_family_summary": {"move_recolor": {"selected_exact": 2}},
+    }
+    compact = {"eval_diagnostics": {"task_family_summary": {"frame_object": {"selected_exact": 1}}}}
+
+    assert summary_from_payload(payload)["best_of_k_exact"] == 3
+    assert summary_from_payload(_summary(1, 1))["selected_exact"] == 1
+    assert task_family_summary_from_payload(payload)["move_recolor"]["selected_exact"] == 2
+    assert task_family_summary_from_payload(compact)["frame_object"]["selected_exact"] == 1
+
+
+def test_compare_task_family_summaries_tracks_family_deltas() -> None:
+    delta = compare_task_family_summaries(
+        {"move_recolor": _summary(3, 4), "frame_object": _summary(1, 1)},
+        {"move_recolor": _summary(1, 4), "crop": _summary(2, 2)},
+    )
+
+    assert delta["move_recolor"]["selected_delta"] == 2
+    assert delta["move_recolor"]["best_of_k_delta"] == 0
+    assert delta["frame_object"]["selected_delta"] == 1
+    assert delta["crop"]["selected_delta"] == -2
 
 
 def test_decide_recovery_requires_non_negative_selected_and_best() -> None:
@@ -94,6 +123,24 @@ def test_decide_recovery_uses_best_checkpoint_when_available() -> None:
     assert evidence["phase1_tuned_vs_start"]["selected_delta"] == 1
 
 
+def test_recovered_task_family_summary_prefers_best_checkpoint() -> None:
+    payload = {
+        "eval_diagnostics": {
+            "phase1_arc_agi_tuned": {
+                "task_family_summary": {"move_recolor": {"selected_exact": 1}},
+            }
+        },
+        "best_checkpoint": {
+            "eval_diagnostics": {
+                "task_family_summary": {"frame_object": {"selected_exact": 2}},
+            }
+        },
+    }
+    recovered = {"source": "best_checkpoint"}
+
+    assert recovered_task_family_summary(payload, recovered)["frame_object"]["selected_exact"] == 2
+
+
 def test_decide_particle_value_requires_non_negative_over_tuned() -> None:
     tuned = _summary(2, 3)
     particle_summaries = {
@@ -103,6 +150,23 @@ def test_decide_particle_value_requires_non_negative_over_tuned() -> None:
     decision, evidence = decide_particle_value(particle_summaries, tuned)
     assert decision is True
     assert evidence["best_non_negative_variant"] == "good"
+
+
+def test_decide_particle_value_reports_task_family_deltas_from_full_payloads() -> None:
+    tuned = _summary(2, 3)
+    tuned_families = {"move_recolor": _summary(1, 1)}
+    particle_summaries = {
+        "svgd": {
+            "summary": _summary(2, 4),
+            "task_family_summary": {"move_recolor": _summary(2, 3)},
+        }
+    }
+
+    decision, evidence = decide_particle_value(particle_summaries, tuned, tuned_families)
+
+    assert decision is True
+    assert evidence["variants"]["svgd"]["task_family_delta_vs_tuned"]["move_recolor"]["selected_delta"] == 1
+    assert evidence["variants"]["svgd"]["task_family_delta_vs_tuned"]["move_recolor"]["best_of_k_delta"] == 2
 
 
 def test_decide_particle_value_rejects_all_negative() -> None:

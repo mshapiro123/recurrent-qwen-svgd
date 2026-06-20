@@ -171,6 +171,36 @@ def compare_summaries(candidate: dict[str, Any], reference: dict[str, Any]) -> d
     }
 
 
+def summary_from_payload(value: dict[str, Any]) -> dict[str, Any]:
+    """Accept either a raw summary or a full eval payload."""
+
+    summary = value.get("summary")
+    return summary if isinstance(summary, dict) else value
+
+
+def task_family_summary_from_payload(value: dict[str, Any]) -> dict[str, Any]:
+    """Accept either a full eval payload or compact Colab eval diagnostics."""
+
+    direct = value.get("task_family_summary")
+    if isinstance(direct, dict):
+        return direct
+    diagnostics = value.get("eval_diagnostics")
+    if isinstance(diagnostics, dict):
+        nested = diagnostics.get("task_family_summary")
+        if isinstance(nested, dict):
+            return nested
+    return {}
+
+
+def compare_task_family_summaries(candidate: dict[str, Any], reference: dict[str, Any]) -> dict[str, Any]:
+    rows: dict[str, Any] = {}
+    for family in sorted(set(candidate) | set(reference)):
+        cand = candidate.get(family, {})
+        ref = reference.get(family, {})
+        rows[family] = compare_summaries(cand, ref)
+    return rows
+
+
 def parse_csv(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
@@ -199,6 +229,16 @@ def select_recovered_checkpoint(sft_summary: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def recovered_task_family_summary(sft_summary: dict[str, Any], recovered: dict[str, Any]) -> dict[str, Any]:
+    if recovered.get("source") == "best_checkpoint":
+        best = sft_summary.get("best_checkpoint") or {}
+        best_family = task_family_summary_from_payload(best)
+        if best_family:
+            return best_family
+    tuned_diagnostics = (sft_summary.get("eval_diagnostics") or {}).get("phase1_arc_agi_tuned", {})
+    return task_family_summary_from_payload(tuned_diagnostics)
+
+
 def decide_recovery(sft_summary: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
     recovered = select_recovered_checkpoint(sft_summary)
     tuned = recovered["summary"]
@@ -222,12 +262,21 @@ def decide_recovery(sft_summary: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
 def decide_particle_value(
     particle_summaries: dict[str, dict[str, Any]],
     tuned_summary: dict[str, Any],
+    tuned_task_family_summary: dict[str, Any] | None = None,
 ) -> tuple[bool, dict[str, Any]]:
     rows: dict[str, Any] = {}
-    for name, summary in particle_summaries.items():
+    tuned_task_family_summary = tuned_task_family_summary or {}
+    for name, payload_or_summary in particle_summaries.items():
+        summary = summary_from_payload(payload_or_summary)
+        task_family_summary = task_family_summary_from_payload(payload_or_summary)
         rows[name] = {
             "summary": summary,
+            "task_family_summary": task_family_summary,
             "delta_vs_tuned": compare_summaries(summary, tuned_summary),
+            "task_family_delta_vs_tuned": compare_task_family_summaries(
+                task_family_summary,
+                tuned_task_family_summary,
+            ),
         }
     best_variant = None
     for name, row in rows.items():
@@ -492,7 +541,7 @@ def eval_particle_variant(
         "yes",
     }:
         print(f"reusing_particle_summary={summary_json}")
-        return read_json(summary_json)["summary"]
+        return read_json(summary_json)
     run(
         [
             sys.executable,
@@ -545,7 +594,7 @@ def eval_particle_variant(
         ],
         log_name=f"{label}.log",
     )
-    return read_json(summary_json)["summary"]
+    return read_json(summary_json)
 
 
 def eval_particle_checkpoint_ladder(
@@ -573,14 +622,21 @@ def eval_particle_checkpoint_ladder(
                 checkpoint=checkpoint,
                 label=label,
             )
+            particle_summary_metrics = summary_from_payload(particle_summary)
             rows.append(
                 {
                     "step": step,
                     "checkpoint": path_for_cli(checkpoint),
                     "variant": variant.name,
                     "recurrent_summary": recurrent_summary,
-                    "particle_summary": particle_summary,
-                    "delta_vs_recurrent": compare_summaries(particle_summary, recurrent_summary),
+                    "recurrent_task_family_summary": task_family_summary_from_payload(checkpoint_row),
+                    "particle_summary": particle_summary_metrics,
+                    "particle_task_family_summary": task_family_summary_from_payload(particle_summary),
+                    "delta_vs_recurrent": compare_summaries(particle_summary_metrics, recurrent_summary),
+                    "task_family_delta_vs_recurrent": compare_task_family_summaries(
+                        task_family_summary_from_payload(particle_summary),
+                        task_family_summary_from_payload(checkpoint_row),
+                    ),
                 }
             )
     return rows
@@ -655,6 +711,9 @@ def write_report(payload: dict[str, Any]) -> None:
     lines.extend(["## Particle Evidence", ""])
     for name, row in particle["evidence"]["variants"].items():
         lines.append(f"- `{name}` delta vs tuned: `{row['delta_vs_tuned']}` summary `{row['summary']}`")
+        family_delta = row.get("task_family_delta_vs_tuned", {})
+        if family_delta:
+            lines.append(f"  - task family deltas: `{family_delta}`")
     particle_ladder = payload.get("particle_checkpoint_ladder_summary", {})
     if particle_ladder:
         lines.extend(
@@ -686,6 +745,7 @@ def main() -> int:
     sft_summary = run_synthetic_sft()
     recovery_passed, recovery_evidence = decide_recovery(sft_summary)
     recovered = select_recovered_checkpoint(sft_summary)
+    recovered_family_summary = recovered_task_family_summary(sft_summary, recovered)
 
     metadata = sft_summary["metadata"]
     tasks_path = resolve_path(metadata["eval_path"])
@@ -711,6 +771,7 @@ def main() -> int:
     particle_passed, particle_evidence = decide_particle_value(
         particle_summaries,
         recovered["summary"],
+        tuned_task_family_summary=recovered_family_summary,
     )
     particle_ladder_rows = (
         eval_particle_checkpoint_ladder(
@@ -749,6 +810,7 @@ def main() -> int:
             "particle_variants": [variant.__dict__ for variant in particle_variants],
         },
         "recovered_checkpoint": recovered,
+        "recovered_task_family_summary": recovered_family_summary,
         "sft_summary": sft_summary,
         "synthetic_holdout": synthetic_holdout,
         "recovery_decision": {"passed": recovery_passed, "evidence": recovery_evidence},
