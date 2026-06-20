@@ -4,3 +4,4 @@ accelerate
 pyyaml
 pytest
 datasets
+huggingface_hub
