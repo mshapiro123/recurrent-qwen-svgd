@@ -45,6 +45,7 @@ from eval.arc_agi_utils import (  # noqa: E402
     parse_geometry_augmentations,
     render_arc_prompt,
 )
+from eval.arc_agi_symbolic import exact_symbolic_candidate, format_symbolic_trace  # noqa: E402
 
 
 def apply_color_permutation(grid: Grid, permutation: list[int]) -> Grid:
@@ -127,8 +128,13 @@ def leave_one_out_examples(task_examples: Iterable[ArcAgiExample]) -> list[ArcAg
     return generated
 
 
-def render_chat_prompt(tokenizer, example: ArcAgiExample, output_format: str) -> str:
+def render_chat_prompt(tokenizer, example: ArcAgiExample, output_format: str, trace_mode: str = "none") -> str:
     user_prompt = render_arc_prompt(example, output_format=output_format)
+    if trace_mode != "none":
+        user_prompt += (
+            "\n\nYou may include a brief <think> trace before the final output grid. "
+            "The final answer must still contain the output grid in the requested format."
+        )
     return tokenizer.apply_chat_template(
         [{"role": "user", "content": user_prompt}],
         tokenize=False,
@@ -143,24 +149,40 @@ def example_to_jsonl_row(
     append_eos: bool,
     source: str,
     output_format: str,
+    trace_mode: str,
 ) -> dict[str, object] | None:
     if example.test_output is None:
         return None
+    trace = ""
+    trace_source = None
+    if trace_mode == "symbolic":
+        candidate = exact_symbolic_candidate(example)
+        if candidate is not None:
+            trace = format_symbolic_trace(candidate)
+            trace_source = candidate.name
+    elif trace_mode != "none":
+        raise ValueError(f"Unknown trace_mode={trace_mode!r}")
     completion = format_grid_completion(example.test_output, output_format=output_format)
+    completion = trace + completion
     if append_eos and tokenizer.eos_token:
         completion += tokenizer.eos_token
-    prompt = render_chat_prompt(tokenizer, example, output_format)
-    cot_tokens = max(1, len(tokenizer(completion, add_special_tokens=False)["input_ids"]))
-    return {
+    prompt = render_chat_prompt(tokenizer, example, output_format, trace_mode)
+    cot_text = trace.strip() if trace else completion
+    cot_tokens = max(1, len(tokenizer(cot_text, add_special_tokens=False)["input_ids"]))
+    row = {
         "prompt": prompt,
         "completion": completion,
+        "cot": cot_text,
         "cot_tokens": cot_tokens,
         "source_dataset": "arc-agi",
         "category": source,
         "difficulty": None,
         "task_id": example.task_id,
         "test_index": example.test_index,
+        "trace_mode": trace_mode,
+        "trace_source": trace_source,
     }
+    return row
 
 
 def write_jsonl(path: str | Path, rows: list[dict[str, object]]) -> None:
@@ -193,6 +215,7 @@ def main() -> int:
     parser.add_argument("--shuffle_train_examples", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--append_eos", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--grid_format", default="json", choices=("json", "compact", "tagged"))
+    parser.add_argument("--trace_mode", default="none", choices=("none", "symbolic"))
     parser.add_argument("--max_total_tokens", type=int, default=4096)
     args = parser.parse_args()
 
@@ -237,6 +260,7 @@ def main() -> int:
             append_eos=args.append_eos,
             source=source,
             output_format=args.grid_format,
+            trace_mode=args.trace_mode,
         )
         if row is None:
             skipped += 1
@@ -267,6 +291,8 @@ def main() -> int:
     print(f"val_rows={len(val_rows)}")
     print(f"skipped_rows={skipped}")
     print(f"grid_format={args.grid_format}")
+    print(f"trace_mode={args.trace_mode}")
+    print(f"symbolic_trace_rows={sum(1 for row in rows if row.get('trace_source'))}")
     print(f"geometry_transforms={','.join(geometry_transforms)}")
     return 0
 

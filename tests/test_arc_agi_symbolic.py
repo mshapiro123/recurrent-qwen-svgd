@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from eval.arc_agi_symbolic import learn_color_map, symbolic_candidates
+from eval.arc_agi_symbolic import exact_symbolic_candidate, format_symbolic_trace, learn_color_map, symbolic_candidates
 from eval.arc_agi_utils import ArcAgiExample, ArcPair
 from eval.eval_arc_agi import evaluate_example, summarize_candidate_sources
 
@@ -21,7 +21,10 @@ def test_symbolic_candidates_learn_geometry_plus_color_map() -> None:
         test_output=[[6, 2], [2, 2]],
     )
     candidates = symbolic_candidates(example)
+    exact = exact_symbolic_candidate(example)
     assert any(candidate.grid == [[6, 2], [2, 2]] for candidate in candidates)
+    assert exact is not None
+    assert "Geometry transform:" in format_symbolic_trace(exact)
 
 
 def test_symbolic_candidates_include_constant_output() -> None:
@@ -37,6 +40,7 @@ def test_symbolic_candidates_include_constant_output() -> None:
     )
     assert symbolic_candidates(example)[0].name == "constant_output"
     assert symbolic_candidates(example)[0].grid == [[9, 9]]
+    assert "copy that output grid" in format_symbolic_trace(symbolic_candidates(example)[0])
 
 
 def test_evaluate_example_tracks_candidate_sources() -> None:

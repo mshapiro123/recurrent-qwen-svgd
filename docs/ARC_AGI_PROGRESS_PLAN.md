@@ -78,10 +78,14 @@ Initial harness files:
   exact-grid evaluation.
 - `training/prepare_arc_agi_sft_jsonl.py`: supervised ARC-AGI JSONL
   preparation with leave-one-out task rows and safe color-permutation
-  augmentation.
+  augmentation. It also supports `--trace_mode symbolic`, which prepends a
+  compact `<think>` transformation trace when the small symbolic solver can
+  exactly explain the target grid.
 - `colab/run_stage5_arc_agi_sft.py`: smoke fine-tune runner for adapting
   recurrent Phase1 on public ARC-AGI training tasks and evaluating held-out
   ARC-AGI evaluation tasks.
+- `colab/run_stage5_arc_agi_trace_sft_gate.py`: matched two-arm SFT runner for
+  grid-only supervision versus symbolic-trace supervision.
 - Grid output formats: JSON, compact row strings, and tagged row strings are
   supported. Colab ARC-AGI runners default to compact row strings because they
   are shorter and easier for a 0.5B model to emit reliably.
@@ -137,10 +141,19 @@ It then fine-tunes the recurrent Phase1 checkpoint and compares exact-grid
 generation against base and the pre-SFT recurrent checkpoint on the ARC-AGI
 evaluation split.
 
+Set `STAGE5_ARC_AGI_TRACE_MODE=symbolic` to train on explicit transformation
+traces for covered examples. Keep `STAGE5_ARC_AGI_TRACE_MODE=none` as the
+grid-only control.
+
+Run `colab/run_stage5_arc_agi_trace_sft_gate.py` to execute both controls under
+the same settings and write one comparison summary.
+
 Gate:
 
 - valid-grid rate should improve materially;
 - exact-grid score should not regress against recurrent Phase1;
+- symbolic-trace SFT should beat or match grid-only SFT before scaling this
+  recipe;
 - selected-candidate score should be reported separately from oracle best-of-K;
 - if exact-grid remains near zero, next work is representation/traces, not more
   blind SFT steps.

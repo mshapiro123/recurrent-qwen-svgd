@@ -20,6 +20,7 @@ from eval.arc_agi_utils import ArcAgiExample, GEOMETRY_TRANSFORMS, Grid, apply_g
 class SymbolicCandidate:
     name: str
     grid: Grid
+    trace: tuple[str, ...] = ()
 
 
 def grid_shape(grid: Grid) -> tuple[int, int]:
@@ -42,6 +43,13 @@ def learn_color_map(inputs: list[Grid], outputs: list[Grid]) -> dict[int, int] |
                     return None
                 mapping[source] = target
     return mapping
+
+
+def color_map_trace(color_map: dict[int, int]) -> str:
+    if not color_map:
+        return "Color map: identity."
+    pairs = ", ".join(f"{source}->{target}" for source, target in sorted(color_map.items()))
+    return f"Color map: {pairs}."
 
 
 def all_outputs_equal(outputs: list[Grid]) -> bool:
@@ -69,7 +77,13 @@ def symbolic_candidates(example: ArcAgiExample) -> list[SymbolicCandidate]:
     candidates: list[SymbolicCandidate] = []
 
     if all_outputs_equal(outputs):
-        candidates.append(SymbolicCandidate("constant_output", [row[:] for row in outputs[0]]))
+        candidates.append(
+            SymbolicCandidate(
+                "constant_output",
+                [row[:] for row in outputs[0]],
+                ("Rule: all demonstrations share the same output grid.", "Action: copy that output grid."),
+            )
+        )
 
     for transform in GEOMETRY_TRANSFORMS:
         transformed_inputs = [apply_geometry_transform(pair.input, transform) for pair in train_pairs]
@@ -79,6 +93,30 @@ def symbolic_candidates(example: ArcAgiExample) -> list[SymbolicCandidate]:
         transformed_test = apply_geometry_transform(example.test_input, transform)
         predicted = apply_color_map(transformed_test, color_map)
         label = f"{transform}+color_map" if color_map else transform
-        candidates.append(SymbolicCandidate(label, predicted))
+        candidates.append(
+            SymbolicCandidate(
+                label,
+                predicted,
+                (
+                    f"Geometry transform: {transform}.",
+                    color_map_trace(color_map),
+                    "Action: apply the transform and color map to the test input.",
+                ),
+            )
+        )
 
     return dedupe_candidates(candidates)
+
+
+def exact_symbolic_candidate(example: ArcAgiExample) -> SymbolicCandidate | None:
+    if example.test_output is None:
+        return None
+    for candidate in symbolic_candidates(example):
+        if candidate.grid == example.test_output:
+            return candidate
+    return None
+
+
+def format_symbolic_trace(candidate: SymbolicCandidate) -> str:
+    lines = ["<think>", *candidate.trace, "</think>"]
+    return "\n".join(lines) + "\n"
