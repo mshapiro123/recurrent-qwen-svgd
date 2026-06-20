@@ -43,6 +43,8 @@ PHASE2_STEPS = int(os.environ.get("STAGE4_PHASE2_STEPS", "100"))
 PHASE2_SAVE_EVERY = int(os.environ.get("STAGE4_PHASE2_SAVE_EVERY", "50"))
 ARC_LIMIT = int(os.environ.get("STAGE4_ARC_LIMIT", "128"))
 EXACT_SEEDS = os.environ.get("STAGE4_EXACT_SEEDS", "0,1,2")
+RUN_EXACT = os.environ.get("STAGE4_RUN_EXACT", "0").strip().lower() in {"1", "true", "yes", "y"}
+EXACT_MAX_NEW_TOKENS = int(os.environ.get("STAGE4_EXACT_MAX_NEW_TOKENS", "96"))
 DEVICE = os.environ.get("DEVICE", "cuda")
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
@@ -99,6 +101,47 @@ def summarize_mcq(path: Path) -> dict[str, Any]:
             "accuracy": sum(1 for row in agg_rows if row["hit"]) / max(len(agg_rows), 1),
         }
         for agg, agg_rows in sorted(by_agg.items())
+    }
+
+
+def accuracy(summary: dict[str, Any], label: str = "mean") -> float | None:
+    metric = summary.get(label)
+    if not metric:
+        return None
+    return float(metric["accuracy"])
+
+
+def subtract_optional(left: float | None, right: float | None) -> float | None:
+    if left is None or right is None:
+        return None
+    return left - right
+
+
+def summarize_ladder(
+    base: dict[str, Any],
+    phase1: dict[str, Any],
+    phase2: dict[str, Any],
+) -> dict[str, Any]:
+    base_mean = accuracy(base, "mean")
+    phase1_mean = accuracy(phase1, "mean")
+    phase2_mean = accuracy(phase2, "mean")
+    phase2_max = accuracy(phase2, "max")
+    phase2_vote = accuracy(phase2, "vote")
+    best_phase2 = max(
+        [value for value in [phase2_mean, phase2_max, phase2_vote] if value is not None],
+        default=None,
+    )
+    return {
+        "base_mean_accuracy": base_mean,
+        "phase1_mean_accuracy": phase1_mean,
+        "phase2_mean_accuracy": phase2_mean,
+        "phase2_max_accuracy": phase2_max,
+        "phase2_vote_accuracy": phase2_vote,
+        "phase2_best_accuracy": best_phase2,
+        "phase1_gap_to_base": subtract_optional(phase1_mean, base_mean),
+        "phase2_mean_lift_over_phase1": subtract_optional(phase2_mean, phase1_mean),
+        "phase2_best_lift_over_phase1": subtract_optional(best_phase2, phase1_mean),
+        "phase2_best_gap_to_base": subtract_optional(best_phase2, base_mean),
     }
 
 
@@ -265,6 +308,8 @@ def main() -> int:
         "phase2_steps": PHASE2_STEPS,
         "arc_limit": ARC_LIMIT,
         "exact_seeds": EXACT_SEEDS,
+        "run_exact": RUN_EXACT,
+        "exact_max_new_tokens": EXACT_MAX_NEW_TOKENS,
         "dtype": DTYPE,
         "adapter_dtype": ADAPTER_DTYPE,
     }
@@ -445,54 +490,70 @@ def main() -> int:
     arc_phase2 = eval_arc("phase2_svgd_label", "phase2", phase2_ckpt, projection)
 
     exact_out = RUN_DIR / "exact_phase1_vs_phase2.jsonl"
-    run(
-        [
-            sys.executable,
-            "eval/eval_best_of_k_jsonl.py",
-            "--tasks_jsonl",
-            "eval/smoke_exact_tasks_v2.jsonl",
-            "--compact",
-            "--seeds",
-            EXACT_SEEDS,
-            "--phase1_checkpoint",
-            str(phase1_ckpt.relative_to(ROOT)),
-            "--phase2_checkpoint",
-            str(phase2_ckpt.relative_to(ROOT)),
-            "--phase2_num_trajectories",
-            "4",
-            "--phase2_particle_update_mode",
-            "svgd",
-            "--particle_init_noise",
-            "0.05",
-            "--particle_noise_every_step",
-            "--particle_noise_steps",
-            "16",
-            "--svgd_kernel_geometry",
-            "euclidean",
-            "--svgd_kernel_projection_path",
-            str(projection.relative_to(ROOT)),
-            "--svgd_kernel_projection_dim",
-            "8",
-            "--svgd_repulsion_scale",
-            "2",
-            "--svgd_repulsion_max_norm",
-            "none",
-            "--temperature",
-            "0.0",
-            "--max_new_tokens",
-            "140",
-            "--dtype",
-            DTYPE,
-            "--adapter_dtype",
-            ADAPTER_DTYPE,
-            "--device",
-            DEVICE,
-            "--output_jsonl",
-            str(exact_out.relative_to(ROOT)),
-        ],
-        log_name="exact_phase1_vs_phase2.log",
-    )
+    if RUN_EXACT:
+        run(
+            [
+                sys.executable,
+                "eval/eval_best_of_k_jsonl.py",
+                "--tasks_jsonl",
+                "eval/smoke_exact_tasks_v2.jsonl",
+                "--compact",
+                "--seeds",
+                EXACT_SEEDS,
+                "--phase1_checkpoint",
+                str(phase1_ckpt.relative_to(ROOT)),
+                "--phase2_checkpoint",
+                str(phase2_ckpt.relative_to(ROOT)),
+                "--phase2_num_trajectories",
+                "4",
+                "--phase2_particle_update_mode",
+                "svgd",
+                "--particle_init_noise",
+                "0.05",
+                "--particle_noise_every_step",
+                "--particle_noise_steps",
+                "16",
+                "--svgd_kernel_geometry",
+                "euclidean",
+                "--svgd_kernel_projection_path",
+                str(projection.relative_to(ROOT)),
+                "--svgd_kernel_projection_dim",
+                "8",
+                "--svgd_repulsion_scale",
+                "2",
+                "--svgd_repulsion_max_norm",
+                "none",
+                "--temperature",
+                "0.0",
+                "--max_new_tokens",
+                str(EXACT_MAX_NEW_TOKENS),
+                "--dtype",
+                DTYPE,
+                "--adapter_dtype",
+                ADAPTER_DTYPE,
+                "--device",
+                DEVICE,
+                "--output_jsonl",
+                str(exact_out.relative_to(ROOT)),
+            ],
+            log_name="exact_phase1_vs_phase2.log",
+        )
+    else:
+        (RUN_DIR / "exact_phase1_vs_phase2.log").write_text(
+            "Skipped. Set STAGE4_RUN_EXACT=1 to run exact generation diagnostics.\n",
+            encoding="utf-8",
+        )
 
+    arc_summary = {
+        "base": summarize_mcq(arc_base),
+        "phase1_recurrent_baseline": summarize_mcq(arc_phase1),
+        "phase2_recurrent_candidate": summarize_mcq(arc_phase2),
+    }
+    ladder = summarize_ladder(
+        arc_summary["base"],
+        arc_summary["phase1_recurrent_baseline"],
+        arc_summary["phase2_recurrent_candidate"],
+    )
     summary = {
         "run_id": RUN_ID,
         "phase1_checkpoint": str(phase1_ckpt.relative_to(ROOT)),
@@ -500,11 +561,9 @@ def main() -> int:
         "projection": str(projection.relative_to(ROOT)),
         "phase1_val": phase1_val,
         "phase2_val": phase2_val,
-        "arc": {
-            "base": summarize_mcq(arc_base),
-            "phase1_recurrent_baseline": summarize_mcq(arc_phase1),
-            "phase2_recurrent_candidate": summarize_mcq(arc_phase2),
-        },
+        "arc": arc_summary,
+        "arc_ladder": ladder,
+        "exact_generation_ran": RUN_EXACT,
     }
     (RUN_DIR / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
@@ -522,6 +581,20 @@ def main() -> int:
     ]
     for label, metrics in summary["arc"].items():
         lines.append(f"- {label}: `{metrics}`")
+    lines.extend(
+        [
+            "",
+            "## Baseline Ladder",
+            f"- Base mean accuracy: `{ladder['base_mean_accuracy']}`",
+            f"- Phase1 recurrent mean accuracy: `{ladder['phase1_mean_accuracy']}`",
+            f"- Phase2 recurrent best accuracy: `{ladder['phase2_best_accuracy']}`",
+            f"- Phase1 gap to base: `{ladder['phase1_gap_to_base']}`",
+            f"- Phase2 best lift over Phase1: `{ladder['phase2_best_lift_over_phase1']}`",
+            f"- Phase2 best gap to base: `{ladder['phase2_best_gap_to_base']}`",
+            "",
+            "Interpretation rule: Phase2 is a useful recurrent mechanism only if it first beats Phase1. Beating base Qwen is the later training target.",
+        ]
+    )
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))
 

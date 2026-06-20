@@ -48,16 +48,21 @@ model.
 
 ## Current Read
 
-As of the 2026-06-20 smoke runs:
+As of the 2026-06-20 runs:
 
 - Within-group SVGD improves exact-task heldout diagnostics versus random
   projected repulsion.
-- Phase2 sometimes recovers Phase1 loss on MCQ/ARC, especially with max
-  aggregation.
-- Base Qwen still beats the current recurrent checkpoints on ARC-128.
+- The Stage 4 modified-Opus Phase1 run materially strengthened the recurrent
+  baseline on ARC-128: base Qwen scored 72/128, the trained deterministic
+  recurrent model scored 70/128, and the Phase2/SVGD candidate scored 69/128
+  under mean/vote aggregation.
+- That narrows the outer base gap, but Phase2 did not improve over the stronger
+  Phase1 recurrent baseline in that run.
 
-That means the SVGD mechanism is not disproven, but the current checkpoints are
-diagnostic artifacts, not release candidates.
+That means the recurrent architecture is not dead weight: adapter training can
+restore much of the lost base-model competence. The SVGD mechanism remains a
+diagnostic/research candidate until it produces reliable lift over the current
+Phase1 recurrent baseline.
 
 ## Next Gate
 
@@ -73,3 +78,15 @@ baseline first. The gate after Stage 4 is:
 
 Only after those pass should we spend serious A100 time on GPQA Diamond or HF
 release packaging.
+
+## Immediate Policy
+
+- Treat Phase1 Stage 4 as the current recurrent baseline.
+- Do not call Phase2 successful unless it beats that Phase1 checkpoint, even if
+  it is interesting relative to older weaker recurrent checkpoints.
+- Report all benchmark tables as:
+  - base Qwen 0.5B,
+  - Phase1 deterministic recurrent,
+  - Phase2/SVGD recurrent,
+  - Phase2 minus Phase1,
+  - best recurrent minus base.
