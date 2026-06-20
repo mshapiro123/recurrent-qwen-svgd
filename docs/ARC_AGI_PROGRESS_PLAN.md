@@ -64,7 +64,15 @@ harmed examples.
 Build a separate harness for ARC-AGI public tasks. ARC-Challenge numbers should
 not be described as ARC-AGI numbers.
 
-The harness should:
+Initial harness files:
+
+- `eval/arc_agi_utils.py`: task loading, prompt rendering, grid parsing, and
+  exact-grid scoring.
+- `eval/eval_arc_agi.py`: base/recurrent exact-grid evaluator.
+- `colab/run_stage5_arc_agi_smoke.py`: Colab smoke runner that can clone public
+  ARC-AGI data and compare base Qwen against the recurrent Phase1 checkpoint.
+
+The harness should and now does:
 
 - load ARC-AGI-1 and ARC-AGI-2 public/evaluation JSON tasks,
 - render train/test grids into model prompts,
@@ -72,6 +80,13 @@ The harness should:
 - parse and validate grids strictly,
 - score exact-grid accuracy,
 - support K candidates and verifier/reranker selection.
+
+Next upgrades:
+
+- add programmatic grid-edit/action traces rather than plain text grid output;
+- add a verifier/reranker for K candidates;
+- add synthetic ARC-style trace generation for recurrent fine-tuning;
+- report ARC-AGI-1 and ARC-AGI-2 separately.
 
 ## Training Direction After 5A/5B
 
