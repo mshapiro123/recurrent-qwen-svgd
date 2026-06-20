@@ -5,6 +5,7 @@ import json
 from colab.plan_stage5_next_run import (
     best_recovered_tta_row,
     evidence_fragment,
+    next_validation_limit,
     paired_delta_or_aggregate,
     paired_metric,
     plan_next_actions,
@@ -79,6 +80,40 @@ def test_smoke_win_recommends_confirmation_and_export(tmp_path) -> None:
 
     assert any(name.startswith("Confirm recovered-vs-base") for name in names)
     assert "Export recovered adapter to Hugging Face" in names
+
+
+def test_confirmation_win_at_large_limit_recommends_full_split(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    payload = {
+        "autopilot_compact": {
+            "candidate_distillation_passed": True,
+            "final_checkpoint": "outputs/stage5/run/final.pt",
+            "particle_passed": False,
+        },
+        "recovered_benchmark": {
+            "base": {"summary": _summary(20, 22, examples=400)},
+            "phase1_start": {"summary": _summary(16, 18, examples=400)},
+            "recovered": {"summary": _summary(21, 23, examples=400)},
+            "deltas": {
+                "recovered_vs_base": {
+                    "selected_exact_delta": 1,
+                    "best_of_k_exact_delta": 1,
+                },
+                "recovered_vs_start": {
+                    "selected_exact_delta": 5,
+                    "best_of_k_exact_delta": 5,
+                },
+            },
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+    confirm = next(action for action in actions if action["name"].startswith("Confirm recovered-vs-base"))
+
+    assert confirm["name"] == "Confirm recovered-vs-base at ARC limit full"
+    assert "STAGE5_ARC_AGI_FOLLOWUP_LIMIT=full" in confirm["command"]
+    assert "full ARC split" in confirm["reason"]
 
 
 def test_paired_evidence_overrides_misleading_aggregate_win(tmp_path) -> None:
@@ -279,6 +314,12 @@ def test_paired_metric_helpers_fall_back_to_aggregate() -> None:
         == 2
     )
     assert "paired delta 1" in evidence_fragment(paired_metric(payload, "recovered_vs_base", "selected_exact"), 2)
+
+
+def test_next_validation_limit_graduates_smoke_to_confirm_to_full() -> None:
+    assert next_validation_limit(50) == 100
+    assert next_validation_limit(100) == 400
+    assert next_validation_limit(400) is None
 
 
 def test_source_kind_classifies_followup_and_autopilot() -> None:

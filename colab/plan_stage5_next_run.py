@@ -20,6 +20,11 @@ import time
 from pathlib import Path
 from typing import Any
 
+try:
+    from colab.stage5_limits import limit_label, parse_optional_limit
+except ModuleNotFoundError:  # pragma: no cover - direct ``python colab/script.py`` execution
+    from stage5_limits import limit_label, parse_optional_limit
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN_ID = os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_RUN_ID") or time.strftime("stage5_arc_agi_next_plan_%Y%m%d_%H%M%S")
@@ -28,7 +33,8 @@ RUN_DIR.mkdir(parents=True, exist_ok=True)
 
 SOURCE_SUMMARY = os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_SOURCE_SUMMARY", "")
 NEXT_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_NEXT_LIMIT", "100"))
-CONFIRM_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_CONFIRM_LIMIT", "400"))
+CONFIRM_LIMIT = parse_optional_limit(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_CONFIRM_LIMIT", "400"))
+FULL_SPLIT_AFTER_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_FULL_SPLIT_AFTER_LIMIT", "400"))
 MIN_RECOVERED_VS_START_DELTA = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_MIN_RECOVERED_VS_START_DELTA", "0"))
 
 
@@ -172,6 +178,21 @@ def command_env(assignments: dict[str, str], command: str) -> str:
     return f"{prefix} {command}" if prefix else command
 
 
+def next_validation_limit(current_examples: int, *, first_limit: int = NEXT_LIMIT) -> int | None:
+    """Choose the next ARC eval cap.
+
+    The planner graduates evidence from a small smoke sample to a larger
+    confirmation sample, then to the full split once the current run is already
+    at or beyond ``FULL_SPLIT_AFTER_LIMIT``.
+    """
+
+    if current_examples >= FULL_SPLIT_AFTER_LIMIT:
+        return None
+    if current_examples >= first_limit:
+        return CONFIRM_LIMIT
+    return first_limit
+
+
 def make_action(name: str, reason: str, command: str, priority: int) -> dict[str, Any]:
     return {"name": name, "reason": reason, "command": command, "priority": priority}
 
@@ -243,17 +264,24 @@ def plan_next_actions(payload: dict[str, Any], *, source_summary: Path) -> list[
             recovered_vs_base_selected_stats,
             recovered_vs_base_selected,
         ) and paired_supports_nonnegative(recovered_vs_base_best_stats, recovered_vs_base_best):
+            confirm_limit = next_validation_limit(examples, first_limit=CONFIRM_LIMIT or NEXT_LIMIT)
+            confirm_label = limit_label(confirm_limit)
+            confirm_reason = (
+                "Recovered recurrent matched or beat base on a confirmed sample; run the full ARC split before claiming lift."
+                if confirm_limit is None
+                else "Recovered recurrent matched or beat base on the current smoke comparison; validate at a larger held-out limit before claiming lift."
+            )
             actions.append(
                 make_action(
-                    f"Confirm recovered-vs-base at ARC limit {CONFIRM_LIMIT}",
-                    "Recovered recurrent matched or beat base on the current smoke comparison; validate at a larger held-out limit before claiming lift. "
+                    f"Confirm recovered-vs-base at ARC limit {confirm_label}",
+                    f"{confirm_reason} "
                     f"Selected evidence: {evidence_fragment(recovered_vs_base_selected_stats, recovered_vs_base_selected)}. "
                     f"Best-of-K evidence: {evidence_fragment(recovered_vs_base_best_stats, recovered_vs_base_best)}.",
                     command_env(
                         {
                             "STAGE5_ARC_AGI_AUTOPILOT_SUMMARY": source_summary_cli,
-                            "STAGE5_ARC_AGI_FOLLOWUP_RUN_ID": f"{RUN_ID}_confirm_limit{CONFIRM_LIMIT}",
-                            "STAGE5_ARC_AGI_FOLLOWUP_LIMIT": str(CONFIRM_LIMIT),
+                            "STAGE5_ARC_AGI_FOLLOWUP_RUN_ID": f"{RUN_ID}_confirm_limit{confirm_label}",
+                            "STAGE5_ARC_AGI_FOLLOWUP_LIMIT": confirm_label,
                         },
                         "python colab/run_stage5_arc_agi_autopilot_followup.py",
                     ),
@@ -354,6 +382,8 @@ def plan_next_actions(payload: dict[str, Any], *, source_summary: Path) -> list[
         best_tta_delta = metric(best_tta, "best_of_k_exact") - none_best
         tta_stats = paired_metric(tta, f"recovered__tta_{best_tta['tta_variant']}_vs_none", "best_of_k_exact")
         if paired_supports_positive(tta_stats, best_tta_delta):
+            tta_limit = next_validation_limit(metric(best_tta, "examples_with_targets"))
+            tta_limit_label = limit_label(tta_limit)
             actions.append(
                 make_action(
                     f"Replicate recovered TTA variant `{best_tta['tta_variant']}`",
@@ -362,8 +392,8 @@ def plan_next_actions(payload: dict[str, Any], *, source_summary: Path) -> list[
                     command_env(
                         {
                             "STAGE5_ARC_AGI_AUTOPILOT_SUMMARY": source_summary_cli,
-                            "STAGE5_ARC_AGI_FOLLOWUP_RUN_ID": f"{RUN_ID}_tta_{best_tta['tta_variant']}_limit{NEXT_LIMIT}",
-                            "STAGE5_ARC_AGI_FOLLOWUP_LIMIT": str(NEXT_LIMIT),
+                            "STAGE5_ARC_AGI_FOLLOWUP_RUN_ID": f"{RUN_ID}_tta_{best_tta['tta_variant']}_limit{tta_limit_label}",
+                            "STAGE5_ARC_AGI_FOLLOWUP_LIMIT": tta_limit_label,
                             "STAGE5_ARC_AGI_TTA_VARIANTS": f"none,{best_tta['tta_variant']}",
                         },
                         "python colab/run_stage5_arc_agi_autopilot_followup.py",
@@ -373,6 +403,10 @@ def plan_next_actions(payload: dict[str, Any], *, source_summary: Path) -> list[
             )
 
     if particle_passed:
+        particle_limit = next_validation_limit(
+            metric((benchmark or {}).get("base", {}).get("summary") if benchmark else None, "examples_with_targets")
+        )
+        particle_limit_label = limit_label(particle_limit)
         actions.append(
             make_action(
                 "Replicate particle gate at larger limit",
@@ -381,7 +415,7 @@ def plan_next_actions(payload: dict[str, Any], *, source_summary: Path) -> list[
                     {
                         "STAGE5_ARC_AGI_AUTOPILOT_SUMMARY": source_summary_cli,
                         "STAGE5_ARC_AGI_FOLLOWUP_RUN_ID": f"{RUN_ID}_particle_replicate",
-                        "STAGE5_ARC_AGI_FOLLOWUP_LIMIT": str(NEXT_LIMIT),
+                        "STAGE5_ARC_AGI_FOLLOWUP_LIMIT": particle_limit_label,
                     },
                     "python colab/run_stage5_arc_agi_autopilot_followup.py",
                 ),
