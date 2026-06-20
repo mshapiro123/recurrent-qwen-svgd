@@ -47,6 +47,9 @@ COLOR_AUGS = int(os.environ.get("STAGE5_ARC_AGI_COLOR_AUGS", "2"))
 GEOMETRY_AUGS = os.environ.get("STAGE5_ARC_AGI_GEOMETRY_AUGS", "all")
 TRACE_MODE = os.environ.get("STAGE5_ARC_AGI_TRACE_MODE", "none")
 TRACE_FILTER = os.environ.get("STAGE5_ARC_AGI_TRACE_FILTER", "all")
+SYNTHETIC_TASKS = int(os.environ.get("STAGE5_ARC_AGI_SYNTHETIC_TASKS", "0"))
+SYNTHETIC_SEED = int(os.environ.get("STAGE5_ARC_AGI_SYNTHETIC_SEED", "101"))
+SYNTHETIC_MODES = os.environ.get("STAGE5_ARC_AGI_SYNTHETIC_MODES", "all")
 MAX_LENGTH = int(os.environ.get("STAGE5_ARC_AGI_MAX_LENGTH", "1024"))
 MAX_TOTAL_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_TOTAL_TOKENS", "2048"))
 TRAIN_STEPS = int(os.environ.get("STAGE5_ARC_AGI_TRAIN_STEPS", "300"))
@@ -73,6 +76,8 @@ PUSH_RESULTS = os.environ.get("STAGE5_ARC_AGI_SFT_PUSH", "1").strip().lower() in
 
 TRAIN_JSONL = ROOT / "data" / f"{RUN_ID}_train.jsonl"
 VAL_JSONL = ROOT / "data" / f"{RUN_ID}_val.jsonl"
+SYNTHETIC_TASKS_JSON = RUN_DIR / "synthetic_arc_tasks.json"
+SYNTHETIC_JSONL = ROOT / "data" / f"{RUN_ID}_synthetic_train.jsonl"
 
 
 def run(cmd: list[str], *, check: bool = True, log_name: str | None = None) -> subprocess.CompletedProcess[str]:
@@ -178,6 +183,21 @@ def read_summary(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def count_jsonl(path: Path) -> int:
+    if not path.exists():
+        return 0
+    return sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
+
+
+def append_jsonl(target: Path, source: Path) -> None:
+    if not source.exists() or source.stat().st_size == 0:
+        return
+    with target.open("a", encoding="utf-8") as out, source.open("r", encoding="utf-8") as inp:
+        for line in inp:
+            if line.strip():
+                out.write(line if line.endswith("\n") else line + "\n")
+
+
 def add_symbolic_args(cmd: list[str]) -> list[str]:
     if INCLUDE_SYMBOLIC:
         cmd += ["--include_symbolic_candidates", "--symbolic_position", SYMBOLIC_POSITION]
@@ -214,6 +234,53 @@ def prepare_sft(train_path: Path) -> None:
         ],
         log_name="prepare_arc_agi_sft.log",
     )
+    if SYNTHETIC_TASKS:
+        run(
+            [
+                sys.executable,
+                "training/generate_arc_agi_synthetic_tasks.py",
+                "--output_json",
+                path_for_cli(SYNTHETIC_TASKS_JSON),
+                "--num_tasks",
+                str(SYNTHETIC_TASKS),
+                "--seed",
+                str(SYNTHETIC_SEED),
+                "--modes",
+                SYNTHETIC_MODES,
+            ],
+            log_name="generate_synthetic_arc_tasks.log",
+        )
+        run(
+            [
+                sys.executable,
+                "training/prepare_arc_agi_sft_jsonl.py",
+                "--tasks_path",
+                path_for_cli(SYNTHETIC_TASKS_JSON),
+                "--tokenizer_name",
+                MODEL_NAME,
+                "--output_jsonl",
+                path_for_cli(SYNTHETIC_JSONL),
+                "--augment_color_permutations",
+                "0",
+                "--augment_geometries",
+                "none",
+                "--grid_format",
+                GRID_FORMAT,
+                "--trace_mode",
+                "symbolic",
+                "--trace_filter",
+                "covered",
+                "--max_total_tokens",
+                str(MAX_TOTAL_TOKENS),
+                "--no-append_eos",
+            ],
+            log_name="prepare_synthetic_arc_sft.log",
+        )
+        before = count_jsonl(TRAIN_JSONL)
+        append_jsonl(TRAIN_JSONL, SYNTHETIC_JSONL)
+        after = count_jsonl(TRAIN_JSONL)
+        print(f"synthetic_jsonl_rows={count_jsonl(SYNTHETIC_JSONL)}")
+        print(f"train_rows_after_synthetic={after} added={after - before}")
 
 
 def eval_arc_agi(label: str, mode: str, tasks_path: Path, checkpoint: Path | None = None) -> dict[str, Any]:
@@ -317,7 +384,7 @@ def backup_to_drive() -> None:
     backup = drive_root / RUN_ID
     backup.mkdir(parents=True, exist_ok=True)
     shutil.copytree(RUN_DIR, backup / "run_dir", dirs_exist_ok=True)
-    for source in [TRAIN_JSONL, VAL_JSONL]:
+    for source in [TRAIN_JSONL, VAL_JSONL, SYNTHETIC_JSONL, SYNTHETIC_TASKS_JSON]:
         if source.exists():
             target = backup / "data" / source.name
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -356,6 +423,9 @@ def main() -> int:
         "geometry_augmentations": GEOMETRY_AUGS,
         "trace_mode": TRACE_MODE,
         "trace_filter": TRACE_FILTER,
+        "synthetic_tasks": SYNTHETIC_TASKS,
+        "synthetic_seed": SYNTHETIC_SEED,
+        "synthetic_modes": SYNTHETIC_MODES,
         "train_steps": TRAIN_STEPS,
         "learning_rate": LEARNING_RATE,
         "grid_format": GRID_FORMAT,
@@ -399,6 +469,7 @@ def main() -> int:
         f"- Geometry augmentations: `{GEOMETRY_AUGS}`",
         f"- Trace mode: `{TRACE_MODE}`",
         f"- Trace filter: `{TRACE_FILTER}`",
+        f"- Synthetic tasks: `{SYNTHETIC_TASKS}` modes `{SYNTHETIC_MODES}`",
         f"- Distillation: `{DISTILL_ENABLED}` weight `{DISTILL_WEIGHT}` temperature `{DISTILL_TEMPERATURE}` on `{DISTILL_ON}`",
         f"- Symbolic candidates: `{INCLUDE_SYMBOLIC}`",
         f"- Symbolic position: `{SYMBOLIC_POSITION if INCLUDE_SYMBOLIC else 'n/a'}`",

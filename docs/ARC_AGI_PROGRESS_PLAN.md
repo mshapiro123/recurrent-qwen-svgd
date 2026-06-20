@@ -84,9 +84,16 @@ Initial harness files:
   augmentation. It also supports `--trace_mode symbolic`, which prepends a
   compact `<think>` transformation trace when the small symbolic solver can
   exactly explain the target grid.
+- `training/generate_arc_agi_synthetic_tasks.py`: synthetic ARC-style task
+  generator for geometry/color-map and constant-output tasks that are exactly
+  covered by the symbolic trace solver. This is a controlled curriculum for
+  testing whether the recurrent architecture can learn clean transformation
+  traces before we spend more time on particle mechanisms.
 - `colab/run_stage5_arc_agi_sft.py`: smoke fine-tune runner for adapting
   recurrent Phase1 on public ARC-AGI training tasks and evaluating held-out
-  ARC-AGI evaluation tasks.
+  ARC-AGI evaluation tasks. It can append the synthetic curriculum with
+  `STAGE5_ARC_AGI_SYNTHETIC_TASKS`, `STAGE5_ARC_AGI_SYNTHETIC_SEED`, and
+  `STAGE5_ARC_AGI_SYNTHETIC_MODES`.
 - `colab/run_stage5_arc_agi_trace_sft_gate.py`: matched two-arm SFT runner for
   grid-only supervision versus symbolic-trace supervision.
 - `colab/run_stage5_arc_agi_distill_sft_gate.py`: matched two-arm SFT runner
@@ -153,6 +160,12 @@ Set `STAGE5_ARC_AGI_TRACE_MODE=symbolic` to train on explicit transformation
 traces for covered examples. Use `STAGE5_ARC_AGI_TRACE_FILTER=covered` for the
 clean curriculum arm, and keep `STAGE5_ARC_AGI_TRACE_MODE=none` as the grid-only
 control.
+
+Set `STAGE5_ARC_AGI_SYNTHETIC_TASKS=200` or higher to append symbolically covered
+synthetic ARC-style tasks to the public ARC SFT rows. This is the first
+controlled test for whether more targeted training can recover or improve the
+surgically altered recurrent model. Keep particle/SVGD claims separate until
+the deterministic recurrent baseline improves under this curriculum.
 
 Run `colab/run_stage5_arc_agi_trace_sft_gate.py` to execute both controls under
 the same settings and write one comparison summary. By default it compares
