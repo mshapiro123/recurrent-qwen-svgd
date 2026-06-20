@@ -3,6 +3,6 @@ base: outputs/benchmarks/mcq_smoke_base_label.jsonl
 phase1: outputs/benchmarks/mcq_smoke_phase1_label.jsonl
   aggregate=mean correct=4/8 accuracy=0.5000
 phase2_svgd: outputs/benchmarks/mcq_smoke_phase2_svgd_label.jsonl
-  aggregate=max correct=5/8 accuracy=0.6250
+  aggregate=max correct=4/8 accuracy=0.5000
   aggregate=mean correct=5/8 accuracy=0.6250
   aggregate=vote correct=5/8 accuracy=0.6250
