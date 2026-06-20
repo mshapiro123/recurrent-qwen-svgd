@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from colab.run_stage5_arc_agi_recovered_benchmark import (
     comparison_specs,
+    eval_arc,
     final_stage_row,
     metric_delta,
     recovered_checkpoint_from_curriculum,
@@ -67,3 +68,22 @@ def test_comparison_specs_cover_base_start_and_recovered_pairs() -> None:
         ("recovered_vs_start", "phase1_start", "recovered"),
         ("recovered_vs_base", "base", "recovered"),
     ]
+
+
+def test_eval_arc_omits_limit_for_full_split(monkeypatch, tmp_path) -> None:
+    import colab.run_stage5_arc_agi_recovered_benchmark as module
+
+    commands: list[list[str]] = []
+    summary_json = module.RUN_DIR / "base_summary.json"
+
+    def fake_run(cmd: list[str], **kwargs) -> None:
+        commands.append(cmd)
+        summary_json.write_text('{"summary": {}}', encoding="utf-8")
+
+    monkeypatch.setattr(module, "LIMIT", None)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    eval_arc("base", mode="base", tasks_path=tmp_path)
+
+    assert commands
+    assert "--limit" not in commands[0]

@@ -23,6 +23,11 @@ import time
 from pathlib import Path
 from typing import Any
 
+try:
+    from colab.stage5_limits import limit_label, parse_optional_limit
+except ModuleNotFoundError:  # pragma: no cover - direct ``python colab/script.py`` execution
+    from stage5_limits import limit_label, parse_optional_limit
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN_ID = os.environ.get("STAGE5_ARC_AGI_FOLLOWUP_RUN_ID") or time.strftime(
@@ -32,7 +37,9 @@ RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
 RUN_DIR.mkdir(parents=True, exist_ok=True)
 
 AUTOPILOT_SUMMARY = os.environ.get("STAGE5_ARC_AGI_AUTOPILOT_SUMMARY", "")
-LIMIT = int(os.environ.get("STAGE5_ARC_AGI_FOLLOWUP_LIMIT", os.environ.get("STAGE5_ARC_AGI_LIMIT", "50")))
+LIMIT = parse_optional_limit(
+    os.environ.get("STAGE5_ARC_AGI_FOLLOWUP_LIMIT", os.environ.get("STAGE5_ARC_AGI_LIMIT", "50"))
+)
 RUN_RECOVERED_BENCHMARK = os.environ.get("STAGE5_ARC_AGI_FOLLOWUP_RUN_RECOVERED_BENCHMARK", "1").strip().lower() in {
     "1",
     "true",
@@ -168,27 +175,29 @@ def run_child(label: str, script: str, env_updates: dict[str, str]) -> dict[str,
 
 
 def run_recovered_benchmark(curriculum_summary: Path) -> dict[str, Any]:
+    limit = limit_label(LIMIT)
     return run_child(
         "RECOVERED_BENCHMARK",
         "colab/run_stage5_arc_agi_recovered_benchmark.py",
         {
-            "STAGE5_ARC_AGI_RECOVERED_BENCHMARK_RUN_ID": f"{RUN_ID}_recovered_benchmark_limit{LIMIT}",
+            "STAGE5_ARC_AGI_RECOVERED_BENCHMARK_RUN_ID": f"{RUN_ID}_recovered_benchmark_limit{limit}",
             "STAGE5_ARC_AGI_RECOVERED_BENCHMARK_PUSH": "0",
             "STAGE5_ARC_AGI_CURRICULUM_SUMMARY": path_for_cli(curriculum_summary),
-            "STAGE5_ARC_AGI_LIMIT": str(LIMIT),
+            "STAGE5_ARC_AGI_LIMIT": limit,
         },
     )
 
 
 def run_tta_sweep(curriculum_summary: Path) -> dict[str, Any]:
+    limit = limit_label(LIMIT)
     return run_child(
         "TTA_SWEEP",
         "colab/run_stage5_arc_agi_tta_sweep.py",
         {
-            "STAGE5_ARC_AGI_TTA_SWEEP_RUN_ID": f"{RUN_ID}_tta_sweep_limit{LIMIT}",
+            "STAGE5_ARC_AGI_TTA_SWEEP_RUN_ID": f"{RUN_ID}_tta_sweep_limit{limit}",
             "STAGE5_ARC_AGI_TTA_SWEEP_PUSH": "0",
             "STAGE5_ARC_AGI_CURRICULUM_SUMMARY": path_for_cli(curriculum_summary),
-            "STAGE5_ARC_AGI_LIMIT": str(LIMIT),
+            "STAGE5_ARC_AGI_LIMIT": limit,
         },
     )
 
@@ -301,7 +310,7 @@ def main() -> int:
         "run_id": RUN_ID,
         "metadata": {
             "autopilot_summary": path_for_cli(summary_path),
-            "limit": LIMIT,
+            "limit": limit_label(LIMIT),
             "curriculum_summary": path_for_cli(curriculum_summary) if curriculum_summary else None,
             "run_recovered_benchmark": RUN_RECOVERED_BENCHMARK,
             "run_tta_sweep": RUN_TTA_SWEEP,

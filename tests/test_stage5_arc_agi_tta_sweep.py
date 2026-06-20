@@ -7,6 +7,7 @@ from colab.run_stage5_arc_agi_tta_sweep import (
     TTA_VARIANTS,
     arm_variant_label,
     compute_deltas,
+    eval_arm,
     paired_comparison_specs,
     requested_model_arms,
     requested_tta_variants,
@@ -96,3 +97,45 @@ def test_paired_comparison_specs_cover_tta_and_base_gap() -> None:
         ("recovered__tta_all_vs_none", "recovered__tta_none", "recovered__tta_all"),
         ("recovered__vs_base__tta_all", "base__tta_all", "recovered__tta_all"),
     ]
+
+
+def test_eval_arm_omits_limit_for_full_split(monkeypatch, tmp_path) -> None:
+    import colab.run_stage5_arc_agi_tta_sweep as module
+
+    commands: list[list[str]] = []
+    summary_json = module.RUN_DIR / "base__tta_none_summary.json"
+    summary_json.write_text(
+        json_payload(
+            {
+                "summary": {
+                    "first_exact": 0,
+                    "selected_exact": 0,
+                    "best_of_k_exact": 0,
+                    "examples_with_targets": 0,
+                    "tasks_solved_best_of_k": 0,
+                    "tasks_with_targets": 0,
+                    "valid_candidate_rate": 0.0,
+                },
+                "candidate_source_summary": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_run(cmd: list[str], **kwargs) -> None:
+        commands.append(cmd)
+
+    monkeypatch.setattr(module, "LIMIT", None)
+    monkeypatch.setattr(module, "RESUME", False)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    eval_arm(ModelArm("base", "base"), TTA_VARIANTS["none"], tmp_path)
+
+    assert commands
+    assert "--limit" not in commands[0]
+
+
+def json_payload(payload: dict[str, object]) -> str:
+    import json
+
+    return json.dumps(payload)

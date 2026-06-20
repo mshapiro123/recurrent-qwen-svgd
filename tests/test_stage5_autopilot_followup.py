@@ -5,6 +5,7 @@ import json
 from colab.run_stage5_arc_agi_autopilot_followup import (
     compare_recovered_to_base,
     curriculum_summary_path,
+    run_recovered_benchmark,
     should_run_eval_followups,
 )
 
@@ -74,3 +75,21 @@ def test_compare_recovered_to_base_returns_benchmark_delta() -> None:
         "best_of_k_exact_delta": 3,
     }
     assert compare_recovered_to_base(None) is None
+
+
+def test_run_recovered_benchmark_passes_full_limit_to_child(monkeypatch, tmp_path) -> None:
+    import colab.run_stage5_arc_agi_autopilot_followup as module
+
+    captured: dict[str, str] = {}
+
+    def fake_run_child(label: str, script: str, env_updates: dict[str, str]) -> dict[str, object]:
+        captured.update(env_updates)
+        return {}
+
+    monkeypatch.setattr(module, "LIMIT", None)
+    monkeypatch.setattr(module, "run_child", fake_run_child)
+
+    run_recovered_benchmark(tmp_path / "summary.json")
+
+    assert captured["STAGE5_ARC_AGI_LIMIT"] == "full"
+    assert captured["STAGE5_ARC_AGI_RECOVERED_BENCHMARK_RUN_ID"].endswith("_limitfull")

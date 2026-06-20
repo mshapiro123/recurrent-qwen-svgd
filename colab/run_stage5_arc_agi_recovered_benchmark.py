@@ -18,6 +18,11 @@ import time
 from pathlib import Path
 from typing import Any
 
+try:
+    from colab.stage5_limits import limit_args, limit_label, parse_optional_limit
+except ModuleNotFoundError:  # pragma: no cover - direct ``python colab/script.py`` execution
+    from stage5_limits import limit_args, limit_label, parse_optional_limit
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN_ID = os.environ.get("STAGE5_ARC_AGI_RECOVERED_BENCHMARK_RUN_ID") or time.strftime(
@@ -38,7 +43,7 @@ ARC_AGI_1_REPO = os.environ.get("ARC_AGI_1_REPO", "https://github.com/fchollet/A
 ARC_AGI_2_REPO = os.environ.get("ARC_AGI_2_REPO", "https://github.com/arcprize/ARC-AGI-2.git")
 ARC_VERSION = os.environ.get("STAGE5_ARC_AGI_VERSION", "1")
 ARC_SPLIT = os.environ.get("STAGE5_ARC_AGI_SPLIT", "evaluation")
-LIMIT = int(os.environ.get("STAGE5_ARC_AGI_LIMIT", "20"))
+LIMIT = parse_optional_limit(os.environ.get("STAGE5_ARC_AGI_LIMIT", "20"))
 MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
 GRID_FORMAT = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
 GEOMETRY_TTA = os.environ.get("STAGE5_ARC_AGI_GEOMETRY_TTA", "none")
@@ -182,8 +187,6 @@ def eval_arc(label: str, *, mode: str, tasks_path: Path, checkpoint: Path | None
         "eval/eval_arc_agi.py",
         "--tasks_path",
         str(tasks_path),
-        "--limit",
-        str(LIMIT),
         "--mode",
         mode,
         "--max_new_tokens",
@@ -208,7 +211,7 @@ def eval_arc(label: str, *, mode: str, tasks_path: Path, checkpoint: Path | None
         path_for_cli(summary_json),
         "--summary_md",
         path_for_cli(RUN_DIR / f"{label}_summary.md"),
-    ]
+    ] + limit_args(LIMIT)
     if mode != "base":
         if checkpoint is None:
             raise ValueError(f"checkpoint required for mode={mode}")
@@ -300,7 +303,7 @@ def write_report(payload: dict[str, Any]) -> None:
         f"# Stage 5 Recovered ARC-AGI Benchmark - {RUN_ID}",
         "",
         f"- ARC version/split: `{ARC_VERSION}` / `{ARC_SPLIT}`",
-        f"- Limit: `{LIMIT}`",
+        f"- Limit: `{limit_label(LIMIT)}`",
         f"- Tasks path: `{payload['metadata']['tasks_path']}`",
         f"- Phase1 start checkpoint: `{payload['metadata']['phase1_start_checkpoint']}`",
         f"- Recovered checkpoint: `{payload['metadata']['recovered_checkpoint']}`",
@@ -364,7 +367,7 @@ def main() -> int:
         "metadata": {
             "arc_version": ARC_VERSION,
             "arc_split": ARC_SPLIT,
-            "limit": LIMIT,
+            "limit": limit_label(LIMIT),
             "tasks_path": str(tasks_path),
             "curriculum_summary": CURRICULUM_SUMMARY or None,
             "phase1_start_checkpoint": path_for_cli(start_ckpt),
