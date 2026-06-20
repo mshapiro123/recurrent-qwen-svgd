@@ -53,6 +53,25 @@ def test_symbolic_candidates_include_constant_output() -> None:
     assert "constant_output_from_demonstrations" in format_symbolic_program_trace(symbolic_candidates(example)[0])
 
 
+def test_symbolic_candidates_learn_crop_non_background() -> None:
+    example = ArcAgiExample(
+        task_id="crop",
+        test_index=0,
+        train=(
+            ArcPair(input=[[0, 0, 0], [0, 4, 5], [0, 6, 0]], output=[[4, 5], [6, 0]]),
+            ArcPair(input=[[0, 7, 0], [0, 8, 0], [0, 0, 0]], output=[[7], [8]]),
+        ),
+        test_input=[[0, 0, 0, 0], [0, 2, 3, 0], [0, 0, 4, 0]],
+        test_output=[[2, 3], [0, 4]],
+    )
+    exact = exact_symbolic_candidate(example)
+    assert exact is not None
+    assert exact.name == "crop_non_background_bg0"
+    assert exact.grid == [[2, 3], [0, 4]]
+    assert "crop the minimal bounding box" in format_symbolic_trace(exact)
+    assert "crop_non_background(test_input, background=0)" in format_symbolic_program_trace(exact)
+
+
 def test_evaluate_example_tracks_candidate_sources() -> None:
     example = ArcAgiExample(
         task_id="source",

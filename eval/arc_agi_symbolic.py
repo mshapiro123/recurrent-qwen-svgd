@@ -6,6 +6,7 @@ that can be inferred exactly from demonstrations:
 
 - dihedral geometry transforms;
 - consistent per-color maps after a geometry transform;
+- non-background object bounding-box crops;
 - constant-output tasks.
 """
 
@@ -30,6 +31,21 @@ def grid_shape(grid: Grid) -> tuple[int, int]:
 
 def apply_color_map(grid: Grid, color_map: dict[int, int]) -> Grid:
     return [[color_map.get(cell, cell) for cell in row] for row in grid]
+
+
+def crop_non_background(grid: Grid, background: int) -> Grid | None:
+    rows: list[int] = []
+    cols: list[int] = []
+    for row_idx, row in enumerate(grid):
+        for col_idx, cell in enumerate(row):
+            if cell != background:
+                rows.append(row_idx)
+                cols.append(col_idx)
+    if not rows or not cols:
+        return None
+    row_start, row_end = min(rows), max(rows)
+    col_start, col_end = min(cols), max(cols)
+    return [row[col_start : col_end + 1] for row in grid[row_start : row_end + 1]]
 
 
 def learn_color_map(inputs: list[Grid], outputs: list[Grid]) -> dict[int, int] | None:
@@ -60,6 +76,14 @@ def color_map_program_literal(color_map: dict[int, int]) -> str:
 
 def all_outputs_equal(outputs: list[Grid]) -> bool:
     return bool(outputs) and all(output == outputs[0] for output in outputs)
+
+
+def learn_crop_background(inputs: list[Grid], outputs: list[Grid]) -> int | None:
+    for background in range(10):
+        predicted = [crop_non_background(grid, background) for grid in inputs]
+        if all(item is not None for item in predicted) and predicted == outputs:
+            return background
+    return None
 
 
 def dedupe_candidates(candidates: list[SymbolicCandidate]) -> list[SymbolicCandidate]:
@@ -95,6 +119,27 @@ def symbolic_candidates(example: ArcAgiExample) -> list[SymbolicCandidate]:
                 ),
             )
         )
+
+    crop_background = learn_crop_background([pair.input for pair in train_pairs], outputs)
+    if crop_background is not None:
+        predicted_crop = crop_non_background(example.test_input, crop_background)
+        if predicted_crop is not None:
+            candidates.append(
+                SymbolicCandidate(
+                    f"crop_non_background_bg{crop_background}",
+                    predicted_crop,
+                    (
+                        f"Background color: {crop_background}.",
+                        "Rule: crop the minimal bounding box containing all non-background cells.",
+                        "Action: apply the same crop to the test input.",
+                    ),
+                    (
+                        "program:",
+                        f"  grid = crop_non_background(test_input, background={crop_background})",
+                        "  return grid",
+                    ),
+                )
+            )
 
     for transform in GEOMETRY_TRANSFORMS:
         transformed_inputs = [apply_geometry_transform(pair.input, transform) for pair in train_pairs]

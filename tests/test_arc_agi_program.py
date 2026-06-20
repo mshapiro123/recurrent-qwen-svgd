@@ -28,6 +28,22 @@ def test_execute_arc_program_runs_transform_and_recolor() -> None:
     assert execute_arc_program(example, "\n".join(candidate.program)) == [[6, 2], [2, 2]]
 
 
+def test_execute_arc_program_runs_crop_non_background() -> None:
+    example = ArcAgiExample(
+        task_id="crop",
+        test_index=0,
+        train=(
+            ArcPair(input=[[0, 0, 0], [0, 4, 5], [0, 6, 0]], output=[[4, 5], [6, 0]]),
+            ArcPair(input=[[0, 7, 0], [0, 8, 0], [0, 0, 0]], output=[[7], [8]]),
+        ),
+        test_input=[[0, 0, 0, 0], [0, 2, 3, 0], [0, 0, 4, 0]],
+        test_output=[[2, 3], [0, 4]],
+    )
+    candidate = exact_symbolic_candidate(example)
+    assert candidate is not None
+    assert execute_arc_program(example, "\n".join(candidate.program)) == [[2, 3], [0, 4]]
+
+
 def test_parse_arc_program_from_text_extracts_think_region() -> None:
     example = ArcAgiExample(
         task_id="constant",

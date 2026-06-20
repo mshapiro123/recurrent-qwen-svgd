@@ -15,7 +15,7 @@ def test_generate_tasks_are_symbolically_covered(tmp_path) -> None:
         test_examples=1,
         min_size=2,
         max_size=4,
-        modes=["geometry_color", "constant_output"],
+        modes=["geometry_color", "constant_output", "crop_non_background"],
     )
     path = tmp_path / "synthetic.json"
     path.write_text(json.dumps(tasks), encoding="utf-8")
@@ -40,3 +40,22 @@ def test_generated_task_file_loads(tmp_path) -> None:
     examples = load_arc_agi_examples(path)
     assert len(examples) == 3
     assert analyze_examples(examples)["summary"]["exact_symbolic"] == 3
+
+
+def test_generate_crop_non_background_tasks_are_symbolically_covered(tmp_path) -> None:
+    tasks = generate_tasks(
+        num_tasks=5,
+        seed=99,
+        train_examples=3,
+        test_examples=1,
+        min_size=2,
+        max_size=5,
+        modes=["crop_non_background"],
+    )
+    path = tmp_path / "synthetic_crop.json"
+    path.write_text(json.dumps(tasks), encoding="utf-8")
+    examples = load_arc_agi_examples(path)
+    summary = analyze_examples(examples)["summary"]
+    assert summary["examples_with_targets"] == 5
+    assert summary["exact_symbolic"] == 5
+    assert any(source.startswith("crop_non_background_bg") for source in summary["exact_by_source"])
