@@ -208,7 +208,11 @@ def score_completion(
                 use_cache=False,
                 return_dict=True,
             )
-    return sequence_logprobs(output.logits, labels, normalize=args.normalize_option_score).cpu()
+    logits = output.logits
+    trajectory_logits = getattr(output, "trajectory_logits", None)
+    if trajectory_logits is not None:
+        logits = trajectory_logits.reshape(-1, *trajectory_logits.shape[2:])
+    return sequence_logprobs(logits, labels, normalize=args.normalize_option_score).cpu()
 
 
 def aggregate(scores: torch.Tensor, method: str) -> float:
