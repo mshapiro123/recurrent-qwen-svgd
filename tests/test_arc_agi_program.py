@@ -1,9 +1,15 @@
 from __future__ import annotations
 
-from eval.arc_agi_program import execute_arc_program, parse_arc_program_from_text, parse_color_map_literal
+from eval.arc_agi_program import (
+    arc_program_fits_training_examples,
+    arc_program_training_match_count,
+    execute_arc_program,
+    parse_arc_program_from_text,
+    parse_color_map_literal,
+)
 from eval.arc_agi_utils import ArcAgiExample, ArcPair
 from eval.arc_agi_symbolic import exact_symbolic_candidate, format_symbolic_program_trace
-from eval.eval_arc_agi import evaluate_example
+from eval.eval_arc_agi import evaluate_example, summarize_program_verifier
 
 
 def test_parse_color_map_literal_accepts_int_key_pairs() -> None:
@@ -26,6 +32,44 @@ def test_execute_arc_program_runs_transform_and_recolor() -> None:
     candidate = exact_symbolic_candidate(example)
     assert candidate is not None
     assert execute_arc_program(example, "\n".join(candidate.program)) == [[6, 2], [2, 2]]
+    assert arc_program_training_match_count(example, "\n".join(candidate.program)) == (2, 2)
+    assert arc_program_fits_training_examples(example, "\n".join(candidate.program)) is True
+
+
+def test_arc_program_training_match_count_rejects_inconsistent_program() -> None:
+    example = ArcAgiExample(
+        task_id="program",
+        test_index=0,
+        train=(
+            ArcPair(input=[[1]], output=[[2]]),
+            ArcPair(input=[[3]], output=[[4]]),
+        ),
+        test_input=[[5]],
+        test_output=[[6]],
+    )
+    wrong_program = "\n".join(
+        [
+            "program:",
+            "  grid = transform(test_input, 'identity')",
+            "  grid = recolor(grid, {1: 2, 3: 9, 5: 6})",
+            "  return grid",
+        ]
+    )
+    assert parse_arc_program_from_text(example, wrong_program) == [[6]]
+    assert arc_program_training_match_count(example, wrong_program) == (1, 2)
+    assert arc_program_fits_training_examples(example, wrong_program) is False
+
+
+def test_arc_program_training_match_count_ignores_plain_grid_text() -> None:
+    example = ArcAgiExample(
+        task_id="plain-grid",
+        test_index=0,
+        train=(ArcPair(input=[[1]], output=[[2]]),),
+        test_input=[[3]],
+        test_output=[[4]],
+    )
+    assert arc_program_training_match_count(example, "4") == (0, 0)
+    assert arc_program_fits_training_examples(example, "4") is False
 
 
 def test_execute_arc_program_runs_crop_non_background() -> None:
@@ -144,3 +188,41 @@ def test_evaluate_example_can_prefer_program_over_wrong_literal_grid() -> None:
     )
     assert prefer_summary["best_of_k_exact"] is True
     assert prefer_rows[0]["parse_method"] == "program"
+    assert prefer_rows[0]["program_fits_train"] is True
+    assert prefer_rows[0]["parsed_grid"] == [[9, 9]]
+
+
+def test_evaluate_example_selects_verified_program_over_valid_shape_grid() -> None:
+    example = ArcAgiExample(
+        task_id="verified-program",
+        test_index=0,
+        train=(
+            ArcPair(input=[[1, 1]], output=[[2, 2]]),
+            ArcPair(input=[[3, 3]], output=[[4, 4]]),
+        ),
+        test_input=[[5, 5]],
+        test_output=[[6, 6]],
+    )
+    text = "\n".join(
+        [
+            "<think>",
+            "program:",
+            "  grid = transform(test_input, 'identity')",
+            "  grid = recolor(grid, {1: 2, 3: 4, 5: 6})",
+            "  return grid",
+            "</think>",
+        ]
+    )
+    rows, summary = evaluate_example(
+        example,
+        ["99", text],
+        candidate_sources=["model", "model"],
+        diagnostics={},
+        generation_steps=1,
+        output_format="compact",
+        program_parse_mode="prefer",
+    )
+    assert summary["selected_index"] == 1
+    assert summary["selected_exact"] is True
+    assert rows[1]["program_fits_train"] is True
+    assert summarize_program_verifier(rows)["program_fit_selected_exact"] == 1

@@ -113,3 +113,42 @@ def parse_arc_program_from_text(example: ArcAgiExample, text: str) -> Grid | Non
         if grid is not None:
             return grid
     return None
+
+
+def execute_arc_program_on_input(example: ArcAgiExample, program_text: str, input_grid: Grid) -> Grid | None:
+    probe = ArcAgiExample(
+        task_id=example.task_id,
+        test_index=example.test_index,
+        train=example.train,
+        test_input=input_grid,
+        test_output=None,
+    )
+    return execute_arc_program(probe, program_text)
+
+
+def arc_program_training_match_count(example: ArcAgiExample, text: str) -> tuple[int, int]:
+    train_pairs = [pair for pair in example.train if pair.output is not None]
+    if not train_pairs:
+        return 0, 0
+
+    best_matches = 0
+    saw_executable_program = False
+    for region in _program_regions(text):
+        if execute_arc_program(example, region) is None:
+            continue
+        saw_executable_program = True
+        matches = 0
+        for pair in train_pairs:
+            predicted = execute_arc_program_on_input(example, region, pair.input)
+            matches += int(predicted == pair.output)
+        best_matches = max(best_matches, matches)
+        if best_matches == len(train_pairs):
+            break
+    if not saw_executable_program:
+        return 0, 0
+    return best_matches, len(train_pairs)
+
+
+def arc_program_fits_training_examples(example: ArcAgiExample, text: str) -> bool:
+    matches, total = arc_program_training_match_count(example, text)
+    return total > 0 and matches == total

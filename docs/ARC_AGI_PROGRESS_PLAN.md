@@ -118,7 +118,8 @@ Initial harness files:
   are shorter and easier for a 0.5B model to emit reliably.
 - Evaluation reports first-candidate, selected-candidate, and oracle best-of-K
   exact-grid accuracy. Selected-candidate accuracy uses only demonstration
-  shape heuristics and valid-grid parsing; best-of-K is diagnostic, not a
+  shape heuristics, valid-grid parsing, and a tiny program verifier when
+  candidates emit executable symbolic programs. Best-of-K is diagnostic, not a
   deployable score.
 - Evaluation can execute the tiny `symbolic_program` DSL as a fallback when a
   candidate does not contain a directly parseable output grid. Reports include
@@ -127,6 +128,11 @@ Initial harness files:
   grid-first scoring, and `--program_parse_mode prefer` when diagnosing whether
   the model learned executable transformations before it learned reliable final
   grid formatting.
+- Executable program candidates are also checked against every demonstration.
+  Candidates whose program reproduces all training outputs are preferred during
+  selected-candidate ranking before shape heuristics. Reports include a
+  `program_verifier_summary` so verifier lift remains separate from oracle
+  best-of-K.
 - Evaluation can optionally include symbolic candidates with
   `--include_symbolic_candidates`. Colab runners expose this as
   `STAGE5_ARC_AGI_INCLUDE_SYMBOLIC=1` and

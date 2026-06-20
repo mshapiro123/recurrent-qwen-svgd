@@ -156,3 +156,21 @@ def test_shape_aware_candidate_selection_prefers_inferred_shape() -> None:
         {"parsed_grid": [[9, 9]]},
     ]
     assert select_candidate_index(example, rows) == 1
+
+
+def test_candidate_selection_prefers_verified_program_over_shape_heuristic() -> None:
+    example = ArcAgiExample(
+        task_id="program-select",
+        test_index=0,
+        train=(
+            ArcPair(input=[[1, 1]], output=[[2, 2]]),
+            ArcPair(input=[[3, 3]], output=[[4, 4]]),
+        ),
+        test_input=[[5, 5]],
+        test_output=[[6, 6]],
+    )
+    rows = [
+        {"parsed_grid": [[9, 9]], "parse_method": "grid", "program_fits_train": False},
+        {"parsed_grid": [[6], [6]], "parse_method": "program", "program_fits_train": True},
+    ]
+    assert select_candidate_index(example, rows) == 1

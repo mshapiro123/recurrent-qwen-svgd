@@ -28,7 +28,7 @@ from eval.arc_agi_utils import (  # noqa: E402
     render_arc_prompt,
     score_grid_prediction,
 )
-from eval.arc_agi_program import parse_arc_program_from_text  # noqa: E402
+from eval.arc_agi_program import arc_program_training_match_count, parse_arc_program_from_text  # noqa: E402
 from eval.arc_agi_symbolic import symbolic_candidates  # noqa: E402
 from eval.eval_best_of_k_jsonl import generate_candidates, load_wrapper, parse_optional_float  # noqa: E402
 from eval.eval_identity import model_load_kwargs  # noqa: E402
@@ -212,6 +212,14 @@ def inferred_output_shapes(example: ArcAgiExample) -> list[tuple[int, int]]:
 
 def select_candidate_index(example: ArcAgiExample, candidate_rows: list[dict[str, Any]]) -> int:
     preferred_shapes = set(inferred_output_shapes(example))
+    for idx, row in enumerate(candidate_rows):
+        if (
+            row["parsed_grid"] is not None
+            and row.get("parse_method") == "program"
+            and row.get("program_fits_train")
+        ):
+            return idx
+
     first_valid: int | None = None
     for idx, row in enumerate(candidate_rows):
         parsed = row["parsed_grid"]
@@ -253,6 +261,7 @@ def evaluate_example(
             program_parse_mode=program_parse_mode,
         )
         score = score_grid_prediction(parsed, target)
+        program_train_matches, program_train_total = arc_program_training_match_count(example, text)
         valid_count += int(bool(score["valid"]))
         exact = bool(score.get("exact"))
         if idx == 0:
@@ -267,6 +276,9 @@ def evaluate_example(
                 "candidate_text": text,
                 "parsed_grid": parsed,
                 "parse_method": parse_method,
+                "program_train_matches": program_train_matches,
+                "program_train_total": program_train_total,
+                "program_fits_train": program_train_total > 0 and program_train_matches == program_train_total,
                 "target_grid": target,
                 "target_json": grid_to_json_text(target) if target is not None else None,
                 "score": score,
@@ -377,6 +389,20 @@ def summarize_parse_methods(rows: list[dict[str, Any]]) -> dict[str, Any]:
     return by_method
 
 
+def summarize_program_verifier(rows: list[dict[str, Any]]) -> dict[str, int]:
+    with_program = [row for row in rows if int(row.get("program_train_total", 0)) > 0]
+    fits = [row for row in with_program if row.get("program_fits_train")]
+    return {
+        "candidates_with_program": len(with_program),
+        "candidates_program_fits_train": len(fits),
+        "program_fit_exact": sum(1 for row in fits if bool(row.get("score", {}).get("exact"))),
+        "program_fit_selected": sum(1 for row in fits if bool(row.get("selected"))),
+        "program_fit_selected_exact": sum(
+            1 for row in fits if bool(row.get("selected")) and bool(row.get("score", {}).get("exact"))
+        ),
+    }
+
+
 def write_summary(path: str | Path | None, payload: dict[str, Any]) -> None:
     if not path:
         return
@@ -391,6 +417,7 @@ def write_summary_md(path: str | Path | None, payload: dict[str, Any]) -> None:
     summary = payload["summary"]
     source_summary = payload.get("candidate_source_summary", {})
     parse_summary = payload.get("parse_method_summary", {})
+    program_verifier = payload.get("program_verifier_summary", {})
     lines = [
         f"# ARC-AGI Evaluation - {payload['mode']}",
         "",
@@ -421,6 +448,16 @@ def write_summary_md(path: str | Path | None, payload: dict[str, Any]) -> None:
                 f"- `{method}`: count `{stats['count']}`, exact `{stats['exact']}`, "
                 f"selected `{stats['selected']}`, selected_exact `{stats['selected_exact']}`"
             )
+    if program_verifier:
+        lines += [
+            "",
+            "## Program Verifier",
+            f"- Candidates with executable programs: `{program_verifier['candidates_with_program']}`",
+            f"- Candidates fitting all demonstrations: `{program_verifier['candidates_program_fits_train']}`",
+            f"- Program-fit exact candidates: `{program_verifier['program_fit_exact']}`",
+            f"- Program-fit selected candidates: `{program_verifier['program_fit_selected']}`",
+            f"- Program-fit selected exact: `{program_verifier['program_fit_selected_exact']}`",
+        ]
     out = Path(path)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -602,6 +639,7 @@ def main() -> int:
         "summary": summarize_examples(example_summaries),
         "candidate_source_summary": summarize_candidate_sources(all_rows),
         "parse_method_summary": summarize_parse_methods(all_rows),
+        "program_verifier_summary": summarize_program_verifier(all_rows),
         "examples": example_summaries,
     }
     write_summary(args.summary_json, payload)
