@@ -6,6 +6,7 @@ from colab.run_stage5_arc_agi_recovery_particle_gate import (
     decide_recovery,
     parse_particle_variants,
     select_recovered_checkpoint,
+    summarize_particle_ladder,
     summarize_holdout_recovery,
 )
 
@@ -108,6 +109,48 @@ def test_decide_particle_value_rejects_all_negative() -> None:
     decision, evidence = decide_particle_value({"bad": _summary(2, 2)}, _summary(2, 3))
     assert decision is False
     assert evidence["best_non_negative_variant"] is None
+
+
+def test_summarize_particle_ladder_tracks_variant_windows() -> None:
+    rows = [
+        {
+            "step": 100,
+            "variant": "noise",
+            "delta_vs_recurrent": {
+                "selected_delta": 0,
+                "best_of_k_delta": 1,
+                "first_delta": 0,
+                "valid_rate_delta": 0.0,
+            },
+        },
+        {
+            "step": 200,
+            "variant": "noise",
+            "delta_vs_recurrent": {
+                "selected_delta": -1,
+                "best_of_k_delta": 2,
+                "first_delta": 0,
+                "valid_rate_delta": 0.0,
+            },
+        },
+        {
+            "step": 200,
+            "variant": "svgd",
+            "delta_vs_recurrent": {
+                "selected_delta": 1,
+                "best_of_k_delta": 1,
+                "first_delta": 0,
+                "valid_rate_delta": 0.0,
+            },
+        },
+    ]
+    summary = summarize_particle_ladder(rows)
+    assert summary["evaluated_rows"] == 3
+    assert summary["by_variant"]["noise"]["evaluated_checkpoints"] == 2
+    assert summary["by_variant"]["noise"]["non_negative_checkpoints"] == 1
+    assert summary["by_variant"]["svgd"]["non_negative_checkpoints"] == 1
+    assert summary["best_row"]["step"] == 200
+    assert summary["best_row"]["variant"] == "noise"
 
 
 def test_summarize_holdout_recovery_tracks_parse_modes_and_deltas() -> None:

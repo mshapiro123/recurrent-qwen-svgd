@@ -69,6 +69,12 @@ PARTICLE_TRAJECTORIES = int(os.environ.get("STAGE5_ARC_AGI_PARTICLE_TRAJECTORIES
 PARTICLE_NOISE = float(os.environ.get("STAGE5_ARC_AGI_PARTICLE_NOISE", "0.01"))
 PARTICLE_NOISE_STEPS = int(os.environ.get("STAGE5_ARC_AGI_PARTICLE_NOISE_STEPS", "16"))
 PARTICLE_PROJECTION_DIM = int(os.environ.get("STAGE5_ARC_AGI_PARTICLE_PROJECTION_DIM", "32"))
+PARTICLE_CHECKPOINT_LADDER = os.environ.get("STAGE5_ARC_AGI_PARTICLE_CHECKPOINT_LADDER", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 PARTICLE_VARIANTS = os.environ.get(
     "STAGE5_ARC_AGI_PARTICLE_VARIANTS",
     "k4_noise0_rep0:0:0,k4_noise001_rep0:0.01:0,k4_noise001_rep05:0.01:0.5,k4_noise001_rep2:0.01:2",
@@ -230,6 +236,59 @@ def decide_particle_value(
             if best_variant is None or delta["best_of_k_delta"] > rows[best_variant]["delta_vs_tuned"]["best_of_k_delta"]:
                 best_variant = name
     return best_variant is not None, {"variants": rows, "best_non_negative_variant": best_variant}
+
+
+def summarize_particle_ladder(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Summarize whether particles help at particular recovery checkpoints."""
+
+    by_variant: dict[str, Any] = {}
+    best_row: dict[str, Any] | None = None
+    for row in rows:
+        variant = str(row["variant"])
+        delta = row["delta_vs_recurrent"]
+        is_non_negative = delta["best_of_k_delta"] >= 0 and delta["selected_delta"] >= 0
+        variant_row = by_variant.setdefault(
+            variant,
+            {
+                "evaluated_checkpoints": 0,
+                "non_negative_checkpoints": 0,
+                "best_selected_delta": None,
+                "best_best_of_k_delta": None,
+                "best_step": None,
+            },
+        )
+        variant_row["evaluated_checkpoints"] += 1
+        if is_non_negative:
+            variant_row["non_negative_checkpoints"] += 1
+        if (
+            best_row is None
+            or delta["best_of_k_delta"] > best_row["delta_vs_recurrent"]["best_of_k_delta"]
+            or (
+                delta["best_of_k_delta"] == best_row["delta_vs_recurrent"]["best_of_k_delta"]
+                and delta["selected_delta"] > best_row["delta_vs_recurrent"]["selected_delta"]
+            )
+        ):
+            best_row = row
+        if (
+            variant_row["best_best_of_k_delta"] is None
+            or delta["best_of_k_delta"] > variant_row["best_best_of_k_delta"]
+            or (
+                delta["best_of_k_delta"] == variant_row["best_best_of_k_delta"]
+                and (
+                    variant_row["best_selected_delta"] is None
+                    or delta["selected_delta"] > variant_row["best_selected_delta"]
+                )
+            )
+        ):
+            variant_row["best_best_of_k_delta"] = delta["best_of_k_delta"]
+            variant_row["best_selected_delta"] = delta["selected_delta"]
+            variant_row["best_step"] = row.get("step")
+
+    return {
+        "evaluated_rows": len(rows),
+        "by_variant": by_variant,
+        "best_row": best_row,
+    }
 
 
 def summarize_holdout_recovery(holdout: dict[str, dict[str, dict[str, Any]]]) -> dict[str, Any]:
@@ -421,10 +480,12 @@ def eval_particle_variant(
     variant: ParticleVariant,
     tasks_path: Path,
     checkpoint: Path,
+    label: str | None = None,
 ) -> dict[str, Any]:
-    summary_json = RUN_DIR / f"{variant.name}_summary.json"
-    summary_md = RUN_DIR / f"{variant.name}_summary.md"
-    output_jsonl = RUN_DIR / f"{variant.name}_candidates.jsonl"
+    label = label or variant.name
+    summary_json = RUN_DIR / f"{label}_summary.json"
+    summary_md = RUN_DIR / f"{label}_summary.md"
+    output_jsonl = RUN_DIR / f"{label}_candidates.jsonl"
     if summary_json.exists() and os.environ.get("STAGE5_ARC_AGI_RECOVERY_PARTICLE_RESUME", "1") in {
         "1",
         "true",
@@ -482,9 +543,47 @@ def eval_particle_variant(
             "--summary_md",
             path_for_cli(summary_md),
         ],
-        log_name=f"{variant.name}.log",
+        log_name=f"{label}.log",
     )
     return read_json(summary_json)["summary"]
+
+
+def eval_particle_checkpoint_ladder(
+    *,
+    sft_summary: dict[str, Any],
+    tasks_path: Path,
+    particle_variants: list[ParticleVariant],
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for checkpoint_row in sft_summary.get("checkpoint_ladder") or []:
+        checkpoint_value = checkpoint_row.get("checkpoint")
+        if not checkpoint_value:
+            continue
+        checkpoint = resolve_path(checkpoint_value)
+        if not checkpoint.exists():
+            print(f"skipping_missing_ladder_checkpoint={checkpoint}")
+            continue
+        step = checkpoint_row.get("step")
+        recurrent_summary = checkpoint_row["summary"]
+        for variant in particle_variants:
+            label = f"ladder_step{step}_{variant.name}"
+            particle_summary = eval_particle_variant(
+                variant=variant,
+                tasks_path=tasks_path,
+                checkpoint=checkpoint,
+                label=label,
+            )
+            rows.append(
+                {
+                    "step": step,
+                    "checkpoint": path_for_cli(checkpoint),
+                    "variant": variant.name,
+                    "recurrent_summary": recurrent_summary,
+                    "particle_summary": particle_summary,
+                    "delta_vs_recurrent": compare_summaries(particle_summary, recurrent_summary),
+                }
+            )
+    return rows
 
 
 def backup_to_drive() -> None:
@@ -556,6 +655,18 @@ def write_report(payload: dict[str, Any]) -> None:
     lines.extend(["## Particle Evidence", ""])
     for name, row in particle["evidence"]["variants"].items():
         lines.append(f"- `{name}` delta vs tuned: `{row['delta_vs_tuned']}` summary `{row['summary']}`")
+    particle_ladder = payload.get("particle_checkpoint_ladder_summary", {})
+    if particle_ladder:
+        lines.extend(
+            [
+                "",
+                "## Particle Checkpoint Ladder",
+                "",
+                f"- Evaluated rows: `{particle_ladder['evaluated_rows']}`",
+                f"- By variant: `{particle_ladder['by_variant']}`",
+                f"- Best row: `{particle_ladder['best_row']}`",
+            ]
+        )
     lines.extend(
         [
             "",
@@ -601,6 +712,16 @@ def main() -> int:
         particle_summaries,
         recovered["summary"],
     )
+    particle_ladder_rows = (
+        eval_particle_checkpoint_ladder(
+            sft_summary=sft_summary,
+            tasks_path=tasks_path,
+            particle_variants=particle_variants,
+        )
+        if PARTICLE_CHECKPOINT_LADDER
+        else []
+    )
+    particle_ladder_summary = summarize_particle_ladder(particle_ladder_rows) if particle_ladder_rows else {}
 
     payload = {
         "run_id": RUN_ID,
@@ -623,6 +744,7 @@ def main() -> int:
             "particle_trajectories": PARTICLE_TRAJECTORIES,
             "particle_noise_steps": PARTICLE_NOISE_STEPS,
             "particle_projection_dim": PARTICLE_PROJECTION_DIM,
+            "particle_checkpoint_ladder": PARTICLE_CHECKPOINT_LADDER,
             "program_parse_mode": PROGRAM_PARSE_MODE,
             "particle_variants": [variant.__dict__ for variant in particle_variants],
         },
@@ -631,6 +753,8 @@ def main() -> int:
         "synthetic_holdout": synthetic_holdout,
         "recovery_decision": {"passed": recovery_passed, "evidence": recovery_evidence},
         "particle_decision": {"passed": particle_passed, "evidence": particle_evidence},
+        "particle_checkpoint_ladder": particle_ladder_rows,
+        "particle_checkpoint_ladder_summary": particle_ladder_summary,
     }
     write_report(payload)
     backup_to_drive()
