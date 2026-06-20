@@ -28,6 +28,7 @@ from eval.arc_agi_utils import (  # noqa: E402
     render_arc_prompt,
     score_grid_prediction,
 )
+from eval.arc_agi_program import parse_arc_program_from_text  # noqa: E402
 from eval.arc_agi_symbolic import symbolic_candidates  # noqa: E402
 from eval.eval_best_of_k_jsonl import generate_candidates, load_wrapper, parse_optional_float  # noqa: E402
 from eval.eval_identity import model_load_kwargs  # noqa: E402
@@ -243,6 +244,10 @@ def evaluate_example(
     sources = candidate_sources or ["model"] * len(candidates)
     for idx, text in enumerate(candidates):
         parsed = parse_grid_from_text(text, output_format=output_format)
+        parse_method = "grid" if parsed is not None else "none"
+        if parsed is None:
+            parsed = parse_arc_program_from_text(example, text)
+            parse_method = "program" if parsed is not None else "none"
         score = score_grid_prediction(parsed, target)
         valid_count += int(bool(score["valid"]))
         exact = bool(score.get("exact"))
@@ -257,6 +262,7 @@ def evaluate_example(
                 "candidate_source": sources[idx] if idx < len(sources) else "unknown",
                 "candidate_text": text,
                 "parsed_grid": parsed,
+                "parse_method": parse_method,
                 "target_grid": target,
                 "target_json": grid_to_json_text(target) if target is not None else None,
                 "score": score,
@@ -326,6 +332,19 @@ def summarize_candidate_sources(rows: list[dict[str, Any]]) -> dict[str, Any]:
     return by_source
 
 
+def summarize_parse_methods(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    by_method: dict[str, dict[str, int]] = {}
+    for row in rows:
+        method = str(row.get("parse_method", "unknown"))
+        stats = by_method.setdefault(method, {"count": 0, "exact": 0, "selected": 0, "selected_exact": 0})
+        stats["count"] += 1
+        score = row.get("score", {})
+        stats["exact"] += int(bool(score.get("exact")))
+        stats["selected"] += int(bool(row.get("selected")))
+        stats["selected_exact"] += int(bool(row.get("selected")) and bool(score.get("exact")))
+    return by_method
+
+
 def write_summary(path: str | Path | None, payload: dict[str, Any]) -> None:
     if not path:
         return
@@ -339,6 +358,7 @@ def write_summary_md(path: str | Path | None, payload: dict[str, Any]) -> None:
         return
     summary = payload["summary"]
     source_summary = payload.get("candidate_source_summary", {})
+    parse_summary = payload.get("parse_method_summary", {})
     lines = [
         f"# ARC-AGI Evaluation - {payload['mode']}",
         "",
@@ -360,6 +380,13 @@ def write_summary_md(path: str | Path | None, payload: dict[str, Any]) -> None:
                 f"- `{source}`: count `{stats['count']}`, valid `{stats['valid']}`, "
                 f"exact `{stats['exact']}`, selected `{stats['selected']}`, "
                 f"selected_exact `{stats['selected_exact']}`"
+            )
+    if parse_summary:
+        lines += ["", "## Parse Methods"]
+        for method, stats in sorted(parse_summary.items()):
+            lines.append(
+                f"- `{method}`: count `{stats['count']}`, exact `{stats['exact']}`, "
+                f"selected `{stats['selected']}`, selected_exact `{stats['selected_exact']}`"
             )
     out = Path(path)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -529,6 +556,7 @@ def main() -> int:
         "symbolic_position": args.symbolic_position,
         "summary": summarize_examples(example_summaries),
         "candidate_source_summary": summarize_candidate_sources(all_rows),
+        "parse_method_summary": summarize_parse_methods(all_rows),
         "examples": example_summaries,
     }
     write_summary(args.summary_json, payload)

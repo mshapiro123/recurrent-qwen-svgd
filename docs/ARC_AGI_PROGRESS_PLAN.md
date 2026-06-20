@@ -114,6 +114,10 @@ Initial harness files:
   exact-grid accuracy. Selected-candidate accuracy uses only demonstration
   shape heuristics and valid-grid parsing; best-of-K is diagnostic, not a
   deployable score.
+- Evaluation can execute the tiny `symbolic_program` DSL as a fallback when a
+  candidate does not contain a directly parseable output grid. Reports include
+  a parse-method summary so literal-grid exactness and program-executed
+  exactness remain visible.
 - Evaluation can optionally include symbolic candidates with
   `--include_symbolic_candidates`. Colab runners expose this as
   `STAGE5_ARC_AGI_INCLUDE_SYMBOLIC=1` and

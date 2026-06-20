@@ -8,7 +8,7 @@ from eval.arc_agi_symbolic import (
     symbolic_candidates,
 )
 from eval.arc_agi_utils import ArcAgiExample, ArcPair
-from eval.eval_arc_agi import evaluate_example, summarize_candidate_sources
+from eval.eval_arc_agi import evaluate_example, summarize_candidate_sources, summarize_parse_methods
 
 
 def test_learn_color_map_rejects_conflicts() -> None:
@@ -72,3 +72,5 @@ def test_evaluate_example_tracks_candidate_sources() -> None:
     assert summary["best_of_k_exact"] is True
     by_source = summarize_candidate_sources(rows)
     assert by_source["symbolic"]["exact"] == 1
+    by_method = summarize_parse_methods(rows)
+    assert by_method["grid"]["exact"] == 1
