@@ -28,6 +28,7 @@ from eval.arc_agi_utils import (  # noqa: E402
     render_arc_prompt,
     score_grid_prediction,
 )
+from eval.arc_agi_symbolic import symbolic_candidates  # noqa: E402
 from eval.eval_best_of_k_jsonl import generate_candidates, load_wrapper, parse_optional_float  # noqa: E402
 from eval.eval_identity import model_load_kwargs  # noqa: E402
 
@@ -228,6 +229,7 @@ def evaluate_example(
     example: ArcAgiExample,
     candidates: list[str],
     *,
+    candidate_sources: list[str] | None = None,
     diagnostics: dict[str, float],
     generation_steps: int,
     output_format: str,
@@ -238,6 +240,7 @@ def evaluate_example(
     selected_exact = False
     valid_count = 0
     target = example.test_output
+    sources = candidate_sources or ["model"] * len(candidates)
     for idx, text in enumerate(candidates):
         parsed = parse_grid_from_text(text, output_format=output_format)
         score = score_grid_prediction(parsed, target)
@@ -251,6 +254,7 @@ def evaluate_example(
                 "task_id": example.task_id,
                 "test_index": example.test_index,
                 "candidate_index": idx,
+                "candidate_source": sources[idx] if idx < len(sources) else "unknown",
                 "candidate_text": text,
                 "parsed_grid": parsed,
                 "target_grid": target,
@@ -308,6 +312,20 @@ def summarize_examples(example_summaries: list[dict[str, Any]]) -> dict[str, Any
     }
 
 
+def summarize_candidate_sources(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    by_source: dict[str, dict[str, int]] = {}
+    for row in rows:
+        source = str(row.get("candidate_source", "unknown"))
+        stats = by_source.setdefault(source, {"count": 0, "valid": 0, "exact": 0, "selected": 0, "selected_exact": 0})
+        stats["count"] += 1
+        score = row.get("score", {})
+        stats["valid"] += int(bool(score.get("valid")))
+        stats["exact"] += int(bool(score.get("exact")))
+        stats["selected"] += int(bool(row.get("selected")))
+        stats["selected_exact"] += int(bool(row.get("selected")) and bool(score.get("exact")))
+    return by_source
+
+
 def write_summary(path: str | Path | None, payload: dict[str, Any]) -> None:
     if not path:
         return
@@ -320,6 +338,7 @@ def write_summary_md(path: str | Path | None, payload: dict[str, Any]) -> None:
     if not path:
         return
     summary = payload["summary"]
+    source_summary = payload.get("candidate_source_summary", {})
     lines = [
         f"# ARC-AGI Evaluation - {payload['mode']}",
         "",
@@ -334,6 +353,14 @@ def write_summary_md(path: str | Path | None, payload: dict[str, Any]) -> None:
         "",
         "This is exact-grid scoring on ARC-AGI-format tasks, not ARC-Challenge multiple choice.",
     ]
+    if source_summary:
+        lines += ["", "## Candidate Sources"]
+        for source, stats in sorted(source_summary.items()):
+            lines.append(
+                f"- `{source}`: count `{stats['count']}`, valid `{stats['valid']}`, "
+                f"exact `{stats['exact']}`, selected `{stats['selected']}`, "
+                f"selected_exact `{stats['selected_exact']}`"
+            )
     out = Path(path)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -357,6 +384,13 @@ def main() -> int:
     parser.add_argument("--max_new_tokens", type=int, default=512)
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--grid_format", default="json", choices=("json", "compact", "tagged"))
+    parser.add_argument("--include_symbolic_candidates", action="store_true")
+    parser.add_argument(
+        "--symbolic_position",
+        default="after_model",
+        choices=("before_model", "after_model", "only"),
+        help="Where to place deterministic symbolic ARC candidates relative to model candidates.",
+    )
     parser.add_argument("--dtype", default="bfloat16")
     parser.add_argument("--attn_implementation", default="default")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
@@ -381,16 +415,20 @@ def main() -> int:
     parser.add_argument("--particle_noise_steps", type=int, default=32)
     args = parser.parse_args()
 
-    if args.mode != "base" and not args.checkpoint:
+    symbolic_only = args.include_symbolic_candidates and args.symbolic_position == "only"
+
+    if not symbolic_only and args.mode != "base" and not args.checkpoint:
         raise SystemExit("--checkpoint is required for phase1/phase2 modes")
     if args.output_jsonl:
         Path(args.output_jsonl).parent.mkdir(parents=True, exist_ok=True)
         Path(args.output_jsonl).write_text("", encoding="utf-8")
 
     set_seed(args.seed)
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
-    if tokenizer.pad_token_id is None:
-        tokenizer.pad_token = tokenizer.eos_token
+    tokenizer = None
+    if not symbolic_only:
+        tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+        if tokenizer.pad_token_id is None:
+            tokenizer.pad_token = tokenizer.eos_token
 
     examples = load_arc_agi_examples(
         args.tasks_path,
@@ -399,16 +437,38 @@ def main() -> int:
     )
     print(f"loaded_examples={len(examples)}")
 
-    if args.mode == "base":
+    model_or_wrapper = None
+    if symbolic_only:
+        print("symbolic_only=True; skipping model load")
+    elif args.mode == "base":
         model_or_wrapper = load_base(args)
     else:
         model_or_wrapper = load_wrapper(args, args.checkpoint)
 
     example_summaries: list[dict[str, Any]] = []
+    all_rows: list[dict[str, Any]] = []
     for idx, example in enumerate(examples):
         prompt = render_arc_prompt(example, output_format=args.grid_format)
-        if args.mode == "base":
-            candidates = generate_base_candidates(
+        candidates: list[str] = []
+        candidate_sources: list[str] = []
+        diagnostics: dict[str, float] = {}
+        generation_steps = 0
+        symbolic_texts: list[str] = []
+        if args.include_symbolic_candidates:
+            from eval.arc_agi_utils import format_grid_completion
+
+            symbolic_texts = [
+                format_grid_completion(candidate.grid, output_format=args.grid_format)
+                for candidate in symbolic_candidates(example)
+            ]
+
+        if args.include_symbolic_candidates and args.symbolic_position == "before_model":
+            candidates.extend(symbolic_texts)
+            candidate_sources.extend(["symbolic"] * len(symbolic_texts))
+
+        if not (args.include_symbolic_candidates and args.symbolic_position == "only") and args.mode == "base":
+            assert tokenizer is not None and model_or_wrapper is not None
+            generated = generate_base_candidates(
                 model_or_wrapper,
                 tokenizer,
                 prompt,
@@ -418,18 +478,31 @@ def main() -> int:
                 device=args.device,
                 seed=args.seed + idx * max(args.num_candidates, 1),
             )
-            diagnostics: dict[str, float] = {}
+            candidates.extend(generated)
+            candidate_sources.extend(["model"] * len(generated))
             generation_steps = args.max_new_tokens
-        else:
-            candidates, diagnostics, generation_steps = generate_recurrent_candidates(
+        elif not (args.include_symbolic_candidates and args.symbolic_position == "only"):
+            assert tokenizer is not None and model_or_wrapper is not None
+            generated, diagnostics, generation_steps = generate_recurrent_candidates(
                 model_or_wrapper,
                 tokenizer,
                 prompt,
                 args,
             )
+            candidates.extend(generated)
+            candidate_sources.extend(["model"] * len(generated))
+
+        if args.include_symbolic_candidates and args.symbolic_position == "after_model":
+            candidates.extend(symbolic_texts)
+            candidate_sources.extend(["symbolic"] * len(symbolic_texts))
+        elif args.include_symbolic_candidates and args.symbolic_position == "only":
+            candidates.extend(symbolic_texts)
+            candidate_sources.extend(["symbolic"] * len(symbolic_texts))
+
         rows, example_summary = evaluate_example(
             example,
             candidates,
+            candidate_sources=candidate_sources,
             diagnostics=diagnostics,
             generation_steps=generation_steps,
             output_format=args.grid_format,
@@ -438,6 +511,7 @@ def main() -> int:
         for row in rows:
             row.update({"mode": args.mode, "prompt": prompt})
             append_jsonl(args.output_jsonl, row)
+            all_rows.append(row)
         print(json.dumps(example_summary, ensure_ascii=False))
 
     payload = {
@@ -451,7 +525,10 @@ def main() -> int:
         "max_new_tokens": args.max_new_tokens,
         "temperature": args.temperature,
         "grid_format": args.grid_format,
+        "include_symbolic_candidates": args.include_symbolic_candidates,
+        "symbolic_position": args.symbolic_position,
         "summary": summarize_examples(example_summaries),
+        "candidate_source_summary": summarize_candidate_sources(all_rows),
         "examples": example_summaries,
     }
     write_summary(args.summary_json, payload)

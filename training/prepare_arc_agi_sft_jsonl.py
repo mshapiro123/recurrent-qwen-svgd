@@ -37,50 +37,18 @@ if str(ROOT) not in sys.path:
 from eval.arc_agi_utils import (  # noqa: E402
     ArcAgiExample,
     ArcPair,
+    GEOMETRY_TRANSFORMS,
     Grid,
+    apply_geometry_transform,
     format_grid_completion,
     load_arc_agi_examples,
+    parse_geometry_augmentations,
     render_arc_prompt,
 )
 
 
 def apply_color_permutation(grid: Grid, permutation: list[int]) -> Grid:
     return [[permutation[cell] for cell in row] for row in grid]
-
-
-GEOMETRY_TRANSFORMS = (
-    "identity",
-    "rot90",
-    "rot180",
-    "rot270",
-    "flip_h",
-    "flip_v",
-    "transpose",
-    "anti_transpose",
-)
-
-
-def apply_geometry_transform(grid: Grid, transform: str) -> Grid:
-    if transform == "identity":
-        return [row[:] for row in grid]
-    if transform == "rot90":
-        return [[grid[row][col] for row in range(len(grid) - 1, -1, -1)] for col in range(len(grid[0]))]
-    if transform == "rot180":
-        return [list(reversed(row)) for row in reversed(grid)]
-    if transform == "rot270":
-        return [[grid[row][col] for row in range(len(grid))] for col in range(len(grid[0]) - 1, -1, -1)]
-    if transform == "flip_h":
-        return [list(reversed(row)) for row in grid]
-    if transform == "flip_v":
-        return [row[:] for row in reversed(grid)]
-    if transform == "transpose":
-        return [[grid[row][col] for row in range(len(grid))] for col in range(len(grid[0]))]
-    if transform == "anti_transpose":
-        return [
-            [grid[row][col] for row in range(len(grid) - 1, -1, -1)]
-            for col in range(len(grid[0]) - 1, -1, -1)
-        ]
-    raise ValueError(f"Unknown geometry transform: {transform}")
 
 
 def permute_pair(pair: ArcPair, permutation: list[int]) -> ArcPair:
@@ -125,19 +93,6 @@ def random_color_permutation(rng: random.Random) -> list[int]:
 
 def identity_permutation() -> list[int]:
     return list(range(10))
-
-
-def parse_geometry_augmentations(value: str) -> list[str]:
-    normalized = value.strip().lower()
-    if normalized in {"", "none", "0", "false"}:
-        return ["identity"]
-    if normalized == "all":
-        return list(GEOMETRY_TRANSFORMS)
-    transforms = [item.strip() for item in normalized.split(",") if item.strip()]
-    unknown = set(transforms) - set(GEOMETRY_TRANSFORMS)
-    if unknown:
-        raise ValueError(f"Unknown geometry transforms: {sorted(unknown)}")
-    return ["identity", *[item for item in transforms if item != "identity"]]
 
 
 def leave_one_out_examples(task_examples: Iterable[ArcAgiExample]) -> list[ArcAgiExample]:

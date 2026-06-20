@@ -37,6 +37,13 @@ ARC_SPLIT = os.environ.get("STAGE5_ARC_AGI_SPLIT", "evaluation")
 LIMIT = int(os.environ.get("STAGE5_ARC_AGI_LIMIT", "5"))
 MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
 GRID_FORMAT = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
+INCLUDE_SYMBOLIC = os.environ.get("STAGE5_ARC_AGI_INCLUDE_SYMBOLIC", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
+SYMBOLIC_POSITION = os.environ.get("STAGE5_ARC_AGI_SYMBOLIC_POSITION", "after_model")
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
 DEVICE = os.environ.get("DEVICE", "cuda")
@@ -131,6 +138,12 @@ def read_summary(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def add_symbolic_args(cmd: list[str]) -> list[str]:
+    if INCLUDE_SYMBOLIC:
+        cmd += ["--include_symbolic_candidates", "--symbolic_position", SYMBOLIC_POSITION]
+    return cmd
+
+
 def backup_to_drive() -> None:
     mount_drive_if_possible()
     drive_root = Path(os.environ.get("DRIVE_BACKUP_DIR", "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts"))
@@ -172,6 +185,8 @@ def main() -> int:
         "tasks_path": str(tasks_path),
         "phase1_checkpoint": str(PHASE1_CKPT.relative_to(ROOT) if PHASE1_CKPT.is_relative_to(ROOT) else PHASE1_CKPT),
         "grid_format": GRID_FORMAT,
+        "include_symbolic_candidates": INCLUDE_SYMBOLIC,
+        "symbolic_position": SYMBOLIC_POSITION if INCLUDE_SYMBOLIC else None,
         "dtype": DTYPE,
         "adapter_dtype": ADAPTER_DTYPE,
     }
@@ -181,7 +196,8 @@ def main() -> int:
     base_summary_json = RUN_DIR / "base_summary.json"
     phase1_summary_json = RUN_DIR / "phase1_summary.json"
     run(
-        [
+        add_symbolic_args(
+            [
             sys.executable,
             "eval/eval_arc_agi.py",
             "--tasks_path",
@@ -206,11 +222,13 @@ def main() -> int:
             str(base_summary_json.relative_to(ROOT)),
             "--summary_md",
             str((RUN_DIR / "base_summary.md").relative_to(ROOT)),
-        ],
+            ]
+        ),
         log_name="base_eval.log",
     )
     run(
-        [
+        add_symbolic_args(
+            [
             sys.executable,
             "eval/eval_arc_agi.py",
             "--tasks_path",
@@ -241,7 +259,8 @@ def main() -> int:
             str(phase1_summary_json.relative_to(ROOT)),
             "--summary_md",
             str((RUN_DIR / "phase1_summary.md").relative_to(ROOT)),
-        ],
+            ]
+        ),
         log_name="phase1_eval.log",
     )
     summary = {
@@ -258,6 +277,8 @@ def main() -> int:
         f"- Limit: `{LIMIT}`",
         f"- Tasks path: `{tasks_path}`",
         f"- Grid format: `{GRID_FORMAT}`",
+        f"- Symbolic candidates: `{INCLUDE_SYMBOLIC}`",
+        f"- Symbolic position: `{SYMBOLIC_POSITION if INCLUDE_SYMBOLIC else 'n/a'}`",
         "",
         "## Exact-Grid Results",
         f"- Base: `{summary['base']}`",

@@ -69,6 +69,8 @@ Initial harness files:
 - `eval/arc_agi_utils.py`: task loading, prompt rendering, grid parsing, and
   exact-grid scoring.
 - `eval/eval_arc_agi.py`: base/recurrent exact-grid evaluator.
+- `eval/arc_agi_symbolic.py`: small deterministic ARC candidate generator for
+  simple geometry, consistent color-map, and constant-output transformations.
 - `colab/run_stage5_arc_agi_smoke.py`: Colab smoke runner that can clone public
   ARC-AGI data and compare base Qwen against the recurrent Phase1 checkpoint.
 - `training/prepare_arc_agi_sft_jsonl.py`: supervised ARC-AGI JSONL
@@ -84,6 +86,12 @@ Initial harness files:
   exact-grid accuracy. Selected-candidate accuracy uses only demonstration
   shape heuristics and valid-grid parsing; best-of-K is diagnostic, not a
   deployable score.
+- Evaluation can optionally include symbolic candidates with
+  `--include_symbolic_candidates`. Colab runners expose this as
+  `STAGE5_ARC_AGI_INCLUDE_SYMBOLIC=1` and
+  `STAGE5_ARC_AGI_SYMBOLIC_POSITION=after_model|before_model|only`.
+  Use this to separate model-only ability, symbolic-only transform coverage,
+  and hybrid candidate selection.
 
 The harness should and now does:
 
@@ -96,6 +104,8 @@ The harness should and now does:
 
 Next upgrades:
 
+- run model-only, symbolic-only, and hybrid ARC-AGI smoke evaluations before
+  spending more GPU on particles;
 - add programmatic grid-edit/action traces rather than plain text grid output;
 - add a verifier/reranker for K candidates;
 - add synthetic ARC-style trace generation for recurrent fine-tuning;
@@ -137,6 +147,15 @@ If particles pass the value gate:
 - train particles with set/coverage objectives rather than plain diversity;
 - only reward diversity among correct or verifier-approved candidates;
 - evaluate K=1, K=2, and K=4 separately.
+
+If symbolic or hybrid candidates help while particles do not:
+
+- treat this as evidence that candidate diversity can matter, but current
+  latent particles are not yet producing the right alternatives;
+- train the recurrent model on explicit transformation/action traces and
+  use particles as proposal mechanisms only after those traces are learned;
+- compare particle candidates against symbolic candidate coverage rather than
+  against random output diversity.
 
 If Phase1 does not improve:
 

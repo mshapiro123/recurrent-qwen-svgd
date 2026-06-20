@@ -53,6 +53,13 @@ LEARNING_RATE = float(os.environ.get("STAGE5_ARC_AGI_LR", "8e-6"))
 BETA = float(os.environ.get("STAGE5_ARC_AGI_BETA", "0.08"))
 MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
 GRID_FORMAT = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
+INCLUDE_SYMBOLIC = os.environ.get("STAGE5_ARC_AGI_INCLUDE_SYMBOLIC", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
+SYMBOLIC_POSITION = os.environ.get("STAGE5_ARC_AGI_SYMBOLIC_POSITION", "after_model")
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
 DEVICE = os.environ.get("DEVICE", "cuda")
@@ -165,6 +172,12 @@ def read_summary(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def add_symbolic_args(cmd: list[str]) -> list[str]:
+    if INCLUDE_SYMBOLIC:
+        cmd += ["--include_symbolic_candidates", "--symbolic_position", SYMBOLIC_POSITION]
+    return cmd
+
+
 def prepare_sft(train_path: Path) -> None:
     run(
         [
@@ -231,6 +244,7 @@ def eval_arc_agi(label: str, mode: str, tasks_path: Path, checkpoint: Path | Non
             "--num_candidates",
             "1",
         ]
+    add_symbolic_args(cmd)
     run(cmd, log_name=f"{label}_eval.log")
     return read_summary(summary_json)["summary"]
 
@@ -327,6 +341,8 @@ def main() -> int:
         "train_steps": TRAIN_STEPS,
         "learning_rate": LEARNING_RATE,
         "grid_format": GRID_FORMAT,
+        "include_symbolic_candidates": INCLUDE_SYMBOLIC,
+        "symbolic_position": SYMBOLIC_POSITION if INCLUDE_SYMBOLIC else None,
         "phase1_checkpoint": path_for_cli(PHASE1_CKPT),
         "train_path": str(train_path),
         "eval_path": str(eval_path),
@@ -357,6 +373,8 @@ def main() -> int:
         f"- Train task limit: `{TRAIN_TASK_LIMIT}`",
         f"- Eval task limit: `{EVAL_TASK_LIMIT}`",
         f"- Geometry augmentations: `{GEOMETRY_AUGS}`",
+        f"- Symbolic candidates: `{INCLUDE_SYMBOLIC}`",
+        f"- Symbolic position: `{SYMBOLIC_POSITION if INCLUDE_SYMBOLIC else 'n/a'}`",
         f"- Tuned checkpoint: `{path_for_cli(tuned_ckpt)}`",
         f"- Grid format: `{GRID_FORMAT}`",
         "",

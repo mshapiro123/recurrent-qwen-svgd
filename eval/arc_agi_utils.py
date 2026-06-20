@@ -16,6 +16,16 @@ from typing import Any, Iterable
 
 
 Grid = list[list[int]]
+GEOMETRY_TRANSFORMS = (
+    "identity",
+    "rot90",
+    "rot180",
+    "rot270",
+    "flip_h",
+    "flip_v",
+    "transpose",
+    "anti_transpose",
+)
 
 
 @dataclass(frozen=True)
@@ -54,6 +64,42 @@ def validate_grid(value: Any) -> Grid:
     if len(grid) > 30 or (width or 0) > 30:
         raise ValueError("ARC-AGI grids must be at most 30x30")
     return grid
+
+
+def apply_geometry_transform(grid: Grid, transform: str) -> Grid:
+    if transform == "identity":
+        return [row[:] for row in grid]
+    if transform == "rot90":
+        return [[grid[row][col] for row in range(len(grid) - 1, -1, -1)] for col in range(len(grid[0]))]
+    if transform == "rot180":
+        return [list(reversed(row)) for row in reversed(grid)]
+    if transform == "rot270":
+        return [[grid[row][col] for row in range(len(grid))] for col in range(len(grid[0]) - 1, -1, -1)]
+    if transform == "flip_h":
+        return [list(reversed(row)) for row in grid]
+    if transform == "flip_v":
+        return [row[:] for row in reversed(grid)]
+    if transform == "transpose":
+        return [[grid[row][col] for row in range(len(grid))] for col in range(len(grid[0]))]
+    if transform == "anti_transpose":
+        return [
+            [grid[row][col] for row in range(len(grid) - 1, -1, -1)]
+            for col in range(len(grid[0]) - 1, -1, -1)
+        ]
+    raise ValueError(f"Unknown geometry transform: {transform}")
+
+
+def parse_geometry_augmentations(value: str) -> list[str]:
+    normalized = value.strip().lower()
+    if normalized in {"", "none", "0", "false"}:
+        return ["identity"]
+    if normalized == "all":
+        return list(GEOMETRY_TRANSFORMS)
+    transforms = [item.strip() for item in normalized.split(",") if item.strip()]
+    unknown = set(transforms) - set(GEOMETRY_TRANSFORMS)
+    if unknown:
+        raise ValueError(f"Unknown geometry transforms: {sorted(unknown)}")
+    return ["identity", *[item for item in transforms if item != "identity"]]
 
 
 def _pair_from_json(row: dict[str, Any], *, require_output: bool) -> ArcPair:
