@@ -244,6 +244,9 @@ else:
 """
 
 
+SINGLE_RUNTIME_STAGE1_CELL = BOOTSTRAP + "\n\n" + STAGE1_RUN
+
+
 def write_notebook(name: str, cells: list[dict]) -> None:
     COLAB.mkdir(parents=True, exist_ok=True)
     path = COLAB / name
@@ -253,63 +256,167 @@ def write_notebook(name: str, cells: list[dict]) -> None:
 
 def main() -> int:
     write_notebook(
-        "00_stage_launcher.ipynb",
+        "00_single_a100_runbook.ipynb",
         [
             md(
                 """
-                # Recurrent Qwen SVGD Stage Launcher
+                # Single A100 Runbook - Recurrent Qwen SVGD
 
-                Run the single code cell below in Colab to clone/update the private
-                GitHub repo and print links to the staged notebooks.
+                This is the preferred Colab workflow. Keep one A100 runtime attached
+                to this notebook and run the stage cells in order. Do not hop between
+                notebooks unless you intentionally want a separate session.
+
+                Stage 1 is executable now. Stages 2-6 are separated cells with the
+                next gates and implementation checklists so we can continue in this
+                same runtime once Stage 1 results land.
+                """
+            ),
+            code(BOOTSTRAP),
+            md(
+                """
+                ## Stage 1 - Finish SVGD Heldout Seed Replication
+
+                Runs heldout seeds `5-9` for random32 vs recreated within-group PCA.
+                Commits and pushes the diagnostic JSONL/log/summary outputs.
+                """
+            ),
+            code(STAGE1_RUN),
+            md(
+                """
+                ## Stage 2 - Benchmark Harness Gate
+
+                Run this only after Stage 1 summary is reviewed.
                 """
             ),
             code(
                 r"""
-import os, subprocess
-from pathlib import Path
-from IPython.display import Markdown, display
-from google.colab import userdata
+%cd /content/recurrent-qwen-svgd
+!python eval/eval_gpqa.py --help
 
-REPO = "mshapiro123/recurrent-qwen-svgd"
-ROOT = Path("/content/recurrent-qwen-svgd")
-
-def secret(name):
-    try:
-        return userdata.get(name)
-    except Exception:
-        return None
-
-GH_TOKEN = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or secret("GH_TOKEN") or secret("GITHUB_TOKEN")
-assert GH_TOKEN, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
-
-def run(cmd, cwd=None):
-    printable = " ".join(map(str, cmd)).replace(GH_TOKEN, "****")
-    print("$", printable)
-    proc = subprocess.run(cmd, cwd=cwd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    print(proc.stdout)
-    if proc.returncode:
-        raise RuntimeError(printable)
-
-if ROOT.exists():
-    run(["git", "remote", "set-url", "origin", f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"], cwd=ROOT)
-    run(["git", "fetch", "origin", "main"], cwd=ROOT)
-    run(["git", "checkout", "main"], cwd=ROOT)
-    run(["git", "pull", "--ff-only", "origin", "main"], cwd=ROOT)
-else:
-    run(["git", "clone", f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git", str(ROOT)])
-
-base = "https://colab.research.google.com/github/mshapiro123/recurrent-qwen-svgd/blob/main/colab"
-links = [
-    ("Stage 1 - SVGD seed replication", "01_stage1_svgd_seed_replication.ipynb"),
-    ("Stage 2 - Benchmark harness", "02_stage2_benchmark_harness.ipynb"),
-    ("Stage 3 - Hugging Face packaging", "03_stage3_hf_packaging.ipynb"),
-    ("Stage 4 - Modified Opus fine-tune", "04_stage4_modified_opus_finetune.ipynb"),
-    ("Stage 5 - Benchmarks", "05_stage5_benchmarks.ipynb"),
-    ("Stage 6 - Write-up and release", "06_stage6_writeup_and_release.ipynb"),
-]
-display(Markdown("\n".join(f"- [{name}]({base}/{path})" for name, path in links)))
+print('''
+Stage 2 implementation checklist:
+1. Upgrade eval/eval_gpqa.py or add eval/eval_mcq_benchmark.py.
+2. Add --mode base|phase1|phase2.
+3. Add --checkpoint loading for recurrent wrappers.
+4. Add --num_trajectories and SVGD kernel options.
+5. Add --output_jsonl.
+6. Validate on a tiny handcrafted MCQ JSONL before GPQA.
+''')
 """
             ),
+            md(
+                """
+                ## Stage 3 - Hugging Face Packaging Gate
+
+                Package only after the benchmark harness can reload and evaluate a
+                saved adapter/controller artifact.
+                """
+            ),
+            code(
+                r"""
+%cd /content/recurrent-qwen-svgd
+
+MODEL_REPO = "mshapiro123/recurrent-qwen-svgd-0.5b-adapter"
+print("Target HF repo:", MODEL_REPO)
+print('''
+Stage 3 implementation checklist:
+1. Export trainable checkpoint to safetensors.
+2. Save adapter config: base_model, split, max_loops, SVGD defaults, projection path metadata.
+3. Write README/model card with limitations and exact commands.
+4. Push adapter package to HF private repo first.
+5. Add a reload smoke test from HF.
+''')
+"""
+            ),
+            md(
+                """
+                ## Stage 4 - Modified Opus Fine-Tune Gate
+
+                Resume modified Opus training only after Stage 1 replication and the
+                benchmark harness are stable.
+                """
+            ),
+            code(
+                r"""
+%cd /content/recurrent-qwen-svgd
+
+print('''
+Stage 4 implementation checklist:
+1. Generate modified Opus JSONL with prompt/completion/cot_tokens.
+2. Validate token lengths and target-loop distribution.
+3. Run Phase 1 for 500-2000 steps with fp32 adapters.
+4. Validate CE, halting KL, expected loops, and exact smoke tasks.
+5. Train Phase 2/SVGD from the best Phase 1 checkpoint.
+6. Recalibrate within-group projection after Phase 2.
+''')
+"""
+            ),
+            md(
+                """
+                ## Stage 5 - Benchmark Runs Gate
+
+                Run serious benchmarks after packaging/reload is deterministic.
+                """
+            ),
+            code(
+                r"""
+%cd /content/recurrent-qwen-svgd
+
+print('''
+Benchmark order:
+1. exact smoke v2/v3
+2. tiny handcrafted MCQ sanity set
+3. GPQA-lite/sample
+4. ARC-Challenge or science MCQ subset
+5. GPQA Diamond full
+
+Report separately:
+- deterministic option-likelihood accuracy
+- Phase 2 seed/K settings
+- best-of-K oracle where applicable
+- selector/verifier-selected score only if a selector exists
+''')
+"""
+            ),
+            md(
+                """
+                ## Stage 6 - Write-Up and Release Gate
+
+                Turn the run into a reproducible result bundle.
+                """
+            ),
+            code(
+                r"""
+%cd /content/recurrent-qwen-svgd
+
+print('''
+Stage 6 deliverables:
+1. docs/U5_WITHIN_GROUP_SVGD_REPORT.md
+2. docs/EXPERIMENT_LOG.md update
+3. HF model card
+4. benchmark result JSONLs
+5. exact reproduction commands
+6. limitations section: small model, no verifier, slow no-cache recurrent generation
+''')
+"""
+            ),
+        ],
+    )
+
+    write_notebook(
+        "00_stage_launcher.ipynb",
+        [
+            md(
+                """
+                # Recurrent Qwen SVGD Single-Runtime Launcher
+
+                Run the single code cell below in the already-attached Colab A100
+                runtime. It clones/updates the private GitHub repo and runs Stage 1
+                directly in this notebook. It does not open or route you to another
+                notebook.
+                """
+            ),
+            code(SINGLE_RUNTIME_STAGE1_CELL),
         ],
     )
 

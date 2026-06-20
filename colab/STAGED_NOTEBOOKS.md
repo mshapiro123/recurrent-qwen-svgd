@@ -1,12 +1,19 @@
-# Staged Colab Notebooks
+# Single A100 Colab Runbook
 
-Run this single cell in any Colab notebook to fetch the private repo and print
-links to the staged notebooks:
+The preferred workflow is **one Colab notebook attached to one A100 runtime**.
+Do not open each stage as a separate notebook while an expensive runtime is
+active. The staged notebooks remain in `colab/` for review, but the execution
+path below stays inside the current runtime.
+
+## Start or Resume Stage 1 In-Place
+
+Paste this single cell into the already-attached A100 notebook. It clones or
+updates the private GitHub repo, installs dependencies, validates optional HF
+auth, then runs Stage 1 directly in the current runtime.
 
 ```python
-import os, subprocess
+import os, subprocess, sys
 from pathlib import Path
-from IPython.display import Markdown, display
 from google.colab import userdata
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
@@ -18,16 +25,31 @@ def secret(name):
     except Exception:
         return None
 
-GH_TOKEN = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or secret("GH_TOKEN") or secret("GITHUB_TOKEN")
+GH_TOKEN = (
+    os.environ.get("GH_TOKEN")
+    or os.environ.get("GITHUB_TOKEN")
+    or secret("GH_TOKEN")
+    or secret("GITHUB_TOKEN")
+)
+HF_TOKEN = (
+    os.environ.get("HF_TOKEN")
+    or os.environ.get("HUGGINGFACE_HUB_TOKEN")
+    or secret("HF_TOKEN")
+    or secret("HUGGINGFACE_HUB_TOKEN")
+)
 assert GH_TOKEN, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
+if HF_TOKEN:
+    os.environ["HF_TOKEN"] = HF_TOKEN
+    os.environ["HUGGINGFACE_HUB_TOKEN"] = HF_TOKEN
 
-def run(cmd, cwd=None):
+def run(cmd, cwd=None, check=True):
     printable = " ".join(map(str, cmd)).replace(GH_TOKEN, "****")
     print("$", printable)
     proc = subprocess.run(cmd, cwd=cwd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     print(proc.stdout)
-    if proc.returncode:
-        raise RuntimeError(printable)
+    if check and proc.returncode:
+        raise RuntimeError(f"failed: {printable}")
+    return proc
 
 if ROOT.exists():
     run(["git", "remote", "set-url", "origin", f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"], cwd=ROOT)
@@ -37,24 +59,39 @@ if ROOT.exists():
 else:
     run(["git", "clone", f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git", str(ROOT)])
 
-base = "https://colab.research.google.com/github/mshapiro123/recurrent-qwen-svgd/blob/main/colab"
-links = [
-    ("Stage 1 - SVGD seed replication", "01_stage1_svgd_seed_replication.ipynb"),
-    ("Stage 2 - Benchmark harness", "02_stage2_benchmark_harness.ipynb"),
-    ("Stage 3 - Hugging Face packaging", "03_stage3_hf_packaging.ipynb"),
-    ("Stage 4 - Modified Opus fine-tune", "04_stage4_modified_opus_finetune.ipynb"),
-    ("Stage 5 - Benchmarks", "05_stage5_benchmarks.ipynb"),
-    ("Stage 6 - Write-up and release", "06_stage6_writeup_and_release.ipynb"),
-]
-display(Markdown("\n".join(f"- [{name}]({base}/{path})" for name, path in links)))
+run(["git", "config", "user.email", "colab-runner@local"], cwd=ROOT)
+run(["git", "config", "user.name", "Colab Runner"], cwd=ROOT)
+run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"], cwd=ROOT)
+
+if HF_TOKEN:
+    from huggingface_hub import HfApi, login
+    login(token=HF_TOKEN, add_to_git_credential=False)
+    who = HfApi(token=HF_TOKEN).whoami()
+    print("HF auth OK:", who.get("name") or who.get("email") or "authenticated user")
+
+run([sys.executable, "colab/run_stage1_single_runtime.py"], cwd=ROOT)
 ```
+
+## Optional Notebook Reference
+
+Open `colab/00_single_a100_runbook.ipynb` only when you want a clean notebook
+layout. Once it is open, keep all stage execution inside that one notebook.
+
+The older split notebooks are kept only as references:
+
+1. `01_stage1_svgd_seed_replication.ipynb`
+2. `02_stage2_benchmark_harness.ipynb`
+3. `03_stage3_hf_packaging.ipynb`
+4. `04_stage4_modified_opus_finetune.ipynb`
+5. `05_stage5_benchmarks.ipynb`
+6. `06_stage6_writeup_and_release.ipynb`
 
 ## Stage Map
 
-1. `01_stage1_svgd_seed_replication.ipynb`: finish heldout seed `5-9`
-   replication for random32 vs recreated within-group PCA.
-2. `02_stage2_benchmark_harness.ipynb`: build/validate MCQ benchmark harness.
-3. `03_stage3_hf_packaging.ipynb`: export and push adapter/controller package.
-4. `04_stage4_modified_opus_finetune.ipynb`: fine-tune on modified Opus traces.
-5. `05_stage5_benchmarks.ipynb`: run base vs recurrent benchmarks.
-6. `06_stage6_writeup_and_release.ipynb`: produce report, model card, and release notes.
+1. Finish heldout seed `5-9` replication for random32 vs recreated
+   within-group PCA.
+2. Build/validate the MCQ benchmark harness.
+3. Export and push adapter/controller package to Hugging Face.
+4. Fine-tune on modified Opus traces.
+5. Run base vs recurrent benchmarks.
+6. Write the report, model card, and release notes.
