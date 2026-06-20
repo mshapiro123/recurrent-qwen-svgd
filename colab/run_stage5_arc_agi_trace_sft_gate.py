@@ -107,6 +107,9 @@ def compact(summary: dict[str, Any]) -> dict[str, Any]:
     start = summary["phase1_start"]
     best_checkpoint = summary.get("best_checkpoint") or {}
     best_summary = best_checkpoint.get("summary") or tuned
+    diagnostics = summary.get("eval_diagnostics", {}).get("phase1_arc_agi_tuned", {})
+    verifier = diagnostics.get("program_verifier_summary", {})
+    best_verifier = (best_checkpoint.get("eval_diagnostics") or {}).get("program_verifier_summary", {})
     return {
         "base_selected": summary["base"]["selected_exact"],
         "base_best": summary["base"]["best_of_k_exact"],
@@ -122,6 +125,15 @@ def compact(summary: dict[str, Any]) -> dict[str, Any]:
         "examples": tuned["examples_with_targets"],
         "tasks_solved_best": best_summary["tasks_solved_best_of_k"],
         "tasks": best_summary["tasks_with_targets"],
+        "tuned_program_candidates": verifier.get("candidates_with_program", 0),
+        "tuned_program_fits": verifier.get("candidates_program_fits_train", 0),
+        "tuned_program_fit_selected_exact": verifier.get("program_fit_selected_exact", 0),
+        "best_program_candidates": best_verifier.get("candidates_with_program", verifier.get("candidates_with_program", 0)),
+        "best_program_fits": best_verifier.get("candidates_program_fits_train", verifier.get("candidates_program_fits_train", 0)),
+        "best_program_fit_selected_exact": best_verifier.get(
+            "program_fit_selected_exact",
+            verifier.get("program_fit_selected_exact", 0),
+        ),
     }
 
 
@@ -176,8 +188,8 @@ def main() -> int:
     lines = [
         f"# Stage 5 ARC-AGI Trace SFT Gate - {RUN_ID}",
         "",
-        "| Arm | Final selected | Final best | Best step | Best selected | Best best | Tasks best | Best valid rate |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|",
+        "| Arm | Final selected | Final best | Best step | Best selected | Best best | Tasks best | Best valid rate | Program fits | Program fit selected exact |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for label, row in rows.items():
         best_step = row["best_step"] if row["best_step"] is not None else "final"
@@ -186,7 +198,8 @@ def main() -> int:
             f"{row['tuned_best']}/{row['examples']} | {best_step} | "
             f"{row['best_selected']}/{row['examples']} | "
             f"{row['best_best']}/{row['examples']} | "
-            f"{row['tasks_solved_best']}/{row['tasks']} | {row['best_valid_rate']:.4f} |"
+            f"{row['tasks_solved_best']}/{row['tasks']} | {row['best_valid_rate']:.4f} | "
+            f"{row['best_program_fits']} | {row['best_program_fit_selected_exact']} |"
         )
     lines += [
         "",

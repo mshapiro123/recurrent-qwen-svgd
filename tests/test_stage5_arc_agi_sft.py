@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from colab.run_stage5_arc_agi_sft import best_ladder_row, checkpoint_delta, checkpoint_step
+from colab.run_stage5_arc_agi_sft import best_ladder_row, checkpoint_delta, checkpoint_step, eval_diagnostics, program_verifier_line
 
 
 def _summary(selected: int, best: int, first: int = 0, valid_rate: float = 1.0) -> dict[str, object]:
@@ -36,3 +36,14 @@ def test_best_ladder_row_prefers_best_then_selected_then_valid_rate_then_later_s
         {"step": 300, "summary": _summary(3, 6, valid_rate=0.7)},
     ]
     assert best_ladder_row(rows) == rows[1]
+
+
+def test_eval_diagnostics_keeps_program_verifier_payload() -> None:
+    payload = {
+        "candidate_source_summary": {"model": {"count": 1}},
+        "parse_method_summary": {"program": {"count": 1}},
+        "program_verifier_summary": {"candidates_with_program": 1, "candidates_program_fits_train": 1},
+    }
+    diagnostics = eval_diagnostics(payload)
+    assert diagnostics["program_verifier_summary"]["candidates_program_fits_train"] == 1
+    assert "fits_train `1`" in program_verifier_line("Tuned", diagnostics)

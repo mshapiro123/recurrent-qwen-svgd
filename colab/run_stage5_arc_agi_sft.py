@@ -298,7 +298,7 @@ def prepare_sft(train_path: Path) -> None:
         print(f"train_rows_after_synthetic={after} added={after - before}")
 
 
-def eval_arc_agi(label: str, mode: str, tasks_path: Path, checkpoint: Path | None = None) -> dict[str, Any]:
+def eval_arc_agi_payload(label: str, mode: str, tasks_path: Path, checkpoint: Path | None = None) -> dict[str, Any]:
     summary_json = RUN_DIR / f"{label}_summary.json"
     cmd = [
         sys.executable,
@@ -340,7 +340,28 @@ def eval_arc_agi(label: str, mode: str, tasks_path: Path, checkpoint: Path | Non
         ]
     add_symbolic_args(cmd)
     run(cmd, log_name=f"{label}_eval.log")
-    return read_summary(summary_json)["summary"]
+    return read_summary(summary_json)
+
+
+def eval_arc_agi(label: str, mode: str, tasks_path: Path, checkpoint: Path | None = None) -> dict[str, Any]:
+    return eval_arc_agi_payload(label, mode, tasks_path, checkpoint)["summary"]
+
+
+def eval_diagnostics(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "candidate_source_summary": payload.get("candidate_source_summary", {}),
+        "parse_method_summary": payload.get("parse_method_summary", {}),
+        "program_verifier_summary": payload.get("program_verifier_summary", {}),
+    }
+
+
+def program_verifier_line(label: str, diagnostics: dict[str, Any]) -> str:
+    verifier = diagnostics.get("program_verifier_summary", {})
+    return (
+        f"- {label} program verifier: candidates `{verifier.get('candidates_with_program', 0)}`, "
+        f"fits_train `{verifier.get('candidates_program_fits_train', 0)}`, "
+        f"fit_selected_exact `{verifier.get('program_fit_selected_exact', 0)}`"
+    )
 
 
 def checkpoint_step(path: Path) -> int:
@@ -372,12 +393,14 @@ def eval_checkpoint_ladder(
         step = checkpoint_step(checkpoint)
         if step < 0:
             continue
-        summary = eval_arc_agi(f"phase1_arc_agi_step_{step}", "phase1", eval_path, checkpoint)
+        payload = eval_arc_agi_payload(f"phase1_arc_agi_step_{step}", "phase1", eval_path, checkpoint)
+        summary = payload["summary"]
         rows.append(
             {
                 "step": step,
                 "checkpoint": path_for_cli(checkpoint),
                 "summary": summary,
+                "eval_diagnostics": eval_diagnostics(payload),
                 "delta_vs_start": checkpoint_delta(summary, start_summary),
                 "delta_vs_base": checkpoint_delta(summary, base_summary),
             }
@@ -522,10 +545,13 @@ def main() -> int:
     print(json.dumps(metadata, indent=2))
 
     prepare_sft(train_path)
-    base_summary = eval_arc_agi("base", "base", eval_path)
-    start_summary = eval_arc_agi("phase1_start", "phase1", eval_path, PHASE1_CKPT)
+    base_payload = eval_arc_agi_payload("base", "base", eval_path)
+    base_summary = base_payload["summary"]
+    start_payload = eval_arc_agi_payload("phase1_start", "phase1", eval_path, PHASE1_CKPT)
+    start_summary = start_payload["summary"]
     tuned_ckpt = train_phase1()
-    tuned_summary = eval_arc_agi("phase1_arc_agi_tuned", "phase1", eval_path, tuned_ckpt)
+    tuned_payload = eval_arc_agi_payload("phase1_arc_agi_tuned", "phase1", eval_path, tuned_ckpt)
+    tuned_summary = tuned_payload["summary"]
     checkpoint_ladder = (
         eval_checkpoint_ladder(eval_path=eval_path, start_summary=start_summary, base_summary=base_summary)
         if EVAL_CHECKPOINT_LADDER
@@ -538,10 +564,16 @@ def main() -> int:
         "base": base_summary,
         "phase1_start": start_summary,
         "phase1_arc_agi_tuned": tuned_summary,
+        "eval_diagnostics": {
+            "base": eval_diagnostics(base_payload),
+            "phase1_start": eval_diagnostics(start_payload),
+            "phase1_arc_agi_tuned": eval_diagnostics(tuned_payload),
+        },
         "tuned_checkpoint": path_for_cli(tuned_ckpt),
         "checkpoint_ladder": checkpoint_ladder,
         "best_checkpoint": best_checkpoint,
     }
+    diagnostics = summary["eval_diagnostics"]
     (RUN_DIR / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     lines = [
         f"# Stage 5 ARC-AGI SFT Smoke - {RUN_ID}",
@@ -570,13 +602,19 @@ def main() -> int:
         f"- Phase1 start: `{start_summary}`",
         f"- Phase1 ARC-AGI tuned: `{tuned_summary}`",
         "",
+        "## Program Verifier Diagnostics",
+        program_verifier_line("Base", diagnostics["base"]),
+        program_verifier_line("Phase1 start", diagnostics["phase1_start"]),
+        program_verifier_line("Phase1 tuned", diagnostics["phase1_arc_agi_tuned"]),
+        "",
     ]
     if checkpoint_ladder:
         lines.extend(["## Checkpoint Ladder", ""])
         for row in checkpoint_ladder:
             lines.append(
                 f"- Step `{row['step']}`: summary `{row['summary']}`, "
-                f"delta_vs_start `{row['delta_vs_start']}`, delta_vs_base `{row['delta_vs_base']}`"
+                f"delta_vs_start `{row['delta_vs_start']}`, delta_vs_base `{row['delta_vs_base']}`, "
+                f"program_verifier `{row.get('eval_diagnostics', {}).get('program_verifier_summary', {})}`"
             )
         lines.extend(["", f"Best checkpoint: `{best_checkpoint}`", ""])
     lines.append(
