@@ -26,6 +26,16 @@ GEOMETRY_TRANSFORMS = (
     "transpose",
     "anti_transpose",
 )
+INVERSE_GEOMETRY_TRANSFORMS = {
+    "identity": "identity",
+    "rot90": "rot270",
+    "rot180": "rot180",
+    "rot270": "rot90",
+    "flip_h": "flip_h",
+    "flip_v": "flip_v",
+    "transpose": "transpose",
+    "anti_transpose": "anti_transpose",
+}
 
 
 @dataclass(frozen=True)
@@ -87,6 +97,31 @@ def apply_geometry_transform(grid: Grid, transform: str) -> Grid:
             for col in range(len(grid[0]) - 1, -1, -1)
         ]
     raise ValueError(f"Unknown geometry transform: {transform}")
+
+
+def inverse_geometry_transform(transform: str) -> str:
+    try:
+        return INVERSE_GEOMETRY_TRANSFORMS[transform]
+    except KeyError as exc:
+        raise ValueError(f"Unknown geometry transform: {transform}") from exc
+
+
+def transform_arc_pair(pair: ArcPair, transform: str) -> ArcPair:
+    return ArcPair(
+        input=apply_geometry_transform(pair.input, transform),
+        output=apply_geometry_transform(pair.output, transform) if pair.output is not None else None,
+    )
+
+
+def transform_arc_example(example: ArcAgiExample, transform: str, *, suffix: str | None = None) -> ArcAgiExample:
+    task_id = example.task_id if suffix is None else f"{example.task_id}:{suffix}"
+    return ArcAgiExample(
+        task_id=task_id,
+        test_index=example.test_index,
+        train=tuple(transform_arc_pair(pair, transform) for pair in example.train),
+        test_input=apply_geometry_transform(example.test_input, transform),
+        test_output=apply_geometry_transform(example.test_output, transform) if example.test_output is not None else None,
+    )
 
 
 def parse_geometry_augmentations(value: str) -> list[str]:

@@ -1,10 +1,19 @@
 from __future__ import annotations
 
-from eval.arc_agi_utils import ArcAgiExample, ArcPair
+from eval.arc_agi_utils import (
+    ArcAgiExample,
+    ArcPair,
+    apply_geometry_transform,
+    format_grid_completion,
+    parse_grid_from_text,
+    transform_arc_example,
+)
 from eval.arc_agi_symbolic import exact_symbolic_candidate
 from eval.eval_arc_agi import (
     evaluate_example,
     format_symbolic_candidate_texts,
+    geometry_tta_enabled,
+    invert_tta_candidate_text,
     summarize_program_verifier,
     summarize_task_families,
     task_family,
@@ -73,6 +82,30 @@ def test_task_family_extracts_synthetic_family_names() -> None:
     assert task_family("synthetic_move_recolor_000123") == "move_recolor"
     assert task_family("synthetic_frame_object_000001:loo0") == "frame_object"
     assert task_family("0d3d703e") == "arc"
+
+
+def test_geometry_tta_inverts_transformed_candidate_text_before_scoring() -> None:
+    example = ArcAgiExample(
+        task_id="geom",
+        test_index=0,
+        train=(ArcPair(input=[[1, 2], [3, 4]], output=[[4, 3], [2, 1]]),),
+        test_input=[[5, 6], [7, 8]],
+        test_output=[[8, 7], [6, 5]],
+    )
+    transformed = transform_arc_example(example, "rot90")
+    transformed_prediction = apply_geometry_transform(example.test_output, "rot90")
+
+    restored_text = invert_tta_candidate_text(
+        transformed,
+        format_grid_completion(transformed_prediction, output_format="compact"),
+        "rot90",
+        output_format="compact",
+        program_parse_mode="fallback",
+    )
+
+    assert geometry_tta_enabled("rot90")
+    assert not geometry_tta_enabled("none")
+    assert parse_grid_from_text(restored_text, output_format="compact") == example.test_output
 
 
 def test_summarize_task_families_tracks_family_exact_rates() -> None:

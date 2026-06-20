@@ -5,16 +5,20 @@ import json
 from eval.arc_agi_utils import (
     ArcAgiExample,
     ArcPair,
+    GEOMETRY_TRANSFORMS,
+    apply_geometry_transform,
     format_grid_completion,
+    inverse_geometry_transform,
     load_arc_agi_examples,
     parse_grid_from_text,
+    parse_geometry_augmentations,
     render_arc_prompt,
     score_grid_prediction,
+    transform_arc_example,
     validate_grid,
 )
 from eval.eval_arc_agi import inferred_output_shapes, select_candidate_index
 from training.prepare_arc_agi_sft_jsonl import apply_color_permutation, leave_one_out_examples
-from training.prepare_arc_agi_sft_jsonl import apply_geometry_transform, parse_geometry_augmentations
 
 
 def test_validate_grid_rejects_ragged_rows() -> None:
@@ -112,6 +116,32 @@ def test_geometry_transforms_handle_rectangular_grids() -> None:
     assert apply_geometry_transform(grid, "flip_v") == [[4, 5, 6], [1, 2, 3]]
     assert apply_geometry_transform(grid, "transpose") == [[1, 4], [2, 5], [3, 6]]
     assert apply_geometry_transform(grid, "anti_transpose") == [[6, 3], [5, 2], [4, 1]]
+
+
+def test_geometry_inverse_roundtrips_rectangular_grid() -> None:
+    grid = [[1, 2, 3], [4, 5, 6]]
+    for transform in GEOMETRY_TRANSFORMS:
+        transformed = apply_geometry_transform(grid, transform)
+        restored = apply_geometry_transform(transformed, inverse_geometry_transform(transform))
+        assert restored == grid
+
+
+def test_transform_arc_example_transforms_pairs_and_suffix() -> None:
+    example = ArcAgiExample(
+        task_id="task",
+        test_index=0,
+        train=(ArcPair(input=[[1, 2], [3, 4]], output=[[4, 3], [2, 1]]),),
+        test_input=[[5, 6], [7, 8]],
+        test_output=[[8, 7], [6, 5]],
+    )
+
+    transformed = transform_arc_example(example, "rot180", suffix="rot180")
+
+    assert transformed.task_id == "task:rot180"
+    assert transformed.train[0].input == [[4, 3], [2, 1]]
+    assert transformed.train[0].output == [[1, 2], [3, 4]]
+    assert transformed.test_input == [[8, 7], [6, 5]]
+    assert transformed.test_output == [[5, 6], [7, 8]]
 
 
 def test_parse_geometry_augmentations() -> None:

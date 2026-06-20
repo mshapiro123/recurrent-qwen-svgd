@@ -23,12 +23,16 @@ if str(ROOT) not in sys.path:
 from eval.arc_agi_utils import (  # noqa: E402
     ArcAgiExample,
     Grid,
+    apply_geometry_transform,
     format_grid_completion,
     grid_to_json_text,
+    inverse_geometry_transform,
     load_arc_agi_examples,
     parse_grid_from_text,
+    parse_geometry_augmentations,
     render_arc_prompt,
     score_grid_prediction,
+    transform_arc_example,
 )
 from eval.arc_agi_program import arc_program_training_match_count, parse_arc_program_from_text  # noqa: E402
 from eval.arc_agi_symbolic import SymbolicCandidate, format_symbolic_program_trace, symbolic_candidates  # noqa: E402
@@ -98,6 +102,8 @@ def generate_recurrent_candidates(
     tokenizer,
     prompt: str,
     args: argparse.Namespace,
+    *,
+    seed_base: int | None = None,
 ) -> tuple[list[str], dict[str, float], int]:
     if args.num_trajectories > 1:
         result = generate_candidates(
@@ -131,8 +137,9 @@ def generate_recurrent_candidates(
     candidates: list[str] = []
     diagnostics: dict[str, float] = {}
     generation_steps = 0
+    base_seed = args.seed if seed_base is None else seed_base
     for idx in range(args.num_candidates):
-        set_seed(args.seed + idx)
+        set_seed(base_seed + idx)
         result = generate_candidates(
             wrapper,
             tokenizer,
@@ -163,6 +170,99 @@ def generate_recurrent_candidates(
         diagnostics = result.diagnostics
         generation_steps = max(generation_steps, result.generation_steps)
     return candidates, diagnostics, generation_steps
+
+
+def geometry_tta_enabled(value: str) -> bool:
+    return value.strip().lower() not in {"", "none", "0", "false"}
+
+
+def generate_model_candidates(
+    model_or_wrapper,
+    tokenizer,
+    prompt: str,
+    args: argparse.Namespace,
+    *,
+    seed: int,
+) -> tuple[list[str], dict[str, float], int]:
+    if args.mode == "base":
+        generated = generate_base_candidates(
+            model_or_wrapper,
+            tokenizer,
+            prompt,
+            num_candidates=args.num_candidates,
+            max_new_tokens=args.max_new_tokens,
+            temperature=args.temperature,
+            device=args.device,
+            seed=seed,
+        )
+        return generated, {}, args.max_new_tokens
+
+    set_seed(seed)
+    return generate_recurrent_candidates(model_or_wrapper, tokenizer, prompt, args, seed_base=seed)
+
+
+def invert_tta_candidate_text(
+    transformed_example: ArcAgiExample,
+    text: str,
+    transform: str,
+    *,
+    output_format: str,
+    program_parse_mode: str,
+) -> str:
+    parsed, _parse_method = parse_candidate_grid(
+        transformed_example,
+        text,
+        output_format=output_format,
+        program_parse_mode=program_parse_mode,
+    )
+    if parsed is None:
+        return ""
+    inverse = inverse_geometry_transform(transform)
+    return format_grid_completion(
+        apply_geometry_transform(parsed, inverse),
+        output_format=output_format,
+    )
+
+
+def generate_geometry_tta_candidates(
+    model_or_wrapper,
+    tokenizer,
+    example: ArcAgiExample,
+    args: argparse.Namespace,
+    *,
+    example_index: int,
+) -> tuple[list[str], list[str], dict[str, float], int]:
+    candidates: list[str] = []
+    candidate_sources: list[str] = []
+    diagnostics: dict[str, float] = {}
+    max_generation_steps = 0
+
+    for transform_index, transform in enumerate(parse_geometry_augmentations(args.geometry_tta)):
+        transformed_example = transform_arc_example(example, transform)
+        prompt = render_arc_prompt(transformed_example, output_format=args.grid_format)
+        transform_seed = args.seed + example_index * 1000 + transform_index * 100
+        generated, transform_diagnostics, generation_steps = generate_model_candidates(
+            model_or_wrapper,
+            tokenizer,
+            prompt,
+            args,
+            seed=transform_seed,
+        )
+        max_generation_steps = max(max_generation_steps, generation_steps)
+        diagnostics.update({f"tta/{transform}/{key}": value for key, value in transform_diagnostics.items()})
+        for text in generated:
+            candidates.append(
+                invert_tta_candidate_text(
+                    transformed_example,
+                    text,
+                    transform,
+                    output_format=args.grid_format,
+                    program_parse_mode=args.program_parse_mode,
+                )
+            )
+            candidate_sources.append(f"model_tta_{transform}")
+
+    return candidates, candidate_sources, diagnostics, max_generation_steps
 
 
 def append_jsonl(path: str | Path | None, row: dict[str, Any]) -> None:
@@ -486,6 +586,7 @@ def write_summary_md(path: str | Path | None, payload: dict[str, Any]) -> None:
         "",
         f"- Tasks path: `{payload['tasks_path']}`",
         f"- Grid format: `{payload['grid_format']}`",
+        f"- Geometry TTA: `{payload.get('geometry_tta', 'none')}`",
         f"- Program parse mode: `{payload['program_parse_mode']}`",
         f"- Symbolic candidate format: `{payload.get('symbolic_candidate_format', 'grid')}`",
         f"- Examples with targets: `{summary['examples_with_targets']}`",
@@ -555,6 +656,15 @@ def main() -> int:
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--grid_format", default="json", choices=("json", "compact", "tagged"))
     parser.add_argument(
+        "--geometry_tta",
+        default="none",
+        help=(
+            "Test-time geometry augmentation for model candidates: none, all, identity, "
+            "or a comma-separated subset of identity, rot90, rot180, rot270, flip_h, "
+            "flip_v, transpose, anti_transpose. Parsed outputs are inverted before scoring."
+        ),
+    )
+    parser.add_argument(
         "--program_parse_mode",
         default="fallback",
         choices=("off", "fallback", "prefer", "program_only"),
@@ -601,6 +711,7 @@ def main() -> int:
     parser.add_argument("--particle_noise_steps", type=int, default=32)
     args = parser.parse_args()
 
+    parse_geometry_augmentations(args.geometry_tta)
     symbolic_only = args.include_symbolic_candidates and args.symbolic_position == "only"
 
     if not symbolic_only and args.mode != "base" and not args.checkpoint:
@@ -651,7 +762,21 @@ def main() -> int:
             candidates.extend(text for text, _source in symbolic_rows)
             candidate_sources.extend(source for _text, source in symbolic_rows)
 
-        if not (args.include_symbolic_candidates and args.symbolic_position == "only") and args.mode == "base":
+        if (
+            not (args.include_symbolic_candidates and args.symbolic_position == "only")
+            and geometry_tta_enabled(args.geometry_tta)
+        ):
+            assert tokenizer is not None and model_or_wrapper is not None
+            generated, generated_sources, diagnostics, generation_steps = generate_geometry_tta_candidates(
+                model_or_wrapper,
+                tokenizer,
+                example,
+                args,
+                example_index=idx,
+            )
+            candidates.extend(generated)
+            candidate_sources.extend(generated_sources)
+        elif not (args.include_symbolic_candidates and args.symbolic_position == "only") and args.mode == "base":
             assert tokenizer is not None and model_or_wrapper is not None
             generated = generate_base_candidates(
                 model_or_wrapper,
@@ -711,6 +836,7 @@ def main() -> int:
         "max_new_tokens": args.max_new_tokens,
         "temperature": args.temperature,
         "grid_format": args.grid_format,
+        "geometry_tta": args.geometry_tta,
         "program_parse_mode": args.program_parse_mode,
         "include_symbolic_candidates": args.include_symbolic_candidates,
         "symbolic_position": args.symbolic_position,

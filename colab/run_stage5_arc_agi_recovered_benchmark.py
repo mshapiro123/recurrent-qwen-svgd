@@ -41,6 +41,7 @@ ARC_SPLIT = os.environ.get("STAGE5_ARC_AGI_SPLIT", "evaluation")
 LIMIT = int(os.environ.get("STAGE5_ARC_AGI_LIMIT", "20"))
 MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
 GRID_FORMAT = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
+GEOMETRY_TTA = os.environ.get("STAGE5_ARC_AGI_GEOMETRY_TTA", "none")
 PROGRAM_PARSE_MODE = os.environ.get("STAGE5_ARC_AGI_PROGRAM_PARSE_MODE", "fallback")
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
@@ -188,6 +189,8 @@ def eval_arc(label: str, *, mode: str, tasks_path: Path, checkpoint: Path | None
         str(MAX_NEW_TOKENS),
         "--grid_format",
         GRID_FORMAT,
+        "--geometry_tta",
+        GEOMETRY_TTA,
         "--program_parse_mode",
         PROGRAM_PARSE_MODE,
         "--dtype",
@@ -262,6 +265,7 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Tasks path: `{payload['metadata']['tasks_path']}`",
         f"- Phase1 start checkpoint: `{payload['metadata']['phase1_start_checkpoint']}`",
         f"- Recovered checkpoint: `{payload['metadata']['recovered_checkpoint']}`",
+        f"- Geometry TTA: `{GEOMETRY_TTA}`",
         f"- Program parse mode: `{PROGRAM_PARSE_MODE}`",
         "",
         "## Results",
@@ -311,6 +315,7 @@ def main() -> int:
             "phase1_start_checkpoint": path_for_cli(start_ckpt),
             "recovered_checkpoint": path_for_cli(recovered_ckpt),
             "grid_format": GRID_FORMAT,
+            "geometry_tta": GEOMETRY_TTA,
             "program_parse_mode": PROGRAM_PARSE_MODE,
         },
         "base": base,
