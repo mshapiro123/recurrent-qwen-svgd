@@ -8,6 +8,7 @@ from colab.run_stage5_arc_agi_rescore_selectors import (
     candidate_label,
     find_candidate_pairs,
     original_row,
+    paired_selector_comparisons,
     requested_strategies,
 )
 
@@ -63,6 +64,7 @@ def test_original_row_preserves_source_strategy_and_metrics(tmp_path) -> None:
     assert row["selection_strategy"] == "original:self_consistency"
     assert row["selected_exact"] == 1
     assert row["selected_delta_vs_source"] is None
+    assert row["output_summary_json"] == str(summary_path)
 
 
 def test_best_rows_by_label_prefers_selected_then_best_then_valid_rate() -> None:
@@ -95,3 +97,57 @@ def test_best_rows_by_label_prefers_selected_then_best_then_valid_rate() -> None
 
     assert best["a"]["selection_strategy"] == "self_consistency"
     assert best["b"]["selection_strategy"] == "symbolic_priority"
+
+
+def test_paired_selector_comparisons_compare_rescore_to_source(tmp_path) -> None:
+    source = tmp_path / "recovered_summary.json"
+    rescored = tmp_path / "recovered_rescored_summary.json"
+    source.write_text(
+        json.dumps(
+            {
+                "summary": {"selected_exact": 1, "best_of_k_exact": 1},
+                "examples": [
+                    {
+                        "task_id": "synthetic_move_recolor_000001",
+                        "test_index": 0,
+                        "has_target": True,
+                        "selected_exact": False,
+                        "best_of_k_exact": True,
+                        "first_exact": False,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    rescored.write_text(
+        json.dumps(
+            {
+                "summary": {"selected_exact": 1, "best_of_k_exact": 1},
+                "examples": [
+                    {
+                        "task_id": "synthetic_move_recolor_000001",
+                        "test_index": 0,
+                        "has_target": True,
+                        "selected_exact": True,
+                        "best_of_k_exact": True,
+                        "first_exact": False,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    rows = [
+        {
+            "label": "recovered",
+            "selection_strategy": "self_consistency",
+            "source_summary_json": str(source),
+            "output_summary_json": str(rescored),
+        }
+    ]
+
+    comparisons = paired_selector_comparisons(rows)
+
+    selected = comparisons["recovered__selector_self_consistency_vs_source"]["metrics"]["selected_exact"]
+    assert selected["delta_exact"] == 1

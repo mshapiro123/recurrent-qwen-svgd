@@ -273,10 +273,10 @@ def test_recovery_analysis_selector_miss_recommends_no_gpu_rescore(tmp_path) -> 
     actions = plan_next_actions(payload, source_summary=source)
     rescore = next(action for action in actions if action["name"] == "Rescore recovered candidates with selector variants")
 
-    assert "eval/rescore_arc_agi_candidates.py" in rescore["command"]
-    assert "outputs/stage5/bench_run/recovered_candidates.jsonl" in rescore["command"]
-    assert "--selection_strategy self_consistency" in rescore["command"]
-    assert "--selection_strategy symbolic_priority" in rescore["command"]
+    assert "colab/run_stage5_arc_agi_rescore_selectors.py" in rescore["command"]
+    assert "STAGE5_ARC_AGI_RESCORE_SOURCE_RUN_DIR=outputs/stage5/bench_run" in rescore["command"]
+    assert "STAGE5_ARC_AGI_RESCORE_SOURCE_GLOB=recovered_candidates.jsonl" in rescore["command"]
+    assert "STAGE5_ARC_AGI_RESCORE_STRATEGIES=self_consistency,symbolic_priority" in rescore["command"]
 
 
 def test_recovery_analysis_format_failures_recommend_format_branch(tmp_path) -> None:

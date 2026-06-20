@@ -16,6 +16,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+try:
+    from eval.compare_arc_agi_runs import compare_payloads
+except ModuleNotFoundError:  # pragma: no cover - direct ``python colab/script.py`` execution
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from eval.compare_arc_agi_runs import compare_payloads
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN_ID = os.environ.get("STAGE5_ARC_AGI_RESCORE_RUN_ID") or time.strftime("stage5_arc_agi_rescore_%Y%m%d_%H%M%S")
@@ -133,13 +139,21 @@ def find_candidate_pairs(source_run_dir: Path, pattern: str = SOURCE_GLOB) -> li
     return pairs
 
 
-def summary_row(*, label: str, strategy: str, payload: dict[str, Any], source_summary_json: Path | None) -> dict[str, Any]:
+def summary_row(
+    *,
+    label: str,
+    strategy: str,
+    payload: dict[str, Any],
+    source_summary_json: Path | None,
+    output_summary_json: Path | None = None,
+) -> dict[str, Any]:
     summary = payload["summary"]
     source_summary = payload.get("source_summary") or {}
     return {
         "label": label,
         "selection_strategy": strategy,
         "source_summary_json": path_for_cli(source_summary_json) if source_summary_json is not None else None,
+        "output_summary_json": path_for_cli(output_summary_json) if output_summary_json is not None else None,
         "examples": summary["examples_with_targets"],
         "selected_exact": summary["selected_exact"],
         "best_of_k_exact": summary["best_of_k_exact"],
@@ -163,7 +177,13 @@ def original_row(pair: CandidatePair) -> dict[str, Any] | None:
         return None
     payload = read_json(pair.summary_json)
     strategy = f"original:{payload.get('selection_strategy', 'unknown')}"
-    return summary_row(label=pair.label, strategy=strategy, payload=payload, source_summary_json=pair.summary_json)
+    return summary_row(
+        label=pair.label,
+        strategy=strategy,
+        payload=payload,
+        source_summary_json=pair.summary_json,
+        output_summary_json=pair.summary_json,
+    )
 
 
 def rescore_pair(pair: CandidatePair, strategy: str) -> dict[str, Any]:
@@ -188,7 +208,13 @@ def rescore_pair(pair: CandidatePair, strategy: str) -> dict[str, Any]:
         cmd += ["--output_jsonl", path_for_cli(output_prefix.with_name(f"{output_prefix.name}_candidates.jsonl"))]
     run(cmd, log_name=f"{pair.label}__selector_{strategy}.log")
     payload = read_json(output_summary_json)
-    return summary_row(label=pair.label, strategy=strategy, payload=payload, source_summary_json=pair.summary_json)
+    return summary_row(
+        label=pair.label,
+        strategy=strategy,
+        payload=payload,
+        source_summary_json=pair.summary_json,
+        output_summary_json=output_summary_json,
+    )
 
 
 def best_rows_by_label(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
@@ -209,6 +235,29 @@ def best_rows_by_label(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return best
 
 
+def paired_selector_comparisons(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    comparisons: dict[str, Any] = {}
+    for row in rows:
+        strategy = str(row["selection_strategy"])
+        if strategy.startswith("original:"):
+            continue
+        source_summary_json = row.get("source_summary_json")
+        output_summary_json = row.get("output_summary_json")
+        if not source_summary_json or not output_summary_json:
+            continue
+        label = str(row["label"])
+        key = f"{label}__selector_{strategy}_vs_source"
+        comparisons[key] = compare_payloads(
+            read_json(resolve_path(str(source_summary_json))),
+            read_json(resolve_path(str(output_summary_json))),
+            reference_label=f"{label}:source",
+            candidate_label=f"{label}:{strategy}",
+            bootstrap_samples=0,
+            seed=0,
+        )
+    return comparisons
+
+
 def write_comparison(
     *,
     source_run_dir: Path,
@@ -217,6 +266,7 @@ def write_comparison(
     rows: list[dict[str, Any]],
 ) -> None:
     best_by_label = best_rows_by_label([row for row in rows if not str(row["selection_strategy"]).startswith("original:")])
+    paired_comparisons = paired_selector_comparisons(rows)
     payload = {
         "run_id": RUN_ID,
         "source_run_dir": path_for_cli(source_run_dir),
@@ -224,6 +274,7 @@ def write_comparison(
         "candidate_files": [path_for_cli(pair.candidates_jsonl) for pair in pairs],
         "rows": rows,
         "best_by_label": best_by_label,
+        "paired_comparisons": paired_comparisons,
     }
     write_json(RUN_DIR / "summary.json", payload)
 
@@ -258,6 +309,14 @@ def write_comparison(
             f"- `{label}`: `{row['selection_strategy']}` selected `{row['selected_exact']}/{examples}`, "
             f"best `{row['best_of_k_exact']}/{examples}`, valid `{row['valid_candidate_rate']:.4f}`"
         )
+    if paired_comparisons:
+        lines += ["", "## Paired Selector Evidence", ""]
+        for name, comparison in sorted(paired_comparisons.items()):
+            selected = comparison["metrics"]["selected_exact"]
+            lines.append(
+                f"- `{name}` selected delta `{selected['delta_exact']}` "
+                f"({selected['wins']}/{selected['losses']}/{selected['ties']} W/L/T)"
+            )
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))
 
@@ -295,6 +354,14 @@ def git_commit_results() -> None:
 
 
 def main() -> int:
+    if any(arg in {"-h", "--help"} for arg in sys.argv[1:]):
+        print(
+            "Run after a Stage 5 ARC eval with saved *_candidates.jsonl files. "
+            "Configure STAGE5_ARC_AGI_RESCORE_SOURCE_RUN_DIR and "
+            "STAGE5_ARC_AGI_RESCORE_STRATEGIES."
+        )
+        return 0
+
     source_run_dir = resolve_path(SOURCE_RUN_DIR) if SOURCE_RUN_DIR else latest_stage5_run_with_candidates()
     strategies = requested_strategies()
     pairs = find_candidate_pairs(source_run_dir)

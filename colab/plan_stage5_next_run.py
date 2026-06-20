@@ -269,25 +269,14 @@ def command_path(path: Path) -> str:
 
 def selector_rescore_command(benchmark: dict[str, Any] | None, source_summary: Path) -> str:
     run_dir = benchmark_run_dir(benchmark, source_summary)
-    recovered_candidates = command_path(run_dir / "recovered_candidates.jsonl")
-    recovered_summary = command_path(run_dir / "recovered_summary.json")
-    self_consistency_json = command_path(run_dir / "recovered_self_consistency_summary.json")
-    self_consistency_md = command_path(run_dir / "recovered_self_consistency_summary.md")
-    symbolic_json = command_path(run_dir / "recovered_symbolic_priority_summary.json")
-    symbolic_md = command_path(run_dir / "recovered_symbolic_priority_summary.md")
-    return (
-        "python eval/rescore_arc_agi_candidates.py "
-        f"--candidates_jsonl {recovered_candidates} "
-        f"--summary_json {recovered_summary} "
-        "--selection_strategy self_consistency "
-        f"--output_summary_json {self_consistency_json} "
-        f"--output_summary_md {self_consistency_md} "
-        "&& python eval/rescore_arc_agi_candidates.py "
-        f"--candidates_jsonl {recovered_candidates} "
-        f"--summary_json {recovered_summary} "
-        "--selection_strategy symbolic_priority "
-        f"--output_summary_json {symbolic_json} "
-        f"--output_summary_md {symbolic_md}"
+    return command_env(
+        {
+            "STAGE5_ARC_AGI_RESCORE_SOURCE_RUN_DIR": command_path(run_dir),
+            "STAGE5_ARC_AGI_RESCORE_SOURCE_GLOB": "recovered_candidates.jsonl",
+            "STAGE5_ARC_AGI_RESCORE_STRATEGIES": "self_consistency,symbolic_priority",
+            "STAGE5_ARC_AGI_RESCORE_RUN_ID": f"{RUN_ID}_selector_rescore",
+        },
+        "python colab/run_stage5_arc_agi_rescore_selectors.py",
     )
 
 
