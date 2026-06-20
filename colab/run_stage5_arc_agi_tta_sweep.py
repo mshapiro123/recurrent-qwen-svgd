@@ -218,7 +218,7 @@ def requested_model_arms(start_ckpt: Path, recovered_ckpt: Path) -> list[ModelAr
 
 
 def eval_arm(arm: ModelArm, variant: TtaVariant, tasks_path: Path) -> dict[str, Any]:
-    label = f"{arm.name}__tta_{variant.name}"
+    label = arm_variant_label(arm.name, variant.name)
     summary_json = RUN_DIR / f"{label}_summary.json"
     if RESUME and summary_json.exists():
         print(f"resume_existing={summary_json}")
@@ -265,6 +265,10 @@ def eval_arm(arm: ModelArm, variant: TtaVariant, tasks_path: Path) -> dict[str, 
     return summarize_arm_payload(arm, variant, read_json(summary_json))
 
 
+def arm_variant_label(arm: str, variant: str) -> str:
+    return f"{arm}__tta_{variant}"
+
+
 def summarize_arm_payload(arm: ModelArm, variant: TtaVariant, payload: dict[str, Any]) -> dict[str, Any]:
     summary = payload["summary"]
     source_summary = payload.get("candidate_source_summary", {})
@@ -292,6 +296,55 @@ def summarize_arm_payload(arm: ModelArm, variant: TtaVariant, payload: dict[str,
 def delta_row(candidate: dict[str, Any], reference: dict[str, Any]) -> dict[str, Any]:
     keys = ("first_exact", "selected_exact", "best_of_k_exact", "tasks_solved_best_of_k", "model_exact_count")
     return {f"{key}_delta": int(candidate.get(key, 0)) - int(reference.get(key, 0)) for key in keys}
+
+
+def paired_comparison_specs(rows: list[dict[str, Any]]) -> list[tuple[str, str, str]]:
+    by_key = {(row["arm"], row["tta_variant"]): row for row in rows}
+    specs: list[tuple[str, str, str]] = []
+    seen: set[str] = set()
+    for row in rows:
+        arm = row["arm"]
+        variant = row["tta_variant"]
+        candidate_label = arm_variant_label(arm, variant)
+        if variant != "none" and (arm, "none") in by_key:
+            label = f"{arm}__tta_{variant}_vs_none"
+            if label not in seen:
+                specs.append((label, arm_variant_label(arm, "none"), candidate_label))
+                seen.add(label)
+        if arm != "base" and ("base", variant) in by_key:
+            label = f"{arm}__vs_base__tta_{variant}"
+            if label not in seen:
+                specs.append((label, arm_variant_label("base", variant), candidate_label))
+                seen.add(label)
+    return specs
+
+
+def compare_eval_summaries(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    comparisons: dict[str, Any] = {}
+    for label, reference, candidate in paired_comparison_specs(rows):
+        output_json = RUN_DIR / f"{label}_paired_comparison.json"
+        output_md = RUN_DIR / f"{label}_paired_comparison.md"
+        run(
+            [
+                sys.executable,
+                "eval/compare_arc_agi_runs.py",
+                "--reference_summary_json",
+                path_for_cli(RUN_DIR / f"{reference}_summary.json"),
+                "--candidate_summary_json",
+                path_for_cli(RUN_DIR / f"{candidate}_summary.json"),
+                "--reference_label",
+                reference,
+                "--candidate_label",
+                candidate,
+                "--output_json",
+                path_for_cli(output_json),
+                "--output_md",
+                path_for_cli(output_md),
+            ],
+            log_name=f"{label}_paired_comparison.log",
+        )
+        comparisons[label] = read_json(output_json)
+    return comparisons
 
 
 def compute_deltas(rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -366,6 +419,16 @@ def write_report(payload: dict[str, Any]) -> None:
     lines += ["", "## Deltas"]
     for name, delta in sorted(payload["deltas"].items()):
         lines.append(f"- `{name}`: `{delta}`")
+    lines += ["", "## Paired Evidence"]
+    for name, comparison in sorted(payload.get("paired_comparisons", {}).items()):
+        selected = comparison["metrics"]["selected_exact"]
+        best = comparison["metrics"]["best_of_k_exact"]
+        lines.append(
+            f"- `{name}` selected delta `{selected['delta_exact']}` "
+            f"({selected['wins']}/{selected['losses']}/{selected['ties']} W/L/T, p `{selected['sign_test_p_value']}`); "
+            f"best-of-K delta `{best['delta_exact']}` "
+            f"({best['wins']}/{best['losses']}/{best['ties']} W/L/T, p `{best['sign_test_p_value']}`)"
+        )
     lines += [
         "",
         "Interpretation guide: useful TTA should improve best-of-K or selected exact without only "
@@ -414,11 +477,13 @@ def main() -> int:
     print(json.dumps(metadata, indent=2))
 
     rows = [eval_arm(arm, variant, tasks_path) for variant in variants for arm in arms]
+    paired_comparisons = compare_eval_summaries(rows)
     payload = {
         "run_id": RUN_ID,
         "metadata": metadata,
         "rows": rows,
         "deltas": compute_deltas(rows),
+        "paired_comparisons": paired_comparisons,
     }
     write_report(payload)
     backup_to_drive()
