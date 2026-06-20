@@ -1,0 +1,223 @@
+{
+  "bfloat16": {
+    "phase1": {
+      "mean": {
+        "correct": 3,
+        "total": 5,
+        "accuracy": 0.6
+      }
+    },
+    "phase2path_k4_none": {
+      "max": {
+        "correct": 2,
+        "total": 5,
+        "accuracy": 0.4
+      },
+      "mean": {
+        "correct": 2,
+        "total": 5,
+        "accuracy": 0.4
+      },
+      "vote": {
+        "correct": 2,
+        "total": 5,
+        "accuracy": 0.4
+      }
+    },
+    "comparison": {
+      "max": {
+        "aggregate": "max",
+        "prediction_changes": 5,
+        "changed_examples": [
+          {
+            "id": "Mercury_7011270",
+            "reference_prediction": "A",
+            "test_prediction": "B",
+            "answer": "A",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_SC_400339",
+            "reference_prediction": "D",
+            "test_prediction": "C",
+            "answer": "D",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_7207410",
+            "reference_prediction": "D",
+            "test_prediction": "A",
+            "answer": "D",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_7135310",
+            "reference_prediction": "D",
+            "test_prediction": "B",
+            "answer": "B",
+            "reference_hit": false,
+            "test_hit": true
+          },
+          {
+            "id": "Mercury_7033653",
+            "reference_prediction": "A",
+            "test_prediction": "D",
+            "answer": "D",
+            "reference_hit": false,
+            "test_hit": true
+          }
+        ],
+        "mean_abs_score_delta": 0.02183510661125183,
+        "max_abs_score_delta": 0.0611037015914917
+      },
+      "mean": {
+        "aggregate": "mean",
+        "prediction_changes": 5,
+        "changed_examples": [
+          {
+            "id": "Mercury_7011270",
+            "reference_prediction": "A",
+            "test_prediction": "B",
+            "answer": "A",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_SC_400339",
+            "reference_prediction": "D",
+            "test_prediction": "C",
+            "answer": "D",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_7207410",
+            "reference_prediction": "D",
+            "test_prediction": "A",
+            "answer": "D",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_7135310",
+            "reference_prediction": "D",
+            "test_prediction": "B",
+            "answer": "B",
+            "reference_hit": false,
+            "test_hit": true
+          },
+          {
+            "id": "Mercury_7033653",
+            "reference_prediction": "A",
+            "test_prediction": "D",
+            "answer": "D",
+            "reference_hit": false,
+            "test_hit": true
+          }
+        ],
+        "mean_abs_score_delta": 0.02183510661125183,
+        "max_abs_score_delta": 0.0611037015914917
+      },
+      "vote": {
+        "aggregate": "vote",
+        "prediction_changes": 5,
+        "changed_examples": [
+          {
+            "id": "Mercury_7011270",
+            "reference_prediction": "A",
+            "test_prediction": "B",
+            "answer": "A",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_SC_400339",
+            "reference_prediction": "D",
+            "test_prediction": "C",
+            "answer": "D",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_7207410",
+            "reference_prediction": "D",
+            "test_prediction": "A",
+            "answer": "D",
+            "reference_hit": true,
+            "test_hit": false
+          },
+          {
+            "id": "Mercury_7135310",
+            "reference_prediction": "D",
+            "test_prediction": "B",
+            "answer": "B",
+            "reference_hit": false,
+            "test_hit": true
+          },
+          {
+            "id": "Mercury_7033653",
+            "reference_prediction": "A",
+            "test_prediction": "D",
+            "answer": "D",
+            "reference_hit": false,
+            "test_hit": true
+          }
+        ],
+        "mean_abs_score_delta": 0.02183510661125183,
+        "max_abs_score_delta": 0.0611037015914917
+      }
+    }
+  },
+  "float32": {
+    "phase1": {
+      "mean": {
+        "correct": 0,
+        "total": 5,
+        "accuracy": 0.0
+      }
+    },
+    "phase2path_k4_none": {
+      "max": {
+        "correct": 0,
+        "total": 5,
+        "accuracy": 0.0
+      },
+      "mean": {
+        "correct": 0,
+        "total": 5,
+        "accuracy": 0.0
+      },
+      "vote": {
+        "correct": 0,
+        "total": 5,
+        "accuracy": 0.0
+      }
+    },
+    "comparison": {
+      "max": {
+        "aggregate": "max",
+        "prediction_changes": 0,
+        "changed_examples": [],
+        "mean_abs_score_delta": 2.205371856689453e-06,
+        "max_abs_score_delta": 8.225440979003906e-06
+      },
+      "mean": {
+        "aggregate": "mean",
+        "prediction_changes": 0,
+        "changed_examples": [],
+        "mean_abs_score_delta": 2.205371856689453e-06,
+        "max_abs_score_delta": 8.225440979003906e-06
+      },
+      "vote": {
+        "aggregate": "vote",
+        "prediction_changes": 0,
+        "changed_examples": [],
+        "mean_abs_score_delta": 2.205371856689453e-06,
+        "max_abs_score_delta": 8.225440979003906e-06
+      }
+    }
+  }
+}
