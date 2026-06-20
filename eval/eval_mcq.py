@@ -1,0 +1,344 @@
+"""Multiple-choice likelihood scorer for base and recurrent Qwen variants.
+
+Input JSONL rows should contain:
+
+    {"id": "...", "question": "...", "choices": {"A": "...", ...}, "answer": "A"}
+
+`choices` may also be a list, in which case labels A-F are assigned in order.
+The answer may be either the label or the exact choice text.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from eval.eval_identity import model_load_kwargs, parse_split, resolve_dtype
+from eval.eval_best_of_k_jsonl import parse_optional_float
+from models.lora import apply_lora_to_recurrent_block
+from models.recurrent_wrapper import RecurrentQwenForCausalLM
+from training.checkpointing import load_trainable_checkpoint
+
+
+LABELS = ("A", "B", "C", "D", "E", "F")
+
+
+@dataclass(frozen=True)
+class MCQExample:
+    id: str
+    question: str
+    choices: list[tuple[str, str]]
+    answer: str
+
+
+def read_examples(path: str | Path) -> list[MCQExample]:
+    examples: list[MCQExample] = []
+    for idx, line in enumerate(Path(path).read_text(encoding="utf-8").splitlines()):
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        choices = option_items(row)
+        answer = normalize_answer(row.get("answer") or row.get("label") or row.get("target"), choices)
+        question = row.get("question") or row.get("prompt")
+        if question is None:
+            raise ValueError(f"Row {idx} missing question/prompt")
+        examples.append(
+            MCQExample(
+                id=str(row.get("id") or row.get("name") or idx),
+                question=str(question),
+                choices=choices,
+                answer=answer,
+            )
+        )
+    return examples
+
+
+def option_items(row: dict[str, Any]) -> list[tuple[str, str]]:
+    choices = row.get("choices") or row.get("options")
+    if isinstance(choices, dict):
+        return [(str(label).strip(), str(text)) for label, text in choices.items()]
+    if isinstance(choices, list):
+        if len(choices) > len(LABELS):
+            raise ValueError(f"Too many choices ({len(choices)}); max supported is {len(LABELS)}")
+        return list(zip(LABELS, [str(item) for item in choices]))
+    raise ValueError("Each row must contain choices/options as a list or dict")
+
+
+def normalize_answer(answer: Any, choices: list[tuple[str, str]]) -> str:
+    if answer is None:
+        raise ValueError("Each row must contain answer/label/target")
+    raw = str(answer).strip()
+    labels = {label for label, _ in choices}
+    if raw in labels:
+        return raw
+    raw_folded = raw.casefold()
+    for label, text in choices:
+        if raw_folded == text.strip().casefold():
+            return label
+    raise ValueError(f"Answer {raw!r} does not match labels or choice text")
+
+
+def format_prompt(example: MCQExample, prompt_style: str) -> str:
+    if prompt_style == "question_only":
+        return example.question.rstrip() + "\nAnswer:"
+    if prompt_style != "with_options":
+        raise ValueError(f"Unknown prompt_style={prompt_style}")
+    rendered = "\n".join(f"{label}. {text}" for label, text in example.choices)
+    return f"{example.question.rstrip()}\n{rendered}\nAnswer:"
+
+
+def format_completion(label: str, text: str, score_target: str) -> str:
+    if score_target == "label":
+        return f" {label}"
+    if score_target == "option_text":
+        return f" {text}"
+    if score_target == "label_and_text":
+        return f" {label}. {text}"
+    raise ValueError(f"Unknown score_target={score_target}")
+
+
+def load_base_model(args: argparse.Namespace):
+    model = AutoModelForCausalLM.from_pretrained(
+        args.model_name,
+        **model_load_kwargs(args.dtype, args.attn_implementation),
+    ).to(args.device)
+    model.eval()
+    return model
+
+
+def set_seed(seed: int) -> None:
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
+def load_recurrent_wrapper(args: argparse.Namespace, checkpoint: str | None) -> RecurrentQwenForCausalLM:
+    model = load_base_model(args)
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=parse_split(args.split)).to(args.device)
+    adapter_dtype = resolve_dtype(args.adapter_dtype)
+    replaced = apply_lora_to_recurrent_block(
+        wrapper,
+        rank=args.lora_rank,
+        alpha=args.lora_alpha,
+        dropout=0.0,
+        adapter_dtype=adapter_dtype,
+    )
+    print(f"lora_recurrent_modules={replaced}")
+    wrapper.set_trainable_modules_dtype(adapter_dtype)
+    if checkpoint:
+        load_info = load_trainable_checkpoint(wrapper, checkpoint)
+        print(f"loaded_checkpoint={checkpoint} loaded_keys={len(load_info['loaded_keys'])}")
+        if load_info["skipped"]:
+            print(f"skipped_keys={len(load_info['skipped'])}")
+    wrapper.eval()
+    return wrapper
+
+
+def sequence_logprobs(logits: torch.Tensor, labels: torch.Tensor, normalize: bool) -> torch.Tensor:
+    if logits.shape[0] != labels.shape[0]:
+        if labels.shape[0] != 1 or logits.shape[0] % labels.shape[0] != 0:
+            raise ValueError(f"Cannot align logits {tuple(logits.shape)} with labels {tuple(labels.shape)}")
+        labels = labels.expand(logits.shape[0], -1).contiguous()
+    shift_logits = logits[:, :-1, :].float()
+    shift_labels = labels[:, 1:]
+    mask = shift_labels.ne(-100)
+    safe_labels = shift_labels.masked_fill(~mask, 0)
+    token_logprobs = torch.log_softmax(shift_logits, dim=-1).gather(
+        dim=-1,
+        index=safe_labels.unsqueeze(-1),
+    ).squeeze(-1)
+    scores = (token_logprobs * mask).sum(dim=-1)
+    if normalize:
+        scores = scores / mask.sum(dim=-1).clamp_min(1)
+    return scores
+
+
+def score_completion(
+    model_or_wrapper,
+    tokenizer,
+    prompt: str,
+    completion: str,
+    args: argparse.Namespace,
+) -> torch.Tensor:
+    prompt_ids = tokenizer(prompt, add_special_tokens=True)["input_ids"]
+    encoded = tokenizer(prompt + completion, return_tensors="pt", add_special_tokens=True).to(args.device)
+    labels = encoded["input_ids"].clone()
+    labels[:, : min(len(prompt_ids), labels.shape[1])] = -100
+
+    with torch.no_grad():
+        if args.mode == "base":
+            output = model_or_wrapper(
+                input_ids=encoded["input_ids"],
+                attention_mask=encoded["attention_mask"],
+                labels=None,
+                use_cache=False,
+                return_dict=True,
+            )
+        else:
+            output = model_or_wrapper(
+                input_ids=encoded["input_ids"],
+                attention_mask=encoded["attention_mask"],
+                labels=None,
+                max_loops=args.max_loops,
+                num_trajectories=args.num_trajectories,
+                sample_latents=args.sample_latents,
+                latent_injection_mode=args.latent_injection_mode,
+                particle_update_mode=args.particle_update_mode,
+                particle_init_noise=args.particle_init_noise,
+                svgd_eps=args.svgd_eps,
+                svgd_repulsion_scale=args.svgd_repulsion_scale,
+                svgd_bandwidth=args.svgd_bandwidth,
+                svgd_bandwidth_floor=args.svgd_bandwidth_floor,
+                svgd_repulsion_max_norm=args.svgd_repulsion_max_norm,
+                svgd_kernel_projection_dim=args.svgd_kernel_projection_dim,
+                svgd_kernel_projection_path=args.svgd_kernel_projection_path,
+                svgd_kernel_geometry=args.svgd_kernel_geometry,
+                svgd_projection_seed=args.svgd_projection_seed,
+                use_cache=False,
+                return_dict=True,
+            )
+    return sequence_logprobs(output.logits, labels, normalize=args.normalize_option_score).cpu()
+
+
+def aggregate(scores: torch.Tensor, method: str) -> float:
+    if method == "mean":
+        return float(scores.mean().item())
+    if method == "max":
+        return float(scores.max().item())
+    raise ValueError(f"Unknown aggregate={method}")
+
+
+def predict_from_scores(option_scores: dict[str, torch.Tensor], aggregate_method: str) -> tuple[str, dict[str, float]]:
+    if aggregate_method == "vote":
+        labels = list(option_scores)
+        per_traj = torch.stack([option_scores[label] for label in labels], dim=0)
+        winners = per_traj.argmax(dim=0)
+        votes = {label: int(winners.eq(idx).sum().item()) for idx, label in enumerate(labels)}
+        mean_scores = {label: float(option_scores[label].mean().item()) for label in labels}
+        prediction = max(labels, key=lambda label: (votes[label], mean_scores[label]))
+        return prediction, mean_scores
+    scalar_scores = {label: aggregate(scores, aggregate_method) for label, scores in option_scores.items()}
+    return max(scalar_scores, key=scalar_scores.get), scalar_scores
+
+
+def append_jsonl(path: str | Path | None, row: dict[str, Any]) -> None:
+    if not path:
+        return
+    out = Path(path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--model_name", default="Qwen/Qwen2.5-0.5B-Instruct")
+    parser.add_argument("--data_jsonl", required=True)
+    parser.add_argument("--mode", choices=("base", "phase1", "phase2"), default="base")
+    parser.add_argument("--checkpoint", help="Trainable recurrent checkpoint for phase1/phase2 modes.")
+    parser.add_argument("--output_jsonl")
+    parser.add_argument("--prompt_style", choices=("with_options", "question_only"), default="with_options")
+    parser.add_argument("--score_target", choices=("label", "option_text", "label_and_text"), default="label")
+    parser.add_argument("--aggregate", choices=("mean", "max", "vote"), default="mean")
+    parser.add_argument(
+        "--aggregates",
+        help="Optional comma-separated aggregate list, e.g. mean,max,vote. Reuses option scores in one model pass.",
+    )
+    parser.add_argument("--normalize_option_score", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--split", default="6,18")
+    parser.add_argument("--max_loops", type=int, default=4)
+    parser.add_argument("--num_trajectories", type=int, default=1)
+    parser.add_argument("--dtype", default="bfloat16")
+    parser.add_argument("--attn_implementation", default="default")
+    parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--lora_rank", type=int, default=8)
+    parser.add_argument("--lora_alpha", type=int, default=16)
+    parser.add_argument("--adapter_dtype", default="float32")
+    parser.add_argument("--sample_latents", action="store_true")
+    parser.add_argument("--latent_injection_mode", default="post", choices=("pre", "post", "both"))
+    parser.add_argument("--particle_update_mode", default="none", choices=("none", "svgd"))
+    parser.add_argument("--particle_init_noise", type=float, default=0.0)
+    parser.add_argument("--svgd_eps", type=float, default=1.0)
+    parser.add_argument("--svgd_repulsion_scale", type=float, default=0.5)
+    parser.add_argument("--svgd_bandwidth", default="median")
+    parser.add_argument("--svgd_bandwidth_floor", type=float, default=1e-6)
+    parser.add_argument("--svgd_repulsion_max_norm", type=parse_optional_float)
+    parser.add_argument("--svgd_kernel_projection_dim", type=int)
+    parser.add_argument("--svgd_kernel_projection_path")
+    parser.add_argument("--svgd_kernel_geometry", default="euclidean", choices=("euclidean", "spherical"))
+    parser.add_argument("--svgd_projection_seed", type=int, default=0)
+    args = parser.parse_args()
+
+    if args.mode != "base" and not args.checkpoint:
+        raise SystemExit("--checkpoint is required for phase1/phase2 modes")
+    if args.mode == "phase1" and args.num_trajectories != 1:
+        raise SystemExit("phase1 mode expects --num_trajectories 1")
+
+    set_seed(args.seed)
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    model_or_wrapper = (
+        load_base_model(args)
+        if args.mode == "base"
+        else load_recurrent_wrapper(args, args.checkpoint)
+    )
+
+    examples = read_examples(args.data_jsonl)
+    aggregates = (
+        [item.strip() for item in args.aggregates.split(",") if item.strip()]
+        if args.aggregates
+        else [args.aggregate]
+    )
+    allowed_aggregates = {"mean", "max", "vote"}
+    unknown = set(aggregates) - allowed_aggregates
+    if unknown:
+        raise SystemExit(f"Unknown aggregates: {sorted(unknown)}")
+
+    correct = {aggregate_name: 0 for aggregate_name in aggregates}
+    for example in examples:
+        prompt = format_prompt(example, args.prompt_style)
+        option_scores: dict[str, torch.Tensor] = {}
+        for label, text in example.choices:
+            completion = format_completion(label, text, args.score_target)
+            option_scores[label] = score_completion(model_or_wrapper, tokenizer, prompt, completion, args)
+        trajectory_scores = {label: [float(x) for x in scores.tolist()] for label, scores in option_scores.items()}
+        for aggregate_name in aggregates:
+            prediction, scalar_scores = predict_from_scores(option_scores, aggregate_name)
+            hit = prediction == example.answer
+            correct[aggregate_name] += int(hit)
+            row = {
+                "id": example.id,
+                "mode": args.mode,
+                "checkpoint": args.checkpoint,
+                "prompt_style": args.prompt_style,
+                "score_target": args.score_target,
+                "aggregate": aggregate_name,
+                "num_trajectories": args.num_trajectories,
+                "prediction": prediction,
+                "answer": example.answer,
+                "hit": hit,
+                "scores": scalar_scores,
+                "trajectory_scores": trajectory_scores,
+            }
+            print(json.dumps(row, ensure_ascii=False))
+            append_jsonl(args.output_jsonl, row)
+
+    for aggregate_name in aggregates:
+        accuracy = correct[aggregate_name] / max(len(examples), 1)
+        print(f"aggregate={aggregate_name} accuracy={accuracy:.4f} correct={correct[aggregate_name]} total={len(examples)}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

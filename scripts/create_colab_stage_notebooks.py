@@ -291,17 +291,7 @@ def main() -> int:
             code(
                 r"""
 %cd /content/recurrent-qwen-svgd
-!python eval/eval_gpqa.py --help
-
-print('''
-Stage 2 implementation checklist:
-1. Upgrade eval/eval_gpqa.py or add eval/eval_mcq_benchmark.py.
-2. Add --mode base|phase1|phase2.
-3. Add --checkpoint loading for recurrent wrappers.
-4. Add --num_trajectories and SVGD kernel options.
-5. Add --output_jsonl.
-6. Validate on a tiny handcrafted MCQ JSONL before GPQA.
-''')
+!python colab/run_stage2_mcq_smoke.py
 """
             ),
             md(
@@ -462,17 +452,7 @@ Stage 6 deliverables:
             code(
                 r"""
 %cd /content/recurrent-qwen-svgd
-!python eval/eval_gpqa.py --help
-
-print('''
-Stage 2 implementation checklist:
-1. Upgrade eval/eval_gpqa.py or add eval/eval_mcq_benchmark.py.
-2. Add --mode base|phase1|phase2.
-3. Add --checkpoint loading for recurrent wrappers.
-4. Add --num_trajectories and SVGD kernel options.
-5. Add --output_jsonl.
-6. Validate on a tiny handcrafted MCQ JSONL before GPQA.
-''')
+!python colab/run_stage2_mcq_smoke.py
 """
             ),
         ],

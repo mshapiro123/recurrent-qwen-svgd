@@ -1,0 +1,8 @@
+{"id":"mcq_arithmetic_add","question":"What is 17 + 28?","choices":{"A":"35","B":"45","C":"46","D":"55"},"answer":"B"}
+{"id":"mcq_train_speed","question":"A train travels 120 miles in 3 hours. What is its average speed?","choices":{"A":"30 miles per hour","B":"40 miles per hour","C":"60 miles per hour","D":"120 miles per hour"},"answer":"B"}
+{"id":"mcq_unit_conversion","question":"How many centimeters are in 2 meters?","choices":{"A":"20","B":"100","C":"200","D":"2000"},"answer":"C"}
+{"id":"mcq_rectangle_area","question":"A rectangle is 6 units wide and 7 units tall. What is its area?","choices":{"A":"13 square units","B":"36 square units","C":"42 square units","D":"49 square units"},"answer":"C"}
+{"id":"mcq_discount_price","question":"A $50 item is discounted by 20%. What is the final price?","choices":{"A":"$10","B":"$30","C":"$40","D":"$45"},"answer":"C"}
+{"id":"mcq_chemistry_basic","question":"Which particle has a negative electric charge?","choices":{"A":"proton","B":"neutron","C":"electron","D":"alpha particle"},"answer":"C"}
+{"id":"mcq_biology_basic","question":"Which molecule carries genetic information in most living organisms?","choices":{"A":"DNA","B":"glucose","C":"water","D":"sodium chloride"},"answer":"A"}
+{"id":"mcq_physics_basic","question":"Which quantity is measured in joules?","choices":{"A":"temperature","B":"energy","C":"electric current","D":"mass"},"answer":"B"}
