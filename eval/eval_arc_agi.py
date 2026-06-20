@@ -401,6 +401,32 @@ def select_self_consistency_candidate_index(example: ArcAgiExample, candidate_ro
     )[0]
 
 
+def symbolic_candidate_index(example: ArcAgiExample, candidate_rows: list[dict[str, Any]]) -> int | None:
+    valid_symbolic_rows = [
+        (idx, row)
+        for idx, row in enumerate(candidate_rows)
+        if row["parsed_grid"] is not None and str(row.get("candidate_source", "")).startswith("symbolic_")
+    ]
+    if not valid_symbolic_rows:
+        return None
+
+    preferred_shapes = set(inferred_output_shapes(example))
+    for idx, row in valid_symbolic_rows:
+        if preferred_shapes and grid_shape(row["parsed_grid"]) in preferred_shapes:
+            return idx
+    return valid_symbolic_rows[0][0]
+
+
+def select_symbolic_priority_candidate_index(example: ArcAgiExample, candidate_rows: list[dict[str, Any]]) -> int:
+    verified_index = verified_program_index(candidate_rows)
+    if verified_index is not None:
+        return verified_index
+    symbolic_index = symbolic_candidate_index(example, candidate_rows)
+    if symbolic_index is not None:
+        return symbolic_index
+    return select_heuristic_candidate_index(example, candidate_rows)
+
+
 def select_candidate_index(
     example: ArcAgiExample,
     candidate_rows: list[dict[str, Any]],
@@ -411,6 +437,8 @@ def select_candidate_index(
         return select_heuristic_candidate_index(example, candidate_rows)
     if selection_strategy == "self_consistency":
         return select_self_consistency_candidate_index(example, candidate_rows)
+    if selection_strategy == "symbolic_priority":
+        return select_symbolic_priority_candidate_index(example, candidate_rows)
     raise ValueError(f"Unknown selection_strategy={selection_strategy!r}")
 
 
@@ -427,7 +455,7 @@ def evaluate_example(
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     if program_parse_mode not in {"off", "fallback", "prefer", "program_only"}:
         raise ValueError(f"Unknown program_parse_mode={program_parse_mode!r}")
-    if selection_strategy not in {"heuristic", "self_consistency"}:
+    if selection_strategy not in {"heuristic", "self_consistency", "symbolic_priority"}:
         raise ValueError(f"Unknown selection_strategy={selection_strategy!r}")
     rows: list[dict[str, Any]] = []
     any_exact = False
@@ -742,11 +770,12 @@ def main() -> int:
     parser.add_argument(
         "--selection_strategy",
         default="heuristic",
-        choices=("heuristic", "self_consistency"),
+        choices=("heuristic", "self_consistency", "symbolic_priority"),
         help=(
             "How to pick the selected answer from candidates. heuristic preserves the legacy "
             "program/shape/first-valid selector. self_consistency votes over identical parsed grids "
-            "after optional shape filtering."
+            "after optional shape filtering. symbolic_priority prefers valid deterministic symbolic "
+            "candidates after verified programs."
         ),
     )
     parser.add_argument("--include_symbolic_candidates", action="store_true")

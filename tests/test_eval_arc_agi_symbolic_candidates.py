@@ -79,6 +79,47 @@ def test_symbolic_program_candidate_is_verified_and_selectable() -> None:
     assert verifier["program_fit_selected_exact"] == 1
 
 
+def test_symbolic_priority_selects_later_symbolic_grid_without_changing_default() -> None:
+    example = _constant_example()
+    candidate = exact_symbolic_candidate(example)
+    assert candidate is not None
+    symbolic_rows = format_symbolic_candidate_texts(
+        [candidate],
+        output_format="compact",
+        candidate_format="grid",
+    )
+
+    rows, summary = evaluate_example(
+        example,
+        ["00", *[text for text, _source in symbolic_rows]],
+        candidate_sources=["model", *[source for _text, source in symbolic_rows]],
+        diagnostics={},
+        generation_steps=0,
+        output_format="compact",
+        program_parse_mode="fallback",
+    )
+
+    assert summary["best_of_k_exact"] is True
+    assert summary["selected_exact"] is False
+    assert rows[0]["selected"] is True
+
+    priority_rows, priority_summary = evaluate_example(
+        example,
+        ["00", *[text for text, _source in symbolic_rows]],
+        candidate_sources=["model", *[source for _text, source in symbolic_rows]],
+        diagnostics={},
+        generation_steps=0,
+        output_format="compact",
+        program_parse_mode="fallback",
+        selection_strategy="symbolic_priority",
+    )
+
+    assert priority_summary["selected_exact"] is True
+    assert priority_summary["selected_index"] == 1
+    assert priority_rows[1]["selected"] is True
+    assert priority_rows[1]["candidate_source"] == "symbolic_grid"
+
+
 def test_task_family_extracts_synthetic_family_names() -> None:
     assert task_family("synthetic_move_recolor_000123") == "move_recolor"
     assert task_family("synthetic_frame_object_000001:loo0") == "frame_object"
