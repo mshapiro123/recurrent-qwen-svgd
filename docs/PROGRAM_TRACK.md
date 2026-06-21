@@ -150,6 +150,15 @@ reasoning model can confound the survival-of-diversity question.
 6. Treat same-recipe recurrent-vs-dense assessment as required evidence before
    attributing ARC gains to architecture.
 
+## Standing Decision Flag
+
+When continued mechanism refinement appears to have passed the point of
+diminishing returns relative to measurement, selector work, or the matched
+same-recipe comparison, surface that explicitly as a flag rather than silently
+continuing. This is not a veto; it is a prompt for the human to choose whether
+the next move is destination-primary, contribution-primary, or a limited
+mechanism probe.
+
 ## Anti-Patterns
 
 - Chasing more kernel variants before the selector and stratified eval exist.
