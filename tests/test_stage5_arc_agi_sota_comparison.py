@@ -15,6 +15,26 @@ def _candidate(path, *, selected_exact: int = 12, examples: int = 100):
         path,
         {
             "run_id": "candidate",
+            "metadata": {
+                "arc_version": "1",
+                "eval_split": "evaluation",
+                "eval_task_limit": examples,
+            },
+            "phase1_arc_agi_tuned": {
+                "selected_exact": selected_exact,
+                "best_of_k_exact": selected_exact,
+                "examples_with_targets": examples,
+            },
+        },
+    )
+    return path
+
+
+def _candidate_without_metadata(path, *, selected_exact: int = 12, examples: int = 100):
+    _write(
+        path,
+        {
+            "run_id": "candidate",
             "phase1_arc_agi_tuned": {
                 "selected_exact": selected_exact,
                 "best_of_k_exact": selected_exact,
@@ -87,6 +107,21 @@ def test_sota_comparison_requires_baseline_registry(tmp_path) -> None:
     )
 
     assert payload["status"] == "needs_baseline_registry"
+    assert payload["criteria"][3]["passed"] is False
+
+
+def test_sota_comparison_requires_arc_agi_candidate_metadata(tmp_path) -> None:
+    payload = build_sota_comparison(
+        candidate_summary=_candidate_without_metadata(tmp_path / "candidate" / "summary.json", selected_exact=12),
+        baseline_registry=_registry(tmp_path / "baselines.json", accuracy=0.1),
+        candidate_label="phase1_arc_agi_tuned",
+        metric="selected_accuracy",
+        min_examples=100,
+        min_margin=0.0,
+    )
+
+    assert payload["status"] == "needs_arc_agi_candidate_metadata"
+    assert payload["criteria"][2]["name"] == "candidate_arc_agi_metadata_present"
     assert payload["criteria"][2]["passed"] is False
 
 

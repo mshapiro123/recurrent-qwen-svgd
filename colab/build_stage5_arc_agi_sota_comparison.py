@@ -90,6 +90,20 @@ def summary_block(payload: dict[str, Any], *, label: str) -> dict[str, Any] | No
     return None
 
 
+def candidate_metadata(payload: dict[str, Any]) -> dict[str, Any]:
+    metadata = payload.get("metadata")
+    return metadata if isinstance(metadata, dict) else {}
+
+
+def candidate_arc_split(metadata: dict[str, Any]) -> str | None:
+    value = metadata.get("arc_split") or metadata.get("eval_split")
+    return str(value) if value else None
+
+
+def has_arc_agi_metadata(metadata: dict[str, Any]) -> bool:
+    return bool(metadata.get("arc_version") and candidate_arc_split(metadata))
+
+
 def accuracy_from_summary(summary: dict[str, Any], metric: str) -> float | None:
     if metric in summary:
         return float(summary[metric])
@@ -115,6 +129,7 @@ def candidate_evidence(path: Path | None, *, label: str, metric: str) -> dict[st
     if not summary:
         return {"present": False, "path": path_for_cli(path), "reason": f"missing summary block {label!r}"}
     accuracy = accuracy_from_summary(summary, metric)
+    metadata = candidate_metadata(payload)
     return {
         "present": accuracy is not None,
         "path": path_for_cli(path),
@@ -125,6 +140,9 @@ def candidate_evidence(path: Path | None, *, label: str, metric: str) -> dict[st
         "examples": int(summary.get("examples_with_targets", 0) or summary.get("examples", 0) or 0),
         "selected_exact": int(summary.get("selected_exact", 0) or 0),
         "best_of_k_exact": int(summary.get("best_of_k_exact", 0) or 0),
+        "arc_version": metadata.get("arc_version"),
+        "arc_split": candidate_arc_split(metadata),
+        "metadata": metadata,
         "summary": summary,
     }
 
@@ -194,6 +212,7 @@ def build_sota_comparison(
     best = best_baseline(registry, metric) if registry.get("present") else None
     candidate_present = bool(candidate.get("present"))
     candidate_examples = int(candidate.get("examples", 0) or 0)
+    candidate_has_arc_metadata = has_arc_agi_metadata(candidate.get("metadata") or {})
     candidate_accuracy = candidate.get("accuracy")
     best_accuracy = float(best["accuracy"]) if best else None
     delta = (float(candidate_accuracy) - best_accuracy) if candidate_accuracy is not None and best_accuracy is not None else None
@@ -212,6 +231,16 @@ def build_sota_comparison(
                 "Candidate ARC-AGI summary has enough examples."
                 if candidate_present and candidate_examples >= min_examples
                 else "Candidate ARC-AGI summary has too few examples for a SOTA comparison."
+            ),
+            candidate,
+        ),
+        criterion(
+            "candidate_arc_agi_metadata_present",
+            candidate_present and candidate_has_arc_metadata,
+            (
+                "Candidate summary has ARC-AGI version and split metadata."
+                if candidate_present and candidate_has_arc_metadata
+                else "Candidate summary must be a main ARC-AGI run summary with arc_version and eval/arc split metadata."
             ),
             candidate,
         ),
@@ -240,6 +269,12 @@ def build_sota_comparison(
     if not candidate_present:
         status = "needs_candidate_summary"
         next_step = "Run an ARC-AGI evaluation summary for the recurrent candidate."
+    elif not candidate_has_arc_metadata:
+        status = "needs_arc_agi_candidate_metadata"
+        next_step = (
+            "Use a main ARC-AGI run summary with metadata.arc_version and metadata.arc_split/eval_split; "
+            "do not compare ad hoc eval summaries to same-size baselines."
+        )
     elif candidate_examples < min_examples:
         status = "needs_more_examples"
         next_step = "Evaluate the recurrent candidate on a larger ARC-AGI split before comparing to baselines."

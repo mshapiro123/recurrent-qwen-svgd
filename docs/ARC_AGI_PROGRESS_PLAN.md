@@ -315,6 +315,11 @@ The Stage 5 planner routes a passed selector-conversion artifact directly into
 whether the remaining blocker is benchmark confirmation, HF export metadata, or
 broader benchmark readiness.
 
+For any same-size SOTA comparison, use a main ARC-AGI run summary carrying
+`metadata.arc_version` and `metadata.arc_split` or `metadata.eval_split`.
+Ad hoc per-label evaluation summaries are not sufficient evidence for
+`colab/build_stage5_arc_agi_sota_comparison.py`.
+
 Set `STAGE5_ARC_AGI_DISTILL=1` to add frozen-base next-token KL distillation
 inside `training/train_phase1_ponder.py`. Run
 `colab/run_stage5_arc_agi_distill_sft_gate.py` to compare the selected ARC SFT
