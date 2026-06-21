@@ -13,6 +13,7 @@
       "accuracy": 0.0,
       "metric": "selected_accuracy",
       "source": "REPLACE_WITH_AUTHORITATIVE_SOURCE",
+      "accessed_date": "YYYY-MM-DD",
       "notes": "Placeholder example only; do not use for claims."
     }
   ]

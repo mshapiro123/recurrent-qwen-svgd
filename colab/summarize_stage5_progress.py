@@ -147,6 +147,8 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         return True
     if payload.get("gate") == "stage5_claim_readiness":
         return True
+    if payload.get("gate") == "stage5_arc_agi_baseline_registry" or payload.get("kind") == "arc_agi_baseline_registry":
+        return True
     if payload.get("gate") == "stage5_arc_agi_sota_comparison" or payload.get("kind") == "arc_agi_sota_comparison":
         return True
     if payload.get("kind") == "dense_sft_control":
@@ -536,6 +538,30 @@ def arc_agi_sota_comparisons(summary_files: list[Path]) -> list[dict[str, Any]]:
     return sorted(comparisons, key=lambda item: str(item["path"]))
 
 
+def arc_agi_baseline_registries(summary_files: list[Path]) -> list[dict[str, Any]]:
+    registries: list[dict[str, Any]] = []
+    for path in summary_files:
+        payload = safe_read_json(path)
+        if not payload:
+            continue
+        if payload.get("gate") != "stage5_arc_agi_baseline_registry" and payload.get("kind") != "arc_agi_baseline_registry":
+            continue
+        registries.append(
+            {
+                "path": path_for_cli(path),
+                "run_id": str(payload.get("run_id") or path.parent.name),
+                "status": payload.get("status"),
+                "passed": bool(payload.get("passed", False)),
+                "metric": payload.get("metric"),
+                "valid_baseline_count": int(payload.get("valid_baseline_count", 0) or 0),
+                "best_baseline": (payload.get("best_baseline") or {}).get("name"),
+                "best_baseline_accuracy": (payload.get("best_baseline") or {}).get("accuracy"),
+                "next_step": payload.get("next_step"),
+            }
+        )
+    return sorted(registries, key=lambda item: str(item["path"]))
+
+
 def iter_summary_files(scan_root: Path) -> list[Path]:
     if not scan_root.exists():
         return []
@@ -639,6 +665,7 @@ def scan_progress(scan_root: Path, *, run_id: str | None = None) -> dict[str, An
         "benchmark_suite_assessments": benchmark_suite_assessments(summary_files),
         "broader_benchmark_gate_assessments": broader_benchmark_gate_assessments(summary_files),
         "claim_readiness_packets": claim_readiness_packets(summary_files),
+        "arc_agi_baseline_registries": arc_agi_baseline_registries(summary_files),
         "arc_agi_sota_comparisons": arc_agi_sota_comparisons(summary_files),
         "recommended_next_plan_source": latest_planner_source(summary_files),
     }
@@ -759,6 +786,17 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
             )
     else:
         lines.append("- No claim-readiness packets found.")
+    lines.extend(["", "## ARC-AGI Baseline Registries", ""])
+    if payload["arc_agi_baseline_registries"]:
+        for registry in payload["arc_agi_baseline_registries"][-10:]:
+            lines.append(
+                f"- `{registry['run_id']}` status `{registry['status']}` passed "
+                f"`{registry['passed']}` metric `{registry['metric']}` valid baselines "
+                f"`{registry['valid_baseline_count']}` best `{registry['best_baseline']}` "
+                f"`{registry['best_baseline_accuracy']}`: {registry['next_step']}"
+            )
+    else:
+        lines.append("- No ARC-AGI baseline registry validation artifacts found.")
     lines.extend(["", "## ARC-AGI SOTA Comparisons", ""])
     if payload["arc_agi_sota_comparisons"]:
         for comparison in payload["arc_agi_sota_comparisons"][-10:]:

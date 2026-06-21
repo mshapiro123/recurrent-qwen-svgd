@@ -12,12 +12,19 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 import time
 from pathlib import Path
 from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
+try:
+    from colab.validate_arc_agi_baseline_registry import validate_baseline_registry
+except ModuleNotFoundError:  # pragma: no cover - used when run as a script from colab/
+    sys.path.insert(0, str(ROOT))
+    from colab.validate_arc_agi_baseline_registry import validate_baseline_registry
+
 RUN_ID = os.environ.get("STAGE5_ARC_AGI_SOTA_COMPARISON_RUN_ID") or time.strftime(
     "stage5_arc_agi_sota_comparison_%Y%m%d_%H%M%S"
 )
@@ -124,17 +131,25 @@ def candidate_evidence(path: Path | None, *, label: str, metric: str) -> dict[st
 
 def load_baselines(path: Path | None) -> dict[str, Any]:
     if not path or not path.exists():
-        return {"present": False, "path": path_for_cli(path or DEFAULT_BASELINE_REGISTRY), "baselines": []}
-    payload = read_json(path)
-    baselines = payload.get("baselines")
+        validation = validate_baseline_registry(path or DEFAULT_BASELINE_REGISTRY)
+        return {
+            "present": False,
+            "valid": False,
+            "path": path_for_cli(path or DEFAULT_BASELINE_REGISTRY),
+            "baselines": [],
+            "validation": validation,
+        }
+    validation = validate_baseline_registry(path)
+    baselines = validation.get("valid_baselines")
     return {
-        "present": isinstance(baselines, list) and bool(baselines),
+        "present": bool(validation.get("passed")) and isinstance(baselines, list) and bool(baselines),
+        "valid": bool(validation.get("passed")),
         "path": path_for_cli(path),
-        "benchmark": payload.get("benchmark"),
-        "metric": payload.get("metric"),
-        "same_size_band": payload.get("same_size_band") or {},
+        "benchmark": validation.get("benchmark"),
+        "metric": validation.get("metric"),
+        "same_size_band": validation.get("same_size_band") or {},
         "baselines": baselines if isinstance(baselines, list) else [],
-        "source_notes": payload.get("source_notes"),
+        "validation": validation,
     }
 
 
@@ -204,9 +219,9 @@ def build_sota_comparison(
             "baseline_registry_present",
             bool(registry.get("present")) and best is not None,
             (
-                "Same-size baseline registry has at least one score for the requested metric."
+                "Same-size baseline registry is valid and has at least one score for the requested metric."
                 if bool(registry.get("present")) and best is not None
-                else "Same-size baseline registry is missing or has no score for the requested metric."
+                else "Same-size baseline registry is missing, invalid, or has no score for the requested metric."
             ),
             registry,
         ),
@@ -230,7 +245,10 @@ def build_sota_comparison(
         next_step = "Evaluate the recurrent candidate on a larger ARC-AGI split before comparing to baselines."
     elif not registry.get("present") or best is None:
         status = "needs_baseline_registry"
-        next_step = "Provide config/arc_agi_same_size_baselines.json with sourced same-size baseline scores."
+        next_step = (
+            "Provide a validator-passing config/arc_agi_same_size_baselines.json with sourced same-size "
+            "baseline scores."
+        )
     elif delta is not None and delta >= min_margin:
         status = "passed"
         next_step = "Rebuild the Stage 5 claim packet; it can now include this ARC-AGI SOTA comparison evidence."

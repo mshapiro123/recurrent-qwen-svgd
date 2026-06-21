@@ -38,7 +38,8 @@ def _registry(path, *, accuracy: float = 0.1):
                     "params_b": 0.5,
                     "metric": "selected_accuracy",
                     "accuracy": accuracy,
-                    "source": "unit-test",
+                    "source": "https://arcprize.org/leaderboard",
+                    "accessed_date": "2026-06-20",
                 }
             ],
         },
@@ -87,6 +88,39 @@ def test_sota_comparison_requires_baseline_registry(tmp_path) -> None:
 
     assert payload["status"] == "needs_baseline_registry"
     assert payload["criteria"][2]["passed"] is False
+
+
+def test_sota_comparison_rejects_invalid_baseline_registry(tmp_path) -> None:
+    registry = tmp_path / "baselines.json"
+    _write(
+        registry,
+        {
+            "benchmark": "ARC-AGI public evaluation",
+            "metric": "selected_accuracy",
+            "same_size_band": {"min_params_b": 0.3, "max_params_b": 1.0},
+            "baselines": [
+                {
+                    "name": "placeholder-baseline",
+                    "params_b": 0.5,
+                    "metric": "selected_accuracy",
+                    "accuracy": 0.1,
+                    "source": "REPLACE_WITH_AUTHORITATIVE_SOURCE",
+                }
+            ],
+        },
+    )
+
+    payload = build_sota_comparison(
+        candidate_summary=_candidate(tmp_path / "candidate" / "summary.json", selected_exact=12),
+        baseline_registry=registry,
+        candidate_label="phase1_arc_agi_tuned",
+        metric="selected_accuracy",
+        min_examples=100,
+        min_margin=0.0,
+    )
+
+    assert payload["status"] == "needs_baseline_registry"
+    assert payload["baseline_registry"]["validation"]["passed"] is False
 
 
 def test_sota_comparison_cli_writes_outputs(tmp_path, monkeypatch) -> None:

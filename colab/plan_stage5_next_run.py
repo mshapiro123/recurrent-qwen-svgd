@@ -81,6 +81,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or benchmark_suite_payload(payload) is not None
         or benchmark_suite_assessment_payload(payload) is not None
         or claim_readiness_payload(payload) is not None
+        or arc_agi_baseline_registry_payload(payload) is not None
         or arc_agi_sota_comparison_payload(payload) is not None
     )
 
@@ -180,6 +181,12 @@ def benchmark_suite_assessment_payload(payload: dict[str, Any]) -> dict[str, Any
 
 def claim_readiness_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("gate") == "stage5_claim_readiness" else None
+
+
+def arc_agi_baseline_registry_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    if payload.get("gate") == "stage5_arc_agi_baseline_registry" or payload.get("kind") == "arc_agi_baseline_registry":
+        return payload
+    return None
 
 
 def arc_agi_sota_comparison_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -783,6 +790,32 @@ def arc_agi_sota_comparison_actions(payload: dict[str, Any], *, source_summary: 
     ]
 
 
+def arc_agi_baseline_registry_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    if status == "passed":
+        return [
+            make_action(
+                "Build ARC-AGI same-size comparison artifact",
+                "The same-size baseline registry passed validation; compare the recurrent ARC-AGI candidate against the sourced baseline set.",
+                command_env(
+                    {
+                        "STAGE5_ARC_AGI_SOTA_COMPARISON_RUN_ID": f"{RUN_ID}_arc_agi_sota_comparison",
+                    },
+                    "python colab/build_stage5_arc_agi_sota_comparison.py",
+                ),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect ARC-AGI baseline registry `{status}`",
+            "The ARC-AGI same-size registry is missing sourced values or contains placeholders; fix it before any SOTA comparison.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
 def dense_sft_matched_recurrent_command(payload: dict[str, Any]) -> str:
     metadata = payload.get("metadata") or {}
     assignments = {
@@ -1214,6 +1247,9 @@ def plan_next_actions(
     claim_readiness = claim_readiness_payload(payload)
     if claim_readiness:
         return claim_readiness_actions(claim_readiness, source_summary=source_summary)
+    arc_agi_baseline_registry = arc_agi_baseline_registry_payload(payload)
+    if arc_agi_baseline_registry:
+        return arc_agi_baseline_registry_actions(arc_agi_baseline_registry, source_summary=source_summary)
     arc_agi_sota = arc_agi_sota_comparison_payload(payload)
     if arc_agi_sota:
         return arc_agi_sota_comparison_actions(arc_agi_sota, source_summary=source_summary)
@@ -1541,6 +1577,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "benchmark_suite_assessment"
     if claim_readiness_payload(payload):
         return "claim_readiness"
+    if arc_agi_baseline_registry_payload(payload):
+        return "arc_agi_baseline_registry"
     if arc_agi_sota_comparison_payload(payload):
         return "arc_agi_sota_comparison"
     if benchmark_suite_payload(payload):

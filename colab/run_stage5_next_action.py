@@ -58,6 +58,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/build_stage5_arc_agi_sota_comparison.py",
     "colab/build_stage5_claim_packet.py",
     "colab/plan_stage5_next_run.py",
+    "colab/validate_arc_agi_baseline_registry.py",
     "colab/run_stage5_arc_agi_autopilot_followup.py",
     "colab/run_stage5_arc_agi_candidate_distill_gate.py",
     "colab/run_stage5_arc_agi_curriculum_particle_autopilot.py",

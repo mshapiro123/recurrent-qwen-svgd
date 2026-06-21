@@ -518,6 +518,42 @@ def test_progress_ledger_reports_arc_agi_sota_comparisons(tmp_path) -> None:
     assert payload["recommended_next_plan_source"] == str(source)
 
 
+def test_progress_ledger_reports_arc_agi_baseline_registries(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "arc_agi_registry" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "arc_agi_registry",
+            "gate": "stage5_arc_agi_baseline_registry",
+            "kind": "arc_agi_baseline_registry",
+            "status": "passed",
+            "passed": True,
+            "metric": "selected_accuracy",
+            "valid_baseline_count": 1,
+            "best_baseline": {"name": "same-size-baseline", "accuracy": 0.1},
+            "next_step": "compare",
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["arc_agi_baseline_registries"] == [
+        {
+            "path": str(source),
+            "run_id": "arc_agi_registry",
+            "status": "passed",
+            "passed": True,
+            "metric": "selected_accuracy",
+            "valid_baseline_count": 1,
+            "best_baseline": "same-size-baseline",
+            "best_baseline_accuracy": 0.1,
+            "next_step": "compare",
+        }
+    ]
+    assert payload["recommended_next_plan_source"] == str(source)
+
+
 def test_progress_ledger_skips_empty_and_malformed_eval_summaries(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     _write(scan_root / "empty" / "base_summary.json", {"summary": {}})
