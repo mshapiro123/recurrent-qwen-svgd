@@ -10,6 +10,7 @@ from colab.run_stage5_benchmark_suite import (
     compare_arm_summaries,
     paired_arm_summaries,
     parse_csv,
+    parse_optional_limit,
     resolve_checkpoint,
     summarize_rows,
     two_sided_sign_p_value,
@@ -23,6 +24,13 @@ def _write_jsonl(path, rows) -> None:
 
 def test_parse_csv_trims_empty_items() -> None:
     assert parse_csv(" arc_challenge, gpqa_lite ,,") == ["arc_challenge", "gpqa_lite"]
+
+
+def test_parse_optional_limit_accepts_full_aliases() -> None:
+    assert parse_optional_limit("256") == 256
+    assert parse_optional_limit("full") is None
+    assert parse_optional_limit("all") is None
+    assert parse_optional_limit("0") is None
 
 
 def test_summarize_rows_groups_by_aggregate() -> None:

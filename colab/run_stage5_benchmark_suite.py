@@ -36,7 +36,7 @@ PRIVATE_DATA_DIR = ROOT / "data" / "stage5_benchmark_suite" / RUN_ID
 SOURCE_SUMMARY = os.environ.get("STAGE5_BENCHMARK_SOURCE_SUMMARY", "")
 EXPLICIT_CHECKPOINT = os.environ.get("STAGE5_BENCHMARK_CHECKPOINT", "")
 BENCHMARKS = os.environ.get("STAGE5_BENCHMARKS", "arc_challenge,gpqa_lite")
-ARC_CHALLENGE_LIMIT = int(os.environ.get("STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT", "128"))
+ARC_CHALLENGE_LIMIT_RAW = os.environ.get("STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT", "128")
 GPQA_LIMIT = int(os.environ.get("STAGE5_BENCHMARK_GPQA_LIMIT", "16"))
 GPQA_CONFIG = os.environ.get("STAGE5_BENCHMARK_GPQA_CONFIG", "gpqa_diamond")
 SCORE_TARGETS = os.environ.get("STAGE5_BENCHMARK_SCORE_TARGETS", "label")
@@ -135,6 +135,19 @@ def parse_csv(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
+def parse_optional_limit(value: str) -> int | None:
+    normalized = value.strip().lower()
+    if normalized in {"", "none", "full", "all"}:
+        return None
+    limit = int(normalized)
+    if limit <= 0:
+        return None
+    return limit
+
+
+ARC_CHALLENGE_LIMIT = parse_optional_limit(ARC_CHALLENGE_LIMIT_RAW)
+
+
 def latest_summary_with_checkpoint() -> Path | None:
     candidates: list[Path] = []
     for root in (ROOT / "outputs" / "hf_exports", ROOT / "outputs" / "stage5"):
@@ -189,25 +202,26 @@ def benchmark_specs(names: list[str]) -> list[BenchmarkSpec]:
     specs: list[BenchmarkSpec] = []
     for name in names:
         if name == "arc_challenge":
-            output = PRIVATE_DATA_DIR / f"arc_challenge_validation_{ARC_CHALLENGE_LIMIT}.jsonl"
+            limit_label = "full" if ARC_CHALLENGE_LIMIT is None else str(ARC_CHALLENGE_LIMIT)
+            prepare_cmd = [
+                sys.executable,
+                "eval/prepare_arc_mcq.py",
+                "--config",
+                "ARC-Challenge",
+                "--split",
+                "validation",
+                "--seed",
+                "0",
+            ]
+            if ARC_CHALLENGE_LIMIT is not None:
+                prepare_cmd.extend(["--limit", str(ARC_CHALLENGE_LIMIT)])
+            output = PRIVATE_DATA_DIR / f"arc_challenge_validation_{limit_label}.jsonl"
+            prepare_cmd.extend(["--output_jsonl", str(output)])
             specs.append(
                 BenchmarkSpec(
                     name=name,
                     data_jsonl=output,
-                    prepare_cmd=[
-                        sys.executable,
-                        "eval/prepare_arc_mcq.py",
-                        "--config",
-                        "ARC-Challenge",
-                        "--split",
-                        "validation",
-                        "--limit",
-                        str(ARC_CHALLENGE_LIMIT),
-                        "--seed",
-                        "0",
-                        "--output_jsonl",
-                        str(output),
-                    ],
+                    prepare_cmd=prepare_cmd,
                 )
             )
         elif name == "gpqa_lite":

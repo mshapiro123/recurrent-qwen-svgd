@@ -76,6 +76,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/run_stage5_benchmark_suite.py",
     "colab/run_stage5_phase1_recovery_ladder.py",
     "colab/run_stage5_publish_hf_adapter.py",
+    "colab/run_stage5_recovered_phase1_arc_gate.py",
 }
 
 
