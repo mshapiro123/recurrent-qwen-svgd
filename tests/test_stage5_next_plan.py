@@ -707,6 +707,90 @@ def test_recovery_particle_gate_particle_pass_recommends_replicated_particle_gat
     assert "STAGE5_ARC_AGI_PARTICLE_VARIANTS=k4_noise001_rep05:0.01:0.5" in particle["command"]
 
 
+def test_gate1_passed_delegates_to_source_summary_action(tmp_path) -> None:
+    source_run = tmp_path / "source_benchmark"
+    source_run.mkdir()
+    (source_run / "summary.json").write_text(
+        json.dumps(
+            {
+                "metadata": {
+                    "recovered_checkpoint": "outputs/stage5/recovered.pt",
+                    "phase1_start_checkpoint": "outputs/stage4/phase1.pt",
+                    "grid_format": "compact",
+                    "program_parse_mode": "fallback",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    selector = tmp_path / "selector" / "summary.json"
+    selector.parent.mkdir()
+    selector.write_text(
+        json.dumps(
+            {
+                "source_run_dir": str(source_run),
+                "strategies": ["reliability_vote"],
+                "rows": [
+                    {
+                        "label": "recovered",
+                        "selection_strategy": "reliability_vote",
+                        "examples": 50,
+                        "selected_exact": 12,
+                        "best_of_k_exact": 13,
+                        "valid_candidate_rate": 0.9,
+                        "selected_delta_vs_source": 2,
+                    }
+                ],
+                "best_by_label": {},
+                "paired_comparisons": {
+                    "recovered__selector_reliability_vote_vs_source": {
+                        "metrics": {"selected_exact": _paired(2, wins=2, losses=0, ties=48)}
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    gate1 = tmp_path / "gate1" / "summary.json"
+    gate1.parent.mkdir()
+    payload = {
+        "gate": "stage5_gate1_selector_tta",
+        "status": "passed",
+        "passed": True,
+        "reason": "hard-tail lift",
+        "next_step": "replicate",
+        "source_summary": str(selector),
+        "source_kind": "selector_rescore",
+    }
+    gate1.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=gate1)
+
+    assert actions[0]["name"].startswith("Gate 1 passed: Promote selector `reliability_vote`")
+    assert "hard-tail lift" in actions[0]["reason"]
+    assert "STAGE5_ARC_AGI_SELECTION_STRATEGY=reliability_vote" in actions[0]["command"]
+
+
+def test_gate1_needs_review_recommends_inspection(tmp_path) -> None:
+    gate1 = tmp_path / "gate1" / "summary.json"
+    gate1.parent.mkdir()
+    (gate1.parent / "summary.md").write_text("# Gate 1\n", encoding="utf-8")
+    payload = {
+        "gate": "stage5_gate1_selector_tta",
+        "status": "needs_review",
+        "passed": False,
+        "reason": "hard-tail lift with aggregate harm",
+        "next_step": "inspect",
+    }
+    gate1.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=gate1)
+
+    assert actions[0]["name"] == "Inspect Gate 1 assessment `needs_review`"
+    assert actions[0]["command"].startswith("cat ")
+    assert "summary.md" in actions[0]["command"]
+
+
 def test_paired_metric_helpers_fall_back_to_aggregate() -> None:
     payload = {
         "deltas": {"recovered_vs_base": {"selected_exact_delta": 2}},
@@ -750,3 +834,4 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"compact": {}}) == "autopilot"
     assert source_kind({"best_by_label": {}, "rows": []}) == "selector_rescore"
     assert source_kind({"recovery_decision": {}, "particle_decision": {}}) == "recovery_particle_gate"
+    assert source_kind({"gate": "stage5_gate1_selector_tta"}) == "gate1_assessment"

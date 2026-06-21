@@ -70,7 +70,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
             "best_by_label",
             "recovery_decision",
         )
-    ) or selector_rescore_payload(payload) is not None
+    ) or selector_rescore_payload(payload) is not None or gate1_assessment_payload(payload) is not None
 
 
 def latest_summary() -> Path:
@@ -136,6 +136,10 @@ def recovery_particle_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     if isinstance(payload.get("recovery_decision"), dict) and isinstance(payload.get("particle_decision"), dict):
         return payload
     return None
+
+
+def gate1_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("gate") == "stage5_gate1_selector_tta" else None
 
 
 def compact_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -537,6 +541,60 @@ def selector_rescore_actions(payload: dict[str, Any], *, source_summary: Path) -
     ]
 
 
+def gate1_source_summary_path(payload: dict[str, Any], fallback: Path) -> Path:
+    source = payload.get("source_summary")
+    return resolve_path(str(source)) if source else fallback
+
+
+def gate1_inspect_action(payload: dict[str, Any], source_summary: Path, *, priority: int = 10) -> dict[str, Any]:
+    summary_md = source_summary.with_name("summary.md")
+    inspect_path = summary_md if summary_md.exists() else source_summary
+    status = str(payload.get("status", "unknown"))
+    return make_action(
+        f"Inspect Gate 1 assessment `{status}`",
+        f"Gate 1 status `{status}` needs human review before spending more GPU. Reason: {payload.get('reason')}",
+        f"cat {command_path(inspect_path)}",
+        priority,
+    )
+
+
+def gate1_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    source_path = gate1_source_summary_path(payload, source_summary)
+    source_actions: list[dict[str, Any]] = []
+    if source_path != source_summary and source_path.exists():
+        source_payload = read_json(source_path)
+        if gate1_assessment_payload(source_payload) is None:
+            source_actions = plan_next_actions(source_payload, source_summary=source_path)
+
+    if status == "needs_review":
+        return [gate1_inspect_action(payload, source_summary, priority=10)]
+    if not source_actions:
+        return [gate1_inspect_action(payload, source_summary, priority=10)]
+
+    top = dict(source_actions[0])
+    if status == "passed":
+        prefix = "Gate 1 passed"
+        priority = 10
+    elif status == "needs_more_evidence":
+        prefix = "Gate 1 needs more evidence"
+        priority = max(9, int(top.get("priority", 0)))
+    elif status == "failed":
+        prefix = "Gate 1 failed"
+        priority = max(9, int(top.get("priority", 0)))
+    else:
+        prefix = f"Gate 1 status `{status}`"
+        priority = max(8, int(top.get("priority", 0)))
+    top["name"] = f"{prefix}: {top.get('name')}"
+    top["reason"] = (
+        f"{prefix}. Assessment reason: {payload.get('reason')} "
+        f"Assessment next step: {payload.get('next_step')} "
+        f"Source action reason: {top.get('reason')}"
+    )
+    top["priority"] = priority
+    return [top]
+
+
 def recovery_particle_examples(payload: dict[str, Any]) -> int:
     settings = payload.get("settings") or {}
     if settings.get("eval_task_limit") is not None:
@@ -686,6 +744,9 @@ def recovery_particle_actions(payload: dict[str, Any], *, source_summary: Path) 
 
 def plan_next_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     actions: list[dict[str, Any]] = []
+    gate1 = gate1_assessment_payload(payload)
+    if gate1:
+        return gate1_assessment_actions(gate1, source_summary=source_summary)
     selector_rescore = selector_rescore_payload(payload)
     if selector_rescore:
         return selector_rescore_actions(selector_rescore, source_summary=source_summary)
@@ -986,6 +1047,8 @@ def write_report(payload: dict[str, Any]) -> None:
 
 
 def source_kind(payload: dict[str, Any]) -> str:
+    if gate1_assessment_payload(payload):
+        return "gate1_assessment"
     if selector_rescore_payload(payload):
         return "selector_rescore"
     if recovery_particle_payload(payload):
