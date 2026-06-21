@@ -54,7 +54,8 @@ evidence.
 
 Stage 5 also includes `colab/assess_stage5_recipe_control.py`, the explicit
 same-recipe architecture gate. It reads the dense-control summary and matched
-recurrent SFT summary, verifies recipe metadata, and asks whether recurrent
+recurrent SFT summary, verifies that both arms use the same base model,
+parameter count, ARC split, and recipe metadata, and asks whether recurrent
 selected-answer accuracy beats the dense control in the hard bucket without
 aggregate selected-answer harm. This is the local form of the decisive
 experiment before larger recipe or scale-up runs. It also separates the

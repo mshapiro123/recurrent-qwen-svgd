@@ -42,12 +42,22 @@ def _write_json(path, payload) -> None:
 
 def _metadata(eval_limit: int = 20) -> dict[str, object]:
     return {
+        "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+        "params_b": 0.5,
         "arc_version": "1",
+        "train_split": "training",
+        "eval_split": "evaluation",
         "train_task_limit": 100,
         "eval_task_limit": eval_limit,
+        "color_augmentations": 2,
+        "geometry_augmentations": "all",
         "trace_mode": "symbolic_program",
         "trace_filter": "covered",
         "grid_format": "compact",
+        "program_parse_mode": "fallback",
+        "selection_strategy": "heuristic",
+        "train_steps": 300,
+        "learning_rate": 8e-6,
     }
 
 
@@ -195,6 +205,43 @@ def test_recipe_control_flags_metadata_mismatch(tmp_path) -> None:
         "dense": "symbolic_program",
         "recurrent": "none",
     }
+
+
+def test_recipe_control_flags_base_model_mismatch(tmp_path) -> None:
+    dense_summary, recurrent_summary = _make_dense_and_recurrent(
+        tmp_path,
+        dense_selected=[False] * 20,
+        recurrent_selected=[True] * 20,
+    )
+    payload = json.loads(recurrent_summary.read_text(encoding="utf-8"))
+    payload["metadata"]["model_name"] = "Qwen/Qwen2.5-1.5B-Instruct"
+    payload["metadata"]["params_b"] = 1.5
+    recurrent_summary.write_text(json.dumps(payload), encoding="utf-8")
+
+    assessment = assess_recipe_control(dense_summary_path=dense_summary, recurrent_summary_path=recurrent_summary)
+
+    assert assessment["status"] == "needs_review"
+    assert assessment["metadata_differences"]["model_name"] == {
+        "dense": "Qwen/Qwen2.5-0.5B-Instruct",
+        "recurrent": "Qwen/Qwen2.5-1.5B-Instruct",
+    }
+    assert assessment["metadata_differences"]["params_b"] == {"dense": "0.5", "recurrent": "1.5"}
+
+
+def test_recipe_control_flags_eval_split_mismatch(tmp_path) -> None:
+    dense_summary, recurrent_summary = _make_dense_and_recurrent(
+        tmp_path,
+        dense_selected=[False] * 20,
+        recurrent_selected=[True] * 20,
+    )
+    payload = json.loads(recurrent_summary.read_text(encoding="utf-8"))
+    payload["metadata"]["eval_split"] = "training"
+    recurrent_summary.write_text(json.dumps(payload), encoding="utf-8")
+
+    assessment = assess_recipe_control(dense_summary_path=dense_summary, recurrent_summary_path=recurrent_summary)
+
+    assert assessment["status"] == "needs_review"
+    assert assessment["metadata_differences"]["eval_split"] == {"dense": "evaluation", "recurrent": "training"}
 
 
 def test_recipe_control_cli_writes_outputs(tmp_path, monkeypatch) -> None:

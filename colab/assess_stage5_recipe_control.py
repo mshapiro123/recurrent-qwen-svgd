@@ -24,12 +24,22 @@ RUN_ID = os.environ.get("STAGE5_RECIPE_CONTROL_ASSESSMENT_RUN_ID") or time.strft
 )
 
 METADATA_KEYS = (
+    "model_name",
+    "params_b",
     "arc_version",
+    "train_split",
+    "eval_split",
     "train_task_limit",
     "eval_task_limit",
+    "color_augmentations",
+    "geometry_augmentations",
     "trace_mode",
     "trace_filter",
     "grid_format",
+    "program_parse_mode",
+    "selection_strategy",
+    "train_steps",
+    "learning_rate",
 )
 
 

@@ -109,8 +109,9 @@ Initial harness files:
   this before interpreting recurrent SFT gains as architectural gains.
 - `colab/assess_stage5_recipe_control.py`: no-GPU same-recipe assessment for
   dense-control plus matched recurrent SFT summaries. It verifies recipe
-  metadata and reports whether recurrent selected-answer accuracy beats the
-  dense control in the hard bucket with no aggregate harm. If recurrent
+  metadata, including same base model, parameter count, ARC split, and training
+  recipe fields, and reports whether recurrent selected-answer accuracy beats
+  the dense control in the hard bucket with no aggregate harm. If recurrent
   improves hard-bucket best-of-K candidate coverage but not selected accuracy,
   it reports `needs_selector_conversion` and the planner routes to selector
   rescoring. Aggregate-only gains are treated as more-evidence diagnostics, not
