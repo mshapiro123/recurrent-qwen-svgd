@@ -1,0 +1,98 @@
+{
+  "run_id": "stage5_mcq_gate_20260621_155430",
+  "kind": "stage5_benchmark_suite",
+  "status": "completed_with_failures",
+  "source_summary": null,
+  "checkpoint": "outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt",
+  "benchmarks": [
+    "arc_challenge",
+    "gpqa_lite"
+  ],
+  "score_targets": [
+    "label"
+  ],
+  "aggregates": [
+    "mean"
+  ],
+  "recurrent_mode": "phase1",
+  "recurrent_num_trajectories": 1,
+  "elapsed_seconds": 58.16455554962158,
+  "failures": [
+    {
+      "stage": "prepare",
+      "benchmark": "gpqa_lite",
+      "error": "command failed: /usr/bin/python3 eval/prepare_gpqa_mcq.py --config gpqa_diamond --split train --limit 16 --seed 0 --output_jsonl /content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_mcq_gate_20260621_155430/gpqa_diamond_16.jsonl"
+    }
+  ],
+  "results": {
+    "arc_challenge": {
+      "label": {
+        "base": {
+          "mean": {
+            "correct": 20,
+            "total": 32,
+            "accuracy": 0.625
+          }
+        },
+        "recurrent": {
+          "mean": {
+            "correct": 20,
+            "total": 32,
+            "accuracy": 0.625
+          }
+        }
+      }
+    },
+    "gpqa_lite": {
+      "label": {
+        "base": {},
+        "recurrent": {}
+      }
+    }
+  },
+  "comparisons": {
+    "arc_challenge": {
+      "label": {
+        "mean": {
+          "correct_delta_recurrent_vs_base": 0,
+          "accuracy_delta_recurrent_vs_base": 0.0,
+          "base": {
+            "correct": 20,
+            "total": 32,
+            "accuracy": 0.625
+          },
+          "recurrent": {
+            "correct": 20,
+            "total": 32,
+            "accuracy": 0.625
+          }
+        }
+      }
+    },
+    "gpqa_lite": {
+      "label": {}
+    }
+  },
+  "paired_comparisons": {
+    "arc_challenge": {
+      "label": {
+        "mean": {
+          "paired_examples": 32,
+          "base_correct": 20,
+          "recurrent_correct": 20,
+          "correct_delta_recurrent_vs_base": 0,
+          "base_accuracy": 0.625,
+          "recurrent_accuracy": 0.625,
+          "accuracy_delta_recurrent_vs_base": 0.0,
+          "wins": 4,
+          "losses": 4,
+          "ties": 24,
+          "sign_test_p_value": 1.0
+        }
+      }
+    },
+    "gpqa_lite": {
+      "label": {}
+    }
+  }
+}
