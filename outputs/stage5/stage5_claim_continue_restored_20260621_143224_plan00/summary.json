@@ -1,0 +1,14 @@
+{
+  "run_id": "stage5_claim_continue_restored_20260621_143224_plan00",
+  "source_kind": "bootstrap",
+  "source_summary": null,
+  "reason": "planner_found_no_stage5_summary",
+  "actions": [
+    {
+      "name": "Run Stage 5 ARC-AGI candidate gate",
+      "reason": "No Stage 5 summary exists yet; start with the candidate-source gate to measure base, recurrent, symbolic, and hybrid ARC-AGI exact-grid behavior before SFT or particles.",
+      "command": "STAGE5_ARC_AGI_GATE_RUN_ID=stage5_claim_continue_restored_20260621_143224_candidate_gate python colab/run_stage5_arc_agi_candidate_gate.py",
+      "priority": 10
+    }
+  ]
+}

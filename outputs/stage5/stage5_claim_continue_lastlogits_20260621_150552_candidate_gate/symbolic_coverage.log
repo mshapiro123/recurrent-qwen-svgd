@@ -1,0 +1,12 @@
+{
+  "examples": 20,
+  "examples_with_targets": 20,
+  "exact_symbolic": 0,
+  "exact_symbolic_rate": 0.0,
+  "tasks_with_targets": 20,
+  "tasks_solved_symbolic": 0,
+  "task_solve_rate_symbolic": 0.0,
+  "mean_candidates": 0.0,
+  "exact_by_source": {},
+  "candidate_by_source": {}
+}

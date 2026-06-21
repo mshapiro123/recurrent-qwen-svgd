@@ -1,0 +1,199 @@
+{
+  "tasks_path": "/content/recurrent-qwen-svgd/data/arc_agi/ARC-AGI/data/evaluation",
+  "solutions_path": null,
+  "limit": 20,
+  "summary": {
+    "examples": 20,
+    "examples_with_targets": 20,
+    "exact_symbolic": 0,
+    "exact_symbolic_rate": 0.0,
+    "tasks_with_targets": 20,
+    "tasks_solved_symbolic": 0,
+    "task_solve_rate_symbolic": 0.0,
+    "mean_candidates": 0.0,
+    "exact_by_source": {},
+    "candidate_by_source": {}
+  },
+  "examples": [
+    {
+      "task_id": "00576224",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "009d5c81",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "00dbd492",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "03560426",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "05a7bcf2",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "0607ce86",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "0692e18c",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "070dd51e",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "08573cc6",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "0934a4d8",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "09c534e7",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "0a1d4ef5",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "0a2355a6",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "0b17323b",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "0bb8deee",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "0becf7df",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "0c786b71",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "0c9aba6e",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "0d87d2a6",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    },
+    {
+      "task_id": "0e671a1a",
+      "test_index": 0,
+      "has_target": true,
+      "num_symbolic_candidates": 0,
+      "exact_symbolic": false,
+      "exact_source": null,
+      "candidate_sources": []
+    }
+  ]
+}

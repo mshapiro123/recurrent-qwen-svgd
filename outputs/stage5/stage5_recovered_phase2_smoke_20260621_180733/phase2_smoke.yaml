@@ -1,0 +1,50 @@
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+dtype: bfloat16
+adapter_dtype: float32
+layer_split: 6,18
+max_length: 512
+max_loops: 4
+num_trajectories: 4
+sample_latents: false
+particle_update_mode: svgd
+particle_init_noise: 0.05
+svgd_eps: 1.0
+svgd_repulsion_scale: 2.0
+svgd_bandwidth: median
+svgd_bandwidth_floor: 1.0e-06
+svgd_repulsion_max_norm: null
+svgd_kernel_projection_path: outputs/stage5/stage5_recovered_phase2_smoke_20260621_180733/recovered_phase1_within_group_projection.pt
+svgd_kernel_projection_dim: 8
+svgd_kernel_geometry: euclidean
+svgd_projection_seed: 0
+latent_dim: 256
+latent_scale_init: 0.01
+latent_adapter_std: 0.0001
+latent_injection_mode: pre
+initial_halt_prob: 0.15
+beta: 0.12
+eta: 0.0
+rho: 0.001
+batch_size: 1
+learning_rate: 5.0e-06
+weight_decay: 0.0
+max_grad_norm: 0.3
+max_steps: 50
+save_every: 50
+log_every: 5
+train_on_prompt: false
+output_dir: outputs/stage5/stage5_recovered_phase2_smoke_20260621_180733/phase2
+resume_from: outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/phase1/phase1_step_125.pt
+distillation:
+  enabled: true
+  weight: 0.4
+  temperature: 2.0
+  'on': response
+  target: trajectories
+  teacher_model_name: Qwen/Qwen2.5-0.5B-Instruct
+  dtype: bfloat16
+lora:
+  enabled: true
+  rank: 8
+  alpha: 16
+  dropout: 0.0

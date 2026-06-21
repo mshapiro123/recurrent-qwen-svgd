@@ -1,0 +1,24 @@
+{
+  "run_id": "stage5_claim_continue_restored_20260621_143224_candidate_gate",
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "params_b": 0.5,
+  "arc_version": "1",
+  "arc_split": "evaluation",
+  "limit": 20,
+  "tasks_path": "/content/recurrent-qwen-svgd/data/arc_agi/ARC-AGI/data/evaluation",
+  "phase1_checkpoint": "outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt",
+  "grid_format": "compact",
+  "selection_strategy": "heuristic",
+  "dtype": "bfloat16",
+  "adapter_dtype": "float32",
+  "variants": [
+    "symbolic_only",
+    "symbolic_program_only",
+    "base_model_only",
+    "base_hybrid_symbolic_first",
+    "base_hybrid_program_first",
+    "phase1_model_only",
+    "phase1_hybrid_symbolic_first",
+    "phase1_hybrid_program_first"
+  ]
+}

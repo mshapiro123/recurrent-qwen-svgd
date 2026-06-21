@@ -1,0 +1,12 @@
+$ git clone --depth 1 https://github.com/fchollet/ARC-AGI.git /content/recurrent-qwen-svgd/data/arc_agi/ARC-AGI
+Cloning into '/content/recurrent-qwen-svgd/data/arc_agi/ARC-AGI'...
+Drive mount skipped/failed: 'NoneType' object has no attribute 'kernel'
+Traceback (most recent call last):
+  File "/content/recurrent-qwen-svgd/colab/run_stage5_arc_agi_candidate_gate.py", line 411, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/content/recurrent-qwen-svgd/colab/run_stage5_arc_agi_candidate_gate.py", line 382, in main
+    restore_phase1_checkpoint()
+  File "/content/recurrent-qwen-svgd/colab/run_stage5_arc_agi_candidate_gate.py", line 129, in restore_phase1_checkpoint
+    raise FileNotFoundError(f"Missing Phase1 checkpoint: {PHASE1_CKPT}")
+FileNotFoundError: Missing Phase1 checkpoint: /content/recurrent-qwen-svgd/outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt

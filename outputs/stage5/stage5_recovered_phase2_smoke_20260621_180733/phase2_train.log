@@ -1,0 +1,26 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 4173.58it/s]
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 4764.78it/s]
+distillation_teacher=Qwen/Qwen2.5-0.5B-Instruct
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/phase1/phase1_step_125.pt loaded_keys=173
+step=0 mean_expected_loops=2.8632 mean_halt_entropy=1.2820 trajectory_diversity=0.2740 svgd_bandwidth=126.9001 svgd_pairwise_distance=11.8826 svgd_drift_rms=0.6283 svgd_repulsion_rms_pre_clip=0.0570 svgd_repulsion_rms=0.0570 svgd_repulsion_clip_fraction=0.0000 svgd_velocity_rms=0.2996 expected_ce=3.2908 halting_kl=0.2210 loss=4.0482 base_distill_kl=1.8277
+step=5 mean_expected_loops=2.8671 mean_halt_entropy=1.2889 trajectory_diversity=0.1203 svgd_bandwidth=55.4817 svgd_pairwise_distance=7.3694 svgd_drift_rms=0.6218 svgd_repulsion_rms_pre_clip=0.0348 svgd_repulsion_rms=0.0348 svgd_repulsion_clip_fraction=0.0000 svgd_velocity_rms=0.2843 expected_ce=1.5471 halting_kl=0.5298 loss=2.2957 base_distill_kl=1.7128
+step=10 mean_expected_loops=2.8529 mean_halt_entropy=1.2949 trajectory_diversity=0.0832 svgd_bandwidth=26.6398 svgd_pairwise_distance=6.0118 svgd_drift_rms=0.6211 svgd_repulsion_rms_pre_clip=0.0294 svgd_repulsion_rms=0.0294 svgd_repulsion_clip_fraction=0.0000 svgd_velocity_rms=0.2661 expected_ce=1.8292 halting_kl=0.5154 loss=2.3354 base_distill_kl=1.1111
+Traceback (most recent call last):
+  File "/content/recurrent-qwen-svgd/training/train_phase2_stochastic.py", line 212, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/content/recurrent-qwen-svgd/training/train_phase2_stochastic.py", line 183, in main
+    output.loss.backward()
+  File "/usr/local/lib/python3.12/dist-packages/torch/_tensor.py", line 631, in backward
+    torch.autograd.backward(
+  File "/usr/local/lib/python3.12/dist-packages/torch/autograd/__init__.py", line 381, in backward
+    _engine_run_backward(
+  File "/usr/local/lib/python3.12/dist-packages/torch/autograd/graph.py", line 869, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 4.64 GiB. GPU 0 has a total capacity of 39.49 GiB of which 3.03 GiB is free. Including non-PyTorch memory, this process has 36.45 GiB memory in use. Of the allocated memory 26.72 GiB is allocated by PyTorch, and 9.22 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)

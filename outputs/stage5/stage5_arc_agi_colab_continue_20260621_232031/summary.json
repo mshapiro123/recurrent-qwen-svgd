@@ -1,0 +1,53 @@
+{
+  "run_id": "stage5_arc_agi_colab_continue_20260621_232031",
+  "action_index": 0,
+  "max_actions": 1,
+  "allow_repeat": false,
+  "execute_requested": true,
+  "steps": [
+    {
+      "step": 0,
+      "planner_summary": "outputs/stage5/stage5_arc_agi_colab_continue_20260621_232031_plan/summary.json",
+      "planner": {
+        "run_id": "stage5_arc_agi_colab_continue_20260621_232031_plan",
+        "source_summary": "outputs/stage5/stage5_benchmark_assessment_20260621_183952/summary.json",
+        "source_kind": "benchmark_suite_assessment",
+        "actions": [
+          {
+            "name": "Run competence-preserving ARC-mix proxy gate",
+            "reason": "Credit-saving probe: the broader benchmark gate says recurrent still trails base, mostly through competence tax; run one ARC-Easy-weighted mixed-objective proxy gate and stop before a full assessment.",
+            "command": "STAGE5_ARC_MIX_RUN_ID=stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe STAGE5_ARC_MIX_SOURCE_SUMMARY=outputs/stage5/stage5_benchmark_assessment_20260621_183952/summary.json STAGE5_ARC_MIX_ARMS=arc_mix_response_w005_lr2e6 STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT=2 STAGE5_ARC_MIX_ARC_EASY_REPEAT=4 STAGE5_ARC_MIX_ARC_EVAL_LIMIT=128 STAGE5_ARC_MIX_OPUS_LIMIT=3000 python colab/run_stage5_balanced_arc_mix_gate.py",
+            "priority": 10
+          }
+        ]
+      },
+      "selected_action": {
+        "name": "Run competence-preserving ARC-mix proxy gate",
+        "reason": "Credit-saving probe: the broader benchmark gate says recurrent still trails base, mostly through competence tax; run one ARC-Easy-weighted mixed-objective proxy gate and stop before a full assessment.",
+        "command": "STAGE5_ARC_MIX_RUN_ID=stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe STAGE5_ARC_MIX_SOURCE_SUMMARY=outputs/stage5/stage5_benchmark_assessment_20260621_183952/summary.json STAGE5_ARC_MIX_ARMS=arc_mix_response_w005_lr2e6 STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT=2 STAGE5_ARC_MIX_ARC_EASY_REPEAT=4 STAGE5_ARC_MIX_ARC_EVAL_LIMIT=128 STAGE5_ARC_MIX_OPUS_LIMIT=3000 python colab/run_stage5_balanced_arc_mix_gate.py",
+        "priority": 10
+      },
+      "parsed_command": {
+        "kind": "python",
+        "env": {
+          "STAGE5_ARC_MIX_RUN_ID": "stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe",
+          "STAGE5_ARC_MIX_SOURCE_SUMMARY": "outputs/stage5/stage5_benchmark_assessment_20260621_183952/summary.json",
+          "STAGE5_ARC_MIX_ARMS": "arc_mix_response_w005_lr2e6",
+          "STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT": "2",
+          "STAGE5_ARC_MIX_ARC_EASY_REPEAT": "4",
+          "STAGE5_ARC_MIX_ARC_EVAL_LIMIT": "128",
+          "STAGE5_ARC_MIX_OPUS_LIMIT": "3000"
+        },
+        "argv": [
+          "/usr/bin/python3",
+          "colab/run_stage5_balanced_arc_mix_gate.py"
+        ]
+      },
+      "repeat_detected": false,
+      "execution": {
+        "executed": true,
+        "returncode": 0
+      }
+    }
+  ]
+}

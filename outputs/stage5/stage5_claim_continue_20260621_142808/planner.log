@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/content/recurrent-qwen-svgd/colab/plan_stage5_next_run.py", line 2391, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/content/recurrent-qwen-svgd/colab/plan_stage5_next_run.py", line 2378, in main
+    summary_path = resolve_source_summary()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/recurrent-qwen-svgd/colab/plan_stage5_next_run.py", line 112, in resolve_source_summary
+    return resolve_path(SOURCE_SUMMARY) if SOURCE_SUMMARY else latest_summary()
+                                                               ^^^^^^^^^^^^^^^^
+  File "/content/recurrent-qwen-svgd/colab/plan_stage5_next_run.py", line 107, in latest_summary
+    raise FileNotFoundError("No Stage 5 result summary found. Set STAGE5_ARC_AGI_NEXT_PLAN_SOURCE_SUMMARY.")
+FileNotFoundError: No Stage 5 result summary found. Set STAGE5_ARC_AGI_NEXT_PLAN_SOURCE_SUMMARY.

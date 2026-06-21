@@ -1,0 +1,43 @@
+{
+  "run_id": "stage5_release_gate_20260621_233156",
+  "gate": "stage5_release_benchmark_readiness",
+  "status": "needs_benchmark_confirmation",
+  "passed": false,
+  "next_step": "Run or replicate recovered-vs-base ARC-AGI benchmark on a larger held-out slice.",
+  "min_arc_examples": 100,
+  "criteria": [
+    {
+      "name": "arc_benchmark_confirmation",
+      "passed": false,
+      "reason": "Need a larger or non-negative recovered-vs-base ARC-AGI benchmark before broader claims.",
+      "evidence": {
+        "present": false
+      }
+    },
+    {
+      "name": "same_recipe_architecture_or_selector_conversion",
+      "passed": false,
+      "reason": "Same-recipe architecture gate is 'missing', and selector conversion has not passed.",
+      "evidence": {
+        "architecture": {
+          "present": false
+        },
+        "selector_conversion": {
+          "present": false
+        }
+      }
+    },
+    {
+      "name": "hf_export_artifact",
+      "passed": false,
+      "reason": "Need an HF export artifact with checkpoint metadata.",
+      "evidence": {
+        "present": false
+      }
+    }
+  ],
+  "benchmark_summary": null,
+  "recipe_control_summary": null,
+  "selector_conversion_summary": null,
+  "hf_export_summary": null
+}

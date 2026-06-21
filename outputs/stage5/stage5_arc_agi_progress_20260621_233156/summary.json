@@ -1,0 +1,921 @@
+{
+  "run_id": "stage5_arc_agi_progress_20260621_233156",
+  "scan_root": "outputs/stage5",
+  "scanned_files": 61,
+  "parsed_records": 14,
+  "skipped_files": [],
+  "records": [
+    {
+      "path": "outputs/stage5/stage5_arc_fast_smoke5_20260621_154412/base_model_only_summary.json",
+      "run_id": "stage5_arc_fast_smoke5_20260621_154412",
+      "kind": "eval_summary",
+      "arm": "base",
+      "label": "base_model_only",
+      "examples": 5,
+      "selected_exact": 0,
+      "best_of_k_exact": 0,
+      "first_exact": 0,
+      "selected_accuracy": 0.0,
+      "best_of_k_accuracy": 0.0,
+      "valid_candidate_rate": 0.0
+    },
+    {
+      "path": "outputs/stage5/stage5_arc_fast_smoke5_20260621_154412/phase1_model_only_summary.json",
+      "run_id": "stage5_arc_fast_smoke5_20260621_154412",
+      "kind": "eval_summary",
+      "arm": "phase1_start",
+      "label": "phase1_model_only",
+      "examples": 5,
+      "selected_exact": 0,
+      "best_of_k_exact": 0,
+      "first_exact": 0,
+      "selected_accuracy": 0.0,
+      "best_of_k_accuracy": 0.0,
+      "valid_candidate_rate": 0.0
+    },
+    {
+      "path": "outputs/stage5/stage5_candidate_gate_fast128_20260621_153247/base_hybrid_symbolic_first_summary.json",
+      "run_id": "stage5_candidate_gate_fast128_20260621_153247",
+      "kind": "eval_summary",
+      "arm": "base",
+      "label": "base_hybrid_symbolic_first",
+      "examples": 20,
+      "selected_exact": 0,
+      "best_of_k_exact": 0,
+      "first_exact": 0,
+      "selected_accuracy": 0.0,
+      "best_of_k_accuracy": 0.0,
+      "valid_candidate_rate": 0.2
+    },
+    {
+      "path": "outputs/stage5/stage5_candidate_gate_fast128_20260621_153247/base_model_only_summary.json",
+      "run_id": "stage5_candidate_gate_fast128_20260621_153247",
+      "kind": "eval_summary",
+      "arm": "base",
+      "label": "base_model_only",
+      "examples": 20,
+      "selected_exact": 0,
+      "best_of_k_exact": 0,
+      "first_exact": 0,
+      "selected_accuracy": 0.0,
+      "best_of_k_accuracy": 0.0,
+      "valid_candidate_rate": 0.2
+    },
+    {
+      "path": "outputs/stage5/stage5_claim_continue_lastlogits_20260621_150552_candidate_gate/base_hybrid_program_first_summary.json",
+      "run_id": "stage5_claim_continue_lastlogits_20260621_150552_candidate_gate",
+      "kind": "eval_summary",
+      "arm": "base",
+      "label": "base_hybrid_program_first",
+      "examples": 20,
+      "selected_exact": 0,
+      "best_of_k_exact": 0,
+      "first_exact": 0,
+      "selected_accuracy": 0.0,
+      "best_of_k_accuracy": 0.0,
+      "valid_candidate_rate": 0.25
+    },
+    {
+      "path": "outputs/stage5/stage5_claim_continue_lastlogits_20260621_150552_candidate_gate/base_hybrid_symbolic_first_summary.json",
+      "run_id": "stage5_claim_continue_lastlogits_20260621_150552_candidate_gate",
+      "kind": "eval_summary",
+      "arm": "base",
+      "label": "base_hybrid_symbolic_first",
+      "examples": 20,
+      "selected_exact": 0,
+      "best_of_k_exact": 0,
+      "first_exact": 0,
+      "selected_accuracy": 0.0,
+      "best_of_k_accuracy": 0.0,
+      "valid_candidate_rate": 0.25
+    },
+    {
+      "path": "outputs/stage5/stage5_claim_continue_lastlogits_20260621_150552_candidate_gate/base_model_only_summary.json",
+      "run_id": "stage5_claim_continue_lastlogits_20260621_150552_candidate_gate",
+      "kind": "eval_summary",
+      "arm": "base",
+      "label": "base_model_only",
+      "examples": 20,
+      "selected_exact": 0,
+      "best_of_k_exact": 0,
+      "first_exact": 0,
+      "selected_accuracy": 0.0,
+      "best_of_k_accuracy": 0.0,
+      "valid_candidate_rate": 0.25
+    },
+    {
+      "path": "outputs/stage5/stage5_claim_continue_lastlogits_20260621_150552_candidate_gate/symbolic_only_summary.json",
+      "run_id": "stage5_claim_continue_lastlogits_20260621_150552_candidate_gate",
+      "kind": "eval_summary",
+      "arm": "unknown",
+      "label": "symbolic_only",
+      "examples": 20,
+      "selected_exact": 0,
+      "best_of_k_exact": 0,
+      "first_exact": 0,
+      "selected_accuracy": 0.0,
+      "best_of_k_accuracy": 0.0,
+      "valid_candidate_rate": 0.0
+    },
+    {
+      "path": "outputs/stage5/stage5_claim_continue_lastlogits_20260621_150552_candidate_gate/symbolic_program_only_summary.json",
+      "run_id": "stage5_claim_continue_lastlogits_20260621_150552_candidate_gate",
+      "kind": "eval_summary",
+      "arm": "unknown",
+      "label": "symbolic_program_only",
+      "examples": 20,
+      "selected_exact": 0,
+      "best_of_k_exact": 0,
+      "first_exact": 0,
+      "selected_accuracy": 0.0,
+      "best_of_k_accuracy": 0.0,
+      "valid_candidate_rate": 0.0
+    },
+    {
+      "path": "outputs/stage5/stage5_claim_continue_restored_20260621_143224_candidate_gate/base_hybrid_program_first_summary.json",
+      "run_id": "stage5_claim_continue_restored_20260621_143224_candidate_gate",
+      "kind": "eval_summary",
+      "arm": "base",
+      "label": "base_hybrid_program_first",
+      "examples": 20,
+      "selected_exact": 0,
+      "best_of_k_exact": 0,
+      "first_exact": 0,
+      "selected_accuracy": 0.0,
+      "best_of_k_accuracy": 0.0,
+      "valid_candidate_rate": 0.25
+    },
+    {
+      "path": "outputs/stage5/stage5_claim_continue_restored_20260621_143224_candidate_gate/base_hybrid_symbolic_first_summary.json",
+      "run_id": "stage5_claim_continue_restored_20260621_143224_candidate_gate",
+      "kind": "eval_summary",
+      "arm": "base",
+      "label": "base_hybrid_symbolic_first",
+      "examples": 20,
+      "selected_exact": 0,
+      "best_of_k_exact": 0,
+      "first_exact": 0,
+      "selected_accuracy": 0.0,
+      "best_of_k_accuracy": 0.0,
+      "valid_candidate_rate": 0.25
+    },
+    {
+      "path": "outputs/stage5/stage5_claim_continue_restored_20260621_143224_candidate_gate/base_model_only_summary.json",
+      "run_id": "stage5_claim_continue_restored_20260621_143224_candidate_gate",
+      "kind": "eval_summary",
+      "arm": "base",
+      "label": "base_model_only",
+      "examples": 20,
+      "selected_exact": 0,
+      "best_of_k_exact": 0,
+      "first_exact": 0,
+      "selected_accuracy": 0.0,
+      "best_of_k_accuracy": 0.0,
+      "valid_candidate_rate": 0.25
+    },
+    {
+      "path": "outputs/stage5/stage5_claim_continue_restored_20260621_143224_candidate_gate/symbolic_only_summary.json",
+      "run_id": "stage5_claim_continue_restored_20260621_143224_candidate_gate",
+      "kind": "eval_summary",
+      "arm": "unknown",
+      "label": "symbolic_only",
+      "examples": 20,
+      "selected_exact": 0,
+      "best_of_k_exact": 0,
+      "first_exact": 0,
+      "selected_accuracy": 0.0,
+      "best_of_k_accuracy": 0.0,
+      "valid_candidate_rate": 0.0
+    },
+    {
+      "path": "outputs/stage5/stage5_claim_continue_restored_20260621_143224_candidate_gate/symbolic_program_only_summary.json",
+      "run_id": "stage5_claim_continue_restored_20260621_143224_candidate_gate",
+      "kind": "eval_summary",
+      "arm": "unknown",
+      "label": "symbolic_program_only",
+      "examples": 20,
+      "selected_exact": 0,
+      "best_of_k_exact": 0,
+      "first_exact": 0,
+      "selected_accuracy": 0.0,
+      "best_of_k_accuracy": 0.0,
+      "valid_candidate_rate": 0.0
+    }
+  ],
+  "best_by_arm": {
+    "base": {
+      "path": "outputs/stage5/stage5_claim_continue_lastlogits_20260621_150552_candidate_gate/base_hybrid_program_first_summary.json",
+      "run_id": "stage5_claim_continue_lastlogits_20260621_150552_candidate_gate",
+      "kind": "eval_summary",
+      "arm": "base",
+      "label": "base_hybrid_program_first",
+      "examples": 20,
+      "selected_exact": 0,
+      "best_of_k_exact": 0,
+      "first_exact": 0,
+      "selected_accuracy": 0.0,
+      "best_of_k_accuracy": 0.0,
+      "valid_candidate_rate": 0.25
+    },
+    "phase1_start": {
+      "path": "outputs/stage5/stage5_arc_fast_smoke5_20260621_154412/phase1_model_only_summary.json",
+      "run_id": "stage5_arc_fast_smoke5_20260621_154412",
+      "kind": "eval_summary",
+      "arm": "phase1_start",
+      "label": "phase1_model_only",
+      "examples": 5,
+      "selected_exact": 0,
+      "best_of_k_exact": 0,
+      "first_exact": 0,
+      "selected_accuracy": 0.0,
+      "best_of_k_accuracy": 0.0,
+      "valid_candidate_rate": 0.0
+    },
+    "unknown": {
+      "path": "outputs/stage5/stage5_claim_continue_lastlogits_20260621_150552_candidate_gate/symbolic_only_summary.json",
+      "run_id": "stage5_claim_continue_lastlogits_20260621_150552_candidate_gate",
+      "kind": "eval_summary",
+      "arm": "unknown",
+      "label": "symbolic_only",
+      "examples": 20,
+      "selected_exact": 0,
+      "best_of_k_exact": 0,
+      "first_exact": 0,
+      "selected_accuracy": 0.0,
+      "best_of_k_accuracy": 0.0,
+      "valid_candidate_rate": 0.0
+    }
+  },
+  "recovered_vs_base_gaps": [],
+  "gate1_assessments": [],
+  "gate2_assessments": [],
+  "selector_replications": [],
+  "recipe_selector_conversions": [],
+  "recipe_control_assessments": [],
+  "release_gate_assessments": [
+    {
+      "path": "outputs/stage5/stage5_release_gate_20260621_233156/summary.json",
+      "run_id": "stage5_release_gate_20260621_233156",
+      "status": "needs_benchmark_confirmation",
+      "passed": false,
+      "next_step": "Run or replicate recovered-vs-base ARC-AGI benchmark on a larger held-out slice.",
+      "min_arc_examples": 100,
+      "criteria": [
+        {
+          "name": "arc_benchmark_confirmation",
+          "passed": false,
+          "reason": "Need a larger or non-negative recovered-vs-base ARC-AGI benchmark before broader claims.",
+          "evidence": {
+            "present": false
+          }
+        },
+        {
+          "name": "same_recipe_architecture_or_selector_conversion",
+          "passed": false,
+          "reason": "Same-recipe architecture gate is 'missing', and selector conversion has not passed.",
+          "evidence": {
+            "architecture": {
+              "present": false
+            },
+            "selector_conversion": {
+              "present": false
+            }
+          }
+        },
+        {
+          "name": "hf_export_artifact",
+          "passed": false,
+          "reason": "Need an HF export artifact with checkpoint metadata.",
+          "evidence": {
+            "present": false
+          }
+        }
+      ]
+    }
+  ],
+  "benchmark_suite_assessments": [
+    {
+      "path": "outputs/stage5/stage5_arc128_phase2_k4_no_svgd_20260621_161246/summary.json",
+      "run_id": "stage5_arc128_phase2_k4_no_svgd_20260621_161246",
+      "status": "completed",
+      "checkpoint": "outputs/qwen_0_5b_phase2_svgd_recreated_smoke25/phase2_step_25.pt",
+      "benchmarks": [
+        "arc_challenge"
+      ],
+      "deltas": [
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "max",
+          "correct_delta_recurrent_vs_base": -9,
+          "accuracy_delta_recurrent_vs_base": -0.0703125,
+          "paired_examples": 128,
+          "wins": 16,
+          "losses": 25,
+          "ties": 87,
+          "sign_test_p_value": 0.21102359760880063
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "mean",
+          "correct_delta_recurrent_vs_base": -9,
+          "accuracy_delta_recurrent_vs_base": -0.0703125,
+          "paired_examples": 128,
+          "wins": 16,
+          "losses": 25,
+          "ties": 87,
+          "sign_test_p_value": 0.21102359760880063
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "vote",
+          "correct_delta_recurrent_vs_base": -9,
+          "accuracy_delta_recurrent_vs_base": -0.0703125,
+          "paired_examples": 128,
+          "wins": 16,
+          "losses": 25,
+          "ties": 87,
+          "sign_test_p_value": 0.21102359760880063
+        }
+      ]
+    },
+    {
+      "path": "outputs/stage5/stage5_arc128_phase2_svgd_k4_20260621_160916/summary.json",
+      "run_id": "stage5_arc128_phase2_svgd_k4_20260621_160916",
+      "status": "completed",
+      "checkpoint": "outputs/qwen_0_5b_phase2_svgd_recreated_smoke25/phase2_step_25.pt",
+      "benchmarks": [
+        "arc_challenge"
+      ],
+      "deltas": [
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "max",
+          "correct_delta_recurrent_vs_base": -5,
+          "accuracy_delta_recurrent_vs_base": -0.0390625,
+          "paired_examples": 128,
+          "wins": 1,
+          "losses": 6,
+          "ties": 121,
+          "sign_test_p_value": 0.125
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "mean",
+          "correct_delta_recurrent_vs_base": -6,
+          "accuracy_delta_recurrent_vs_base": -0.046875,
+          "paired_examples": 128,
+          "wins": 1,
+          "losses": 7,
+          "ties": 120,
+          "sign_test_p_value": 0.0703125
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "vote",
+          "correct_delta_recurrent_vs_base": -5,
+          "accuracy_delta_recurrent_vs_base": -0.0390625,
+          "paired_examples": 128,
+          "wins": 2,
+          "losses": 7,
+          "ties": 119,
+          "sign_test_p_value": 0.1796875
+        }
+      ]
+    },
+    {
+      "path": "outputs/stage5/stage5_arc64_phase2_k4_no_svgd_20260621_160716/summary.json",
+      "run_id": "stage5_arc64_phase2_k4_no_svgd_20260621_160716",
+      "status": "completed",
+      "checkpoint": "outputs/qwen_0_5b_phase2_svgd_recreated_smoke25/phase2_step_25.pt",
+      "benchmarks": [
+        "arc_challenge"
+      ],
+      "deltas": [
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "max",
+          "correct_delta_recurrent_vs_base": -4,
+          "accuracy_delta_recurrent_vs_base": -0.0625,
+          "paired_examples": 64,
+          "wins": 7,
+          "losses": 11,
+          "ties": 46,
+          "sign_test_p_value": 0.480682373046875
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "mean",
+          "correct_delta_recurrent_vs_base": -4,
+          "accuracy_delta_recurrent_vs_base": -0.0625,
+          "paired_examples": 64,
+          "wins": 7,
+          "losses": 11,
+          "ties": 46,
+          "sign_test_p_value": 0.480682373046875
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "vote",
+          "correct_delta_recurrent_vs_base": -4,
+          "accuracy_delta_recurrent_vs_base": -0.0625,
+          "paired_examples": 64,
+          "wins": 7,
+          "losses": 11,
+          "ties": 46,
+          "sign_test_p_value": 0.480682373046875
+        }
+      ]
+    },
+    {
+      "path": "outputs/stage5/stage5_arc64_phase2_svgd_k4_20260621_160421/summary.json",
+      "run_id": "stage5_arc64_phase2_svgd_k4_20260621_160421",
+      "status": "completed",
+      "checkpoint": "outputs/qwen_0_5b_phase2_svgd_recreated_smoke25/phase2_step_25.pt",
+      "benchmarks": [
+        "arc_challenge"
+      ],
+      "deltas": [
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "max",
+          "correct_delta_recurrent_vs_base": -2,
+          "accuracy_delta_recurrent_vs_base": -0.03125,
+          "paired_examples": 64,
+          "wins": 1,
+          "losses": 3,
+          "ties": 60,
+          "sign_test_p_value": 0.625
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "mean",
+          "correct_delta_recurrent_vs_base": -1,
+          "accuracy_delta_recurrent_vs_base": -0.015625,
+          "paired_examples": 64,
+          "wins": 1,
+          "losses": 2,
+          "ties": 61,
+          "sign_test_p_value": 1.0
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "vote",
+          "correct_delta_recurrent_vs_base": 0,
+          "accuracy_delta_recurrent_vs_base": 0.0,
+          "paired_examples": 64,
+          "wins": 2,
+          "losses": 2,
+          "ties": 60,
+          "sign_test_p_value": 1.0
+        }
+      ]
+    },
+    {
+      "path": "outputs/stage5/stage5_arc_challenge_128_20260621_155723/summary.json",
+      "run_id": "stage5_arc_challenge_128_20260621_155723",
+      "status": "completed",
+      "checkpoint": "outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt",
+      "benchmarks": [
+        "arc_challenge"
+      ],
+      "deltas": [
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "mean",
+          "correct_delta_recurrent_vs_base": -2,
+          "accuracy_delta_recurrent_vs_base": -0.015625,
+          "paired_examples": 128,
+          "wins": 17,
+          "losses": 19,
+          "ties": 92,
+          "sign_test_p_value": 0.8679394004284404
+        }
+      ]
+    },
+    {
+      "path": "outputs/stage5/stage5_mcq_gate_20260621_155430/summary.json",
+      "run_id": "stage5_mcq_gate_20260621_155430",
+      "status": "completed_with_failures",
+      "checkpoint": "outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt",
+      "benchmarks": [
+        "arc_challenge",
+        "gpqa_lite"
+      ],
+      "deltas": [
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "mean",
+          "correct_delta_recurrent_vs_base": 0,
+          "accuracy_delta_recurrent_vs_base": 0.0,
+          "paired_examples": 32,
+          "wins": 4,
+          "losses": 4,
+          "ties": 24,
+          "sign_test_p_value": 1.0
+        }
+      ]
+    },
+    {
+      "path": "outputs/stage5/stage5_phase1_best_arceasy_full_20260621_184638/summary.json",
+      "run_id": "stage5_phase1_best_arceasy_full_20260621_184638",
+      "status": "completed",
+      "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_200.pt",
+      "benchmarks": [
+        "arc_easy"
+      ],
+      "deltas": [
+        {
+          "benchmark": "arc_easy",
+          "score_target": "label",
+          "aggregate": "mean",
+          "correct_delta_recurrent_vs_base": -12,
+          "accuracy_delta_recurrent_vs_base": -0.021052631578947323,
+          "paired_examples": 570,
+          "wins": 15,
+          "losses": 27,
+          "ties": 528,
+          "sign_test_p_value": 0.08842954698775429
+        }
+      ]
+    },
+    {
+      "path": "outputs/stage5/stage5_phase1_best_gpqa16_20260621_184030/summary.json",
+      "run_id": "stage5_phase1_best_gpqa16_20260621_184030",
+      "status": "completed_with_failures",
+      "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_200.pt",
+      "benchmarks": [
+        "gpqa_lite"
+      ],
+      "deltas": []
+    },
+    {
+      "path": "outputs/stage5/stage5_phase1_step150_arcchallenge_full_20260621_194028/summary.json",
+      "run_id": "stage5_phase1_step150_arcchallenge_full_20260621_194028",
+      "status": "completed",
+      "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_150.pt",
+      "benchmarks": [
+        "arc_challenge"
+      ],
+      "deltas": [
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "mean",
+          "correct_delta_recurrent_vs_base": 2,
+          "accuracy_delta_recurrent_vs_base": 0.006688963210702337,
+          "paired_examples": 299,
+          "wins": 24,
+          "losses": 22,
+          "ties": 253,
+          "sign_test_p_value": 0.8829959121223965
+        }
+      ]
+    },
+    {
+      "path": "outputs/stage5/stage5_recovered_phase1_arc256_20260621_172908/summary.json",
+      "run_id": "stage5_recovered_phase1_arc256_20260621_172908",
+      "status": "completed",
+      "checkpoint": "outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/phase1/phase1_step_125.pt",
+      "benchmarks": [
+        "arc_challenge"
+      ],
+      "deltas": [
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "mean",
+          "correct_delta_recurrent_vs_base": -2,
+          "accuracy_delta_recurrent_vs_base": -0.0078125,
+          "paired_examples": 256,
+          "wins": 24,
+          "losses": 26,
+          "ties": 206,
+          "sign_test_p_value": 0.887724827340783
+        }
+      ]
+    },
+    {
+      "path": "outputs/stage5/stage5_recovered_phase1_arcfull_20260621_173349/summary.json",
+      "run_id": "stage5_recovered_phase1_arcfull_20260621_173349",
+      "status": "completed",
+      "checkpoint": "outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/phase1/phase1_step_125.pt",
+      "benchmarks": [
+        "arc_challenge"
+      ],
+      "deltas": [
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "mean",
+          "correct_delta_recurrent_vs_base": 1,
+          "accuracy_delta_recurrent_vs_base": 0.0033444816053511683,
+          "paired_examples": 299,
+          "wins": 29,
+          "losses": 28,
+          "ties": 242,
+          "sign_test_p_value": 1.0
+        }
+      ]
+    },
+    {
+      "path": "outputs/stage5/stage5_recovered_phase1_particles_arc_20260621_174231_rep0_k4_arc256/summary.json",
+      "run_id": "stage5_recovered_phase1_particles_arc_20260621_174231_rep0_k4_arc256",
+      "status": "completed",
+      "checkpoint": "outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/phase1/phase1_step_125.pt",
+      "benchmarks": [
+        "arc_challenge"
+      ],
+      "deltas": [
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "max",
+          "correct_delta_recurrent_vs_base": -9,
+          "accuracy_delta_recurrent_vs_base": -0.03515625,
+          "paired_examples": 256,
+          "wins": 13,
+          "losses": 22,
+          "ties": 221,
+          "sign_test_p_value": 0.17546524899080396
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "mean",
+          "correct_delta_recurrent_vs_base": -12,
+          "accuracy_delta_recurrent_vs_base": -0.046875,
+          "paired_examples": 256,
+          "wins": 12,
+          "losses": 24,
+          "ties": 220,
+          "sign_test_p_value": 0.06524533522315323
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "vote",
+          "correct_delta_recurrent_vs_base": -13,
+          "accuracy_delta_recurrent_vs_base": -0.05078125,
+          "paired_examples": 256,
+          "wins": 12,
+          "losses": 25,
+          "ties": 219,
+          "sign_test_p_value": 0.04703102743951604
+        }
+      ]
+    },
+    {
+      "path": "outputs/stage5/stage5_recovered_phase1_particles_arc_20260621_174231_rep2_k4_arc256/summary.json",
+      "run_id": "stage5_recovered_phase1_particles_arc_20260621_174231_rep2_k4_arc256",
+      "status": "completed",
+      "checkpoint": "outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/phase1/phase1_step_125.pt",
+      "benchmarks": [
+        "arc_challenge"
+      ],
+      "deltas": [
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "max",
+          "correct_delta_recurrent_vs_base": -8,
+          "accuracy_delta_recurrent_vs_base": -0.03125,
+          "paired_examples": 256,
+          "wins": 12,
+          "losses": 20,
+          "ties": 224,
+          "sign_test_p_value": 0.21532714972272515
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "mean",
+          "correct_delta_recurrent_vs_base": -4,
+          "accuracy_delta_recurrent_vs_base": -0.015625,
+          "paired_examples": 256,
+          "wins": 12,
+          "losses": 16,
+          "ties": 228,
+          "sign_test_p_value": 0.5715881884098053
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "vote",
+          "correct_delta_recurrent_vs_base": -4,
+          "accuracy_delta_recurrent_vs_base": -0.015625,
+          "paired_examples": 256,
+          "wins": 13,
+          "losses": 17,
+          "ties": 226,
+          "sign_test_p_value": 0.584664711728692
+        }
+      ]
+    },
+    {
+      "path": "outputs/stage5/stage5_recovered_phase2_smoke_20260621_175538_arc128/summary.json",
+      "run_id": "stage5_recovered_phase2_smoke_20260621_175538_arc128",
+      "status": "completed",
+      "checkpoint": "outputs/stage5/stage5_recovered_phase2_smoke_20260621_175538/phase2/phase2_step_25.pt",
+      "benchmarks": [
+        "arc_challenge"
+      ],
+      "deltas": [
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "max",
+          "correct_delta_recurrent_vs_base": -4,
+          "accuracy_delta_recurrent_vs_base": -0.03125,
+          "paired_examples": 128,
+          "wins": 7,
+          "losses": 11,
+          "ties": 110,
+          "sign_test_p_value": 0.480682373046875
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "mean",
+          "correct_delta_recurrent_vs_base": -2,
+          "accuracy_delta_recurrent_vs_base": -0.015625,
+          "paired_examples": 128,
+          "wins": 7,
+          "losses": 9,
+          "ties": 112,
+          "sign_test_p_value": 0.803619384765625
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "vote",
+          "correct_delta_recurrent_vs_base": -5,
+          "accuracy_delta_recurrent_vs_base": -0.0390625,
+          "paired_examples": 128,
+          "wins": 6,
+          "losses": 11,
+          "ties": 111,
+          "sign_test_p_value": 0.332305908203125
+        }
+      ]
+    },
+    {
+      "path": "outputs/stage5/stage5_recovered_phase2_smoke_20260621_180336_arc128/summary.json",
+      "run_id": "stage5_recovered_phase2_smoke_20260621_180336_arc128",
+      "status": "completed",
+      "checkpoint": "outputs/stage5/stage5_recovered_phase2_smoke_20260621_180336/phase2/phase2_step_50.pt",
+      "benchmarks": [
+        "arc_challenge"
+      ],
+      "deltas": [
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "max",
+          "correct_delta_recurrent_vs_base": -6,
+          "accuracy_delta_recurrent_vs_base": -0.046875,
+          "paired_examples": 128,
+          "wins": 5,
+          "losses": 11,
+          "ties": 112,
+          "sign_test_p_value": 0.210113525390625
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "mean",
+          "correct_delta_recurrent_vs_base": -3,
+          "accuracy_delta_recurrent_vs_base": -0.0234375,
+          "paired_examples": 128,
+          "wins": 6,
+          "losses": 9,
+          "ties": 113,
+          "sign_test_p_value": 0.60723876953125
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "vote",
+          "correct_delta_recurrent_vs_base": -4,
+          "accuracy_delta_recurrent_vs_base": -0.03125,
+          "paired_examples": 128,
+          "wins": 6,
+          "losses": 10,
+          "ties": 112,
+          "sign_test_p_value": 0.454498291015625
+        }
+      ]
+    },
+    {
+      "path": "outputs/stage5/stage5_recovery_full_assessment_current_balanced_full/summary.json",
+      "run_id": "stage5_recovery_full_assessment_current_balanced_full",
+      "status": "completed",
+      "checkpoint": "outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/arc_mix_nodistill_lr3e6/phase1/phase1_step_150.pt",
+      "benchmarks": [
+        "arc_easy",
+        "arc_challenge"
+      ],
+      "deltas": [
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "mean",
+          "correct_delta_recurrent_vs_base": 2,
+          "accuracy_delta_recurrent_vs_base": 0.006688963210702337,
+          "paired_examples": 299,
+          "wins": 13,
+          "losses": 11,
+          "ties": 275,
+          "sign_test_p_value": 0.8388197422027588
+        },
+        {
+          "benchmark": "arc_easy",
+          "score_target": "label",
+          "aggregate": "mean",
+          "correct_delta_recurrent_vs_base": -9,
+          "accuracy_delta_recurrent_vs_base": -0.015789473684210464,
+          "paired_examples": 570,
+          "wins": 20,
+          "losses": 29,
+          "ties": 521,
+          "sign_test_p_value": 0.2528697301676033
+        }
+      ]
+    }
+  ],
+  "broader_benchmark_gate_assessments": [
+    {
+      "path": "outputs/stage5/stage5_benchmark_assessment_20260621_183952/summary.json",
+      "run_id": "stage5_benchmark_assessment_20260621_183952",
+      "status": "needs_recurrent_recovery",
+      "passed": false,
+      "source_summary": "outputs\\stage5\\stage5_recovery_full_assessment_current_balanced_full\\summary.json",
+      "next_step": "Return to deterministic recurrent recovery before GPQA Diamond or release claims.",
+      "benchmarks": [
+        {
+          "benchmark": "arc_easy",
+          "present": true,
+          "required_examples": 1,
+          "paired_examples": 570,
+          "base_correct": 421,
+          "recurrent_correct": 412,
+          "correct_delta_recurrent_vs_base": -9,
+          "wins": 20,
+          "losses": 29,
+          "ties": 521,
+          "sign_test_p_value": 0.2528697301676033
+        },
+        {
+          "benchmark": "arc_challenge",
+          "present": true,
+          "required_examples": 128,
+          "paired_examples": 299,
+          "base_correct": 167,
+          "recurrent_correct": 169,
+          "correct_delta_recurrent_vs_base": 2,
+          "wins": 13,
+          "losses": 11,
+          "ties": 275,
+          "sign_test_p_value": 0.8388197422027588
+        }
+      ]
+    }
+  ],
+  "claim_readiness_packets": [],
+  "arc_agi_baseline_registries": [],
+  "arc_agi_sota_comparisons": [],
+  "arc_agi_candidate_gates": [
+    {
+      "path": "outputs/stage5/stage5_arc_fast_smoke5_20260621_154412/summary.json",
+      "run_id": "stage5_arc_fast_smoke5_20260621_154412",
+      "arc_version": "1",
+      "arc_split": "evaluation",
+      "limit": 5,
+      "grid_format": "compact",
+      "selection_strategy": "heuristic",
+      "examples": 5,
+      "symbolic_exact": 0,
+      "phase1_model_best": 0,
+      "phase1_hybrid_best": 0,
+      "phase1_hybrid_best_delta": 0,
+      "base_model_best": 0,
+      "base_hybrid_best": 0,
+      "base_hybrid_best_delta": 0
+    }
+  ],
+  "arc_agi_sft_recipe_gates": [],
+  "recommended_next_plan_source": "outputs/stage5/stage5_release_gate_20260621_233156/summary.json"
+}
