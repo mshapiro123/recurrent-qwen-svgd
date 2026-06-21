@@ -34,6 +34,13 @@ SOURCE_SUMMARY = os.environ.get("STAGE5_ARC_AGI_NEXT_ACTION_SOURCE_SUMMARY") or 
     "",
 )
 ACTION_INDEX = int(os.environ.get("STAGE5_ARC_AGI_NEXT_ACTION_INDEX", "0"))
+MAX_ACTIONS = int(os.environ.get("STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS", "1"))
+ALLOW_REPEAT = os.environ.get("STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 EXECUTE = os.environ.get("STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE", "0").strip().lower() in {
     "1",
     "true",
@@ -152,16 +159,16 @@ def run_cat(argv: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.CompletedProcess(argv, 0, "".join(chunks), None)
 
 
-def execute_parsed_command(parsed: ParsedCommand) -> subprocess.CompletedProcess[str]:
+def execute_parsed_command(parsed: ParsedCommand, *, log_name: str = "selected_action.log") -> subprocess.CompletedProcess[str]:
     if parsed.kind == "cat":
         return run_cat(parsed.argv)
     env = os.environ.copy()
     env.update(parsed.env)
-    return run(parsed.argv, env=env, log_name="selected_action.log")
+    return run(parsed.argv, env=env, log_name=log_name)
 
 
-def run_planner() -> tuple[Path, dict[str, Any], subprocess.CompletedProcess[str]]:
-    plan_run_id = f"{RUN_ID}_plan"
+def run_planner(*, step: int | None = None) -> tuple[Path, dict[str, Any], subprocess.CompletedProcess[str]]:
+    plan_run_id = f"{RUN_ID}_plan" if step is None else f"{RUN_ID}_plan{step:02d}"
     env = os.environ.copy()
     env["STAGE5_ARC_AGI_NEXT_PLAN_RUN_ID"] = plan_run_id
     if SOURCE_SUMMARY:
@@ -173,13 +180,69 @@ def run_planner() -> tuple[Path, dict[str, Any], subprocess.CompletedProcess[str
     return plan_summary, read_json(plan_summary), proc
 
 
-def selected_action(plan: dict[str, Any]) -> dict[str, Any]:
+def selected_action(plan: dict[str, Any], *, action_index: int = ACTION_INDEX) -> dict[str, Any]:
     actions = plan.get("actions") or []
     if not actions:
         raise ValueError("Planner returned no actions.")
-    if ACTION_INDEX < 0 or ACTION_INDEX >= len(actions):
-        raise IndexError(f"STAGE5_ARC_AGI_NEXT_ACTION_INDEX={ACTION_INDEX} out of range for {len(actions)} actions.")
-    return actions[ACTION_INDEX]
+    if action_index < 0 or action_index >= len(actions):
+        raise IndexError(f"STAGE5_ARC_AGI_NEXT_ACTION_INDEX={action_index} out of range for {len(actions)} actions.")
+    return actions[action_index]
+
+
+def action_fingerprint(action: dict[str, Any]) -> str:
+    return str(action.get("command", "")).strip()
+
+
+def is_repeat_action(action: dict[str, Any], seen_commands: set[str], *, allow_repeat: bool = ALLOW_REPEAT) -> bool:
+    return not allow_repeat and action_fingerprint(action) in seen_commands
+
+
+def execute_action_loop(*, execute: bool = EXECUTE, max_actions: int = MAX_ACTIONS) -> list[dict[str, Any]]:
+    if max_actions < 1:
+        raise ValueError("STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS must be >= 1.")
+    steps: list[dict[str, Any]] = []
+    seen_commands: set[str] = set()
+    total_steps = max_actions if execute else 1
+
+    for step_index in range(total_steps):
+        plan_summary_path, plan, _planner_proc = run_planner(step=step_index if total_steps > 1 else None)
+        action = selected_action(plan)
+        parsed = parse_action_command(str(action.get("command", "")))
+        repeated = is_repeat_action(action, seen_commands)
+        command_text = action_fingerprint(action)
+        step_payload: dict[str, Any] = {
+            "step": step_index,
+            "planner_summary": path_for_cli(plan_summary_path),
+            "planner": plan,
+            "selected_action": action,
+            "parsed_command": {"kind": parsed.kind, "env": parsed.env, "argv": parsed.argv},
+            "repeat_detected": repeated,
+        }
+        if repeated:
+            step_payload["execution"] = {
+                "executed": False,
+                "stopped": True,
+                "reason": "Selected action command repeated; set STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT=1 to override.",
+            }
+            steps.append(step_payload)
+            break
+
+        seen_commands.add(command_text)
+        if execute:
+            proc = execute_parsed_command(parsed, log_name=f"selected_action_{step_index:02d}.log")
+            step_payload["execution"] = {"executed": True, "returncode": proc.returncode}
+            steps.append(step_payload)
+            if proc.returncode:
+                break
+        else:
+            step_payload["execution"] = {
+                "executed": False,
+                "dry_run": True,
+                "reason": "Set STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE=1 to run the selected action.",
+            }
+            steps.append(step_payload)
+            break
+    return steps
 
 
 def backup_to_drive() -> None:
@@ -203,15 +266,19 @@ def backup_to_drive() -> None:
 
 def write_report(payload: dict[str, Any]) -> None:
     write_json(RUN_DIR / "summary.json", payload)
-    action = payload["selected_action"]
-    parsed = payload.get("parsed_command") or {}
-    execution = payload.get("execution") or {}
+    steps = payload.get("steps") or []
+    first_step = steps[0] if steps else {}
+    action = first_step.get("selected_action") or {}
+    parsed = first_step.get("parsed_command") or {}
+    execution = first_step.get("execution") or {}
     lines = [
         f"# Stage 5 Next Action - {RUN_ID}",
         "",
-        f"- Planner summary: `{payload['planner_summary']}`",
+        f"- Planner summary: `{first_step.get('planner_summary')}`",
         f"- Execute requested: `{payload['execute_requested']}`",
         f"- Action index: `{payload['action_index']}`",
+        f"- Max actions: `{payload['max_actions']}`",
+        f"- Completed steps: `{len(steps)}`",
         f"- Selected action: `{action.get('name')}`",
         f"- Priority: `{action.get('priority')}`",
         f"- Reason: {action.get('reason')}",
@@ -220,6 +287,14 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Parsed argv: `{parsed.get('argv')}`",
         f"- Execution: `{execution}`",
     ]
+    if len(steps) > 1:
+        lines.extend(["", "## Action Loop", ""])
+        for step in steps:
+            step_action = step.get("selected_action") or {}
+            lines.append(
+                f"- Step `{step.get('step')}`: `{step_action.get('name')}` "
+                f"repeat `{step.get('repeat_detected')}` execution `{step.get('execution')}`"
+            )
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))
 
@@ -228,37 +303,24 @@ def main() -> int:
     if any(arg in {"-h", "--help"} for arg in sys.argv[1:]):
         print(
             "Run Stage 5 planner and optionally execute the selected allowlisted action. "
-            "Set STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE=1 to execute."
+            "Set STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE=1 to execute. "
+            "Set STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS=N for a bounded loop."
         )
         return 0
 
-    plan_summary_path, plan, _planner_proc = run_planner()
-    action = selected_action(plan)
-    parsed = parse_action_command(str(action.get("command", "")))
-    execution: dict[str, Any]
-    if EXECUTE:
-        proc = execute_parsed_command(parsed)
-        execution = {"executed": True, "returncode": proc.returncode}
-    else:
-        execution = {
-            "executed": False,
-            "dry_run": True,
-            "reason": "Set STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE=1 to run the selected action.",
-        }
-
+    steps = execute_action_loop()
+    last_execution = (steps[-1].get("execution") if steps else {}) or {}
     payload = {
         "run_id": RUN_ID,
-        "planner_summary": path_for_cli(plan_summary_path),
-        "planner": plan,
         "action_index": ACTION_INDEX,
-        "selected_action": action,
+        "max_actions": MAX_ACTIONS,
+        "allow_repeat": ALLOW_REPEAT,
         "execute_requested": EXECUTE,
-        "parsed_command": {"kind": parsed.kind, "env": parsed.env, "argv": parsed.argv},
-        "execution": execution,
+        "steps": steps,
     }
     write_report(payload)
     backup_to_drive()
-    return int(execution.get("returncode", 0))
+    return int(last_execution.get("returncode", 0))
 
 
 if __name__ == "__main__":

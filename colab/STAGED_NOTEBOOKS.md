@@ -124,5 +124,8 @@ The older split notebooks are kept only as references:
    `colab/run_stage5_next_action.py`. By default it writes a dry-run summary of
    the planner's top action. Set
    `STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE=1` to execute the selected allowlisted
-   Stage 5 runner without copying commands by hand.
+   Stage 5 runner without copying commands by hand. Set
+   `STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS=2` or higher only when you want a
+   bounded planner-runner loop; repeated commands stop the loop unless
+   `STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT=1` is set.
 6. Write the report, model card, and release notes.
