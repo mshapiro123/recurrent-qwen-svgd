@@ -10,6 +10,7 @@ from colab.run_stage5_arc_agi_rescore_selectors import (
     original_row,
     paired_selector_comparisons,
     requested_strategies,
+    summary_row,
 )
 
 
@@ -67,6 +68,37 @@ def test_original_row_preserves_source_strategy_and_metrics(tmp_path) -> None:
     assert row["selected_exact"] == 1
     assert row["selected_delta_vs_source"] is None
     assert row["output_summary_json"] == str(summary_path)
+
+
+def test_summary_row_records_rescored_candidate_jsonl(tmp_path) -> None:
+    output_jsonl = tmp_path / "rescored_candidates.jsonl"
+    row = summary_row(
+        label="recovered",
+        strategy="cell_vote",
+        payload={
+            "summary": {
+                "examples_with_targets": 2,
+                "selected_exact": 1,
+                "best_of_k_exact": 0,
+                "first_exact": 0,
+                "selector_generated_selected": 1,
+                "selector_generated_selected_exact": 1,
+                "selected_exceeds_best_of_k": 1,
+                "selected_accuracy": 0.5,
+                "best_of_k_accuracy": 0.0,
+                "tasks_solved_best_of_k": 0,
+                "tasks_with_targets": 1,
+                "valid_candidate_rate": 1.0,
+            }
+        },
+        source_summary_json=None,
+        output_summary_json=tmp_path / "summary.json",
+        output_jsonl=output_jsonl,
+    )
+
+    assert row["output_jsonl"] == str(output_jsonl)
+    assert row["selector_generated_selected_exact"] == 1
+    assert row["selected_exceeds_best_of_k"] == 1
 
 
 def test_best_rows_by_label_prefers_selected_then_best_then_valid_rate() -> None:

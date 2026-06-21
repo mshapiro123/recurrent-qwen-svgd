@@ -82,6 +82,30 @@ def test_choose_selected_exact_returns_empty_when_selector_missed() -> None:
     assert choose_exact_candidates(rows, choice="selected_exact") == []
 
 
+def test_choose_selector_exact_returns_only_selector_generated_exact_rows() -> None:
+    rows = [
+        candidate_row(0, [[1]], exact=True, selected=True, source="model_tta_identity"),
+        {
+            **candidate_row(1, [[2]], exact=True, selected=True, source="selector_cell_vote"),
+            "selector_generated": True,
+        },
+        candidate_row(2, [[3]], exact=False, source="selector_cell_vote"),
+    ]
+
+    chosen = choose_exact_candidates(rows, choice="selector_exact")
+
+    assert [row["candidate_index"] for row in chosen] == [1]
+
+
+def test_choose_selector_exact_returns_empty_without_selector_generated_exact() -> None:
+    rows = [
+        candidate_row(0, [[1]], exact=True, selected=True, source="model_tta_identity"),
+        candidate_row(1, [[2]], exact=False, source="selector_cell_vote"),
+    ]
+
+    assert choose_exact_candidates(rows, choice="selector_exact") == []
+
+
 def test_all_exact_returns_ranked_exact_rows() -> None:
     rows = [
         candidate_row(0, [[1]], exact=False),
@@ -133,6 +157,7 @@ def test_build_distill_rows_groups_candidates_and_writes_metadata() -> None:
         {
             **candidate_row(0, [[4]], exact=True, selected=True, source="model_tta_identity", candidate_text="4"),
             "task_id": "task2",
+            "selector_generated": True,
         },
     ]
 
@@ -154,4 +179,7 @@ def test_build_distill_rows_groups_candidates_and_writes_metadata() -> None:
     assert output_rows[0]["cot"] == "<think>\ncopy\n</think>"
     assert output_rows[0]["completion_source"] == "trace_then_canonical_grid"
     assert output_rows[0]["source_dataset"] == "arc-agi-candidate-distill"
+    assert output_rows[0]["selector_generated"] is False
     assert output_rows[1]["task_id"] == "task2"
+    assert output_rows[1]["selector_generated"] is True
+    assert output_rows[1]["selected"] is True

@@ -150,6 +150,7 @@ def summary_row(
     payload: dict[str, Any],
     source_summary_json: Path | None,
     output_summary_json: Path | None = None,
+    output_jsonl: Path | None = None,
 ) -> dict[str, Any]:
     summary = payload["summary"]
     source_summary = payload.get("source_summary") or {}
@@ -158,6 +159,7 @@ def summary_row(
         "selection_strategy": strategy,
         "source_summary_json": path_for_cli(source_summary_json) if source_summary_json is not None else None,
         "output_summary_json": path_for_cli(output_summary_json) if output_summary_json is not None else None,
+        "output_jsonl": path_for_cli(output_jsonl) if output_jsonl is not None else None,
         "examples": summary["examples_with_targets"],
         "selected_exact": summary["selected_exact"],
         "best_of_k_exact": summary["best_of_k_exact"],
@@ -197,6 +199,7 @@ def rescore_pair(pair: CandidatePair, strategy: str) -> dict[str, Any]:
     output_prefix = RUN_DIR / f"{pair.label}__selector_{strategy}"
     output_summary_json = output_prefix.with_name(f"{output_prefix.name}_summary.json")
     output_summary_md = output_prefix.with_name(f"{output_prefix.name}_summary.md")
+    output_jsonl = output_prefix.with_name(f"{output_prefix.name}_candidates.jsonl") if WRITE_RESCORED_JSONL else None
     cmd = [
         sys.executable,
         "eval/rescore_arc_agi_candidates.py",
@@ -211,8 +214,8 @@ def rescore_pair(pair: CandidatePair, strategy: str) -> dict[str, Any]:
     ]
     if pair.summary_json is not None:
         cmd += ["--summary_json", path_for_cli(pair.summary_json)]
-    if WRITE_RESCORED_JSONL:
-        cmd += ["--output_jsonl", path_for_cli(output_prefix.with_name(f"{output_prefix.name}_candidates.jsonl"))]
+    if output_jsonl is not None:
+        cmd += ["--output_jsonl", path_for_cli(output_jsonl)]
     run(cmd, log_name=f"{pair.label}__selector_{strategy}.log")
     payload = read_json(output_summary_json)
     return summary_row(
@@ -221,6 +224,7 @@ def rescore_pair(pair: CandidatePair, strategy: str) -> dict[str, Any]:
         payload=payload,
         source_summary_json=pair.summary_json,
         output_summary_json=output_summary_json,
+        output_jsonl=output_jsonl,
     )
 
 

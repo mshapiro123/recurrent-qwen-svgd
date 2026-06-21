@@ -1189,7 +1189,7 @@ def selector_replication_actions(payload: dict[str, Any], *, source_summary: Pat
 def recipe_selector_conversion_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
     if status == "passed":
-        return [
+        actions = [
             make_action(
                 "Run release gate with selector-conversion evidence",
                 "A recurrent selector converted same-recipe candidate coverage into selected-answer lift versus the dense control; run the release readiness audit so this evidence can be combined with ARC confirmation and HF export metadata.",
@@ -1202,6 +1202,33 @@ def recipe_selector_conversion_actions(payload: dict[str, Any], *, source_summar
                 10,
             )
         ]
+        best = payload.get("best_selector") or {}
+        best_row = None
+        for row in payload.get("selector_evidence") or []:
+            if row.get("label") == best.get("label") and row.get("selection_strategy") == best.get("selection_strategy"):
+                best_row = row
+                break
+        candidates_jsonl = str((best_row or {}).get("selector_candidates_jsonl") or "")
+        if candidates_jsonl:
+            actions.append(
+                make_action(
+                    "Run selector-exact candidate-distillation SFT",
+                    "The passing selector-conversion gate includes a rescored candidate JSONL. Distill selector-generated exact ARC grids back into the recurrent model to test whether the model can internalize claim-level particle/selector wins.",
+                    command_env(
+                        {
+                            "STAGE5_ARC_AGI_SFT_RUN_ID": f"{RUN_ID}_selector_exact_distill_sft",
+                            "STAGE5_ARC_AGI_CANDIDATE_DISTILL_JSONLS": candidates_jsonl,
+                            "STAGE5_ARC_AGI_CANDIDATE_DISTILL_CHOICE": "selector_exact",
+                            "STAGE5_ARC_AGI_CANDIDATE_DISTILL_COMPLETION_SOURCE": "canonical_grid",
+                            "STAGE5_ARC_AGI_SELECTION_STRATEGY": "cell_vote",
+                            "STAGE5_ARC_AGI_EVAL_CHECKPOINT_LADDER": "1",
+                        },
+                        "python colab/run_stage5_arc_agi_sft.py",
+                    ),
+                    9,
+                )
+            )
+        return actions
     return [
         make_action(
             f"Inspect same-recipe selector conversion `{status}`",

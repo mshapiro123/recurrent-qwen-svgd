@@ -158,6 +158,7 @@ def evaluate_selector_row(
         "label": str(row.get("label")),
         "selection_strategy": str(row.get("selection_strategy")),
         "selector_summary_json": path_for_cli(selector_summary_path),
+        "selector_candidates_jsonl": row.get("output_jsonl"),
         "claim_level_selector": bool(
             str(row.get("selection_strategy")) == "cell_vote"
             or int(selector_summary.get("selector_generated_selected", 0) or 0) > 0

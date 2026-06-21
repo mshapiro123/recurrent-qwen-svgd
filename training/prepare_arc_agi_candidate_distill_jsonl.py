@@ -49,6 +49,10 @@ def candidate_rank(row: dict[str, Any]) -> tuple[int, int, int, int, int]:
     )
 
 
+def is_selector_generated_candidate(row: dict[str, Any]) -> bool:
+    return bool(row.get("selector_generated")) or str(row.get("candidate_source", "")) == "selector_cell_vote"
+
+
 def choose_exact_candidates(
     group_rows: list[dict[str, Any]],
     *,
@@ -59,6 +63,8 @@ def choose_exact_candidates(
         return []
     if choice == "selected_exact":
         return [row for row in exact_rows if row.get("selected")]
+    if choice == "selector_exact":
+        return sorted([row for row in exact_rows if is_selector_generated_candidate(row)], key=candidate_rank)
     if choice == "best_exact":
         return [min(exact_rows, key=candidate_rank)]
     if choice == "all_exact":
@@ -135,6 +141,9 @@ def candidate_to_jsonl_row(
         "test_index": row.get("test_index"),
         "candidate_index": row.get("candidate_index"),
         "candidate_source": row.get("candidate_source"),
+        "selected": bool(row.get("selected")),
+        "selector_generated": is_selector_generated_candidate(row),
+        "selected_exceeds_best_of_k": bool(row.get("selected_exceeds_best_of_k")),
         "parse_method": row.get("parse_method"),
         "program_fits_train": bool(row.get("program_fits_train")),
         "distill_choice": choice,
@@ -178,7 +187,11 @@ def main() -> int:
     parser.add_argument("--candidates_jsonl", required=True)
     parser.add_argument("--output_jsonl", required=True)
     parser.add_argument("--tokenizer_name", default="Qwen/Qwen2.5-0.5B-Instruct")
-    parser.add_argument("--choice", default="best_exact", choices=("selected_exact", "best_exact", "all_exact"))
+    parser.add_argument(
+        "--choice",
+        default="best_exact",
+        choices=("selected_exact", "selector_exact", "best_exact", "all_exact"),
+    )
     parser.add_argument(
         "--completion_source",
         default="trace_then_canonical_grid",

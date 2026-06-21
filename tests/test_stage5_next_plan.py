@@ -1256,6 +1256,33 @@ def test_recipe_selector_conversion_passed_runs_release_gate(tmp_path) -> None:
     assert "python colab/assess_stage5_release_gate.py" in actions[0]["command"]
 
 
+def test_recipe_selector_conversion_with_candidates_adds_selector_exact_sft(tmp_path) -> None:
+    source = tmp_path / "conversion" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_same_recipe_selector_conversion",
+        "kind": "recipe_selector_conversion",
+        "status": "passed",
+        "passed": True,
+        "best_selector": {"label": "recovered", "selection_strategy": "cell_vote"},
+        "selector_evidence": [
+            {
+                "label": "recovered",
+                "selection_strategy": "cell_vote",
+                "selector_candidates_jsonl": "outputs/stage5/rescore/recovered__selector_cell_vote_candidates.jsonl",
+            }
+        ],
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run release gate with selector-conversion evidence"
+    assert actions[1]["name"] == "Run selector-exact candidate-distillation SFT"
+    assert "STAGE5_ARC_AGI_CANDIDATE_DISTILL_CHOICE=selector_exact" in actions[1]["command"]
+    assert "STAGE5_ARC_AGI_CANDIDATE_DISTILL_JSONLS=outputs/stage5/rescore/recovered__selector_cell_vote_candidates.jsonl" in actions[1]["command"]
+    assert "python colab/run_stage5_arc_agi_sft.py" in actions[1]["command"]
+
+
 def test_recipe_control_assessment_failed_inspects_markdown(tmp_path) -> None:
     source = tmp_path / "recipe" / "summary.json"
     source.parent.mkdir()
