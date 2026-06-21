@@ -1,0 +1,5 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=validation
+rows=570
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_recovery_full_assessment_current_balanced_full/arc_easy_validation_full.jsonl
