@@ -1,5 +1,5 @@
 root=/content/recurrent-qwen-svgd
-git_head=1b87ef3
+git_head=9b7a681
 git_status:
   clean
 
@@ -19,8 +19,8 @@ checkpoint_exists=True
 checkpoint_run_id=stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143
 
 autopilot_run_id=stage5_balanced_recovery_autopilot_current
-parent_summary=outputs/stage5/stage5_balanced_recovery_autopilot_current/summary.json status=missing
-distill_summary=outputs/stage5/stage5_balanced_recovery_autopilot_current_distill/summary.json status=missing
-arc_mix_summary=outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/summary.json status=missing
+parent_summary=outputs/stage5/stage5_balanced_recovery_autopilot_current/summary.json status=arc_mix_gate_passed passed=None
+distill_summary=outputs/stage5/stage5_balanced_recovery_autopilot_current_distill/summary.json status=no_proxy_lift passed=False
+arc_mix_summary=outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/summary.json status=proxy_lift passed=True
 
-next_action=Run colab/run_stage5_balanced_recovery_autopilot.py.
+next_action=Review committed autopilot summary or rerun only if it failed before push.
