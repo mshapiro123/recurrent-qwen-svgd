@@ -1171,12 +1171,26 @@ def test_dense_sft_control_plans_matched_recurrent_recipe(tmp_path) -> None:
     payload = {
         "kind": "dense_sft_control",
         "metadata": {
+            "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
             "arc_version": "1",
+            "train_split": "training",
+            "eval_split": "evaluation",
             "train_task_limit": 80,
             "eval_task_limit": 12,
+            "color_augmentations": 3,
+            "geometry_augmentations": "rotations",
             "trace_mode": "symbolic_program",
             "trace_filter": "covered",
+            "synthetic_tasks": 0,
+            "candidate_distill_jsonls": [],
             "grid_format": "compact",
+            "program_parse_mode": "fallback",
+            "selection_strategy": "heuristic",
+            "train_steps": 300,
+            "learning_rate": 8e-6,
+            "distillation": {"enabled": False, "weight": 0.1, "temperature": 1.0, "on": "response"},
+            "include_symbolic_candidates": False,
+            "eval_checkpoint_ladder": False,
         },
         "deltas": {
             "dense_tuned_vs_base": {"selected_exact_delta": 2},
@@ -1193,9 +1207,46 @@ def test_dense_sft_control_plans_matched_recurrent_recipe(tmp_path) -> None:
     assert actions[0]["name"] == "Run matched recurrent ARC-AGI SFT control"
     assert "STAGE5_ARC_AGI_TRAIN_TASK_LIMIT=80" in actions[0]["command"]
     assert "STAGE5_ARC_AGI_EVAL_TASK_LIMIT=12" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_COLOR_AUGS=3" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_GEOMETRY_AUGS=rotations" in actions[0]["command"]
     assert "STAGE5_ARC_AGI_TRACE_MODE=symbolic_program" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_PROGRAM_PARSE_MODE=fallback" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_TRAIN_STEPS=300" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_LR=8e-06" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_DISTILL=0" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_INCLUDE_SYMBOLIC=0" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_EVAL_CHECKPOINT_LADDER=0" in actions[0]["command"]
     assert "python colab/run_stage5_arc_agi_sft.py" in actions[0]["command"]
     assert "Dense-vs-base evidence: paired delta 2" in actions[0]["reason"]
+
+
+def test_dense_sft_control_plans_matched_recurrent_distillation(tmp_path) -> None:
+    source = tmp_path / "dense" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "dense_sft_control",
+        "metadata": {
+            "train_task_limit": 80,
+            "eval_task_limit": 12,
+            "trace_mode": "symbolic_program",
+            "trace_filter": "covered",
+            "grid_format": "compact",
+            "distillation": {"enabled": True, "weight": 0.2, "temperature": 2.0, "on": "full"},
+            "eval_checkpoint_ladder": False,
+        },
+        "deltas": {
+            "dense_tuned_vs_base": {"selected_exact_delta": 0},
+            "phase1_start_vs_base": {"selected_exact_delta": 0},
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert "STAGE5_ARC_AGI_DISTILL=1" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_DISTILL_WEIGHT=0.2" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_DISTILL_TEMPERATURE=2.0" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_DISTILL_ON=full" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_EVAL_CHECKPOINT_LADDER=0" in actions[0]["command"]
 
 
 def test_recurrent_sft_summary_plans_same_recipe_assessment(tmp_path) -> None:
@@ -1215,10 +1266,36 @@ def test_recurrent_sft_summary_plans_same_recipe_assessment(tmp_path) -> None:
 
 def test_recipe_control_assessment_passed_replicates_dense_control(tmp_path) -> None:
     source = tmp_path / "recipe" / "summary.json"
+    dense = tmp_path / "dense" / "summary.json"
     source.parent.mkdir()
+    dense.parent.mkdir()
+    dense.write_text(
+        json.dumps(
+            {
+                "kind": "dense_sft_control",
+                "metadata": {
+                    "arc_version": "1",
+                    "train_task_limit": 80,
+                    "eval_task_limit": 40,
+                    "trace_mode": "symbolic_program",
+                    "trace_filter": "covered",
+                    "grid_format": "compact",
+                    "program_parse_mode": "fallback",
+                    "selection_strategy": "heuristic",
+                    "train_steps": 300,
+                    "learning_rate": 8e-6,
+                    "distillation": {"enabled": False, "weight": 0.1, "temperature": 1.0, "on": "response"},
+                    "include_symbolic_candidates": False,
+                    "eval_checkpoint_ladder": False,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
     payload = {
         "gate": "stage5_same_recipe_architecture",
         "status": "passed",
+        "dense_summary": str(dense),
         "evidence": {
             "recurrent_vs_dense": {
                 "candidate_summary": {"examples_with_targets": 40},
@@ -1229,6 +1306,12 @@ def test_recipe_control_assessment_passed_replicates_dense_control(tmp_path) -> 
     actions = plan_next_actions(payload, source_summary=source)
 
     assert actions[0]["name"] == "Replicate dense control at ARC limit 100"
+    assert "STAGE5_ARC_AGI_TRAIN_TASK_LIMIT=80" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_EVAL_TASK_LIMIT=100" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_TRACE_MODE=symbolic_program" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_PROGRAM_PARSE_MODE=fallback" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_DISTILL=0" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_EVAL_CHECKPOINT_LADDER=0" in actions[0]["command"]
     assert "python colab/run_stage5_arc_agi_dense_sft.py" in actions[0]["command"]
 
 

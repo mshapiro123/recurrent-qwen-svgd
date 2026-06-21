@@ -349,6 +349,98 @@ def command_env(assignments: dict[str, str], command: str) -> str:
     return f"{prefix} {command}" if prefix else command
 
 
+def env_bool(value: Any, *, default: bool = False) -> str:
+    if value is None:
+        return "1" if default else "0"
+    if isinstance(value, str):
+        return "1" if value.strip().lower() in {"1", "true", "yes", "y"} else "0"
+    return "1" if bool(value) else "0"
+
+
+def env_csv(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, (list, tuple)):
+        return ",".join(str(item).replace("\\", "/") for item in value if str(item))
+    return str(value).replace("\\", "/")
+
+
+def add_common_arc_recipe_env(assignments: dict[str, str], metadata: dict[str, Any]) -> None:
+    for env_key, metadata_key in {
+        "MODEL_NAME": "model_name",
+        "STAGE5_ARC_AGI_VERSION": "arc_version",
+        "STAGE5_ARC_AGI_TRAIN_SPLIT": "train_split",
+        "STAGE5_ARC_AGI_EVAL_SPLIT": "eval_split",
+        "STAGE5_ARC_AGI_TRAIN_TASK_LIMIT": "train_task_limit",
+        "STAGE5_ARC_AGI_EVAL_TASK_LIMIT": "eval_task_limit",
+        "STAGE5_ARC_AGI_COLOR_AUGS": "color_augmentations",
+        "STAGE5_ARC_AGI_GEOMETRY_AUGS": "geometry_augmentations",
+        "STAGE5_ARC_AGI_TRACE_MODE": "trace_mode",
+        "STAGE5_ARC_AGI_TRACE_FILTER": "trace_filter",
+        "STAGE5_ARC_AGI_GRID_FORMAT": "grid_format",
+        "STAGE5_ARC_AGI_PROGRAM_PARSE_MODE": "program_parse_mode",
+        "STAGE5_ARC_AGI_SELECTION_STRATEGY": "selection_strategy",
+        "STAGE5_ARC_AGI_TRAIN_STEPS": "train_steps",
+        "STAGE5_ARC_AGI_LR": "learning_rate",
+        "STAGE5_ARC_AGI_SYNTHETIC_TASKS": "synthetic_tasks",
+    }.items():
+        value = metadata.get(metadata_key)
+        if value is not None:
+            assignments[env_key] = str(value).replace("\\", "/")
+
+    assignments["STAGE5_ARC_AGI_EVAL_CHECKPOINT_LADDER"] = env_bool(
+        metadata.get("eval_checkpoint_ladder"),
+        default=False,
+    )
+    assignments["STAGE5_ARC_AGI_INCLUDE_SYMBOLIC"] = env_bool(
+        metadata.get("include_symbolic_candidates"),
+        default=False,
+    )
+
+    distillation = metadata.get("distillation")
+    if isinstance(distillation, dict):
+        assignments["STAGE5_ARC_AGI_DISTILL"] = env_bool(distillation.get("enabled"), default=False)
+        for env_key, metadata_key in {
+            "STAGE5_ARC_AGI_DISTILL_WEIGHT": "weight",
+            "STAGE5_ARC_AGI_DISTILL_TEMPERATURE": "temperature",
+            "STAGE5_ARC_AGI_DISTILL_ON": "on",
+        }.items():
+            value = distillation.get(metadata_key)
+            if value is not None:
+                assignments[env_key] = str(value)
+
+    candidates = env_csv(metadata.get("candidate_distill_jsonls"))
+    if candidates:
+        assignments["STAGE5_ARC_AGI_CANDIDATE_DISTILL_JSONLS"] = candidates
+        for env_key, metadata_key in {
+            "STAGE5_ARC_AGI_CANDIDATE_DISTILL_CHOICE": "candidate_distill_choice",
+            "STAGE5_ARC_AGI_CANDIDATE_DISTILL_COMPLETION_SOURCE": "candidate_distill_completion_source",
+        }.items():
+            value = metadata.get(metadata_key)
+            if value is not None:
+                assignments[env_key] = str(value)
+
+    if metadata.get("include_symbolic_candidates"):
+        for env_key, metadata_key in {
+            "STAGE5_ARC_AGI_SYMBOLIC_POSITION": "symbolic_position",
+            "STAGE5_ARC_AGI_SYMBOLIC_CANDIDATE_FORMAT": "symbolic_candidate_format",
+        }.items():
+            value = metadata.get(metadata_key)
+            if value is not None:
+                assignments[env_key] = str(value)
+
+
+def summary_metadata_from_path(path_value: str | None) -> dict[str, Any]:
+    if not path_value:
+        return {}
+    try:
+        payload = read_json(resolve_path(path_value))
+    except Exception:
+        return {}
+    metadata = payload.get("metadata")
+    return metadata if isinstance(metadata, dict) else {}
+
+
 def next_validation_limit(current_examples: int, *, first_limit: int = NEXT_LIMIT) -> int | None:
     """Choose the next ARC eval cap.
 
@@ -629,6 +721,13 @@ def recipe_control_assessment_actions(payload: dict[str, Any], *, source_summary
     examples = int(metadata.get("examples_with_targets", 0) or 0)
     next_limit = next_validation_limit(examples)
     next_label = limit_label(next_limit)
+    dense_metadata = summary_metadata_from_path(payload.get("dense_summary"))
+    dense_assignments = {
+        "STAGE5_ARC_AGI_DENSE_SFT_RUN_ID": f"{RUN_ID}_dense_limit{next_label}",
+        "STAGE5_ARC_AGI_EVAL_TASK_LIMIT": next_label,
+    }
+    add_common_arc_recipe_env(dense_assignments, dense_metadata)
+    dense_assignments["STAGE5_ARC_AGI_EVAL_TASK_LIMIT"] = next_label
     recurrent_summary = payload.get("recurrent_summary")
     recurrent_summary_path = resolve_path(str(recurrent_summary)) if recurrent_summary else None
     recurrent_run_dir = recurrent_summary_path.parent if recurrent_summary_path is not None else source_summary.parent
@@ -637,13 +736,7 @@ def recipe_control_assessment_actions(payload: dict[str, Any], *, source_summary
             make_action(
                 f"Replicate dense control at ARC limit {next_label}",
                 "Same-recipe architecture evidence is promising or underpowered; rerun the dense control at a larger matched slice, then the planner will route to the recurrent arm.",
-                command_env(
-                    {
-                        "STAGE5_ARC_AGI_DENSE_SFT_RUN_ID": f"{RUN_ID}_dense_limit{next_label}",
-                        "STAGE5_ARC_AGI_EVAL_TASK_LIMIT": next_label,
-                    },
-                    "python colab/run_stage5_arc_agi_dense_sft.py",
-                ),
+                command_env(dense_assignments, "python colab/run_stage5_arc_agi_dense_sft.py"),
                 10,
             )
         ]
@@ -913,15 +1006,13 @@ def dense_sft_matched_recurrent_command(payload: dict[str, Any]) -> str:
     metadata = payload.get("metadata") or {}
     assignments = {
         "STAGE5_ARC_AGI_SFT_RUN_ID": f"{RUN_ID}_matched_recurrent_sft",
-        "STAGE5_ARC_AGI_TRAIN_TASK_LIMIT": str(metadata.get("train_task_limit", 100)),
-        "STAGE5_ARC_AGI_EVAL_TASK_LIMIT": str(metadata.get("eval_task_limit", 10)),
-        "STAGE5_ARC_AGI_TRACE_MODE": str(metadata.get("trace_mode", "symbolic_program")),
-        "STAGE5_ARC_AGI_TRACE_FILTER": str(metadata.get("trace_filter", "covered")),
-        "STAGE5_ARC_AGI_GRID_FORMAT": str(metadata.get("grid_format", "compact")),
-        "STAGE5_ARC_AGI_EVAL_CHECKPOINT_LADDER": "1",
     }
-    if arc_version := metadata.get("arc_version"):
-        assignments["STAGE5_ARC_AGI_VERSION"] = str(arc_version)
+    add_common_arc_recipe_env(assignments, metadata)
+    assignments.setdefault("STAGE5_ARC_AGI_TRAIN_TASK_LIMIT", "100")
+    assignments.setdefault("STAGE5_ARC_AGI_EVAL_TASK_LIMIT", "10")
+    assignments.setdefault("STAGE5_ARC_AGI_TRACE_MODE", "symbolic_program")
+    assignments.setdefault("STAGE5_ARC_AGI_TRACE_FILTER", "covered")
+    assignments.setdefault("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
     return command_env(assignments, "python colab/run_stage5_arc_agi_sft.py")
 
 
