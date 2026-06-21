@@ -350,6 +350,14 @@ trace-SFT matches or beats grid-only SFT. Thresholds:
 - `STAGE5_ARC_AGI_AUTOPILOT_MIN_HYBRID_BEST_DELTA` default `0`;
 - `STAGE5_ARC_AGI_AUTOPILOT_MIN_TRACE_BEST_DELTA` default `0`.
 
+For the maintained one-script continuation path, set
+`STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE=same_recipe` before running
+`colab/run_stage5_colab_continue.py` when you want the A100 to keep moving
+toward the decisive same-recipe architecture comparison. This expands the
+bounded action loop to six actions, enough to chain from candidate gate through
+trace/distill recipe selection into dense control, matched recurrent SFT, and
+same-recipe architecture assessment when each prior artifact lands.
+
 Gate:
 
 - valid-grid rate should improve materially;
