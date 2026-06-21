@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from colab.run_stage5_colab_continue import default_env, focused_test_paths, mask_command, stage5_output_paths
+from colab.run_stage5_colab_continue import (
+    default_env,
+    focused_test_paths,
+    mask_command,
+    post_action_commands,
+    stage5_output_paths,
+)
 
 
 def test_colab_continue_focuses_gate1_and_next_action_tests() -> None:
@@ -45,6 +51,15 @@ def test_colab_continue_max_actions_can_be_overridden(monkeypatch) -> None:
 
 def test_colab_continue_commits_stage5_and_hf_export_outputs() -> None:
     assert stage5_output_paths() == ["outputs/stage5", "outputs/hf_exports"]
+
+
+def test_colab_continue_summarizes_after_release_gate() -> None:
+    scripts = [command[1] for command in post_action_commands()]
+
+    assert scripts == [
+        "colab/assess_stage5_release_gate.py",
+        "colab/summarize_stage5_progress.py",
+    ]
 
 
 def test_mask_command_redacts_tokens(monkeypatch) -> None:

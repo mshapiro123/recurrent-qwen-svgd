@@ -69,6 +69,15 @@ def stage5_output_paths() -> list[str]:
     return ["outputs/stage5", "outputs/hf_exports"]
 
 
+def post_action_commands() -> list[list[str]]:
+    """No-GPU follow-ups that make the committed run directory self-explaining."""
+
+    return [
+        [sys.executable, "colab/assess_stage5_release_gate.py"],
+        [sys.executable, "colab/summarize_stage5_progress.py"],
+    ]
+
+
 def mask_command(cmd: list[str]) -> str:
     printable = " ".join(map(str, cmd))
     for key in ("GH_TOKEN", "GITHUB_TOKEN", "HF_TOKEN", "HUGGINGFACE_HUB_TOKEN"):
@@ -137,8 +146,8 @@ def main() -> int:
     run([sys.executable, "-m", "pytest", "-q", *focused_test_paths()])
     print("RUN_ID", RUN_ID)
     run([sys.executable, "colab/run_stage5_next_action.py"])
-    run([sys.executable, "colab/summarize_stage5_progress.py"], check=False)
-    run([sys.executable, "colab/assess_stage5_release_gate.py"], check=False)
+    for command in post_action_commands():
+        run(command, check=False)
     commit_stage5_outputs()
     return 0
 
