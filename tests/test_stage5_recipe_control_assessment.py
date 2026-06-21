@@ -136,6 +136,48 @@ def test_recipe_control_flags_selector_conversion_when_best_of_k_lifts(tmp_path)
     assert assessment["decision_evidence"]["hard_best_of_k"]["delta_exact"] == 3
 
 
+def test_recipe_control_does_not_pass_without_hard_tail_selected_lift(tmp_path) -> None:
+    dense_summary, recurrent_summary = _make_dense_and_recurrent(
+        tmp_path,
+        dense_selected=[False] * 20,
+        recurrent_selected=[False, False, False, False, False, False] + [True, True, True] + [False] * 11,
+    )
+
+    assessment = assess_recipe_control(
+        dense_summary_path=dense_summary,
+        recurrent_summary_path=recurrent_summary,
+        min_total_examples=20,
+        min_hard_examples=5,
+    )
+
+    assert assessment["status"] == "needs_more_evidence"
+    assert assessment["passed"] is False
+    assert assessment["decision_evidence"]["aggregate"]["delta_exact"] == 3
+    assert assessment["decision_evidence"]["hard"]["delta_exact"] == 0
+
+
+def test_recipe_control_does_not_request_selector_conversion_without_hard_tail_candidate_lift(tmp_path) -> None:
+    dense_summary, recurrent_summary = _make_dense_and_recurrent(
+        tmp_path,
+        dense_selected=[False] * 20,
+        recurrent_selected=[False] * 20,
+        dense_best=[False] * 20,
+        recurrent_best=[False, False, False, False, False, False] + [True, True, True] + [False] * 11,
+    )
+
+    assessment = assess_recipe_control(
+        dense_summary_path=dense_summary,
+        recurrent_summary_path=recurrent_summary,
+        min_total_examples=20,
+        min_hard_examples=5,
+    )
+
+    assert assessment["status"] == "needs_more_evidence"
+    assert assessment["passed"] is False
+    assert assessment["decision_evidence"]["aggregate_best_of_k"]["delta_exact"] == 3
+    assert assessment["decision_evidence"]["hard_best_of_k"]["delta_exact"] == 0
+
+
 def test_recipe_control_flags_metadata_mismatch(tmp_path) -> None:
     dense_summary, recurrent_summary = _make_dense_and_recurrent(
         tmp_path,

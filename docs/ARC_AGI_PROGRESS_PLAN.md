@@ -110,9 +110,11 @@ Initial harness files:
 - `colab/assess_stage5_recipe_control.py`: no-GPU same-recipe assessment for
   dense-control plus matched recurrent SFT summaries. It verifies recipe
   metadata and reports whether recurrent selected-answer accuracy beats the
-  dense control with hard-bucket support and no aggregate harm. If recurrent
-  improves best-of-K candidate coverage but not selected accuracy, it reports
-  `needs_selector_conversion` and the planner routes to selector rescoring.
+  dense control in the hard bucket with no aggregate harm. If recurrent
+  improves hard-bucket best-of-K candidate coverage but not selected accuracy,
+  it reports `needs_selector_conversion` and the planner routes to selector
+  rescoring. Aggregate-only gains are treated as more-evidence diagnostics, not
+  architecture proof.
 - `colab/assess_stage5_release_gate.py`: no-GPU Stage 5E readiness audit. It
   combines recovered-vs-base ARC benchmark confirmation, same-recipe
   architecture evidence, and HF export metadata into one status before broader

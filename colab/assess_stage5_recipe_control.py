@@ -227,13 +227,13 @@ def assess_recipe_control(
         status = "needs_more_evidence"
         reason = "Same-recipe comparison has too few paired examples or too few hard-bucket examples."
         next_step = "Replicate the dense and recurrent controls on a larger stratified ARC slice."
-    elif (aggregate_positive and hard_nonnegative) or (hard_positive and aggregate_nonnegative):
+    elif hard_positive and aggregate_nonnegative:
         status = "passed"
-        reason = "Recurrent same-recipe arm improves selected-answer accuracy versus dense control with hard-bucket support and no aggregate harm."
+        reason = "Recurrent same-recipe arm improves hard-bucket selected-answer accuracy versus dense control with no aggregate selected-answer harm."
         next_step = "Replicate at a larger ARC slice, then consider recurrent-specific training or particle mechanisms only if the lift survives."
-    elif (aggregate_best_positive and hard_best_nonnegative) or (hard_best_positive and aggregate_best_nonnegative):
+    elif hard_best_positive and aggregate_best_nonnegative:
         status = "needs_selector_conversion"
-        reason = "Recurrent same-recipe arm improves exact candidate coverage versus dense control, but selected-answer accuracy does not yet convert it."
+        reason = "Recurrent same-recipe arm improves hard-bucket exact candidate coverage versus dense control, but selected-answer accuracy does not yet convert it."
         next_step = "Run selector or verifier work on the recurrent candidate set before judging this architecture signal as failed."
     elif hard_best_positive and not aggregate_best_nonnegative:
         status = "needs_review"
@@ -247,6 +247,10 @@ def assess_recipe_control(
         status = "needs_more_evidence"
         reason = "Recurrent arm improves aggregate selected accuracy, but hard-bucket support is missing."
         next_step = "Run a difficulty-stratified comparison before treating this as architecture evidence."
+    elif aggregate_best_positive:
+        status = "needs_more_evidence"
+        reason = "Recurrent arm improves aggregate best-of-K coverage, but hard-bucket candidate-coverage support is missing."
+        next_step = "Run a larger difficulty-stratified comparison before spending selector work on this candidate set."
     else:
         status = "failed"
         reason = "Recurrent same-recipe arm does not improve selected-answer accuracy versus dense control."
