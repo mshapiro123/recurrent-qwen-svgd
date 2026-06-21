@@ -1,0 +1,153 @@
+{
+  "run_id": "stage5_arc_fast_smoke5_20260621_154412",
+  "gate": "stage5_arc_agi_candidate_gate",
+  "kind": "stage5_arc_agi_candidate_gate",
+  "metadata": {
+    "run_id": "stage5_arc_fast_smoke5_20260621_154412",
+    "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+    "params_b": 0.5,
+    "arc_version": "1",
+    "arc_split": "evaluation",
+    "limit": 5,
+    "tasks_path": "/content/recurrent-qwen-svgd/data/arc_agi/ARC-AGI/data/evaluation",
+    "phase1_checkpoint": "outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt",
+    "grid_format": "compact",
+    "selection_strategy": "heuristic",
+    "dtype": "bfloat16",
+    "adapter_dtype": "float32",
+    "variants": [
+      "base_model_only",
+      "phase1_model_only"
+    ]
+  },
+  "symbolic_coverage": {
+    "examples": 5,
+    "examples_with_targets": 5,
+    "exact_symbolic": 0,
+    "exact_symbolic_rate": 0.0,
+    "tasks_with_targets": 5,
+    "tasks_solved_symbolic": 0,
+    "task_solve_rate_symbolic": 0.0,
+    "mean_candidates": 0.0,
+    "exact_by_source": {},
+    "candidate_by_source": {}
+  },
+  "rows": [
+    {
+      "variant": "base_model_only",
+      "first": 0,
+      "selected": 0,
+      "best": 0,
+      "examples": 5,
+      "tasks_solved_best": 0,
+      "tasks": 5,
+      "valid_rate": 0.0
+    },
+    {
+      "variant": "phase1_model_only",
+      "first": 0,
+      "selected": 0,
+      "best": 0,
+      "examples": 5,
+      "tasks_solved_best": 0,
+      "tasks": 5,
+      "valid_rate": 0.0
+    }
+  ],
+  "results": [
+    {
+      "variant": "base_model_only",
+      "mode": "base",
+      "include_symbolic_candidates": false,
+      "symbolic_position": null,
+      "symbolic_candidate_format": null,
+      "summary": {
+        "examples_with_targets": 5,
+        "first_exact": 0,
+        "selected_exact": 0,
+        "best_of_k_exact": 0,
+        "selector_generated_selected": 0,
+        "selector_generated_selected_exact": 0,
+        "selected_exceeds_best_of_k": 0,
+        "first_accuracy": 0.0,
+        "selected_accuracy": 0.0,
+        "best_of_k_accuracy": 0.0,
+        "tasks_with_targets": 5,
+        "tasks_solved_best_of_k": 0,
+        "task_solve_rate_best_of_k": 0.0,
+        "valid_candidate_rate": 0.0
+      },
+      "candidate_source_summary": {
+        "model": {
+          "count": 5,
+          "valid": 0,
+          "exact": 0,
+          "selected": 5,
+          "selected_exact": 0
+        }
+      },
+      "parse_method_summary": {
+        "none": {
+          "count": 5,
+          "exact": 0,
+          "selected": 5,
+          "selected_exact": 0
+        }
+      },
+      "program_verifier_summary": {
+        "candidates_with_program": 0,
+        "candidates_program_fits_train": 0,
+        "program_fit_exact": 0,
+        "program_fit_selected": 0,
+        "program_fit_selected_exact": 0
+      }
+    },
+    {
+      "variant": "phase1_model_only",
+      "mode": "phase1",
+      "include_symbolic_candidates": false,
+      "symbolic_position": null,
+      "symbolic_candidate_format": null,
+      "summary": {
+        "examples_with_targets": 5,
+        "first_exact": 0,
+        "selected_exact": 0,
+        "best_of_k_exact": 0,
+        "selector_generated_selected": 0,
+        "selector_generated_selected_exact": 0,
+        "selected_exceeds_best_of_k": 0,
+        "first_accuracy": 0.0,
+        "selected_accuracy": 0.0,
+        "best_of_k_accuracy": 0.0,
+        "tasks_with_targets": 5,
+        "tasks_solved_best_of_k": 0,
+        "task_solve_rate_best_of_k": 0.0,
+        "valid_candidate_rate": 0.0
+      },
+      "candidate_source_summary": {
+        "model": {
+          "count": 5,
+          "valid": 0,
+          "exact": 0,
+          "selected": 5,
+          "selected_exact": 0
+        }
+      },
+      "parse_method_summary": {
+        "none": {
+          "count": 5,
+          "exact": 0,
+          "selected": 5,
+          "selected_exact": 0
+        }
+      },
+      "program_verifier_summary": {
+        "candidates_with_program": 0,
+        "candidates_program_fits_train": 0,
+        "program_fit_exact": 0,
+        "program_fit_selected": 0,
+        "program_fit_selected_exact": 0
+      }
+    }
+  ]
+}

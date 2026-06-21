@@ -1,0 +1,27 @@
+loaded_examples=5
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5856.64it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt loaded_keys=173
+{"task_id": "00576224", "test_index": 0, "has_target": true, "first_exact": false, "selected_exact": false, "selected_selector_generated": false, "selector_generated_selected_exact": false, "selected_exceeds_best_of_k": false, "selected_index": 0, "selection_strategy": "heuristic", "inferred_shapes": [[6, 6]], "best_of_k_exact": false, "valid_candidates": 0, "num_candidates": 1, "selector_generated_candidates": 0, "difficulty_source": "grid_complexity_proxy", "difficulty_score": 80, "difficulty_bucket": "medium", "difficulty_features": {"max_grid_cells": 36, "unique_colors": 7, "train_examples": 2, "shape_changes": 2, "leave_one_out": false}}
+{"task_id": "009d5c81", "test_index": 0, "has_target": true, "first_exact": false, "selected_exact": false, "selected_selector_generated": false, "selector_generated_selected_exact": false, "selected_exceeds_best_of_k": false, "selected_index": 0, "selection_strategy": "heuristic", "inferred_shapes": [[14, 14]], "best_of_k_exact": false, "valid_candidates": 0, "num_candidates": 1, "selector_generated_candidates": 0, "difficulty_source": "grid_complexity_proxy", "difficulty_score": 230, "difficulty_bucket": "hard", "difficulty_features": {"max_grid_cells": 196, "unique_colors": 6, "train_examples": 5, "shape_changes": 0, "leave_one_out": false}}
+{"task_id": "00dbd492", "test_index": 0, "has_target": true, "first_exact": false, "selected_exact": false, "selected_selector_generated": false, "selector_generated_selected_exact": false, "selected_exceeds_best_of_k": false, "selected_index": 0, "selection_strategy": "heuristic", "inferred_shapes": [[20, 20]], "best_of_k_exact": false, "valid_candidates": 0, "num_candidates": 1, "selector_generated_candidates": 0, "difficulty_source": "grid_complexity_proxy", "difficulty_score": 428, "difficulty_bucket": "hard", "difficulty_features": {"max_grid_cells": 400, "unique_colors": 5, "train_examples": 4, "shape_changes": 0, "leave_one_out": false}}
+{"task_id": "03560426", "test_index": 0, "has_target": true, "first_exact": false, "selected_exact": false, "selected_selector_generated": false, "selector_generated_selected_exact": false, "selected_exceeds_best_of_k": false, "selected_index": 0, "selection_strategy": "heuristic", "inferred_shapes": [[10, 10]], "best_of_k_exact": false, "valid_candidates": 0, "num_candidates": 1, "selector_generated_candidates": 0, "difficulty_source": "grid_complexity_proxy", "difficulty_score": 138, "difficulty_bucket": "medium", "difficulty_features": {"max_grid_cells": 100, "unique_colors": 8, "train_examples": 3, "shape_changes": 0, "leave_one_out": false}}
+{"task_id": "05a7bcf2", "test_index": 0, "has_target": true, "first_exact": false, "selected_exact": false, "selected_selector_generated": false, "selector_generated_selected_exact": false, "selected_exceeds_best_of_k": false, "selected_index": 0, "selection_strategy": "heuristic", "inferred_shapes": [[30, 30]], "best_of_k_exact": false, "valid_candidates": 0, "num_candidates": 1, "selector_generated_candidates": 0, "difficulty_source": "grid_complexity_proxy", "difficulty_score": 926, "difficulty_bucket": "hard", "difficulty_features": {"max_grid_cells": 900, "unique_colors": 5, "train_examples": 3, "shape_changes": 0, "leave_one_out": false}}
+{
+  "examples_with_targets": 5,
+  "first_exact": 0,
+  "selected_exact": 0,
+  "best_of_k_exact": 0,
+  "selector_generated_selected": 0,
+  "selector_generated_selected_exact": 0,
+  "selected_exceeds_best_of_k": 0,
+  "first_accuracy": 0.0,
+  "selected_accuracy": 0.0,
+  "best_of_k_accuracy": 0.0,
+  "tasks_with_targets": 5,
+  "tasks_solved_best_of_k": 0,
+  "task_solve_rate_best_of_k": 0.0,
+  "valid_candidate_rate": 0.0
+}

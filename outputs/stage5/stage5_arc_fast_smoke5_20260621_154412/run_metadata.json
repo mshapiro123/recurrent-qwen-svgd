@@ -1,0 +1,18 @@
+{
+  "run_id": "stage5_arc_fast_smoke5_20260621_154412",
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "params_b": 0.5,
+  "arc_version": "1",
+  "arc_split": "evaluation",
+  "limit": 5,
+  "tasks_path": "/content/recurrent-qwen-svgd/data/arc_agi/ARC-AGI/data/evaluation",
+  "phase1_checkpoint": "outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt",
+  "grid_format": "compact",
+  "selection_strategy": "heuristic",
+  "dtype": "bfloat16",
+  "adapter_dtype": "float32",
+  "variants": [
+    "base_model_only",
+    "phase1_model_only"
+  ]
+}
