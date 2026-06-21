@@ -20,6 +20,7 @@ from eval.arc_agi_utils import (
 )
 from eval.eval_arc_agi import (
     arc_difficulty_features,
+    evaluate_example,
     inferred_output_shapes,
     parse_difficulty_buckets,
     select_candidate_index,
@@ -393,3 +394,54 @@ def test_reliability_vote_selection_can_beat_weak_plurality() -> None:
 
     assert select_candidate_index(example, rows, selection_strategy="self_consistency") == 0
     assert select_candidate_index(example, rows, selection_strategy="reliability_vote") == 2
+
+
+def test_cell_vote_selection_can_synthesize_grid_from_partial_candidates() -> None:
+    example = ArcAgiExample(
+        task_id="cell-vote",
+        test_index=0,
+        train=(ArcPair(input=[[1, 1]], output=[[2, 2]]),),
+        test_input=[[3, 3]],
+        test_output=[[4, 4]],
+    )
+    rows = [
+        {"candidate_index": 0, "parsed_grid": [[4, 9]], "candidate_source": "model_tta_identity"},
+        {"candidate_index": 1, "parsed_grid": [[9, 4]], "candidate_source": "model_tta_rot90"},
+        {"candidate_index": 2, "parsed_grid": [[4, 0]], "candidate_source": "model_tta_rot180"},
+        {"candidate_index": 3, "parsed_grid": [[0, 4]], "candidate_source": "model_tta_flip_h"},
+    ]
+
+    selected_index = select_candidate_index(example, rows, selection_strategy="cell_vote")
+
+    assert selected_index == 4
+    assert rows[selected_index]["candidate_source"] == "selector_cell_vote"
+    assert rows[selected_index]["parsed_grid"] == [[4, 4]]
+    assert rows[selected_index]["score"]["exact"] is True
+
+
+def test_evaluate_example_cell_vote_preserves_generated_best_of_k_accounting() -> None:
+    example = ArcAgiExample(
+        task_id="cell-vote-eval",
+        test_index=0,
+        train=(ArcPair(input=[[1, 1]], output=[[2, 2]]),),
+        test_input=[[3, 3]],
+        test_output=[[4, 4]],
+    )
+    rows, summary = evaluate_example(
+        example,
+        ["[[4,9]]", "[[9,4]]", "[[4,0]]", "[[0,4]]"],
+        candidate_sources=["model_tta_identity", "model_tta_rot90", "model_tta_rot180", "model_tta_flip_h"],
+        diagnostics={},
+        generation_steps=1,
+        output_format="json",
+        selection_strategy="cell_vote",
+    )
+
+    selected = [row for row in rows if row["selected"]]
+    assert selected[0]["candidate_source"] == "selector_cell_vote"
+    assert selected[0]["parsed_grid"] == [[4, 4]]
+    assert summary["selected_exact"] is True
+    assert summary["best_of_k_exact"] is False
+    assert summary["num_candidates"] == 4
+    assert summary["valid_candidates"] == 4
+    assert summary["selector_generated_candidates"] == 1

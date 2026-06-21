@@ -605,6 +605,112 @@ def select_symbolic_priority_candidate_index(example: ArcAgiExample, candidate_r
     return select_heuristic_candidate_index(example, candidate_rows)
 
 
+def _candidate_weight(row: dict[str, Any], preferred_shapes: set[tuple[int, int]]) -> float:
+    return max(reliability_vote_weight(row, preferred_shapes), 0.0)
+
+
+def cell_vote_grid(
+    candidate_rows: list[dict[str, Any]],
+    preferred_shapes: set[tuple[int, int]],
+) -> Grid | None:
+    weighted_rows: list[tuple[int, dict[str, Any], float, tuple[int, int]]] = []
+    for idx, row in enumerate(candidate_rows):
+        parsed = row.get("parsed_grid")
+        if parsed is None:
+            continue
+        shape = grid_shape(parsed)
+        if preferred_shapes and shape not in preferred_shapes:
+            continue
+        weight = _candidate_weight(row, preferred_shapes)
+        if weight > 0.0:
+            weighted_rows.append((idx, row, weight, shape))
+
+    if not weighted_rows and preferred_shapes:
+        return cell_vote_grid(candidate_rows, set())
+    if not weighted_rows:
+        return None
+
+    shape_stats: dict[tuple[int, int], dict[str, float | int]] = {}
+    for idx, _row, weight, shape in weighted_rows:
+        stats = shape_stats.setdefault(shape, {"weight": 0.0, "count": 0, "first_index": idx})
+        stats["weight"] = float(stats["weight"]) + weight
+        stats["count"] = int(stats["count"]) + 1
+        stats["first_index"] = min(int(stats["first_index"]), idx)
+
+    winning_shape = max(
+        shape_stats,
+        key=lambda shape: (
+            float(shape_stats[shape]["weight"]),
+            int(shape_stats[shape]["count"]),
+            -int(shape_stats[shape]["first_index"]),
+        ),
+    )
+    shape_rows = [(idx, row, weight) for idx, row, weight, shape in weighted_rows if shape == winning_shape]
+    rows, cols = winning_shape
+    voted: Grid = []
+    for row_idx in range(rows):
+        voted_row: list[int] = []
+        for col_idx in range(cols):
+            color_stats: dict[int, dict[str, float | int]] = {}
+            for idx, row, weight in shape_rows:
+                color = int(row["parsed_grid"][row_idx][col_idx])
+                stats = color_stats.setdefault(color, {"weight": 0.0, "count": 0, "first_index": idx})
+                stats["weight"] = float(stats["weight"]) + weight
+                stats["count"] = int(stats["count"]) + 1
+                stats["first_index"] = min(int(stats["first_index"]), idx)
+            voted_row.append(
+                max(
+                    color_stats,
+                    key=lambda color: (
+                        float(color_stats[color]["weight"]),
+                        int(color_stats[color]["count"]),
+                        -int(color_stats[color]["first_index"]),
+                    ),
+                )
+            )
+        voted.append(voted_row)
+    return voted
+
+
+def append_cell_vote_candidate(example: ArcAgiExample, candidate_rows: list[dict[str, Any]]) -> int | None:
+    if not candidate_rows:
+        return None
+    preferred_shapes = set(inferred_output_shapes(example))
+    voted = cell_vote_grid(candidate_rows, preferred_shapes)
+    if voted is None:
+        return None
+
+    max_candidate_index = max(int(row.get("candidate_index", idx)) for idx, row in enumerate(candidate_rows))
+    template = dict(candidate_rows[0])
+    target = example.test_output
+    template.update(
+        {
+            "candidate_index": max_candidate_index + 1,
+            "candidate_source": "selector_cell_vote",
+            "candidate_text": grid_to_json_text(voted),
+            "parsed_grid": voted,
+            "parse_method": "cell_vote",
+            "program_train_matches": 0,
+            "program_train_total": 0,
+            "program_fits_train": False,
+            "target_grid": target,
+            "target_json": grid_to_json_text(target) if target is not None else None,
+            "score": score_grid_prediction(voted, target),
+            "selector_generated": True,
+            "selected": False,
+        }
+    )
+    candidate_rows.append(template)
+    return len(candidate_rows) - 1
+
+
+def select_cell_vote_candidate_index(example: ArcAgiExample, candidate_rows: list[dict[str, Any]]) -> int:
+    synthetic_index = append_cell_vote_candidate(example, candidate_rows)
+    if synthetic_index is not None:
+        return synthetic_index
+    return select_reliability_vote_candidate_index(example, candidate_rows)
+
+
 def select_candidate_index(
     example: ArcAgiExample,
     candidate_rows: list[dict[str, Any]],
@@ -619,6 +725,8 @@ def select_candidate_index(
         return select_reliability_vote_candidate_index(example, candidate_rows)
     if selection_strategy == "symbolic_priority":
         return select_symbolic_priority_candidate_index(example, candidate_rows)
+    if selection_strategy == "cell_vote":
+        return select_cell_vote_candidate_index(example, candidate_rows)
     raise ValueError(f"Unknown selection_strategy={selection_strategy!r}")
 
 
@@ -635,7 +743,7 @@ def evaluate_example(
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     if program_parse_mode not in {"off", "fallback", "prefer", "program_only"}:
         raise ValueError(f"Unknown program_parse_mode={program_parse_mode!r}")
-    if selection_strategy not in {"heuristic", "self_consistency", "reliability_vote", "symbolic_priority"}:
+    if selection_strategy not in {"heuristic", "self_consistency", "reliability_vote", "symbolic_priority", "cell_vote"}:
         raise ValueError(f"Unknown selection_strategy={selection_strategy!r}")
     difficulty = arc_difficulty_features(example)
     rows: list[dict[str, Any]] = []
@@ -699,6 +807,7 @@ def evaluate_example(
         "best_of_k_exact": any_exact if target is not None else None,
         "valid_candidates": valid_count,
         "num_candidates": len(candidates),
+        "selector_generated_candidates": sum(1 for row in rows if row.get("selector_generated")),
         **difficulty,
     }
     return rows, summary
@@ -1051,13 +1160,14 @@ def main() -> int:
     parser.add_argument(
         "--selection_strategy",
         default="heuristic",
-        choices=("heuristic", "self_consistency", "reliability_vote", "symbolic_priority"),
+        choices=("heuristic", "self_consistency", "reliability_vote", "symbolic_priority", "cell_vote"),
         help=(
             "How to pick the selected answer from candidates. heuristic preserves the legacy "
             "program/shape/first-valid selector. self_consistency votes over identical parsed grids "
             "after optional shape filtering. reliability_vote weights grid votes by target-free "
             "source reliability proxies. symbolic_priority prefers valid deterministic symbolic "
-            "candidates after verified programs."
+            "candidates after verified programs. cell_vote synthesizes a grid by reliability-weighted "
+            "per-cell voting across valid same-shape candidates."
         ),
     )
     parser.add_argument("--include_symbolic_candidates", action="store_true")
