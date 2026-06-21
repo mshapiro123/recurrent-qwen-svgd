@@ -140,7 +140,11 @@ The older split notebooks are kept only as references:
    continuation. Set `STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE=same_recipe` for
    a six-action ladder intended to continue through candidate gate, trace gate,
    distill/dense-control selection, dense control, matched recurrent SFT, and
-   the same-recipe architecture assessment when each prior step completes.
+   the same-recipe architecture assessment when each prior step completes. Set
+   `STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE=claim` for a ten-action bounded
+   release/SOTA-readiness ladder after same-recipe evidence exists; it can
+   continue through release gate, broader benchmark suite, claim packet,
+   same-size ARC-AGI comparison, and baseline-registry validation.
    `colab/run_stage5_next_action.py` remains available directly. By default it
    writes a dry-run summary of the planner's top action. Set
    `STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE=1` to execute the selected allowlisted

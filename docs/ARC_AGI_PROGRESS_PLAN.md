@@ -358,6 +358,15 @@ bounded action loop to six actions, enough to chain from candidate gate through
 trace/distill recipe selection into dense control, matched recurrent SFT, and
 same-recipe architecture assessment when each prior artifact lands.
 
+After same-recipe evidence exists, set
+`STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE=claim` for a ten-action bounded
+release/SOTA-readiness ladder. This profile lets the same continuation wrapper
+advance through release-gate audit, broader benchmark suite, benchmark
+assessment, claim packet, same-size ARC-AGI comparison, and baseline-registry
+validation as each artifact lands. Keep it bounded; use
+`STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS` to reduce the run if you only want
+one or two next actions.
+
 Gate:
 
 - valid-grid rate should improve materially;

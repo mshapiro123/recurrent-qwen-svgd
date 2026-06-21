@@ -73,6 +73,7 @@ def default_max_actions() -> str:
         "single": "1",
         "gate": "3",
         "same_recipe": "6",
+        "claim": "10",
     }.get(continuation_profile(), "3")
 
 

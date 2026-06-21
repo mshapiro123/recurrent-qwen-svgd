@@ -57,6 +57,15 @@ def test_colab_continue_same_recipe_profile_runs_longer_ladder(monkeypatch) -> N
     assert default_env()["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] == "6"
 
 
+def test_colab_continue_claim_profile_runs_release_ladder(monkeypatch) -> None:
+    monkeypatch.delenv("STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS", raising=False)
+    monkeypatch.setenv("STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE", "claim")
+
+    assert continuation_profile() == "claim"
+    assert default_max_actions() == "10"
+    assert default_env()["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] == "10"
+
+
 def test_colab_continue_max_actions_can_be_overridden(monkeypatch) -> None:
     monkeypatch.setenv("STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE", "same_recipe")
     monkeypatch.setenv("STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS", "1")
