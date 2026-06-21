@@ -46,8 +46,14 @@ def test_progress_ledger_reads_recovered_benchmark_and_gaps(tmp_path) -> None:
         {
             "run_id": "bench",
             "examples": 20,
+            "selected_initial_gap_to_base": 6,
+            "selected_gain_from_start": 4,
             "selected_delta_recovered_vs_base": -2,
+            "selected_gap_closure_fraction": 4 / 6,
+            "best_of_k_initial_gap_to_base": 6,
+            "best_of_k_gain_from_start": 4,
             "best_of_k_delta_recovered_vs_base": -2,
+            "best_of_k_gap_closure_fraction": 4 / 6,
             "path": str(source),
         }
     ]

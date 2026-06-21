@@ -4,6 +4,7 @@ from colab.run_stage5_arc_agi_recovered_benchmark import (
     comparison_specs,
     eval_arc,
     final_stage_row,
+    gap_closure,
     metric_delta,
     recovered_checkpoint_from_curriculum,
 )
@@ -60,6 +61,39 @@ def test_metric_delta_tracks_core_arc_metrics() -> None:
         "best_of_k_exact_delta": 2,
         "tasks_solved_best_of_k_delta": -2,
     }
+
+
+def test_gap_closure_tracks_recovery_from_surgical_regression() -> None:
+    closure = gap_closure(
+        {"selected_exact": 10, "best_of_k_exact": 12},
+        {"selected_exact": 4, "best_of_k_exact": 8},
+        {"selected_exact": 7, "best_of_k_exact": 13},
+    )
+
+    assert closure["selected_exact"] == {
+        "base": 10,
+        "phase1_start": 4,
+        "recovered": 7,
+        "initial_gap_to_base": 6,
+        "recovered_gain_from_start": 3,
+        "remaining_gap_to_base": 3,
+        "closure_fraction": 0.5,
+        "status": "partially_closed",
+    }
+    assert closure["best_of_k_exact"]["closure_fraction"] == 1.25
+    assert closure["best_of_k_exact"]["status"] == "closed_or_surpassed"
+
+
+def test_gap_closure_marks_start_at_or_above_base() -> None:
+    closure = gap_closure(
+        {"selected_exact": 5},
+        {"selected_exact": 6},
+        {"selected_exact": 7},
+    )
+
+    assert closure["selected_exact"]["initial_gap_to_base"] == -1
+    assert closure["selected_exact"]["closure_fraction"] is None
+    assert closure["selected_exact"]["status"] == "start_at_or_above_base"
 
 
 def test_comparison_specs_cover_base_start_and_recovered_pairs() -> None:

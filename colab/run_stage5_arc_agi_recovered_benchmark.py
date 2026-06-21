@@ -296,6 +296,50 @@ def metric_delta(candidate: dict[str, Any], reference: dict[str, Any]) -> dict[s
     return {f"{key}_delta": int(candidate.get(key, 0)) - int(reference.get(key, 0)) for key in keys}
 
 
+def gap_closure(base: dict[str, Any], start: dict[str, Any], recovered: dict[str, Any]) -> dict[str, Any]:
+    """Measure how much later training recovers from recurrent surgery.
+
+    Positive ``initial_gap_to_base`` means the recurrent wrapper started below
+    the dense base. ``closure_fraction`` is recovered-vs-start gain divided by
+    that initial deficit. Values above 1.0 mean recovered recurrent surpassed
+    the dense base on that metric.
+    """
+
+    keys = ("first_exact", "selected_exact", "best_of_k_exact", "tasks_solved_best_of_k")
+    rows: dict[str, Any] = {}
+    for key in keys:
+        base_value = int(base.get(key, 0))
+        start_value = int(start.get(key, 0))
+        recovered_value = int(recovered.get(key, 0))
+        initial_gap = base_value - start_value
+        recovered_gain = recovered_value - start_value
+        remaining_gap = base_value - recovered_value
+        if initial_gap > 0:
+            closure_fraction: float | None = recovered_gain / initial_gap
+            if remaining_gap <= 0:
+                status = "closed_or_surpassed"
+            elif recovered_gain > 0:
+                status = "partially_closed"
+            elif recovered_gain == 0:
+                status = "unchanged"
+            else:
+                status = "widened"
+        else:
+            closure_fraction = None
+            status = "start_at_or_above_base"
+        rows[key] = {
+            "base": base_value,
+            "phase1_start": start_value,
+            "recovered": recovered_value,
+            "initial_gap_to_base": initial_gap,
+            "recovered_gain_from_start": recovered_gain,
+            "remaining_gap_to_base": remaining_gap,
+            "closure_fraction": closure_fraction,
+            "status": status,
+        }
+    return rows
+
+
 def backup_to_drive() -> None:
     if not Path("/content/drive/MyDrive").exists():
         try:
@@ -352,6 +396,22 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Start vs base: `{payload['deltas']['phase1_start_vs_base']}`",
         f"- Recovered vs start: `{payload['deltas']['recovered_vs_start']}`",
         f"- Recovered vs base: `{payload['deltas']['recovered_vs_base']}`",
+        "",
+        "## Surgical Gap Closure",
+        "",
+    ]
+    for metric, row in payload["gap_closure"].items():
+        fraction = row["closure_fraction"]
+        fraction_text = "n/a" if fraction is None else f"{fraction:.2%}"
+        lines.append(
+            f"- `{metric}`: initial gap `{row['initial_gap_to_base']}`, "
+            f"gain `{row['recovered_gain_from_start']}`, remaining gap `{row['remaining_gap_to_base']}`, "
+            f"closure `{fraction_text}`, status `{row['status']}`"
+        )
+    lines += [
+        "",
+        "Interpretation: gap closure is the share of the dense-base regression introduced by the recurrent surgery "
+        "that was recovered by later training. Values above 100% mean recovered recurrent surpassed the dense base.",
         "",
         "## Paired Evidence",
         "",
@@ -424,6 +484,7 @@ def main() -> int:
             "recovered_vs_start": metric_delta(recovered["summary"], phase1_start["summary"]),
             "recovered_vs_base": metric_delta(recovered["summary"], base["summary"]),
         },
+        "gap_closure": gap_closure(base["summary"], phase1_start["summary"], recovered["summary"]),
         "paired_comparisons": paired_comparisons,
         "recovery_analysis": recovery_analysis,
     }

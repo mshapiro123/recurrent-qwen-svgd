@@ -673,15 +673,28 @@ def recovered_base_gaps(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     gaps: list[dict[str, Any]] = []
     for run_id, arms in by_run.items():
         base = arms.get("base")
+        start = arms.get("phase1_start")
         recovered = arms.get("recovered")
-        if not base or not recovered:
+        if not base or not start or not recovered:
             continue
+        selected_initial_gap = int(base["selected_exact"]) - int(start["selected_exact"])
+        selected_gain = int(recovered["selected_exact"]) - int(start["selected_exact"])
+        best_initial_gap = int(base["best_of_k_exact"]) - int(start["best_of_k_exact"])
+        best_gain = int(recovered["best_of_k_exact"]) - int(start["best_of_k_exact"])
         gaps.append(
             {
                 "run_id": run_id,
-                "examples": min(int(base["examples"]), int(recovered["examples"])),
+                "examples": min(int(base["examples"]), int(start["examples"]), int(recovered["examples"])),
+                "selected_initial_gap_to_base": selected_initial_gap,
+                "selected_gain_from_start": selected_gain,
                 "selected_delta_recovered_vs_base": int(recovered["selected_exact"]) - int(base["selected_exact"]),
+                "selected_gap_closure_fraction": (
+                    selected_gain / selected_initial_gap if selected_initial_gap > 0 else None
+                ),
+                "best_of_k_initial_gap_to_base": best_initial_gap,
+                "best_of_k_gain_from_start": best_gain,
                 "best_of_k_delta_recovered_vs_base": int(recovered["best_of_k_exact"]) - int(base["best_of_k_exact"]),
+                "best_of_k_gap_closure_fraction": best_gain / best_initial_gap if best_initial_gap > 0 else None,
                 "path": recovered["path"],
             }
         )
@@ -754,10 +767,14 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
         )
     lines.extend(["", "## Recovered vs Base Gaps", ""])
     for row in payload["recovered_vs_base_gaps"][:10]:
+        selected_closure = row.get("selected_gap_closure_fraction")
+        best_closure = row.get("best_of_k_gap_closure_fraction")
+        selected_text = "n/a" if selected_closure is None else f"{float(selected_closure):.2%}"
+        best_text = "n/a" if best_closure is None else f"{float(best_closure):.2%}"
         lines.append(
             f"- `{row['run_id']}` examples `{row['examples']}` selected delta "
-            f"`{row['selected_delta_recovered_vs_base']}`, best delta "
-            f"`{row['best_of_k_delta_recovered_vs_base']}`"
+            f"`{row['selected_delta_recovered_vs_base']}` closure `{selected_text}`, best delta "
+            f"`{row['best_of_k_delta_recovered_vs_base']}` closure `{best_text}`"
         )
     if not payload["recovered_vs_base_gaps"]:
         lines.append("- No complete recovered-vs-base benchmark summaries found.")
