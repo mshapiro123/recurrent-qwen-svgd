@@ -134,6 +134,25 @@ def write_report(payload: dict[str, Any]) -> None:
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))
 
 
+def failure_summary(*, stage: str, error: str) -> dict[str, Any]:
+    return {
+        "run_id": RUN_ID,
+        "kind": "stage5_recovery_pipeline",
+        "status": "pipeline_failed",
+        "failed_stage": stage,
+        "error": error,
+        "next_step": f"Inspect {stage} logs under {path_for_cli(RUN_DIR)} and rerun with the same run ids.",
+        "autopilot_run_id": AUTOPILOT_RUN_ID,
+        "autopilot_summary": path_for_cli(autopilot_summary_path()),
+        "autopilot_status": None,
+        "full_assessment_run_id": FULL_ASSESS_RUN_ID,
+        "full_assessment_summary": None,
+        "full_assessment_status": None,
+        "autopilot": None,
+        "full_assessment": None,
+    }
+
+
 def build_summary(
     *,
     autopilot_payload: dict[str, Any] | None,
@@ -171,29 +190,44 @@ def build_summary(
 def main() -> int:
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     env = child_env()
+    current_stage = "preflight"
 
-    run([sys.executable, "colab/check_stage5_colab_preflight.py"], env=env, log_name="preflight.log")
+    try:
+        run([sys.executable, "colab/check_stage5_colab_preflight.py"], env=env, log_name="preflight.log")
 
-    autopilot_summary = autopilot_summary_path(env["STAGE5_BALANCED_RECOVERY_RUN_ID"])
-    if autopilot_summary.exists():
-        print(f"reusing_autopilot_summary={path_for_cli(autopilot_summary)}")
-    else:
-        run([sys.executable, "colab/run_stage5_balanced_recovery_autopilot.py"], env=env, log_name="autopilot.log")
-    autopilot_payload = read_json(autopilot_summary) if autopilot_summary.exists() else None
-
-    full_payload: dict[str, Any] | None = None
-    if autopilot_payload and autopilot_passed(autopilot_payload):
-        full_summary = full_assessment_summary_path(env["STAGE5_RECOVERY_FULL_ASSESS_RUN_ID"])
-        if full_summary.exists():
-            print(f"reusing_full_assessment_summary={path_for_cli(full_summary)}")
+        autopilot_summary = autopilot_summary_path(env["STAGE5_BALANCED_RECOVERY_RUN_ID"])
+        if autopilot_summary.exists():
+            print(f"reusing_autopilot_summary={path_for_cli(autopilot_summary)}")
         else:
-            run([sys.executable, "colab/run_stage5_recovery_full_assessment.py"], env=env, log_name="full_assessment.log")
-        full_payload = read_json(full_summary) if full_summary.exists() else None
+            current_stage = "autopilot"
+            run([sys.executable, "colab/run_stage5_balanced_recovery_autopilot.py"], env=env, log_name="autopilot.log")
+        current_stage = "autopilot"
+        autopilot_payload = read_json(autopilot_summary) if autopilot_summary.exists() else None
 
-    payload = build_summary(autopilot_payload=autopilot_payload, full_payload=full_payload)
-    write_report(payload)
-    commit_results()
-    return 0
+        full_payload: dict[str, Any] | None = None
+        if autopilot_payload and autopilot_passed(autopilot_payload):
+            full_summary = full_assessment_summary_path(env["STAGE5_RECOVERY_FULL_ASSESS_RUN_ID"])
+            if full_summary.exists():
+                print(f"reusing_full_assessment_summary={path_for_cli(full_summary)}")
+            else:
+                current_stage = "full_assessment"
+                run(
+                    [sys.executable, "colab/run_stage5_recovery_full_assessment.py"],
+                    env=env,
+                    log_name="full_assessment.log",
+                )
+            current_stage = "full_assessment"
+            full_payload = read_json(full_summary) if full_summary.exists() else None
+
+        payload = build_summary(autopilot_payload=autopilot_payload, full_payload=full_payload)
+        write_report(payload)
+        commit_results()
+        return 0
+    except Exception as exc:
+        payload = failure_summary(stage=current_stage, error=str(exc))
+        write_report(payload)
+        commit_results()
+        return 1
 
 
 if __name__ == "__main__":

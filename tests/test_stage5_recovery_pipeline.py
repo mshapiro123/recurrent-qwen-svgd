@@ -39,3 +39,13 @@ def test_build_summary_reports_full_assessment_status() -> None:
 
     assert payload["status"] == "full_assessment_balanced_nonnegative"
     assert payload["next_step"] == "ship it"
+
+
+def test_failure_summary_records_failed_stage() -> None:
+    import colab.run_stage5_recovery_pipeline as module
+
+    payload = module.failure_summary(stage="autopilot", error="boom")
+
+    assert payload["status"] == "pipeline_failed"
+    assert payload["failed_stage"] == "autopilot"
+    assert payload["error"] == "boom"
