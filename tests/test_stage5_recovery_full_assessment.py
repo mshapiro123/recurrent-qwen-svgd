@@ -63,3 +63,23 @@ def test_infer_stage5_run_id() -> None:
     import colab.run_stage5_recovery_full_assessment as module
 
     assert module.infer_stage5_run_id("outputs/stage5/run/phase1/phase1_step_50.pt") == "run"
+
+
+def test_run_full_benchmark_reuses_existing_summary(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_recovery_full_assessment as module
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_ID", "full_assess")
+    called = False
+
+    def fake_run(*args, **kwargs):
+        nonlocal called
+        called = True
+
+    monkeypatch.setattr(module, "run", fake_run)
+    summary = tmp_path / "outputs" / "stage5" / "full_assess_balanced_full" / "summary.json"
+    summary.parent.mkdir(parents=True)
+    summary.write_text("{}", encoding="utf-8")
+
+    assert module.run_full_benchmark(tmp_path / "checkpoint.pt") == summary
+    assert called is False

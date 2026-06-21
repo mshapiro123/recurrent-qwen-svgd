@@ -140,6 +140,10 @@ def selected_checkpoint(source_payload: dict[str, Any]) -> tuple[str, Path, dict
 
 def run_full_benchmark(checkpoint: Path) -> Path:
     benchmark_run_id = f"{RUN_ID}_balanced_full"
+    benchmark_summary = ROOT / "outputs" / "stage5" / benchmark_run_id / "summary.json"
+    if benchmark_summary.exists():
+        print(f"reusing_benchmark_summary={path_for_cli(benchmark_summary)}")
+        return benchmark_summary
     env = os.environ.copy()
     env.update(
         {
@@ -158,7 +162,7 @@ def run_full_benchmark(checkpoint: Path) -> Path:
         }
     )
     run([sys.executable, "colab/run_stage5_benchmark_suite.py"], env=env, log_name="benchmark_suite.log")
-    return ROOT / "outputs" / "stage5" / benchmark_run_id / "summary.json"
+    return benchmark_summary
 
 
 def run_balanced_assessment(benchmark_summary: Path) -> Path:
