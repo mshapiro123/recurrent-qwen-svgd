@@ -111,12 +111,22 @@ def validate_registry_payload(payload: Any, *, source_path: Path | None = None) 
             valid_baselines=valid_baselines,
             issues=issues,
             metric=None,
+            arc_version=None,
+            arc_split=None,
             same_size_band={},
         )
 
     benchmark = text_value(payload.get("benchmark"))
     if is_placeholder_text(benchmark):
         issues.append(issue("$.benchmark", "Benchmark must be present and non-placeholder."))
+
+    arc_version = text_value(payload.get("arc_version"))
+    if is_placeholder_text(arc_version):
+        issues.append(issue("$.arc_version", "arc_version must identify the ARC-AGI version used by these baselines."))
+
+    arc_split = text_value(payload.get("arc_split") or payload.get("eval_split"))
+    if is_placeholder_text(arc_split):
+        issues.append(issue("$.arc_split", "arc_split or eval_split must identify the evaluated ARC-AGI split."))
 
     metric = text_value(payload.get("metric"))
     if metric not in SUPPORTED_METRICS:
@@ -211,6 +221,8 @@ def validate_registry_payload(payload: Any, *, source_path: Path | None = None) 
         valid_baselines=valid_baselines,
         issues=issues,
         metric=metric,
+        arc_version=arc_version,
+        arc_split=arc_split,
         same_size_band=band,
     )
 
@@ -222,6 +234,8 @@ def build_payload(
     valid_baselines: list[dict[str, Any]],
     issues: list[dict[str, str]],
     metric: str | None,
+    arc_version: str | None,
+    arc_split: str | None,
     same_size_band: dict[str, Any],
 ) -> dict[str, Any]:
     errors = [row for row in issues if row["severity"] == "error"]
@@ -241,6 +255,16 @@ def build_payload(
             {"issues": errors},
         ),
         criterion(
+            "arc_agi_metadata_present",
+            bool(arc_version and arc_split),
+            (
+                "Registry identifies the ARC-AGI version and split."
+                if arc_version and arc_split
+                else "Registry must identify ARC-AGI version and split for claim-safe comparisons."
+            ),
+            {"arc_version": arc_version, "arc_split": arc_split},
+        ),
+        criterion(
             "has_valid_same_size_baseline",
             bool(valid_baselines),
             "At least one valid same-size baseline is available."
@@ -258,6 +282,8 @@ def build_payload(
         "path": path_for_cli(source_path),
         "benchmark": payload.get("benchmark"),
         "metric": metric,
+        "arc_version": arc_version,
+        "arc_split": arc_split,
         "same_size_band": same_size_band,
         "baseline_count": len(payload.get("baselines", [])) if isinstance(payload.get("baselines"), list) else 0,
         "valid_baseline_count": len(valid_baselines),
@@ -281,6 +307,8 @@ def validate_baseline_registry(path: Path) -> dict[str, Any]:
             valid_baselines=[],
             issues=[issue("$", "Baseline registry file is missing.")],
             metric=None,
+            arc_version=None,
+            arc_split=None,
             same_size_band={},
         )
     try:
@@ -292,6 +320,8 @@ def validate_baseline_registry(path: Path) -> dict[str, Any]:
             valid_baselines=[],
             issues=[issue("$", f"Could not read registry JSON: {exc}")],
             metric=None,
+            arc_version=None,
+            arc_split=None,
             same_size_band={},
         )
     return validate_registry_payload(payload, source_path=path)
@@ -305,6 +335,7 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
         f"- Status: `{payload['status']}`",
         f"- Passed: `{payload['passed']}`",
         f"- Registry: `{payload.get('path')}`",
+        f"- ARC version/split: `{payload.get('arc_version')}` / `{payload.get('arc_split')}`",
         f"- Metric: `{payload.get('metric')}`",
         f"- Valid baselines: `{payload.get('valid_baseline_count')}` / `{payload.get('baseline_count')}`",
         f"- Best baseline: `{(payload.get('best_baseline') or {}).get('name')}` at `{(payload.get('best_baseline') or {}).get('accuracy')}`",
@@ -324,8 +355,9 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
             "## Requirement",
             "",
             "A same-size ARC-AGI SOTA comparison requires sourced, non-placeholder "
-            "baseline scores inside the configured parameter band. Placeholder or "
-            "unsourced values keep the SOTA gate closed.",
+            "baseline scores inside the configured parameter band for the same "
+            "ARC-AGI version and split. Placeholder or unsourced values keep the "
+            "SOTA gate closed.",
         ]
     )
     output_md.parent.mkdir(parents=True, exist_ok=True)

@@ -8,6 +8,8 @@ from colab.validate_arc_agi_baseline_registry import main, validate_baseline_reg
 def _registry(*, params_b: float = 0.5, source: str = "https://arcprize.org/leaderboard") -> dict:
     return {
         "benchmark": "ARC-AGI public evaluation",
+        "arc_version": "1",
+        "arc_split": "evaluation",
         "metric": "selected_accuracy",
         "same_size_band": {"min_params_b": 0.3, "max_params_b": 1.0},
         "baselines": [
@@ -30,6 +32,21 @@ def test_baseline_registry_validation_passes_sourced_same_size_registry() -> Non
     assert payload["passed"] is True
     assert payload["valid_baseline_count"] == 1
     assert payload["best_baseline"]["accuracy"] == 0.1
+    assert payload["arc_version"] == "1"
+    assert payload["arc_split"] == "evaluation"
+
+
+def test_baseline_registry_validation_rejects_missing_arc_metadata() -> None:
+    registry = _registry()
+    registry.pop("arc_version")
+    registry.pop("arc_split")
+
+    payload = validate_registry_payload(registry)
+
+    assert payload["status"] == "needs_baseline_registry"
+    assert payload["passed"] is False
+    assert any(row["path"] == "$.arc_version" for row in payload["issues"])
+    assert any(row["path"] == "$.arc_split" for row in payload["issues"])
 
 
 def test_baseline_registry_validation_rejects_placeholder_source() -> None:

@@ -165,6 +165,8 @@ def load_baselines(path: Path | None) -> dict[str, Any]:
         "path": path_for_cli(path),
         "benchmark": validation.get("benchmark"),
         "metric": validation.get("metric"),
+        "arc_version": validation.get("arc_version"),
+        "arc_split": validation.get("arc_split"),
         "same_size_band": validation.get("same_size_band") or {},
         "baselines": baselines if isinstance(baselines, list) else [],
         "validation": validation,
@@ -198,6 +200,18 @@ def criterion(name: str, passed: bool, reason: str, evidence: dict[str, Any]) ->
     return {"name": name, "passed": passed, "reason": reason, "evidence": evidence}
 
 
+def normalized_text(value: Any) -> str:
+    return str(value).strip().casefold() if value is not None else ""
+
+
+def registry_matches_candidate_arc(candidate: dict[str, Any], registry: dict[str, Any]) -> bool:
+    return (
+        bool(candidate.get("arc_version") and candidate.get("arc_split"))
+        and normalized_text(candidate.get("arc_version")) == normalized_text(registry.get("arc_version"))
+        and normalized_text(candidate.get("arc_split")) == normalized_text(registry.get("arc_split"))
+    )
+
+
 def build_sota_comparison(
     *,
     candidate_summary: Path | None,
@@ -213,6 +227,7 @@ def build_sota_comparison(
     candidate_present = bool(candidate.get("present"))
     candidate_examples = int(candidate.get("examples", 0) or 0)
     candidate_has_arc_metadata = has_arc_agi_metadata(candidate.get("metadata") or {})
+    registry_candidate_match = registry_matches_candidate_arc(candidate, registry)
     candidate_accuracy = candidate.get("accuracy")
     best_accuracy = float(best["accuracy"]) if best else None
     delta = (float(candidate_accuracy) - best_accuracy) if candidate_accuracy is not None and best_accuracy is not None else None
@@ -255,6 +270,16 @@ def build_sota_comparison(
             registry,
         ),
         criterion(
+            "baseline_registry_matches_candidate_arc",
+            bool(registry.get("present")) and registry_candidate_match,
+            (
+                "Baseline registry ARC-AGI version/split matches the candidate summary."
+                if bool(registry.get("present")) and registry_candidate_match
+                else "Baseline registry must match the candidate ARC-AGI version and split."
+            ),
+            {"candidate": candidate, "baseline_registry": registry},
+        ),
+        criterion(
             "candidate_meets_or_exceeds_best_baseline",
             delta is not None and delta >= min_margin,
             (
@@ -284,6 +309,11 @@ def build_sota_comparison(
             "Provide a validator-passing config/arc_agi_same_size_baselines.json with sourced same-size "
             "baseline scores."
         )
+    elif not registry_candidate_match:
+        status = "needs_matching_baseline_registry"
+        next_step = (
+            "Use a baseline registry whose arc_version and arc_split match the candidate ARC-AGI run summary."
+        )
     elif delta is not None and delta >= min_margin:
         status = "passed"
         next_step = "Rebuild the Stage 5 claim packet; it can now include this ARC-AGI SOTA comparison evidence."
@@ -303,6 +333,7 @@ def build_sota_comparison(
         "min_margin": min_margin,
         "candidate": candidate,
         "baseline_registry": registry,
+        "candidate_registry_arc_match": registry_candidate_match,
         "best_baseline": best,
         "delta_accuracy_vs_best_baseline": delta,
         "criteria": criteria,
@@ -322,6 +353,8 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
         f"- Passed: `{payload['passed']}`",
         f"- Metric: `{payload['metric']}`",
         f"- Candidate: `{candidate.get('accuracy')}` over `{candidate.get('examples')}` examples",
+        f"- Candidate ARC version/split: `{candidate.get('arc_version')}` / `{candidate.get('arc_split')}`",
+        f"- Baseline ARC version/split: `{payload.get('baseline_registry', {}).get('arc_version')}` / `{payload.get('baseline_registry', {}).get('arc_split')}`",
         f"- Best baseline: `{best.get('name')}` at `{best.get('accuracy')}`",
         f"- Delta accuracy: `{payload['delta_accuracy_vs_best_baseline']}`",
         f"- Next step: {payload['next_step']}",

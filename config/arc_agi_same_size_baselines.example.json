@@ -1,5 +1,7 @@
 {
   "benchmark": "ARC-AGI public evaluation",
+  "arc_version": "1",
+  "arc_split": "evaluation",
   "metric": "selected_accuracy",
   "same_size_band": {
     "min_params_b": 0.3,

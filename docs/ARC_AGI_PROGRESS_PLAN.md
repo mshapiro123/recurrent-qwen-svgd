@@ -318,7 +318,9 @@ broader benchmark readiness.
 For any same-size SOTA comparison, use a main ARC-AGI run summary carrying
 `metadata.arc_version` and `metadata.arc_split` or `metadata.eval_split`.
 Ad hoc per-label evaluation summaries are not sufficient evidence for
-`colab/build_stage5_arc_agi_sota_comparison.py`.
+`colab/build_stage5_arc_agi_sota_comparison.py`. The sourced baseline registry
+must also carry `arc_version` and `arc_split`, and they must match the
+candidate summary exactly.
 
 Set `STAGE5_ARC_AGI_DISTILL=1` to add frozen-base next-token KL distillation
 inside `training/train_phase1_ponder.py`. Run
