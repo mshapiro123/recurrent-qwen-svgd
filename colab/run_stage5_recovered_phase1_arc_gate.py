@@ -41,18 +41,48 @@ def path_for_cli(path: Path) -> str:
 
 
 def mount_drive_if_possible() -> None:
-    if Path("/content/drive/MyDrive").exists():
+    force_remount = os.environ.get("FORCE_DRIVE_REMOUNT", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+    }
+    if Path("/content/drive/MyDrive").exists() and not force_remount:
         return
     try:
         from google.colab import drive  # type: ignore
 
-        drive.mount("/content/drive")
+        drive.mount("/content/drive", force_remount=force_remount)
     except Exception as exc:  # pragma: no cover - Colab only
         print(f"Drive mount skipped/failed: {exc}")
 
 
 def drive_root() -> Path:
     return Path(os.environ.get("DRIVE_BACKUP_DIR", "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts"))
+
+
+def drive_diagnostics() -> str:
+    root = drive_root()
+    probes = [
+        Path("/content/drive"),
+        Path("/content/drive/MyDrive"),
+        root,
+    ]
+    lines = ["Drive visibility:"]
+    for probe in probes:
+        try:
+            lines.append(f"- {probe}: exists={probe.exists()} is_dir={probe.is_dir()}")
+        except OSError as exc:
+            lines.append(f"- {probe}: inaccessible ({exc})")
+    lines.extend(
+        [
+            "If Drive was recently reauthorized or the runtime reset, run this in Colab before retrying:",
+            "from google.colab import drive",
+            "drive.mount('/content/drive', force_remount=True)",
+            "or set FORCE_DRIVE_REMOUNT=1 for this runner.",
+        ]
+    )
+    return "\n".join(lines)
 
 
 def candidate_drive_checkpoints(run_id: str, filename: str) -> list[Path]:
@@ -81,7 +111,8 @@ def restore_checkpoint_if_needed(checkpoint: Path, *, run_id: str) -> None:
     searched = "\n".join(str(path) for path in candidate_drive_checkpoints(run_id, checkpoint.name)[:12])
     raise FileNotFoundError(
         f"Missing recovered checkpoint {checkpoint}. Could not restore it from Drive.\n"
-        f"Drive root: {drive_root()}\nSearched:\n{searched}"
+        f"{drive_diagnostics()}\n"
+        f"Searched:\n{searched}"
     )
 
 

@@ -32,6 +32,23 @@ def test_restore_checkpoint_copies_from_drive(monkeypatch, tmp_path) -> None:
     assert target.read_bytes() == b"checkpoint"
 
 
+def test_restore_checkpoint_failure_mentions_drive_reauth(monkeypatch, tmp_path) -> None:
+    import pytest
+    import colab.run_stage5_recovered_phase1_arc_gate as module
+
+    monkeypatch.setenv("DRIVE_BACKUP_DIR", str(tmp_path / "missing-drive"))
+    monkeypatch.setattr(module, "mount_drive_if_possible", lambda: None)
+    target = tmp_path / "outputs" / "stage5" / "run" / "phase1" / "phase1_step_125.pt"
+
+    with pytest.raises(FileNotFoundError) as exc:
+        module.restore_checkpoint_if_needed(target, run_id="run")
+
+    message = str(exc.value)
+    assert "Drive visibility:" in message
+    assert "drive.mount('/content/drive', force_remount=True)" in message
+    assert "FORCE_DRIVE_REMOUNT=1" in message
+
+
 def test_default_run_id_uses_full_label() -> None:
     import colab.run_stage5_recovered_phase1_arc_gate as module
 
