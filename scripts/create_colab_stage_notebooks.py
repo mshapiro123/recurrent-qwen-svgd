@@ -247,6 +247,59 @@ else:
 SINGLE_RUNTIME_STAGE1_CELL = BOOTSTRAP + "\n\n" + STAGE1_RUN
 
 
+STAGE5_CONTINUE_RUN = r"""
+import os, subprocess, sys, time
+from pathlib import Path
+
+ROOT = Path("/content/recurrent-qwen-svgd")
+RUN_ID = os.environ.get("STAGE5_ARC_AGI_NEXT_ACTION_RUN_ID") or time.strftime("stage5_arc_agi_colab_continue_%Y%m%d_%H%M%S")
+
+# Conservative defaults: execute one allowlisted next action. Increase MAX_ACTIONS
+# only when you want the planner to chain safe follow-up actions in the same A100 session.
+os.environ.setdefault("STAGE5_ARC_AGI_NEXT_ACTION_RUN_ID", RUN_ID)
+os.environ.setdefault("STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE", "1")
+os.environ.setdefault("STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS", "1")
+os.environ.setdefault("STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT", "0")
+os.environ.setdefault("STAGE5_ARC_AGI_AUTOPILOT_TRACE_SFT_GATE_ARMS", "grid_only,symbolic_program_trace_covered,symbolic_state_trace_covered")
+os.environ.setdefault("STAGE5_ARC_AGI_NEXT_PLAN_TRACE_SFT_GATE_ARMS", "grid_only,symbolic_program_trace_covered,symbolic_state_trace_covered")
+os.environ.setdefault("DRIVE_BACKUP_DIR", "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts")
+
+def run(cmd, check=True):
+    print("$", " ".join(map(str, cmd)))
+    proc = subprocess.run(cmd, cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    print(proc.stdout)
+    if check and proc.returncode:
+        raise RuntimeError(f"failed: {' '.join(map(str, cmd))}")
+    return proc
+
+try:
+    from google.colab import drive
+
+    drive.mount("/content/drive")
+except Exception as exc:
+    print("Drive mount skipped/failed:", exc)
+
+run(["nvidia-smi"], check=False)
+run([sys.executable, "-m", "pytest", "-q", "tests/test_stage5_autopilot.py", "tests/test_stage5_next_plan.py", "tests/test_stage5_sft_gates.py"])
+
+print("RUN_ID", RUN_ID)
+run([sys.executable, "colab/run_stage5_next_action.py"])
+run([sys.executable, "colab/summarize_stage5_progress.py"], check=False)
+
+run(["git", "status", "-sb"])
+run(["git", "add", "-f", "outputs/stage5"])
+status = run(["git", "diff", "--cached", "--quiet"], check=False)
+if status.returncode == 0:
+    print("No Stage 5 outputs to commit.")
+else:
+    run(["git", "commit", "-m", f"Record Stage 5 continuation {RUN_ID}"])
+    run(["git", "push", "origin", "main"], check=False)
+"""
+
+
+SINGLE_RUNTIME_STAGE5_CELL = BOOTSTRAP + "\n\n" + STAGE5_CONTINUE_RUN
+
+
 def write_notebook(name: str, cells: list[dict]) -> None:
     COLAB.mkdir(parents=True, exist_ok=True)
     path = COLAB / name
@@ -266,55 +319,48 @@ def main() -> int:
                 to this notebook and run the stage cells in order. Do not hop between
                 notebooks unless you intentionally want a separate session.
 
-                Stage 1 is executable now. Stages 2-6 are separated cells with the
-                next gates and implementation checklists so we can continue in this
-                same runtime once Stage 1 results land.
+                The first executable cell is the current Stage 5 continuation path:
+                clone/pull latest GitHub, verify auth, run focused tests, execute one
+                allowlisted next action, summarize progress, and push run summaries.
                 """
             ),
             code(BOOTSTRAP),
             md(
                 """
-                ## Stage 1 - Finish SVGD Heldout Seed Replication
+                ## Current Stage 5 Continuation
 
-                Runs heldout seeds `5-9` for random32 vs recreated within-group PCA.
-                Commits and pushes the diagnostic JSONL/log/summary outputs.
+                Runs one planner-selected, allowlisted next action. Change
+                `STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS` in the cell only when you
+                intentionally want a bounded multi-action loop in the same runtime.
+                """
+            ),
+            code(STAGE5_CONTINUE_RUN),
+            md(
+                """
+                ## Historical Stage 1 - SVGD Heldout Seed Replication
+
+                Kept for reproducing the earlier SVGD heldout seed diagnostics.
                 """
             ),
             code(STAGE1_RUN),
             md(
                 """
-                ## Stage 2 - Benchmark Harness Gate
+                ## Benchmark Harness Gate
 
-                Run this only after Stage 1 summary is reviewed.
-                """
-            ),
-            code(
-                r"""
-%cd /content/recurrent-qwen-svgd
-!python colab/run_stage2_mcq_smoke.py
-"""
-            ),
-            md(
-                """
-                ## Stage 3 - Hugging Face Packaging Gate
-
-                Package only after the benchmark harness can reload and evaluate a
-                saved adapter/controller artifact.
+                Run after a recovered recurrent checkpoint is selected by Stage 5.
                 """
             ),
             code(
                 r"""
 %cd /content/recurrent-qwen-svgd
 
-MODEL_REPO = "mshapiro123/recurrent-qwen-svgd-0.5b-adapter"
-print("Target HF repo:", MODEL_REPO)
 print('''
-Stage 3 implementation checklist:
-1. Export trainable checkpoint to safetensors.
-2. Save adapter config: base_model, split, max_loops, SVGD defaults, projection path metadata.
-3. Write README/model card with limitations and exact commands.
-4. Push adapter package to HF private repo first.
-5. Add a reload smoke test from HF.
+Benchmark order:
+1. ARC-AGI recovered recurrent vs base at increasing limits
+2. TTA/selector sweeps only after recurrent recovery is non-negative
+3. MCQ harness smoke
+4. GPQA-lite/sample
+5. GPQA Diamond only after packaging/reload is deterministic
 ''')
 """
             ),
@@ -396,12 +442,12 @@ Stage 6 deliverables:
                 # Recurrent Qwen SVGD Single-Runtime Launcher
 
                 Run the single code cell below in the already-attached Colab A100
-                runtime. It clones/updates the private GitHub repo and runs Stage 1
-                directly in this notebook. It does not open or route you to another
-                notebook.
+                runtime. It clones/updates the private GitHub repo and runs the
+                Stage 5 continuation directly in this notebook. It does not open or route
+                you to another notebook.
                 """
             ),
-            code(SINGLE_RUNTIME_STAGE1_CELL),
+            code(SINGLE_RUNTIME_STAGE5_CELL),
         ],
     )
 
