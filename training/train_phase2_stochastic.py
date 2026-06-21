@@ -114,6 +114,10 @@ def main() -> int:
                 svgd_bandwidth=cfg.get("svgd_bandwidth", "median"),
                 svgd_bandwidth_floor=cfg.get("svgd_bandwidth_floor", 1e-6),
                 svgd_repulsion_max_norm=cfg.get("svgd_repulsion_max_norm"),
+                svgd_kernel_projection_dim=cfg.get("svgd_kernel_projection_dim"),
+                svgd_kernel_projection_path=cfg.get("svgd_kernel_projection_path"),
+                svgd_kernel_geometry=cfg.get("svgd_kernel_geometry", "euclidean"),
+                svgd_projection_seed=cfg.get("svgd_projection_seed", 0),
                 use_cache=False,
                 return_dict=True,
             )
