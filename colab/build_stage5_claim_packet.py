@@ -1,9 +1,10 @@
 """Build a conservative Stage 5 claim/readiness packet from saved artifacts.
 
 This is a no-GPU synthesis step. It does not make benchmark claims by itself;
-it gathers the release gate, broader benchmark gate, same-recipe architecture
-gate, HF export metadata, and any future authoritative ARC-AGI comparison into
-one auditable packet.
+it gathers the release gate, broader benchmark gate, replicated Gate 1 selector
+evidence, Gate 2 particle-mechanism evidence, same-recipe architecture gate, HF
+export metadata, and any future authoritative ARC-AGI comparison into one
+auditable packet.
 """
 
 from __future__ import annotations
@@ -82,6 +83,17 @@ def is_recipe_selector_conversion_gate(payload: dict[str, Any]) -> bool:
     )
 
 
+def is_selector_replication_gate(payload: dict[str, Any]) -> bool:
+    return (
+        payload.get("gate") == "stage5_selector_replication"
+        or payload.get("kind") == "selector_replication"
+    )
+
+
+def is_particle_mechanism_gate(payload: dict[str, Any]) -> bool:
+    return payload.get("gate") == "stage5_gate2_particle_mechanism"
+
+
 def is_hf_export(payload: dict[str, Any]) -> bool:
     return bool(payload.get("export_dir") and payload.get("checkpoint") and isinstance(payload.get("metadata"), dict))
 
@@ -130,16 +142,22 @@ def build_claim_packet(
     hf_export_summary: Path | None,
     arc_agi_comparison_summary: Path | None,
     selector_conversion_summary: Path | None = None,
+    selector_replication_summary: Path | None = None,
+    particle_mechanism_summary: Path | None = None,
 ) -> dict[str, Any]:
     release_gate = artifact(release_gate_summary)
     broader_benchmark = artifact(broader_benchmark_summary)
     recipe_control = artifact(recipe_control_summary)
     selector_conversion = artifact(selector_conversion_summary)
+    selector_replication = artifact(selector_replication_summary)
+    particle_mechanism = artifact(particle_mechanism_summary)
     hf_export = artifact(hf_export_summary)
     arc_agi = artifact(arc_agi_comparison_summary)
 
     release_passed = bool(release_gate.get("passed"))
     broader_passed = bool(broader_benchmark.get("passed"))
+    selector_replication_passed = bool(selector_replication.get("passed"))
+    particle_mechanism_passed = bool(particle_mechanism.get("passed"))
     recipe_passed = bool(recipe_control.get("passed"))
     selector_conversion_passed = bool(selector_conversion.get("passed"))
     architecture_or_conversion_passed = recipe_passed or selector_conversion_passed
@@ -179,6 +197,26 @@ def build_claim_packet(
             {"architecture": recipe_control, "selector_conversion": selector_conversion},
         ),
         criterion(
+            "selector_replication_passed",
+            selector_replication_passed,
+            (
+                "Gate 1 selector/TTA evidence replicated on a second slice."
+                if selector_replication_passed
+                else "Replicated Gate 1 selector/TTA evidence is missing or has not passed."
+            ),
+            selector_replication,
+        ),
+        criterion(
+            "particle_mechanism_gate_passed",
+            particle_mechanism_passed,
+            (
+                "Gate 2 recurrent-particle mechanism evidence passed."
+                if particle_mechanism_passed
+                else "Gate 2 recurrent-particle mechanism evidence is missing or has not passed."
+            ),
+            particle_mechanism,
+        ),
+        criterion(
             "hf_export_hash_present",
             bool(hf_export.get("present")) and export_has_hash,
             (
@@ -208,6 +246,14 @@ def build_claim_packet(
         status = "needs_broader_benchmark_gate"
         claim_level = "not_ready"
         next_step = "Run the broader benchmark suite and paired assessment gate."
+    elif not selector_replication_passed:
+        status = "needs_selector_replication"
+        claim_level = "not_ready"
+        next_step = "Replicate the Gate 1 selector/TTA setting on a distinct stratified slice."
+    elif not particle_mechanism_passed:
+        status = "needs_particle_mechanism_gate"
+        claim_level = "not_ready"
+        next_step = "Pass the Gate 2 recurrent-particle mechanism assessment before architecture-facing claims."
     elif not architecture_or_conversion_passed:
         status = "needs_architecture_evidence"
         claim_level = "not_ready"
@@ -237,6 +283,8 @@ def build_claim_packet(
             "broader_benchmark_gate": broader_benchmark,
             "same_recipe_architecture": recipe_control,
             "same_recipe_selector_conversion": selector_conversion,
+            "selector_replication": selector_replication,
+            "particle_mechanism_gate": particle_mechanism,
             "hf_export": hf_export,
             "authoritative_arc_agi_comparison": arc_agi,
         },
@@ -283,6 +331,8 @@ def main() -> int:
     parser.add_argument("--broader_benchmark_summary")
     parser.add_argument("--recipe_control_summary")
     parser.add_argument("--selector_conversion_summary")
+    parser.add_argument("--selector_replication_summary")
+    parser.add_argument("--particle_mechanism_summary")
     parser.add_argument("--hf_export_summary")
     parser.add_argument("--arc_agi_comparison_summary")
     parser.add_argument("--output_json")
@@ -307,6 +357,16 @@ def main() -> int:
         if args.selector_conversion_summary
         else latest_matching(stage5_files, is_recipe_selector_conversion_gate)
     )
+    selector_replication = (
+        resolve_path(args.selector_replication_summary)
+        if args.selector_replication_summary
+        else latest_matching(stage5_files, is_selector_replication_gate)
+    )
+    particle_mechanism = (
+        resolve_path(args.particle_mechanism_summary)
+        if args.particle_mechanism_summary
+        else latest_matching(stage5_files, is_particle_mechanism_gate)
+    )
     hf_export = resolve_path(args.hf_export_summary) if args.hf_export_summary else latest_matching(hf_files, is_hf_export)
     arc_agi = (
         resolve_path(args.arc_agi_comparison_summary)
@@ -323,6 +383,8 @@ def main() -> int:
         hf_export_summary=hf_export,
         arc_agi_comparison_summary=arc_agi,
         selector_conversion_summary=selector_conversion,
+        selector_replication_summary=selector_replication,
+        particle_mechanism_summary=particle_mechanism,
     )
     write_report(payload, output_json=output_json, output_md=output_md)
     return 0

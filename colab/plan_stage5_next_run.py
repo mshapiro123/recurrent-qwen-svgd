@@ -791,6 +791,34 @@ def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summar
 
 def claim_readiness_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
+    if status == "needs_selector_replication":
+        return [
+            make_action(
+                "Assess selector replication for claim packet",
+                "The claim packet is missing replicated Gate 1 selector/TTA evidence; run the no-GPU replication assessor before release or SOTA-facing claims.",
+                command_env(
+                    {
+                        "STAGE5_SELECTOR_REPLICATION_RUN_ID": f"{RUN_ID}_claim_selector_replication",
+                    },
+                    "python colab/assess_stage5_selector_replication.py",
+                ),
+                10,
+            )
+        ]
+    if status == "needs_particle_mechanism_gate":
+        return [
+            make_action(
+                "Assess Gate 2 particle mechanism for claim packet",
+                "The claim packet is missing passed Gate 2 recurrent-particle mechanism evidence; run the no-GPU Gate 2 assessor before architecture-facing claims.",
+                command_env(
+                    {
+                        "STAGE5_GATE2_ASSESSMENT_RUN_ID": f"{RUN_ID}_claim_gate2_assessment",
+                    },
+                    "python colab/assess_stage5_gate2.py",
+                ),
+                10,
+            )
+        ]
     if status == "needs_hf_export":
         return [
             make_action(

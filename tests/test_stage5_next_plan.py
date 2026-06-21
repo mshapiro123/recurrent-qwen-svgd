@@ -1463,6 +1463,34 @@ def test_claim_readiness_missing_export_runs_exporter(tmp_path) -> None:
     assert "python colab/run_stage5_publish_hf_adapter.py" in actions[0]["command"]
 
 
+def test_claim_readiness_missing_selector_replication_runs_assessor(tmp_path) -> None:
+    source = tmp_path / "claim" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_claim_readiness",
+        "status": "needs_selector_replication",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Assess selector replication for claim packet"
+    assert "python colab/assess_stage5_selector_replication.py" in actions[0]["command"]
+
+
+def test_claim_readiness_missing_particle_gate_runs_gate2_assessor(tmp_path) -> None:
+    source = tmp_path / "claim" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_claim_readiness",
+        "status": "needs_particle_mechanism_gate",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Assess Gate 2 particle mechanism for claim packet"
+    assert "python colab/assess_stage5_gate2.py" in actions[0]["command"]
+
+
 def test_claim_readiness_release_candidate_inspects_markdown(tmp_path) -> None:
     source = tmp_path / "claim" / "summary.json"
     source.parent.mkdir()

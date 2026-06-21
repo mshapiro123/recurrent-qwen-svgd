@@ -69,6 +69,37 @@ def _selector_conversion(path, *, passed: bool = True):
     return path
 
 
+def _selector_replication(path, *, passed: bool = True):
+    _write(
+        path,
+        {
+            "run_id": "selector_replication",
+            "gate": "stage5_selector_replication",
+            "kind": "selector_replication",
+            "status": "passed" if passed else "needs_confirmation",
+            "passed": passed,
+            "next_step": "particle gate",
+            "replicated_comparisons": ["recovered__selector_reliability_vote_vs_source"] if passed else [],
+        },
+    )
+    return path
+
+
+def _particle_gate(path, *, passed: bool = True):
+    _write(
+        path,
+        {
+            "run_id": "particle_gate",
+            "gate": "stage5_gate2_particle_mechanism",
+            "status": "passed" if passed else "failed",
+            "passed": passed,
+            "next_step": "release gate",
+            "best_variant": {"variant": "svgd", "selected_delta": 1, "best_of_k_delta": 1} if passed else None,
+        },
+    )
+    return path
+
+
 def _export(path, *, with_hash: bool = True):
     _write(
         path,
@@ -101,6 +132,8 @@ def test_claim_packet_distinguishes_release_candidate_from_sota(tmp_path) -> Non
         release_gate_summary=_release(tmp_path / "release" / "summary.json"),
         broader_benchmark_summary=_broader(tmp_path / "broader" / "summary.json"),
         recipe_control_summary=_recipe(tmp_path / "recipe" / "summary.json"),
+        selector_replication_summary=_selector_replication(tmp_path / "selector_replication" / "summary.json"),
+        particle_mechanism_summary=_particle_gate(tmp_path / "particle_gate" / "summary.json"),
         hf_export_summary=_export(tmp_path / "export" / "summary.json"),
         arc_agi_comparison_summary=None,
     )
@@ -117,6 +150,8 @@ def test_claim_packet_accepts_selector_conversion_as_architecture_evidence(tmp_p
         broader_benchmark_summary=_broader(tmp_path / "broader" / "summary.json"),
         recipe_control_summary=_recipe(tmp_path / "recipe" / "summary.json", passed=False),
         selector_conversion_summary=_selector_conversion(tmp_path / "selector_conversion" / "summary.json"),
+        selector_replication_summary=_selector_replication(tmp_path / "selector_replication" / "summary.json"),
+        particle_mechanism_summary=_particle_gate(tmp_path / "particle_gate" / "summary.json"),
         hf_export_summary=_export(tmp_path / "export" / "summary.json"),
         arc_agi_comparison_summary=None,
     )
@@ -127,11 +162,45 @@ def test_claim_packet_accepts_selector_conversion_as_architecture_evidence(tmp_p
     assert payload["artifacts"]["same_recipe_selector_conversion"]["passed"] is True
 
 
+def test_claim_packet_requires_selector_replication_before_release_candidate(tmp_path) -> None:
+    payload = build_claim_packet(
+        release_gate_summary=_release(tmp_path / "release" / "summary.json"),
+        broader_benchmark_summary=_broader(tmp_path / "broader" / "summary.json"),
+        recipe_control_summary=_recipe(tmp_path / "recipe" / "summary.json"),
+        selector_replication_summary=None,
+        particle_mechanism_summary=_particle_gate(tmp_path / "particle_gate" / "summary.json"),
+        hf_export_summary=_export(tmp_path / "export" / "summary.json"),
+        arc_agi_comparison_summary=None,
+    )
+
+    assert payload["status"] == "needs_selector_replication"
+    assert payload["claim_level"] == "not_ready"
+    assert payload["passed"] is False
+
+
+def test_claim_packet_requires_particle_mechanism_gate_before_release_candidate(tmp_path) -> None:
+    payload = build_claim_packet(
+        release_gate_summary=_release(tmp_path / "release" / "summary.json"),
+        broader_benchmark_summary=_broader(tmp_path / "broader" / "summary.json"),
+        recipe_control_summary=_recipe(tmp_path / "recipe" / "summary.json"),
+        selector_replication_summary=_selector_replication(tmp_path / "selector_replication" / "summary.json"),
+        particle_mechanism_summary=None,
+        hf_export_summary=_export(tmp_path / "export" / "summary.json"),
+        arc_agi_comparison_summary=None,
+    )
+
+    assert payload["status"] == "needs_particle_mechanism_gate"
+    assert payload["claim_level"] == "not_ready"
+    assert payload["passed"] is False
+
+
 def test_claim_packet_can_mark_sota_candidate_when_authoritative_comparison_exists(tmp_path) -> None:
     payload = build_claim_packet(
         release_gate_summary=_release(tmp_path / "release" / "summary.json"),
         broader_benchmark_summary=_broader(tmp_path / "broader" / "summary.json"),
         recipe_control_summary=_recipe(tmp_path / "recipe" / "summary.json"),
+        selector_replication_summary=_selector_replication(tmp_path / "selector_replication" / "summary.json"),
+        particle_mechanism_summary=_particle_gate(tmp_path / "particle_gate" / "summary.json"),
         hf_export_summary=_export(tmp_path / "export" / "summary.json"),
         arc_agi_comparison_summary=_arc_agi(tmp_path / "arc_agi" / "summary.json"),
     )
@@ -146,6 +215,8 @@ def test_claim_packet_requires_hf_export_hash(tmp_path) -> None:
         release_gate_summary=_release(tmp_path / "release" / "summary.json"),
         broader_benchmark_summary=_broader(tmp_path / "broader" / "summary.json"),
         recipe_control_summary=_recipe(tmp_path / "recipe" / "summary.json"),
+        selector_replication_summary=_selector_replication(tmp_path / "selector_replication" / "summary.json"),
+        particle_mechanism_summary=_particle_gate(tmp_path / "particle_gate" / "summary.json"),
         hf_export_summary=_export(tmp_path / "export" / "summary.json", with_hash=False),
         arc_agi_comparison_summary=None,
     )
@@ -158,6 +229,8 @@ def test_claim_packet_cli_writes_outputs(tmp_path, monkeypatch) -> None:
     release = _release(tmp_path / "release" / "summary.json")
     broader = _broader(tmp_path / "broader" / "summary.json")
     recipe = _recipe(tmp_path / "recipe" / "summary.json")
+    selector_replication = _selector_replication(tmp_path / "selector_replication" / "summary.json")
+    particle_gate = _particle_gate(tmp_path / "particle_gate" / "summary.json")
     export = _export(tmp_path / "export" / "summary.json")
     output_json = tmp_path / "claim.json"
     output_md = tmp_path / "claim.md"
@@ -171,6 +244,10 @@ def test_claim_packet_cli_writes_outputs(tmp_path, monkeypatch) -> None:
             str(broader),
             "--recipe_control_summary",
             str(recipe),
+            "--selector_replication_summary",
+            str(selector_replication),
+            "--particle_mechanism_summary",
+            str(particle_gate),
             "--hf_export_summary",
             str(export),
             "--output_json",
