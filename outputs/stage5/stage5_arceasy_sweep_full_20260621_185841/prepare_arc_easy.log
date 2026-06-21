@@ -1,0 +1,5 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=validation
+rows=570
+output_jsonl=data/stage5_benchmark_suite/stage5_arceasy_sweep_full_20260621_185841/arc_easy.jsonl
