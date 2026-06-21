@@ -427,7 +427,6 @@ def main() -> int:
     challenge_paths = [resolve_path(item) for item in args.arc_challenge_summary]
     if not challenge_paths:
         challenge_paths = all_summaries(has_full_arc_challenge)
-    challenge_paths = [path for path in challenge_paths if path != easy_path]
     if not challenge_paths:
         raise FileNotFoundError("No ARC-Challenge benchmark or recovery summaries found.")
 

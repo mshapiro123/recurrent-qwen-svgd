@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
+import sys
 
-from colab.assess_stage5_balanced_mcq import build_assessment, checkpoint_label
+from colab.assess_stage5_balanced_mcq import build_assessment, checkpoint_label, main
 
 
 def _write(path, payload) -> None:
@@ -155,4 +156,29 @@ def test_balanced_assessment_accepts_combined_benchmark_suite(tmp_path) -> None:
 
     assert payload["status"] == "balanced_nonnegative"
     assert payload["best_checkpoint"]["label"] == "step_150"
+    assert payload["best_checkpoint"]["micro_correct_delta"] == 4
+
+
+def test_balanced_assessment_cli_accepts_same_combined_summary_for_both_inputs(tmp_path, monkeypatch) -> None:
+    combined = tmp_path / "combined" / "summary.json"
+    output_dir = tmp_path / "assessment"
+    _combined_suite(combined)
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "assess_stage5_balanced_mcq.py",
+            "--arc_easy_sweep",
+            str(combined),
+            "--arc_challenge_summary",
+            str(combined),
+            "--output_dir",
+            str(output_dir),
+        ],
+    )
+
+    assert main() == 0
+    payload = json.loads((output_dir / "summary.json").read_text(encoding="utf-8"))
+    assert payload["status"] == "balanced_nonnegative"
     assert payload["best_checkpoint"]["micro_correct_delta"] == 4
