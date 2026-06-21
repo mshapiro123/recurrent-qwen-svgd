@@ -2,9 +2,9 @@
 
 This is the first post-release-gate benchmark runner. It compares unmodified
 base Qwen against the selected recurrent checkpoint on MCQ-style reasoning
-slices, starting with ARC-Challenge and GPQA-lite. Prepared question data stays
-under ``data/`` and is not committed; result JSONLs omit question/choice text
-and are written under ``outputs/stage5``.
+slices, starting with ARC-Challenge, ARC-Easy, and GPQA-lite. Prepared question
+data stays under ``data/`` and is not committed; result JSONLs omit
+question/choice text and are written under ``outputs/stage5``.
 """
 
 from __future__ import annotations
@@ -37,6 +37,7 @@ SOURCE_SUMMARY = os.environ.get("STAGE5_BENCHMARK_SOURCE_SUMMARY", "")
 EXPLICIT_CHECKPOINT = os.environ.get("STAGE5_BENCHMARK_CHECKPOINT", "")
 BENCHMARKS = os.environ.get("STAGE5_BENCHMARKS", "arc_challenge,gpqa_lite")
 ARC_CHALLENGE_LIMIT_RAW = os.environ.get("STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT", "128")
+ARC_EASY_LIMIT_RAW = os.environ.get("STAGE5_BENCHMARK_ARC_EASY_LIMIT", "128")
 GPQA_LIMIT = int(os.environ.get("STAGE5_BENCHMARK_GPQA_LIMIT", "16"))
 GPQA_CONFIG = os.environ.get("STAGE5_BENCHMARK_GPQA_CONFIG", "gpqa_diamond")
 SCORE_TARGETS = os.environ.get("STAGE5_BENCHMARK_SCORE_TARGETS", "label")
@@ -146,6 +147,7 @@ def parse_optional_limit(value: str) -> int | None:
 
 
 ARC_CHALLENGE_LIMIT = parse_optional_limit(ARC_CHALLENGE_LIMIT_RAW)
+ARC_EASY_LIMIT = parse_optional_limit(ARC_EASY_LIMIT_RAW)
 
 
 def latest_summary_with_checkpoint() -> Path | None:
@@ -201,21 +203,25 @@ def resolve_checkpoint(source_summary: Path | None, payload: dict[str, Any] | No
 def benchmark_specs(names: list[str]) -> list[BenchmarkSpec]:
     specs: list[BenchmarkSpec] = []
     for name in names:
-        if name == "arc_challenge":
-            limit_label = "full" if ARC_CHALLENGE_LIMIT is None else str(ARC_CHALLENGE_LIMIT)
+        if name in {"arc_challenge", "arc_easy"}:
+            config = "ARC-Challenge" if name == "arc_challenge" else "ARC-Easy"
+            limit = ARC_CHALLENGE_LIMIT if name == "arc_challenge" else ARC_EASY_LIMIT
+            limit_label = "full" if limit is None else str(limit)
             prepare_cmd = [
                 sys.executable,
                 "eval/prepare_arc_mcq.py",
                 "--config",
-                "ARC-Challenge",
+                config,
                 "--split",
                 "validation",
                 "--seed",
                 "0",
             ]
-            if ARC_CHALLENGE_LIMIT is not None:
-                prepare_cmd.extend(["--limit", str(ARC_CHALLENGE_LIMIT)])
+            if limit is not None:
+                prepare_cmd.extend(["--limit", str(limit)])
             output = PRIVATE_DATA_DIR / f"arc_challenge_validation_{limit_label}.jsonl"
+            if name == "arc_easy":
+                output = PRIVATE_DATA_DIR / f"arc_easy_validation_{limit_label}.jsonl"
             prepare_cmd.extend(["--output_jsonl", str(output)])
             specs.append(
                 BenchmarkSpec(
@@ -247,7 +253,7 @@ def benchmark_specs(names: list[str]) -> list[BenchmarkSpec]:
                 )
             )
         else:
-            raise ValueError(f"Unknown benchmark {name!r}; expected arc_challenge or gpqa_lite")
+            raise ValueError(f"Unknown benchmark {name!r}; expected arc_challenge, arc_easy, or gpqa_lite")
     return specs
 
 

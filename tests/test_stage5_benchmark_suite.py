@@ -5,6 +5,7 @@ import json
 from colab.run_stage5_benchmark_suite import (
     EvalJob,
     BenchmarkSpec,
+    benchmark_specs,
     build_summary,
     checkpoint_candidates_from_payload,
     compare_arm_summaries,
@@ -183,3 +184,29 @@ def test_eval_jobs_passes_phase2_svgd_flags(tmp_path, monkeypatch) -> None:
     assert recurrent_cmd[recurrent_cmd.index("--svgd_repulsion_max_norm") + 1] == "none"
     assert recurrent_cmd[recurrent_cmd.index("--svgd_kernel_projection_dim") + 1] == "8"
     assert recurrent_cmd[recurrent_cmd.index("--svgd_kernel_projection_path") + 1] == "outputs/calibration/proj.pt"
+
+
+def test_benchmark_specs_supports_arc_easy(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    monkeypatch.setattr(module, "PRIVATE_DATA_DIR", tmp_path)
+    monkeypatch.setattr(module, "ARC_EASY_LIMIT", None)
+
+    spec = benchmark_specs(["arc_easy"])[0]
+
+    assert spec.name == "arc_easy"
+    assert spec.data_jsonl == tmp_path / "arc_easy_validation_full.jsonl"
+    assert "ARC-Easy" in spec.prepare_cmd
+    assert "--limit" not in spec.prepare_cmd
+
+
+def test_benchmark_specs_supports_limited_arc_easy(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    monkeypatch.setattr(module, "PRIVATE_DATA_DIR", tmp_path)
+    monkeypatch.setattr(module, "ARC_EASY_LIMIT", 64)
+
+    spec = benchmark_specs(["arc_easy"])[0]
+
+    assert spec.data_jsonl == tmp_path / "arc_easy_validation_64.jsonl"
+    assert spec.prepare_cmd[spec.prepare_cmd.index("--limit") + 1] == "64"
