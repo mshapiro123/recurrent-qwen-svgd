@@ -689,6 +689,59 @@ def test_progress_ledger_reports_arc_agi_baseline_registries(tmp_path) -> None:
     assert payload["recommended_next_plan_source"] == str(source)
 
 
+def test_progress_ledger_reports_arc_agi_candidate_gates(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "candidate_gate" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "candidate_gate",
+            "gate": "stage5_arc_agi_candidate_gate",
+            "kind": "stage5_arc_agi_candidate_gate",
+            "metadata": {
+                "arc_version": "arc-agi-1",
+                "arc_split": "evaluation",
+                "limit": 8,
+                "grid_format": "compact",
+                "selection_strategy": "symbolic_first",
+            },
+            "symbolic_coverage": {
+                "examples_with_targets": 8,
+                "exact_symbolic": 2,
+            },
+            "rows": [
+                {"variant": "phase1_model_only", "best": 1},
+                {"variant": "phase1_hybrid_symbolic_first", "best": 3},
+                {"variant": "base_model_only", "best": 4},
+                {"variant": "base_hybrid_symbolic_first", "best": 5},
+            ],
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["arc_agi_candidate_gates"] == [
+        {
+            "path": str(source),
+            "run_id": "candidate_gate",
+            "arc_version": "arc-agi-1",
+            "arc_split": "evaluation",
+            "limit": 8,
+            "grid_format": "compact",
+            "selection_strategy": "symbolic_first",
+            "examples": 8,
+            "symbolic_exact": 2,
+            "phase1_model_best": 1,
+            "phase1_hybrid_best": 3,
+            "phase1_hybrid_best_delta": 2,
+            "base_model_best": 4,
+            "base_hybrid_best": 5,
+            "base_hybrid_best_delta": 1,
+        }
+    ]
+    assert payload["recommended_next_plan_source"] == str(source)
+
+
 def test_progress_ledger_skips_empty_and_malformed_eval_summaries(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     _write(scan_root / "empty" / "base_summary.json", {"summary": {}})
@@ -738,3 +791,29 @@ def test_progress_ledger_writes_summary_markdown(tmp_path) -> None:
     assert "| `base` | 8 | 9 | 20 | `base` |" in report
     assert "selected delta `-2`" in report
     assert (output_dir / "summary.json").exists()
+
+
+def test_progress_ledger_writes_candidate_gate_markdown(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    _write(
+        scan_root / "candidate_gate" / "summary.json",
+        {
+            "run_id": "candidate_gate",
+            "kind": "stage5_arc_agi_candidate_gate",
+            "metadata": {"arc_version": "arc-agi-1", "arc_split": "eval", "limit": 6},
+            "symbolic_coverage": {"examples_with_targets": 6, "exact_symbolic": 1},
+            "rows": [
+                {"variant": "phase1_model_only", "best": 0},
+                {"variant": "phase1_hybrid_symbolic_first", "best": 1},
+            ],
+        },
+    )
+    payload = scan_progress(scan_root, run_id="ledger")
+    output_dir = tmp_path / "ledger"
+
+    write_report(payload, output_dir)
+
+    report = (output_dir / "summary.md").read_text(encoding="utf-8")
+    assert "## ARC-AGI Candidate Gates" in report
+    assert "symbolic exact `1/6`" in report
+    assert "phase1 hybrid best delta `1`" in report

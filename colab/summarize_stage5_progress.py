@@ -155,6 +155,8 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         return True
     if payload.get("gate") == "stage5_arc_agi_sota_comparison" or payload.get("kind") == "arc_agi_sota_comparison":
         return True
+    if payload.get("gate") == "stage5_arc_agi_candidate_gate" or payload.get("kind") == "stage5_arc_agi_candidate_gate":
+        return True
     if payload.get("kind") == "dense_sft_control":
         return True
     if "phase1_arc_agi_tuned" in payload and payload.get("tuned_checkpoint"):
@@ -624,6 +626,52 @@ def arc_agi_baseline_registries(summary_files: list[Path]) -> list[dict[str, Any
     return sorted(registries, key=lambda item: str(item["path"]))
 
 
+def row_metric_by_variant(payload: dict[str, Any], variant: str, metric_name: str) -> int:
+    for row in payload.get("rows") or []:
+        if isinstance(row, dict) and row.get("variant") == variant:
+            if metric_name in row:
+                return int(row.get(metric_name, 0) or 0)
+            if metric_name == "best":
+                return int(row.get("best_exact", 0) or 0)
+    return 0
+
+
+def arc_agi_candidate_gates(summary_files: list[Path]) -> list[dict[str, Any]]:
+    gates: list[dict[str, Any]] = []
+    for path in summary_files:
+        payload = safe_read_json(path)
+        if not payload:
+            continue
+        if payload.get("gate") != "stage5_arc_agi_candidate_gate" and payload.get("kind") != "stage5_arc_agi_candidate_gate":
+            continue
+        metadata = payload.get("metadata") or {}
+        coverage = payload.get("symbolic_coverage") or {}
+        phase1_model_best = row_metric_by_variant(payload, "phase1_model_only", "best")
+        phase1_hybrid_best = row_metric_by_variant(payload, "phase1_hybrid_symbolic_first", "best")
+        base_model_best = row_metric_by_variant(payload, "base_model_only", "best")
+        base_hybrid_best = row_metric_by_variant(payload, "base_hybrid_symbolic_first", "best")
+        gates.append(
+            {
+                "path": path_for_cli(path),
+                "run_id": str(payload.get("run_id") or path.parent.name),
+                "arc_version": metadata.get("arc_version"),
+                "arc_split": metadata.get("arc_split"),
+                "limit": metadata.get("limit"),
+                "grid_format": metadata.get("grid_format"),
+                "selection_strategy": metadata.get("selection_strategy"),
+                "examples": int(coverage.get("examples_with_targets", 0) or 0),
+                "symbolic_exact": int(coverage.get("exact_symbolic", 0) or 0),
+                "phase1_model_best": phase1_model_best,
+                "phase1_hybrid_best": phase1_hybrid_best,
+                "phase1_hybrid_best_delta": phase1_hybrid_best - phase1_model_best,
+                "base_model_best": base_model_best,
+                "base_hybrid_best": base_hybrid_best,
+                "base_hybrid_best_delta": base_hybrid_best - base_model_best,
+            }
+        )
+    return sorted(gates, key=lambda item: str(item["path"]))
+
+
 def iter_summary_files(scan_root: Path) -> list[Path]:
     if not scan_root.exists():
         return []
@@ -744,6 +792,7 @@ def scan_progress(scan_root: Path, *, run_id: str | None = None) -> dict[str, An
         "claim_readiness_packets": claim_readiness_packets(summary_files),
         "arc_agi_baseline_registries": arc_agi_baseline_registries(summary_files),
         "arc_agi_sota_comparisons": arc_agi_sota_comparisons(summary_files),
+        "arc_agi_candidate_gates": arc_agi_candidate_gates(summary_files),
         "recommended_next_plan_source": latest_planner_source(summary_files),
     }
 
@@ -914,6 +963,17 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
             )
     else:
         lines.append("- No ARC-AGI SOTA comparison artifacts found.")
+    lines.extend(["", "## ARC-AGI Candidate Gates", ""])
+    if payload["arc_agi_candidate_gates"]:
+        for gate in payload["arc_agi_candidate_gates"][-10:]:
+            lines.append(
+                f"- `{gate['run_id']}` ARC `{gate['arc_version']}` split `{gate['arc_split']}` "
+                f"limit `{gate['limit']}` symbolic exact `{gate['symbolic_exact']}/{gate['examples']}`, "
+                f"phase1 hybrid best delta `{gate['phase1_hybrid_best_delta']}`, "
+                f"base hybrid best delta `{gate['base_hybrid_best_delta']}`"
+            )
+    else:
+        lines.append("- No ARC-AGI candidate-gate artifacts found.")
     (output_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((output_dir / "summary.md").read_text(encoding="utf-8"))
 

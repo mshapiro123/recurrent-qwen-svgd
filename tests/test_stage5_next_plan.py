@@ -1161,8 +1161,71 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"gate": "stage5_claim_readiness"}) == "claim_readiness"
     assert source_kind({"gate": "stage5_arc_agi_baseline_registry"}) == "arc_agi_baseline_registry"
     assert source_kind({"gate": "stage5_arc_agi_sota_comparison"}) == "arc_agi_sota_comparison"
+    assert source_kind({"kind": "stage5_arc_agi_candidate_gate"}) == "candidate_gate"
     assert source_kind({"phase1_arc_agi_tuned": {}, "tuned_checkpoint": "ckpt.pt"}) == "recurrent_sft"
     assert source_kind({"rows": [], "deltas": {}, "paired_comparisons": {}}) == "tta_sweep"
+
+
+def test_candidate_gate_plans_trace_sft_when_symbolic_hybrid_signal_exists(tmp_path) -> None:
+    source = tmp_path / "candidate_gate" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_arc_agi_candidate_gate",
+        "metadata": {
+            "arc_version": "1",
+            "arc_split": "evaluation",
+            "limit": 20,
+            "phase1_checkpoint": "outputs/stage4/phase1.pt",
+            "grid_format": "compact",
+            "selection_strategy": "heuristic",
+        },
+        "symbolic_coverage": {"exact_symbolic": 1},
+        "rows": [
+            {"variant": "base_model_only", "best": 1},
+            {"variant": "base_hybrid_symbolic_first", "best": 1},
+            {"variant": "phase1_model_only", "best": 1},
+            {"variant": "phase1_hybrid_symbolic_first", "best": 2},
+        ],
+        "results": [],
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Compare ARC trace-training targets"
+    assert "python colab/run_stage5_arc_agi_trace_sft_gate.py" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_VERSION=1" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_EVAL_SPLIT=evaluation" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_EVAL_TASK_LIMIT=20" in actions[0]["command"]
+    assert "STAGE5_PHASE1_CKPT=outputs/stage4/phase1.pt" in actions[0]["command"]
+
+
+def test_candidate_gate_without_symbolic_signal_starts_dense_control(tmp_path) -> None:
+    source = tmp_path / "candidate_gate" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_arc_agi_candidate_gate",
+        "metadata": {
+            "arc_version": "1",
+            "arc_split": "evaluation",
+            "limit": 20,
+            "grid_format": "compact",
+        },
+        "symbolic_coverage": {"exact_symbolic": 0},
+        "rows": [
+            {"variant": "base_model_only", "best": 1},
+            {"variant": "base_hybrid_symbolic_first", "best": 0},
+            {"variant": "phase1_model_only", "best": 1},
+            {"variant": "phase1_hybrid_symbolic_first", "best": 0},
+        ],
+        "results": [],
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run dense ARC-AGI SFT control"
+    assert "python colab/run_stage5_arc_agi_dense_sft.py" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_TRACE_MODE=none" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_EVAL_TASK_LIMIT=20" in actions[0]["command"]
 
 
 def test_dense_sft_control_plans_matched_recurrent_recipe(tmp_path) -> None:

@@ -289,7 +289,15 @@ def analyze_symbolic_coverage(tasks_path: Path) -> dict[str, Any]:
 
 def write_comparison(results: list[dict[str, Any]], metadata: dict[str, Any], coverage: dict[str, Any]) -> None:
     rows = [compact_row(result) for result in results]
-    payload = {"metadata": metadata, "symbolic_coverage": coverage, "rows": rows, "results": results}
+    payload = {
+        "run_id": RUN_ID,
+        "gate": "stage5_arc_agi_candidate_gate",
+        "kind": "stage5_arc_agi_candidate_gate",
+        "metadata": metadata,
+        "symbolic_coverage": coverage,
+        "rows": rows,
+        "results": results,
+    }
     (RUN_DIR / "summary.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     lines = [

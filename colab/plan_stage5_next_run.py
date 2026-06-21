@@ -41,6 +41,8 @@ DEFAULT_TRACE_SFT_GATE_ARMS = os.environ.get(
     "STAGE5_ARC_AGI_NEXT_PLAN_TRACE_SFT_GATE_ARMS",
     "grid_only,symbolic_program_trace_covered,symbolic_state_trace_covered",
 )
+MIN_SYMBOLIC_EXACT = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_MIN_SYMBOLIC_EXACT", "1"))
+MIN_HYBRID_BEST_DELTA = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_MIN_HYBRID_BEST_DELTA", "0"))
 
 
 def resolve_path(value: str | Path) -> Path:
@@ -85,6 +87,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or claim_readiness_payload(payload) is not None
         or arc_agi_baseline_registry_payload(payload) is not None
         or arc_agi_sota_comparison_payload(payload) is not None
+        or candidate_gate_payload(payload) is not None
     )
 
 
@@ -155,6 +158,14 @@ def recovery_particle_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
 
 def dense_sft_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "dense_sft_control" else None
+
+
+def candidate_gate_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    if payload.get("gate") == "stage5_arc_agi_candidate_gate" or payload.get("kind") == "stage5_arc_agi_candidate_gate":
+        return payload
+    if {"symbolic_coverage", "rows", "results"} <= set(payload):
+        return payload
+    return None
 
 
 def gate1_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -713,6 +724,93 @@ def recipe_control_assessment_action(source_summary: Path) -> dict[str, Any]:
         ),
         10,
     )
+
+
+def candidate_gate_rows_by_variant(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    rows = payload.get("rows")
+    if not isinstance(rows, list):
+        return {}
+    return {str(row.get("variant")): row for row in rows if isinstance(row, dict) and row.get("variant")}
+
+
+def candidate_gate_trace_evidence(payload: dict[str, Any]) -> dict[str, Any]:
+    coverage = payload.get("symbolic_coverage") or {}
+    rows = candidate_gate_rows_by_variant(payload)
+    phase1_model = rows.get("phase1_model_only", {})
+    phase1_hybrid = rows.get("phase1_hybrid_symbolic_first", {})
+    base_model = rows.get("base_model_only", {})
+    base_hybrid = rows.get("base_hybrid_symbolic_first", {})
+    symbolic_exact = int(coverage.get("exact_symbolic", 0) or 0)
+    phase1_delta = int(phase1_hybrid.get("best", 0) or 0) - int(phase1_model.get("best", 0) or 0)
+    base_delta = int(base_hybrid.get("best", 0) or 0) - int(base_model.get("best", 0) or 0)
+    best_delta = max(phase1_delta, base_delta)
+    return {
+        "symbolic_exact": symbolic_exact,
+        "min_symbolic_exact": MIN_SYMBOLIC_EXACT,
+        "phase1_hybrid_best_delta": phase1_delta,
+        "base_hybrid_best_delta": base_delta,
+        "best_hybrid_delta": best_delta,
+        "min_hybrid_best_delta": MIN_HYBRID_BEST_DELTA,
+        "run_trace_sft_gate": symbolic_exact >= MIN_SYMBOLIC_EXACT and best_delta >= MIN_HYBRID_BEST_DELTA,
+    }
+
+
+def candidate_gate_common_assignments(payload: dict[str, Any]) -> dict[str, str]:
+    metadata = payload.get("metadata") or {}
+    assignments: dict[str, str] = {}
+    mapping = {
+        "STAGE5_ARC_AGI_VERSION": "arc_version",
+        "STAGE5_ARC_AGI_EVAL_SPLIT": "arc_split",
+        "STAGE5_ARC_AGI_GRID_FORMAT": "grid_format",
+        "STAGE5_ARC_AGI_SELECTION_STRATEGY": "selection_strategy",
+        "STAGE5_PHASE1_CKPT": "phase1_checkpoint",
+    }
+    for env_key, metadata_key in mapping.items():
+        value = metadata.get(metadata_key)
+        if value:
+            assignments[env_key] = str(value).replace("\\", "/")
+    limit = metadata.get("limit")
+    if limit:
+        assignments["STAGE5_ARC_AGI_EVAL_TASK_LIMIT"] = str(limit)
+    return assignments
+
+
+def candidate_gate_actions(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    evidence = candidate_gate_trace_evidence(payload)
+    assignments = candidate_gate_common_assignments(payload)
+    if evidence["run_trace_sft_gate"]:
+        trace_assignments = {
+            **assignments,
+            "STAGE5_ARC_AGI_TRACE_SFT_GATE_RUN_ID": f"{RUN_ID}_trace_sft_gate",
+            "STAGE5_ARC_AGI_TRACE_SFT_GATE_ARMS": DEFAULT_TRACE_SFT_GATE_ARMS,
+        }
+        return [
+            make_action(
+                "Compare ARC trace-training targets",
+                "Candidate gate found symbolic/hybrid signal; compare grid-only, symbolic-program, and symbolic-state trace SFT before scaling the ARC recipe. "
+                f"Evidence: symbolic exact {evidence['symbolic_exact']} >= {evidence['min_symbolic_exact']}, "
+                f"best hybrid delta {evidence['best_hybrid_delta']} >= {evidence['min_hybrid_best_delta']}.",
+                command_env(trace_assignments, "python colab/run_stage5_arc_agi_trace_sft_gate.py"),
+                10,
+            )
+        ]
+
+    dense_assignments = {
+        **assignments,
+        "STAGE5_ARC_AGI_DENSE_SFT_RUN_ID": f"{RUN_ID}_dense_grid_control",
+        "STAGE5_ARC_AGI_TRACE_MODE": "none",
+        "STAGE5_ARC_AGI_TRACE_FILTER": "all",
+    }
+    return [
+        make_action(
+            "Run dense ARC-AGI SFT control",
+            "Candidate gate did not find enough symbolic/hybrid signal for trace-SFT; establish the ordinary dense grid-only recipe control before recurrent-specific training claims. "
+            f"Evidence: symbolic exact {evidence['symbolic_exact']} < {evidence['min_symbolic_exact']} "
+            f"or best hybrid delta {evidence['best_hybrid_delta']} < {evidence['min_hybrid_best_delta']}.",
+            command_env(dense_assignments, "python colab/run_stage5_arc_agi_dense_sft.py"),
+            10,
+        )
+    ]
 
 
 def recipe_control_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
@@ -1629,6 +1727,9 @@ def plan_next_actions(
     benchmark_suite = benchmark_suite_payload(payload)
     if benchmark_suite:
         return benchmark_suite_actions(benchmark_suite, source_summary=source_summary)
+    candidate_gate = candidate_gate_payload(payload)
+    if candidate_gate:
+        return candidate_gate_actions(candidate_gate)
     recipe_selector_action = recipe_selector_conversion_action(payload, source_summary=source_summary)
     if recipe_selector_action is not None:
         return [recipe_selector_action]
@@ -1974,6 +2075,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "selector_rescore"
     if dense_sft_payload(payload):
         return "dense_sft_control"
+    if candidate_gate_payload(payload):
+        return "candidate_gate"
     if recurrent_sft_payload(payload):
         return "recurrent_sft"
     if recovery_particle_payload(payload):
