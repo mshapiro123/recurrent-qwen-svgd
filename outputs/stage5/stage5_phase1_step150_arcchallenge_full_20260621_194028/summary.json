@@ -1,0 +1,79 @@
+{
+  "run_id": "stage5_phase1_step150_arcchallenge_full_20260621_194028",
+  "kind": "stage5_benchmark_suite",
+  "status": "completed",
+  "source_summary": "outputs/stage5/stage5_arceasy_sweep_full_20260621_185841/summary.json",
+  "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_150.pt",
+  "benchmarks": [
+    "arc_challenge"
+  ],
+  "score_targets": [
+    "label"
+  ],
+  "aggregates": [
+    "mean"
+  ],
+  "recurrent_mode": "phase1",
+  "recurrent_num_trajectories": 1,
+  "elapsed_seconds": 252.95206499099731,
+  "failures": [],
+  "results": {
+    "arc_challenge": {
+      "label": {
+        "base": {
+          "mean": {
+            "correct": 167,
+            "total": 299,
+            "accuracy": 0.5585284280936454
+          }
+        },
+        "recurrent": {
+          "mean": {
+            "correct": 169,
+            "total": 299,
+            "accuracy": 0.5652173913043478
+          }
+        }
+      }
+    }
+  },
+  "comparisons": {
+    "arc_challenge": {
+      "label": {
+        "mean": {
+          "correct_delta_recurrent_vs_base": 2,
+          "accuracy_delta_recurrent_vs_base": 0.006688963210702337,
+          "base": {
+            "correct": 167,
+            "total": 299,
+            "accuracy": 0.5585284280936454
+          },
+          "recurrent": {
+            "correct": 169,
+            "total": 299,
+            "accuracy": 0.5652173913043478
+          }
+        }
+      }
+    }
+  },
+  "paired_comparisons": {
+    "arc_challenge": {
+      "label": {
+        "mean": {
+          "paired_examples": 299,
+          "base_correct": 167,
+          "recurrent_correct": 169,
+          "correct_delta_recurrent_vs_base": 2,
+          "base_accuracy": 0.5585284280936454,
+          "recurrent_accuracy": 0.5652173913043478,
+          "accuracy_delta_recurrent_vs_base": 0.006688963210702341,
+          "wins": 24,
+          "losses": 22,
+          "ties": 253,
+          "sign_test_p_value": 0.8829959121223965
+        }
+      }
+    }
+  }
+}
