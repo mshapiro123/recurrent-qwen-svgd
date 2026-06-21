@@ -95,23 +95,22 @@ def next_action_summary_path() -> Path:
 
 def audit_env() -> dict[str, str]:
     env = os.environ.copy()
-    env.setdefault("STAGE5_DATASET_AUDIT_RUN_ID", AUDIT_RUN_ID)
-    env.setdefault(
-        "STAGE5_DATASET_AUDIT_KEYS",
-        "opus47_sft,opus47_raw,fable5_pi_agent,fable5_flat,jackrong_opus47_trace_inversion",
+    env["STAGE5_DATASET_AUDIT_RUN_ID"] = AUDIT_RUN_ID
+    env["STAGE5_DATASET_AUDIT_KEYS"] = (
+        "opus47_sft,opus47_raw,fable5_pi_agent,fable5_flat,jackrong_opus47_trace_inversion"
     )
-    env.setdefault("STAGE5_DATASET_AUDIT_LIMIT", "1000")
-    env.setdefault("STAGE5_DATASET_AUDIT_PUSH", "1" if PUSH_RESULTS else "0")
+    env["STAGE5_DATASET_AUDIT_LIMIT"] = "1000"
+    env["STAGE5_DATASET_AUDIT_PUSH"] = "1" if PUSH_RESULTS else "0"
     return env
 
 
 def next_action_env() -> dict[str, str]:
     env = os.environ.copy()
-    env.setdefault("STAGE5_ARC_AGI_NEXT_ACTION_RUN_ID", NEXT_ACTION_RUN_ID)
+    env["STAGE5_ARC_AGI_NEXT_ACTION_RUN_ID"] = NEXT_ACTION_RUN_ID
     env["STAGE5_ARC_AGI_NEXT_ACTION_SOURCE_SUMMARY"] = path_for_cli(audit_summary_path())
-    env.setdefault("STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE", "1" if EXECUTE_NEXT else "0")
-    env.setdefault("STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS", str(MAX_ACTIONS))
-    env.setdefault("STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT", "0")
+    env["STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE"] = "1" if EXECUTE_NEXT else "0"
+    env["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] = str(MAX_ACTIONS)
+    env["STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT"] = "0"
     return env
 
 
