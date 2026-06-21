@@ -472,6 +472,97 @@ def test_selector_rescore_summary_promotes_paired_lift(tmp_path) -> None:
     assert "paired delta 2" in actions[0]["reason"]
 
 
+def test_selector_rescore_summary_validates_hard_tail_lift(tmp_path) -> None:
+    source_run = tmp_path / "source_benchmark"
+    source_run.mkdir()
+    source_benchmark = {
+        "metadata": {
+            "curriculum_summary": "outputs/stage5/curriculum/summary.json",
+            "phase1_start_checkpoint": "outputs/stage4/phase1.pt",
+            "recovered_checkpoint": "outputs/stage5/recovered.pt",
+            "arc_version": "1",
+            "arc_split": "evaluation",
+            "grid_format": "compact",
+            "program_parse_mode": "fallback",
+        }
+    }
+    (source_run / "summary.json").write_text(json.dumps(source_benchmark), encoding="utf-8")
+    source = tmp_path / "selector_summary.json"
+    payload = {
+        "run_id": "selector_rescore",
+        "source_run_dir": str(source_run),
+        "strategies": ["self_consistency"],
+        "rows": [
+            {
+                "label": "recovered",
+                "selection_strategy": "self_consistency",
+                "examples": 50,
+                "selected_exact": 10,
+                "best_of_k_exact": 13,
+                "valid_candidate_rate": 0.9,
+                "selected_delta_vs_source": 0,
+            }
+        ],
+        "best_by_label": {},
+        "paired_comparisons": {
+            "recovered__selector_self_consistency_vs_source": {
+                "metrics": {"selected_exact": _paired(0, wins=1, losses=1, ties=48)},
+                "difficulty_metrics": {
+                    "selected_exact": {
+                        "hard": _paired(2, wins=2, losses=0, ties=8),
+                        "medium": _paired(-2, wins=0, losses=2, ties=28),
+                    }
+                },
+            }
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Validate hard-tail selector `self_consistency` for `recovered` benchmark"
+    assert "STAGE5_ARC_AGI_SELECTION_STRATEGY=self_consistency" in actions[0]["command"]
+    assert "Hard-bucket evidence: paired delta 2" in actions[0]["reason"]
+    assert "Aggregate evidence: paired delta 0" in actions[0]["reason"]
+
+
+def test_selector_rescore_summary_flags_hard_tail_tradeoff(tmp_path) -> None:
+    source = tmp_path / "selector_summary.json"
+    payload = {
+        "source_run_dir": str(tmp_path / "missing_source"),
+        "strategies": ["self_consistency"],
+        "rows": [
+            {
+                "label": "recovered",
+                "selection_strategy": "self_consistency",
+                "examples": 50,
+                "selected_exact": 9,
+                "best_of_k_exact": 13,
+                "valid_candidate_rate": 0.9,
+                "selected_delta_vs_source": -1,
+            }
+        ],
+        "best_by_label": {},
+        "paired_comparisons": {
+            "recovered__selector_self_consistency_vs_source": {
+                "metrics": {"selected_exact": _paired(-1, wins=1, losses=2, ties=47)},
+                "difficulty_metrics": {
+                    "selected_exact": {
+                        "hard": _paired(2, wins=2, losses=0, ties=8),
+                    }
+                },
+            }
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect hard-tail selector tradeoff `self_consistency`"
+    assert "hard difficulty bucket" in actions[0]["reason"]
+    assert "Aggregate evidence: paired delta -1" in actions[0]["reason"]
+
+
 def test_selector_rescore_summary_without_paired_lift_replans_source(tmp_path) -> None:
     source_run = tmp_path / "source_benchmark"
     source_run.mkdir()

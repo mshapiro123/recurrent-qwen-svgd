@@ -334,7 +334,7 @@ def selector_rescore_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
     return [row for row in payload.get("rows", []) if isinstance(row, dict)]
 
 
-def best_selector_rescore_row(payload: dict[str, Any]) -> dict[str, Any] | None:
+def selector_rescore_candidate_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
     rows = [
         row
         for row in selector_rescore_rows(payload)
@@ -345,6 +345,11 @@ def best_selector_rescore_row(payload: dict[str, Any]) -> dict[str, Any] | None:
         recovered_rows = [row for row in rows if str(row.get("label", "")).startswith("recovered")]
     if not recovered_rows:
         recovered_rows = rows
+    return recovered_rows
+
+
+def best_selector_rescore_row(payload: dict[str, Any]) -> dict[str, Any] | None:
+    recovered_rows = selector_rescore_candidate_rows(payload)
     if not recovered_rows:
         return None
     return max(
@@ -358,10 +363,53 @@ def best_selector_rescore_row(payload: dict[str, Any]) -> dict[str, Any] | None:
     )
 
 
-def selector_rescore_paired_stats(payload: dict[str, Any], row: dict[str, Any]) -> dict[str, Any] | None:
+def selector_rescore_comparison(payload: dict[str, Any], row: dict[str, Any]) -> dict[str, Any] | None:
     label = str(row.get("label", ""))
     strategy = str(row.get("selection_strategy", ""))
-    return paired_metric(payload, f"{label}__selector_{strategy}_vs_source", "selected_exact")
+    comparisons = payload.get("paired_comparisons") or {}
+    comparison = comparisons.get(f"{label}__selector_{strategy}_vs_source")
+    return comparison if isinstance(comparison, dict) else None
+
+
+def selector_rescore_paired_stats(payload: dict[str, Any], row: dict[str, Any]) -> dict[str, Any] | None:
+    comparison = selector_rescore_comparison(payload, row)
+    metrics = (comparison or {}).get("metrics") or {}
+    metric_payload = metrics.get("selected_exact")
+    return metric_payload if isinstance(metric_payload, dict) else None
+
+
+def selector_rescore_difficulty_stats(
+    payload: dict[str, Any],
+    row: dict[str, Any],
+    *,
+    bucket: str = "hard",
+) -> dict[str, Any] | None:
+    comparison = selector_rescore_comparison(payload, row)
+    difficulty_metrics = (comparison or {}).get("difficulty_metrics") or {}
+    selected = difficulty_metrics.get("selected_exact") or {}
+    metric_payload = selected.get(bucket)
+    return metric_payload if isinstance(metric_payload, dict) else None
+
+
+def best_hard_tail_selector_rescore_row(payload: dict[str, Any]) -> dict[str, Any] | None:
+    rows = [
+        row
+        for row in selector_rescore_candidate_rows(payload)
+        if selector_rescore_difficulty_stats(payload, row, bucket="hard") is not None
+    ]
+    if not rows:
+        return None
+    return max(
+        rows,
+        key=lambda row: (
+            int((selector_rescore_difficulty_stats(payload, row, bucket="hard") or {}).get("delta_exact", 0)),
+            int((selector_rescore_difficulty_stats(payload, row, bucket="hard") or {}).get("wins", 0))
+            - int((selector_rescore_difficulty_stats(payload, row, bucket="hard") or {}).get("losses", 0)),
+            int((selector_rescore_difficulty_stats(payload, row, bucket="hard") or {}).get("candidate_exact", 0)),
+            int((selector_rescore_difficulty_stats(payload, row, bucket="hard") or {}).get("paired_examples", 0)),
+            int(row.get("selected_delta_vs_source") or 0),
+        ),
+    )
 
 
 def selector_rerun_command(payload: dict[str, Any], row: dict[str, Any]) -> str | None:
@@ -434,6 +482,46 @@ def selector_rescore_actions(payload: dict[str, Any], *, source_summary: Path) -
                 f"Evidence: {evidence_fragment(stats, fallback_delta)}.",
                 source_replan_command(payload, source_summary),
                 10,
+            )
+        ]
+    hard_row = best_hard_tail_selector_rescore_row(payload)
+    hard_stats = selector_rescore_difficulty_stats(payload, hard_row, bucket="hard") if hard_row else None
+    if hard_row is not None and paired_supports_positive(hard_stats, 0):
+        hard_strategy = str(hard_row.get("selection_strategy", ""))
+        hard_label = str(hard_row.get("label", ""))
+        hard_fallback_delta = int(hard_row.get("selected_delta_vs_source") or 0)
+        hard_aggregate_stats = selector_rescore_paired_stats(payload, hard_row)
+        rerun = selector_rerun_command(payload, hard_row)
+        if paired_supports_nonnegative(hard_aggregate_stats, hard_fallback_delta):
+            if rerun:
+                return [
+                    make_action(
+                        f"Validate hard-tail selector `{hard_strategy}` for `{hard_label}` benchmark",
+                        "Selector rescoring improved selected exact accuracy on the hard difficulty bucket while aggregate selected accuracy was non-negative; rerun before treating this as a Gate 1 signal. "
+                        f"Hard-bucket evidence: {evidence_fragment(hard_stats, 0)}. "
+                        f"Aggregate evidence: {evidence_fragment(hard_aggregate_stats, hard_fallback_delta)}.",
+                        rerun,
+                        10,
+                    )
+                ]
+            return [
+                make_action(
+                    f"Validate hard-tail selector `{hard_strategy}` after restoring source metadata",
+                    "Selector rescoring improved selected exact accuracy on the hard difficulty bucket, but source benchmark metadata was not available in this checkout. "
+                    f"Hard-bucket evidence: {evidence_fragment(hard_stats, 0)}. "
+                    f"Aggregate evidence: {evidence_fragment(hard_aggregate_stats, hard_fallback_delta)}.",
+                    source_replan_command(payload, source_summary),
+                    10,
+                )
+            ]
+        return [
+            make_action(
+                f"Inspect hard-tail selector tradeoff `{hard_strategy}`",
+                "Selector rescoring improved the hard difficulty bucket but harmed aggregate selected accuracy; inspect the tradeoff before adopting it as default. "
+                f"Hard-bucket evidence: {evidence_fragment(hard_stats, 0)}. "
+                f"Aggregate evidence: {evidence_fragment(hard_aggregate_stats, hard_fallback_delta)}.",
+                source_replan_command(payload, source_summary),
+                9,
             )
         ]
     return [
