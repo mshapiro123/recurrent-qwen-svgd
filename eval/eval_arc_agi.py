@@ -313,6 +313,27 @@ def difficulty_bucket_for_score(score: int) -> str:
     return "hard"
 
 
+VALID_DIFFICULTY_BUCKETS = ("easy", "medium", "hard")
+
+
+def parse_difficulty_buckets(value: str | None) -> tuple[str, ...] | None:
+    if value is None:
+        return None
+    normalized = value.strip().lower()
+    if normalized in {"", "all", "any", "none"}:
+        return None
+    buckets: list[str] = []
+    for item in normalized.split(","):
+        bucket = item.strip()
+        if not bucket:
+            continue
+        if bucket not in VALID_DIFFICULTY_BUCKETS:
+            raise ValueError(f"Unknown difficulty bucket {bucket!r}; expected one of {VALID_DIFFICULTY_BUCKETS}")
+        if bucket not in buckets:
+            buckets.append(bucket)
+    return tuple(buckets) if buckets else None
+
+
 def arc_difficulty_features(example: ArcAgiExample) -> dict[str, Any]:
     grids: list[Grid] = [example.test_input]
     for pair in example.train:
@@ -914,12 +935,39 @@ def select_eval_examples(
     *,
     include_original_test_pairs: bool,
     include_leave_one_out: bool,
+    difficulty_buckets: tuple[str, ...] | None = None,
+    examples_per_difficulty: int | None = None,
 ) -> list[ArcAgiExample]:
     examples: list[ArcAgiExample] = []
     if include_original_test_pairs:
         examples.extend(base_examples)
     if include_leave_one_out:
         examples.extend(leave_one_out_examples(base_examples))
+    if difficulty_buckets:
+        allowed = set(difficulty_buckets)
+        examples = [
+            example
+            for example in examples
+            if arc_difficulty_features(example)["difficulty_bucket"] in allowed
+        ]
+    if examples_per_difficulty is not None:
+        if examples_per_difficulty <= 0:
+            return []
+        bucket_order = difficulty_buckets or VALID_DIFFICULTY_BUCKETS
+        by_bucket: dict[str, list[tuple[int, ArcAgiExample]]] = {bucket: [] for bucket in bucket_order}
+        for example in examples:
+            difficulty = arc_difficulty_features(example)
+            bucket = difficulty["difficulty_bucket"]
+            if bucket in by_bucket:
+                by_bucket[bucket].append((int(difficulty["difficulty_score"]), example))
+        selected: list[ArcAgiExample] = []
+        for bucket in bucket_order:
+            bucket_examples = sorted(
+                by_bucket[bucket],
+                key=lambda item: (-item[0], item[1].task_id, item[1].test_index),
+            )
+            selected.extend(example for _score, example in bucket_examples[:examples_per_difficulty])
+        examples = selected
     return examples
 
 
@@ -930,6 +978,18 @@ def main() -> int:
     parser.add_argument("--limit", type=int)
     parser.add_argument("--include_original_test_pairs", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--include_leave_one_out", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument(
+        "--difficulty_buckets",
+        help="Optional comma-separated ARC difficulty buckets to evaluate: easy,medium,hard.",
+    )
+    parser.add_argument(
+        "--examples_per_difficulty",
+        type=int,
+        help=(
+            "When set, load the full task split and deterministically select this many "
+            "examples from each requested difficulty bucket."
+        ),
+    )
     parser.add_argument("--mode", choices=("base", "phase1", "phase2"), default="base")
     parser.add_argument("--checkpoint")
     parser.add_argument("--output_jsonl")
@@ -1027,15 +1087,19 @@ def main() -> int:
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token = tokenizer.eos_token
 
+    difficulty_buckets = parse_difficulty_buckets(args.difficulty_buckets)
+    stratified_selection = args.examples_per_difficulty is not None
     base_examples = load_arc_agi_examples(
         args.tasks_path,
         solutions_path=args.solutions_path,
-        limit=args.limit,
+        limit=None if stratified_selection else args.limit,
     )
     examples = select_eval_examples(
         base_examples,
         include_original_test_pairs=args.include_original_test_pairs,
         include_leave_one_out=args.include_leave_one_out,
+        difficulty_buckets=difficulty_buckets,
+        examples_per_difficulty=args.examples_per_difficulty,
     )
     if not examples:
         raise SystemExit("No ARC examples selected. Enable --include_original_test_pairs or --include_leave_one_out.")
@@ -1139,6 +1203,8 @@ def main() -> int:
         "tasks_path": args.tasks_path,
         "solutions_path": args.solutions_path,
         "limit": args.limit,
+        "difficulty_buckets": list(difficulty_buckets) if difficulty_buckets else None,
+        "examples_per_difficulty": args.examples_per_difficulty,
         "include_original_test_pairs": args.include_original_test_pairs,
         "include_leave_one_out": args.include_leave_one_out,
         "num_candidates": args.num_candidates,

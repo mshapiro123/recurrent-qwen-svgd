@@ -22,9 +22,9 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from colab.stage5_limits import limit_args, limit_label, parse_optional_limit
+    from colab.stage5_limits import difficulty_args, limit_args, limit_label, parse_optional_limit
 except ModuleNotFoundError:  # pragma: no cover - direct ``python colab/script.py`` execution
-    from stage5_limits import limit_args, limit_label, parse_optional_limit
+    from stage5_limits import difficulty_args, limit_args, limit_label, parse_optional_limit
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,6 +45,8 @@ ARC_AGI_2_REPO = os.environ.get("ARC_AGI_2_REPO", "https://github.com/arcprize/A
 ARC_VERSION = os.environ.get("STAGE5_ARC_AGI_VERSION", "1")
 ARC_SPLIT = os.environ.get("STAGE5_ARC_AGI_SPLIT", "evaluation")
 LIMIT = parse_optional_limit(os.environ.get("STAGE5_ARC_AGI_LIMIT", "10"))
+DIFFICULTY_BUCKETS = os.environ.get("STAGE5_ARC_AGI_DIFFICULTY_BUCKETS", "")
+EXAMPLES_PER_DIFFICULTY = parse_optional_limit(os.environ.get("STAGE5_ARC_AGI_EXAMPLES_PER_DIFFICULTY"))
 MAX_NEW_TOKENS = int(os.environ.get("STAGE5_ARC_AGI_MAX_NEW_TOKENS", "512"))
 GRID_FORMAT = os.environ.get("STAGE5_ARC_AGI_GRID_FORMAT", "compact")
 PROGRAM_PARSE_MODE = os.environ.get("STAGE5_ARC_AGI_PROGRAM_PARSE_MODE", "fallback")
@@ -259,7 +261,10 @@ def eval_arm(arm: ModelArm, variant: TtaVariant, tasks_path: Path) -> dict[str, 
         path_for_cli(summary_json),
         "--summary_md",
         path_for_cli(RUN_DIR / f"{label}_summary.md"),
-    ] + limit_args(LIMIT)
+    ]
+    if EXAMPLES_PER_DIFFICULTY is None:
+        cmd += limit_args(LIMIT)
+    cmd += difficulty_args(DIFFICULTY_BUCKETS, EXAMPLES_PER_DIFFICULTY)
     if arm.mode != "base":
         if arm.checkpoint is None:
             raise ValueError(f"checkpoint required for arm={arm.name}")
@@ -399,6 +404,8 @@ def write_report(payload: dict[str, Any]) -> None:
         "",
         f"- ARC version/split: `{ARC_VERSION}` / `{ARC_SPLIT}`",
         f"- Limit: `{limit_label(LIMIT)}`",
+        f"- Difficulty buckets: `{DIFFICULTY_BUCKETS or 'all'}`",
+        f"- Examples per difficulty: `{EXAMPLES_PER_DIFFICULTY}`",
         f"- Tasks path: `{payload['metadata']['tasks_path']}`",
         f"- Program parse mode: `{PROGRAM_PARSE_MODE}`",
         f"- Selection strategy: `{SELECTION_STRATEGY}`",
@@ -466,6 +473,8 @@ def main() -> int:
         "arc_version": ARC_VERSION,
         "arc_split": ARC_SPLIT,
         "limit": limit_label(LIMIT),
+        "difficulty_buckets": DIFFICULTY_BUCKETS or None,
+        "examples_per_difficulty": EXAMPLES_PER_DIFFICULTY,
         "tasks_path": str(tasks_path),
         "curriculum_summary": CURRICULUM_SUMMARY or None,
         "phase1_start_checkpoint": path_for_cli(start_ckpt),

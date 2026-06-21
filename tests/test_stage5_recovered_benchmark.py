@@ -87,3 +87,26 @@ def test_eval_arc_omits_limit_for_full_split(monkeypatch, tmp_path) -> None:
 
     assert commands
     assert "--limit" not in commands[0]
+
+
+def test_eval_arc_uses_difficulty_stratified_slice_without_limit(monkeypatch, tmp_path) -> None:
+    import colab.run_stage5_arc_agi_recovered_benchmark as module
+
+    commands: list[list[str]] = []
+    summary_json = module.RUN_DIR / "base_summary.json"
+
+    def fake_run(cmd: list[str], **kwargs) -> None:
+        commands.append(cmd)
+        summary_json.write_text('{"summary": {}}', encoding="utf-8")
+
+    monkeypatch.setattr(module, "LIMIT", 100)
+    monkeypatch.setattr(module, "DIFFICULTY_BUCKETS", "easy,medium,hard")
+    monkeypatch.setattr(module, "EXAMPLES_PER_DIFFICULTY", 20)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    eval_arc("base", mode="base", tasks_path=tmp_path)
+
+    assert commands
+    assert "--limit" not in commands[0]
+    assert commands[0][commands[0].index("--difficulty_buckets") + 1] == "easy,medium,hard"
+    assert commands[0][commands[0].index("--examples_per_difficulty") + 1] == "20"

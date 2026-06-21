@@ -416,6 +416,8 @@ def test_selector_rescore_summary_promotes_paired_lift(tmp_path) -> None:
             "arc_split": "evaluation",
             "grid_format": "compact",
             "program_parse_mode": "fallback",
+            "difficulty_buckets": "easy,medium,hard",
+            "examples_per_difficulty": 20,
         }
     }
     (source_run / "summary.json").write_text(json.dumps(source_benchmark), encoding="utf-8")
@@ -484,6 +486,8 @@ def test_selector_rescore_summary_validates_hard_tail_lift(tmp_path) -> None:
             "arc_split": "evaluation",
             "grid_format": "compact",
             "program_parse_mode": "fallback",
+            "difficulty_buckets": "easy,medium,hard",
+            "examples_per_difficulty": 20,
         }
     }
     (source_run / "summary.json").write_text(json.dumps(source_benchmark), encoding="utf-8")
@@ -522,6 +526,8 @@ def test_selector_rescore_summary_validates_hard_tail_lift(tmp_path) -> None:
 
     assert actions[0]["name"] == "Validate hard-tail selector `self_consistency` for `recovered` benchmark"
     assert "STAGE5_ARC_AGI_SELECTION_STRATEGY=self_consistency" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_DIFFICULTY_BUCKETS=easy,medium,hard" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_EXAMPLES_PER_DIFFICULTY=20" in actions[0]["command"]
     assert "Hard-bucket evidence: paired delta 2" in actions[0]["reason"]
     assert "Aggregate evidence: paired delta 0" in actions[0]["reason"]
 

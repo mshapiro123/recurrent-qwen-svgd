@@ -138,6 +138,12 @@ Initial harness files:
   difficulty. Use the hard bucket as the first-pass proxy for the program
   track's hard-tail question: does candidate diversity become selected-answer
   accuracy where single-answer accuracy is lowest?
+- Benchmark-facing ARC runners support deterministic stratified slices with
+  `STAGE5_ARC_AGI_DIFFICULTY_BUCKETS=easy,medium,hard` and
+  `STAGE5_ARC_AGI_EXAMPLES_PER_DIFFICULTY=N`. When the per-bucket quota is
+  set, it governs sample size instead of `STAGE5_ARC_AGI_LIMIT`; this is the
+  preferred Gate 1 mode for selector/TTA checks because every comparison sees
+  the same easy/medium/hard mix.
 - Evaluation can execute the tiny `symbolic_program` DSL as a fallback when a
   candidate does not contain a directly parseable output grid. Reports include
   a parse-method summary so literal-grid exactness and program-executed

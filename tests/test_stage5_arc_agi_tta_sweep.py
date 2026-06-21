@@ -135,6 +135,46 @@ def test_eval_arm_omits_limit_for_full_split(monkeypatch, tmp_path) -> None:
     assert "--limit" not in commands[0]
 
 
+def test_eval_arm_uses_difficulty_stratified_slice_without_limit(monkeypatch, tmp_path) -> None:
+    import colab.run_stage5_arc_agi_tta_sweep as module
+
+    commands: list[list[str]] = []
+    summary_json = module.RUN_DIR / "base__tta_none_summary.json"
+    summary_json.write_text(
+        json_payload(
+            {
+                "summary": {
+                    "first_exact": 0,
+                    "selected_exact": 0,
+                    "best_of_k_exact": 0,
+                    "examples_with_targets": 0,
+                    "tasks_solved_best_of_k": 0,
+                    "tasks_with_targets": 0,
+                    "valid_candidate_rate": 0.0,
+                },
+                "candidate_source_summary": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_run(cmd: list[str], **kwargs) -> None:
+        commands.append(cmd)
+
+    monkeypatch.setattr(module, "LIMIT", 100)
+    monkeypatch.setattr(module, "DIFFICULTY_BUCKETS", "medium,hard")
+    monkeypatch.setattr(module, "EXAMPLES_PER_DIFFICULTY", 12)
+    monkeypatch.setattr(module, "RESUME", False)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    eval_arm(ModelArm("base", "base"), TTA_VARIANTS["none"], tmp_path)
+
+    assert commands
+    assert "--limit" not in commands[0]
+    assert commands[0][commands[0].index("--difficulty_buckets") + 1] == "medium,hard"
+    assert commands[0][commands[0].index("--examples_per_difficulty") + 1] == "12"
+
+
 def json_payload(payload: dict[str, object]) -> str:
     import json
 

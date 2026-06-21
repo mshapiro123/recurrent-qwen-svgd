@@ -432,6 +432,8 @@ def selector_rerun_command(payload: dict[str, Any], row: dict[str, Any]) -> str 
         "STAGE5_ARC_AGI_SPLIT": "arc_split",
         "STAGE5_ARC_AGI_GRID_FORMAT": "grid_format",
         "STAGE5_ARC_AGI_PROGRAM_PARSE_MODE": "program_parse_mode",
+        "STAGE5_ARC_AGI_DIFFICULTY_BUCKETS": "difficulty_buckets",
+        "STAGE5_ARC_AGI_EXAMPLES_PER_DIFFICULTY": "examples_per_difficulty",
     }
     for env_key, metadata_key in optional_metadata_env.items():
         value = metadata.get(metadata_key)

@@ -34,3 +34,14 @@ def limit_label(limit: int | None) -> str:
     """Stable label for reports and child run ids."""
 
     return "full" if limit is None else str(limit)
+
+
+def difficulty_args(buckets: str | None, examples_per_difficulty: int | None) -> list[str]:
+    """Return eval args for deterministic difficulty-stratified ARC slices."""
+
+    args: list[str] = []
+    if buckets:
+        args += ["--difficulty_buckets", buckets]
+    if examples_per_difficulty is not None:
+        args += ["--examples_per_difficulty", str(examples_per_difficulty)]
+    return args

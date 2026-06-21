@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from colab.stage5_limits import limit_args, limit_label, parse_optional_limit
+from colab.stage5_limits import difficulty_args, limit_args, limit_label, parse_optional_limit
 
 
 @pytest.mark.parametrize(
@@ -32,3 +32,14 @@ def test_limit_args_omits_full_split_limit() -> None:
 def test_limit_label_names_full_split() -> None:
     assert limit_label(None) == "full"
     assert limit_label(400) == "400"
+
+
+def test_difficulty_args_adds_stratified_eval_flags() -> None:
+    assert difficulty_args("", None) == []
+    assert difficulty_args("easy,hard", None) == ["--difficulty_buckets", "easy,hard"]
+    assert difficulty_args("easy,hard", 12) == [
+        "--difficulty_buckets",
+        "easy,hard",
+        "--examples_per_difficulty",
+        "12",
+    ]
