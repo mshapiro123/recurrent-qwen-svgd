@@ -151,6 +151,10 @@ Initial harness files:
   hard difficulty bucket. The progress ledger reports these Gate 1 assessments
   alongside benchmark summaries. The Stage 5 next-action planner now emits this
   assessment step automatically before it promotes selector or TTA settings.
+  The preferred Colab continuation entrypoint is
+  `python colab/run_stage5_colab_continue.py`, which runs the focused Gate 1
+  and next-action tests, executes a bounded planner loop, summarizes progress,
+  and commits changed Stage 5 artifacts.
 - Evaluation can execute the tiny `symbolic_program` DSL as a fallback when a
   candidate does not contain a directly parseable output grid. Reports include
   a parse-method summary so literal-grid exactness and program-executed

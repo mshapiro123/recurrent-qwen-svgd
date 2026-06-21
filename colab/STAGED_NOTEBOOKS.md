@@ -130,8 +130,15 @@ The older split notebooks are kept only as references:
    instead; it branches through those gates with explicit thresholds and writes
    one decision report.
    To keep a live A100 session moving after any Stage 5 result lands, run
-   `colab/run_stage5_next_action.py`. By default it writes a dry-run summary of
-   the planner's top action. Set
+   `colab/run_stage5_colab_continue.py`. It prints GPU state, runs focused
+   Stage 5 tests including the Gate 1 assessor and next-action executor, runs
+   `colab/run_stage5_next_action.py`, writes the progress ledger, and commits
+   changed `outputs/stage5` artifacts. It defaults to a bounded two-action loop
+   so a cheap Gate 1 assessment can run and the planner can immediately react
+   to the assessment. Set `STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS=1` for a
+   strictly single-action continuation.
+   `colab/run_stage5_next_action.py` remains available directly. By default it
+   writes a dry-run summary of the planner's top action. Set
    `STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE=1` to execute the selected allowlisted
    Stage 5 runner without copying commands by hand. Set
    `STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS=2` or higher only when you want a
