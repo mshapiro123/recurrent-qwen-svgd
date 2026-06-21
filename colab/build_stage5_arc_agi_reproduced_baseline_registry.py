@@ -328,11 +328,11 @@ def main() -> int:
         params_b_override=args.params_b,
     )
     output_json = resolve_path(args.output_json)
+    write_json(output_json, registry)
     validation = validate_registry_payload(registry, source_path=output_json)
     if not validation.get("passed"):
         print(json.dumps(validation, indent=2))
         raise SystemExit("Generated registry did not pass validation.")
-    write_json(output_json, registry)
     if args.validation_json:
         write_json(resolve_path(args.validation_json), validation)
     print(f"wrote_registry={path_for_cli(output_json)}")

@@ -169,6 +169,30 @@ def test_parse_action_command_allows_arc_agi_baseline_registry_validator() -> No
     assert parsed.argv == [sys.executable, "colab/validate_arc_agi_baseline_registry.py"]
 
 
+def test_parse_action_command_allows_reproduced_baseline_registry_builder() -> None:
+    parsed = parse_action_command(
+        "python colab/build_stage5_arc_agi_reproduced_baseline_registry.py "
+        "--summary_json outputs/stage5/candidate/summary.json "
+        "--labels base "
+        "--output_json config/arc_agi_same_size_baselines.json "
+        "--validation_json outputs/stage5/registry/summary.json"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.argv == [
+        sys.executable,
+        "colab/build_stage5_arc_agi_reproduced_baseline_registry.py",
+        "--summary_json",
+        "outputs/stage5/candidate/summary.json",
+        "--labels",
+        "base",
+        "--output_json",
+        "config/arc_agi_same_size_baselines.json",
+        "--validation_json",
+        "outputs/stage5/registry/summary.json",
+    ]
+
+
 def test_parse_action_command_allows_benchmark_suite_runner() -> None:
     parsed = parse_action_command(
         "STAGE5_BENCHMARK_SUITE_RUN_ID=bench python colab/run_stage5_benchmark_suite.py"

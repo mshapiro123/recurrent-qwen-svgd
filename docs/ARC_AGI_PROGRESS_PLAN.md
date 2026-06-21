@@ -340,6 +340,10 @@ in the repo and the row records the `reproduction_command` and `git_commit`.
 Use `colab/build_stage5_arc_agi_reproduced_baseline_registry.py` to generate
 those local reproduced-control rows from saved Stage 5 summaries before running
 the baseline validator and SOTA comparison.
+When an ARC-AGI comparison reaches `needs_baseline_registry` and includes the
+candidate summary path, the Stage 5 planner now routes to this builder first,
+writing both `config/arc_agi_same_size_baselines.json` and a validation summary
+under `outputs/stage5`.
 The SOTA comparison separates `comparison_scope: reproduced_control` from
 `comparison_scope: public_sota`; only the latter can make the claim packet
 SOTA-ready.

@@ -1974,3 +1974,26 @@ def test_arc_agi_sota_comparison_missing_registry_runs_validator(tmp_path) -> No
     assert actions[0]["name"] == "Validate ARC-AGI same-size baseline registry"
     assert "STAGE5_ARC_AGI_BASELINE_REGISTRY_RUN_ID=" in actions[0]["command"]
     assert "python colab/validate_arc_agi_baseline_registry.py" in actions[0]["command"]
+
+
+def test_arc_agi_sota_comparison_missing_registry_builds_reproduced_registry_when_candidate_path_exists(
+    tmp_path,
+) -> None:
+    source = tmp_path / "arc_agi_sota" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_arc_agi_sota_comparison",
+        "status": "needs_baseline_registry",
+        "passed": False,
+        "candidate": {
+            "path": "outputs/stage5/candidate/summary.json",
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Build reproduced ARC-AGI baseline registry"
+    assert "python colab/build_stage5_arc_agi_reproduced_baseline_registry.py" in actions[0]["command"]
+    assert "--summary_json outputs/stage5/candidate/summary.json" in actions[0]["command"]
+    assert "--labels base" in actions[0]["command"]
+    assert "--validation_json outputs/stage5/" in actions[0]["command"]

@@ -107,6 +107,7 @@ def test_reproduced_registry_builder_cli_writes_validator_passing_registry(tmp_p
     monkeypatch.setattr(builder, "current_git_commit", lambda: "abc1234")
     summary_path = tmp_path / "outputs" / "stage5" / "run" / "summary.json"
     output_json = tmp_path / "config" / "arc_agi_same_size_baselines.json"
+    validation_json = tmp_path / "outputs" / "stage5" / "registry" / "summary.json"
     _write(
         summary_path,
         {
@@ -130,6 +131,8 @@ def test_reproduced_registry_builder_cli_writes_validator_passing_registry(tmp_p
             "base",
             "--output_json",
             str(output_json),
+            "--validation_json",
+            str(validation_json),
         ],
     )
 
@@ -139,6 +142,9 @@ def test_reproduced_registry_builder_cli_writes_validator_passing_registry(tmp_p
 
     assert validation["passed"] is True
     assert payload["baselines"][0]["git_commit"] == "abc1234"
+    validation_payload = json.loads(validation_json.read_text(encoding="utf-8"))
+    assert validation_payload["passed"] is True
+    assert validation_payload["criteria"][0]["passed"] is True
 
 
 def test_reproduced_registry_builder_rejects_missing_arc_metadata(tmp_path, monkeypatch) -> None:

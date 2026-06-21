@@ -1295,6 +1295,16 @@ def claim_readiness_actions(payload: dict[str, Any], *, source_summary: Path) ->
     ]
 
 
+def arc_agi_candidate_summary_path(payload: dict[str, Any]) -> str | None:
+    candidate = payload.get("candidate")
+    if not isinstance(candidate, dict):
+        return None
+    path = candidate.get("path")
+    if not isinstance(path, str) or not path.strip():
+        return None
+    return path.strip().replace("\\", "/")
+
+
 def arc_agi_sota_comparison_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
     if status in {"passed", "failed"}:
@@ -1326,6 +1336,23 @@ def arc_agi_sota_comparison_actions(payload: dict[str, Any], *, source_summary: 
             )
         ]
     if status == "needs_baseline_registry":
+        candidate_summary = arc_agi_candidate_summary_path(payload)
+        if candidate_summary:
+            validation_summary = f"outputs/stage5/{RUN_ID}_arc_agi_reproduced_baseline_registry/summary.json"
+            return [
+                make_action(
+                    "Build reproduced ARC-AGI baseline registry",
+                    "The SOTA comparison has a candidate ARC-AGI summary but no registry; first generate a local reproduced base-control registry from that summary, then rerun the comparison before public SOTA baselines.",
+                    (
+                        "python colab/build_stage5_arc_agi_reproduced_baseline_registry.py "
+                        f"--summary_json {shlex.quote(candidate_summary)} "
+                        "--labels base "
+                        "--output_json config/arc_agi_same_size_baselines.json "
+                        f"--validation_json {shlex.quote(validation_summary)}"
+                    ),
+                    10,
+                )
+            ]
         return [
             make_action(
                 "Validate ARC-AGI same-size baseline registry",

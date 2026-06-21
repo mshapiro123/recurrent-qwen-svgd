@@ -205,8 +205,10 @@ Release candidate definition:
   `colab/build_stage5_arc_agi_reproduced_baseline_registry.py` against a saved
   Stage 5 ARC-AGI summary, usually with `--labels base`, to generate a
   validator-passing `reproduced_eval` registry row from the audited local
-  artifact. Treat this as reproduced-control evidence; prefer external
-  official, paper, or model-card sources for public SOTA claims.
+  artifact. The planner automatically chooses this step when a SOTA comparison
+  has a candidate summary path but no registry. Treat this as
+  reproduced-control evidence; prefer external official, paper, or model-card
+  sources for public SOTA claims.
 - `colab/build_stage5_arc_agi_sota_comparison.py` now reports
   `comparison_scope`. A reproduced-only registry can pass the recovery/control
   comparison as `passed_reproduced_control`, but only `status: passed` with
