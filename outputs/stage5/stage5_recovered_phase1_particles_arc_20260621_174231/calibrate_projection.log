@@ -1,0 +1,18 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6185.57it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/phase1/phase1_step_125.pt loaded_keys=173
+saved_projection=outputs/stage5/stage5_recovered_phase1_particles_arc_20260621_174231/recovered_phase1_within_group_projection.pt
+saved_metadata=outputs/stage5/stage5_recovered_phase1_particles_arc_20260621_174231/recovered_phase1_within_group_projection.json
+num_samples=280
+num_groups=70
+hidden_dim=896
+projection_dim=64
+calibration_centering=within_group
+recommended_dim=8
+radial_eta2_task=0.999878
+radial_eta2_seed=0.000003
+radial_eta2_group=0.999906
+within_group_capture= {'global_pca': {'8': 0.1006912961602211, '16': 0.46336159110069275, '32': 0.6283679008483887, '64': 0.7912911772727966}, 'within_task_pca': {'8': 0.4863390028476715, '16': 0.5660416483879089, '32': 0.6792923808097839, '64': 0.8204993605613708}, 'within_group_pca': {'8': 0.4871295392513275, '16': 0.5669599771499634, '32': 0.6801873445510864, '64': 0.8213297724723816}}
+direction_eigenvalues_top16= [0.00017058, 2.492e-05, 1.532e-05, 1.284e-05, 1.119e-05, 9.38e-06, 8.4e-06, 8.19e-06, 7.52e-06, 6.81e-06, 6.24e-06, 6.12e-06, 5.49e-06, 5.24e-06, 4.9e-06, 4.73e-06]

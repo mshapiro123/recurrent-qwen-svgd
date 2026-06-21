@@ -1,0 +1,192 @@
+{
+  "run_id": "stage5_recovered_phase1_particles_arc_20260621_174231",
+  "kind": "stage5_recovered_phase1_particle_arc_gate",
+  "arc_limit": "256",
+  "checkpoint": "outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/phase1/phase1_step_125.pt",
+  "projection": "outputs/stage5/stage5_recovered_phase1_particles_arc_20260621_174231/recovered_phase1_within_group_projection.pt",
+  "projection_dim": "8",
+  "num_trajectories": 4,
+  "particle_init_noise": "0.05",
+  "results": {
+    "rep0": {
+      "summary_path": "outputs/stage5/stage5_recovered_phase1_particles_arc_20260621_174231_rep0_k4_arc256/summary.json",
+      "checkpoint": "outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/phase1/phase1_step_125.pt",
+      "recurrent_num_trajectories": 4,
+      "comparisons": {
+        "max": {
+          "correct_delta_recurrent_vs_base": -9,
+          "accuracy_delta_recurrent_vs_base": -0.03515625,
+          "base": {
+            "correct": 148,
+            "total": 256,
+            "accuracy": 0.578125
+          },
+          "recurrent": {
+            "correct": 139,
+            "total": 256,
+            "accuracy": 0.54296875
+          }
+        },
+        "mean": {
+          "correct_delta_recurrent_vs_base": -12,
+          "accuracy_delta_recurrent_vs_base": -0.046875,
+          "base": {
+            "correct": 148,
+            "total": 256,
+            "accuracy": 0.578125
+          },
+          "recurrent": {
+            "correct": 136,
+            "total": 256,
+            "accuracy": 0.53125
+          }
+        },
+        "vote": {
+          "correct_delta_recurrent_vs_base": -13,
+          "accuracy_delta_recurrent_vs_base": -0.05078125,
+          "base": {
+            "correct": 148,
+            "total": 256,
+            "accuracy": 0.578125
+          },
+          "recurrent": {
+            "correct": 135,
+            "total": 256,
+            "accuracy": 0.52734375
+          }
+        }
+      },
+      "paired_comparisons": {
+        "max": {
+          "paired_examples": 256,
+          "base_correct": 148,
+          "recurrent_correct": 139,
+          "correct_delta_recurrent_vs_base": -9,
+          "base_accuracy": 0.578125,
+          "recurrent_accuracy": 0.54296875,
+          "accuracy_delta_recurrent_vs_base": -0.03515625,
+          "wins": 13,
+          "losses": 22,
+          "ties": 221,
+          "sign_test_p_value": 0.17546524899080396
+        },
+        "mean": {
+          "paired_examples": 256,
+          "base_correct": 148,
+          "recurrent_correct": 136,
+          "correct_delta_recurrent_vs_base": -12,
+          "base_accuracy": 0.578125,
+          "recurrent_accuracy": 0.53125,
+          "accuracy_delta_recurrent_vs_base": -0.046875,
+          "wins": 12,
+          "losses": 24,
+          "ties": 220,
+          "sign_test_p_value": 0.06524533522315323
+        },
+        "vote": {
+          "paired_examples": 256,
+          "base_correct": 148,
+          "recurrent_correct": 135,
+          "correct_delta_recurrent_vs_base": -13,
+          "base_accuracy": 0.578125,
+          "recurrent_accuracy": 0.52734375,
+          "accuracy_delta_recurrent_vs_base": -0.05078125,
+          "wins": 12,
+          "losses": 25,
+          "ties": 219,
+          "sign_test_p_value": 0.04703102743951604
+        }
+      }
+    },
+    "rep2": {
+      "summary_path": "outputs/stage5/stage5_recovered_phase1_particles_arc_20260621_174231_rep2_k4_arc256/summary.json",
+      "checkpoint": "outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/phase1/phase1_step_125.pt",
+      "recurrent_num_trajectories": 4,
+      "comparisons": {
+        "max": {
+          "correct_delta_recurrent_vs_base": -8,
+          "accuracy_delta_recurrent_vs_base": -0.03125,
+          "base": {
+            "correct": 148,
+            "total": 256,
+            "accuracy": 0.578125
+          },
+          "recurrent": {
+            "correct": 140,
+            "total": 256,
+            "accuracy": 0.546875
+          }
+        },
+        "mean": {
+          "correct_delta_recurrent_vs_base": -4,
+          "accuracy_delta_recurrent_vs_base": -0.015625,
+          "base": {
+            "correct": 148,
+            "total": 256,
+            "accuracy": 0.578125
+          },
+          "recurrent": {
+            "correct": 144,
+            "total": 256,
+            "accuracy": 0.5625
+          }
+        },
+        "vote": {
+          "correct_delta_recurrent_vs_base": -4,
+          "accuracy_delta_recurrent_vs_base": -0.015625,
+          "base": {
+            "correct": 148,
+            "total": 256,
+            "accuracy": 0.578125
+          },
+          "recurrent": {
+            "correct": 144,
+            "total": 256,
+            "accuracy": 0.5625
+          }
+        }
+      },
+      "paired_comparisons": {
+        "max": {
+          "paired_examples": 256,
+          "base_correct": 148,
+          "recurrent_correct": 140,
+          "correct_delta_recurrent_vs_base": -8,
+          "base_accuracy": 0.578125,
+          "recurrent_accuracy": 0.546875,
+          "accuracy_delta_recurrent_vs_base": -0.03125,
+          "wins": 12,
+          "losses": 20,
+          "ties": 224,
+          "sign_test_p_value": 0.21532714972272515
+        },
+        "mean": {
+          "paired_examples": 256,
+          "base_correct": 148,
+          "recurrent_correct": 144,
+          "correct_delta_recurrent_vs_base": -4,
+          "base_accuracy": 0.578125,
+          "recurrent_accuracy": 0.5625,
+          "accuracy_delta_recurrent_vs_base": -0.015625,
+          "wins": 12,
+          "losses": 16,
+          "ties": 228,
+          "sign_test_p_value": 0.5715881884098053
+        },
+        "vote": {
+          "paired_examples": 256,
+          "base_correct": 148,
+          "recurrent_correct": 144,
+          "correct_delta_recurrent_vs_base": -4,
+          "base_accuracy": 0.578125,
+          "recurrent_accuracy": 0.5625,
+          "accuracy_delta_recurrent_vs_base": -0.015625,
+          "wins": 13,
+          "losses": 17,
+          "ties": 226,
+          "sign_test_p_value": 0.584664711728692
+        }
+      }
+    }
+  }
+}

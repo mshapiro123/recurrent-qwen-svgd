@@ -1,0 +1,13 @@
+{
+  "run_id": "stage5_recovered_phase1_particles_arc_20260621_174231",
+  "recovered_run_id": "stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231",
+  "checkpoint": "outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/phase1/phase1_step_125.pt",
+  "source_summary": "outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/summary.json",
+  "arc_limit": "256",
+  "num_trajectories": 4,
+  "particle_init_noise": "0.05",
+  "repulsion_scales": [
+    "0",
+    "2"
+  ]
+}
