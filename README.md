@@ -51,6 +51,23 @@ The next gate is competence-preserving recurrent SFT that keeps the
 ARC-Challenge gain while closing the ARC-Easy gap. Phase 2/SVGD work resumes
 after deterministic recurrent recovery is competitive with base.
 
+## Credit-Saving Research Rule
+
+Treat A100 time as the scarce experimental reagent. The default answer to
+"should we use the A100?" is **no** unless the job satisfies all of these:
+
+1. it answers the next blocker in the paper-level claim;
+2. it has a fixed step/eval limit and known checkpoint source;
+3. it emits `summary.json`/`summary.md` artifacts that the planner can read;
+4. it has an automatic stop/disconnect path or is short enough to supervise;
+5. it is not a dataset audit, unit test, notebook repair, README edit, or
+   exploratory script-debugging task.
+
+Right now the only A100-worthy job is the full balanced ARC-Easy/ARC-Challenge
+assessment for the latest weak-positive ARC-mix proxy checkpoint. Dataset
+inspection, Hugging Face trace triage, planner repairs, documentation, and
+small CPU tests should stay local or on a free CPU runtime.
+
 ## What Has Been Achieved
 
 - **Exact identity gate passed.** The manually wrapped Qwen path can reproduce
@@ -228,6 +245,16 @@ current fine-tuning source. Jackrong Opus TraceInversion is an immediate audit
 candidate for easy/hard recurrent curriculum work. Fable/Pi-agent traces are
 treated as later agent/tool-diversity material unless an audit and filter
 explicitly promote them into a training mix.
+
+Current dataset triage:
+
+| Dataset | Immediate role | GPU policy |
+|---|---|---|
+| [`lordx64/reasoning-distill-opus-4-7-max-sft`](https://huggingface.co/datasets/lordx64/reasoning-distill-opus-4-7-max-sft) | SFT-ready Opus trace source for recurrent competence recovery. | Use filtered subsets in bounded Phase 1 mixes. |
+| [`lordx64/reasoning-distill-claude-opus-4-7-max`](https://huggingface.co/datasets/lordx64/reasoning-distill-claude-opus-4-7-max) | Raw Opus source with richer fields for curriculum filtering. | Audit/filter first; do not blindly train full rows. |
+| [`Jackrong/Claude-opus-4.7-TraceInversion-5000x`](https://huggingface.co/datasets/Jackrong/Claude-opus-4.7-TraceInversion-5000x) | Immediate audit candidate for alternative reasoning-trace supervision. | CPU audit first, then small mixed pilot only if promoted. |
+| [`Glint-Research/Fable-5-traces`](https://huggingface.co/datasets/Glint-Research/Fable-5-traces) | Agent/tool/coding trace diversity source. | Hold for filter design; no blind ARC/GPQA recovery SFT. |
+| [`Glint-Research/Complete-FABLE.5-traces-2M`](https://huggingface.co/datasets/Glint-Research/Complete-FABLE.5-traces-2M) | Large trace-mining source. | Streaming CPU audit only until a precise filter exists. |
 
 ## Phase 2 Stochastic Trajectories
 

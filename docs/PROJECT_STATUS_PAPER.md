@@ -116,6 +116,25 @@ The current policy is to recover deterministic recurrent competence using Opus
 and TraceInversion-style reasoning traces first, while holding Fable for a later
 coding/tool trajectory track.
 
+The practical reason is credit discipline. Dataset discovery should not consume
+A100 time. Opus-style rows are already close to ordinary supervised reasoning
+fine-tuning, while Fable rows often encode agent/tool behavior whose value is
+likely in trajectory diversity rather than immediate ARC/GPQA competence
+recovery. The current dataset policy is therefore:
+
+| Source | Near-term status | Rationale |
+|---|---|---|
+| `lordx64/reasoning-distill-opus-4-7-max-sft` | trainable now after filtering | SFT-ready Qwen-template reasoning traces; already used in Stage 4/5. |
+| `lordx64/reasoning-distill-claude-opus-4-7-max` | audit/filter | Raw source exposes richer fields for trace-length and provenance curriculum. |
+| `Jackrong/Claude-opus-4.7-TraceInversion-5000x` | immediate audit candidate | Preserves an explicit inferred reasoning field that maps naturally to latent recurrent supervision. |
+| `Glint-Research/Fable-5-traces` | hold for agent/tool filter | Valuable trace corpus, but likely confounds competence recovery if blindly mixed into MCQ/ARC training. |
+| `Glint-Research/Complete-FABLE.5-traces-2M` | streaming audit only | Large source for future mining; too broad for direct small-model recovery. |
+
+This is not a judgment that Fable is low value. It is a sequencing decision:
+use Opus/TraceInversion to recover deterministic competence first, then use
+Fable-like traces when the project is explicitly training multi-path
+agent/tool/coding trajectories.
+
 ## 5. Evidence So Far
 
 ### 5.1 Identity Preservation
@@ -334,6 +353,10 @@ Colab continuation wrapper now defaults to `credit_saver`, which executes one
 allowlisted planner action, summarizes, commits safe text artifacts, and stops.
 Longer A100 ladders require an explicit profile such as `gate`, `same_recipe`,
 or `claim`.
+
+The project should treat UI/auth repair inside Colab as a stop condition, not a
+reason to leave an A100 attached. If GitHub, Google Drive, or notebook editor
+automation fails, disconnect the runtime and repair the launch path locally.
 
 ## 10. Current Conclusion
 
