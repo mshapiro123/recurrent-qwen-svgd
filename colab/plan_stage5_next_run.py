@@ -72,6 +72,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         )
     ) or (
         selector_rescore_payload(payload) is not None
+        or dense_sft_payload(payload) is not None
         or gate1_assessment_payload(payload) is not None
         or gate2_assessment_payload(payload) is not None
     )
@@ -140,6 +141,10 @@ def recovery_particle_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     if isinstance(payload.get("recovery_decision"), dict) and isinstance(payload.get("particle_decision"), dict):
         return payload
     return None
+
+
+def dense_sft_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "dense_sft_control" else None
 
 
 def gate1_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -489,6 +494,45 @@ def source_replan_command(payload: dict[str, Any], source_summary: Path) -> str:
         {"STAGE5_ARC_AGI_NEXT_PLAN_SOURCE_SUMMARY": command_path(summary_path)},
         "python colab/plan_stage5_next_run.py",
     )
+
+
+def dense_sft_matched_recurrent_command(payload: dict[str, Any]) -> str:
+    metadata = payload.get("metadata") or {}
+    assignments = {
+        "STAGE5_ARC_AGI_SFT_RUN_ID": f"{RUN_ID}_matched_recurrent_sft",
+        "STAGE5_ARC_AGI_TRAIN_TASK_LIMIT": str(metadata.get("train_task_limit", 100)),
+        "STAGE5_ARC_AGI_EVAL_TASK_LIMIT": str(metadata.get("eval_task_limit", 10)),
+        "STAGE5_ARC_AGI_TRACE_MODE": str(metadata.get("trace_mode", "symbolic_program")),
+        "STAGE5_ARC_AGI_TRACE_FILTER": str(metadata.get("trace_filter", "covered")),
+        "STAGE5_ARC_AGI_GRID_FORMAT": str(metadata.get("grid_format", "compact")),
+        "STAGE5_ARC_AGI_EVAL_CHECKPOINT_LADDER": "1",
+    }
+    if arc_version := metadata.get("arc_version"):
+        assignments["STAGE5_ARC_AGI_VERSION"] = str(arc_version)
+    return command_env(assignments, "python colab/run_stage5_arc_agi_sft.py")
+
+
+def dense_sft_actions(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    deltas = payload.get("deltas") or {}
+    dense_vs_base = deltas.get("dense_tuned_vs_base") or {}
+    phase1_vs_base = deltas.get("phase1_start_vs_base") or {}
+    dense_selected_delta = int(dense_vs_base.get("selected_exact_delta", 0) or 0)
+    phase1_selected_delta = int(phase1_vs_base.get("selected_exact_delta", 0) or 0)
+    reason = (
+        "A dense standard-control SFT run exists. Run the matched recurrent SFT arm under the same ARC row recipe so the project can compare recipe lift against architecture lift."
+    )
+    if dense_selected_delta > phase1_selected_delta:
+        reason += (
+            f" Dense selected delta vs base `{dense_selected_delta}` exceeds Phase1-start delta `{phase1_selected_delta}`, so this is now a necessary control before attributing gains to recurrence."
+        )
+    return [
+        make_action(
+            "Run matched recurrent ARC-AGI SFT control",
+            reason,
+            dense_sft_matched_recurrent_command(payload),
+            10,
+        )
+    ]
 
 
 def selector_rescore_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
@@ -874,6 +918,9 @@ def plan_next_actions(
     selector_rescore = selector_rescore_payload(payload)
     if selector_rescore:
         return selector_rescore_actions(selector_rescore, source_summary=source_summary)
+    dense_sft = dense_sft_payload(payload)
+    if dense_sft:
+        return dense_sft_actions(dense_sft)
     recovery_particle = recovery_particle_payload(payload)
     if recovery_particle:
         return sorted(
@@ -1177,6 +1224,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "gate2_assessment"
     if selector_rescore_payload(payload):
         return "selector_rescore"
+    if dense_sft_payload(payload):
+        return "dense_sft_control"
     if recovery_particle_payload(payload):
         return "recovery_particle_gate"
     if direct_tta_sweep_payload(payload):

@@ -137,6 +137,8 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         return True
     if payload.get("gate") == "stage5_gate2_particle_mechanism":
         return True
+    if payload.get("kind") == "dense_sft_control":
+        return True
     if {"base", "phase1_start", "recovered", "deltas"} <= set(payload):
         return True
     return False
@@ -224,6 +226,22 @@ def records_from_recovery_particle(path: Path, payload: dict[str, Any]) -> list[
     return rows
 
 
+def records_from_dense_sft(path: Path, payload: dict[str, Any]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for arm in ("base", "dense_tuned", "phase1_start"):
+        record = record_from_summary(
+            path=path,
+            kind="dense_sft_control",
+            arm=arm,
+            label=arm,
+            summary=summary_metrics(payload.get(arm)),
+            run_id=str(payload.get("run_id") or path.parent.name),
+        )
+        if record:
+            rows.append(record)
+    return rows
+
+
 def records_from_eval_summary(path: Path, payload: dict[str, Any]) -> list[dict[str, Any]]:
     summary = summary_metrics(payload)
     if not summary:
@@ -258,6 +276,8 @@ def records_from_payload(path: Path, payload: dict[str, Any]) -> list[dict[str, 
         return records_from_recovered_benchmark(path, payload)
     if isinstance(payload.get("rows"), list) and ("best_by_label" in payload or "strategies" in payload):
         return records_from_selector_rescore(path, payload)
+    if payload.get("kind") == "dense_sft_control":
+        return records_from_dense_sft(path, payload)
     if isinstance(payload.get("recovery_decision"), dict) and isinstance(payload.get("particle_decision"), dict):
         return records_from_recovery_particle(path, payload)
     return records_from_eval_summary(path, payload)

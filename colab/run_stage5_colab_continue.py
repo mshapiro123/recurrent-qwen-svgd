@@ -30,6 +30,7 @@ def focused_test_paths() -> list[str]:
         "tests/test_stage5_gate2_assessment.py",
         "tests/test_stage5_sft_gates.py",
         "tests/test_stage5_progress_ledger.py",
+        "tests/test_lora.py",
     ]
 
 

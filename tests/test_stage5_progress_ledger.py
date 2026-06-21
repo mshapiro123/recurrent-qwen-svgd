@@ -129,6 +129,31 @@ def test_progress_ledger_reads_recovery_particle_gate(tmp_path) -> None:
     assert payload["recommended_next_plan_source"] == str(source)
 
 
+def test_progress_ledger_reads_dense_sft_control(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "dense" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "dense",
+            "kind": "dense_sft_control",
+            "base": {"summary": _summary(5, 6, examples=10)},
+            "dense_tuned": {"summary": _summary(7, 8, examples=10)},
+            "phase1_start": {"summary": _summary(4, 5, examples=10)},
+            "deltas": {},
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["parsed_records"] == 3
+    dense = next(record for record in payload["records"] if record["arm"] == "dense_tuned")
+    assert dense["kind"] == "dense_sft_control"
+    assert dense["selected_exact"] == 7
+    assert payload["best_by_arm"]["dense_tuned"]["best_of_k_exact"] == 8
+    assert payload["recommended_next_plan_source"] == str(source)
+
+
 def test_progress_ledger_reports_gate1_assessments(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     source = scan_root / "gate1" / "summary.json"

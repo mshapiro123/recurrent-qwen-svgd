@@ -120,6 +120,10 @@ Required control:
 
 - Train a standard non-recurrent baseline and recurrent-particle model through
   the same recipe.
+- Start with `colab/run_stage5_arc_agi_dense_sft.py` as the dense LoRA control:
+  it prepares the same ARC-AGI rows, trains an unmodified Qwen adapter with
+  `training/train_dense_lora.py`, and lets the planner launch the matched
+  recurrent SFT arm.
 - Cross the signal phase with entropy on/off.
 - Measure whether structural diversity survives the signal phase better than
   weight-only diversity.

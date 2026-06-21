@@ -1041,7 +1041,36 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"recovered_benchmark": {}}) == "followup"
     assert source_kind({"compact": {}}) == "autopilot"
     assert source_kind({"best_by_label": {}, "rows": []}) == "selector_rescore"
+    assert source_kind({"kind": "dense_sft_control"}) == "dense_sft_control"
     assert source_kind({"recovery_decision": {}, "particle_decision": {}}) == "recovery_particle_gate"
     assert source_kind({"gate": "stage5_gate1_selector_tta"}) == "gate1_assessment"
     assert source_kind({"gate": "stage5_gate2_particle_mechanism"}) == "gate2_assessment"
     assert source_kind({"rows": [], "deltas": {}, "paired_comparisons": {}}) == "tta_sweep"
+
+
+def test_dense_sft_control_plans_matched_recurrent_recipe(tmp_path) -> None:
+    source = tmp_path / "dense" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "dense_sft_control",
+        "metadata": {
+            "arc_version": "1",
+            "train_task_limit": 80,
+            "eval_task_limit": 12,
+            "trace_mode": "symbolic_program",
+            "trace_filter": "covered",
+            "grid_format": "compact",
+        },
+        "deltas": {
+            "dense_tuned_vs_base": {"selected_exact_delta": 2},
+            "phase1_start_vs_base": {"selected_exact_delta": -1},
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run matched recurrent ARC-AGI SFT control"
+    assert "STAGE5_ARC_AGI_TRAIN_TASK_LIMIT=80" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_EVAL_TASK_LIMIT=12" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_TRACE_MODE=symbolic_program" in actions[0]["command"]
+    assert "python colab/run_stage5_arc_agi_sft.py" in actions[0]["command"]

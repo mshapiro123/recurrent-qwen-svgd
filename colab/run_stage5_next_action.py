@@ -59,6 +59,8 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/run_stage5_arc_agi_recovered_benchmark.py",
     "colab/run_stage5_arc_agi_recovery_particle_gate.py",
     "colab/run_stage5_arc_agi_rescore_selectors.py",
+    "colab/run_stage5_arc_agi_sft.py",
+    "colab/run_stage5_arc_agi_dense_sft.py",
     "colab/run_stage5_arc_agi_trace_sft_gate.py",
     "colab/run_stage5_arc_agi_tta_sweep.py",
     "colab/run_stage5_publish_hf_adapter.py",

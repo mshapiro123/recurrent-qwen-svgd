@@ -101,6 +101,12 @@ Initial harness files:
   ARC-AGI evaluation tasks. It can append the synthetic curriculum with
   `STAGE5_ARC_AGI_SYNTHETIC_TASKS`, `STAGE5_ARC_AGI_SYNTHETIC_SEED`, and
   `STAGE5_ARC_AGI_SYNTHETIC_MODES`.
+- `training/train_dense_lora.py` and `colab/run_stage5_arc_agi_dense_sft.py`:
+  standard dense Qwen LoRA control for the same ARC-AGI SFT recipe. The dense
+  runner trains an unmodified base-model adapter on the same prepared rows,
+  evaluates base/dense-tuned/Phase1-start, and the planner then routes to a
+  matched recurrent SFT arm. Use this before interpreting recurrent SFT gains
+  as architectural gains.
 - `colab/run_stage5_arc_agi_trace_sft_gate.py`: matched two-arm SFT runner for
   grid-only supervision versus symbolic-program trace supervision. It reports
   the best checkpoint in each child SFT ladder when available, not only the
@@ -268,6 +274,12 @@ last training step.
 Run `colab/run_stage5_arc_agi_trace_sft_gate.py` to execute both controls under
 the same settings and write one comparison summary. By default it compares
 grid-only SFT against symbolic-trace SFT on trace-covered examples.
+
+Run `colab/run_stage5_arc_agi_dense_sft.py` when the question is whether the
+current ARC recipe is helping a standard dense model as much as, or more than,
+the recurrent model. After this summary lands, the Stage 5 planner recommends
+the matched recurrent SFT run with the same task limits, trace mode, trace
+filter, and grid format.
 
 Set `STAGE5_ARC_AGI_DISTILL=1` to add frozen-base next-token KL distillation
 inside `training/train_phase1_ponder.py`. Run

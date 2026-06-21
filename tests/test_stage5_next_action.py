@@ -78,6 +78,14 @@ def test_parse_action_command_allows_gate2_assessor() -> None:
     ]
 
 
+def test_parse_action_command_allows_dense_and_recurrent_sft_runners() -> None:
+    dense = parse_action_command("python colab/run_stage5_arc_agi_dense_sft.py")
+    recurrent = parse_action_command("python colab/run_stage5_arc_agi_sft.py")
+
+    assert dense.argv == [sys.executable, "colab/run_stage5_arc_agi_dense_sft.py"]
+    assert recurrent.argv == [sys.executable, "colab/run_stage5_arc_agi_sft.py"]
+
+
 def test_parse_action_command_rejects_arbitrary_shell() -> None:
     try:
         parse_action_command("rm -rf outputs")

@@ -31,6 +31,13 @@ reinforcement better than diversity encoded only in weights. A strong final
 model is not enough; the decisive experiment must isolate whether architecture
 adds hard-tail accuracy beyond the same recipe on a standard dense model.
 
+Implementation note: Stage 5 now includes a dense standard-control SFT runner,
+`colab/run_stage5_arc_agi_dense_sft.py`, plus dense base-mode LoRA loading in
+`eval/eval_arc_agi.py`. This lets the project train an unmodified Qwen LoRA
+adapter on the same ARC-AGI rows used for recurrent SFT, then route the planner
+to a matched recurrent SFT arm. This is the first concrete scaffold for the
+standard-vs-recurrent same-recipe comparison.
+
 ## Decisive Experiment
 
 Train both a standard version and a recurrent-particle version of the same
@@ -59,6 +66,8 @@ Required pieces:
 - paired sign tests on selected-answer metrics;
 - task-family or difficulty-stratified reporting;
 - held-out checks for any calibrated projection or selector setting.
+- a standard dense recipe-control arm whenever a recurrent training recipe is
+  being evaluated for architecture lift.
 
 ### Gate 2: Mechanism Before Scaling
 

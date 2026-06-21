@@ -38,7 +38,9 @@ from eval.arc_agi_utils import (  # noqa: E402
 from eval.arc_agi_program import arc_program_training_match_count, parse_arc_program_from_text  # noqa: E402
 from eval.arc_agi_symbolic import SymbolicCandidate, format_symbolic_program_trace, symbolic_candidates  # noqa: E402
 from eval.eval_best_of_k_jsonl import generate_candidates, load_wrapper, parse_optional_float  # noqa: E402
-from eval.eval_identity import model_load_kwargs  # noqa: E402
+from eval.eval_identity import model_load_kwargs, resolve_dtype  # noqa: E402
+from models.lora import apply_lora_to_qwen_layers  # noqa: E402
+from training.checkpointing import load_trainable_checkpoint  # noqa: E402
 
 
 def set_seed(seed: int) -> None:
@@ -52,8 +54,32 @@ def load_base(args: argparse.Namespace):
         args.model_name,
         **model_load_kwargs(args.dtype, args.attn_implementation),
     ).to(args.device)
+    if args.checkpoint:
+        start, end = parse_base_lora_layer_range(args.base_lora_layer_range, len(model.model.layers))
+        replaced = apply_lora_to_qwen_layers(
+            model,
+            start_layer=start,
+            end_layer=end,
+            rank=args.lora_rank,
+            alpha=args.lora_alpha,
+            dropout=0.0,
+            adapter_dtype=resolve_dtype(args.adapter_dtype),
+        )
+        print(f"dense_lora_modules={replaced} layer_range={start},{end}")
+        load_info = load_trainable_checkpoint(model, args.checkpoint)
+        print(f"loaded_base_lora_checkpoint={args.checkpoint} loaded_keys={len(load_info['loaded_keys'])}")
     model.eval()
     return model
+
+
+def parse_base_lora_layer_range(value: str, num_layers: int) -> tuple[int, int]:
+    if value.lower() in {"", "auto", "all"}:
+        return 0, num_layers
+    left, right = value.split(",", maxsplit=1)
+    start, end = int(left), int(right)
+    if not 0 <= start < end <= num_layers:
+        raise ValueError(f"Invalid base LoRA layer range {value!r} for {num_layers} layers")
+    return start, end
 
 
 def trim_completion(text: str) -> str:
@@ -1053,6 +1079,11 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--lora_rank", type=int, default=8)
     parser.add_argument("--lora_alpha", type=int, default=16)
+    parser.add_argument(
+        "--base_lora_layer_range",
+        default="6,18",
+        help="Layer range for loading a dense base-mode LoRA checkpoint. Use all/auto or start,end.",
+    )
     parser.add_argument("--adapter_dtype", default="float32")
     parser.add_argument("--sample_latents", action="store_true")
     parser.add_argument("--latent_injection_mode", default="post", choices=("pre", "post", "both"))

@@ -89,6 +89,39 @@ def apply_lora_to_recurrent_block(
     return replaced
 
 
+def apply_lora_to_qwen_layers(
+    model: nn.Module,
+    *,
+    start_layer: int = 0,
+    end_layer: int | None = None,
+    rank: int = 8,
+    alpha: int = 16,
+    dropout: float = 0.0,
+    adapter_dtype: torch.dtype = torch.float32,
+    target_module_names: Iterable[str] = DEFAULT_QWEN_LORA_TARGETS,
+) -> int:
+    """Replace target Linear modules in a Qwen-style dense model layer range.
+
+    This is the dense-model control counterpart to
+    :func:`apply_lora_to_recurrent_block`.  It keeps the same zero-init
+    identity behavior while allowing a standard non-recurrent Qwen baseline to
+    train on the same curriculum as the recurrent wrapper.
+    """
+
+    qwen = getattr(model, "model", model)
+    if not hasattr(qwen, "layers"):
+        raise TypeError("Expected a Qwen-style model with .model.layers or .layers")
+    layers = qwen.layers
+    end = len(layers) if end_layer is None else end_layer
+    if not 0 <= start_layer < end <= len(layers):
+        raise ValueError(f"Invalid LoRA layer range {start_layer}:{end} for {len(layers)} layers")
+    target_names = set(target_module_names)
+    replaced = 0
+    for layer_idx in range(start_layer, end):
+        replaced += _replace_lora_targets(layers[layer_idx], target_names, rank, alpha, dropout, adapter_dtype)
+    return replaced
+
+
 def mark_only_lora_trainable(module: nn.Module) -> None:
     for child in module.modules():
         if isinstance(child, LoRALinear):
