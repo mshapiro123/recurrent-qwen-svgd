@@ -1,0 +1,155 @@
+{
+  "run_id": "stage5_recovered_phase2_smoke_20260621_175538_arc128",
+  "kind": "stage5_benchmark_suite",
+  "status": "completed",
+  "source_summary": "outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/summary.json",
+  "checkpoint": "outputs/stage5/stage5_recovered_phase2_smoke_20260621_175538/phase2/phase2_step_25.pt",
+  "benchmarks": [
+    "arc_challenge"
+  ],
+  "score_targets": [
+    "label"
+  ],
+  "aggregates": [
+    "mean",
+    "max",
+    "vote"
+  ],
+  "recurrent_mode": "phase2",
+  "recurrent_num_trajectories": 4,
+  "elapsed_seconds": 129.58089685440063,
+  "failures": [],
+  "results": {
+    "arc_challenge": {
+      "label": {
+        "base": {
+          "max": {
+            "correct": 72,
+            "total": 128,
+            "accuracy": 0.5625
+          },
+          "mean": {
+            "correct": 72,
+            "total": 128,
+            "accuracy": 0.5625
+          },
+          "vote": {
+            "correct": 72,
+            "total": 128,
+            "accuracy": 0.5625
+          }
+        },
+        "recurrent": {
+          "max": {
+            "correct": 68,
+            "total": 128,
+            "accuracy": 0.53125
+          },
+          "mean": {
+            "correct": 70,
+            "total": 128,
+            "accuracy": 0.546875
+          },
+          "vote": {
+            "correct": 67,
+            "total": 128,
+            "accuracy": 0.5234375
+          }
+        }
+      }
+    }
+  },
+  "comparisons": {
+    "arc_challenge": {
+      "label": {
+        "max": {
+          "correct_delta_recurrent_vs_base": -4,
+          "accuracy_delta_recurrent_vs_base": -0.03125,
+          "base": {
+            "correct": 72,
+            "total": 128,
+            "accuracy": 0.5625
+          },
+          "recurrent": {
+            "correct": 68,
+            "total": 128,
+            "accuracy": 0.53125
+          }
+        },
+        "mean": {
+          "correct_delta_recurrent_vs_base": -2,
+          "accuracy_delta_recurrent_vs_base": -0.015625,
+          "base": {
+            "correct": 72,
+            "total": 128,
+            "accuracy": 0.5625
+          },
+          "recurrent": {
+            "correct": 70,
+            "total": 128,
+            "accuracy": 0.546875
+          }
+        },
+        "vote": {
+          "correct_delta_recurrent_vs_base": -5,
+          "accuracy_delta_recurrent_vs_base": -0.0390625,
+          "base": {
+            "correct": 72,
+            "total": 128,
+            "accuracy": 0.5625
+          },
+          "recurrent": {
+            "correct": 67,
+            "total": 128,
+            "accuracy": 0.5234375
+          }
+        }
+      }
+    }
+  },
+  "paired_comparisons": {
+    "arc_challenge": {
+      "label": {
+        "max": {
+          "paired_examples": 128,
+          "base_correct": 72,
+          "recurrent_correct": 68,
+          "correct_delta_recurrent_vs_base": -4,
+          "base_accuracy": 0.5625,
+          "recurrent_accuracy": 0.53125,
+          "accuracy_delta_recurrent_vs_base": -0.03125,
+          "wins": 7,
+          "losses": 11,
+          "ties": 110,
+          "sign_test_p_value": 0.480682373046875
+        },
+        "mean": {
+          "paired_examples": 128,
+          "base_correct": 72,
+          "recurrent_correct": 70,
+          "correct_delta_recurrent_vs_base": -2,
+          "base_accuracy": 0.5625,
+          "recurrent_accuracy": 0.546875,
+          "accuracy_delta_recurrent_vs_base": -0.015625,
+          "wins": 7,
+          "losses": 9,
+          "ties": 112,
+          "sign_test_p_value": 0.803619384765625
+        },
+        "vote": {
+          "paired_examples": 128,
+          "base_correct": 72,
+          "recurrent_correct": 67,
+          "correct_delta_recurrent_vs_base": -5,
+          "base_accuracy": 0.5625,
+          "recurrent_accuracy": 0.5234375,
+          "accuracy_delta_recurrent_vs_base": -0.0390625,
+          "wins": 6,
+          "losses": 11,
+          "ties": 111,
+          "sign_test_p_value": 0.332305908203125
+        }
+      }
+    }
+  }
+}
