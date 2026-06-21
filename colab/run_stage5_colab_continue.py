@@ -88,6 +88,7 @@ def default_max_actions() -> str:
 
 def default_env() -> dict[str, str]:
     return {
+        "STAGE5_A100_BUDGET_PROFILE": continuation_profile(),
         "STAGE5_ARC_AGI_NEXT_ACTION_RUN_ID": RUN_ID,
         "STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE": "1",
         "STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS": default_max_actions(),

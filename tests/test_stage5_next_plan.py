@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+import colab.plan_stage5_next_run as planner
 from colab.plan_stage5_next_run import (
     best_recovered_tta_row,
     evidence_fragment,
@@ -1875,6 +1876,25 @@ def test_benchmark_suite_assessment_negative_runs_recovery_ladder(tmp_path) -> N
 
     assert actions[0]["name"] == "Run deterministic recurrent recovery ladder"
     assert "python colab/run_stage5_phase1_recovery_ladder.py" in actions[0]["command"]
+    assert "STAGE5_PHASE1_EXTRA_STEPS=500" in actions[0]["command"]
+    assert "STAGE5_ARC_LIMIT=256" in actions[0]["command"]
+
+
+def test_benchmark_suite_assessment_credit_saver_runs_short_recovery_probe(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(planner, "A100_BUDGET_PROFILE", "credit_saver")
+    source = tmp_path / "benchmark_assessment" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_broader_benchmark_suite",
+        "status": "needs_recurrent_recovery",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run deterministic recurrent recovery ladder"
+    assert "Credit-saving probe" in actions[0]["reason"]
+    assert "STAGE5_PHASE1_EXTRA_STEPS=250" in actions[0]["command"]
+    assert "STAGE5_ARC_LIMIT=128" in actions[0]["command"]
 
 
 def test_benchmark_suite_assessment_passed_builds_claim_packet(tmp_path) -> None:

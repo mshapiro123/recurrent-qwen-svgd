@@ -44,6 +44,7 @@ def test_colab_continue_defaults_to_credit_saving_single_action_loop(monkeypatch
     env = default_env()
 
     assert env["STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE"] == "1"
+    assert env["STAGE5_A100_BUDGET_PROFILE"] == "credit_saver"
     assert continuation_profile() == "credit_saver"
     assert env["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] == "1"
     assert env["STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT"] == "0"

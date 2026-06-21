@@ -44,6 +44,24 @@ DEFAULT_TRACE_SFT_GATE_ARMS = os.environ.get(
 MIN_SYMBOLIC_EXACT = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_MIN_SYMBOLIC_EXACT", "1"))
 MIN_HYBRID_BEST_DELTA = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_MIN_HYBRID_BEST_DELTA", "0"))
 MIN_TRACE_BEST_DELTA = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_MIN_TRACE_BEST_DELTA", "0"))
+A100_BUDGET_PROFILE = os.environ.get(
+    "STAGE5_A100_BUDGET_PROFILE",
+    os.environ.get("STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE", ""),
+).strip().lower()
+
+
+def credit_saver_budget() -> bool:
+    return A100_BUDGET_PROFILE in {"credit_saver", "single", "low_credit", "low-credit"}
+
+
+def recurrent_recovery_budget_defaults() -> tuple[str, str, str]:
+    """Return extra steps, ARC eval limit, and a reason prefix for recovery runs."""
+
+    explicit_steps = os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_RECOVERY_EXTRA_STEPS")
+    explicit_arc_limit = os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_RECOVERY_ARC_LIMIT")
+    if credit_saver_budget():
+        return explicit_steps or "250", explicit_arc_limit or "128", "Credit-saving probe: "
+    return explicit_steps or "500", explicit_arc_limit or "256", ""
 
 
 def resolve_path(value: str | Path) -> Path:
@@ -1344,15 +1362,19 @@ def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summar
             )
         ]
     if status == "needs_recurrent_recovery":
+        extra_steps, arc_limit, budget_reason_prefix = recurrent_recovery_budget_defaults()
         return [
             make_action(
                 "Run deterministic recurrent recovery ladder",
-                "The broader benchmark gate says recurrent still trails base; improve deterministic recurrent competence before GPQA Diamond or release claims.",
+                (
+                    budget_reason_prefix
+                    + "The broader benchmark gate says recurrent still trails base; improve deterministic recurrent competence before GPQA Diamond or release claims."
+                ),
                 command_env(
                     {
                         "STAGE5_RUN_ID": f"{RUN_ID}_phase1_recovery",
-                        "STAGE5_PHASE1_EXTRA_STEPS": "500",
-                        "STAGE5_ARC_LIMIT": "256",
+                        "STAGE5_PHASE1_EXTRA_STEPS": extra_steps,
+                        "STAGE5_ARC_LIMIT": arc_limit,
                     },
                     "python colab/run_stage5_phase1_recovery_ladder.py",
                 ),
