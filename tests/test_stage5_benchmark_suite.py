@@ -144,3 +144,34 @@ def test_build_summary_compares_base_and_recurrent_rows(tmp_path) -> None:
     assert paired["paired_examples"] == 2
     assert paired["wins"] == 1
     assert paired["losses"] == 0
+
+
+def test_eval_jobs_passes_phase2_svgd_flags(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    checkpoint = tmp_path / "phase2.pt"
+    data = tmp_path / "arc.jsonl"
+    monkeypatch.setattr(module, "RECURRENT_MODE", "phase2")
+    monkeypatch.setattr(module, "RECURRENT_NUM_TRAJECTORIES", 4)
+    monkeypatch.setattr(module, "RECURRENT_SAMPLE_LATENTS", True)
+    monkeypatch.setattr(module, "RECURRENT_PARTICLE_UPDATE_MODE", "svgd")
+    monkeypatch.setattr(module, "RECURRENT_PARTICLE_INIT_NOISE", "0.05")
+    monkeypatch.setattr(module, "RECURRENT_SVGD_REPULSION_SCALE", "2.0")
+    monkeypatch.setattr(module, "RECURRENT_SVGD_REPULSION_MAX_NORM", "none")
+    monkeypatch.setattr(module, "RECURRENT_SVGD_KERNEL_PROJECTION_DIM", "8")
+    monkeypatch.setattr(module, "RECURRENT_SVGD_KERNEL_PROJECTION_PATH", "outputs/calibration/proj.pt")
+    monkeypatch.setattr(module, "RECURRENT_SVGD_KERNEL_GEOMETRY", "euclidean")
+
+    jobs = module.eval_jobs([BenchmarkSpec("arc_challenge", data, [])], checkpoint=checkpoint)
+    recurrent_cmd = next(job.cmd for job in jobs if job.arm == "recurrent")
+
+    assert "--mode" in recurrent_cmd
+    assert recurrent_cmd[recurrent_cmd.index("--mode") + 1] == "phase2"
+    assert "--sample_latents" in recurrent_cmd
+    assert recurrent_cmd[recurrent_cmd.index("--num_trajectories") + 1] == "4"
+    assert recurrent_cmd[recurrent_cmd.index("--particle_update_mode") + 1] == "svgd"
+    assert recurrent_cmd[recurrent_cmd.index("--particle_init_noise") + 1] == "0.05"
+    assert recurrent_cmd[recurrent_cmd.index("--svgd_repulsion_scale") + 1] == "2.0"
+    assert recurrent_cmd[recurrent_cmd.index("--svgd_repulsion_max_norm") + 1] == "none"
+    assert recurrent_cmd[recurrent_cmd.index("--svgd_kernel_projection_dim") + 1] == "8"
+    assert recurrent_cmd[recurrent_cmd.index("--svgd_kernel_projection_path") + 1] == "outputs/calibration/proj.pt"

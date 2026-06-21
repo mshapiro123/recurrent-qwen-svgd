@@ -51,6 +51,24 @@ CONTINUE_ON_FAILURE = os.environ.get("STAGE5_BENCHMARK_CONTINUE_ON_FAILURE", "1"
 RECURRENT_MODE = os.environ.get("STAGE5_BENCHMARK_RECURRENT_MODE", "phase1")
 RECURRENT_MAX_LOOPS = int(os.environ.get("STAGE5_BENCHMARK_MAX_LOOPS", "4"))
 RECURRENT_NUM_TRAJECTORIES = int(os.environ.get("STAGE5_BENCHMARK_NUM_TRAJECTORIES", "1"))
+RECURRENT_SAMPLE_LATENTS = os.environ.get("STAGE5_BENCHMARK_SAMPLE_LATENTS", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
+RECURRENT_LATENT_INJECTION_MODE = os.environ.get("STAGE5_BENCHMARK_LATENT_INJECTION_MODE", "post")
+RECURRENT_PARTICLE_UPDATE_MODE = os.environ.get("STAGE5_BENCHMARK_PARTICLE_UPDATE_MODE", "none")
+RECURRENT_PARTICLE_INIT_NOISE = os.environ.get("STAGE5_BENCHMARK_PARTICLE_INIT_NOISE", "0.0")
+RECURRENT_SVGD_EPS = os.environ.get("STAGE5_BENCHMARK_SVGD_EPS", "1.0")
+RECURRENT_SVGD_REPULSION_SCALE = os.environ.get("STAGE5_BENCHMARK_SVGD_REPULSION_SCALE", "0.5")
+RECURRENT_SVGD_BANDWIDTH = os.environ.get("STAGE5_BENCHMARK_SVGD_BANDWIDTH", "median")
+RECURRENT_SVGD_BANDWIDTH_FLOOR = os.environ.get("STAGE5_BENCHMARK_SVGD_BANDWIDTH_FLOOR", "1e-6")
+RECURRENT_SVGD_REPULSION_MAX_NORM = os.environ.get("STAGE5_BENCHMARK_SVGD_REPULSION_MAX_NORM", "")
+RECURRENT_SVGD_KERNEL_PROJECTION_DIM = os.environ.get("STAGE5_BENCHMARK_SVGD_KERNEL_PROJECTION_DIM", "")
+RECURRENT_SVGD_KERNEL_PROJECTION_PATH = os.environ.get("STAGE5_BENCHMARK_SVGD_KERNEL_PROJECTION_PATH", "")
+RECURRENT_SVGD_KERNEL_GEOMETRY = os.environ.get("STAGE5_BENCHMARK_SVGD_KERNEL_GEOMETRY", "euclidean")
+RECURRENT_SVGD_PROJECTION_SEED = os.environ.get("STAGE5_BENCHMARK_SVGD_PROJECTION_SEED", "0")
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
 DEVICE = os.environ.get("DEVICE", "cuda")
@@ -221,6 +239,45 @@ def benchmark_specs(names: list[str]) -> list[BenchmarkSpec]:
 
 def eval_jobs(specs: list[BenchmarkSpec], *, checkpoint: Path) -> list[EvalJob]:
     jobs: list[EvalJob] = []
+    recurrent_extra = [
+        "--checkpoint",
+        path_for_cli(checkpoint),
+        "--max_loops",
+        str(RECURRENT_MAX_LOOPS),
+        "--num_trajectories",
+        str(RECURRENT_NUM_TRAJECTORIES),
+    ]
+    if RECURRENT_MODE == "phase2":
+        if RECURRENT_SAMPLE_LATENTS:
+            recurrent_extra.append("--sample_latents")
+        recurrent_extra.extend(
+            [
+                "--latent_injection_mode",
+                RECURRENT_LATENT_INJECTION_MODE,
+                "--particle_update_mode",
+                RECURRENT_PARTICLE_UPDATE_MODE,
+                "--particle_init_noise",
+                RECURRENT_PARTICLE_INIT_NOISE,
+                "--svgd_eps",
+                RECURRENT_SVGD_EPS,
+                "--svgd_repulsion_scale",
+                RECURRENT_SVGD_REPULSION_SCALE,
+                "--svgd_bandwidth",
+                RECURRENT_SVGD_BANDWIDTH,
+                "--svgd_bandwidth_floor",
+                RECURRENT_SVGD_BANDWIDTH_FLOOR,
+                "--svgd_kernel_geometry",
+                RECURRENT_SVGD_KERNEL_GEOMETRY,
+                "--svgd_projection_seed",
+                RECURRENT_SVGD_PROJECTION_SEED,
+            ]
+        )
+        if RECURRENT_SVGD_REPULSION_MAX_NORM:
+            recurrent_extra.extend(["--svgd_repulsion_max_norm", RECURRENT_SVGD_REPULSION_MAX_NORM])
+        if RECURRENT_SVGD_KERNEL_PROJECTION_DIM:
+            recurrent_extra.extend(["--svgd_kernel_projection_dim", RECURRENT_SVGD_KERNEL_PROJECTION_DIM])
+        if RECURRENT_SVGD_KERNEL_PROJECTION_PATH:
+            recurrent_extra.extend(["--svgd_kernel_projection_path", RECURRENT_SVGD_KERNEL_PROJECTION_PATH])
     for spec in specs:
         for score_target in parse_csv(SCORE_TARGETS):
             common = [
@@ -245,18 +302,7 @@ def eval_jobs(specs: list[BenchmarkSpec], *, checkpoint: Path) -> list[EvalJob]:
             ]
             for arm, mode, extra in (
                 ("base", "base", []),
-                (
-                    "recurrent",
-                    RECURRENT_MODE,
-                    [
-                        "--checkpoint",
-                        path_for_cli(checkpoint),
-                        "--max_loops",
-                        str(RECURRENT_MAX_LOOPS),
-                        "--num_trajectories",
-                        str(RECURRENT_NUM_TRAJECTORIES),
-                    ],
-                ),
+                ("recurrent", RECURRENT_MODE, recurrent_extra),
             ):
                 output = RUN_DIR / f"{spec.name}_{arm}_{score_target}.jsonl"
                 jobs.append(
