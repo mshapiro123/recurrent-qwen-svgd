@@ -129,6 +129,7 @@ def evaluate_selector_row(
 ) -> dict[str, Any]:
     selector_summary_path = resolve_path(str(row["output_summary_json"]))
     selector_payload = read_json(selector_summary_path)
+    selector_summary = selector_payload.get("summary") or {}
     label = row_label(row)
     comparison = compare_payloads(
         dense_payload,
@@ -157,6 +158,14 @@ def evaluate_selector_row(
         "label": str(row.get("label")),
         "selection_strategy": str(row.get("selection_strategy")),
         "selector_summary_json": path_for_cli(selector_summary_path),
+        "claim_level_selector": bool(
+            str(row.get("selection_strategy")) == "cell_vote"
+            or int(selector_summary.get("selector_generated_selected", 0) or 0) > 0
+            or int(selector_summary.get("selected_exceeds_best_of_k", 0) or 0) > 0
+        ),
+        "selector_generated_selected": int(selector_summary.get("selector_generated_selected", 0) or 0),
+        "selector_generated_selected_exact": int(selector_summary.get("selector_generated_selected_exact", 0) or 0),
+        "selected_exceeds_best_of_k": int(selector_summary.get("selected_exceeds_best_of_k", 0) or 0),
         "passed": passed,
         "tradeoff": tradeoff,
         "total_sufficient": total_sufficient,
@@ -210,7 +219,12 @@ def assess_recipe_selector_conversion(
 
     if passing:
         status = "passed"
-        reason = "At least one recurrent selector converts best-of-K coverage into selected-answer lift versus the dense control."
+        has_claim_level = any(row["claim_level_selector"] for row in passing)
+        reason = (
+            "At least one recurrent selector converts claim-level candidate evidence into selected-answer lift versus the dense control."
+            if has_claim_level
+            else "At least one recurrent selector converts best-of-K coverage into selected-answer lift versus the dense control."
+        )
         next_step = "Rerun or update the same-recipe architecture assessment using the passing selector setting."
     elif not evaluated_rows:
         status = "needs_selector_rescore"
@@ -284,12 +298,15 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
         "",
         "## Selector Evidence",
         "",
-        "| Label | Selector | Passed | Aggregate selected | Hard selected |",
-        "|---|---|---:|---|---|",
+        "| Label | Selector | Passed | Claim-level | Selector exact | Beyond best-of-K | Aggregate selected | Hard selected |",
+        "|---|---|---:|---:|---:|---:|---|---|",
     ]
     for row in payload["selector_evidence"]:
         lines.append(
             f"| `{row['label']}` | `{row['selection_strategy']}` | `{row['passed']}` | "
+            f"`{row.get('claim_level_selector', False)}` | "
+            f"`{row.get('selector_generated_selected_exact', 0)}` | "
+            f"`{row.get('selected_exceeds_best_of_k', 0)}` | "
             f"{row['aggregate_evidence']} | {row['hard_evidence']} |"
         )
     output_md.parent.mkdir(parents=True, exist_ok=True)

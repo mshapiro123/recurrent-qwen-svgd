@@ -795,12 +795,17 @@ def evaluate_example(
         selected_exact = bool(rows[selected_index]["score"].get("exact"))
         for idx, row in enumerate(rows):
             row.setdefault("selected", idx == selected_index)
+    selected_row = rows[selected_index] if rows else {}
+    selected_selector_generated = bool(selected_row.get("selector_generated"))
     summary = {
         "task_id": example.task_id,
         "test_index": example.test_index,
         "has_target": target is not None,
         "first_exact": first_exact if target is not None else None,
         "selected_exact": selected_exact if target is not None else None,
+        "selected_selector_generated": selected_selector_generated,
+        "selector_generated_selected_exact": bool(selected_selector_generated and selected_exact),
+        "selected_exceeds_best_of_k": bool(target is not None and selected_exact and not any_exact),
         "selected_index": selected_index,
         "selection_strategy": selection_strategy,
         "inferred_shapes": [list(shape) for shape in inferred_output_shapes(example)],
@@ -846,6 +851,9 @@ def summarize_examples(example_summaries: list[dict[str, Any]]) -> dict[str, Any
     first = sum(1 for item in scored if item["first_exact"])
     selected = sum(1 for item in scored if item["selected_exact"])
     best = sum(1 for item in scored if item["best_of_k_exact"])
+    selector_generated_selected = sum(1 for item in scored if item.get("selected_selector_generated"))
+    selector_generated_selected_exact = sum(1 for item in scored if item.get("selector_generated_selected_exact"))
+    selected_exceeds_best = sum(1 for item in scored if item.get("selected_exceeds_best_of_k"))
     task_ids = sorted({item["task_id"] for item in scored})
     solved_tasks = 0
     for task_id in task_ids:
@@ -857,6 +865,9 @@ def summarize_examples(example_summaries: list[dict[str, Any]]) -> dict[str, Any
         "first_exact": first,
         "selected_exact": selected,
         "best_of_k_exact": best,
+        "selector_generated_selected": selector_generated_selected,
+        "selector_generated_selected_exact": selector_generated_selected_exact,
+        "selected_exceeds_best_of_k": selected_exceeds_best,
         "first_accuracy": first / max(len(scored), 1),
         "selected_accuracy": selected / max(len(scored), 1),
         "best_of_k_accuracy": best / max(len(scored), 1),
@@ -886,6 +897,9 @@ def summarize_task_families(example_summaries: list[dict[str, Any]]) -> dict[str
         first = sum(1 for item in items if item["first_exact"])
         selected = sum(1 for item in items if item["selected_exact"])
         best = sum(1 for item in items if item["best_of_k_exact"])
+        selector_generated_selected = sum(1 for item in items if item.get("selected_selector_generated"))
+        selector_generated_selected_exact = sum(1 for item in items if item.get("selector_generated_selected_exact"))
+        selected_exceeds_best = sum(1 for item in items if item.get("selected_exceeds_best_of_k"))
         task_ids = sorted({item["task_id"] for item in items})
         solved_tasks = 0
         for task_id in task_ids:
@@ -899,6 +913,9 @@ def summarize_task_families(example_summaries: list[dict[str, Any]]) -> dict[str
             "first_exact": first,
             "selected_exact": selected,
             "best_of_k_exact": best,
+            "selector_generated_selected": selector_generated_selected,
+            "selector_generated_selected_exact": selector_generated_selected_exact,
+            "selected_exceeds_best_of_k": selected_exceeds_best,
             "first_accuracy": first / max(len(items), 1),
             "selected_accuracy": selected / max(len(items), 1),
             "best_of_k_accuracy": best / max(len(items), 1),
@@ -921,6 +938,9 @@ def summarize_difficulty_buckets(example_summaries: list[dict[str, Any]]) -> dic
         first = sum(1 for item in items if item["first_exact"])
         selected = sum(1 for item in items if item["selected_exact"])
         best = sum(1 for item in items if item["best_of_k_exact"])
+        selector_generated_selected = sum(1 for item in items if item.get("selected_selector_generated"))
+        selector_generated_selected_exact = sum(1 for item in items if item.get("selector_generated_selected_exact"))
+        selected_exceeds_best = sum(1 for item in items if item.get("selected_exceeds_best_of_k"))
         valid_candidates = sum(item["valid_candidates"] for item in items)
         total_candidates = sum(item["num_candidates"] for item in items)
         scores = [item.get("difficulty_score") for item in items if isinstance(item.get("difficulty_score"), int)]
@@ -929,6 +949,9 @@ def summarize_difficulty_buckets(example_summaries: list[dict[str, Any]]) -> dic
             "first_exact": first,
             "selected_exact": selected,
             "best_of_k_exact": best,
+            "selector_generated_selected": selector_generated_selected,
+            "selector_generated_selected_exact": selector_generated_selected_exact,
+            "selected_exceeds_best_of_k": selected_exceeds_best,
             "first_accuracy": first / max(len(items), 1),
             "selected_accuracy": selected / max(len(items), 1),
             "best_of_k_accuracy": best / max(len(items), 1),
@@ -1012,6 +1035,9 @@ def write_summary_md(path: str | Path | None, payload: dict[str, Any]) -> None:
         f"- First-candidate exact: `{summary['first_exact']}` / `{summary['examples_with_targets']}` = `{summary['first_accuracy']}`",
         f"- Selected-candidate exact: `{summary['selected_exact']}` / `{summary['examples_with_targets']}` = `{summary['selected_accuracy']}`",
         f"- Best-of-K exact: `{summary['best_of_k_exact']}` / `{summary['examples_with_targets']}` = `{summary['best_of_k_accuracy']}`",
+        f"- Selector-generated selected: `{summary.get('selector_generated_selected', 0)}`",
+        f"- Selector-generated selected exact: `{summary.get('selector_generated_selected_exact', 0)}`",
+        f"- Selected exact beyond generated best-of-K: `{summary.get('selected_exceeds_best_of_k', 0)}`",
         f"- Tasks solved best-of-K: `{summary['tasks_solved_best_of_k']}` / `{summary['tasks_with_targets']}` = `{summary['task_solve_rate_best_of_k']}`",
         f"- Valid candidate rate: `{summary['valid_candidate_rate']}`",
         "",

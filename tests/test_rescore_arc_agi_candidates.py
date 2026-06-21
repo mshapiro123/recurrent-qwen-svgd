@@ -138,6 +138,9 @@ def test_rescore_cell_vote_can_synthesize_correct_grid_from_partial_candidates()
     assert summaries[0]["selected_exact"] is True
     assert summaries[0]["best_of_k_exact"] is False
     assert summaries[0]["selector_generated_candidates"] == 1
+    assert summaries[0]["selected_selector_generated"] is True
+    assert summaries[0]["selector_generated_selected_exact"] is True
+    assert summaries[0]["selected_exceeds_best_of_k"] is True
     assert summaries[0]["num_candidates"] == 4
 
 

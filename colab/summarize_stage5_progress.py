@@ -403,6 +403,13 @@ def recipe_selector_conversions(summary_files: list[Path]) -> list[dict[str, Any
             continue
         if payload.get("gate") != "stage5_same_recipe_selector_conversion" and payload.get("kind") != "recipe_selector_conversion":
             continue
+        best = payload.get("best_selector") or {}
+        best_row = None
+        for row in payload.get("selector_evidence") or []:
+            if row.get("label") == best.get("label") and row.get("selection_strategy") == best.get("selection_strategy"):
+                best_row = row
+                break
+        best_row = best_row or {}
         conversions.append(
             {
                 "path": path_for_cli(path),
@@ -410,7 +417,10 @@ def recipe_selector_conversions(summary_files: list[Path]) -> list[dict[str, Any
                 "status": payload.get("status"),
                 "passed": bool(payload.get("passed", False)),
                 "passing_selectors": payload.get("passing_selectors") or [],
-                "best_selector": payload.get("best_selector"),
+                "best_selector": best,
+                "claim_level_selector": bool(best_row.get("claim_level_selector", False)),
+                "selector_generated_selected_exact": int(best_row.get("selector_generated_selected_exact", 0) or 0),
+                "selected_exceeds_best_of_k": int(best_row.get("selected_exceeds_best_of_k", 0) or 0),
                 "next_step": payload.get("next_step"),
             }
         )
@@ -788,7 +798,9 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
             lines.append(
                 f"- `{assessment['run_id']}` status `{assessment['status']}` passed "
                 f"`{assessment['passed']}` passing `{assessment['passing_selectors']}` "
-                f"best `{assessment['best_selector']}`: {assessment['next_step']}"
+                f"best `{assessment['best_selector']}` claim-level `{assessment['claim_level_selector']}` "
+                f"selector exact `{assessment['selector_generated_selected_exact']}` "
+                f"beyond best-of-K `{assessment['selected_exceeds_best_of_k']}`: {assessment['next_step']}"
             )
     else:
         lines.append("- No same-recipe selector conversion gates found.")

@@ -445,3 +445,6 @@ def test_evaluate_example_cell_vote_preserves_generated_best_of_k_accounting() -
     assert summary["num_candidates"] == 4
     assert summary["valid_candidates"] == 4
     assert summary["selector_generated_candidates"] == 1
+    assert summary["selected_selector_generated"] is True
+    assert summary["selector_generated_selected_exact"] is True
+    assert summary["selected_exceeds_best_of_k"] is True

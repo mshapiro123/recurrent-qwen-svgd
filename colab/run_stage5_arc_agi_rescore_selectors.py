@@ -162,6 +162,9 @@ def summary_row(
         "selected_exact": summary["selected_exact"],
         "best_of_k_exact": summary["best_of_k_exact"],
         "first_exact": summary["first_exact"],
+        "selector_generated_selected": summary.get("selector_generated_selected", 0),
+        "selector_generated_selected_exact": summary.get("selector_generated_selected_exact", 0),
+        "selected_exceeds_best_of_k": summary.get("selected_exceeds_best_of_k", 0),
         "selected_accuracy": summary["selected_accuracy"],
         "best_of_k_accuracy": summary["best_of_k_accuracy"],
         "tasks_solved_best_of_k": summary["tasks_solved_best_of_k"],
@@ -293,8 +296,8 @@ def write_comparison(
         "",
         "## Comparison",
         "",
-        "| Label | Strategy | Selected | Best-of-K | Tasks best | Valid rate | Delta vs source selected |",
-        "|---|---|---:|---:|---:|---:|---:|",
+        "| Label | Strategy | Selected | Best-of-K | Selector exact | Beyond best-of-K | Tasks best | Valid rate | Delta vs source selected |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for row in rows:
         examples = int(row["examples"])
@@ -304,6 +307,8 @@ def write_comparison(
         lines.append(
             f"| `{row['label']}` | `{row['selection_strategy']}` | "
             f"{row['selected_exact']}/{examples} | {row['best_of_k_exact']}/{examples} | "
+            f"{row.get('selector_generated_selected_exact', 0)} | "
+            f"{row.get('selected_exceeds_best_of_k', 0)} | "
             f"{row['tasks_solved_best_of_k']}/{tasks} | {row['valid_candidate_rate']:.4f} | {delta_text} |"
         )
 

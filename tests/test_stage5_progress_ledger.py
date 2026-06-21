@@ -303,6 +303,15 @@ def test_progress_ledger_reports_recipe_selector_conversions(tmp_path) -> None:
             "passed": True,
             "passing_selectors": [{"label": "recovered", "selection_strategy": "reliability_vote"}],
             "best_selector": {"label": "recovered", "selection_strategy": "reliability_vote"},
+            "selector_evidence": [
+                {
+                    "label": "recovered",
+                    "selection_strategy": "reliability_vote",
+                    "claim_level_selector": True,
+                    "selector_generated_selected_exact": 2,
+                    "selected_exceeds_best_of_k": 1,
+                }
+            ],
             "next_step": "reassess architecture",
         },
     )
@@ -317,6 +326,9 @@ def test_progress_ledger_reports_recipe_selector_conversions(tmp_path) -> None:
             "passed": True,
             "passing_selectors": [{"label": "recovered", "selection_strategy": "reliability_vote"}],
             "best_selector": {"label": "recovered", "selection_strategy": "reliability_vote"},
+            "claim_level_selector": True,
+            "selector_generated_selected_exact": 2,
+            "selected_exceeds_best_of_k": 1,
             "next_step": "reassess architecture",
         }
     ]

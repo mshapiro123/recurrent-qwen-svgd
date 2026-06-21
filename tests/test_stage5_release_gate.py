@@ -74,6 +74,16 @@ def _selector_conversion(path, *, passed: bool = True):
         "next_step": "reassess architecture",
         "passing_selectors": [{"label": "recovered", "selection_strategy": "reliability_vote"}] if passed else [],
         "best_selector": {"label": "recovered", "selection_strategy": "reliability_vote"},
+        "selector_evidence": [
+            {
+                "label": "recovered",
+                "selection_strategy": "reliability_vote",
+                "claim_level_selector": True,
+                "selector_generated_selected": 3,
+                "selector_generated_selected_exact": 2,
+                "selected_exceeds_best_of_k": 1,
+            }
+        ],
     }
     _write(path, payload)
     return path
@@ -157,6 +167,9 @@ def test_release_gate_accepts_passed_selector_conversion_as_architecture_evidenc
     assert payload["status"] == "ready_for_broader_benchmarks"
     assert payload["passed"] is True
     assert payload["selector_conversion_summary"] is not None
+    selector_evidence = payload["criteria"][1]["evidence"]["selector_conversion"]
+    assert selector_evidence["claim_level_selector"] is True
+    assert selector_evidence["selector_generated_selected_exact"] == 2
     assert payload["criteria"][1]["passed"] is True
 
 

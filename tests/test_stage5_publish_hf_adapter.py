@@ -155,6 +155,10 @@ def test_build_export_metadata_captures_selector_conversion_evidence(tmp_path) -
             {
                 "label": "recovered",
                 "selection_strategy": "reliability_vote",
+                "claim_level_selector": True,
+                "selector_generated_selected": 3,
+                "selector_generated_selected_exact": 2,
+                "selected_exceeds_best_of_k": 1,
                 "aggregate": {"delta_exact": 3, "wins": 3, "losses": 0, "ties": 17},
                 "hard": {"delta_exact": 2, "wins": 2, "losses": 0, "ties": 4},
                 "aggregate_best_of_k": {"delta_exact": 4, "wins": 4, "losses": 0, "ties": 16},
@@ -180,6 +184,9 @@ def test_build_export_metadata_captures_selector_conversion_evidence(tmp_path) -
     evidence = metadata["selector_conversion_evidence"]
     assert evidence["status"] == "passed"
     assert evidence["best_selector"]["selection_strategy"] == "reliability_vote"
+    assert evidence["claim_level_selector"] is True
+    assert evidence["selector_generated_selected_exact"] == 2
+    assert evidence["selected_exceeds_best_of_k"] == 1
     assert evidence["best_aggregate_selected"]["delta_exact"] == 3
     assert evidence["best_hard_selected"]["delta_exact"] == 2
 

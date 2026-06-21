@@ -476,17 +476,23 @@ def rescore_groups(
         target_available = has_target(candidate_rows)
         selected_row = candidate_rows[selected_index] if candidate_rows else {}
         generated_rows = [row for row in candidate_rows if not row.get("selector_generated")]
+        selected_exact = score_exact(selected_row) if target_available and candidate_rows else None
+        best_of_k_exact = any(score_exact(row) for row in generated_rows) if target_available else None
+        selected_selector_generated = bool(selected_row.get("selector_generated"))
         example_summaries.append(
             {
                 "task_id": key[0],
                 "test_index": key[1],
                 "has_target": target_available,
                 "first_exact": score_exact(candidate_rows[0]) if target_available and candidate_rows else None,
-                "selected_exact": score_exact(selected_row) if target_available and candidate_rows else None,
+                "selected_exact": selected_exact,
+                "selected_selector_generated": selected_selector_generated,
+                "selector_generated_selected_exact": bool(selected_selector_generated and selected_exact),
+                "selected_exceeds_best_of_k": bool(target_available and selected_exact and not best_of_k_exact),
                 "selected_index": selected_index,
                 "selection_strategy": selection_strategy,
                 "inferred_shapes": [list(shape) for shape in preferred_shapes],
-                "best_of_k_exact": any(score_exact(row) for row in generated_rows) if target_available else None,
+                "best_of_k_exact": best_of_k_exact,
                 "valid_candidates": sum(1 for row in generated_rows if score_valid(row)),
                 "num_candidates": len(generated_rows),
                 "selector_generated_candidates": len(candidate_rows) - len(generated_rows),

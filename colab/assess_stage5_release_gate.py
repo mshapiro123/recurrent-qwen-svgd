@@ -166,6 +166,12 @@ def selector_conversion_evidence(path: Path | None, payload: dict[str, Any] | No
     if not path or not payload:
         return {"present": False}
     best = payload.get("best_selector") or {}
+    best_row = None
+    for row in payload.get("selector_evidence") or []:
+        if row.get("label") == best.get("label") and row.get("selection_strategy") == best.get("selection_strategy"):
+            best_row = row
+            break
+    best_row = best_row or {}
     return {
         "present": True,
         "path": path_for_cli(path),
@@ -176,6 +182,10 @@ def selector_conversion_evidence(path: Path | None, payload: dict[str, Any] | No
         "next_step": payload.get("next_step"),
         "passing_selectors": payload.get("passing_selectors") or [],
         "best_selector": best,
+        "claim_level_selector": bool(best_row.get("claim_level_selector", False)),
+        "selector_generated_selected": int(best_row.get("selector_generated_selected", 0) or 0),
+        "selector_generated_selected_exact": int(best_row.get("selector_generated_selected_exact", 0) or 0),
+        "selected_exceeds_best_of_k": int(best_row.get("selected_exceeds_best_of_k", 0) or 0),
     }
 
 

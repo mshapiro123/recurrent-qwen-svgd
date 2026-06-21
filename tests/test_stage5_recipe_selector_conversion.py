@@ -10,8 +10,14 @@ def _write(path, payload) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
-def _eval_summary(selected: list[bool], *, best: list[bool] | None = None, hard_count: int = 6) -> dict:
-    best = best or selected
+def _eval_summary(
+    selected: list[bool],
+    *,
+    best: list[bool] | None = None,
+    hard_count: int = 6,
+    selector_generated: bool = False,
+) -> dict:
+    best = selected if best is None else best
     examples = []
     for idx, hit in enumerate(selected):
         examples.append(
@@ -21,6 +27,9 @@ def _eval_summary(selected: list[bool], *, best: list[bool] | None = None, hard_
                 "has_target": True,
                 "selected_exact": hit,
                 "best_of_k_exact": best[idx],
+                "selected_selector_generated": selector_generated and hit,
+                "selector_generated_selected_exact": selector_generated and hit,
+                "selected_exceeds_best_of_k": hit and not best[idx],
                 "first_exact": hit,
                 "difficulty_bucket": "hard" if idx < hard_count else "easy",
             }
@@ -29,6 +38,9 @@ def _eval_summary(selected: list[bool], *, best: list[bool] | None = None, hard_
         "summary": {
             "selected_exact": sum(1 for value in selected if value),
             "best_of_k_exact": sum(1 for value in best if value),
+            "selector_generated_selected": sum(1 for value in selected if selector_generated and value),
+            "selector_generated_selected_exact": sum(1 for value in selected if selector_generated and value),
+            "selected_exceeds_best_of_k": sum(1 for hit, best_hit in zip(selected, best) if hit and not best_hit),
             "first_exact": sum(1 for value in selected if value),
             "examples_with_targets": len(selected),
         },
@@ -41,13 +53,16 @@ def _recipe_and_selector(
     *,
     dense_selected: list[bool],
     selector_selected: list[bool],
+    selector_best: list[bool] | None = None,
+    selector_strategy: str = "reliability_vote",
+    selector_generated: bool = False,
 ):
     dense_dir = tmp_path / "outputs" / "stage5" / "dense"
     selector_dir = tmp_path / "outputs" / "stage5" / "selector"
     dense_eval = _eval_summary(dense_selected)
-    selector_eval = _eval_summary(selector_selected)
+    selector_eval = _eval_summary(selector_selected, best=selector_best, selector_generated=selector_generated)
     dense_summary = dense_dir / "summary.json"
-    selector_output = selector_dir / "recovered__selector_reliability_vote_summary.json"
+    selector_output = selector_dir / f"recovered__selector_{selector_strategy}_summary.json"
     recipe_summary = tmp_path / "outputs" / "stage5" / "recipe" / "summary.json"
     selector_summary = selector_dir / "summary.json"
 
@@ -76,13 +91,15 @@ def _recipe_and_selector(
         {
             "run_id": "selector",
             "source_run_dir": str(selector_dir),
-            "strategies": ["reliability_vote"],
+            "strategies": [selector_strategy],
             "rows": [
                 {
                     "label": "recovered",
-                    "selection_strategy": "reliability_vote",
+                    "selection_strategy": selector_strategy,
                     "selected_exact": sum(selector_selected),
-                    "best_of_k_exact": sum(selector_selected),
+                    "best_of_k_exact": sum(selector_best or selector_selected),
+                    "selector_generated_selected_exact": selector_eval["summary"]["selector_generated_selected_exact"],
+                    "selected_exceeds_best_of_k": selector_eval["summary"]["selected_exceeds_best_of_k"],
                     "examples": len(selector_selected),
                     "valid_candidate_rate": 1.0,
                     "output_summary_json": str(selector_output),
@@ -111,6 +128,33 @@ def test_recipe_selector_conversion_passes_when_selector_beats_dense_with_hard_s
     assert payload["status"] == "passed"
     assert payload["passed"] is True
     assert payload["passing_selectors"] == [{"label": "recovered", "selection_strategy": "reliability_vote"}]
+
+
+def test_recipe_selector_conversion_labels_cell_vote_as_claim_level(tmp_path) -> None:
+    selector_selected = [True, True, True, False, False, False] + [False] * 14
+    recipe, selector = _recipe_and_selector(
+        tmp_path,
+        dense_selected=[False] * 20,
+        selector_selected=selector_selected,
+        selector_best=[False] * 20,
+        selector_strategy="cell_vote",
+        selector_generated=True,
+    )
+
+    payload = assess_recipe_selector_conversion(
+        recipe_control_summary=recipe,
+        selector_rescore_summary=selector,
+        min_total_examples=20,
+        min_hard_examples=5,
+    )
+
+    assert payload["status"] == "passed"
+    assert "claim-level" in payload["reason"]
+    assert payload["passing_selectors"] == [{"label": "recovered", "selection_strategy": "cell_vote"}]
+    evidence = payload["selector_evidence"][0]
+    assert evidence["claim_level_selector"] is True
+    assert evidence["selector_generated_selected_exact"] == 3
+    assert evidence["selected_exceeds_best_of_k"] == 3
 
 
 def test_recipe_selector_conversion_fails_when_selector_does_not_beat_dense(tmp_path) -> None:
