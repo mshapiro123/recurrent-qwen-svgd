@@ -80,6 +80,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or release_gate_payload(payload) is not None
         or benchmark_suite_payload(payload) is not None
         or benchmark_suite_assessment_payload(payload) is not None
+        or claim_readiness_payload(payload) is not None
     )
 
 
@@ -174,6 +175,10 @@ def benchmark_suite_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
 
 def benchmark_suite_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("gate") == "stage5_broader_benchmark_suite" else None
+
+
+def claim_readiness_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("gate") == "stage5_claim_readiness" else None
 
 
 def recurrent_sft_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -649,6 +654,20 @@ def benchmark_suite_actions(payload: dict[str, Any], *, source_summary: Path) ->
 
 def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
+    if status == "passed":
+        return [
+            make_action(
+                "Build Stage 5 claim readiness packet",
+                "The broader paired benchmark gate passed; synthesize release, architecture, benchmark, HF export, and ARC-AGI claim-readiness evidence before writing up results.",
+                command_env(
+                    {
+                        "STAGE5_CLAIM_PACKET_RUN_ID": f"{RUN_ID}_claim_packet",
+                    },
+                    "python colab/build_stage5_claim_packet.py",
+                ),
+                10,
+            )
+        ]
     if status == "needs_benchmark_confirmation":
         return [
             make_action(
@@ -685,6 +704,32 @@ def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summar
         make_action(
             f"Inspect broader benchmark assessment `{status}`",
             "The broader benchmark gate is the current summary; inspect it before spending more GPU or making benchmark claims.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
+def claim_readiness_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    if status == "needs_hf_export":
+        return [
+            make_action(
+                "Export recurrent adapter for claim packet",
+                "The claim packet is missing HF export metadata; package the recurrent adapter before release-candidate writeup.",
+                command_env(
+                    {
+                        "STAGE5_HF_EXPORT_RUN_ID": f"{RUN_ID}_claim_hf_export",
+                    },
+                    "python colab/run_stage5_publish_hf_adapter.py",
+                ),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect claim readiness `{status}`",
+            "The claim-readiness packet is the current summary; inspect it before writing release notes or any SOTA-facing claim.",
             f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
             10,
         )
@@ -1119,6 +1164,9 @@ def plan_next_actions(
     benchmark_suite_assessment = benchmark_suite_assessment_payload(payload)
     if benchmark_suite_assessment:
         return benchmark_suite_assessment_actions(benchmark_suite_assessment, source_summary=source_summary)
+    claim_readiness = claim_readiness_payload(payload)
+    if claim_readiness:
+        return claim_readiness_actions(claim_readiness, source_summary=source_summary)
     benchmark_suite = benchmark_suite_payload(payload)
     if benchmark_suite:
         return benchmark_suite_actions(benchmark_suite, source_summary=source_summary)
@@ -1441,6 +1489,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "release_gate"
     if benchmark_suite_assessment_payload(payload):
         return "benchmark_suite_assessment"
+    if claim_readiness_payload(payload):
+        return "claim_readiness"
     if benchmark_suite_payload(payload):
         return "benchmark_suite"
     if selector_rescore_payload(payload):

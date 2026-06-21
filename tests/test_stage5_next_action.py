@@ -119,6 +119,14 @@ def test_parse_action_command_allows_benchmark_suite_assessor() -> None:
     ]
 
 
+def test_parse_action_command_allows_claim_packet_builder() -> None:
+    parsed = parse_action_command("STAGE5_CLAIM_PACKET_RUN_ID=claim python colab/build_stage5_claim_packet.py")
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_CLAIM_PACKET_RUN_ID": "claim"}
+    assert parsed.argv == [sys.executable, "colab/build_stage5_claim_packet.py"]
+
+
 def test_parse_action_command_allows_benchmark_suite_runner() -> None:
     parsed = parse_action_command(
         "STAGE5_BENCHMARK_SUITE_RUN_ID=bench python colab/run_stage5_benchmark_suite.py"

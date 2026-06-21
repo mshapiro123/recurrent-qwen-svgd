@@ -1049,6 +1049,7 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"gate": "stage5_release_benchmark_readiness"}) == "release_gate"
     assert source_kind({"kind": "stage5_benchmark_suite"}) == "benchmark_suite"
     assert source_kind({"gate": "stage5_broader_benchmark_suite"}) == "benchmark_suite_assessment"
+    assert source_kind({"gate": "stage5_claim_readiness"}) == "claim_readiness"
     assert source_kind({"phase1_arc_agi_tuned": {}, "tuned_checkpoint": "ckpt.pt"}) == "recurrent_sft"
     assert source_kind({"rows": [], "deltas": {}, "paired_comparisons": {}}) == "tta_sweep"
 
@@ -1233,6 +1234,21 @@ def test_benchmark_suite_assessment_negative_runs_recovery_ladder(tmp_path) -> N
     assert "python colab/run_stage5_phase1_recovery_ladder.py" in actions[0]["command"]
 
 
+def test_benchmark_suite_assessment_passed_builds_claim_packet(tmp_path) -> None:
+    source = tmp_path / "benchmark_assessment" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_broader_benchmark_suite",
+        "status": "passed",
+        "passed": True,
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Build Stage 5 claim readiness packet"
+    assert "python colab/build_stage5_claim_packet.py" in actions[0]["command"]
+
+
 def test_benchmark_suite_assessment_low_coverage_expands_suite(tmp_path) -> None:
     source = tmp_path / "benchmark_assessment" / "summary.json"
     source.parent.mkdir()
@@ -1246,3 +1262,31 @@ def test_benchmark_suite_assessment_low_coverage_expands_suite(tmp_path) -> None
     assert actions[0]["name"] == "Expand broader benchmark suite confirmation"
     assert "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT=256" in actions[0]["command"]
     assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
+
+
+def test_claim_readiness_missing_export_runs_exporter(tmp_path) -> None:
+    source = tmp_path / "claim" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_claim_readiness",
+        "status": "needs_hf_export",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Export recurrent adapter for claim packet"
+    assert "python colab/run_stage5_publish_hf_adapter.py" in actions[0]["command"]
+
+
+def test_claim_readiness_release_candidate_inspects_markdown(tmp_path) -> None:
+    source = tmp_path / "claim" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_claim_readiness",
+        "status": "ready_for_release_candidate_not_sota",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect claim readiness `ready_for_release_candidate_not_sota`"
+    assert "summary.md" in actions[0]["command"]

@@ -176,4 +176,8 @@ Release candidate definition:
   GPQA Diamond or public claims. A negative paired recurrent-vs-base result
   routes back to deterministic recurrent recovery; insufficient coverage routes
   to a larger benchmark-suite confirmation run.
+- Run `colab/build_stage5_claim_packet.py` after the broader benchmark gate
+  passes. It synthesizes release, architecture, benchmark, HF export, and
+  ARC-AGI claim evidence while explicitly distinguishing release-candidate
+  status from any SOTA ARC-AGI claim.
 - Include the modified-architecture caveat and training recipe.

@@ -450,6 +450,36 @@ def test_progress_ledger_reports_broader_benchmark_gate_assessments(tmp_path) ->
     assert payload["recommended_next_plan_source"] == str(source)
 
 
+def test_progress_ledger_reports_claim_readiness_packets(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "claim" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "claim",
+            "gate": "stage5_claim_readiness",
+            "status": "ready_for_release_candidate_not_sota",
+            "passed": True,
+            "claim_level": "release_candidate",
+            "next_step": "write report without SOTA claim",
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["claim_readiness_packets"] == [
+        {
+            "path": str(source),
+            "run_id": "claim",
+            "status": "ready_for_release_candidate_not_sota",
+            "passed": True,
+            "claim_level": "release_candidate",
+            "next_step": "write report without SOTA claim",
+        }
+    ]
+    assert payload["recommended_next_plan_source"] == str(source)
+
+
 def test_progress_ledger_skips_empty_and_malformed_eval_summaries(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     _write(scan_root / "empty" / "base_summary.json", {"summary": {}})

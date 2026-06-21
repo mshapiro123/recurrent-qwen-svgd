@@ -145,6 +145,8 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         return True
     if payload.get("gate") == "stage5_broader_benchmark_suite":
         return True
+    if payload.get("gate") == "stage5_claim_readiness":
+        return True
     if payload.get("kind") == "dense_sft_control":
         return True
     if "phase1_arc_agi_tuned" in payload and payload.get("tuned_checkpoint"):
@@ -488,6 +490,25 @@ def broader_benchmark_gate_assessments(summary_files: list[Path]) -> list[dict[s
     return sorted(assessments, key=lambda item: str(item["path"]))
 
 
+def claim_readiness_packets(summary_files: list[Path]) -> list[dict[str, Any]]:
+    packets: list[dict[str, Any]] = []
+    for path in summary_files:
+        payload = safe_read_json(path)
+        if not payload or payload.get("gate") != "stage5_claim_readiness":
+            continue
+        packets.append(
+            {
+                "path": path_for_cli(path),
+                "run_id": str(payload.get("run_id") or path.parent.name),
+                "status": payload.get("status"),
+                "passed": bool(payload.get("passed", False)),
+                "claim_level": payload.get("claim_level"),
+                "next_step": payload.get("next_step"),
+            }
+        )
+    return sorted(packets, key=lambda item: str(item["path"]))
+
+
 def iter_summary_files(scan_root: Path) -> list[Path]:
     if not scan_root.exists():
         return []
@@ -590,6 +611,7 @@ def scan_progress(scan_root: Path, *, run_id: str | None = None) -> dict[str, An
         "release_gate_assessments": release_gate_assessments(summary_files),
         "benchmark_suite_assessments": benchmark_suite_assessments(summary_files),
         "broader_benchmark_gate_assessments": broader_benchmark_gate_assessments(summary_files),
+        "claim_readiness_packets": claim_readiness_packets(summary_files),
         "recommended_next_plan_source": latest_planner_source(summary_files),
     }
 
@@ -700,6 +722,15 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
             )
     else:
         lines.append("- No broader benchmark gate summaries found.")
+    lines.extend(["", "## Claim Readiness Packets", ""])
+    if payload["claim_readiness_packets"]:
+        for packet in payload["claim_readiness_packets"][-10:]:
+            lines.append(
+                f"- `{packet['run_id']}` status `{packet['status']}` claim level "
+                f"`{packet['claim_level']}` passed `{packet['passed']}`: {packet['next_step']}"
+            )
+    else:
+        lines.append("- No claim-readiness packets found.")
     (output_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((output_dir / "summary.md").read_text(encoding="utf-8"))
 
