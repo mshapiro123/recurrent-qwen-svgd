@@ -159,15 +159,23 @@ def mask_command(cmd: list[str]) -> str:
 
 def run(cmd: list[str], *, check: bool = True, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
     print("$", mask_command(cmd), flush=True)
-    process = subprocess.Popen(
-        cmd,
-        cwd=ROOT,
-        env=env,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        bufsize=1,
-    )
+    try:
+        process = subprocess.Popen(
+            cmd,
+            cwd=ROOT,
+            env=env,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            bufsize=1,
+        )
+    except FileNotFoundError as exc:
+        message = f"command not found: {cmd[0]} ({exc})\n"
+        print(message, end="", flush=True)
+        proc = subprocess.CompletedProcess(cmd, 127, message, None)
+        if check:
+            raise RuntimeError(f"failed: {mask_command(cmd)}") from exc
+        return proc
     chunks: list[str] = []
     assert process.stdout is not None
     for line in process.stdout:

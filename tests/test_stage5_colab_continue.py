@@ -9,6 +9,7 @@ from colab.run_stage5_colab_continue import (
     is_safe_output_artifact,
     mask_command,
     post_action_commands,
+    run,
     stage5_output_paths,
 )
 
@@ -133,3 +134,10 @@ def test_mask_command_redacts_tokens(monkeypatch) -> None:
 
     assert "secret-token" not in mask_command(["git", "clone", "https://secret-token@example/repo.git"])
     assert "****" in mask_command(["git", "clone", "https://secret-token@example/repo.git"])
+
+
+def test_run_returns_nonzero_for_missing_optional_command() -> None:
+    proc = run(["definitely_missing_stage5_colab_command"], check=False)
+
+    assert proc.returncode == 127
+    assert "command not found" in proc.stdout
