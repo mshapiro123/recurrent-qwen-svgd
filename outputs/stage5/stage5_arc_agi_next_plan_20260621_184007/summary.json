@@ -1,0 +1,13 @@
+{
+  "run_id": "stage5_arc_agi_next_plan_20260621_184007",
+  "source_summary": "outputs\\stage5\\stage5_benchmark_assessment_20260621_183952\\summary.json",
+  "source_kind": "benchmark_suite_assessment",
+  "actions": [
+    {
+      "name": "Run deterministic recurrent recovery ladder",
+      "reason": "The broader benchmark gate says recurrent still trails base; improve deterministic recurrent competence before GPQA Diamond or release claims.",
+      "command": "STAGE5_RUN_ID=stage5_arc_agi_next_plan_20260621_184007_phase1_recovery STAGE5_PHASE1_EXTRA_STEPS=500 STAGE5_ARC_LIMIT=256 python colab/run_stage5_phase1_recovery_ladder.py",
+      "priority": 10
+    }
+  ]
+}
