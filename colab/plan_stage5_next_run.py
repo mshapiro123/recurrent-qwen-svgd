@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 import time
 from pathlib import Path
 from typing import Any
@@ -207,7 +208,7 @@ def best_recovered_tta_row(tta: dict[str, Any] | None) -> dict[str, Any] | None:
 
 
 def command_env(assignments: dict[str, str], command: str) -> str:
-    prefix = " ".join(f"{key}={value}" for key, value in assignments.items())
+    prefix = " ".join(f"{key}={shlex.quote(str(value))}" for key, value in assignments.items())
     return f"{prefix} {command}" if prefix else command
 
 

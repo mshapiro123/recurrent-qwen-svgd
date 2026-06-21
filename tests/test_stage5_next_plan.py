@@ -235,7 +235,7 @@ def test_recovery_analysis_focuses_scaled_curriculum_on_worst_families(tmp_path)
     actions = plan_next_actions(payload, source_summary=source)
     scale = next(action for action in actions if action["name"] == "Scale deterministic curriculum")
 
-    assert "STAGE5_ARC_AGI_CURRICULUM_STAGES=focus:move_recolor,frame_object" in scale["command"]
+    assert "STAGE5_ARC_AGI_CURRICULUM_STAGES='focus:move_recolor,frame_object" in scale["command"]
     assert "move_recolor, frame_object" in scale["reason"]
 
 

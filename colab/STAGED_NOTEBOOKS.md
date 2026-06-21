@@ -120,4 +120,9 @@ The older split notebooks are kept only as references:
    For unattended A100 time, run `colab/run_stage5_arc_agi_autopilot.py`
    instead; it branches through those gates with explicit thresholds and writes
    one decision report.
+   To keep a live A100 session moving after any Stage 5 result lands, run
+   `colab/run_stage5_next_action.py`. By default it writes a dry-run summary of
+   the planner's top action. Set
+   `STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE=1` to execute the selected allowlisted
+   Stage 5 runner without copying commands by hand.
 6. Write the report, model card, and release notes.
