@@ -91,6 +91,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or candidate_gate_payload(payload) is not None
         or trace_sft_gate_payload(payload) is not None
         or distill_sft_gate_payload(payload) is not None
+        or reasoning_dataset_audit_payload(payload) is not None
     )
 
 
@@ -242,6 +243,10 @@ def arc_agi_sota_comparison_payload(payload: dict[str, Any]) -> dict[str, Any] |
     if payload.get("gate") == "stage5_arc_agi_sota_comparison" or payload.get("kind") == "arc_agi_sota_comparison":
         return payload
     return None
+
+
+def reasoning_dataset_audit_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_reasoning_dataset_audit" else None
 
 
 def recurrent_sft_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -734,6 +739,112 @@ def source_replan_command(payload: dict[str, Any], source_summary: Path) -> str:
         {"STAGE5_ARC_AGI_NEXT_PLAN_SOURCE_SUMMARY": command_path(summary_path)},
         "python colab/plan_stage5_next_run.py",
     )
+
+
+def dataset_audit_recommendations(
+    payload: dict[str, Any],
+    *,
+    status: str | None = None,
+) -> list[dict[str, Any]]:
+    rows = payload.get("recommendations")
+    if not isinstance(rows, list):
+        return []
+    items = [row for row in rows if isinstance(row, dict)]
+    if status is None:
+        return items
+    return [row for row in items if row.get("status") == status]
+
+
+def dataset_audit_summary_md(source_summary: Path) -> Path:
+    return source_summary.with_suffix(".md")
+
+
+def reasoning_dataset_audit_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    promoted = dataset_audit_recommendations(payload, status="promote_to_small_train_mix")
+    fable_hold = dataset_audit_recommendations(payload, status="hold_for_agent_tool_filter")
+    errors = payload.get("errors") or {}
+    audit_run_id = str(payload.get("run_id") or source_summary.parent.name or RUN_ID)
+    if isinstance(errors, dict) and errors and not promoted:
+        return [
+            make_action(
+                "Rerun reasoning dataset audit",
+                "The dataset audit completed with errors and did not promote a trace source; rerun it before adding HF traces to the training mix.",
+                command_env(
+                    {
+                        "STAGE5_DATASET_AUDIT_RUN_ID": f"{audit_run_id}_retry",
+                        "STAGE5_DATASET_AUDIT_KEYS": ",".join(str(key) for key in payload.get("selected_keys", [])),
+                    },
+                    "python colab/run_stage5_reasoning_dataset_audit.py",
+                ),
+                10,
+            )
+        ]
+
+    opus_like = [
+        row
+        for row in promoted
+        if "opus" in str(row.get("key", "")).lower() or "opus" in str(row.get("dataset_id", "")).lower()
+    ]
+    if opus_like:
+        source = opus_like[0]
+        assignments = {
+            "STAGE4_RUN_ID": f"{audit_run_id}_audited_opus_finetune",
+            "OPUS_DATASET_ID": str(source.get("dataset_id") or "lordx64/reasoning-distill-opus-4-7-max-sft"),
+            "OPUS_DATASET_ADAPTER": "qwen_text" if source.get("key") == "opus47_sft" else "auto",
+            "OPUS_LIMIT": "3000",
+            "OPUS_MAX_TOTAL_TOKENS": "1024",
+            "STAGE4_PHASE1_STEPS": "500",
+            "STAGE4_PHASE2_STEPS": "100",
+            "STAGE4_RUN_EXACT": "0",
+        }
+        if source.get("name"):
+            assignments["OPUS_DATASET_NAME"] = str(source["name"])
+        return [
+            make_action(
+                "Run audited modified-Opus recurrent fine-tune",
+                "Dataset audit promoted an Opus-style reasoning trace source; run the guarded Stage 4 recurrent fine-tune while keeping ARC competence checks active. "
+                f"Source `{source.get('key')}` converted {source.get('converted_rows')} rows "
+                f"({float(source.get('conversion_rate') or 0.0):.1%}).",
+                command_env(assignments, "python colab/run_stage4_opus_finetune.py"),
+                10,
+            )
+        ]
+
+    if promoted:
+        source = promoted[0]
+        return [
+            make_action(
+                "Inspect promoted non-Opus trace source",
+                "A non-Opus trace source was promoted by schema audit, but no training recipe is mapped for it yet. Inspect the summary before launching GPU training.",
+                f"cat {shlex.quote(command_path(dataset_audit_summary_md(source_summary)))}",
+                8,
+            )
+        ]
+
+    if fable_hold:
+        return [
+            make_action(
+                "Inspect Fable/tool-trace audit before training",
+                "Fable-style traces are convertible but classified as agent/tool-diversity material; inspect the audit and build a filter before mixing them into ARC/GPQA recovery.",
+                f"cat {shlex.quote(command_path(dataset_audit_summary_md(source_summary)))}",
+                8,
+            )
+        ]
+
+    return [
+        make_action(
+            "Rerun reasoning dataset audit with broader sources",
+            "No audited dataset was promoted for training; rerun with explicit registry keys or inspect failed conversions.",
+            command_env(
+                    {
+                        "STAGE5_DATASET_AUDIT_RUN_ID": f"{audit_run_id}_broader",
+                        "STAGE5_DATASET_AUDIT_KEYS": "opus47_sft,opus47_raw,fable5_pi_agent,fable5_flat,jackrong_opus47_trace_inversion",
+                },
+                "python colab/run_stage5_reasoning_dataset_audit.py",
+            ),
+            6,
+        )
+    ]
 
 
 def recipe_control_assessment_action(source_summary: Path) -> dict[str, Any]:
@@ -1993,6 +2104,9 @@ def plan_next_actions(
     arc_agi_sota = arc_agi_sota_comparison_payload(payload)
     if arc_agi_sota:
         return arc_agi_sota_comparison_actions(arc_agi_sota, source_summary=source_summary)
+    reasoning_audit = reasoning_dataset_audit_payload(payload)
+    if reasoning_audit:
+        return reasoning_dataset_audit_actions(reasoning_audit, source_summary=source_summary)
     benchmark_suite = benchmark_suite_payload(payload)
     if benchmark_suite:
         return benchmark_suite_actions(benchmark_suite, source_summary=source_summary)
@@ -2344,6 +2458,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "arc_agi_baseline_registry"
     if arc_agi_sota_comparison_payload(payload):
         return "arc_agi_sota_comparison"
+    if reasoning_dataset_audit_payload(payload):
+        return "reasoning_dataset_audit"
     if benchmark_suite_payload(payload):
         return "benchmark_suite"
     if selector_rescore_payload(payload):

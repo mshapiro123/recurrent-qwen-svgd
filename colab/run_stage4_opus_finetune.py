@@ -33,6 +33,8 @@ RUN_DIR.mkdir(parents=True, exist_ok=True)
 
 MODEL_NAME = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")
 DATASET_ID = os.environ.get("OPUS_DATASET_ID", "lordx64/reasoning-distill-opus-4-7-max-sft")
+DATASET_NAME = os.environ.get("OPUS_DATASET_NAME", "")
+DATASET_ADAPTER = os.environ.get("OPUS_DATASET_ADAPTER", "auto")
 DATASET_LIMIT = int(os.environ.get("OPUS_LIMIT", "3000"))
 VAL_FRACTION = float(os.environ.get("OPUS_VAL_FRACTION", "0.05"))
 MAX_TOTAL_TOKENS = int(os.environ.get("OPUS_MAX_TOTAL_TOKENS", "1024"))
@@ -300,6 +302,8 @@ def main() -> int:
         "run_id": RUN_ID,
         "model_name": MODEL_NAME,
         "dataset_id": DATASET_ID,
+        "dataset_name": DATASET_NAME or None,
+        "dataset_adapter": DATASET_ADAPTER,
         "dataset_limit": DATASET_LIMIT,
         "val_fraction": VAL_FRACTION,
         "max_total_tokens": MAX_TOTAL_TOKENS,
@@ -317,27 +321,29 @@ def main() -> int:
     print(json.dumps(metadata, indent=2))
 
     if not TRAIN_JSONL.exists() or not VAL_JSONL.exists():
-        run(
-            [
-                sys.executable,
-                "training/prepare_hf_reasoning_jsonl.py",
-                "--dataset_id",
-                DATASET_ID,
-                "--tokenizer_name",
-                MODEL_NAME,
-                "--output_jsonl",
-                str(TRAIN_JSONL.relative_to(ROOT)),
-                "--val_jsonl",
-                str(VAL_JSONL.relative_to(ROOT)),
-                "--limit",
-                str(DATASET_LIMIT),
-                "--val_fraction",
-                str(VAL_FRACTION),
-                "--max_total_tokens",
-                str(MAX_TOTAL_TOKENS),
-            ],
-            log_name="prepare_opus.log",
-        )
+        prepare_cmd = [
+            sys.executable,
+            "training/prepare_hf_reasoning_jsonl.py",
+            "--dataset_id",
+            DATASET_ID,
+            "--adapter",
+            DATASET_ADAPTER,
+            "--tokenizer_name",
+            MODEL_NAME,
+            "--output_jsonl",
+            str(TRAIN_JSONL.relative_to(ROOT)),
+            "--val_jsonl",
+            str(VAL_JSONL.relative_to(ROOT)),
+            "--limit",
+            str(DATASET_LIMIT),
+            "--val_fraction",
+            str(VAL_FRACTION),
+            "--max_total_tokens",
+            str(MAX_TOTAL_TOKENS),
+        ]
+        if DATASET_NAME:
+            prepare_cmd += ["--name", DATASET_NAME]
+        run(prepare_cmd, log_name="prepare_opus.log")
 
     phase1_cfg = {
         "model_name": MODEL_NAME,

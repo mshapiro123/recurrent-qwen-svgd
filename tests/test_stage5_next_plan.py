@@ -1162,10 +1162,66 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"gate": "stage5_arc_agi_baseline_registry"}) == "arc_agi_baseline_registry"
     assert source_kind({"gate": "stage5_arc_agi_sota_comparison"}) == "arc_agi_sota_comparison"
     assert source_kind({"kind": "stage5_arc_agi_candidate_gate"}) == "candidate_gate"
+    assert source_kind({"kind": "stage5_reasoning_dataset_audit"}) == "reasoning_dataset_audit"
     assert source_kind({"kind": "trace_sft_gate"}) == "trace_sft_gate"
     assert source_kind({"kind": "distill_sft_gate"}) == "distill_sft_gate"
     assert source_kind({"phase1_arc_agi_tuned": {}, "tuned_checkpoint": "ckpt.pt"}) == "recurrent_sft"
     assert source_kind({"rows": [], "deltas": {}, "paired_comparisons": {}}) == "tta_sweep"
+
+
+def test_reasoning_dataset_audit_promotes_opus_finetune(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    payload = {
+        "run_id": "audit_run",
+        "kind": "stage5_reasoning_dataset_audit",
+        "recommendations": [
+            {
+                "key": "opus47_sft",
+                "dataset_id": "lordx64/reasoning-distill-opus-4-7-max-sft",
+                "status": "promote_to_small_train_mix",
+                "converted_rows": 900,
+                "conversion_rate": 0.9,
+            },
+            {
+                "key": "fable5_pi_agent",
+                "dataset_id": "Glint-Research/Fable-5-traces",
+                "status": "hold_for_agent_tool_filter",
+                "converted_rows": 100,
+                "conversion_rate": 0.1,
+            },
+        ],
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run audited modified-Opus recurrent fine-tune"
+    assert "STAGE4_RUN_ID=audit_run_audited_opus_finetune" in actions[0]["command"]
+    assert "OPUS_DATASET_ID=lordx64/reasoning-distill-opus-4-7-max-sft" in actions[0]["command"]
+    assert "OPUS_DATASET_ADAPTER=qwen_text" in actions[0]["command"]
+    assert "python colab/run_stage4_opus_finetune.py" in actions[0]["command"]
+
+
+def test_reasoning_dataset_audit_holds_fable_without_training(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    payload = {
+        "kind": "stage5_reasoning_dataset_audit",
+        "recommendations": [
+            {
+                "key": "fable5_pi_agent",
+                "dataset_id": "Glint-Research/Fable-5-traces",
+                "status": "hold_for_agent_tool_filter",
+                "converted_rows": 700,
+                "conversion_rate": 0.7,
+            }
+        ],
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect Fable/tool-trace audit before training"
+    assert actions[0]["command"].startswith("cat ")
 
 
 def test_candidate_gate_plans_trace_sft_when_symbolic_hybrid_signal_exists(tmp_path) -> None:

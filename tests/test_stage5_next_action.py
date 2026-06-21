@@ -203,6 +203,26 @@ def test_parse_action_command_allows_benchmark_suite_runner() -> None:
     assert parsed.argv == [sys.executable, "colab/run_stage5_benchmark_suite.py"]
 
 
+def test_parse_action_command_allows_reasoning_dataset_audit_runner() -> None:
+    parsed = parse_action_command(
+        "STAGE5_DATASET_AUDIT_RUN_ID=audit python colab/run_stage5_reasoning_dataset_audit.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_DATASET_AUDIT_RUN_ID": "audit"}
+    assert parsed.argv == [sys.executable, "colab/run_stage5_reasoning_dataset_audit.py"]
+
+
+def test_parse_action_command_allows_stage4_opus_finetune_runner() -> None:
+    parsed = parse_action_command(
+        "STAGE4_RUN_ID=opus OPUS_DATASET_ADAPTER=qwen_text python colab/run_stage4_opus_finetune.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE4_RUN_ID": "opus", "OPUS_DATASET_ADAPTER": "qwen_text"}
+    assert parsed.argv == [sys.executable, "colab/run_stage4_opus_finetune.py"]
+
+
 def test_parse_action_command_allows_candidate_gate_runner() -> None:
     parsed = parse_action_command(
         "STAGE5_ARC_AGI_GATE_RUN_ID=gate python colab/run_stage5_arc_agi_candidate_gate.py"

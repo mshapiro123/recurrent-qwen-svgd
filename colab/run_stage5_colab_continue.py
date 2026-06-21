@@ -58,6 +58,8 @@ def focused_test_paths() -> list[str]:
         "tests/test_stage5_benchmark_suite.py",
         "tests/test_lora.py",
         "tests/test_stage5_dense_sft_control.py",
+        "tests/test_hf_reasoning_data.py",
+        "tests/test_stage5_reasoning_dataset_audit.py",
     ]
 
 
