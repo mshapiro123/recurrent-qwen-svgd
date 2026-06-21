@@ -106,6 +106,68 @@ def test_latent_injection_modes_run_on_tiny_model():
             assert torch.isfinite(output.metrics["trajectory_diversity"])
 
 
+def test_logits_to_keep_returns_last_token_logits_on_tiny_model():
+    torch.manual_seed(0)
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+
+    with torch.no_grad():
+        full = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=2,
+            use_cache=False,
+            return_dict=True,
+        )
+        last_only = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=2,
+            use_cache=False,
+            logits_to_keep=1,
+            return_dict=True,
+        )
+
+    assert last_only.logits.shape == (1, 1, 19)
+    assert torch.allclose(full.logits[:, -1:, :], last_only.logits)
+
+
+def test_logits_to_keep_preserves_trajectory_last_token_logits_on_tiny_model():
+    torch.manual_seed(0)
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+
+    with torch.no_grad():
+        full = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=2,
+            num_trajectories=2,
+            sample_latents=False,
+            use_cache=False,
+            return_dict=True,
+        )
+        last_only = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=2,
+            num_trajectories=2,
+            sample_latents=False,
+            use_cache=False,
+            logits_to_keep=1,
+            return_dict=True,
+        )
+
+    assert last_only.logits.shape == (1, 1, 19)
+    assert last_only.trajectory_logits.shape == (1, 2, 1, 19)
+    assert torch.allclose(full.logits[:, -1:, :], last_only.logits)
+    assert torch.allclose(full.trajectory_logits[:, :, -1:, :], last_only.trajectory_logits)
+
+
 def test_invalid_latent_injection_mode_raises():
     model = TinyCausalLM().eval()
     wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()

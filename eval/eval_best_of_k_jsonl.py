@@ -267,6 +267,7 @@ def generate_candidates(
                 svgd_kernel_geometry=svgd_kernel_geometry,
                 svgd_projection_seed=svgd_projection_seed,
                 use_cache=False,
+                logits_to_keep=1,
                 return_dict=True,
             )
             _record_metric_history(metrics_history, output.metrics)
