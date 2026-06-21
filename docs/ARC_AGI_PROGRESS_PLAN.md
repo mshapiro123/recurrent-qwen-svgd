@@ -110,7 +110,9 @@ Initial harness files:
 - `colab/assess_stage5_recipe_control.py`: no-GPU same-recipe assessment for
   dense-control plus matched recurrent SFT summaries. It verifies recipe
   metadata and reports whether recurrent selected-answer accuracy beats the
-  dense control with hard-bucket support and no aggregate harm.
+  dense control with hard-bucket support and no aggregate harm. If recurrent
+  improves best-of-K candidate coverage but not selected accuracy, it reports
+  `needs_selector_conversion` and the planner routes to selector rescoring.
 - `colab/run_stage5_arc_agi_trace_sft_gate.py`: matched two-arm SFT runner for
   grid-only supervision versus symbolic-program trace supervision. It reports
   the best checkpoint in each child SFT ladder when available, not only the
@@ -289,7 +291,10 @@ After the matched recurrent SFT run lands, run
 `colab/assess_stage5_recipe_control.py` or let `colab/run_stage5_colab_continue.py`
 route to it. This writes the same-recipe architecture gate. A pass is the first
 credible evidence that recurrence, not only the training recipe, is helping on
-ARC-style tasks.
+ARC-style tasks. A `needs_selector_conversion` result is still useful
+architecture evidence: it means recurrent candidates improved, but the
+claim-level selector or verifier has not converted that coverage into the
+selected score yet.
 
 Set `STAGE5_ARC_AGI_DISTILL=1` to add frozen-base next-token KL distillation
 inside `training/train_phase1_ponder.py`. Run

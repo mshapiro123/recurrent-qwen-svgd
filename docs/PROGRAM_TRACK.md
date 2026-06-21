@@ -45,7 +45,9 @@ same-recipe architecture gate. It reads the dense-control summary and matched
 recurrent SFT summary, verifies recipe metadata, and asks whether recurrent
 selected-answer accuracy beats the dense control with hard-bucket support. This
 is the local form of the decisive experiment before larger recipe or scale-up
-runs.
+runs. It also separates the selector-conversion case: if recurrent improves
+best-of-K candidate coverage but not selected-answer accuracy, the next move is
+selector/verifier work on those candidates, not declaring the architecture dead.
 
 ## Decisive Experiment
 

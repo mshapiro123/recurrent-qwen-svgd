@@ -205,6 +205,8 @@ def assess_recipe_control(
 
     aggregate = metric_stats(recurrent_vs_dense, "selected_exact")
     hard = difficulty_stats(recurrent_vs_dense, metric_name="selected_exact", bucket=hard_bucket)
+    aggregate_best = metric_stats(recurrent_vs_dense, "best_of_k_exact")
+    hard_best = difficulty_stats(recurrent_vs_dense, metric_name="best_of_k_exact", bucket=hard_bucket)
     metadata_diff = metadata_differences(dense_summary, recurrent_summary)
     total_sufficient = paired_examples(aggregate) >= min_total_examples
     hard_sufficient = paired_examples(hard) >= min_hard_examples
@@ -212,6 +214,10 @@ def assess_recipe_control(
     aggregate_nonnegative = supports_nonnegative(aggregate)
     hard_positive = hard_sufficient and supports_positive(hard)
     hard_nonnegative = bool(hard) and hard_sufficient and supports_nonnegative(hard)
+    aggregate_best_positive = supports_positive(aggregate_best)
+    aggregate_best_nonnegative = supports_nonnegative(aggregate_best)
+    hard_best_positive = hard_sufficient and supports_positive(hard_best)
+    hard_best_nonnegative = bool(hard_best) and hard_sufficient and supports_nonnegative(hard_best)
 
     if metadata_diff:
         status = "needs_review"
@@ -225,6 +231,14 @@ def assess_recipe_control(
         status = "passed"
         reason = "Recurrent same-recipe arm improves selected-answer accuracy versus dense control with hard-bucket support and no aggregate harm."
         next_step = "Replicate at a larger ARC slice, then consider recurrent-specific training or particle mechanisms only if the lift survives."
+    elif (aggregate_best_positive and hard_best_nonnegative) or (hard_best_positive and aggregate_best_nonnegative):
+        status = "needs_selector_conversion"
+        reason = "Recurrent same-recipe arm improves exact candidate coverage versus dense control, but selected-answer accuracy does not yet convert it."
+        next_step = "Run selector or verifier work on the recurrent candidate set before judging this architecture signal as failed."
+    elif hard_best_positive and not aggregate_best_nonnegative:
+        status = "needs_review"
+        reason = "Recurrent arm improves hard-bucket candidate coverage but harms aggregate best-of-K coverage versus dense control."
+        next_step = "Inspect task-family tradeoffs and selector failures before scaling this recipe."
     elif hard_positive and not aggregate_nonnegative:
         status = "needs_review"
         reason = "Recurrent arm improves the hard bucket but harms aggregate selected-answer accuracy versus dense control."
@@ -260,8 +274,12 @@ def assess_recipe_control(
         "decision_evidence": {
             "aggregate": aggregate,
             "hard": hard,
+            "aggregate_best_of_k": aggregate_best,
+            "hard_best_of_k": hard_best,
             "aggregate_evidence": evidence_fragment(aggregate),
             "hard_evidence": evidence_fragment(hard),
+            "aggregate_best_of_k_evidence": evidence_fragment(aggregate_best),
+            "hard_best_of_k_evidence": evidence_fragment(hard_best),
             "total_sufficient": total_sufficient,
             "hard_sufficient": hard_sufficient,
         },
@@ -273,6 +291,8 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
     output_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     dense_stats = payload["decision_evidence"]["aggregate_evidence"]
     hard_stats = payload["decision_evidence"]["hard_evidence"]
+    dense_best_stats = payload["decision_evidence"]["aggregate_best_of_k_evidence"]
+    hard_best_stats = payload["decision_evidence"]["hard_best_of_k_evidence"]
     lines = [
         f"# Stage 5 Same-Recipe Architecture Assessment - {payload['run_id']}",
         "",
@@ -288,6 +308,8 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
         "",
         f"- Aggregate recurrent-vs-dense selected: {dense_stats}",
         f"- `{payload['hard_bucket']}` recurrent-vs-dense selected: {hard_stats}",
+        f"- Aggregate recurrent-vs-dense best-of-K: {dense_best_stats}",
+        f"- `{payload['hard_bucket']}` recurrent-vs-dense best-of-K: {hard_best_stats}",
         f"- Metadata differences: `{payload['metadata_differences']}`",
         "",
         "## Other Comparisons",

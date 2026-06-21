@@ -367,6 +367,8 @@ def recipe_control_assessments(summary_files: list[Path]) -> list[dict[str, Any]
         decision = payload.get("decision_evidence") or {}
         aggregate = decision.get("aggregate") or {}
         hard = decision.get("hard") or {}
+        aggregate_best = decision.get("aggregate_best_of_k") or {}
+        hard_best = decision.get("hard_best_of_k") or {}
         assessments.append(
             {
                 "path": path_for_cli(path),
@@ -379,6 +381,8 @@ def recipe_control_assessments(summary_files: list[Path]) -> list[dict[str, Any]
                 "next_step": payload.get("next_step"),
                 "aggregate_selected_delta": int(aggregate.get("delta_exact", 0) or 0),
                 "hard_selected_delta": int(hard.get("delta_exact", 0) or 0),
+                "aggregate_best_of_k_delta": int(aggregate_best.get("delta_exact", 0) or 0),
+                "hard_best_of_k_delta": int(hard_best.get("delta_exact", 0) or 0),
             }
         )
     return sorted(assessments, key=lambda item: str(item["path"]))
@@ -546,7 +550,9 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
                 f"- `{assessment['run_id']}` status `{assessment['status']}` passed "
                 f"`{assessment['passed']}` aggregate selected delta "
                 f"`{assessment['aggregate_selected_delta']}`, hard selected delta "
-                f"`{assessment['hard_selected_delta']}`: {assessment['reason']}"
+                f"`{assessment['hard_selected_delta']}`, aggregate best-of-K delta "
+                f"`{assessment['aggregate_best_of_k_delta']}`, hard best-of-K delta "
+                f"`{assessment['hard_best_of_k_delta']}`: {assessment['reason']}"
             )
     else:
         lines.append("- No same-recipe architecture assessment summaries found.")

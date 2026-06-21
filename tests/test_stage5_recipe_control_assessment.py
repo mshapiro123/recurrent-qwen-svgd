@@ -9,7 +9,8 @@ from colab.assess_stage5_recipe_control import (
 )
 
 
-def _summary(selected: list[bool], *, hard_count: int = 6) -> dict[str, object]:
+def _summary(selected: list[bool], *, best: list[bool] | None = None, hard_count: int = 6) -> dict[str, object]:
+    best = best or selected
     examples = []
     for idx, hit in enumerate(selected):
         examples.append(
@@ -18,7 +19,7 @@ def _summary(selected: list[bool], *, hard_count: int = 6) -> dict[str, object]:
                 "test_index": 0,
                 "has_target": True,
                 "selected_exact": hit,
-                "best_of_k_exact": hit,
+                "best_of_k_exact": best[idx],
                 "first_exact": hit,
                 "difficulty_bucket": "hard" if idx < hard_count else "easy",
             }
@@ -26,7 +27,7 @@ def _summary(selected: list[bool], *, hard_count: int = 6) -> dict[str, object]:
     return {
         "summary": {
             "selected_exact": sum(1 for value in selected if value),
-            "best_of_k_exact": sum(1 for value in selected if value),
+            "best_of_k_exact": sum(1 for value in best if value),
             "first_exact": sum(1 for value in selected if value),
             "examples_with_targets": len(selected),
         },
@@ -50,13 +51,20 @@ def _metadata(eval_limit: int = 20) -> dict[str, object]:
     }
 
 
-def _make_dense_and_recurrent(tmp_path, *, recurrent_selected: list[bool], dense_selected: list[bool]):
+def _make_dense_and_recurrent(
+    tmp_path,
+    *,
+    recurrent_selected: list[bool],
+    dense_selected: list[bool],
+    recurrent_best: list[bool] | None = None,
+    dense_best: list[bool] | None = None,
+):
     dense_dir = tmp_path / "outputs" / "stage5" / "dense"
     recurrent_dir = tmp_path / "outputs" / "stage5" / "recurrent"
     base = _summary([False] * len(dense_selected))
-    dense = _summary(dense_selected)
+    dense = _summary(dense_selected, best=dense_best)
     start = _summary([False] * len(dense_selected))
-    recurrent = _summary(recurrent_selected)
+    recurrent = _summary(recurrent_selected, best=recurrent_best)
     _write_json(dense_dir / "base_summary.json", base)
     _write_json(dense_dir / "dense_tuned_summary.json", dense)
     _write_json(
@@ -103,6 +111,29 @@ def test_recipe_control_passes_hard_tail_recurrent_lift(tmp_path) -> None:
     assert assessment["passed"] is True
     assert assessment["decision_evidence"]["aggregate"]["delta_exact"] == 3
     assert assessment["decision_evidence"]["hard"]["delta_exact"] == 3
+
+
+def test_recipe_control_flags_selector_conversion_when_best_of_k_lifts(tmp_path) -> None:
+    dense_summary, recurrent_summary = _make_dense_and_recurrent(
+        tmp_path,
+        dense_selected=[False] * 20,
+        recurrent_selected=[False] * 20,
+        dense_best=[False] * 20,
+        recurrent_best=[True, True, True, False, False, False] + [False] * 14,
+    )
+
+    assessment = assess_recipe_control(
+        dense_summary_path=dense_summary,
+        recurrent_summary_path=recurrent_summary,
+        min_total_examples=20,
+        min_hard_examples=5,
+    )
+
+    assert assessment["status"] == "needs_selector_conversion"
+    assert assessment["passed"] is False
+    assert assessment["decision_evidence"]["aggregate"]["delta_exact"] == 0
+    assert assessment["decision_evidence"]["aggregate_best_of_k"]["delta_exact"] == 3
+    assert assessment["decision_evidence"]["hard_best_of_k"]["delta_exact"] == 3
 
 
 def test_recipe_control_flags_metadata_mismatch(tmp_path) -> None:

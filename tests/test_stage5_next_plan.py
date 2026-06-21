@@ -1117,6 +1117,29 @@ def test_recipe_control_assessment_passed_replicates_dense_control(tmp_path) -> 
     assert "python colab/run_stage5_arc_agi_dense_sft.py" in actions[0]["command"]
 
 
+def test_recipe_control_assessment_selector_conversion_runs_rescore(tmp_path) -> None:
+    source = tmp_path / "recipe" / "summary.json"
+    recurrent = tmp_path / "recurrent" / "summary.json"
+    source.parent.mkdir()
+    recurrent.parent.mkdir()
+    payload = {
+        "gate": "stage5_same_recipe_architecture",
+        "status": "needs_selector_conversion",
+        "recurrent_summary": str(recurrent),
+        "evidence": {
+            "recurrent_vs_dense": {
+                "candidate_summary": {"examples_with_targets": 40},
+            }
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Rescore recurrent candidates with selectors"
+    assert "STAGE5_ARC_AGI_RESCORE_SOURCE_RUN_DIR" in actions[0]["command"]
+    assert "python colab/run_stage5_arc_agi_rescore_selectors.py" in actions[0]["command"]
+
+
 def test_recipe_control_assessment_failed_inspects_markdown(tmp_path) -> None:
     source = tmp_path / "recipe" / "summary.json"
     source.parent.mkdir()

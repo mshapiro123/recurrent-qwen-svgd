@@ -532,6 +532,9 @@ def recipe_control_assessment_actions(payload: dict[str, Any], *, source_summary
     examples = int(metadata.get("examples_with_targets", 0) or 0)
     next_limit = next_validation_limit(examples)
     next_label = limit_label(next_limit)
+    recurrent_summary = payload.get("recurrent_summary")
+    recurrent_summary_path = resolve_path(str(recurrent_summary)) if recurrent_summary else None
+    recurrent_run_dir = recurrent_summary_path.parent if recurrent_summary_path is not None else source_summary.parent
     if status in {"passed", "needs_more_evidence"}:
         return [
             make_action(
@@ -543,6 +546,21 @@ def recipe_control_assessment_actions(payload: dict[str, Any], *, source_summary
                         "STAGE5_ARC_AGI_EVAL_TASK_LIMIT": next_label,
                     },
                     "python colab/run_stage5_arc_agi_dense_sft.py",
+                ),
+                10,
+            )
+        ]
+    if status == "needs_selector_conversion":
+        return [
+            make_action(
+                "Rescore recurrent candidates with selectors",
+                "The recurrent same-recipe arm improved candidate coverage but not selected accuracy; run the no-GPU selector rescoring pass on the recurrent candidate files.",
+                command_env(
+                    {
+                        "STAGE5_ARC_AGI_RESCORE_RUN_ID": f"{RUN_ID}_recipe_selector",
+                        "STAGE5_ARC_AGI_RESCORE_SOURCE_RUN_DIR": path_for_cli(recurrent_run_dir),
+                    },
+                    "python colab/run_stage5_arc_agi_rescore_selectors.py",
                 ),
                 10,
             )

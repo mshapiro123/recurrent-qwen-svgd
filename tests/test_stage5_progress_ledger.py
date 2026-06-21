@@ -276,6 +276,8 @@ def test_progress_ledger_reports_recipe_control_assessments(tmp_path) -> None:
             "decision_evidence": {
                 "aggregate": {"delta_exact": 1},
                 "hard": {"delta_exact": 2},
+                "aggregate_best_of_k": {"delta_exact": 3},
+                "hard_best_of_k": {"delta_exact": 4},
             },
         },
     )
@@ -294,6 +296,8 @@ def test_progress_ledger_reports_recipe_control_assessments(tmp_path) -> None:
             "next_step": "replicate",
             "aggregate_selected_delta": 1,
             "hard_selected_delta": 2,
+            "aggregate_best_of_k_delta": 3,
+            "hard_best_of_k_delta": 4,
         }
     ]
     assert payload["recommended_next_plan_source"] == str(source)
