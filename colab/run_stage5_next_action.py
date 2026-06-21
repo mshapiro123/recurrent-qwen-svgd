@@ -52,6 +52,7 @@ ENV_ASSIGNMENT_RE = re.compile(r"^[A-Z][A-Z0-9_]*=.*$")
 ALLOWED_PYTHON_SCRIPTS = {
     "colab/assess_stage5_gate1.py",
     "colab/assess_stage5_gate2.py",
+    "colab/assess_stage5_recipe_control.py",
     "colab/plan_stage5_next_run.py",
     "colab/run_stage5_arc_agi_autopilot_followup.py",
     "colab/run_stage5_arc_agi_candidate_distill_gate.py",

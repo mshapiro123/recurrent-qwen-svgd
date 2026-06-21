@@ -1,0 +1,164 @@
+from __future__ import annotations
+
+import json
+
+from colab.assess_stage5_recipe_control import (
+    assess_recipe_control,
+    latest_summary,
+    main,
+)
+
+
+def _summary(selected: list[bool], *, hard_count: int = 6) -> dict[str, object]:
+    examples = []
+    for idx, hit in enumerate(selected):
+        examples.append(
+            {
+                "task_id": f"task_{idx}",
+                "test_index": 0,
+                "has_target": True,
+                "selected_exact": hit,
+                "best_of_k_exact": hit,
+                "first_exact": hit,
+                "difficulty_bucket": "hard" if idx < hard_count else "easy",
+            }
+        )
+    return {
+        "summary": {
+            "selected_exact": sum(1 for value in selected if value),
+            "best_of_k_exact": sum(1 for value in selected if value),
+            "first_exact": sum(1 for value in selected if value),
+            "examples_with_targets": len(selected),
+        },
+        "examples": examples,
+    }
+
+
+def _write_json(path, payload) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _metadata(eval_limit: int = 20) -> dict[str, object]:
+    return {
+        "arc_version": "1",
+        "train_task_limit": 100,
+        "eval_task_limit": eval_limit,
+        "trace_mode": "symbolic_program",
+        "trace_filter": "covered",
+        "grid_format": "compact",
+    }
+
+
+def _make_dense_and_recurrent(tmp_path, *, recurrent_selected: list[bool], dense_selected: list[bool]):
+    dense_dir = tmp_path / "outputs" / "stage5" / "dense"
+    recurrent_dir = tmp_path / "outputs" / "stage5" / "recurrent"
+    base = _summary([False] * len(dense_selected))
+    dense = _summary(dense_selected)
+    start = _summary([False] * len(dense_selected))
+    recurrent = _summary(recurrent_selected)
+    _write_json(dense_dir / "base_summary.json", base)
+    _write_json(dense_dir / "dense_tuned_summary.json", dense)
+    _write_json(
+        dense_dir / "summary.json",
+        {
+            "run_id": "dense",
+            "kind": "dense_sft_control",
+            "metadata": _metadata(),
+            "base": base,
+            "dense_tuned": dense,
+            "phase1_start": start,
+        },
+    )
+    _write_json(recurrent_dir / "phase1_start_summary.json", start)
+    _write_json(recurrent_dir / "phase1_arc_agi_tuned_summary.json", recurrent)
+    _write_json(
+        recurrent_dir / "summary.json",
+        {
+            "run_id": "recurrent",
+            "metadata": _metadata(),
+            "phase1_start": start["summary"],
+            "phase1_arc_agi_tuned": recurrent["summary"],
+            "tuned_checkpoint": "outputs/stage5/recurrent/phase1.pt",
+        },
+    )
+    return dense_dir / "summary.json", recurrent_dir / "summary.json"
+
+
+def test_recipe_control_passes_hard_tail_recurrent_lift(tmp_path) -> None:
+    dense_summary, recurrent_summary = _make_dense_and_recurrent(
+        tmp_path,
+        dense_selected=[False, False, False, False, False, False] + [False] * 14,
+        recurrent_selected=[True, True, True, False, False, False] + [False] * 14,
+    )
+
+    assessment = assess_recipe_control(
+        dense_summary_path=dense_summary,
+        recurrent_summary_path=recurrent_summary,
+        min_total_examples=20,
+        min_hard_examples=5,
+    )
+
+    assert assessment["status"] == "passed"
+    assert assessment["passed"] is True
+    assert assessment["decision_evidence"]["aggregate"]["delta_exact"] == 3
+    assert assessment["decision_evidence"]["hard"]["delta_exact"] == 3
+
+
+def test_recipe_control_flags_metadata_mismatch(tmp_path) -> None:
+    dense_summary, recurrent_summary = _make_dense_and_recurrent(
+        tmp_path,
+        dense_selected=[False] * 20,
+        recurrent_selected=[True] * 20,
+    )
+    payload = json.loads(recurrent_summary.read_text(encoding="utf-8"))
+    payload["metadata"]["trace_mode"] = "none"
+    recurrent_summary.write_text(json.dumps(payload), encoding="utf-8")
+
+    assessment = assess_recipe_control(dense_summary_path=dense_summary, recurrent_summary_path=recurrent_summary)
+
+    assert assessment["status"] == "needs_review"
+    assert assessment["metadata_differences"]["trace_mode"] == {
+        "dense": "symbolic_program",
+        "recurrent": "none",
+    }
+
+
+def test_recipe_control_cli_writes_outputs(tmp_path, monkeypatch) -> None:
+    dense_summary, recurrent_summary = _make_dense_and_recurrent(
+        tmp_path,
+        dense_selected=[False] * 20,
+        recurrent_selected=[True] * 20,
+    )
+    output_json = tmp_path / "assessment.json"
+    output_md = tmp_path / "assessment.md"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "assess_stage5_recipe_control.py",
+            "--dense_summary_json",
+            str(dense_summary),
+            "--recurrent_summary_json",
+            str(recurrent_summary),
+            "--output_json",
+            str(output_json),
+            "--output_md",
+            str(output_md),
+        ],
+    )
+
+    assert main() == 0
+    assert json.loads(output_json.read_text(encoding="utf-8"))["status"] == "passed"
+    assert "Same-Recipe Architecture Assessment" in output_md.read_text(encoding="utf-8")
+
+
+def test_recipe_control_latest_summary_finds_expected_types(tmp_path) -> None:
+    dense_summary, recurrent_summary = _make_dense_and_recurrent(
+        tmp_path,
+        dense_selected=[False] * 20,
+        recurrent_selected=[True] * 20,
+    )
+    scan_root = tmp_path / "outputs" / "stage5"
+
+    assert latest_summary(scan_root, lambda payload: payload.get("kind") == "dense_sft_control") == dense_summary
+    assert latest_summary(scan_root, lambda payload: bool(payload.get("tuned_checkpoint"))) == recurrent_summary

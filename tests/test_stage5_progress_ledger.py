@@ -154,6 +154,29 @@ def test_progress_ledger_reads_dense_sft_control(tmp_path) -> None:
     assert payload["recommended_next_plan_source"] == str(source)
 
 
+def test_progress_ledger_reads_recurrent_sft_summary(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "recurrent" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "recurrent",
+            "base": _summary(5, 6, examples=10),
+            "phase1_start": _summary(4, 5, examples=10),
+            "phase1_arc_agi_tuned": _summary(7, 8, examples=10),
+            "tuned_checkpoint": "outputs/stage5/recurrent/phase1.pt",
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["parsed_records"] == 3
+    tuned = next(record for record in payload["records"] if record["arm"] == "recurrent_tuned")
+    assert tuned["kind"] == "recurrent_sft"
+    assert tuned["selected_exact"] == 7
+    assert payload["recommended_next_plan_source"] == str(source)
+
+
 def test_progress_ledger_reports_gate1_assessments(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     source = scan_root / "gate1" / "summary.json"
@@ -231,6 +254,46 @@ def test_progress_ledger_reports_gate2_assessments(tmp_path) -> None:
             "best_variant": "svgd",
             "selected_delta": 1.0,
             "best_of_k_delta": 2.0,
+        }
+    ]
+    assert payload["recommended_next_plan_source"] == str(source)
+
+
+def test_progress_ledger_reports_recipe_control_assessments(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "recipe" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "recipe",
+            "gate": "stage5_same_recipe_architecture",
+            "status": "passed",
+            "passed": True,
+            "dense_summary": "outputs/stage5/dense/summary.json",
+            "recurrent_summary": "outputs/stage5/recurrent/summary.json",
+            "reason": "hard-tail lift",
+            "next_step": "replicate",
+            "decision_evidence": {
+                "aggregate": {"delta_exact": 1},
+                "hard": {"delta_exact": 2},
+            },
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["recipe_control_assessments"] == [
+        {
+            "path": str(source),
+            "run_id": "recipe",
+            "status": "passed",
+            "passed": True,
+            "dense_summary": "outputs/stage5/dense/summary.json",
+            "recurrent_summary": "outputs/stage5/recurrent/summary.json",
+            "reason": "hard-tail lift",
+            "next_step": "replicate",
+            "aggregate_selected_delta": 1,
+            "hard_selected_delta": 2,
         }
     ]
     assert payload["recommended_next_plan_source"] == str(source)

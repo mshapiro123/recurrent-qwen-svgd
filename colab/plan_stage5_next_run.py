@@ -73,8 +73,10 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
     ) or (
         selector_rescore_payload(payload) is not None
         or dense_sft_payload(payload) is not None
+        or recurrent_sft_payload(payload) is not None
         or gate1_assessment_payload(payload) is not None
         or gate2_assessment_payload(payload) is not None
+        or recipe_control_assessment_payload(payload) is not None
     )
 
 
@@ -155,6 +157,16 @@ def gate2_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("gate") == "stage5_gate2_particle_mechanism" else None
 
 
+def recipe_control_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("gate") == "stage5_same_recipe_architecture" else None
+
+
+def recurrent_sft_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    if "phase1_arc_agi_tuned" in payload and payload.get("tuned_checkpoint"):
+        return payload
+    return None
+
+
 def direct_tta_sweep_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     if isinstance(payload.get("rows"), list) and isinstance(payload.get("paired_comparisons"), dict):
         if "deltas" in payload and "best_by_label" not in payload:
@@ -182,6 +194,10 @@ def needs_gate2_assessment(payload: dict[str, Any]) -> bool:
     recovery = recovery_particle.get("recovery_decision") or {}
     particle = recovery_particle.get("particle_decision") or {}
     return bool(recovery.get("passed")) and bool(particle.get("passed"))
+
+
+def needs_recipe_control_assessment(payload: dict[str, Any]) -> bool:
+    return recurrent_sft_payload(payload) is not None
 
 
 def compact_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -494,6 +510,51 @@ def source_replan_command(payload: dict[str, Any], source_summary: Path) -> str:
         {"STAGE5_ARC_AGI_NEXT_PLAN_SOURCE_SUMMARY": command_path(summary_path)},
         "python colab/plan_stage5_next_run.py",
     )
+
+
+def recipe_control_assessment_action(source_summary: Path) -> dict[str, Any]:
+    return make_action(
+        "Assess same-recipe recurrent-vs-dense control",
+        "A recurrent ARC-AGI SFT summary exists; compare it against the latest dense SFT control with paired hard-tail evidence before claiming architecture lift.",
+        command_env(
+            {
+                "STAGE5_RECIPE_CONTROL_ASSESSMENT_RUN_ID": f"{RUN_ID}_recipe_control",
+            },
+            f"python colab/assess_stage5_recipe_control.py --recurrent_summary_json {shlex.quote(path_for_cli(source_summary))}",
+        ),
+        10,
+    )
+
+
+def recipe_control_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    metadata = ((payload.get("evidence") or {}).get("recurrent_vs_dense") or {}).get("candidate_summary", {})
+    examples = int(metadata.get("examples_with_targets", 0) or 0)
+    next_limit = next_validation_limit(examples)
+    next_label = limit_label(next_limit)
+    if status in {"passed", "needs_more_evidence"}:
+        return [
+            make_action(
+                f"Replicate dense control at ARC limit {next_label}",
+                "Same-recipe architecture evidence is promising or underpowered; rerun the dense control at a larger matched slice, then the planner will route to the recurrent arm.",
+                command_env(
+                    {
+                        "STAGE5_ARC_AGI_DENSE_SFT_RUN_ID": f"{RUN_ID}_dense_limit{next_label}",
+                        "STAGE5_ARC_AGI_EVAL_TASK_LIMIT": next_label,
+                    },
+                    "python colab/run_stage5_arc_agi_dense_sft.py",
+                ),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect same-recipe assessment `{status}`",
+            "The recurrent-vs-dense same-recipe gate did not clear cleanly; inspect the assessment before scaling recurrent-specific training.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
 
 
 def dense_sft_matched_recurrent_command(payload: dict[str, Any]) -> str:
@@ -915,10 +976,15 @@ def plan_next_actions(
     gate2 = gate2_assessment_payload(payload)
     if gate2:
         return gate2_assessment_actions(gate2, source_summary=source_summary)
+    recipe_control = recipe_control_assessment_payload(payload)
+    if recipe_control:
+        return recipe_control_assessment_actions(recipe_control, source_summary=source_summary)
     if require_gate1_assessment and needs_gate1_assessment(payload):
         return [gate1_assessment_action(source_summary)]
     if require_gate2_assessment and needs_gate2_assessment(payload):
         return [gate2_assessment_action(source_summary)]
+    if needs_recipe_control_assessment(payload):
+        return [recipe_control_assessment_action(source_summary)]
     selector_rescore = selector_rescore_payload(payload)
     if selector_rescore:
         return selector_rescore_actions(selector_rescore, source_summary=source_summary)
@@ -1226,10 +1292,14 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "gate1_assessment"
     if gate2_assessment_payload(payload):
         return "gate2_assessment"
+    if recipe_control_assessment_payload(payload):
+        return "recipe_control_assessment"
     if selector_rescore_payload(payload):
         return "selector_rescore"
     if dense_sft_payload(payload):
         return "dense_sft_control"
+    if recurrent_sft_payload(payload):
+        return "recurrent_sft"
     if recovery_particle_payload(payload):
         return "recovery_particle_gate"
     if direct_tta_sweep_payload(payload):

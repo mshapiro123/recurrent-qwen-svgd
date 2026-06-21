@@ -107,6 +107,10 @@ Initial harness files:
   evaluates base/dense-tuned/Phase1-start, writes paired sign-test comparison
   artifacts, and the planner then routes to a matched recurrent SFT arm. Use
   this before interpreting recurrent SFT gains as architectural gains.
+- `colab/assess_stage5_recipe_control.py`: no-GPU same-recipe assessment for
+  dense-control plus matched recurrent SFT summaries. It verifies recipe
+  metadata and reports whether recurrent selected-answer accuracy beats the
+  dense control with hard-bucket support and no aggregate harm.
 - `colab/run_stage5_arc_agi_trace_sft_gate.py`: matched two-arm SFT runner for
   grid-only supervision versus symbolic-program trace supervision. It reports
   the best checkpoint in each child SFT ladder when available, not only the
@@ -280,6 +284,12 @@ current ARC recipe is helping a standard dense model as much as, or more than,
 the recurrent model. After this summary lands, the Stage 5 planner recommends
 the matched recurrent SFT run with the same task limits, trace mode, trace
 filter, and grid format.
+
+After the matched recurrent SFT run lands, run
+`colab/assess_stage5_recipe_control.py` or let `colab/run_stage5_colab_continue.py`
+route to it. This writes the same-recipe architecture gate. A pass is the first
+credible evidence that recurrence, not only the training recipe, is helping on
+ARC-style tasks.
 
 Set `STAGE5_ARC_AGI_DISTILL=1` to add frozen-base next-token KL distillation
 inside `training/train_phase1_ponder.py`. Run

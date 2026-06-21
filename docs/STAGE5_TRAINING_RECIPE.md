@@ -124,6 +124,9 @@ Required control:
   it prepares the same ARC-AGI rows, trains an unmodified Qwen adapter with
   `training/train_dense_lora.py`, and lets the planner launch the matched
   recurrent SFT arm.
+- Judge that pair with `colab/assess_stage5_recipe_control.py`; it is the
+  paired hard-tail assessment for whether recurrence adds value beyond the
+  standard dense recipe.
 - Cross the signal phase with entropy on/off.
 - Measure whether structural diversity survives the signal phase better than
   weight-only diversity.

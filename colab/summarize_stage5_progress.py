@@ -137,7 +137,11 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         return True
     if payload.get("gate") == "stage5_gate2_particle_mechanism":
         return True
+    if payload.get("gate") == "stage5_same_recipe_architecture":
+        return True
     if payload.get("kind") == "dense_sft_control":
+        return True
+    if "phase1_arc_agi_tuned" in payload and payload.get("tuned_checkpoint"):
         return True
     if {"base", "phase1_start", "recovered", "deltas"} <= set(payload):
         return True
@@ -242,6 +246,26 @@ def records_from_dense_sft(path: Path, payload: dict[str, Any]) -> list[dict[str
     return rows
 
 
+def records_from_recurrent_sft(path: Path, payload: dict[str, Any]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for arm, label in (
+        ("base", "base"),
+        ("phase1_start", "phase1_start"),
+        ("recurrent_tuned", "phase1_arc_agi_tuned"),
+    ):
+        record = record_from_summary(
+            path=path,
+            kind="recurrent_sft",
+            arm=arm,
+            label=label,
+            summary=payload.get(label),
+            run_id=str(payload.get("run_id") or path.parent.name),
+        )
+        if record:
+            rows.append(record)
+    return rows
+
+
 def records_from_eval_summary(path: Path, payload: dict[str, Any]) -> list[dict[str, Any]]:
     summary = summary_metrics(payload)
     if not summary:
@@ -278,6 +302,8 @@ def records_from_payload(path: Path, payload: dict[str, Any]) -> list[dict[str, 
         return records_from_selector_rescore(path, payload)
     if payload.get("kind") == "dense_sft_control":
         return records_from_dense_sft(path, payload)
+    if "phase1_arc_agi_tuned" in payload and payload.get("tuned_checkpoint"):
+        return records_from_recurrent_sft(path, payload)
     if isinstance(payload.get("recovery_decision"), dict) and isinstance(payload.get("particle_decision"), dict):
         return records_from_recovery_particle(path, payload)
     return records_from_eval_summary(path, payload)
@@ -327,6 +353,32 @@ def gate2_assessments(summary_files: list[Path]) -> list[dict[str, Any]]:
                 "best_variant": best.get("variant"),
                 "selected_delta": float(best.get("selected_delta", 0.0) or 0.0),
                 "best_of_k_delta": float(best.get("best_of_k_delta", 0.0) or 0.0),
+            }
+        )
+    return sorted(assessments, key=lambda item: str(item["path"]))
+
+
+def recipe_control_assessments(summary_files: list[Path]) -> list[dict[str, Any]]:
+    assessments: list[dict[str, Any]] = []
+    for path in summary_files:
+        payload = safe_read_json(path)
+        if not payload or payload.get("gate") != "stage5_same_recipe_architecture":
+            continue
+        decision = payload.get("decision_evidence") or {}
+        aggregate = decision.get("aggregate") or {}
+        hard = decision.get("hard") or {}
+        assessments.append(
+            {
+                "path": path_for_cli(path),
+                "run_id": str(payload.get("run_id") or path.parent.name),
+                "status": payload.get("status"),
+                "passed": bool(payload.get("passed", False)),
+                "dense_summary": payload.get("dense_summary"),
+                "recurrent_summary": payload.get("recurrent_summary"),
+                "reason": payload.get("reason"),
+                "next_step": payload.get("next_step"),
+                "aggregate_selected_delta": int(aggregate.get("delta_exact", 0) or 0),
+                "hard_selected_delta": int(hard.get("delta_exact", 0) or 0),
             }
         )
     return sorted(assessments, key=lambda item: str(item["path"]))
@@ -430,6 +482,7 @@ def scan_progress(scan_root: Path, *, run_id: str | None = None) -> dict[str, An
         "recovered_vs_base_gaps": recovered_base_gaps(records),
         "gate1_assessments": gate1_assessments(summary_files),
         "gate2_assessments": gate2_assessments(summary_files),
+        "recipe_control_assessments": recipe_control_assessments(summary_files),
         "recommended_next_plan_source": latest_planner_source(summary_files),
     }
 
@@ -486,6 +539,17 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
             )
     else:
         lines.append("- No Gate 2 assessment summaries found.")
+    lines.extend(["", "## Same-Recipe Architecture Assessments", ""])
+    if payload["recipe_control_assessments"]:
+        for assessment in payload["recipe_control_assessments"][-10:]:
+            lines.append(
+                f"- `{assessment['run_id']}` status `{assessment['status']}` passed "
+                f"`{assessment['passed']}` aggregate selected delta "
+                f"`{assessment['aggregate_selected_delta']}`, hard selected delta "
+                f"`{assessment['hard_selected_delta']}`: {assessment['reason']}"
+            )
+    else:
+        lines.append("- No same-recipe architecture assessment summaries found.")
     (output_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((output_dir / "summary.md").read_text(encoding="utf-8"))
 

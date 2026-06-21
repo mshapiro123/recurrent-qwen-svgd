@@ -1045,6 +1045,8 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"recovery_decision": {}, "particle_decision": {}}) == "recovery_particle_gate"
     assert source_kind({"gate": "stage5_gate1_selector_tta"}) == "gate1_assessment"
     assert source_kind({"gate": "stage5_gate2_particle_mechanism"}) == "gate2_assessment"
+    assert source_kind({"gate": "stage5_same_recipe_architecture"}) == "recipe_control_assessment"
+    assert source_kind({"phase1_arc_agi_tuned": {}, "tuned_checkpoint": "ckpt.pt"}) == "recurrent_sft"
     assert source_kind({"rows": [], "deltas": {}, "paired_comparisons": {}}) == "tta_sweep"
 
 
@@ -1079,3 +1081,56 @@ def test_dense_sft_control_plans_matched_recurrent_recipe(tmp_path) -> None:
     assert "STAGE5_ARC_AGI_TRACE_MODE=symbolic_program" in actions[0]["command"]
     assert "python colab/run_stage5_arc_agi_sft.py" in actions[0]["command"]
     assert "Dense-vs-base evidence: paired delta 2" in actions[0]["reason"]
+
+
+def test_recurrent_sft_summary_plans_same_recipe_assessment(tmp_path) -> None:
+    source = tmp_path / "recurrent" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "phase1_arc_agi_tuned": {"selected_exact": 3, "best_of_k_exact": 3},
+        "tuned_checkpoint": "outputs/stage5/recurrent/phase1.pt",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Assess same-recipe recurrent-vs-dense control"
+    assert "python colab/assess_stage5_recipe_control.py" in actions[0]["command"]
+    assert "--recurrent_summary_json" in actions[0]["command"]
+
+
+def test_recipe_control_assessment_passed_replicates_dense_control(tmp_path) -> None:
+    source = tmp_path / "recipe" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_same_recipe_architecture",
+        "status": "passed",
+        "evidence": {
+            "recurrent_vs_dense": {
+                "candidate_summary": {"examples_with_targets": 40},
+            }
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Replicate dense control at ARC limit 100"
+    assert "python colab/run_stage5_arc_agi_dense_sft.py" in actions[0]["command"]
+
+
+def test_recipe_control_assessment_failed_inspects_markdown(tmp_path) -> None:
+    source = tmp_path / "recipe" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_same_recipe_architecture",
+        "status": "failed",
+        "evidence": {
+            "recurrent_vs_dense": {
+                "candidate_summary": {"examples_with_targets": 40},
+            }
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect same-recipe assessment `failed`"
+    assert "summary.md" in actions[0]["command"]

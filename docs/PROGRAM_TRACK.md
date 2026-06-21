@@ -40,6 +40,13 @@ standard-vs-recurrent same-recipe comparison. Dense-control summaries include
 paired comparison artifacts, so aggregate deltas are not used as the only
 evidence.
 
+Stage 5 also includes `colab/assess_stage5_recipe_control.py`, the explicit
+same-recipe architecture gate. It reads the dense-control summary and matched
+recurrent SFT summary, verifies recipe metadata, and asks whether recurrent
+selected-answer accuracy beats the dense control with hard-bucket support. This
+is the local form of the decisive experiment before larger recipe or scale-up
+runs.
+
 ## Decisive Experiment
 
 Train both a standard version and a recurrent-particle version of the same
@@ -106,6 +113,8 @@ reasoning model can confound the survival-of-diversity question.
 3. Keep standard-vs-recurrent under the same recipe as the decisive comparison.
 4. Treat kernel geometry as a mechanism de-risking step, not the destination.
 5. Scale only after Gate 1 and Gate 2 give a real signal.
+6. Treat same-recipe recurrent-vs-dense assessment as required evidence before
+   attributing ARC gains to architecture.
 
 ## Anti-Patterns
 

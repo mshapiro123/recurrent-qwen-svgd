@@ -78,6 +78,22 @@ def test_parse_action_command_allows_gate2_assessor() -> None:
     ]
 
 
+def test_parse_action_command_allows_recipe_control_assessor() -> None:
+    parsed = parse_action_command(
+        "STAGE5_RECIPE_CONTROL_ASSESSMENT_RUN_ID=recipe "
+        "python colab/assess_stage5_recipe_control.py --recurrent_summary_json outputs/stage5/run/summary.json"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_RECIPE_CONTROL_ASSESSMENT_RUN_ID": "recipe"}
+    assert parsed.argv == [
+        sys.executable,
+        "colab/assess_stage5_recipe_control.py",
+        "--recurrent_summary_json",
+        "outputs/stage5/run/summary.json",
+    ]
+
+
 def test_parse_action_command_allows_dense_and_recurrent_sft_runners() -> None:
     dense = parse_action_command("python colab/run_stage5_arc_agi_dense_sft.py")
     recurrent = parse_action_command("python colab/run_stage5_arc_agi_sft.py")
