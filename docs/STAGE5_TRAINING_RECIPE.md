@@ -160,4 +160,7 @@ Release candidate definition:
 - Explicitly state whether the released checkpoint is Phase1 deterministic or
   Phase2 particle.
 - Report both internal recurrent lift and gap to base Qwen.
+- Package the latest same-recipe dense-vs-recurrent architecture assessment in
+  the adapter metadata/model card when available, including whether the result
+  is `passed`, `needs_selector_conversion`, or not yet established.
 - Include the modified-architecture caveat and training recipe.

@@ -5,6 +5,7 @@ import torch
 from colab.run_stage5_publish_hf_adapter import (
     build_export_metadata,
     checkpoint_value_from_payload,
+    compact_recipe_control_evidence,
     render_model_card,
     should_upload,
 )
@@ -70,6 +71,57 @@ def test_build_export_metadata_captures_checkpoint_hash_and_config(tmp_path) -> 
     assert metadata["checkpoint_bytes"] == checkpoint.stat().st_size
     assert metadata["architecture"]["layer_split"] == "6,18"
     assert metadata["eval_snapshot"]["deltas"]["recovered_vs_base"]["selected_exact_delta"] == 1
+    assert metadata["architecture_evidence"] == {}
+
+
+def test_build_export_metadata_captures_recipe_control_evidence(tmp_path) -> None:
+    checkpoint = tmp_path / "phase1_step_10.pt"
+    torch.save(
+        {
+            "phase": "phase1",
+            "step": 10,
+            "config": {"model_name": "Qwen/Qwen2.5-0.5B-Instruct"},
+            "trainable_state_dict": {"bridge.weight": torch.eye(2)},
+        },
+        checkpoint,
+    )
+    recipe_path = tmp_path / "recipe" / "summary.json"
+    recipe_path.parent.mkdir()
+    recipe_payload = {
+        "gate": "stage5_same_recipe_architecture",
+        "status": "needs_selector_conversion",
+        "passed": False,
+        "reason": "candidate coverage improved",
+        "next_step": "rescore",
+        "dense_summary": "outputs/stage5/dense/summary.json",
+        "recurrent_summary": "outputs/stage5/recurrent/summary.json",
+        "hard_bucket": "hard",
+        "decision_evidence": {
+            "aggregate": {"delta_exact": 0, "wins": 0, "losses": 0, "ties": 20},
+            "hard": {"delta_exact": 0, "wins": 0, "losses": 0, "ties": 6},
+            "aggregate_best_of_k": {"delta_exact": 3, "wins": 3, "losses": 0, "ties": 17},
+            "hard_best_of_k": {"delta_exact": 2, "wins": 2, "losses": 0, "ties": 4},
+        },
+    }
+
+    metadata = build_export_metadata(
+        checkpoint=checkpoint,
+        checkpoint_metadata={
+            "phase": "phase1",
+            "step": 10,
+            "config": {"model_name": "Qwen/Qwen2.5-0.5B-Instruct"},
+            "trainable_key_count": 1,
+        },
+        source_summary=None,
+        source_payload=None,
+        recipe_control_summary=recipe_path,
+        recipe_control_payload=recipe_payload,
+    )
+
+    evidence = metadata["architecture_evidence"]
+    assert evidence["status"] == "needs_selector_conversion"
+    assert evidence["aggregate_best_of_k"]["delta_exact"] == 3
+    assert evidence["hard_best_of_k"]["delta_exact"] == 2
 
 
 def test_render_model_card_includes_loading_sketch_and_benchmark_delta() -> None:
@@ -87,6 +139,17 @@ def test_render_model_card_includes_loading_sketch_and_benchmark_delta() -> None
             "deltas": {"recovered_vs_base": {"best_of_k_exact_delta": 2}},
             "compact": {"particle_passed": False},
         },
+        "architecture_evidence": {
+            "summary_path": "outputs/stage5/recipe/summary.json",
+            "status": "passed",
+            "passed": True,
+            "reason": "hard-tail selected lift",
+            "next_step": "replicate",
+            "aggregate_selected": {"delta_exact": 1, "wins": 1, "losses": 0, "ties": 10},
+            "hard_selected": {"delta_exact": 1, "wins": 1, "losses": 0, "ties": 4},
+            "aggregate_best_of_k": {"delta_exact": 2, "wins": 2, "losses": 0, "ties": 9},
+            "hard_best_of_k": {"delta_exact": 1, "wins": 1, "losses": 0, "ties": 4},
+        },
     }
 
     card = render_model_card(metadata)
@@ -95,6 +158,13 @@ def test_render_model_card_includes_loading_sketch_and_benchmark_delta() -> None
     assert "Qwen/Qwen2.5-0.5B-Instruct" in card
     assert "best_of_k_exact_delta" in card
     assert "load_trainable_checkpoint" in card
+    assert "Same-Recipe Architecture Evidence" in card
+    assert "hard-tail selected lift" in card
+    assert "Aggregate best-of-K recurrent-vs-dense: delta 2" in card
+
+
+def test_compact_recipe_control_evidence_returns_empty_without_payload(tmp_path) -> None:
+    assert compact_recipe_control_evidence(tmp_path / "missing.json", None) == {}
 
 
 def test_should_upload_requires_repo_and_token_unless_disabled() -> None:

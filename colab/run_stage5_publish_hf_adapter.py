@@ -40,6 +40,7 @@ HF_TOKEN = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_HUB_TOKEN")
 HF_PRIVATE = os.environ.get("STAGE5_HF_PRIVATE", "1").strip().lower() in {"1", "true", "yes", "y"}
 HF_UPLOAD = os.environ.get("STAGE5_HF_UPLOAD", "auto").strip().lower()
 MODEL_NAME_DEFAULT = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")
+RECIPE_CONTROL_SUMMARY = os.environ.get("STAGE5_HF_RECIPE_CONTROL_SUMMARY", "")
 
 
 def run(cmd: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -106,6 +107,35 @@ def checkpoint_value_from_payload(payload: dict[str, Any]) -> str | None:
     return None
 
 
+def is_recipe_control_assessment(payload: dict[str, Any]) -> bool:
+    return payload.get("gate") == "stage5_same_recipe_architecture"
+
+
+def latest_recipe_control_summary() -> Path | None:
+    candidates: list[Path] = []
+    for path in (ROOT / "outputs" / "stage5").glob("*/summary.json"):
+        try:
+            payload = read_json(path)
+        except Exception:
+            continue
+        if is_recipe_control_assessment(payload):
+            candidates.append(path)
+    if not candidates:
+        return None
+    return sorted(candidates, key=lambda item: item.stat().st_mtime, reverse=True)[0]
+
+
+def resolve_recipe_control_summary(source_summary: Path | None, source_payload: dict[str, Any] | None) -> Path | None:
+    if RECIPE_CONTROL_SUMMARY:
+        path = resolve_path(RECIPE_CONTROL_SUMMARY)
+        if not path.exists():
+            raise FileNotFoundError(path)
+        return path
+    if source_summary and source_payload and is_recipe_control_assessment(source_payload):
+        return source_summary
+    return latest_recipe_control_summary()
+
+
 def resolve_source_summary() -> Path | None:
     if SOURCE_SUMMARY:
         path = resolve_path(SOURCE_SUMMARY)
@@ -169,12 +199,34 @@ def extract_eval_snapshot(source_payload: dict[str, Any] | None) -> dict[str, An
     return {key: source_payload[key] for key in keys if key in source_payload}
 
 
+def compact_recipe_control_evidence(path: Path | None, payload: dict[str, Any] | None) -> dict[str, Any]:
+    if not payload:
+        return {}
+    decision = payload.get("decision_evidence") or {}
+    return {
+        "summary_path": path_for_cli(path) if path else None,
+        "status": payload.get("status"),
+        "passed": bool(payload.get("passed", False)),
+        "reason": payload.get("reason"),
+        "next_step": payload.get("next_step"),
+        "dense_summary": payload.get("dense_summary"),
+        "recurrent_summary": payload.get("recurrent_summary"),
+        "hard_bucket": payload.get("hard_bucket"),
+        "aggregate_selected": decision.get("aggregate"),
+        "hard_selected": decision.get("hard"),
+        "aggregate_best_of_k": decision.get("aggregate_best_of_k"),
+        "hard_best_of_k": decision.get("hard_best_of_k"),
+    }
+
+
 def build_export_metadata(
     *,
     checkpoint: Path,
     checkpoint_metadata: dict[str, Any],
     source_summary: Path | None,
     source_payload: dict[str, Any] | None,
+    recipe_control_summary: Path | None = None,
+    recipe_control_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     config = checkpoint_metadata.get("config") or {}
     return {
@@ -198,7 +250,20 @@ def build_export_metadata(
             "summary_path": path_for_cli(source_summary) if source_summary else None,
         },
         "eval_snapshot": extract_eval_snapshot(source_payload),
+        "architecture_evidence": compact_recipe_control_evidence(
+            recipe_control_summary,
+            recipe_control_payload,
+        ),
     }
+
+
+def delta_fragment(stats: dict[str, Any] | None) -> str:
+    if not stats:
+        return "missing"
+    return (
+        f"delta {stats.get('delta_exact', 0)} "
+        f"({stats.get('wins', 0)}/{stats.get('losses', 0)}/{stats.get('ties', 0)} W/L/T)"
+    )
 
 
 def render_model_card(metadata: dict[str, Any]) -> str:
@@ -206,6 +271,7 @@ def render_model_card(metadata: dict[str, Any]) -> str:
     architecture = metadata["architecture"]
     source = metadata["source"]
     eval_snapshot = metadata.get("eval_snapshot") or {}
+    architecture_evidence = metadata.get("architecture_evidence") or {}
     deltas = eval_snapshot.get("deltas") or {}
     compact = eval_snapshot.get("compact") or eval_snapshot.get("autopilot_compact") or {}
     lines = [
@@ -246,6 +312,25 @@ def render_model_card(metadata: dict[str, Any]) -> str:
         lines.append(f"- Benchmark deltas: `{deltas}`")
     if not compact and not deltas:
         lines.append("- No benchmark summary was packaged with this export.")
+    lines.extend(["", "## Same-Recipe Architecture Evidence", ""])
+    if architecture_evidence:
+        lines.extend(
+            [
+                f"- Architecture gate summary: `{architecture_evidence.get('summary_path')}`",
+                f"- Status: `{architecture_evidence.get('status')}`",
+                f"- Passed: `{architecture_evidence.get('passed')}`",
+                f"- Reason: {architecture_evidence.get('reason')}",
+                f"- Next step: {architecture_evidence.get('next_step')}",
+                f"- Aggregate selected recurrent-vs-dense: {delta_fragment(architecture_evidence.get('aggregate_selected'))}",
+                f"- Hard selected recurrent-vs-dense: {delta_fragment(architecture_evidence.get('hard_selected'))}",
+                f"- Aggregate best-of-K recurrent-vs-dense: {delta_fragment(architecture_evidence.get('aggregate_best_of_k'))}",
+                f"- Hard best-of-K recurrent-vs-dense: {delta_fragment(architecture_evidence.get('hard_best_of_k'))}",
+            ]
+        )
+    else:
+        lines.append(
+            "- No same-recipe dense-vs-recurrent architecture assessment was packaged with this export."
+        )
     lines.extend(
         [
             "",
@@ -300,6 +385,14 @@ def write_export(
         source_md = source_summary.with_suffix(".md")
         if source_md.exists():
             shutil.copy2(source_md, RUN_DIR / "source_summary.md")
+    architecture_summary = (metadata.get("architecture_evidence") or {}).get("summary_path")
+    if architecture_summary:
+        architecture_summary_path = resolve_path(str(architecture_summary))
+        if architecture_summary_path.exists():
+            shutil.copy2(architecture_summary_path, RUN_DIR / "architecture_assessment_summary.json")
+            architecture_md = architecture_summary_path.with_suffix(".md")
+            if architecture_md.exists():
+                shutil.copy2(architecture_md, RUN_DIR / "architecture_assessment_summary.md")
     summary = {
         "run_id": RUN_ID,
         "export_dir": path_for_cli(RUN_DIR),
@@ -352,6 +445,7 @@ def write_report(url: str | None) -> None:
         "- `recurrent_adapter_config.json`",
         "- `README.md`",
         "- `source_summary.json` if a source run summary was found",
+        "- `architecture_assessment_summary.json` if a same-recipe architecture gate was found",
     ]
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))
@@ -363,6 +457,8 @@ def main() -> int:
         return 0
     source_summary = resolve_source_summary()
     source_payload = read_json(source_summary) if source_summary else None
+    recipe_control_summary = resolve_recipe_control_summary(source_summary, source_payload)
+    recipe_control_payload = read_json(recipe_control_summary) if recipe_control_summary else None
     checkpoint = resolve_checkpoint(source_payload)
     checkpoint_metadata = load_checkpoint_metadata(checkpoint)
     metadata = build_export_metadata(
@@ -370,6 +466,8 @@ def main() -> int:
         checkpoint_metadata=checkpoint_metadata,
         source_summary=source_summary,
         source_payload=source_payload,
+        recipe_control_summary=recipe_control_summary,
+        recipe_control_payload=recipe_control_payload,
     )
     write_export(
         checkpoint=checkpoint,
