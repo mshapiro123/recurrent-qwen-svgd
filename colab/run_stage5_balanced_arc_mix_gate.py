@@ -36,7 +36,6 @@ RUN_ID = os.environ.get("STAGE5_ARC_MIX_RUN_ID") or time.strftime(
     "stage5_balanced_arc_mix_%Y%m%d_%H%M%S"
 )
 RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
-RUN_DIR.mkdir(parents=True, exist_ok=True)
 
 SOURCE_SUMMARY = Path(
     os.environ.get(
@@ -227,6 +226,7 @@ def run(
     stdout = "".join(chunks)
     proc = subprocess.CompletedProcess(cmd, process.wait(), stdout, None)
     if log_name:
+        RUN_DIR.mkdir(parents=True, exist_ok=True)
         (RUN_DIR / log_name).write_text(stdout, encoding="utf-8")
     if check and proc.returncode:
         raise RuntimeError(f"command failed: {' '.join(map(str, cmd))}")
@@ -565,6 +565,7 @@ def build_summary(
 
 
 def write_report(payload: dict[str, Any]) -> None:
+    RUN_DIR.mkdir(parents=True, exist_ok=True)
     (RUN_DIR / "summary.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
     lines = [
         f"# Stage 5 Balanced ARC-Mix Gate - {RUN_ID}",
@@ -640,6 +641,7 @@ def commit_results() -> None:
 
 
 def main() -> int:
+    RUN_DIR.mkdir(parents=True, exist_ok=True)
     source_payload = read_json(SOURCE_SUMMARY)
     resume_checkpoint = selected_checkpoint(source_payload)
     restore_checkpoint_if_needed(resume_checkpoint, run_id=checkpoint_run_id(resume_checkpoint))
