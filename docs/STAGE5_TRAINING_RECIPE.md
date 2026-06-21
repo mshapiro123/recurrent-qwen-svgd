@@ -201,6 +201,12 @@ Release candidate definition:
   authoritative SOTA-comparison artifact consumed by the claim packet. It
   requires a sourced `config/arc_agi_same_size_baselines.json`; the example file
   is only a schema and must not be used for claims.
+- For internally reproduced same-size controls, run
+  `colab/build_stage5_arc_agi_reproduced_baseline_registry.py` against a saved
+  Stage 5 ARC-AGI summary, usually with `--labels base`, to generate a
+  validator-passing `reproduced_eval` registry row from the audited local
+  artifact. Treat this as reproduced-control evidence; prefer external
+  official, paper, or model-card sources for public SOTA claims.
 - Run `colab/validate_arc_agi_baseline_registry.py` before any SOTA-facing
   comparison. The validator requires non-placeholder same-size baseline names,
   sourced URLs/DOIs/arXiv references, dates, metrics, row-level ARC

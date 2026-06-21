@@ -337,6 +337,9 @@ ARC version/split and include an `evidence_type` such as
 registry header. A `reproduced_eval` row may use a local JSON
 `source_artifact` instead of an external source only when the artifact exists
 in the repo and the row records the `reproduction_command` and `git_commit`.
+Use `colab/build_stage5_arc_agi_reproduced_baseline_registry.py` to generate
+those local reproduced-control rows from saved Stage 5 summaries before running
+the baseline validator and SOTA comparison.
 
 Set `STAGE5_ARC_AGI_DISTILL=1` to add frozen-base next-token KL distillation
 inside `training/train_phase1_ponder.py`. Run
