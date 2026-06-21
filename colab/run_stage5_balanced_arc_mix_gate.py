@@ -53,6 +53,8 @@ OPUS_VAL_FRACTION = os.environ.get("STAGE5_ARC_MIX_OPUS_VAL_FRACTION", "0.05")
 MAX_TOTAL_TOKENS = os.environ.get("STAGE5_ARC_MIX_MAX_TOTAL_TOKENS", "1024")
 ARC_TRAIN_LIMIT = os.environ.get("STAGE5_ARC_MIX_ARC_TRAIN_LIMIT", "0")
 ARC_REPEAT = int(os.environ.get("STAGE5_ARC_MIX_ARC_REPEAT", "2"))
+ARC_CHALLENGE_REPEAT = int(os.environ.get("STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT", str(ARC_REPEAT)))
+ARC_EASY_REPEAT = int(os.environ.get("STAGE5_ARC_MIX_ARC_EASY_REPEAT", str(ARC_REPEAT)))
 MIX_SEED = int(os.environ.get("STAGE5_ARC_MIX_SEED", "17"))
 ARC_EVAL_LIMIT = int(os.environ.get("STAGE5_ARC_MIX_ARC_EVAL_LIMIT", "128"))
 PUSH_RESULTS = os.environ.get("STAGE5_ARC_MIX_PUSH", "1").strip().lower() in {
@@ -107,6 +109,39 @@ ARM_PRESETS: dict[str, ArmConfig] = {
         save_every="50",
         distill_enabled="1",
         distill_weight="0.05",
+        distill_temperature="2.0",
+        distill_on="response",
+    ),
+    "arc_mix_response_w005_lr2e6": ArmConfig(
+        name="arc_mix_response_w005_lr2e6",
+        learning_rate="2e-6",
+        beta="0.12",
+        steps="150",
+        save_every="50",
+        distill_enabled="1",
+        distill_weight="0.05",
+        distill_temperature="2.0",
+        distill_on="response",
+    ),
+    "arc_mix_response_w01_lr2e6": ArmConfig(
+        name="arc_mix_response_w01_lr2e6",
+        learning_rate="2e-6",
+        beta="0.12",
+        steps="150",
+        save_every="50",
+        distill_enabled="1",
+        distill_weight="0.10",
+        distill_temperature="2.0",
+        distill_on="response",
+    ),
+    "arc_mix_response_w02_lr2e6": ArmConfig(
+        name="arc_mix_response_w02_lr2e6",
+        learning_rate="2e-6",
+        beta="0.12",
+        steps="150",
+        save_every="50",
+        distill_enabled="1",
+        distill_weight="0.20",
         distill_temperature="2.0",
         distill_on="response",
     ),
@@ -354,8 +389,9 @@ def build_mixed_train() -> dict[str, Any]:
     arc_challenge_rows = read_jsonl(ARC_CHALLENGE_TRAIN_JSONL)
     arc_easy_rows = read_jsonl(ARC_EASY_TRAIN_JSONL)
     mixed = [*opus_rows]
-    for _ in range(max(1, ARC_REPEAT)):
+    for _ in range(max(1, ARC_CHALLENGE_REPEAT)):
         mixed.extend(arc_challenge_rows)
+    for _ in range(max(1, ARC_EASY_REPEAT)):
         mixed.extend(arc_easy_rows)
     random.Random(MIX_SEED).shuffle(mixed)
     write_jsonl(MIXED_TRAIN_JSONL, mixed)
@@ -364,6 +400,8 @@ def build_mixed_train() -> dict[str, Any]:
         "arc_challenge_rows": len(arc_challenge_rows),
         "arc_easy_rows": len(arc_easy_rows),
         "arc_repeat": ARC_REPEAT,
+        "arc_challenge_repeat": ARC_CHALLENGE_REPEAT,
+        "arc_easy_repeat": ARC_EASY_REPEAT,
         "mixed_rows": len(mixed),
         "mixed_train_jsonl": path_for_cli(MIXED_TRAIN_JSONL),
         "opus_val_jsonl": path_for_cli(OPUS_VAL_JSONL),
