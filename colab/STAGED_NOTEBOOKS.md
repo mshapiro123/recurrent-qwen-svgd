@@ -128,4 +128,8 @@ The older split notebooks are kept only as references:
    `STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS=2` or higher only when you want a
    bounded planner-runner loop; repeated commands stop the loop unless
    `STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT=1` is set.
+   To summarize all saved Stage 5 evidence without using the GPU, run
+   `colab/summarize_stage5_progress.py`. It scans `outputs/stage5`, writes a
+   compact progress ledger, and reports the best base/recurrent/recovered arms,
+   recovered-vs-base gaps, and the latest planner-compatible source summary.
 6. Write the report, model card, and release notes.

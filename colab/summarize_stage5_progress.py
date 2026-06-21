@@ -1,0 +1,429 @@
+"""Summarize Stage 5 ARC-AGI progress across saved run summaries.
+
+This is a no-GPU ledger. It scans ``outputs/stage5`` for run summaries and
+individual eval summaries, normalizes exact-grid metrics, and writes a compact
+progress report. The goal is to keep the research loop empirical: which arm is
+best, where did recovered recurrent close the base gap, and which run summary
+should feed the next planner invocation?
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import sys
+import time
+from pathlib import Path
+from typing import Any
+
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_SCAN_ROOT = "outputs/stage5"
+
+
+def current_run_id() -> str:
+    return os.environ.get("STAGE5_ARC_AGI_PROGRESS_RUN_ID") or time.strftime(
+        "stage5_arc_agi_progress_%Y%m%d_%H%M%S"
+    )
+
+
+def current_scan_root() -> str:
+    return os.environ.get("STAGE5_ARC_AGI_PROGRESS_SCAN_ROOT", DEFAULT_SCAN_ROOT)
+
+
+def run_dir(run_id: str) -> Path:
+    return ROOT / "outputs" / "stage5" / run_id
+
+
+def resolve_path(value: str | Path) -> Path:
+    path = Path(value)
+    return path if path.is_absolute() else ROOT / path
+
+
+def path_for_cli(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
+def read_json(path: str | Path) -> dict[str, Any]:
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def safe_read_json(path: Path) -> dict[str, Any] | None:
+    try:
+        payload = read_json(path)
+    except Exception:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def metric(summary: dict[str, Any] | None, key: str) -> int:
+    if not summary:
+        return 0
+    return int(summary.get(key, 0) or 0)
+
+
+def rate(summary: dict[str, Any] | None, key: str) -> float:
+    if not summary:
+        return 0.0
+    return float(summary.get(key, 0.0) or 0.0)
+
+
+def summary_metrics(payload_or_summary: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not payload_or_summary:
+        return None
+    summary = payload_or_summary.get("summary")
+    if isinstance(summary, dict):
+        return summary
+    if {"selected_exact", "best_of_k_exact"} & set(payload_or_summary):
+        return payload_or_summary
+    return None
+
+
+def record_from_summary(
+    *,
+    path: Path,
+    kind: str,
+    arm: str,
+    label: str,
+    summary: dict[str, Any] | None,
+    run_id: str | None = None,
+) -> dict[str, Any] | None:
+    if not summary:
+        return None
+    examples = metric(summary, "examples_with_targets")
+    selected_exact = metric(summary, "selected_exact")
+    best_of_k_exact = metric(summary, "best_of_k_exact")
+    first_exact = metric(summary, "first_exact")
+    if examples <= 0 and selected_exact == 0 and best_of_k_exact == 0 and first_exact == 0:
+        return None
+    return {
+        "path": path_for_cli(path),
+        "run_id": run_id or path.parent.name,
+        "kind": kind,
+        "arm": arm,
+        "label": label,
+        "examples": examples,
+        "selected_exact": selected_exact,
+        "best_of_k_exact": best_of_k_exact,
+        "first_exact": first_exact,
+        "selected_accuracy": rate(summary, "selected_accuracy"),
+        "best_of_k_accuracy": rate(summary, "best_of_k_accuracy"),
+        "valid_candidate_rate": rate(summary, "valid_candidate_rate"),
+    }
+
+
+def looks_like_planner_source(payload: dict[str, Any]) -> bool:
+    if any(
+        key in payload
+        for key in (
+            "recovered_benchmark",
+            "tta_sweep",
+            "compact",
+            "autopilot_compact",
+            "best_by_label",
+            "recovery_decision",
+        )
+    ):
+        return True
+    if isinstance(payload.get("rows"), list) and (
+        "best_by_label" in payload or {"source_run_dir", "strategies"} <= set(payload)
+    ):
+        return True
+    if {"base", "phase1_start", "recovered", "deltas"} <= set(payload):
+        return True
+    return False
+
+
+def records_from_recovered_benchmark(path: Path, payload: dict[str, Any]) -> list[dict[str, Any]]:
+    benchmark = payload.get("recovered_benchmark") or payload
+    rows: list[dict[str, Any]] = []
+    for arm in ("base", "phase1_start", "recovered"):
+        record = record_from_summary(
+            path=path,
+            kind="recovered_benchmark",
+            arm=arm,
+            label=arm,
+            summary=summary_metrics(benchmark.get(arm)),
+            run_id=str(benchmark.get("run_id") or payload.get("run_id") or path.parent.name),
+        )
+        if record:
+            rows.append(record)
+    return rows
+
+
+def records_from_selector_rescore(path: Path, payload: dict[str, Any]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for row in payload.get("rows", []):
+        if not isinstance(row, dict):
+            continue
+        summary = {
+            "examples_with_targets": row.get("examples"),
+            "selected_exact": row.get("selected_exact"),
+            "best_of_k_exact": row.get("best_of_k_exact"),
+            "valid_candidate_rate": row.get("valid_candidate_rate"),
+        }
+        record = record_from_summary(
+            path=path,
+            kind="selector_rescore",
+            arm=str(row.get("label", "unknown")),
+            label=str(row.get("selection_strategy", "unknown")),
+            summary=summary,
+            run_id=str(payload.get("run_id") or path.parent.name),
+        )
+        if record:
+            rows.append(record)
+    return rows
+
+
+def records_from_recovery_particle(path: Path, payload: dict[str, Any]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    recovered = payload.get("recovered_checkpoint") or {}
+    recovered_summary = summary_metrics(recovered.get("summary") if isinstance(recovered, dict) else None)
+    record = record_from_summary(
+        path=path,
+        kind="recovery_particle_gate",
+        arm="recovered",
+        label="deterministic_recovery",
+        summary=recovered_summary,
+        run_id=str(payload.get("run_id") or path.parent.name),
+    )
+    if record:
+        rows.append(record)
+    particle = payload.get("particle_decision") or {}
+    for name, variant in ((particle.get("evidence") or {}).get("variants") or {}).items():
+        if not isinstance(variant, dict):
+            continue
+        mean_delta = variant.get("mean_delta_vs_tuned") or variant.get("delta_vs_tuned") or {}
+        rows.append(
+            {
+                "path": path_for_cli(path),
+                "run_id": str(payload.get("run_id") or path.parent.name),
+                "kind": "recovery_particle_gate",
+                "arm": "particle",
+                "label": str(name),
+                "examples": 0,
+                "selected_exact": 0,
+                "best_of_k_exact": 0,
+                "first_exact": 0,
+                "selected_accuracy": 0.0,
+                "best_of_k_accuracy": 0.0,
+                "valid_candidate_rate": 0.0,
+                "selected_delta_vs_recovered": float(mean_delta.get("selected_delta", 0.0) or 0.0),
+                "best_of_k_delta_vs_recovered": float(mean_delta.get("best_of_k_delta", 0.0) or 0.0),
+                "passed": bool(variant.get("passed", False)),
+            }
+        )
+    return rows
+
+
+def records_from_eval_summary(path: Path, payload: dict[str, Any]) -> list[dict[str, Any]]:
+    summary = summary_metrics(payload)
+    if not summary:
+        return []
+    stem = path.stem
+    label = stem.removesuffix("_summary")
+    arm = label.split("__", 1)[0]
+    if arm not in {"base", "phase1_start", "recovered", "phase1", "phase2"}:
+        if label.startswith("base"):
+            arm = "base"
+        elif label.startswith("recovered"):
+            arm = "recovered"
+        elif "phase1" in label:
+            arm = "phase1_start"
+        elif "phase2" in label or "particle" in label:
+            arm = "particle"
+        else:
+            arm = "unknown"
+    record = record_from_summary(
+        path=path,
+        kind="eval_summary",
+        arm=arm,
+        label=label,
+        summary=summary,
+        run_id=str(payload.get("run_id") or path.parent.name),
+    )
+    return [record] if record else []
+
+
+def records_from_payload(path: Path, payload: dict[str, Any]) -> list[dict[str, Any]]:
+    if payload.get("recovered_benchmark") or {"base", "phase1_start", "recovered", "deltas"} <= set(payload):
+        return records_from_recovered_benchmark(path, payload)
+    if isinstance(payload.get("rows"), list) and ("best_by_label" in payload or "strategies" in payload):
+        return records_from_selector_rescore(path, payload)
+    if isinstance(payload.get("recovery_decision"), dict) and isinstance(payload.get("particle_decision"), dict):
+        return records_from_recovery_particle(path, payload)
+    return records_from_eval_summary(path, payload)
+
+
+def iter_summary_files(scan_root: Path) -> list[Path]:
+    if not scan_root.exists():
+        return []
+    patterns = ["summary.json", "*_summary.json"]
+    paths: list[Path] = []
+    for pattern in patterns:
+        paths.extend(scan_root.glob(f"**/{pattern}"))
+    return sorted(set(paths), key=lambda path: str(path))
+
+
+def best_records(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    best: dict[str, dict[str, Any]] = {}
+    for record in records:
+        arm = str(record.get("arm", "unknown"))
+        if arm == "particle" and record.get("examples", 0) == 0:
+            continue
+        current = best.get(arm)
+        if current is None or (
+            int(record.get("examples", 0)),
+            int(record.get("selected_exact", 0)),
+            int(record.get("best_of_k_exact", 0)),
+            float(record.get("valid_candidate_rate", 0.0)),
+        ) > (
+            int(current.get("examples", 0)),
+            int(current.get("selected_exact", 0)),
+            int(current.get("best_of_k_exact", 0)),
+            float(current.get("valid_candidate_rate", 0.0)),
+        ):
+            best[arm] = record
+    return best
+
+
+def latest_planner_source(summary_files: list[Path]) -> str | None:
+    candidates: list[Path] = []
+    for path in summary_files:
+        if path.name != "summary.json":
+            continue
+        payload = safe_read_json(path)
+        if payload and looks_like_planner_source(payload):
+            candidates.append(path)
+    if not candidates:
+        return None
+    return path_for_cli(sorted(candidates, key=lambda path: path.stat().st_mtime, reverse=True)[0])
+
+
+def recovered_base_gaps(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_run: dict[str, dict[str, dict[str, Any]]] = {}
+    for record in records:
+        if record.get("kind") != "recovered_benchmark":
+            continue
+        by_run.setdefault(str(record["run_id"]), {})[str(record["arm"])] = record
+    gaps: list[dict[str, Any]] = []
+    for run_id, arms in by_run.items():
+        base = arms.get("base")
+        recovered = arms.get("recovered")
+        if not base or not recovered:
+            continue
+        gaps.append(
+            {
+                "run_id": run_id,
+                "examples": min(int(base["examples"]), int(recovered["examples"])),
+                "selected_delta_recovered_vs_base": int(recovered["selected_exact"]) - int(base["selected_exact"]),
+                "best_of_k_delta_recovered_vs_base": int(recovered["best_of_k_exact"]) - int(base["best_of_k_exact"]),
+                "path": recovered["path"],
+            }
+        )
+    return sorted(
+        gaps,
+        key=lambda row: (
+            int(row["examples"]),
+            int(row["selected_delta_recovered_vs_base"]),
+            int(row["best_of_k_delta_recovered_vs_base"]),
+        ),
+        reverse=True,
+    )
+
+
+def scan_progress(scan_root: Path, *, run_id: str | None = None) -> dict[str, Any]:
+    summary_files = iter_summary_files(scan_root)
+    records: list[dict[str, Any]] = []
+    skipped: list[str] = []
+    for path in summary_files:
+        payload = safe_read_json(path)
+        if payload is None:
+            skipped.append(path_for_cli(path))
+            continue
+        records.extend(records_from_payload(path, payload))
+    return {
+        "run_id": run_id or current_run_id(),
+        "scan_root": path_for_cli(scan_root),
+        "scanned_files": len(summary_files),
+        "parsed_records": len(records),
+        "skipped_files": skipped,
+        "records": records,
+        "best_by_arm": best_records(records),
+        "recovered_vs_base_gaps": recovered_base_gaps(records),
+        "recommended_next_plan_source": latest_planner_source(summary_files),
+    }
+
+
+def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> None:
+    output_dir = output_dir or run_dir(str(payload["run_id"]))
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "summary.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    lines = [
+        f"# Stage 5 ARC-AGI Progress Ledger - {payload['run_id']}",
+        "",
+        f"- Scan root: `{payload['scan_root']}`",
+        f"- Scanned files: `{payload['scanned_files']}`",
+        f"- Parsed records: `{payload['parsed_records']}`",
+        f"- Recommended next-plan source: `{payload['recommended_next_plan_source']}`",
+        "",
+        "## Best By Arm",
+        "",
+        "| Arm | Selected | Best-of-K | Examples | Label | Source |",
+        "|---|---:|---:|---:|---|---|",
+    ]
+    for arm, record in sorted(payload["best_by_arm"].items()):
+        lines.append(
+            f"| `{arm}` | {record['selected_exact']} | {record['best_of_k_exact']} | "
+            f"{record['examples']} | `{record['label']}` | `{record['path']}` |"
+        )
+    lines.extend(["", "## Recovered vs Base Gaps", ""])
+    for row in payload["recovered_vs_base_gaps"][:10]:
+        lines.append(
+            f"- `{row['run_id']}` examples `{row['examples']}` selected delta "
+            f"`{row['selected_delta_recovered_vs_base']}`, best delta "
+            f"`{row['best_of_k_delta_recovered_vs_base']}`"
+        )
+    if not payload["recovered_vs_base_gaps"]:
+        lines.append("- No complete recovered-vs-base benchmark summaries found.")
+    (output_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print((output_dir / "summary.md").read_text(encoding="utf-8"))
+
+
+def backup_to_drive(output_dir: Path, *, run_id: str) -> None:
+    if not Path("/content/drive/MyDrive").exists():
+        try:
+            from google.colab import drive  # type: ignore
+
+            drive.mount("/content/drive")
+        except Exception as exc:  # pragma: no cover - Colab only
+            print(f"Drive mount skipped/failed: {exc}")
+            return
+    drive_root = Path(os.environ.get("DRIVE_BACKUP_DIR", "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts"))
+    if not drive_root.exists():
+        print(f"Drive backup skipped; missing {drive_root}")
+        return
+    backup = drive_root / run_id
+    backup.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(output_dir, backup / "run_dir", dirs_exist_ok=True)
+    print(f"backed_up_to={backup}")
+
+
+def main() -> int:
+    if any(arg in {"-h", "--help"} for arg in sys.argv[1:]):
+        print("Scan outputs/stage5 and write a compact ARC-AGI progress ledger.")
+        return 0
+    run_id = current_run_id()
+    output_dir = run_dir(run_id)
+    payload = scan_progress(resolve_path(current_scan_root()), run_id=run_id)
+    write_report(payload, output_dir)
+    backup_to_drive(output_dir, run_id=run_id)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
