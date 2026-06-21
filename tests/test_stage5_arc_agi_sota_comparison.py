@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from colab.build_stage5_arc_agi_sota_comparison import build_sota_comparison, main
+from colab.build_stage5_arc_agi_sota_comparison import build_sota_comparison, candidate_evidence, main
 
 
 def _write(path, payload) -> None:
@@ -24,6 +24,31 @@ def _candidate(path, *, selected_exact: int = 12, examples: int = 100):
                 "selected_exact": selected_exact,
                 "best_of_k_exact": selected_exact,
                 "examples_with_targets": examples,
+            },
+        },
+    )
+    return path
+
+
+def _recovered_candidate(path, *, selected_exact: int = 12, examples: int = 100):
+    _write(
+        path,
+        {
+            "run_id": "recovered_benchmark",
+            "metadata": {
+                "arc_version": "1",
+                "arc_split": "evaluation",
+            },
+            "base": {"summary": {"selected_exact": 10, "best_of_k_exact": 10, "examples_with_targets": examples}},
+            "phase1_start": {
+                "summary": {"selected_exact": 5, "best_of_k_exact": 5, "examples_with_targets": examples}
+            },
+            "recovered": {
+                "summary": {
+                    "selected_exact": selected_exact,
+                    "best_of_k_exact": selected_exact,
+                    "examples_with_targets": examples,
+                }
             },
         },
     )
@@ -82,6 +107,33 @@ def test_sota_comparison_passes_when_candidate_beats_same_size_baseline(tmp_path
     assert payload["status"] == "passed"
     assert payload["passed"] is True
     assert payload["delta_accuracy_vs_best_baseline"] == 0.01999999999999999
+
+
+def test_sota_comparison_auto_label_prefers_recovered_benchmark_summary(tmp_path) -> None:
+    candidate = _recovered_candidate(tmp_path / "candidate" / "summary.json", selected_exact=12)
+
+    payload = build_sota_comparison(
+        candidate_summary=candidate,
+        baseline_registry=_registry(tmp_path / "baselines.json", accuracy=0.1),
+        candidate_label="auto",
+        metric="selected_accuracy",
+        min_examples=100,
+        min_margin=0.0,
+    )
+
+    assert payload["status"] == "passed"
+    assert payload["candidate"]["requested_label"] == "auto"
+    assert payload["candidate"]["label"] == "recovered"
+    assert payload["candidate"]["accuracy"] == 0.12
+
+
+def test_candidate_evidence_reports_requested_missing_label(tmp_path) -> None:
+    candidate = _recovered_candidate(tmp_path / "candidate" / "summary.json", selected_exact=12)
+
+    evidence = candidate_evidence(candidate, label="phase1_arc_agi_tuned", metric="selected_accuracy")
+
+    assert evidence["present"] is False
+    assert "phase1_arc_agi_tuned" in evidence["reason"]
 
 
 def test_sota_comparison_fails_when_candidate_trails_baseline(tmp_path) -> None:

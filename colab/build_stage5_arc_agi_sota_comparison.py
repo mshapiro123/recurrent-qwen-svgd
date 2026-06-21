@@ -30,7 +30,7 @@ RUN_ID = os.environ.get("STAGE5_ARC_AGI_SOTA_COMPARISON_RUN_ID") or time.strftim
 )
 
 DEFAULT_BASELINE_REGISTRY = ROOT / "config" / "arc_agi_same_size_baselines.json"
-DEFAULT_CANDIDATE_LABEL = os.environ.get("STAGE5_ARC_AGI_SOTA_CANDIDATE_LABEL", "phase1_arc_agi_tuned")
+DEFAULT_CANDIDATE_LABEL = os.environ.get("STAGE5_ARC_AGI_SOTA_CANDIDATE_LABEL", "auto")
 METRIC = os.environ.get("STAGE5_ARC_AGI_SOTA_METRIC", "selected_accuracy")
 MIN_EXAMPLES = int(os.environ.get("STAGE5_ARC_AGI_SOTA_MIN_EXAMPLES", "100"))
 MIN_MARGIN = float(os.environ.get("STAGE5_ARC_AGI_SOTA_MIN_MARGIN", "0.0"))
@@ -69,24 +69,35 @@ def latest_candidate_summary() -> Path | None:
         payload = safe_read_json(path)
         if not payload:
             continue
-        if "phase1_arc_agi_tuned" in payload or (payload.get("summary") or {}).get("examples_with_targets"):
+        if (
+            "recovered" in payload
+            or "phase1_arc_agi_tuned" in payload
+            or (payload.get("summary") or {}).get("examples_with_targets")
+        ):
             candidates.append(path)
     if not candidates:
         return None
     return sorted(candidates, key=lambda item: item.stat().st_mtime, reverse=True)[0]
 
 
-def summary_block(payload: dict[str, Any], *, label: str) -> dict[str, Any] | None:
+def candidate_label_order(label: str) -> list[str]:
+    if label != "auto":
+        return [label]
+    return ["recovered", "phase1_arc_agi_tuned", "summary"]
+
+
+def summary_block(payload: dict[str, Any], *, label: str) -> tuple[str, dict[str, Any]] | None:
     summary = payload.get("summary")
-    if isinstance(summary, dict) and "examples_with_targets" in summary:
-        return summary
-    block = payload.get(label)
-    if isinstance(block, dict):
-        nested = block.get("summary")
-        if isinstance(nested, dict):
-            return nested
-        if "examples_with_targets" in block:
-            return block
+    for candidate_label in candidate_label_order(label):
+        if candidate_label == "summary" and isinstance(summary, dict) and "examples_with_targets" in summary:
+            return candidate_label, summary
+        block = payload.get(candidate_label)
+        if isinstance(block, dict):
+            nested = block.get("summary")
+            if isinstance(nested, dict):
+                return candidate_label, nested
+            if "examples_with_targets" in block:
+                return candidate_label, block
     return None
 
 
@@ -125,16 +136,18 @@ def candidate_evidence(path: Path | None, *, label: str, metric: str) -> dict[st
     payload = safe_read_json(path)
     if not payload:
         return {"present": False, "path": path_for_cli(path)}
-    summary = summary_block(payload, label=label)
-    if not summary:
+    resolved = summary_block(payload, label=label)
+    if not resolved:
         return {"present": False, "path": path_for_cli(path), "reason": f"missing summary block {label!r}"}
+    resolved_label, summary = resolved
     accuracy = accuracy_from_summary(summary, metric)
     metadata = candidate_metadata(payload)
     return {
         "present": accuracy is not None,
         "path": path_for_cli(path),
         "run_id": str(payload.get("run_id") or path.parent.name),
-        "label": label,
+        "requested_label": label,
+        "label": resolved_label,
         "metric": metric,
         "accuracy": accuracy,
         "examples": int(summary.get("examples_with_targets", 0) or summary.get("examples", 0) or 0),
