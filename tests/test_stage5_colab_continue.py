@@ -33,13 +33,13 @@ def test_colab_continue_focuses_gate1_and_next_action_tests() -> None:
     assert "tests/test_stage5_dense_sft_control.py" in paths
 
 
-def test_colab_continue_defaults_to_bounded_two_action_loop(monkeypatch) -> None:
+def test_colab_continue_defaults_to_bounded_three_action_loop(monkeypatch) -> None:
     monkeypatch.delenv("STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS", raising=False)
 
     env = default_env()
 
     assert env["STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE"] == "1"
-    assert env["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] == "2"
+    assert env["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] == "3"
     assert env["STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT"] == "0"
 
 

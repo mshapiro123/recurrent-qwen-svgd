@@ -133,10 +133,11 @@ The older split notebooks are kept only as references:
    `colab/run_stage5_colab_continue.py`. It prints GPU state, runs focused
    Stage 5 tests including the Gate 1 assessor and next-action executor, runs
    `colab/run_stage5_next_action.py`, writes the progress ledger, and commits
-   changed `outputs/stage5` artifacts. It defaults to a bounded two-action loop
-   so a cheap Gate 1 assessment can run and the planner can immediately react
-   to the assessment. Set `STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS=1` for a
-   strictly single-action continuation.
+   changed `outputs/stage5` artifacts. It defaults to a bounded three-action
+   loop so a candidate gate can be followed by trace-SFT and then by the
+   distill/dense-control decision in one A100 session. Set
+   `STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS=1` for a strictly single-action
+   continuation.
    `colab/run_stage5_next_action.py` remains available directly. By default it
    writes a dry-run summary of the planner's top action. Set
    `STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE=1` to execute the selected allowlisted
