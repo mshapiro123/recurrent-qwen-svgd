@@ -543,6 +543,14 @@ def test_progress_ledger_reports_claim_readiness_packets(tmp_path) -> None:
             "status": "ready_for_release_candidate_not_sota",
             "passed": True,
             "claim_level": "release_candidate",
+            "artifacts": {
+                "sota_export_linkage": {
+                    "passed": False,
+                    "verified": False,
+                    "matched_on": None,
+                    "reason": "No authoritative ARC-AGI same-size SOTA comparison proves a SOTA claim.",
+                }
+            },
             "next_step": "write report without SOTA claim",
         },
     )
@@ -556,10 +564,55 @@ def test_progress_ledger_reports_claim_readiness_packets(tmp_path) -> None:
             "status": "ready_for_release_candidate_not_sota",
             "passed": True,
             "claim_level": "release_candidate",
+            "sota_export_linkage_passed": False,
+            "sota_export_linkage_verified": False,
+            "sota_export_linkage_matched_on": None,
+            "sota_export_linkage_reason": "No authoritative ARC-AGI same-size SOTA comparison proves a SOTA claim.",
             "next_step": "write report without SOTA claim",
         }
     ]
     assert payload["recommended_next_plan_source"] == str(source)
+
+
+def test_progress_ledger_reports_sota_export_linkage_status(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "claim_linkage" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "claim_linkage",
+            "gate": "stage5_claim_readiness",
+            "status": "ready_for_release_candidate_needs_sota_export_linkage",
+            "passed": True,
+            "claim_level": "release_candidate",
+            "artifacts": {
+                "sota_export_linkage": {
+                    "passed": False,
+                    "verified": True,
+                    "matched_on": "checkpoint",
+                    "reason": "HF export checkpoint does not match the ARC-AGI candidate checkpoint.",
+                }
+            },
+            "next_step": "rebuild matched export",
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["claim_readiness_packets"] == [
+        {
+            "path": str(source),
+            "run_id": "claim_linkage",
+            "status": "ready_for_release_candidate_needs_sota_export_linkage",
+            "passed": True,
+            "claim_level": "release_candidate",
+            "sota_export_linkage_passed": False,
+            "sota_export_linkage_verified": True,
+            "sota_export_linkage_matched_on": "checkpoint",
+            "sota_export_linkage_reason": "HF export checkpoint does not match the ARC-AGI candidate checkpoint.",
+            "next_step": "rebuild matched export",
+        }
+    ]
 
 
 def test_progress_ledger_reports_arc_agi_sota_comparisons(tmp_path) -> None:

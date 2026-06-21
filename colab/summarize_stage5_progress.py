@@ -557,6 +557,7 @@ def claim_readiness_packets(summary_files: list[Path]) -> list[dict[str, Any]]:
         payload = safe_read_json(path)
         if not payload or payload.get("gate") != "stage5_claim_readiness":
             continue
+        linkage = (payload.get("artifacts") or {}).get("sota_export_linkage") or {}
         packets.append(
             {
                 "path": path_for_cli(path),
@@ -564,6 +565,10 @@ def claim_readiness_packets(summary_files: list[Path]) -> list[dict[str, Any]]:
                 "status": payload.get("status"),
                 "passed": bool(payload.get("passed", False)),
                 "claim_level": payload.get("claim_level"),
+                "sota_export_linkage_passed": bool(linkage.get("passed", False)),
+                "sota_export_linkage_verified": bool(linkage.get("verified", False)),
+                "sota_export_linkage_matched_on": linkage.get("matched_on"),
+                "sota_export_linkage_reason": linkage.get("reason"),
                 "next_step": payload.get("next_step"),
             }
         )
@@ -880,7 +885,9 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
         for packet in payload["claim_readiness_packets"][-10:]:
             lines.append(
                 f"- `{packet['run_id']}` status `{packet['status']}` claim level "
-                f"`{packet['claim_level']}` passed `{packet['passed']}`: {packet['next_step']}"
+                f"`{packet['claim_level']}` passed `{packet['passed']}` SOTA/export linkage "
+                f"`{packet['sota_export_linkage_passed']}` matched on "
+                f"`{packet['sota_export_linkage_matched_on']}`: {packet['next_step']}"
             )
     else:
         lines.append("- No claim-readiness packets found.")
