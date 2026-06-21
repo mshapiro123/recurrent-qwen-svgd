@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from colab.summarize_stage5_progress import scan_progress, write_report
@@ -796,6 +797,36 @@ def test_progress_ledger_reports_arc_agi_sft_recipe_gates(tmp_path) -> None:
         },
     ]
     assert payload["recommended_next_plan_source"] in {str(trace_source), str(distill_source)}
+
+
+def test_progress_ledger_prefers_passed_arc_mix_gate_over_newer_release_gate(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    arc_mix_source = scan_root / "arc_mix" / "summary.json"
+    release_source = scan_root / "release" / "summary.json"
+    _write(
+        arc_mix_source,
+        {
+            "run_id": "arc_mix",
+            "kind": "stage5_balanced_arc_mix_gate",
+            "status": "proxy_lift",
+            "passed": True,
+        },
+    )
+    _write(
+        release_source,
+        {
+            "run_id": "release",
+            "gate": "stage5_release_benchmark_readiness",
+            "status": "needs_benchmark_confirmation",
+            "passed": False,
+        },
+    )
+    os.utime(arc_mix_source, (1000, 1000))
+    os.utime(release_source, (2000, 2000))
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["recommended_next_plan_source"] == str(arc_mix_source)
 
 
 def test_progress_ledger_skips_empty_and_malformed_eval_summaries(tmp_path) -> None:

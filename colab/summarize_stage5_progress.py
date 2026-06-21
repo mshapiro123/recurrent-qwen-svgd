@@ -149,6 +149,8 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         return True
     if payload.get("gate") == "stage5_broader_benchmark_suite":
         return True
+    if payload.get("kind") == "stage5_balanced_arc_mix_gate":
+        return True
     if payload.get("gate") == "stage5_claim_readiness":
         return True
     if payload.get("gate") == "stage5_arc_agi_baseline_registry" or payload.get("kind") == "arc_agi_baseline_registry":
@@ -784,16 +786,30 @@ def best_records(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
 
 
 def latest_planner_source(summary_files: list[Path]) -> str | None:
-    candidates: list[Path] = []
+    candidates: list[tuple[int, float, str, Path]] = []
     for path in summary_files:
         if path.name != "summary.json":
             continue
         payload = safe_read_json(path)
         if payload and looks_like_planner_source(payload):
-            candidates.append(path)
+            candidates.append((planner_source_priority(payload), path.stat().st_mtime, str(path), path))
     if not candidates:
         return None
-    return path_for_cli(sorted(candidates, key=lambda path: path.stat().st_mtime, reverse=True)[0])
+    return path_for_cli(sorted(candidates, reverse=True)[0][3])
+
+
+def planner_source_priority(payload: dict[str, Any]) -> int:
+    """Prefer the newest actionable recovery gate over generic readiness checks."""
+
+    if payload.get("kind") == "stage5_balanced_arc_mix_gate":
+        if payload.get("status") in {"proxy_lift", "proxy_matches_base"}:
+            return 100
+        return 90
+    if payload.get("kind") == "stage5_broader_benchmark_suite_assessment":
+        return 80
+    if payload.get("gate") == "stage5_release_benchmark_readiness":
+        return 20
+    return 50
 
 
 def recovered_base_gaps(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
