@@ -25,8 +25,20 @@ def test_compact_counts_candidate_distill_rows_and_best_checkpoint() -> None:
             "summary": _summary(7, 8, valid_rate=0.9),
         },
         "candidate_distill_info": [
-            {"rows": 4},
-            {"rows": 6},
+            {
+                "rows": 4,
+                "selector_generated_rows": 2,
+                "selected_rows": 3,
+                "selected_exceeds_best_of_k_rows": 1,
+                "program_fit_rows": 1,
+            },
+            {
+                "rows": 6,
+                "selector_generated_rows": 4,
+                "selected_rows": 5,
+                "selected_exceeds_best_of_k_rows": 2,
+                "program_fit_rows": 0,
+            },
         ],
     }
 
@@ -38,6 +50,10 @@ def test_compact_counts_candidate_distill_rows_and_best_checkpoint() -> None:
     assert row["best_step"] == 200
     assert row["best_selected"] == 7
     assert row["candidate_distill_rows"] == 10
+    assert row["candidate_distill_selector_generated_rows"] == 6
+    assert row["candidate_distill_selected_rows"] == 8
+    assert row["candidate_distill_selected_exceeds_best_of_k_rows"] == 3
+    assert row["candidate_distill_program_fit_rows"] == 1
 
 
 def test_compact_uses_final_checkpoint_when_no_ladder_best() -> None:
@@ -52,6 +68,7 @@ def test_compact_uses_final_checkpoint_when_no_ladder_best() -> None:
     assert row["best_step"] is None
     assert row["best_selected"] == 5
     assert row["candidate_distill_rows"] == 0
+    assert row["candidate_distill_selector_generated_rows"] == 0
 
 
 def test_metric_delta_compares_candidate_distill_against_baseline() -> None:

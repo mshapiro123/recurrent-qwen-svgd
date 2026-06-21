@@ -282,7 +282,14 @@ def compact(summary: dict[str, Any]) -> dict[str, Any]:
     start = summary["phase1_start"]
     best_checkpoint = summary.get("best_checkpoint") or {}
     best_summary = best_checkpoint.get("summary") or tuned
-    candidate_distill_rows = sum(int(item.get("rows", 0)) for item in summary.get("candidate_distill_info", []))
+    candidate_distill_info = summary.get("candidate_distill_info", [])
+    candidate_distill_rows = sum(int(item.get("rows", 0)) for item in candidate_distill_info)
+    selector_generated_rows = sum(int(item.get("selector_generated_rows", 0)) for item in candidate_distill_info)
+    selected_rows = sum(int(item.get("selected_rows", 0)) for item in candidate_distill_info)
+    selected_exceeds_best_rows = sum(
+        int(item.get("selected_exceeds_best_of_k_rows", 0)) for item in candidate_distill_info
+    )
+    program_fit_rows = sum(int(item.get("program_fit_rows", 0)) for item in candidate_distill_info)
     return {
         "base_selected": summary["base"]["selected_exact"],
         "base_best": summary["base"]["best_of_k_exact"],
@@ -299,6 +306,10 @@ def compact(summary: dict[str, Any]) -> dict[str, Any]:
         "tasks_solved_best": best_summary["tasks_solved_best_of_k"],
         "tasks": best_summary["tasks_with_targets"],
         "candidate_distill_rows": candidate_distill_rows,
+        "candidate_distill_selector_generated_rows": selector_generated_rows,
+        "candidate_distill_selected_rows": selected_rows,
+        "candidate_distill_selected_exceeds_best_of_k_rows": selected_exceeds_best_rows,
+        "candidate_distill_program_fit_rows": program_fit_rows,
     }
 
 
@@ -337,13 +348,15 @@ def write_report(payload: dict[str, Any]) -> None:
         "",
         "## SFT Comparison",
         "",
-        "| Arm | Candidate rows | Final selected | Final best | Best step | Best selected | Best best | Tasks best | Best valid rate |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| Arm | Candidate rows | Selector rows | Selector beyond best-of-K | Final selected | Final best | Best step | Best selected | Best best | Tasks best | Best valid rate |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for label, row in rows.items():
         best_step = row["best_step"] if row["best_step"] is not None else "final"
         lines.append(
             f"| `{label}` | {row['candidate_distill_rows']} | "
+            f"{row['candidate_distill_selector_generated_rows']} | "
+            f"{row['candidate_distill_selected_exceeds_best_of_k_rows']} | "
             f"{row['tuned_selected']}/{row['examples']} | {row['tuned_best']}/{row['examples']} | "
             f"{best_step} | {row['best_selected']}/{row['examples']} | {row['best_best']}/{row['examples']} | "
             f"{row['tasks_solved_best']}/{row['tasks']} | {row['best_valid_rate']:.4f} |"

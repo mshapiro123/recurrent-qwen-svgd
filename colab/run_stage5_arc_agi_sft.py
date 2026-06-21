@@ -27,7 +27,12 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from training.arc_agi_training_signal import summarize_training_signal, write_training_signal_report  # noqa: E402
+from training.arc_agi_training_signal import (  # noqa: E402
+    read_jsonl,
+    summarize_rows,
+    summarize_training_signal,
+    write_training_signal_report,
+)
 
 RUN_ID = os.environ.get("STAGE5_ARC_AGI_SFT_RUN_ID") or time.strftime("stage5_arc_agi_sft_%Y%m%d_%H%M%S")
 RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
@@ -282,6 +287,7 @@ def append_candidate_distill_rows() -> list[dict[str, Any]]:
             log_name=f"prepare_candidate_distill_{idx:02d}.log",
         )
         rows = count_jsonl(output)
+        distill_stats = summarize_rows(read_jsonl(output))
         before = count_jsonl(TRAIN_JSONL)
         append_jsonl(TRAIN_JSONL, output)
         after = count_jsonl(TRAIN_JSONL)
@@ -289,11 +295,23 @@ def append_candidate_distill_rows() -> list[dict[str, Any]]:
             "source_jsonl": path_for_cli(source),
             "output_jsonl": path_for_cli(output),
             "rows": rows,
+            "selector_generated_rows": distill_stats["candidate_distill_selector_generated_rows"],
+            "selected_rows": distill_stats["candidate_distill_selected_rows"],
+            "selected_exceeds_best_of_k_rows": distill_stats["candidate_distill_selected_exceeds_best_of_k_rows"],
+            "program_fit_rows": distill_stats["candidate_distill_program_fit_rows"],
+            "candidate_source_counts": distill_stats["candidate_distill_candidate_source_counts"],
+            "choice_counts": distill_stats["candidate_distill_choice_counts"],
+            "completion_source_counts": distill_stats["candidate_distill_completion_source_counts"],
             "train_rows_before_append": before,
             "train_rows_after_append": after,
         }
         distill_info.append(info)
-        print(f"candidate_distill_jsonl={source} rows={rows} train_rows_after_append={after}")
+        print(
+            f"candidate_distill_jsonl={source} rows={rows} "
+            f"selector_generated_rows={info['selector_generated_rows']} "
+            f"selected_exceeds_best_of_k_rows={info['selected_exceeds_best_of_k_rows']} "
+            f"train_rows_after_append={after}"
+        )
     return distill_info
 
 
@@ -765,6 +783,10 @@ def main() -> int:
         f"- Training rows: `{training_signal['train']['rows']}`",
         f"- Synthetic training rows: `{training_signal['train']['synthetic_rows']}`",
         f"- Candidate-distill training rows: `{training_signal['train']['candidate_distill_rows']}`",
+        f"- Candidate-distill selector-generated training rows: "
+        f"`{training_signal['train']['candidate_distill_selector_generated_rows']}`",
+        f"- Candidate-distill selected beyond generated best-of-K training rows: "
+        f"`{training_signal['train']['candidate_distill_selected_exceeds_best_of_k_rows']}`",
         f"- Traced training rows: `{training_signal['train']['trace_rows']}`",
         f"- Program-trace training rows: `{training_signal['train']['program_trace_rows']}`",
         f"- Distillation: `{DISTILL_ENABLED}` weight `{DISTILL_WEIGHT}` temperature `{DISTILL_TEMPERATURE}` on `{DISTILL_ON}`",
@@ -793,6 +815,9 @@ def main() -> int:
         for item in candidate_distill_info:
             lines.append(
                 f"- `{item['source_jsonl']}` -> `{item['output_jsonl']}` rows `{item['rows']}`, "
+                f"selector-generated `{item['selector_generated_rows']}`, "
+                f"selected `{item['selected_rows']}`, "
+                f"beyond generated best-of-K `{item['selected_exceeds_best_of_k_rows']}`, "
                 f"train rows `{item['train_rows_before_append']}` -> `{item['train_rows_after_append']}`"
             )
         lines.append("")

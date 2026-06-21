@@ -130,11 +130,29 @@ def candidate_distill_rows(candidate_gate: dict[str, Any] | None) -> int:
     return int(distill.get("candidate_distill_rows", 0))
 
 
+def candidate_distill_selector_generated_rows(candidate_gate: dict[str, Any] | None) -> int:
+    if not candidate_gate:
+        return 0
+    comparison = candidate_gate.get("comparison", {})
+    distill = comparison.get("candidate_distill", {})
+    return int(distill.get("candidate_distill_selector_generated_rows", 0))
+
+
+def candidate_distill_selector_beyond_best_rows(candidate_gate: dict[str, Any] | None) -> int:
+    if not candidate_gate:
+        return 0
+    comparison = candidate_gate.get("comparison", {})
+    distill = comparison.get("candidate_distill", {})
+    return int(distill.get("candidate_distill_selected_exceeds_best_of_k_rows", 0))
+
+
 def decide_candidate_distill_gate(candidate_gate: dict[str, Any] | None) -> tuple[bool, dict[str, Any]]:
     if not candidate_gate:
         return False, {"reason": "candidate distillation gate did not run"}
     delta = candidate_gate.get("delta_candidate_distill_vs_baseline", {})
     rows = candidate_distill_rows(candidate_gate)
+    selector_rows = candidate_distill_selector_generated_rows(candidate_gate)
+    selector_beyond_best_rows = candidate_distill_selector_beyond_best_rows(candidate_gate)
     selected_delta = int(delta.get("best_selected_delta", 0))
     best_delta = int(delta.get("best_best_delta", 0))
     valid_rate_delta = float(delta.get("best_valid_rate_delta", 0.0))
@@ -146,6 +164,8 @@ def decide_candidate_distill_gate(candidate_gate: dict[str, Any] | None) -> tupl
     )
     return passed, {
         "candidate_distill_rows": rows,
+        "candidate_distill_selector_generated_rows": selector_rows,
+        "candidate_distill_selected_exceeds_best_of_k_rows": selector_beyond_best_rows,
         "min_candidate_distill_rows": MIN_CANDIDATE_DISTILL_ROWS,
         "best_selected_delta": selected_delta,
         "min_best_selected_delta": MIN_CANDIDATE_DISTILL_SELECTED_DELTA,

@@ -80,6 +80,14 @@ def summarize_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     candidate_distill_rows = [
         row for row in rows if str(row.get("source_dataset", "")) == "arc-agi-candidate-distill"
     ]
+    candidate_distill_selector_generated_rows = [
+        row for row in candidate_distill_rows if row.get("selector_generated")
+    ]
+    candidate_distill_selected_rows = [row for row in candidate_distill_rows if row.get("selected")]
+    candidate_distill_selected_exceeds_best_rows = [
+        row for row in candidate_distill_rows if row.get("selected_exceeds_best_of_k")
+    ]
+    candidate_distill_program_fit_rows = [row for row in candidate_distill_rows if row.get("program_fits_train")]
     synthetic_rows = [row for row, family in zip(rows, families) if family != "arc"]
     public_arc_rows = [row for row, family in zip(rows, families) if family == "arc"]
     return {
@@ -90,6 +98,13 @@ def summarize_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "trace_source_counts": count_by(rows, "trace_source", missing="none"),
         "task_family_counts": dict(sorted(Counter(families).items())),
         "candidate_distill_rows": len(candidate_distill_rows),
+        "candidate_distill_selector_generated_rows": len(candidate_distill_selector_generated_rows),
+        "candidate_distill_selected_rows": len(candidate_distill_selected_rows),
+        "candidate_distill_selected_exceeds_best_of_k_rows": len(candidate_distill_selected_exceeds_best_rows),
+        "candidate_distill_program_fit_rows": len(candidate_distill_program_fit_rows),
+        "candidate_distill_candidate_source_counts": count_by(candidate_distill_rows, "candidate_source"),
+        "candidate_distill_choice_counts": count_by(candidate_distill_rows, "distill_choice"),
+        "candidate_distill_completion_source_counts": count_by(candidate_distill_rows, "completion_source"),
         "synthetic_rows": len(synthetic_rows),
         "public_arc_rows": len(public_arc_rows),
         "trace_rows": len(trace_rows),
@@ -197,6 +212,10 @@ def training_signal_markdown(payload: dict[str, Any]) -> str:
         f"- Public ARC rows: `{train['public_arc_rows']}`",
         f"- Synthetic rows: `{train['synthetic_rows']}`",
         f"- Candidate-distill rows: `{train['candidate_distill_rows']}`",
+        f"- Candidate-distill selector-generated rows: `{train['candidate_distill_selector_generated_rows']}`",
+        f"- Candidate-distill selected rows: `{train['candidate_distill_selected_rows']}`",
+        f"- Candidate-distill selected beyond generated best-of-K rows: "
+        f"`{train['candidate_distill_selected_exceeds_best_of_k_rows']}`",
         f"- Trace rows: `{train['trace_rows']}` ({train['trace_row_fraction']:.2%})",
         f"- Program-trace rows: `{train['program_trace_rows']}` ({train['program_trace_row_fraction']:.2%})",
         f"- Completion chars p90/max: `{train['completion_chars']['p90']}` / `{train['completion_chars']['max']}`",
@@ -213,6 +232,11 @@ def training_signal_markdown(payload: dict[str, Any]) -> str:
     lines.extend(markdown_table(train["source_dataset_counts"]))
     lines.extend(["", "## Trace Sources", ""])
     lines.extend(markdown_table(train["trace_source_counts"]))
+    if train["candidate_distill_rows"]:
+        lines.extend(["", "## Candidate Distillation Sources", ""])
+        lines.extend(markdown_table(train["candidate_distill_candidate_source_counts"]))
+        lines.extend(["", "## Candidate Distillation Choices", ""])
+        lines.extend(markdown_table(train["candidate_distill_choice_counts"]))
     if "val" in payload:
         val = payload["val"]
         lines.extend(

@@ -3,6 +3,8 @@ from __future__ import annotations
 from colab.run_stage5_arc_agi_curriculum_particle_autopilot import (
     candidate_distill_curriculum_env,
     candidate_distill_rows,
+    candidate_distill_selector_beyond_best_rows,
+    candidate_distill_selector_generated_rows,
     child_run_id,
     decide_candidate_distill_gate,
     recommended_next_actions,
@@ -16,7 +18,13 @@ def test_child_run_id_uses_parent_prefix() -> None:
 
 def test_decide_candidate_distill_gate_passes_on_nonnegative_lift() -> None:
     payload = {
-        "comparison": {"candidate_distill": {"candidate_distill_rows": 4}},
+        "comparison": {
+            "candidate_distill": {
+                "candidate_distill_rows": 4,
+                "candidate_distill_selector_generated_rows": 3,
+                "candidate_distill_selected_exceeds_best_of_k_rows": 2,
+            }
+        },
         "delta_candidate_distill_vs_baseline": {
             "best_selected_delta": 0,
             "best_best_delta": 1,
@@ -28,6 +36,8 @@ def test_decide_candidate_distill_gate_passes_on_nonnegative_lift() -> None:
 
     assert passed is True
     assert evidence["candidate_distill_rows"] == 4
+    assert evidence["candidate_distill_selector_generated_rows"] == 3
+    assert evidence["candidate_distill_selected_exceeds_best_of_k_rows"] == 2
     assert evidence["best_best_delta"] == 1
 
 
@@ -66,9 +76,19 @@ def test_candidate_distill_curriculum_env_uses_gate_candidate_source() -> None:
 
 
 def test_candidate_distill_rows_reads_compact_comparison() -> None:
-    payload = {"comparison": {"candidate_distill": {"candidate_distill_rows": 7}}}
+    payload = {
+        "comparison": {
+            "candidate_distill": {
+                "candidate_distill_rows": 7,
+                "candidate_distill_selector_generated_rows": 5,
+                "candidate_distill_selected_exceeds_best_of_k_rows": 2,
+            }
+        }
+    }
 
     assert candidate_distill_rows(payload) == 7
+    assert candidate_distill_selector_generated_rows(payload) == 5
+    assert candidate_distill_selector_beyond_best_rows(payload) == 2
 
 
 def test_summarize_autopilot_keeps_final_checkpoint_and_particle_decision() -> None:

@@ -28,6 +28,9 @@ def _row(
     trace_source: str | None = None,
     source_dataset: str = "arc-agi",
     category: str = "arc_original_test_pair",
+    selected: bool = False,
+    selector_generated: bool = False,
+    selected_exceeds_best_of_k: bool = False,
 ) -> dict[str, object]:
     return {
         "prompt": "solve",
@@ -40,6 +43,9 @@ def _row(
         "test_index": 0,
         "trace_mode": trace_mode,
         "trace_source": trace_source,
+        "selected": selected,
+        "selector_generated": selector_generated,
+        "selected_exceeds_best_of_k": selected_exceeds_best_of_k,
     }
 
 
@@ -68,6 +74,9 @@ def test_summarize_rows_profiles_training_signal() -> None:
             "synthetic_constant_output_000003",
             source_dataset="arc-agi-candidate-distill",
             category="symbolic_constant_output",
+            selected=True,
+            selector_generated=True,
+            selected_exceeds_best_of_k=True,
         ),
         _row(
             "synthetic_crop_recolor_000004",
@@ -83,6 +92,9 @@ def test_summarize_rows_profiles_training_signal() -> None:
     assert summary["public_arc_rows"] == 1
     assert summary["synthetic_rows"] == 4
     assert summary["candidate_distill_rows"] == 1
+    assert summary["candidate_distill_selector_generated_rows"] == 1
+    assert summary["candidate_distill_selected_rows"] == 1
+    assert summary["candidate_distill_selected_exceeds_best_of_k_rows"] == 1
     assert summary["trace_rows"] == 3
     assert summary["program_trace_rows"] == 2
     assert summary["task_family_counts"]["move_recolor"] == 2
