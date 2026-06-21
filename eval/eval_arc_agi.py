@@ -297,6 +297,55 @@ def grid_shape(grid: Grid) -> tuple[int, int]:
     return len(grid), len(grid[0])
 
 
+def grid_cell_count(grid: Grid) -> int:
+    return len(grid) * len(grid[0])
+
+
+def grid_colors(grid: Grid) -> set[int]:
+    return {cell for row in grid for cell in row}
+
+
+def difficulty_bucket_for_score(score: int) -> str:
+    if score <= 48:
+        return "easy"
+    if score <= 160:
+        return "medium"
+    return "hard"
+
+
+def arc_difficulty_features(example: ArcAgiExample) -> dict[str, Any]:
+    grids: list[Grid] = [example.test_input]
+    for pair in example.train:
+        grids.append(pair.input)
+        if pair.output is not None:
+            grids.append(pair.output)
+    if example.test_output is not None:
+        grids.append(example.test_output)
+
+    max_cells = max(grid_cell_count(grid) for grid in grids)
+    total_colors = len(set().union(*(grid_colors(grid) for grid in grids)))
+    shape_changes = sum(
+        1
+        for pair in example.train
+        if pair.output is not None and grid_shape(pair.input) != grid_shape(pair.output)
+    )
+    score = max_cells + 4 * total_colors + 6 * shape_changes + 2 * len(example.train)
+    if ":loo" in example.task_id:
+        score += 3
+    return {
+        "difficulty_source": "grid_complexity_proxy",
+        "difficulty_score": score,
+        "difficulty_bucket": difficulty_bucket_for_score(score),
+        "difficulty_features": {
+            "max_grid_cells": max_cells,
+            "unique_colors": total_colors,
+            "train_examples": len(example.train),
+            "shape_changes": shape_changes,
+            "leave_one_out": ":loo" in example.task_id,
+        },
+    }
+
+
 def inferred_output_shapes(example: ArcAgiExample) -> list[tuple[int, int]]:
     """Infer plausible output shapes from demonstrations without using target."""
 
@@ -541,6 +590,7 @@ def evaluate_example(
         raise ValueError(f"Unknown program_parse_mode={program_parse_mode!r}")
     if selection_strategy not in {"heuristic", "self_consistency", "reliability_vote", "symbolic_priority"}:
         raise ValueError(f"Unknown selection_strategy={selection_strategy!r}")
+    difficulty = arc_difficulty_features(example)
     rows: list[dict[str, Any]] = []
     any_exact = False
     first_exact = False
@@ -579,6 +629,9 @@ def evaluate_example(
                 "score": score,
                 "diagnostics": diagnostics,
                 "generation_steps": generation_steps,
+                "difficulty_bucket": difficulty["difficulty_bucket"],
+                "difficulty_score": difficulty["difficulty_score"],
+                "difficulty_source": difficulty["difficulty_source"],
             }
         )
     selected_index = select_candidate_index(example, rows, selection_strategy=selection_strategy) if rows else 0
@@ -599,6 +652,7 @@ def evaluate_example(
         "best_of_k_exact": any_exact if target is not None else None,
         "valid_candidates": valid_count,
         "num_candidates": len(candidates),
+        **difficulty,
     }
     return rows, summary
 
@@ -700,6 +754,35 @@ def summarize_task_families(example_summaries: list[dict[str, Any]]) -> dict[str
     return summary
 
 
+def summarize_difficulty_buckets(example_summaries: list[dict[str, Any]]) -> dict[str, Any]:
+    scored = [item for item in example_summaries if item["has_target"]]
+    by_bucket: dict[str, list[dict[str, Any]]] = {}
+    for item in scored:
+        by_bucket.setdefault(str(item.get("difficulty_bucket") or "unknown"), []).append(item)
+
+    summary: dict[str, Any] = {}
+    for bucket, items in sorted(by_bucket.items()):
+        first = sum(1 for item in items if item["first_exact"])
+        selected = sum(1 for item in items if item["selected_exact"])
+        best = sum(1 for item in items if item["best_of_k_exact"])
+        valid_candidates = sum(item["valid_candidates"] for item in items)
+        total_candidates = sum(item["num_candidates"] for item in items)
+        scores = [item.get("difficulty_score") for item in items if isinstance(item.get("difficulty_score"), int)]
+        summary[bucket] = {
+            "examples_with_targets": len(items),
+            "first_exact": first,
+            "selected_exact": selected,
+            "best_of_k_exact": best,
+            "first_accuracy": first / max(len(items), 1),
+            "selected_accuracy": selected / max(len(items), 1),
+            "best_of_k_accuracy": best / max(len(items), 1),
+            "valid_candidate_rate": valid_candidates / max(total_candidates, 1),
+            "min_difficulty_score": min(scores) if scores else None,
+            "max_difficulty_score": max(scores) if scores else None,
+        }
+    return summary
+
+
 def summarize_candidate_sources(rows: list[dict[str, Any]]) -> dict[str, Any]:
     by_source: dict[str, dict[str, int]] = {}
     for row in rows:
@@ -757,6 +840,7 @@ def write_summary_md(path: str | Path | None, payload: dict[str, Any]) -> None:
     parse_summary = payload.get("parse_method_summary", {})
     program_verifier = payload.get("program_verifier_summary", {})
     family_summary = payload.get("task_family_summary", {})
+    difficulty_summary = payload.get("difficulty_summary", {})
     lines = [
         f"# ARC-AGI Evaluation - {payload['mode']}",
         "",
@@ -793,6 +877,15 @@ def write_summary_md(path: str | Path | None, payload: dict[str, Any]) -> None:
                 f"best `{stats['best_of_k_exact']}` / `{stats['examples_with_targets']}`, "
                 f"tasks `{stats['tasks_solved_best_of_k']}` / `{stats['tasks_with_targets']}`, "
                 f"valid_rate `{stats['valid_candidate_rate']}`"
+            )
+    if difficulty_summary:
+        lines += ["", "## Difficulty Buckets"]
+        for bucket, stats in sorted(difficulty_summary.items()):
+            lines.append(
+                f"- `{bucket}`: selected `{stats['selected_exact']}` / `{stats['examples_with_targets']}`, "
+                f"best `{stats['best_of_k_exact']}` / `{stats['examples_with_targets']}`, "
+                f"valid_rate `{stats['valid_candidate_rate']}`, "
+                f"score_range `{stats['min_difficulty_score']}`-`{stats['max_difficulty_score']}`"
             )
     if parse_summary:
         lines += ["", "## Parse Methods"]
@@ -1062,6 +1155,7 @@ def main() -> int:
         "summary": summarize_examples(example_summaries),
         "candidate_source_summary": summarize_candidate_sources(all_rows),
         "task_family_summary": summarize_task_families(example_summaries),
+        "difficulty_summary": summarize_difficulty_buckets(example_summaries),
         "parse_method_summary": summarize_parse_methods(all_rows),
         "program_verifier_summary": summarize_program_verifier(all_rows),
         "examples": example_summaries,

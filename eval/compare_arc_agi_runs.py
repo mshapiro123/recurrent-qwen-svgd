@@ -40,6 +40,14 @@ def bool_score(example: dict[str, Any], metric: Metric) -> int | None:
     return int(bool(value))
 
 
+def example_difficulty_bucket(*examples: dict[str, Any]) -> str:
+    for example in examples:
+        value = example.get("difficulty_bucket") or example.get("difficulty")
+        if value:
+            return str(value)
+    return "unknown"
+
+
 def paired_rows(
     reference: dict[str, Any],
     candidate: dict[str, Any],
@@ -58,6 +66,7 @@ def paired_rows(
                 "task_id": key[0],
                 "test_index": key[1],
                 "family": task_family(key[0]),
+                "difficulty_bucket": example_difficulty_bucket(cand_examples[key], ref_examples[key]),
                 "reference": ref_score,
                 "candidate": cand_score,
                 "delta": cand_score - ref_score,
@@ -140,12 +149,20 @@ def metric_summary(
 
 
 def family_summaries(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    by_family: dict[str, list[dict[str, Any]]] = {}
+    return stratified_summaries(rows, "family")
+
+
+def difficulty_summaries(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    return stratified_summaries(rows, "difficulty_bucket")
+
+
+def stratified_summaries(rows: list[dict[str, Any]], field: str) -> dict[str, Any]:
+    by_group: dict[str, list[dict[str, Any]]] = {}
     for row in rows:
-        by_family.setdefault(str(row["family"]), []).append(row)
+        by_group.setdefault(str(row.get(field) or "unknown"), []).append(row)
     return {
-        family: metric_summary(items, bootstrap_samples=0, seed=0)
-        for family, items in sorted(by_family.items())
+        group: metric_summary(items, bootstrap_samples=0, seed=0)
+        for group, items in sorted(by_group.items())
     }
 
 
@@ -160,10 +177,12 @@ def compare_payloads(
 ) -> dict[str, Any]:
     metrics: dict[str, Any] = {}
     families: dict[str, Any] = {}
+    difficulties: dict[str, Any] = {}
     for metric in METRICS:
         rows = paired_rows(reference, candidate, metric)
         metrics[metric] = metric_summary(rows, bootstrap_samples=bootstrap_samples, seed=seed)
         families[metric] = family_summaries(rows)
+        difficulties[metric] = difficulty_summaries(rows)
     return {
         "reference_label": reference_label,
         "candidate_label": candidate_label,
@@ -172,6 +191,7 @@ def compare_payloads(
         "common_examples": metrics["selected_exact"]["paired_examples"],
         "metrics": metrics,
         "task_family_metrics": families,
+        "difficulty_metrics": difficulties,
     }
 
 
@@ -212,6 +232,16 @@ def write_markdown(path: str | Path | None, payload: dict[str, Any]) -> None:
         for family, stats in family_rows.items():
             lines.append(
                 f"- `{family}`: candidate `{stats['candidate_exact']}` / `{stats['paired_examples']}`, "
+                f"reference `{stats['reference_exact']}` / `{stats['paired_examples']}`, "
+                f"delta `{stats['delta_exact']}`"
+            )
+        lines.append("")
+    lines += ["", "## Difficulty Bucket Deltas", ""]
+    for metric, difficulty_rows in payload.get("difficulty_metrics", {}).items():
+        lines.append(f"### {metric}")
+        for bucket, stats in difficulty_rows.items():
+            lines.append(
+                f"- `{bucket}`: candidate `{stats['candidate_exact']}` / `{stats['paired_examples']}`, "
                 f"reference `{stats['reference_exact']}` / `{stats['paired_examples']}`, "
                 f"delta `{stats['delta_exact']}`"
             )

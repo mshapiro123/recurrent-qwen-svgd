@@ -133,6 +133,11 @@ Initial harness files:
   programs, source diversity, and output-shape consistency. Use
   `colab/run_stage5_arc_agi_rescore_selectors.py` on saved candidate JSONLs
   before tuning more kernel geometry.
+- ARC-AGI summaries now include a `grid_complexity_proxy` difficulty bucket
+  and selector-rescore comparisons include paired selected-answer evidence by
+  difficulty. Use the hard bucket as the first-pass proxy for the program
+  track's hard-tail question: does candidate diversity become selected-answer
+  accuracy where single-answer accuracy is lowest?
 - Evaluation can execute the tiny `symbolic_program` DSL as a fallback when a
   candidate does not contain a directly parseable output grid. Reports include
   a parse-method summary so literal-grid exactness and program-executed

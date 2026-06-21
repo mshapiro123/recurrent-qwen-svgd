@@ -18,7 +18,7 @@ from eval.arc_agi_utils import (
     transform_arc_example,
     validate_grid,
 )
-from eval.eval_arc_agi import inferred_output_shapes, select_candidate_index, select_eval_examples
+from eval.eval_arc_agi import arc_difficulty_features, inferred_output_shapes, select_candidate_index, select_eval_examples
 from training.prepare_arc_agi_sft_jsonl import apply_color_permutation
 
 
@@ -70,6 +70,26 @@ def test_load_arc_agi_directory_and_render_prompt(tmp_path) -> None:
     assert "Output JSON grid:" in prompt
     compact_prompt = render_arc_prompt(examples[0], output_format="compact")
     assert "Output grid rows:" in compact_prompt
+
+
+def test_arc_difficulty_features_bucket_grid_complexity() -> None:
+    easy = ArcAgiExample(
+        task_id="easy",
+        test_index=0,
+        train=(ArcPair(input=[[1]], output=[[2]]),),
+        test_input=[[3]],
+        test_output=[[4]],
+    )
+    hard = ArcAgiExample(
+        task_id="hard",
+        test_index=0,
+        train=(ArcPair(input=[[1] * 20 for _ in range(20)], output=[[2] * 20 for _ in range(20)]),),
+        test_input=[[3] * 20 for _ in range(20)],
+        test_output=[[4] * 20 for _ in range(20)],
+    )
+
+    assert arc_difficulty_features(easy)["difficulty_bucket"] == "easy"
+    assert arc_difficulty_features(hard)["difficulty_bucket"] == "hard"
 
 
 def test_load_arc_agi_combined_challenges_with_solutions(tmp_path) -> None:

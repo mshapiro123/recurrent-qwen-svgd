@@ -23,6 +23,7 @@ from eval.eval_arc_agi import (  # noqa: E402
     grid_shape,
     grid_vote_key,
     summarize_candidate_sources,
+    summarize_difficulty_buckets,
     summarize_examples,
     summarize_parse_methods,
     summarize_program_verifier,
@@ -91,6 +92,38 @@ def read_inferred_shapes(summary_payload: dict[str, Any] | None) -> dict[GroupKe
                 shapes.append(shape)
         shapes_by_key[key] = shapes
     return shapes_by_key
+
+
+def read_example_metadata(summary_payload: dict[str, Any] | None) -> dict[GroupKey, dict[str, Any]]:
+    if not summary_payload:
+        return {}
+    metadata_by_key: dict[GroupKey, dict[str, Any]] = {}
+    for item in summary_payload.get("examples", []):
+        key = (str(item["task_id"]), int(item.get("test_index", 0)))
+        metadata_by_key[key] = {
+            "difficulty_bucket": item.get("difficulty_bucket") or item.get("difficulty") or "unknown",
+            "difficulty_score": item.get("difficulty_score"),
+            "difficulty_source": item.get("difficulty_source"),
+            "difficulty_features": item.get("difficulty_features"),
+        }
+    return metadata_by_key
+
+
+def row_example_metadata(candidate_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    for row in candidate_rows:
+        if row.get("difficulty_bucket") or row.get("difficulty"):
+            return {
+                "difficulty_bucket": row.get("difficulty_bucket") or row.get("difficulty") or "unknown",
+                "difficulty_score": row.get("difficulty_score"),
+                "difficulty_source": row.get("difficulty_source"),
+                "difficulty_features": row.get("difficulty_features"),
+            }
+    return {
+        "difficulty_bucket": "unknown",
+        "difficulty_score": None,
+        "difficulty_source": None,
+        "difficulty_features": None,
+    }
 
 
 def verified_program_index(candidate_rows: list[dict[str, Any]]) -> int | None:
@@ -306,15 +339,18 @@ def rescore_groups(
     rows: list[dict[str, Any]],
     *,
     inferred_shapes_by_key: dict[GroupKey, list[Shape]] | None = None,
+    example_metadata_by_key: dict[GroupKey, dict[str, Any]] | None = None,
     selection_strategy: str,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     inferred_shapes_by_key = inferred_shapes_by_key or {}
+    example_metadata_by_key = example_metadata_by_key or {}
     rescored_rows: list[dict[str, Any]] = []
     example_summaries: list[dict[str, Any]] = []
 
     for key, group_rows in sorted(group_candidate_rows(rows).items()):
         candidate_rows = [copy.deepcopy(row) for row in group_rows]
         preferred_shapes = inferred_shapes_by_key.get(key, [])
+        example_metadata = example_metadata_by_key.get(key) or row_example_metadata(candidate_rows)
         selected_index = select_candidate_index(
             candidate_rows,
             preferred_shapes,
@@ -325,6 +361,9 @@ def rescore_groups(
             row["previous_selected"] = bool(row.get("selected"))
             row["selected"] = idx == selected_index
             row["selection_strategy"] = selection_strategy
+            row["difficulty_bucket"] = example_metadata.get("difficulty_bucket", "unknown")
+            row["difficulty_score"] = example_metadata.get("difficulty_score")
+            row["difficulty_source"] = example_metadata.get("difficulty_source")
             rescored_rows.append(row)
 
         target_available = has_target(candidate_rows)
@@ -342,6 +381,7 @@ def rescore_groups(
                 "best_of_k_exact": any(score_exact(row) for row in candidate_rows) if target_available else None,
                 "valid_candidates": sum(1 for row in candidate_rows if score_valid(row)),
                 "num_candidates": len(candidate_rows),
+                **example_metadata,
             }
         )
 
@@ -379,6 +419,7 @@ def build_payload(
         "summary": summarize_examples(example_summaries),
         "candidate_source_summary": summarize_candidate_sources(rescored_rows),
         "task_family_summary": summarize_task_families(example_summaries),
+        "difficulty_summary": summarize_difficulty_buckets(example_summaries),
         "parse_method_summary": summarize_parse_methods(rescored_rows),
         "program_verifier_summary": summarize_program_verifier(rescored_rows),
         "examples": example_summaries,
@@ -402,10 +443,12 @@ def main() -> int:
     rows = read_jsonl(args.candidates_jsonl)
     summary_payload = json.loads(Path(args.summary_json).read_text(encoding="utf-8")) if args.summary_json else None
     inferred_shapes_by_key = read_inferred_shapes(summary_payload)
+    example_metadata_by_key = read_example_metadata(summary_payload)
 
     rescored_rows, example_summaries = rescore_groups(
         rows,
         inferred_shapes_by_key=inferred_shapes_by_key,
+        example_metadata_by_key=example_metadata_by_key,
         selection_strategy=args.selection_strategy,
     )
     payload = build_payload(

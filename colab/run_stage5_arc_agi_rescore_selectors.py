@@ -338,6 +338,24 @@ def write_comparison(
                     f"{stats['wins']}/{stats['losses']}/{stats['ties']} | "
                     f"{stats['sign_test_p_value']} |"
                 )
+        lines += [
+            "",
+            "## Paired Selector Evidence By Difficulty",
+            "",
+            "| Comparison | Difficulty | Candidate | Reference | Delta | Win/Loss/Tie | Sign p |",
+            "|---|---|---:|---:|---:|---:|---:|",
+        ]
+        for name, comparison in sorted(paired_comparisons.items()):
+            difficulty_rows = comparison.get("difficulty_metrics", {}).get("selected_exact", {})
+            for bucket, stats in sorted(difficulty_rows.items()):
+                lines.append(
+                    f"| `{name}` | `{bucket}` | "
+                    f"{stats['candidate_exact']}/{stats['paired_examples']} | "
+                    f"{stats['reference_exact']}/{stats['paired_examples']} | "
+                    f"{stats['delta_exact']} | "
+                    f"{stats['wins']}/{stats['losses']}/{stats['ties']} | "
+                    f"{stats['sign_test_p_value']} |"
+                )
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))
 

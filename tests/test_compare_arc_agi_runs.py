@@ -7,8 +7,14 @@ from eval.compare_arc_agi_runs import (
 )
 
 
-def _example(task_id: str, selected: bool, best: bool, first: bool | None = None) -> dict[str, object]:
-    return {
+def _example(
+    task_id: str,
+    selected: bool,
+    best: bool,
+    first: bool | None = None,
+    difficulty: str | None = None,
+) -> dict[str, object]:
+    payload: dict[str, object] = {
         "task_id": task_id,
         "test_index": 0,
         "has_target": True,
@@ -16,6 +22,9 @@ def _example(task_id: str, selected: bool, best: bool, first: bool | None = None
         "best_of_k_exact": best,
         "first_exact": selected if first is None else first,
     }
+    if difficulty:
+        payload["difficulty_bucket"] = difficulty
+    return payload
 
 
 def test_paired_rows_keep_common_target_examples_only() -> None:
@@ -40,6 +49,7 @@ def test_paired_rows_keep_common_target_examples_only() -> None:
             "task_id": "synthetic_move_recolor_000001",
             "test_index": 0,
             "family": "move_recolor",
+            "difficulty_bucket": "unknown",
             "reference": 1,
             "candidate": 0,
             "delta": -1,
@@ -57,17 +67,17 @@ def test_compare_payloads_reports_paired_metric_and_family_deltas() -> None:
     reference = {
         "summary": {"selected_exact": 1, "best_of_k_exact": 2},
         "examples": [
-            _example("synthetic_move_recolor_000001", True, True),
-            _example("synthetic_move_recolor_000002", False, True),
-            _example("synthetic_frame_object_000003", False, False),
+            _example("synthetic_move_recolor_000001", True, True, difficulty="easy"),
+            _example("synthetic_move_recolor_000002", False, True, difficulty="hard"),
+            _example("synthetic_frame_object_000003", False, False, difficulty="hard"),
         ],
     }
     candidate = {
         "summary": {"selected_exact": 2, "best_of_k_exact": 3},
         "examples": [
-            _example("synthetic_move_recolor_000001", True, True),
-            _example("synthetic_move_recolor_000002", True, True),
-            _example("synthetic_frame_object_000003", False, True),
+            _example("synthetic_move_recolor_000001", True, True, difficulty="easy"),
+            _example("synthetic_move_recolor_000002", True, True, difficulty="hard"),
+            _example("synthetic_frame_object_000003", False, True, difficulty="hard"),
         ],
     }
 
@@ -94,3 +104,5 @@ def test_compare_payloads_reports_paired_metric_and_family_deltas() -> None:
     assert best["delta_exact"] == 1
     assert payload["task_family_metrics"]["selected_exact"]["move_recolor"]["delta_exact"] == 1
     assert payload["task_family_metrics"]["best_of_k_exact"]["frame_object"]["delta_exact"] == 1
+    assert payload["difficulty_metrics"]["selected_exact"]["hard"]["delta_exact"] == 1
+    assert payload["difficulty_metrics"]["selected_exact"]["easy"]["delta_exact"] == 0
