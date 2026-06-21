@@ -41,6 +41,7 @@ HF_PRIVATE = os.environ.get("STAGE5_HF_PRIVATE", "1").strip().lower() in {"1", "
 HF_UPLOAD = os.environ.get("STAGE5_HF_UPLOAD", "auto").strip().lower()
 MODEL_NAME_DEFAULT = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")
 RECIPE_CONTROL_SUMMARY = os.environ.get("STAGE5_HF_RECIPE_CONTROL_SUMMARY", "")
+SELECTOR_CONVERSION_SUMMARY = os.environ.get("STAGE5_HF_SELECTOR_CONVERSION_SUMMARY", "")
 
 
 def run(cmd: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -111,6 +112,13 @@ def is_recipe_control_assessment(payload: dict[str, Any]) -> bool:
     return payload.get("gate") == "stage5_same_recipe_architecture"
 
 
+def is_recipe_selector_conversion_assessment(payload: dict[str, Any]) -> bool:
+    return (
+        payload.get("gate") == "stage5_same_recipe_selector_conversion"
+        or payload.get("kind") == "recipe_selector_conversion"
+    )
+
+
 def latest_recipe_control_summary() -> Path | None:
     candidates: list[Path] = []
     for path in (ROOT / "outputs" / "stage5").glob("*/summary.json"):
@@ -125,6 +133,27 @@ def latest_recipe_control_summary() -> Path | None:
     return sorted(candidates, key=lambda item: item.stat().st_mtime, reverse=True)[0]
 
 
+def latest_selector_conversion_summary() -> Path | None:
+    candidates: list[Path] = []
+    for path in (ROOT / "outputs" / "stage5").glob("*/summary.json"):
+        try:
+            payload = read_json(path)
+        except Exception:
+            continue
+        if is_recipe_selector_conversion_assessment(payload):
+            candidates.append(path)
+    if not candidates:
+        return None
+    return sorted(candidates, key=lambda item: item.stat().st_mtime, reverse=True)[0]
+
+
+def summary_path_from_payload(payload: dict[str, Any] | None, key: str) -> Path | None:
+    if not payload or not payload.get(key):
+        return None
+    path = resolve_path(str(payload[key]))
+    return path if path.exists() else None
+
+
 def resolve_recipe_control_summary(source_summary: Path | None, source_payload: dict[str, Any] | None) -> Path | None:
     if RECIPE_CONTROL_SUMMARY:
         path = resolve_path(RECIPE_CONTROL_SUMMARY)
@@ -133,7 +162,24 @@ def resolve_recipe_control_summary(source_summary: Path | None, source_payload: 
         return path
     if source_summary and source_payload and is_recipe_control_assessment(source_payload):
         return source_summary
+    from_payload = summary_path_from_payload(source_payload, "recipe_control_summary")
+    if from_payload:
+        return from_payload
     return latest_recipe_control_summary()
+
+
+def resolve_selector_conversion_summary(source_summary: Path | None, source_payload: dict[str, Any] | None) -> Path | None:
+    if SELECTOR_CONVERSION_SUMMARY:
+        path = resolve_path(SELECTOR_CONVERSION_SUMMARY)
+        if not path.exists():
+            raise FileNotFoundError(path)
+        return path
+    if source_summary and source_payload and is_recipe_selector_conversion_assessment(source_payload):
+        return source_summary
+    from_payload = summary_path_from_payload(source_payload, "selector_conversion_summary")
+    if from_payload:
+        return from_payload
+    return latest_selector_conversion_summary()
 
 
 def resolve_source_summary() -> Path | None:
@@ -219,6 +265,36 @@ def compact_recipe_control_evidence(path: Path | None, payload: dict[str, Any] |
     }
 
 
+def compact_selector_conversion_evidence(path: Path | None, payload: dict[str, Any] | None) -> dict[str, Any]:
+    if not payload:
+        return {}
+    best = payload.get("best_selector") or {}
+    best_row = None
+    for row in payload.get("selector_evidence") or []:
+        if row.get("label") == best.get("label") and row.get("selection_strategy") == best.get("selection_strategy"):
+            best_row = row
+            break
+    best_row = best_row or {}
+    return {
+        "summary_path": path_for_cli(path) if path else None,
+        "status": payload.get("status"),
+        "passed": bool(payload.get("passed", False)),
+        "reason": payload.get("reason"),
+        "next_step": payload.get("next_step"),
+        "recipe_control_summary": payload.get("recipe_control_summary"),
+        "selector_rescore_summary": payload.get("selector_rescore_summary"),
+        "dense_summary": payload.get("dense_summary"),
+        "hard_bucket": payload.get("hard_bucket"),
+        "passing_selectors": payload.get("passing_selectors") or [],
+        "tradeoff_selectors": payload.get("tradeoff_selectors") or [],
+        "best_selector": best,
+        "best_aggregate_selected": best_row.get("aggregate"),
+        "best_hard_selected": best_row.get("hard"),
+        "best_aggregate_best_of_k": best_row.get("aggregate_best_of_k"),
+        "best_hard_best_of_k": best_row.get("hard_best_of_k"),
+    }
+
+
 def build_export_metadata(
     *,
     checkpoint: Path,
@@ -227,6 +303,8 @@ def build_export_metadata(
     source_payload: dict[str, Any] | None,
     recipe_control_summary: Path | None = None,
     recipe_control_payload: dict[str, Any] | None = None,
+    selector_conversion_summary: Path | None = None,
+    selector_conversion_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     config = checkpoint_metadata.get("config") or {}
     return {
@@ -254,6 +332,10 @@ def build_export_metadata(
             recipe_control_summary,
             recipe_control_payload,
         ),
+        "selector_conversion_evidence": compact_selector_conversion_evidence(
+            selector_conversion_summary,
+            selector_conversion_payload,
+        ),
     }
 
 
@@ -272,6 +354,7 @@ def render_model_card(metadata: dict[str, Any]) -> str:
     source = metadata["source"]
     eval_snapshot = metadata.get("eval_snapshot") or {}
     architecture_evidence = metadata.get("architecture_evidence") or {}
+    selector_conversion_evidence = metadata.get("selector_conversion_evidence") or {}
     deltas = eval_snapshot.get("deltas") or {}
     compact = eval_snapshot.get("compact") or eval_snapshot.get("autopilot_compact") or {}
     lines = [
@@ -330,6 +413,26 @@ def render_model_card(metadata: dict[str, Any]) -> str:
     else:
         lines.append(
             "- No same-recipe dense-vs-recurrent architecture assessment was packaged with this export."
+        )
+    lines.extend(["", "## Same-Recipe Selector Conversion Evidence", ""])
+    if selector_conversion_evidence:
+        lines.extend(
+            [
+                f"- Selector-conversion summary: `{selector_conversion_evidence.get('summary_path')}`",
+                f"- Status: `{selector_conversion_evidence.get('status')}`",
+                f"- Passed: `{selector_conversion_evidence.get('passed')}`",
+                f"- Reason: {selector_conversion_evidence.get('reason')}",
+                f"- Next step: {selector_conversion_evidence.get('next_step')}",
+                f"- Best selector: `{selector_conversion_evidence.get('best_selector')}`",
+                f"- Best aggregate selected recurrent-vs-dense: {delta_fragment(selector_conversion_evidence.get('best_aggregate_selected'))}",
+                f"- Best hard selected recurrent-vs-dense: {delta_fragment(selector_conversion_evidence.get('best_hard_selected'))}",
+                f"- Best aggregate best-of-K recurrent-vs-dense: {delta_fragment(selector_conversion_evidence.get('best_aggregate_best_of_k'))}",
+                f"- Best hard best-of-K recurrent-vs-dense: {delta_fragment(selector_conversion_evidence.get('best_hard_best_of_k'))}",
+            ]
+        )
+    else:
+        lines.append(
+            "- No same-recipe selector-conversion assessment was packaged with this export."
         )
     lines.extend(
         [
@@ -393,6 +496,14 @@ def write_export(
             architecture_md = architecture_summary_path.with_suffix(".md")
             if architecture_md.exists():
                 shutil.copy2(architecture_md, RUN_DIR / "architecture_assessment_summary.md")
+    selector_conversion_summary = (metadata.get("selector_conversion_evidence") or {}).get("summary_path")
+    if selector_conversion_summary:
+        selector_conversion_summary_path = resolve_path(str(selector_conversion_summary))
+        if selector_conversion_summary_path.exists():
+            shutil.copy2(selector_conversion_summary_path, RUN_DIR / "selector_conversion_summary.json")
+            selector_conversion_md = selector_conversion_summary_path.with_suffix(".md")
+            if selector_conversion_md.exists():
+                shutil.copy2(selector_conversion_md, RUN_DIR / "selector_conversion_summary.md")
     summary = {
         "run_id": RUN_ID,
         "export_dir": path_for_cli(RUN_DIR),
@@ -446,6 +557,7 @@ def write_report(url: str | None) -> None:
         "- `README.md`",
         "- `source_summary.json` if a source run summary was found",
         "- `architecture_assessment_summary.json` if a same-recipe architecture gate was found",
+        "- `selector_conversion_summary.json` if a same-recipe selector-conversion gate was found",
     ]
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))
@@ -459,6 +571,8 @@ def main() -> int:
     source_payload = read_json(source_summary) if source_summary else None
     recipe_control_summary = resolve_recipe_control_summary(source_summary, source_payload)
     recipe_control_payload = read_json(recipe_control_summary) if recipe_control_summary else None
+    selector_conversion_summary = resolve_selector_conversion_summary(source_summary, source_payload)
+    selector_conversion_payload = read_json(selector_conversion_summary) if selector_conversion_summary else None
     checkpoint = resolve_checkpoint(source_payload)
     checkpoint_metadata = load_checkpoint_metadata(checkpoint)
     metadata = build_export_metadata(
@@ -468,6 +582,8 @@ def main() -> int:
         source_payload=source_payload,
         recipe_control_summary=recipe_control_summary,
         recipe_control_payload=recipe_control_payload,
+        selector_conversion_summary=selector_conversion_summary,
+        selector_conversion_payload=selector_conversion_payload,
     )
     write_export(
         checkpoint=checkpoint,

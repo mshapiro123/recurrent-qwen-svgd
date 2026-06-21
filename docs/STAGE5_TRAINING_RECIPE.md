@@ -172,7 +172,10 @@ Release candidate definition:
 - Report both internal recurrent lift and gap to base Qwen.
 - Package the latest same-recipe dense-vs-recurrent architecture assessment in
   the adapter metadata/model card when available, including whether the result
-  is `passed`, `needs_selector_conversion`, or not yet established.
+  is `passed`, `needs_selector_conversion`, or not yet established. If selector
+  conversion is the evidence that advances the artifact, package that
+  selector-conversion summary too and state the lift as recurrent candidate
+  coverage plus selector conversion.
 - Run `colab/assess_stage5_release_gate.py` before broader benchmark claims. It
   checks ARC benchmark confirmation, same-recipe architecture or
   selector-conversion evidence, and HF export metadata from saved artifacts

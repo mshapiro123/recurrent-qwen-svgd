@@ -6,6 +6,7 @@ from colab.run_stage5_publish_hf_adapter import (
     build_export_metadata,
     checkpoint_value_from_payload,
     compact_recipe_control_evidence,
+    compact_selector_conversion_evidence,
     render_model_card,
     should_upload,
 )
@@ -124,6 +125,65 @@ def test_build_export_metadata_captures_recipe_control_evidence(tmp_path) -> Non
     assert evidence["hard_best_of_k"]["delta_exact"] == 2
 
 
+def test_build_export_metadata_captures_selector_conversion_evidence(tmp_path) -> None:
+    checkpoint = tmp_path / "phase1_step_10.pt"
+    torch.save(
+        {
+            "phase": "phase1",
+            "step": 10,
+            "config": {"model_name": "Qwen/Qwen2.5-0.5B-Instruct"},
+            "trainable_state_dict": {"bridge.weight": torch.eye(2)},
+        },
+        checkpoint,
+    )
+    selector_path = tmp_path / "selector_conversion" / "summary.json"
+    selector_path.parent.mkdir()
+    selector_payload = {
+        "gate": "stage5_same_recipe_selector_conversion",
+        "kind": "recipe_selector_conversion",
+        "status": "passed",
+        "passed": True,
+        "reason": "selector converts candidate coverage",
+        "next_step": "release gate",
+        "recipe_control_summary": "outputs/stage5/recipe/summary.json",
+        "selector_rescore_summary": "outputs/stage5/selector/summary.json",
+        "dense_summary": "outputs/stage5/dense/summary.json",
+        "hard_bucket": "hard",
+        "passing_selectors": [{"label": "recovered", "selection_strategy": "reliability_vote"}],
+        "best_selector": {"label": "recovered", "selection_strategy": "reliability_vote"},
+        "selector_evidence": [
+            {
+                "label": "recovered",
+                "selection_strategy": "reliability_vote",
+                "aggregate": {"delta_exact": 3, "wins": 3, "losses": 0, "ties": 17},
+                "hard": {"delta_exact": 2, "wins": 2, "losses": 0, "ties": 4},
+                "aggregate_best_of_k": {"delta_exact": 4, "wins": 4, "losses": 0, "ties": 16},
+                "hard_best_of_k": {"delta_exact": 2, "wins": 2, "losses": 0, "ties": 4},
+            }
+        ],
+    }
+
+    metadata = build_export_metadata(
+        checkpoint=checkpoint,
+        checkpoint_metadata={
+            "phase": "phase1",
+            "step": 10,
+            "config": {"model_name": "Qwen/Qwen2.5-0.5B-Instruct"},
+            "trainable_key_count": 1,
+        },
+        source_summary=None,
+        source_payload=None,
+        selector_conversion_summary=selector_path,
+        selector_conversion_payload=selector_payload,
+    )
+
+    evidence = metadata["selector_conversion_evidence"]
+    assert evidence["status"] == "passed"
+    assert evidence["best_selector"]["selection_strategy"] == "reliability_vote"
+    assert evidence["best_aggregate_selected"]["delta_exact"] == 3
+    assert evidence["best_hard_selected"]["delta_exact"] == 2
+
+
 def test_render_model_card_includes_loading_sketch_and_benchmark_delta() -> None:
     metadata = {
         "base_model": "Qwen/Qwen2.5-0.5B-Instruct",
@@ -150,6 +210,18 @@ def test_render_model_card_includes_loading_sketch_and_benchmark_delta() -> None
             "aggregate_best_of_k": {"delta_exact": 2, "wins": 2, "losses": 0, "ties": 9},
             "hard_best_of_k": {"delta_exact": 1, "wins": 1, "losses": 0, "ties": 4},
         },
+        "selector_conversion_evidence": {
+            "summary_path": "outputs/stage5/selector_conversion/summary.json",
+            "status": "passed",
+            "passed": True,
+            "reason": "selector converted candidate coverage",
+            "next_step": "release gate",
+            "best_selector": {"label": "recovered", "selection_strategy": "reliability_vote"},
+            "best_aggregate_selected": {"delta_exact": 3, "wins": 3, "losses": 0, "ties": 10},
+            "best_hard_selected": {"delta_exact": 2, "wins": 2, "losses": 0, "ties": 4},
+            "best_aggregate_best_of_k": {"delta_exact": 4, "wins": 4, "losses": 0, "ties": 9},
+            "best_hard_best_of_k": {"delta_exact": 2, "wins": 2, "losses": 0, "ties": 4},
+        },
     }
 
     card = render_model_card(metadata)
@@ -161,10 +233,17 @@ def test_render_model_card_includes_loading_sketch_and_benchmark_delta() -> None
     assert "Same-Recipe Architecture Evidence" in card
     assert "hard-tail selected lift" in card
     assert "Aggregate best-of-K recurrent-vs-dense: delta 2" in card
+    assert "Same-Recipe Selector Conversion Evidence" in card
+    assert "selector converted candidate coverage" in card
+    assert "Best aggregate selected recurrent-vs-dense: delta 3" in card
 
 
 def test_compact_recipe_control_evidence_returns_empty_without_payload(tmp_path) -> None:
     assert compact_recipe_control_evidence(tmp_path / "missing.json", None) == {}
+
+
+def test_compact_selector_conversion_evidence_returns_empty_without_payload(tmp_path) -> None:
+    assert compact_selector_conversion_evidence(tmp_path / "missing.json", None) == {}
 
 
 def test_should_upload_requires_repo_and_token_unless_disabled() -> None:
