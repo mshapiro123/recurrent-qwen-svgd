@@ -1,0 +1,453 @@
+{
+  "run_id": "stage5_balanced_recovery_autopilot_current",
+  "kind": "stage5_balanced_recovery_autopilot",
+  "source_summary": "outputs/stage5/stage5_balanced_mcq_current/summary.json",
+  "status": "arc_mix_gate_passed",
+  "next_step": "Run the full balanced MCQ assessment on the best ARC-mix checkpoint.",
+  "distill_run_id": "stage5_balanced_recovery_autopilot_current_distill",
+  "distill_summary": "outputs/stage5/stage5_balanced_recovery_autopilot_current_distill/summary.json",
+  "distill_status": "no_proxy_lift",
+  "distill_passed": false,
+  "arc_mix_run_id": "stage5_balanced_recovery_autopilot_current_arc_mix",
+  "arc_mix_summary": "outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/summary.json",
+  "arc_mix_status": "proxy_lift",
+  "arc_mix_passed": true,
+  "distill": {
+    "run_id": "stage5_balanced_recovery_autopilot_current_distill",
+    "kind": "stage5_balanced_distill_gate",
+    "source_summary": "outputs/stage5/stage5_balanced_mcq_current/summary.json",
+    "source_status": "needs_competence_recovery",
+    "resume_checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_150.pt",
+    "resume_run_id": "stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143",
+    "arc_limit": "128",
+    "opus_limit": "6000",
+    "status": "no_proxy_lift",
+    "passed": false,
+    "next_step": "Do not extend this distillation setting. Try a mixed ARC-train supervision gate or revisit training data before particle/SVGD work.",
+    "best_arm": {
+      "arm": "response_w005_lr3e6",
+      "child_run_id": "stage5_balanced_recovery_autopilot_current_distill_response_w005_lr3e6",
+      "summary": "outputs/stage5/stage5_balanced_recovery_autopilot_current_distill_response_w005_lr3e6/summary.json",
+      "checkpoint": "outputs/stage5/stage5_balanced_recovery_autopilot_current_distill_response_w005_lr3e6/phase1/phase1_step_100.pt",
+      "start_arc": {
+        "correct": 71,
+        "total": 128,
+        "accuracy": 0.5546875
+      },
+      "base_arc": {
+        "correct": 72,
+        "total": 128,
+        "accuracy": 0.5625
+      },
+      "best_arc": {
+        "correct": 71,
+        "total": 128,
+        "accuracy": 0.5546875
+      },
+      "lift_vs_start": 0,
+      "gap_vs_base": -1,
+      "distillation": {
+        "enabled": true,
+        "weight": 0.05,
+        "temperature": 2.0,
+        "on": "response"
+      },
+      "learning_rate": 3e-06,
+      "beta": 0.12,
+      "steps": 100
+    },
+    "arms": [
+      {
+        "arm": "response_w005_lr3e6",
+        "child_run_id": "stage5_balanced_recovery_autopilot_current_distill_response_w005_lr3e6",
+        "summary": "outputs/stage5/stage5_balanced_recovery_autopilot_current_distill_response_w005_lr3e6/summary.json",
+        "checkpoint": "outputs/stage5/stage5_balanced_recovery_autopilot_current_distill_response_w005_lr3e6/phase1/phase1_step_100.pt",
+        "start_arc": {
+          "correct": 71,
+          "total": 128,
+          "accuracy": 0.5546875
+        },
+        "base_arc": {
+          "correct": 72,
+          "total": 128,
+          "accuracy": 0.5625
+        },
+        "best_arc": {
+          "correct": 71,
+          "total": 128,
+          "accuracy": 0.5546875
+        },
+        "lift_vs_start": 0,
+        "gap_vs_base": -1,
+        "distillation": {
+          "enabled": true,
+          "weight": 0.05,
+          "temperature": 2.0,
+          "on": "response"
+        },
+        "learning_rate": 3e-06,
+        "beta": 0.12,
+        "steps": 100
+      }
+    ]
+  },
+  "arc_mix": {
+    "run_id": "stage5_balanced_recovery_autopilot_current_arc_mix",
+    "kind": "stage5_balanced_arc_mix_gate",
+    "source_summary": "outputs/stage5/stage5_balanced_mcq_current/summary.json",
+    "source_status": "needs_competence_recovery",
+    "resume_checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_150.pt",
+    "resume_run_id": "stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143",
+    "data": {
+      "opus_rows": 2640,
+      "arc_challenge_rows": 1119,
+      "arc_easy_rows": 2251,
+      "arc_repeat": 2,
+      "mixed_rows": 9380,
+      "mixed_train_jsonl": "data/stage5_balanced_recovery_autopilot_current_arc_mix_mixed_train.jsonl",
+      "opus_val_jsonl": "data/stage5_balanced_recovery_autopilot_current_arc_mix_opus_val.jsonl"
+    },
+    "arc_eval_limit": 128,
+    "status": "proxy_lift",
+    "passed": true,
+    "next_step": "Run full ARC-Easy and ARC-Challenge balanced benchmark on the best ARC-mix checkpoint.",
+    "best_arm": {
+      "arm": "arc_mix_nodistill_lr3e6",
+      "base_arc": {
+        "mean": {
+          "correct": 68,
+          "total": 128,
+          "accuracy": 0.53125
+        }
+      },
+      "phase1_start": {
+        "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_150.pt",
+        "val": {
+          "lora_recurrent_modules": 84.0,
+          "examples": 138.0,
+          "expected_ce": 2.304668,
+          "halting_kl": 0.18302,
+          "loss": 2.326631,
+          "mean_expected_loops": 2.433729,
+          "mean_halt_entropy": 1.374796
+        },
+        "arc": {
+          "mean": {
+            "correct": 65,
+            "total": 128,
+            "accuracy": 0.5078125
+          }
+        }
+      },
+      "checkpoints": [
+        {
+          "checkpoint": "outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/arc_mix_nodistill_lr3e6/phase1/phase1_step_50.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 138.0,
+            "expected_ce": 2.298278,
+            "halting_kl": 0.174891,
+            "loss": 2.319265,
+            "mean_expected_loops": 2.414806,
+            "mean_halt_entropy": 1.374372
+          },
+          "arc_path": "outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/stage5_balanced_recovery_autopilot_current_arc_mix_arc128_arc_mix_nodistill_lr3e6_phase1_step_50_label.jsonl",
+          "arc": {
+            "mean": {
+              "correct": 65,
+              "total": 128,
+              "accuracy": 0.5078125
+            }
+          },
+          "comparison_to_start": {
+            "helped": 3,
+            "hurt": 3,
+            "tied": 122,
+            "prediction_changes": 12
+          },
+          "comparison_to_base": {
+            "helped": 6,
+            "hurt": 9,
+            "tied": 113,
+            "prediction_changes": 19
+          }
+        },
+        {
+          "checkpoint": "outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/arc_mix_nodistill_lr3e6/phase1/phase1_step_100.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 138.0,
+            "expected_ce": 2.291697,
+            "halting_kl": 0.167233,
+            "loss": 2.311765,
+            "mean_expected_loops": 2.396179,
+            "mean_halt_entropy": 1.373592
+          },
+          "arc_path": "outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/stage5_balanced_recovery_autopilot_current_arc_mix_arc128_arc_mix_nodistill_lr3e6_phase1_step_100_label.jsonl",
+          "arc": {
+            "mean": {
+              "correct": 65,
+              "total": 128,
+              "accuracy": 0.5078125
+            }
+          },
+          "comparison_to_start": {
+            "helped": 5,
+            "hurt": 5,
+            "tied": 118,
+            "prediction_changes": 16
+          },
+          "comparison_to_base": {
+            "helped": 5,
+            "hurt": 8,
+            "tied": 115,
+            "prediction_changes": 17
+          }
+        },
+        {
+          "checkpoint": "outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/arc_mix_nodistill_lr3e6/phase1/phase1_step_150.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 138.0,
+            "expected_ce": 2.28477,
+            "halting_kl": 0.158578,
+            "loss": 2.3038,
+            "mean_expected_loops": 2.373738,
+            "mean_halt_entropy": 1.37214
+          },
+          "arc_path": "outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/stage5_balanced_recovery_autopilot_current_arc_mix_arc128_arc_mix_nodistill_lr3e6_phase1_step_150_label.jsonl",
+          "arc": {
+            "mean": {
+              "correct": 66,
+              "total": 128,
+              "accuracy": 0.515625
+            }
+          },
+          "comparison_to_start": {
+            "helped": 6,
+            "hurt": 5,
+            "tied": 117,
+            "prediction_changes": 21
+          },
+          "comparison_to_base": {
+            "helped": 7,
+            "hurt": 9,
+            "tied": 112,
+            "prediction_changes": 20
+          }
+        }
+      ],
+      "best_checkpoint": {
+        "checkpoint": "outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/arc_mix_nodistill_lr3e6/phase1/phase1_step_150.pt",
+        "val": {
+          "lora_recurrent_modules": 84.0,
+          "examples": 138.0,
+          "expected_ce": 2.28477,
+          "halting_kl": 0.158578,
+          "loss": 2.3038,
+          "mean_expected_loops": 2.373738,
+          "mean_halt_entropy": 1.37214
+        },
+        "arc_path": "outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/stage5_balanced_recovery_autopilot_current_arc_mix_arc128_arc_mix_nodistill_lr3e6_phase1_step_150_label.jsonl",
+        "arc": {
+          "mean": {
+            "correct": 66,
+            "total": 128,
+            "accuracy": 0.515625
+          }
+        },
+        "comparison_to_start": {
+          "helped": 6,
+          "hurt": 5,
+          "tied": 117,
+          "prediction_changes": 21
+        },
+        "comparison_to_base": {
+          "helped": 7,
+          "hurt": 9,
+          "tied": 112,
+          "prediction_changes": 20
+        }
+      },
+      "distillation": {
+        "enabled": false,
+        "weight": 0.0,
+        "temperature": 2.0,
+        "on": "response"
+      },
+      "learning_rate": 3e-06,
+      "beta": 0.12,
+      "steps": 150
+    },
+    "arms": [
+      {
+        "arm": "arc_mix_nodistill_lr3e6",
+        "base_arc": {
+          "mean": {
+            "correct": 68,
+            "total": 128,
+            "accuracy": 0.53125
+          }
+        },
+        "phase1_start": {
+          "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_150.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 138.0,
+            "expected_ce": 2.304668,
+            "halting_kl": 0.18302,
+            "loss": 2.326631,
+            "mean_expected_loops": 2.433729,
+            "mean_halt_entropy": 1.374796
+          },
+          "arc": {
+            "mean": {
+              "correct": 65,
+              "total": 128,
+              "accuracy": 0.5078125
+            }
+          }
+        },
+        "checkpoints": [
+          {
+            "checkpoint": "outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/arc_mix_nodistill_lr3e6/phase1/phase1_step_50.pt",
+            "val": {
+              "lora_recurrent_modules": 84.0,
+              "examples": 138.0,
+              "expected_ce": 2.298278,
+              "halting_kl": 0.174891,
+              "loss": 2.319265,
+              "mean_expected_loops": 2.414806,
+              "mean_halt_entropy": 1.374372
+            },
+            "arc_path": "outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/stage5_balanced_recovery_autopilot_current_arc_mix_arc128_arc_mix_nodistill_lr3e6_phase1_step_50_label.jsonl",
+            "arc": {
+              "mean": {
+                "correct": 65,
+                "total": 128,
+                "accuracy": 0.5078125
+              }
+            },
+            "comparison_to_start": {
+              "helped": 3,
+              "hurt": 3,
+              "tied": 122,
+              "prediction_changes": 12
+            },
+            "comparison_to_base": {
+              "helped": 6,
+              "hurt": 9,
+              "tied": 113,
+              "prediction_changes": 19
+            }
+          },
+          {
+            "checkpoint": "outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/arc_mix_nodistill_lr3e6/phase1/phase1_step_100.pt",
+            "val": {
+              "lora_recurrent_modules": 84.0,
+              "examples": 138.0,
+              "expected_ce": 2.291697,
+              "halting_kl": 0.167233,
+              "loss": 2.311765,
+              "mean_expected_loops": 2.396179,
+              "mean_halt_entropy": 1.373592
+            },
+            "arc_path": "outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/stage5_balanced_recovery_autopilot_current_arc_mix_arc128_arc_mix_nodistill_lr3e6_phase1_step_100_label.jsonl",
+            "arc": {
+              "mean": {
+                "correct": 65,
+                "total": 128,
+                "accuracy": 0.5078125
+              }
+            },
+            "comparison_to_start": {
+              "helped": 5,
+              "hurt": 5,
+              "tied": 118,
+              "prediction_changes": 16
+            },
+            "comparison_to_base": {
+              "helped": 5,
+              "hurt": 8,
+              "tied": 115,
+              "prediction_changes": 17
+            }
+          },
+          {
+            "checkpoint": "outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/arc_mix_nodistill_lr3e6/phase1/phase1_step_150.pt",
+            "val": {
+              "lora_recurrent_modules": 84.0,
+              "examples": 138.0,
+              "expected_ce": 2.28477,
+              "halting_kl": 0.158578,
+              "loss": 2.3038,
+              "mean_expected_loops": 2.373738,
+              "mean_halt_entropy": 1.37214
+            },
+            "arc_path": "outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/stage5_balanced_recovery_autopilot_current_arc_mix_arc128_arc_mix_nodistill_lr3e6_phase1_step_150_label.jsonl",
+            "arc": {
+              "mean": {
+                "correct": 66,
+                "total": 128,
+                "accuracy": 0.515625
+              }
+            },
+            "comparison_to_start": {
+              "helped": 6,
+              "hurt": 5,
+              "tied": 117,
+              "prediction_changes": 21
+            },
+            "comparison_to_base": {
+              "helped": 7,
+              "hurt": 9,
+              "tied": 112,
+              "prediction_changes": 20
+            }
+          }
+        ],
+        "best_checkpoint": {
+          "checkpoint": "outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/arc_mix_nodistill_lr3e6/phase1/phase1_step_150.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 138.0,
+            "expected_ce": 2.28477,
+            "halting_kl": 0.158578,
+            "loss": 2.3038,
+            "mean_expected_loops": 2.373738,
+            "mean_halt_entropy": 1.37214
+          },
+          "arc_path": "outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/stage5_balanced_recovery_autopilot_current_arc_mix_arc128_arc_mix_nodistill_lr3e6_phase1_step_150_label.jsonl",
+          "arc": {
+            "mean": {
+              "correct": 66,
+              "total": 128,
+              "accuracy": 0.515625
+            }
+          },
+          "comparison_to_start": {
+            "helped": 6,
+            "hurt": 5,
+            "tied": 117,
+            "prediction_changes": 21
+          },
+          "comparison_to_base": {
+            "helped": 7,
+            "hurt": 9,
+            "tied": 112,
+            "prediction_changes": 20
+          }
+        },
+        "distillation": {
+          "enabled": false,
+          "weight": 0.0,
+          "temperature": 2.0,
+          "on": "response"
+        },
+        "learning_rate": 3e-06,
+        "beta": 0.12,
+        "steps": 150
+      }
+    ]
+  }
+}

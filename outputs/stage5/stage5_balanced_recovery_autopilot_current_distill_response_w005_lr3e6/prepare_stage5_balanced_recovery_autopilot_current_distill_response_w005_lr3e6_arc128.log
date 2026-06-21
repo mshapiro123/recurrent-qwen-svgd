@@ -1,0 +1,5 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Challenge
+split=validation
+rows=128
+output_jsonl=data/stage5_balanced_recovery_autopilot_current_distill_response_w005_lr3e6_arc128.jsonl

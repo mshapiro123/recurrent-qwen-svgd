@@ -1,0 +1,6 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=train
+rows=2251
+skipped_rows=0
+output_jsonl=data/stage5_balanced_recovery_autopilot_current_arc_mix_arc_easy_train_sft.jsonl

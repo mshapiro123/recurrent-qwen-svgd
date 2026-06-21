@@ -1,0 +1,79 @@
+{
+  "run_id": "stage5_balanced_recovery_autopilot_current_distill",
+  "kind": "stage5_balanced_distill_gate",
+  "source_summary": "outputs/stage5/stage5_balanced_mcq_current/summary.json",
+  "source_status": "needs_competence_recovery",
+  "resume_checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_150.pt",
+  "resume_run_id": "stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143",
+  "arc_limit": "128",
+  "opus_limit": "6000",
+  "status": "no_proxy_lift",
+  "passed": false,
+  "next_step": "Do not extend this distillation setting. Try a mixed ARC-train supervision gate or revisit training data before particle/SVGD work.",
+  "best_arm": {
+    "arm": "response_w005_lr3e6",
+    "child_run_id": "stage5_balanced_recovery_autopilot_current_distill_response_w005_lr3e6",
+    "summary": "outputs/stage5/stage5_balanced_recovery_autopilot_current_distill_response_w005_lr3e6/summary.json",
+    "checkpoint": "outputs/stage5/stage5_balanced_recovery_autopilot_current_distill_response_w005_lr3e6/phase1/phase1_step_100.pt",
+    "start_arc": {
+      "correct": 71,
+      "total": 128,
+      "accuracy": 0.5546875
+    },
+    "base_arc": {
+      "correct": 72,
+      "total": 128,
+      "accuracy": 0.5625
+    },
+    "best_arc": {
+      "correct": 71,
+      "total": 128,
+      "accuracy": 0.5546875
+    },
+    "lift_vs_start": 0,
+    "gap_vs_base": -1,
+    "distillation": {
+      "enabled": true,
+      "weight": 0.05,
+      "temperature": 2.0,
+      "on": "response"
+    },
+    "learning_rate": 3e-06,
+    "beta": 0.12,
+    "steps": 100
+  },
+  "arms": [
+    {
+      "arm": "response_w005_lr3e6",
+      "child_run_id": "stage5_balanced_recovery_autopilot_current_distill_response_w005_lr3e6",
+      "summary": "outputs/stage5/stage5_balanced_recovery_autopilot_current_distill_response_w005_lr3e6/summary.json",
+      "checkpoint": "outputs/stage5/stage5_balanced_recovery_autopilot_current_distill_response_w005_lr3e6/phase1/phase1_step_100.pt",
+      "start_arc": {
+        "correct": 71,
+        "total": 128,
+        "accuracy": 0.5546875
+      },
+      "base_arc": {
+        "correct": 72,
+        "total": 128,
+        "accuracy": 0.5625
+      },
+      "best_arc": {
+        "correct": 71,
+        "total": 128,
+        "accuracy": 0.5546875
+      },
+      "lift_vs_start": 0,
+      "gap_vs_base": -1,
+      "distillation": {
+        "enabled": true,
+        "weight": 0.05,
+        "temperature": 2.0,
+        "on": "response"
+      },
+      "learning_rate": 3e-06,
+      "beta": 0.12,
+      "steps": 100
+    }
+  ]
+}
