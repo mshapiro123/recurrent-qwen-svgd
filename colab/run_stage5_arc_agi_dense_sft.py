@@ -475,12 +475,22 @@ def main() -> int:
         "geometry_augmentations": GEOMETRY_AUGS,
         "trace_mode": TRACE_MODE,
         "trace_filter": TRACE_FILTER,
+        "synthetic_tasks": 0,
+        "candidate_distill_jsonls": [],
         "grid_format": GRID_FORMAT,
         "program_parse_mode": PROGRAM_PARSE_MODE,
         "selection_strategy": SELECTION_STRATEGY,
         "train_steps": TRAIN_STEPS,
         "save_every": SAVE_EVERY,
         "learning_rate": LEARNING_RATE,
+        "distillation": {
+            "enabled": DISTILL_ENABLED,
+            "weight": DISTILL_WEIGHT,
+            "temperature": DISTILL_TEMPERATURE,
+            "on": DISTILL_ON,
+        },
+        "include_symbolic_candidates": False,
+        "eval_checkpoint_ladder": False,
         "dense_lora_layer_range": DENSE_LORA_LAYER_RANGE,
     }
     training_signal = audit_training_signal(metadata)

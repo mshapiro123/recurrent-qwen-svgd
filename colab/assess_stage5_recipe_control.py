@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import time
 from pathlib import Path
@@ -35,11 +36,16 @@ METADATA_KEYS = (
     "geometry_augmentations",
     "trace_mode",
     "trace_filter",
+    "synthetic_tasks",
+    "candidate_distill_jsonls",
     "grid_format",
     "program_parse_mode",
     "selection_strategy",
     "train_steps",
     "learning_rate",
+    "distillation",
+    "include_symbolic_candidates",
+    "eval_checkpoint_ladder",
 )
 
 
@@ -106,9 +112,17 @@ def recurrent_eval_payload(summary_path: Path, summary: dict[str, Any]) -> tuple
     return "phase1_arc_agi_tuned", eval_payload_from_summary(summary_path, summary, "phase1_arc_agi_tuned")
 
 
+def metadata_value_for_compare(value: Any) -> str:
+    if isinstance(value, float):
+        return repr(value) if math.isfinite(value) else str(value)
+    if isinstance(value, (dict, list, tuple)):
+        return json.dumps(value, sort_keys=True)
+    return str(value)
+
+
 def normalized_metadata(summary: dict[str, Any]) -> dict[str, str]:
     metadata = summary.get("metadata") or {}
-    return {key: str(metadata.get(key)) for key in METADATA_KEYS if metadata.get(key) is not None}
+    return {key: metadata_value_for_compare(metadata.get(key)) for key in METADATA_KEYS if metadata.get(key) is not None}
 
 
 def metadata_differences(dense: dict[str, Any], recurrent: dict[str, Any]) -> dict[str, dict[str, str | None]]:

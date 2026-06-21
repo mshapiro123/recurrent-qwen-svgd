@@ -188,6 +188,11 @@ Initial harness files:
   and next-action tests, executes a bounded planner loop, summarizes progress,
   runs the Stage 5E release-gate audit, and commits changed Stage 5/HF export
   artifacts.
+- Same-recipe recurrent-vs-dense claims must also pass
+  `colab/assess_stage5_recipe_control.py`, which checks hard-bucket
+  selected-answer lift after matching base model, ARC split, training recipe,
+  synthetic/candidate-distill inputs, symbolic-candidate use, and checkpoint
+  selection policy.
 - Evaluation can execute the tiny `symbolic_program` DSL as a fallback when a
   candidate does not contain a directly parseable output grid. Reports include
   a parse-method summary so literal-grid exactness and program-executed

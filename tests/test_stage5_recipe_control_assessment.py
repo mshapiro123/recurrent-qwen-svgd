@@ -53,11 +53,16 @@ def _metadata(eval_limit: int = 20) -> dict[str, object]:
         "geometry_augmentations": "all",
         "trace_mode": "symbolic_program",
         "trace_filter": "covered",
+        "synthetic_tasks": 0,
+        "candidate_distill_jsonls": [],
         "grid_format": "compact",
         "program_parse_mode": "fallback",
         "selection_strategy": "heuristic",
         "train_steps": 300,
         "learning_rate": 8e-6,
+        "distillation": {"enabled": False, "weight": 0.1, "temperature": 1.0, "on": "response"},
+        "include_symbolic_candidates": False,
+        "eval_checkpoint_ladder": False,
     }
 
 
@@ -242,6 +247,95 @@ def test_recipe_control_flags_eval_split_mismatch(tmp_path) -> None:
 
     assert assessment["status"] == "needs_review"
     assert assessment["metadata_differences"]["eval_split"] == {"dense": "evaluation", "recurrent": "training"}
+
+
+def test_recipe_control_flags_synthetic_task_mismatch(tmp_path) -> None:
+    dense_summary, recurrent_summary = _make_dense_and_recurrent(
+        tmp_path,
+        dense_selected=[False] * 20,
+        recurrent_selected=[True] * 20,
+    )
+    payload = json.loads(recurrent_summary.read_text(encoding="utf-8"))
+    payload["metadata"]["synthetic_tasks"] = 200
+    recurrent_summary.write_text(json.dumps(payload), encoding="utf-8")
+
+    assessment = assess_recipe_control(dense_summary_path=dense_summary, recurrent_summary_path=recurrent_summary)
+
+    assert assessment["status"] == "needs_review"
+    assert assessment["metadata_differences"]["synthetic_tasks"] == {"dense": "0", "recurrent": "200"}
+
+
+def test_recipe_control_flags_candidate_distill_mismatch(tmp_path) -> None:
+    dense_summary, recurrent_summary = _make_dense_and_recurrent(
+        tmp_path,
+        dense_selected=[False] * 20,
+        recurrent_selected=[True] * 20,
+    )
+    payload = json.loads(recurrent_summary.read_text(encoding="utf-8"))
+    payload["metadata"]["candidate_distill_jsonls"] = ["outputs/stage5/candidates.jsonl"]
+    recurrent_summary.write_text(json.dumps(payload), encoding="utf-8")
+
+    assessment = assess_recipe_control(dense_summary_path=dense_summary, recurrent_summary_path=recurrent_summary)
+
+    assert assessment["status"] == "needs_review"
+    assert assessment["metadata_differences"]["candidate_distill_jsonls"] == {
+        "dense": "[]",
+        "recurrent": '["outputs/stage5/candidates.jsonl"]',
+    }
+
+
+def test_recipe_control_flags_distillation_mismatch(tmp_path) -> None:
+    dense_summary, recurrent_summary = _make_dense_and_recurrent(
+        tmp_path,
+        dense_selected=[False] * 20,
+        recurrent_selected=[True] * 20,
+    )
+    payload = json.loads(recurrent_summary.read_text(encoding="utf-8"))
+    payload["metadata"]["distillation"] = {"enabled": True, "weight": 0.2, "temperature": 2.0, "on": "full"}
+    recurrent_summary.write_text(json.dumps(payload), encoding="utf-8")
+
+    assessment = assess_recipe_control(dense_summary_path=dense_summary, recurrent_summary_path=recurrent_summary)
+
+    assert assessment["status"] == "needs_review"
+    diff = assessment["metadata_differences"]["distillation"]
+    assert diff["dense"] != diff["recurrent"]
+    assert '"enabled": false' in diff["dense"]
+    assert '"enabled": true' in diff["recurrent"]
+
+
+def test_recipe_control_flags_symbolic_candidates_mismatch(tmp_path) -> None:
+    dense_summary, recurrent_summary = _make_dense_and_recurrent(
+        tmp_path,
+        dense_selected=[False] * 20,
+        recurrent_selected=[True] * 20,
+    )
+    payload = json.loads(recurrent_summary.read_text(encoding="utf-8"))
+    payload["metadata"]["include_symbolic_candidates"] = True
+    recurrent_summary.write_text(json.dumps(payload), encoding="utf-8")
+
+    assessment = assess_recipe_control(dense_summary_path=dense_summary, recurrent_summary_path=recurrent_summary)
+
+    assert assessment["status"] == "needs_review"
+    assert assessment["metadata_differences"]["include_symbolic_candidates"] == {
+        "dense": "False",
+        "recurrent": "True",
+    }
+
+
+def test_recipe_control_flags_checkpoint_ladder_mismatch(tmp_path) -> None:
+    dense_summary, recurrent_summary = _make_dense_and_recurrent(
+        tmp_path,
+        dense_selected=[False] * 20,
+        recurrent_selected=[True] * 20,
+    )
+    payload = json.loads(recurrent_summary.read_text(encoding="utf-8"))
+    payload["metadata"]["eval_checkpoint_ladder"] = True
+    recurrent_summary.write_text(json.dumps(payload), encoding="utf-8")
+
+    assessment = assess_recipe_control(dense_summary_path=dense_summary, recurrent_summary_path=recurrent_summary)
+
+    assert assessment["status"] == "needs_review"
+    assert assessment["metadata_differences"]["eval_checkpoint_ladder"] == {"dense": "False", "recurrent": "True"}
 
 
 def test_recipe_control_cli_writes_outputs(tmp_path, monkeypatch) -> None:
