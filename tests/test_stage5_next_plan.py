@@ -276,7 +276,7 @@ def test_recovery_analysis_selector_miss_recommends_no_gpu_rescore(tmp_path) -> 
     assert "colab/run_stage5_arc_agi_rescore_selectors.py" in rescore["command"]
     assert "STAGE5_ARC_AGI_RESCORE_SOURCE_RUN_DIR=outputs/stage5/bench_run" in rescore["command"]
     assert "STAGE5_ARC_AGI_RESCORE_SOURCE_GLOB=recovered_candidates.jsonl" in rescore["command"]
-    assert "STAGE5_ARC_AGI_RESCORE_STRATEGIES=self_consistency,symbolic_priority" in rescore["command"]
+    assert "STAGE5_ARC_AGI_RESCORE_STRATEGIES=self_consistency,reliability_vote,symbolic_priority" in rescore["command"]
 
 
 def test_recovery_analysis_format_failures_recommend_format_branch(tmp_path) -> None:

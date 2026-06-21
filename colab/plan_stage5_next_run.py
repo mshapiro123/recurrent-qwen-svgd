@@ -303,7 +303,7 @@ def selector_rescore_command(benchmark: dict[str, Any] | None, source_summary: P
         {
             "STAGE5_ARC_AGI_RESCORE_SOURCE_RUN_DIR": command_path(run_dir),
             "STAGE5_ARC_AGI_RESCORE_SOURCE_GLOB": "recovered_candidates.jsonl",
-            "STAGE5_ARC_AGI_RESCORE_STRATEGIES": "self_consistency,symbolic_priority",
+            "STAGE5_ARC_AGI_RESCORE_STRATEGIES": "self_consistency,reliability_vote,symbolic_priority",
             "STAGE5_ARC_AGI_RESCORE_RUN_ID": f"{RUN_ID}_selector_rescore",
         },
         "python colab/run_stage5_arc_agi_rescore_selectors.py",
