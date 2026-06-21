@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from colab.run_stage5_colab_continue import (
+    committable_stage5_files,
     continuation_profile,
     default_env,
     default_max_actions,
     focused_test_paths,
+    is_safe_output_artifact,
     mask_command,
     post_action_commands,
     stage5_output_paths,
@@ -64,6 +66,37 @@ def test_colab_continue_max_actions_can_be_overridden(monkeypatch) -> None:
 
 def test_colab_continue_commits_stage5_and_hf_export_outputs() -> None:
     assert stage5_output_paths() == ["outputs/stage5", "outputs/hf_exports"]
+
+
+def test_colab_continue_only_commits_safe_text_artifacts(monkeypatch, tmp_path) -> None:
+    import colab.run_stage5_colab_continue as module
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    safe = tmp_path / "outputs" / "stage5" / "run" / "summary.json"
+    safe.parent.mkdir(parents=True)
+    safe.write_text("{}", encoding="utf-8")
+    checkpoint = tmp_path / "outputs" / "stage5" / "run" / "phase1_step_100.pt"
+    checkpoint.write_bytes(b"checkpoint")
+    hf_checkpoint = tmp_path / "outputs" / "hf_exports" / "run" / "recurrent_adapter_checkpoint.pt"
+    hf_checkpoint.parent.mkdir(parents=True)
+    hf_checkpoint.write_bytes(b"checkpoint")
+    card = tmp_path / "outputs" / "hf_exports" / "run" / "README.md"
+    card.write_text("# card\n", encoding="utf-8")
+
+    assert is_safe_output_artifact(safe)
+    assert not is_safe_output_artifact(checkpoint)
+    assert not is_safe_output_artifact(hf_checkpoint)
+    assert sorted(committable_stage5_files()) == [
+        "outputs/hf_exports/run/README.md",
+        "outputs/stage5/run/summary.json",
+    ]
+
+
+def test_colab_continue_skips_oversized_text_artifacts(tmp_path) -> None:
+    large = tmp_path / "large.jsonl"
+    large.write_text("x" * 11, encoding="utf-8")
+
+    assert not is_safe_output_artifact(large, max_bytes=10)
 
 
 def test_colab_continue_summarizes_after_release_gate() -> None:

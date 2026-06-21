@@ -152,4 +152,8 @@ The older split notebooks are kept only as references:
    `colab/summarize_stage5_progress.py`. It scans `outputs/stage5`, writes a
    compact progress ledger, and reports the best base/recurrent/recovered arms,
    recovered-vs-base gaps, and the latest planner-compatible source summary.
+   The continuation wrapper only commits safe text/report artifacts from
+   `outputs/stage5` and `outputs/hf_exports` (`.json`, `.jsonl`, `.md`, `.log`,
+   `.txt`, `.yaml`, `.yml`, `.csv`, `.html`) and skips checkpoints such as
+   `.pt`/`.safetensors`; keep large trainable adapters in Drive or Hugging Face.
 6. Write the report, model card, and release notes.

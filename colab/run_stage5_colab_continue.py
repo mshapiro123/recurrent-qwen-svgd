@@ -19,6 +19,19 @@ ROOT = Path(__file__).resolve().parents[1]
 RUN_ID = os.environ.get("STAGE5_ARC_AGI_COLAB_CONTINUE_RUN_ID") or time.strftime(
     "stage5_arc_agi_colab_continue_%Y%m%d_%H%M%S"
 )
+SAFE_OUTPUT_SUFFIXES = {
+    ".csv",
+    ".html",
+    ".json",
+    ".jsonl",
+    ".log",
+    ".md",
+    ".txt",
+    ".yaml",
+    ".yml",
+}
+BINARY_OUTPUT_SUFFIXES = {".bin", ".ckpt", ".pt", ".pth", ".safetensors"}
+MAX_COMMIT_ARTIFACT_BYTES = int(os.environ.get("STAGE5_ARC_AGI_COMMIT_MAX_ARTIFACT_BYTES", "25000000"))
 
 
 def focused_test_paths() -> list[str]:
@@ -83,6 +96,38 @@ def stage5_output_paths() -> list[str]:
     return ["outputs/stage5", "outputs/hf_exports"]
 
 
+def is_safe_output_artifact(path: Path, *, max_bytes: int = MAX_COMMIT_ARTIFACT_BYTES) -> bool:
+    if not path.is_file():
+        return False
+    suffix = path.suffix.lower()
+    if suffix in BINARY_OUTPUT_SUFFIXES:
+        return False
+    if suffix not in SAFE_OUTPUT_SUFFIXES:
+        return False
+    try:
+        return path.stat().st_size <= max_bytes
+    except OSError:
+        return False
+
+
+def committable_stage5_files() -> list[str]:
+    files: list[str] = []
+    for root_name in stage5_output_paths():
+        root = ROOT / root_name
+        if not root.exists():
+            continue
+        for path in root.rglob("*"):
+            if is_safe_output_artifact(path):
+                files.append(path.relative_to(ROOT).as_posix())
+    return sorted(files)
+
+
+def git_add_files(paths: list[str]) -> None:
+    chunk_size = 100
+    for index in range(0, len(paths), chunk_size):
+        run(["git", "add", "-f", *paths[index : index + chunk_size]])
+
+
 def post_action_commands() -> list[list[str]]:
     """No-GPU follow-ups that make the committed run directory self-explaining."""
 
@@ -139,11 +184,12 @@ def ensure_git_identity() -> None:
 
 def commit_stage5_outputs() -> None:
     run(["git", "status", "-sb"], check=False)
-    existing = [path for path in stage5_output_paths() if (ROOT / path).exists()]
-    if not existing:
-        print("No Stage 5 output directories exist yet.")
+    files = committable_stage5_files()
+    if not files:
+        print("No safe Stage 5 output artifacts to commit.")
         return
-    run(["git", "add", "-f", *existing])
+    print(f"safe_stage5_artifacts={len(files)}")
+    git_add_files(files)
     status = run(["git", "diff", "--cached", "--quiet"], check=False)
     if status.returncode == 0:
         print("No Stage 5 outputs to commit.")
