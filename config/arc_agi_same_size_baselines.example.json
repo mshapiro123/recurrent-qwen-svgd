@@ -1,0 +1,19 @@
+{
+  "benchmark": "ARC-AGI public evaluation",
+  "metric": "selected_accuracy",
+  "same_size_band": {
+    "min_params_b": 0.3,
+    "max_params_b": 1.0
+  },
+  "source_notes": "Copy this file to config/arc_agi_same_size_baselines.json and fill it with sourced same-size model scores before making any SOTA claim.",
+  "baselines": [
+    {
+      "name": "example-model-0.5b",
+      "params_b": 0.5,
+      "accuracy": 0.0,
+      "metric": "selected_accuracy",
+      "source": "REPLACE_WITH_AUTHORITATIVE_SOURCE",
+      "notes": "Placeholder example only; do not use for claims."
+    }
+  ]
+}

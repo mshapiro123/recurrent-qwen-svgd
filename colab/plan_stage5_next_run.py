@@ -81,6 +81,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or benchmark_suite_payload(payload) is not None
         or benchmark_suite_assessment_payload(payload) is not None
         or claim_readiness_payload(payload) is not None
+        or arc_agi_sota_comparison_payload(payload) is not None
     )
 
 
@@ -179,6 +180,12 @@ def benchmark_suite_assessment_payload(payload: dict[str, Any]) -> dict[str, Any
 
 def claim_readiness_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("gate") == "stage5_claim_readiness" else None
+
+
+def arc_agi_sota_comparison_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    if payload.get("gate") == "stage5_arc_agi_sota_comparison" or payload.get("kind") == "arc_agi_sota_comparison":
+        return payload
+    return None
 
 
 def recurrent_sft_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -726,10 +733,50 @@ def claim_readiness_actions(payload: dict[str, Any], *, source_summary: Path) ->
                 10,
             )
         ]
+    if status == "ready_for_release_candidate_not_sota":
+        return [
+            make_action(
+                "Build ARC-AGI same-size comparison artifact",
+                "The claim packet is release-candidate ready but not SOTA-ready; compare the recurrent ARC-AGI result against a sourced same-size baseline registry.",
+                command_env(
+                    {
+                        "STAGE5_ARC_AGI_SOTA_COMPARISON_RUN_ID": f"{RUN_ID}_arc_agi_sota_comparison",
+                    },
+                    "python colab/build_stage5_arc_agi_sota_comparison.py",
+                ),
+                10,
+            )
+        ]
     return [
         make_action(
             f"Inspect claim readiness `{status}`",
             "The claim-readiness packet is the current summary; inspect it before writing release notes or any SOTA-facing claim.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
+def arc_agi_sota_comparison_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    if status in {"passed", "failed"}:
+        return [
+            make_action(
+                "Rebuild claim packet with ARC-AGI comparison",
+                "An ARC-AGI same-size comparison artifact exists; rebuild the claim packet so release/SOTA readiness reflects it.",
+                command_env(
+                    {
+                        "STAGE5_CLAIM_PACKET_RUN_ID": f"{RUN_ID}_claim_packet_with_arc_agi",
+                    },
+                    "python colab/build_stage5_claim_packet.py",
+                ),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect ARC-AGI SOTA comparison `{status}`",
+            "The ARC-AGI same-size comparison artifact needs human input, usually a sourced baseline registry or a larger candidate ARC-AGI eval.",
             f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
             10,
         )
@@ -1167,6 +1214,9 @@ def plan_next_actions(
     claim_readiness = claim_readiness_payload(payload)
     if claim_readiness:
         return claim_readiness_actions(claim_readiness, source_summary=source_summary)
+    arc_agi_sota = arc_agi_sota_comparison_payload(payload)
+    if arc_agi_sota:
+        return arc_agi_sota_comparison_actions(arc_agi_sota, source_summary=source_summary)
     benchmark_suite = benchmark_suite_payload(payload)
     if benchmark_suite:
         return benchmark_suite_actions(benchmark_suite, source_summary=source_summary)
@@ -1491,6 +1541,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "benchmark_suite_assessment"
     if claim_readiness_payload(payload):
         return "claim_readiness"
+    if arc_agi_sota_comparison_payload(payload):
+        return "arc_agi_sota_comparison"
     if benchmark_suite_payload(payload):
         return "benchmark_suite"
     if selector_rescore_payload(payload):

@@ -1050,6 +1050,7 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"kind": "stage5_benchmark_suite"}) == "benchmark_suite"
     assert source_kind({"gate": "stage5_broader_benchmark_suite"}) == "benchmark_suite_assessment"
     assert source_kind({"gate": "stage5_claim_readiness"}) == "claim_readiness"
+    assert source_kind({"gate": "stage5_arc_agi_sota_comparison"}) == "arc_agi_sota_comparison"
     assert source_kind({"phase1_arc_agi_tuned": {}, "tuned_checkpoint": "ckpt.pt"}) == "recurrent_sft"
     assert source_kind({"rows": [], "deltas": {}, "paired_comparisons": {}}) == "tta_sweep"
 
@@ -1288,5 +1289,35 @@ def test_claim_readiness_release_candidate_inspects_markdown(tmp_path) -> None:
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Inspect claim readiness `ready_for_release_candidate_not_sota`"
+    assert actions[0]["name"] == "Build ARC-AGI same-size comparison artifact"
+    assert "python colab/build_stage5_arc_agi_sota_comparison.py" in actions[0]["command"]
+
+
+def test_arc_agi_sota_comparison_passed_rebuilds_claim_packet(tmp_path) -> None:
+    source = tmp_path / "arc_agi_sota" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_arc_agi_sota_comparison",
+        "status": "passed",
+        "passed": True,
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Rebuild claim packet with ARC-AGI comparison"
+    assert "python colab/build_stage5_claim_packet.py" in actions[0]["command"]
+
+
+def test_arc_agi_sota_comparison_missing_registry_inspects_markdown(tmp_path) -> None:
+    source = tmp_path / "arc_agi_sota" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_arc_agi_sota_comparison",
+        "status": "needs_baseline_registry",
+        "passed": False,
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect ARC-AGI SOTA comparison `needs_baseline_registry`"
     assert "summary.md" in actions[0]["command"]

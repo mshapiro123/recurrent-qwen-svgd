@@ -127,6 +127,16 @@ def test_parse_action_command_allows_claim_packet_builder() -> None:
     assert parsed.argv == [sys.executable, "colab/build_stage5_claim_packet.py"]
 
 
+def test_parse_action_command_allows_arc_agi_sota_comparison_builder() -> None:
+    parsed = parse_action_command(
+        "STAGE5_ARC_AGI_SOTA_COMPARISON_RUN_ID=sota python colab/build_stage5_arc_agi_sota_comparison.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_ARC_AGI_SOTA_COMPARISON_RUN_ID": "sota"}
+    assert parsed.argv == [sys.executable, "colab/build_stage5_arc_agi_sota_comparison.py"]
+
+
 def test_parse_action_command_allows_benchmark_suite_runner() -> None:
     parsed = parse_action_command(
         "STAGE5_BENCHMARK_SUITE_RUN_ID=bench python colab/run_stage5_benchmark_suite.py"

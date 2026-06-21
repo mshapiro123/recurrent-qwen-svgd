@@ -180,4 +180,8 @@ Release candidate definition:
   passes. It synthesizes release, architecture, benchmark, HF export, and
   ARC-AGI claim evidence while explicitly distinguishing release-candidate
   status from any SOTA ARC-AGI claim.
+- Run `colab/build_stage5_arc_agi_sota_comparison.py` to create the
+  authoritative SOTA-comparison artifact consumed by the claim packet. It
+  requires a sourced `config/arc_agi_same_size_baselines.json`; the example file
+  is only a schema and must not be used for claims.
 - Include the modified-architecture caveat and training recipe.
