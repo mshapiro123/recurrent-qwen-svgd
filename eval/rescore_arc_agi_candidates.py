@@ -22,6 +22,8 @@ if str(ROOT) not in sys.path:
 from eval.eval_arc_agi import (  # noqa: E402
     grid_shape,
     grid_vote_key,
+    grid_to_json_text,
+    score_grid_prediction,
     summarize_candidate_sources,
     summarize_difficulty_buckets,
     summarize_examples,
@@ -302,6 +304,109 @@ def select_symbolic_priority_candidate_index(
     return select_heuristic_candidate_index(candidate_rows, preferred_shapes)
 
 
+def _candidate_weight(row: dict[str, Any], preferred_shapes: set[Shape]) -> float:
+    return max(reliability_vote_weight(row, preferred_shapes), 0.0)
+
+
+def cell_vote_grid(candidate_rows: list[dict[str, Any]], preferred_shapes: set[Shape]) -> list[list[int]] | None:
+    weighted_rows: list[tuple[int, dict[str, Any], float, Shape]] = []
+    for idx, row in enumerate(candidate_rows):
+        parsed = row.get("parsed_grid")
+        if parsed is None:
+            continue
+        shape = grid_shape(parsed)
+        if preferred_shapes and shape not in preferred_shapes:
+            continue
+        weight = _candidate_weight(row, preferred_shapes)
+        if weight > 0.0:
+            weighted_rows.append((idx, row, weight, shape))
+
+    if not weighted_rows and preferred_shapes:
+        return cell_vote_grid(candidate_rows, set())
+    if not weighted_rows:
+        return None
+
+    shape_stats: dict[Shape, dict[str, float | int]] = {}
+    for idx, _row, weight, shape in weighted_rows:
+        stats = shape_stats.setdefault(shape, {"weight": 0.0, "count": 0, "first_index": idx})
+        stats["weight"] = float(stats["weight"]) + weight
+        stats["count"] = int(stats["count"]) + 1
+        stats["first_index"] = min(int(stats["first_index"]), idx)
+
+    winning_shape = max(
+        shape_stats,
+        key=lambda shape: (
+            float(shape_stats[shape]["weight"]),
+            int(shape_stats[shape]["count"]),
+            -int(shape_stats[shape]["first_index"]),
+        ),
+    )
+    shape_rows = [(idx, row, weight) for idx, row, weight, shape in weighted_rows if shape == winning_shape]
+    rows, cols = winning_shape
+    voted: list[list[int]] = []
+    for row_idx in range(rows):
+        voted_row: list[int] = []
+        for col_idx in range(cols):
+            color_stats: dict[int, dict[str, float | int]] = {}
+            for idx, row, weight in shape_rows:
+                color = int(row["parsed_grid"][row_idx][col_idx])
+                stats = color_stats.setdefault(color, {"weight": 0.0, "count": 0, "first_index": idx})
+                stats["weight"] = float(stats["weight"]) + weight
+                stats["count"] = int(stats["count"]) + 1
+                stats["first_index"] = min(int(stats["first_index"]), idx)
+            voted_row.append(
+                max(
+                    color_stats,
+                    key=lambda color: (
+                        float(color_stats[color]["weight"]),
+                        int(color_stats[color]["count"]),
+                        -int(color_stats[color]["first_index"]),
+                    ),
+                )
+            )
+        voted.append(voted_row)
+    return voted
+
+
+def append_cell_vote_candidate(candidate_rows: list[dict[str, Any]], preferred_shapes: set[Shape]) -> int | None:
+    if not candidate_rows:
+        return None
+    voted = cell_vote_grid(candidate_rows, preferred_shapes)
+    if voted is None:
+        return None
+
+    max_candidate_index = max(int(row.get("candidate_index", idx)) for idx, row in enumerate(candidate_rows))
+    template = copy.deepcopy(candidate_rows[0])
+    target = template.get("target_grid")
+    template.update(
+        {
+            "candidate_index": max_candidate_index + 1,
+            "candidate_source": "selector_cell_vote",
+            "candidate_text": grid_to_json_text(voted),
+            "parsed_grid": voted,
+            "parse_method": "cell_vote",
+            "program_train_matches": 0,
+            "program_train_total": 0,
+            "program_fits_train": False,
+            "score": score_grid_prediction(voted, target),
+            "selector_generated": True,
+            "selected": False,
+            "previous_selected": False,
+        }
+    )
+    candidate_rows.append(template)
+    return len(candidate_rows) - 1
+
+
+def select_cell_vote_candidate_index(
+    candidate_rows: list[dict[str, Any]], preferred_shapes: set[Shape]
+) -> int:
+    synthetic_index = append_cell_vote_candidate(candidate_rows, preferred_shapes)
+    if synthetic_index is not None:
+        return synthetic_index
+    return select_reliability_vote_candidate_index(candidate_rows, preferred_shapes)
+
+
 def select_candidate_index(
     candidate_rows: list[dict[str, Any]],
     preferred_shapes: list[Shape],
@@ -317,6 +422,8 @@ def select_candidate_index(
         return select_reliability_vote_candidate_index(candidate_rows, preferred_shape_set)
     if selection_strategy == "symbolic_priority":
         return select_symbolic_priority_candidate_index(candidate_rows, preferred_shape_set)
+    if selection_strategy == "cell_vote":
+        return select_cell_vote_candidate_index(candidate_rows, preferred_shape_set)
     raise ValueError(f"Unknown selection_strategy={selection_strategy!r}")
 
 
@@ -368,6 +475,7 @@ def rescore_groups(
 
         target_available = has_target(candidate_rows)
         selected_row = candidate_rows[selected_index] if candidate_rows else {}
+        generated_rows = [row for row in candidate_rows if not row.get("selector_generated")]
         example_summaries.append(
             {
                 "task_id": key[0],
@@ -378,9 +486,10 @@ def rescore_groups(
                 "selected_index": selected_index,
                 "selection_strategy": selection_strategy,
                 "inferred_shapes": [list(shape) for shape in preferred_shapes],
-                "best_of_k_exact": any(score_exact(row) for row in candidate_rows) if target_available else None,
-                "valid_candidates": sum(1 for row in candidate_rows if score_valid(row)),
-                "num_candidates": len(candidate_rows),
+                "best_of_k_exact": any(score_exact(row) for row in generated_rows) if target_available else None,
+                "valid_candidates": sum(1 for row in generated_rows if score_valid(row)),
+                "num_candidates": len(generated_rows),
+                "selector_generated_candidates": len(candidate_rows) - len(generated_rows),
                 **example_metadata,
             }
         )
@@ -433,7 +542,7 @@ def main() -> int:
     parser.add_argument(
         "--selection_strategy",
         default="heuristic",
-        choices=("heuristic", "self_consistency", "reliability_vote", "symbolic_priority"),
+        choices=("heuristic", "self_consistency", "reliability_vote", "symbolic_priority", "cell_vote"),
     )
     parser.add_argument("--output_jsonl")
     parser.add_argument("--output_summary_json")

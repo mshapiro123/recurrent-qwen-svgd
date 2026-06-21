@@ -16,6 +16,7 @@ from colab.run_stage5_arc_agi_rescore_selectors import (
 def test_requested_strategies_defaults_and_validates() -> None:
     assert requested_strategies("heuristic,self_consistency") == ["heuristic", "self_consistency"]
     assert "reliability_vote" in requested_strategies()
+    assert "cell_vote" in requested_strategies()
 
     try:
         requested_strategies("heuristic,bogus")

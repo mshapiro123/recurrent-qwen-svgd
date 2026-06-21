@@ -30,7 +30,7 @@ RUN_DIR.mkdir(parents=True, exist_ok=True)
 
 STRATEGIES = os.environ.get(
     "STAGE5_ARC_AGI_RESCORE_STRATEGIES",
-    "heuristic,self_consistency,reliability_vote,symbolic_priority",
+    "heuristic,self_consistency,reliability_vote,symbolic_priority,cell_vote",
 )
 SOURCE_RUN_DIR = os.environ.get("STAGE5_ARC_AGI_RESCORE_SOURCE_RUN_DIR", "")
 SOURCE_GLOB = os.environ.get("STAGE5_ARC_AGI_RESCORE_SOURCE_GLOB", "*_candidates.jsonl")
@@ -99,7 +99,7 @@ def write_json(path: str | Path, payload: dict[str, Any]) -> None:
 
 def requested_strategies(value: str = STRATEGIES) -> list[str]:
     strategies = [item.strip() for item in value.split(",") if item.strip()]
-    valid = {"heuristic", "self_consistency", "reliability_vote", "symbolic_priority"}
+    valid = {"heuristic", "self_consistency", "reliability_vote", "symbolic_priority", "cell_vote"}
     unknown = set(strategies) - valid
     if unknown:
         raise ValueError(f"Unknown selector strategies: {sorted(unknown)}")

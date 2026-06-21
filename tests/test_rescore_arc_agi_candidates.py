@@ -115,6 +115,32 @@ def test_rescore_symbolic_priority_selects_later_symbolic_candidate() -> None:
     assert summaries[0]["selected_exact"] is True
 
 
+def test_rescore_cell_vote_can_synthesize_correct_grid_from_partial_candidates() -> None:
+    rows = [
+        candidate_row(0, [[6, 9]], exact=False, source="model_tta_identity", selected=True),
+        candidate_row(1, [[6, 6]], exact=True, source="model_tta_rot90"),
+        candidate_row(2, [[9, 6]], exact=False, source="model_tta_rot180"),
+        candidate_row(3, [[5, 6]], exact=False, source="model_tta_flip_h"),
+    ]
+    rows[1]["score"]["exact"] = False
+    rows[1]["target_grid"] = [[6, 6]]
+
+    rescored, summaries = rescore_groups(
+        rows,
+        inferred_shapes_by_key={("task", 0): [(1, 2)]},
+        selection_strategy="cell_vote",
+    )
+
+    selected = [row for row in rescored if row["selected"]]
+    assert selected[0]["candidate_source"] == "selector_cell_vote"
+    assert selected[0]["parsed_grid"] == [[6, 6]]
+    assert selected[0]["score"]["exact"] is True
+    assert summaries[0]["selected_exact"] is True
+    assert summaries[0]["best_of_k_exact"] is False
+    assert summaries[0]["selector_generated_candidates"] == 1
+    assert summaries[0]["num_candidates"] == 4
+
+
 def test_rescore_verified_program_still_beats_symbolic_priority() -> None:
     rows = [
         candidate_row(0, [[9, 9]], exact=False, source="model", selected=True),
