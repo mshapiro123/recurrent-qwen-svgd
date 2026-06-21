@@ -1,0 +1,44 @@
+{
+  "run_id": "stage5_phase1_best_gpqa16_20260621_184030",
+  "kind": "stage5_benchmark_suite",
+  "status": "completed_with_failures",
+  "source_summary": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/summary.json",
+  "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_200.pt",
+  "benchmarks": [
+    "gpqa_lite"
+  ],
+  "score_targets": [
+    "label"
+  ],
+  "aggregates": [
+    "mean"
+  ],
+  "recurrent_mode": "phase1",
+  "recurrent_num_trajectories": 1,
+  "elapsed_seconds": 1.868919849395752,
+  "failures": [
+    {
+      "stage": "prepare",
+      "benchmark": "gpqa_lite",
+      "error": "command failed: /usr/bin/python3 eval/prepare_gpqa_mcq.py --config gpqa_diamond --split train --limit 16 --seed 0 --output_jsonl /content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_phase1_best_gpqa16_20260621_184030/gpqa_diamond_16.jsonl"
+    }
+  ],
+  "results": {
+    "gpqa_lite": {
+      "label": {
+        "base": {},
+        "recurrent": {}
+      }
+    }
+  },
+  "comparisons": {
+    "gpqa_lite": {
+      "label": {}
+    }
+  },
+  "paired_comparisons": {
+    "gpqa_lite": {
+      "label": {}
+    }
+  }
+}
