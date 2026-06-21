@@ -1246,6 +1246,18 @@ def claim_readiness_actions(payload: dict[str, Any], *, source_summary: Path) ->
             )
         ]
     if status == "ready_for_release_candidate_not_sota":
+        arc_agi_summary = (
+            ((payload.get("artifacts") or {}).get("arc_agi_comparison") or {}).get("summary") or {}
+        )
+        if arc_agi_summary.get("comparison_scope") == "reproduced_control":
+            return [
+                make_action(
+                    "Add public-source ARC-AGI same-size baselines",
+                    "The claim packet already records a reproduced-control ARC-AGI comparison, but SOTA readiness requires public-source same-size baselines rather than local reproduced controls.",
+                    f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                    10,
+                )
+            ]
         return [
             make_action(
                 "Build ARC-AGI same-size comparison artifact",
@@ -1293,6 +1305,20 @@ def arc_agi_sota_comparison_actions(payload: dict[str, Any], *, source_summary: 
                 command_env(
                     {
                         "STAGE5_CLAIM_PACKET_RUN_ID": f"{RUN_ID}_claim_packet_with_arc_agi",
+                    },
+                    "python colab/build_stage5_claim_packet.py",
+                ),
+                10,
+            )
+        ]
+    if status == "passed_reproduced_control":
+        return [
+            make_action(
+                "Rebuild claim packet with reproduced ARC-AGI control",
+                "The recurrent candidate beat the local reproduced same-size control; rebuild the claim packet so it records recovery evidence while still blocking public SOTA readiness.",
+                command_env(
+                    {
+                        "STAGE5_CLAIM_PACKET_RUN_ID": f"{RUN_ID}_claim_packet_with_reproduced_arc_agi",
                     },
                     "python colab/build_stage5_claim_packet.py",
                 ),

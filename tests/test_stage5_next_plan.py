@@ -1862,6 +1862,28 @@ def test_claim_readiness_release_candidate_inspects_markdown(tmp_path) -> None:
     assert "python colab/build_stage5_arc_agi_sota_comparison.py" in actions[0]["command"]
 
 
+def test_claim_readiness_with_reproduced_control_requests_public_baselines(tmp_path) -> None:
+    source = tmp_path / "claim" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_claim_readiness",
+        "status": "ready_for_release_candidate_not_sota",
+        "artifacts": {
+            "arc_agi_comparison": {
+                "summary": {
+                    "status": "passed_reproduced_control",
+                    "comparison_scope": "reproduced_control",
+                }
+            }
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Add public-source ARC-AGI same-size baselines"
+    assert "summary.md" in actions[0]["command"]
+
+
 def test_claim_readiness_sota_export_linkage_runs_hf_exporter(tmp_path) -> None:
     source = tmp_path / "claim" / "summary.json"
     source.parent.mkdir()
@@ -1888,6 +1910,23 @@ def test_arc_agi_sota_comparison_passed_rebuilds_claim_packet(tmp_path) -> None:
     actions = plan_next_actions(payload, source_summary=source)
 
     assert actions[0]["name"] == "Rebuild claim packet with ARC-AGI comparison"
+    assert "python colab/build_stage5_claim_packet.py" in actions[0]["command"]
+
+
+def test_arc_agi_sota_comparison_reproduced_control_rebuilds_claim_packet(tmp_path) -> None:
+    source = tmp_path / "arc_agi_sota" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_arc_agi_sota_comparison",
+        "status": "passed_reproduced_control",
+        "passed": False,
+        "control_passed": True,
+        "comparison_scope": "reproduced_control",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Rebuild claim packet with reproduced ARC-AGI control"
     assert "python colab/build_stage5_claim_packet.py" in actions[0]["command"]
 
 
