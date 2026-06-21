@@ -9,6 +9,7 @@ from colab.plan_stage5_next_run import (
     paired_delta_or_aggregate,
     paired_metric,
     plan_next_actions,
+    recovery_particle_actions,
     selector_rescore_actions,
     source_kind,
 )
@@ -767,7 +768,7 @@ def test_recovery_particle_gate_particle_pass_recommends_replicated_particle_gat
     }
     source.write_text(json.dumps(payload), encoding="utf-8")
 
-    actions = plan_next_actions(payload, source_summary=source)
+    actions = recovery_particle_actions(payload, source_summary=source)
     particle = next(action for action in actions if action["name"].startswith("Replicate particle value"))
 
     assert "k4_noise001_rep05" in particle["name"]
@@ -775,6 +776,96 @@ def test_recovery_particle_gate_particle_pass_recommends_replicated_particle_gat
     assert "STAGE5_ARC_AGI_EVAL_TASK_LIMIT=400" in particle["command"]
     assert "STAGE5_ARC_AGI_PARTICLE_SEEDS=0,1,2,3,4" in particle["command"]
     assert "STAGE5_ARC_AGI_PARTICLE_VARIANTS=k4_noise001_rep05:0.01:0.5" in particle["command"]
+
+
+def test_recovery_particle_gate_particle_pass_requests_gate2_assessment(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    payload = {
+        "recovery_decision": {"passed": True, "evidence": {}},
+        "particle_decision": {
+            "passed": True,
+            "evidence": {
+                "best_replicated_variant": "k4_noise001_rep05",
+                "variants": {
+                    "k4_noise001_rep05": {
+                        "passed": True,
+                        "evaluated_seed_count": 5,
+                        "non_negative_seed_count": 5,
+                        "mean_delta_vs_tuned": {"selected_delta": 1, "best_of_k_delta": 2},
+                    }
+                },
+            },
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Assess Gate 2 particle mechanism evidence"
+    assert "colab/assess_stage5_gate2.py" in actions[0]["command"]
+
+
+def test_gate2_passed_delegates_to_particle_replication(tmp_path) -> None:
+    source = tmp_path / "particle" / "summary.json"
+    source.parent.mkdir()
+    source_payload = {
+        "settings": {
+            "eval_task_limit": 100,
+            "synthetic_tasks": 200,
+            "synthetic_modes": "all",
+            "train_steps": 300,
+            "train_task_limit": 100,
+            "trace_mode": "symbolic_program",
+            "trace_filter": "covered",
+            "program_parse_mode": "prefer",
+            "selection_strategy": "heuristic",
+            "particle_variants": [
+                {"name": "k4_noise001_rep05", "noise": 0.01, "repulsion": 0.5},
+            ],
+        },
+        "recovery_decision": {"passed": True, "evidence": {}},
+        "particle_decision": {
+            "passed": True,
+            "evidence": {"best_replicated_variant": "k4_noise001_rep05"},
+        },
+    }
+    source.write_text(json.dumps(source_payload), encoding="utf-8")
+    gate2 = tmp_path / "gate2" / "summary.json"
+    gate2.parent.mkdir()
+    payload = {
+        "gate": "stage5_gate2_particle_mechanism",
+        "status": "passed",
+        "passed": True,
+        "reason": "replicated selected lift",
+        "next_step": "replicate larger",
+        "source_summary": str(source),
+        "source_kind": "recovery_particle_gate",
+    }
+    gate2.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=gate2)
+
+    assert actions[0]["name"].startswith("Gate 2 passed: Replicate particle value `k4_noise001_rep05`")
+    assert "replicated selected lift" in actions[0]["reason"]
+    assert "run_stage5_arc_agi_recovery_particle_gate.py" in actions[0]["command"]
+
+
+def test_gate2_selector_conversion_stops_for_inspection(tmp_path) -> None:
+    gate2 = tmp_path / "gate2" / "summary.json"
+    gate2.parent.mkdir()
+    payload = {
+        "gate": "stage5_gate2_particle_mechanism",
+        "status": "needs_selector_conversion",
+        "passed": False,
+        "reason": "coverage improved but selected accuracy did not",
+        "next_step": "run selector work",
+    }
+    gate2.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=gate2)
+
+    assert actions[0]["name"] == "Inspect Gate 2 assessment `needs_selector_conversion`"
+    assert actions[0]["command"].startswith("cat ")
 
 
 def test_gate1_passed_delegates_to_source_summary_action(tmp_path) -> None:
@@ -952,4 +1043,5 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"best_by_label": {}, "rows": []}) == "selector_rescore"
     assert source_kind({"recovery_decision": {}, "particle_decision": {}}) == "recovery_particle_gate"
     assert source_kind({"gate": "stage5_gate1_selector_tta"}) == "gate1_assessment"
+    assert source_kind({"gate": "stage5_gate2_particle_mechanism"}) == "gate2_assessment"
     assert source_kind({"rows": [], "deltas": {}, "paired_comparisons": {}}) == "tta_sweep"

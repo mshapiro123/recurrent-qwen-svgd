@@ -118,6 +118,13 @@ Initial harness files:
   recovered checkpoint before running the particle arms. Use this to separate
   "more targeted training helped the recurrent model" from "particles add value
   over the recovered recurrent model."
+- `colab/assess_stage5_gate2.py`: no-GPU assessment for recovery-particle
+  summaries. It writes an auditable Gate 2 decision:
+  `passed`, `needs_more_evidence`, `needs_selector_conversion`,
+  `needs_review`, or `failed`. A pass requires replicated selected-answer lift
+  for a particle setting over the recovered deterministic recurrent baseline.
+  Candidate-coverage-only lift is tracked separately because it is useful
+  mechanism evidence, but not enough to scale particles without selector work.
 - Grid output formats: JSON, compact row strings, and tagged row strings are
   supported. Colab ARC-AGI runners default to compact row strings because they
   are shorter and easier for a 0.5B model to emit reliably.

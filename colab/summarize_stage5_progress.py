@@ -135,6 +135,8 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         return True
     if payload.get("gate") == "stage5_gate1_selector_tta":
         return True
+    if payload.get("gate") == "stage5_gate2_particle_mechanism":
+        return True
     if {"base", "phase1_start", "recovered", "deltas"} <= set(payload):
         return True
     return False
@@ -285,6 +287,31 @@ def gate1_assessments(summary_files: list[Path]) -> list[dict[str, Any]]:
     return sorted(assessments, key=lambda item: str(item["path"]))
 
 
+def gate2_assessments(summary_files: list[Path]) -> list[dict[str, Any]]:
+    assessments: list[dict[str, Any]] = []
+    for path in summary_files:
+        payload = safe_read_json(path)
+        if not payload or payload.get("gate") != "stage5_gate2_particle_mechanism":
+            continue
+        best = payload.get("best_variant") or {}
+        assessments.append(
+            {
+                "path": path_for_cli(path),
+                "run_id": str(payload.get("run_id") or path.parent.name),
+                "status": payload.get("status"),
+                "passed": bool(payload.get("passed", False)),
+                "source_summary": payload.get("source_summary"),
+                "source_kind": payload.get("source_kind"),
+                "reason": payload.get("reason"),
+                "next_step": payload.get("next_step"),
+                "best_variant": best.get("variant"),
+                "selected_delta": float(best.get("selected_delta", 0.0) or 0.0),
+                "best_of_k_delta": float(best.get("best_of_k_delta", 0.0) or 0.0),
+            }
+        )
+    return sorted(assessments, key=lambda item: str(item["path"]))
+
+
 def iter_summary_files(scan_root: Path) -> list[Path]:
     if not scan_root.exists():
         return []
@@ -382,6 +409,7 @@ def scan_progress(scan_root: Path, *, run_id: str | None = None) -> dict[str, An
         "best_by_arm": best_records(records),
         "recovered_vs_base_gaps": recovered_base_gaps(records),
         "gate1_assessments": gate1_assessments(summary_files),
+        "gate2_assessments": gate2_assessments(summary_files),
         "recommended_next_plan_source": latest_planner_source(summary_files),
     }
 
@@ -427,6 +455,17 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
             )
     else:
         lines.append("- No Gate 1 assessment summaries found.")
+    lines.extend(["", "## Gate 2 Assessments", ""])
+    if payload["gate2_assessments"]:
+        for assessment in payload["gate2_assessments"][-10:]:
+            lines.append(
+                f"- `{assessment['run_id']}` status `{assessment['status']}` passed "
+                f"`{assessment['passed']}` variant `{assessment['best_variant']}` "
+                f"selected delta `{assessment['selected_delta']}`, best-of-K delta "
+                f"`{assessment['best_of_k_delta']}`: {assessment['reason']}"
+            )
+    else:
+        lines.append("- No Gate 2 assessment summaries found.")
     (output_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((output_dir / "summary.md").read_text(encoding="utf-8"))
 

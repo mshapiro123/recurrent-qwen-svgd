@@ -70,6 +70,13 @@ useful diversity that a selector converts to accuracy:
 - diversity that improves exact candidate coverage rather than only noise;
 - held-out confirmation of the selected mechanism.
 
+Implementation note: Stage 5 now has an explicit Gate 2 assessment artifact,
+`colab/assess_stage5_gate2.py`, for recovery-particle summaries. It separates
+replicated selected-answer lift from the weaker case where particles improve
+best-of-K coverage but the selector does not convert that coverage into selected
+accuracy. The next-action planner runs this assessment before treating particle
+evidence as a scaling signal.
+
 ## Base Model Decision
 
 Qwen 0.5B is likely below the floor for frontier verifiable reasoning. It is
