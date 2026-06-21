@@ -1,0 +1,20 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5259.13it/s]
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6172.91it/s]
+distillation_teacher=Qwen/Qwen2.5-0.5B-Instruct
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/phase1/phase1_step_125.pt loaded_keys=173
+step=0 mean_expected_loops=2.8487 mean_halt_entropy=1.2935 trajectory_diversity=0.0747 svgd_bandwidth=37.0166 svgd_pairwise_distance=6.3911 svgd_drift_rms=0.6188 svgd_repulsion_rms_pre_clip=0.0300 svgd_repulsion_rms=0.0300 svgd_repulsion_clip_fraction=0.0000 svgd_velocity_rms=0.2768 expected_ce=1.7479 halting_kl=0.5143 loss=2.2130 base_distill_kl=1.0086
+step=5 mean_expected_loops=2.8309 mean_halt_entropy=1.2926 trajectory_diversity=0.1256 svgd_bandwidth=85.9906 svgd_pairwise_distance=9.5788 svgd_drift_rms=0.6114 svgd_repulsion_rms_pre_clip=0.0428 svgd_repulsion_rms=0.0428 svgd_repulsion_clip_fraction=0.0000 svgd_velocity_rms=0.2888 expected_ce=1.3579 halting_kl=0.5045 loss=2.3968 base_distill_kl=2.4463
+step=10 mean_expected_loops=2.9201 mean_halt_entropy=1.2603 trajectory_diversity=0.1489 svgd_bandwidth=45.7313 svgd_pairwise_distance=8.4496 svgd_drift_rms=0.6381 svgd_repulsion_rms_pre_clip=0.0369 svgd_repulsion_rms=0.0369 svgd_repulsion_clip_fraction=0.0000 svgd_velocity_rms=0.2701 expected_ce=2.0807 halting_kl=0.5901 loss=2.8384 base_distill_kl=1.7177
+step=15 mean_expected_loops=2.8549 mean_halt_entropy=1.2894 trajectory_diversity=0.0761 svgd_bandwidth=34.2511 svgd_pairwise_distance=6.2729 svgd_drift_rms=0.6047 svgd_repulsion_rms_pre_clip=0.0263 svgd_repulsion_rms=0.0263 svgd_repulsion_clip_fraction=0.0000 svgd_velocity_rms=0.2710 expected_ce=2.3576 halting_kl=0.2115 loss=2.6955 base_distill_kl=0.7815
+step=20 mean_expected_loops=2.8936 mean_halt_entropy=1.2678 trajectory_diversity=0.1955 svgd_bandwidth=57.3833 svgd_pairwise_distance=8.8567 svgd_drift_rms=0.6275 svgd_repulsion_rms_pre_clip=0.0480 svgd_repulsion_rms=0.0480 svgd_repulsion_clip_fraction=0.0000 svgd_velocity_rms=0.2833 expected_ce=2.2667 halting_kl=0.5668 loss=3.0377 base_distill_kl=1.7579
+step=25 mean_expected_loops=2.8863 mean_halt_entropy=1.2712 trajectory_diversity=0.3419 svgd_bandwidth=112.5854 svgd_pairwise_distance=12.6958 svgd_drift_rms=0.6328 svgd_repulsion_rms_pre_clip=0.0569 svgd_repulsion_rms=0.0569 svgd_repulsion_clip_fraction=0.0000 svgd_velocity_rms=0.2843 expected_ce=2.9232 halting_kl=0.5591 loss=3.7688 base_distill_kl=1.9471
+step=30 mean_expected_loops=2.7792 mean_halt_entropy=1.3176 trajectory_diversity=0.0471 svgd_bandwidth=35.5048 svgd_pairwise_distance=6.3284 svgd_drift_rms=0.6598 svgd_repulsion_rms_pre_clip=0.0271 svgd_repulsion_rms=0.0271 svgd_repulsion_clip_fraction=0.0000 svgd_velocity_rms=0.2819 expected_ce=2.6447 halting_kl=0.4487 loss=3.2301 base_distill_kl=1.3289
+step=35 mean_expected_loops=2.8270 mean_halt_entropy=1.3026 trajectory_diversity=0.0536 svgd_bandwidth=22.9372 svgd_pairwise_distance=5.2540 svgd_drift_rms=0.6205 svgd_repulsion_rms_pre_clip=0.0246 svgd_repulsion_rms=0.0246 svgd_repulsion_clip_fraction=0.0000 svgd_velocity_rms=0.2691 expected_ce=2.1836 halting_kl=0.4922 loss=2.6477 base_distill_kl=1.0128
+step=40 mean_expected_loops=2.8507 mean_halt_entropy=1.2923 trajectory_diversity=0.0134 svgd_bandwidth=5.9515 svgd_pairwise_distance=2.5671 svgd_drift_rms=0.5847 svgd_repulsion_rms_pre_clip=0.0127 svgd_repulsion_rms=0.0127 svgd_repulsion_clip_fraction=0.0000 svgd_velocity_rms=0.2760 expected_ce=1.0250 halting_kl=0.5167 loss=1.3987 base_distill_kl=0.7792
+step=45 mean_expected_loops=2.8321 mean_halt_entropy=1.3010 trajectory_diversity=0.0335 svgd_bandwidth=9.8563 svgd_pairwise_distance=3.8125 svgd_drift_rms=0.6244 svgd_repulsion_rms_pre_clip=0.0187 svgd_repulsion_rms=0.0187 svgd_repulsion_clip_fraction=0.0000 svgd_velocity_rms=0.2609 expected_ce=1.9089 halting_kl=0.4968 loss=2.2951 base_distill_kl=0.8165
+saved_checkpoint=outputs/stage5/stage5_recovered_phase2_smoke_20260621_180336/phase2/phase2_step_50.pt
