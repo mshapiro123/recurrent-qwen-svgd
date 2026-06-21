@@ -62,6 +62,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/plan_stage5_next_run.py",
     "colab/validate_arc_agi_baseline_registry.py",
     "colab/run_stage5_arc_agi_autopilot_followup.py",
+    "colab/run_stage5_arc_agi_candidate_gate.py",
     "colab/run_stage5_arc_agi_candidate_distill_gate.py",
     "colab/run_stage5_arc_agi_curriculum_particle_autopilot.py",
     "colab/run_stage5_arc_agi_recovered_benchmark.py",
@@ -181,14 +182,45 @@ def execute_parsed_command(parsed: ParsedCommand, *, log_name: str = "selected_a
     return run(parsed.argv, env=env, log_name=log_name)
 
 
+def bootstrap_plan(plan_run_id: str, *, reason: str) -> dict[str, Any]:
+    """First Stage 5 action when no prior result summary exists."""
+
+    return {
+        "run_id": plan_run_id,
+        "source_kind": "bootstrap",
+        "source_summary": None,
+        "reason": reason,
+        "actions": [
+            {
+                "name": "Run Stage 5 ARC-AGI candidate gate",
+                "reason": (
+                    "No Stage 5 summary exists yet; start with the candidate-source gate to measure "
+                    "base, recurrent, symbolic, and hybrid ARC-AGI exact-grid behavior before SFT or particles."
+                ),
+                "command": (
+                    f"STAGE5_ARC_AGI_GATE_RUN_ID={RUN_ID}_candidate_gate "
+                    "python colab/run_stage5_arc_agi_candidate_gate.py"
+                ),
+                "priority": 10,
+            }
+        ],
+    }
+
+
 def run_planner(*, step: int | None = None) -> tuple[Path, dict[str, Any], subprocess.CompletedProcess[str]]:
     plan_run_id = f"{RUN_ID}_plan" if step is None else f"{RUN_ID}_plan{step:02d}"
     env = os.environ.copy()
     env["STAGE5_ARC_AGI_NEXT_PLAN_RUN_ID"] = plan_run_id
     if SOURCE_SUMMARY:
         env["STAGE5_ARC_AGI_NEXT_PLAN_SOURCE_SUMMARY"] = SOURCE_SUMMARY
-    proc = run([sys.executable, "colab/plan_stage5_next_run.py"], env=env, log_name="planner.log")
+    proc = run([sys.executable, "colab/plan_stage5_next_run.py"], env=env, check=False, log_name="planner.log")
     plan_summary = ROOT / "outputs" / "stage5" / plan_run_id / "summary.json"
+    if proc.returncode:
+        if not SOURCE_SUMMARY and "No Stage 5 result summary found" in proc.stdout:
+            plan = bootstrap_plan(plan_run_id, reason="planner_found_no_stage5_summary")
+            write_json(plan_summary, plan)
+            return plan_summary, plan, proc
+        raise RuntimeError(f"command failed: {sys.executable} colab/plan_stage5_next_run.py")
     if not plan_summary.exists():
         raise FileNotFoundError(plan_summary)
     return plan_summary, read_json(plan_summary), proc

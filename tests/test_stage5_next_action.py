@@ -6,9 +6,11 @@ import sys
 import colab.run_stage5_next_action as module
 from colab.run_stage5_next_action import (
     action_fingerprint,
+    bootstrap_plan,
     execute_action_loop,
     is_repeat_action,
     parse_action_command,
+    run_planner,
     selected_action,
 )
 
@@ -177,6 +179,16 @@ def test_parse_action_command_allows_benchmark_suite_runner() -> None:
     assert parsed.argv == [sys.executable, "colab/run_stage5_benchmark_suite.py"]
 
 
+def test_parse_action_command_allows_candidate_gate_runner() -> None:
+    parsed = parse_action_command(
+        "STAGE5_ARC_AGI_GATE_RUN_ID=gate python colab/run_stage5_arc_agi_candidate_gate.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_ARC_AGI_GATE_RUN_ID": "gate"}
+    assert parsed.argv == [sys.executable, "colab/run_stage5_arc_agi_candidate_gate.py"]
+
+
 def test_parse_action_command_allows_selector_replication_assessor() -> None:
     parsed = parse_action_command(
         "STAGE5_SELECTOR_REPLICATION_RUN_ID=selector_rep python colab/assess_stage5_selector_replication.py"
@@ -290,3 +302,36 @@ def test_execute_action_loop_rejects_nonpositive_max_actions() -> None:
         assert "MAX_ACTIONS must be >= 1" in str(exc)
     else:
         raise AssertionError("nonpositive max_actions should fail")
+
+
+def test_bootstrap_plan_runs_candidate_gate_first() -> None:
+    plan = bootstrap_plan("bootstrap_run", reason="no summaries")
+
+    action = plan["actions"][0]
+    assert plan["source_kind"] == "bootstrap"
+    assert action["name"] == "Run Stage 5 ARC-AGI candidate gate"
+    assert "python colab/run_stage5_arc_agi_candidate_gate.py" in action["command"]
+
+
+def test_run_planner_bootstraps_when_no_stage5_summary(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(module, "RUN_ID", "bootstrap")
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_DIR", tmp_path / "run")
+    monkeypatch.setattr(module, "SOURCE_SUMMARY", "")
+
+    def fake_run(cmd, *, env=None, check=True, log_name=None):
+        return subprocess.CompletedProcess(
+            cmd,
+            1,
+            "FileNotFoundError: No Stage 5 result summary found. Set STAGE5_ARC_AGI_NEXT_PLAN_SOURCE_SUMMARY.",
+            None,
+        )
+
+    monkeypatch.setattr(module, "run", fake_run)
+
+    path, plan, proc = run_planner()
+
+    assert proc.returncode == 1
+    assert path.exists()
+    assert plan["source_kind"] == "bootstrap"
+    assert plan["actions"][0]["name"] == "Run Stage 5 ARC-AGI candidate gate"
