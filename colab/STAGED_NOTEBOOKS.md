@@ -9,10 +9,11 @@ path below stays inside the current runtime.
 
 The active next A100-worthy job is not Stage 1. It is the full balanced
 ARC-Easy/ARC-Challenge assessment for the passed ARC-mix proxy checkpoint. Use
-[`STAGE5_FULL_ASSESSMENT_CELL.md`](STAGE5_FULL_ASSESSMENT_CELL.md) when credits
-are tight: that cell updates the repo, runs exactly
-`colab/run_stage5_full_assessment_once.py`, commits safe text artifacts, and
-disconnects the runtime after completion.
+[`07_stage5_full_arc_assessment.ipynb`](07_stage5_full_arc_assessment.ipynb)
+or [`STAGE5_FULL_ASSESSMENT_CELL.md`](STAGE5_FULL_ASSESSMENT_CELL.md) when
+credits are tight: both update the repo, run exactly
+`colab/run_stage5_full_assessment_once.py`, commit safe text artifacts, and
+disconnect the runtime after completion.
 
 Do not use the generic continuation cell for this narrow gate unless you
 intentionally want the planner to choose a different action.

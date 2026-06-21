@@ -35,3 +35,16 @@ def test_stage_launcher_uses_colab_continue_wrapper() -> None:
     assert "claim" in text
     assert payload["cells"][0]["cell_type"] == "markdown"
     assert payload["cells"][1]["cell_type"] == "code"
+
+
+def test_full_arc_assessment_notebook_is_single_purpose() -> None:
+    payload = notebook_payload("colab/07_stage5_full_arc_assessment.ipynb")
+    text = "\n".join(str(cell.get("source", "")) for cell in payload.get("cells", []))
+
+    assert "colab/run_stage5_full_assessment_once.py" in text
+    assert "STAGE5_FULL_ASSESS_AUTO_DISCONNECT" in text
+    assert "stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe/summary.json" in text
+    assert "colab/run_stage5_colab_continue.py" not in text
+    assert "colab/run_stage5_reasoning_dataset_pipeline.py" not in text
+    assert payload["cells"][0]["cell_type"] == "markdown"
+    assert payload["cells"][1]["cell_type"] == "code"

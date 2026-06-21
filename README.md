@@ -136,8 +136,10 @@ python colab/run_stage5_full_assessment_once.py
 
 The notebook-ready copy/paste cell is in
 [`colab/STAGE5_FULL_ASSESSMENT_CELL.md`](colab/STAGE5_FULL_ASSESSMENT_CELL.md).
-It clones or updates the private repo, runs exactly this assessment, pushes
-safe text artifacts, and disconnects the Colab runtime when finished.
+The direct notebook version is
+[`colab/07_stage5_full_arc_assessment.ipynb`](colab/07_stage5_full_arc_assessment.ipynb).
+Both clone or update the private repo, run exactly this assessment, push safe
+text artifacts, and disconnect the Colab runtime when finished.
 
 Do not run GPQA, Phase 2/SVGD, or scale-up jobs before this deterministic
 recurrent recovery question is resolved.
