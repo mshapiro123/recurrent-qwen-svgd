@@ -334,7 +334,9 @@ candidate summary exactly. Each baseline row must also explicitly repeat the
 ARC version/split and include an `evidence_type` such as
 `official_leaderboard`, `paper`, `model_card`, `repository`, or
 `reproduced_eval`, so mixed-protocol scores cannot be hidden under a global
-registry header.
+registry header. A `reproduced_eval` row may use a local JSON
+`source_artifact` instead of an external source only when the artifact exists
+in the repo and the row records the `reproduction_command` and `git_commit`.
 
 Set `STAGE5_ARC_AGI_DISTILL=1` to add frozen-base next-token KL distillation
 inside `training/train_phase1_ponder.py`. Run

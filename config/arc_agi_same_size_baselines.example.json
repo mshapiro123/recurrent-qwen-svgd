@@ -7,7 +7,7 @@
     "min_params_b": 0.3,
     "max_params_b": 1.0
   },
-  "source_notes": "Copy this file to config/arc_agi_same_size_baselines.json and fill it with sourced same-size model scores before making any SOTA claim.",
+  "source_notes": "Copy this file to config/arc_agi_same_size_baselines.json and fill it with sourced same-size model scores before making any SOTA claim. Official/paper/model-card rows need source URLs/DOIs/arXiv references. reproduced_eval rows may instead cite an existing local JSON artifact plus reproduction_command and git_commit.",
   "baselines": [
     {
       "name": "example-model-0.5b",
@@ -20,6 +20,20 @@
       "source": "REPLACE_WITH_AUTHORITATIVE_SOURCE",
       "accessed_date": "YYYY-MM-DD",
       "notes": "Placeholder example only; do not use for claims."
+    },
+    {
+      "name": "example-reproduced-qwen-0.5b-base",
+      "params_b": 0.5,
+      "arc_version": "1",
+      "arc_split": "evaluation",
+      "accuracy": 0.0,
+      "metric": "selected_accuracy",
+      "evidence_type": "reproduced_eval",
+      "source_artifact": "outputs/stage5/REPLACE_WITH_BASELINE_RUN/summary.json",
+      "reproduction_command": "REPLACE_WITH_COMMAND",
+      "git_commit": "REPLACE_WITH_GIT_COMMIT",
+      "accessed_date": "YYYY-MM-DD",
+      "notes": "Placeholder reproduced-eval example only; source_artifact must exist and be generated from the stated command/commit."
     }
   ]
 }

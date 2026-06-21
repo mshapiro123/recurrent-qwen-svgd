@@ -43,9 +43,9 @@ def path_for_cli(path: Path | None) -> str:
     if path is None:
         return ""
     try:
-        return str(path.relative_to(ROOT))
+        return path.relative_to(ROOT).as_posix()
     except ValueError:
-        return str(path)
+        return str(path).replace("\\", "/")
 
 
 def baseline_registry_next_step(passed: bool) -> str:
@@ -90,6 +90,31 @@ def is_authoritative_source(value: Any) -> bool:
     if "example.com" in lower:
         return False
     return lower.startswith(("https://", "http://", "doi:", "arxiv:"))
+
+
+def local_artifact_path(value: Any) -> Path | None:
+    text = text_value(value)
+    if is_placeholder_text(text):
+        return None
+    path = resolve_path(text)
+    if not path.exists() or not path.is_file():
+        return None
+    if path.suffix.lower() != ".json":
+        return None
+    try:
+        path.relative_to(ROOT)
+    except ValueError:
+        return None
+    return path
+
+
+def has_reproduced_eval_evidence(row: dict[str, Any]) -> bool:
+    if text_value(row.get("evidence_type")) != "reproduced_eval":
+        return False
+    artifact = local_artifact_path(row.get("source_artifact") or row.get("artifact") or row.get("summary_json"))
+    command = row.get("reproduction_command") or row.get("command")
+    commit = row.get("git_commit") or row.get("commit")
+    return artifact is not None and not is_placeholder_text(command) and not is_placeholder_text(commit)
 
 
 def is_valid_date(value: Any) -> bool:
@@ -221,13 +246,24 @@ def validate_registry_payload(payload: Any, *, source_path: Path | None = None) 
             issues.append(issue(f"{row_path}.accuracy", "accuracy must be a finite number between 0 and 1."))
 
         source = row.get("source") or row.get("source_url") or row.get("citation_url")
-        if not is_authoritative_source(source):
-            issues.append(
-                issue(
-                    f"{row_path}.source",
-                    "source must be an authoritative URL, DOI, or arXiv reference, not a placeholder.",
+        reproduced_eval = evidence_type == "reproduced_eval"
+        has_external_source = is_authoritative_source(source)
+        has_local_reproduction = has_reproduced_eval_evidence(row)
+        if not has_external_source and not has_local_reproduction:
+            if reproduced_eval:
+                issues.append(
+                    issue(
+                        f"{row_path}.source_artifact",
+                        "reproduced_eval rows need either an authoritative source URL/DOI/arXiv reference or an existing local JSON source_artifact plus reproduction_command and git_commit.",
+                    )
                 )
-            )
+            else:
+                issues.append(
+                    issue(
+                        f"{row_path}.source",
+                        "source must be an authoritative URL, DOI, or arXiv reference, not a placeholder.",
+                    )
+                )
 
         date_value = row.get("accessed_date") or row.get("as_of_date")
         if not is_valid_date(date_value):
@@ -250,6 +286,9 @@ def validate_registry_payload(payload: Any, *, source_path: Path | None = None) 
                     "evidence_type": evidence_type,
                     "accuracy": float(accuracy),
                     "source": text_value(source),
+                    "source_artifact": path_for_cli(
+                        local_artifact_path(row.get("source_artifact") or row.get("artifact") or row.get("summary_json"))
+                    ),
                 }
             )
 
@@ -382,10 +421,11 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
     valid_baselines = payload.get("valid_baselines") or []
     if valid_baselines:
         for row in valid_baselines:
+            source_ref = row.get("source") or row.get("source_artifact")
             lines.append(
                 f"- `{row.get('name')}`: accuracy `{row.get('accuracy')}`, params `{row.get('params_b')}`B, "
                 f"ARC `{row.get('arc_version')}`/`{row.get('arc_split')}`, evidence `{row.get('evidence_type')}`, "
-                f"source `{row.get('source')}`"
+                f"source `{source_ref}`"
             )
     else:
         lines.append("- None.")
@@ -413,9 +453,14 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
             "repository, or reproduced eval. Placeholder, mixed-split, or "
             "unsourced values keep the SOTA gate closed.",
             "",
+            "`reproduced_eval` rows may use a local `source_artifact` instead "
+            "of an external source only when the artifact exists in this repo "
+            "and the row also supplies `reproduction_command` and `git_commit`.",
+            "",
             "Required row fields: `name`, `params_b`, `arc_version`, `arc_split`, "
             "`metric`, `accuracy`, `evidence_type`, `source`, and "
-            "`accessed_date` or `as_of_date`.",
+            "`accessed_date` or `as_of_date`; for `reproduced_eval`, use either "
+            "`source` or the audited `source_artifact` bundle above.",
             "",
             f"Accepted evidence types: `{', '.join(sorted(SUPPORTED_EVIDENCE_TYPES))}`.",
         ]

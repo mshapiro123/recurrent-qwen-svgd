@@ -205,5 +205,8 @@ Release candidate definition:
   comparison. The validator requires non-placeholder same-size baseline names,
   sourced URLs/DOIs/arXiv references, dates, metrics, row-level ARC
   version/split, evidence type, and parameter counts inside the declared
-  model-size band.
+  model-size band. For `evidence_type: reproduced_eval`, a row may cite an
+  existing local JSON `source_artifact` instead of an external URL only when it
+  also records the `reproduction_command` and `git_commit` that produced that
+  artifact.
 - Include the modified-architecture caveat and training recipe.

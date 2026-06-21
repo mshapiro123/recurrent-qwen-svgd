@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+import colab.validate_arc_agi_baseline_registry as module
 from colab.validate_arc_agi_baseline_registry import main, validate_baseline_registry, validate_registry_payload
 
 
@@ -90,6 +91,51 @@ def test_baseline_registry_validation_requires_row_evidence_type() -> None:
     assert payload["status"] == "needs_baseline_registry"
     assert payload["passed"] is False
     assert any(row["path"] == "$.baselines[0].evidence_type" for row in payload["issues"])
+
+
+def test_baseline_registry_accepts_local_reproduced_eval_artifact(tmp_path, monkeypatch) -> None:
+    artifact = tmp_path / "outputs" / "stage5" / "base_qwen_eval" / "summary.json"
+    artifact.parent.mkdir(parents=True)
+    artifact.write_text(json.dumps({"run_id": "base_qwen_eval"}), encoding="utf-8")
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    registry = _registry()
+    registry["baselines"][0].update(
+        {
+            "name": "reproduced-qwen-0.5b-base",
+            "evidence_type": "reproduced_eval",
+            "source": "",
+            "source_artifact": "outputs/stage5/base_qwen_eval/summary.json",
+            "reproduction_command": "python colab/run_stage5_benchmark_suite.py",
+            "git_commit": "abc1234",
+        }
+    )
+
+    payload = module.validate_registry_payload(registry, source_path=tmp_path / "config" / "baselines.json")
+
+    assert payload["status"] == "passed"
+    assert payload["passed"] is True
+    assert payload["valid_baselines"][0]["source_artifact"] == "outputs/stage5/base_qwen_eval/summary.json"
+
+
+def test_baseline_registry_rejects_reproduced_eval_without_audit_bundle(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    registry = _registry()
+    registry["baselines"][0].update(
+        {
+            "name": "reproduced-qwen-0.5b-base",
+            "evidence_type": "reproduced_eval",
+            "source": "",
+            "source_artifact": "outputs/stage5/missing/summary.json",
+            "reproduction_command": "python colab/run_stage5_benchmark_suite.py",
+            "git_commit": "abc1234",
+        }
+    )
+
+    payload = module.validate_registry_payload(registry, source_path=tmp_path / "config" / "baselines.json")
+
+    assert payload["status"] == "needs_baseline_registry"
+    assert payload["passed"] is False
+    assert any(row["path"] == "$.baselines[0].source_artifact" for row in payload["issues"])
 
 
 def test_baseline_registry_cli_writes_outputs(tmp_path, monkeypatch) -> None:
