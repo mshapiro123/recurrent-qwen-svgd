@@ -16,10 +16,13 @@ def test_single_a100_runbook_uses_colab_continue_wrapper() -> None:
     text = "\n".join(str(cell.get("source", "")) for cell in payload.get("cells", []))
 
     assert "colab/run_stage5_colab_continue.py" in text
+    assert "colab/run_stage5_reasoning_dataset_pipeline.py" in text
+    assert "STAGE5_REASONING_DATASET_PIPELINE_EXECUTE_NEXT" in text
     assert "STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS" in text
     assert "STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE" in text
     assert "claim" in text
     assert payload["cells"][3]["cell_type"] == "code"
+    assert payload["cells"][5]["cell_type"] == "code"
 
 
 def test_stage_launcher_uses_colab_continue_wrapper() -> None:
