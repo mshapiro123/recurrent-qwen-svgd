@@ -19,10 +19,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from colab.run_stage5_publish_hf_adapter import checkpoint_value_from_payload
 
 
-ROOT = Path(__file__).resolve().parents[1]
 RUN_ID = os.environ.get("STAGE5_BENCHMARK_SUITE_RUN_ID") or time.strftime(
     "stage5_benchmark_suite_%Y%m%d_%H%M%S"
 )
