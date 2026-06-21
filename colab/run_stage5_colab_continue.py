@@ -48,13 +48,26 @@ def focused_test_paths() -> list[str]:
     ]
 
 
+def continuation_profile() -> str:
+    return os.environ.get("STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE", "gate").strip().lower()
+
+
+def default_max_actions() -> str:
+    explicit = os.environ.get("STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS")
+    if explicit:
+        return explicit
+    return {
+        "single": "1",
+        "gate": "3",
+        "same_recipe": "6",
+    }.get(continuation_profile(), "3")
+
+
 def default_env() -> dict[str, str]:
     return {
         "STAGE5_ARC_AGI_NEXT_ACTION_RUN_ID": RUN_ID,
         "STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE": "1",
-        "STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS": os.environ.get(
-            "STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS", "3"
-        ),
+        "STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS": default_max_actions(),
         "STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT": "0",
         "STAGE5_ARC_AGI_AUTOPILOT_TRACE_SFT_GATE_ARMS": (
             "grid_only,symbolic_program_trace_covered,symbolic_state_trace_covered"
@@ -146,6 +159,7 @@ def main() -> int:
     run(["nvidia-smi"], check=False)
     run([sys.executable, "-m", "pytest", "-q", *focused_test_paths()])
     print("RUN_ID", RUN_ID)
+    print("CONTINUATION_PROFILE", continuation_profile())
     run([sys.executable, "colab/run_stage5_next_action.py"])
     for command in post_action_commands():
         run(command, check=False)

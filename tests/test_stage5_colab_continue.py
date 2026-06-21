@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from colab.run_stage5_colab_continue import (
+    continuation_profile,
     default_env,
+    default_max_actions,
     focused_test_paths,
     mask_command,
     post_action_commands,
@@ -35,6 +37,7 @@ def test_colab_continue_focuses_gate1_and_next_action_tests() -> None:
 
 def test_colab_continue_defaults_to_bounded_three_action_loop(monkeypatch) -> None:
     monkeypatch.delenv("STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS", raising=False)
+    monkeypatch.delenv("STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE", raising=False)
 
     env = default_env()
 
@@ -43,7 +46,17 @@ def test_colab_continue_defaults_to_bounded_three_action_loop(monkeypatch) -> No
     assert env["STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT"] == "0"
 
 
+def test_colab_continue_same_recipe_profile_runs_longer_ladder(monkeypatch) -> None:
+    monkeypatch.delenv("STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS", raising=False)
+    monkeypatch.setenv("STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE", "same_recipe")
+
+    assert continuation_profile() == "same_recipe"
+    assert default_max_actions() == "6"
+    assert default_env()["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] == "6"
+
+
 def test_colab_continue_max_actions_can_be_overridden(monkeypatch) -> None:
+    monkeypatch.setenv("STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE", "same_recipe")
     monkeypatch.setenv("STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS", "1")
 
     assert default_env()["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] == "1"

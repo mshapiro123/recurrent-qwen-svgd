@@ -137,7 +137,10 @@ The older split notebooks are kept only as references:
    loop so a candidate gate can be followed by trace-SFT and then by the
    distill/dense-control decision in one A100 session. Set
    `STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS=1` for a strictly single-action
-   continuation.
+   continuation. Set `STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE=same_recipe` for
+   a six-action ladder intended to continue through candidate gate, trace gate,
+   distill/dense-control selection, dense control, matched recurrent SFT, and
+   the same-recipe architecture assessment when each prior step completes.
    `colab/run_stage5_next_action.py` remains available directly. By default it
    writes a dry-run summary of the planner's top action. Set
    `STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE=1` to execute the selected allowlisted
