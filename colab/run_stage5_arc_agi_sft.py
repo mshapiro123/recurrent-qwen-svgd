@@ -24,6 +24,11 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from training.arc_agi_training_signal import summarize_training_signal, write_training_signal_report  # noqa: E402
+
 RUN_ID = os.environ.get("STAGE5_ARC_AGI_SFT_RUN_ID") or time.strftime("stage5_arc_agi_sft_%Y%m%d_%H%M%S")
 RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
 RUN_DIR.mkdir(parents=True, exist_ok=True)
@@ -614,6 +619,13 @@ def train_phase1() -> Path:
     return checkpoint
 
 
+def audit_training_signal(metadata: dict[str, Any]) -> dict[str, Any]:
+    payload = summarize_training_signal(TRAIN_JSONL, val_jsonl=VAL_JSONL, metadata=metadata)
+    write_training_signal_report(payload, RUN_DIR / "training_signal.json", RUN_DIR / "training_signal.md")
+    print((RUN_DIR / "training_signal.md").read_text(encoding="utf-8"))
+    return payload
+
+
 def backup_to_drive() -> None:
     mount_drive_if_possible()
     drive_root = Path(os.environ.get("DRIVE_BACKUP_DIR", "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts"))
@@ -694,6 +706,7 @@ def main() -> int:
     print(json.dumps(metadata, indent=2))
 
     candidate_distill_info = prepare_sft(train_path)
+    training_signal = audit_training_signal(metadata)
     base_payload = eval_arc_agi_payload("base", "base", eval_path)
     base_summary = base_payload["summary"]
     start_payload = eval_arc_agi_payload("phase1_start", "phase1", eval_path, PHASE1_CKPT)
@@ -728,6 +741,7 @@ def main() -> int:
         "checkpoint_ladder": checkpoint_ladder,
         "best_checkpoint": best_checkpoint,
         "candidate_distill_info": candidate_distill_info,
+        "training_signal": training_signal,
     }
     diagnostics = summary["eval_diagnostics"]
     (RUN_DIR / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
@@ -748,6 +762,11 @@ def main() -> int:
         f"- Candidate distillation sources: `{metadata['candidate_distill_jsonls']}`",
         f"- Candidate distillation choice: `{CANDIDATE_DISTILL_CHOICE}`",
         f"- Candidate distillation completion source: `{CANDIDATE_DISTILL_COMPLETION_SOURCE}`",
+        f"- Training rows: `{training_signal['train']['rows']}`",
+        f"- Synthetic training rows: `{training_signal['train']['synthetic_rows']}`",
+        f"- Candidate-distill training rows: `{training_signal['train']['candidate_distill_rows']}`",
+        f"- Traced training rows: `{training_signal['train']['trace_rows']}`",
+        f"- Program-trace training rows: `{training_signal['train']['program_trace_rows']}`",
         f"- Distillation: `{DISTILL_ENABLED}` weight `{DISTILL_WEIGHT}` temperature `{DISTILL_TEMPERATURE}` on `{DISTILL_ON}`",
         f"- Symbolic candidates: `{INCLUDE_SYMBOLIC}`",
         f"- Symbolic position: `{SYMBOLIC_POSITION if INCLUDE_SYMBOLIC else 'n/a'}`",
@@ -777,6 +796,20 @@ def main() -> int:
                 f"train rows `{item['train_rows_before_append']}` -> `{item['train_rows_after_append']}`"
             )
         lines.append("")
+    lines.extend(
+        [
+            "## Training Signal Audit",
+            "",
+            f"- Source datasets: `{training_signal['train']['source_dataset_counts']}`",
+            f"- Task families: `{training_signal['train']['task_family_counts']}`",
+            f"- Trace sources: `{training_signal['train']['trace_source_counts']}`",
+            f"- Completion chars: `{training_signal['train']['completion_chars']}`",
+            f"- Warnings: `{training_signal['warnings']}`",
+            "",
+            f"Full audit: `{path_for_cli(RUN_DIR / 'training_signal.md')}`",
+            "",
+        ]
+    )
     if program_only_eval:
         lines.extend(
             [

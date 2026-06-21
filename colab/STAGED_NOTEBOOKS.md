@@ -107,6 +107,11 @@ The older split notebooks are kept only as references:
    `STAGE5_ARC_AGI_TRACE_FILTER=covered`. That tests whether targeted
    symbolic ARC program traces improve the deterministic recurrent model
    before attributing value to particles/SVGD.
+   Every ARC SFT run also writes `training_signal.json` and
+   `training_signal.md`, which profile how many rows came from public ARC,
+   synthetic families, candidate distillation, symbolic traces, and
+   program-style traces. Use that audit before scaling a run that appears to
+   improve or regress unexpectedly.
    The most direct combined gate is
    `colab/run_stage5_arc_agi_recovery_particle_gate.py`: it runs that synthetic
    recurrent-recovery SFT first, then tests low-noise K-particle/SVGD variants
