@@ -135,6 +135,10 @@ Required control:
   compares recurrent selector-selected outputs directly against the dense
   control, instead of only comparing selectors against the recurrent source
   heuristic.
+- Treat a passed selector-conversion gate as selector-converted architecture
+  evidence, not as a raw recurrent win. It can unlock release-candidate and
+  broader-benchmark packaging, but the report must state that the lift came
+  from recurrent candidate coverage plus the claim-level selector.
 - Cross the signal phase with entropy on/off.
 - Measure whether structural diversity survives the signal phase better than
   weight-only diversity.
@@ -170,8 +174,9 @@ Release candidate definition:
   the adapter metadata/model card when available, including whether the result
   is `passed`, `needs_selector_conversion`, or not yet established.
 - Run `colab/assess_stage5_release_gate.py` before broader benchmark claims. It
-  checks ARC benchmark confirmation, same-recipe architecture evidence, and HF
-  export metadata from saved artifacts without using the GPU.
+  checks ARC benchmark confirmation, same-recipe architecture or
+  selector-conversion evidence, and HF export metadata from saved artifacts
+  without using the GPU.
 - If that gate returns `ready_for_broader_benchmarks`, run
   `colab/run_stage5_benchmark_suite.py`. The suite compares unmodified base Qwen
   and the recurrent artifact on ARC-Challenge plus GPQA-lite, writes sanitized

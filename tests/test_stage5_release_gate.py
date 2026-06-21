@@ -63,6 +63,22 @@ def _recipe(path, *, status: str = "passed", passed: bool = True):
     return path
 
 
+def _selector_conversion(path, *, passed: bool = True):
+    payload = {
+        "run_id": "selector_conversion",
+        "gate": "stage5_same_recipe_selector_conversion",
+        "kind": "recipe_selector_conversion",
+        "status": "passed" if passed else "failed",
+        "passed": passed,
+        "reason": "selector converted candidate coverage",
+        "next_step": "reassess architecture",
+        "passing_selectors": [{"label": "recovered", "selection_strategy": "reliability_vote"}] if passed else [],
+        "best_selector": {"label": "recovered", "selection_strategy": "reliability_vote"},
+    }
+    _write(path, payload)
+    return path
+
+
 def _hf_export(path):
     payload = {
         "run_id": "export",
@@ -115,6 +131,33 @@ def test_release_gate_routes_selector_conversion_before_release(tmp_path) -> Non
     assert payload["status"] == "needs_selector_conversion"
     assert payload["passed"] is False
     assert "selector" in payload["next_step"].lower()
+
+
+def test_release_gate_accepts_passed_selector_conversion_as_architecture_evidence(tmp_path) -> None:
+    benchmark = _benchmark(tmp_path / "outputs" / "stage5" / "bench" / "summary.json")
+    recipe = _recipe(
+        tmp_path / "outputs" / "stage5" / "recipe" / "summary.json",
+        status="needs_selector_conversion",
+        passed=False,
+    )
+    selector_conversion = _selector_conversion(
+        tmp_path / "outputs" / "stage5" / "selector_conversion" / "summary.json",
+        passed=True,
+    )
+    export = _hf_export(tmp_path / "outputs" / "hf_exports" / "export" / "summary.json")
+
+    payload = assess_release_gate(
+        benchmark_summary=benchmark,
+        recipe_control_summary=recipe,
+        selector_conversion_summary=selector_conversion,
+        hf_export_summary=export,
+        min_arc_examples=100,
+    )
+
+    assert payload["status"] == "ready_for_broader_benchmarks"
+    assert payload["passed"] is True
+    assert payload["selector_conversion_summary"] is not None
+    assert payload["criteria"][1]["passed"] is True
 
 
 def test_release_gate_requires_benchmark_size_before_export_status(tmp_path) -> None:

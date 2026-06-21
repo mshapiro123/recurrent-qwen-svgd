@@ -74,6 +74,13 @@ def is_recipe_control(payload: dict[str, Any]) -> bool:
     return payload.get("gate") == "stage5_same_recipe_architecture"
 
 
+def is_recipe_selector_conversion(payload: dict[str, Any]) -> bool:
+    return (
+        payload.get("gate") == "stage5_same_recipe_selector_conversion"
+        or payload.get("kind") == "recipe_selector_conversion"
+    )
+
+
 def is_hf_export(payload: dict[str, Any]) -> bool:
     return bool(payload.get("export_dir") and payload.get("checkpoint") and isinstance(payload.get("metadata"), dict))
 
@@ -155,6 +162,23 @@ def architecture_evidence(path: Path | None, payload: dict[str, Any] | None) -> 
     }
 
 
+def selector_conversion_evidence(path: Path | None, payload: dict[str, Any] | None) -> dict[str, Any]:
+    if not path or not payload:
+        return {"present": False}
+    best = payload.get("best_selector") or {}
+    return {
+        "present": True,
+        "path": path_for_cli(path),
+        "run_id": str(payload.get("run_id") or path.parent.name),
+        "status": payload.get("status"),
+        "passed": bool(payload.get("passed", False)),
+        "reason": payload.get("reason"),
+        "next_step": payload.get("next_step"),
+        "passing_selectors": payload.get("passing_selectors") or [],
+        "best_selector": best,
+    }
+
+
 def hf_export_evidence(path: Path | None, payload: dict[str, Any] | None) -> dict[str, Any]:
     if not path or not payload:
         return {"present": False}
@@ -176,19 +200,33 @@ def criterion(name: str, passed: bool, reason: str, evidence: dict[str, Any]) ->
     return {"name": name, "passed": passed, "reason": reason, "evidence": evidence}
 
 
+def evidence_source(evidence: dict[str, Any]) -> str | None:
+    if evidence.get("path"):
+        return str(evidence["path"])
+    sources = []
+    for key in ("architecture", "selector_conversion"):
+        nested = evidence.get(key)
+        if isinstance(nested, dict) and nested.get("path"):
+            sources.append(f"{key}:{nested['path']}")
+    return ", ".join(sources) if sources else None
+
+
 def assess_release_gate(
     *,
     benchmark_summary: Path | None,
     recipe_control_summary: Path | None,
     hf_export_summary: Path | None,
     min_arc_examples: int,
+    selector_conversion_summary: Path | None = None,
 ) -> dict[str, Any]:
     benchmark_payload = safe_read_json(benchmark_summary) if benchmark_summary else None
     recipe_payload = safe_read_json(recipe_control_summary) if recipe_control_summary else None
+    selector_conversion_payload = safe_read_json(selector_conversion_summary) if selector_conversion_summary else None
     export_payload = safe_read_json(hf_export_summary) if hf_export_summary else None
 
     benchmark = recovered_benchmark_evidence(benchmark_summary, benchmark_payload)
     architecture = architecture_evidence(recipe_control_summary, recipe_payload)
+    selector_conversion = selector_conversion_evidence(selector_conversion_summary, selector_conversion_payload)
     export = hf_export_evidence(hf_export_summary, export_payload)
 
     benchmark_present = bool(benchmark.get("present"))
@@ -200,6 +238,8 @@ def assess_release_gate(
     architecture_present = bool(architecture.get("present"))
     architecture_status = str(architecture.get("status") or "missing")
     architecture_passed = bool(architecture.get("passed", False))
+    selector_conversion_passed = bool(selector_conversion.get("passed", False))
+    architecture_or_conversion_passed = architecture_passed or selector_conversion_passed
     export_present = bool(export.get("present"))
     export_has_hash = bool(export.get("checkpoint_sha256"))
 
@@ -215,14 +255,18 @@ def assess_release_gate(
             benchmark,
         ),
         criterion(
-            "same_recipe_architecture",
-            architecture_passed,
+            "same_recipe_architecture_or_selector_conversion",
+            architecture_or_conversion_passed,
             (
                 "Same-recipe recurrent-vs-dense architecture gate passed."
                 if architecture_passed
-                else f"Same-recipe architecture gate is {architecture_status!r}, not passed."
+                else (
+                    "Same-recipe selector conversion gate passed against the dense control."
+                    if selector_conversion_passed
+                    else f"Same-recipe architecture gate is {architecture_status!r}, and selector conversion has not passed."
+                )
             ),
-            architecture,
+            {"architecture": architecture, "selector_conversion": selector_conversion},
         ),
         criterion(
             "hf_export_artifact",
@@ -242,13 +286,16 @@ def assess_release_gate(
     elif not benchmark_nonnegative:
         status = "needs_recovery_training"
         next_step = "Continue deterministic recurrent recovery before release or broader benchmark claims."
-    elif not architecture_present:
+    elif not architecture_present and not selector_conversion_passed:
         status = "needs_architecture_evidence"
         next_step = "Run dense-control plus matched recurrent SFT, then assess same-recipe architecture lift."
-    elif architecture_status == "needs_selector_conversion":
+    elif architecture_status == "needs_selector_conversion" and not selector_conversion_passed:
         status = "needs_selector_conversion"
-        next_step = "Run selector/verifier rescoring on recurrent candidates before judging architecture lift."
-    elif not architecture_passed:
+        next_step = (
+            "Run selector/verifier rescoring and the same-recipe selector-conversion gate before judging "
+            "architecture lift."
+        )
+    elif not architecture_or_conversion_passed:
         status = "needs_architecture_recovery"
         next_step = "Improve recurrent training or recipe before using the artifact as architecture evidence."
     elif not export_present or not export_has_hash:
@@ -268,6 +315,7 @@ def assess_release_gate(
         "criteria": criteria,
         "benchmark_summary": benchmark.get("path"),
         "recipe_control_summary": architecture.get("path"),
+        "selector_conversion_summary": selector_conversion.get("path"),
         "hf_export_summary": export.get("path"),
     }
 
@@ -291,7 +339,7 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
     for row in payload["criteria"]:
         evidence = row.get("evidence") or {}
         lines.append(
-            f"| `{row['name']}` | `{row['passed']}` | {row['reason']} | `{evidence.get('path')}` |"
+            f"| `{row['name']}` | `{row['passed']}` | {row['reason']} | `{evidence_source(evidence)}` |"
         )
     output_md.parent.mkdir(parents=True, exist_ok=True)
     output_md.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -302,6 +350,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--benchmark_summary")
     parser.add_argument("--recipe_control_summary")
+    parser.add_argument("--selector_conversion_summary")
     parser.add_argument("--hf_export_summary")
     parser.add_argument("--stage5_root", default="outputs/stage5")
     parser.add_argument("--hf_exports_root", default="outputs/hf_exports")
@@ -325,6 +374,11 @@ def main() -> int:
         if args.recipe_control_summary
         else latest_matching(stage5_files, is_recipe_control)
     )
+    selector_conversion_summary = (
+        resolve_path(args.selector_conversion_summary)
+        if args.selector_conversion_summary
+        else latest_matching(stage5_files, is_recipe_selector_conversion)
+    )
     hf_export_summary = (
         resolve_path(args.hf_export_summary)
         if args.hf_export_summary
@@ -337,6 +391,7 @@ def main() -> int:
     payload = assess_release_gate(
         benchmark_summary=benchmark_summary,
         recipe_control_summary=recipe_control_summary,
+        selector_conversion_summary=selector_conversion_summary,
         hf_export_summary=hf_export_summary,
         min_arc_examples=args.min_arc_examples,
     )

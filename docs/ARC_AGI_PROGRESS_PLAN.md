@@ -305,6 +305,12 @@ architecture evidence: it means recurrent candidates improved, but the
 claim-level selector or verifier has not converted that coverage into the
 selected score yet.
 
+When selector rescoring does convert that candidate coverage against the dense
+control, the release and claim gates may treat it as architecture-relevant
+evidence, but the claim language must remain explicit: this is recurrent
+candidate diversity plus selector conversion, not a direct single-candidate
+recurrent win.
+
 Set `STAGE5_ARC_AGI_DISTILL=1` to add frozen-base next-token KL distillation
 inside `training/train_phase1_ponder.py`. Run
 `colab/run_stage5_arc_agi_distill_sft_gate.py` to compare the selected ARC SFT

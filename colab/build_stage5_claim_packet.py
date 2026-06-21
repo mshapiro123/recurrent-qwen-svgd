@@ -75,6 +75,13 @@ def is_recipe_control_gate(payload: dict[str, Any]) -> bool:
     return payload.get("gate") == "stage5_same_recipe_architecture"
 
 
+def is_recipe_selector_conversion_gate(payload: dict[str, Any]) -> bool:
+    return (
+        payload.get("gate") == "stage5_same_recipe_selector_conversion"
+        or payload.get("kind") == "recipe_selector_conversion"
+    )
+
+
 def is_hf_export(payload: dict[str, Any]) -> bool:
     return bool(payload.get("export_dir") and payload.get("checkpoint") and isinstance(payload.get("metadata"), dict))
 
@@ -104,6 +111,17 @@ def criterion(name: str, passed: bool, reason: str, evidence: dict[str, Any]) ->
     return {"name": name, "passed": passed, "reason": reason, "evidence": evidence}
 
 
+def evidence_source(evidence: dict[str, Any]) -> str | None:
+    if evidence.get("path"):
+        return str(evidence["path"])
+    sources = []
+    for key in ("architecture", "selector_conversion"):
+        nested = evidence.get(key)
+        if isinstance(nested, dict) and nested.get("path"):
+            sources.append(f"{key}:{nested['path']}")
+    return ", ".join(sources) if sources else None
+
+
 def build_claim_packet(
     *,
     release_gate_summary: Path | None,
@@ -111,16 +129,20 @@ def build_claim_packet(
     recipe_control_summary: Path | None,
     hf_export_summary: Path | None,
     arc_agi_comparison_summary: Path | None,
+    selector_conversion_summary: Path | None = None,
 ) -> dict[str, Any]:
     release_gate = artifact(release_gate_summary)
     broader_benchmark = artifact(broader_benchmark_summary)
     recipe_control = artifact(recipe_control_summary)
+    selector_conversion = artifact(selector_conversion_summary)
     hf_export = artifact(hf_export_summary)
     arc_agi = artifact(arc_agi_comparison_summary)
 
     release_passed = bool(release_gate.get("passed"))
     broader_passed = bool(broader_benchmark.get("passed"))
     recipe_passed = bool(recipe_control.get("passed"))
+    selector_conversion_passed = bool(selector_conversion.get("passed"))
+    architecture_or_conversion_passed = recipe_passed or selector_conversion_passed
     export_has_hash = bool((hf_export.get("summary") or {}).get("metadata", {}).get("checkpoint_sha256"))
     arc_agi_present = bool(arc_agi.get("present"))
     arc_agi_passed = bool(arc_agi.get("passed"))
@@ -143,14 +165,18 @@ def build_claim_packet(
             broader_benchmark,
         ),
         criterion(
-            "same_recipe_architecture_passed",
-            recipe_passed,
+            "same_recipe_architecture_or_selector_conversion_passed",
+            architecture_or_conversion_passed,
             (
                 "Same-recipe recurrent-vs-dense architecture gate passed."
                 if recipe_passed
-                else "Same-recipe architecture gate has not passed."
+                else (
+                    "Same-recipe selector-conversion gate passed."
+                    if selector_conversion_passed
+                    else "Same-recipe architecture or selector-conversion evidence has not passed."
+                )
             ),
-            recipe_control,
+            {"architecture": recipe_control, "selector_conversion": selector_conversion},
         ),
         criterion(
             "hf_export_hash_present",
@@ -182,10 +208,10 @@ def build_claim_packet(
         status = "needs_broader_benchmark_gate"
         claim_level = "not_ready"
         next_step = "Run the broader benchmark suite and paired assessment gate."
-    elif not recipe_passed:
+    elif not architecture_or_conversion_passed:
         status = "needs_architecture_evidence"
         claim_level = "not_ready"
-        next_step = "Repair same-recipe recurrent-vs-dense architecture evidence before architecture claims."
+        next_step = "Repair same-recipe recurrent-vs-dense architecture or selector-conversion evidence before architecture claims."
     elif not bool(hf_export.get("present")) or not export_has_hash:
         status = "needs_hf_export"
         claim_level = "not_ready"
@@ -210,6 +236,7 @@ def build_claim_packet(
             "release_gate": release_gate,
             "broader_benchmark_gate": broader_benchmark,
             "same_recipe_architecture": recipe_control,
+            "same_recipe_selector_conversion": selector_conversion,
             "hf_export": hf_export,
             "authoritative_arc_agi_comparison": arc_agi,
         },
@@ -235,7 +262,7 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
         evidence = row.get("evidence") or {}
         lines.append(
             f"- `{row['name']}` passed `{row['passed']}`: {row['reason']} "
-            f"(source `{evidence.get('path')}`)"
+            f"(source `{evidence_source(evidence)}`)"
         )
     lines.extend(
         [
@@ -255,6 +282,7 @@ def main() -> int:
     parser.add_argument("--release_gate_summary")
     parser.add_argument("--broader_benchmark_summary")
     parser.add_argument("--recipe_control_summary")
+    parser.add_argument("--selector_conversion_summary")
     parser.add_argument("--hf_export_summary")
     parser.add_argument("--arc_agi_comparison_summary")
     parser.add_argument("--output_json")
@@ -274,6 +302,11 @@ def main() -> int:
         if args.recipe_control_summary
         else latest_matching(stage5_files, is_recipe_control_gate)
     )
+    selector_conversion = (
+        resolve_path(args.selector_conversion_summary)
+        if args.selector_conversion_summary
+        else latest_matching(stage5_files, is_recipe_selector_conversion_gate)
+    )
     hf_export = resolve_path(args.hf_export_summary) if args.hf_export_summary else latest_matching(hf_files, is_hf_export)
     arc_agi = (
         resolve_path(args.arc_agi_comparison_summary)
@@ -289,6 +322,7 @@ def main() -> int:
         recipe_control_summary=recipe,
         hf_export_summary=hf_export,
         arc_agi_comparison_summary=arc_agi,
+        selector_conversion_summary=selector_conversion,
     )
     write_report(payload, output_json=output_json, output_md=output_md)
     return 0

@@ -52,6 +52,23 @@ def _recipe(path, *, passed: bool = True):
     return path
 
 
+def _selector_conversion(path, *, passed: bool = True):
+    _write(
+        path,
+        {
+            "run_id": "selector_conversion",
+            "gate": "stage5_same_recipe_selector_conversion",
+            "kind": "recipe_selector_conversion",
+            "status": "passed" if passed else "failed",
+            "passed": passed,
+            "next_step": "broader benchmark gate",
+            "passing_selectors": [{"label": "recovered", "selection_strategy": "reliability_vote"}] if passed else [],
+            "best_selector": {"label": "recovered", "selection_strategy": "reliability_vote"},
+        },
+    )
+    return path
+
+
 def _export(path, *, with_hash: bool = True):
     _write(
         path,
@@ -92,6 +109,22 @@ def test_claim_packet_distinguishes_release_candidate_from_sota(tmp_path) -> Non
     assert payload["claim_level"] == "release_candidate"
     assert payload["passed"] is True
     assert payload["criteria"][-1]["passed"] is False
+
+
+def test_claim_packet_accepts_selector_conversion_as_architecture_evidence(tmp_path) -> None:
+    payload = build_claim_packet(
+        release_gate_summary=_release(tmp_path / "release" / "summary.json"),
+        broader_benchmark_summary=_broader(tmp_path / "broader" / "summary.json"),
+        recipe_control_summary=_recipe(tmp_path / "recipe" / "summary.json", passed=False),
+        selector_conversion_summary=_selector_conversion(tmp_path / "selector_conversion" / "summary.json"),
+        hf_export_summary=_export(tmp_path / "export" / "summary.json"),
+        arc_agi_comparison_summary=None,
+    )
+
+    assert payload["status"] == "ready_for_release_candidate_not_sota"
+    assert payload["claim_level"] == "release_candidate"
+    assert payload["criteria"][2]["passed"] is True
+    assert payload["artifacts"]["same_recipe_selector_conversion"]["passed"] is True
 
 
 def test_claim_packet_can_mark_sota_candidate_when_authoritative_comparison_exists(tmp_path) -> None:
