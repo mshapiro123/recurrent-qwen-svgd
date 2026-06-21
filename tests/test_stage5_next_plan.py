@@ -1162,6 +1162,8 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"gate": "stage5_arc_agi_baseline_registry"}) == "arc_agi_baseline_registry"
     assert source_kind({"gate": "stage5_arc_agi_sota_comparison"}) == "arc_agi_sota_comparison"
     assert source_kind({"kind": "stage5_arc_agi_candidate_gate"}) == "candidate_gate"
+    assert source_kind({"kind": "trace_sft_gate"}) == "trace_sft_gate"
+    assert source_kind({"kind": "distill_sft_gate"}) == "distill_sft_gate"
     assert source_kind({"phase1_arc_agi_tuned": {}, "tuned_checkpoint": "ckpt.pt"}) == "recurrent_sft"
     assert source_kind({"rows": [], "deltas": {}, "paired_comparisons": {}}) == "tta_sweep"
 
@@ -1226,6 +1228,123 @@ def test_candidate_gate_without_symbolic_signal_starts_dense_control(tmp_path) -
     assert "python colab/run_stage5_arc_agi_dense_sft.py" in actions[0]["command"]
     assert "STAGE5_ARC_AGI_TRACE_MODE=none" in actions[0]["command"]
     assert "STAGE5_ARC_AGI_EVAL_TASK_LIMIT=20" in actions[0]["command"]
+
+
+def test_trace_sft_gate_plans_distill_when_trace_matches_grid(tmp_path) -> None:
+    source = tmp_path / "trace_gate" / "summary.json"
+    source.parent.mkdir()
+    metadata = {
+        "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+        "arc_version": "1",
+        "train_split": "training",
+        "eval_split": "evaluation",
+        "train_task_limit": 80,
+        "eval_task_limit": 12,
+        "trace_mode": "symbolic_program",
+        "trace_filter": "covered",
+        "grid_format": "compact",
+        "program_parse_mode": "fallback",
+        "selection_strategy": "heuristic",
+        "train_steps": 120,
+        "learning_rate": 8e-6,
+        "distillation": {"enabled": False, "weight": 0.1, "temperature": 1.0, "on": "response"},
+    }
+    payload = {
+        "kind": "trace_sft_gate",
+        "arms": [
+            {"label": "grid_only", "trace_mode": "none", "trace_filter": "all"},
+            {"label": "symbolic_program_trace_covered", "trace_mode": "symbolic_program", "trace_filter": "covered"},
+        ],
+        "results": {
+            "grid_only": {"metadata": {**metadata, "trace_mode": "none", "trace_filter": "all"}},
+            "symbolic_program_trace_covered": {"metadata": metadata},
+        },
+        "comparison": {
+            "grid_only": {"best_best": 2, "best_selected": 1, "tuned_best": 2, "tuned_selected": 1},
+            "symbolic_program_trace_covered": {
+                "best_best": 2,
+                "best_selected": 2,
+                "tuned_best": 2,
+                "tuned_selected": 2,
+            },
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Compare base-logit distillation for selected ARC trace recipe"
+    assert "python colab/run_stage5_arc_agi_distill_sft_gate.py" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_TRACE_MODE=symbolic_program" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_TRACE_FILTER=covered" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_EVAL_TASK_LIMIT=12" in actions[0]["command"]
+
+
+def test_trace_sft_gate_without_trace_signal_runs_dense_grid_control(tmp_path) -> None:
+    source = tmp_path / "trace_gate" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_arc_agi_trace_sft_gate",
+        "arms": [
+            {"label": "grid_only", "trace_mode": "none", "trace_filter": "all"},
+            {"label": "symbolic_state_trace_covered", "trace_mode": "symbolic_state_trace", "trace_filter": "covered"},
+        ],
+        "results": {
+            "grid_only": {
+                "metadata": {
+                    "arc_version": "1",
+                    "eval_split": "evaluation",
+                    "eval_task_limit": 10,
+                    "trace_mode": "none",
+                    "trace_filter": "all",
+                }
+            }
+        },
+        "comparison": {
+            "grid_only": {"best_best": 3, "best_selected": 2},
+            "symbolic_state_trace_covered": {"best_best": 1, "best_selected": 1},
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run dense ARC-AGI SFT control for grid-only recipe"
+    assert "python colab/run_stage5_arc_agi_dense_sft.py" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_TRACE_MODE=none" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_TRACE_FILTER=all" in actions[0]["command"]
+
+
+def test_distill_sft_gate_plans_dense_control_with_selected_distill_arm(tmp_path) -> None:
+    source = tmp_path / "distill_gate" / "summary.json"
+    source.parent.mkdir()
+    metadata = {
+        "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+        "arc_version": "1",
+        "train_split": "training",
+        "eval_split": "evaluation",
+        "train_task_limit": 80,
+        "eval_task_limit": 12,
+        "trace_mode": "symbolic_program",
+        "trace_filter": "covered",
+        "grid_format": "compact",
+        "distillation": {"enabled": True, "weight": 0.1, "temperature": 1.0, "on": "response"},
+    }
+    payload = {
+        "kind": "distill_sft_gate",
+        "distill_off": {"metadata": {**metadata, "distillation": {"enabled": False}}},
+        "distill_on": {"metadata": metadata},
+        "comparison": {
+            "distill_off": {"best_best": 2, "best_selected": 1, "tuned_best": 2, "tuned_selected": 1},
+            "distill_on": {"best_best": 3, "best_selected": 2, "tuned_best": 3, "tuned_selected": 2},
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run dense ARC-AGI SFT control for selected recipe"
+    assert "python colab/run_stage5_arc_agi_dense_sft.py" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_DENSE_DISTILL=1" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_TRACE_MODE=symbolic_program" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_EVAL_TASK_LIMIT=12" in actions[0]["command"]
 
 
 def test_dense_sft_control_plans_matched_recurrent_recipe(tmp_path) -> None:

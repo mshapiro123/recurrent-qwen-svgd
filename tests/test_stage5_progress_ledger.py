@@ -742,6 +742,62 @@ def test_progress_ledger_reports_arc_agi_candidate_gates(tmp_path) -> None:
     assert payload["recommended_next_plan_source"] == str(source)
 
 
+def test_progress_ledger_reports_arc_agi_sft_recipe_gates(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    trace_source = scan_root / "trace_gate" / "summary.json"
+    distill_source = scan_root / "distill_gate" / "summary.json"
+    _write(
+        trace_source,
+        {
+            "run_id": "trace_gate",
+            "kind": "trace_sft_gate",
+            "arms": [
+                {"label": "grid_only", "trace_mode": "none", "trace_filter": "all"},
+                {"label": "symbolic_program_trace_covered", "trace_mode": "symbolic_program", "trace_filter": "covered"},
+            ],
+            "comparison": {
+                "grid_only": {"best_best": 2, "best_selected": 1},
+                "symbolic_program_trace_covered": {"best_best": 3, "best_selected": 2},
+            },
+        },
+    )
+    _write(
+        distill_source,
+        {
+            "run_id": "distill_gate",
+            "gate": "stage5_arc_agi_distill_sft_gate",
+            "comparison": {
+                "distill_off": {"best_best": 3, "best_selected": 2},
+                "distill_on": {"best_best": 4, "best_selected": 2},
+            },
+            "distill_off": {"metadata": {"distillation": {"enabled": False}}},
+            "distill_on": {"metadata": {"distillation": {"enabled": True}}},
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["arc_agi_sft_recipe_gates"] == [
+        {
+            "path": str(distill_source),
+            "run_id": "distill_gate",
+            "kind": "distill_sft_gate",
+            "best_arm": "distill_on",
+            "best_delta": 1,
+            "selected_delta": 0,
+        },
+        {
+            "path": str(trace_source),
+            "run_id": "trace_gate",
+            "kind": "trace_sft_gate",
+            "best_arm": "symbolic_program_trace_covered",
+            "best_delta": 1,
+            "selected_delta": 1,
+        },
+    ]
+    assert payload["recommended_next_plan_source"] in {str(trace_source), str(distill_source)}
+
+
 def test_progress_ledger_skips_empty_and_malformed_eval_summaries(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     _write(scan_root / "empty" / "base_summary.json", {"summary": {}})

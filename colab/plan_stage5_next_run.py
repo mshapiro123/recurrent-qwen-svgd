@@ -43,6 +43,7 @@ DEFAULT_TRACE_SFT_GATE_ARMS = os.environ.get(
 )
 MIN_SYMBOLIC_EXACT = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_MIN_SYMBOLIC_EXACT", "1"))
 MIN_HYBRID_BEST_DELTA = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_MIN_HYBRID_BEST_DELTA", "0"))
+MIN_TRACE_BEST_DELTA = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_MIN_TRACE_BEST_DELTA", "0"))
 
 
 def resolve_path(value: str | Path) -> Path:
@@ -88,6 +89,8 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or arc_agi_baseline_registry_payload(payload) is not None
         or arc_agi_sota_comparison_payload(payload) is not None
         or candidate_gate_payload(payload) is not None
+        or trace_sft_gate_payload(payload) is not None
+        or distill_sft_gate_payload(payload) is not None
     )
 
 
@@ -165,6 +168,27 @@ def candidate_gate_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
         return payload
     if {"symbolic_coverage", "rows", "results"} <= set(payload):
         return payload
+    return None
+
+
+def trace_sft_gate_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    if payload.get("gate") == "stage5_arc_agi_trace_sft_gate" or payload.get("kind") == "trace_sft_gate":
+        return payload
+    comparison = payload.get("comparison")
+    arms = payload.get("arms")
+    if isinstance(comparison, dict) and isinstance(arms, list) and "grid_only" in comparison:
+        if any(isinstance(arm, dict) and "trace_mode" in arm and "trace_filter" in arm for arm in arms):
+            return payload
+    return None
+
+
+def distill_sft_gate_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    if payload.get("gate") == "stage5_arc_agi_distill_sft_gate" or payload.get("kind") == "distill_sft_gate":
+        return payload
+    comparison = payload.get("comparison")
+    if isinstance(comparison, dict) and {"distill_off", "distill_on"} <= set(comparison):
+        if isinstance(payload.get("distill_off"), dict) and isinstance(payload.get("distill_on"), dict):
+            return payload
     return None
 
 
@@ -808,6 +832,160 @@ def candidate_gate_actions(payload: dict[str, Any]) -> list[dict[str, Any]]:
             f"Evidence: symbolic exact {evidence['symbolic_exact']} < {evidence['min_symbolic_exact']} "
             f"or best hybrid delta {evidence['best_hybrid_delta']} < {evidence['min_hybrid_best_delta']}.",
             command_env(dense_assignments, "python colab/run_stage5_arc_agi_dense_sft.py"),
+            10,
+        )
+    ]
+
+
+def trace_arm_settings(arm: str) -> tuple[str | None, str | None]:
+    if arm == "grid_only":
+        return "none", "all"
+    if arm.endswith("_covered"):
+        trace_filter = "covered"
+        prefix = arm[: -len("_covered")]
+    elif arm.endswith("_all"):
+        trace_filter = "all"
+        prefix = arm[: -len("_all")]
+    else:
+        return None, None
+    return {
+        "symbolic_trace": "symbolic",
+        "symbolic_program_trace": "symbolic_program",
+        "symbolic_state_trace": "symbolic_state_trace",
+    }.get(prefix), trace_filter
+
+
+def sft_gate_score(row: dict[str, Any]) -> tuple[int, int, int, int, float]:
+    return (
+        int(row.get("best_best", row.get("tuned_best", 0)) or 0),
+        int(row.get("best_selected", row.get("tuned_selected", 0)) or 0),
+        int(row.get("tuned_best", 0) or 0),
+        int(row.get("tuned_selected", 0) or 0),
+        float(row.get("best_valid_rate", row.get("tuned_valid_rate", 0.0)) or 0.0),
+    )
+
+
+def trace_gate_arm_metadata(payload: dict[str, Any], arm: str) -> dict[str, Any]:
+    summary = (payload.get("results") or {}).get(arm)
+    metadata = (summary or {}).get("metadata") if isinstance(summary, dict) else None
+    return metadata if isinstance(metadata, dict) else {}
+
+
+def trace_gate_best_trace(payload: dict[str, Any]) -> dict[str, Any]:
+    comparison = payload.get("comparison") or {}
+    grid = comparison.get("grid_only") or {}
+    grid_score = sft_gate_score(grid)
+    candidates: list[tuple[tuple[int, int, int, int, float, str], str, dict[str, Any]]] = []
+    for arm, row in comparison.items():
+        if arm == "grid_only" or not isinstance(row, dict):
+            continue
+        mode, trace_filter = trace_arm_settings(str(arm))
+        if mode is None or trace_filter is None:
+            continue
+        score = sft_gate_score(row)
+        candidates.append(((*score, str(arm)), str(arm), row))
+    if not candidates:
+        return {
+            "best_trace_arm": None,
+            "best_trace_mode": None,
+            "best_trace_filter": None,
+            "best_trace_best_delta": -grid_score[0],
+            "best_trace_selected_delta": -grid_score[1],
+            "run_distill_gate": False,
+            "metadata": trace_gate_arm_metadata(payload, "grid_only"),
+        }
+    best_score, arm, row = max(candidates, key=lambda item: item[0])
+    mode, trace_filter = trace_arm_settings(arm)
+    best_delta = int(best_score[0]) - int(grid_score[0])
+    selected_delta = int(best_score[1]) - int(grid_score[1])
+    return {
+        "best_trace_arm": arm,
+        "best_trace_mode": mode,
+        "best_trace_filter": trace_filter,
+        "best_trace_best_delta": best_delta,
+        "best_trace_selected_delta": selected_delta,
+        "min_trace_best_delta": MIN_TRACE_BEST_DELTA,
+        "run_distill_gate": best_delta >= MIN_TRACE_BEST_DELTA,
+        "metadata": trace_gate_arm_metadata(payload, arm),
+        "grid_metadata": trace_gate_arm_metadata(payload, "grid_only"),
+        "best_trace_row": row,
+        "grid_row": grid,
+    }
+
+
+def trace_sft_gate_actions(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    evidence = trace_gate_best_trace(payload)
+    if evidence["run_distill_gate"]:
+        assignments: dict[str, str] = {
+            "STAGE5_ARC_AGI_DISTILL_GATE_RUN_ID": f"{RUN_ID}_distill_sft_gate",
+            "STAGE5_ARC_AGI_TRACE_MODE": str(evidence["best_trace_mode"]),
+            "STAGE5_ARC_AGI_TRACE_FILTER": str(evidence["best_trace_filter"]),
+        }
+        add_common_arc_recipe_env(assignments, evidence.get("metadata") or {})
+        assignments["STAGE5_ARC_AGI_TRACE_MODE"] = str(evidence["best_trace_mode"])
+        assignments["STAGE5_ARC_AGI_TRACE_FILTER"] = str(evidence["best_trace_filter"])
+        return [
+            make_action(
+                "Compare base-logit distillation for selected ARC trace recipe",
+                "Trace-SFT matched or beat grid-only SFT; now test whether base-logit distillation preserves base behavior while keeping the recurrent ARC gains. "
+                f"Best trace arm `{evidence['best_trace_arm']}` best delta `{evidence['best_trace_best_delta']}` "
+                f">= `{evidence['min_trace_best_delta']}`.",
+                command_env(assignments, "python colab/run_stage5_arc_agi_distill_sft_gate.py"),
+                10,
+            )
+        ]
+
+    assignments = {
+        "STAGE5_ARC_AGI_DENSE_SFT_RUN_ID": f"{RUN_ID}_dense_grid_control_after_trace_gate",
+    }
+    add_common_arc_recipe_env(assignments, evidence.get("grid_metadata") or {})
+    assignments["STAGE5_ARC_AGI_TRACE_MODE"] = "none"
+    assignments["STAGE5_ARC_AGI_TRACE_FILTER"] = "all"
+    return [
+        make_action(
+            "Run dense ARC-AGI SFT control for grid-only recipe",
+            "Trace-SFT did not clear the grid-only gate; establish the ordinary dense grid-only recipe control before interpreting recurrent-specific trace targets. "
+            f"Best trace delta `{evidence['best_trace_best_delta']}` < `{MIN_TRACE_BEST_DELTA}`.",
+            command_env(assignments, "python colab/run_stage5_arc_agi_dense_sft.py"),
+            10,
+        )
+    ]
+
+
+def distill_gate_best_arm(payload: dict[str, Any]) -> dict[str, Any]:
+    comparison = payload.get("comparison") or {}
+    off = comparison.get("distill_off") or {}
+    on = comparison.get("distill_on") or {}
+    off_score = sft_gate_score(off)
+    on_score = sft_gate_score(on)
+    label = "distill_on" if on_score >= off_score else "distill_off"
+    summary = payload.get(label) or {}
+    metadata = summary.get("metadata") if isinstance(summary, dict) else {}
+    return {
+        "label": label,
+        "distill_enabled": label == "distill_on",
+        "best_delta": int(on_score[0]) - int(off_score[0]),
+        "selected_delta": int(on_score[1]) - int(off_score[1]),
+        "metadata": metadata if isinstance(metadata, dict) else {},
+    }
+
+
+def distill_sft_gate_actions(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    evidence = distill_gate_best_arm(payload)
+    assignments: dict[str, str] = {
+        "STAGE5_ARC_AGI_DENSE_SFT_RUN_ID": f"{RUN_ID}_dense_control_from_{evidence['label']}",
+        "STAGE5_ARC_AGI_DISTILL": "1" if evidence["distill_enabled"] else "0",
+        "STAGE5_ARC_AGI_DENSE_DISTILL": "1" if evidence["distill_enabled"] else "0",
+    }
+    add_common_arc_recipe_env(assignments, evidence.get("metadata") or {})
+    assignments["STAGE5_ARC_AGI_DISTILL"] = "1" if evidence["distill_enabled"] else "0"
+    assignments["STAGE5_ARC_AGI_DENSE_DISTILL"] = "1" if evidence["distill_enabled"] else "0"
+    return [
+        make_action(
+            "Run dense ARC-AGI SFT control for selected recipe",
+            "Distillation gate selected the current ARC recipe arm; run the unmodified dense Qwen control under the same recipe before judging recurrent architecture lift. "
+            f"Selected `{evidence['label']}` with distill-on best delta `{evidence['best_delta']}` and selected delta `{evidence['selected_delta']}`.",
+            command_env(assignments, "python colab/run_stage5_arc_agi_dense_sft.py"),
             10,
         )
     ]
@@ -1730,6 +1908,12 @@ def plan_next_actions(
     candidate_gate = candidate_gate_payload(payload)
     if candidate_gate:
         return candidate_gate_actions(candidate_gate)
+    trace_sft_gate = trace_sft_gate_payload(payload)
+    if trace_sft_gate:
+        return trace_sft_gate_actions(trace_sft_gate)
+    distill_sft_gate = distill_sft_gate_payload(payload)
+    if distill_sft_gate:
+        return distill_sft_gate_actions(distill_sft_gate)
     recipe_selector_action = recipe_selector_conversion_action(payload, source_summary=source_summary)
     if recipe_selector_action is not None:
         return [recipe_selector_action]
@@ -2077,6 +2261,10 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "dense_sft_control"
     if candidate_gate_payload(payload):
         return "candidate_gate"
+    if trace_sft_gate_payload(payload):
+        return "trace_sft_gate"
+    if distill_sft_gate_payload(payload):
+        return "distill_sft_gate"
     if recurrent_sft_payload(payload):
         return "recurrent_sft"
     if recovery_particle_payload(payload):

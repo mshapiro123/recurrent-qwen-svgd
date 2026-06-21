@@ -157,6 +157,15 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         return True
     if payload.get("gate") == "stage5_arc_agi_candidate_gate" or payload.get("kind") == "stage5_arc_agi_candidate_gate":
         return True
+    if payload.get("gate") == "stage5_arc_agi_trace_sft_gate" or payload.get("kind") == "trace_sft_gate":
+        return True
+    if payload.get("gate") == "stage5_arc_agi_distill_sft_gate" or payload.get("kind") == "distill_sft_gate":
+        return True
+    comparison = payload.get("comparison")
+    if isinstance(comparison, dict) and "grid_only" in comparison and isinstance(payload.get("arms"), list):
+        return True
+    if isinstance(comparison, dict) and {"distill_off", "distill_on"} <= set(comparison):
+        return True
     if payload.get("kind") == "dense_sft_control":
         return True
     if "phase1_arc_agi_tuned" in payload and payload.get("tuned_checkpoint"):
@@ -672,6 +681,72 @@ def arc_agi_candidate_gates(summary_files: list[Path]) -> list[dict[str, Any]]:
     return sorted(gates, key=lambda item: str(item["path"]))
 
 
+def sft_recipe_score(row: dict[str, Any]) -> tuple[int, int, int, int]:
+    return (
+        int(row.get("best_best", row.get("tuned_best", 0)) or 0),
+        int(row.get("best_selected", row.get("tuned_selected", 0)) or 0),
+        int(row.get("tuned_best", 0) or 0),
+        int(row.get("tuned_selected", 0) or 0),
+    )
+
+
+def trace_gate_summary(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    comparison = payload.get("comparison") or {}
+    grid = comparison.get("grid_only") or {}
+    grid_score = sft_recipe_score(grid)
+    trace_rows = [
+        (sft_recipe_score(row), str(label), row)
+        for label, row in comparison.items()
+        if label != "grid_only" and isinstance(row, dict)
+    ]
+    best_score, best_arm, _best_row = max(trace_rows, default=((-grid_score[0], -grid_score[1], 0, 0), None, {}))
+    return {
+        "path": path_for_cli(path),
+        "run_id": str(payload.get("run_id") or path.parent.name),
+        "kind": "trace_sft_gate",
+        "best_arm": best_arm,
+        "best_delta": int(best_score[0]) - int(grid_score[0]),
+        "selected_delta": int(best_score[1]) - int(grid_score[1]),
+    }
+
+
+def distill_gate_summary(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    comparison = payload.get("comparison") or {}
+    off = comparison.get("distill_off") or {}
+    on = comparison.get("distill_on") or {}
+    off_score = sft_recipe_score(off)
+    on_score = sft_recipe_score(on)
+    selected_arm = "distill_on" if on_score >= off_score else "distill_off"
+    return {
+        "path": path_for_cli(path),
+        "run_id": str(payload.get("run_id") or path.parent.name),
+        "kind": "distill_sft_gate",
+        "best_arm": selected_arm,
+        "best_delta": int(on_score[0]) - int(off_score[0]),
+        "selected_delta": int(on_score[1]) - int(off_score[1]),
+    }
+
+
+def arc_agi_sft_recipe_gates(summary_files: list[Path]) -> list[dict[str, Any]]:
+    gates: list[dict[str, Any]] = []
+    for path in summary_files:
+        payload = safe_read_json(path)
+        if not payload:
+            continue
+        comparison = payload.get("comparison")
+        if not isinstance(comparison, dict):
+            continue
+        if payload.get("gate") == "stage5_arc_agi_trace_sft_gate" or payload.get("kind") == "trace_sft_gate":
+            gates.append(trace_gate_summary(path, payload))
+        elif payload.get("gate") == "stage5_arc_agi_distill_sft_gate" or payload.get("kind") == "distill_sft_gate":
+            gates.append(distill_gate_summary(path, payload))
+        elif "grid_only" in comparison and isinstance(payload.get("arms"), list):
+            gates.append(trace_gate_summary(path, payload))
+        elif {"distill_off", "distill_on"} <= set(comparison):
+            gates.append(distill_gate_summary(path, payload))
+    return sorted(gates, key=lambda item: str(item["path"]))
+
+
 def iter_summary_files(scan_root: Path) -> list[Path]:
     if not scan_root.exists():
         return []
@@ -793,6 +868,7 @@ def scan_progress(scan_root: Path, *, run_id: str | None = None) -> dict[str, An
         "arc_agi_baseline_registries": arc_agi_baseline_registries(summary_files),
         "arc_agi_sota_comparisons": arc_agi_sota_comparisons(summary_files),
         "arc_agi_candidate_gates": arc_agi_candidate_gates(summary_files),
+        "arc_agi_sft_recipe_gates": arc_agi_sft_recipe_gates(summary_files),
         "recommended_next_plan_source": latest_planner_source(summary_files),
     }
 
@@ -974,6 +1050,15 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
             )
     else:
         lines.append("- No ARC-AGI candidate-gate artifacts found.")
+    lines.extend(["", "## ARC-AGI SFT Recipe Gates", ""])
+    if payload["arc_agi_sft_recipe_gates"]:
+        for gate in payload["arc_agi_sft_recipe_gates"][-10:]:
+            lines.append(
+                f"- `{gate['run_id']}` kind `{gate['kind']}` best arm `{gate['best_arm']}` "
+                f"best delta `{gate['best_delta']}`, selected delta `{gate['selected_delta']}`"
+            )
+    else:
+        lines.append("- No ARC-AGI SFT recipe gate artifacts found.")
     (output_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((output_dir / "summary.md").read_text(encoding="utf-8"))
 

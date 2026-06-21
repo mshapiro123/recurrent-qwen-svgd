@@ -188,6 +188,8 @@ def main() -> int:
     results = {label: run_child(label, trace_mode, trace_filter) for label, trace_mode, trace_filter in arms}
     payload = {
         "run_id": RUN_ID,
+        "gate": "stage5_arc_agi_trace_sft_gate",
+        "kind": "trace_sft_gate",
         "arms": [{"label": label, "trace_mode": mode, "trace_filter": trace_filter} for label, mode, trace_filter in arms],
         "results": results,
         "comparison": {label: compact(summary) for label, summary in results.items()},

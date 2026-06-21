@@ -155,6 +155,8 @@ def main() -> int:
     distill_on = run_child("distill_on", True)
     payload = {
         "run_id": RUN_ID,
+        "gate": "stage5_arc_agi_distill_sft_gate",
+        "kind": "distill_sft_gate",
         "distill_off": distill_off,
         "distill_on": distill_on,
         "comparison": {
