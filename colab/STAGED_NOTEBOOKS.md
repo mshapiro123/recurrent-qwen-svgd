@@ -93,11 +93,12 @@ The older split notebooks are kept only as references:
 2. Build/validate the MCQ benchmark harness.
 3. Export and push adapter/controller package to Hugging Face.
 4. Audit reasoning-trace sources before expanding the modified-Opus mix. Run
-   `colab/run_stage5_reasoning_dataset_audit.py` before adding unfamiliar
-   Hugging Face trace sources to any fine-tuning mix. It reads
-   `config/reasoning_dataset_registry.yaml`, audits Opus/Fable-style schemas,
-   writes `outputs/stage5/<run_id>/summary.{json,md}`, and classifies each
-   dataset as immediate trace-SFT material, audit-only material, or later
+   `colab/run_stage5_reasoning_dataset_pipeline.py` when you want one cell to
+   audit and then execute the planner-selected next action. For audit-only
+   mode, run `colab/run_stage5_reasoning_dataset_audit.py`. Both read
+   `config/reasoning_dataset_registry.yaml`, audit Opus/Fable-style schemas,
+   write `outputs/stage5/<run_id>/summary.{json,md}`, and classify each dataset
+   as immediate trace-SFT material, audit-only material, or later
    agent/tool-diversity material. Use this to keep Opus competence recovery
    separate from Fable tool/agent trajectory experiments.
 5. Fine-tune on modified Opus traces.

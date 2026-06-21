@@ -75,6 +75,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/run_stage5_arc_agi_tta_sweep.py",
     "colab/run_stage5_benchmark_suite.py",
     "colab/run_stage5_reasoning_dataset_audit.py",
+    "colab/run_stage5_reasoning_dataset_pipeline.py",
     "colab/run_stage5_phase1_recovery_ladder.py",
     "colab/run_stage5_publish_hf_adapter.py",
     "colab/run_stage5_recovered_phase1_arc_gate.py",

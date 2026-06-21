@@ -213,6 +213,16 @@ def test_parse_action_command_allows_reasoning_dataset_audit_runner() -> None:
     assert parsed.argv == [sys.executable, "colab/run_stage5_reasoning_dataset_audit.py"]
 
 
+def test_parse_action_command_allows_reasoning_dataset_pipeline_runner() -> None:
+    parsed = parse_action_command(
+        "STAGE5_REASONING_DATASET_PIPELINE_RUN_ID=pipe python colab/run_stage5_reasoning_dataset_pipeline.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_REASONING_DATASET_PIPELINE_RUN_ID": "pipe"}
+    assert parsed.argv == [sys.executable, "colab/run_stage5_reasoning_dataset_pipeline.py"]
+
+
 def test_parse_action_command_allows_stage4_opus_finetune_runner() -> None:
     parsed = parse_action_command(
         "STAGE4_RUN_ID=opus OPUS_DATASET_ADAPTER=qwen_text python colab/run_stage4_opus_finetune.py"
