@@ -276,11 +276,12 @@ or GPQA Diamond.
 
 ## 8. Immediate Credit-Saving Gate
 
-The next A100 run should be a bounded competence-preserving proxy, not another
-SVGD/kernel sweep. The current benchmark failure is concentrated in ARC-Easy:
-the recurrent checkpoint slightly exceeds base on ARC-Challenge but trails on
-ARC-Easy. The next experiment therefore resumes from the selected balanced
-checkpoint and runs a single mixed objective with:
+The first A100 credit-saving recovery probe has now run. It was a bounded
+competence-preserving proxy rather than another SVGD/kernel sweep. The broader
+benchmark failure was concentrated in ARC-Easy: the recurrent checkpoint
+slightly exceeded base on ARC-Challenge but trailed on ARC-Easy. The probe
+therefore resumed from the selected balanced checkpoint and ran a single mixed
+objective with:
 
 - Opus reasoning traces as the general reasoning anchor;
 - ARC-Challenge training rows repeated `2x`;
@@ -289,10 +290,23 @@ checkpoint and runs a single mixed objective with:
 - learning rate `2e-6`;
 - proxy MCQ eval limit `128`.
 
-The intended Colab planner action is `Run competence-preserving ARC-mix proxy
-gate`. If it produces proxy lift or matches base, the next action is the full
-balanced ARC-Easy/ARC-Challenge assessment. If it fails, inspect the summary
-before spending more GPU.
+The completed Colab planner action was `Run competence-preserving ARC-mix proxy
+gate`, producing:
+
+```text
+run_id = stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe
+status = proxy_lift
+base proxy = 68/128
+start proxy = 66/128
+best recurrent proxy = 67/128
+best checkpoint = outputs/stage5/stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe/arc_mix_response_w005_lr2e6/phase1/phase1_step_100.pt
+```
+
+This is a weak but positive proxy result. It improves the recurrent start by
+one example but remains one example below base on the 128-example proxy. The
+next planner action is therefore the full balanced ARC-Easy/ARC-Challenge
+assessment for the best proxy checkpoint, but it should be launched only as a
+deliberate A100 spend, not as an automatic continuation.
 
 This gate is intentionally deterministic Phase 1 recovery work. Phase 2/SVGD,
 GPQA Diamond, and 1.5B/3B scaling remain deferred until deterministic recurrent

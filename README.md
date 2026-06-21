@@ -88,22 +88,30 @@ time.
 
 ## Active Next A100 Action
 
-Credits are tight, so the next GPU action is a single proxy gate, not a sweep.
-Do not run GPQA, Phase 2/SVGD, or scale-up jobs while this gate is unresolved.
-The gate resumes from the current benchmark assessment and runs one
-ARC-Easy-weighted ARC-mix recovery arm:
+Credits are tight, so A100 work is deliberately gate-based. The latest
+credit-saver ARC-mix proxy gate completed:
 
-```bash
-STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE=credit_saver \
-STAGE5_ARC_AGI_NEXT_ACTION_SOURCE_SUMMARY=outputs/stage5/stage5_benchmark_assessment_20260621_183952/summary.json \
-STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE=1 \
-python colab/run_stage5_colab_continue.py
+```text
+run_id = stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe
+status = proxy_lift
+base proxy = 68/128
+start proxy = 66/128
+best recurrent proxy = 67/128
+best checkpoint = outputs/stage5/stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe/arc_mix_response_w005_lr2e6/phase1/phase1_step_100.pt
 ```
 
-The planner should emit `Run competence-preserving ARC-mix proxy gate`, using
-`arc_mix_response_w005_lr2e6`, `ARC-Challenge` repeat `2`, `ARC-Easy` repeat
-`4`, and eval limit `128`. Review that proxy before launching full assessment,
-SVGD, GPQA, or scaling runs.
+The lift is real but weak: `+1` versus the recurrent starting checkpoint and
+`-1` versus base on the 128-example proxy. The planner's next action, if we
+choose to spend the A100 time, is the full balanced ARC-Easy/ARC-Challenge
+assessment for that checkpoint:
+
+```bash
+STAGE5_ARC_AGI_NEXT_PLAN_SOURCE_SUMMARY=outputs/stage5/stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe/summary.json \
+python colab/plan_stage5_next_run.py
+```
+
+Do not run GPQA, Phase 2/SVGD, or scale-up jobs before this deterministic
+recurrent recovery question is resolved.
 
 ## A100 Credit Discipline
 
