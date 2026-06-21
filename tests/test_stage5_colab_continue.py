@@ -12,6 +12,7 @@ def test_colab_continue_focuses_gate1_and_next_action_tests() -> None:
     assert "tests/test_stage5_gate2_assessment.py" in paths
     assert "tests/test_stage5_progress_ledger.py" in paths
     assert "tests/test_lora.py" in paths
+    assert "tests/test_stage5_dense_sft_control.py" in paths
 
 
 def test_colab_continue_defaults_to_bounded_two_action_loop(monkeypatch) -> None:

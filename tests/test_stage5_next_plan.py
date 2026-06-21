@@ -1065,6 +1065,10 @@ def test_dense_sft_control_plans_matched_recurrent_recipe(tmp_path) -> None:
             "dense_tuned_vs_base": {"selected_exact_delta": 2},
             "phase1_start_vs_base": {"selected_exact_delta": -1},
         },
+        "paired_comparisons": {
+            "dense_tuned_vs_base": {"metrics": {"selected_exact": _paired(2, wins=2, losses=0, ties=10)}},
+            "phase1_start_vs_base": {"metrics": {"selected_exact": _paired(-1, wins=0, losses=1, ties=11)}},
+        },
     }
 
     actions = plan_next_actions(payload, source_summary=source)
@@ -1074,3 +1078,4 @@ def test_dense_sft_control_plans_matched_recurrent_recipe(tmp_path) -> None:
     assert "STAGE5_ARC_AGI_EVAL_TASK_LIMIT=12" in actions[0]["command"]
     assert "STAGE5_ARC_AGI_TRACE_MODE=symbolic_program" in actions[0]["command"]
     assert "python colab/run_stage5_arc_agi_sft.py" in actions[0]["command"]
+    assert "Dense-vs-base evidence: paired delta 2" in actions[0]["reason"]

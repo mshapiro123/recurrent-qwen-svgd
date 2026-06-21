@@ -104,9 +104,9 @@ Initial harness files:
 - `training/train_dense_lora.py` and `colab/run_stage5_arc_agi_dense_sft.py`:
   standard dense Qwen LoRA control for the same ARC-AGI SFT recipe. The dense
   runner trains an unmodified base-model adapter on the same prepared rows,
-  evaluates base/dense-tuned/Phase1-start, and the planner then routes to a
-  matched recurrent SFT arm. Use this before interpreting recurrent SFT gains
-  as architectural gains.
+  evaluates base/dense-tuned/Phase1-start, writes paired sign-test comparison
+  artifacts, and the planner then routes to a matched recurrent SFT arm. Use
+  this before interpreting recurrent SFT gains as architectural gains.
 - `colab/run_stage5_arc_agi_trace_sft_gate.py`: matched two-arm SFT runner for
   grid-only supervision versus symbolic-program trace supervision. It reports
   the best checkpoint in each child SFT ladder when available, not only the

@@ -518,8 +518,12 @@ def dense_sft_actions(payload: dict[str, Any]) -> list[dict[str, Any]]:
     phase1_vs_base = deltas.get("phase1_start_vs_base") or {}
     dense_selected_delta = int(dense_vs_base.get("selected_exact_delta", 0) or 0)
     phase1_selected_delta = int(phase1_vs_base.get("selected_exact_delta", 0) or 0)
+    dense_vs_base_stats = paired_metric(payload, "dense_tuned_vs_base", "selected_exact")
+    phase1_vs_base_stats = paired_metric(payload, "phase1_start_vs_base", "selected_exact")
     reason = (
-        "A dense standard-control SFT run exists. Run the matched recurrent SFT arm under the same ARC row recipe so the project can compare recipe lift against architecture lift."
+        "A dense standard-control SFT run exists. Run the matched recurrent SFT arm under the same ARC row recipe so the project can compare recipe lift against architecture lift. "
+        f"Dense-vs-base evidence: {evidence_fragment(dense_vs_base_stats, dense_selected_delta)}. "
+        f"Phase1-start-vs-base evidence: {evidence_fragment(phase1_vs_base_stats, phase1_selected_delta)}."
     )
     if dense_selected_delta > phase1_selected_delta:
         reason += (

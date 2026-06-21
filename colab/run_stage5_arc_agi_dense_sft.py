@@ -30,6 +30,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from eval.compare_arc_agi_runs import compare_payloads, write_markdown as write_comparison_markdown  # noqa: E402
 from training.arc_agi_training_signal import summarize_training_signal, write_training_signal_report  # noqa: E402
 
 
@@ -318,6 +319,64 @@ def summary_delta(candidate: dict[str, Any], reference: dict[str, Any]) -> dict[
     }
 
 
+def compare_eval_payloads(
+    reference: dict[str, Any],
+    candidate: dict[str, Any],
+    *,
+    reference_label: str,
+    candidate_label: str,
+) -> dict[str, Any]:
+    payload = compare_payloads(
+        reference,
+        candidate,
+        reference_label=reference_label,
+        candidate_label=candidate_label,
+        bootstrap_samples=1000,
+        seed=0,
+    )
+    name = f"{candidate_label}_vs_{reference_label}"
+    (RUN_DIR / f"{name}_paired_comparison.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    write_comparison_markdown(RUN_DIR / f"{name}_paired_comparison.md", payload)
+    return payload
+
+
+def paired_comparisons(
+    *,
+    base: dict[str, Any],
+    dense_tuned: dict[str, Any],
+    phase1_start: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "dense_tuned_vs_base": compare_eval_payloads(
+            base,
+            dense_tuned,
+            reference_label="base",
+            candidate_label="dense_tuned",
+        ),
+        "dense_tuned_vs_phase1_start": compare_eval_payloads(
+            phase1_start,
+            dense_tuned,
+            reference_label="phase1_start",
+            candidate_label="dense_tuned",
+        ),
+        "phase1_start_vs_base": compare_eval_payloads(
+            base,
+            phase1_start,
+            reference_label="base",
+            candidate_label="phase1_start",
+        ),
+    }
+
+
+def paired_selected_line(name: str, comparison: dict[str, Any]) -> str:
+    stats = (comparison.get("metrics") or {}).get("selected_exact") or {}
+    return (
+        f"- {name}: selected delta `{stats.get('delta_exact')}` "
+        f"({stats.get('wins')}/{stats.get('losses')}/{stats.get('ties')} W/L/T, "
+        f"p `{stats.get('sign_test_p_value')}`)"
+    )
+
+
 def audit_training_signal(metadata: dict[str, Any]) -> dict[str, Any]:
     payload = summarize_training_signal(TRAIN_JSONL, val_jsonl=VAL_JSONL, metadata=metadata)
     write_training_signal_report(payload, RUN_DIR / "training_signal.json", RUN_DIR / "training_signal.md")
@@ -379,8 +438,17 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Dense tuned vs Phase1 start: `{payload['deltas']['dense_tuned_vs_phase1_start']}`",
         f"- Phase1 start vs base: `{payload['deltas']['phase1_start_vs_base']}`",
         "",
-        f"Training-signal audit: `{path_for_cli(RUN_DIR / 'training_signal.md')}`",
+        "## Paired Selected-Answer Evidence",
+        "",
     ]
+    for name, comparison in payload.get("paired_comparisons", {}).items():
+        lines.append(paired_selected_line(name, comparison))
+    lines.extend(
+        [
+            "",
+            f"Training-signal audit: `{path_for_cli(RUN_DIR / 'training_signal.md')}`",
+        ]
+    )
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))
 
@@ -411,6 +479,7 @@ def main() -> int:
     base = eval_arc("base", "base", eval_path)
     dense_tuned = eval_arc("dense_tuned", "base", eval_path, dense_checkpoint)
     phase1_start = eval_arc("phase1_start", "phase1", eval_path, PHASE1_CKPT)
+    paired = paired_comparisons(base=base, dense_tuned=dense_tuned, phase1_start=phase1_start)
 
     payload = {
         "run_id": RUN_ID,
@@ -426,6 +495,7 @@ def main() -> int:
             "dense_tuned_vs_phase1_start": summary_delta(dense_tuned, phase1_start),
             "phase1_start_vs_base": summary_delta(phase1_start, base),
         },
+        "paired_comparisons": paired,
     }
     write_report(payload)
     backup_to_drive()

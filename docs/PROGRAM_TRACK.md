@@ -36,7 +36,9 @@ Implementation note: Stage 5 now includes a dense standard-control SFT runner,
 `eval/eval_arc_agi.py`. This lets the project train an unmodified Qwen LoRA
 adapter on the same ARC-AGI rows used for recurrent SFT, then route the planner
 to a matched recurrent SFT arm. This is the first concrete scaffold for the
-standard-vs-recurrent same-recipe comparison.
+standard-vs-recurrent same-recipe comparison. Dense-control summaries include
+paired comparison artifacts, so aggregate deltas are not used as the only
+evidence.
 
 ## Decisive Experiment
 
