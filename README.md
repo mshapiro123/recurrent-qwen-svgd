@@ -1,20 +1,35 @@
-# GRAM-Inspired Recurrent-Depth Qwen
+# GRAM-Inspired Recurrent-Particle Qwen
 
-This scaffold implements the staged handoff:
+This repository studies whether a pretrained dense Qwen model can be surgically
+converted into a recurrent latent-reasoning model, recovered with a small
+trainable parameter budget, and then extended with multiple particle-like latent
+reasoning trajectories. The current base is
+`Qwen/Qwen2.5-0.5B-Instruct`; the project deliberately stays small until the
+identity, recurrence, recovery, and particle-selection gates are reproducible.
 
-1. Phase 0: manual Prelude / Recurrent Block / Coda identity wrapper.
-2. Phase 1: deterministic recurrent-depth loop with sequence-level PonderNet halting.
-3. Phase 2: trajectory uncertainty with either stochastic latent sampling or
-   SVGD-style particle updates over recurrent hidden states.
+The work is organized like a model-surgery paper rather than a conventional SFT
+run. The central question is:
 
-Start with `Qwen/Qwen2.5-0.5B-Instruct`. Do not scale to 9B until the identity,
-halting, and trajectory gates pass on smaller models.
+> Can we preserve most of a trained model's competence after converting it into
+> a recurrent-depth architecture, then use learned depth and latent particles to
+> surpass the original model on hard reasoning?
 
-For high-end Colab Pro+, the intended scale-up path is 0.5B first, then
-`Qwen/Qwen2.5-1.5B-Instruct` using the `config/qwen_1_5b_phase*.yaml` configs.
+The implementation has three stages:
 
-For the current scientific status, evidence, negative results, and next gates,
-see [docs/PROJECT_STATUS_PAPER.md](docs/PROJECT_STATUS_PAPER.md).
+1. **Identity-preserving surgery.** Split Qwen into Prelude, Recurrent Block,
+   and Coda. With one recurrent pass, the wrapper must reproduce the original
+   logits exactly under strict float32/eager settings.
+2. **Deterministic recurrent recovery.** Train only LoRA adapters in the
+   recurrent block, a gated identity bridge, and a sequence-level PonderNet
+   halting head. The frozen base remains low precision; trainable controllers
+   stay fp32 for stability.
+3. **Recurrent particles.** Add stochastic latent trajectories and SVGD-style
+   particle updates over recurrent hidden states, then test whether a selector
+   can convert candidate diversity into accuracy.
+
+For the current manuscript-style status, evidence, negative results, and next
+gates, see [docs/PROJECT_STATUS_PAPER.md](docs/PROJECT_STATUS_PAPER.md). The
+program-level strategy is tracked in [docs/PROGRAM_TRACK.md](docs/PROGRAM_TRACK.md).
 
 ## Current Result
 
@@ -36,10 +51,46 @@ The next gate is competence-preserving recurrent SFT that keeps the
 ARC-Challenge gain while closing the ARC-Easy gap. Phase 2/SVGD work resumes
 after deterministic recurrent recovery is competitive with base.
 
+## What Has Been Achieved
+
+- **Exact identity gate passed.** The manually wrapped Qwen path can reproduce
+  the base model with `max_abs_diff=0.0` under the strict identity setting.
+- **Stable learned depth.** Sequence-level halting remains non-collapsed after
+  adapter/controller stabilization, with expected loop depth around 2.9 on the
+  current recurrent checkpoints.
+- **Recoverable competence.** The recurrent model has recovered to near-base
+  performance on balanced ARC and slightly exceeds base on ARC-Challenge, while
+  still trailing on ARC-Easy.
+- **Particle mechanism signal.** SVGD and within-group particle geometry improve
+  candidate density on controlled exact-task suites, but have not yet beaten the
+  strongest deterministic recurrent checkpoint on non-toy benchmarks.
+- **Automation and gates.** Colab runners now emit planner-readable summaries so
+  GPU jobs can be bounded, resumed, assessed, and stopped instead of becoming
+  open-ended notebook sweeps.
+
+## What Is Still Required To Beat Base
+
+The next scientific result must come from deterministic recurrent recovery, not
+more particle geometry. The active recipe is:
+
+1. Continue Phase 1 from the best balanced checkpoint.
+2. Mix Opus/TraceInversion reasoning traces with benchmark-style ARC rows.
+3. Weight ARC-Easy more heavily to close the easy-regression gap while keeping
+   ARC-Challenge non-negative.
+4. Preserve answer competence with a small response-level base-distillation
+   signal.
+5. Re-run the full balanced ARC assessment only after a bounded proxy gate is
+   non-negative.
+
+Only after the recurrent model is base-competitive should Phase 2/SVGD, GPQA
+Diamond, 1.5B/3B scaling, or Hugging Face release work consume serious A100
+time.
+
 ## Active Next A100 Action
 
-Credits are tight, so the next GPU action is a single proxy gate, not a long
-sweep. It resumes from the current benchmark assessment and runs one
+Credits are tight, so the next GPU action is a single proxy gate, not a sweep.
+Do not run GPQA, Phase 2/SVGD, or scale-up jobs while this gate is unresolved.
+The gate resumes from the current benchmark assessment and runs one
 ARC-Easy-weighted ARC-mix recovery arm:
 
 ```bash
