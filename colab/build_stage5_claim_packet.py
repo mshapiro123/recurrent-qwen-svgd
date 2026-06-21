@@ -123,6 +123,121 @@ def criterion(name: str, passed: bool, reason: str, evidence: dict[str, Any]) ->
     return {"name": name, "passed": passed, "reason": reason, "evidence": evidence}
 
 
+def normalized_ref(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip().replace("\\", "/")
+    if not text:
+        return None
+    while text.startswith("./"):
+        text = text[2:]
+    root = str(ROOT).replace("\\", "/")
+    if text.startswith(root + "/"):
+        text = text[len(root) + 1 :]
+    return text
+
+
+def first_ref(*values: Any) -> str | None:
+    for value in values:
+        ref = normalized_ref(value)
+        if ref:
+            return ref
+    return None
+
+
+def hf_export_checkpoint_ref(hf_export: dict[str, Any]) -> str | None:
+    summary = hf_export.get("summary") or {}
+    metadata = summary.get("metadata") or {}
+    return first_ref(summary.get("checkpoint"), metadata.get("checkpoint_source_path"))
+
+
+def hf_export_source_summary_ref(hf_export: dict[str, Any]) -> str | None:
+    metadata = (hf_export.get("summary") or {}).get("metadata") or {}
+    source = metadata.get("source") or {}
+    return first_ref(source.get("summary_path"))
+
+
+def arc_agi_candidate(arc_agi: dict[str, Any]) -> dict[str, Any]:
+    candidate = (arc_agi.get("summary") or {}).get("candidate")
+    return candidate if isinstance(candidate, dict) else {}
+
+
+def arc_agi_candidate_checkpoint_ref(arc_agi: dict[str, Any]) -> str | None:
+    candidate = arc_agi_candidate(arc_agi)
+    metadata = candidate.get("metadata") or {}
+    return first_ref(
+        metadata.get("recovered_checkpoint"),
+        metadata.get("selected_checkpoint"),
+        metadata.get("tuned_checkpoint"),
+        metadata.get("final_checkpoint"),
+        metadata.get("checkpoint"),
+        metadata.get("checkpoint_path"),
+    )
+
+
+def arc_agi_candidate_summary_ref(arc_agi: dict[str, Any]) -> str | None:
+    return first_ref(arc_agi_candidate(arc_agi).get("path"))
+
+
+def sota_export_linkage(hf_export: dict[str, Any], arc_agi: dict[str, Any]) -> dict[str, Any]:
+    """Verify the SOTA comparison is for the exported recurrent artifact."""
+
+    hf_checkpoint = hf_export_checkpoint_ref(hf_export)
+    hf_source_summary = hf_export_source_summary_ref(hf_export)
+    candidate_checkpoint = arc_agi_candidate_checkpoint_ref(arc_agi)
+    candidate_summary = arc_agi_candidate_summary_ref(arc_agi)
+
+    evidence = {
+        "hf_checkpoint": hf_checkpoint,
+        "candidate_checkpoint": candidate_checkpoint,
+        "hf_source_summary": hf_source_summary,
+        "candidate_summary": candidate_summary,
+        "matched_on": None,
+        "verified": False,
+    }
+
+    if not (hf_export.get("present") and arc_agi.get("present") and arc_agi.get("passed")):
+        return {
+            **evidence,
+            "passed": False,
+            "reason": "SOTA export linkage requires both an HF export and a passed ARC-AGI comparison.",
+        }
+
+    if hf_checkpoint and candidate_checkpoint:
+        passed = hf_checkpoint == candidate_checkpoint
+        return {
+            **evidence,
+            "matched_on": "checkpoint",
+            "verified": True,
+            "passed": passed,
+            "reason": (
+                "HF export checkpoint matches the ARC-AGI candidate checkpoint."
+                if passed
+                else "HF export checkpoint does not match the ARC-AGI candidate checkpoint."
+            ),
+        }
+
+    if hf_source_summary and candidate_summary:
+        passed = hf_source_summary == candidate_summary
+        return {
+            **evidence,
+            "matched_on": "source_summary",
+            "verified": True,
+            "passed": passed,
+            "reason": (
+                "HF export source summary matches the ARC-AGI candidate summary."
+                if passed
+                else "HF export source summary does not match the ARC-AGI candidate summary."
+            ),
+        }
+
+    return {
+        **evidence,
+        "passed": False,
+        "reason": "Could not verify that the HF export and ARC-AGI SOTA comparison refer to the same artifact.",
+    }
+
+
 def evidence_source(evidence: dict[str, Any]) -> str | None:
     if evidence.get("path"):
         return str(evidence["path"])
@@ -164,6 +279,8 @@ def build_claim_packet(
     export_has_hash = bool((hf_export.get("summary") or {}).get("metadata", {}).get("checkpoint_sha256"))
     arc_agi_present = bool(arc_agi.get("present"))
     arc_agi_passed = bool(arc_agi.get("passed"))
+    sota_linkage = sota_export_linkage(hf_export, arc_agi)
+    sota_linkage_passed = bool(sota_linkage.get("passed"))
 
     criteria = [
         criterion(
@@ -236,6 +353,12 @@ def build_claim_packet(
             ),
             arc_agi,
         ),
+        criterion(
+            "sota_candidate_matches_hf_export",
+            sota_linkage_passed,
+            str(sota_linkage.get("reason")),
+            sota_linkage,
+        ),
     ]
 
     if not release_passed:
@@ -266,6 +389,13 @@ def build_claim_packet(
         status = "ready_for_release_candidate_not_sota"
         claim_level = "release_candidate"
         next_step = "Write the release-candidate report, but do not claim SOTA until authoritative ARC-AGI comparison evidence exists."
+    elif not sota_linkage_passed:
+        status = "ready_for_release_candidate_needs_sota_export_linkage"
+        claim_level = "release_candidate"
+        next_step = (
+            "Do not claim SOTA until the HF export and ARC-AGI comparison are linked to the same checkpoint "
+            "or source summary."
+        )
     else:
         status = "sota_claim_ready"
         claim_level = "sota_candidate"
@@ -275,7 +405,12 @@ def build_claim_packet(
         "run_id": RUN_ID,
         "gate": "stage5_claim_readiness",
         "status": status,
-        "passed": status in {"ready_for_release_candidate_not_sota", "sota_claim_ready"},
+        "passed": status
+        in {
+            "ready_for_release_candidate_not_sota",
+            "ready_for_release_candidate_needs_sota_export_linkage",
+            "sota_claim_ready",
+        },
         "claim_level": claim_level,
         "next_step": next_step,
         "artifacts": {
@@ -287,6 +422,7 @@ def build_claim_packet(
             "particle_mechanism_gate": particle_mechanism,
             "hf_export": hf_export,
             "authoritative_arc_agi_comparison": arc_agi,
+            "sota_export_linkage": sota_linkage,
         },
         "criteria": criteria,
     }
@@ -318,7 +454,8 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
             "## Claim Guardrail",
             "",
             "This packet separates release-candidate evidence from a SOTA ARC-AGI claim. "
-            "A SOTA claim requires an authoritative ARC-AGI comparison artifact against similarly sized models.",
+            "A SOTA claim requires an authoritative ARC-AGI comparison artifact against similarly sized models, "
+            "linked to the same checkpoint or source summary as the exported HF artifact.",
         ]
     )
     output_md.write_text("\n".join(lines) + "\n", encoding="utf-8")

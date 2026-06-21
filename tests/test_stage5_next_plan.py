@@ -1638,6 +1638,20 @@ def test_claim_readiness_release_candidate_inspects_markdown(tmp_path) -> None:
     assert "python colab/build_stage5_arc_agi_sota_comparison.py" in actions[0]["command"]
 
 
+def test_claim_readiness_sota_export_linkage_runs_hf_exporter(tmp_path) -> None:
+    source = tmp_path / "claim" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_claim_readiness",
+        "status": "ready_for_release_candidate_needs_sota_export_linkage",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Rebuild claim packet inputs with matched SOTA export linkage"
+    assert "python colab/run_stage5_publish_hf_adapter.py" in actions[0]["command"]
+
+
 def test_arc_agi_sota_comparison_passed_rebuilds_claim_packet(tmp_path) -> None:
     source = tmp_path / "arc_agi_sota" / "summary.json"
     source.parent.mkdir()

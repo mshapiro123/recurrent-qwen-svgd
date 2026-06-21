@@ -12,9 +12,10 @@ the training recipe alone.
 
 The target is a compact model that reaches frontier-level performance on
 verifiable reasoning: mathematics, competitive code, STEM, and ARC-style exact
-reasoning. The reference class is a VibeThinker-style small model, where a
-training recipe rather than scale pushes a 1.5B-3B model into a much stronger
-reasoning band.
+reasoning. The concrete reference class is the VibeThinker-style result: a
+small model, roughly in the 3B band, moving into a frontier-relevant range on
+AIME, HMMT, and LiveCodeBench through a training recipe rather than through
+scale.
 
 ## Proven Path And Project Bet
 
@@ -27,9 +28,11 @@ The proven path is the spectrum-to-signal recipe:
 
 The recurrent-particle architecture is the project contribution and the bet. It
 must prove that structural diversity in the computation survives later
-reinforcement better than diversity encoded only in weights. A strong final
-model is not enough; the decisive experiment must isolate whether architecture
-adds hard-tail accuracy beyond the same recipe on a standard dense model.
+reinforcement better than diversity encoded only in weights. The recipe alone
+is the proven path; the architecture earns its place only if it adds value the
+recipe alone does not. A strong final model is not enough; the decisive
+experiment must isolate whether architecture adds hard-tail accuracy beyond the
+same recipe on a standard dense model.
 
 There are two legitimate ordering modes:
 
@@ -93,7 +96,8 @@ lift under a matched recipe.
 
 Before more kernel geometry work, build the selector and a larger
 difficulty-stratified evaluation suite. The selector metric defines what
-``better`` means.
+``better`` means. When effects are small, measurement has priority over more
+mechanism.
 
 Required pieces:
 
@@ -114,6 +118,9 @@ useful diversity that a selector converts to accuracy:
 - helped examples at least equal harmed examples;
 - diversity that improves exact candidate coverage rather than only noise;
 - held-out confirmation of the selected mechanism.
+
+If particles improve candidate coverage but not selected-answer accuracy, the
+next move is selector/verifier work, not more particle geometry by default.
 
 Implementation note: Stage 5 now has an explicit Gate 2 assessment artifact,
 `colab/assess_stage5_gate2.py`, for recovery-particle summaries. It separates
@@ -152,6 +159,8 @@ reasoning model can confound the survival-of-diversity question.
   architecture or the recipe produced it.
 - Using derivative or repackaged checkpoints when a primary source model,
   teacher, or verifier is available.
+- Promoting an HF artifact or benchmark packet to a SOTA-facing claim when the
+  exported checkpoint is not linked to the exact comparison run.
 
 ## Current Implementation Link
 

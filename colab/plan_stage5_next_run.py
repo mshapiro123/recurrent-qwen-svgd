@@ -959,6 +959,20 @@ def claim_readiness_actions(payload: dict[str, Any], *, source_summary: Path) ->
                 10,
             )
         ]
+    if status == "ready_for_release_candidate_needs_sota_export_linkage":
+        return [
+            make_action(
+                "Rebuild claim packet inputs with matched SOTA export linkage",
+                "The claim packet has release-candidate evidence and a passed ARC-AGI comparison, but the HF export is not linked to that exact candidate checkpoint or source summary.",
+                command_env(
+                    {
+                        "STAGE5_HF_EXPORT_RUN_ID": f"{RUN_ID}_linked_sota_hf_export",
+                    },
+                    "python colab/run_stage5_publish_hf_adapter.py",
+                ),
+                10,
+            )
+        ]
     return [
         make_action(
             f"Inspect claim readiness `{status}`",

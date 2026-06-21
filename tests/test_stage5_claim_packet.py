@@ -100,21 +100,45 @@ def _particle_gate(path, *, passed: bool = True):
     return path
 
 
-def _export(path, *, with_hash: bool = True):
+def _export(
+    path,
+    *,
+    with_hash: bool = True,
+    checkpoint: str = "outputs/stage5/run/phase1.pt",
+    source_summary: str | None = "outputs/stage5/run/summary.json",
+):
+    metadata = {
+        "checkpoint_source_path": checkpoint,
+        "source": {"summary_path": source_summary},
+    }
+    if with_hash:
+        metadata["checkpoint_sha256"] = "abc123"
     _write(
         path,
         {
             "run_id": "export",
             "export_dir": "outputs/hf_exports/export",
-            "checkpoint": "outputs/stage5/run/phase1.pt",
+            "checkpoint": checkpoint,
             "hf_repo_id": "mshapiro123/recurrent-qwen-test",
-            "metadata": {"checkpoint_sha256": "abc123"} if with_hash else {},
+            "metadata": metadata,
         },
     )
     return path
 
 
-def _arc_agi(path, *, passed: bool = True):
+def _arc_agi(
+    path,
+    *,
+    passed: bool = True,
+    checkpoint: str | None = "outputs/stage5/run/phase1.pt",
+    source_summary: str | None = "outputs/stage5/run/summary.json",
+):
+    candidate_metadata = {}
+    if checkpoint:
+        candidate_metadata["recovered_checkpoint"] = checkpoint
+    candidate = {"metadata": candidate_metadata}
+    if source_summary:
+        candidate["path"] = source_summary
     _write(
         path,
         {
@@ -122,6 +146,7 @@ def _arc_agi(path, *, passed: bool = True):
             "gate": "stage5_arc_agi_sota_comparison",
             "status": "passed" if passed else "failed",
             "passed": passed,
+            "candidate": candidate,
         },
     )
     return path
@@ -208,6 +233,75 @@ def test_claim_packet_can_mark_sota_candidate_when_authoritative_comparison_exis
     assert payload["status"] == "sota_claim_ready"
     assert payload["claim_level"] == "sota_candidate"
     assert all(row["passed"] for row in payload["criteria"])
+
+
+def test_claim_packet_requires_sota_export_checkpoint_linkage(tmp_path) -> None:
+    payload = build_claim_packet(
+        release_gate_summary=_release(tmp_path / "release" / "summary.json"),
+        broader_benchmark_summary=_broader(tmp_path / "broader" / "summary.json"),
+        recipe_control_summary=_recipe(tmp_path / "recipe" / "summary.json"),
+        selector_replication_summary=_selector_replication(tmp_path / "selector_replication" / "summary.json"),
+        particle_mechanism_summary=_particle_gate(tmp_path / "particle_gate" / "summary.json"),
+        hf_export_summary=_export(tmp_path / "export" / "summary.json", checkpoint="outputs/stage5/run/phase1.pt"),
+        arc_agi_comparison_summary=_arc_agi(
+            tmp_path / "arc_agi" / "summary.json",
+            checkpoint="outputs/stage5/other/phase1.pt",
+        ),
+    )
+
+    assert payload["status"] == "ready_for_release_candidate_needs_sota_export_linkage"
+    assert payload["claim_level"] == "release_candidate"
+    assert payload["passed"] is True
+    assert payload["artifacts"]["sota_export_linkage"]["matched_on"] == "checkpoint"
+    assert payload["artifacts"]["sota_export_linkage"]["passed"] is False
+    assert payload["criteria"][-1]["passed"] is False
+
+
+def test_claim_packet_accepts_source_summary_linkage_when_checkpoint_missing(tmp_path) -> None:
+    payload = build_claim_packet(
+        release_gate_summary=_release(tmp_path / "release" / "summary.json"),
+        broader_benchmark_summary=_broader(tmp_path / "broader" / "summary.json"),
+        recipe_control_summary=_recipe(tmp_path / "recipe" / "summary.json"),
+        selector_replication_summary=_selector_replication(tmp_path / "selector_replication" / "summary.json"),
+        particle_mechanism_summary=_particle_gate(tmp_path / "particle_gate" / "summary.json"),
+        hf_export_summary=_export(
+            tmp_path / "export" / "summary.json",
+            checkpoint="outputs/stage5/run/phase1.pt",
+            source_summary="outputs/stage5/run/summary.json",
+        ),
+        arc_agi_comparison_summary=_arc_agi(
+            tmp_path / "arc_agi" / "summary.json",
+            checkpoint=None,
+            source_summary="outputs/stage5/run/summary.json",
+        ),
+    )
+
+    assert payload["status"] == "sota_claim_ready"
+    assert payload["artifacts"]["sota_export_linkage"]["matched_on"] == "source_summary"
+
+
+def test_claim_packet_blocks_sota_when_export_linkage_is_unverified(tmp_path) -> None:
+    payload = build_claim_packet(
+        release_gate_summary=_release(tmp_path / "release" / "summary.json"),
+        broader_benchmark_summary=_broader(tmp_path / "broader" / "summary.json"),
+        recipe_control_summary=_recipe(tmp_path / "recipe" / "summary.json"),
+        selector_replication_summary=_selector_replication(tmp_path / "selector_replication" / "summary.json"),
+        particle_mechanism_summary=_particle_gate(tmp_path / "particle_gate" / "summary.json"),
+        hf_export_summary=_export(
+            tmp_path / "export" / "summary.json",
+            checkpoint="outputs/stage5/run/phase1.pt",
+            source_summary=None,
+        ),
+        arc_agi_comparison_summary=_arc_agi(
+            tmp_path / "arc_agi" / "summary.json",
+            checkpoint=None,
+            source_summary=None,
+        ),
+    )
+
+    assert payload["status"] == "ready_for_release_candidate_needs_sota_export_linkage"
+    assert payload["artifacts"]["sota_export_linkage"]["verified"] is False
+    assert payload["criteria"][-1]["passed"] is False
 
 
 def test_claim_packet_requires_hf_export_hash(tmp_path) -> None:
