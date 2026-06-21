@@ -420,6 +420,7 @@ def benchmark_suite_assessments(summary_files: list[Path]) -> list[dict[str, Any
             continue
         deltas: list[dict[str, Any]] = []
         comparisons = payload.get("comparisons") or {}
+        paired_comparisons = payload.get("paired_comparisons") or {}
         for benchmark, score_targets in sorted(comparisons.items()):
             if not isinstance(score_targets, dict):
                 continue
@@ -429,6 +430,11 @@ def benchmark_suite_assessments(summary_files: list[Path]) -> list[dict[str, Any
                 for aggregate, row in sorted(aggregates.items()):
                     if not isinstance(row, dict):
                         continue
+                    paired = (
+                        (paired_comparisons.get(benchmark) or {})
+                        .get(score_target, {})
+                        .get(aggregate, {})
+                    )
                     deltas.append(
                         {
                             "benchmark": benchmark,
@@ -440,6 +446,11 @@ def benchmark_suite_assessments(summary_files: list[Path]) -> list[dict[str, Any
                             "accuracy_delta_recurrent_vs_base": float(
                                 row.get("accuracy_delta_recurrent_vs_base", 0.0) or 0.0
                             ),
+                            "paired_examples": int((paired or {}).get("paired_examples", 0) or 0),
+                            "wins": int((paired or {}).get("wins", 0) or 0),
+                            "losses": int((paired or {}).get("losses", 0) or 0),
+                            "ties": int((paired or {}).get("ties", 0) or 0),
+                            "sign_test_p_value": (paired or {}).get("sign_test_p_value"),
                         }
                     )
         assessments.append(
@@ -646,7 +657,8 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
         for assessment in payload["benchmark_suite_assessments"][-10:]:
             delta_text = "; ".join(
                 f"{row['benchmark']}/{row['score_target']}/{row['aggregate']}: "
-                f"{row['correct_delta_recurrent_vs_base']:+d}"
+                f"{row['correct_delta_recurrent_vs_base']:+d} "
+                f"(W/L/T {row['wins']}/{row['losses']}/{row['ties']}, p {row['sign_test_p_value']})"
                 for row in assessment.get("deltas", [])
             )
             lines.append(

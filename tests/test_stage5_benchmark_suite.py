@@ -8,9 +8,11 @@ from colab.run_stage5_benchmark_suite import (
     build_summary,
     checkpoint_candidates_from_payload,
     compare_arm_summaries,
+    paired_arm_summaries,
     parse_csv,
     resolve_checkpoint,
     summarize_rows,
+    two_sided_sign_p_value,
 )
 
 
@@ -43,7 +45,36 @@ def test_compare_arm_summaries_reports_recurrent_delta() -> None:
     )
 
     assert comparison["mean"]["correct_delta_recurrent_vs_base"] == 1
-    assert comparison["mean"]["accuracy_delta_recurrent_vs_base"] == 0.20000000000000007
+    assert round(comparison["mean"]["accuracy_delta_recurrent_vs_base"], 4) == 0.2
+
+
+def test_paired_arm_summaries_report_wins_losses_and_sign_test() -> None:
+    paired = paired_arm_summaries(
+        [
+            {"id": "a", "aggregate": "mean", "hit": True},
+            {"id": "b", "aggregate": "mean", "hit": False},
+            {"id": "c", "aggregate": "mean", "hit": True},
+            {"id": "base_only", "aggregate": "mean", "hit": True},
+        ],
+        [
+            {"id": "a", "aggregate": "mean", "hit": True},
+            {"id": "b", "aggregate": "mean", "hit": True},
+            {"id": "c", "aggregate": "mean", "hit": False},
+            {"id": "recurrent_only", "aggregate": "mean", "hit": True},
+        ],
+    )
+
+    assert paired["mean"]["paired_examples"] == 3
+    assert paired["mean"]["base_correct"] == 2
+    assert paired["mean"]["recurrent_correct"] == 2
+    assert paired["mean"]["wins"] == 1
+    assert paired["mean"]["losses"] == 1
+    assert paired["mean"]["ties"] == 1
+    assert paired["mean"]["sign_test_p_value"] == 1.0
+
+
+def test_sign_test_returns_none_without_disagreements() -> None:
+    assert two_sided_sign_p_value(0, 0) is None
 
 
 def test_checkpoint_candidates_include_hf_export_checkpoint(tmp_path) -> None:
@@ -80,15 +111,15 @@ def test_build_summary_compares_base_and_recurrent_rows(tmp_path) -> None:
     _write_jsonl(
         base_jsonl,
         [
-            {"aggregate": "mean", "hit": True},
-            {"aggregate": "mean", "hit": False},
+            {"id": "a", "aggregate": "mean", "hit": True},
+            {"id": "b", "aggregate": "mean", "hit": False},
         ],
     )
     _write_jsonl(
         recurrent_jsonl,
         [
-            {"aggregate": "mean", "hit": True},
-            {"aggregate": "mean", "hit": True},
+            {"id": "a", "aggregate": "mean", "hit": True},
+            {"id": "b", "aggregate": "mean", "hit": True},
         ],
     )
 
@@ -105,7 +136,11 @@ def test_build_summary_compares_base_and_recurrent_rows(tmp_path) -> None:
     )
 
     delta = payload["comparisons"]["arc_challenge"]["label"]["mean"]
+    paired = payload["paired_comparisons"]["arc_challenge"]["label"]["mean"]
     assert payload["status"] == "completed"
     assert delta["correct_delta_recurrent_vs_base"] == 1
     assert delta["base"]["correct"] == 1
     assert delta["recurrent"]["correct"] == 2
+    assert paired["paired_examples"] == 2
+    assert paired["wins"] == 1
+    assert paired["losses"] == 0

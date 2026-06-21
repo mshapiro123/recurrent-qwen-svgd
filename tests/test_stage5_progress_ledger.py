@@ -364,6 +364,19 @@ def test_progress_ledger_reports_benchmark_suite_assessments(tmp_path) -> None:
                     }
                 }
             },
+            "paired_comparisons": {
+                "arc_challenge": {
+                    "label": {
+                        "mean": {
+                            "paired_examples": 16,
+                            "wins": 1,
+                            "losses": 3,
+                            "ties": 12,
+                            "sign_test_p_value": 0.625,
+                        }
+                    }
+                }
+            },
         },
     )
 
@@ -383,6 +396,11 @@ def test_progress_ledger_reports_benchmark_suite_assessments(tmp_path) -> None:
                     "aggregate": "mean",
                     "correct_delta_recurrent_vs_base": -2,
                     "accuracy_delta_recurrent_vs_base": -0.125,
+                    "paired_examples": 16,
+                    "wins": 1,
+                    "losses": 3,
+                    "ties": 12,
+                    "sign_test_p_value": 0.625,
                 }
             ],
         }

@@ -169,6 +169,7 @@ Release candidate definition:
 - If that gate returns `ready_for_broader_benchmarks`, run
   `colab/run_stage5_benchmark_suite.py`. The suite compares unmodified base Qwen
   and the recurrent artifact on ARC-Challenge plus GPQA-lite, writes sanitized
-  result artifacts under `outputs/stage5`, and leaves prepared question data
-  under ignored `data/` paths.
+  result artifacts with paired recurrent-vs-base sign-test evidence under
+  `outputs/stage5`, and leaves prepared question data under ignored `data/`
+  paths.
 - Include the modified-architecture caveat and training recipe.

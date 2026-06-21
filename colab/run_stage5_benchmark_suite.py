@@ -10,6 +10,7 @@ and are written under ``outputs/stage5``.
 from __future__ import annotations
 
 import json
+import math
 import os
 import subprocess
 import sys
@@ -287,6 +288,60 @@ def summarize_rows(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     }
 
 
+def two_sided_sign_p_value(wins: int, losses: int) -> float | None:
+    trials = wins + losses
+    if trials == 0:
+        return None
+    observed = min(wins, losses)
+    probability = sum(math.comb(trials, k) for k in range(observed + 1)) / (2**trials)
+    return min(1.0, 2.0 * probability)
+
+
+def rows_by_id(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    return {str(row["id"]): row for row in rows if row.get("id") is not None}
+
+
+def paired_arm_summaries(
+    base_rows: list[dict[str, Any]],
+    recurrent_rows: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    base_by_aggregate: dict[str, list[dict[str, Any]]] = {}
+    recurrent_by_aggregate: dict[str, list[dict[str, Any]]] = {}
+    for row in base_rows:
+        base_by_aggregate.setdefault(str(row.get("aggregate") or "mean"), []).append(row)
+    for row in recurrent_rows:
+        recurrent_by_aggregate.setdefault(str(row.get("aggregate") or "mean"), []).append(row)
+
+    summaries: dict[str, dict[str, Any]] = {}
+    for aggregate in sorted(set(base_by_aggregate) | set(recurrent_by_aggregate)):
+        base_by_key = rows_by_id(base_by_aggregate.get(aggregate, []))
+        recurrent_by_key = rows_by_id(recurrent_by_aggregate.get(aggregate, []))
+        common_ids = sorted(set(base_by_key) & set(recurrent_by_key))
+        paired = [
+            (bool(base_by_key[item].get("hit")), bool(recurrent_by_key[item].get("hit")))
+            for item in common_ids
+        ]
+        base_correct = sum(int(base_hit) for base_hit, _recurrent_hit in paired)
+        recurrent_correct = sum(int(recurrent_hit) for _base_hit, recurrent_hit in paired)
+        wins = sum(1 for base_hit, recurrent_hit in paired if recurrent_hit and not base_hit)
+        losses = sum(1 for base_hit, recurrent_hit in paired if base_hit and not recurrent_hit)
+        ties = len(paired) - wins - losses
+        summaries[aggregate] = {
+            "paired_examples": len(paired),
+            "base_correct": base_correct,
+            "recurrent_correct": recurrent_correct,
+            "correct_delta_recurrent_vs_base": recurrent_correct - base_correct,
+            "base_accuracy": base_correct / max(len(paired), 1),
+            "recurrent_accuracy": recurrent_correct / max(len(paired), 1),
+            "accuracy_delta_recurrent_vs_base": (recurrent_correct - base_correct) / max(len(paired), 1),
+            "wins": wins,
+            "losses": losses,
+            "ties": ties,
+            "sign_test_p_value": two_sided_sign_p_value(wins, losses),
+        }
+    return summaries
+
+
 def compare_arm_summaries(base: dict[str, Any], recurrent: dict[str, Any]) -> dict[str, Any]:
     comparisons: dict[str, Any] = {}
     for aggregate in sorted(set(base) | set(recurrent)):
@@ -311,17 +366,24 @@ def build_summary(
     elapsed_seconds: float,
 ) -> dict[str, Any]:
     result_rows: dict[str, dict[str, Any]] = {}
+    raw_rows: dict[str, dict[str, dict[str, list[dict[str, Any]]]]] = {}
     for job in jobs:
-        result_rows.setdefault(job.benchmark, {}).setdefault(job.score_target, {})[job.arm] = summarize_rows(
-            read_rows(job.output_jsonl)
-        )
+        rows = read_rows(job.output_jsonl)
+        raw_rows.setdefault(job.benchmark, {}).setdefault(job.score_target, {})[job.arm] = rows
+        result_rows.setdefault(job.benchmark, {}).setdefault(job.score_target, {})[job.arm] = summarize_rows(rows)
     comparisons: dict[str, Any] = {}
+    paired_comparisons: dict[str, Any] = {}
     for benchmark, score_targets in result_rows.items():
         comparisons[benchmark] = {}
         for score_target, arms in score_targets.items():
             comparisons[benchmark][score_target] = compare_arm_summaries(
                 arms.get("base") or {},
                 arms.get("recurrent") or {},
+            )
+            raw_arms = raw_rows.get(benchmark, {}).get(score_target, {})
+            paired_comparisons.setdefault(benchmark, {})[score_target] = paired_arm_summaries(
+                raw_arms.get("base") or [],
+                raw_arms.get("recurrent") or [],
             )
     return {
         "run_id": RUN_ID,
@@ -338,6 +400,7 @@ def build_summary(
         "failures": failures,
         "results": result_rows,
         "comparisons": comparisons,
+        "paired_comparisons": paired_comparisons,
     }
 
 
@@ -369,6 +432,18 @@ def write_report(payload: dict[str, Any]) -> None:
                     f"(base `{row['base']['correct']}/{row['base']['total']}`, "
                     f"recurrent `{row['recurrent']['correct']}/{row['recurrent']['total']}`)"
                 )
+            paired = payload.get("paired_comparisons", {}).get(benchmark, {}).get(score_target, {})
+            if paired:
+                lines.append("  - paired evidence")
+                for aggregate, row in paired.items():
+                    lines.append(
+                        f"    - aggregate `{aggregate}`: recurrent `{row['recurrent_correct']}` / "
+                        f"`{row['paired_examples']}`, base `{row['base_correct']}` / "
+                        f"`{row['paired_examples']}`, delta "
+                        f"`{row['correct_delta_recurrent_vs_base']}`, W/L/T "
+                        f"`{row['wins']}/{row['losses']}/{row['ties']}`, p "
+                        f"`{row['sign_test_p_value']}`"
+                    )
     if payload["failures"]:
         lines.extend(["", "## Failures", ""])
         for failure in payload["failures"]:
