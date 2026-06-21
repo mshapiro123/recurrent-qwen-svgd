@@ -1048,6 +1048,7 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"gate": "stage5_same_recipe_architecture"}) == "recipe_control_assessment"
     assert source_kind({"gate": "stage5_release_benchmark_readiness"}) == "release_gate"
     assert source_kind({"kind": "stage5_benchmark_suite"}) == "benchmark_suite"
+    assert source_kind({"gate": "stage5_broader_benchmark_suite"}) == "benchmark_suite_assessment"
     assert source_kind({"phase1_arc_agi_tuned": {}, "tuned_checkpoint": "ckpt.pt"}) == "recurrent_sft"
     assert source_kind({"rows": [], "deltas": {}, "paired_comparisons": {}}) == "tta_sweep"
 
@@ -1213,5 +1214,35 @@ def test_benchmark_suite_summary_inspects_markdown(tmp_path) -> None:
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Inspect broader benchmark suite `completed`"
-    assert "summary.md" in actions[0]["command"]
+    assert actions[0]["name"] == "Assess broader benchmark suite `completed`"
+    assert "python colab/assess_stage5_benchmark_suite.py" in actions[0]["command"]
+    assert "--summary_json" in actions[0]["command"]
+
+
+def test_benchmark_suite_assessment_negative_runs_recovery_ladder(tmp_path) -> None:
+    source = tmp_path / "benchmark_assessment" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_broader_benchmark_suite",
+        "status": "needs_recurrent_recovery",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run deterministic recurrent recovery ladder"
+    assert "python colab/run_stage5_phase1_recovery_ladder.py" in actions[0]["command"]
+
+
+def test_benchmark_suite_assessment_low_coverage_expands_suite(tmp_path) -> None:
+    source = tmp_path / "benchmark_assessment" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_broader_benchmark_suite",
+        "status": "needs_benchmark_confirmation",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Expand broader benchmark suite confirmation"
+    assert "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT=256" in actions[0]["command"]
+    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]

@@ -172,4 +172,8 @@ Release candidate definition:
   result artifacts with paired recurrent-vs-base sign-test evidence under
   `outputs/stage5`, and leaves prepared question data under ignored `data/`
   paths.
+- Run `colab/assess_stage5_benchmark_suite.py` on the suite summary before
+  GPQA Diamond or public claims. A negative paired recurrent-vs-base result
+  routes back to deterministic recurrent recovery; insufficient coverage routes
+  to a larger benchmark-suite confirmation run.
 - Include the modified-architecture caveat and training recipe.

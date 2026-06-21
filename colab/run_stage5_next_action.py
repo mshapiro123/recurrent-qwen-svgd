@@ -53,6 +53,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/assess_stage5_gate1.py",
     "colab/assess_stage5_gate2.py",
     "colab/assess_stage5_recipe_control.py",
+    "colab/assess_stage5_benchmark_suite.py",
     "colab/assess_stage5_release_gate.py",
     "colab/plan_stage5_next_run.py",
     "colab/run_stage5_arc_agi_autopilot_followup.py",
@@ -66,6 +67,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/run_stage5_arc_agi_trace_sft_gate.py",
     "colab/run_stage5_arc_agi_tta_sweep.py",
     "colab/run_stage5_benchmark_suite.py",
+    "colab/run_stage5_phase1_recovery_ladder.py",
     "colab/run_stage5_publish_hf_adapter.py",
 }
 

@@ -79,6 +79,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or recipe_control_assessment_payload(payload) is not None
         or release_gate_payload(payload) is not None
         or benchmark_suite_payload(payload) is not None
+        or benchmark_suite_assessment_payload(payload) is not None
     )
 
 
@@ -169,6 +170,10 @@ def release_gate_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
 
 def benchmark_suite_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "stage5_benchmark_suite" else None
+
+
+def benchmark_suite_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("gate") == "stage5_broader_benchmark_suite" else None
 
 
 def recurrent_sft_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -629,8 +634,57 @@ def benchmark_suite_actions(payload: dict[str, Any], *, source_summary: Path) ->
     status = str(payload.get("status", "unknown"))
     return [
         make_action(
-            f"Inspect broader benchmark suite `{status}`",
-            "The broader base-vs-recurrent benchmark suite finished; inspect ARC-Challenge/GPQA-lite deltas before making release or GPQA Diamond claims.",
+            f"Assess broader benchmark suite `{status}`",
+            "The broader base-vs-recurrent benchmark suite finished; run the no-GPU paired-evidence gate before deciding whether to recover recurrent, expand benchmarks, or write up the result.",
+            command_env(
+                {
+                    "STAGE5_BENCHMARK_ASSESS_RUN_ID": f"{RUN_ID}_benchmark_assessment",
+                },
+                f"python colab/assess_stage5_benchmark_suite.py --summary_json {shlex.quote(path_for_cli(source_summary))}",
+            ),
+            10,
+        )
+    ]
+
+
+def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    if status == "needs_benchmark_confirmation":
+        return [
+            make_action(
+                "Expand broader benchmark suite confirmation",
+                "The benchmark-suite gate found too few paired examples; rerun ARC-Challenge/GPQA-lite with larger limits before interpreting deltas.",
+                command_env(
+                    {
+                        "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{RUN_ID}_expanded_benchmark_suite",
+                        "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "256",
+                        "STAGE5_BENCHMARK_GPQA_LIMIT": "32",
+                    },
+                    "python colab/run_stage5_benchmark_suite.py",
+                ),
+                10,
+            )
+        ]
+    if status == "needs_recurrent_recovery":
+        return [
+            make_action(
+                "Run deterministic recurrent recovery ladder",
+                "The broader benchmark gate says recurrent still trails base; improve deterministic recurrent competence before GPQA Diamond or release claims.",
+                command_env(
+                    {
+                        "STAGE5_RUN_ID": f"{RUN_ID}_phase1_recovery",
+                        "STAGE5_PHASE1_EXTRA_STEPS": "500",
+                        "STAGE5_ARC_LIMIT": "256",
+                    },
+                    "python colab/run_stage5_phase1_recovery_ladder.py",
+                ),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect broader benchmark assessment `{status}`",
+            "The broader benchmark gate is the current summary; inspect it before spending more GPU or making benchmark claims.",
             f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
             10,
         )
@@ -1062,6 +1116,9 @@ def plan_next_actions(
     release_gate = release_gate_payload(payload)
     if release_gate:
         return release_gate_actions(release_gate, source_summary=source_summary)
+    benchmark_suite_assessment = benchmark_suite_assessment_payload(payload)
+    if benchmark_suite_assessment:
+        return benchmark_suite_assessment_actions(benchmark_suite_assessment, source_summary=source_summary)
     benchmark_suite = benchmark_suite_payload(payload)
     if benchmark_suite:
         return benchmark_suite_actions(benchmark_suite, source_summary=source_summary)
@@ -1382,6 +1439,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "recipe_control_assessment"
     if release_gate_payload(payload):
         return "release_gate"
+    if benchmark_suite_assessment_payload(payload):
+        return "benchmark_suite_assessment"
     if benchmark_suite_payload(payload):
         return "benchmark_suite"
     if selector_rescore_payload(payload):

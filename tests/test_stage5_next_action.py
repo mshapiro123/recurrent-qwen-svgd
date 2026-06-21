@@ -104,6 +104,21 @@ def test_parse_action_command_allows_release_gate_assessor() -> None:
     assert parsed.argv == [sys.executable, "colab/assess_stage5_release_gate.py"]
 
 
+def test_parse_action_command_allows_benchmark_suite_assessor() -> None:
+    parsed = parse_action_command(
+        "STAGE5_BENCHMARK_ASSESS_RUN_ID=assess python colab/assess_stage5_benchmark_suite.py --summary_json outputs/stage5/suite/summary.json"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_BENCHMARK_ASSESS_RUN_ID": "assess"}
+    assert parsed.argv == [
+        sys.executable,
+        "colab/assess_stage5_benchmark_suite.py",
+        "--summary_json",
+        "outputs/stage5/suite/summary.json",
+    ]
+
+
 def test_parse_action_command_allows_benchmark_suite_runner() -> None:
     parsed = parse_action_command(
         "STAGE5_BENCHMARK_SUITE_RUN_ID=bench python colab/run_stage5_benchmark_suite.py"
@@ -112,6 +127,16 @@ def test_parse_action_command_allows_benchmark_suite_runner() -> None:
     assert parsed.kind == "python"
     assert parsed.env == {"STAGE5_BENCHMARK_SUITE_RUN_ID": "bench"}
     assert parsed.argv == [sys.executable, "colab/run_stage5_benchmark_suite.py"]
+
+
+def test_parse_action_command_allows_phase1_recovery_ladder() -> None:
+    parsed = parse_action_command(
+        "STAGE5_RUN_ID=recovery python colab/run_stage5_phase1_recovery_ladder.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_RUN_ID": "recovery"}
+    assert parsed.argv == [sys.executable, "colab/run_stage5_phase1_recovery_ladder.py"]
 
 
 def test_parse_action_command_allows_dense_and_recurrent_sft_runners() -> None:

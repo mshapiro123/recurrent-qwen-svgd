@@ -143,6 +143,8 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         return True
     if payload.get("kind") == "stage5_benchmark_suite":
         return True
+    if payload.get("gate") == "stage5_broader_benchmark_suite":
+        return True
     if payload.get("kind") == "dense_sft_control":
         return True
     if "phase1_arc_agi_tuned" in payload and payload.get("tuned_checkpoint"):
@@ -466,6 +468,26 @@ def benchmark_suite_assessments(summary_files: list[Path]) -> list[dict[str, Any
     return sorted(assessments, key=lambda item: str(item["path"]))
 
 
+def broader_benchmark_gate_assessments(summary_files: list[Path]) -> list[dict[str, Any]]:
+    assessments: list[dict[str, Any]] = []
+    for path in summary_files:
+        payload = safe_read_json(path)
+        if not payload or payload.get("gate") != "stage5_broader_benchmark_suite":
+            continue
+        assessments.append(
+            {
+                "path": path_for_cli(path),
+                "run_id": str(payload.get("run_id") or path.parent.name),
+                "status": payload.get("status"),
+                "passed": bool(payload.get("passed", False)),
+                "source_summary": payload.get("source_summary"),
+                "next_step": payload.get("next_step"),
+                "benchmarks": payload.get("benchmarks") or [],
+            }
+        )
+    return sorted(assessments, key=lambda item: str(item["path"]))
+
+
 def iter_summary_files(scan_root: Path) -> list[Path]:
     if not scan_root.exists():
         return []
@@ -567,6 +589,7 @@ def scan_progress(scan_root: Path, *, run_id: str | None = None) -> dict[str, An
         "recipe_control_assessments": recipe_control_assessments(summary_files),
         "release_gate_assessments": release_gate_assessments(summary_files),
         "benchmark_suite_assessments": benchmark_suite_assessments(summary_files),
+        "broader_benchmark_gate_assessments": broader_benchmark_gate_assessments(summary_files),
         "recommended_next_plan_source": latest_planner_source(summary_files),
     }
 
@@ -667,6 +690,16 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
             )
     else:
         lines.append("- No broader benchmark suite summaries found.")
+    lines.extend(["", "## Broader Benchmark Gates", ""])
+    if payload["broader_benchmark_gate_assessments"]:
+        for assessment in payload["broader_benchmark_gate_assessments"][-10:]:
+            lines.append(
+                f"- `{assessment['run_id']}` status `{assessment['status']}` passed "
+                f"`{assessment['passed']}` source `{assessment['source_summary']}`: "
+                f"{assessment['next_step']}"
+            )
+    else:
+        lines.append("- No broader benchmark gate summaries found.")
     (output_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((output_dir / "summary.md").read_text(encoding="utf-8"))
 

@@ -408,6 +408,48 @@ def test_progress_ledger_reports_benchmark_suite_assessments(tmp_path) -> None:
     assert payload["recommended_next_plan_source"] == str(source)
 
 
+def test_progress_ledger_reports_broader_benchmark_gate_assessments(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "bench_gate" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "bench_gate",
+            "gate": "stage5_broader_benchmark_suite",
+            "status": "needs_recurrent_recovery",
+            "passed": False,
+            "source_summary": "outputs/stage5/suite/summary.json",
+            "next_step": "recover recurrent",
+            "benchmarks": [
+                {
+                    "benchmark": "arc_challenge",
+                    "correct_delta_recurrent_vs_base": -2,
+                }
+            ],
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["broader_benchmark_gate_assessments"] == [
+        {
+            "path": str(source),
+            "run_id": "bench_gate",
+            "status": "needs_recurrent_recovery",
+            "passed": False,
+            "source_summary": "outputs/stage5/suite/summary.json",
+            "next_step": "recover recurrent",
+            "benchmarks": [
+                {
+                    "benchmark": "arc_challenge",
+                    "correct_delta_recurrent_vs_base": -2,
+                }
+            ],
+        }
+    ]
+    assert payload["recommended_next_plan_source"] == str(source)
+
+
 def test_progress_ledger_skips_empty_and_malformed_eval_summaries(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     _write(scan_root / "empty" / "base_summary.json", {"summary": {}})
