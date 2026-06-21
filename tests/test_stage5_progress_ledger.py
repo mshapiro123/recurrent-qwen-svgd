@@ -129,6 +129,46 @@ def test_progress_ledger_reads_recovery_particle_gate(tmp_path) -> None:
     assert payload["recommended_next_plan_source"] == str(source)
 
 
+def test_progress_ledger_reports_gate1_assessments(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "gate1" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "gate1",
+            "gate": "stage5_gate1_selector_tta",
+            "status": "passed",
+            "passed": True,
+            "source_summary": "outputs/stage5/selector/summary.json",
+            "source_kind": "selector_rescore",
+            "reason": "hard-tail lift",
+            "next_step": "replicate",
+            "passing_comparisons": ["selector_vs_source"],
+            "tradeoff_comparisons": [],
+            "num_comparisons": 1,
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["gate1_assessments"] == [
+        {
+            "path": str(source),
+            "run_id": "gate1",
+            "status": "passed",
+            "passed": True,
+            "source_summary": "outputs/stage5/selector/summary.json",
+            "source_kind": "selector_rescore",
+            "reason": "hard-tail lift",
+            "next_step": "replicate",
+            "passing_comparisons": ["selector_vs_source"],
+            "tradeoff_comparisons": [],
+            "num_comparisons": 1,
+        }
+    ]
+    assert payload["recommended_next_plan_source"] == str(source)
+
+
 def test_progress_ledger_skips_empty_and_malformed_eval_summaries(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     _write(scan_root / "empty" / "base_summary.json", {"summary": {}})

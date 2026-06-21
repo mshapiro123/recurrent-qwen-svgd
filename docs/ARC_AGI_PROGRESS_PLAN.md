@@ -144,6 +144,12 @@ Initial harness files:
   set, it governs sample size instead of `STAGE5_ARC_AGI_LIMIT`; this is the
   preferred Gate 1 mode for selector/TTA checks because every comparison sees
   the same easy/medium/hard mix.
+- After a selector-rescore or TTA summary lands, run
+  `python colab/assess_stage5_gate1.py --summary_json <summary.json>`. It
+  writes an auditable Gate 1 decision: `passed`, `needs_more_evidence`,
+  `needs_review`, or `failed`, using paired selected-answer evidence and the
+  hard difficulty bucket. The progress ledger reports these Gate 1 assessments
+  alongside benchmark summaries.
 - Evaluation can execute the tiny `symbolic_program` DSL as a fallback when a
   candidate does not contain a directly parseable output grid. Reports include
   a parse-method summary so literal-grid exactness and program-executed
