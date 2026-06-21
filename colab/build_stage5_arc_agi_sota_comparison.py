@@ -61,8 +61,55 @@ def safe_read_json(path: Path) -> dict[str, Any] | None:
     return payload if isinstance(payload, dict) else None
 
 
+def candidate_discovery_metadata(payload: dict[str, Any]) -> dict[str, Any]:
+    metadata = payload.get("metadata")
+    return metadata if isinstance(metadata, dict) else {}
+
+
+def discovery_has_arc_metadata(metadata: dict[str, Any]) -> bool:
+    return bool(metadata.get("arc_version") and (metadata.get("arc_split") or metadata.get("eval_split")))
+
+
+def discovery_has_params(metadata: dict[str, Any]) -> bool:
+    for key in ("params_b", "candidate_params_b", "model_params_b", "base_model_params_b", "parameter_count_b"):
+        value = metadata.get(key)
+        if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value)):
+            return True
+    return False
+
+
+def discovery_summary_examples(block: Any) -> int:
+    if not isinstance(block, dict):
+        return 0
+    summary = block.get("summary")
+    if isinstance(summary, dict):
+        block = summary
+    return int(block.get("examples_with_targets", 0) or block.get("examples", 0) or 0)
+
+
+def candidate_discovery_score(payload: dict[str, Any]) -> tuple[int, int] | None:
+    """Rank default SOTA candidates by claim-readiness, not file recency alone."""
+
+    label_scores = [
+        (30, discovery_summary_examples(payload.get("recovered"))),
+        (20, discovery_summary_examples(payload.get("phase1_arc_agi_tuned"))),
+        (10, discovery_summary_examples(payload.get("summary"))),
+    ]
+    label_score, examples = max(label_scores, key=lambda item: (item[0] if item[1] > 0 else -1, item[1]))
+    if examples <= 0:
+        return None
+
+    metadata = candidate_discovery_metadata(payload)
+    score = label_score
+    if discovery_has_arc_metadata(metadata):
+        score += 100
+    if discovery_has_params(metadata):
+        score += 50
+    return score, examples
+
+
 def latest_candidate_summary() -> Path | None:
-    candidates: list[Path] = []
+    candidates: list[tuple[int, int, float, Path]] = []
     root = ROOT / "outputs" / "stage5"
     if not root.exists():
         return None
@@ -70,15 +117,12 @@ def latest_candidate_summary() -> Path | None:
         payload = safe_read_json(path)
         if not payload:
             continue
-        if (
-            "recovered" in payload
-            or "phase1_arc_agi_tuned" in payload
-            or (payload.get("summary") or {}).get("examples_with_targets")
-        ):
-            candidates.append(path)
+        score = candidate_discovery_score(payload)
+        if score is not None:
+            candidates.append((*score, path.stat().st_mtime, path))
     if not candidates:
         return None
-    return sorted(candidates, key=lambda item: item.stat().st_mtime, reverse=True)[0]
+    return sorted(candidates, key=lambda item: (item[0], item[1], item[2]), reverse=True)[0][3]
 
 
 def candidate_label_order(label: str) -> list[str]:

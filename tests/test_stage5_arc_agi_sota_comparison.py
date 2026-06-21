@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import json
 
-from colab.build_stage5_arc_agi_sota_comparison import build_sota_comparison, candidate_evidence, main
+from colab.build_stage5_arc_agi_sota_comparison import (
+    build_sota_comparison,
+    candidate_evidence,
+    latest_candidate_summary,
+    main,
+)
 
 
 def _write(path, payload) -> None:
@@ -137,6 +142,40 @@ def test_sota_comparison_auto_label_prefers_recovered_benchmark_summary(tmp_path
     assert payload["candidate"]["requested_label"] == "auto"
     assert payload["candidate"]["label"] == "recovered"
     assert payload["candidate"]["accuracy"] == 0.12
+
+
+def test_latest_candidate_summary_prefers_main_summary_over_newer_child_eval(tmp_path, monkeypatch) -> None:
+    import colab.build_stage5_arc_agi_sota_comparison as module
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    main_summary = tmp_path / "outputs" / "stage5" / "main" / "summary.json"
+    child_summary = tmp_path / "outputs" / "stage5" / "child" / "summary.json"
+    _recovered_candidate(main_summary, selected_exact=12, examples=100)
+    _write(
+        child_summary,
+        {
+            "run_id": "child_eval",
+            "summary": {
+                "selected_exact": 99,
+                "best_of_k_exact": 99,
+                "examples_with_targets": 100,
+            },
+        },
+    )
+
+    assert latest_candidate_summary() == main_summary
+
+
+def test_latest_candidate_summary_prefers_model_size_metadata(tmp_path, monkeypatch) -> None:
+    import colab.build_stage5_arc_agi_sota_comparison as module
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    missing_params = tmp_path / "outputs" / "stage5" / "missing_params" / "summary.json"
+    with_params = tmp_path / "outputs" / "stage5" / "with_params" / "summary.json"
+    _recovered_candidate(missing_params, selected_exact=30, examples=100, params_b=None)
+    _recovered_candidate(with_params, selected_exact=12, examples=100, params_b=0.5)
+
+    assert latest_candidate_summary() == with_params
 
 
 def test_candidate_evidence_reports_requested_missing_label(tmp_path) -> None:
