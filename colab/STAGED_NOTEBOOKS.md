@@ -142,11 +142,14 @@ The older split notebooks are kept only as references:
    `colab/run_stage5_colab_continue.py`. It prints GPU state, runs focused
    Stage 5 tests including the Gate 1 assessor and next-action executor, runs
    `colab/run_stage5_next_action.py`, writes the progress ledger, and commits
-   changed `outputs/stage5` artifacts. It defaults to a bounded three-action
-   loop so a candidate gate can be followed by trace-SFT and then by the
-   distill/dense-control decision in one A100 session. Set
-   `STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS=1` for a strictly single-action
-   continuation. Set `STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE=same_recipe` for
+   changed `outputs/stage5` artifacts. It now defaults to a credit-saving
+   single-action loop: one allowlisted planner action, one summary, then stop.
+   Set `STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE=gate` or
+   `STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE=throughput` for the older bounded
+   three-action loop when you intentionally want candidate, trace-SFT, and
+   distill/dense-control decisions to chain inside one A100 session. Set
+   `STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS=N` to override the action count
+   directly. Set `STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE=same_recipe` for
    a six-action ladder intended to continue through candidate gate, trace gate,
    distill/dense-control selection, dense control, matched recurrent SFT, and
    the same-recipe architecture assessment when each prior step completes. Set

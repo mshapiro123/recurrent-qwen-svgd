@@ -4,6 +4,10 @@ This is the preferred "keep the A100 moving" entrypoint after the repo has
 been cloned or pulled in Colab. It runs focused smoke tests for the planner and
 Gate 1 path, executes the bounded next-action loop, writes the progress ledger,
 and commits Stage 5 outputs when they changed.
+
+The default profile is intentionally credit-saving: execute exactly one
+allowlisted planner action, then stop with a committed summary. Longer ladders
+must be requested explicitly.
 """
 
 from __future__ import annotations
@@ -65,7 +69,7 @@ def focused_test_paths() -> list[str]:
 
 
 def continuation_profile() -> str:
-    return os.environ.get("STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE", "gate").strip().lower()
+    return os.environ.get("STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE", "credit_saver").strip().lower()
 
 
 def default_max_actions() -> str:
@@ -73,11 +77,13 @@ def default_max_actions() -> str:
     if explicit:
         return explicit
     return {
+        "credit_saver": "1",
         "single": "1",
+        "throughput": "3",
         "gate": "3",
         "same_recipe": "6",
         "claim": "10",
-    }.get(continuation_profile(), "3")
+    }.get(continuation_profile(), "1")
 
 
 def default_env() -> dict[str, str]:
@@ -210,6 +216,7 @@ def main() -> int:
     run([sys.executable, "-m", "pytest", "-q", *focused_test_paths()])
     print("RUN_ID", RUN_ID)
     print("CONTINUATION_PROFILE", continuation_profile())
+    print("MAX_ACTIONS", default_max_actions())
     run([sys.executable, "colab/run_stage5_next_action.py"])
     for command in post_action_commands():
         run(command, check=False)

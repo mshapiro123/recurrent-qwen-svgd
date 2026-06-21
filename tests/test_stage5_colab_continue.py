@@ -37,15 +37,25 @@ def test_colab_continue_focuses_gate1_and_next_action_tests() -> None:
     assert "tests/test_stage5_dense_sft_control.py" in paths
 
 
-def test_colab_continue_defaults_to_bounded_three_action_loop(monkeypatch) -> None:
+def test_colab_continue_defaults_to_credit_saving_single_action_loop(monkeypatch) -> None:
     monkeypatch.delenv("STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS", raising=False)
     monkeypatch.delenv("STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE", raising=False)
 
     env = default_env()
 
     assert env["STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE"] == "1"
-    assert env["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] == "3"
+    assert continuation_profile() == "credit_saver"
+    assert env["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] == "1"
     assert env["STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT"] == "0"
+
+
+def test_colab_continue_gate_profile_runs_three_action_loop(monkeypatch) -> None:
+    monkeypatch.delenv("STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS", raising=False)
+    monkeypatch.setenv("STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE", "gate")
+
+    assert continuation_profile() == "gate"
+    assert default_max_actions() == "3"
+    assert default_env()["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] == "3"
 
 
 def test_colab_continue_same_recipe_profile_runs_longer_ladder(monkeypatch) -> None:

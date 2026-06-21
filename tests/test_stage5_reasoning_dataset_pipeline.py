@@ -43,7 +43,7 @@ def test_pipeline_summary_records_planned_action_without_execute(monkeypatch, tm
         next_payload={
             "steps": [
                 {
-                    "action": {
+                    "selected_action": {
                         "name": "Run audited modified-Opus recurrent fine-tune",
                     }
                 }

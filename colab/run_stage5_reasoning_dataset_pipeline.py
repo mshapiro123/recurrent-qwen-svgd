@@ -166,7 +166,9 @@ def build_summary(
     else:
         status = "next_action_complete" if EXECUTE_NEXT else "next_action_planned"
         steps = next_payload.get("steps")
-        selected = steps[0].get("action", {}) if isinstance(steps, list) and steps else {}
+        selected = {}
+        if isinstance(steps, list) and steps:
+            selected = steps[0].get("selected_action") or steps[0].get("action") or {}
         next_step = selected.get("name") or audit_payload.get("next_step") or "Review next-action summary."
     return {
         "run_id": RUN_ID,

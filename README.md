@@ -16,6 +16,22 @@ For high-end Colab Pro+, the intended scale-up path is 0.5B first, then
 For the current scientific status, evidence, negative results, and next gates,
 see [docs/PROJECT_STATUS_PAPER.md](docs/PROJECT_STATUS_PAPER.md).
 
+## A100 Credit Discipline
+
+Use GPU time only for bounded training/evaluation actions that emit summaries,
+checkpoints, and planner-readable next steps. The maintained Colab continuation
+entrypoint is:
+
+```bash
+python colab/run_stage5_colab_continue.py
+```
+
+By default it now runs in `credit_saver` mode: one allowlisted planner action,
+post-run summaries, safe text-artifact commit, then stop. Set
+`STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE=gate` or `throughput` only when you
+intentionally want a three-action loop. Set `same_recipe` or `claim` only after
+the preceding evidence gate has landed and the extra A100 spend is deliberate.
+
 ## Phase 0 Identity Gate
 
 ```bash

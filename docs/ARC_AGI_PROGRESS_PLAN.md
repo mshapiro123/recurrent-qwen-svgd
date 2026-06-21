@@ -362,7 +362,12 @@ trace-SFT matches or beats grid-only SFT. Thresholds:
 - `STAGE5_ARC_AGI_AUTOPILOT_MIN_HYBRID_BEST_DELTA` default `0`;
 - `STAGE5_ARC_AGI_AUTOPILOT_MIN_TRACE_BEST_DELTA` default `0`.
 
-For the maintained one-script continuation path, set
+For credit-saving continuation, run `colab/run_stage5_colab_continue.py` with
+no profile override. The default now executes one allowlisted planner action,
+summarizes, commits safe text artifacts, and stops. Use this mode when A100
+credits are tight or when a result needs review before the next GPU job.
+
+For the maintained multi-step continuation path, set
 `STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE=same_recipe` before running
 `colab/run_stage5_colab_continue.py` when you want the A100 to keep moving
 toward the decisive same-recipe architecture comparison. This expands the
