@@ -13,6 +13,9 @@ halting, and trajectory gates pass on smaller models.
 For high-end Colab Pro+, the intended scale-up path is 0.5B first, then
 `Qwen/Qwen2.5-1.5B-Instruct` using the `config/qwen_1_5b_phase*.yaml` configs.
 
+For the current scientific status, evidence, negative results, and next gates,
+see [docs/PROJECT_STATUS_PAPER.md](docs/PROJECT_STATUS_PAPER.md).
+
 ## Phase 0 Identity Gate
 
 ```bash
