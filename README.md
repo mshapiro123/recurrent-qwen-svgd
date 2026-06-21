@@ -36,6 +36,24 @@ The next gate is competence-preserving recurrent SFT that keeps the
 ARC-Challenge gain while closing the ARC-Easy gap. Phase 2/SVGD work resumes
 after deterministic recurrent recovery is competitive with base.
 
+## Active Next A100 Action
+
+Credits are tight, so the next GPU action is a single proxy gate, not a long
+sweep. It resumes from the current benchmark assessment and runs one
+ARC-Easy-weighted ARC-mix recovery arm:
+
+```bash
+STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE=credit_saver \
+STAGE5_ARC_AGI_NEXT_ACTION_SOURCE_SUMMARY=outputs/stage5/stage5_benchmark_assessment_20260621_183952/summary.json \
+STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE=1 \
+python colab/run_stage5_colab_continue.py
+```
+
+The planner should emit `Run competence-preserving ARC-mix proxy gate`, using
+`arc_mix_response_w005_lr2e6`, `ARC-Challenge` repeat `2`, `ARC-Easy` repeat
+`4`, and eval limit `128`. Review that proxy before launching full assessment,
+SVGD, GPQA, or scaling runs.
+
 ## A100 Credit Discipline
 
 Use GPU time only for bounded training/evaluation actions that emit summaries,

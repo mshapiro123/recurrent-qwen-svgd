@@ -154,7 +154,7 @@ ARM_NAMES = [
 
 
 def resolve_path(value: str | Path) -> Path:
-    path = Path(value)
+    path = Path(str(value).replace("\\", "/"))
     return path if path.is_absolute() else ROOT / path
 
 
@@ -215,9 +215,12 @@ def helped_hurt(variant_path: Path, reference_path: Path) -> dict[str, int]:
 
 def selected_checkpoint(source_payload: dict[str, Any]) -> Path:
     best = source_payload.get("best_checkpoint") or {}
-    checkpoint = best.get("checkpoint")
+    checkpoint = best.get("checkpoint") or source_payload.get("checkpoint") or source_payload.get("selected_checkpoint")
+    if not checkpoint and source_payload.get("source_summary"):
+        source = read_json(resolve_path(str(source_payload["source_summary"])))
+        checkpoint = source.get("checkpoint")
     if not checkpoint:
-        raise ValueError("Balanced MCQ summary does not contain best_checkpoint.checkpoint")
+        raise ValueError("Source summary does not contain best_checkpoint.checkpoint or checkpoint")
     return resolve_path(str(checkpoint))
 
 

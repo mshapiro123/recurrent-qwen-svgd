@@ -274,7 +274,31 @@ before further particle training:
 Only after those gates pass should the project spend heavily on 1.5B/3B models
 or GPQA Diamond.
 
-## 8. A100 Credit Discipline
+## 8. Immediate Credit-Saving Gate
+
+The next A100 run should be a bounded competence-preserving proxy, not another
+SVGD/kernel sweep. The current benchmark failure is concentrated in ARC-Easy:
+the recurrent checkpoint slightly exceeds base on ARC-Challenge but trails on
+ARC-Easy. The next experiment therefore resumes from the selected balanced
+checkpoint and runs a single mixed objective with:
+
+- Opus reasoning traces as the general reasoning anchor;
+- ARC-Challenge training rows repeated `2x`;
+- ARC-Easy training rows repeated `4x`;
+- response-level base-logit distillation weight `0.05`;
+- learning rate `2e-6`;
+- proxy MCQ eval limit `128`.
+
+The intended Colab planner action is `Run competence-preserving ARC-mix proxy
+gate`. If it produces proxy lift or matches base, the next action is the full
+balanced ARC-Easy/ARC-Challenge assessment. If it fails, inspect the summary
+before spending more GPU.
+
+This gate is intentionally deterministic Phase 1 recovery work. Phase 2/SVGD,
+GPQA Diamond, and 1.5B/3B scaling remain deferred until deterministic recurrent
+competence is at least base-competitive on the balanced ARC suite.
+
+## 9. A100 Credit Discipline
 
 The current Colab policy should be:
 
@@ -297,7 +321,7 @@ allowlisted planner action, summarizes, commits safe text artifacts, and stops.
 Longer A100 ladders require an explicit profile such as `gate`, `same_recipe`,
 or `claim`.
 
-## 9. Current Conclusion
+## 10. Current Conclusion
 
 The project has achieved the hard first step: a pretrained Qwen model can be
 converted into a recurrent-depth model with exact identity preservation in the

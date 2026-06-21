@@ -80,6 +80,19 @@ def test_parse_action_command_allows_gate2_assessor() -> None:
     ]
 
 
+def test_parse_action_command_allows_competence_recovery_scripts() -> None:
+    for script in [
+        "colab/run_stage5_balanced_arc_mix_gate.py",
+        "colab/run_stage5_competence_preserving_pipeline.py",
+        "colab/run_stage5_recovery_full_assessment.py",
+    ]:
+        parsed = parse_action_command(f"STAGE5_RUN_ID=test python {script}")
+
+        assert parsed.kind == "python"
+        assert parsed.env == {"STAGE5_RUN_ID": "test"}
+        assert parsed.argv == [sys.executable, script]
+
+
 def test_parse_action_command_allows_recipe_control_assessor() -> None:
     parsed = parse_action_command(
         "STAGE5_RECIPE_CONTROL_ASSESSMENT_RUN_ID=recipe "

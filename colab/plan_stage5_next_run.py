@@ -117,6 +117,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or release_gate_payload(payload) is not None
         or benchmark_suite_payload(payload) is not None
         or benchmark_suite_assessment_payload(payload) is not None
+        or balanced_arc_mix_payload(payload) is not None
         or claim_readiness_payload(payload) is not None
         or arc_agi_baseline_registry_payload(payload) is not None
         or arc_agi_sota_comparison_payload(payload) is not None
@@ -260,6 +261,10 @@ def benchmark_suite_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
 
 def benchmark_suite_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("gate") == "stage5_broader_benchmark_suite" else None
+
+
+def balanced_arc_mix_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_balanced_arc_mix_gate" else None
 
 
 def claim_readiness_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -1376,23 +1381,43 @@ def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summar
             )
         ]
     if status == "needs_recurrent_recovery":
-        extra_steps, arc_limit, budget_reason_prefix = recurrent_recovery_budget_defaults()
-        assignments = {
-            "STAGE5_RUN_ID": f"{RUN_ID}_phase1_recovery",
-            "STAGE5_PHASE1_EXTRA_STEPS": extra_steps,
-            "STAGE5_ARC_LIMIT": arc_limit,
-        }
-        resume_from = benchmark_suite_assessment_checkpoint(payload)
-        if resume_from:
-            assignments["STAGE5_RESUME_FROM"] = resume_from
+        if credit_saver_budget():
+            return [
+                make_action(
+                    "Run competence-preserving ARC-mix proxy gate",
+                    "Credit-saving probe: the broader benchmark gate says recurrent still trails base, mostly through competence tax; run one ARC-Easy-weighted mixed-objective proxy gate and stop before a full assessment.",
+                    command_env(
+                        {
+                            "STAGE5_ARC_MIX_RUN_ID": f"{RUN_ID}_arc_mix_probe",
+                            "STAGE5_ARC_MIX_SOURCE_SUMMARY": path_for_cli(source_summary),
+                            "STAGE5_ARC_MIX_ARMS": os.environ.get(
+                                "STAGE5_ARC_AGI_NEXT_PLAN_ARC_MIX_ARMS",
+                                "arc_mix_response_w005_lr2e6",
+                            ),
+                            "STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT": "2",
+                            "STAGE5_ARC_MIX_ARC_EASY_REPEAT": "4",
+                            "STAGE5_ARC_MIX_ARC_EVAL_LIMIT": "128",
+                            "STAGE5_ARC_MIX_OPUS_LIMIT": os.environ.get(
+                                "STAGE5_ARC_AGI_NEXT_PLAN_ARC_MIX_OPUS_LIMIT",
+                                "3000",
+                            ),
+                        },
+                        "python colab/run_stage5_balanced_arc_mix_gate.py",
+                    ),
+                    10,
+                )
+            ]
         return [
             make_action(
-                "Run deterministic recurrent recovery ladder",
-                (
-                    budget_reason_prefix
-                    + "The broader benchmark gate says recurrent still trails base; improve deterministic recurrent competence before GPQA Diamond or release claims."
+                "Run competence-preserving recurrent recovery pipeline",
+                "The broader benchmark gate says recurrent still trails base; run the ARC-Easy-weighted mixed objective and full balanced assessment before GPQA Diamond or release claims.",
+                command_env(
+                    {
+                        "STAGE5_COMPETENCE_PIPELINE_RUN_ID": f"{RUN_ID}_competence_recovery",
+                        "STAGE5_COMPETENCE_SOURCE_SUMMARY": path_for_cli(source_summary),
+                    },
+                    "python colab/run_stage5_competence_preserving_pipeline.py",
                 ),
-                command_env(assignments, "python colab/run_stage5_phase1_recovery_ladder.py"),
                 10,
             )
         ]
@@ -1400,6 +1425,33 @@ def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summar
         make_action(
             f"Inspect broader benchmark assessment `{status}`",
             "The broader benchmark gate is the current summary; inspect it before spending more GPU or making benchmark claims.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
+def balanced_arc_mix_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    if status in {"proxy_lift", "proxy_matches_base"}:
+        return [
+            make_action(
+                "Run full balanced assessment for ARC-mix checkpoint",
+                "The ARC-mix proxy gate passed; run full ARC-Easy and ARC-Challenge assessment before any particle/SVGD or GPQA spend.",
+                command_env(
+                    {
+                        "STAGE5_RECOVERY_FULL_ASSESS_RUN_ID": f"{RUN_ID}_full_assessment",
+                        "STAGE5_RECOVERY_FULL_ASSESS_SOURCE_SUMMARY": path_for_cli(source_summary),
+                    },
+                    "python colab/run_stage5_recovery_full_assessment.py",
+                ),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect ARC-mix proxy gate `{status}`",
+            "The competence-preserving proxy did not pass; inspect the ARC-mix summary before spending more GPU.",
             f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
             10,
         )
@@ -2189,6 +2241,9 @@ def plan_next_actions(
     benchmark_suite_assessment = benchmark_suite_assessment_payload(payload)
     if benchmark_suite_assessment:
         return benchmark_suite_assessment_actions(benchmark_suite_assessment, source_summary=source_summary)
+    balanced_arc_mix = balanced_arc_mix_payload(payload)
+    if balanced_arc_mix:
+        return balanced_arc_mix_actions(balanced_arc_mix, source_summary=source_summary)
     claim_readiness = claim_readiness_payload(payload)
     if claim_readiness:
         return claim_readiness_actions(claim_readiness, source_summary=source_summary)
@@ -2549,6 +2604,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "release_gate"
     if benchmark_suite_assessment_payload(payload):
         return "benchmark_suite_assessment"
+    if balanced_arc_mix_payload(payload):
+        return "balanced_arc_mix_gate"
     if claim_readiness_payload(payload):
         return "claim_readiness"
     if arc_agi_baseline_registry_payload(payload):

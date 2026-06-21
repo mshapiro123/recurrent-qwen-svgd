@@ -1159,6 +1159,7 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"gate": "stage5_release_benchmark_readiness"}) == "release_gate"
     assert source_kind({"kind": "stage5_benchmark_suite"}) == "benchmark_suite"
     assert source_kind({"gate": "stage5_broader_benchmark_suite"}) == "benchmark_suite_assessment"
+    assert source_kind({"kind": "stage5_balanced_arc_mix_gate"}) == "balanced_arc_mix_gate"
     assert source_kind({"gate": "stage5_claim_readiness"}) == "claim_readiness"
     assert source_kind({"gate": "stage5_arc_agi_baseline_registry"}) == "arc_agi_baseline_registry"
     assert source_kind({"gate": "stage5_arc_agi_sota_comparison"}) == "arc_agi_sota_comparison"
@@ -1864,7 +1865,7 @@ def test_benchmark_suite_summary_inspects_markdown(tmp_path) -> None:
     assert "--summary_json" in actions[0]["command"]
 
 
-def test_benchmark_suite_assessment_negative_runs_recovery_ladder(tmp_path) -> None:
+def test_benchmark_suite_assessment_negative_runs_competence_pipeline(tmp_path) -> None:
     source = tmp_path / "benchmark_assessment" / "summary.json"
     source.parent.mkdir()
     payload = {
@@ -1875,11 +1876,9 @@ def test_benchmark_suite_assessment_negative_runs_recovery_ladder(tmp_path) -> N
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Run deterministic recurrent recovery ladder"
-    assert "python colab/run_stage5_phase1_recovery_ladder.py" in actions[0]["command"]
-    assert "STAGE5_PHASE1_EXTRA_STEPS=500" in actions[0]["command"]
-    assert "STAGE5_ARC_LIMIT=256" in actions[0]["command"]
-    assert "STAGE5_RESUME_FROM=outputs/stage5/balanced/phase1_step_150.pt" in actions[0]["command"]
+    assert actions[0]["name"] == "Run competence-preserving recurrent recovery pipeline"
+    assert "python colab/run_stage5_competence_preserving_pipeline.py" in actions[0]["command"]
+    assert "STAGE5_COMPETENCE_SOURCE_SUMMARY=" in actions[0]["command"]
 
 
 def test_benchmark_suite_assessment_credit_saver_runs_short_recovery_probe(monkeypatch, tmp_path) -> None:
@@ -1894,14 +1893,16 @@ def test_benchmark_suite_assessment_credit_saver_runs_short_recovery_probe(monke
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Run deterministic recurrent recovery ladder"
+    assert actions[0]["name"] == "Run competence-preserving ARC-mix proxy gate"
     assert "Credit-saving probe" in actions[0]["reason"]
-    assert "STAGE5_PHASE1_EXTRA_STEPS=250" in actions[0]["command"]
-    assert "STAGE5_ARC_LIMIT=128" in actions[0]["command"]
-    assert "STAGE5_RESUME_FROM=outputs/stage5/balanced/phase1_step_150.pt" in actions[0]["command"]
+    assert "python colab/run_stage5_balanced_arc_mix_gate.py" in actions[0]["command"]
+    assert "STAGE5_ARC_MIX_ARMS=arc_mix_response_w005_lr2e6" in actions[0]["command"]
+    assert "STAGE5_ARC_MIX_ARC_EVAL_LIMIT=128" in actions[0]["command"]
+    assert "STAGE5_ARC_MIX_SOURCE_SUMMARY=" in actions[0]["command"]
 
 
-def test_benchmark_suite_assessment_reads_checkpoint_from_source_summary_with_windows_path(tmp_path, monkeypatch) -> None:
+def test_benchmark_suite_assessment_credit_saver_keeps_source_summary_boundary(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(planner, "A100_BUDGET_PROFILE", "credit_saver")
     monkeypatch.setattr(planner, "ROOT", tmp_path)
     suite = tmp_path / "outputs" / "stage5" / "suite" / "summary.json"
     suite.parent.mkdir(parents=True)
@@ -1924,7 +1925,37 @@ def test_benchmark_suite_assessment_reads_checkpoint_from_source_summary_with_wi
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert "STAGE5_RESUME_FROM=outputs/stage5/balanced/phase1_step_150.pt" in actions[0]["command"]
+    assert "python colab/run_stage5_balanced_arc_mix_gate.py" in actions[0]["command"]
+    assert "STAGE5_ARC_MIX_SOURCE_SUMMARY=outputs/stage5/assessment/summary.json" in actions[0]["command"]
+
+
+def test_balanced_arc_mix_passed_runs_full_assessment(tmp_path) -> None:
+    source = tmp_path / "arc_mix" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_balanced_arc_mix_gate",
+        "status": "proxy_lift",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run full balanced assessment for ARC-mix checkpoint"
+    assert "python colab/run_stage5_recovery_full_assessment.py" in actions[0]["command"]
+    assert "STAGE5_RECOVERY_FULL_ASSESS_SOURCE_SUMMARY=" in actions[0]["command"]
+
+
+def test_balanced_arc_mix_failed_inspects_summary(tmp_path) -> None:
+    source = tmp_path / "arc_mix" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_balanced_arc_mix_gate",
+        "status": "no_proxy_lift",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect ARC-mix proxy gate `no_proxy_lift`"
+    assert actions[0]["command"].startswith("cat ")
 
 
 def test_benchmark_suite_assessment_passed_builds_claim_packet(tmp_path) -> None:

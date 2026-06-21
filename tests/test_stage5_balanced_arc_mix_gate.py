@@ -6,6 +6,7 @@ from colab.run_stage5_balanced_arc_mix_gate import (
     arm_config,
     build_summary,
     checkpoint_run_id,
+    selected_checkpoint,
 )
 
 
@@ -83,6 +84,32 @@ def test_build_mixed_train_uses_separate_arc_repeats(tmp_path, monkeypatch) -> N
     assert summary["mixed_rows"] == 5
     assert sum(1 for row in rows if row["id"] == "challenge") == 1
     assert sum(1 for row in rows if row["id"] == "easy") == 3
+
+
+def test_selected_checkpoint_accepts_top_level_checkpoint(monkeypatch, tmp_path) -> None:
+    import colab.run_stage5_balanced_arc_mix_gate as module
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+
+    assert selected_checkpoint({"checkpoint": "outputs/stage5/source/phase1.pt"}) == (
+        tmp_path / "outputs" / "stage5" / "source" / "phase1.pt"
+    )
+
+
+def test_selected_checkpoint_reads_source_summary_with_windows_path(monkeypatch, tmp_path) -> None:
+    import colab.run_stage5_balanced_arc_mix_gate as module
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    source = tmp_path / "outputs" / "stage5" / "suite" / "summary.json"
+    source.parent.mkdir(parents=True)
+    source.write_text(
+        '{"checkpoint": "outputs/stage5/source/phase1/phase1_step_150.pt"}',
+        encoding="utf-8",
+    )
+
+    assert selected_checkpoint({"source_summary": "outputs\\stage5\\suite\\summary.json"}) == (
+        tmp_path / "outputs" / "stage5" / "source" / "phase1" / "phase1_step_150.pt"
+    )
 
 
 def test_build_summary_passes_when_arc_mix_lifts_proxy(tmp_path) -> None:
