@@ -29,6 +29,7 @@ def focused_test_paths() -> list[str]:
         "tests/test_stage5_gate1_assessment.py",
         "tests/test_stage5_gate2_assessment.py",
         "tests/test_stage5_recipe_control_assessment.py",
+        "tests/test_stage5_release_gate.py",
         "tests/test_stage5_sft_gates.py",
         "tests/test_stage5_progress_ledger.py",
         "tests/test_lora.py",
@@ -55,7 +56,7 @@ def default_env() -> dict[str, str]:
 
 
 def stage5_output_paths() -> list[str]:
-    return ["outputs/stage5"]
+    return ["outputs/stage5", "outputs/hf_exports"]
 
 
 def mask_command(cmd: list[str]) -> str:
@@ -105,7 +106,11 @@ def ensure_git_identity() -> None:
 
 def commit_stage5_outputs() -> None:
     run(["git", "status", "-sb"], check=False)
-    run(["git", "add", "-f", *stage5_output_paths()])
+    existing = [path for path in stage5_output_paths() if (ROOT / path).exists()]
+    if not existing:
+        print("No Stage 5 output directories exist yet.")
+        return
+    run(["git", "add", "-f", *existing])
     status = run(["git", "diff", "--cached", "--quiet"], check=False)
     if status.returncode == 0:
         print("No Stage 5 outputs to commit.")
@@ -123,6 +128,7 @@ def main() -> int:
     print("RUN_ID", RUN_ID)
     run([sys.executable, "colab/run_stage5_next_action.py"])
     run([sys.executable, "colab/summarize_stage5_progress.py"], check=False)
+    run([sys.executable, "colab/assess_stage5_release_gate.py"], check=False)
     commit_stage5_outputs()
     return 0
 

@@ -94,6 +94,16 @@ def test_parse_action_command_allows_recipe_control_assessor() -> None:
     ]
 
 
+def test_parse_action_command_allows_release_gate_assessor() -> None:
+    parsed = parse_action_command(
+        "STAGE5_RELEASE_GATE_RUN_ID=release python colab/assess_stage5_release_gate.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_RELEASE_GATE_RUN_ID": "release"}
+    assert parsed.argv == [sys.executable, "colab/assess_stage5_release_gate.py"]
+
+
 def test_parse_action_command_allows_dense_and_recurrent_sft_runners() -> None:
     dense = parse_action_command("python colab/run_stage5_arc_agi_dense_sft.py")
     recurrent = parse_action_command("python colab/run_stage5_arc_agi_sft.py")

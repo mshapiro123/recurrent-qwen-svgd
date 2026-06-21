@@ -11,6 +11,7 @@ def test_colab_continue_focuses_gate1_and_next_action_tests() -> None:
     assert "tests/test_stage5_gate1_assessment.py" in paths
     assert "tests/test_stage5_gate2_assessment.py" in paths
     assert "tests/test_stage5_recipe_control_assessment.py" in paths
+    assert "tests/test_stage5_release_gate.py" in paths
     assert "tests/test_stage5_progress_ledger.py" in paths
     assert "tests/test_lora.py" in paths
     assert "tests/test_stage5_dense_sft_control.py" in paths
@@ -32,8 +33,8 @@ def test_colab_continue_max_actions_can_be_overridden(monkeypatch) -> None:
     assert default_env()["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] == "1"
 
 
-def test_colab_continue_only_commits_stage5_outputs() -> None:
-    assert stage5_output_paths() == ["outputs/stage5"]
+def test_colab_continue_commits_stage5_and_hf_export_outputs() -> None:
+    assert stage5_output_paths() == ["outputs/stage5", "outputs/hf_exports"]
 
 
 def test_mask_command_redacts_tokens(monkeypatch) -> None:

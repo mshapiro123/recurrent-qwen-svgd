@@ -1046,6 +1046,7 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"gate": "stage5_gate1_selector_tta"}) == "gate1_assessment"
     assert source_kind({"gate": "stage5_gate2_particle_mechanism"}) == "gate2_assessment"
     assert source_kind({"gate": "stage5_same_recipe_architecture"}) == "recipe_control_assessment"
+    assert source_kind({"gate": "stage5_release_benchmark_readiness"}) == "release_gate"
     assert source_kind({"phase1_arc_agi_tuned": {}, "tuned_checkpoint": "ckpt.pt"}) == "recurrent_sft"
     assert source_kind({"rows": [], "deltas": {}, "paired_comparisons": {}}) == "tta_sweep"
 
@@ -1156,4 +1157,32 @@ def test_recipe_control_assessment_failed_inspects_markdown(tmp_path) -> None:
     actions = plan_next_actions(payload, source_summary=source)
 
     assert actions[0]["name"] == "Inspect same-recipe assessment `failed`"
+    assert "summary.md" in actions[0]["command"]
+
+
+def test_release_gate_needs_hf_export_runs_exporter(tmp_path) -> None:
+    source = tmp_path / "release" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_release_benchmark_readiness",
+        "status": "needs_hf_export",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Export recurrent adapter with release-gate evidence"
+    assert "python colab/run_stage5_publish_hf_adapter.py" in actions[0]["command"]
+
+
+def test_release_gate_other_status_inspects_markdown(tmp_path) -> None:
+    source = tmp_path / "release" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_release_benchmark_readiness",
+        "status": "needs_selector_conversion",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect release gate `needs_selector_conversion`"
     assert "summary.md" in actions[0]["command"]

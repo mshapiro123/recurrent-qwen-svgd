@@ -163,4 +163,7 @@ Release candidate definition:
 - Package the latest same-recipe dense-vs-recurrent architecture assessment in
   the adapter metadata/model card when available, including whether the result
   is `passed`, `needs_selector_conversion`, or not yet established.
+- Run `colab/assess_stage5_release_gate.py` before broader benchmark claims. It
+  checks ARC benchmark confirmation, same-recipe architecture evidence, and HF
+  export metadata from saved artifacts without using the GPU.
 - Include the modified-architecture caveat and training recipe.

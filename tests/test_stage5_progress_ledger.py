@@ -303,6 +303,46 @@ def test_progress_ledger_reports_recipe_control_assessments(tmp_path) -> None:
     assert payload["recommended_next_plan_source"] == str(source)
 
 
+def test_progress_ledger_reports_release_gate_assessments(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "release" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "release",
+            "gate": "stage5_release_benchmark_readiness",
+            "status": "needs_hf_export",
+            "passed": False,
+            "next_step": "export",
+            "min_arc_examples": 100,
+            "criteria": [
+                {"name": "arc_benchmark_confirmation", "passed": True},
+                {"name": "same_recipe_architecture", "passed": True},
+                {"name": "hf_export_artifact", "passed": False},
+            ],
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["release_gate_assessments"] == [
+        {
+            "path": str(source),
+            "run_id": "release",
+            "status": "needs_hf_export",
+            "passed": False,
+            "next_step": "export",
+            "min_arc_examples": 100,
+            "criteria": [
+                {"name": "arc_benchmark_confirmation", "passed": True},
+                {"name": "same_recipe_architecture", "passed": True},
+                {"name": "hf_export_artifact", "passed": False},
+            ],
+        }
+    ]
+    assert payload["recommended_next_plan_source"] == str(source)
+
+
 def test_progress_ledger_skips_empty_and_malformed_eval_summaries(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     _write(scan_root / "empty" / "base_summary.json", {"summary": {}})

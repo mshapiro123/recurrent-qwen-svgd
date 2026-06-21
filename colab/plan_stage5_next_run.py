@@ -77,6 +77,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or gate1_assessment_payload(payload) is not None
         or gate2_assessment_payload(payload) is not None
         or recipe_control_assessment_payload(payload) is not None
+        or release_gate_payload(payload) is not None
     )
 
 
@@ -159,6 +160,10 @@ def gate2_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
 
 def recipe_control_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("gate") == "stage5_same_recipe_architecture" else None
+
+
+def release_gate_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("gate") == "stage5_release_benchmark_readiness" else None
 
 
 def recurrent_sft_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -569,6 +574,32 @@ def recipe_control_assessment_actions(payload: dict[str, Any], *, source_summary
         make_action(
             f"Inspect same-recipe assessment `{status}`",
             "The recurrent-vs-dense same-recipe gate did not clear cleanly; inspect the assessment before scaling recurrent-specific training.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
+def release_gate_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    if status == "needs_hf_export":
+        return [
+            make_action(
+                "Export recurrent adapter with release-gate evidence",
+                "The release gate found enough benchmark and architecture evidence, but no HF export artifact with checkpoint metadata.",
+                command_env(
+                    {
+                        "STAGE5_HF_EXPORT_RUN_ID": f"{RUN_ID}_release_hf_export",
+                    },
+                    "python colab/run_stage5_publish_hf_adapter.py",
+                ),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect release gate `{status}`",
+            "The release/benchmark readiness gate is the current summary; inspect its failed criteria before spending more GPU.",
             f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
             10,
         )
@@ -997,6 +1028,9 @@ def plan_next_actions(
     recipe_control = recipe_control_assessment_payload(payload)
     if recipe_control:
         return recipe_control_assessment_actions(recipe_control, source_summary=source_summary)
+    release_gate = release_gate_payload(payload)
+    if release_gate:
+        return release_gate_actions(release_gate, source_summary=source_summary)
     if require_gate1_assessment and needs_gate1_assessment(payload):
         return [gate1_assessment_action(source_summary)]
     if require_gate2_assessment and needs_gate2_assessment(payload):
@@ -1312,6 +1346,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "gate2_assessment"
     if recipe_control_assessment_payload(payload):
         return "recipe_control_assessment"
+    if release_gate_payload(payload):
+        return "release_gate"
     if selector_rescore_payload(payload):
         return "selector_rescore"
     if dense_sft_payload(payload):

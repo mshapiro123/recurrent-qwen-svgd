@@ -113,6 +113,10 @@ Initial harness files:
   dense control with hard-bucket support and no aggregate harm. If recurrent
   improves best-of-K candidate coverage but not selected accuracy, it reports
   `needs_selector_conversion` and the planner routes to selector rescoring.
+- `colab/assess_stage5_release_gate.py`: no-GPU Stage 5E readiness audit. It
+  combines recovered-vs-base ARC benchmark confirmation, same-recipe
+  architecture evidence, and HF export metadata into one status before broader
+  benchmarks or release claims.
 - `colab/run_stage5_arc_agi_trace_sft_gate.py`: matched two-arm SFT runner for
   grid-only supervision versus symbolic-program trace supervision. It reports
   the best checkpoint in each child SFT ladder when available, not only the
@@ -173,7 +177,8 @@ Initial harness files:
   The preferred Colab continuation entrypoint is
   `python colab/run_stage5_colab_continue.py`, which runs the focused Gate 1
   and next-action tests, executes a bounded planner loop, summarizes progress,
-  and commits changed Stage 5 artifacts.
+  runs the Stage 5E release-gate audit, and commits changed Stage 5/HF export
+  artifacts.
 - Evaluation can execute the tiny `symbolic_program` DSL as a fallback when a
   candidate does not contain a directly parseable output grid. Reports include
   a parse-method summary so literal-grid exactness and program-executed

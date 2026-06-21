@@ -139,6 +139,8 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         return True
     if payload.get("gate") == "stage5_same_recipe_architecture":
         return True
+    if payload.get("gate") == "stage5_release_benchmark_readiness":
+        return True
     if payload.get("kind") == "dense_sft_control":
         return True
     if "phase1_arc_agi_tuned" in payload and payload.get("tuned_checkpoint"):
@@ -388,6 +390,26 @@ def recipe_control_assessments(summary_files: list[Path]) -> list[dict[str, Any]
     return sorted(assessments, key=lambda item: str(item["path"]))
 
 
+def release_gate_assessments(summary_files: list[Path]) -> list[dict[str, Any]]:
+    assessments: list[dict[str, Any]] = []
+    for path in summary_files:
+        payload = safe_read_json(path)
+        if not payload or payload.get("gate") != "stage5_release_benchmark_readiness":
+            continue
+        assessments.append(
+            {
+                "path": path_for_cli(path),
+                "run_id": str(payload.get("run_id") or path.parent.name),
+                "status": payload.get("status"),
+                "passed": bool(payload.get("passed", False)),
+                "next_step": payload.get("next_step"),
+                "min_arc_examples": int(payload.get("min_arc_examples", 0) or 0),
+                "criteria": payload.get("criteria") or [],
+            }
+        )
+    return sorted(assessments, key=lambda item: str(item["path"]))
+
+
 def iter_summary_files(scan_root: Path) -> list[Path]:
     if not scan_root.exists():
         return []
@@ -487,6 +509,7 @@ def scan_progress(scan_root: Path, *, run_id: str | None = None) -> dict[str, An
         "gate1_assessments": gate1_assessments(summary_files),
         "gate2_assessments": gate2_assessments(summary_files),
         "recipe_control_assessments": recipe_control_assessments(summary_files),
+        "release_gate_assessments": release_gate_assessments(summary_files),
         "recommended_next_plan_source": latest_planner_source(summary_files),
     }
 
@@ -556,6 +579,22 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
             )
     else:
         lines.append("- No same-recipe architecture assessment summaries found.")
+    lines.extend(["", "## Release / Benchmark Gates", ""])
+    if payload["release_gate_assessments"]:
+        for assessment in payload["release_gate_assessments"][-10:]:
+            failed = [
+                str(row.get("name"))
+                for row in assessment.get("criteria", [])
+                if isinstance(row, dict) and not row.get("passed")
+            ]
+            failed_text = ", ".join(failed) if failed else "none"
+            lines.append(
+                f"- `{assessment['run_id']}` status `{assessment['status']}` passed "
+                f"`{assessment['passed']}` min ARC examples `{assessment['min_arc_examples']}` "
+                f"failed criteria `{failed_text}`: {assessment['next_step']}"
+            )
+    else:
+        lines.append("- No release / benchmark gate summaries found.")
     (output_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((output_dir / "summary.md").read_text(encoding="utf-8"))
 
