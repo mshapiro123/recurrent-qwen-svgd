@@ -421,6 +421,31 @@ def selector_rescore_command(benchmark: dict[str, Any] | None, source_summary: P
     )
 
 
+def selector_exact_candidate_distill_gate_action(compact: dict[str, Any]) -> dict[str, Any] | None:
+    evidence = compact.get("candidate_distillation_evidence") or {}
+    rows = int(evidence.get("candidate_distill_rows", 0) or 0)
+    selector_rows = int(evidence.get("candidate_distill_selector_generated_rows", 0) or 0)
+    if not compact.get("candidate_distillation_passed") or rows <= 0 or selector_rows > 0:
+        return None
+    return make_action(
+        "Run selector-exact candidate-distillation gate",
+        "Candidate distillation passed on generic exact rows, but the gate did not train on selector-generated rows. "
+        "Run the selector-exact variant so candidate distillation can be interpreted as claim-level selector evidence rather than ordinary exact-candidate SFT.",
+        command_env(
+            {
+                "STAGE5_ARC_AGI_CANDIDATE_DISTILL_GATE_RUN_ID": f"{RUN_ID}_selector_exact_candidate_distill_gate",
+                "STAGE5_ARC_AGI_CANDIDATE_DISTILL_SELECTION_STRATEGY": "cell_vote",
+                "STAGE5_ARC_AGI_CANDIDATE_DISTILL_CHOICE": "selector_exact",
+                "STAGE5_ARC_AGI_CANDIDATE_DISTILL_COMPLETION_SOURCE": "canonical_grid",
+                "STAGE5_ARC_AGI_CANDIDATE_DISTILL_INCLUDE_SYMBOLIC": "1",
+                "STAGE5_ARC_AGI_CANDIDATE_DISTILL_GEOMETRY_TTA": "all",
+            },
+            "python colab/run_stage5_arc_agi_candidate_distill_gate.py",
+        ),
+        8,
+    )
+
+
 def selector_source_summary_path(payload: dict[str, Any]) -> Path | None:
     source_run_dir = payload.get("source_run_dir")
     if not source_run_dir:
@@ -1658,6 +1683,10 @@ def plan_next_actions(
                 10,
             )
         )
+
+    selector_distill_action = selector_exact_candidate_distill_gate_action(compact)
+    if selector_distill_action is not None:
+        actions.append(selector_distill_action)
 
     best_tta = best_recovered_tta_row(tta)
     if best_tta and best_tta.get("tta_variant") not in {None, "none"}:

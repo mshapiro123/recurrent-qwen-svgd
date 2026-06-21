@@ -51,6 +51,49 @@ def test_failed_candidate_distillation_recommends_baseline_curriculum(tmp_path) 
     assert "RUN_CANDIDATE_DISTILL_GATE=0" in actions[0]["command"]
 
 
+def test_generic_candidate_distillation_pass_adds_selector_exact_gate(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    payload = {
+        "autopilot_compact": {
+            "candidate_distillation_passed": True,
+            "candidate_distillation_evidence": {
+                "candidate_distill_rows": 12,
+                "candidate_distill_selector_generated_rows": 0,
+            },
+            "final_checkpoint": "outputs/stage5/run/final.pt",
+            "particle_passed": False,
+        }
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+    selector_gate = next(action for action in actions if action["name"] == "Run selector-exact candidate-distillation gate")
+
+    assert "STAGE5_ARC_AGI_CANDIDATE_DISTILL_CHOICE=selector_exact" in selector_gate["command"]
+    assert "STAGE5_ARC_AGI_CANDIDATE_DISTILL_SELECTION_STRATEGY=cell_vote" in selector_gate["command"]
+    assert "claim-level selector evidence" in selector_gate["reason"]
+
+
+def test_selector_candidate_distillation_pass_does_not_repeat_selector_gate(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    payload = {
+        "autopilot_compact": {
+            "candidate_distillation_passed": True,
+            "candidate_distillation_evidence": {
+                "candidate_distill_rows": 12,
+                "candidate_distill_selector_generated_rows": 5,
+            },
+            "final_checkpoint": "outputs/stage5/run/final.pt",
+            "particle_passed": False,
+        }
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert "Run selector-exact candidate-distillation gate" not in [action["name"] for action in actions]
+
+
 def test_smoke_win_recommends_confirmation_and_export(tmp_path) -> None:
     source = tmp_path / "summary.json"
     payload = {
