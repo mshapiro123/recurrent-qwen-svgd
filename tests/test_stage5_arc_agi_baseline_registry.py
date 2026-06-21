@@ -120,4 +120,30 @@ def test_missing_baseline_registry_returns_gate_payload(tmp_path) -> None:
 
     assert payload["status"] == "needs_baseline_registry"
     assert payload["passed"] is False
+    assert "config/arc_agi_same_size_baselines.example.json" in payload["next_step"]
+    assert "config/arc_agi_same_size_baselines.json" in payload["next_step"]
     assert payload["criteria"][0]["passed"] is False
+
+
+def test_baseline_registry_report_includes_schema_guidance(tmp_path, monkeypatch) -> None:
+    output_json = tmp_path / "summary.json"
+    output_md = tmp_path / "summary.md"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "validate_arc_agi_baseline_registry.py",
+            "--baseline_registry_json",
+            str(tmp_path / "missing.json"),
+            "--output_json",
+            str(output_json),
+            "--output_md",
+            str(output_md),
+        ],
+    )
+
+    assert main() == 0
+    report = output_md.read_text(encoding="utf-8")
+    assert "Example schema" in report
+    assert "arc_agi_same_size_baselines.example.json" in report
+    assert "Required row fields" in report
+    assert "official_leaderboard" in report

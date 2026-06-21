@@ -23,6 +23,7 @@ RUN_ID = os.environ.get("STAGE5_ARC_AGI_BASELINE_REGISTRY_RUN_ID") or time.strft
     "stage5_arc_agi_baseline_registry_%Y%m%d_%H%M%S"
 )
 DEFAULT_BASELINE_REGISTRY = ROOT / "config" / "arc_agi_same_size_baselines.json"
+EXAMPLE_BASELINE_REGISTRY = ROOT / "config" / "arc_agi_same_size_baselines.example.json"
 SUPPORTED_METRICS = {"selected_accuracy", "best_of_k_accuracy", "first_accuracy"}
 SUPPORTED_EVIDENCE_TYPES = {"official_leaderboard", "paper", "model_card", "repository", "reproduced_eval"}
 PLACEHOLDER_TOKENS = {
@@ -45,6 +46,16 @@ def path_for_cli(path: Path | None) -> str:
         return str(path.relative_to(ROOT))
     except ValueError:
         return str(path)
+
+
+def baseline_registry_next_step(passed: bool) -> str:
+    if passed:
+        return "Run colab/build_stage5_arc_agi_sota_comparison.py against this registry."
+    return (
+        "Copy config/arc_agi_same_size_baselines.example.json to "
+        "config/arc_agi_same_size_baselines.json, then replace every placeholder "
+        "with sourced same-size ARC-AGI baseline scores before making a SOTA claim."
+    )
 
 
 def resolve_path(value: str | Path) -> Path:
@@ -318,11 +329,7 @@ def build_payload(
         "best_baseline": best,
         "issues": issues,
         "criteria": criteria,
-        "next_step": (
-            "Run colab/build_stage5_arc_agi_sota_comparison.py against this registry."
-            if passed
-            else "Replace placeholders with sourced same-size ARC-AGI baseline scores before making a SOTA claim."
-        ),
+        "next_step": baseline_registry_next_step(passed),
     }
 
 
@@ -362,6 +369,7 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
         f"- Status: `{payload['status']}`",
         f"- Passed: `{payload['passed']}`",
         f"- Registry: `{payload.get('path')}`",
+        f"- Example schema: `{path_for_cli(EXAMPLE_BASELINE_REGISTRY)}`",
         f"- ARC version/split: `{payload.get('arc_version')}` / `{payload.get('arc_split')}`",
         f"- Metric: `{payload.get('metric')}`",
         f"- Valid baselines: `{payload.get('valid_baseline_count')}` / `{payload.get('baseline_count')}`",
@@ -404,6 +412,12 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
             "score came from an official leaderboard, paper, model card, "
             "repository, or reproduced eval. Placeholder, mixed-split, or "
             "unsourced values keep the SOTA gate closed.",
+            "",
+            "Required row fields: `name`, `params_b`, `arc_version`, `arc_split`, "
+            "`metric`, `accuracy`, `evidence_type`, `source`, and "
+            "`accessed_date` or `as_of_date`.",
+            "",
+            f"Accepted evidence types: `{', '.join(sorted(SUPPORTED_EVIDENCE_TYPES))}`.",
         ]
     )
     output_md.parent.mkdir(parents=True, exist_ok=True)
