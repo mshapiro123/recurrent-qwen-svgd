@@ -1,0 +1,15 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5127.40it/s]
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 4565.19it/s]
+distillation_teacher=Qwen/Qwen2.5-0.5B-Instruct
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_150.pt loaded_keys=173
+step=0 mean_expected_loops=2.3576 mean_halt_entropy=1.3750 expected_ce=1.7539 halting_kl=0.0693 loss=1.8818 base_distill_kl=1.1954
+step=25 mean_expected_loops=2.3542 mean_halt_entropy=1.3732 expected_ce=3.3099 halting_kl=0.1652 loss=3.3771 base_distill_kl=0.4737
+saved_checkpoint=outputs/stage5/stage5_phase1_step150_distill_all_w010_lr5e6_100_20260621_194820/phase1/phase1_step_50.pt
+step=50 mean_expected_loops=2.3026 mean_halt_entropy=1.3678 expected_ce=3.1166 halting_kl=0.1754 loss=3.1873 base_distill_kl=0.4967
+step=75 mean_expected_loops=2.2244 mean_halt_entropy=1.3540 expected_ce=3.3074 halting_kl=0.1964 loss=3.3899 base_distill_kl=0.5896
+saved_checkpoint=outputs/stage5/stage5_phase1_step150_distill_all_w010_lr5e6_100_20260621_194820/phase1/phase1_step_100.pt

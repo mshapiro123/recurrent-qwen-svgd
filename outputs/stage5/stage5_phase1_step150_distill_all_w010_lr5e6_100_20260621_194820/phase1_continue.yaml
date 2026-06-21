@@ -1,0 +1,30 @@
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+dtype: bfloat16
+adapter_dtype: float32
+layer_split: 6,18
+max_length: 512
+max_loops: 4
+initial_halt_prob: 0.15
+beta: 0.12
+batch_size: 1
+learning_rate: 5.0e-06
+weight_decay: 0.0
+max_grad_norm: 0.3
+max_steps: 100
+save_every: 50
+log_every: 25
+train_on_prompt: false
+output_dir: outputs/stage5/stage5_phase1_step150_distill_all_w010_lr5e6_100_20260621_194820/phase1
+resume_from: outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_150.pt
+lora:
+  enabled: true
+  rank: 8
+  alpha: 16
+  dropout: 0.0
+distillation:
+  enabled: true
+  weight: 0.1
+  temperature: 2.0
+  'on': all
+  teacher_model_name: Qwen/Qwen2.5-0.5B-Instruct
+  dtype: bfloat16
