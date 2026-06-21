@@ -982,6 +982,45 @@ def gate1_assessment_action(source_summary: Path) -> dict[str, Any]:
     )
 
 
+def safe_gate1_summary(path: Path) -> dict[str, Any] | None:
+    try:
+        payload = read_json(path)
+    except Exception:
+        return None
+    return payload if gate1_assessment_payload(payload) is not None else None
+
+
+def previous_gate1_summary(current_summary: Path) -> Path | None:
+    scan_root = current_summary.parent.parent if current_summary.name == "summary.json" else ROOT / "outputs" / "stage5"
+    if not scan_root.exists():
+        return None
+    candidates: list[Path] = []
+    for path in scan_root.glob("*/summary.json"):
+        if path == current_summary:
+            continue
+        if safe_gate1_summary(path):
+            candidates.append(path)
+    if not candidates:
+        return None
+    return sorted(candidates, key=lambda item: item.stat().st_mtime, reverse=True)[0]
+
+
+def selector_replication_assessment_action(*, discovery_summary: Path, confirmation_summary: Path) -> dict[str, Any]:
+    return make_action(
+        "Assess selector replication across Gate 1 slices",
+        "A Gate 1 selector/TTA setting passed and an earlier Gate 1 assessment exists; verify that the same comparison passed both slices before promoting the selector.",
+        command_env(
+            {"STAGE5_SELECTOR_REPLICATION_RUN_ID": f"{RUN_ID}_selector_replication"},
+            (
+                "python colab/assess_stage5_selector_replication.py "
+                f"--discovery_gate1_json {command_path(discovery_summary)} "
+                f"--confirmation_gate1_json {command_path(confirmation_summary)}"
+            ),
+        ),
+        10,
+    )
+
+
 def gate1_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
     source_path = gate1_source_summary_path(payload, source_summary)
@@ -997,15 +1036,29 @@ def gate1_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -
 
     if status != "passed":
         return [gate1_inspect_action(payload, source_summary, priority=10)]
+    previous = previous_gate1_summary(source_summary)
+    if previous is not None:
+        return [
+            selector_replication_assessment_action(
+                discovery_summary=previous,
+                confirmation_summary=source_summary,
+            )
+        ]
     if not source_actions:
         return [gate1_inspect_action(payload, source_summary, priority=10)]
 
     top = dict(source_actions[0])
-    prefix = "Gate 1 passed"
+    name = str(top.get("name", ""))
+    if name.startswith("Promote selector"):
+        name = name.replace("Promote selector", "Confirm selector", 1)
+    if name.startswith("Validate hard-tail selector"):
+        name = name.replace("Validate hard-tail selector", "Confirm hard-tail selector", 1)
+    prefix = "Gate 1 discovery passed"
     priority = 10
-    top["name"] = f"{prefix}: {top.get('name')}"
+    top["name"] = f"{prefix}: {name}"
     top["reason"] = (
-        f"{prefix}. Assessment reason: {payload.get('reason')} "
+        f"{prefix}; this is a confirmation run, not a final selector promotion. "
+        f"Assessment reason: {payload.get('reason')} "
         f"Assessment next step: {payload.get('next_step')} "
         f"Source action reason: {top.get('reason')}"
     )

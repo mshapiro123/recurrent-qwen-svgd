@@ -868,7 +868,7 @@ def test_gate2_selector_conversion_stops_for_inspection(tmp_path) -> None:
     assert actions[0]["command"].startswith("cat ")
 
 
-def test_gate1_passed_delegates_to_source_summary_action(tmp_path) -> None:
+def test_gate1_passed_without_previous_gate1_runs_confirmation_selector_benchmark(tmp_path) -> None:
     source_run = tmp_path / "source_benchmark"
     source_run.mkdir()
     (source_run / "summary.json").write_text(
@@ -927,9 +927,40 @@ def test_gate1_passed_delegates_to_source_summary_action(tmp_path) -> None:
 
     actions = plan_next_actions(payload, source_summary=gate1)
 
-    assert actions[0]["name"].startswith("Gate 1 passed: Promote selector `reliability_vote`")
+    assert actions[0]["name"].startswith("Gate 1 discovery passed: Confirm selector `reliability_vote`")
     assert "hard-tail lift" in actions[0]["reason"]
+    assert "confirmation run, not a final selector promotion" in actions[0]["reason"]
     assert "STAGE5_ARC_AGI_SELECTION_STRATEGY=reliability_vote" in actions[0]["command"]
+
+
+def test_gate1_passed_with_previous_gate1_runs_selector_replication(tmp_path) -> None:
+    previous = tmp_path / "previous_gate1" / "summary.json"
+    previous.parent.mkdir()
+    previous_payload = {
+        "gate": "stage5_gate1_selector_tta",
+        "status": "passed",
+        "passed": True,
+        "passing_comparisons": ["recovered__selector_reliability_vote_vs_source"],
+    }
+    previous.write_text(json.dumps(previous_payload), encoding="utf-8")
+    gate1 = tmp_path / "gate1" / "summary.json"
+    gate1.parent.mkdir()
+    payload = {
+        "gate": "stage5_gate1_selector_tta",
+        "status": "passed",
+        "passed": True,
+        "reason": "hard-tail lift",
+        "next_step": "replicate",
+        "passing_comparisons": ["recovered__selector_reliability_vote_vs_source"],
+    }
+    gate1.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=gate1)
+
+    assert actions[0]["name"] == "Assess selector replication across Gate 1 slices"
+    assert "assess_stage5_selector_replication.py" in actions[0]["command"]
+    assert previous.as_posix() in actions[0]["command"]
+    assert gate1.as_posix() in actions[0]["command"]
 
 
 def test_gate1_needs_more_evidence_does_not_promote_source_action(tmp_path) -> None:
