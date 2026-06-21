@@ -46,6 +46,22 @@ def test_parse_action_command_allows_readonly_cat() -> None:
     assert parsed.argv == ["cat", "outputs/stage5/run/summary.md"]
 
 
+def test_parse_action_command_allows_gate1_assessor() -> None:
+    parsed = parse_action_command(
+        "STAGE5_GATE1_ASSESSMENT_RUN_ID=gate1 "
+        "python colab/assess_stage5_gate1.py --summary_json outputs/stage5/run/summary.json"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_GATE1_ASSESSMENT_RUN_ID": "gate1"}
+    assert parsed.argv == [
+        sys.executable,
+        "colab/assess_stage5_gate1.py",
+        "--summary_json",
+        "outputs/stage5/run/summary.json",
+    ]
+
+
 def test_parse_action_command_rejects_arbitrary_shell() -> None:
     try:
         parse_action_command("rm -rf outputs")

@@ -9,6 +9,7 @@ from colab.plan_stage5_next_run import (
     paired_delta_or_aggregate,
     paired_metric,
     plan_next_actions,
+    selector_rescore_actions,
     source_kind,
 )
 
@@ -404,6 +405,75 @@ def test_tta_replicate_uses_paired_evidence_when_available(tmp_path) -> None:
     assert not any(action["name"].startswith("Replicate recovered TTA") for action in actions)
 
 
+def test_selector_rescore_summary_requests_gate1_assessment(tmp_path) -> None:
+    source = tmp_path / "selector_summary.json"
+    payload = {
+        "source_run_dir": str(tmp_path / "source_benchmark"),
+        "strategies": ["reliability_vote"],
+        "rows": [
+            {
+                "label": "recovered",
+                "selection_strategy": "reliability_vote",
+                "examples": 50,
+                "selected_exact": 12,
+                "best_of_k_exact": 13,
+                "valid_candidate_rate": 0.9,
+                "selected_delta_vs_source": 2,
+            }
+        ],
+        "best_by_label": {},
+        "paired_comparisons": {
+            "recovered__selector_reliability_vote_vs_source": {
+                "metrics": {"selected_exact": _paired(2, wins=2, losses=0, ties=48)}
+            }
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    expected_source = str(source).replace("\\", "/")
+    assert actions[0]["name"] == "Assess Gate 1 selector/TTA evidence"
+    assert "colab/assess_stage5_gate1.py" in actions[0]["command"]
+    assert f"--summary_json {expected_source}" in actions[0]["command"]
+
+
+def test_direct_tta_sweep_summary_requests_gate1_assessment(tmp_path) -> None:
+    source = tmp_path / "tta_summary.json"
+    payload = {
+        "run_id": "tta_sweep",
+        "rows": [
+            {
+                "arm": "recovered",
+                "tta_variant": "none",
+                "examples_with_targets": 50,
+                "selected_exact": 10,
+                "best_of_k_exact": 11,
+            },
+            {
+                "arm": "recovered",
+                "tta_variant": "rotations",
+                "examples_with_targets": 50,
+                "selected_exact": 10,
+                "best_of_k_exact": 13,
+            },
+        ],
+        "deltas": {"recovered": {"best_of_k_exact_delta": 2}},
+        "paired_comparisons": {
+            "recovered__tta_rotations_vs_none": {
+                "metrics": {"best_of_k_exact": _paired(2, wins=2, losses=0, ties=48)}
+            }
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Assess Gate 1 selector/TTA evidence"
+    assert "colab/assess_stage5_gate1.py" in actions[0]["command"]
+    assert source_kind(payload) == "tta_sweep"
+
+
 def test_selector_rescore_summary_promotes_paired_lift(tmp_path) -> None:
     source_run = tmp_path / "source_benchmark"
     source_run.mkdir()
@@ -464,7 +534,7 @@ def test_selector_rescore_summary_promotes_paired_lift(tmp_path) -> None:
     }
     source.write_text(json.dumps(payload), encoding="utf-8")
 
-    actions = plan_next_actions(payload, source_summary=source)
+    actions = selector_rescore_actions(payload, source_summary=source)
 
     assert actions[0]["name"] == "Promote selector `self_consistency` for `recovered` benchmark"
     assert "STAGE5_ARC_AGI_SELECTION_STRATEGY=self_consistency" in actions[0]["command"]
@@ -522,7 +592,7 @@ def test_selector_rescore_summary_validates_hard_tail_lift(tmp_path) -> None:
     }
     source.write_text(json.dumps(payload), encoding="utf-8")
 
-    actions = plan_next_actions(payload, source_summary=source)
+    actions = selector_rescore_actions(payload, source_summary=source)
 
     assert actions[0]["name"] == "Validate hard-tail selector `self_consistency` for `recovered` benchmark"
     assert "STAGE5_ARC_AGI_SELECTION_STRATEGY=self_consistency" in actions[0]["command"]
@@ -562,7 +632,7 @@ def test_selector_rescore_summary_flags_hard_tail_tradeoff(tmp_path) -> None:
     }
     source.write_text(json.dumps(payload), encoding="utf-8")
 
-    actions = plan_next_actions(payload, source_summary=source)
+    actions = selector_rescore_actions(payload, source_summary=source)
 
     assert actions[0]["name"] == "Inspect hard-tail selector tradeoff `self_consistency`"
     assert "hard difficulty bucket" in actions[0]["reason"]
@@ -597,7 +667,7 @@ def test_selector_rescore_summary_without_paired_lift_replans_source(tmp_path) -
     }
     source.write_text(json.dumps(payload), encoding="utf-8")
 
-    actions = plan_next_actions(payload, source_summary=source)
+    actions = selector_rescore_actions(payload, source_summary=source)
 
     assert actions[0]["name"] == "Defer selector changes and continue recovery plan"
     assert "colab/plan_stage5_next_run.py" in actions[0]["command"]
@@ -771,6 +841,53 @@ def test_gate1_passed_delegates_to_source_summary_action(tmp_path) -> None:
     assert "STAGE5_ARC_AGI_SELECTION_STRATEGY=reliability_vote" in actions[0]["command"]
 
 
+def test_gate1_needs_more_evidence_does_not_promote_source_action(tmp_path) -> None:
+    selector = tmp_path / "selector" / "summary.json"
+    selector.parent.mkdir()
+    selector.write_text(
+        json.dumps(
+            {
+                "strategies": ["reliability_vote"],
+                "rows": [
+                    {
+                        "label": "recovered",
+                        "selection_strategy": "reliability_vote",
+                        "examples": 50,
+                        "selected_exact": 12,
+                        "best_of_k_exact": 13,
+                        "valid_candidate_rate": 0.9,
+                        "selected_delta_vs_source": 2,
+                    }
+                ],
+                "best_by_label": {},
+                "paired_comparisons": {
+                    "recovered__selector_reliability_vote_vs_source": {
+                        "metrics": {"selected_exact": _paired(2, wins=2, losses=0, ties=48)}
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    gate1 = tmp_path / "gate1" / "summary.json"
+    gate1.parent.mkdir()
+    payload = {
+        "gate": "stage5_gate1_selector_tta",
+        "status": "needs_more_evidence",
+        "passed": False,
+        "reason": "aggregate lift without hard-bucket evidence",
+        "next_step": "run stratified slice",
+        "source_summary": str(selector),
+        "source_kind": "selector_rescore",
+    }
+    gate1.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=gate1)
+
+    assert actions[0]["name"] == "Inspect Gate 1 assessment `needs_more_evidence`"
+    assert "STAGE5_ARC_AGI_SELECTION_STRATEGY=reliability_vote" not in actions[0]["command"]
+
+
 def test_gate1_needs_review_recommends_inspection(tmp_path) -> None:
     gate1 = tmp_path / "gate1" / "summary.json"
     gate1.parent.mkdir()
@@ -835,3 +952,4 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"best_by_label": {}, "rows": []}) == "selector_rescore"
     assert source_kind({"recovery_decision": {}, "particle_decision": {}}) == "recovery_particle_gate"
     assert source_kind({"gate": "stage5_gate1_selector_tta"}) == "gate1_assessment"
+    assert source_kind({"rows": [], "deltas": {}, "paired_comparisons": {}}) == "tta_sweep"

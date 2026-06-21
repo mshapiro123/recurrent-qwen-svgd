@@ -142,6 +142,24 @@ def gate1_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("gate") == "stage5_gate1_selector_tta" else None
 
 
+def direct_tta_sweep_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    if isinstance(payload.get("rows"), list) and isinstance(payload.get("paired_comparisons"), dict):
+        if "deltas" in payload and "best_by_label" not in payload:
+            return payload
+    return None
+
+
+def needs_gate1_assessment(payload: dict[str, Any]) -> bool:
+    if gate1_assessment_payload(payload):
+        return False
+    if selector_rescore_payload(payload) and bool(payload.get("paired_comparisons")):
+        return True
+    nested_tta = tta_payload(payload)
+    if isinstance(nested_tta, dict) and bool(nested_tta.get("paired_comparisons")):
+        return True
+    return direct_tta_sweep_payload(payload) is not None and bool(payload.get("paired_comparisons"))
+
+
 def compact_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return payload.get("autopilot_compact") or payload.get("compact") or {}
 
@@ -558,6 +576,18 @@ def gate1_inspect_action(payload: dict[str, Any], source_summary: Path, *, prior
     )
 
 
+def gate1_assessment_action(source_summary: Path) -> dict[str, Any]:
+    return make_action(
+        "Assess Gate 1 selector/TTA evidence",
+        "Selector or TTA paired evidence exists; write the explicit Gate 1 assessment before promoting selector, TTA, or particle settings.",
+        command_env(
+            {"STAGE5_GATE1_ASSESSMENT_RUN_ID": f"{RUN_ID}_gate1_assessment"},
+            f"python colab/assess_stage5_gate1.py --summary_json {command_path(source_summary)}",
+        ),
+        10,
+    )
+
+
 def gate1_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
     source_path = gate1_source_summary_path(payload, source_summary)
@@ -565,26 +595,20 @@ def gate1_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -
     if source_path != source_summary and source_path.exists():
         source_payload = read_json(source_path)
         if gate1_assessment_payload(source_payload) is None:
-            source_actions = plan_next_actions(source_payload, source_summary=source_path)
+            source_actions = plan_next_actions(
+                source_payload,
+                source_summary=source_path,
+                require_gate1_assessment=False,
+            )
 
-    if status == "needs_review":
+    if status != "passed":
         return [gate1_inspect_action(payload, source_summary, priority=10)]
     if not source_actions:
         return [gate1_inspect_action(payload, source_summary, priority=10)]
 
     top = dict(source_actions[0])
-    if status == "passed":
-        prefix = "Gate 1 passed"
-        priority = 10
-    elif status == "needs_more_evidence":
-        prefix = "Gate 1 needs more evidence"
-        priority = max(9, int(top.get("priority", 0)))
-    elif status == "failed":
-        prefix = "Gate 1 failed"
-        priority = max(9, int(top.get("priority", 0)))
-    else:
-        prefix = f"Gate 1 status `{status}`"
-        priority = max(8, int(top.get("priority", 0)))
+    prefix = "Gate 1 passed"
+    priority = 10
     top["name"] = f"{prefix}: {top.get('name')}"
     top["reason"] = (
         f"{prefix}. Assessment reason: {payload.get('reason')} "
@@ -742,11 +766,18 @@ def recovery_particle_actions(payload: dict[str, Any], *, source_summary: Path) 
     return actions
 
 
-def plan_next_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+def plan_next_actions(
+    payload: dict[str, Any],
+    *,
+    source_summary: Path,
+    require_gate1_assessment: bool = True,
+) -> list[dict[str, Any]]:
     actions: list[dict[str, Any]] = []
     gate1 = gate1_assessment_payload(payload)
     if gate1:
         return gate1_assessment_actions(gate1, source_summary=source_summary)
+    if require_gate1_assessment and needs_gate1_assessment(payload):
+        return [gate1_assessment_action(source_summary)]
     selector_rescore = selector_rescore_payload(payload)
     if selector_rescore:
         return selector_rescore_actions(selector_rescore, source_summary=source_summary)
@@ -1053,6 +1084,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "selector_rescore"
     if recovery_particle_payload(payload):
         return "recovery_particle_gate"
+    if direct_tta_sweep_payload(payload):
+        return "tta_sweep"
     if "recovered_benchmark" in payload or "tta_sweep" in payload:
         return "followup"
     if "compact" in payload:

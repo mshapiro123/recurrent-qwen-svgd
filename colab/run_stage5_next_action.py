@@ -50,6 +50,7 @@ EXECUTE = os.environ.get("STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE", "0").strip().lowe
 
 ENV_ASSIGNMENT_RE = re.compile(r"^[A-Z][A-Z0-9_]*=.*$")
 ALLOWED_PYTHON_SCRIPTS = {
+    "colab/assess_stage5_gate1.py",
     "colab/plan_stage5_next_run.py",
     "colab/run_stage5_arc_agi_autopilot_followup.py",
     "colab/run_stage5_arc_agi_candidate_distill_gate.py",

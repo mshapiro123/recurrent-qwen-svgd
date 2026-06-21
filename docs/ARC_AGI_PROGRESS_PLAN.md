@@ -149,7 +149,8 @@ Initial harness files:
   writes an auditable Gate 1 decision: `passed`, `needs_more_evidence`,
   `needs_review`, or `failed`, using paired selected-answer evidence and the
   hard difficulty bucket. The progress ledger reports these Gate 1 assessments
-  alongside benchmark summaries.
+  alongside benchmark summaries. The Stage 5 next-action planner now emits this
+  assessment step automatically before it promotes selector or TTA settings.
 - Evaluation can execute the tiny `symbolic_program` DSL as a fallback when a
   candidate does not contain a directly parseable output grid. Reports include
   a parse-method summary so literal-grid exactness and program-executed
