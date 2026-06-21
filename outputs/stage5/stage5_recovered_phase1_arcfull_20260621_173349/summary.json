@@ -1,0 +1,79 @@
+{
+  "run_id": "stage5_recovered_phase1_arcfull_20260621_173349",
+  "kind": "stage5_benchmark_suite",
+  "status": "completed",
+  "source_summary": "outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/summary.json",
+  "checkpoint": "outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/phase1/phase1_step_125.pt",
+  "benchmarks": [
+    "arc_challenge"
+  ],
+  "score_targets": [
+    "label"
+  ],
+  "aggregates": [
+    "mean"
+  ],
+  "recurrent_mode": "phase1",
+  "recurrent_num_trajectories": 1,
+  "elapsed_seconds": 249.86994290351868,
+  "failures": [],
+  "results": {
+    "arc_challenge": {
+      "label": {
+        "base": {
+          "mean": {
+            "correct": 167,
+            "total": 299,
+            "accuracy": 0.5585284280936454
+          }
+        },
+        "recurrent": {
+          "mean": {
+            "correct": 168,
+            "total": 299,
+            "accuracy": 0.5618729096989966
+          }
+        }
+      }
+    }
+  },
+  "comparisons": {
+    "arc_challenge": {
+      "label": {
+        "mean": {
+          "correct_delta_recurrent_vs_base": 1,
+          "accuracy_delta_recurrent_vs_base": 0.0033444816053511683,
+          "base": {
+            "correct": 167,
+            "total": 299,
+            "accuracy": 0.5585284280936454
+          },
+          "recurrent": {
+            "correct": 168,
+            "total": 299,
+            "accuracy": 0.5618729096989966
+          }
+        }
+      }
+    }
+  },
+  "paired_comparisons": {
+    "arc_challenge": {
+      "label": {
+        "mean": {
+          "paired_examples": 299,
+          "base_correct": 167,
+          "recurrent_correct": 168,
+          "correct_delta_recurrent_vs_base": 1,
+          "base_accuracy": 0.5585284280936454,
+          "recurrent_accuracy": 0.5618729096989966,
+          "accuracy_delta_recurrent_vs_base": 0.0033444816053511705,
+          "wins": 29,
+          "losses": 28,
+          "ties": 242,
+          "sign_test_p_value": 1.0
+        }
+      }
+    }
+  }
+}
