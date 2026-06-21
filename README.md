@@ -16,6 +16,26 @@ For high-end Colab Pro+, the intended scale-up path is 0.5B first, then
 For the current scientific status, evidence, negative results, and next gates,
 see [docs/PROJECT_STATUS_PAPER.md](docs/PROJECT_STATUS_PAPER.md).
 
+## Current Result
+
+The project has not yet shown a release-grade recurrent/SVGD win over base
+Qwen. It has shown a more useful intermediate result: a trained dense Qwen 0.5B
+model can be converted into a recurrent-depth architecture with exact one-pass
+identity preservation, stable learned halting, and recoverable benchmark
+competence under small-parameter adapter/controller training.
+
+Latest balanced ARC assessment for the selected recurrent checkpoint:
+
+| Benchmark | Base Qwen | Recurrent Phase 1 | Delta |
+|---|---:|---:|---:|
+| ARC-Easy | `421/570` | `412/570` | `-9` |
+| ARC-Challenge | `167/299` | `169/299` | `+2` |
+| Combined | `588/869` | `581/869` | `-7` |
+
+The next gate is competence-preserving recurrent SFT that keeps the
+ARC-Challenge gain while closing the ARC-Easy gap. Phase 2/SVGD work resumes
+after deterministic recurrent recovery is competitive with base.
+
 ## A100 Credit Discipline
 
 Use GPU time only for bounded training/evaluation actions that emit summaries,

@@ -11,12 +11,12 @@ halting, and extends the recurrent state into a family of particle trajectories
 with stochastic latent injection or SVGD-style repulsion. The strongest result
 so far is not yet a final benchmark win over the unmodified base model. It is a
 mechanistic result: the surgery can preserve identity under the one-pass gate,
-the deterministic recurrent model can recover most of the ARC-Challenge gap
-after targeted adapter training, and SVGD-style particle updates can increase
-useful candidate density on controlled exact-task suites. The next scientific
-gate is to show that a recovered recurrent checkpoint matches or exceeds base
-Qwen on non-toy reasoning slices, then to test whether particle/SVGD trajectories
-produce selector-convertible lift over that recovered recurrent baseline.
+the deterministic recurrent model can recover much of the ARC regression after
+targeted adapter training, and SVGD-style particle updates can increase useful
+candidate density on controlled exact-task suites. The next scientific gate is
+to turn near-base recurrent recovery into a robust base-model win across non-toy
+reasoning slices, then to test whether particle/SVGD trajectories produce
+selector-convertible lift over that recovered recurrent baseline.
 
 ## 1. Research Question
 
@@ -206,9 +206,27 @@ architecture modification. It also shows that the current Phase 2/SVGD candidate
 did not improve over the stronger Phase 1 recurrent baseline on this slice.
 
 Subsequent Stage 5 recovery work found that a balanced ARC/Opus mix can produce
-proxy lift, but the full assessment still reports `needs_competence_recovery`.
-The current selected checkpoint is a useful balanced baseline, not a release
-claim.
+proxy lift. The current selected balanced checkpoint is:
+
+```text
+outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/
+  arc_mix_nodistill_lr3e6/phase1/phase1_step_150.pt
+```
+
+The full balanced MCQ assessment reports:
+
+| Benchmark | Base Qwen | Recurrent Phase 1 | Delta |
+|---|---:|---:|---:|
+| ARC-Easy | `421/570` (`73.86%`) | `412/570` (`72.28%`) | `-9` |
+| ARC-Challenge | `167/299` (`55.85%`) | `169/299` (`56.52%`) | `+2` |
+| Combined | `588/869` (`67.66%`) | `581/869` (`66.86%`) | `-7` |
+
+The paired combined sign test is not significant
+(`wins=33`, `losses=40`, `ties=796`, `p=0.4828`). The right interpretation is
+encouraging but not yet a release claim: the recurrent model can slightly beat
+base on the harder ARC-Challenge slice, but it still gives back more points on
+ARC-Easy. The full assessment therefore correctly remains
+`needs_competence_recovery`.
 
 ## 6. What Has Not Been Shown Yet
 
@@ -234,7 +252,8 @@ before further particle training:
 1. **Competence-preserving recurrent SFT.** Continue Phase 1 from the best
    balanced checkpoint using a mix of Opus traces, TraceInversion traces, and
    benchmark-style MCQ rows. Keep the base-logit or answer-preservation signal
-   strong enough to avoid ARC regression.
+   strong enough to avoid ARC-Easy regression while preserving the
+   ARC-Challenge gain.
 2. **Easy/hard curriculum.** Infer difficulty from base loss, recurrent loss,
    answer correctness, trace length, prompt length, and benchmark family. Do not
    use trace length alone as the difficulty label.
@@ -272,16 +291,22 @@ The current Colab policy should be:
 Recent automation changes support this policy: Stage 4 summaries now identify
 their deterministic recurrent checkpoint, and the Stage 5 planner routes a
 finished Stage 4 fine-tune directly into a broader benchmark-suite action. This
-reduces idle A100 time between training and measurement.
+reduces idle A100 time between training and measurement. The single-runtime
+Colab continuation wrapper now defaults to `credit_saver`, which executes one
+allowlisted planner action, summarizes, commits safe text artifacts, and stops.
+Longer A100 ladders require an explicit profile such as `gate`, `same_recipe`,
+or `claim`.
 
 ## 9. Current Conclusion
 
 The project has achieved the hard first step: a pretrained Qwen model can be
 converted into a recurrent-depth model with exact identity preservation in the
 single-pass gate, stable learned halting, and recoverable benchmark competence
-under small-parameter fine-tuning. SVGD-style particles have shown useful
-candidate-density signals on controlled exact tasks, but not yet reliable lift
-over the strongest recovered deterministic recurrent model.
+under small-parameter fine-tuning. The latest recovered recurrent checkpoint is
+competitive with base Qwen on ARC-Challenge but remains behind on ARC-Easy.
+SVGD-style particles have shown useful candidate-density signals on controlled
+exact tasks, but not yet reliable lift over the strongest recovered
+deterministic recurrent model.
 
 The next publishable claim should not be "SVGD beats Qwen" yet. The defensible
 claim is narrower and scientifically useful:
