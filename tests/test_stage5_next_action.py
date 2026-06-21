@@ -104,6 +104,16 @@ def test_parse_action_command_allows_release_gate_assessor() -> None:
     assert parsed.argv == [sys.executable, "colab/assess_stage5_release_gate.py"]
 
 
+def test_parse_action_command_allows_benchmark_suite_runner() -> None:
+    parsed = parse_action_command(
+        "STAGE5_BENCHMARK_SUITE_RUN_ID=bench python colab/run_stage5_benchmark_suite.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_BENCHMARK_SUITE_RUN_ID": "bench"}
+    assert parsed.argv == [sys.executable, "colab/run_stage5_benchmark_suite.py"]
+
+
 def test_parse_action_command_allows_dense_and_recurrent_sft_runners() -> None:
     dense = parse_action_command("python colab/run_stage5_arc_agi_dense_sft.py")
     recurrent = parse_action_command("python colab/run_stage5_arc_agi_sft.py")

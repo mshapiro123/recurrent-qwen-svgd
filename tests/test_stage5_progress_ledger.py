@@ -343,6 +343,53 @@ def test_progress_ledger_reports_release_gate_assessments(tmp_path) -> None:
     assert payload["recommended_next_plan_source"] == str(source)
 
 
+def test_progress_ledger_reports_benchmark_suite_assessments(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "bench_suite" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "bench_suite",
+            "kind": "stage5_benchmark_suite",
+            "status": "completed",
+            "checkpoint": "outputs/recurrent.pt",
+            "benchmarks": ["arc_challenge"],
+            "comparisons": {
+                "arc_challenge": {
+                    "label": {
+                        "mean": {
+                            "correct_delta_recurrent_vs_base": -2,
+                            "accuracy_delta_recurrent_vs_base": -0.125,
+                        }
+                    }
+                }
+            },
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["benchmark_suite_assessments"] == [
+        {
+            "path": str(source),
+            "run_id": "bench_suite",
+            "status": "completed",
+            "checkpoint": "outputs/recurrent.pt",
+            "benchmarks": ["arc_challenge"],
+            "deltas": [
+                {
+                    "benchmark": "arc_challenge",
+                    "score_target": "label",
+                    "aggregate": "mean",
+                    "correct_delta_recurrent_vs_base": -2,
+                    "accuracy_delta_recurrent_vs_base": -0.125,
+                }
+            ],
+        }
+    ]
+    assert payload["recommended_next_plan_source"] == str(source)
+
+
 def test_progress_ledger_skips_empty_and_malformed_eval_summaries(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     _write(scan_root / "empty" / "base_summary.json", {"summary": {}})

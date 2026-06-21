@@ -117,6 +117,10 @@ Initial harness files:
   combines recovered-vs-base ARC benchmark confirmation, same-recipe
   architecture evidence, and HF export metadata into one status before broader
   benchmarks or release claims.
+- `colab/run_stage5_benchmark_suite.py`: post-release-gate benchmark runner for
+  base Qwen versus the recurrent artifact on ARC-Challenge and GPQA-lite. It
+  commits sanitized benchmark result summaries only; prepared MCQ data remains
+  under ignored `data/` paths.
 - `colab/run_stage5_arc_agi_trace_sft_gate.py`: matched two-arm SFT runner for
   grid-only supervision versus symbolic-program trace supervision. It reports
   the best checkpoint in each child SFT ladder when available, not only the

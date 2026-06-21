@@ -141,6 +141,8 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         return True
     if payload.get("gate") == "stage5_release_benchmark_readiness":
         return True
+    if payload.get("kind") == "stage5_benchmark_suite":
+        return True
     if payload.get("kind") == "dense_sft_control":
         return True
     if "phase1_arc_agi_tuned" in payload and payload.get("tuned_checkpoint"):
@@ -410,6 +412,49 @@ def release_gate_assessments(summary_files: list[Path]) -> list[dict[str, Any]]:
     return sorted(assessments, key=lambda item: str(item["path"]))
 
 
+def benchmark_suite_assessments(summary_files: list[Path]) -> list[dict[str, Any]]:
+    assessments: list[dict[str, Any]] = []
+    for path in summary_files:
+        payload = safe_read_json(path)
+        if not payload or payload.get("kind") != "stage5_benchmark_suite":
+            continue
+        deltas: list[dict[str, Any]] = []
+        comparisons = payload.get("comparisons") or {}
+        for benchmark, score_targets in sorted(comparisons.items()):
+            if not isinstance(score_targets, dict):
+                continue
+            for score_target, aggregates in sorted(score_targets.items()):
+                if not isinstance(aggregates, dict):
+                    continue
+                for aggregate, row in sorted(aggregates.items()):
+                    if not isinstance(row, dict):
+                        continue
+                    deltas.append(
+                        {
+                            "benchmark": benchmark,
+                            "score_target": score_target,
+                            "aggregate": aggregate,
+                            "correct_delta_recurrent_vs_base": int(
+                                row.get("correct_delta_recurrent_vs_base", 0) or 0
+                            ),
+                            "accuracy_delta_recurrent_vs_base": float(
+                                row.get("accuracy_delta_recurrent_vs_base", 0.0) or 0.0
+                            ),
+                        }
+                    )
+        assessments.append(
+            {
+                "path": path_for_cli(path),
+                "run_id": str(payload.get("run_id") or path.parent.name),
+                "status": payload.get("status"),
+                "checkpoint": payload.get("checkpoint"),
+                "benchmarks": payload.get("benchmarks") or [],
+                "deltas": deltas,
+            }
+        )
+    return sorted(assessments, key=lambda item: str(item["path"]))
+
+
 def iter_summary_files(scan_root: Path) -> list[Path]:
     if not scan_root.exists():
         return []
@@ -510,6 +555,7 @@ def scan_progress(scan_root: Path, *, run_id: str | None = None) -> dict[str, An
         "gate2_assessments": gate2_assessments(summary_files),
         "recipe_control_assessments": recipe_control_assessments(summary_files),
         "release_gate_assessments": release_gate_assessments(summary_files),
+        "benchmark_suite_assessments": benchmark_suite_assessments(summary_files),
         "recommended_next_plan_source": latest_planner_source(summary_files),
     }
 
@@ -595,6 +641,20 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
             )
     else:
         lines.append("- No release / benchmark gate summaries found.")
+    lines.extend(["", "## Broader Benchmark Suites", ""])
+    if payload["benchmark_suite_assessments"]:
+        for assessment in payload["benchmark_suite_assessments"][-10:]:
+            delta_text = "; ".join(
+                f"{row['benchmark']}/{row['score_target']}/{row['aggregate']}: "
+                f"{row['correct_delta_recurrent_vs_base']:+d}"
+                for row in assessment.get("deltas", [])
+            )
+            lines.append(
+                f"- `{assessment['run_id']}` status `{assessment['status']}` checkpoint "
+                f"`{assessment['checkpoint']}` deltas: {delta_text or 'none'}"
+            )
+    else:
+        lines.append("- No broader benchmark suite summaries found.")
     (output_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((output_dir / "summary.md").read_text(encoding="utf-8"))
 

@@ -78,6 +78,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or gate2_assessment_payload(payload) is not None
         or recipe_control_assessment_payload(payload) is not None
         or release_gate_payload(payload) is not None
+        or benchmark_suite_payload(payload) is not None
     )
 
 
@@ -164,6 +165,10 @@ def recipe_control_assessment_payload(payload: dict[str, Any]) -> dict[str, Any]
 
 def release_gate_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("gate") == "stage5_release_benchmark_readiness" else None
+
+
+def benchmark_suite_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_benchmark_suite" else None
 
 
 def recurrent_sft_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -582,6 +587,20 @@ def recipe_control_assessment_actions(payload: dict[str, Any], *, source_summary
 
 def release_gate_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
+    if status == "ready_for_broader_benchmarks":
+        return [
+            make_action(
+                "Run broader Stage 5 benchmark suite",
+                "The release gate cleared; compare the recurrent artifact against base Qwen on ARC-Challenge and GPQA-lite before any broader claims.",
+                command_env(
+                    {
+                        "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{RUN_ID}_benchmark_suite",
+                    },
+                    "python colab/run_stage5_benchmark_suite.py",
+                ),
+                10,
+            )
+        ]
     if status == "needs_hf_export":
         return [
             make_action(
@@ -600,6 +619,18 @@ def release_gate_actions(payload: dict[str, Any], *, source_summary: Path) -> li
         make_action(
             f"Inspect release gate `{status}`",
             "The release/benchmark readiness gate is the current summary; inspect its failed criteria before spending more GPU.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
+def benchmark_suite_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    return [
+        make_action(
+            f"Inspect broader benchmark suite `{status}`",
+            "The broader base-vs-recurrent benchmark suite finished; inspect ARC-Challenge/GPQA-lite deltas before making release or GPQA Diamond claims.",
             f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
             10,
         )
@@ -1031,6 +1062,9 @@ def plan_next_actions(
     release_gate = release_gate_payload(payload)
     if release_gate:
         return release_gate_actions(release_gate, source_summary=source_summary)
+    benchmark_suite = benchmark_suite_payload(payload)
+    if benchmark_suite:
+        return benchmark_suite_actions(benchmark_suite, source_summary=source_summary)
     if require_gate1_assessment and needs_gate1_assessment(payload):
         return [gate1_assessment_action(source_summary)]
     if require_gate2_assessment and needs_gate2_assessment(payload):
@@ -1348,6 +1382,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "recipe_control_assessment"
     if release_gate_payload(payload):
         return "release_gate"
+    if benchmark_suite_payload(payload):
+        return "benchmark_suite"
     if selector_rescore_payload(payload):
         return "selector_rescore"
     if dense_sft_payload(payload):

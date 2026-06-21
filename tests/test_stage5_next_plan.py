@@ -1047,6 +1047,7 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"gate": "stage5_gate2_particle_mechanism"}) == "gate2_assessment"
     assert source_kind({"gate": "stage5_same_recipe_architecture"}) == "recipe_control_assessment"
     assert source_kind({"gate": "stage5_release_benchmark_readiness"}) == "release_gate"
+    assert source_kind({"kind": "stage5_benchmark_suite"}) == "benchmark_suite"
     assert source_kind({"phase1_arc_agi_tuned": {}, "tuned_checkpoint": "ckpt.pt"}) == "recurrent_sft"
     assert source_kind({"rows": [], "deltas": {}, "paired_comparisons": {}}) == "tta_sweep"
 
@@ -1174,6 +1175,20 @@ def test_release_gate_needs_hf_export_runs_exporter(tmp_path) -> None:
     assert "python colab/run_stage5_publish_hf_adapter.py" in actions[0]["command"]
 
 
+def test_release_gate_ready_runs_benchmark_suite(tmp_path) -> None:
+    source = tmp_path / "release" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_release_benchmark_readiness",
+        "status": "ready_for_broader_benchmarks",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run broader Stage 5 benchmark suite"
+    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
+
+
 def test_release_gate_other_status_inspects_markdown(tmp_path) -> None:
     source = tmp_path / "release" / "summary.json"
     source.parent.mkdir()
@@ -1185,4 +1200,18 @@ def test_release_gate_other_status_inspects_markdown(tmp_path) -> None:
     actions = plan_next_actions(payload, source_summary=source)
 
     assert actions[0]["name"] == "Inspect release gate `needs_selector_conversion`"
+    assert "summary.md" in actions[0]["command"]
+
+
+def test_benchmark_suite_summary_inspects_markdown(tmp_path) -> None:
+    source = tmp_path / "benchmark_suite" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_benchmark_suite",
+        "status": "completed",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect broader benchmark suite `completed`"
     assert "summary.md" in actions[0]["command"]

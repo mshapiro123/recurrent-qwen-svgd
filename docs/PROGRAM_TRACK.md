@@ -31,6 +31,18 @@ reinforcement better than diversity encoded only in weights. A strong final
 model is not enough; the decisive experiment must isolate whether architecture
 adds hard-tail accuracy beyond the same recipe on a standard dense model.
 
+There are two legitimate ordering modes:
+
+- **Destination-primary:** prioritize the proven spectrum-to-signal recipe and
+  layer recurrent particles on once base capability exists.
+- **Contribution-primary:** prioritize mechanism evidence that architectural
+  diversity is a real lever, accepting a slower path to a deployable artifact.
+
+The working order is the hybrid: de-risk the mechanism cheaply, then scale
+through the recipe only if recurrent particles show selector-convertible value.
+When this fork affects a concrete decision, surface it explicitly rather than
+silently assuming one branch.
+
 Implementation note: Stage 5 now includes a dense standard-control SFT runner,
 `colab/run_stage5_arc_agi_dense_sft.py`, plus dense base-mode LoRA loading in
 `eval/eval_arc_agi.py`. This lets the project train an unmodified Qwen LoRA
@@ -61,6 +73,12 @@ This is the thesis experiment:
 - structural diversity should survive the signal phase;
 - the selector should convert that diversity into accuracy;
 - the lift should concentrate on hard-tail problems.
+
+The architecture earns its place in the hard-problem tail. Test-time scaling
+matters most when single-answer accuracy is low, candidate diversity is real,
+and the selector can extract a correct claim from several plausible paths.
+Broad aggregate gains are useful, but the project claim depends on hard-tail
+lift under a matched recipe.
 
 ## Near-Term Gates
 
