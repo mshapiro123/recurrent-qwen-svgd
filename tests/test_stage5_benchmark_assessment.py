@@ -10,11 +10,19 @@ def _write(path, payload) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
-def _suite(*, arc_delta: int = 0, gpqa_delta: int = 0, arc_n: int = 128, gpqa_n: int = 16):
+def _suite(
+    *,
+    arc_delta: int = 0,
+    gpqa_delta: int = 0,
+    arc_n: int = 128,
+    gpqa_n: int = 16,
+    checkpoint: str = "outputs/stage5/run/phase1.pt",
+):
     return {
         "run_id": "suite",
         "kind": "stage5_benchmark_suite",
         "status": "completed",
+        "checkpoint": checkpoint,
         "benchmarks": ["arc_challenge", "gpqa_lite"],
         "failures": [],
         "paired_comparisons": {
@@ -58,6 +66,7 @@ def test_benchmark_assessment_passes_nonnegative_paired_evidence(tmp_path) -> No
 
     assert assessed["status"] == "passed"
     assert assessed["passed"] is True
+    assert assessed["checkpoint"] == "outputs/stage5/run/phase1.pt"
     assert [row["passed"] for row in assessed["criteria"]] == [True, True, True]
 
 

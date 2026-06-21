@@ -29,13 +29,13 @@ ALLOWED_NEGATIVE_DELTA = int(os.environ.get("STAGE5_BENCHMARK_ASSESS_ALLOWED_NEG
 
 def path_for_cli(path: Path) -> str:
     try:
-        return str(path.relative_to(ROOT))
+        return str(path.relative_to(ROOT)).replace("\\", "/")
     except ValueError:
-        return str(path)
+        return str(path).replace("\\", "/")
 
 
 def resolve_path(value: str | Path) -> Path:
-    path = Path(value)
+    path = Path(str(value).replace("\\", "/"))
     return path if path.is_absolute() else ROOT / path
 
 
@@ -184,6 +184,7 @@ def assess_benchmark_suite(*, summary_json: Path, payload: dict[str, Any]) -> di
         "run_id": RUN_ID,
         "gate": "stage5_broader_benchmark_suite",
         "source_summary": path_for_cli(summary_json),
+        "checkpoint": payload.get("checkpoint"),
         "status": gate_status,
         "passed": gate_status == "passed",
         "next_step": next_step,

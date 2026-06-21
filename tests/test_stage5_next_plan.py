@@ -1870,6 +1870,7 @@ def test_benchmark_suite_assessment_negative_runs_recovery_ladder(tmp_path) -> N
     payload = {
         "gate": "stage5_broader_benchmark_suite",
         "status": "needs_recurrent_recovery",
+        "checkpoint": "outputs/stage5/balanced/phase1_step_150.pt",
     }
 
     actions = plan_next_actions(payload, source_summary=source)
@@ -1878,6 +1879,7 @@ def test_benchmark_suite_assessment_negative_runs_recovery_ladder(tmp_path) -> N
     assert "python colab/run_stage5_phase1_recovery_ladder.py" in actions[0]["command"]
     assert "STAGE5_PHASE1_EXTRA_STEPS=500" in actions[0]["command"]
     assert "STAGE5_ARC_LIMIT=256" in actions[0]["command"]
+    assert "STAGE5_RESUME_FROM=outputs/stage5/balanced/phase1_step_150.pt" in actions[0]["command"]
 
 
 def test_benchmark_suite_assessment_credit_saver_runs_short_recovery_probe(monkeypatch, tmp_path) -> None:
@@ -1887,6 +1889,7 @@ def test_benchmark_suite_assessment_credit_saver_runs_short_recovery_probe(monke
     payload = {
         "gate": "stage5_broader_benchmark_suite",
         "status": "needs_recurrent_recovery",
+        "checkpoint": "outputs/stage5/balanced/phase1_step_150.pt",
     }
 
     actions = plan_next_actions(payload, source_summary=source)
@@ -1895,6 +1898,33 @@ def test_benchmark_suite_assessment_credit_saver_runs_short_recovery_probe(monke
     assert "Credit-saving probe" in actions[0]["reason"]
     assert "STAGE5_PHASE1_EXTRA_STEPS=250" in actions[0]["command"]
     assert "STAGE5_ARC_LIMIT=128" in actions[0]["command"]
+    assert "STAGE5_RESUME_FROM=outputs/stage5/balanced/phase1_step_150.pt" in actions[0]["command"]
+
+
+def test_benchmark_suite_assessment_reads_checkpoint_from_source_summary_with_windows_path(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(planner, "ROOT", tmp_path)
+    suite = tmp_path / "outputs" / "stage5" / "suite" / "summary.json"
+    suite.parent.mkdir(parents=True)
+    suite.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_benchmark_suite",
+                "checkpoint": "outputs/stage5/balanced/phase1_step_150.pt",
+            }
+        ),
+        encoding="utf-8",
+    )
+    source = tmp_path / "outputs" / "stage5" / "assessment" / "summary.json"
+    source.parent.mkdir(parents=True)
+    payload = {
+        "gate": "stage5_broader_benchmark_suite",
+        "status": "needs_recurrent_recovery",
+        "source_summary": "outputs\\stage5\\suite\\summary.json",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert "STAGE5_RESUME_FROM=outputs/stage5/balanced/phase1_step_150.pt" in actions[0]["command"]
 
 
 def test_benchmark_suite_assessment_passed_builds_claim_packet(tmp_path) -> None:

@@ -64,16 +64,30 @@ def recurrent_recovery_budget_defaults() -> tuple[str, str, str]:
     return explicit_steps or "500", explicit_arc_limit or "256", ""
 
 
+def benchmark_suite_assessment_checkpoint(payload: dict[str, Any]) -> str:
+    checkpoint = str(payload.get("checkpoint") or "").strip()
+    if checkpoint:
+        return checkpoint
+    source_summary = str(payload.get("source_summary") or "").strip()
+    if not source_summary:
+        return ""
+    try:
+        source_payload = read_json(resolve_path(source_summary))
+    except Exception:
+        return ""
+    return str(source_payload.get("checkpoint") or "").strip()
+
+
 def resolve_path(value: str | Path) -> Path:
-    path = Path(value)
+    path = Path(str(value).replace("\\", "/"))
     return path if path.is_absolute() else ROOT / path
 
 
 def path_for_cli(path: Path) -> str:
     try:
-        return str(path.relative_to(ROOT))
+        return str(path.relative_to(ROOT)).replace("\\", "/")
     except ValueError:
-        return str(path)
+        return str(path).replace("\\", "/")
 
 
 def read_json(path: str | Path) -> dict[str, Any]:
@@ -1363,6 +1377,14 @@ def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summar
         ]
     if status == "needs_recurrent_recovery":
         extra_steps, arc_limit, budget_reason_prefix = recurrent_recovery_budget_defaults()
+        assignments = {
+            "STAGE5_RUN_ID": f"{RUN_ID}_phase1_recovery",
+            "STAGE5_PHASE1_EXTRA_STEPS": extra_steps,
+            "STAGE5_ARC_LIMIT": arc_limit,
+        }
+        resume_from = benchmark_suite_assessment_checkpoint(payload)
+        if resume_from:
+            assignments["STAGE5_RESUME_FROM"] = resume_from
         return [
             make_action(
                 "Run deterministic recurrent recovery ladder",
@@ -1370,14 +1392,7 @@ def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summar
                     budget_reason_prefix
                     + "The broader benchmark gate says recurrent still trails base; improve deterministic recurrent competence before GPQA Diamond or release claims."
                 ),
-                command_env(
-                    {
-                        "STAGE5_RUN_ID": f"{RUN_ID}_phase1_recovery",
-                        "STAGE5_PHASE1_EXTRA_STEPS": extra_steps,
-                        "STAGE5_ARC_LIMIT": arc_limit,
-                    },
-                    "python colab/run_stage5_phase1_recovery_ladder.py",
-                ),
+                command_env(assignments, "python colab/run_stage5_phase1_recovery_ladder.py"),
                 10,
             )
         ]
