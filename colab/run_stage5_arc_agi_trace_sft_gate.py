@@ -35,7 +35,7 @@ PUSH_RESULTS = os.environ.get("STAGE5_ARC_AGI_TRACE_SFT_GATE_PUSH", "1").strip()
     "yes",
     "y",
 }
-DEFAULT_ARMS = "grid_only,symbolic_program_trace_covered"
+DEFAULT_ARMS = "grid_only,symbolic_program_trace_covered,symbolic_state_trace_covered"
 
 
 def run(cmd: list[str], *, env: dict[str, str] | None = None, check: bool = True, log_name: str | None = None):

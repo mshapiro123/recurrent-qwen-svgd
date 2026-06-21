@@ -525,6 +525,8 @@ def test_recovery_particle_gate_failed_recovery_recommends_trace_training_gate(t
 
     assert actions[0]["name"] == "Compare ARC trace-training targets"
     assert "run_stage5_arc_agi_trace_sft_gate.py" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_TRACE_SFT_GATE_ARMS" in actions[0]["command"]
+    assert "symbolic_state_trace_covered" in actions[0]["command"]
     assert "selected_delta" in actions[0]["reason"]
 
 

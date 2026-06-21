@@ -40,5 +40,27 @@ def test_decide_distill_gate_runs_when_trace_matches_grid() -> None:
     }
     decision, evidence = decide_distill_gate(payload)
     assert decision is True
+    assert evidence["best_trace_arm"] == "symbolic_trace_covered"
+    assert evidence["best_trace_mode"] == "symbolic"
+    assert evidence["best_trace_filter"] == "covered"
     assert evidence["trace_best_delta"] == 0
     assert evidence["trace_selected_delta"] == 2
+
+
+def test_decide_distill_gate_selects_best_state_trace_arm() -> None:
+    payload = {
+        "comparison": {
+            "grid_only": {"tuned_best": 2, "tuned_selected": 2, "best_best": 2},
+            "symbolic_program_trace_covered": {"tuned_best": 2, "tuned_selected": 3, "best_best": 3},
+            "symbolic_state_trace_covered": {"tuned_best": 4, "tuned_selected": 3, "best_best": 4},
+        }
+    }
+
+    decision, evidence = decide_distill_gate(payload)
+
+    assert decision is True
+    assert evidence["best_trace_arm"] == "symbolic_state_trace_covered"
+    assert evidence["best_trace_mode"] == "symbolic_state_trace"
+    assert evidence["best_trace_filter"] == "covered"
+    assert evidence["trace_best_delta"] == 2
+    assert evidence["trace_selected_delta"] == 1

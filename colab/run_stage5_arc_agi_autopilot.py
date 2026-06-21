@@ -32,6 +32,10 @@ PUSH_RESULTS = os.environ.get("STAGE5_ARC_AGI_AUTOPILOT_PUSH", "1").strip().lowe
 MIN_SYMBOLIC_EXACT = int(os.environ.get("STAGE5_ARC_AGI_AUTOPILOT_MIN_SYMBOLIC_EXACT", "1"))
 MIN_HYBRID_BEST_DELTA = int(os.environ.get("STAGE5_ARC_AGI_AUTOPILOT_MIN_HYBRID_BEST_DELTA", "0"))
 MIN_TRACE_BEST_DELTA = int(os.environ.get("STAGE5_ARC_AGI_AUTOPILOT_MIN_TRACE_BEST_DELTA", "0"))
+DEFAULT_TRACE_SFT_GATE_ARMS = os.environ.get(
+    "STAGE5_ARC_AGI_AUTOPILOT_TRACE_SFT_GATE_ARMS",
+    "grid_only,symbolic_program_trace_covered,symbolic_state_trace_covered",
+)
 
 
 def run(cmd: list[str], *, env: dict[str, str] | None = None, check: bool = True, log_name: str | None = None):
@@ -107,14 +111,59 @@ def decide_trace_gate(candidate_gate: dict[str, Any]) -> tuple[bool, dict[str, A
     return decision, evidence
 
 
+def trace_arm_settings(arm: str) -> tuple[str | None, str | None]:
+    if arm == "grid_only":
+        return "none", "all"
+    if arm.endswith("_covered"):
+        trace_filter = "covered"
+        prefix = arm[: -len("_covered")]
+    elif arm.endswith("_all"):
+        trace_filter = "all"
+        prefix = arm[: -len("_all")]
+    else:
+        return None, None
+
+    mode_by_prefix = {
+        "symbolic_trace": "symbolic",
+        "symbolic_program_trace": "symbolic_program",
+        "symbolic_state_trace": "symbolic_state_trace",
+    }
+    return mode_by_prefix.get(prefix), trace_filter
+
+
+def best_trace_arm(comparison: dict[str, Any]) -> tuple[str | None, dict[str, Any]]:
+    grid = comparison.get("grid_only", {})
+    candidates: list[tuple[tuple[int, int, int, str], str, dict[str, Any]]] = []
+    for arm, row in comparison.items():
+        if arm == "grid_only":
+            continue
+        mode, trace_filter = trace_arm_settings(arm)
+        if mode is None or trace_filter is None:
+            continue
+        best_delta = int(row.get("tuned_best", 0)) - int(grid.get("tuned_best", 0))
+        selected_delta = int(row.get("tuned_selected", 0)) - int(grid.get("tuned_selected", 0))
+        checkpoint_delta = int(row.get("best_best", row.get("tuned_best", 0))) - int(
+            grid.get("best_best", grid.get("tuned_best", 0))
+        )
+        candidates.append(((best_delta, selected_delta, checkpoint_delta, arm), arm, row))
+    if not candidates:
+        return None, {}
+    _, arm, row = max(candidates, key=lambda item: item[0])
+    return arm, row
+
+
 def decide_distill_gate(trace_gate: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
     comparison = trace_gate.get("comparison", {})
     grid = comparison.get("grid_only", {})
-    trace = comparison.get("symbolic_trace_covered") or comparison.get("symbolic_trace_all") or {}
+    arm, trace = best_trace_arm(comparison)
+    trace_mode, trace_filter = trace_arm_settings(arm or "")
     best_delta = int(trace.get("tuned_best", 0)) - int(grid.get("tuned_best", 0))
     selected_delta = int(trace.get("tuned_selected", 0)) - int(grid.get("tuned_selected", 0))
     decision = best_delta >= MIN_TRACE_BEST_DELTA
     evidence = {
+        "best_trace_arm": arm,
+        "best_trace_mode": trace_mode,
+        "best_trace_filter": trace_filter,
         "trace_best_delta": best_delta,
         "trace_selected_delta": selected_delta,
         "min_trace_best_delta": MIN_TRACE_BEST_DELTA,
@@ -182,6 +231,7 @@ def write_report(payload: dict[str, Any]) -> None:
             f"- Min symbolic exact: `{MIN_SYMBOLIC_EXACT}`",
             f"- Min hybrid best delta: `{MIN_HYBRID_BEST_DELTA}`",
             f"- Min trace best delta: `{MIN_TRACE_BEST_DELTA}`",
+            f"- Trace SFT gate arms: `{DEFAULT_TRACE_SFT_GATE_ARMS}`",
         ]
     )
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -221,6 +271,7 @@ def main() -> int:
             "colab/run_stage5_arc_agi_trace_sft_gate.py",
             {
                 "STAGE5_ARC_AGI_TRACE_SFT_GATE_RUN_ID": child_run_id("trace_sft_gate"),
+                "STAGE5_ARC_AGI_TRACE_SFT_GATE_ARMS": DEFAULT_TRACE_SFT_GATE_ARMS,
                 "STAGE5_ARC_AGI_TRACE_SFT_GATE_PUSH": "0",
             },
             log_name="trace_sft_gate.log",
@@ -254,6 +305,8 @@ def main() -> int:
             "colab/run_stage5_arc_agi_distill_sft_gate.py",
             {
                 "STAGE5_ARC_AGI_DISTILL_GATE_RUN_ID": child_run_id("distill_sft_gate"),
+                "STAGE5_ARC_AGI_TRACE_MODE": str(distill_evidence.get("best_trace_mode") or "symbolic_program"),
+                "STAGE5_ARC_AGI_TRACE_FILTER": str(distill_evidence.get("best_trace_filter") or "covered"),
                 "STAGE5_ARC_AGI_DISTILL_GATE_PUSH": "0",
             },
             log_name="distill_sft_gate.log",
@@ -282,6 +335,7 @@ def main() -> int:
             "min_symbolic_exact": MIN_SYMBOLIC_EXACT,
             "min_hybrid_best_delta": MIN_HYBRID_BEST_DELTA,
             "min_trace_best_delta": MIN_TRACE_BEST_DELTA,
+            "trace_sft_gate_arms": DEFAULT_TRACE_SFT_GATE_ARMS,
         },
         "decisions": decisions,
         "candidate_gate": candidate_gate,

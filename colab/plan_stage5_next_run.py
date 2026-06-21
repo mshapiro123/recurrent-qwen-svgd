@@ -37,6 +37,10 @@ NEXT_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_NEXT_LIMIT", "100"))
 CONFIRM_LIMIT = parse_optional_limit(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_CONFIRM_LIMIT", "400"))
 FULL_SPLIT_AFTER_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_FULL_SPLIT_AFTER_LIMIT", "400"))
 MIN_RECOVERED_VS_START_DELTA = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_MIN_RECOVERED_VS_START_DELTA", "0"))
+DEFAULT_TRACE_SFT_GATE_ARMS = os.environ.get(
+    "STAGE5_ARC_AGI_NEXT_PLAN_TRACE_SFT_GATE_ARMS",
+    "grid_only,symbolic_program_trace_covered,symbolic_state_trace_covered",
+)
 
 
 def resolve_path(value: str | Path) -> Path:
@@ -534,11 +538,12 @@ def recovery_particle_actions(payload: dict[str, Any], *, source_summary: Path) 
         return [
             make_action(
                 "Compare ARC trace-training targets",
-                "Deterministic recurrent recovery did not clear the non-negative gate; compare grid-only, symbolic-trace, and symbolic-program trace SFT before scaling particles. "
+                "Deterministic recurrent recovery did not clear the non-negative gate; compare grid-only, symbolic-program trace, and symbolic-state trace SFT before scaling particles. "
                 f"Recovered-vs-start evidence: `{start_delta}`.",
                 command_env(
                     {
                         "STAGE5_ARC_AGI_TRACE_SFT_GATE_RUN_ID": f"{RUN_ID}_trace_sft_gate",
+                        "STAGE5_ARC_AGI_TRACE_SFT_GATE_ARMS": DEFAULT_TRACE_SFT_GATE_ARMS,
                     },
                     "python colab/run_stage5_arc_agi_trace_sft_gate.py",
                 ),
