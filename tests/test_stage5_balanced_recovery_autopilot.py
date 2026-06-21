@@ -55,3 +55,11 @@ def test_stageable_result_paths_includes_nested_distill_children(tmp_path, monke
 
     assert tmp_path / "outputs" / "stage5" / "parent_gate" in paths
     assert tmp_path / "outputs" / "stage5" / "nested_ladder" in paths
+
+
+def test_child_summary_path_uses_stage5_run_dir(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_balanced_recovery_autopilot as module
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+
+    assert module.child_summary_path("run") == tmp_path / "outputs" / "stage5" / "run" / "summary.json"

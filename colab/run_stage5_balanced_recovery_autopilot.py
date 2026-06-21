@@ -92,6 +92,10 @@ def child_env(prefix: str, run_id: str, source_summary: Path) -> dict[str, str]:
     return env
 
 
+def child_summary_path(run_id: str) -> Path:
+    return ROOT / "outputs" / "stage5" / run_id / "summary.json"
+
+
 def should_run_arc_mix(distill_payload: dict[str, Any]) -> bool:
     return distill_payload.get("status") not in {"proxy_lift", "proxy_matches_base"}
 
@@ -245,26 +249,32 @@ def main() -> int:
         raise FileNotFoundError(f"Missing source summary: {SOURCE_SUMMARY}")
 
     distill_run_id = f"{RUN_ID}_distill"
-    distill_env = child_env("STAGE5_BALANCED_DISTILL", distill_run_id, SOURCE_SUMMARY)
-    run(
-        [sys.executable, "colab/run_stage5_balanced_distill_gate.py"],
-        env=distill_env,
-        log_name="distill_gate.log",
-    )
-    distill_summary = ROOT / "outputs" / "stage5" / distill_run_id / "summary.json"
+    distill_summary = child_summary_path(distill_run_id)
+    if distill_summary.exists():
+        print(f"reusing_distill_summary={path_for_cli(distill_summary)}")
+    else:
+        distill_env = child_env("STAGE5_BALANCED_DISTILL", distill_run_id, SOURCE_SUMMARY)
+        run(
+            [sys.executable, "colab/run_stage5_balanced_distill_gate.py"],
+            env=distill_env,
+            log_name="distill_gate.log",
+        )
     distill_payload = read_json(distill_summary)
 
     arc_mix_run_id: str | None = None
     arc_mix_payload: dict[str, Any] | None = None
     if should_run_arc_mix(distill_payload):
         arc_mix_run_id = f"{RUN_ID}_arc_mix"
-        arc_mix_env = child_env("STAGE5_ARC_MIX", arc_mix_run_id, SOURCE_SUMMARY)
-        run(
-            [sys.executable, "colab/run_stage5_balanced_arc_mix_gate.py"],
-            env=arc_mix_env,
-            log_name="arc_mix_gate.log",
-        )
-        arc_mix_summary = ROOT / "outputs" / "stage5" / arc_mix_run_id / "summary.json"
+        arc_mix_summary = child_summary_path(arc_mix_run_id)
+        if arc_mix_summary.exists():
+            print(f"reusing_arc_mix_summary={path_for_cli(arc_mix_summary)}")
+        else:
+            arc_mix_env = child_env("STAGE5_ARC_MIX", arc_mix_run_id, SOURCE_SUMMARY)
+            run(
+                [sys.executable, "colab/run_stage5_balanced_arc_mix_gate.py"],
+                env=arc_mix_env,
+                log_name="arc_mix_gate.log",
+            )
         arc_mix_payload = read_json(arc_mix_summary)
 
     payload = build_summary(
