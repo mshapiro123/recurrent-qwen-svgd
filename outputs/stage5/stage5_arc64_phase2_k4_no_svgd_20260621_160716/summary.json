@@ -1,0 +1,155 @@
+{
+  "run_id": "stage5_arc64_phase2_k4_no_svgd_20260621_160716",
+  "kind": "stage5_benchmark_suite",
+  "status": "completed",
+  "source_summary": "outputs/stage5/stage5_arc64_phase2_svgd_k4_20260621_160421/summary.json",
+  "checkpoint": "outputs/qwen_0_5b_phase2_svgd_recreated_smoke25/phase2_step_25.pt",
+  "benchmarks": [
+    "arc_challenge"
+  ],
+  "score_targets": [
+    "label"
+  ],
+  "aggregates": [
+    "mean",
+    "max",
+    "vote"
+  ],
+  "recurrent_mode": "phase2",
+  "recurrent_num_trajectories": 4,
+  "elapsed_seconds": 76.89268660545349,
+  "failures": [],
+  "results": {
+    "arc_challenge": {
+      "label": {
+        "base": {
+          "max": {
+            "correct": 36,
+            "total": 64,
+            "accuracy": 0.5625
+          },
+          "mean": {
+            "correct": 36,
+            "total": 64,
+            "accuracy": 0.5625
+          },
+          "vote": {
+            "correct": 36,
+            "total": 64,
+            "accuracy": 0.5625
+          }
+        },
+        "recurrent": {
+          "max": {
+            "correct": 32,
+            "total": 64,
+            "accuracy": 0.5
+          },
+          "mean": {
+            "correct": 32,
+            "total": 64,
+            "accuracy": 0.5
+          },
+          "vote": {
+            "correct": 32,
+            "total": 64,
+            "accuracy": 0.5
+          }
+        }
+      }
+    }
+  },
+  "comparisons": {
+    "arc_challenge": {
+      "label": {
+        "max": {
+          "correct_delta_recurrent_vs_base": -4,
+          "accuracy_delta_recurrent_vs_base": -0.0625,
+          "base": {
+            "correct": 36,
+            "total": 64,
+            "accuracy": 0.5625
+          },
+          "recurrent": {
+            "correct": 32,
+            "total": 64,
+            "accuracy": 0.5
+          }
+        },
+        "mean": {
+          "correct_delta_recurrent_vs_base": -4,
+          "accuracy_delta_recurrent_vs_base": -0.0625,
+          "base": {
+            "correct": 36,
+            "total": 64,
+            "accuracy": 0.5625
+          },
+          "recurrent": {
+            "correct": 32,
+            "total": 64,
+            "accuracy": 0.5
+          }
+        },
+        "vote": {
+          "correct_delta_recurrent_vs_base": -4,
+          "accuracy_delta_recurrent_vs_base": -0.0625,
+          "base": {
+            "correct": 36,
+            "total": 64,
+            "accuracy": 0.5625
+          },
+          "recurrent": {
+            "correct": 32,
+            "total": 64,
+            "accuracy": 0.5
+          }
+        }
+      }
+    }
+  },
+  "paired_comparisons": {
+    "arc_challenge": {
+      "label": {
+        "max": {
+          "paired_examples": 64,
+          "base_correct": 36,
+          "recurrent_correct": 32,
+          "correct_delta_recurrent_vs_base": -4,
+          "base_accuracy": 0.5625,
+          "recurrent_accuracy": 0.5,
+          "accuracy_delta_recurrent_vs_base": -0.0625,
+          "wins": 7,
+          "losses": 11,
+          "ties": 46,
+          "sign_test_p_value": 0.480682373046875
+        },
+        "mean": {
+          "paired_examples": 64,
+          "base_correct": 36,
+          "recurrent_correct": 32,
+          "correct_delta_recurrent_vs_base": -4,
+          "base_accuracy": 0.5625,
+          "recurrent_accuracy": 0.5,
+          "accuracy_delta_recurrent_vs_base": -0.0625,
+          "wins": 7,
+          "losses": 11,
+          "ties": 46,
+          "sign_test_p_value": 0.480682373046875
+        },
+        "vote": {
+          "paired_examples": 64,
+          "base_correct": 36,
+          "recurrent_correct": 32,
+          "correct_delta_recurrent_vs_base": -4,
+          "base_accuracy": 0.5625,
+          "recurrent_accuracy": 0.5,
+          "accuracy_delta_recurrent_vs_base": -0.0625,
+          "wins": 7,
+          "losses": 11,
+          "ties": 46,
+          "sign_test_p_value": 0.480682373046875
+        }
+      }
+    }
+  }
+}
