@@ -69,17 +69,24 @@ def test_summarize_rows_profiles_training_signal() -> None:
             source_dataset="arc-agi-candidate-distill",
             category="symbolic_constant_output",
         ),
+        _row(
+            "synthetic_crop_recolor_000004",
+            completion="<think>\nprogram state trace:\nstep 1: grid = crop_non_background(test_input, background=0)\n1\n</think>\n2",
+            trace_mode="symbolic_state_trace",
+            trace_source="crop_non_background+color_map",
+        ),
     ]
 
     summary = summarize_rows(rows)
 
-    assert summary["rows"] == 4
+    assert summary["rows"] == 5
     assert summary["public_arc_rows"] == 1
-    assert summary["synthetic_rows"] == 3
+    assert summary["synthetic_rows"] == 4
     assert summary["candidate_distill_rows"] == 1
-    assert summary["trace_rows"] == 2
-    assert summary["program_trace_rows"] == 1
+    assert summary["trace_rows"] == 3
+    assert summary["program_trace_rows"] == 2
     assert summary["task_family_counts"]["move_recolor"] == 2
+    assert summary["task_family_counts"]["crop_recolor"] == 1
     assert summary["source_dataset_counts"]["arc-agi-candidate-distill"] == 1
     assert summary["trace_source_counts"]["move_non_background"] == 2
     assert summary["completion_chars"]["max"] >= len("<think>")
@@ -91,14 +98,14 @@ def test_warnings_flag_missing_expected_signal() -> None:
     warnings = warnings_for_summary(
         summary,
         {
-            "trace_mode": "symbolic_program",
+            "trace_mode": "symbolic_state_trace",
             "trace_filter": "covered",
             "synthetic_tasks": 10,
             "candidate_distill_jsonls": ["candidates.jsonl"],
         },
     )
 
-    assert "Trace mode `symbolic_program` was requested but no traced rows were found." in warnings
+    assert "Trace mode `symbolic_state_trace` was requested but no traced rows were found." in warnings
     assert "Trace filter `covered` was requested but some rows have no trace." in warnings
     assert "Synthetic tasks were requested but no synthetic rows were found." in warnings
     assert "Candidate distillation sources were configured but no candidate-distill rows were found." in warnings

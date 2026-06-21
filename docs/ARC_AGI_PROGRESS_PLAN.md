@@ -85,6 +85,10 @@ Initial harness files:
   compact `<think>` transformation trace when the small symbolic solver can
   exactly explain the target grid, and `--trace_mode symbolic_program`, which
   emits a tiny program-style trace such as transform/recolor/return steps.
+  It also supports `--trace_mode symbolic_state_trace`, which emits the same
+  program operations plus compact intermediate grid states. This is the most
+  recurrent-specific target: it teaches a visible transformation trajectory
+  rather than only a final grid or abstract program.
 - `training/generate_arc_agi_synthetic_tasks.py`: synthetic ARC-style task
   generator for geometry/color-map, non-background object crop, crop-then-recolor,
   crop-then-transform-then-recolor, and constant-output tasks that are exactly
@@ -187,6 +191,10 @@ program-style transformation traces for covered examples. Use
 `STAGE5_ARC_AGI_TRACE_FILTER=covered` for the clean curriculum arm, and keep
 `STAGE5_ARC_AGI_TRACE_MODE=none` as the grid-only control. The older
 `symbolic` mode remains available for prose traces.
+Set `STAGE5_ARC_AGI_TRACE_MODE=symbolic_state_trace` for the recurrent
+state-trajectory arm. Compare it against `symbolic_program` before scaling:
+state traces may help the loop learn intermediate transformations, but they
+also lengthen completions and should be checked by `training_signal.md`.
 
 Set `STAGE5_ARC_AGI_SYNTHETIC_TASKS=200` or higher to append symbolically covered
 synthetic ARC-style tasks to the public ARC SFT rows. This is the first

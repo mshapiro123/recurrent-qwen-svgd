@@ -83,6 +83,10 @@ available. For synthetic or verifiable domains, generate multiple strategies:
 - combinatorics: constructive and constraint-checking traces;
 - code/math: different valid proof or program approaches;
 - multi-solution tasks: distinct valid final objects.
+- ARC-style grids: compact symbolic state traces that show each transformation
+  step and intermediate grid before the final answer. Use
+  `STAGE5_ARC_AGI_TRACE_MODE=symbolic_state_trace` as the recurrent-specific
+  curriculum arm, with `symbolic_program` and grid-only as controls.
 
 Loss shape:
 

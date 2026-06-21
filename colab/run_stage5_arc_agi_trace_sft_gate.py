@@ -79,6 +79,8 @@ def available_arms() -> dict[str, tuple[str, str]]:
         "symbolic_trace_covered": ("symbolic", "covered"),
         "symbolic_program_trace_all": ("symbolic_program", "all"),
         "symbolic_program_trace_covered": ("symbolic_program", "covered"),
+        "symbolic_state_trace_all": ("symbolic_state_trace", "all"),
+        "symbolic_state_trace_covered": ("symbolic_state_trace", "covered"),
     }
 
 

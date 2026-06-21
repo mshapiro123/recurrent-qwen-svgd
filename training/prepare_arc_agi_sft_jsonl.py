@@ -50,6 +50,7 @@ from eval.arc_agi_symbolic import (  # noqa: E402
     format_symbolic_program_trace,
     format_symbolic_trace,
 )
+from eval.arc_agi_program import execute_arc_program_steps  # noqa: E402
 
 
 def apply_color_permutation(grid: Grid, permutation: list[int]) -> Grid:
@@ -114,6 +115,22 @@ def render_chat_prompt(tokenizer, example: ArcAgiExample, output_format: str, tr
     )
 
 
+def format_symbolic_state_trace(example: ArcAgiExample, output_format: str) -> tuple[str, str | None]:
+    candidate = exact_symbolic_candidate(example)
+    if candidate is None:
+        return "", None
+    program_text = "\n".join(candidate.program or ())
+    steps = execute_arc_program_steps(example, program_text)
+    if not steps:
+        return format_symbolic_program_trace(candidate), candidate.name
+    lines = ["<think>", "program state trace:"]
+    for idx, step in enumerate(steps, start=1):
+        lines.append(f"step {idx}: {step['operation']}")
+        lines.append(str(format_grid_completion(step["grid"], output_format=output_format)))
+    lines.append("</think>")
+    return "\n".join(lines) + "\n", candidate.name
+
+
 def example_to_jsonl_row(
     tokenizer,
     example: ArcAgiExample,
@@ -127,7 +144,9 @@ def example_to_jsonl_row(
         return None
     trace = ""
     trace_source = None
-    if trace_mode in {"symbolic", "symbolic_program"}:
+    if trace_mode == "symbolic_state_trace":
+        trace, trace_source = format_symbolic_state_trace(example, output_format)
+    elif trace_mode in {"symbolic", "symbolic_program"}:
         candidate = exact_symbolic_candidate(example)
         if candidate is not None:
             trace = (
@@ -191,17 +210,22 @@ def main() -> int:
     parser.add_argument("--shuffle_train_examples", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--append_eos", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--grid_format", default="json", choices=("json", "compact", "tagged"))
-    parser.add_argument("--trace_mode", default="none", choices=("none", "symbolic", "symbolic_program"))
+    parser.add_argument(
+        "--trace_mode",
+        default="none",
+        choices=("none", "symbolic", "symbolic_program", "symbolic_state_trace"),
+    )
     parser.add_argument(
         "--trace_filter",
         default="all",
         choices=("all", "covered", "uncovered"),
-        help="When trace_mode=symbolic, optionally keep only rows with or without an exact symbolic trace.",
+        help="When trace_mode is symbolic, symbolic_program, or symbolic_state_trace, "
+        "optionally keep only rows with or without an exact symbolic trace.",
     )
     parser.add_argument("--max_total_tokens", type=int, default=4096)
     args = parser.parse_args()
-    if args.trace_filter != "all" and args.trace_mode not in {"symbolic", "symbolic_program"}:
-        raise SystemExit("--trace_filter requires --trace_mode symbolic or symbolic_program")
+    if args.trace_filter != "all" and args.trace_mode not in {"symbolic", "symbolic_program", "symbolic_state_trace"}:
+        raise SystemExit("--trace_filter requires --trace_mode symbolic, symbolic_program, or symbolic_state_trace")
 
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name)
     base_examples = load_arc_agi_examples(args.tasks_path, solutions_path=args.solutions_path, limit=args.limit)

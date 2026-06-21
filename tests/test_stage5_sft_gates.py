@@ -83,3 +83,5 @@ def test_trace_gate_supports_symbolic_program_arms() -> None:
     arms = available_arms()
     assert arms["symbolic_program_trace_covered"] == ("symbolic_program", "covered")
     assert arms["symbolic_program_trace_all"] == ("symbolic_program", "all")
+    assert arms["symbolic_state_trace_covered"] == ("symbolic_state_trace", "covered")
+    assert arms["symbolic_state_trace_all"] == ("symbolic_state_trace", "all")

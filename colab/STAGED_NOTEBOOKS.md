@@ -107,6 +107,10 @@ The older split notebooks are kept only as references:
    `STAGE5_ARC_AGI_TRACE_FILTER=covered`. That tests whether targeted
    symbolic ARC program traces improve the deterministic recurrent model
    before attributing value to particles/SVGD.
+   For a more recurrent-specific curriculum arm, set
+   `STAGE5_ARC_AGI_TRACE_MODE=symbolic_state_trace`; this includes compact
+   intermediate grid states after each symbolic operation, and should be
+   compared against `symbolic_program` before scaling.
    Every ARC SFT run also writes `training_signal.json` and
    `training_signal.md`, which profile how many rows came from public ARC,
    synthetic families, candidate distillation, symbolic traces, and

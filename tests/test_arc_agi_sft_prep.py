@@ -95,3 +95,34 @@ def test_example_to_jsonl_row_can_include_symbolic_program_trace() -> None:
     assert "recolor(grid" in completion
     assert row["trace_mode"] == "symbolic_program"
     assert row["trace_source"] is not None
+
+
+def test_example_to_jsonl_row_can_include_symbolic_state_trace() -> None:
+    example = ArcAgiExample(
+        task_id="state-trace",
+        test_index=0,
+        train=(
+            ArcPair(input=[[1, 0], [0, 0]], output=[[2, 3], [2, 2]]),
+            ArcPair(input=[[0, 4], [0, 0]], output=[[2, 2], [2, 5]]),
+        ),
+        test_input=[[0, 0], [6, 0]],
+        test_output=[[6, 2], [2, 2]],
+    )
+    row = example_to_jsonl_row(
+        FakeTokenizer(),
+        example,
+        append_eos=False,
+        source="unit",
+        output_format="compact",
+        trace_mode="symbolic_state_trace",
+    )
+    assert row is not None
+    completion = str(row["completion"])
+    assert completion.startswith("<think>")
+    assert "program state trace:" in completion
+    assert "step 1: grid = transform(test_input, 'rot90')" in completion
+    assert "step 2: grid = recolor(grid" in completion
+    assert "60\n00" in completion
+    assert completion.rstrip().endswith("62\n22")
+    assert row["trace_mode"] == "symbolic_state_trace"
+    assert row["trace_source"] is not None

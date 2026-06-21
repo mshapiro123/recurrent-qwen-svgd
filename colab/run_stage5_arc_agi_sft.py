@@ -328,7 +328,7 @@ def prepare_sft(train_path: Path) -> list[dict[str, Any]]:
         log_name="prepare_arc_agi_sft.log",
     )
     if SYNTHETIC_TASKS:
-        synthetic_trace_mode = TRACE_MODE if TRACE_MODE in {"symbolic", "symbolic_program"} else "symbolic"
+        synthetic_trace_mode = TRACE_MODE if TRACE_MODE in {"symbolic", "symbolic_program", "symbolic_state_trace"} else "symbolic"
         run(
             [
                 sys.executable,

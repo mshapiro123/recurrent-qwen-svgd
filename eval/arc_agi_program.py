@@ -146,6 +146,109 @@ def execute_arc_program(example: ArcAgiExample, program_text: str) -> Grid | Non
         return None
 
 
+def execute_arc_program_steps(example: ArcAgiExample, program_text: str) -> list[dict[str, object]] | None:
+    """Execute a tiny ARC program and return intermediate grid states.
+
+    The returned list has one row per grid-producing operation. It is intended
+    for recurrent SFT traces where the model should learn a sequence of compact
+    transformations, not only the final output grid.
+    """
+
+    grid: Grid | None = None
+    saw_return = False
+    steps: list[dict[str, object]] = []
+    lines = [line.strip() for line in program_text.splitlines() if line.strip()]
+    if not any("grid =" in line or line.startswith("return") for line in lines):
+        return None
+
+    for line in lines:
+        changed_grid = False
+        if line == "program:":
+            continue
+        if _CONSTANT_RE.fullmatch(line):
+            train_outputs = [pair.output for pair in example.train if pair.output is not None]
+            if not all_outputs_equal(train_outputs):
+                return None
+            grid = [row[:] for row in train_outputs[0]]
+            changed_grid = True
+        else:
+            transform_match = _TRANSFORM_RE.fullmatch(line)
+            if transform_match:
+                source = transform_match.group(1)
+                transform = transform_match.group(2)
+                if transform not in GEOMETRY_TRANSFORMS:
+                    return None
+                if source == "test_input":
+                    grid = apply_geometry_transform(example.test_input, transform)
+                elif grid is not None:
+                    grid = apply_geometry_transform(grid, transform)
+                else:
+                    return None
+                changed_grid = True
+            else:
+                crop_match = _CROP_RE.fullmatch(line)
+                if crop_match:
+                    grid = crop_non_background(example.test_input, int(crop_match.group(1)))
+                    if grid is None:
+                        return None
+                    changed_grid = True
+                else:
+                    move_match = _MOVE_RE.fullmatch(line)
+                    if move_match:
+                        grid = move_non_background(
+                            example.test_input,
+                            int(move_match.group(1)),
+                            int(move_match.group(2)),
+                            int(move_match.group(3)),
+                        )
+                        if grid is None:
+                            return None
+                        changed_grid = True
+                    else:
+                        frame_match = _FRAME_RE.fullmatch(line)
+                        if frame_match:
+                            grid = frame_non_background(
+                                example.test_input,
+                                int(frame_match.group(1)),
+                                int(frame_match.group(2)),
+                            )
+                            if grid is None:
+                                return None
+                            changed_grid = True
+                        else:
+                            recolor_match = _RECOLOR_RE.fullmatch(line)
+                            if recolor_match:
+                                if grid is None:
+                                    return None
+                                color_map = parse_color_map_literal(recolor_match.group(1))
+                                if color_map is None:
+                                    return None
+                                grid = apply_color_map(grid, color_map)
+                                changed_grid = True
+                            elif line == "return grid":
+                                saw_return = True
+                                continue
+                            elif line.startswith("#"):
+                                continue
+                            elif "grid =" in line or line.startswith("return"):
+                                return None
+
+        if changed_grid:
+            try:
+                validated = validate_grid(grid)
+            except ValueError:
+                return None
+            steps.append({"operation": line, "grid": validated})
+
+    if not saw_return or grid is None:
+        return None
+    try:
+        validate_grid(grid)
+    except ValueError:
+        return None
+    return steps
+
+
 def parse_arc_program_from_text(example: ArcAgiExample, text: str) -> Grid | None:
     for region in _program_regions(text):
         grid = execute_arc_program(example, region)

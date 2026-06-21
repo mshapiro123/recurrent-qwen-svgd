@@ -4,6 +4,7 @@ from eval.arc_agi_program import (
     arc_program_fits_training_examples,
     arc_program_training_match_count,
     execute_arc_program,
+    execute_arc_program_steps,
     parse_arc_program_from_text,
     parse_color_map_literal,
 )
@@ -34,6 +35,31 @@ def test_execute_arc_program_runs_transform_and_recolor() -> None:
     assert execute_arc_program(example, "\n".join(candidate.program)) == [[6, 2], [2, 2]]
     assert arc_program_training_match_count(example, "\n".join(candidate.program)) == (2, 2)
     assert arc_program_fits_training_examples(example, "\n".join(candidate.program)) is True
+
+
+def test_execute_arc_program_steps_records_intermediate_grids() -> None:
+    example = ArcAgiExample(
+        task_id="steps",
+        test_index=0,
+        train=(
+            ArcPair(input=[[1, 0], [0, 0]], output=[[2, 3], [2, 2]]),
+            ArcPair(input=[[0, 4], [0, 0]], output=[[2, 2], [2, 5]]),
+        ),
+        test_input=[[0, 0], [6, 0]],
+        test_output=[[6, 2], [2, 2]],
+    )
+    candidate = exact_symbolic_candidate(example)
+    assert candidate is not None
+
+    steps = execute_arc_program_steps(example, "\n".join(candidate.program))
+
+    assert steps is not None
+    assert [step["operation"] for step in steps] == [
+        "grid = transform(test_input, 'rot90')",
+        "grid = recolor(grid, {0: 2, 1: 3, 4: 5})",
+    ]
+    assert steps[0]["grid"] == [[6, 0], [0, 0]]
+    assert steps[-1]["grid"] == [[6, 2], [2, 2]]
 
 
 def test_arc_program_training_match_count_rejects_inconsistent_program() -> None:

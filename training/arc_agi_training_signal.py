@@ -70,7 +70,7 @@ def has_think_trace(row: dict[str, Any]) -> bool:
 
 def has_program_trace(row: dict[str, Any]) -> bool:
     completion = str(row.get("completion", ""))
-    return row.get("trace_mode") == "symbolic_program" or "program:" in completion
+    return row.get("trace_mode") in {"symbolic_program", "symbolic_state_trace"} or "program:" in completion
 
 
 def summarize_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -126,7 +126,7 @@ def warnings_for_summary(summary: dict[str, Any], metadata: dict[str, Any] | Non
         return warnings
     expected_trace_mode = str(metadata.get("trace_mode", "none"))
     expected_trace_filter = str(metadata.get("trace_filter", "all"))
-    if expected_trace_mode in {"symbolic", "symbolic_program"} and summary["trace_rows"] == 0:
+    if expected_trace_mode in {"symbolic", "symbolic_program", "symbolic_state_trace"} and summary["trace_rows"] == 0:
         warnings.append(f"Trace mode `{expected_trace_mode}` was requested but no traced rows were found.")
     if expected_trace_filter == "covered" and summary["grid_only_rows"] > 0:
         warnings.append("Trace filter `covered` was requested but some rows have no trace.")
@@ -134,8 +134,11 @@ def warnings_for_summary(summary: dict[str, Any], metadata: dict[str, Any] | Non
         warnings.append("Synthetic tasks were requested but no synthetic rows were found.")
     if _metadata_bool(metadata, "candidate_distill_jsonls") and summary["candidate_distill_rows"] == 0:
         warnings.append("Candidate distillation sources were configured but no candidate-distill rows were found.")
-    if summary["trace_rows"] and summary["program_trace_rows"] == 0 and expected_trace_mode == "symbolic_program":
-        warnings.append("Symbolic-program traces were requested but no program-style traces were detected.")
+    if summary["trace_rows"] and summary["program_trace_rows"] == 0 and expected_trace_mode in {
+        "symbolic_program",
+        "symbolic_state_trace",
+    }:
+        warnings.append(f"`{expected_trace_mode}` traces were requested but no program-style traces were detected.")
     return warnings
 
 
