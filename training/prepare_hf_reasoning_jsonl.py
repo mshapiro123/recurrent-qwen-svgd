@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from datasets import load_dataset
+from huggingface_hub import hf_hub_download
 from transformers import AutoTokenizer
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,7 +20,15 @@ if str(ROOT) not in sys.path:
 
 
 THINK_RE = re.compile(r"<think>\s*(.*?)\s*</think>", re.DOTALL | re.IGNORECASE)
-ADAPTERS = ("auto", "qwen_text", "messages", "thinking_response", "fable_flat", "fable_pi_agent")
+ADAPTERS = (
+    "auto",
+    "qwen_text",
+    "messages",
+    "thinking_response",
+    "trace_inversion",
+    "fable_flat",
+    "fable_pi_agent",
+)
 
 
 def extract_thinking(text: str) -> str:
@@ -47,6 +56,18 @@ def content_to_text(content: Any) -> str:
         text = content.get("text") or content.get("content")
         return text if isinstance(text, str) else ""
     return str(content)
+
+
+def embedded_row_json(row: dict[str, Any]) -> dict[str, Any] | None:
+    """Decode Complete-FABLE-style rows that preserve the original row JSON."""
+    row_json = row.get("row_json")
+    if not isinstance(row_json, str) or not row_json.strip():
+        return None
+    try:
+        decoded = json.loads(row_json)
+    except json.JSONDecodeError:
+        return None
+    return decoded if isinstance(decoded, dict) and decoded is not row else None
 
 
 def split_qwen_text(text: str) -> tuple[str, str] | None:
@@ -169,6 +190,48 @@ def raw_thinking_response_to_prompt_completion(
     return prompt, completion, str(thinking)
 
 
+def trace_inversion_to_prompt_completion(
+    row: dict[str, Any],
+    tokenizer: Any,
+) -> tuple[str, str, str] | None:
+    """Convert trace-inversion rows while preserving the inferred reasoning."""
+    reasoning = content_to_text(row.get("inverted_reasoning") or row.get("reasoning_bubble"))
+    output = content_to_text(row.get("output") or row.get("response") or row.get("answer"))
+    if not reasoning or not output:
+        return None
+
+    if isinstance(row.get("messages"), list):
+        messages = row["messages"]
+        assistant_idx = next(
+            (idx for idx in range(len(messages) - 1, -1, -1) if messages[idx].get("role") == "assistant"),
+            len(messages),
+        )
+        prompt_messages = messages[:assistant_idx]
+        if not prompt_messages:
+            return None
+        prompt = tokenizer.apply_chat_template(
+            prompt_messages,
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+    else:
+        problem = row.get("input") or row.get("prompt") or row.get("question") or row.get("instruction")
+        if not problem:
+            return None
+        prompt = tokenizer.apply_chat_template(
+            [{"role": "user", "content": content_to_text(problem)}],
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+
+    thinking = extract_thinking(reasoning) or reasoning.strip()
+    reasoning_text = reasoning.strip()
+    if "<think" not in reasoning_text.lower():
+        reasoning_text = f"<think>\n{thinking}\n</think>"
+    completion = f"{reasoning_text}\n\n{output.strip()}"
+    return prompt, completion, thinking
+
+
 def text_to_prompt_completion(row: dict[str, Any]) -> tuple[str, str, str] | None:
     text = row.get("text")
     if not isinstance(text, str) or not text.strip():
@@ -188,10 +251,14 @@ def row_to_prompt_completion(
     if adapter not in ADAPTERS:
         raise ValueError(f"Unknown adapter={adapter!r}; expected one of {', '.join(ADAPTERS)}")
 
+    if inner := embedded_row_json(row):
+        return row_to_prompt_completion(inner, tokenizer, adapter=adapter)
+
     converters = {
         "qwen_text": lambda: text_to_prompt_completion(row),
         "messages": lambda: messages_to_prompt_completion(row, tokenizer),
         "thinking_response": lambda: raw_thinking_response_to_prompt_completion(row, tokenizer),
+        "trace_inversion": lambda: trace_inversion_to_prompt_completion(row, tokenizer),
         "fable_flat": lambda: fable_flat_to_prompt_completion(row, tokenizer),
         "fable_pi_agent": lambda: fable_pi_agent_to_prompt_completion(row, tokenizer),
     }
@@ -199,6 +266,7 @@ def row_to_prompt_completion(
         return converters[adapter]()
     return (
         converters["thinking_response"]()
+        or converters["trace_inversion"]()
         or converters["fable_flat"]()
         or converters["fable_pi_agent"]()
         or converters["messages"]()
@@ -217,6 +285,7 @@ def row_to_example(
         return None
 
     prompt, completion, thinking = converted
+    metadata_row = embedded_row_json(row) or {}
     if not completion.strip():
         return None
 
@@ -225,17 +294,32 @@ def row_to_example(
         "prompt": prompt,
         "completion": completion,
         "cot_tokens": max(1, cot_tokens),
-        "source_dataset": row.get("source_dataset") or row.get("first_source_dataset") or source_dataset_name,
-        "category": row.get("category") or row.get("domain") or row.get("output_type"),
-        "difficulty": row.get("difficulty"),
+        "source_dataset": (
+            row.get("source_dataset")
+            or row.get("first_source_dataset")
+            or metadata_row.get("source_dataset")
+            or metadata_row.get("origin")
+            or source_dataset_name
+        ),
+        "category": (
+            row.get("category")
+            or row.get("domain")
+            or row.get("output_type")
+            or metadata_row.get("category")
+            or metadata_row.get("domain")
+            or metadata_row.get("output_type")
+        ),
+        "difficulty": row.get("difficulty") or metadata_row.get("difficulty"),
     }
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataset_id", required=True)
+    parser.add_argument("--dataset_id", default="local-jsonl")
     parser.add_argument("--split", default="train")
     parser.add_argument("--name", help="Optional Hugging Face dataset config/subset name.")
+    parser.add_argument("--input_jsonl", help="Read a local JSONL file instead of a datasets split.")
+    parser.add_argument("--hf_file", help="Download and read a specific JSONL file from the Hugging Face dataset repo.")
     parser.add_argument("--adapter", choices=ADAPTERS, default="auto")
     parser.add_argument("--tokenizer_name", default="Qwen/Qwen2.5-0.5B-Instruct")
     parser.add_argument("--output_jsonl", required=True)
@@ -248,8 +332,7 @@ def main() -> int:
     args = parser.parse_args()
 
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name)
-    ds = load_dataset(args.dataset_id, name=args.name, split=args.split) if args.name else load_dataset(args.dataset_id, split=args.split)
-    rows = list(ds)
+    rows = load_source_rows(args)
     random.Random(args.seed).shuffle(rows)
     if args.limit:
         rows = rows[: args.limit]
@@ -290,6 +373,20 @@ def main() -> int:
     print(f"val_rows={len(val_examples)}")
     print(f"skipped_rows={skipped}")
     return 0
+
+
+def read_jsonl_rows(path: str | Path) -> list[dict[str, Any]]:
+    return [json.loads(line) for line in Path(path).read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def load_source_rows(args: argparse.Namespace) -> list[dict[str, Any]]:
+    if args.input_jsonl:
+        return read_jsonl_rows(args.input_jsonl)
+    if args.hf_file:
+        path = hf_hub_download(repo_id=args.dataset_id, repo_type="dataset", filename=args.hf_file)
+        return read_jsonl_rows(path)
+    ds = load_dataset(args.dataset_id, name=args.name, split=args.split) if args.name else load_dataset(args.dataset_id, split=args.split)
+    return list(ds)
 
 
 def write_jsonl(path: str | Path, examples: list[dict[str, Any]]) -> None:

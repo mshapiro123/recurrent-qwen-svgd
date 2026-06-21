@@ -63,25 +63,55 @@ python training/prepare_hf_reasoning_jsonl.py \
 ```
 
 The converter supports datasets with `text`, `messages`, or
-`thinking`/`response`-style fields and writes `prompt`, `completion`, and
+`thinking`/`response`-style fields, TraceInversion-style
+`inverted_reasoning` rows, explicit Hugging Face JSONL files, and
+Complete-FABLE-style `row_json` wrappers. It writes `prompt`, `completion`, and
 `cot_tokens`.
+
+For the Jackrong Opus TraceInversion rows, use the dedicated adapter so the
+inverted reasoning trace is preserved instead of falling back to answer-only
+chat messages:
+
+```bash
+python training/prepare_hf_reasoning_jsonl.py \
+  --dataset_id Jackrong/Claude-opus-4.7-TraceInversion-5000x \
+  --adapter trace_inversion \
+  --output_jsonl data/trace_inversion_train.jsonl \
+  --val_jsonl data/trace_inversion_val.jsonl \
+  --limit 1000 \
+  --max_total_tokens 2048
+```
+
+For Fable's flat merged trace file, address the file explicitly:
+
+```bash
+python training/prepare_hf_reasoning_jsonl.py \
+  --dataset_id Glint-Research/Fable-5-traces \
+  --hf_file fable5_cot_merged.jsonl \
+  --adapter fable_flat \
+  --output_jsonl data/fable5_flat_train.jsonl \
+  --val_jsonl data/fable5_flat_val.jsonl \
+  --limit 1000 \
+  --max_total_tokens 4096
+```
 
 Audit unfamiliar trace datasets before mixing them into training:
 
 ```bash
 python training/inspect_hf_reasoning_dataset.py \
   --dataset_id Glint-Research/Fable-5-traces \
-  --name pi_agent \
-  --adapter auto \
+  --hf_file fable5_cot_merged.jsonl \
+  --adapter fable_flat \
   --limit 1000 \
-  --output_json outputs/dataset_audits/fable5_pi_agent.json
+  --output_json outputs/dataset_audits/fable5_flat.json
 ```
 
 Known candidate trace sources and their intended roles are tracked in
 `config/reasoning_dataset_registry.yaml`. Opus-style reasoning traces are the
-current fine-tuning source; Fable/Pi-agent traces are treated as later
-agent/tool-diversity material unless an audit and filter explicitly promote
-them into a training mix.
+current fine-tuning source. Jackrong Opus TraceInversion is an immediate audit
+candidate for easy/hard recurrent curriculum work. Fable/Pi-agent traces are
+treated as later agent/tool-diversity material unless an audit and filter
+explicitly promote them into a training mix.
 
 ## Phase 2 Stochastic Trajectories
 

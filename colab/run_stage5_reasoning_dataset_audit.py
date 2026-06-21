@@ -97,6 +97,8 @@ def audit_command(key: str, spec: dict[str, Any], output: Path) -> list[str]:
     ]
     if spec.get("name"):
         cmd += ["--name", str(spec["name"])]
+    if spec.get("hf_file"):
+        cmd += ["--hf_file", str(spec["hf_file"])]
     if spec.get("streaming"):
         cmd += ["--streaming"]
     return cmd
@@ -108,6 +110,7 @@ def priority_score(priority: str) -> int:
         "immediate_candidate": 0,
         "audit": 1,
         "later": 2,
+        "immediate_audit_candidate": 1,
         "later_audit": 3,
         "later_audit_only": 4,
     }

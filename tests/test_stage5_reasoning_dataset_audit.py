@@ -28,6 +28,20 @@ def test_audit_command_includes_dataset_name_and_adapter() -> None:
     assert "fable_pi_agent" in cmd
 
 
+def test_audit_command_includes_explicit_hf_file() -> None:
+    spec = {
+        "dataset_id": "Glint-Research/Fable-5-traces",
+        "hf_file": "fable5_cot_merged.jsonl",
+        "split": "train",
+        "adapter": "fable_flat",
+    }
+
+    cmd = audit_command("fable5_flat", spec, Path("outputs/audit.json"))
+
+    assert "--hf_file" in cmd
+    assert "fable5_cot_merged.jsonl" in cmd
+
+
 def test_recommendation_promotes_compatible_opus_trace_source() -> None:
     spec = {
         "dataset_id": "lordx64/reasoning-distill-opus-4-7-max-sft",

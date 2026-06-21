@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from datasets import load_dataset
+from huggingface_hub import hf_hub_download
 from transformers import AutoTokenizer
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -172,6 +173,10 @@ def load_rows(args: argparse.Namespace) -> list[dict[str, Any]]:
     if args.input_jsonl:
         rows = read_jsonl(args.input_jsonl)
         return rows[: args.limit] if args.limit else rows
+    if args.hf_file:
+        path = hf_hub_download(repo_id=args.dataset_id, repo_type="dataset", filename=args.hf_file)
+        rows = read_jsonl(path)
+        return rows[: args.limit] if args.limit else rows
 
     kwargs: dict[str, Any] = {"split": args.split}
     if args.name:
@@ -190,6 +195,7 @@ def main() -> int:
     parser.add_argument("--name", help="Optional Hugging Face dataset config/subset name.")
     parser.add_argument("--split", default="train")
     parser.add_argument("--input_jsonl", help="Audit a local JSONL file instead of Hugging Face.")
+    parser.add_argument("--hf_file", help="Download and audit a specific JSONL file from the Hugging Face dataset repo.")
     parser.add_argument("--adapter", choices=ADAPTERS, default="auto")
     parser.add_argument("--tokenizer_name", default="Qwen/Qwen2.5-0.5B-Instruct")
     parser.add_argument("--limit", type=int, default=1000)

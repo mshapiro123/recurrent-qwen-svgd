@@ -82,6 +82,56 @@ def test_fable_pi_agent_converter_accepts_assistant_text_content_list() -> None:
     assert thinking == "Check call sites."
 
 
+def test_trace_inversion_converter_preserves_inverted_reasoning() -> None:
+    row = {
+        "messages": [
+            {"role": "user", "content": "A worker packs 3 boxes per hour for 4 hours. How many boxes?"},
+            {"role": "assistant", "content": "The answer is 12."},
+        ],
+        "input": "A worker packs 3 boxes per hour for 4 hours. How many boxes?",
+        "inverted_reasoning": "<think>\nMultiply 3 by 4.\n</think>",
+        "reasoning_bubble": "Use multiplication.",
+        "output": "The answer is 12.",
+    }
+
+    example = row_to_example(
+        row,
+        DummyTokenizer(),
+        adapter="trace_inversion",
+        source_dataset_name="Jackrong/Claude-opus-4.7-TraceInversion-5000x",
+    )
+
+    assert example is not None
+    assert "3 boxes" in example["prompt"]
+    assert "Multiply 3 by 4" in str(example["completion"])
+    assert "The answer is 12." in str(example["completion"])
+    assert int(example["cot_tokens"]) > 1
+
+
+def test_complete_fable_row_json_is_unwrapped() -> None:
+    row = {
+        "row_hash": "abc",
+        "first_source_dataset": "1EYE4ALL/Fable-5-traces",
+        "row_json": (
+            '{"context":"Fix the parser.","cot":"Inspect the failing case.",'
+            '"output":"Parser fixed.","output_type":"text"}'
+        ),
+    }
+
+    example = row_to_example(
+        row,
+        DummyTokenizer(),
+        adapter="auto",
+        source_dataset_name="Glint-Research/Complete-FABLE.5-traces-2M",
+    )
+
+    assert example is not None
+    assert "Fix the parser" in example["prompt"]
+    assert "Inspect the failing case" in str(example["completion"])
+    assert example["source_dataset"] == "1EYE4ALL/Fable-5-traces"
+    assert example["category"] == "text"
+
+
 def test_audit_rows_marks_fable_as_later_agent_trace_source() -> None:
     rows = [
         {
@@ -126,4 +176,25 @@ def test_audit_rows_marks_qwen_text_opus_as_immediate_candidate() -> None:
 
     assert report["converted_rows"] == 1
     assert report["adapter_success_counts"]["qwen_text"] == 1
+    assert report["training_role"]["priority"] == "immediate_candidate"
+
+
+def test_audit_rows_marks_trace_inversion_as_immediate_candidate() -> None:
+    rows = [
+        {
+            "input": "Solve 5 + 6.",
+            "inverted_reasoning": "Add the two numbers.",
+            "output": "11",
+        }
+    ]
+
+    report = audit_rows(
+        rows,
+        DummyTokenizer(),
+        dataset_id="Jackrong/Claude-opus-4.7-TraceInversion-5000x",
+        adapter="auto",
+    )
+
+    assert report["converted_rows"] == 1
+    assert report["adapter_success_counts"]["trace_inversion"] == 1
     assert report["training_role"]["priority"] == "immediate_candidate"

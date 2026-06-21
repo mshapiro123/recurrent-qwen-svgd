@@ -50,6 +50,7 @@ datasets:
 
   fable5_flat:
     dataset_id: Glint-Research/Fable-5-traces
+    hf_file: fable5_cot_merged.jsonl
     split: train
     adapter: fable_flat
     license: agpl-3.0
@@ -64,6 +65,8 @@ datasets:
     dataset_id: Glint-Research/Complete-FABLE.5-traces-2M
     split: train
     adapter: auto
+    streaming: true
+    audit_limit: 500
     license: mixed; inspect provenance before use
     priority: later_audit_only
     train_role:
@@ -78,14 +81,16 @@ datasets:
   jackrong_opus47_trace_inversion:
     dataset_id: Jackrong/Claude-opus-4.7-TraceInversion-5000x
     split: train
-    adapter: auto
+    adapter: trace_inversion
     license: inspect_before_use
-    priority: audit
+    priority: immediate_audit_candidate
     train_role:
       - alternative_opus_reasoning_trace_source
+      - easy_hard_curriculum_candidate
     notes:
       - Promising smaller trace-inversion source.
-      - Needs schema/license/quality audit before mixing with Opus SFT.
+      - Preserve inverted_reasoning as recurrent latent reasoning supervision.
+      - Needs source/difficulty filtering before mixing with Opus SFT.
 
   jackrong_glm51_reasoning_1m:
     dataset_id: Jackrong/GLM-5.1-Reasoning-1M-Cleaned
