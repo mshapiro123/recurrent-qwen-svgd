@@ -167,6 +167,8 @@ def test_claim_packet_distinguishes_release_candidate_from_sota(tmp_path) -> Non
     assert payload["claim_level"] == "release_candidate"
     assert payload["passed"] is True
     assert payload["criteria"][-1]["passed"] is False
+    assert "build_stage5_arc_agi_sota_comparison.py" in payload["next_step"]
+    assert "do not claim SOTA" in payload["next_step"]
 
 
 def test_claim_packet_accepts_selector_conversion_as_architecture_evidence(tmp_path) -> None:
@@ -255,6 +257,8 @@ def test_claim_packet_requires_sota_export_checkpoint_linkage(tmp_path) -> None:
     assert payload["artifacts"]["sota_export_linkage"]["matched_on"] == "checkpoint"
     assert payload["artifacts"]["sota_export_linkage"]["passed"] is False
     assert payload["criteria"][-1]["passed"] is False
+    assert "run_stage5_publish_hf_adapter.py" in payload["next_step"]
+    assert "do not claim SOTA" in payload["next_step"]
 
 
 def test_claim_packet_accepts_source_summary_linkage_when_checkpoint_missing(tmp_path) -> None:

@@ -388,13 +388,16 @@ def build_claim_packet(
     elif not arc_agi_present or not arc_agi_passed:
         status = "ready_for_release_candidate_not_sota"
         claim_level = "release_candidate"
-        next_step = "Write the release-candidate report, but do not claim SOTA until authoritative ARC-AGI comparison evidence exists."
+        next_step = (
+            "Run colab/build_stage5_arc_agi_sota_comparison.py with a sourced same-size baseline registry; "
+            "until that artifact passes, write only a release-candidate report and do not claim SOTA."
+        )
     elif not sota_linkage_passed:
         status = "ready_for_release_candidate_needs_sota_export_linkage"
         claim_level = "release_candidate"
         next_step = (
-            "Do not claim SOTA until the HF export and ARC-AGI comparison are linked to the same checkpoint "
-            "or source summary."
+            "Rerun colab/run_stage5_publish_hf_adapter.py from the exact ARC-AGI candidate checkpoint or source "
+            "summary; do not claim SOTA until the HF export and ARC-AGI comparison are linked."
         )
     else:
         status = "sota_claim_ready"
