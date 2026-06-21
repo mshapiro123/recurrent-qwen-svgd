@@ -60,6 +60,12 @@ DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
 DEVICE = os.environ.get("DEVICE", "cuda")
 PUSH_RESULTS = os.environ.get("STAGE5_PUSH", "1").strip().lower() in {"1", "true", "yes", "y"}
+DISTILL_ENABLED = os.environ.get("STAGE5_PHASE1_DISTILL", "0").strip().lower() in {"1", "true", "yes", "y"}
+DISTILL_WEIGHT = float(os.environ.get("STAGE5_PHASE1_DISTILL_WEIGHT", "0.1"))
+DISTILL_TEMPERATURE = float(os.environ.get("STAGE5_PHASE1_DISTILL_TEMPERATURE", "2.0"))
+DISTILL_ON = os.environ.get("STAGE5_PHASE1_DISTILL_ON", "response")
+DISTILL_TEACHER_MODEL_NAME = os.environ.get("STAGE5_PHASE1_DISTILL_TEACHER_MODEL_NAME", MODEL_NAME)
+DISTILL_DTYPE = os.environ.get("STAGE5_PHASE1_DISTILL_DTYPE", DTYPE)
 
 BASE_RUN_DIR = ROOT / "outputs" / "stage4" / BASE_RUN_ID
 DEFAULT_RESUME = BASE_RUN_DIR / "phase1" / "phase1_step_500.pt"
@@ -100,6 +106,17 @@ def run(cmd: list[str], *, check: bool = True, log_name: str | None = None) -> s
 def write_yaml(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+
+
+def phase1_distillation_config() -> dict[str, Any]:
+    return {
+        "enabled": DISTILL_ENABLED,
+        "weight": DISTILL_WEIGHT,
+        "temperature": DISTILL_TEMPERATURE,
+        "on": DISTILL_ON,
+        "teacher_model_name": DISTILL_TEACHER_MODEL_NAME,
+        "dtype": DISTILL_DTYPE,
+    }
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -344,6 +361,8 @@ def train_phase1() -> list[Path]:
         "resume_from": path_for_cli(RESUME_FROM),
         "lora": {"enabled": True, "rank": 8, "alpha": 16, "dropout": 0.0},
     }
+    if DISTILL_ENABLED:
+        cfg["distillation"] = phase1_distillation_config()
     cfg_path = RUN_DIR / "phase1_continue.yaml"
     write_yaml(cfg_path, cfg)
     run(
@@ -407,6 +426,7 @@ def main() -> int:
         "learning_rate": LEARNING_RATE,
         "beta": BETA,
         "max_grad_norm": MAX_GRAD_NORM,
+        "distillation": phase1_distillation_config(),
         "arc_limit": ARC_LIMIT,
         "arc_split": ARC_SPLIT,
         "arc_seed": ARC_SEED,
