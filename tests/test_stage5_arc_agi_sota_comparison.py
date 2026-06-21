@@ -10,16 +10,23 @@ def _write(path, payload) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
-def _candidate(path, *, selected_exact: int = 12, examples: int = 100):
+def _criterion(payload: dict, name: str) -> dict:
+    return next(row for row in payload["criteria"] if row["name"] == name)
+
+
+def _candidate(path, *, selected_exact: int = 12, examples: int = 100, params_b: float | None = 0.5):
+    metadata = {
+        "arc_version": "1",
+        "eval_split": "evaluation",
+        "eval_task_limit": examples,
+    }
+    if params_b is not None:
+        metadata["params_b"] = params_b
     _write(
         path,
         {
             "run_id": "candidate",
-            "metadata": {
-                "arc_version": "1",
-                "eval_split": "evaluation",
-                "eval_task_limit": examples,
-            },
+            "metadata": metadata,
             "phase1_arc_agi_tuned": {
                 "selected_exact": selected_exact,
                 "best_of_k_exact": selected_exact,
@@ -30,15 +37,18 @@ def _candidate(path, *, selected_exact: int = 12, examples: int = 100):
     return path
 
 
-def _recovered_candidate(path, *, selected_exact: int = 12, examples: int = 100):
+def _recovered_candidate(path, *, selected_exact: int = 12, examples: int = 100, params_b: float | None = 0.5):
+    metadata = {
+        "arc_version": "1",
+        "arc_split": "evaluation",
+    }
+    if params_b is not None:
+        metadata["params_b"] = params_b
     _write(
         path,
         {
             "run_id": "recovered_benchmark",
-            "metadata": {
-                "arc_version": "1",
-                "arc_split": "evaluation",
-            },
+            "metadata": metadata,
             "base": {"summary": {"selected_exact": 10, "best_of_k_exact": 10, "examples_with_targets": examples}},
             "phase1_start": {
                 "summary": {"selected_exact": 5, "best_of_k_exact": 5, "examples_with_targets": examples}
@@ -106,6 +116,8 @@ def test_sota_comparison_passes_when_candidate_beats_same_size_baseline(tmp_path
 
     assert payload["status"] == "passed"
     assert payload["passed"] is True
+    assert payload["candidate"]["params_b"] == 0.5
+    assert payload["candidate_in_same_size_band"] is True
     assert payload["delta_accuracy_vs_best_baseline"] == 0.01999999999999999
 
 
@@ -161,7 +173,7 @@ def test_sota_comparison_requires_baseline_registry(tmp_path) -> None:
     )
 
     assert payload["status"] == "needs_baseline_registry"
-    assert payload["criteria"][3]["passed"] is False
+    assert _criterion(payload, "baseline_registry_present")["passed"] is False
 
 
 def test_sota_comparison_requires_matching_registry_arc_metadata(tmp_path) -> None:
@@ -176,8 +188,36 @@ def test_sota_comparison_requires_matching_registry_arc_metadata(tmp_path) -> No
 
     assert payload["status"] == "needs_matching_baseline_registry"
     assert payload["candidate_registry_arc_match"] is False
-    assert payload["criteria"][4]["name"] == "baseline_registry_matches_candidate_arc"
-    assert payload["criteria"][4]["passed"] is False
+    assert _criterion(payload, "baseline_registry_matches_candidate_arc")["passed"] is False
+
+
+def test_sota_comparison_requires_candidate_size_metadata(tmp_path) -> None:
+    payload = build_sota_comparison(
+        candidate_summary=_candidate(tmp_path / "candidate" / "summary.json", selected_exact=12, params_b=None),
+        baseline_registry=_registry(tmp_path / "baselines.json", accuracy=0.1),
+        candidate_label="phase1_arc_agi_tuned",
+        metric="selected_accuracy",
+        min_examples=100,
+        min_margin=0.0,
+    )
+
+    assert payload["status"] == "needs_candidate_size_metadata"
+    assert _criterion(payload, "candidate_params_present")["passed"] is False
+
+
+def test_sota_comparison_requires_candidate_inside_same_size_band(tmp_path) -> None:
+    payload = build_sota_comparison(
+        candidate_summary=_candidate(tmp_path / "candidate" / "summary.json", selected_exact=12, params_b=1.5),
+        baseline_registry=_registry(tmp_path / "baselines.json", accuracy=0.1),
+        candidate_label="phase1_arc_agi_tuned",
+        metric="selected_accuracy",
+        min_examples=100,
+        min_margin=0.0,
+    )
+
+    assert payload["status"] == "needs_candidate_size_match"
+    assert payload["candidate_in_same_size_band"] is False
+    assert _criterion(payload, "candidate_inside_same_size_band")["passed"] is False
 
 
 def test_sota_comparison_requires_arc_agi_candidate_metadata(tmp_path) -> None:
@@ -191,8 +231,7 @@ def test_sota_comparison_requires_arc_agi_candidate_metadata(tmp_path) -> None:
     )
 
     assert payload["status"] == "needs_arc_agi_candidate_metadata"
-    assert payload["criteria"][2]["name"] == "candidate_arc_agi_metadata_present"
-    assert payload["criteria"][2]["passed"] is False
+    assert _criterion(payload, "candidate_arc_agi_metadata_present")["passed"] is False
 
 
 def test_sota_comparison_rejects_invalid_baseline_registry(tmp_path) -> None:

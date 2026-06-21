@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sys
 import time
@@ -111,6 +112,21 @@ def candidate_arc_split(metadata: dict[str, Any]) -> str | None:
     return str(value) if value else None
 
 
+def finite_float(value: Any) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    value = float(value)
+    return value if math.isfinite(value) else None
+
+
+def candidate_params_b(metadata: dict[str, Any]) -> float | None:
+    for key in ("params_b", "candidate_params_b", "model_params_b", "base_model_params_b", "parameter_count_b"):
+        value = finite_float(metadata.get(key))
+        if value is not None:
+            return value
+    return None
+
+
 def has_arc_agi_metadata(metadata: dict[str, Any]) -> bool:
     return bool(metadata.get("arc_version") and candidate_arc_split(metadata))
 
@@ -155,6 +171,7 @@ def candidate_evidence(path: Path | None, *, label: str, metric: str) -> dict[st
         "best_of_k_exact": int(summary.get("best_of_k_exact", 0) or 0),
         "arc_version": metadata.get("arc_version"),
         "arc_split": candidate_arc_split(metadata),
+        "params_b": candidate_params_b(metadata),
         "metadata": metadata,
         "summary": summary,
     }
@@ -225,6 +242,16 @@ def registry_matches_candidate_arc(candidate: dict[str, Any], registry: dict[str
     )
 
 
+def registry_band_contains_candidate(candidate: dict[str, Any], registry: dict[str, Any]) -> bool:
+    params_b = finite_float(candidate.get("params_b"))
+    band = registry.get("same_size_band")
+    if params_b is None or not isinstance(band, dict):
+        return False
+    min_params = finite_float(band.get("min_params_b"))
+    max_params = finite_float(band.get("max_params_b"))
+    return min_params is not None and max_params is not None and min_params <= params_b <= max_params
+
+
 def build_sota_comparison(
     *,
     candidate_summary: Path | None,
@@ -240,7 +267,9 @@ def build_sota_comparison(
     candidate_present = bool(candidate.get("present"))
     candidate_examples = int(candidate.get("examples", 0) or 0)
     candidate_has_arc_metadata = has_arc_agi_metadata(candidate.get("metadata") or {})
+    candidate_has_params = finite_float(candidate.get("params_b")) is not None
     registry_candidate_match = registry_matches_candidate_arc(candidate, registry)
+    candidate_in_same_size_band = registry_band_contains_candidate(candidate, registry)
     candidate_accuracy = candidate.get("accuracy")
     best_accuracy = float(best["accuracy"]) if best else None
     delta = (float(candidate_accuracy) - best_accuracy) if candidate_accuracy is not None and best_accuracy is not None else None
@@ -273,6 +302,16 @@ def build_sota_comparison(
             candidate,
         ),
         criterion(
+            "candidate_params_present",
+            candidate_present and candidate_has_params,
+            (
+                "Candidate summary identifies the model parameter count."
+                if candidate_present and candidate_has_params
+                else "Candidate summary must include params_b or equivalent model-size metadata."
+            ),
+            candidate,
+        ),
+        criterion(
             "baseline_registry_present",
             bool(registry.get("present")) and best is not None,
             (
@@ -289,6 +328,16 @@ def build_sota_comparison(
                 "Baseline registry ARC-AGI version/split matches the candidate summary."
                 if bool(registry.get("present")) and registry_candidate_match
                 else "Baseline registry must match the candidate ARC-AGI version and split."
+            ),
+            {"candidate": candidate, "baseline_registry": registry},
+        ),
+        criterion(
+            "candidate_inside_same_size_band",
+            bool(registry.get("present")) and candidate_in_same_size_band,
+            (
+                "Candidate parameter count falls inside the same-size baseline band."
+                if bool(registry.get("present")) and candidate_in_same_size_band
+                else "Candidate parameter count must fall inside the registry same-size band."
             ),
             {"candidate": candidate, "baseline_registry": registry},
         ),
@@ -313,6 +362,11 @@ def build_sota_comparison(
             "Use a main ARC-AGI run summary with metadata.arc_version and metadata.arc_split/eval_split; "
             "do not compare ad hoc eval summaries to same-size baselines."
         )
+    elif not candidate_has_params:
+        status = "needs_candidate_size_metadata"
+        next_step = (
+            "Add candidate model-size metadata such as metadata.params_b before comparing to same-size baselines."
+        )
     elif candidate_examples < min_examples:
         status = "needs_more_examples"
         next_step = "Evaluate the recurrent candidate on a larger ARC-AGI split before comparing to baselines."
@@ -327,6 +381,9 @@ def build_sota_comparison(
         next_step = (
             "Use a baseline registry whose arc_version and arc_split match the candidate ARC-AGI run summary."
         )
+    elif not candidate_in_same_size_band:
+        status = "needs_candidate_size_match"
+        next_step = "Use a same-size baseline registry whose parameter band contains the recurrent candidate."
     elif delta is not None and delta >= min_margin:
         status = "passed"
         next_step = "Rebuild the Stage 5 claim packet; it can now include this ARC-AGI SOTA comparison evidence."
@@ -347,6 +404,7 @@ def build_sota_comparison(
         "candidate": candidate,
         "baseline_registry": registry,
         "candidate_registry_arc_match": registry_candidate_match,
+        "candidate_in_same_size_band": candidate_in_same_size_band,
         "best_baseline": best,
         "delta_accuracy_vs_best_baseline": delta,
         "criteria": criteria,
@@ -367,6 +425,7 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
         f"- Metric: `{payload['metric']}`",
         f"- Candidate: `{candidate.get('accuracy')}` over `{candidate.get('examples')}` examples",
         f"- Candidate ARC version/split: `{candidate.get('arc_version')}` / `{candidate.get('arc_split')}`",
+        f"- Candidate params (B): `{candidate.get('params_b')}`",
         f"- Baseline ARC version/split: `{payload.get('baseline_registry', {}).get('arc_version')}` / `{payload.get('baseline_registry', {}).get('arc_split')}`",
         f"- Best baseline: `{best.get('name')}` at `{best.get('accuracy')}`",
         f"- Delta accuracy: `{payload['delta_accuracy_vs_best_baseline']}`",
