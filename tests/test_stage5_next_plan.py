@@ -1497,6 +1497,48 @@ def test_recipe_control_assessment_passed_replicates_dense_control(tmp_path) -> 
     assert "python colab/run_stage5_arc_agi_dense_sft.py" in actions[0]["command"]
 
 
+def test_recipe_control_assessment_full_pass_runs_release_gate(tmp_path) -> None:
+    source = tmp_path / "recipe" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_same_recipe_architecture",
+        "status": "passed",
+        "evidence": {
+            "recurrent_vs_dense": {
+                "candidate_summary": {"examples_with_targets": 400},
+            }
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run release gate after full same-recipe pass"
+    assert "STAGE5_RELEASE_GATE_RUN_ID=" in actions[0]["command"]
+    assert "python colab/assess_stage5_release_gate.py" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_EVAL_TASK_LIMIT=full" not in actions[0]["command"]
+    assert "run_stage5_arc_agi_dense_sft.py" not in actions[0]["command"]
+
+
+def test_recipe_control_assessment_full_needs_more_evidence_inspects(tmp_path) -> None:
+    source = tmp_path / "recipe" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_same_recipe_architecture",
+        "status": "needs_more_evidence",
+        "evidence": {
+            "recurrent_vs_dense": {
+                "candidate_summary": {"examples_with_targets": 400},
+            }
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect full-split same-recipe evidence"
+    assert "summary.md" in actions[0]["command"]
+    assert "run_stage5_arc_agi_dense_sft.py" not in actions[0]["command"]
+
+
 def test_recipe_control_assessment_selector_conversion_runs_rescore(tmp_path) -> None:
     source = tmp_path / "recipe" / "summary.json"
     recurrent = tmp_path / "recurrent" / "summary.json"

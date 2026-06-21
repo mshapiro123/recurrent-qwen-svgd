@@ -997,6 +997,30 @@ def recipe_control_assessment_actions(payload: dict[str, Any], *, source_summary
     examples = int(metadata.get("examples_with_targets", 0) or 0)
     next_limit = next_validation_limit(examples)
     next_label = limit_label(next_limit)
+    if next_limit is None:
+        if status == "passed":
+            return [
+                make_action(
+                    "Run release gate after full same-recipe pass",
+                    "Same-recipe recurrent-vs-dense architecture evidence passed at the full ARC evaluation cap; run the release readiness audit instead of launching another matched dense-control run.",
+                    command_env(
+                        {
+                            "STAGE5_RELEASE_GATE_RUN_ID": f"{RUN_ID}_release_gate_from_full_same_recipe",
+                        },
+                        "python colab/assess_stage5_release_gate.py",
+                    ),
+                    10,
+                )
+            ]
+        if status == "needs_more_evidence":
+            return [
+                make_action(
+                    "Inspect full-split same-recipe evidence",
+                    "The same-recipe architecture gate still needs evidence even though the current comparison is already at the full ARC evaluation cap; inspect the hard-bucket coverage and gate thresholds before spending more GPU.",
+                    f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                    10,
+                )
+            ]
     dense_metadata = summary_metadata_from_path(payload.get("dense_summary"))
     dense_assignments = {
         "STAGE5_ARC_AGI_DENSE_SFT_RUN_ID": f"{RUN_ID}_dense_limit{next_label}",
