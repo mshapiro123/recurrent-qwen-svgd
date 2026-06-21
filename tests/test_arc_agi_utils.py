@@ -288,3 +288,36 @@ def test_self_consistency_selection_still_prefers_verified_program() -> None:
     ]
 
     assert select_candidate_index(example, rows, selection_strategy="self_consistency") == 2
+
+
+def test_reliability_vote_selection_can_beat_weak_plurality() -> None:
+    example = ArcAgiExample(
+        task_id="reliability-vote",
+        test_index=0,
+        train=(ArcPair(input=[[1, 1]], output=[[2, 2]]),),
+        test_input=[[3, 3]],
+        test_output=[[4, 4]],
+    )
+    rows = [
+        {
+            "parsed_grid": [[9, 9]],
+            "parse_method": "grid",
+            "program_fits_train": False,
+            "candidate_source": "model_a",
+        },
+        {
+            "parsed_grid": [[9, 9]],
+            "parse_method": "grid",
+            "program_fits_train": False,
+            "candidate_source": "model_b",
+        },
+        {
+            "parsed_grid": [[4, 4]],
+            "parse_method": "grid",
+            "program_fits_train": False,
+            "candidate_source": "symbolic_transform",
+        },
+    ]
+
+    assert select_candidate_index(example, rows, selection_strategy="self_consistency") == 0
+    assert select_candidate_index(example, rows, selection_strategy="reliability_vote") == 2

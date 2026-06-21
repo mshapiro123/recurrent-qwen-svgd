@@ -61,6 +61,9 @@ Screen:
 - Noise in {0.005, 0.01, 0.02}.
 - Repulsion in {0, 0.5, 2}.
 - Aggregation in {mean, max, vote}.
+- Selector in {self_consistency, reliability_vote}; do not spend more A100 time
+  on kernel geometry until selector-rescored selected-answer metrics are
+  reported.
 - Report helped/hurt/tied against Phase1, not only aggregate accuracy.
 
 Gate to train particles:

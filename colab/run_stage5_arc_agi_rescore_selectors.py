@@ -28,7 +28,10 @@ RUN_ID = os.environ.get("STAGE5_ARC_AGI_RESCORE_RUN_ID") or time.strftime("stage
 RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
 RUN_DIR.mkdir(parents=True, exist_ok=True)
 
-STRATEGIES = os.environ.get("STAGE5_ARC_AGI_RESCORE_STRATEGIES", "heuristic,self_consistency,symbolic_priority")
+STRATEGIES = os.environ.get(
+    "STAGE5_ARC_AGI_RESCORE_STRATEGIES",
+    "heuristic,self_consistency,reliability_vote,symbolic_priority",
+)
 SOURCE_RUN_DIR = os.environ.get("STAGE5_ARC_AGI_RESCORE_SOURCE_RUN_DIR", "")
 SOURCE_GLOB = os.environ.get("STAGE5_ARC_AGI_RESCORE_SOURCE_GLOB", "*_candidates.jsonl")
 WRITE_RESCORED_JSONL = os.environ.get("STAGE5_ARC_AGI_RESCORE_WRITE_JSONL", "0").strip().lower() in {
@@ -95,7 +98,7 @@ def write_json(path: str | Path, payload: dict[str, Any]) -> None:
 
 def requested_strategies(value: str = STRATEGIES) -> list[str]:
     strategies = [item.strip() for item in value.split(",") if item.strip()]
-    valid = {"heuristic", "self_consistency", "symbolic_priority"}
+    valid = {"heuristic", "self_consistency", "reliability_vote", "symbolic_priority"}
     unknown = set(strategies) - valid
     if unknown:
         raise ValueError(f"Unknown selector strategies: {sorted(unknown)}")
@@ -317,6 +320,24 @@ def write_comparison(
                 f"- `{name}` selected delta `{selected['delta_exact']}` "
                 f"({selected['wins']}/{selected['losses']}/{selected['ties']} W/L/T)"
             )
+        lines += [
+            "",
+            "## Paired Selector Evidence By Task Family",
+            "",
+            "| Comparison | Family | Candidate | Reference | Delta | Win/Loss/Tie | Sign p |",
+            "|---|---|---:|---:|---:|---:|---:|",
+        ]
+        for name, comparison in sorted(paired_comparisons.items()):
+            family_rows = comparison.get("task_family_metrics", {}).get("selected_exact", {})
+            for family, stats in sorted(family_rows.items()):
+                lines.append(
+                    f"| `{name}` | `{family}` | "
+                    f"{stats['candidate_exact']}/{stats['paired_examples']} | "
+                    f"{stats['reference_exact']}/{stats['paired_examples']} | "
+                    f"{stats['delta_exact']} | "
+                    f"{stats['wins']}/{stats['losses']}/{stats['ties']} | "
+                    f"{stats['sign_test_p_value']} |"
+                )
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))
 

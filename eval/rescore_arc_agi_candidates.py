@@ -160,6 +160,88 @@ def select_self_consistency_candidate_index(
     )[0]
 
 
+def reliability_vote_weight(row: dict[str, Any], preferred_shapes: set[Shape]) -> float:
+    parsed = row.get("parsed_grid")
+    if parsed is None:
+        return 0.0
+
+    weight = 1.0
+    source = str(row.get("candidate_source", "unknown"))
+    parse_method = str(row.get("parse_method", ""))
+    if source.startswith("symbolic_"):
+        weight += 2.0
+    if source.startswith("model_tta_"):
+        weight += 0.25
+    if parse_method == "program":
+        weight += 1.5
+    if row.get("program_fits_train"):
+        weight += 4.0
+    else:
+        try:
+            matches = int(row.get("program_train_matches", 0))
+            total = int(row.get("program_train_total", 0))
+        except (TypeError, ValueError):
+            matches = 0
+            total = 0
+        if total > 0 and matches > 0:
+            weight += matches / total
+    if preferred_shapes and grid_shape(parsed) in preferred_shapes:
+        weight += 0.75
+    return weight
+
+
+def select_reliability_vote_candidate_index(
+    candidate_rows: list[dict[str, Any]], preferred_shapes: set[Shape]
+) -> int:
+    valid_rows: list[tuple[int, dict[str, Any], float]] = []
+    for idx, row in enumerate(candidate_rows):
+        weight = reliability_vote_weight(row, preferred_shapes)
+        if weight > 0.0:
+            valid_rows.append((idx, row, weight))
+    if not valid_rows:
+        return 0
+
+    grid_stats: dict[str, dict[str, Any]] = {}
+    for idx, row, weight in valid_rows:
+        key = grid_vote_key(row["parsed_grid"])
+        stats = grid_stats.setdefault(
+            key,
+            {
+                "weight": 0.0,
+                "count": 0,
+                "sources": set(),
+                "program_fits": 0,
+                "symbolic": 0,
+                "shape_matches": 0,
+                "first_index": idx,
+            },
+        )
+        stats["weight"] += weight
+        stats["count"] += 1
+        stats["sources"].add(str(row.get("candidate_source", "unknown")))
+        stats["program_fits"] += int(bool(row.get("program_fits_train")))
+        stats["symbolic"] += int(str(row.get("candidate_source", "")).startswith("symbolic_"))
+        stats["shape_matches"] += int(bool(preferred_shapes and grid_shape(row["parsed_grid"]) in preferred_shapes))
+        stats["first_index"] = min(int(stats["first_index"]), idx)
+
+    winning_key = max(
+        grid_stats,
+        key=lambda key: (
+            float(grid_stats[key]["weight"]),
+            int(grid_stats[key]["count"]),
+            len(grid_stats[key]["sources"]),
+            int(grid_stats[key]["program_fits"]),
+            int(grid_stats[key]["symbolic"]),
+            int(grid_stats[key]["shape_matches"]),
+            -int(grid_stats[key]["first_index"]),
+        ),
+    )
+    return max(
+        [(idx, row, weight) for idx, row, weight in valid_rows if grid_vote_key(row["parsed_grid"]) == winning_key],
+        key=lambda item: (item[2], -item[0]),
+    )[0]
+
+
 def symbolic_candidate_index(candidate_rows: list[dict[str, Any]], preferred_shapes: set[Shape]) -> int | None:
     valid_symbolic_rows = [
         (idx, row)
@@ -198,6 +280,8 @@ def select_candidate_index(
         return select_heuristic_candidate_index(candidate_rows, preferred_shape_set)
     if selection_strategy == "self_consistency":
         return select_self_consistency_candidate_index(candidate_rows, preferred_shape_set)
+    if selection_strategy == "reliability_vote":
+        return select_reliability_vote_candidate_index(candidate_rows, preferred_shape_set)
     if selection_strategy == "symbolic_priority":
         return select_symbolic_priority_candidate_index(candidate_rows, preferred_shape_set)
     raise ValueError(f"Unknown selection_strategy={selection_strategy!r}")
@@ -308,7 +392,7 @@ def main() -> int:
     parser.add_argument(
         "--selection_strategy",
         default="heuristic",
-        choices=("heuristic", "self_consistency", "symbolic_priority"),
+        choices=("heuristic", "self_consistency", "reliability_vote", "symbolic_priority"),
     )
     parser.add_argument("--output_jsonl")
     parser.add_argument("--output_summary_json")

@@ -126,6 +126,13 @@ Initial harness files:
   shape heuristics, valid-grid parsing, and a tiny program verifier when
   candidates emit executable symbolic programs. Best-of-K is diagnostic, not a
   deployable score.
+- Gate 1 selector work now includes offline and live `reliability_vote`
+  selection in addition to `heuristic`, `self_consistency`, and
+  `symbolic_priority`. `reliability_vote` is target-free: it votes over parsed
+  grid claims using candidate provenance, symbolic source, demonstration-fitting
+  programs, source diversity, and output-shape consistency. Use
+  `colab/run_stage5_arc_agi_rescore_selectors.py` on saved candidate JSONLs
+  before tuning more kernel geometry.
 - Evaluation can execute the tiny `symbolic_program` DSL as a fallback when a
   candidate does not contain a directly parseable output grid. Reports include
   a parse-method summary so literal-grid exactness and program-executed

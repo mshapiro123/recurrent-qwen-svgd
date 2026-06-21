@@ -72,6 +72,31 @@ def test_rescore_self_consistency_replays_tta_votes_offline() -> None:
     assert summaries[0]["valid_candidates"] == 5
 
 
+def test_rescore_reliability_vote_can_beat_weak_plurality() -> None:
+    rows = [
+        candidate_row(0, [[9, 9]], exact=False, source="model_a", selected=True),
+        candidate_row(1, [[9, 9]], exact=False, source="model_b"),
+        candidate_row(
+            2,
+            [[6, 6]],
+            exact=True,
+            source="symbolic_transform",
+        ),
+    ]
+
+    rescored, summaries = rescore_groups(
+        rows,
+        inferred_shapes_by_key={("task", 0): [(1, 2)]},
+        selection_strategy="reliability_vote",
+    )
+
+    selected = [row for row in rescored if row["selected"]]
+    assert selected[0]["candidate_index"] == 2
+    assert selected[0]["score"]["exact"] is True
+    assert summaries[0]["selection_strategy"] == "reliability_vote"
+    assert summaries[0]["selected_exact"] is True
+
+
 def test_rescore_symbolic_priority_selects_later_symbolic_candidate() -> None:
     rows = [
         candidate_row(0, [[9, 9]], exact=False, source="model", selected=True),
