@@ -1,0 +1,79 @@
+{
+  "run_id": "stage5_recovered_phase1_arc256_20260621_172908",
+  "kind": "stage5_benchmark_suite",
+  "status": "completed",
+  "source_summary": "outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/summary.json",
+  "checkpoint": "outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/phase1/phase1_step_125.pt",
+  "benchmarks": [
+    "arc_challenge"
+  ],
+  "score_targets": [
+    "label"
+  ],
+  "aggregates": [
+    "mean"
+  ],
+  "recurrent_mode": "phase1",
+  "recurrent_num_trajectories": 1,
+  "elapsed_seconds": 218.1751742362976,
+  "failures": [],
+  "results": {
+    "arc_challenge": {
+      "label": {
+        "base": {
+          "mean": {
+            "correct": 148,
+            "total": 256,
+            "accuracy": 0.578125
+          }
+        },
+        "recurrent": {
+          "mean": {
+            "correct": 146,
+            "total": 256,
+            "accuracy": 0.5703125
+          }
+        }
+      }
+    }
+  },
+  "comparisons": {
+    "arc_challenge": {
+      "label": {
+        "mean": {
+          "correct_delta_recurrent_vs_base": -2,
+          "accuracy_delta_recurrent_vs_base": -0.0078125,
+          "base": {
+            "correct": 148,
+            "total": 256,
+            "accuracy": 0.578125
+          },
+          "recurrent": {
+            "correct": 146,
+            "total": 256,
+            "accuracy": 0.5703125
+          }
+        }
+      }
+    }
+  },
+  "paired_comparisons": {
+    "arc_challenge": {
+      "label": {
+        "mean": {
+          "paired_examples": 256,
+          "base_correct": 148,
+          "recurrent_correct": 146,
+          "correct_delta_recurrent_vs_base": -2,
+          "base_accuracy": 0.578125,
+          "recurrent_accuracy": 0.5703125,
+          "accuracy_delta_recurrent_vs_base": -0.0078125,
+          "wins": 24,
+          "losses": 26,
+          "ties": 206,
+          "sign_test_p_value": 0.887724827340783
+        }
+      }
+    }
+  }
+}
