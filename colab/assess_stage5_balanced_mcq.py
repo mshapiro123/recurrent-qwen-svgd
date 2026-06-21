@@ -303,11 +303,16 @@ def build_assessment(
     records: dict[str, dict[str, Any]] = {}
 
     easy_payload = read_json(arc_easy_sweep)
-    if not is_arceasy_sweep(easy_payload):
-        raise ValueError(f"Not an ARC-Easy checkpoint sweep: {arc_easy_sweep}")
-    ingest_arceasy_sweep(records, arc_easy_sweep, easy_payload)
+    if is_arceasy_sweep(easy_payload):
+        ingest_arceasy_sweep(records, arc_easy_sweep, easy_payload)
+    elif easy_payload.get("kind") == "stage5_benchmark_suite":
+        ingest_benchmark_suite(records, arc_easy_sweep, easy_payload)
+    else:
+        raise ValueError(f"Not an ARC-Easy checkpoint sweep or benchmark suite: {arc_easy_sweep}")
 
     for path in arc_challenge_summaries:
+        if path == arc_easy_sweep:
+            continue
         payload = read_json(path)
         if payload.get("kind") == "stage5_benchmark_suite":
             ingest_benchmark_suite(records, path, payload)

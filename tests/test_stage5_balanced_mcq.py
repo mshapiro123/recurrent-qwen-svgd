@@ -66,6 +66,36 @@ def _challenge_step150(path) -> None:
     )
 
 
+def _combined_suite(path) -> None:
+    _write(
+        path,
+        {
+            "kind": "stage5_benchmark_suite",
+            "run_id": "combined_suite",
+            "checkpoint": "runs/phase1_step_150.pt",
+            "benchmarks": ["arc_easy", "arc_challenge"],
+            "results": {
+                "arc_easy": {
+                    "label": {
+                        "base": {"mean": {"correct": 421, "total": 570, "accuracy": 421 / 570}},
+                        "recurrent": {"mean": {"correct": 422, "total": 570, "accuracy": 422 / 570}},
+                    }
+                },
+                "arc_challenge": {
+                    "label": {
+                        "base": {"mean": {"correct": 167, "total": 299, "accuracy": 167 / 299}},
+                        "recurrent": {"mean": {"correct": 170, "total": 299, "accuracy": 170 / 299}},
+                    }
+                },
+            },
+            "paired_comparisons": {
+                "arc_easy": {"label": {"mean": {"wins": 10, "losses": 9, "ties": 551}}},
+                "arc_challenge": {"label": {"mean": {"wins": 12, "losses": 9, "ties": 278}}},
+            },
+        },
+    )
+
+
 def _challenge_recovery(path) -> None:
     _write(
         path,
@@ -111,3 +141,18 @@ def test_balanced_assessment_prefers_step150_over_challenge_only_best(tmp_path) 
     assert payload["ranked_checkpoints"][1]["micro_correct_delta"] == -9
     assert payload["ranked_checkpoints"][1]["combined_wins"] == 37
     assert payload["ranked_checkpoints"][1]["combined_losses"] == 46
+
+
+def test_balanced_assessment_accepts_combined_benchmark_suite(tmp_path) -> None:
+    combined = tmp_path / "combined" / "summary.json"
+    _combined_suite(combined)
+
+    payload = build_assessment(
+        arc_easy_sweep=combined,
+        arc_challenge_summaries=[combined],
+        required_benchmarks=("arc_easy", "arc_challenge"),
+    )
+
+    assert payload["status"] == "balanced_nonnegative"
+    assert payload["best_checkpoint"]["label"] == "step_150"
+    assert payload["best_checkpoint"]["micro_correct_delta"] == 4
