@@ -112,6 +112,38 @@ def _registry(path, *, accuracy: float = 0.1, arc_version: str = "1", arc_split:
     return path
 
 
+def _reproduced_registry(path, *, accuracy: float = 0.1, arc_version: str = "1", arc_split: str = "evaluation"):
+    artifact = path.parent / "outputs" / "stage5" / "base_qwen" / "summary.json"
+    _write(artifact, {"run_id": "base_qwen"})
+    _write(
+        path,
+        {
+            "benchmark": "ARC-AGI public evaluation",
+            "arc_version": arc_version,
+            "arc_split": arc_split,
+            "metric": "selected_accuracy",
+            "same_size_band": {"min_params_b": 0.3, "max_params_b": 1.0},
+            "baselines": [
+                {
+                    "name": "reproduced-base-qwen",
+                    "params_b": 0.5,
+                    "arc_version": arc_version,
+                    "arc_split": arc_split,
+                    "metric": "selected_accuracy",
+                    "accuracy": accuracy,
+                    "evidence_type": "reproduced_eval",
+                    "source": "",
+                    "source_artifact": str(artifact.relative_to(path.parent)),
+                    "reproduction_command": "python colab/run_stage5_benchmark_suite.py",
+                    "git_commit": "abc1234",
+                    "accessed_date": "2026-06-20",
+                }
+            ],
+        },
+    )
+    return path
+
+
 def test_sota_comparison_passes_when_candidate_beats_same_size_baseline(tmp_path) -> None:
     payload = build_sota_comparison(
         candidate_summary=_candidate(tmp_path / "candidate" / "summary.json", selected_exact=12),
@@ -124,9 +156,31 @@ def test_sota_comparison_passes_when_candidate_beats_same_size_baseline(tmp_path
 
     assert payload["status"] == "passed"
     assert payload["passed"] is True
+    assert payload["comparison_scope"] == "public_sota"
     assert payload["candidate"]["params_b"] == 0.5
     assert payload["candidate_in_same_size_band"] is True
     assert payload["delta_accuracy_vs_best_baseline"] == 0.01999999999999999
+
+
+def test_sota_comparison_marks_reproduced_eval_as_control_not_sota(tmp_path, monkeypatch) -> None:
+    import colab.validate_arc_agi_baseline_registry as registry_module
+
+    monkeypatch.setattr(registry_module, "ROOT", tmp_path)
+    payload = build_sota_comparison(
+        candidate_summary=_candidate(tmp_path / "candidate" / "summary.json", selected_exact=12),
+        baseline_registry=_reproduced_registry(tmp_path / "baselines.json", accuracy=0.1),
+        candidate_label="phase1_arc_agi_tuned",
+        metric="selected_accuracy",
+        min_examples=100,
+        min_margin=0.0,
+    )
+
+    assert payload["status"] == "passed_reproduced_control"
+    assert payload["passed"] is False
+    assert payload["control_passed"] is True
+    assert payload["comparison_scope"] == "reproduced_control"
+    assert payload["best_public_baseline"] is None
+    assert "public-source" in payload["next_step"]
 
 
 def test_sota_comparison_auto_label_prefers_recovered_benchmark_summary(tmp_path) -> None:

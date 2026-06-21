@@ -4,7 +4,8 @@ This is the authoritative comparison artifact consumed by
 ``build_stage5_claim_packet.py``. It intentionally does not scrape or invent
 leaderboard numbers. Provide a baseline registry JSON with sourced same-size
 model scores, then compare the selected recurrent ARC-AGI summary against the
-best applicable baseline.
+best applicable baseline. Local ``reproduced_eval`` rows are accepted as
+reproduced-control evidence, but only public-source rows establish SOTA scope.
 """
 
 from __future__ import annotations
@@ -35,6 +36,7 @@ DEFAULT_CANDIDATE_LABEL = os.environ.get("STAGE5_ARC_AGI_SOTA_CANDIDATE_LABEL", 
 METRIC = os.environ.get("STAGE5_ARC_AGI_SOTA_METRIC", "selected_accuracy")
 MIN_EXAMPLES = int(os.environ.get("STAGE5_ARC_AGI_SOTA_MIN_EXAMPLES", "100"))
 MIN_MARGIN = float(os.environ.get("STAGE5_ARC_AGI_SOTA_MIN_MARGIN", "0.0"))
+PUBLIC_SOTA_EVIDENCE_TYPES = {"official_leaderboard", "paper", "model_card", "repository"}
 
 
 def path_for_cli(path: Path) -> str:
@@ -270,6 +272,24 @@ def best_baseline(registry: dict[str, Any], metric: str) -> dict[str, Any] | Non
     return max(scored, key=lambda row: float(row["accuracy"]))
 
 
+def is_public_sota_baseline(row: dict[str, Any]) -> bool:
+    return normalized_text(row.get("evidence_type")) in PUBLIC_SOTA_EVIDENCE_TYPES and bool(row.get("source"))
+
+
+def best_public_sota_baseline(registry: dict[str, Any], metric: str) -> dict[str, Any] | None:
+    scored: list[dict[str, Any]] = []
+    for row in registry.get("baselines", []):
+        if not isinstance(row, dict) or not is_public_sota_baseline(row):
+            continue
+        accuracy = baseline_accuracy(row, metric)
+        if accuracy is None:
+            continue
+        scored.append({**row, "accuracy": accuracy})
+    if not scored:
+        return None
+    return max(scored, key=lambda row: float(row["accuracy"]))
+
+
 def criterion(name: str, passed: bool, reason: str, evidence: dict[str, Any]) -> dict[str, Any]:
     return {"name": name, "passed": passed, "reason": reason, "evidence": evidence}
 
@@ -307,7 +327,10 @@ def build_sota_comparison(
 ) -> dict[str, Any]:
     candidate = candidate_evidence(candidate_summary, label=candidate_label, metric=metric)
     registry = load_baselines(baseline_registry)
-    best = best_baseline(registry, metric) if registry.get("present") else None
+    best_registry = best_baseline(registry, metric) if registry.get("present") else None
+    best_public = best_public_sota_baseline(registry, metric) if registry.get("present") else None
+    comparison_scope = "public_sota" if best_public else "reproduced_control"
+    best = best_public or best_registry
     candidate_present = bool(candidate.get("present"))
     candidate_examples = int(candidate.get("examples", 0) or 0)
     candidate_has_arc_metadata = has_arc_agi_metadata(candidate.get("metadata") or {})
@@ -317,6 +340,19 @@ def build_sota_comparison(
     candidate_accuracy = candidate.get("accuracy")
     best_accuracy = float(best["accuracy"]) if best else None
     delta = (float(candidate_accuracy) - best_accuracy) if candidate_accuracy is not None and best_accuracy is not None else None
+    best_registry_accuracy = float(best_registry["accuracy"]) if best_registry else None
+    registry_delta = (
+        float(candidate_accuracy) - best_registry_accuracy
+        if candidate_accuracy is not None and best_registry_accuracy is not None
+        else None
+    )
+    public_delta = delta if best_public else None
+    if delta is None or delta < min_margin:
+        comparison_reason = "Candidate does not meet the best same-size baseline by the required margin."
+    elif comparison_scope == "public_sota":
+        comparison_reason = "Candidate meets or exceeds the best same-size public SOTA baseline by the required margin."
+    else:
+        comparison_reason = "Candidate meets or exceeds the best reproduced same-size control by the required margin."
 
     criteria = [
         criterion(
@@ -357,13 +393,23 @@ def build_sota_comparison(
         ),
         criterion(
             "baseline_registry_present",
-            bool(registry.get("present")) and best is not None,
+            bool(registry.get("present")) and best_registry is not None,
             (
                 "Same-size baseline registry is valid and has at least one score for the requested metric."
-                if bool(registry.get("present")) and best is not None
+                if bool(registry.get("present")) and best_registry is not None
                 else "Same-size baseline registry is missing, invalid, or has no score for the requested metric."
             ),
             registry,
+        ),
+        criterion(
+            "public_sota_baseline_present",
+            bool(registry.get("present")) and best_public is not None,
+            (
+                "Same-size registry has at least one public-source SOTA baseline."
+                if bool(registry.get("present")) and best_public is not None
+                else "Registry only has reproduced/local controls; add public-source same-size baselines before SOTA claims."
+            ),
+            {"best_public_baseline": best_public, "baseline_registry": registry},
         ),
         criterion(
             "baseline_registry_matches_candidate_arc",
@@ -388,12 +434,16 @@ def build_sota_comparison(
         criterion(
             "candidate_meets_or_exceeds_best_baseline",
             delta is not None and delta >= min_margin,
-            (
-                "Candidate meets or exceeds the best same-size baseline by the required margin."
-                if delta is not None and delta >= min_margin
-                else "Candidate does not meet the best same-size baseline by the required margin."
-            ),
-            {"candidate": candidate, "best_baseline": best, "delta_accuracy": delta, "min_margin": min_margin},
+            comparison_reason,
+            {
+                "candidate": candidate,
+                "best_baseline": best,
+                "best_registry_baseline": best_registry,
+                "best_public_baseline": best_public,
+                "delta_accuracy": delta,
+                "comparison_scope": comparison_scope,
+                "min_margin": min_margin,
+            },
         ),
     ]
 
@@ -414,7 +464,7 @@ def build_sota_comparison(
     elif candidate_examples < min_examples:
         status = "needs_more_examples"
         next_step = "Evaluate the recurrent candidate on a larger ARC-AGI split before comparing to baselines."
-    elif not registry.get("present") or best is None:
+    elif not registry.get("present") or best_registry is None:
         status = "needs_baseline_registry"
         next_step = (
             "Provide a validator-passing config/arc_agi_same_size_baselines.json with sourced same-size "
@@ -428,7 +478,20 @@ def build_sota_comparison(
     elif not candidate_in_same_size_band:
         status = "needs_candidate_size_match"
         next_step = "Use a same-size baseline registry whose parameter band contains the recurrent candidate."
-    elif delta is not None and delta >= min_margin:
+    elif best_public is None:
+        if delta is not None and delta >= min_margin:
+            status = "passed_reproduced_control"
+            next_step = (
+                "Candidate beat the reproduced same-size control, but this is not SOTA evidence. Add public-source "
+                "same-size baselines before rebuilding the claim packet as a SOTA-facing artifact."
+            )
+        else:
+            status = "failed_reproduced_control"
+            next_step = (
+                "Candidate does not beat the reproduced same-size control; continue recurrent recovery or selector work "
+                "before spending effort on SOTA-facing baselines."
+            )
+    elif public_delta is not None and public_delta >= min_margin:
         status = "passed"
         next_step = "Rebuild the Stage 5 claim packet; it can now include this ARC-AGI SOTA comparison evidence."
     else:
@@ -441,6 +504,10 @@ def build_sota_comparison(
         "kind": "arc_agi_sota_comparison",
         "status": status,
         "passed": status == "passed",
+        "control_passed": status in {"passed", "passed_reproduced_control"} or (
+            registry_delta is not None and registry_delta >= min_margin
+        ),
+        "comparison_scope": comparison_scope,
         "metric": metric,
         "candidate_label": candidate_label,
         "min_examples": min_examples,
@@ -450,7 +517,11 @@ def build_sota_comparison(
         "candidate_registry_arc_match": registry_candidate_match,
         "candidate_in_same_size_band": candidate_in_same_size_band,
         "best_baseline": best,
+        "best_registry_baseline": best_registry,
+        "best_public_baseline": best_public,
         "delta_accuracy_vs_best_baseline": delta,
+        "delta_accuracy_vs_best_registry_baseline": registry_delta,
+        "delta_accuracy_vs_best_public_baseline": public_delta,
         "criteria": criteria,
         "next_step": next_step,
     }
@@ -466,6 +537,7 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
         "",
         f"- Status: `{payload['status']}`",
         f"- Passed: `{payload['passed']}`",
+        f"- Comparison scope: `{payload.get('comparison_scope')}`",
         f"- Metric: `{payload['metric']}`",
         f"- Candidate: `{candidate.get('accuracy')}` over `{candidate.get('examples')}` examples",
         f"- Candidate ARC version/split: `{candidate.get('arc_version')}` / `{candidate.get('arc_split')}`",
@@ -475,6 +547,8 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
         f"- Best baseline params (B): `{best.get('params_b')}`",
         f"- Best baseline evidence: `{best.get('evidence_type')}` from `{best.get('source')}`",
         f"- Delta accuracy: `{payload['delta_accuracy_vs_best_baseline']}`",
+        f"- Delta vs best public baseline: `{payload.get('delta_accuracy_vs_best_public_baseline')}`",
+        f"- Delta vs best registry baseline: `{payload.get('delta_accuracy_vs_best_registry_baseline')}`",
         f"- Next step: {payload['next_step']}",
         "",
         "## Criteria",
@@ -489,7 +563,9 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
             "",
             "This artifact is only authoritative if the baseline registry contains sourced same-size scores. "
             "Each accepted baseline row must explicitly match the ARC-AGI version/split and identify its evidence type. "
-            "Do not use this file for SOTA claims when status is `needs_baseline_registry`.",
+            "Rows with `evidence_type: reproduced_eval` are useful reproduced controls, but do not establish public "
+            "SOTA scope by themselves. Do not use this file for SOTA claims unless status is `passed` and "
+            "`comparison_scope` is `public_sota`.",
         ]
     )
     output_md.write_text("\n".join(lines) + "\n", encoding="utf-8")

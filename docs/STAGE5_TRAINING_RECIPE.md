@@ -207,6 +207,10 @@ Release candidate definition:
   validator-passing `reproduced_eval` registry row from the audited local
   artifact. Treat this as reproduced-control evidence; prefer external
   official, paper, or model-card sources for public SOTA claims.
+- `colab/build_stage5_arc_agi_sota_comparison.py` now reports
+  `comparison_scope`. A reproduced-only registry can pass the recovery/control
+  comparison as `passed_reproduced_control`, but only `status: passed` with
+  `comparison_scope: public_sota` can unlock SOTA readiness in the claim packet.
 - Run `colab/validate_arc_agi_baseline_registry.py` before any SOTA-facing
   comparison. The validator requires non-placeholder same-size baseline names,
   sourced URLs/DOIs/arXiv references, dates, metrics, row-level ARC

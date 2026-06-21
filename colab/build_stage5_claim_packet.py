@@ -162,6 +162,11 @@ def arc_agi_candidate(arc_agi: dict[str, Any]) -> dict[str, Any]:
     return candidate if isinstance(candidate, dict) else {}
 
 
+def arc_agi_comparison_scope(arc_agi: dict[str, Any]) -> str | None:
+    value = (arc_agi.get("summary") or {}).get("comparison_scope")
+    return str(value) if value else None
+
+
 def arc_agi_candidate_checkpoint_ref(arc_agi: dict[str, Any]) -> str | None:
     candidate = arc_agi_candidate(arc_agi)
     metadata = candidate.get("metadata") or {}
@@ -279,6 +284,7 @@ def build_claim_packet(
     export_has_hash = bool((hf_export.get("summary") or {}).get("metadata", {}).get("checkpoint_sha256"))
     arc_agi_present = bool(arc_agi.get("present"))
     arc_agi_passed = bool(arc_agi.get("passed"))
+    arc_agi_public_sota = arc_agi_passed and arc_agi_comparison_scope(arc_agi) == "public_sota"
     sota_linkage = sota_export_linkage(hf_export, arc_agi)
     sota_linkage_passed = bool(sota_linkage.get("passed"))
 
@@ -345,11 +351,15 @@ def build_claim_packet(
         ),
         criterion(
             "authoritative_arc_agi_sota_comparison",
-            arc_agi_present and arc_agi_passed,
+            arc_agi_present and arc_agi_public_sota,
             (
                 "Authoritative ARC-AGI same-size SOTA comparison passed."
-                if arc_agi_present and arc_agi_passed
-                else "No authoritative ARC-AGI same-size SOTA comparison proves a SOTA claim."
+                if arc_agi_present and arc_agi_public_sota
+                else (
+                    "ARC-AGI comparison only proves a reproduced/local control, not public SOTA."
+                    if arc_agi_present and arc_agi_passed
+                    else "No authoritative ARC-AGI same-size SOTA comparison proves a SOTA claim."
+                )
             ),
             arc_agi,
         ),
@@ -385,12 +395,13 @@ def build_claim_packet(
         status = "needs_hf_export"
         claim_level = "not_ready"
         next_step = "Export the recurrent adapter with checkpoint hash metadata."
-    elif not arc_agi_present or not arc_agi_passed:
+    elif not arc_agi_present or not arc_agi_public_sota:
         status = "ready_for_release_candidate_not_sota"
         claim_level = "release_candidate"
         next_step = (
-            "Run colab/build_stage5_arc_agi_sota_comparison.py with a sourced same-size baseline registry; "
-            "until that artifact passes, write only a release-candidate report and do not claim SOTA."
+            "Run colab/build_stage5_arc_agi_sota_comparison.py with public-source same-size baselines; "
+            "reproduced-control comparisons are useful recovery evidence, but until a public-scope artifact passes, "
+            "write only a release-candidate report and do not claim SOTA."
         )
     elif not sota_linkage_passed:
         status = "ready_for_release_candidate_needs_sota_export_linkage"

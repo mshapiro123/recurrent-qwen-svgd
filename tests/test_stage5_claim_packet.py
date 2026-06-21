@@ -130,6 +130,7 @@ def _arc_agi(
     path,
     *,
     passed: bool = True,
+    comparison_scope: str = "public_sota",
     checkpoint: str | None = "outputs/stage5/run/phase1.pt",
     source_summary: str | None = "outputs/stage5/run/summary.json",
 ):
@@ -146,6 +147,7 @@ def _arc_agi(
             "gate": "stage5_arc_agi_sota_comparison",
             "status": "passed" if passed else "failed",
             "passed": passed,
+            "comparison_scope": comparison_scope,
             "candidate": candidate,
         },
     )
@@ -235,6 +237,27 @@ def test_claim_packet_can_mark_sota_candidate_when_authoritative_comparison_exis
     assert payload["status"] == "sota_claim_ready"
     assert payload["claim_level"] == "sota_candidate"
     assert all(row["passed"] for row in payload["criteria"])
+
+
+def test_claim_packet_does_not_treat_reproduced_control_as_sota(tmp_path) -> None:
+    payload = build_claim_packet(
+        release_gate_summary=_release(tmp_path / "release" / "summary.json"),
+        broader_benchmark_summary=_broader(tmp_path / "broader" / "summary.json"),
+        recipe_control_summary=_recipe(tmp_path / "recipe" / "summary.json"),
+        selector_replication_summary=_selector_replication(tmp_path / "selector_replication" / "summary.json"),
+        particle_mechanism_summary=_particle_gate(tmp_path / "particle_gate" / "summary.json"),
+        hf_export_summary=_export(tmp_path / "export" / "summary.json"),
+        arc_agi_comparison_summary=_arc_agi(
+            tmp_path / "arc_agi" / "summary.json",
+            passed=True,
+            comparison_scope="reproduced_control",
+        ),
+    )
+
+    assert payload["status"] == "ready_for_release_candidate_not_sota"
+    assert payload["claim_level"] == "release_candidate"
+    assert payload["criteria"][-2]["passed"] is False
+    assert "public-scope" in payload["next_step"]
 
 
 def test_claim_packet_requires_sota_export_checkpoint_linkage(tmp_path) -> None:
