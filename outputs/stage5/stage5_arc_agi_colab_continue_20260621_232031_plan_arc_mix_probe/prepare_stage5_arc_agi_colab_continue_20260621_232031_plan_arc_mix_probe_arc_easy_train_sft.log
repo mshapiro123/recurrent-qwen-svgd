@@ -1,0 +1,6 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=train
+rows=2251
+skipped_rows=0
+output_jsonl=data/stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe_arc_easy_train_sft.jsonl
