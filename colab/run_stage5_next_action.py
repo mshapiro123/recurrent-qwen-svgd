@@ -55,6 +55,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/assess_stage5_recipe_control.py",
     "colab/assess_stage5_benchmark_suite.py",
     "colab/assess_stage5_release_gate.py",
+    "colab/assess_stage5_selector_replication.py",
     "colab/build_stage5_arc_agi_sota_comparison.py",
     "colab/build_stage5_claim_packet.py",
     "colab/plan_stage5_next_run.py",

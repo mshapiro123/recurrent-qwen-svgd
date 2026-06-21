@@ -999,6 +999,37 @@ def test_gate1_needs_review_recommends_inspection(tmp_path) -> None:
     assert "summary.md" in actions[0]["command"]
 
 
+def test_selector_replication_passed_routes_to_inspection(tmp_path) -> None:
+    source = tmp_path / "selector_replication" / "summary.json"
+    source.parent.mkdir()
+    (source.parent / "summary.md").write_text("# Selector replication\n", encoding="utf-8")
+    payload = {
+        "gate": "stage5_selector_replication",
+        "status": "passed",
+        "passed": True,
+        "replicated_comparisons": ["recovered__selector_reliability_vote_vs_source"],
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect replicated selector evidence"
+    assert "summary.md" in actions[0]["command"]
+
+
+def test_selector_replication_missing_confirmation_routes_to_inspection(tmp_path) -> None:
+    source = tmp_path / "selector_replication" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_selector_replication",
+        "status": "needs_confirmation",
+        "passed": False,
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect selector replication `needs_confirmation`"
+
+
 def test_paired_metric_helpers_fall_back_to_aggregate() -> None:
     payload = {
         "deltas": {"recovered_vs_base": {"selected_exact_delta": 2}},
@@ -1045,6 +1076,7 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"recovery_decision": {}, "particle_decision": {}}) == "recovery_particle_gate"
     assert source_kind({"gate": "stage5_gate1_selector_tta"}) == "gate1_assessment"
     assert source_kind({"gate": "stage5_gate2_particle_mechanism"}) == "gate2_assessment"
+    assert source_kind({"gate": "stage5_selector_replication"}) == "selector_replication"
     assert source_kind({"gate": "stage5_same_recipe_architecture"}) == "recipe_control_assessment"
     assert source_kind({"gate": "stage5_release_benchmark_readiness"}) == "release_gate"
     assert source_kind({"kind": "stage5_benchmark_suite"}) == "benchmark_suite"

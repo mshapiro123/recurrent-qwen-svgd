@@ -30,6 +30,7 @@ def focused_test_paths() -> list[str]:
         "tests/test_stage5_gate2_assessment.py",
         "tests/test_stage5_recipe_control_assessment.py",
         "tests/test_stage5_release_gate.py",
+        "tests/test_stage5_selector_replication.py",
         "tests/test_stage5_benchmark_assessment.py",
         "tests/test_stage5_claim_packet.py",
         "tests/test_stage5_arc_agi_baseline_registry.py",

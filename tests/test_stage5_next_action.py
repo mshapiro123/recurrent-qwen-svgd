@@ -157,6 +157,16 @@ def test_parse_action_command_allows_benchmark_suite_runner() -> None:
     assert parsed.argv == [sys.executable, "colab/run_stage5_benchmark_suite.py"]
 
 
+def test_parse_action_command_allows_selector_replication_assessor() -> None:
+    parsed = parse_action_command(
+        "STAGE5_SELECTOR_REPLICATION_RUN_ID=selector_rep python colab/assess_stage5_selector_replication.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_SELECTOR_REPLICATION_RUN_ID": "selector_rep"}
+    assert parsed.argv == [sys.executable, "colab/assess_stage5_selector_replication.py"]
+
+
 def test_parse_action_command_allows_phase1_recovery_ladder() -> None:
     parsed = parse_action_command(
         "STAGE5_RUN_ID=recovery python colab/run_stage5_phase1_recovery_ladder.py"

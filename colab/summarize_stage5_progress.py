@@ -137,6 +137,8 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         return True
     if payload.get("gate") == "stage5_gate2_particle_mechanism":
         return True
+    if payload.get("gate") == "stage5_selector_replication" or payload.get("kind") == "selector_replication":
+        return True
     if payload.get("gate") == "stage5_same_recipe_architecture":
         return True
     if payload.get("gate") == "stage5_release_benchmark_readiness":
@@ -368,6 +370,27 @@ def gate2_assessments(summary_files: list[Path]) -> list[dict[str, Any]]:
             }
         )
     return sorted(assessments, key=lambda item: str(item["path"]))
+
+
+def selector_replications(summary_files: list[Path]) -> list[dict[str, Any]]:
+    replications: list[dict[str, Any]] = []
+    for path in summary_files:
+        payload = safe_read_json(path)
+        if not payload:
+            continue
+        if payload.get("gate") != "stage5_selector_replication" and payload.get("kind") != "selector_replication":
+            continue
+        replications.append(
+            {
+                "path": path_for_cli(path),
+                "run_id": str(payload.get("run_id") or path.parent.name),
+                "status": payload.get("status"),
+                "passed": bool(payload.get("passed", False)),
+                "replicated_comparisons": payload.get("replicated_comparisons") or [],
+                "next_step": payload.get("next_step"),
+            }
+        )
+    return sorted(replications, key=lambda item: str(item["path"]))
 
 
 def recipe_control_assessments(summary_files: list[Path]) -> list[dict[str, Any]]:
@@ -660,6 +683,7 @@ def scan_progress(scan_root: Path, *, run_id: str | None = None) -> dict[str, An
         "recovered_vs_base_gaps": recovered_base_gaps(records),
         "gate1_assessments": gate1_assessments(summary_files),
         "gate2_assessments": gate2_assessments(summary_files),
+        "selector_replications": selector_replications(summary_files),
         "recipe_control_assessments": recipe_control_assessments(summary_files),
         "release_gate_assessments": release_gate_assessments(summary_files),
         "benchmark_suite_assessments": benchmark_suite_assessments(summary_files),
@@ -723,6 +747,16 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
             )
     else:
         lines.append("- No Gate 2 assessment summaries found.")
+    lines.extend(["", "## Selector Replication Gates", ""])
+    if payload["selector_replications"]:
+        for assessment in payload["selector_replications"][-10:]:
+            lines.append(
+                f"- `{assessment['run_id']}` status `{assessment['status']}` passed "
+                f"`{assessment['passed']}` replicated `{assessment['replicated_comparisons']}`: "
+                f"{assessment['next_step']}"
+            )
+    else:
+        lines.append("- No selector replication gates found.")
     lines.extend(["", "## Same-Recipe Architecture Assessments", ""])
     if payload["recipe_control_assessments"]:
         for assessment in payload["recipe_control_assessments"][-10:]:

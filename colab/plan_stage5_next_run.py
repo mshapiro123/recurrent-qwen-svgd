@@ -76,6 +76,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or recurrent_sft_payload(payload) is not None
         or gate1_assessment_payload(payload) is not None
         or gate2_assessment_payload(payload) is not None
+        or selector_replication_payload(payload) is not None
         or recipe_control_assessment_payload(payload) is not None
         or release_gate_payload(payload) is not None
         or benchmark_suite_payload(payload) is not None
@@ -161,6 +162,12 @@ def gate1_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
 
 def gate2_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("gate") == "stage5_gate2_particle_mechanism" else None
+
+
+def selector_replication_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    if payload.get("gate") == "stage5_selector_replication" or payload.get("kind") == "selector_replication":
+        return payload
+    return None
 
 
 def recipe_control_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -1074,6 +1081,29 @@ def gate2_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -
     return [top]
 
 
+def selector_replication_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    summary_md = source_summary.with_name("summary.md")
+    inspect_path = summary_md if summary_md.exists() else source_summary
+    if status == "passed":
+        return [
+            make_action(
+                "Inspect replicated selector evidence",
+                "A selector/TTA comparison passed Gate 1 on two saved slices. Inspect the replicated comparison before using it in release or broader benchmark evidence.",
+                f"cat {command_path(inspect_path)}",
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect selector replication `{status}`",
+            "Selector/TTA evidence has not replicated yet; either run a confirmation Gate 1 slice or return to selector design.",
+            f"cat {command_path(inspect_path)}",
+            10,
+        )
+    ]
+
+
 def recovery_particle_examples(payload: dict[str, Any]) -> int:
     settings = payload.get("settings") or {}
     if settings.get("eval_task_limit") is not None:
@@ -1235,6 +1265,9 @@ def plan_next_actions(
     gate2 = gate2_assessment_payload(payload)
     if gate2:
         return gate2_assessment_actions(gate2, source_summary=source_summary)
+    selector_replication = selector_replication_payload(payload)
+    if selector_replication:
+        return selector_replication_actions(selector_replication, source_summary=source_summary)
     recipe_control = recipe_control_assessment_payload(payload)
     if recipe_control:
         return recipe_control_assessment_actions(recipe_control, source_summary=source_summary)
@@ -1569,6 +1602,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "gate1_assessment"
     if gate2_assessment_payload(payload):
         return "gate2_assessment"
+    if selector_replication_payload(payload):
+        return "selector_replication"
     if recipe_control_assessment_payload(payload):
         return "recipe_control_assessment"
     if release_gate_payload(payload):
