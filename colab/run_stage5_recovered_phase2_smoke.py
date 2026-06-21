@@ -70,6 +70,15 @@ NUM_TRAJECTORIES = int(os.environ.get("STAGE5_RECOVERED_PHASE2_K", "4"))
 PARTICLE_INIT_NOISE = os.environ.get("STAGE5_RECOVERED_PHASE2_INIT_NOISE", "0.05")
 REPULSION_SCALE = os.environ.get("STAGE5_RECOVERED_PHASE2_REPULSION", "2")
 PROJECTION_DIM = os.environ.get("STAGE5_RECOVERED_PHASE2_PROJECTION_DIM", "8")
+DISTILL_ENABLED = os.environ.get("STAGE5_RECOVERED_PHASE2_DISTILL", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
+DISTILL_WEIGHT = float(os.environ.get("STAGE5_RECOVERED_PHASE2_DISTILL_WEIGHT", "0.4"))
+DISTILL_TEMPERATURE = float(os.environ.get("STAGE5_RECOVERED_PHASE2_DISTILL_TEMPERATURE", "2.0"))
+DISTILL_TARGET = os.environ.get("STAGE5_RECOVERED_PHASE2_DISTILL_TARGET", "trajectories")
 ARC_LIMIT = os.environ.get("STAGE5_RECOVERED_PHASE2_ARC_LIMIT", "128")
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
@@ -229,6 +238,15 @@ def phase2_config(projection: Path) -> Path:
         "train_on_prompt": False,
         "output_dir": path_for_cli(RUN_DIR / "phase2"),
         "resume_from": path_for_cli(RECOVERED_CHECKPOINT),
+        "distillation": {
+            "enabled": DISTILL_ENABLED,
+            "weight": DISTILL_WEIGHT,
+            "temperature": DISTILL_TEMPERATURE,
+            "on": "response",
+            "target": DISTILL_TARGET,
+            "teacher_model_name": MODEL_NAME,
+            "dtype": DTYPE,
+        },
         "lora": {"enabled": True, "rank": 8, "alpha": 16, "dropout": 0.0},
     }
     cfg_path = RUN_DIR / "phase2_smoke.yaml"
@@ -332,6 +350,7 @@ def write_summary(checkpoint: Path, projection: Path, benchmark_summary: Path) -
         f"- ARC limit: `{ARC_LIMIT}`",
         f"- K: `{NUM_TRAJECTORIES}`",
         f"- Repulsion: `{REPULSION_SCALE}`",
+        f"- Distillation: `{DISTILL_ENABLED}` weight `{DISTILL_WEIGHT}` target `{DISTILL_TARGET}`",
         "",
         "## ARC-Challenge",
     ]

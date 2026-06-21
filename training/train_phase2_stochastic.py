@@ -21,11 +21,20 @@ from models.lora import apply_lora_to_recurrent_block
 from models.recurrent_wrapper import RecurrentQwenForCausalLM
 from training.checkpointing import load_trainable_checkpoint, save_trainable_checkpoint
 from training.dataset import JsonlCausalDataset, collate_causal_batch
+from training.losses import causal_kl_distillation_loss
 from training.stability import (
     assert_finite_trainable_gradients,
     assert_finite_trainable_parameters,
     assert_finite_training_state,
 )
+
+
+def distillation_mask(batch: dict[str, torch.Tensor], mode: str) -> torch.Tensor:
+    if mode == "response":
+        return batch["labels"].ne(-100)
+    if mode == "all":
+        return batch["attention_mask"].ne(0)
+    raise ValueError("distillation.on must be one of: response, all")
 
 
 def main() -> int:
@@ -44,6 +53,22 @@ def main() -> int:
         cfg["model_name"],
         **model_load_kwargs(cfg.get("dtype", "auto"), cfg.get("attn_implementation", "default")),
     ).to(args.device)
+    distill_cfg = cfg.get("distillation", {})
+    teacher = None
+    if distill_cfg.get("enabled", False):
+        teacher_name = distill_cfg.get("teacher_model_name", cfg["model_name"])
+        teacher = AutoModelForCausalLM.from_pretrained(
+            teacher_name,
+            **model_load_kwargs(
+                distill_cfg.get("dtype", cfg.get("dtype", "auto")),
+                cfg.get("attn_implementation", "default"),
+            ),
+        ).to(args.device)
+        teacher.eval()
+        for param in teacher.parameters():
+            param.requires_grad_(False)
+        print(f"distillation_teacher={teacher_name}")
+
     wrapper = RecurrentQwenForCausalLM(
         model,
         layer_split=parse_split(cfg.get("layer_split", "auto")),
@@ -121,6 +146,39 @@ def main() -> int:
                 use_cache=False,
                 return_dict=True,
             )
+            if teacher is not None:
+                with torch.no_grad():
+                    teacher_out = teacher(
+                        input_ids=batch["input_ids"],
+                        attention_mask=batch["attention_mask"],
+                        use_cache=False,
+                        return_dict=True,
+                    )
+                mask = distillation_mask(batch, distill_cfg.get("on", "response"))
+                student_logits = output.logits
+                teacher_logits = teacher_out.logits
+                if distill_cfg.get("target", "mean") == "trajectories":
+                    if output.trajectory_logits is None:
+                        raise RuntimeError("trajectory distillation requires num_trajectories > 1")
+                    num_trajectories = output.trajectory_logits.shape[1]
+                    student_logits = output.trajectory_logits.reshape(
+                        output.trajectory_logits.shape[0] * num_trajectories,
+                        *output.trajectory_logits.shape[2:],
+                    )
+                    teacher_logits = teacher_out.logits.repeat_interleave(num_trajectories, dim=0)
+                    mask = mask.repeat_interleave(num_trajectories, dim=0)
+                elif distill_cfg.get("target", "mean") != "mean":
+                    raise ValueError("distillation.target must be one of: mean, trajectories")
+
+                distill_loss = causal_kl_distillation_loss(
+                    student_logits,
+                    teacher_logits,
+                    mask,
+                    temperature=float(distill_cfg.get("temperature", 1.0)),
+                )
+                output.loss = output.loss + float(distill_cfg.get("weight", 0.1)) * distill_loss
+                output.metrics["base_distill_kl"] = distill_loss.detach()
+                output.metrics["loss"] = output.loss.detach()
             assert_finite_training_state(wrapper, output.loss, output.metrics, step)
             output.loss.backward()
             assert_finite_trainable_gradients(wrapper, step)
