@@ -8,6 +8,9 @@ def test_colab_continue_focuses_gate1_and_next_action_tests() -> None:
 
     assert "tests/test_stage5_next_plan.py" in paths
     assert "tests/test_stage5_next_action.py" in paths
+    assert "tests/test_arc_agi_training_signal.py" in paths
+    assert "tests/test_stage5_arc_agi_candidate_distill_gate.py" in paths
+    assert "tests/test_stage5_curriculum_particle_autopilot.py" in paths
     assert "tests/test_stage5_gate1_assessment.py" in paths
     assert "tests/test_stage5_gate2_assessment.py" in paths
     assert "tests/test_stage5_recipe_control_assessment.py" in paths

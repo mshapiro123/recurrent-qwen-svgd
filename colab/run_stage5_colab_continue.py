@@ -24,8 +24,11 @@ RUN_ID = os.environ.get("STAGE5_ARC_AGI_COLAB_CONTINUE_RUN_ID") or time.strftime
 def focused_test_paths() -> list[str]:
     return [
         "tests/test_stage5_autopilot.py",
+        "tests/test_arc_agi_training_signal.py",
         "tests/test_stage5_next_plan.py",
         "tests/test_stage5_next_action.py",
+        "tests/test_stage5_arc_agi_candidate_distill_gate.py",
+        "tests/test_stage5_curriculum_particle_autopilot.py",
         "tests/test_stage5_gate1_assessment.py",
         "tests/test_stage5_gate2_assessment.py",
         "tests/test_stage5_recipe_control_assessment.py",
