@@ -1921,7 +1921,7 @@ def test_arc_agi_baseline_registry_missing_values_inspects_markdown(tmp_path) ->
     assert "summary.md" in actions[0]["command"]
 
 
-def test_arc_agi_sota_comparison_missing_registry_inspects_markdown(tmp_path) -> None:
+def test_arc_agi_sota_comparison_missing_registry_runs_validator(tmp_path) -> None:
     source = tmp_path / "arc_agi_sota" / "summary.json"
     source.parent.mkdir()
     payload = {
@@ -1932,5 +1932,6 @@ def test_arc_agi_sota_comparison_missing_registry_inspects_markdown(tmp_path) ->
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Inspect ARC-AGI SOTA comparison `needs_baseline_registry`"
-    assert "summary.md" in actions[0]["command"]
+    assert actions[0]["name"] == "Validate ARC-AGI same-size baseline registry"
+    assert "STAGE5_ARC_AGI_BASELINE_REGISTRY_RUN_ID=" in actions[0]["command"]
+    assert "python colab/validate_arc_agi_baseline_registry.py" in actions[0]["command"]

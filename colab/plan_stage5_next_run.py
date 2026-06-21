@@ -1299,6 +1299,20 @@ def arc_agi_sota_comparison_actions(payload: dict[str, Any], *, source_summary: 
                 10,
             )
         ]
+    if status == "needs_baseline_registry":
+        return [
+            make_action(
+                "Validate ARC-AGI same-size baseline registry",
+                "The ARC-AGI same-size comparison could not run claim-safely because the sourced baseline registry is missing or invalid; write an explicit registry gate before any SOTA-facing comparison.",
+                command_env(
+                    {
+                        "STAGE5_ARC_AGI_BASELINE_REGISTRY_RUN_ID": f"{RUN_ID}_arc_agi_baseline_registry",
+                    },
+                    "python colab/validate_arc_agi_baseline_registry.py",
+                ),
+                10,
+            )
+        ]
     return [
         make_action(
             f"Inspect ARC-AGI SOTA comparison `{status}`",
