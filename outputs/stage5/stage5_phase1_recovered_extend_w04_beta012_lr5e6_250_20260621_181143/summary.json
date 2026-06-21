@@ -1,0 +1,289 @@
+{
+  "metadata": {
+    "run_id": "stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143",
+    "base_run_id": "stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231",
+    "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+    "params_b": 0.5,
+    "dataset_id": "lordx64/reasoning-distill-opus-4-7-max-sft",
+    "dataset_limit": 6000,
+    "val_fraction": 0.05,
+    "max_total_tokens": 1024,
+    "max_length": 512,
+    "extra_steps": 250,
+    "save_every": 50,
+    "learning_rate": 5e-06,
+    "beta": 0.12,
+    "max_grad_norm": 0.3,
+    "distillation": {
+      "enabled": true,
+      "weight": 0.4,
+      "temperature": 2.0,
+      "on": "response",
+      "teacher_model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+      "dtype": "bfloat16"
+    },
+    "arc_limit": 128,
+    "arc_split": "validation",
+    "arc_seed": 0,
+    "run_full_arc_final": true,
+    "dtype": "bfloat16",
+    "adapter_dtype": "float32",
+    "resume_from": "outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/phase1/phase1_step_125.pt"
+  },
+  "base_arc": {
+    "mean": {
+      "correct": 72,
+      "total": 128,
+      "accuracy": 0.5625
+    }
+  },
+  "phase1_start": {
+    "checkpoint": "outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/phase1/phase1_step_125.pt",
+    "val": {
+      "lora_recurrent_modules": 84.0,
+      "examples": 208.0,
+      "expected_ce": 2.389109,
+      "halting_kl": 0.244998,
+      "loss": 2.418509,
+      "mean_expected_loops": 2.561408,
+      "mean_halt_entropy": 1.368269
+    },
+    "arc": {
+      "mean": {
+        "correct": 72,
+        "total": 128,
+        "accuracy": 0.5625
+      }
+    }
+  },
+  "checkpoints": [
+    {
+      "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_50.pt",
+      "val": {
+        "lora_recurrent_modules": 84.0,
+        "examples": 208.0,
+        "expected_ce": 2.37199,
+        "halting_kl": 0.22353,
+        "loss": 2.398813,
+        "mean_expected_loops": 2.522481,
+        "mean_halt_entropy": 1.37204
+      },
+      "arc_path": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143_arc128_phase1_step_50_label.jsonl",
+      "arc": {
+        "mean": {
+          "correct": 72,
+          "total": 128,
+          "accuracy": 0.5625
+        }
+      },
+      "comparison_to_start": {
+        "helped": 2,
+        "hurt": 2,
+        "tied": 124,
+        "prediction_changes": 6
+      },
+      "comparison_to_base": {
+        "helped": 11,
+        "hurt": 11,
+        "tied": 106,
+        "prediction_changes": 32
+      }
+    },
+    {
+      "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_100.pt",
+      "val": {
+        "lora_recurrent_modules": 84.0,
+        "examples": 208.0,
+        "expected_ce": 2.355478,
+        "halting_kl": 0.200935,
+        "loss": 2.37959,
+        "mean_expected_loops": 2.478272,
+        "mean_halt_entropy": 1.374481
+      },
+      "arc_path": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143_arc128_phase1_step_100_label.jsonl",
+      "arc": {
+        "mean": {
+          "correct": 69,
+          "total": 128,
+          "accuracy": 0.5390625
+        }
+      },
+      "comparison_to_start": {
+        "helped": 1,
+        "hurt": 4,
+        "tied": 123,
+        "prediction_changes": 8
+      },
+      "comparison_to_base": {
+        "helped": 9,
+        "hurt": 12,
+        "tied": 107,
+        "prediction_changes": 30
+      }
+    },
+    {
+      "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_150.pt",
+      "val": {
+        "lora_recurrent_modules": 84.0,
+        "examples": 208.0,
+        "expected_ce": 2.339362,
+        "halting_kl": 0.180615,
+        "loss": 2.361036,
+        "mean_expected_loops": 2.434324,
+        "mean_halt_entropy": 1.374814
+      },
+      "arc_path": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143_arc128_phase1_step_150_label.jsonl",
+      "arc": {
+        "mean": {
+          "correct": 71,
+          "total": 128,
+          "accuracy": 0.5546875
+        }
+      },
+      "comparison_to_start": {
+        "helped": 2,
+        "hurt": 3,
+        "tied": 123,
+        "prediction_changes": 11
+      },
+      "comparison_to_base": {
+        "helped": 10,
+        "hurt": 11,
+        "tied": 107,
+        "prediction_changes": 32
+      }
+    },
+    {
+      "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_200.pt",
+      "val": {
+        "lora_recurrent_modules": 84.0,
+        "examples": 208.0,
+        "expected_ce": 2.319192,
+        "halting_kl": 0.161216,
+        "loss": 2.338538,
+        "mean_expected_loops": 2.387442,
+        "mean_halt_entropy": 1.373019
+      },
+      "arc_path": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143_arc128_phase1_step_200_label.jsonl",
+      "arc": {
+        "mean": {
+          "correct": 73,
+          "total": 128,
+          "accuracy": 0.5703125
+        }
+      },
+      "comparison_to_start": {
+        "helped": 5,
+        "hurt": 4,
+        "tied": 119,
+        "prediction_changes": 15
+      },
+      "comparison_to_base": {
+        "helped": 10,
+        "hurt": 9,
+        "tied": 109,
+        "prediction_changes": 29
+      }
+    },
+    {
+      "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_250.pt",
+      "val": {
+        "lora_recurrent_modules": 84.0,
+        "examples": 208.0,
+        "expected_ce": 2.303063,
+        "halting_kl": 0.144602,
+        "loss": 2.320416,
+        "mean_expected_loops": 2.341969,
+        "mean_halt_entropy": 1.369176
+      },
+      "arc_path": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143_arc128_phase1_step_250_label.jsonl",
+      "arc": {
+        "mean": {
+          "correct": 71,
+          "total": 128,
+          "accuracy": 0.5546875
+        }
+      },
+      "comparison_to_start": {
+        "helped": 5,
+        "hurt": 6,
+        "tied": 117,
+        "prediction_changes": 19
+      },
+      "comparison_to_base": {
+        "helped": 7,
+        "hurt": 8,
+        "tied": 113,
+        "prediction_changes": 25
+      }
+    }
+  ],
+  "best_checkpoint": {
+    "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_200.pt",
+    "val": {
+      "lora_recurrent_modules": 84.0,
+      "examples": 208.0,
+      "expected_ce": 2.319192,
+      "halting_kl": 0.161216,
+      "loss": 2.338538,
+      "mean_expected_loops": 2.387442,
+      "mean_halt_entropy": 1.373019
+    },
+    "arc_path": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143_arc128_phase1_step_200_label.jsonl",
+    "arc": {
+      "mean": {
+        "correct": 73,
+        "total": 128,
+        "accuracy": 0.5703125
+      }
+    },
+    "comparison_to_start": {
+      "helped": 5,
+      "hurt": 4,
+      "tied": 119,
+      "prediction_changes": 15
+    },
+    "comparison_to_base": {
+      "helped": 10,
+      "hurt": 9,
+      "tied": 109,
+      "prediction_changes": 29
+    }
+  },
+  "full_arc_final": {
+    "base": {
+      "mean": {
+        "correct": 167,
+        "total": 299,
+        "accuracy": 0.5585284280936454
+      }
+    },
+    "phase1_start": {
+      "mean": {
+        "correct": 168,
+        "total": 299,
+        "accuracy": 0.5618729096989966
+      }
+    },
+    "phase1_best": {
+      "mean": {
+        "correct": 170,
+        "total": 299,
+        "accuracy": 0.568561872909699
+      }
+    },
+    "best_checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_200.pt",
+    "best_vs_start": {
+      "helped": 11,
+      "hurt": 9,
+      "tied": 279,
+      "prediction_changes": 32
+    },
+    "best_vs_base": {
+      "helped": 22,
+      "hurt": 19,
+      "tied": 258,
+      "prediction_changes": 63
+    }
+  }
+}

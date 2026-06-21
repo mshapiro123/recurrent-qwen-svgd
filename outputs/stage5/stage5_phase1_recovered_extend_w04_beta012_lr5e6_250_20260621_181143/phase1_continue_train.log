@@ -1,0 +1,24 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6081.41it/s]
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 4741.78it/s]
+distillation_teacher=Qwen/Qwen2.5-0.5B-Instruct
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/phase1/phase1_step_125.pt loaded_keys=173
+step=0 mean_expected_loops=2.4780 mean_halt_entropy=1.3754 expected_ce=1.8974 halting_kl=0.2108 loss=2.3075 base_distill_kl=0.9619
+step=25 mean_expected_loops=2.5319 mean_halt_entropy=1.3728 expected_ce=3.1670 halting_kl=0.1379 loss=3.4005 base_distill_kl=0.5426
+saved_checkpoint=outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_50.pt
+step=50 mean_expected_loops=2.5069 mean_halt_entropy=1.3732 expected_ce=3.6140 halting_kl=0.1509 loss=3.8028 base_distill_kl=0.4267
+step=75 mean_expected_loops=2.4669 mean_halt_entropy=1.3782 expected_ce=1.6149 halting_kl=0.2014 loss=2.1044 base_distill_kl=1.1632
+saved_checkpoint=outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_100.pt
+step=100 mean_expected_loops=2.5046 mean_halt_entropy=1.3769 expected_ce=2.4544 halting_kl=0.1394 loss=2.7109 base_distill_kl=0.5995
+step=125 mean_expected_loops=2.3636 mean_halt_entropy=1.3740 expected_ce=2.2106 halting_kl=0.1438 loss=2.6762 base_distill_kl=1.1208
+saved_checkpoint=outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_150.pt
+step=150 mean_expected_loops=2.3761 mean_halt_entropy=1.3752 expected_ce=3.5377 halting_kl=0.1594 loss=3.7504 base_distill_kl=0.4838
+step=175 mean_expected_loops=2.3107 mean_halt_entropy=1.3691 expected_ce=2.7902 halting_kl=0.1730 loss=3.0072 base_distill_kl=0.4907
+saved_checkpoint=outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_200.pt
+step=200 mean_expected_loops=2.4115 mean_halt_entropy=1.3776 expected_ce=1.6270 halting_kl=0.1688 loss=2.1506 base_distill_kl=1.2582
+step=225 mean_expected_loops=2.4150 mean_halt_entropy=1.3785 expected_ce=2.4854 halting_kl=0.0852 loss=2.7782 base_distill_kl=0.7063
+saved_checkpoint=outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_250.pt
