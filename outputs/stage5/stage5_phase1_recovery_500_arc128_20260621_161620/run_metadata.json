@@ -1,0 +1,23 @@
+{
+  "run_id": "stage5_phase1_recovery_500_arc128_20260621_161620",
+  "base_run_id": "stage4_opus_a100_20260620",
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "params_b": 0.5,
+  "dataset_id": "lordx64/reasoning-distill-opus-4-7-max-sft",
+  "dataset_limit": 6000,
+  "val_fraction": 0.05,
+  "max_total_tokens": 1024,
+  "max_length": 512,
+  "extra_steps": 500,
+  "save_every": 250,
+  "learning_rate": 8e-06,
+  "beta": 0.08,
+  "max_grad_norm": 0.3,
+  "arc_limit": 128,
+  "arc_split": "validation",
+  "arc_seed": 0,
+  "run_full_arc_final": false,
+  "dtype": "bfloat16",
+  "adapter_dtype": "float32",
+  "resume_from": "outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt"
+}

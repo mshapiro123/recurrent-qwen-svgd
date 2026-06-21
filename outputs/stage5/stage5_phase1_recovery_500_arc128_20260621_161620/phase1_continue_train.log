@@ -1,0 +1,27 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6132.02it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt loaded_keys=173
+step=0 mean_expected_loops=2.6260 mean_halt_entropy=1.3613 expected_ce=2.2639 halting_kl=0.1809 loss=2.2784
+step=25 mean_expected_loops=2.6670 mean_halt_entropy=1.3504 expected_ce=2.6844 halting_kl=0.3487 loss=2.7123
+step=50 mean_expected_loops=2.5721 mean_halt_entropy=1.3683 expected_ce=2.2009 halting_kl=0.2741 loss=2.2228
+step=75 mean_expected_loops=2.5936 mean_halt_entropy=1.3654 expected_ce=2.9148 halting_kl=0.1480 loss=2.9266
+step=100 mean_expected_loops=2.5113 mean_halt_entropy=1.3764 expected_ce=3.0705 halting_kl=0.2297 loss=3.0889
+step=125 mean_expected_loops=2.6653 mean_halt_entropy=1.3560 expected_ce=1.8431 halting_kl=0.3421 loss=1.8705
+step=150 mean_expected_loops=2.4351 mean_halt_entropy=1.3790 expected_ce=2.0980 halting_kl=0.1815 loss=2.1125
+step=175 mean_expected_loops=2.5133 mean_halt_entropy=1.3742 expected_ce=3.0766 halting_kl=0.2330 loss=3.0952
+step=200 mean_expected_loops=2.4736 mean_halt_entropy=1.3786 expected_ce=1.5245 halting_kl=0.1394 loss=1.5357
+step=225 mean_expected_loops=2.3271 mean_halt_entropy=1.3708 expected_ce=2.7367 halting_kl=0.1696 loss=2.7502
+saved_checkpoint=outputs/stage5/stage5_phase1_recovery_500_arc128_20260621_161620/phase1/phase1_step_250.pt
+step=250 mean_expected_loops=2.2729 mean_halt_entropy=1.3634 expected_ce=3.5763 halting_kl=0.1843 loss=3.5910
+step=275 mean_expected_loops=2.4113 mean_halt_entropy=1.3780 expected_ce=2.3587 halting_kl=0.1683 loss=2.3721
+step=300 mean_expected_loops=2.2388 mean_halt_entropy=1.3570 expected_ce=3.0057 halting_kl=0.1941 loss=3.0213
+step=325 mean_expected_loops=2.2034 mean_halt_entropy=1.3489 expected_ce=3.3991 halting_kl=0.2024 loss=3.4153
+step=350 mean_expected_loops=2.1150 mean_halt_entropy=1.3235 expected_ce=1.9485 halting_kl=0.0456 loss=1.9522
+step=375 mean_expected_loops=2.0759 mean_halt_entropy=1.3087 expected_ce=2.8834 halting_kl=0.0371 loss=2.8864
+step=400 mean_expected_loops=2.0027 mean_halt_entropy=1.2787 expected_ce=2.0292 halting_kl=0.0233 loss=2.0311
+step=425 mean_expected_loops=1.9754 mean_halt_entropy=1.2668 expected_ce=1.4755 halting_kl=0.0189 loss=1.4770
+step=450 mean_expected_loops=2.0244 mean_halt_entropy=1.2864 expected_ce=2.9899 halting_kl=0.0286 loss=2.9922
+step=475 mean_expected_loops=1.8821 mean_halt_entropy=1.2182 expected_ce=1.8723 halting_kl=0.0117 loss=1.8732
+saved_checkpoint=outputs/stage5/stage5_phase1_recovery_500_arc128_20260621_161620/phase1/phase1_step_500.pt

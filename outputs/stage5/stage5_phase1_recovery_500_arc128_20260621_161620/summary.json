@@ -1,0 +1,150 @@
+{
+  "metadata": {
+    "run_id": "stage5_phase1_recovery_500_arc128_20260621_161620",
+    "base_run_id": "stage4_opus_a100_20260620",
+    "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+    "params_b": 0.5,
+    "dataset_id": "lordx64/reasoning-distill-opus-4-7-max-sft",
+    "dataset_limit": 6000,
+    "val_fraction": 0.05,
+    "max_total_tokens": 1024,
+    "max_length": 512,
+    "extra_steps": 500,
+    "save_every": 250,
+    "learning_rate": 8e-06,
+    "beta": 0.08,
+    "max_grad_norm": 0.3,
+    "arc_limit": 128,
+    "arc_split": "validation",
+    "arc_seed": 0,
+    "run_full_arc_final": false,
+    "dtype": "bfloat16",
+    "adapter_dtype": "float32",
+    "resume_from": "outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt"
+  },
+  "base_arc": {
+    "mean": {
+      "correct": 72,
+      "total": 128,
+      "accuracy": 0.5625
+    }
+  },
+  "phase1_start": {
+    "checkpoint": "outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt",
+    "val": {
+      "lora_recurrent_modules": 84.0,
+      "examples": 208.0,
+      "expected_ce": 2.449877,
+      "halting_kl": 0.330981,
+      "loss": 2.476355,
+      "mean_expected_loops": 2.69581,
+      "mean_halt_entropy": 1.343578
+    },
+    "arc": {
+      "mean": {
+        "correct": 70,
+        "total": 128,
+        "accuracy": 0.546875
+      }
+    }
+  },
+  "checkpoints": [
+    {
+      "checkpoint": "outputs/stage5/stage5_phase1_recovery_500_arc128_20260621_161620/phase1/phase1_step_250.pt",
+      "val": {
+        "lora_recurrent_modules": 84.0,
+        "examples": 208.0,
+        "expected_ce": 2.298474,
+        "halting_kl": 0.15079,
+        "loss": 2.310537,
+        "mean_expected_loops": 2.364228,
+        "mean_halt_entropy": 1.371882
+      },
+      "arc_path": "outputs/stage5/stage5_phase1_recovery_500_arc128_20260621_161620/stage5_phase1_recovery_500_arc128_20260621_161620_arc128_phase1_step_250_label.jsonl",
+      "arc": {
+        "mean": {
+          "correct": 69,
+          "total": 128,
+          "accuracy": 0.5390625
+        }
+      },
+      "comparison_to_start": {
+        "helped": 12,
+        "hurt": 13,
+        "tied": 103,
+        "prediction_changes": 33
+      },
+      "comparison_to_base": {
+        "helped": 9,
+        "hurt": 12,
+        "tied": 107,
+        "prediction_changes": 32
+      }
+    },
+    {
+      "checkpoint": "outputs/stage5/stage5_phase1_recovery_500_arc128_20260621_161620/phase1/phase1_step_500.pt",
+      "val": {
+        "lora_recurrent_modules": 84.0,
+        "examples": 208.0,
+        "expected_ce": 2.17377,
+        "halting_kl": 0.093583,
+        "loss": 2.181257,
+        "mean_expected_loops": 1.971476,
+        "mean_halt_entropy": 1.25644
+      },
+      "arc_path": "outputs/stage5/stage5_phase1_recovery_500_arc128_20260621_161620/stage5_phase1_recovery_500_arc128_20260621_161620_arc128_phase1_step_500_label.jsonl",
+      "arc": {
+        "mean": {
+          "correct": 69,
+          "total": 128,
+          "accuracy": 0.5390625
+        }
+      },
+      "comparison_to_start": {
+        "helped": 18,
+        "hurt": 19,
+        "tied": 91,
+        "prediction_changes": 50
+      },
+      "comparison_to_base": {
+        "helped": 3,
+        "hurt": 6,
+        "tied": 119,
+        "prediction_changes": 16
+      }
+    }
+  ],
+  "best_checkpoint": {
+    "checkpoint": "outputs/stage5/stage5_phase1_recovery_500_arc128_20260621_161620/phase1/phase1_step_250.pt",
+    "val": {
+      "lora_recurrent_modules": 84.0,
+      "examples": 208.0,
+      "expected_ce": 2.298474,
+      "halting_kl": 0.15079,
+      "loss": 2.310537,
+      "mean_expected_loops": 2.364228,
+      "mean_halt_entropy": 1.371882
+    },
+    "arc_path": "outputs/stage5/stage5_phase1_recovery_500_arc128_20260621_161620/stage5_phase1_recovery_500_arc128_20260621_161620_arc128_phase1_step_250_label.jsonl",
+    "arc": {
+      "mean": {
+        "correct": 69,
+        "total": 128,
+        "accuracy": 0.5390625
+      }
+    },
+    "comparison_to_start": {
+      "helped": 12,
+      "hurt": 13,
+      "tied": 103,
+      "prediction_changes": 33
+    },
+    "comparison_to_base": {
+      "helped": 9,
+      "hurt": 12,
+      "tied": 107,
+      "prediction_changes": 32
+    }
+  },
+  "full_arc_final": null
+}
