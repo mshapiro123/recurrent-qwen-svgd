@@ -239,6 +239,7 @@ def test_partial_recovery_recommends_scaled_curriculum(tmp_path) -> None:
 
     assert actions[0]["name"] == "Scale deterministic curriculum"
     assert "STAGE5_ARC_AGI_TRAIN_TASK_LIMIT=160" in actions[0]["command"]
+    assert "Gap closure: selected 33.33%, best-of-K 42.86%." in actions[0]["reason"]
 
 
 def test_recovery_analysis_focuses_scaled_curriculum_on_worst_families(tmp_path) -> None:

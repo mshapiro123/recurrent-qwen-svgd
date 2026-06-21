@@ -109,9 +109,11 @@ def recovered_benchmark_evidence(path: Path | None, payload: dict[str, Any] | No
         return {"present": False}
     benchmark = payload.get("recovered_benchmark") or payload
     base = summary_metrics(benchmark.get("base"))
+    start = summary_metrics(benchmark.get("phase1_start"))
     recovered = summary_metrics(benchmark.get("recovered"))
     deltas = benchmark.get("deltas") or {}
     recovered_vs_base = deltas.get("recovered_vs_base") or {}
+    gap_closure = benchmark.get("gap_closure") or {}
     selected_delta = int(
         recovered_vs_base.get(
             "selected_exact_delta",
@@ -127,6 +129,12 @@ def recovered_benchmark_evidence(path: Path | None, payload: dict[str, Any] | No
         or 0
     )
     examples = max(metric(base, "examples_with_targets"), metric(recovered, "examples_with_targets"))
+    selected_initial_gap = metric(base, "selected_exact") - metric(start, "selected_exact")
+    selected_gain = metric(recovered, "selected_exact") - metric(start, "selected_exact")
+    best_initial_gap = metric(base, "best_of_k_exact") - metric(start, "best_of_k_exact")
+    best_gain = metric(recovered, "best_of_k_exact") - metric(start, "best_of_k_exact")
+    selected_closure = gap_closure.get("selected_exact") or {}
+    best_closure = gap_closure.get("best_of_k_exact") or {}
     return {
         "present": True,
         "path": path_for_cli(path),
@@ -134,7 +142,22 @@ def recovered_benchmark_evidence(path: Path | None, payload: dict[str, Any] | No
         "examples": examples,
         "selected_delta_recovered_vs_base": selected_delta,
         "best_of_k_delta_recovered_vs_base": best_delta,
+        "selected_initial_gap_to_base": int(selected_closure.get("initial_gap_to_base", selected_initial_gap) or 0),
+        "selected_gain_from_start": int(selected_closure.get("recovered_gain_from_start", selected_gain) or 0),
+        "selected_gap_closure_fraction": selected_closure.get(
+            "closure_fraction",
+            selected_gain / selected_initial_gap if selected_initial_gap > 0 else None,
+        ),
+        "selected_gap_closure_status": selected_closure.get("status"),
+        "best_of_k_initial_gap_to_base": int(best_closure.get("initial_gap_to_base", best_initial_gap) or 0),
+        "best_of_k_gain_from_start": int(best_closure.get("recovered_gain_from_start", best_gain) or 0),
+        "best_of_k_gap_closure_fraction": best_closure.get(
+            "closure_fraction",
+            best_gain / best_initial_gap if best_initial_gap > 0 else None,
+        ),
+        "best_of_k_gap_closure_status": best_closure.get("status"),
         "base": base,
+        "phase1_start": start,
         "recovered": recovered,
     }
 
@@ -219,6 +242,14 @@ def evidence_source(evidence: dict[str, Any]) -> str | None:
         if isinstance(nested, dict) and nested.get("path"):
             sources.append(f"{key}:{nested['path']}")
     return ", ".join(sources) if sources else None
+
+
+def closure_fragment(evidence: dict[str, Any]) -> str:
+    selected = evidence.get("selected_gap_closure_fraction")
+    best = evidence.get("best_of_k_gap_closure_fraction")
+    selected_text = "n/a" if selected is None else f"{float(selected):.2%}"
+    best_text = "n/a" if best is None else f"{float(best):.2%}"
+    return f"selected closure {selected_text}; best-of-K closure {best_text}"
 
 
 def assess_release_gate(
@@ -348,8 +379,9 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
     ]
     for row in payload["criteria"]:
         evidence = row.get("evidence") or {}
+        detail = f" ({closure_fragment(evidence)})" if row["name"] == "arc_benchmark_confirmation" else ""
         lines.append(
-            f"| `{row['name']}` | `{row['passed']}` | {row['reason']} | `{evidence_source(evidence)}` |"
+            f"| `{row['name']}` | `{row['passed']}` | {row['reason']}{detail} | `{evidence_source(evidence)}` |"
         )
     output_md.parent.mkdir(parents=True, exist_ok=True)
     output_md.write_text("\n".join(lines) + "\n", encoding="utf-8")

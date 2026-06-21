@@ -304,6 +304,29 @@ def evidence_fragment(stats: dict[str, Any] | None, fallback_delta: int) -> str:
     )
 
 
+def gap_closure_fraction(benchmark: dict[str, Any] | None, metric_name: str) -> float | None:
+    if not benchmark:
+        return None
+    closure = ((benchmark.get("gap_closure") or {}).get(metric_name) or {}).get("closure_fraction")
+    if closure is not None:
+        return float(closure)
+    base = (benchmark.get("base") or {}).get("summary") or {}
+    start = (benchmark.get("phase1_start") or {}).get("summary") or {}
+    recovered = (benchmark.get("recovered") or {}).get("summary") or {}
+    initial_gap = metric(base, metric_name) - metric(start, metric_name)
+    if initial_gap <= 0:
+        return None
+    return (metric(recovered, metric_name) - metric(start, metric_name)) / initial_gap
+
+
+def gap_closure_fragment(benchmark: dict[str, Any] | None) -> str:
+    selected = gap_closure_fraction(benchmark, "selected_exact")
+    best = gap_closure_fraction(benchmark, "best_of_k_exact")
+    selected_text = "n/a" if selected is None else f"{selected:.2%}"
+    best_text = "n/a" if best is None else f"{best:.2%}"
+    return f"Gap closure: selected {selected_text}, best-of-K {best_text}."
+
+
 def best_recovered_tta_row(tta: dict[str, Any] | None) -> dict[str, Any] | None:
     if not tta:
         return None
@@ -1560,7 +1583,8 @@ def plan_next_actions(
                     f"Confirm recovered-vs-base at ARC limit {confirm_label}",
                     f"{confirm_reason} "
                     f"Selected evidence: {evidence_fragment(recovered_vs_base_selected_stats, recovered_vs_base_selected)}. "
-                    f"Best-of-K evidence: {evidence_fragment(recovered_vs_base_best_stats, recovered_vs_base_best)}.",
+                    f"Best-of-K evidence: {evidence_fragment(recovered_vs_base_best_stats, recovered_vs_base_best)}. "
+                    f"{gap_closure_fragment(benchmark)}",
                     command_env(
                         {
                             "STAGE5_ARC_AGI_AUTOPILOT_SUMMARY": source_summary_cli,
@@ -1600,6 +1624,7 @@ def plan_next_actions(
                     "Recovered recurrent improved over its start checkpoint but still trails base; spend GPU on more deterministic recovery before particle/SVGD training. "
                     f"Selected evidence: {evidence_fragment(recovered_vs_start_selected_stats, recovered_vs_start_selected)}. "
                     f"Best-of-K evidence: {evidence_fragment(recovered_vs_start_best_stats, recovered_vs_start_best)}."
+                    f" {gap_closure_fragment(benchmark)}"
                     f"{focus_reason}",
                     command_env(
                         {
@@ -1619,7 +1644,8 @@ def plan_next_actions(
                     "Run trace/candidate-distillation diagnostics before more SFT",
                     "Recovered recurrent did not improve over the start checkpoint; diagnose training target quality instead of scaling the same recipe. "
                     f"Selected evidence: {evidence_fragment(recovered_vs_start_selected_stats, recovered_vs_start_selected)}. "
-                    f"Best-of-K evidence: {evidence_fragment(recovered_vs_start_best_stats, recovered_vs_start_best)}.",
+                    f"Best-of-K evidence: {evidence_fragment(recovered_vs_start_best_stats, recovered_vs_start_best)}. "
+                    f"{gap_closure_fragment(benchmark)}",
                     command_env(
                         {
                             "STAGE5_ARC_AGI_CANDIDATE_DISTILL_GATE_RUN_ID": f"{RUN_ID}_candidate_distill_diagnostic",

@@ -4,6 +4,7 @@ import json
 
 from colab.assess_stage5_release_gate import (
     assess_release_gate,
+    closure_fragment,
     latest_matching,
     is_hf_export,
     is_recipe_control,
@@ -38,6 +39,20 @@ def _benchmark(path, *, selected_delta: int = 1, best_delta: int = 1, examples: 
                 "selected_exact_delta": selected_delta,
                 "best_of_k_exact_delta": best_delta,
             }
+        },
+        "gap_closure": {
+            "selected_exact": {
+                "initial_gap_to_base": 2,
+                "recovered_gain_from_start": 2 + selected_delta,
+                "closure_fraction": (2 + selected_delta) / 2,
+                "status": "closed_or_surpassed" if selected_delta >= 0 else "partially_closed",
+            },
+            "best_of_k_exact": {
+                "initial_gap_to_base": 3,
+                "recovered_gain_from_start": 3 + best_delta,
+                "closure_fraction": (3 + best_delta) / 3,
+                "status": "closed_or_surpassed" if best_delta >= 0 else "partially_closed",
+            },
         },
     }
     _write(path, payload)
@@ -120,6 +135,10 @@ def test_release_gate_ready_when_all_evidence_present(tmp_path) -> None:
     assert payload["status"] == "ready_for_broader_benchmarks"
     assert payload["passed"] is True
     assert [row["passed"] for row in payload["criteria"]] == [True, True, True]
+    benchmark_evidence = payload["criteria"][0]["evidence"]
+    assert benchmark_evidence["selected_gap_closure_fraction"] == 1.5
+    assert benchmark_evidence["best_of_k_gap_closure_fraction"] == 4 / 3
+    assert closure_fragment(benchmark_evidence) == "selected closure 150.00%; best-of-K closure 133.33%"
 
 
 def test_release_gate_routes_selector_conversion_before_release(tmp_path) -> None:
@@ -226,3 +245,4 @@ def test_release_gate_cli_writes_outputs(tmp_path, monkeypatch) -> None:
     assert main() == 0
     assert json.loads(output_json.read_text(encoding="utf-8"))["status"] == "ready_for_broader_benchmarks"
     assert "Stage 5 Release / Benchmark Gate" in output_md.read_text(encoding="utf-8")
+    assert "selected closure" in output_md.read_text(encoding="utf-8")
