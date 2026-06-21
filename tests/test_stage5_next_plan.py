@@ -1340,6 +1340,56 @@ def test_recipe_control_assessment_selector_conversion_runs_rescore(tmp_path) ->
     assert "python colab/run_stage5_arc_agi_rescore_selectors.py" in actions[0]["command"]
 
 
+def test_recipe_control_metadata_mismatch_reruns_recurrent_matched_to_dense(tmp_path) -> None:
+    source = tmp_path / "recipe" / "summary.json"
+    dense = tmp_path / "dense" / "summary.json"
+    source.parent.mkdir()
+    dense.parent.mkdir()
+    dense.write_text(
+        json.dumps(
+            {
+                "kind": "dense_sft_control",
+                "metadata": {
+                    "arc_version": "1",
+                    "train_task_limit": 80,
+                    "eval_task_limit": 40,
+                    "trace_mode": "symbolic_program",
+                    "trace_filter": "covered",
+                    "grid_format": "compact",
+                    "program_parse_mode": "fallback",
+                    "selection_strategy": "heuristic",
+                    "train_steps": 300,
+                    "learning_rate": 8e-6,
+                    "distillation": {"enabled": False, "weight": 0.1, "temperature": 1.0, "on": "response"},
+                    "include_symbolic_candidates": False,
+                    "eval_checkpoint_ladder": False,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    payload = {
+        "gate": "stage5_same_recipe_architecture",
+        "status": "needs_review",
+        "dense_summary": str(dense),
+        "recurrent_summary": str(tmp_path / "recurrent" / "summary.json"),
+        "metadata_differences": {
+            "eval_checkpoint_ladder": {"dense": "False", "recurrent": "True"},
+            "synthetic_tasks": {"dense": "0", "recurrent": "200"},
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Rerun recurrent ARC-AGI SFT matched to dense recipe"
+    assert "Mismatched fields: eval_checkpoint_ladder, synthetic_tasks" in actions[0]["reason"]
+    assert "STAGE5_ARC_AGI_TRAIN_TASK_LIMIT=80" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_EVAL_TASK_LIMIT=40" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_EVAL_CHECKPOINT_LADDER=0" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_SYNTHETIC_TASKS=0" not in actions[0]["command"]
+    assert "python colab/run_stage5_arc_agi_sft.py" in actions[0]["command"]
+
+
 def test_recipe_selector_rescore_runs_conversion_assessment(tmp_path) -> None:
     recipe = tmp_path / "recipe" / "summary.json"
     source = tmp_path / "selector" / "summary.json"

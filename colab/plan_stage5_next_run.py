@@ -757,6 +757,25 @@ def recipe_control_assessment_actions(payload: dict[str, Any], *, source_summary
                 10,
             )
         ]
+    metadata_diff = payload.get("metadata_differences")
+    dense_summary = payload.get("dense_summary")
+    if status == "needs_review" and isinstance(metadata_diff, dict) and metadata_diff and dense_summary:
+        dense_payload = None
+        try:
+            dense_payload = read_json(resolve_path(str(dense_summary)))
+        except Exception:
+            dense_payload = None
+        if isinstance(dense_payload, dict) and dense_sft_payload(dense_payload):
+            fields = ", ".join(sorted(metadata_diff))
+            return [
+                make_action(
+                    "Rerun recurrent ARC-AGI SFT matched to dense recipe",
+                    "The same-recipe architecture gate found metadata differences, so the existing recurrent result is not claim-safe. "
+                    f"Rerun the recurrent arm from the dense control metadata before judging architecture lift. Mismatched fields: {fields}.",
+                    dense_sft_matched_recurrent_command(dense_payload),
+                    10,
+                )
+            ]
     return [
         make_action(
             f"Inspect same-recipe assessment `{status}`",
