@@ -14,6 +14,7 @@ A100 runs evidence-led:
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import shlex
@@ -143,8 +144,19 @@ def latest_summary() -> Path:
     return sorted(candidates, key=lambda item: item.stat().st_mtime, reverse=True)[0]
 
 
-def resolve_source_summary() -> Path:
-    return resolve_path(SOURCE_SUMMARY) if SOURCE_SUMMARY else latest_summary()
+def resolve_source_summary(source_summary: str | None = None) -> Path:
+    explicit = source_summary or SOURCE_SUMMARY
+    return resolve_path(explicit) if explicit else latest_summary()
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Read a Stage 5 summary and write a ranked next-run plan.")
+    parser.add_argument(
+        "--source-summary",
+        default=None,
+        help="Stage 5 summary JSON to plan from. Overrides STAGE5_ARC_AGI_NEXT_PLAN_SOURCE_SUMMARY.",
+    )
+    return parser.parse_args(argv)
 
 
 def metric(summary: dict[str, Any] | None, key: str) -> int:
@@ -2644,10 +2656,8 @@ def source_kind(payload: dict[str, Any]) -> str:
 
 
 def main() -> int:
-    if any(arg in {"-h", "--help"} for arg in os.sys.argv[1:]):
-        print("Read latest Stage 5 run summary and write a ranked next-run plan.")
-        return 0
-    summary_path = resolve_source_summary()
+    args = parse_args()
+    summary_path = resolve_source_summary(args.source_summary)
     payload = read_json(summary_path)
     plan = {
         "run_id": RUN_ID,

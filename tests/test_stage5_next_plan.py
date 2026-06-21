@@ -1945,6 +1945,14 @@ def test_balanced_arc_mix_passed_runs_full_assessment(tmp_path) -> None:
     assert "STAGE5_RECOVERY_FULL_ASSESS_SOURCE_SUMMARY=" in actions[0]["command"]
 
 
+def test_parse_args_accepts_source_summary() -> None:
+    from colab.plan_stage5_next_run import parse_args
+
+    args = parse_args(["--source-summary", "outputs/stage5/run/summary.json"])
+
+    assert args.source_summary == "outputs/stage5/run/summary.json"
+
+
 def test_balanced_arc_mix_failed_inspects_summary(tmp_path) -> None:
     source = tmp_path / "arc_mix" / "summary.json"
     source.parent.mkdir()
