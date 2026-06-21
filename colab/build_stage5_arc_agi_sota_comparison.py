@@ -472,6 +472,8 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
         f"- Candidate params (B): `{candidate.get('params_b')}`",
         f"- Baseline ARC version/split: `{payload.get('baseline_registry', {}).get('arc_version')}` / `{payload.get('baseline_registry', {}).get('arc_split')}`",
         f"- Best baseline: `{best.get('name')}` at `{best.get('accuracy')}`",
+        f"- Best baseline params (B): `{best.get('params_b')}`",
+        f"- Best baseline evidence: `{best.get('evidence_type')}` from `{best.get('source')}`",
         f"- Delta accuracy: `{payload['delta_accuracy_vs_best_baseline']}`",
         f"- Next step: {payload['next_step']}",
         "",
@@ -486,6 +488,7 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
             "## Baseline Registry Requirement",
             "",
             "This artifact is only authoritative if the baseline registry contains sourced same-size scores. "
+            "Each accepted baseline row must explicitly match the ARC-AGI version/split and identify its evidence type. "
             "Do not use this file for SOTA claims when status is `needs_baseline_registry`.",
         ]
     )

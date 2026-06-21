@@ -98,8 +98,11 @@ def _registry(path, *, accuracy: float = 0.1, arc_version: str = "1", arc_split:
                 {
                     "name": "same-size-baseline",
                     "params_b": 0.5,
+                    "arc_version": arc_version,
+                    "arc_split": arc_split,
                     "metric": "selected_accuracy",
                     "accuracy": accuracy,
+                    "evidence_type": "official_leaderboard",
                     "source": "https://arcprize.org/leaderboard",
                     "accessed_date": "2026-06-20",
                 }
@@ -287,8 +290,11 @@ def test_sota_comparison_rejects_invalid_baseline_registry(tmp_path) -> None:
                 {
                     "name": "placeholder-baseline",
                     "params_b": 0.5,
+                    "arc_version": "1",
+                    "arc_split": "evaluation",
                     "metric": "selected_accuracy",
                     "accuracy": 0.1,
+                    "evidence_type": "official_leaderboard",
                     "source": "REPLACE_WITH_AUTHORITATIVE_SOURCE",
                 }
             ],
@@ -306,6 +312,29 @@ def test_sota_comparison_rejects_invalid_baseline_registry(tmp_path) -> None:
 
     assert payload["status"] == "needs_baseline_registry"
     assert payload["baseline_registry"]["validation"]["passed"] is False
+
+
+def test_sota_comparison_rejects_mixed_arc_baseline_row(tmp_path) -> None:
+    registry = _registry(tmp_path / "baselines.json", accuracy=0.1)
+    payload_data = json.loads(registry.read_text(encoding="utf-8"))
+    payload_data["baselines"][0]["arc_split"] = "training"
+    registry.write_text(json.dumps(payload_data), encoding="utf-8")
+
+    payload = build_sota_comparison(
+        candidate_summary=_candidate(tmp_path / "candidate" / "summary.json", selected_exact=12),
+        baseline_registry=registry,
+        candidate_label="phase1_arc_agi_tuned",
+        metric="selected_accuracy",
+        min_examples=100,
+        min_margin=0.0,
+    )
+
+    assert payload["status"] == "needs_baseline_registry"
+    assert payload["baseline_registry"]["validation"]["passed"] is False
+    assert any(
+        row["path"] == "$.baselines[0].arc_split"
+        for row in payload["baseline_registry"]["validation"]["issues"]
+    )
 
 
 def test_sota_comparison_cli_writes_outputs(tmp_path, monkeypatch) -> None:

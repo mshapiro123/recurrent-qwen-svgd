@@ -330,7 +330,11 @@ For any same-size SOTA comparison, use a main ARC-AGI run summary carrying
 Ad hoc per-label evaluation summaries are not sufficient evidence for
 `colab/build_stage5_arc_agi_sota_comparison.py`. The sourced baseline registry
 must also carry `arc_version` and `arc_split`, and they must match the
-candidate summary exactly.
+candidate summary exactly. Each baseline row must also explicitly repeat the
+ARC version/split and include an `evidence_type` such as
+`official_leaderboard`, `paper`, `model_card`, `repository`, or
+`reproduced_eval`, so mixed-protocol scores cannot be hidden under a global
+registry header.
 
 Set `STAGE5_ARC_AGI_DISTILL=1` to add frozen-base next-token KL distillation
 inside `training/train_phase1_ponder.py`. Run

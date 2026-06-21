@@ -24,6 +24,7 @@ RUN_ID = os.environ.get("STAGE5_ARC_AGI_BASELINE_REGISTRY_RUN_ID") or time.strft
 )
 DEFAULT_BASELINE_REGISTRY = ROOT / "config" / "arc_agi_same_size_baselines.json"
 SUPPORTED_METRICS = {"selected_accuracy", "best_of_k_accuracy", "first_accuracy"}
+SUPPORTED_EVIDENCE_TYPES = {"official_leaderboard", "paper", "model_card", "repository", "reproduced_eval"}
 PLACEHOLDER_TOKENS = {
     "example",
     "placeholder",
@@ -178,8 +179,31 @@ def validate_registry_payload(payload: Any, *, source_path: Path | None = None) 
             )
 
         row_metric = text_value(row.get("metric")) or metric
+        if is_placeholder_text(row.get("metric")):
+            issues.append(issue(f"{row_path}.metric", "Baseline row must explicitly identify the scored metric."))
         if row_metric != metric:
             issues.append(issue(f"{row_path}.metric", "Baseline metric must match registry metric."))
+
+        row_arc_version = text_value(row.get("arc_version"))
+        if is_placeholder_text(row_arc_version):
+            issues.append(issue(f"{row_path}.arc_version", "Baseline row must explicitly identify ARC-AGI version."))
+        elif row_arc_version != arc_version:
+            issues.append(issue(f"{row_path}.arc_version", "Baseline ARC-AGI version must match registry arc_version."))
+
+        row_arc_split = text_value(row.get("arc_split") or row.get("eval_split"))
+        if is_placeholder_text(row_arc_split):
+            issues.append(issue(f"{row_path}.arc_split", "Baseline row must explicitly identify ARC-AGI split."))
+        elif row_arc_split != arc_split:
+            issues.append(issue(f"{row_path}.arc_split", "Baseline ARC-AGI split must match registry arc_split."))
+
+        evidence_type = text_value(row.get("evidence_type"))
+        if evidence_type not in SUPPORTED_EVIDENCE_TYPES:
+            issues.append(
+                issue(
+                    f"{row_path}.evidence_type",
+                    f"evidence_type must be one of {sorted(SUPPORTED_EVIDENCE_TYPES)}.",
+                )
+            )
 
         accuracy = row.get("accuracy", row.get(metric))
         if not is_finite_number(accuracy) or not (0.0 <= float(accuracy) <= 1.0):
@@ -210,6 +234,9 @@ def validate_registry_payload(payload: Any, *, source_path: Path | None = None) 
                     "name": name,
                     "params_b": float(params_b),
                     "metric": metric,
+                    "arc_version": row_arc_version,
+                    "arc_split": row_arc_split,
+                    "evidence_type": evidence_type,
                     "accuracy": float(accuracy),
                     "source": text_value(source),
                 }
@@ -341,9 +368,26 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
         f"- Best baseline: `{(payload.get('best_baseline') or {}).get('name')}` at `{(payload.get('best_baseline') or {}).get('accuracy')}`",
         f"- Next step: {payload['next_step']}",
         "",
-        "## Issues",
+        "## Valid Baselines",
         "",
     ]
+    valid_baselines = payload.get("valid_baselines") or []
+    if valid_baselines:
+        for row in valid_baselines:
+            lines.append(
+                f"- `{row.get('name')}`: accuracy `{row.get('accuracy')}`, params `{row.get('params_b')}`B, "
+                f"ARC `{row.get('arc_version')}`/`{row.get('arc_split')}`, evidence `{row.get('evidence_type')}`, "
+                f"source `{row.get('source')}`"
+            )
+    else:
+        lines.append("- None.")
+    lines.extend(
+        [
+            "",
+            "## Issues",
+            "",
+        ]
+    )
     if payload["issues"]:
         for row in payload["issues"]:
             lines.append(f"- `{row['severity']}` `{row['path']}`: {row['message']}")
@@ -356,8 +400,10 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
             "",
             "A same-size ARC-AGI SOTA comparison requires sourced, non-placeholder "
             "baseline scores inside the configured parameter band for the same "
-            "ARC-AGI version and split. Placeholder or unsourced values keep the "
-            "SOTA gate closed.",
+            "ARC-AGI version and split. Each row must also identify whether the "
+            "score came from an official leaderboard, paper, model card, "
+            "repository, or reproduced eval. Placeholder, mixed-split, or "
+            "unsourced values keep the SOTA gate closed.",
         ]
     )
     output_md.parent.mkdir(parents=True, exist_ok=True)

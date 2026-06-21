@@ -16,8 +16,11 @@ def _registry(*, params_b: float = 0.5, source: str = "https://arcprize.org/lead
             {
                 "name": "sourced-small-baseline",
                 "params_b": params_b,
+                "arc_version": "1",
+                "arc_split": "evaluation",
                 "metric": "selected_accuracy",
                 "accuracy": 0.1,
+                "evidence_type": "official_leaderboard",
                 "source": source,
                 "accessed_date": "2026-06-20",
             }
@@ -63,6 +66,30 @@ def test_baseline_registry_validation_rejects_out_of_band_params() -> None:
     assert payload["status"] == "needs_baseline_registry"
     assert payload["passed"] is False
     assert any(row["path"] == "$.baselines[0].params_b" for row in payload["issues"])
+
+
+def test_baseline_registry_validation_rejects_row_arc_mismatch() -> None:
+    registry = _registry()
+    registry["baselines"][0]["arc_version"] = "2"
+    registry["baselines"][0]["arc_split"] = "training"
+
+    payload = validate_registry_payload(registry)
+
+    assert payload["status"] == "needs_baseline_registry"
+    assert payload["passed"] is False
+    assert any(row["path"] == "$.baselines[0].arc_version" for row in payload["issues"])
+    assert any(row["path"] == "$.baselines[0].arc_split" for row in payload["issues"])
+
+
+def test_baseline_registry_validation_requires_row_evidence_type() -> None:
+    registry = _registry()
+    registry["baselines"][0].pop("evidence_type")
+
+    payload = validate_registry_payload(registry)
+
+    assert payload["status"] == "needs_baseline_registry"
+    assert payload["passed"] is False
+    assert any(row["path"] == "$.baselines[0].evidence_type" for row in payload["issues"])
 
 
 def test_baseline_registry_cli_writes_outputs(tmp_path, monkeypatch) -> None:
