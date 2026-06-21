@@ -1,0 +1,155 @@
+{
+  "run_id": "stage5_arc128_phase2_k4_no_svgd_20260621_161246",
+  "kind": "stage5_benchmark_suite",
+  "status": "completed",
+  "source_summary": "outputs/stage5/stage5_arc128_phase2_svgd_k4_20260621_160916/summary.json",
+  "checkpoint": "outputs/qwen_0_5b_phase2_svgd_recreated_smoke25/phase2_step_25.pt",
+  "benchmarks": [
+    "arc_challenge"
+  ],
+  "score_targets": [
+    "label"
+  ],
+  "aggregates": [
+    "mean",
+    "max",
+    "vote"
+  ],
+  "recurrent_mode": "phase2",
+  "recurrent_num_trajectories": 4,
+  "elapsed_seconds": 126.11213994026184,
+  "failures": [],
+  "results": {
+    "arc_challenge": {
+      "label": {
+        "base": {
+          "max": {
+            "correct": 72,
+            "total": 128,
+            "accuracy": 0.5625
+          },
+          "mean": {
+            "correct": 72,
+            "total": 128,
+            "accuracy": 0.5625
+          },
+          "vote": {
+            "correct": 72,
+            "total": 128,
+            "accuracy": 0.5625
+          }
+        },
+        "recurrent": {
+          "max": {
+            "correct": 63,
+            "total": 128,
+            "accuracy": 0.4921875
+          },
+          "mean": {
+            "correct": 63,
+            "total": 128,
+            "accuracy": 0.4921875
+          },
+          "vote": {
+            "correct": 63,
+            "total": 128,
+            "accuracy": 0.4921875
+          }
+        }
+      }
+    }
+  },
+  "comparisons": {
+    "arc_challenge": {
+      "label": {
+        "max": {
+          "correct_delta_recurrent_vs_base": -9,
+          "accuracy_delta_recurrent_vs_base": -0.0703125,
+          "base": {
+            "correct": 72,
+            "total": 128,
+            "accuracy": 0.5625
+          },
+          "recurrent": {
+            "correct": 63,
+            "total": 128,
+            "accuracy": 0.4921875
+          }
+        },
+        "mean": {
+          "correct_delta_recurrent_vs_base": -9,
+          "accuracy_delta_recurrent_vs_base": -0.0703125,
+          "base": {
+            "correct": 72,
+            "total": 128,
+            "accuracy": 0.5625
+          },
+          "recurrent": {
+            "correct": 63,
+            "total": 128,
+            "accuracy": 0.4921875
+          }
+        },
+        "vote": {
+          "correct_delta_recurrent_vs_base": -9,
+          "accuracy_delta_recurrent_vs_base": -0.0703125,
+          "base": {
+            "correct": 72,
+            "total": 128,
+            "accuracy": 0.5625
+          },
+          "recurrent": {
+            "correct": 63,
+            "total": 128,
+            "accuracy": 0.4921875
+          }
+        }
+      }
+    }
+  },
+  "paired_comparisons": {
+    "arc_challenge": {
+      "label": {
+        "max": {
+          "paired_examples": 128,
+          "base_correct": 72,
+          "recurrent_correct": 63,
+          "correct_delta_recurrent_vs_base": -9,
+          "base_accuracy": 0.5625,
+          "recurrent_accuracy": 0.4921875,
+          "accuracy_delta_recurrent_vs_base": -0.0703125,
+          "wins": 16,
+          "losses": 25,
+          "ties": 87,
+          "sign_test_p_value": 0.21102359760880063
+        },
+        "mean": {
+          "paired_examples": 128,
+          "base_correct": 72,
+          "recurrent_correct": 63,
+          "correct_delta_recurrent_vs_base": -9,
+          "base_accuracy": 0.5625,
+          "recurrent_accuracy": 0.4921875,
+          "accuracy_delta_recurrent_vs_base": -0.0703125,
+          "wins": 16,
+          "losses": 25,
+          "ties": 87,
+          "sign_test_p_value": 0.21102359760880063
+        },
+        "vote": {
+          "paired_examples": 128,
+          "base_correct": 72,
+          "recurrent_correct": 63,
+          "correct_delta_recurrent_vs_base": -9,
+          "base_accuracy": 0.5625,
+          "recurrent_accuracy": 0.4921875,
+          "accuracy_delta_recurrent_vs_base": -0.0703125,
+          "wins": 16,
+          "losses": 25,
+          "ties": 87,
+          "sign_test_p_value": 0.21102359760880063
+        }
+      }
+    }
+  }
+}
