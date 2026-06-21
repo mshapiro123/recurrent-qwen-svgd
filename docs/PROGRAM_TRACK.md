@@ -60,7 +60,9 @@ aggregate selected-answer harm. This is the local form of the decisive
 experiment before larger recipe or scale-up runs. It also separates the
 selector-conversion case: if recurrent improves hard-bucket best-of-K candidate
 coverage without selected-answer conversion, the next move is selector/verifier
-work on those candidates, not declaring the architecture dead.
+work on those candidates, not declaring the architecture dead. Selector
+conversion itself must also convert into hard-bucket selected-answer lift; a
+selector that only improves the aggregate is diagnostic evidence, not a pass.
 
 ## Decisive Experiment
 

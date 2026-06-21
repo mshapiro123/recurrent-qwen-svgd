@@ -114,7 +114,9 @@ Initial harness files:
   improves hard-bucket best-of-K candidate coverage but not selected accuracy,
   it reports `needs_selector_conversion` and the planner routes to selector
   rescoring. Aggregate-only gains are treated as more-evidence diagnostics, not
-  architecture proof.
+  architecture proof. The selector-conversion gate applies the same hard-tail
+  rule: selected-answer conversion must improve the hard bucket without
+  aggregate harm.
 - `colab/assess_stage5_release_gate.py`: no-GPU Stage 5E readiness audit. It
   combines recovered-vs-base ARC benchmark confirmation, same-recipe
   architecture evidence, and HF export metadata into one status before broader

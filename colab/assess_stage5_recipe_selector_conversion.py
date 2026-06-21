@@ -149,10 +149,7 @@ def evaluate_selector_row(
     aggregate_nonnegative = supports_nonnegative(aggregate)
     hard_positive = hard_sufficient and supports_positive(hard)
     hard_nonnegative = bool(hard) and hard_sufficient and supports_nonnegative(hard)
-    passed = total_sufficient and hard_sufficient and (
-        (aggregate_positive and hard_nonnegative)
-        or (hard_positive and aggregate_nonnegative)
-    )
+    passed = total_sufficient and hard_sufficient and hard_positive and aggregate_nonnegative
     tradeoff = hard_positive and not aggregate_nonnegative
     return {
         "label": str(row.get("label")),
@@ -222,9 +219,9 @@ def assess_recipe_selector_conversion(
         status = "passed"
         has_claim_level = any(row["claim_level_selector"] for row in passing)
         reason = (
-            "At least one recurrent selector converts claim-level candidate evidence into selected-answer lift versus the dense control."
+            "At least one recurrent selector converts claim-level candidate evidence into hard-bucket selected-answer lift versus the dense control."
             if has_claim_level
-            else "At least one recurrent selector converts best-of-K coverage into selected-answer lift versus the dense control."
+            else "At least one recurrent selector converts best-of-K coverage into hard-bucket selected-answer lift versus the dense control."
         )
         next_step = "Rerun or update the same-recipe architecture assessment using the passing selector setting."
     elif not evaluated_rows:
@@ -247,8 +244,9 @@ def assess_recipe_selector_conversion(
     best = max(
         evaluated_rows,
         key=lambda row: (
-            int((row["aggregate"] or {}).get("delta_exact", 0) or 0),
             int((row["hard"] or {}).get("delta_exact", 0) or 0),
+            int((row["aggregate"] or {}).get("delta_exact", 0) or 0),
+            int((row["hard_best_of_k"] or {}).get("delta_exact", 0) or 0),
             int((row["aggregate_best_of_k"] or {}).get("delta_exact", 0) or 0),
         ),
         default=None,

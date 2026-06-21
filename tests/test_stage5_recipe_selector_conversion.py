@@ -111,6 +111,36 @@ def _recipe_and_selector(
     return recipe_summary, selector_summary
 
 
+def _add_selector_row(
+    tmp_path,
+    selector_summary,
+    *,
+    strategy: str,
+    selected: list[bool],
+    best: list[bool] | None = None,
+) -> None:
+    selector_dir = selector_summary.parent
+    selector_eval = _eval_summary(selected, best=best)
+    selector_output = selector_dir / f"recovered__selector_{strategy}_summary.json"
+    _write(selector_output, selector_eval)
+    payload = json.loads(selector_summary.read_text(encoding="utf-8"))
+    payload["strategies"].append(strategy)
+    payload["rows"].append(
+        {
+            "label": "recovered",
+            "selection_strategy": strategy,
+            "selected_exact": sum(selected),
+            "best_of_k_exact": sum(best or selected),
+            "selector_generated_selected_exact": 0,
+            "selected_exceeds_best_of_k": selector_eval["summary"]["selected_exceeds_best_of_k"],
+            "examples": len(selected),
+            "valid_candidate_rate": 1.0,
+            "output_summary_json": str(selector_output),
+        }
+    )
+    selector_summary.write_text(json.dumps(payload), encoding="utf-8")
+
+
 def test_recipe_selector_conversion_passes_when_selector_beats_dense_with_hard_support(tmp_path) -> None:
     recipe, selector = _recipe_and_selector(
         tmp_path,
@@ -173,6 +203,53 @@ def test_recipe_selector_conversion_fails_when_selector_does_not_beat_dense(tmp_
 
     assert payload["status"] == "failed"
     assert payload["passed"] is False
+
+
+def test_recipe_selector_conversion_does_not_pass_without_hard_tail_lift(tmp_path) -> None:
+    recipe, selector = _recipe_and_selector(
+        tmp_path,
+        dense_selected=[False] * 20,
+        selector_selected=[False, False, False, False, False, False] + [True, True, True] + [False] * 11,
+    )
+
+    payload = assess_recipe_selector_conversion(
+        recipe_control_summary=recipe,
+        selector_rescore_summary=selector,
+        min_total_examples=20,
+        min_hard_examples=5,
+    )
+
+    assert payload["status"] == "failed"
+    assert payload["passed"] is False
+    evidence = payload["selector_evidence"][0]
+    assert evidence["aggregate"]["delta_exact"] == 3
+    assert evidence["hard"]["delta_exact"] == 0
+    assert evidence["aggregate_positive"] is True
+    assert evidence["hard_positive"] is False
+
+
+def test_recipe_selector_conversion_best_selector_prefers_hard_tail_delta(tmp_path) -> None:
+    recipe, selector = _recipe_and_selector(
+        tmp_path,
+        dense_selected=[False] * 20,
+        selector_selected=[False, False, False, False, False, False] + [True, True, True, True] + [False] * 10,
+        selector_strategy="aggregate_only",
+    )
+    _add_selector_row(
+        tmp_path,
+        selector,
+        strategy="hard_tail",
+        selected=[True, True, False, False, False, False] + [False] * 14,
+    )
+
+    payload = assess_recipe_selector_conversion(
+        recipe_control_summary=recipe,
+        selector_rescore_summary=selector,
+        min_total_examples=20,
+        min_hard_examples=5,
+    )
+
+    assert payload["best_selector"] == {"label": "recovered", "selection_strategy": "hard_tail"}
 
 
 def test_recipe_selector_conversion_cli_writes_outputs(tmp_path, monkeypatch) -> None:
