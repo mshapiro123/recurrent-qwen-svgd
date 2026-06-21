@@ -1,0 +1,16 @@
+{
+  "run_id": "stage5_recovery_pipeline_current",
+  "kind": "stage5_recovery_pipeline",
+  "status": "pipeline_failed",
+  "failed_stage": "full_assessment",
+  "error": "command failed: /usr/bin/python3 colab/run_stage5_recovery_full_assessment.py",
+  "next_step": "Inspect full_assessment logs under outputs/stage5/stage5_recovery_pipeline_current and rerun with the same run ids.",
+  "autopilot_run_id": "stage5_balanced_recovery_autopilot_current",
+  "autopilot_summary": "outputs/stage5/stage5_balanced_recovery_autopilot_current/summary.json",
+  "autopilot_status": null,
+  "full_assessment_run_id": "stage5_recovery_full_assessment_current",
+  "full_assessment_summary": null,
+  "full_assessment_status": null,
+  "autopilot": null,
+  "full_assessment": null
+}

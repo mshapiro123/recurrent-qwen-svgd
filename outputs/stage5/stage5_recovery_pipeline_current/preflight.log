@@ -1,0 +1,26 @@
+root=/content/recurrent-qwen-svgd
+git_head=1b87ef3
+git_status:
+  clean
+
+Drive visibility:
+- /content/drive: exists=True is_dir=True
+- /content/drive/MyDrive: exists=True is_dir=True
+- /content/drive/MyDrive/recurrent-qwen-svgd-artifacts: exists=True is_dir=True
+If Drive was recently reauthorized or the runtime reset, run this in Colab before retrying:
+from google.colab import drive
+drive.mount('/content/drive', force_remount=True)
+or set FORCE_DRIVE_REMOUNT=1 for this runner.
+
+source_summary=outputs/stage5/stage5_balanced_mcq_current/summary.json exists=True
+source_status=needs_competence_recovery
+selected_checkpoint=outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_150.pt
+checkpoint_exists=True
+checkpoint_run_id=stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143
+
+autopilot_run_id=stage5_balanced_recovery_autopilot_current
+parent_summary=outputs/stage5/stage5_balanced_recovery_autopilot_current/summary.json status=missing
+distill_summary=outputs/stage5/stage5_balanced_recovery_autopilot_current_distill/summary.json status=missing
+arc_mix_summary=outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/summary.json status=missing
+
+next_action=Run colab/run_stage5_balanced_recovery_autopilot.py.
