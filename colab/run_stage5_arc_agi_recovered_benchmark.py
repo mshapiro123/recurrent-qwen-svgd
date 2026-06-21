@@ -20,8 +20,10 @@ from typing import Any
 
 try:
     from colab.stage5_limits import difficulty_args, limit_args, limit_label, parse_optional_limit
+    from colab.stage5_model_metadata import model_metadata
 except ModuleNotFoundError:  # pragma: no cover - direct ``python colab/script.py`` execution
     from stage5_limits import difficulty_args, limit_args, limit_label, parse_optional_limit
+    from stage5_model_metadata import model_metadata
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -35,6 +37,7 @@ BASE_RUN_ID = os.environ.get("STAGE5_BASE_RUN_ID", "stage4_opus_a100_20260620")
 BASE_RUN_DIR = ROOT / "outputs" / "stage4" / BASE_RUN_ID
 DEFAULT_PHASE1_CKPT = BASE_RUN_DIR / "phase1" / "phase1_step_500.pt"
 
+MODEL_NAME = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")
 CURRICULUM_SUMMARY = os.environ.get("STAGE5_ARC_AGI_CURRICULUM_SUMMARY", "")
 RECOVERED_CKPT = os.environ.get("STAGE5_ARC_AGI_RECOVERED_CKPT", "")
 PHASE1_START_CKPT = os.environ.get("STAGE5_PHASE1_CKPT", "")
@@ -462,6 +465,7 @@ def main() -> int:
     payload = {
         "run_id": RUN_ID,
         "metadata": {
+            **model_metadata(MODEL_NAME),
             "arc_version": ARC_VERSION,
             "arc_split": ARC_SPLIT,
             "limit": limit_label(LIMIT),

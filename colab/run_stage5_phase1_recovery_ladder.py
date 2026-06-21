@@ -31,6 +31,10 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from colab.stage5_model_metadata import model_metadata  # noqa: E402
 
 BASE_RUN_ID = os.environ.get("STAGE5_BASE_RUN_ID", "stage4_opus_a100_20260620")
 RUN_ID = os.environ.get("STAGE5_RUN_ID") or time.strftime("stage5_phase1_recovery_%Y%m%d_%H%M%S")
@@ -392,7 +396,7 @@ def main() -> int:
     metadata = {
         "run_id": RUN_ID,
         "base_run_id": BASE_RUN_ID,
-        "model_name": MODEL_NAME,
+        **model_metadata(MODEL_NAME),
         "dataset_id": DATASET_ID,
         "dataset_limit": DATASET_LIMIT,
         "val_fraction": VAL_FRACTION,

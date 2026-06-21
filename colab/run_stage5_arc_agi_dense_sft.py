@@ -32,6 +32,7 @@ if str(ROOT) not in sys.path:
 
 from eval.compare_arc_agi_runs import compare_payloads, write_markdown as write_comparison_markdown  # noqa: E402
 from training.arc_agi_training_signal import summarize_training_signal, write_training_signal_report  # noqa: E402
+from colab.stage5_model_metadata import model_metadata  # noqa: E402
 
 
 RUN_ID = os.environ.get("STAGE5_ARC_AGI_DENSE_SFT_RUN_ID") or time.strftime("stage5_arc_agi_dense_sft_%Y%m%d_%H%M%S")
@@ -464,7 +465,7 @@ def main() -> int:
     prepare_sft(train_path)
     metadata = {
         "run_id": RUN_ID,
-        "model_name": MODEL_NAME,
+        **model_metadata(MODEL_NAME),
         "arc_version": ARC_VERSION,
         "train_task_limit": TRAIN_TASK_LIMIT,
         "eval_task_limit": EVAL_TASK_LIMIT,

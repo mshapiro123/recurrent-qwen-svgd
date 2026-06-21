@@ -33,6 +33,7 @@ from training.arc_agi_training_signal import (  # noqa: E402
     summarize_training_signal,
     write_training_signal_report,
 )
+from colab.stage5_model_metadata import model_metadata  # noqa: E402
 
 RUN_ID = os.environ.get("STAGE5_ARC_AGI_SFT_RUN_ID") or time.strftime("stage5_arc_agi_sft_%Y%m%d_%H%M%S")
 RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
@@ -683,6 +684,7 @@ def main() -> int:
 
     metadata = {
         "run_id": RUN_ID,
+        **model_metadata(MODEL_NAME),
         "arc_version": ARC_VERSION,
         "train_split": TRAIN_SPLIT,
         "eval_split": EVAL_SPLIT,

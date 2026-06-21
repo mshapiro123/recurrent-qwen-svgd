@@ -20,6 +20,11 @@ import time
 from pathlib import Path
 from typing import Any
 
+try:
+    from colab.stage5_model_metadata import model_metadata
+except ModuleNotFoundError:  # pragma: no cover - direct ``python colab/script.py`` execution
+    from stage5_model_metadata import model_metadata
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN_ID = os.environ.get("STAGE5_ARC_AGI_CANDIDATE_DISTILL_GATE_RUN_ID") or time.strftime(
@@ -34,6 +39,7 @@ PHASE1_CKPT = Path(os.environ.get("STAGE5_PHASE1_CKPT", str(BASE_RUN_DIR / "phas
 if not PHASE1_CKPT.is_absolute():
     PHASE1_CKPT = ROOT / PHASE1_CKPT
 
+MODEL_NAME = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")
 DATA_ROOT = ROOT / "data" / "arc_agi"
 ARC_AGI_1_REPO = os.environ.get("ARC_AGI_1_REPO", "https://github.com/fchollet/ARC-AGI.git")
 ARC_AGI_2_REPO = os.environ.get("ARC_AGI_2_REPO", "https://github.com/arcprize/ARC-AGI-2.git")
@@ -420,6 +426,7 @@ def main() -> int:
     payload = {
         "run_id": RUN_ID,
         "metadata": {
+            **model_metadata(MODEL_NAME),
             "arc_version": ARC_VERSION,
             "train_split": TRAIN_SPLIT,
             "train_path": str(train_path),

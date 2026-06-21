@@ -23,8 +23,10 @@ from typing import Any
 
 try:
     from colab.stage5_limits import difficulty_args, limit_args, limit_label, parse_optional_limit
+    from colab.stage5_model_metadata import model_metadata
 except ModuleNotFoundError:  # pragma: no cover - direct ``python colab/script.py`` execution
     from stage5_limits import difficulty_args, limit_args, limit_label, parse_optional_limit
+    from stage5_model_metadata import model_metadata
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -42,6 +44,7 @@ PHASE1_START_CKPT = os.environ.get("STAGE5_PHASE1_CKPT", "")
 DATA_ROOT = ROOT / "data" / "arc_agi"
 ARC_AGI_1_REPO = os.environ.get("ARC_AGI_1_REPO", "https://github.com/fchollet/ARC-AGI.git")
 ARC_AGI_2_REPO = os.environ.get("ARC_AGI_2_REPO", "https://github.com/arcprize/ARC-AGI-2.git")
+MODEL_NAME = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")
 ARC_VERSION = os.environ.get("STAGE5_ARC_AGI_VERSION", "1")
 ARC_SPLIT = os.environ.get("STAGE5_ARC_AGI_SPLIT", "evaluation")
 LIMIT = parse_optional_limit(os.environ.get("STAGE5_ARC_AGI_LIMIT", "10"))
@@ -470,6 +473,7 @@ def main() -> int:
     arms = requested_model_arms(start_ckpt, recovered_ckpt)
     metadata = {
         "run_id": RUN_ID,
+        **model_metadata(MODEL_NAME),
         "arc_version": ARC_VERSION,
         "arc_split": ARC_SPLIT,
         "limit": limit_label(LIMIT),

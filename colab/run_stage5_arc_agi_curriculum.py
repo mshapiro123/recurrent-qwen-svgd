@@ -19,6 +19,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+try:
+    from colab.stage5_model_metadata import model_metadata
+except ModuleNotFoundError:  # pragma: no cover - direct ``python colab/script.py`` execution
+    from stage5_model_metadata import model_metadata
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN_ID = os.environ.get("STAGE5_ARC_AGI_CURRICULUM_RUN_ID") or time.strftime(
@@ -35,6 +40,7 @@ INITIAL_PHASE1_CKPT = Path(
 if not INITIAL_PHASE1_CKPT.is_absolute():
     INITIAL_PHASE1_CKPT = ROOT / INITIAL_PHASE1_CKPT
 
+MODEL_NAME = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")
 PUSH_RESULTS = os.environ.get("STAGE5_ARC_AGI_CURRICULUM_PUSH", "1").strip().lower() in {
     "1",
     "true",
@@ -349,6 +355,7 @@ def main() -> int:
     payload = {
         "run_id": RUN_ID,
         "settings": {
+            **model_metadata(MODEL_NAME),
             "stage_spec": STAGE_SPEC,
             "synthetic_seed_base": SYNTHETIC_SEED_BASE,
             "train_task_limit": TRAIN_TASK_LIMIT,
