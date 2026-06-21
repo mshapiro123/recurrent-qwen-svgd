@@ -1,0 +1,20 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5382.76it/s]
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 4831.94it/s]
+distillation_teacher=Qwen/Qwen2.5-0.5B-Instruct
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt loaded_keys=173
+step=0 mean_expected_loops=2.6654 mean_halt_entropy=1.3502 expected_ce=3.2458 halting_kl=0.2106 loss=3.4081 base_distill_kl=0.7272
+step=25 mean_expected_loops=2.6036 mean_halt_entropy=1.3634 expected_ce=2.4124 halting_kl=0.1500 loss=2.5778 base_distill_kl=0.7667
+step=50 mean_expected_loops=2.5866 mean_halt_entropy=1.3664 expected_ce=2.3882 halting_kl=0.2847 loss=2.6696 base_distill_kl=1.2934
+step=75 mean_expected_loops=2.7589 mean_halt_entropy=1.3295 expected_ce=5.2064 halting_kl=0.4245 loss=5.6388 base_distill_kl=1.9923
+step=100 mean_expected_loops=2.6615 mean_halt_entropy=1.3520 expected_ce=1.9151 halting_kl=0.3439 loss=2.1645 base_distill_kl=1.1091
+step=125 mean_expected_loops=2.5543 mean_halt_entropy=1.3724 expected_ce=0.8438 halting_kl=0.2594 loss=1.1222 base_distill_kl=1.2881
+step=150 mean_expected_loops=2.4637 mean_halt_entropy=1.3762 expected_ce=1.9268 halting_kl=0.1501 loss=2.1145 base_distill_kl=0.8784
+step=175 mean_expected_loops=2.3991 mean_halt_entropy=1.3756 expected_ce=2.4880 halting_kl=0.1585 loss=2.6316 base_distill_kl=0.6545
+step=200 mean_expected_loops=2.6043 mean_halt_entropy=1.3658 expected_ce=1.6858 halting_kl=0.1672 loss=2.0758 base_distill_kl=1.8834
+step=225 mean_expected_loops=2.3963 mean_halt_entropy=1.3773 expected_ce=2.3673 halting_kl=0.1600 loss=2.5245 base_distill_kl=0.7219
+saved_checkpoint=outputs/stage5/stage5_phase1_distill_recovery_250_arc128_20260621_163546/phase1/phase1_step_250.pt

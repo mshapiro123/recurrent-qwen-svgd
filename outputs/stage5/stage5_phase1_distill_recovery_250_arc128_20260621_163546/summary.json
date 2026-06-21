@@ -1,0 +1,126 @@
+{
+  "metadata": {
+    "run_id": "stage5_phase1_distill_recovery_250_arc128_20260621_163546",
+    "base_run_id": "stage4_opus_a100_20260620",
+    "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+    "params_b": 0.5,
+    "dataset_id": "lordx64/reasoning-distill-opus-4-7-max-sft",
+    "dataset_limit": 6000,
+    "val_fraction": 0.05,
+    "max_total_tokens": 1024,
+    "max_length": 512,
+    "extra_steps": 250,
+    "save_every": 250,
+    "learning_rate": 8e-06,
+    "beta": 0.08,
+    "max_grad_norm": 0.3,
+    "distillation": {
+      "enabled": true,
+      "weight": 0.2,
+      "temperature": 2.0,
+      "on": "response",
+      "teacher_model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+      "dtype": "bfloat16"
+    },
+    "arc_limit": 128,
+    "arc_split": "validation",
+    "arc_seed": 0,
+    "run_full_arc_final": false,
+    "dtype": "bfloat16",
+    "adapter_dtype": "float32",
+    "resume_from": "outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt"
+  },
+  "base_arc": {
+    "mean": {
+      "correct": 72,
+      "total": 128,
+      "accuracy": 0.5625
+    }
+  },
+  "phase1_start": {
+    "checkpoint": "outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt",
+    "val": {
+      "lora_recurrent_modules": 84.0,
+      "examples": 208.0,
+      "expected_ce": 2.449877,
+      "halting_kl": 0.330981,
+      "loss": 2.476355,
+      "mean_expected_loops": 2.69581,
+      "mean_halt_entropy": 1.343578
+    },
+    "arc": {
+      "mean": {
+        "correct": 70,
+        "total": 128,
+        "accuracy": 0.546875
+      }
+    }
+  },
+  "checkpoints": [
+    {
+      "checkpoint": "outputs/stage5/stage5_phase1_distill_recovery_250_arc128_20260621_163546/phase1/phase1_step_250.pt",
+      "val": {
+        "lora_recurrent_modules": 84.0,
+        "examples": 208.0,
+        "expected_ce": 2.306299,
+        "halting_kl": 0.158244,
+        "loss": 2.318958,
+        "mean_expected_loops": 2.381554,
+        "mean_halt_entropy": 1.372872
+      },
+      "arc_path": "outputs/stage5/stage5_phase1_distill_recovery_250_arc128_20260621_163546/stage5_phase1_distill_recovery_250_arc128_20260621_163546_arc128_phase1_step_250_label.jsonl",
+      "arc": {
+        "mean": {
+          "correct": 71,
+          "total": 128,
+          "accuracy": 0.5546875
+        }
+      },
+      "comparison_to_start": {
+        "helped": 12,
+        "hurt": 11,
+        "tied": 105,
+        "prediction_changes": 31
+      },
+      "comparison_to_base": {
+        "helped": 10,
+        "hurt": 11,
+        "tied": 107,
+        "prediction_changes": 30
+      }
+    }
+  ],
+  "best_checkpoint": {
+    "checkpoint": "outputs/stage5/stage5_phase1_distill_recovery_250_arc128_20260621_163546/phase1/phase1_step_250.pt",
+    "val": {
+      "lora_recurrent_modules": 84.0,
+      "examples": 208.0,
+      "expected_ce": 2.306299,
+      "halting_kl": 0.158244,
+      "loss": 2.318958,
+      "mean_expected_loops": 2.381554,
+      "mean_halt_entropy": 1.372872
+    },
+    "arc_path": "outputs/stage5/stage5_phase1_distill_recovery_250_arc128_20260621_163546/stage5_phase1_distill_recovery_250_arc128_20260621_163546_arc128_phase1_step_250_label.jsonl",
+    "arc": {
+      "mean": {
+        "correct": 71,
+        "total": 128,
+        "accuracy": 0.5546875
+      }
+    },
+    "comparison_to_start": {
+      "helped": 12,
+      "hurt": 11,
+      "tied": 105,
+      "prediction_changes": 31
+    },
+    "comparison_to_base": {
+      "helped": 10,
+      "hurt": 11,
+      "tied": 107,
+      "prediction_changes": 30
+    }
+  },
+  "full_arc_final": null
+}
