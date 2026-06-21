@@ -92,8 +92,16 @@ The older split notebooks are kept only as references:
    within-group PCA.
 2. Build/validate the MCQ benchmark harness.
 3. Export and push adapter/controller package to Hugging Face.
-4. Fine-tune on modified Opus traces.
-5. Run base vs recurrent benchmarks, then run
+4. Audit reasoning-trace sources before expanding the modified-Opus mix. Run
+   `colab/run_stage5_reasoning_dataset_audit.py` before adding unfamiliar
+   Hugging Face trace sources to any fine-tuning mix. It reads
+   `config/reasoning_dataset_registry.yaml`, audits Opus/Fable-style schemas,
+   writes `outputs/stage5/<run_id>/summary.{json,md}`, and classifies each
+   dataset as immediate trace-SFT material, audit-only material, or later
+   agent/tool-diversity material. Use this to keep Opus competence recovery
+   separate from Fable tool/agent trajectory experiments.
+5. Fine-tune on modified Opus traces.
+6. Run base vs recurrent benchmarks, then run
    `colab/run_stage5_arc_agi_candidate_gate.py` to separate model-only,
    symbolic-only, and hybrid candidate value before more particle tuning.
    If symbolic candidates help, run `colab/run_stage5_arc_agi_trace_sft_gate.py`
