@@ -1,0 +1,342 @@
+{
+  "run_id": "stage5_balanced_mcq_20260621_160637",
+  "kind": "stage5_balanced_mcq_checkpoint_assessment",
+  "arc_easy_sweep": "outputs\\stage5\\stage5_arceasy_sweep_full_20260621_185841\\summary.json",
+  "arc_challenge_summaries": [
+    "outputs\\stage5\\stage5_phase1_step150_arcchallenge_full_20260621_194028\\summary.json",
+    "outputs\\stage5\\stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143\\summary.json"
+  ],
+  "required_benchmarks": [
+    "arc_easy",
+    "arc_challenge"
+  ],
+  "score_target": "label",
+  "aggregate": "mean",
+  "status": "needs_competence_recovery",
+  "passed": false,
+  "next_step": "Use the selected checkpoint as the current balanced baseline, then train with a competence-preserving mixed objective before returning to particles/SVGD.",
+  "best_checkpoint": {
+    "label": "step_150",
+    "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_150.pt",
+    "benchmarks": {
+      "arc_easy": {
+        "benchmark": "arc_easy",
+        "source_summary": "outputs\\stage5\\stage5_arceasy_sweep_full_20260621_185841\\summary.json",
+        "base_correct": 421,
+        "recurrent_correct": 412,
+        "total": 570,
+        "correct_delta_recurrent_vs_base": -9,
+        "base_accuracy": 0.7385964912280701,
+        "recurrent_accuracy": 0.7228070175438597,
+        "accuracy_delta_recurrent_vs_base": -0.015789473684210464,
+        "wins": 16,
+        "losses": 25,
+        "ties": 529,
+        "sign_test_p_value": 0.21102359760880063
+      },
+      "arc_challenge": {
+        "benchmark": "arc_challenge",
+        "source_summary": "outputs\\stage5\\stage5_phase1_step150_arcchallenge_full_20260621_194028\\summary.json",
+        "base_correct": 167,
+        "recurrent_correct": 169,
+        "total": 299,
+        "correct_delta_recurrent_vs_base": 2,
+        "base_accuracy": 0.5585284280936454,
+        "recurrent_accuracy": 0.5652173913043478,
+        "accuracy_delta_recurrent_vs_base": 0.006688963210702337,
+        "wins": 24,
+        "losses": 22,
+        "ties": 253,
+        "sign_test_p_value": 0.8829959121223965
+      }
+    },
+    "present_benchmarks": [
+      "arc_challenge",
+      "arc_easy"
+    ],
+    "missing_required_benchmarks": [],
+    "full_required_coverage": true,
+    "macro_accuracy_delta": -0.004550255236754064,
+    "required_macro_accuracy_delta": -0.004550255236754064,
+    "micro_correct_delta": -7,
+    "base_correct": 588,
+    "recurrent_correct": 581,
+    "total": 869,
+    "combined_wins": 40,
+    "combined_losses": 47,
+    "combined_ties": 782,
+    "combined_sign_test_p_value": 0.5202915935750737
+  },
+  "ranked_checkpoints": [
+    {
+      "label": "step_150",
+      "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_150.pt",
+      "benchmarks": {
+        "arc_easy": {
+          "benchmark": "arc_easy",
+          "source_summary": "outputs\\stage5\\stage5_arceasy_sweep_full_20260621_185841\\summary.json",
+          "base_correct": 421,
+          "recurrent_correct": 412,
+          "total": 570,
+          "correct_delta_recurrent_vs_base": -9,
+          "base_accuracy": 0.7385964912280701,
+          "recurrent_accuracy": 0.7228070175438597,
+          "accuracy_delta_recurrent_vs_base": -0.015789473684210464,
+          "wins": 16,
+          "losses": 25,
+          "ties": 529,
+          "sign_test_p_value": 0.21102359760880063
+        },
+        "arc_challenge": {
+          "benchmark": "arc_challenge",
+          "source_summary": "outputs\\stage5\\stage5_phase1_step150_arcchallenge_full_20260621_194028\\summary.json",
+          "base_correct": 167,
+          "recurrent_correct": 169,
+          "total": 299,
+          "correct_delta_recurrent_vs_base": 2,
+          "base_accuracy": 0.5585284280936454,
+          "recurrent_accuracy": 0.5652173913043478,
+          "accuracy_delta_recurrent_vs_base": 0.006688963210702337,
+          "wins": 24,
+          "losses": 22,
+          "ties": 253,
+          "sign_test_p_value": 0.8829959121223965
+        }
+      },
+      "present_benchmarks": [
+        "arc_challenge",
+        "arc_easy"
+      ],
+      "missing_required_benchmarks": [],
+      "full_required_coverage": true,
+      "macro_accuracy_delta": -0.004550255236754064,
+      "required_macro_accuracy_delta": -0.004550255236754064,
+      "micro_correct_delta": -7,
+      "base_correct": 588,
+      "recurrent_correct": 581,
+      "total": 869,
+      "combined_wins": 40,
+      "combined_losses": 47,
+      "combined_ties": 782,
+      "combined_sign_test_p_value": 0.5202915935750737
+    },
+    {
+      "label": "step_200",
+      "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_200.pt",
+      "benchmarks": {
+        "arc_easy": {
+          "benchmark": "arc_easy",
+          "source_summary": "outputs\\stage5\\stage5_arceasy_sweep_full_20260621_185841\\summary.json",
+          "base_correct": 421,
+          "recurrent_correct": 409,
+          "total": 570,
+          "correct_delta_recurrent_vs_base": -12,
+          "base_accuracy": 0.7385964912280701,
+          "recurrent_accuracy": 0.7175438596491228,
+          "accuracy_delta_recurrent_vs_base": -0.021052631578947323,
+          "wins": 15,
+          "losses": 27,
+          "ties": 528,
+          "sign_test_p_value": 0.08842954698775429
+        },
+        "arc_challenge": {
+          "benchmark": "arc_challenge",
+          "source_summary": "outputs\\stage5\\stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143\\summary.json",
+          "base_correct": 167,
+          "recurrent_correct": 170,
+          "total": 299,
+          "correct_delta_recurrent_vs_base": 3,
+          "base_accuracy": 0.5585284280936454,
+          "recurrent_accuracy": 0.568561872909699,
+          "accuracy_delta_recurrent_vs_base": 0.010033444816053505,
+          "wins": 22,
+          "losses": 19,
+          "ties": 258,
+          "sign_test_p_value": 0.755228657504631
+        }
+      },
+      "present_benchmarks": [
+        "arc_challenge",
+        "arc_easy"
+      ],
+      "missing_required_benchmarks": [],
+      "full_required_coverage": true,
+      "macro_accuracy_delta": -0.005509593381446909,
+      "required_macro_accuracy_delta": -0.005509593381446909,
+      "micro_correct_delta": -9,
+      "base_correct": 588,
+      "recurrent_correct": 579,
+      "total": 869,
+      "combined_wins": 37,
+      "combined_losses": 46,
+      "combined_ties": 786,
+      "combined_sign_test_p_value": 0.379999396411918
+    },
+    {
+      "label": "parent",
+      "checkpoint": "outputs/stage5/stage5_phase1_distill_w04_beta012_125_arc128_20260621_171231/phase1/phase1_step_125.pt",
+      "benchmarks": {
+        "arc_easy": {
+          "benchmark": "arc_easy",
+          "source_summary": "outputs\\stage5\\stage5_arceasy_sweep_full_20260621_185841\\summary.json",
+          "base_correct": 421,
+          "recurrent_correct": 402,
+          "total": 570,
+          "correct_delta_recurrent_vs_base": -19,
+          "base_accuracy": 0.7385964912280701,
+          "recurrent_accuracy": 0.7052631578947368,
+          "accuracy_delta_recurrent_vs_base": -0.033333333333333326,
+          "wins": 16,
+          "losses": 35,
+          "ties": 519,
+          "sign_test_p_value": 0.010973562899720513
+        },
+        "arc_challenge": {
+          "benchmark": "arc_challenge",
+          "source_summary": "outputs\\stage5\\stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143\\summary.json",
+          "base_correct": 167,
+          "recurrent_correct": 168,
+          "total": 299,
+          "correct_delta_recurrent_vs_base": 1,
+          "base_accuracy": 0.5585284280936454,
+          "recurrent_accuracy": 0.5618729096989966,
+          "accuracy_delta_recurrent_vs_base": 0.0033444816053511683,
+          "wins": null,
+          "losses": null,
+          "ties": null,
+          "sign_test_p_value": null
+        }
+      },
+      "present_benchmarks": [
+        "arc_challenge",
+        "arc_easy"
+      ],
+      "missing_required_benchmarks": [],
+      "full_required_coverage": true,
+      "macro_accuracy_delta": -0.014994425863991079,
+      "required_macro_accuracy_delta": -0.014994425863991079,
+      "micro_correct_delta": -18,
+      "base_correct": 588,
+      "recurrent_correct": 570,
+      "total": 869,
+      "combined_wins": 16,
+      "combined_losses": 35,
+      "combined_ties": 519,
+      "combined_sign_test_p_value": 0.010973562899720513
+    },
+    {
+      "label": "step_250",
+      "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_250.pt",
+      "benchmarks": {
+        "arc_easy": {
+          "benchmark": "arc_easy",
+          "source_summary": "outputs\\stage5\\stage5_arceasy_sweep_full_20260621_185841\\summary.json",
+          "base_correct": 421,
+          "recurrent_correct": 408,
+          "total": 570,
+          "correct_delta_recurrent_vs_base": -13,
+          "base_accuracy": 0.7385964912280701,
+          "recurrent_accuracy": 0.7157894736842105,
+          "accuracy_delta_recurrent_vs_base": -0.02280701754385961,
+          "wins": 15,
+          "losses": 28,
+          "ties": 527,
+          "sign_test_p_value": 0.0659940344557981
+        }
+      },
+      "present_benchmarks": [
+        "arc_easy"
+      ],
+      "missing_required_benchmarks": [
+        "arc_challenge"
+      ],
+      "full_required_coverage": false,
+      "macro_accuracy_delta": -0.02280701754385961,
+      "required_macro_accuracy_delta": -0.02280701754385961,
+      "micro_correct_delta": -13,
+      "base_correct": 421,
+      "recurrent_correct": 408,
+      "total": 570,
+      "combined_wins": 15,
+      "combined_losses": 28,
+      "combined_ties": 527,
+      "combined_sign_test_p_value": 0.0659940344557981
+    },
+    {
+      "label": "step_100",
+      "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_100.pt",
+      "benchmarks": {
+        "arc_easy": {
+          "benchmark": "arc_easy",
+          "source_summary": "outputs\\stage5\\stage5_arceasy_sweep_full_20260621_185841\\summary.json",
+          "base_correct": 421,
+          "recurrent_correct": 407,
+          "total": 570,
+          "correct_delta_recurrent_vs_base": -14,
+          "base_accuracy": 0.7385964912280701,
+          "recurrent_accuracy": 0.7140350877192982,
+          "accuracy_delta_recurrent_vs_base": -0.024561403508771895,
+          "wins": 15,
+          "losses": 29,
+          "ties": 526,
+          "sign_test_p_value": 0.048766765904474596
+        }
+      },
+      "present_benchmarks": [
+        "arc_easy"
+      ],
+      "missing_required_benchmarks": [
+        "arc_challenge"
+      ],
+      "full_required_coverage": false,
+      "macro_accuracy_delta": -0.024561403508771895,
+      "required_macro_accuracy_delta": -0.024561403508771895,
+      "micro_correct_delta": -14,
+      "base_correct": 421,
+      "recurrent_correct": 407,
+      "total": 570,
+      "combined_wins": 15,
+      "combined_losses": 29,
+      "combined_ties": 526,
+      "combined_sign_test_p_value": 0.048766765904474596
+    },
+    {
+      "label": "step_050",
+      "checkpoint": "outputs/stage5/stage5_phase1_recovered_extend_w04_beta012_lr5e6_250_20260621_181143/phase1/phase1_step_50.pt",
+      "benchmarks": {
+        "arc_easy": {
+          "benchmark": "arc_easy",
+          "source_summary": "outputs\\stage5\\stage5_arceasy_sweep_full_20260621_185841\\summary.json",
+          "base_correct": 421,
+          "recurrent_correct": 404,
+          "total": 570,
+          "correct_delta_recurrent_vs_base": -17,
+          "base_accuracy": 0.7385964912280701,
+          "recurrent_accuracy": 0.7087719298245614,
+          "accuracy_delta_recurrent_vs_base": -0.029824561403508754,
+          "wins": 16,
+          "losses": 33,
+          "ties": 521,
+          "sign_test_p_value": 0.021294114141387155
+        }
+      },
+      "present_benchmarks": [
+        "arc_easy"
+      ],
+      "missing_required_benchmarks": [
+        "arc_challenge"
+      ],
+      "full_required_coverage": false,
+      "macro_accuracy_delta": -0.029824561403508754,
+      "required_macro_accuracy_delta": -0.029824561403508754,
+      "micro_correct_delta": -17,
+      "base_correct": 421,
+      "recurrent_correct": 404,
+      "total": 570,
+      "combined_wins": 16,
+      "combined_losses": 33,
+      "combined_ties": 521,
+      "combined_sign_test_p_value": 0.021294114141387155
+    }
+  ]
+}
