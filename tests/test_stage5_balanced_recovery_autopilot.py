@@ -35,3 +35,23 @@ def test_build_summary_uses_arc_mix_pass_after_distill_miss() -> None:
 
     assert payload["status"] == "arc_mix_gate_passed"
     assert payload["arc_mix_summary"] == "outputs/stage5/arc_mix/summary.json"
+
+
+def test_stageable_result_paths_includes_nested_distill_children(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_balanced_recovery_autopilot as module
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    payload = {
+        "run_id": "parent_gate",
+        "arms": [
+            {
+                "child_run_id": "nested_ladder",
+                "checkpoint": "outputs/stage5/nested_ladder/phase1/phase1_step_50.pt",
+            }
+        ],
+    }
+
+    paths = module.stageable_result_paths(payload)
+
+    assert tmp_path / "outputs" / "stage5" / "parent_gate" in paths
+    assert tmp_path / "outputs" / "stage5" / "nested_ladder" in paths

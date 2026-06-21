@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -93,6 +94,73 @@ def child_env(prefix: str, run_id: str, source_summary: Path) -> dict[str, str]:
 
 def should_run_arc_mix(distill_payload: dict[str, Any]) -> bool:
     return distill_payload.get("status") not in {"proxy_lift", "proxy_matches_base"}
+
+
+def stageable_result_paths(payload: dict[str, Any] | None) -> list[Path]:
+    """Return run directories referenced by a child gate payload.
+
+    The response-distillation gate can itself launch nested recovery-ladder
+    runs. Those checkpoints are not inside the distill gate directory, so the
+    autopilot has to carry them along when it is responsible for committing the
+    result bundle.
+    """
+
+    if not payload:
+        return []
+    paths: list[Path] = []
+    run_id = payload.get("run_id")
+    if isinstance(run_id, str) and run_id:
+        paths.append(ROOT / "outputs" / "stage5" / run_id)
+    for row in payload.get("arms") or []:
+        child_run_id = row.get("child_run_id")
+        if isinstance(child_run_id, str) and child_run_id:
+            paths.append(ROOT / "outputs" / "stage5" / child_run_id)
+        checkpoint = row.get("checkpoint") or (row.get("best_checkpoint") or {}).get("checkpoint")
+        if checkpoint:
+            checkpoint_path = Path(str(checkpoint))
+            if not checkpoint_path.is_absolute():
+                checkpoint_path = ROOT / checkpoint_path
+            try:
+                stage5_idx = checkpoint_path.parts.index("stage5")
+            except ValueError:
+                continue
+            if stage5_idx + 1 < len(checkpoint_path.parts):
+                paths.append(Path(*checkpoint_path.parts[: stage5_idx + 2]))
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for path in paths:
+        key = str(path)
+        if key not in seen:
+            seen.add(key)
+            unique.append(path)
+    return unique
+
+
+def backup_to_drive(paths: list[Path]) -> None:
+    try:
+        from google.colab import drive  # type: ignore
+
+        if not Path("/content/drive/MyDrive").exists():
+            drive.mount("/content/drive")
+    except Exception as exc:  # pragma: no cover - Colab only
+        print(f"Drive mount skipped/failed: {exc}")
+        return
+    drive_root = Path(os.environ.get("DRIVE_BACKUP_DIR", "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts"))
+    if not drive_root.exists():
+        print(f"Drive backup skipped; missing {drive_root}")
+        return
+    backup = drive_root / RUN_ID
+    backup.mkdir(parents=True, exist_ok=True)
+    for path in paths:
+        if not path.exists():
+            continue
+        target = backup / "outputs" / "stage5" / path.name
+        if path.is_dir():
+            shutil.copytree(path, target, dirs_exist_ok=True)
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, target)
+    print(f"backed_up_to={backup}")
 
 
 def commit_results(paths: list[Path]) -> None:
@@ -206,9 +274,10 @@ def main() -> int:
         arc_mix_payload=arc_mix_payload,
     )
     write_report(payload)
-    result_paths = [RUN_DIR, ROOT / "outputs" / "stage5" / distill_run_id]
-    if arc_mix_run_id:
-        result_paths.append(ROOT / "outputs" / "stage5" / arc_mix_run_id)
+    result_paths = [RUN_DIR]
+    result_paths.extend(stageable_result_paths(distill_payload))
+    result_paths.extend(stageable_result_paths(arc_mix_payload))
+    backup_to_drive(result_paths)
     commit_results(result_paths)
     return 0
 
