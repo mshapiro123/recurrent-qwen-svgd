@@ -1,0 +1,100 @@
+version: 1
+purpose: >
+  Candidate reasoning-trace sources for recurrent Qwen fine-tuning. Treat this
+  as an audit registry, not an automatic training manifest.
+
+datasets:
+  opus47_sft:
+    dataset_id: lordx64/reasoning-distill-opus-4-7-max-sft
+    split: train
+    adapter: qwen_text
+    license: apache-2.0 packaging; upstream Claude output terms still apply
+    priority: immediate
+    train_role:
+      - reasoning_trace_sft
+      - modified_opus_recurrent_curriculum
+    notes:
+      - Qwen-style chat-template text with assistant thinking and answer.
+      - Best current trace source for Stage 4/5 recurrent fine-tuning.
+      - Filter by max_total_tokens before A100 training.
+
+  opus47_raw:
+    dataset_id: lordx64/reasoning-distill-claude-opus-4-7-max
+    split: train
+    adapter: thinking_response
+    license: dataset packaging terms plus upstream Claude output terms
+    priority: audit
+    train_role:
+      - richer_opus_filtering
+      - trace_length_curriculum
+    notes:
+      - Raw thinking/response rows preserve more metadata than the SFT version.
+      - Use when we need better filtering or prompt/source provenance.
+
+  fable5_pi_agent:
+    dataset_id: Glint-Research/Fable-5-traces
+    name: pi_agent
+    split: train
+    adapter: fable_pi_agent
+    license: agpl-3.0
+    priority: later
+    train_role:
+      - coding_agent_trajectory_diversity
+      - tool_use_trace_experiments
+    avoid_for_now:
+      - ARC/GPQA competence recovery
+      - blind mixed SFT with MCQ recovery data
+    notes:
+      - Pi-agent sessions with tools, traces, and metadata.
+      - Useful for agent/tool/coding diversity after the recurrent baseline is competence-stable.
+
+  fable5_flat:
+    dataset_id: Glint-Research/Fable-5-traces
+    split: train
+    adapter: fable_flat
+    license: agpl-3.0
+    priority: audit
+    train_role:
+      - coding_agent_trace_sft_after_filtering
+    notes:
+      - Intended for flat context/cot/output rows when using fable5_cot_merged-style exports.
+      - Filter output_type and tool-call-heavy rows before training.
+
+  fable5_complete_2m:
+    dataset_id: Glint-Research/Complete-FABLE.5-traces-2M
+    split: train
+    adapter: auto
+    license: mixed; inspect provenance before use
+    priority: later_audit_only
+    train_role:
+      - large_scale_agent_trace_mining
+    avoid_for_now:
+      - direct 0.5B competence recovery
+      - unfiltered supervised fine-tuning
+    notes:
+      - Very large deduplicated FABLE/Mythos trace compilation.
+      - Use streaming audit and strict filters before any conversion.
+
+  jackrong_opus47_trace_inversion:
+    dataset_id: Jackrong/Claude-opus-4.7-TraceInversion-5000x
+    split: train
+    adapter: auto
+    license: inspect_before_use
+    priority: audit
+    train_role:
+      - alternative_opus_reasoning_trace_source
+    notes:
+      - Promising smaller trace-inversion source.
+      - Needs schema/license/quality audit before mixing with Opus SFT.
+
+  jackrong_glm51_reasoning_1m:
+    dataset_id: Jackrong/GLM-5.1-Reasoning-1M-Cleaned
+    split: train
+    adapter: auto
+    license: inspect_before_use
+    priority: later_audit
+    train_role:
+      - high_volume_reasoning_trace_candidate
+    notes:
+      - Potential high-volume source for later curriculum.
+      - Do not use before small audited subsets prove compatibility.

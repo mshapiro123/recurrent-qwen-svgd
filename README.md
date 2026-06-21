@@ -66,6 +66,23 @@ The converter supports datasets with `text`, `messages`, or
 `thinking`/`response`-style fields and writes `prompt`, `completion`, and
 `cot_tokens`.
 
+Audit unfamiliar trace datasets before mixing them into training:
+
+```bash
+python training/inspect_hf_reasoning_dataset.py \
+  --dataset_id Glint-Research/Fable-5-traces \
+  --name pi_agent \
+  --adapter auto \
+  --limit 1000 \
+  --output_json outputs/dataset_audits/fable5_pi_agent.json
+```
+
+Known candidate trace sources and their intended roles are tracked in
+`config/reasoning_dataset_registry.yaml`. Opus-style reasoning traces are the
+current fine-tuning source; Fable/Pi-agent traces are treated as later
+agent/tool-diversity material unless an audit and filter explicitly promote
+them into a training mix.
+
 ## Phase 2 Stochastic Trajectories
 
 Do not run Phase 2 training until deterministic halting is non-collapsed.
