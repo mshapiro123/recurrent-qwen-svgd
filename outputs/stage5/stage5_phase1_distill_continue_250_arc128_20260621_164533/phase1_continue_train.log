@@ -1,0 +1,21 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 4140.29it/s]
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5127.19it/s]
+distillation_teacher=Qwen/Qwen2.5-0.5B-Instruct
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_phase1_distill_recovery_250_arc128_20260621_163546/phase1/phase1_step_250.pt loaded_keys=173
+step=0 mean_expected_loops=2.3287 mean_halt_entropy=1.3709 expected_ce=2.4826 halting_kl=0.0700 loss=2.5984 base_distill_kl=0.5507
+step=25 mean_expected_loops=2.4102 mean_halt_entropy=1.3796 expected_ce=1.6605 halting_kl=0.1660 loss=1.9516 base_distill_kl=1.3891
+step=50 mean_expected_loops=2.3265 mean_halt_entropy=1.3709 expected_ce=3.0997 halting_kl=0.1247 loss=3.1913 base_distill_kl=0.4080
+step=75 mean_expected_loops=2.2081 mean_halt_entropy=1.3501 expected_ce=2.5894 halting_kl=0.0746 loss=2.7640 base_distill_kl=0.8429
+step=100 mean_expected_loops=2.1725 mean_halt_entropy=1.3413 expected_ce=2.2339 halting_kl=0.0622 loss=2.4041 base_distill_kl=0.8261
+saved_checkpoint=outputs/stage5/stage5_phase1_distill_continue_250_arc128_20260621_164533/phase1/phase1_step_125.pt
+step=125 mean_expected_loops=2.1044 mean_halt_entropy=1.3205 expected_ce=1.6402 halting_kl=0.0422 loss=1.8201 base_distill_kl=0.8825
+step=150 mean_expected_loops=2.1988 mean_halt_entropy=1.3472 expected_ce=1.3624 halting_kl=0.0720 loss=1.5478 base_distill_kl=0.8980
+step=175 mean_expected_loops=2.1655 mean_halt_entropy=1.3382 expected_ce=2.0463 halting_kl=0.0431 loss=2.1633 base_distill_kl=0.5680
+step=200 mean_expected_loops=2.1595 mean_halt_entropy=1.3364 expected_ce=2.4160 halting_kl=0.0593 loss=2.5473 base_distill_kl=0.6329
+step=225 mean_expected_loops=2.0025 mean_halt_entropy=1.2794 expected_ce=2.1917 halting_kl=0.0224 loss=2.3143 base_distill_kl=0.6039
+saved_checkpoint=outputs/stage5/stage5_phase1_distill_continue_250_arc128_20260621_164533/phase1/phase1_step_250.pt

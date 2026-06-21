@@ -1,0 +1,11 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5946.37it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_phase1_distill_continue_250_arc128_20260621_164533/phase1/phase1_step_125.pt loaded_keys=173
+examples=208
+expected_ce=2.257159
+halting_kl=0.113579
+loss=2.266245
+mean_expected_loops=2.234148
+mean_halt_entropy=1.351465
