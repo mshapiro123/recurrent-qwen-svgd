@@ -1865,7 +1865,8 @@ def test_benchmark_suite_summary_inspects_markdown(tmp_path) -> None:
     assert "--summary_json" in actions[0]["command"]
 
 
-def test_benchmark_suite_assessment_negative_runs_competence_pipeline(tmp_path) -> None:
+def test_benchmark_suite_assessment_negative_runs_competence_pipeline(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(planner, "A100_BUDGET_PROFILE", "gate")
     source = tmp_path / "benchmark_assessment" / "summary.json"
     source.parent.mkdir()
     payload = {
