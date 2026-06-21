@@ -30,6 +30,16 @@ def test_checkpoint_value_from_payload_reads_autopilot_final_checkpoint() -> Non
     assert checkpoint_value_from_payload(payload) == "outputs/stage5/parent/final.pt"
 
 
+def test_checkpoint_value_from_payload_reads_stage4_phase1_checkpoint() -> None:
+    payload = {
+        "kind": "stage4_opus_finetune",
+        "phase1_checkpoint": "outputs/stage4/run/phase1.pt",
+        "phase2_checkpoint": "outputs/stage4/run/phase2.pt",
+    }
+
+    assert checkpoint_value_from_payload(payload) == "outputs/stage4/run/phase1.pt"
+
+
 def test_build_export_metadata_captures_checkpoint_hash_and_config(tmp_path) -> None:
     checkpoint = tmp_path / "phase1_step_10.pt"
     torch.save(

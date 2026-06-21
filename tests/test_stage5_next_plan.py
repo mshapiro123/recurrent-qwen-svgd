@@ -1163,6 +1163,7 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"gate": "stage5_arc_agi_sota_comparison"}) == "arc_agi_sota_comparison"
     assert source_kind({"kind": "stage5_arc_agi_candidate_gate"}) == "candidate_gate"
     assert source_kind({"kind": "stage5_reasoning_dataset_audit"}) == "reasoning_dataset_audit"
+    assert source_kind({"kind": "stage4_opus_finetune"}) == "stage4_opus_finetune"
     assert source_kind({"kind": "trace_sft_gate"}) == "trace_sft_gate"
     assert source_kind({"kind": "distill_sft_gate"}) == "distill_sft_gate"
     assert source_kind({"phase1_arc_agi_tuned": {}, "tuned_checkpoint": "ckpt.pt"}) == "recurrent_sft"
@@ -1222,6 +1223,50 @@ def test_reasoning_dataset_audit_holds_fable_without_training(tmp_path) -> None:
 
     assert actions[0]["name"] == "Inspect Fable/tool-trace audit before training"
     assert actions[0]["command"].startswith("cat ")
+
+
+def test_stage4_opus_finetune_runs_benchmark_suite(tmp_path) -> None:
+    source = tmp_path / "stage4" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "run_id": "stage4_opus",
+        "kind": "stage4_opus_finetune",
+        "checkpoint": "outputs/stage4/stage4_opus/phase1_step_500.pt",
+        "phase1_checkpoint": "outputs/stage4/stage4_opus/phase1_step_500.pt",
+        "phase2_checkpoint": "outputs/stage4/stage4_opus/phase2_step_100.pt",
+        "arc_ladder": {
+            "phase1_gap_to_base": -0.12,
+            "phase2_best_lift_over_phase1": 0.03,
+            "phase2_best_gap_to_base": -0.09,
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run benchmark suite for Stage 4 recurrent checkpoint"
+    assert "STAGE5_BENCHMARK_SUITE_RUN_ID=stage4_opus_benchmark_suite" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_SOURCE_SUMMARY=" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_CHECKPOINT=outputs/stage4/stage4_opus/phase1_step_500.pt" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_RECURRENT_MODE=phase1" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_NUM_TRAJECTORIES=1" in actions[0]["command"]
+    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
+
+
+def test_legacy_stage4_opus_finetune_summary_runs_benchmark_suite(tmp_path) -> None:
+    source = tmp_path / "legacy_stage4" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "run_id": "legacy_stage4",
+        "phase1_checkpoint": "outputs/stage4/legacy/phase1.pt",
+        "phase2_checkpoint": "outputs/stage4/legacy/phase2.pt",
+        "arc_ladder": {},
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run benchmark suite for Stage 4 recurrent checkpoint"
+    assert "STAGE5_BENCHMARK_SUITE_RUN_ID=legacy_stage4_benchmark_suite" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_CHECKPOINT=outputs/stage4/legacy/phase1.pt" in actions[0]["command"]
 
 
 def test_candidate_gate_plans_trace_sft_when_symbolic_hybrid_signal_exists(tmp_path) -> None:

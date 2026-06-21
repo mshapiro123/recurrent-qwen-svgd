@@ -92,6 +92,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or trace_sft_gate_payload(payload) is not None
         or distill_sft_gate_payload(payload) is not None
         or reasoning_dataset_audit_payload(payload) is not None
+        or stage4_opus_finetune_payload(payload) is not None
     )
 
 
@@ -247,6 +248,14 @@ def arc_agi_sota_comparison_payload(payload: dict[str, Any]) -> dict[str, Any] |
 
 def reasoning_dataset_audit_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "stage5_reasoning_dataset_audit" else None
+
+
+def stage4_opus_finetune_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    if payload.get("kind") == "stage4_opus_finetune":
+        return payload
+    if {"phase1_checkpoint", "phase2_checkpoint", "arc_ladder"} <= set(payload):
+        return payload
+    return None
 
 
 def recurrent_sft_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -1237,6 +1246,54 @@ def release_gate_actions(payload: dict[str, Any], *, source_summary: Path) -> li
     ]
 
 
+def stage4_opus_finetune_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    run_id = str(payload.get("run_id") or source_summary.parent.name or RUN_ID)
+    checkpoint = str(payload.get("checkpoint") or payload.get("phase1_checkpoint") or "")
+    phase2_checkpoint = str(payload.get("phase2_checkpoint") or "")
+    ladder = payload.get("arc_ladder") or {}
+    if checkpoint:
+        reason = (
+            "Stage 4 finished a modified-Opus recurrent fine-tune; run the broader base-vs-deterministic-recurrent benchmark suite before judging particles or scaling. "
+            f"Phase1 checkpoint `{checkpoint}`."
+        )
+    else:
+        reason = (
+            "Stage 4 finished a modified-Opus recurrent fine-tune, but no phase1 checkpoint was recorded. "
+            "Run the benchmark suite after restoring or selecting the deterministic recurrent checkpoint."
+        )
+
+    assignments = {
+        "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{run_id}_benchmark_suite",
+        "STAGE5_BENCHMARK_SOURCE_SUMMARY": command_path(source_summary),
+        "STAGE5_BENCHMARKS": "arc_challenge,arc_easy,gpqa_lite",
+        "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "128",
+        "STAGE5_BENCHMARK_ARC_EASY_LIMIT": "128",
+        "STAGE5_BENCHMARK_GPQA_LIMIT": "16",
+        "STAGE5_BENCHMARK_RECURRENT_MODE": "phase1",
+        "STAGE5_BENCHMARK_NUM_TRAJECTORIES": "1",
+    }
+    if checkpoint:
+        assignments["STAGE5_BENCHMARK_CHECKPOINT"] = checkpoint
+
+    details = []
+    for key in ("phase1_gap_to_base", "phase2_best_lift_over_phase1", "phase2_best_gap_to_base"):
+        if key in ladder:
+            details.append(f"{key}={ladder[key]}")
+    if phase2_checkpoint:
+        details.append(f"phase2_checkpoint={phase2_checkpoint}")
+    if details:
+        reason += " Stage4 ARC ladder: " + ", ".join(details) + "."
+
+    return [
+        make_action(
+            "Run benchmark suite for Stage 4 recurrent checkpoint",
+            reason,
+            command_env(assignments, "python colab/run_stage5_benchmark_suite.py"),
+            10,
+        )
+    ]
+
+
 def benchmark_suite_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
     return [
@@ -2107,6 +2164,9 @@ def plan_next_actions(
     reasoning_audit = reasoning_dataset_audit_payload(payload)
     if reasoning_audit:
         return reasoning_dataset_audit_actions(reasoning_audit, source_summary=source_summary)
+    stage4_opus = stage4_opus_finetune_payload(payload)
+    if stage4_opus:
+        return stage4_opus_finetune_actions(stage4_opus, source_summary=source_summary)
     benchmark_suite = benchmark_suite_payload(payload)
     if benchmark_suite:
         return benchmark_suite_actions(benchmark_suite, source_summary=source_summary)
@@ -2460,6 +2520,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "arc_agi_sota_comparison"
     if reasoning_dataset_audit_payload(payload):
         return "reasoning_dataset_audit"
+    if stage4_opus_finetune_payload(payload):
+        return "stage4_opus_finetune"
     if benchmark_suite_payload(payload):
         return "benchmark_suite"
     if selector_rescore_payload(payload):

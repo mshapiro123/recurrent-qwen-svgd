@@ -157,6 +157,8 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         return True
     if payload.get("kind") == "stage5_reasoning_dataset_audit":
         return True
+    if payload.get("kind") == "stage4_opus_finetune" or {"phase1_checkpoint", "phase2_checkpoint", "arc_ladder"} <= set(payload):
+        return True
     if payload.get("gate") == "stage5_arc_agi_candidate_gate" or payload.get("kind") == "stage5_arc_agi_candidate_gate":
         return True
     if payload.get("gate") == "stage5_arc_agi_trace_sft_gate" or payload.get("kind") == "trace_sft_gate":

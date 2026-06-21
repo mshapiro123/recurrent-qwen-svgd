@@ -562,6 +562,9 @@ def main() -> int:
     )
     summary = {
         "run_id": RUN_ID,
+        "kind": "stage4_opus_finetune",
+        "checkpoint": str(phase1_ckpt.relative_to(ROOT)),
+        "checkpoint_role": "phase1_deterministic_recurrent",
         "phase1_checkpoint": str(phase1_ckpt.relative_to(ROOT)),
         "phase2_checkpoint": str(phase2_ckpt.relative_to(ROOT)),
         "projection": str(projection.relative_to(ROOT)),

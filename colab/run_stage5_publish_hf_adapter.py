@@ -91,6 +91,8 @@ def checkpoint_value_from_payload(payload: dict[str, Any]) -> str | None:
         payload.get("autopilot_compact", {}).get("final_checkpoint"),
         payload.get("final_checkpoint"),
         payload.get("tuned_checkpoint"),
+        payload.get("checkpoint"),
+        payload.get("phase1_checkpoint"),
         payload.get("selected_checkpoint", {}).get("checkpoint"),
     ]
     stages = payload.get("stages") or []
