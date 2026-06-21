@@ -1191,9 +1191,14 @@ def recipe_selector_conversion_actions(payload: dict[str, Any], *, source_summar
     if status == "passed":
         return [
             make_action(
-                "Inspect same-recipe selector-conversion evidence",
-                "A recurrent selector converted same-recipe candidate coverage into selected-answer lift versus the dense control. Inspect this before rerunning the same-recipe architecture gate or packaging claims.",
-                f"cat {command_path(source_summary.with_suffix('.md'))}",
+                "Run release gate with selector-conversion evidence",
+                "A recurrent selector converted same-recipe candidate coverage into selected-answer lift versus the dense control; run the release readiness audit so this evidence can be combined with ARC confirmation and HF export metadata.",
+                command_env(
+                    {
+                        "STAGE5_RELEASE_GATE_RUN_ID": f"{RUN_ID}_release_gate_from_selector_conversion",
+                    },
+                    "python colab/assess_stage5_release_gate.py",
+                ),
                 10,
             )
         ]

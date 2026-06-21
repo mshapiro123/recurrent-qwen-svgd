@@ -1239,7 +1239,7 @@ def test_recipe_selector_rescore_runs_conversion_assessment(tmp_path) -> None:
     assert source.as_posix() in actions[0]["command"]
 
 
-def test_recipe_selector_conversion_passed_routes_to_inspection(tmp_path) -> None:
+def test_recipe_selector_conversion_passed_runs_release_gate(tmp_path) -> None:
     source = tmp_path / "conversion" / "summary.json"
     source.parent.mkdir()
     payload = {
@@ -1251,8 +1251,9 @@ def test_recipe_selector_conversion_passed_routes_to_inspection(tmp_path) -> Non
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Inspect same-recipe selector-conversion evidence"
-    assert "summary.md" in actions[0]["command"]
+    assert actions[0]["name"] == "Run release gate with selector-conversion evidence"
+    assert "STAGE5_RELEASE_GATE_RUN_ID=" in actions[0]["command"]
+    assert "python colab/assess_stage5_release_gate.py" in actions[0]["command"]
 
 
 def test_recipe_control_assessment_failed_inspects_markdown(tmp_path) -> None:

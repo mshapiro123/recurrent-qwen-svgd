@@ -310,6 +310,10 @@ control, the release and claim gates may treat it as architecture-relevant
 evidence, but the claim language must remain explicit: this is recurrent
 candidate diversity plus selector conversion, not a direct single-candidate
 recurrent win.
+The Stage 5 planner routes a passed selector-conversion artifact directly into
+`colab/assess_stage5_release_gate.py`, so the next automation step can decide
+whether the remaining blocker is benchmark confirmation, HF export metadata, or
+broader benchmark readiness.
 
 Set `STAGE5_ARC_AGI_DISTILL=1` to add frozen-base next-token KL distillation
 inside `training/train_phase1_ponder.py`. Run
