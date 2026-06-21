@@ -1108,6 +1108,7 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"gate": "stage5_gate1_selector_tta"}) == "gate1_assessment"
     assert source_kind({"gate": "stage5_gate2_particle_mechanism"}) == "gate2_assessment"
     assert source_kind({"gate": "stage5_selector_replication"}) == "selector_replication"
+    assert source_kind({"gate": "stage5_same_recipe_selector_conversion"}) == "recipe_selector_conversion"
     assert source_kind({"gate": "stage5_same_recipe_architecture"}) == "recipe_control_assessment"
     assert source_kind({"gate": "stage5_release_benchmark_readiness"}) == "release_gate"
     assert source_kind({"kind": "stage5_benchmark_suite"}) == "benchmark_suite"
@@ -1206,7 +1207,52 @@ def test_recipe_control_assessment_selector_conversion_runs_rescore(tmp_path) ->
 
     assert actions[0]["name"] == "Rescore recurrent candidates with selectors"
     assert "STAGE5_ARC_AGI_RESCORE_SOURCE_RUN_DIR" in actions[0]["command"]
+    assert "STAGE5_ARC_AGI_RESCORE_RECIPE_CONTROL_SUMMARY" in actions[0]["command"]
     assert "python colab/run_stage5_arc_agi_rescore_selectors.py" in actions[0]["command"]
+
+
+def test_recipe_selector_rescore_runs_conversion_assessment(tmp_path) -> None:
+    recipe = tmp_path / "recipe" / "summary.json"
+    source = tmp_path / "selector" / "summary.json"
+    recipe.parent.mkdir()
+    source.parent.mkdir()
+    payload = {
+        "run_id": "selector_rescore",
+        "recipe_control_summary": str(recipe),
+        "strategies": ["reliability_vote"],
+        "rows": [
+            {
+                "label": "recovered",
+                "selection_strategy": "reliability_vote",
+                "output_summary_json": str(tmp_path / "selector" / "recovered_summary.json"),
+            }
+        ],
+        "best_by_label": {},
+        "paired_comparisons": {},
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Assess same-recipe selector conversion"
+    assert "assess_stage5_recipe_selector_conversion.py" in actions[0]["command"]
+    assert str(recipe) in actions[0]["command"]
+    assert source.as_posix() in actions[0]["command"]
+
+
+def test_recipe_selector_conversion_passed_routes_to_inspection(tmp_path) -> None:
+    source = tmp_path / "conversion" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_same_recipe_selector_conversion",
+        "kind": "recipe_selector_conversion",
+        "status": "passed",
+        "passed": True,
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect same-recipe selector-conversion evidence"
+    assert "summary.md" in actions[0]["command"]
 
 
 def test_recipe_control_assessment_failed_inspects_markdown(tmp_path) -> None:

@@ -34,6 +34,7 @@ STRATEGIES = os.environ.get(
 )
 SOURCE_RUN_DIR = os.environ.get("STAGE5_ARC_AGI_RESCORE_SOURCE_RUN_DIR", "")
 SOURCE_GLOB = os.environ.get("STAGE5_ARC_AGI_RESCORE_SOURCE_GLOB", "*_candidates.jsonl")
+RECIPE_CONTROL_SUMMARY = os.environ.get("STAGE5_ARC_AGI_RESCORE_RECIPE_CONTROL_SUMMARY", "")
 WRITE_RESCORED_JSONL = os.environ.get("STAGE5_ARC_AGI_RESCORE_WRITE_JSONL", "0").strip().lower() in {
     "1",
     "true",
@@ -273,6 +274,7 @@ def write_comparison(
     payload = {
         "run_id": RUN_ID,
         "source_run_dir": path_for_cli(source_run_dir),
+        "recipe_control_summary": RECIPE_CONTROL_SUMMARY or None,
         "strategies": strategies,
         "candidate_files": [path_for_cli(pair.candidates_jsonl) for pair in pairs],
         "rows": rows,

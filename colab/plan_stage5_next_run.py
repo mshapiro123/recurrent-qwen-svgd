@@ -77,6 +77,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or gate1_assessment_payload(payload) is not None
         or gate2_assessment_payload(payload) is not None
         or selector_replication_payload(payload) is not None
+        or recipe_selector_conversion_payload(payload) is not None
         or recipe_control_assessment_payload(payload) is not None
         or release_gate_payload(payload) is not None
         or benchmark_suite_payload(payload) is not None
@@ -166,6 +167,12 @@ def gate2_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
 
 def selector_replication_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     if payload.get("gate") == "stage5_selector_replication" or payload.get("kind") == "selector_replication":
+        return payload
+    return None
+
+
+def recipe_selector_conversion_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    if payload.get("gate") == "stage5_same_recipe_selector_conversion" or payload.get("kind") == "recipe_selector_conversion":
         return payload
     return None
 
@@ -600,6 +607,7 @@ def recipe_control_assessment_actions(payload: dict[str, Any], *, source_summary
                     {
                         "STAGE5_ARC_AGI_RESCORE_RUN_ID": f"{RUN_ID}_recipe_selector",
                         "STAGE5_ARC_AGI_RESCORE_SOURCE_RUN_DIR": path_for_cli(recurrent_run_dir),
+                        "STAGE5_ARC_AGI_RESCORE_RECIPE_CONTROL_SUMMARY": path_for_cli(source_summary),
                     },
                     "python colab/run_stage5_arc_agi_rescore_selectors.py",
                 ),
@@ -953,6 +961,27 @@ def selector_rescore_actions(payload: dict[str, Any], *, source_summary: Path) -
     ]
 
 
+def recipe_selector_conversion_action(payload: dict[str, Any], *, source_summary: Path) -> dict[str, Any] | None:
+    recipe_control = payload.get("recipe_control_summary")
+    if not recipe_control:
+        return None
+    return make_action(
+        "Assess same-recipe selector conversion",
+        "Selector rescoring came from a same-recipe architecture gate that needed selector conversion; compare recurrent selector-selected answers directly against the dense control.",
+        command_env(
+            {
+                "STAGE5_RECIPE_SELECTOR_CONVERSION_RUN_ID": f"{RUN_ID}_recipe_selector_conversion",
+            },
+            (
+                "python colab/assess_stage5_recipe_selector_conversion.py "
+                f"--recipe_control_summary {shlex.quote(str(recipe_control))} "
+                f"--selector_rescore_summary {command_path(source_summary)}"
+            ),
+        ),
+        10,
+    )
+
+
 def gate1_source_summary_path(payload: dict[str, Any], fallback: Path) -> Path:
     source = payload.get("source_summary")
     return resolve_path(str(source)) if source else fallback
@@ -1157,6 +1186,27 @@ def selector_replication_actions(payload: dict[str, Any], *, source_summary: Pat
     ]
 
 
+def recipe_selector_conversion_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    if status == "passed":
+        return [
+            make_action(
+                "Inspect same-recipe selector-conversion evidence",
+                "A recurrent selector converted same-recipe candidate coverage into selected-answer lift versus the dense control. Inspect this before rerunning the same-recipe architecture gate or packaging claims.",
+                f"cat {command_path(source_summary.with_suffix('.md'))}",
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect same-recipe selector conversion `{status}`",
+            "Selector conversion did not clear cleanly against the dense control; inspect this before further recurrent-specific scaling.",
+            f"cat {command_path(source_summary.with_suffix('.md'))}",
+            10,
+        )
+    ]
+
+
 def recovery_particle_examples(payload: dict[str, Any]) -> int:
     settings = payload.get("settings") or {}
     if settings.get("eval_task_limit") is not None:
@@ -1321,6 +1371,9 @@ def plan_next_actions(
     selector_replication = selector_replication_payload(payload)
     if selector_replication:
         return selector_replication_actions(selector_replication, source_summary=source_summary)
+    recipe_selector_conversion = recipe_selector_conversion_payload(payload)
+    if recipe_selector_conversion:
+        return recipe_selector_conversion_actions(recipe_selector_conversion, source_summary=source_summary)
     recipe_control = recipe_control_assessment_payload(payload)
     if recipe_control:
         return recipe_control_assessment_actions(recipe_control, source_summary=source_summary)
@@ -1342,6 +1395,9 @@ def plan_next_actions(
     benchmark_suite = benchmark_suite_payload(payload)
     if benchmark_suite:
         return benchmark_suite_actions(benchmark_suite, source_summary=source_summary)
+    recipe_selector_action = recipe_selector_conversion_action(payload, source_summary=source_summary)
+    if recipe_selector_action is not None:
+        return [recipe_selector_action]
     if require_gate1_assessment and needs_gate1_assessment(payload):
         return [gate1_assessment_action(source_summary)]
     if require_gate2_assessment and needs_gate2_assessment(payload):
@@ -1657,6 +1713,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "gate2_assessment"
     if selector_replication_payload(payload):
         return "selector_replication"
+    if recipe_selector_conversion_payload(payload):
+        return "recipe_selector_conversion"
     if recipe_control_assessment_payload(payload):
         return "recipe_control_assessment"
     if release_gate_payload(payload):

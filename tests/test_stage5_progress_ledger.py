@@ -290,6 +290,39 @@ def test_progress_ledger_reports_selector_replications(tmp_path) -> None:
     assert payload["recommended_next_plan_source"] == str(source)
 
 
+def test_progress_ledger_reports_recipe_selector_conversions(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "recipe_selector_conversion" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "recipe_selector_conversion",
+            "gate": "stage5_same_recipe_selector_conversion",
+            "kind": "recipe_selector_conversion",
+            "status": "passed",
+            "passed": True,
+            "passing_selectors": [{"label": "recovered", "selection_strategy": "reliability_vote"}],
+            "best_selector": {"label": "recovered", "selection_strategy": "reliability_vote"},
+            "next_step": "reassess architecture",
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["recipe_selector_conversions"] == [
+        {
+            "path": str(source),
+            "run_id": "recipe_selector_conversion",
+            "status": "passed",
+            "passed": True,
+            "passing_selectors": [{"label": "recovered", "selection_strategy": "reliability_vote"}],
+            "best_selector": {"label": "recovered", "selection_strategy": "reliability_vote"},
+            "next_step": "reassess architecture",
+        }
+    ]
+    assert payload["recommended_next_plan_source"] == str(source)
+
+
 def test_progress_ledger_reports_recipe_control_assessments(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     source = scan_root / "recipe" / "summary.json"

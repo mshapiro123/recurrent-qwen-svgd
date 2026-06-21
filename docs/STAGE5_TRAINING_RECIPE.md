@@ -129,6 +129,12 @@ Required control:
   standard dense recipe. Treat `needs_selector_conversion` as a real diagnostic:
   recurrence may be creating better candidates before the current selector can
   choose them.
+- When same-recipe architecture returns `needs_selector_conversion`, run
+  `colab/run_stage5_arc_agi_rescore_selectors.py`, then
+  `colab/assess_stage5_recipe_selector_conversion.py`. The conversion gate
+  compares recurrent selector-selected outputs directly against the dense
+  control, instead of only comparing selectors against the recurrent source
+  heuristic.
 - Cross the signal phase with entropy on/off.
 - Measure whether structural diversity survives the signal phase better than
   weight-only diversity.

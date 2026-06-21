@@ -94,6 +94,26 @@ def test_parse_action_command_allows_recipe_control_assessor() -> None:
     ]
 
 
+def test_parse_action_command_allows_recipe_selector_conversion_assessor() -> None:
+    parsed = parse_action_command(
+        "STAGE5_RECIPE_SELECTOR_CONVERSION_RUN_ID=conversion python "
+        "colab/assess_stage5_recipe_selector_conversion.py "
+        "--recipe_control_summary outputs/stage5/recipe/summary.json "
+        "--selector_rescore_summary outputs/stage5/selector/summary.json"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_RECIPE_SELECTOR_CONVERSION_RUN_ID": "conversion"}
+    assert parsed.argv == [
+        sys.executable,
+        "colab/assess_stage5_recipe_selector_conversion.py",
+        "--recipe_control_summary",
+        "outputs/stage5/recipe/summary.json",
+        "--selector_rescore_summary",
+        "outputs/stage5/selector/summary.json",
+    ]
+
+
 def test_parse_action_command_allows_release_gate_assessor() -> None:
     parsed = parse_action_command(
         "STAGE5_RELEASE_GATE_RUN_ID=release python colab/assess_stage5_release_gate.py"

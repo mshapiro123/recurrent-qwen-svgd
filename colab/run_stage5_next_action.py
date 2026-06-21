@@ -53,6 +53,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/assess_stage5_gate1.py",
     "colab/assess_stage5_gate2.py",
     "colab/assess_stage5_recipe_control.py",
+    "colab/assess_stage5_recipe_selector_conversion.py",
     "colab/assess_stage5_benchmark_suite.py",
     "colab/assess_stage5_release_gate.py",
     "colab/assess_stage5_selector_replication.py",
