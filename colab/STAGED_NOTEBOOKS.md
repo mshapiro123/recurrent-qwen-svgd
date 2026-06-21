@@ -5,11 +5,22 @@ Do not open each stage as a separate notebook while an expensive runtime is
 active. The staged notebooks remain in `colab/` for review, but the execution
 path below stays inside the current runtime.
 
-## Start or Resume Stage 1 In-Place
+## Current Low-Credit Stage 5 Action
 
-Paste this single cell into the already-attached A100 notebook. It clones or
-updates the private GitHub repo, installs dependencies, validates optional HF
-auth, then runs Stage 1 directly in the current runtime.
+The active next A100-worthy job is not Stage 1. It is the full balanced
+ARC-Easy/ARC-Challenge assessment for the passed ARC-mix proxy checkpoint. Use
+[`STAGE5_FULL_ASSESSMENT_CELL.md`](STAGE5_FULL_ASSESSMENT_CELL.md) when credits
+are tight: that cell updates the repo, runs exactly
+`colab/run_stage5_full_assessment_once.py`, commits safe text artifacts, and
+disconnects the runtime after completion.
+
+Do not use the generic continuation cell for this narrow gate unless you
+intentionally want the planner to choose a different action.
+
+## Legacy Stage 1 Cell
+
+The following older cell is kept for reference when restarting the full staged
+program. Do not run it for the current low-credit full-assessment gate.
 
 ```python
 import os, subprocess, sys

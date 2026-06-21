@@ -127,6 +127,18 @@ STAGE5_ARC_AGI_NEXT_PLAN_SOURCE_SUMMARY=outputs/stage5/stage5_arc_agi_colab_cont
 python colab/plan_stage5_next_run.py
 ```
 
+For a low-credit Colab session, use the single-purpose launcher instead of the
+generic continuation loop:
+
+```bash
+python colab/run_stage5_full_assessment_once.py
+```
+
+The notebook-ready copy/paste cell is in
+[`colab/STAGE5_FULL_ASSESSMENT_CELL.md`](colab/STAGE5_FULL_ASSESSMENT_CELL.md).
+It clones or updates the private repo, runs exactly this assessment, pushes
+safe text artifacts, and disconnects the Colab runtime when finished.
+
 Do not run GPQA, Phase 2/SVGD, or scale-up jobs before this deterministic
 recurrent recovery question is resolved.
 
