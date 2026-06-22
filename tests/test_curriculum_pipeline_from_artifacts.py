@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from training.run_curriculum_pipeline_from_artifacts import parse_args, read_jsonl, run_pipeline
 
 
@@ -40,6 +42,7 @@ def args_for(tmp_path: Path, references_path: Path, *extra: str):
             "2",
             "--min_distinct_agree",
             "2",
+            "--allow_single_model_roles",
             *extra,
         ]
     )
@@ -69,6 +72,52 @@ def test_pipeline_stops_after_building_seed_jobs(tmp_path) -> None:
     assert summary["status"] == "pending_seed_responses"
     assert Path(summary["artifacts"]["jobs_seed"]["path"]).exists()
     assert summary["counts"]["seed_jobs"] == 1
+
+
+def test_pipeline_requires_diverse_external_models_by_default(tmp_path) -> None:
+    references = tmp_path / "refs.jsonl"
+    write_jsonl(references, [{"id": "eval-1", "prompt": "What is 9 + 9?"}])
+
+    args = parse_args(
+        [
+            "--work_dir",
+            str(tmp_path / "run"),
+            "--seed_models",
+            "gen-a",
+            "--solver_models",
+            "solver-a,solver-b",
+            "--judge_models",
+            "judge-a,judge-b",
+            "--references_jsonl",
+            str(references),
+        ]
+    )
+
+    with pytest.raises(ValueError, match="seed_models requires at least two distinct external models"):
+        run_pipeline(args)
+
+
+def test_pipeline_blocks_student_lineage_models_by_default(tmp_path) -> None:
+    references = tmp_path / "refs.jsonl"
+    write_jsonl(references, [{"id": "eval-1", "prompt": "What is 9 + 9?"}])
+
+    args = parse_args(
+        [
+            "--work_dir",
+            str(tmp_path / "run"),
+            "--seed_models",
+            "Qwen/Qwen2.5-0.5B-Instruct,glm-test",
+            "--solver_models",
+            "solver-a,solver-b",
+            "--judge_models",
+            "judge-a,judge-b",
+            "--references_jsonl",
+            str(references),
+        ]
+    )
+
+    with pytest.raises(ValueError, match="Student-lineage models are blocked"):
+        run_pipeline(args)
 
 
 def test_pipeline_resumes_to_complete_from_artifacts(tmp_path) -> None:

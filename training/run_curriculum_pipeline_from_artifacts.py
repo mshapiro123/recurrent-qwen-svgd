@@ -32,6 +32,7 @@ from training.build_curriculum_generation_jobs import (
     build_naturalness_jobs,
     build_perturbation_jobs,
     build_seed_jobs,
+    validate_external_models,
 )
 from training.collect_curriculum_job_outputs import (
     collect_depth_measurements,
@@ -180,6 +181,22 @@ def response_missing(path: Path) -> bool:
     return not path.exists() or line_count(path) == 0
 
 
+def validate_role_models(
+    role_name: str,
+    models: list[str],
+    *,
+    allow_single_model_roles: bool,
+    allow_student_lineage: bool,
+) -> None:
+    validate_external_models(models, allow_student_lineage=allow_student_lineage)
+    distinct = {model.strip().lower() for model in models if model.strip()}
+    if not allow_single_model_roles and len(distinct) < 2:
+        raise ValueError(
+            f"{role_name} requires at least two distinct external models. "
+            "Use --allow_single_model_roles only for local smoke tests."
+        )
+
+
 def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
     work_dir = Path(args.work_dir)
     work_dir.mkdir(parents=True, exist_ok=True)
@@ -194,6 +211,24 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
     methods = split_csv(args.methods)
     if not (seed_models and solver_models and judge_models):
         raise ValueError("seed, solver, and judge models are required.")
+    validate_role_models(
+        "seed_models",
+        seed_models,
+        allow_single_model_roles=args.allow_single_model_roles,
+        allow_student_lineage=args.allow_student_lineage,
+    )
+    validate_role_models(
+        "solver_models",
+        solver_models,
+        allow_single_model_roles=args.allow_single_model_roles,
+        allow_student_lineage=args.allow_student_lineage,
+    )
+    validate_role_models(
+        "judge_models",
+        judge_models,
+        allow_single_model_roles=args.allow_single_model_roles,
+        allow_student_lineage=args.allow_student_lineage,
+    )
 
     seed_jobs = build_seed_jobs(
         models=seed_models,
@@ -430,6 +465,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--seed_models", default="opus-strong,glm-strong")
     parser.add_argument("--solver_models", default="opus-strong,glm-strong")
     parser.add_argument("--judge_models", default="opus-strong,glm-strong")
+    parser.add_argument("--allow_single_model_roles", action="store_true")
+    parser.add_argument("--allow_student_lineage", action="store_true")
     parser.add_argument("--domains", default="math")
     parser.add_argument("--difficulties", default="medium,hard")
     parser.add_argument("--target_steps", type=parse_int_csv, default=[4, 8])
