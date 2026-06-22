@@ -1,0 +1,11 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6029.88it/s]
+lora_recurrent_modules=84
+step=0 mean_expected_loops=3.1865 mean_halt_entropy=1.0875 expected_ce=2.2053 halting_kl=0.9222 loss=2.2791
+step=25 mean_expected_loops=3.1531 mean_halt_entropy=1.1124 expected_ce=1.9449 halting_kl=0.8774 loss=2.0151
+step=50 mean_expected_loops=3.1165 mean_halt_entropy=1.1382 expected_ce=1.1049 halting_kl=0.8297 loss=1.1712
+step=75 mean_expected_loops=3.0771 mean_halt_entropy=1.1651 expected_ce=0.7035 halting_kl=0.0892 loss=0.7106
+step=100 mean_expected_loops=3.0429 mean_halt_entropy=1.1842 expected_ce=0.2820 halting_kl=0.7397 loss=0.3412
+step=125 mean_expected_loops=3.0087 mean_halt_entropy=1.2023 expected_ce=0.1230 halting_kl=0.7011 loss=0.1791
+saved_checkpoint=outputs/stage5/stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft/phase1/phase1_step_150.pt

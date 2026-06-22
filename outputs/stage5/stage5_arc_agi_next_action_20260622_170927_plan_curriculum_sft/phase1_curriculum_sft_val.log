@@ -1,0 +1,23 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 4980.87it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft/phase1/phase1_step_150.pt loaded_keys=173
+examples=200
+expected_ce=0.189663
+halting_kl=0.434806
+loss=0.224447
+mean_expected_loops=2.964177
+mean_halt_entropy=1.228205
+group/curriculum_mode/deep_narrow/examples=97
+group/curriculum_mode/deep_narrow/expected_ce=0.268978
+group/curriculum_mode/deep_narrow/halting_kl=0.205890
+group/curriculum_mode/deep_narrow/loss=0.285449
+group/curriculum_mode/deep_narrow/mean_expected_loops=2.963509
+group/curriculum_mode/deep_narrow/mean_halt_entropy=1.229711
+group/curriculum_mode/direct/examples=103
+group/curriculum_mode/direct/expected_ce=0.114968
+group/curriculum_mode/direct/halting_kl=0.650387
+group/curriculum_mode/direct/loss=0.166999
+group/curriculum_mode/direct/mean_expected_loops=2.964806
+group/curriculum_mode/direct/mean_halt_entropy=1.226787
