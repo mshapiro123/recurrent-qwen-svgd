@@ -239,13 +239,13 @@ The Stage 4 modified-Opus fine-tune narrowed the base gap on an ARC-Challenge
 | Phase 1 deterministic recurrent | `70/128` (`54.69%`) |
 | Phase 2/SVGD candidate | `69/128` (`53.91%`) |
 
-This is the most important practical result so far. It shows that recurrent
-adapter training can recover most of the performance lost by surgical
-architecture modification. It also shows that the current Phase 2/SVGD candidate
-did not improve over the stronger Phase 1 recurrent baseline on this slice.
+This was the first important practical recovery result. It showed that
+recurrent adapter training can recover most of the performance lost by surgical
+architecture modification. It also showed that the Phase 2/SVGD candidate did
+not improve over the stronger Phase 1 recurrent baseline on this slice.
 
 Subsequent Stage 5 recovery work found that a balanced ARC/Opus mix can produce
-proxy lift. The current selected balanced checkpoint is:
+proxy lift. One selected balanced checkpoint was:
 
 ```text
 outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/
@@ -260,12 +260,29 @@ The full balanced MCQ assessment reports:
 | ARC-Challenge | `167/299` (`55.85%`) | `169/299` (`56.52%`) | `+2` |
 | Combined | `588/869` (`67.66%`) | `581/869` (`66.86%`) | `-7` |
 
-The paired combined sign test is not significant
+The paired combined sign test was not significant
 (`wins=33`, `losses=40`, `ties=796`, `p=0.4828`). The right interpretation is
 encouraging but not yet a release claim: the recurrent model can slightly beat
 base on the harder ARC-Challenge slice, but it still gives back more points on
 ARC-Easy. The full assessment therefore correctly remains
 `needs_competence_recovery`.
+
+That checkpoint was superseded by a later proxy-selected full confirmation run
+that trailed base on both ARC-Easy and ARC-Challenge:
+
+```text
+run_id = stage5_full_assessment_once_20260622_005522
+status = needs_competence_recovery
+ARC-Easy:      base 421/570, recurrent 415/570, delta -6
+ARC-Challenge: base 167/299, recurrent 164/299, delta -3
+Combined:      base 588/869, recurrent 579/869, delta -9
+```
+
+The latest diagnosis points to answer-calibration drift, not merely inadequate
+reasoning traces: the recurrent checkpoint over-predicts `C`, under-predicts
+`A`, and lowers the correct-answer margin. This makes calibration-preserving
+recurrent recovery the next gate before GPQA, Phase 2/SVGD scaling, or model
+release.
 
 ## 6. What Has Not Been Shown Yet
 

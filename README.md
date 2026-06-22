@@ -14,6 +14,34 @@ run. The central question is:
 > a recurrent-depth architecture, then use learned depth and latent particles to
 > surpass the original model on hard reasoning?
 
+## Research Contribution Snapshot
+
+This repository is the working artifact for a compact model-surgery study. The
+scientific contribution under test is not a larger data run; it is a controlled
+conversion of a trained dense transformer into a recurrent latent-computation
+system:
+
+1. **Surgery with identity preservation.** Qwen is split into Prelude,
+   Recurrent Block, and Coda. The wrapper passes the strict one-pass identity
+   gate, so the recurrent architecture can exactly represent the original model
+   before training changes behavior.
+2. **Learned recurrent depth.** A sequence-level PonderNet-style halting head
+   learns a non-collapsed loop distribution while only a small adapter,
+   bridge, and controller budget is trained.
+3. **Latent particle trajectories.** Stochastic latent injection and SVGD-style
+   particle updates create multiple recurrent hidden-state trajectories, giving
+   a route to candidate diversity in latent space rather than only in decoded
+   text.
+4. **Credit-aware empirical gates.** The project treats paid A100 time as a
+   scarce experimental reagent. Every GPU run must answer a specific blocker
+   and emit planner-readable artifacts before another run is justified.
+
+The current evidence supports the first three method claims. It does **not**
+yet support the stronger benchmark claim that the recurrent or SVGD model
+surpasses unmodified Qwen 0.5B. The active experimental target is to recover
+deterministic recurrent competence to at least base parity on balanced ARC, then
+test whether particles and selectors add hard-tail lift.
+
 ## Current A100 Answer
 
 We should treat the A100 as a gated measurement instrument, not as the default
@@ -27,8 +55,8 @@ The current answer to "are we using A100 judiciously?" is: mostly yes now, but
 only because the workflow has been narrowed. The project should not use A100 for
 open-ended training, notebook debugging, Hugging Face dataset discovery, or
 SVGD/kernel exploration while deterministic recurrent recovery is still below
-the release bar. Paid GPU is reserved for one bounded confirmation job at a
-time, followed by review.
+the release bar. Paid GPU is reserved for one bounded proxy or confirmation job
+at a time, followed by review.
 
 The latest workflow change makes this stricter: ARC-mix proxy gates now inspect
 paired margin movement and answer-prior drift, not just hit count. A proxy that
@@ -135,12 +163,12 @@ Treat A100 time as the scarce experimental reagent. The default answer to
 5. it is not a dataset audit, unit test, notebook repair, README edit, or
    exploratory script-debugging task.
 
-Right now there is no automatic A100-worthy job. The full balanced assessment
-from `outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json`
+Right now there is exactly one plausible A100-worthy job, and it is **not**
+automatic: one bounded ARC-mix proxy with stronger response distillation, after
+reviewing the local diagnosis. The full balanced assessment from
+`outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json`
 failed, so dataset inspection, Hugging Face trace triage, planner repairs,
-documentation, and diagnosis should stay local or on a free CPU runtime. The
-only plausible next paid job is one bounded ARC-mix proxy with stronger
-response distillation, after reviewing the local diagnosis.
+documentation, and diagnosis should stay local or on a free CPU runtime.
 The maintained next-action wrapper refuses long CPU/data-only dataset actions
 on an attached GPU runtime by default, so an A100 session does not sit idle
 while a Hugging Face audit runs.
@@ -182,8 +210,10 @@ pulls latest GitHub, runs go/no-go, and defaults to dry-run unless
   adapter/controller stabilization, with expected loop depth around 2.9 on the
   current recurrent checkpoints.
 - **Recoverable competence.** The recurrent model has recovered to near-base
-  performance on balanced ARC and slightly exceeds base on ARC-Challenge, while
-  still trailing on ARC-Easy.
+  performance on balanced ARC. An earlier checkpoint slightly exceeded base on
+  ARC-Challenge while trailing on ARC-Easy; the latest proxy-selected full
+  confirmation trails base on both slices, exposing answer-calibration drift as
+  the current blocker.
 - **Particle mechanism signal.** SVGD and within-group particle geometry improve
   candidate density on controlled exact-task suites, but have not yet beaten the
   strongest deterministic recurrent checkpoint on non-toy benchmarks.
