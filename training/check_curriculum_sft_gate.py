@@ -29,6 +29,7 @@ from training.prepare_curriculum_jsonl import (  # noqa: E402
 
 
 RUN_ID = time.strftime("curriculum_sft_gate_%Y%m%d_%H%M%S")
+DEFAULT_CURRICULUM_WORK_DIR = "data/curriculum/run_001"
 
 
 def read_json(path: str | Path) -> dict[str, Any]:
@@ -63,6 +64,12 @@ def summary_path_from_args(args: argparse.Namespace) -> Path:
     if args.summary_json:
         return resolve_path(args.summary_json)
     return resolve_path(args.work_dir) / "summary.json"
+
+
+def work_dir_from_args(args: argparse.Namespace, *, summary_path: Path) -> Path | None:
+    if args.summary_json and str(args.work_dir or "").replace("\\", "/") == DEFAULT_CURRICULUM_WORK_DIR:
+        return summary_path.parent
+    return resolve_path(args.work_dir) if args.work_dir else summary_path.parent
 
 
 def artifact_path(summary: dict[str, Any], name: str) -> Path | None:
@@ -453,11 +460,12 @@ def build_gate_payload(args: argparse.Namespace) -> dict[str, Any]:
         )
 
     go = not any(issue.get("severity") == "blocker" for issue in issues)
+    work_dir = work_dir_from_args(args, summary_path=summary_path)
     return {
         "run_id": RUN_ID,
         "kind": "curriculum_sft_gate",
         "summary_json": str(summary_path),
-        "work_dir": str(resolve_path(args.work_dir)) if args.work_dir else None,
+        "work_dir": str(work_dir) if work_dir else None,
         "go": go,
         "status": "go_train_recurrent_sft" if go else "no_go",
         "issues": issues,
@@ -507,7 +515,7 @@ def write_outputs(payload: dict[str, Any], *, output_json: str | None, output_md
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--work_dir", default="data/curriculum/run_001")
+    parser.add_argument("--work_dir", default=DEFAULT_CURRICULUM_WORK_DIR)
     parser.add_argument("--summary_json")
     parser.add_argument("--output_json")
     parser.add_argument("--output_md")
