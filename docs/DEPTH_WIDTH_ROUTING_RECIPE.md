@@ -209,6 +209,23 @@ Before any more A100 spend:
 5. Keep Phase 2/SVGD and scale-up deferred until deterministic routing is
    healthy.
 
+Current implementation status:
+
+- `eval/eval_mcq.py` can now emit loop-depth diagnostics for recurrent MCQ
+  scoring rows.
+- `eval/analyze_mcq_regressions.py` summarizes paired base-versus-recurrent
+  losses and wins by routing bucket.
+- `colab/run_stage5_benchmark_suite.py` carries those routing buckets into the
+  benchmark-suite `summary.json` and `summary.md`, without storing prompt text in
+  the aggregate suite report.
+
+The next GPU run should be bounded and diagnostic. Use an L4 or T4 for
+diagnostic-only benchmark scoring if it fits; reserve A100/H100 for training
+runs that have already passed a local measurement gate. The immediate useful
+GPU spend is a small Stage 5 MCQ eval with loop diagnostics enabled, followed by
+a direct/deep recovery Phase 1 run only if the diagnostics confirm that shallow
+direct rows are over-looping or drifting from base calibration.
+
 ## Open Questions For Deep Research
 
 1. What is the best low-cost supervision for "direct mode" halting at or near

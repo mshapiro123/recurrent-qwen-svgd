@@ -117,25 +117,49 @@ def test_resolve_checkpoint_prefers_existing_export_adapter(tmp_path, monkeypatc
 def test_build_summary_compares_base_and_recurrent_rows(tmp_path) -> None:
     base_jsonl = tmp_path / "arc_base_label.jsonl"
     recurrent_jsonl = tmp_path / "arc_recurrent_label.jsonl"
+    data_jsonl = tmp_path / "arc.jsonl"
+    _write_jsonl(
+        data_jsonl,
+        [
+            {"id": "a", "question": "Which option is already known?", "choices": {"A": "known", "B": "unknown"}, "answer": "A"},
+            {"id": "b", "question": "What is 2 + 2?", "choices": {"A": "4", "B": "5"}, "answer": "A"},
+        ],
+    )
     _write_jsonl(
         base_jsonl,
         [
-            {"id": "a", "aggregate": "mean", "hit": True},
-            {"id": "b", "aggregate": "mean", "hit": False},
+            {"id": "a", "aggregate": "mean", "answer": "A", "prediction": "A", "hit": True, "scores": {"A": 3.0, "B": 1.0}},
+            {"id": "b", "aggregate": "mean", "answer": "A", "prediction": "B", "hit": False, "scores": {"A": 0.0, "B": 1.0}},
         ],
     )
     _write_jsonl(
         recurrent_jsonl,
         [
-            {"id": "a", "aggregate": "mean", "hit": True},
-            {"id": "b", "aggregate": "mean", "hit": True},
+            {
+                "id": "a",
+                "aggregate": "mean",
+                "answer": "A",
+                "prediction": "A",
+                "hit": True,
+                "scores": {"A": 2.5, "B": 1.0},
+                "loop_diagnostics": {"mean_expected_loops": 1.1, "answer_expected_loops": 1.0},
+            },
+            {
+                "id": "b",
+                "aggregate": "mean",
+                "answer": "A",
+                "prediction": "A",
+                "hit": True,
+                "scores": {"A": 2.0, "B": 1.5},
+                "loop_diagnostics": {"mean_expected_loops": 3.5, "answer_expected_loops": 3.7},
+            },
         ],
     )
 
     payload = build_summary(
         source_summary=None,
         checkpoint=tmp_path / "checkpoint.pt",
-        specs=[BenchmarkSpec("arc_challenge", tmp_path / "arc.jsonl", [])],
+        specs=[BenchmarkSpec("arc_challenge", data_jsonl, [])],
         jobs=[
             EvalJob("arc_challenge", "base", "label", base_jsonl, []),
             EvalJob("arc_challenge", "recurrent", "label", recurrent_jsonl, []),
@@ -153,6 +177,13 @@ def test_build_summary_compares_base_and_recurrent_rows(tmp_path) -> None:
     assert paired["paired_examples"] == 2
     assert paired["wins"] == 1
     assert paired["losses"] == 0
+    routing = payload["routing_diagnostics"]["arc_challenge"]["label"]
+    assert "loss_examples" not in routing
+    assert routing["routing_buckets"]["base_confident_direct_proxy"]["n"] == 1
+    assert routing["routing_buckets"]["base_confident_direct_proxy"]["delta"] == 0
+    assert routing["routing_buckets"]["deep_numeric_proxy"]["n"] == 1
+    assert routing["routing_buckets"]["deep_numeric_proxy"]["delta"] == 1
+    assert routing["routing_buckets"]["deep_numeric_proxy"]["mean_candidate_expected_loops"] == 3.5
 
 
 def test_eval_jobs_passes_phase2_svgd_flags(tmp_path, monkeypatch) -> None:

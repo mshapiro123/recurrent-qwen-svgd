@@ -24,6 +24,11 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from colab.run_stage5_publish_hf_adapter import checkpoint_value_from_payload
+from eval.analyze_mcq_regressions import (
+    paired_rows as paired_mcq_regression_rows,
+    rows_by_id as mcq_rows_by_id,
+    summarize as summarize_mcq_regressions,
+)
 
 
 RUN_ID = os.environ.get("STAGE5_BENCHMARK_SUITE_RUN_ID") or time.strftime(
@@ -377,6 +382,52 @@ def rows_by_id(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return {str(row["id"]): row for row in rows if row.get("id") is not None}
 
 
+def compact_routing_diagnosis(summary: dict[str, Any]) -> dict[str, Any]:
+    """Keep aggregate routing evidence without storing prompt text examples."""
+
+    return {
+        "benchmark": summary["benchmark"],
+        "paired_examples": summary["paired_examples"],
+        "base_correct": summary["base_correct"],
+        "candidate_correct": summary["candidate_correct"],
+        "delta": summary["delta"],
+        "changes": summary["changes"],
+        "mean_margin_delta": summary["mean_margin_delta"],
+        "mean_correct_score_delta": summary["mean_correct_score_delta"],
+        "prediction_counts": summary["prediction_counts"],
+        "features": summary["features"],
+        "routing_buckets": summary["routing_buckets"],
+    }
+
+
+def routing_diagnostics(
+    *,
+    specs: list[BenchmarkSpec],
+    raw_rows: dict[str, dict[str, dict[str, list[dict[str, Any]]]]],
+) -> dict[str, dict[str, dict[str, Any]]]:
+    diagnostics: dict[str, dict[str, dict[str, Any]]] = {}
+    specs_by_name = {spec.name: spec for spec in specs}
+    for benchmark, score_targets in raw_rows.items():
+        spec = specs_by_name.get(benchmark)
+        if spec is None:
+            continue
+        data_rows = mcq_rows_by_id(read_rows(spec.data_jsonl))
+        for score_target, arms in score_targets.items():
+            base_rows = arms.get("base") or []
+            recurrent_rows = arms.get("recurrent") or []
+            if not base_rows or not recurrent_rows:
+                continue
+            paired = paired_mcq_regression_rows(
+                mcq_rows_by_id(base_rows),
+                mcq_rows_by_id(recurrent_rows),
+                data_rows,
+            )
+            diagnostics.setdefault(benchmark, {})[score_target] = compact_routing_diagnosis(
+                summarize_mcq_regressions(paired, benchmark=benchmark)
+            )
+    return diagnostics
+
+
 def paired_arm_summaries(
     base_rows: list[dict[str, Any]],
     recurrent_rows: list[dict[str, Any]],
@@ -461,6 +512,7 @@ def build_summary(
                 raw_arms.get("base") or [],
                 raw_arms.get("recurrent") or [],
             )
+    routing = routing_diagnostics(specs=specs, raw_rows=raw_rows)
     return {
         "run_id": RUN_ID,
         "kind": "stage5_benchmark_suite",
@@ -477,6 +529,7 @@ def build_summary(
         "results": result_rows,
         "comparisons": comparisons,
         "paired_comparisons": paired_comparisons,
+        "routing_diagnostics": routing,
     }
 
 
@@ -519,6 +572,16 @@ def write_report(payload: dict[str, Any]) -> None:
                         f"`{row['correct_delta_recurrent_vs_base']}`, W/L/T "
                         f"`{row['wins']}/{row['losses']}/{row['ties']}`, p "
                         f"`{row['sign_test_p_value']}`"
+                    )
+            routing = payload.get("routing_diagnostics", {}).get(benchmark, {}).get(score_target, {})
+            if routing:
+                lines.append("  - routing buckets")
+                for bucket, values in routing.get("routing_buckets", {}).items():
+                    lines.append(
+                        f"    - `{bucket}`: n `{values['n']}`, delta "
+                        f"`{values['delta']}`, W/L `{values['wins']}/{values['losses']}`, "
+                        f"mean margin delta `{values['mean_margin_delta']}`, "
+                        f"mean loops `{values['mean_candidate_expected_loops']}`"
                     )
     if payload["failures"]:
         lines.extend(["", "## Failures", ""])
