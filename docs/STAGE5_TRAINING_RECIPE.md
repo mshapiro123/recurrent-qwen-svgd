@@ -82,6 +82,12 @@ Gate to proceed:
 - Correct-answer margins and answer priors do not drift materially versus base
   on MCQ rows.
 
+Do not add permutation-invariance training during this recovery stage. Debiased
+MCQ evaluation should neutralize option-label artifacts for measurement, while
+the depth-one direct route stays matched to base. If a later reasoning-path
+objective needs order robustness, use a small per-item content-consistency loss
+only on depth-two-plus rows and mix it with broad replay.
+
 ## Stage 5B: Particle Mechanism Screening
 
 Goal: decide whether the current particle mechanism is worth training around.

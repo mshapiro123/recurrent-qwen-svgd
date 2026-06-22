@@ -2726,6 +2726,40 @@ def test_mcq_debias_content_degradation_persists_runs_direct_preservation(tmp_pa
     assert "python colab/run_stage5_direct_preservation_probe.py" in actions[0]["command"]
 
 
+def test_mcq_debias_pair_confirmed_stops_training_and_adopts_debiased_scoring(tmp_path) -> None:
+    source = tmp_path / "mcq_pair" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_mcq_debias_pair_assessment",
+        "status": "mcq_selection_bias_confirmed",
+        "passed": True,
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert source_kind(payload) == "mcq_debias_pair_assessment"
+    assert actions[0]["name"] == "Adopt debiased MCQ scoring before more training"
+    assert "Do not spend A100 time" in actions[0]["reason"]
+    assert "run_stage5_direct_preservation_probe.py" not in actions[0]["command"]
+
+
+def test_mcq_debias_pair_content_gap_routes_to_blocking_summary(tmp_path) -> None:
+    source = tmp_path / "mcq_pair" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_mcq_debias_pair_assessment",
+        "status": "mcq_content_gap_persists",
+        "passed": False,
+        "blocking_summary": "outputs/stage5/challenge_debias/summary.json",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run bounded max_loops=1 direct-preservation probe"
+    assert "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY=outputs/stage5/challenge_debias/summary.json" in actions[0]["command"]
+    assert "python colab/run_stage5_direct_preservation_probe.py" in actions[0]["command"]
+
+
 def test_direct_preservation_probe_pass_confirms_larger_arc(tmp_path) -> None:
     source = tmp_path / "direct_preserve" / "summary.json"
     source.parent.mkdir()

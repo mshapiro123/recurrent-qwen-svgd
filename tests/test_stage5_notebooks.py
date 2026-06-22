@@ -325,6 +325,7 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     assert "STAGE5_MCQ_DEBIAS_QUIET_EVAL" in plain
     assert "STAGE5_MCQ_DEBIAS_RESUME_EXISTING" in plain
     assert "STAGE5_MCQ_DEBIAS_PUSH" in plain
+    assert "colab/assess_stage5_mcq_debias_pair.py" in plain
     assert "training/run_programmatic_curriculum_pipeline.py" in plain
     assert "colab/publish_stage5_curriculum_gate.py" in plain
     assert "Refusing to run CPU-only programmatic curriculum generation" in plain
@@ -375,6 +376,8 @@ def test_arc_challenge_mcq_debias_cell_is_bounded_and_pushes_summary() -> None:
     assert 'env["STAGE5_MCQ_DEBIAS_RESUME_EXISTING"] = "1"' in plain
     assert 'env["STAGE5_MCQ_DEBIAS_PUSH"] = "1"' in plain
     assert "colab/run_stage5_mcq_debias_diagnostic.py" in plain
+    assert "colab/assess_stage5_mcq_debias_pair.py" in plain
+    assert "STAGE5_MCQ_DEBIAS_ARC_CHALLENGE_SUMMARY" in plain
     assert "tests/test_mcq_debias.py" in plain
     assert "tests/test_stage5_next_plan.py" in plain
     assert "runtime.unassign()" in plain

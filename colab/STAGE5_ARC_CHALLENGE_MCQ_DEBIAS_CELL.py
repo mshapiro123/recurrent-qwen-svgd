@@ -129,6 +129,17 @@ try:
     if summary_md.exists():
         print(summary_md.read_text(encoding="utf-8"), flush=True)
 
+    pair_env = os.environ.copy()
+    pair_env["STAGE5_MCQ_DEBIAS_ARC_CHALLENGE_SUMMARY"] = latest_summary
+    pair_env.setdefault(
+        "STAGE5_MCQ_DEBIAS_PAIR_RUN_ID",
+        "stage5_mcq_debias_pair_" + time.strftime("%Y%m%d_%H%M%S"),
+    )
+    run([sys.executable, "colab/assess_stage5_mcq_debias_pair.py"], env=pair_env)
+
+    pair_summary = (ROOT / "config" / "stage5_current_source_summary.txt").read_text(encoding="utf-8").strip()
+    print("pair_summary:", pair_summary, flush=True)
+
 finally:
     print("Disconnecting Colab runtime to conserve credits.", flush=True)
     try:

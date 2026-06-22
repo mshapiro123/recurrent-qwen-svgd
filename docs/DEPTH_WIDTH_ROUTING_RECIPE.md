@@ -179,6 +179,32 @@ Possible training signals:
 - deep-plus-wide rows: reward both depth and correct diverse coverage, then
   selected-answer conversion.
 
+## Conditional Invariance Objective
+
+Conditional invariance is a later nuisance-collapsing objective, not a recovery
+fix and not a replacement for debiased MCQ scoring. The target property is
+per-item content consistency: the same question should induce the same
+content-answer distribution across option permutations, even though the correct
+letter changes.
+
+Use it only after recovery and debiased MCQ measurement are clean:
+
+- keep the depth-one direct path matched to base;
+- apply invariance pressure only to the depth-two-plus reasoning path;
+- compute consistency over answer content, not over A/B/C/D tokens;
+- mix it lightly with general replay so a narrow MCQ-format objective does not
+  damage open-ended generation;
+- stop or reduce the objective if open-ended reasoning or generation forgets.
+
+This objective fits the wide/deep program because it tells the particles which
+axes are nuisance axes. The model should collapse position and label variance,
+then spend width on content-method diversity rather than option-order drift.
+Cyclic-permutation augmentation is only the weak form. The stronger form is a
+per-item consistency loss, and the reinforcement-phase form is a
+permutation-aware policy objective with a consistency reward. Do not introduce
+either form before the debiased measurement gate decides whether a real
+residual content gap remains.
+
 ## Conditional Width Gate
 
 The first allocation mechanism should be cheap and reversible. Do not build a

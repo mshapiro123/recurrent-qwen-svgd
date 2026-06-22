@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 from colab import run_stage5_mcq_debias_diagnostic as diagnostic
+from colab.assess_stage5_mcq_debias_pair import assess_pair
 from eval.mcq_debias import aggregate_permutation_scores, cyclic_permutation_rows, edge_minus_middle, rotate_mcq_row
 
 
@@ -86,3 +87,74 @@ def test_debias_diagnostic_source_payloads_follow_prior_debias_nested_summary(tm
     assert source_payload["kind"] == "stage5_mcq_debias_diagnostic"
     assert nested_path == nested
     assert nested_payload["resume_checkpoint"] == "checkpoint.pt"
+
+
+def mcq_debias_summary(*, arc_config: str, status: str, cyclic_delta: int, best_delta: int) -> dict:
+    return {
+        "kind": "stage5_mcq_debias_diagnostic",
+        "run_id": f"{arc_config}_run",
+        "arc_config": arc_config,
+        "arc_limit": 128,
+        "status": status,
+        "passed": status == "selection_bias_likely",
+        "decision": {
+            "status": status,
+            "label_delta": -5,
+            "content_delta": -8,
+            "cyclic_delta": cyclic_delta,
+            "best_debiased_delta": best_delta,
+            "closure_vs_label": 6,
+        },
+    }
+
+
+def test_mcq_debias_pair_confirms_selection_bias_across_easy_and_challenge(tmp_path) -> None:
+    payload = assess_pair(
+        arc_easy_path=tmp_path / "easy.json",
+        arc_easy_payload=mcq_debias_summary(
+            arc_config="ARC-Easy",
+            status="selection_bias_likely",
+            cyclic_delta=1,
+            best_delta=1,
+        ),
+        arc_challenge_path=tmp_path / "challenge.json",
+        arc_challenge_payload=mcq_debias_summary(
+            arc_config="ARC-Challenge",
+            status="selection_bias_likely",
+            cyclic_delta=0,
+            best_delta=0,
+        ),
+        max_debiased_gap=2,
+        min_closure=3,
+    )
+
+    assert payload["kind"] == "stage5_mcq_debias_pair_assessment"
+    assert payload["status"] == "mcq_selection_bias_confirmed"
+    assert payload["passed"] is True
+    assert payload["blocking_summary"] is None
+
+
+def test_mcq_debias_pair_routes_residual_content_gap_to_blocking_summary(tmp_path) -> None:
+    challenge_path = tmp_path / "challenge.json"
+    payload = assess_pair(
+        arc_easy_path=tmp_path / "easy.json",
+        arc_easy_payload=mcq_debias_summary(
+            arc_config="ARC-Easy",
+            status="selection_bias_likely",
+            cyclic_delta=1,
+            best_delta=1,
+        ),
+        arc_challenge_path=challenge_path,
+        arc_challenge_payload=mcq_debias_summary(
+            arc_config="ARC-Challenge",
+            status="content_degradation_persists",
+            cyclic_delta=-4,
+            best_delta=-4,
+        ),
+        max_debiased_gap=2,
+        min_closure=3,
+    )
+
+    assert payload["status"] == "mcq_content_gap_persists"
+    assert payload["passed"] is False
+    assert payload["blocking_summary"] == str(challenge_path).replace("\\", "/")

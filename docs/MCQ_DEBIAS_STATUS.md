@@ -60,7 +60,9 @@ colab/STAGE5_ARC_CHALLENGE_MCQ_DEBIAS_CELL.py
 ```
 
 It pins `STAGE5_MCQ_DEBIAS_ARC_CONFIG=ARC-Challenge`, enables quiet/resumable
-output, pushes summary artifacts, and disconnects the Colab runtime.
+output, pushes summary artifacts, runs
+`colab/assess_stage5_mcq_debias_pair.py` to combine ARC-Easy and ARC-Challenge
+into one planner-readable gate, and disconnects the Colab runtime.
 
 ## Decision Rule
 
@@ -71,6 +73,16 @@ After ARC-Challenge cyclic scoring:
 | Cyclic score closes the base/recurrent gap | Prior ARC MCQ regressions were mostly scoring artifacts. | Standardize MCQ evaluation on cyclic/permutation scoring, update benchmark claims, and resume depth/particle planning. |
 | Cyclic score leaves a material recurrent gap | True content or calibration degradation remains. | Run bounded depth-1 preservation or bypass training before particles/SVGD. |
 | Cyclic and content-only disagree strongly | The harness is measuring two separable effects. | Inspect rows and add a richer MCQ scorer before training. |
+
+The preferred artifact after the ARC-Challenge run is now
+`kind=stage5_mcq_debias_pair_assessment`:
+
+- `status=mcq_selection_bias_confirmed`: do not spend A100 time on
+  direct-preservation training; standardize MCQ claims on debiased scoring.
+- `status=mcq_content_gap_persists`: one bounded depth-1 preservation probe is
+  justified from the blocking split.
+- `status=mcq_debias_mixed_or_inconclusive`: inspect rows before choosing a
+  GPU action.
 
 ## Policy
 

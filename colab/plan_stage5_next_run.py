@@ -136,6 +136,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or programmatic_depth_assessment_payload(payload) is not None
         or arc_mix_answer_prior_payload(payload) is not None
         or mcq_debias_diagnostic_payload(payload) is not None
+        or mcq_debias_pair_assessment_payload(payload) is not None
         or direct_preservation_probe_payload(payload) is not None
         or claim_readiness_payload(payload) is not None
         or arc_agi_baseline_registry_payload(payload) is not None
@@ -363,6 +364,10 @@ def arc_mix_answer_prior_payload(payload: dict[str, Any]) -> dict[str, Any] | No
 
 def mcq_debias_diagnostic_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "stage5_mcq_debias_diagnostic" else None
+
+
+def mcq_debias_pair_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_mcq_debias_pair_assessment" else None
 
 
 def direct_preservation_probe_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -2421,6 +2426,56 @@ def mcq_debias_diagnostic_actions(payload: dict[str, Any], *, source_summary: Pa
     ]
 
 
+def mcq_debias_pair_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    if status == "mcq_selection_bias_confirmed":
+        return [
+            make_action(
+                "Adopt debiased MCQ scoring before more training",
+                (
+                    "ARC-Easy and ARC-Challenge both indicate the apparent recurrent/base MCQ gap is mostly a "
+                    "bare option-label artifact. Do not spend A100 time on direct-preservation training until "
+                    "benchmark claims are regenerated with content/cyclic scoring and open-ended replay metrics."
+                ),
+                f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                10,
+            )
+        ]
+    if status == "mcq_content_gap_persists":
+        blocking_summary = str(payload.get("blocking_summary") or "").strip()
+        source_for_probe = blocking_summary or path_for_cli(source_summary)
+        return [
+            make_action(
+                "Run bounded max_loops=1 direct-preservation probe",
+                (
+                    "The paired MCQ debias assessment found a residual content gap after cyclic scoring. Run one "
+                    "narrow loop-1 preservation probe from the blocking debias summary, then stop unless the "
+                    "direct route recovers under debiased scoring."
+                ),
+                command_env(
+                    {
+                        "STAGE5_DIRECT_PRESERVE_RUN_ID": f"{RUN_ID}_direct_preservation",
+                        "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY": source_for_probe,
+                        "STAGE5_DIRECT_PRESERVE_ARC_TRAIN_LIMIT": "512",
+                        "STAGE5_DIRECT_PRESERVE_ARC_EVAL_LIMIT": "128",
+                        "STAGE5_DIRECT_PRESERVE_MAX_STEPS": "75",
+                        "STAGE5_DIRECT_PRESERVE_MIN_BASE_MARGIN": "1.0",
+                    },
+                    "python colab/run_stage5_direct_preservation_probe.py",
+                ),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect paired MCQ debias assessment `{status}`",
+            "ARC-Easy and ARC-Challenge did not cleanly agree; inspect the pair assessment before spending GPU time.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
 def direct_preservation_probe_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
     if status in {"direct_route_matches_base", "direct_route_loop1_matches_base_without_training", "direct_route_lift"}:
@@ -3266,6 +3321,9 @@ def plan_next_actions(
     mcq_debias = mcq_debias_diagnostic_payload(payload)
     if mcq_debias:
         return mcq_debias_diagnostic_actions(mcq_debias, source_summary=source_summary)
+    mcq_debias_pair = mcq_debias_pair_assessment_payload(payload)
+    if mcq_debias_pair:
+        return mcq_debias_pair_assessment_actions(mcq_debias_pair, source_summary=source_summary)
     direct_preservation_probe = direct_preservation_probe_payload(payload)
     if direct_preservation_probe:
         return direct_preservation_probe_actions(direct_preservation_probe, source_summary=source_summary)
@@ -3659,6 +3717,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "arc_mix_answer_prior_diagnosis"
     if mcq_debias_diagnostic_payload(payload):
         return "mcq_debias_diagnostic"
+    if mcq_debias_pair_assessment_payload(payload):
+        return "mcq_debias_pair_assessment"
     if direct_preservation_probe_payload(payload):
         return "direct_preservation_probe"
     if claim_readiness_payload(payload):
