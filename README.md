@@ -315,6 +315,12 @@ recovery; `needs_deep_narrow_recovery` means train deterministic depth with
 repulsion off; `routing_diagnostic_pass` is the only result that justifies a
 larger confirmation or recovery ladder.
 
+After a routing diagnostic lands, the planner can select
+`python colab/run_stage5_routing_repair.py`. That repair runner consumes the
+diagnostic summary, chooses either a direct-heavy or deep-narrow deterministic
+Phase 1 profile, delegates to the existing ARC-mix trainer with particles/SVGD
+off, and records the child run under a planner-readable summary.
+
 Do not run GPQA, Phase 2/SVGD, or scale-up jobs before this deterministic
 recurrent recovery question is resolved.
 

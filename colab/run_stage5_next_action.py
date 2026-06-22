@@ -90,6 +90,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/run_stage5_recovered_phase2_smoke.py",
     "colab/run_stage5_recovery_full_assessment.py",
     "colab/run_stage5_routing_diagnostic.py",
+    "colab/run_stage5_routing_repair.py",
     "colab/run_stage4_opus_finetune.py",
 }
 GUARDED_A100_SCRIPTS = {
@@ -98,6 +99,7 @@ GUARDED_A100_SCRIPTS = {
     "colab/run_stage5_benchmark_suite.py",
     "colab/run_stage5_competence_preserving_pipeline.py",
     "colab/run_stage5_routing_diagnostic.py",
+    "colab/run_stage5_routing_repair.py",
 }
 LOCAL_ONLY_LONG_SCRIPTS = {
     "colab/run_stage5_reasoning_dataset_audit.py",

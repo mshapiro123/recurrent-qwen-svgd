@@ -218,6 +218,11 @@ Current implementation status:
 - `colab/run_stage5_benchmark_suite.py` carries those routing buckets into the
   benchmark-suite `summary.json` and `summary.md`, without storing prompt text in
   the aggregate suite report.
+- `colab/run_stage5_routing_diagnostic.py` runs the bounded ARC-Easy /
+  ARC-Challenge diagnostic that decides whether the next repair is direct-mode
+  halting or deep-narrow recovery.
+- `colab/run_stage5_routing_repair.py` consumes that diagnostic and launches
+  one bounded deterministic Phase 1 repair profile with particles/SVGD off.
 
 The next GPU run should be bounded and diagnostic. Use an L4 or T4 for
 diagnostic-only benchmark scoring if it fits; reserve A100/H100 for training

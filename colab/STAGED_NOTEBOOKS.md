@@ -40,6 +40,9 @@ runtime and the short run is intentional.
 Do not use the ARC-mix recovery cell again from this state. The next training
 run should be chosen only after the routing assessment identifies direct-mode
 halting repair versus deep-narrow recovery.
+When that assessment does identify a repair, the safe-continue planner selects
+[`run_stage5_routing_repair.py`](run_stage5_routing_repair.py), which launches
+one bounded deterministic Phase 1 repair profile and keeps particles/SVGD off.
 
 If the ARC-mix review explicitly says a full confirmation is justified,
 [`STAGE5_FULL_ASSESSMENT_CELL.md`](STAGE5_FULL_ASSESSMENT_CELL.md) and

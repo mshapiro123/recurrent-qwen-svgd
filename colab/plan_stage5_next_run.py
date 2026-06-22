@@ -289,6 +289,10 @@ def balanced_arc_mix_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "stage5_balanced_arc_mix_gate" else None
 
 
+def routing_diagnostic_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_routing_diagnostic_assessment" else None
+
+
 def claim_readiness_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("gate") == "stage5_claim_readiness" else None
 
@@ -1606,6 +1610,55 @@ def balanced_arc_mix_actions(payload: dict[str, Any], *, source_summary: Path) -
     ]
 
 
+def routing_diagnostic_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    if status in {"needs_direct_halting_repair", "needs_deep_narrow_recovery"}:
+        label = "direct-mode halting" if status == "needs_direct_halting_repair" else "deep-narrow deterministic"
+        return [
+            make_action(
+                f"Run bounded {label} Phase 1 repair",
+                f"The routing diagnostic selected `{status}`; run one bounded deterministic repair with particles/SVGD off before broader benchmarks.",
+                command_env(
+                    {
+                        "STAGE5_ROUTING_REPAIR_RUN_ID": f"{RUN_ID}_routing_repair",
+                        "STAGE5_ROUTING_REPAIR_SOURCE_SUMMARY": path_for_cli(source_summary),
+                    },
+                    "python colab/run_stage5_routing_repair.py",
+                ),
+                10,
+            )
+        ]
+    if status == "routing_diagnostic_pass":
+        benchmark_summary = str(payload.get("benchmark_summary") or "")
+        assignments = {
+            "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{RUN_ID}_routing_confirmation",
+            "STAGE5_BENCHMARKS": "arc_easy,arc_challenge",
+            "STAGE5_BENCHMARK_ARC_EASY_LIMIT": "256",
+            "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "256",
+            "STAGE5_BENCHMARK_SCORE_TARGETS": "label",
+            "STAGE5_BENCHMARK_AGGREGATES": "mean",
+            "STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS": "1",
+        }
+        if benchmark_summary:
+            assignments["STAGE5_BENCHMARK_SOURCE_SUMMARY"] = benchmark_summary
+        return [
+            make_action(
+                "Run larger routing confirmation benchmark",
+                "The small routing diagnostic found no direct/deep blocker; confirm on a larger ARC-Easy/Challenge slice before training.",
+                command_env(assignments, "python colab/run_stage5_benchmark_suite.py"),
+                9,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect routing diagnostic `{status}`",
+            "Routing diagnostic status is not mapped to a training action; inspect the summary before spending more GPU.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
 def claim_readiness_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
     if status == "needs_selector_replication":
@@ -2398,6 +2451,9 @@ def plan_next_actions(
     balanced_arc_mix = balanced_arc_mix_payload(payload)
     if balanced_arc_mix:
         return balanced_arc_mix_actions(balanced_arc_mix, source_summary=source_summary)
+    routing_diagnostic = routing_diagnostic_payload(payload)
+    if routing_diagnostic:
+        return routing_diagnostic_actions(routing_diagnostic, source_summary=source_summary)
     claim_readiness = claim_readiness_payload(payload)
     if claim_readiness:
         return claim_readiness_actions(claim_readiness, source_summary=source_summary)
@@ -2764,6 +2820,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "balanced_mcq_assessment"
     if balanced_arc_mix_payload(payload):
         return "balanced_arc_mix_gate"
+    if routing_diagnostic_payload(payload):
+        return "routing_diagnostic"
     if claim_readiness_payload(payload):
         return "claim_readiness"
     if arc_agi_baseline_registry_payload(payload):

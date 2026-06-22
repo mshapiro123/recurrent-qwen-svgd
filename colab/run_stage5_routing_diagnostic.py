@@ -204,6 +204,7 @@ def assess(summary: dict[str, Any]) -> dict[str, Any]:
 
 def write_report(payload: dict[str, Any]) -> None:
     write_json(RUN_DIR / "routing_assessment.json", payload)
+    write_json(RUN_DIR / "summary.json", payload)
     lines = [
         f"# Stage 5 Routing Diagnostic - {RUN_ID}",
         "",
@@ -230,6 +231,7 @@ def write_report(payload: dict[str, Any]) -> None:
             )
         )
     (RUN_DIR / "routing_assessment.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((RUN_DIR / "routing_assessment.md").read_text(encoding="utf-8"))
 
 

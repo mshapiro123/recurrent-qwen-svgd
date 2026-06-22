@@ -82,6 +82,54 @@ def test_arc_mix_calibration_warning_recommends_routing_diagnostic(tmp_path) -> 
     assert "direct-mode loop depth" in actions[0]["reason"]
 
 
+def test_routing_diagnostic_direct_status_recommends_repair(tmp_path) -> None:
+    source = tmp_path / "routing" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_routing_diagnostic_assessment",
+        "status": "needs_direct_halting_repair",
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run bounded direct-mode halting Phase 1 repair"
+    assert "python colab/run_stage5_routing_repair.py" in actions[0]["command"]
+    assert "STAGE5_ROUTING_REPAIR_SOURCE_SUMMARY=" in actions[0]["command"]
+
+
+def test_routing_diagnostic_deep_status_recommends_repair(tmp_path) -> None:
+    source = tmp_path / "routing" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_routing_diagnostic_assessment",
+        "status": "needs_deep_narrow_recovery",
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run bounded deep-narrow deterministic Phase 1 repair"
+    assert "python colab/run_stage5_routing_repair.py" in actions[0]["command"]
+
+
+def test_routing_diagnostic_pass_recommends_larger_confirmation(tmp_path) -> None:
+    source = tmp_path / "routing" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_routing_diagnostic_assessment",
+        "status": "routing_diagnostic_pass",
+        "benchmark_summary": "outputs/stage5/routing/benchmark_run/summary.json",
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run larger routing confirmation benchmark"
+    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_SOURCE_SUMMARY=outputs/stage5/routing/benchmark_run/summary.json" in actions[0]["command"]
+
+
 def test_generic_candidate_distillation_pass_adds_selector_exact_gate(tmp_path) -> None:
     source = tmp_path / "summary.json"
     payload = {
@@ -1190,6 +1238,7 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"kind": "stage5_benchmark_suite"}) == "benchmark_suite"
     assert source_kind({"gate": "stage5_broader_benchmark_suite"}) == "benchmark_suite_assessment"
     assert source_kind({"kind": "stage5_balanced_arc_mix_gate"}) == "balanced_arc_mix_gate"
+    assert source_kind({"kind": "stage5_routing_diagnostic_assessment"}) == "routing_diagnostic"
     assert source_kind({"gate": "stage5_claim_readiness"}) == "claim_readiness"
     assert source_kind({"gate": "stage5_arc_agi_baseline_registry"}) == "arc_agi_baseline_registry"
     assert source_kind({"gate": "stage5_arc_agi_sota_comparison"}) == "arc_agi_sota_comparison"

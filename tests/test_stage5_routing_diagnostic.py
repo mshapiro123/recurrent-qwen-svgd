@@ -99,3 +99,22 @@ def test_default_benchmark_run_id_keeps_full_alias() -> None:
 
     assert "easyfull" in run_id
     assert "challenge64" in run_id
+
+
+def test_write_report_emits_planner_compatible_summary(monkeypatch, tmp_path) -> None:
+    import colab.run_stage5_routing_diagnostic as module
+
+    monkeypatch.setattr(module, "RUN_DIR", tmp_path)
+    payload = {
+        "run_id": "routing",
+        "kind": "stage5_routing_diagnostic_assessment",
+        "status": "needs_direct_halting_repair",
+        "next_action": "repair",
+        "rollup": {},
+    }
+
+    module.write_report(payload)
+
+    assert (tmp_path / "summary.json").exists()
+    assert (tmp_path / "summary.md").exists()
+    assert (tmp_path / "routing_assessment.json").exists()

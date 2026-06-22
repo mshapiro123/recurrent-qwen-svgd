@@ -228,6 +228,16 @@ def test_parse_action_command_allows_routing_diagnostic_runner() -> None:
     assert parsed.argv == [sys.executable, "colab/run_stage5_routing_diagnostic.py"]
 
 
+def test_parse_action_command_allows_routing_repair_runner() -> None:
+    parsed = parse_action_command(
+        "STAGE5_ROUTING_REPAIR_RUN_ID=repair python colab/run_stage5_routing_repair.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_ROUTING_REPAIR_RUN_ID": "repair"}
+    assert parsed.argv == [sys.executable, "colab/run_stage5_routing_repair.py"]
+
+
 def test_parse_action_command_allows_reasoning_dataset_audit_runner() -> None:
     parsed = parse_action_command(
         "STAGE5_DATASET_AUDIT_RUN_ID=audit python colab/run_stage5_reasoning_dataset_audit.py"
@@ -428,7 +438,46 @@ def test_a100_guard_allows_routing_diagnostic_after_calibration_warning(tmp_path
     assert guard["checked"] is True
     assert guard["allowed"] is True
     assert guard["status"] == "go_routing_diagnostic"
-    assert guard["checkpoint_preflight"]["reason"] == "Routing diagnostic restores its own recovered Phase 1 checkpoint."
+    assert guard["checkpoint_preflight"]["reason"] == "Routing diagnostic/repair runner restores its own recovered Phase 1 checkpoint."
+
+
+def test_a100_guard_allows_routing_repair_for_repair_status(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    source.write_text(
+        '{"kind": "stage5_routing_diagnostic_assessment", "status": "needs_direct_halting_repair"}',
+        encoding="utf-8",
+    )
+    action = {
+        "name": "Run bounded direct-mode halting Phase 1 repair",
+        "command": "python colab/run_stage5_routing_repair.py",
+    }
+    parsed = parse_action_command(action["command"])
+
+    guard = a100_execution_guard(action, {"source_summary": str(source)}, parsed)
+
+    assert guard["checked"] is True
+    assert guard["allowed"] is True
+    assert guard["status"] == "go_routing_repair"
+    assert guard["spend_class"] == "bounded_routing_repair"
+
+
+def test_a100_guard_blocks_routing_repair_when_no_repair_needed(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    source.write_text(
+        '{"kind": "stage5_routing_diagnostic_assessment", "status": "routing_diagnostic_pass"}',
+        encoding="utf-8",
+    )
+    action = {
+        "name": "Run bounded direct-mode halting Phase 1 repair",
+        "command": "python colab/run_stage5_routing_repair.py",
+    }
+    parsed = parse_action_command(action["command"])
+
+    guard = a100_execution_guard(action, {"source_summary": str(source)}, parsed)
+
+    assert guard["checked"] is True
+    assert guard["allowed"] is False
+    assert guard["status"] == "routing_repair_blocked"
 
 
 def test_local_only_guard_blocks_dataset_audit_on_gpu(monkeypatch) -> None:

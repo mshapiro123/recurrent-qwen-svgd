@@ -82,3 +82,14 @@ The routing assessment has a machine-readable `status`:
 This diagnostic is the bridge from the failed generic ARC-mix proxy to the new
 depth/width curriculum. It tells us which part of the recurrent model to train
 next instead of spending A100 on another undifferentiated continuation.
+
+After a diagnostic summary lands, the same safe-continue path will select the
+next action:
+
+```bash
+python colab/run_stage5_routing_repair.py
+```
+
+only for `needs_direct_halting_repair` or `needs_deep_narrow_recovery`. The
+repair runner maps the diagnosis to one bounded deterministic Phase 1 profile
+and keeps particles/SVGD off.
