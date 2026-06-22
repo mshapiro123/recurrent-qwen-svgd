@@ -156,6 +156,50 @@ def test_checkpoint_guard_blocks_go_without_checkpoint() -> None:
     assert decision["status"] == "checkpoint_missing_no_go"
 
 
+def test_curriculum_sft_benchmark_guard_blocks_missing_phase1_checkpoint() -> None:
+    source_payload = {
+        "kind": "stage5_curriculum_sft",
+        "phase1_checkpoint": "outputs/stage5/curriculum_sft_run/phase1/phase1_step_150.pt",
+    }
+    action = {
+        "name": "Run benchmark suite for generated-curriculum recurrent checkpoint",
+        "command": "python colab/run_stage5_benchmark_suite.py",
+    }
+
+    decision = classify_action(action, source_payload=source_payload)
+    guarded, checkpoint = apply_checkpoint_guard(decision, source_payload=source_payload)
+
+    assert decision["status"] == "go_broader_benchmark"
+    assert checkpoint["available"] is False
+    assert guarded["go"] is False
+    assert guarded["status"] == "checkpoint_missing_no_go"
+
+
+def test_curriculum_sft_benchmark_guard_allows_visible_phase1_checkpoint(monkeypatch, tmp_path) -> None:
+    import colab.check_stage5_a100_go_no_go as guard
+
+    checkpoint = tmp_path / "outputs" / "stage5" / "curriculum_sft_run" / "phase1" / "phase1_step_150.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    monkeypatch.setattr(guard, "ROOT", tmp_path)
+    source_payload = {
+        "kind": "stage5_curriculum_sft",
+        "phase1_checkpoint": "outputs/stage5/curriculum_sft_run/phase1/phase1_step_150.pt",
+    }
+    action = {
+        "name": "Run benchmark suite for generated-curriculum recurrent checkpoint",
+        "command": "python colab/run_stage5_benchmark_suite.py",
+    }
+
+    decision = guard.classify_action(action, source_payload=source_payload)
+    guarded, preflight = guard.apply_checkpoint_guard(decision, source_payload=source_payload)
+
+    assert preflight["available"] is True
+    assert preflight["exists"] is True
+    assert guarded["go"] is True
+    assert guarded["status"] == "go_broader_benchmark"
+
+
 def test_routing_repair_checkpoint_preflight_can_block(monkeypatch) -> None:
     monkeypatch.setattr(
         "colab.check_stage5_a100_go_no_go.routing_repair_checkpoint_availability",
