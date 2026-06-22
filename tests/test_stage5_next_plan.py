@@ -481,6 +481,51 @@ def test_programmatic_depth_assessment_failure_inspects(tmp_path) -> None:
     assert "summary.md" in actions[0]["command"]
 
 
+def test_programmatic_depth_answer_prior_drift_recommends_conservative_arc_mix(tmp_path, monkeypatch) -> None:
+    root = tmp_path
+    source = root / "outputs" / "stage5" / "programmatic_assess" / "summary.json"
+    source.parent.mkdir(parents=True)
+    benchmark = "outputs/stage5/original_benchmark/summary.json"
+    routing = root / "outputs" / "stage5" / "routing_repair" / "summary.json"
+    routing.parent.mkdir(parents=True)
+    routing.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_routing_repair",
+                "status": "repair_proxy_lift_calibration_warning",
+                "benchmark_summary": benchmark,
+            }
+        ),
+        encoding="utf-8",
+    )
+    payload = {
+        "kind": "stage5_programmatic_depth_assessment",
+        "status": "programmatic_depth_no_lift",
+        "passed": False,
+        "diagnostics": {
+            "primary_failure_mode": "answer-prior drift on base-confident direct ARC-Easy questions",
+            "max_abs_candidate_base_prediction_count_delta": 23,
+        },
+        "summary": {
+            "resume_checkpoint": "outputs/stage5/routing_repair_direct_halting_arc_mix/phase1/phase1_step_50.pt"
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    monkeypatch.setattr(planner, "ROOT", root)
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run conservative direct-preservation ARC-mix probe"
+    assert "python colab/run_stage5_balanced_arc_mix_gate.py" in actions[0]["command"]
+    assert f"STAGE5_ARC_MIX_SOURCE_SUMMARY={benchmark}" in actions[0]["command"]
+    assert "STAGE5_ARC_MIX_ARMS=arc_mix_response_w05_lr1e6" in actions[0]["command"]
+    assert "STAGE5_ARC_MIX_EVAL_CONFIG=ARC-Easy" in actions[0]["command"]
+    assert "STAGE5_ARC_MIX_MIN_MARGIN_DELTA=0.0" in actions[0]["command"]
+    assert "STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT=8" in actions[0]["command"]
+    assert actions[1]["name"] == "Inspect programmatic depth assessment `programmatic_depth_no_lift`"
+
+
 def test_generic_candidate_distillation_pass_adds_selector_exact_gate(tmp_path) -> None:
     source = tmp_path / "summary.json"
     payload = {

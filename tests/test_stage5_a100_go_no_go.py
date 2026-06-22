@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from colab.check_stage5_a100_go_no_go import (
     apply_checkpoint_guard,
     build_payload,
@@ -873,6 +875,48 @@ def test_build_payload_uses_recovered_checkpoint_env_from_planner_action(tmp_pat
     assert payload["decision"]["status"] == "go_routing_diagnostic"
     assert payload["checkpoint_preflight"]["available"] is True
     assert payload["checkpoint_preflight"]["checkpoint"].endswith("phase1/phase1_step_50.pt")
+
+
+def test_arc_mix_proxy_guard_uses_command_source_summary_checkpoint(tmp_path, monkeypatch) -> None:
+    import colab.check_stage5_a100_go_no_go as module
+
+    checkpoint = tmp_path / "outputs" / "stage5" / "source" / "phase1" / "phase1_step_150.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    source_summary = tmp_path / "outputs" / "stage5" / "bench" / "summary.json"
+    source_summary.parent.mkdir(parents=True)
+    source_summary.write_text(
+        json.dumps({"kind": "stage5_benchmark_suite", "checkpoint": checkpoint.as_posix()}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+
+    decision = classify_action(
+        {
+            "name": "Run conservative direct-preservation ARC-mix probe",
+            "command": (
+                "STAGE5_ARC_MIX_SOURCE_SUMMARY=outputs/stage5/bench/summary.json "
+                "python colab/run_stage5_balanced_arc_mix_gate.py"
+            ),
+        },
+        source_payload={
+            "kind": "stage5_programmatic_depth_assessment",
+            "status": "programmatic_depth_no_lift",
+            "checkpoint": "outputs/stage5/failed/phase1/phase1_step_50.pt",
+        },
+    )
+    guarded, preflight = apply_checkpoint_guard(
+        decision,
+        source_payload={
+            "kind": "stage5_programmatic_depth_assessment",
+            "status": "programmatic_depth_no_lift",
+            "checkpoint": "outputs/stage5/failed/phase1/phase1_step_50.pt",
+        },
+    )
+
+    assert guarded["go"] is True
+    assert preflight["available"] is True
+    assert preflight["checkpoint"].endswith("source/phase1/phase1_step_150.pt")
 
 
 def test_unpassed_proxy_blocks_full_confirmation() -> None:

@@ -1,1 +1,1 @@
-outputs/stage5/stage5_arc_agi_next_action_20260622_175531_plan_programmatic_depth_repair/summary.json
+outputs/stage5/stage5_programmatic_depth_assessment_20260622_140220/summary.json

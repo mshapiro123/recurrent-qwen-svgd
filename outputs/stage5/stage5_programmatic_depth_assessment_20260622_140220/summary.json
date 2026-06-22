@@ -1,0 +1,142 @@
+{
+  "run_id": "stage5_programmatic_depth_assessment_20260622_140220",
+  "kind": "stage5_programmatic_depth_assessment",
+  "source_summary": "outputs/stage5/stage5_arc_agi_next_action_20260622_175531_plan_programmatic_depth_repair/summary.json",
+  "status": "programmatic_depth_no_lift",
+  "passed": false,
+  "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_175531_plan_programmatic_depth_repair/phase1/phase1_step_50.pt",
+  "best_checkpoint": {
+    "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_175531_plan_programmatic_depth_repair/phase1/phase1_step_50.pt"
+  },
+  "evidence": {
+    "start_loss": 0.237127,
+    "best_loss": 0.247021,
+    "loss_delta": 0.009893999999999986,
+    "start_mean_expected_loops": 2.95843,
+    "best_mean_expected_loops": 2.937287,
+    "target_loop_mean": 2.1708333333333334,
+    "start_loop_abs_error": 0.7875966666666665,
+    "best_loop_abs_error": 0.7664536666666666,
+    "loop_error_delta": -0.021142999999999912,
+    "loss_improved": false,
+    "loop_not_worse": true,
+    "has_checkpoint": true
+  },
+  "summary": {
+    "run_id": "stage5_arc_agi_next_action_20260622_175531_plan_programmatic_depth_repair",
+    "kind": "stage5_programmatic_depth_repair",
+    "status": "complete",
+    "resume_checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt",
+    "train_sft": "outputs/stage5/stage5_arc_agi_next_action_20260622_175531_plan_programmatic_depth_repair/train_sft.jsonl",
+    "val_sft": "outputs/stage5/stage5_arc_agi_next_action_20260622_175531_plan_programmatic_depth_repair/val_sft.jsonl",
+    "train_report": {
+      "records": 2000,
+      "exported_examples": 2000,
+      "invalid_records": 0,
+      "skipped_invalid_records": 0,
+      "export_invalid_records": false,
+      "issues": [],
+      "role_counts": {
+        "positive_depth": 800,
+        "positive_direct": 1200
+      },
+      "mode_counts": {
+        "deep_narrow": 800,
+        "direct": 1200
+      },
+      "exported_role_counts": {
+        "positive_depth": 800,
+        "positive_direct": 1200
+      },
+      "exported_source_model_counts": {
+        "programmatic_generator": 2000
+      }
+    },
+    "val_report": {
+      "records": 240,
+      "exported_examples": 240,
+      "invalid_records": 0,
+      "skipped_invalid_records": 0,
+      "export_invalid_records": false,
+      "issues": [],
+      "role_counts": {
+        "positive_depth": 120,
+        "positive_direct": 120
+      },
+      "mode_counts": {
+        "deep_narrow": 120,
+        "direct": 120
+      },
+      "exported_role_counts": {
+        "positive_depth": 120,
+        "positive_direct": 120
+      },
+      "exported_source_model_counts": {
+        "programmatic_generator": 240
+      }
+    },
+    "config": "outputs/stage5/stage5_arc_agi_next_action_20260622_175531_plan_programmatic_depth_repair/phase1_programmatic_depth.yaml",
+    "start_eval": {
+      "lora_recurrent_modules": 84.0,
+      "examples": 240.0,
+      "expected_ce": 0.185831,
+      "halting_kl": 0.427464,
+      "loss": 0.237127,
+      "mean_expected_loops": 2.95843,
+      "mean_halt_entropy": 1.231092
+    },
+    "checkpoint_evals": [
+      {
+        "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_175531_plan_programmatic_depth_repair/phase1/phase1_step_50.pt",
+        "metrics": {
+          "lora_recurrent_modules": 84.0,
+          "examples": 240.0,
+          "expected_ce": 0.197624,
+          "halting_kl": 0.411637,
+          "loss": 0.247021,
+          "mean_expected_loops": 2.937287,
+          "mean_halt_entropy": 1.242846
+        }
+      },
+      {
+        "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_175531_plan_programmatic_depth_repair/phase1/phase1_step_100.pt",
+        "metrics": {
+          "lora_recurrent_modules": 84.0,
+          "examples": 240.0,
+          "expected_ce": 0.21011,
+          "halting_kl": 0.397264,
+          "loss": 0.257781,
+          "mean_expected_loops": 2.916304,
+          "mean_halt_entropy": 1.253344
+        }
+      }
+    ],
+    "best_checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_175531_plan_programmatic_depth_repair/phase1/phase1_step_50.pt",
+    "best_eval": {
+      "lora_recurrent_modules": 84.0,
+      "examples": 240.0,
+      "expected_ce": 0.197624,
+      "halting_kl": 0.411637,
+      "loss": 0.247021,
+      "mean_expected_loops": 2.937287,
+      "mean_halt_entropy": 1.242846
+    },
+    "next_step": "Use this only as a calibration ingredient. Confirm any selected checkpoint with the ARC routing/benchmark gate before proceeding to particles or wider data."
+  },
+  "diagnostics": {
+    "routing_repair_answer_prior_drift_json": "outputs/stage5/stage5_programmatic_depth_assessment_20260622_140220/routing_repair_answer_prior_drift.json",
+    "routing_repair_answer_prior_drift_md": "outputs/stage5/stage5_programmatic_depth_assessment_20260622_140220/routing_repair_answer_prior_drift.md",
+    "arc_easy_base_correct": 87,
+    "arc_easy_repair_correct": 84,
+    "arc_easy_repair_delta": -3,
+    "base_confident_direct_proxy_delta": -12,
+    "ambiguous_proxy_delta": 8,
+    "mean_margin_delta": -1.5559766787882836,
+    "max_abs_candidate_base_prediction_count_delta": 23,
+    "max_abs_candidate_answer_prediction_count_delta": 29,
+    "changed_predictions": 38,
+    "paired_examples": 128,
+    "primary_failure_mode": "answer-prior drift on base-confident direct ARC-Easy questions"
+  },
+  "next_step": "Do not extend this constructed pass; return to ARC-routing failure analysis. The paired MCQ diagnostic shows answer-prior drift, especially a +23 shift toward option A and -12 delta on base-confident direct questions."
+}

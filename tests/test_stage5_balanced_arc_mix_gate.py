@@ -74,6 +74,16 @@ def test_arm_config_exposes_competence_preserving_distill_arm() -> None:
     assert cfg.steps == "150"
 
 
+def test_arm_config_exposes_conservative_direct_preservation_arm() -> None:
+    cfg = arm_config("arc_mix_response_w05_lr1e6")
+
+    assert cfg.distill_enabled == "1"
+    assert cfg.distill_weight == "0.50"
+    assert cfg.learning_rate == "1e-6"
+    assert cfg.steps == "100"
+    assert cfg.save_every == "50"
+
+
 def test_build_mixed_train_uses_separate_arc_repeats(tmp_path, monkeypatch) -> None:
     import colab.run_stage5_balanced_arc_mix_gate as module
 

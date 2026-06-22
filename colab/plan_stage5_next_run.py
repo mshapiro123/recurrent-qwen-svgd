@@ -2129,6 +2129,84 @@ def programmatic_depth_repair_actions(payload: dict[str, Any], *, source_summary
     ]
 
 
+def stage5_summary_from_checkpoint_run(checkpoint: str | None) -> Path | None:
+    """Infer the wrapper summary for a Stage 5 child checkpoint path."""
+
+    if not checkpoint:
+        return None
+    normalized = str(checkpoint).replace("\\", "/")
+    parts = [part for part in normalized.split("/") if part]
+    for idx, part in enumerate(parts):
+        if part != "stage5" or idx + 1 >= len(parts):
+            continue
+        run_id = parts[idx + 1]
+        candidates = [run_id]
+        for suffix in ("_direct_halting_arc_mix", "_programmatic_depth_repair", "_arc_mix"):
+            if run_id.endswith(suffix):
+                candidates.append(run_id[: -len(suffix)])
+        for candidate in candidates:
+            summary = ROOT / "outputs" / "stage5" / candidate / "summary.json"
+            if summary.exists():
+                return summary
+    return None
+
+
+def routing_benchmark_summary_for_programmatic_depth(
+    payload: dict[str, Any],
+    *,
+    source_summary: Path,
+) -> str:
+    """Walk from a failed programmatic-depth assessment back to the pre-repair benchmark source."""
+
+    candidate_summaries: list[Path] = []
+    for value in (
+        payload.get("source_summary"),
+        (payload.get("summary") or {}).get("source_summary") if isinstance(payload.get("summary"), dict) else None,
+        source_summary,
+    ):
+        if value:
+            candidate_summaries.append(resolve_path(value))
+
+    for checkpoint in (
+        payload.get("checkpoint"),
+        (payload.get("summary") or {}).get("resume_checkpoint") if isinstance(payload.get("summary"), dict) else None,
+    ):
+        inferred = stage5_summary_from_checkpoint_run(str(checkpoint) if checkpoint else None)
+        if inferred:
+            candidate_summaries.append(inferred)
+
+    seen: set[Path] = set()
+    cursor = 0
+    while cursor < len(candidate_summaries):
+        summary_path = candidate_summaries[cursor]
+        cursor += 1
+        if summary_path in seen or not summary_path.exists():
+            continue
+        seen.add(summary_path)
+        try:
+            summary_payload = read_json(summary_path)
+        except Exception:
+            continue
+
+        benchmark_summary = str(summary_payload.get("benchmark_summary") or "").strip()
+        if benchmark_summary:
+            return benchmark_summary.replace("\\", "/")
+
+        arc_mix_summary = str(summary_payload.get("arc_mix_summary") or "").strip()
+        if arc_mix_summary:
+            candidate_summaries.append(resolve_path(arc_mix_summary))
+
+        nested_source = str(summary_payload.get("source_summary") or "").strip()
+        if nested_source:
+            candidate_summaries.append(resolve_path(nested_source))
+
+        inferred = stage5_summary_from_checkpoint_run(str(summary_payload.get("resume_checkpoint") or ""))
+        if inferred:
+            candidate_summaries.append(inferred)
+
+    return path_for_cli(source_summary).replace("\\", "/")
+
+
 def programmatic_depth_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
     checkpoint = payload.get("checkpoint")
@@ -2150,6 +2228,51 @@ def programmatic_depth_assessment_actions(payload: dict[str, Any], *, source_sum
                 ),
                 10,
             )
+        ]
+    diagnostics = payload.get("diagnostics") if isinstance(payload.get("diagnostics"), dict) else {}
+    primary_failure = str(diagnostics.get("primary_failure_mode") or "").lower()
+    max_shift = int(diagnostics.get("max_abs_candidate_base_prediction_count_delta") or 0)
+    if status == "programmatic_depth_no_lift" and (
+        "answer-prior drift" in primary_failure or max_shift > 8
+    ):
+        return [
+            make_action(
+                "Run conservative direct-preservation ARC-mix probe",
+                (
+                    "The constructed depth pass did not move halting, and the follow-up diagnostic points to "
+                    "answer-prior drift on base-confident direct questions. Run one low-LR, high-preservation "
+                    "ARC-Easy proxy from the pre-repair checkpoint source before spending on broader benchmarks."
+                ),
+                command_env(
+                    {
+                        "STAGE5_ARC_MIX_RUN_ID": f"{RUN_ID}_conservative_direct_preservation",
+                        "STAGE5_ARC_MIX_SOURCE_SUMMARY": routing_benchmark_summary_for_programmatic_depth(
+                            payload,
+                            source_summary=source_summary,
+                        ),
+                        "STAGE5_ARC_MIX_ARMS": "arc_mix_response_w05_lr1e6",
+                        "STAGE5_ARC_MIX_ARC_EASY_REPEAT": "4",
+                        "STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT": "1",
+                        "STAGE5_ARC_MIX_ARC_EASY_TARGET_LOOP": "1",
+                        "STAGE5_ARC_MIX_ARC_CHALLENGE_TARGET_LOOP": "2",
+                        "STAGE5_ARC_MIX_ARC_EASY_ROUTING_TYPE": "direct",
+                        "STAGE5_ARC_MIX_ARC_CHALLENGE_ROUTING_TYPE": "deep_narrow_probe",
+                        "STAGE5_ARC_MIX_EVAL_CONFIG": "ARC-Easy",
+                        "STAGE5_ARC_MIX_OPUS_LIMIT": "1500",
+                        "STAGE5_ARC_MIX_ARC_EVAL_LIMIT": "128",
+                        "STAGE5_ARC_MIX_MIN_MARGIN_DELTA": "0.0",
+                        "STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT": "8",
+                    },
+                    "python colab/run_stage5_balanced_arc_mix_gate.py",
+                ),
+                10,
+            ),
+            make_action(
+                f"Inspect programmatic depth assessment `{status}`",
+                "The depth-specific repair did not improve loss/depth routing; keep its report attached as failure evidence.",
+                f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                8,
+            ),
         ]
     return [
         make_action(

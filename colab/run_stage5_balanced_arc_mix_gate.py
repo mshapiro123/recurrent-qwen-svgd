@@ -172,6 +172,17 @@ ARM_PRESETS: dict[str, ArmConfig] = {
         distill_temperature="2.0",
         distill_on="response",
     ),
+    "arc_mix_response_w05_lr1e6": ArmConfig(
+        name="arc_mix_response_w05_lr1e6",
+        learning_rate="1e-6",
+        beta="0.12",
+        steps="100",
+        save_every="50",
+        distill_enabled="1",
+        distill_weight="0.50",
+        distill_temperature="2.0",
+        distill_on="response",
+    ),
 }
 ARM_NAMES = [
     item.strip()

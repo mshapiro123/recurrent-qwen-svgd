@@ -1046,12 +1046,14 @@ def classify_action(
         }
 
     if script == "colab/run_stage5_balanced_arc_mix_gate.py":
-        return {
-            "go": True,
-            "status": "go_bounded_proxy",
-            "spend_class": "single_arc_mix_proxy",
-            "reason": "Planner recommends exactly one bounded competence-recovery proxy.",
-        }
+        env = command_env_assignments(command)
+        return go_paid_gpu_action(
+            status="go_bounded_proxy",
+            spend_class="single_arc_mix_proxy",
+            checkpoint=checkpoint_from_summary_reference(env.get("STAGE5_ARC_MIX_SOURCE_SUMMARY"))
+            or checkpoint_from_payload(source_payload),
+            reason="Planner recommends exactly one bounded competence-recovery proxy.",
+        )
 
     if script == "colab/run_stage5_recovery_full_assessment.py":
         if source_is_clean_full_confirmation_proxy(source_payload):
