@@ -593,10 +593,64 @@ def test_progress_ledger_reports_full_balanced_assessments(tmp_path) -> None:
             "combined_wins": 34,
             "combined_losses": 35,
             "combined_ties": 800,
+            "child_returncode": None,
+            "child_summary_path": None,
+            "child_stdout_tail": None,
             "next_step": "recover more",
         }
     ]
     assert payload["recommended_next_plan_source"] == str(source)
+
+
+def test_progress_ledger_reports_full_assessment_child_failure(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "full_assessment_failed" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "full_assessment_failed",
+            "kind": "stage5_recovery_full_assessment",
+            "status": "balanced_assessment_child_failed",
+            "passed": False,
+            "selected_checkpoint": "outputs/stage5/full/phase1_step_100.pt",
+            "child_returncode": 8,
+            "child_summary_path": "outputs/stage5/full/balanced_assessment/summary.json",
+            "child_stdout_tail": "assessment died",
+            "next_step": "inspect child output",
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["balanced_full_assessments"] == [
+        {
+            "path": str(source),
+            "run_id": "full_assessment_failed",
+            "kind": "stage5_recovery_full_assessment",
+            "status": "balanced_assessment_child_failed",
+            "passed": False,
+            "selected_checkpoint": "outputs/stage5/full/phase1_step_100.pt",
+            "label": None,
+            "micro_correct_delta": None,
+            "macro_accuracy_delta": None,
+            "base_correct": None,
+            "recurrent_correct": None,
+            "total": None,
+            "combined_wins": None,
+            "combined_losses": None,
+            "combined_ties": None,
+            "child_returncode": 8,
+            "child_summary_path": "outputs/stage5/full/balanced_assessment/summary.json",
+            "child_stdout_tail": "assessment died",
+            "next_step": "inspect child output",
+        }
+    ]
+    output_dir = tmp_path / "ledger"
+    write_report(payload, output_dir)
+    report = (output_dir / "summary.md").read_text(encoding="utf-8")
+    assert "status `balanced_assessment_child_failed`" in report
+    assert "child return `8`" in report
+    assert "outputs/stage5/full/balanced_assessment/summary.json" in report
 
 
 def test_progress_ledger_reports_claim_readiness_packets(tmp_path) -> None:

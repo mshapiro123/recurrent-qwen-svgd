@@ -1717,6 +1717,27 @@ def balanced_full_assessment_actions(payload: dict[str, Any], *, source_summary:
     assessment = balanced_assessment_payload(payload)
     status = str(assessment.get("status", payload.get("status", "unknown")))
     checkpoint = balanced_assessment_best_checkpoint(payload)
+    child_failure_statuses = {
+        "benchmark_child_failed",
+        "benchmark_child_missing_summary",
+        "balanced_assessment_child_failed",
+        "balanced_assessment_child_missing_summary",
+    }
+    if status in child_failure_statuses:
+        child_returncode = payload.get("child_returncode")
+        child_summary_path = payload.get("child_summary_path")
+        return [
+            make_action(
+                f"Inspect failed full balanced assessment child `{status}`",
+                (
+                    "The full balanced assessment runner failed inside a child process and wrote a durable failure "
+                    "summary. Do not launch another GPU action until the child log and expected summary path are "
+                    f"inspected. Child return code `{child_returncode}`, child summary path `{child_summary_path}`."
+                ),
+                f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                10,
+            )
+        ]
     if status == "balanced_nonnegative":
         if not checkpoint:
             return [

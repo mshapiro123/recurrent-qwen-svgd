@@ -2459,6 +2459,27 @@ def test_recovery_full_assessment_negative_runs_recovery_proxy(tmp_path) -> None
     assert "STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT=16" in actions[0]["command"]
 
 
+def test_recovery_full_assessment_child_failure_inspects_only(tmp_path) -> None:
+    source = tmp_path / "full_assessment" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_recovery_full_assessment",
+        "status": "benchmark_child_failed",
+        "passed": False,
+        "child_returncode": 7,
+        "child_summary_path": "outputs/stage5/full_assessment_balanced_full/summary.json",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect failed full balanced assessment child `benchmark_child_failed`"
+    assert actions[0]["command"].startswith("cat ")
+    assert "return code `7`" in actions[0]["reason"]
+    assert "outputs/stage5/full_assessment_balanced_full/summary.json" in actions[0]["reason"]
+    assert "run_stage5_balanced_arc_mix_gate.py" not in actions[0]["command"]
+    assert "run_stage5_benchmark_suite.py" not in actions[0]["command"]
+
+
 def test_parse_args_accepts_source_summary() -> None:
     from colab.plan_stage5_next_run import parse_args
 

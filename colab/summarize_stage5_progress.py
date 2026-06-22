@@ -859,6 +859,9 @@ def balanced_assessment_rows(summary_files: list[Path]) -> list[dict[str, Any]]:
                 "combined_wins": best.get("combined_wins"),
                 "combined_losses": best.get("combined_losses"),
                 "combined_ties": best.get("combined_ties"),
+                "child_returncode": payload.get("child_returncode"),
+                "child_summary_path": payload.get("child_summary_path"),
+                "child_stdout_tail": payload.get("child_stdout_tail"),
                 "next_step": assessment.get("next_step") or payload.get("next_step"),
             }
         )
@@ -1152,6 +1155,12 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
     lines.extend(["", "## Full Balanced ARC Assessments", ""])
     if payload["balanced_full_assessments"]:
         for assessment in payload["balanced_full_assessments"][-10:]:
+            child_fragment = ""
+            if assessment.get("child_returncode") is not None or assessment.get("child_summary_path"):
+                child_fragment = (
+                    f" child return `{assessment.get('child_returncode')}` child summary "
+                    f"`{assessment.get('child_summary_path')}`"
+                )
             lines.append(
                 f"- `{assessment['run_id']}` status `{assessment['status']}` passed "
                 f"`{assessment['passed']}` label `{assessment['label']}` micro delta "
@@ -1159,7 +1168,7 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
                 f"`{assessment['recurrent_correct']}/{assessment['base_correct']}` "
                 f"W/L/T `{assessment['combined_wins']}/{assessment['combined_losses']}/"
                 f"{assessment['combined_ties']}` checkpoint `{assessment['selected_checkpoint']}`: "
-                f"{assessment['next_step']}"
+                f"{assessment['next_step']}{child_fragment}"
             )
     else:
         lines.append("- No full balanced ARC assessment summaries found.")
