@@ -395,6 +395,14 @@ This gate is intentionally deterministic Phase 1 recovery work. Phase 2/SVGD,
 GPQA Diamond, and 1.5B/3B scaling remain deferred until deterministic recurrent
 competence is at least base-competitive on the balanced ARC suite.
 
+The proxy gate has therefore been strengthened. Future ARC-mix proxy summaries
+include paired margin deltas, correct-answer score deltas, answer-prior shifts,
+and a calibration pass/fail flag. A checkpoint that lifts proxy accuracy but
+degrades calibration is no longer allowed to trigger a full paid balanced ARC
+assessment. This makes the next A100 spend answer the actual recovery question:
+whether the recurrent model is improving while preserving the base model's
+answer distribution, rather than merely moving errors around.
+
 The paper should describe the training required to surpass base only after that
 surpass-base checkpoint exists. At present, the empirically supported statement
 is more modest: additional ARC-mixed recurrent SFT closed a 128-example proxy

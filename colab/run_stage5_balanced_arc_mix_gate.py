@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import time
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -57,6 +58,8 @@ ARC_CHALLENGE_REPEAT = int(os.environ.get("STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT",
 ARC_EASY_REPEAT = int(os.environ.get("STAGE5_ARC_MIX_ARC_EASY_REPEAT", str(ARC_REPEAT)))
 MIX_SEED = int(os.environ.get("STAGE5_ARC_MIX_SEED", "17"))
 ARC_EVAL_LIMIT = int(os.environ.get("STAGE5_ARC_MIX_ARC_EVAL_LIMIT", "128"))
+MIN_PROXY_MARGIN_DELTA = float(os.environ.get("STAGE5_ARC_MIX_MIN_MARGIN_DELTA", "-0.05"))
+MAX_PROXY_PREDICTION_SHIFT = int(os.environ.get("STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT", "16"))
 PUSH_RESULTS = os.environ.get("STAGE5_ARC_MIX_PUSH", "1").strip().lower() in {
     "1",
     "true",
@@ -195,14 +198,51 @@ def mean_accuracy(summary: dict[str, Any]) -> float | None:
     return None if metric is None else float(metric["accuracy"])
 
 
-def helped_hurt(variant_path: Path, reference_path: Path) -> dict[str, int]:
+def score_margin(row: dict[str, Any]) -> float | None:
+    scores = row.get("scores") or {}
+    answer = row.get("answer")
+    if answer not in scores:
+        return None
+    other_scores = [float(score) for label, score in scores.items() if label != answer]
+    if not other_scores:
+        return None
+    return float(scores[answer]) - max(other_scores)
+
+
+def correct_score(row: dict[str, Any]) -> float | None:
+    scores = row.get("scores") or {}
+    answer = row.get("answer")
+    if answer not in scores:
+        return None
+    return float(scores[answer])
+
+
+def finite_mean(values: list[float | None]) -> float | None:
+    finite = [float(value) for value in values if value is not None]
+    if not finite:
+        return None
+    return sum(finite) / len(finite)
+
+
+def paired_mcq_diagnostics(variant_path: Path, reference_path: Path) -> dict[str, Any]:
     reference = {row["id"]: row for row in read_jsonl(reference_path) if row["aggregate"] == "mean"}
     helped = hurt = tied = changed = 0
+    margin_deltas: list[float | None] = []
+    correct_score_deltas: list[float | None] = []
+    reference_predictions: Counter[str] = Counter()
+    variant_predictions: Counter[str] = Counter()
+    answer_counts: Counter[str] = Counter()
     for row in read_jsonl(variant_path):
         if row["aggregate"] != "mean":
             continue
         base = reference[row["id"]]
-        if row["prediction"] != base["prediction"]:
+        base_prediction = str(base.get("prediction"))
+        variant_prediction = str(row.get("prediction"))
+        answer = str(row.get("answer"))
+        reference_predictions[base_prediction] += 1
+        variant_predictions[variant_prediction] += 1
+        answer_counts[answer] += 1
+        if variant_prediction != base_prediction:
             changed += 1
         if row["hit"] and not base["hit"]:
             helped += 1
@@ -210,7 +250,51 @@ def helped_hurt(variant_path: Path, reference_path: Path) -> dict[str, int]:
             hurt += 1
         else:
             tied += 1
-    return {"helped": helped, "hurt": hurt, "tied": tied, "prediction_changes": changed}
+
+        base_margin = score_margin(base)
+        row_margin = score_margin(row)
+        margin_deltas.append(None if base_margin is None or row_margin is None else row_margin - base_margin)
+        base_correct_score = correct_score(base)
+        row_correct_score = correct_score(row)
+        correct_score_deltas.append(
+            None
+            if base_correct_score is None or row_correct_score is None
+            else row_correct_score - base_correct_score
+        )
+
+    labels = sorted(set(reference_predictions) | set(variant_predictions) | set(answer_counts))
+    prediction_count_delta = {
+        label: int(variant_predictions[label] - reference_predictions[label]) for label in labels
+    }
+    max_abs_prediction_count_delta = max(
+        [abs(value) for value in prediction_count_delta.values()] or [0]
+    )
+    mean_margin_delta = finite_mean(margin_deltas)
+    calibration_ok = (
+        mean_margin_delta is None or mean_margin_delta >= MIN_PROXY_MARGIN_DELTA
+    ) and max_abs_prediction_count_delta <= MAX_PROXY_PREDICTION_SHIFT
+    return {
+        "helped": helped,
+        "hurt": hurt,
+        "tied": tied,
+        "prediction_changes": changed,
+        "mean_margin_delta": mean_margin_delta,
+        "mean_correct_score_delta": finite_mean(correct_score_deltas),
+        "reference_prediction_counts": dict(reference_predictions),
+        "variant_prediction_counts": dict(variant_predictions),
+        "answer_counts": dict(answer_counts),
+        "prediction_count_delta": prediction_count_delta,
+        "max_abs_prediction_count_delta": max_abs_prediction_count_delta,
+        "calibration_ok": calibration_ok,
+        "calibration_thresholds": {
+            "min_mean_margin_delta": MIN_PROXY_MARGIN_DELTA,
+            "max_abs_prediction_count_delta": MAX_PROXY_PREDICTION_SHIFT,
+        },
+    }
+
+
+def helped_hurt(variant_path: Path, reference_path: Path) -> dict[str, Any]:
+    return paired_mcq_diagnostics(variant_path, reference_path)
 
 
 def selected_checkpoint(source_payload: dict[str, Any]) -> Path:
@@ -553,6 +637,12 @@ def correct(summary: dict[str, Any]) -> int:
     return int(((summary.get("mean") or {}).get("correct", 0)) or 0)
 
 
+def best_calibration(best_arm: dict[str, Any] | None) -> dict[str, Any]:
+    if best_arm is None:
+        return {}
+    return dict((best_arm.get("best_checkpoint") or {}).get("comparison_to_base") or {})
+
+
 def build_summary(
     *,
     source_summary: Path,
@@ -578,12 +668,26 @@ def build_summary(
     else:
         lift = correct(best["best_checkpoint"]["arc"]) - correct(best["phase1_start"]["arc"])
         gap = correct(best["best_checkpoint"]["arc"]) - correct(best["base_arc"])
-        if lift > 0:
+        calibration = best_calibration(best)
+        calibration_ok = bool(calibration.get("calibration_ok", True))
+        if lift > 0 and calibration_ok:
             status = "proxy_lift"
             next_step = "Run full ARC-Easy and ARC-Challenge balanced benchmark on the best ARC-mix checkpoint."
-        elif gap >= 0:
+        elif gap >= 0 and calibration_ok:
             status = "proxy_matches_base"
             next_step = "Run full balanced benchmark on the best ARC-mix checkpoint; proxy no longer trails base."
+        elif lift > 0:
+            status = "proxy_lift_calibration_warning"
+            next_step = (
+                "Do not run the full paid assessment yet; the proxy lifted accuracy but degraded "
+                "base-comparison calibration. Increase preservation/distillation or inspect answer-prior drift."
+            )
+        elif gap >= 0:
+            status = "proxy_matches_base_calibration_warning"
+            next_step = (
+                "Do not run the full paid assessment yet; the proxy matched base accuracy but degraded "
+                "base-comparison calibration. Tighten the recovery objective before spending A100 on confirmation."
+            )
         else:
             status = "no_proxy_lift"
             next_step = "Do not extend this ARC-mix setting; inspect failures or revise supervision mix."
@@ -597,6 +701,10 @@ def build_summary(
         "resume_run_id": checkpoint_run_id(resume_checkpoint),
         "data": data_summary,
         "arc_eval_limit": ARC_EVAL_LIMIT,
+        "proxy_calibration_thresholds": {
+            "min_mean_margin_delta": MIN_PROXY_MARGIN_DELTA,
+            "max_abs_prediction_count_delta": MAX_PROXY_PREDICTION_SHIFT,
+        },
         "status": status,
         "passed": status in {"proxy_lift", "proxy_matches_base"},
         "next_step": next_step,
@@ -616,17 +724,21 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Source summary: `{payload['source_summary']}`",
         f"- Resume checkpoint: `{payload['resume_checkpoint']}`",
         f"- Mixed rows: `{payload['data']['mixed_rows']}`",
+        f"- Calibration thresholds: mean margin delta >= `{payload['proxy_calibration_thresholds']['min_mean_margin_delta']}`, "
+        f"max prediction-count shift <= `{payload['proxy_calibration_thresholds']['max_abs_prediction_count_delta']}`",
         f"- Next step: {payload['next_step']}",
         "",
         "## Arms",
         "",
-        "| arm | best proxy | start proxy | base proxy | lift vs start | gap vs base | checkpoint |",
-        "|---|---:|---:|---:|---:|---:|---|",
+        "| arm | best proxy | start proxy | base proxy | lift vs start | gap vs base | margin vs base | max pred shift | calibration | checkpoint |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---|---|",
     ]
     for row in payload["arms"]:
         best_arc = row["best_checkpoint"]["arc"]["mean"]
         start_arc = row["phase1_start"]["arc"]["mean"]
         base_arc = row["base_arc"]["mean"]
+        calibration = row["best_checkpoint"].get("comparison_to_base") or {}
+        margin = calibration.get("mean_margin_delta")
         lines.append(
             "| "
             + " | ".join(
@@ -637,6 +749,9 @@ def write_report(payload: dict[str, Any]) -> None:
                     f"{base_arc['correct']}/{base_arc['total']}",
                     str(int(best_arc["correct"]) - int(start_arc["correct"])),
                     str(int(best_arc["correct"]) - int(base_arc["correct"])),
+                    "n/a" if margin is None else f"{float(margin):.4f}",
+                    str(calibration.get("max_abs_prediction_count_delta", "n/a")),
+                    "`ok`" if calibration.get("calibration_ok", True) else "`warning`",
                     f"`{row['best_checkpoint']['checkpoint']}`",
                 ]
             )

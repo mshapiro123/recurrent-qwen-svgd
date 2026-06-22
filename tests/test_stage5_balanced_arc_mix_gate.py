@@ -2,15 +2,27 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from colab.run_stage5_balanced_arc_mix_gate import (
     arm_config,
     build_summary,
     checkpoint_run_id,
+    paired_mcq_diagnostics,
     selected_checkpoint,
 )
 
 
-def _arm(name: str, *, start: int, base: int, best: int) -> dict:
+def _arm(
+    name: str,
+    *,
+    start: int,
+    base: int,
+    best: int,
+    margin_delta: float = 0.0,
+    prediction_shift: int = 0,
+    calibration_ok: bool = True,
+) -> dict:
     return {
         "arm": name,
         "base_arc": {"mean": {"correct": base, "total": 128, "accuracy": base / 128}},
@@ -23,6 +35,15 @@ def _arm(name: str, *, start: int, base: int, best: int) -> dict:
         "best_checkpoint": {
             "checkpoint": f"outputs/stage5/child/{name}/phase1/phase1_step_50.pt",
             "arc": {"mean": {"correct": best, "total": 128, "accuracy": best / 128}},
+            "comparison_to_base": {
+                "helped": max(best - base, 0),
+                "hurt": max(base - best, 0),
+                "tied": 128 - abs(best - base),
+                "prediction_changes": prediction_shift,
+                "mean_margin_delta": margin_delta,
+                "max_abs_prediction_count_delta": prediction_shift,
+                "calibration_ok": calibration_ok,
+            },
         },
     }
 
@@ -137,3 +158,84 @@ def test_build_summary_fails_without_proxy_lift(tmp_path) -> None:
 
     assert payload["status"] == "no_proxy_lift"
     assert payload["passed"] is False
+
+
+def test_build_summary_blocks_lift_with_calibration_warning(tmp_path) -> None:
+    payload = build_summary(
+        source_summary=tmp_path / "balanced.json",
+        source_payload={"status": "needs_competence_recovery"},
+        resume_checkpoint=Path("outputs/stage5/source/phase1/phase1_step_150.pt"),
+        data_summary={"mixed_rows": 10},
+        arms=[
+            _arm(
+                "arc_mix",
+                start=71,
+                base=72,
+                best=73,
+                margin_delta=-1.0,
+                prediction_shift=32,
+                calibration_ok=False,
+            )
+        ],
+    )
+
+    assert payload["status"] == "proxy_lift_calibration_warning"
+    assert payload["passed"] is False
+    assert "Do not run the full paid assessment" in payload["next_step"]
+
+
+def test_paired_mcq_diagnostics_reports_margin_and_prediction_shift(tmp_path) -> None:
+    import colab.run_stage5_balanced_arc_mix_gate as module
+
+    reference = tmp_path / "reference.jsonl"
+    variant = tmp_path / "variant.jsonl"
+    module.write_jsonl(
+        reference,
+        [
+            {
+                "id": "a",
+                "aggregate": "mean",
+                "prediction": "A",
+                "answer": "A",
+                "hit": True,
+                "scores": {"A": 0.9, "B": 0.1},
+            },
+            {
+                "id": "b",
+                "aggregate": "mean",
+                "prediction": "B",
+                "answer": "A",
+                "hit": False,
+                "scores": {"A": 0.4, "B": 0.6},
+            },
+        ],
+    )
+    module.write_jsonl(
+        variant,
+        [
+            {
+                "id": "a",
+                "aggregate": "mean",
+                "prediction": "B",
+                "answer": "A",
+                "hit": False,
+                "scores": {"A": 0.3, "B": 0.7},
+            },
+            {
+                "id": "b",
+                "aggregate": "mean",
+                "prediction": "A",
+                "answer": "A",
+                "hit": True,
+                "scores": {"A": 0.8, "B": 0.2},
+            },
+        ],
+    )
+
+    stats = paired_mcq_diagnostics(variant, reference)
+
+    assert stats["helped"] == 1
+    assert stats["hurt"] == 1
+    assert stats["prediction_changes"] == 2
+    assert stats["mean_margin_delta"] == pytest.approx(-0.2)
+    assert stats["prediction_count_delta"] == {"A": 0, "B": 0}

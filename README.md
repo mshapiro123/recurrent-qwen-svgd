@@ -30,6 +30,13 @@ SVGD/kernel exploration while deterministic recurrent recovery is still below
 the release bar. Paid GPU is reserved for one bounded confirmation job at a
 time, followed by review.
 
+The latest workflow change makes this stricter: ARC-mix proxy gates now inspect
+paired margin movement and answer-prior drift, not just hit count. A proxy that
+lifts accuracy but lowers the correct-answer margin or shifts predictions too
+far is recorded as a calibration warning and should **not** trigger a full paid
+assessment. This is the direct fix for the prior failure where a cheap proxy
+matched base but the full balanced ARC run regressed.
+
 As of the current checkpoint, the follow-up ARC-mix recovery proxy matched base
 on the 128-row ARC-Challenge proxy, but the full balanced ARC-Easy /
 ARC-Challenge confirmation assessment did **not** generalize. The recurrent
@@ -223,9 +230,11 @@ STAGE5_ARC_MIX_ARMS=arc_mix_response_w01_lr2e6
 ```
 
 This is a hypothesis-driven calibration-recovery proxy. It should run only
-after reviewing the diagnosis. If it does not lift the proxy without worsening
-calibration, stop deterministic recovery and revise the objective/data mix
-locally.
+after reviewing the diagnosis. The proxy gate now requires calibration to remain
+healthy before it can pass. If it lifts raw accuracy but reports
+`proxy_lift_calibration_warning` or `proxy_matches_base_calibration_warning`,
+stop and revise the objective/data mix locally instead of running another full
+A100 confirmation.
 
 Do not run GPQA, Phase 2/SVGD, or scale-up jobs before this deterministic
 recurrent recovery question is resolved.
