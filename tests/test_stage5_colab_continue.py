@@ -39,6 +39,15 @@ def test_colab_continue_focuses_gate1_and_next_action_tests() -> None:
     assert "tests/test_stage5_routing_repair.py" in paths
     assert "tests/test_lora.py" in paths
     assert "tests/test_stage5_dense_sft_control.py" in paths
+    assert "tests/test_stage5_curriculum_sft.py" in paths
+    assert "tests/test_curriculum_sft_gate.py" in paths
+    assert "tests/test_curriculum_pipeline_from_artifacts.py" in paths
+    assert "tests/test_curriculum_pipeline_fixture.py" in paths
+    assert "tests/test_curriculum_generation_jobs.py" in paths
+    assert "tests/test_collect_curriculum_job_outputs.py" in paths
+    assert "tests/test_assemble_curriculum_records.py" in paths
+    assert "tests/test_curriculum_jsonl.py" in paths
+    assert "tests/test_stage5_notebooks.py" in paths
 
 
 def test_colab_continue_defaults_to_credit_saving_single_action_loop(monkeypatch) -> None:

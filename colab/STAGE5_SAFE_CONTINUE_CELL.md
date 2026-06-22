@@ -151,6 +151,10 @@ if execute_action:
             "tests/test_stage5_next_action.py",
             "tests/test_stage5_routing_repair.py",
             "tests/test_stage5_balanced_arc_mix_gate.py",
+            "tests/test_curriculum_sft_gate.py",
+            "tests/test_stage5_curriculum_sft.py",
+            "tests/test_curriculum_pipeline_from_artifacts.py",
+            "tests/test_curriculum_jsonl.py",
         ],
         cwd=ROOT,
     )

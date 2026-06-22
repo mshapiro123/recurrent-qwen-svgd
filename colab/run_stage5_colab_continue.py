@@ -74,6 +74,13 @@ def focused_test_paths() -> list[str]:
         "tests/test_stage4_opus_finetune.py",
         "tests/test_stage5_curriculum_sft.py",
         "tests/test_curriculum_sft_gate.py",
+        "tests/test_curriculum_pipeline_from_artifacts.py",
+        "tests/test_curriculum_pipeline_fixture.py",
+        "tests/test_curriculum_generation_jobs.py",
+        "tests/test_collect_curriculum_job_outputs.py",
+        "tests/test_assemble_curriculum_records.py",
+        "tests/test_curriculum_jsonl.py",
+        "tests/test_stage5_notebooks.py",
     ]
 
 
