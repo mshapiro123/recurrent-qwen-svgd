@@ -456,6 +456,41 @@ targets. The generator is intentionally simple: it is a cheap CPU source for
 testing depth supervision and loader safety, not a claim about final reasoning
 coverage.
 
+### Stage 8: Capability-Ladder Curriculum From Scored Rows
+
+After a benchmark or model-scoring job produces verified rows with Qwen 0.5B,
+Qwen 1.5B, and stronger-model correctness flags, use the CPU-only capability
+adapter to assign deterministic depth targets:
+
+```bash
+python training/build_capability_ladder_curriculum.py \
+  --input_jsonl data/curriculum/scored_capability_rows.jsonl \
+  --work_dir data/curriculum/capability_ladder_001 \
+  --base_key qwen_0_5b \
+  --mid_key qwen_1_5b \
+  --high_keys qwen_3b,strong_solver
+
+python training/check_curriculum_sft_gate.py \
+  --work_dir data/curriculum/capability_ladder_001 \
+  --output_json data/curriculum/capability_ladder_001/curriculum_sft_gate.json \
+  --output_md data/curriculum/capability_ladder_001/curriculum_sft_gate.md \
+  --min_mode_rows direct=1,deep_narrow=1 \
+  --fail_on_no_go
+```
+
+The input rows must already contain a trusted verified answer and model
+correctness evidence. The builder intentionally does **not** run Qwen 0.5B,
+Qwen 1.5B, or Qwen 3B itself. It maps:
+
+- base correct -> `direct`, `target_loop_count = 1`;
+- base miss, 1.5B correct -> `deep_narrow`, `target_loop_count = 2`;
+- base and 1.5B miss, stronger correct -> `deep_narrow`,
+  `target_loop_count = 3` by default.
+
+Rows without trusted answer verification, decontamination, a usable positive
+trace, or a trace/answer match are skipped. This keeps the capability ladder a
+safe SFT-export step rather than a correctness judge.
+
 ## Prompt Library
 
 Prompts that request JSON should instruct the model to return only the JSON.

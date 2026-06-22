@@ -444,5 +444,6 @@ def test_programmatic_curriculum_cell_is_cpu_safe_and_matches_markdown_code() ->
     assert "stage5_current_source_summary" in plain
     assert "REFUSE_GPU_RUNTIME = True" in plain
     assert "ALLOW_GPU_RUNTIME_FOR_CPU_WORK = False" in plain
+    assert "except FileNotFoundError:" in plain
     assert "Refusing to run CPU-only programmatic curriculum generation" in plain
     assert "zero-provider" in text

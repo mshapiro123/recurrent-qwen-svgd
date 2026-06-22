@@ -69,13 +69,16 @@ def run(cmd, cwd=None, env=None, check=True):
 
 
 def attached_gpu_names():
-    proc = subprocess.run(
-        ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader"],
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+    except FileNotFoundError:
+        return []
     if proc.returncode:
         return []
     return [line.strip() for line in proc.stdout.splitlines() if line.strip()]
