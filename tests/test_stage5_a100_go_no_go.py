@@ -276,6 +276,37 @@ def test_stage4_opus_finetune_checkpoint_guard_does_not_require_recovered_checkp
     assert checkpoint["checkpoint"] is None
 
 
+def test_curriculum_sft_allowed_only_after_green_sft_gate() -> None:
+    action = {
+        "name": "Run generated curriculum SFT",
+        "command": "python colab/run_stage5_curriculum_sft.py",
+    }
+
+    blocked = classify_action(action, source_payload={"kind": "curriculum_sft_gate", "go": False})
+    allowed = classify_action(action, source_payload={"kind": "curriculum_sft_gate", "go": True})
+
+    assert blocked["go"] is False
+    assert blocked["status"] == "curriculum_sft_blocked"
+    assert allowed["go"] is True
+    assert allowed["status"] == "go_curriculum_sft"
+    assert allowed["spend_class"] == "bounded_curriculum_sft"
+
+
+def test_curriculum_sft_checkpoint_guard_does_not_require_recovered_checkpoint() -> None:
+    decision, checkpoint = apply_checkpoint_guard(
+        {
+            "go": True,
+            "status": "go_curriculum_sft",
+            "spend_class": "bounded_curriculum_sft",
+        },
+        source_payload={"kind": "curriculum_sft_gate", "go": True},
+    )
+
+    assert decision["go"] is True
+    assert checkpoint["available"] is True
+    assert checkpoint["checkpoint"] is None
+
+
 def test_routing_checkpoint_availability_reports_default_checkpoint() -> None:
     status = routing_repair_checkpoint_availability()
 

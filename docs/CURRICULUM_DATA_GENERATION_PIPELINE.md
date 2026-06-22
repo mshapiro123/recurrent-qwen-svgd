@@ -283,6 +283,20 @@ programmatic anchoring, records validate, non-positive roles did not leak into
 Colab loop because it is restart-safe and burns no GPU while waiting on
 API/provider artifacts.
 
+After a shard passes the gate and has enough positive rows for a real run, use
+the guarded GPU handoff:
+
+```bash
+python colab/run_stage5_curriculum_sft.py
+```
+
+It reruns the gate, requires Drive backup by default, writes a deterministic
+train/validation split from `positive_sft.jsonl`, trains only Phase 1
+deterministic recurrence, validates the checkpoint, and backs up run artifacts
+to Drive. Use `colab/STAGE5_CURRICULUM_SFT_CELL.py` as the copy/paste Colab
+cell for this path. Do not train Phase 2 particles from a generated shard until
+the deterministic checkpoint is sane.
+
 Seed problem-generation jobs:
 
 ```bash

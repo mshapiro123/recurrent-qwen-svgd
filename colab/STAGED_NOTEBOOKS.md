@@ -151,7 +151,14 @@ The older split notebooks are kept only as references:
    as immediate trace-SFT material, audit-only material, or later
    agent/tool-diversity material. Use this to keep Opus competence recovery
    separate from Fable tool/agent trajectory experiments.
-5. Fine-tune on modified Opus traces.
+5. Fine-tune on modified Opus traces, or on a generated width/depth curriculum
+   shard after it passes `training/check_curriculum_sft_gate.py`. The guarded
+   generated-curriculum handoff is `colab/run_stage5_curriculum_sft.py`: it
+   requires a green SFT gate, enough `positive_*` rows, and Drive backup before
+   launching Phase 1 recurrent training. The copy/paste Colab helper is
+   `colab/STAGE5_CURRICULUM_SFT_CELL.py` with notes in
+   `colab/STAGE5_CURRICULUM_SFT_CELL.md`. Keep Phase 2/SVGD off until this
+   deterministic recurrent checkpoint validates.
 6. Run base vs recurrent benchmarks, then run
    `colab/run_stage5_arc_agi_candidate_gate.py` to separate model-only,
    symbolic-only, and hybrid candidate value before more particle tuning.

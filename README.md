@@ -336,6 +336,17 @@ programmatic checks control labels. Positive SFT loaders may consume only
 `positive_*` roles; rationalizations and slips are reserved for verifier or
 contrastive training.
 
+When that generated curriculum pipeline completes and its SFT gate reports
+`go=true`, the guarded GPU handoff is:
+
+```bash
+python colab/run_stage5_curriculum_sft.py
+```
+
+This runner refuses unsafe or tiny shards, requires Drive backup by default,
+trains only deterministic Phase 1 recurrence from `positive_sft.jsonl`, and
+validates on a held-out curriculum split before any particle/SVGD work.
+
 Do not run GPQA, Phase 2/SVGD, or scale-up jobs before this deterministic
 recurrent recovery question is resolved.
 

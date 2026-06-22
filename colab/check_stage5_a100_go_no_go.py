@@ -220,6 +220,17 @@ def apply_checkpoint_guard(
             "drive_candidate_exists": False,
             "reason": "Stage 4 Opus fine-tune starts from the base model and does not require a recovered checkpoint preflight.",
         }
+    elif decision.get("spend_class") == "bounded_curriculum_sft":
+        checkpoint = {
+            "checkpoint": None,
+            "available": True,
+            "exists": False,
+            "drive_candidate_exists": False,
+            "reason": (
+                "Generated-curriculum SFT starts from base or from an optional "
+                "STAGE5_CURRICULUM_RESUME_FROM checkpoint that the runner validates."
+            ),
+        }
     else:
         checkpoint = checkpoint_availability(source_payload)
     if not decision.get("go"):
@@ -329,6 +340,24 @@ def classify_action(
                 "Stage 4 Opus fine-tune requires a dataset audit with a promoted, approved "
                 "Opus recovery source such as opus47_sft or opus47_raw."
             ),
+        }
+
+    if script == "colab/run_stage5_curriculum_sft.py":
+        if source_payload.get("kind") == "curriculum_sft_gate" and source_payload.get("go") is True:
+            return {
+                "go": True,
+                "status": "go_curriculum_sft",
+                "spend_class": "bounded_curriculum_sft",
+                "reason": (
+                    "A generated curriculum shard passed the strict SFT gate; "
+                    "one bounded deterministic recurrent Phase 1 SFT run is allowed."
+                ),
+            }
+        return {
+            "go": False,
+            "status": "curriculum_sft_blocked",
+            "spend_class": "none",
+            "reason": "Generated curriculum SFT requires a source summary with kind=curriculum_sft_gate and go=true.",
         }
 
     if source_has_calibration_warning(source_payload):

@@ -71,6 +71,8 @@ def focused_test_paths() -> list[str]:
         "tests/test_stage5_reasoning_dataset_audit.py",
         "tests/test_stage5_reasoning_dataset_pipeline.py",
         "tests/test_stage4_opus_finetune.py",
+        "tests/test_stage5_curriculum_sft.py",
+        "tests/test_curriculum_sft_gate.py",
     ]
 
 

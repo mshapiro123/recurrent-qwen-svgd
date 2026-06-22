@@ -135,6 +135,30 @@ python training/check_curriculum_sft_gate.py \
 The gate must report `go=true`; otherwise the shard is still CPU/API cleanup
 work, not GPU training material.
 
+Once the gate is green and the shard has enough positive rows to justify GPU
+spend, the guarded deterministic recurrent SFT handoff is:
+
+```bash
+python colab/run_stage5_curriculum_sft.py
+```
+
+The runner reruns the gate into `outputs/stage5/<run_id>/`, refuses tiny or
+unsafe shards, requires a visible Drive backup directory by default, writes a
+deterministic train/validation split from `positive_sft.jsonl`, trains only the
+Phase 1 recurrent model, validates the checkpoint on the held-out curriculum
+split, and backs checkpoints/data up to Drive. It does not train Phase 2
+particles or SVGD; those remain a separate post-recovery gate.
+
+Useful Colab overrides:
+
+```bash
+STAGE5_CURRICULUM_WORK_DIR=data/curriculum/run_001
+STAGE5_CURRICULUM_MIN_POSITIVE_ROWS=16
+STAGE5_CURRICULUM_PHASE1_STEPS=150
+STAGE5_CURRICULUM_MAX_LOOPS=4
+STAGE5_CURRICULUM_RESUME_FROM=outputs/stage5/<recovered_run>/phase1/phase1_step_125.pt
+```
+
 The driver treats a response artifact as complete only when the number of
 non-empty response rows is at least the number of emitted job rows for that
 stage. This lets bounded provider batches resume safely: a partial

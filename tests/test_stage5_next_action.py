@@ -249,6 +249,21 @@ def test_parse_action_command_allows_programmatic_depth_repair_runner() -> None:
     assert parsed.argv == [sys.executable, "colab/run_stage5_programmatic_depth_repair.py"]
 
 
+def test_parse_action_command_allows_curriculum_sft_runner() -> None:
+    parsed = parse_action_command(
+        "STAGE5_CURRICULUM_WORK_DIR=data/curriculum/run_001 "
+        "STAGE5_CURRICULUM_PHASE1_STEPS=150 "
+        "python colab/run_stage5_curriculum_sft.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {
+        "STAGE5_CURRICULUM_WORK_DIR": "data/curriculum/run_001",
+        "STAGE5_CURRICULUM_PHASE1_STEPS": "150",
+    }
+    assert parsed.argv == [sys.executable, "colab/run_stage5_curriculum_sft.py"]
+
+
 def test_parse_action_command_allows_programmatic_depth_assessor() -> None:
     parsed = parse_action_command(
         "STAGE5_PROGRAMMATIC_DEPTH_ASSESS_RUN_ID=assess python colab/assess_stage5_programmatic_depth_repair.py --summary_json outputs/stage5/run/summary.json"

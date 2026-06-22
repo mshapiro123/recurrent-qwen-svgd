@@ -50,6 +50,12 @@ Recommended run ladder:
   regress.
 - Evaluate each checkpoint against base on ARC-128, ARC-512, GSM8K-mini, and the
   exact smoke suite.
+- For generated width/depth curriculum shards, run
+  `colab/run_stage5_curriculum_sft.py` only after
+  `training/check_curriculum_sft_gate.py` reports `go=true`. This is the
+  strong-model curriculum handoff: it trains Phase 1 deterministic recurrence
+  from verified `positive_*` traces, keeps non-positive traces out of SFT, and
+  leaves particle/SVGD training for a later mechanism gate.
 
 Gate to proceed:
 
