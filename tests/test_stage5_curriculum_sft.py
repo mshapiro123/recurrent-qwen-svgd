@@ -138,6 +138,38 @@ def test_prepare_train_val_blocks_tiny_shard(monkeypatch, tmp_path) -> None:
         runner.prepare_train_val({"artifacts": {"positive_sft": str(positive_sft)}})
 
 
+def test_grouped_eval_metrics_extracts_curriculum_mode_metrics() -> None:
+    metrics = {
+        "loss": 2.0,
+        "group/curriculum_mode/direct/examples": 12.0,
+        "group/curriculum_mode/direct/mean_expected_loops": 1.2,
+        "group/curriculum_mode/deep_narrow/examples": 8.0,
+        "group/curriculum_mode/deep_narrow/mean_expected_loops": 3.1,
+    }
+
+    grouped = runner.grouped_eval_metrics(metrics, group_field="curriculum_mode")
+
+    assert grouped == {
+        "deep_narrow": {"examples": 8.0, "mean_expected_loops": 3.1},
+        "direct": {"examples": 12.0, "mean_expected_loops": 1.2},
+    }
+
+
+def test_eval_jsonl_requests_single_pass_curriculum_mode_groups(monkeypatch, tmp_path) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run(cmd, *, check=True, log_name=None):
+        calls.append([str(item) for item in cmd])
+        return subprocess.CompletedProcess(cmd, 0, "examples=2\ngroup/curriculum_mode/direct/examples=1\n", None)
+
+    monkeypatch.setattr(runner, "run", fake_run)
+    metrics = runner.eval_jsonl("val", tmp_path / "val.jsonl", tmp_path / "phase1.pt")
+
+    assert metrics["group/curriculum_mode/direct/examples"] == 1.0
+    assert "--group_by_field" in calls[0]
+    assert calls[0][calls[0].index("--group_by_field") + 1] == "curriculum_mode"
+
+
 def test_curriculum_sft_updates_current_source_summary(monkeypatch, tmp_path) -> None:
     run_dir = tmp_path / "outputs" / "stage5" / "curriculum_sft"
     monkeypatch.setattr(runner, "ROOT", tmp_path)
@@ -154,10 +186,12 @@ def test_curriculum_sft_updates_current_source_summary(monkeypatch, tmp_path) ->
             "phase1_checkpoint": "outputs/stage5/curriculum_sft/phase1/phase1_step_150.pt",
             "config": {"max_steps": 150, "max_loops": 4},
             "phase1_val": {"loss": 2.5},
+            "phase1_val_by_mode": {"direct": {"loss": 2.0}, "deep_narrow": {"loss": 3.0}},
         }
     )
 
     assert (run_dir / "summary.json").exists()
+    assert "Validation By Curriculum Mode" in (run_dir / "summary.md").read_text(encoding="utf-8")
     assert (tmp_path / "config" / "stage5_current_source_summary.txt").read_text(
         encoding="utf-8"
     ) == "outputs/stage5/curriculum_sft/summary.json\n"

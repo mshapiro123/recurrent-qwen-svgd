@@ -51,7 +51,16 @@ def main() -> int:
     parser.add_argument("--lora_rank", type=int, default=8)
     parser.add_argument("--lora_alpha", type=int, default=16)
     parser.add_argument("--adapter_dtype", default="float32")
+    parser.add_argument(
+        "--group_by_field",
+        help=(
+            "Optional JSONL row field for grouped metrics. Requires batch_size=1 "
+            "so per-example metrics can be assigned without another model pass."
+        ),
+    )
     args = parser.parse_args()
+    if args.group_by_field and args.batch_size != 1:
+        raise SystemExit("--group_by_field currently requires --batch_size 1")
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     if tokenizer.pad_token_id is None:
@@ -95,6 +104,8 @@ def main() -> int:
     )
 
     totals: dict[str, float] = {}
+    grouped_totals: dict[str, dict[str, float]] = {}
+    grouped_counts: dict[str, int] = {}
     count = 0
     with torch.no_grad():
         for batch in loader:
@@ -120,6 +131,13 @@ def main() -> int:
             )
             assert_finite_metrics(output.metrics, count)
             batch_size = batch["input_ids"].shape[0]
+            if args.group_by_field:
+                row = dataset.rows[count]
+                group_value = str(row.get(args.group_by_field) or "missing")
+                grouped_counts[group_value] = grouped_counts.get(group_value, 0) + batch_size
+                group_totals = grouped_totals.setdefault(group_value, {})
+                for key, value in output.metrics.items():
+                    group_totals[key] = group_totals.get(key, 0.0) + float(value) * batch_size
             count += batch_size
             for key, value in output.metrics.items():
                 totals[key] = totals.get(key, 0.0) + float(value) * batch_size
@@ -127,6 +145,11 @@ def main() -> int:
     print(f"examples={count}")
     for key in sorted(totals):
         print(f"{key}={totals[key] / max(count, 1):.6f}")
+    for group in sorted(grouped_totals):
+        group_count = grouped_counts[group]
+        print(f"group/{args.group_by_field}/{group}/examples={group_count}")
+        for key in sorted(grouped_totals[group]):
+            print(f"group/{args.group_by_field}/{group}/{key}={grouped_totals[group][key] / max(group_count, 1):.6f}")
     return 0
 
 

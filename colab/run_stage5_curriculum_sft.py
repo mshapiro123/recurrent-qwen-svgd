@@ -426,6 +426,20 @@ def summarize_jsonl_eval(stdout: str) -> dict[str, float]:
     return metrics
 
 
+def grouped_eval_metrics(metrics: dict[str, float], *, group_field: str) -> dict[str, dict[str, float]]:
+    prefix = f"group/{group_field}/"
+    grouped: dict[str, dict[str, float]] = {}
+    for key, value in metrics.items():
+        if not key.startswith(prefix):
+            continue
+        remainder = key[len(prefix):]
+        group, separator, metric = remainder.partition("/")
+        if not separator or not group or not metric:
+            continue
+        grouped.setdefault(group, {})[metric] = value
+    return grouped
+
+
 def eval_jsonl(label: str, data_jsonl: Path, checkpoint: Path) -> dict[str, float]:
     proc = run(
         [
@@ -451,6 +465,8 @@ def eval_jsonl(label: str, data_jsonl: Path, checkpoint: Path) -> dict[str, floa
             ADAPTER_DTYPE,
             "--device",
             DEVICE,
+            "--group_by_field",
+            "curriculum_mode",
         ],
         log_name=f"{label}_val.log",
     )
@@ -526,6 +542,11 @@ def write_summary(payload: dict[str, Any]) -> None:
         json.dumps(payload["phase1_val"], indent=2),
         "```",
         "",
+        "## Validation By Curriculum Mode",
+        "```json",
+        json.dumps(payload.get("phase1_val_by_mode", {}), indent=2),
+        "```",
+        "",
         "## Next Decision",
         "If validation is finite and loop depth remains non-collapsed, run the paired benchmark suite before any Phase 2/SVGD training.",
     ]
@@ -562,6 +583,7 @@ def main() -> int:
     resume_from = resolve_resume_from()
     checkpoint = train_phase1(train_jsonl, resume_from=resume_from)
     phase1_val = eval_jsonl("phase1_curriculum_sft", val_jsonl, checkpoint)
+    phase1_val_by_mode = grouped_eval_metrics(phase1_val, group_field="curriculum_mode")
     backup = backup_to_drive(train_jsonl, val_jsonl)
 
     summary = {
@@ -581,6 +603,7 @@ def main() -> int:
         "resume_from": None if resume_from is None else path_for_cli(resume_from),
         "phase1_checkpoint": path_for_cli(checkpoint),
         "phase1_val": phase1_val,
+        "phase1_val_by_mode": phase1_val_by_mode,
     }
     write_summary(summary)
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"), flush=True)
