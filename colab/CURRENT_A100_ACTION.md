@@ -81,7 +81,20 @@ prints the exact bootstrap and programmatic launcher blobs that Colab sees.
 import json, os, time, urllib.request
 from google.colab import userdata
 
-token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
+def colab_secret(*names):
+    for name in names:
+        value = os.environ.get(name)
+        if value:
+            return value
+        try:
+            value = userdata.get(name)
+        except Exception:
+            value = None
+        if value:
+            return value
+    return None
+
+token = colab_secret("GH_TOKEN", "GITHUB_TOKEN")
 assert token, "Add GH_TOKEN or GITHUB_TOKEN to Colab secrets."
 
 headers = {
@@ -130,7 +143,21 @@ import base64, json, os, time, urllib.request
 from google.colab import userdata
 
 os.environ["STAGE5_CURRENT_A100_TARGET"] = "programmatic_curriculum_cpu"
-token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
+
+def colab_secret(*names):
+    for name in names:
+        value = os.environ.get(name)
+        if value:
+            return value
+        try:
+            value = userdata.get(name)
+        except Exception:
+            value = None
+        if value:
+            return value
+    return None
+
+token = colab_secret("GH_TOKEN", "GITHUB_TOKEN")
 assert token, "Add GH_TOKEN or GITHUB_TOKEN to Colab secrets."
 
 headers = {
