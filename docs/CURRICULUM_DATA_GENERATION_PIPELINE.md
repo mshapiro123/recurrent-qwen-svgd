@@ -201,8 +201,9 @@ Proposed solution: {solution}
 
 1. Keep using `training/generate_programmatic_curriculum.py` for cheap
    direct/deep-narrow rows.
-2. Use external-model generation only on CPU/API paths and write typed records
-   matching this schema.
+2. Use external-model generation only on CPU/API paths. Build provider-neutral
+   prompt jobs with `training/build_curriculum_generation_jobs.py`; a separate
+   runner can submit those jobs to GPT, Opus, GLM, or other non-student models.
 3. Validate and export positive SFT rows with:
 
 ```bash
@@ -215,3 +216,48 @@ python training/prepare_curriculum_jsonl.py \
 4. Train only after the report confirms no validation issues and no non-positive
    roles were exported.
 
+## Job Builder
+
+The job builder writes JSONL records with `stage`, `role`, `model`, `prompt`,
+`expects_json`, and metadata. It does not call any provider API and blocks Qwen
+or other student-lineage ids by default.
+
+Seed problem-generation jobs:
+
+```bash
+python training/build_curriculum_generation_jobs.py \
+  --stage seed \
+  --models opus-strong,glm-strong \
+  --domains math \
+  --difficulties medium,hard \
+  --target_steps 4,8,12 \
+  --count_per_combo 5 \
+  --output_jsonl data/curriculum/jobs_seed.jsonl \
+  --report_json outputs/curriculum/jobs_seed_report.json
+```
+
+Ground-truth solve jobs from generated candidates:
+
+```bash
+python training/build_curriculum_generation_jobs.py \
+  --stage ground_truth \
+  --models opus-strong,glm-strong \
+  --input_jsonl data/curriculum/candidates.jsonl \
+  --output_jsonl data/curriculum/jobs_ground_truth.jsonl
+```
+
+Method-constrained width jobs:
+
+```bash
+python training/build_curriculum_generation_jobs.py \
+  --stage method_solve \
+  --models opus-strong,glm-strong \
+  --methods algebra,number_theory,bounded_enumeration \
+  --input_jsonl data/curriculum/verified_candidates.jsonl \
+  --output_jsonl data/curriculum/jobs_methods.jsonl
+```
+
+Depth, naturalness, perturbation, and error-detection jobs are available through
+`--stage depth`, `--stage naturalness`, `--stage perturbation`, and
+`--stage error_detection`. These are still job construction steps; responses
+must be parsed and verified before typed curriculum records are created.
