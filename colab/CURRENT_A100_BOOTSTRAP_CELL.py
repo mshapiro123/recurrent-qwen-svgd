@@ -3,6 +3,7 @@ from google.colab import userdata
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 REF = "main"
+BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v2"
 
 # Safe default: verify Drive/checkpoint visibility on a CPU/cheap runtime.
 # Other options:
@@ -51,6 +52,7 @@ TARGETS = {
             "REQUIRE_DRIVE_BACKUP_FOR_PUBLISH",
             "PUBLISH_GATE_TO_GITHUB",
             "stage5_current_source_summary",
+            "except FileNotFoundError:",
             "Refusing to run CPU-only programmatic curriculum generation",
         ],
         "env": {},
@@ -129,5 +131,9 @@ code = base64.b64decode(payload["content"]).decode("utf-8")
 missing = [marker for marker in selected["markers"] if marker not in code]
 assert not missing, f"Fetched launcher is missing expected safety markers: {missing}"
 
+print(
+    f"bootstrap_version={BOOTSTRAP_VERSION} resolved_ref={RESOLVED_REF} target={TARGET}",
+    flush=True,
+)
 print(f"Fetched {launcher_path} from {REPO}@{REF} ({RESOLVED_REF[:12]}) sha={payload.get('sha')} target={TARGET}", flush=True)
 exec(compile(code, launcher_path, "exec"))

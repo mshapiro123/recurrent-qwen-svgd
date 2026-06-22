@@ -113,6 +113,7 @@ payload = gh_json(
 code = base64.b64decode(payload["content"]).decode("utf-8")
 print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12])
 assert "RESOLVED_REF" in code, "Fetched stale bootstrap; rerun this cell."
+assert "sha_resolved_nested_fetch_v2" in code, "Fetched stale bootstrap version; rerun this cell."
 exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
 ```
 
