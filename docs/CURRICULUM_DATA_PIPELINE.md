@@ -113,6 +113,12 @@ stop at the next required job file. The final handoff to GPU training is
 `positive_sft.jsonl`; negative and verifier traces remain in `typed_records.jsonl`
 and are not exported to positive SFT.
 
+The driver treats a response artifact as complete only when the number of
+non-empty response rows is at least the number of emitted job rows for that
+stage. This lets bounded provider batches resume safely: a partial
+`responses_*.jsonl` remains pending rather than being interpreted as failed
+model agreement or missing training signal.
+
 The measured-difficulty stage is also artifact-driven. After ground-truth
 verification the pipeline writes `jobs_reference_attempts.jsonl` and stops with
 `pending_reference_attempt_responses`; run those jobs through the same response

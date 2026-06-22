@@ -122,6 +122,51 @@ def test_pipeline_blocks_student_lineage_models_by_default(tmp_path) -> None:
         run_pipeline(args)
 
 
+def test_pipeline_waits_for_partial_response_files(tmp_path) -> None:
+    references = tmp_path / "refs.jsonl"
+    write_jsonl(references, [{"id": "eval-1", "prompt": "What is 9 + 9?"}])
+
+    args = args_for(tmp_path, references)
+    summary = run_pipeline(args)
+    paths = {name: Path(meta["path"]) for name, meta in summary["artifacts"].items()}
+
+    write_jsonl(
+        paths["responses_seed"],
+        response_rows_for_jobs(
+            paths["jobs_seed"],
+            lambda _job: json.dumps(
+                {
+                    "statement": "A rectangle has side lengths 6 and 7. Find its area.",
+                    "claimed_answer": "42",
+                    "domain": "math",
+                    "candidate_methods": ["algebra"],
+                }
+            ),
+        ),
+    )
+    summary = run_pipeline(args)
+    assert summary["status"] == "pending_ground_truth_responses"
+
+    ground_jobs = read_jsonl(paths["jobs_ground_truth"])
+    write_jsonl(
+        paths["responses_ground_truth"],
+        [
+            {
+                "job_id": ground_jobs[0]["job_id"],
+                "response_id": "partial-ground-truth",
+                "response_text": "6*7=42\nANSWER: 42",
+            }
+        ],
+    )
+
+    summary = run_pipeline(args)
+
+    assert summary["status"] == "pending_ground_truth_responses"
+    assert summary["counts"]["ground_truth_jobs"] == 2
+    assert summary["counts"]["ground_truth_response_rows"] == 1
+    assert summary["artifacts"]["verified_candidates"]["lines"] == 0
+
+
 def test_pipeline_resumes_to_complete_from_artifacts(tmp_path) -> None:
     references = tmp_path / "refs.jsonl"
     work_dir = tmp_path / "run"

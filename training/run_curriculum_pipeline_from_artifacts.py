@@ -186,6 +186,12 @@ def response_missing(path: Path) -> bool:
     return not path.exists() or line_count(path) == 0
 
 
+def response_incomplete(path: Path, *, expected_rows: int) -> bool:
+    if expected_rows <= 0:
+        return False
+    return not path.exists() or line_count(path) < expected_rows
+
+
 def validate_role_models(
     role_name: str,
     models: list[str],
@@ -243,13 +249,16 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
         count_per_combo=args.count_per_combo,
     )
     write_jsonl(paths["jobs_seed"], seed_jobs)
-    if response_missing(paths["responses_seed"]):
+    if response_incomplete(paths["responses_seed"], expected_rows=len(seed_jobs)):
         return stop_summary(
             work_dir=work_dir,
             status="pending_seed_responses",
             next_action=f"Run provider responses for {paths['jobs_seed']}",
             artifacts=paths,
-            counts={"seed_jobs": len(seed_jobs)},
+            counts={
+                "seed_jobs": len(seed_jobs),
+                "seed_response_rows": line_count(paths["responses_seed"]) if paths["responses_seed"].exists() else 0,
+            },
         )
 
     candidates, candidates_report = seed_outputs_to_candidates(seed_jobs, read_jsonl(paths["responses_seed"]))
@@ -276,7 +285,7 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
 
     ground_jobs = build_ground_truth_jobs(decontaminated, models=solver_models)
     write_jsonl(paths["jobs_ground_truth"], ground_jobs)
-    if response_missing(paths["responses_ground_truth"]):
+    if response_incomplete(paths["responses_ground_truth"], expected_rows=len(ground_jobs)):
         return stop_summary(
             work_dir=work_dir,
             status="pending_ground_truth_responses",
@@ -287,6 +296,9 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
                 "decontaminated": decontam_report["accepted"],
                 "contaminated": decontam_report["rejected"],
                 "ground_truth_jobs": len(ground_jobs),
+                "ground_truth_response_rows": line_count(paths["responses_ground_truth"])
+                if paths["responses_ground_truth"].exists()
+                else 0,
             },
         )
 
@@ -307,7 +319,7 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
     )
     write_jsonl(paths["jobs_reference_attempts"], reference_jobs)
     if response_missing(paths["reference_attempts"]):
-        if response_missing(paths["responses_reference_attempts"]):
+        if response_incomplete(paths["responses_reference_attempts"], expected_rows=len(reference_jobs)):
             return stop_summary(
                 work_dir=work_dir,
                 status="pending_reference_attempt_responses",
@@ -317,6 +329,9 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
                     "verified": verified_report["verified"],
                     "ground_truth_rejected": verified_report["rejected"],
                     "reference_attempt_jobs": len(reference_jobs),
+                    "reference_attempt_response_rows": line_count(paths["responses_reference_attempts"])
+                    if paths["responses_reference_attempts"].exists()
+                    else 0,
                 },
             )
         reference_attempts, reference_attempts_report = reference_outputs_to_attempts(
@@ -368,7 +383,10 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
     perturbation_jobs = build_perturbation_jobs(with_false, models=solver_models)
     write_jsonl(paths["jobs_methods"], method_jobs)
     write_jsonl(paths["jobs_perturbation"], perturbation_jobs)
-    if response_missing(paths["responses_methods"]) or (perturbation_jobs and response_missing(paths["responses_perturbation"])):
+    if response_incomplete(paths["responses_methods"], expected_rows=len(method_jobs)) or response_incomplete(
+        paths["responses_perturbation"],
+        expected_rows=len(perturbation_jobs),
+    ):
         return stop_summary(
             work_dir=work_dir,
             status="pending_method_or_perturbation_responses",
@@ -380,6 +398,10 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
                 "false_answers": false_report["with_false_answer"],
                 "method_jobs": len(method_jobs),
                 "perturbation_jobs": len(perturbation_jobs),
+                "method_response_rows": line_count(paths["responses_methods"]) if paths["responses_methods"].exists() else 0,
+                "perturbation_response_rows": line_count(paths["responses_perturbation"])
+                if paths["responses_perturbation"].exists()
+                else 0,
             },
         )
 
@@ -407,11 +429,14 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
     write_jsonl(paths["jobs_depth"], depth_jobs)
     write_jsonl(paths["jobs_error_detection"], error_detection_jobs)
     required_judgment_missing = (
-        response_missing(paths["responses_naturalness"])
-        or response_missing(paths["responses_distinctness"])
-        or response_missing(paths["responses_depth"])
+        response_incomplete(paths["responses_naturalness"], expected_rows=len(naturalness_jobs))
+        or response_incomplete(paths["responses_distinctness"], expected_rows=len(distinctness_jobs))
+        or response_incomplete(paths["responses_depth"], expected_rows=len(depth_jobs))
     )
-    optional_error_missing = error_detection_jobs and response_missing(paths["responses_error_detection"])
+    optional_error_missing = response_incomplete(
+        paths["responses_error_detection"],
+        expected_rows=len(error_detection_jobs),
+    )
     if required_judgment_missing or (args.require_error_detection and optional_error_missing):
         return stop_summary(
             work_dir=work_dir,
@@ -429,6 +454,16 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
                 "distinctness_jobs": len(distinctness_jobs),
                 "depth_jobs": len(depth_jobs),
                 "error_detection_jobs": len(error_detection_jobs),
+                "naturalness_response_rows": line_count(paths["responses_naturalness"])
+                if paths["responses_naturalness"].exists()
+                else 0,
+                "distinctness_response_rows": line_count(paths["responses_distinctness"])
+                if paths["responses_distinctness"].exists()
+                else 0,
+                "depth_response_rows": line_count(paths["responses_depth"]) if paths["responses_depth"].exists() else 0,
+                "error_detection_response_rows": line_count(paths["responses_error_detection"])
+                if paths["responses_error_detection"].exists()
+                else 0,
             },
         )
 
