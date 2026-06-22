@@ -235,6 +235,39 @@ This writes fake raw responses, intermediate collection files, typed records,
 and positive SFT rows. It should produce one `wide` typed record and two
 `positive_wide` SFT rows.
 
+For real API work, prefer the resumable artifact driver over manually chaining
+each command in a notebook:
+
+```bash
+python training/run_curriculum_pipeline_from_artifacts.py \
+  --work_dir data/curriculum/run_001 \
+  --seed_models opus-strong,glm-strong \
+  --solver_models opus-strong,glm-strong \
+  --judge_models opus-strong,glm-strong \
+  --domains math \
+  --difficulties medium,hard \
+  --target_steps 4,8 \
+  --count_per_combo 2 \
+  --references_jsonl eval/smoke_exact_tasks_v2.jsonl \
+  --references_jsonl eval/smoke_mcq_tasks.jsonl
+```
+
+The driver never calls a provider. It writes the next `jobs_*.jsonl`, checks for
+the corresponding `responses_*.jsonl`, and stops with a `status` and
+`next_action` in `summary.json`. After an API runner fills the missing response
+file, run the same command again. The stop points are:
+
+- `pending_seed_responses`
+- `pending_ground_truth_responses`
+- `pending_reference_attempts`
+- `pending_method_or_perturbation_responses`
+- `pending_judgment_responses`
+- `complete`
+
+On completion it writes `typed_records.jsonl` and `positive_sft.jsonl`. This is
+the preferred Colab loop because it is restart-safe and burns no GPU while
+waiting on API/provider artifacts.
+
 Seed problem-generation jobs:
 
 ```bash

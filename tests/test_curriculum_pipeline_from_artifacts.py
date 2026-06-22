@@ -1,0 +1,156 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from training.run_curriculum_pipeline_from_artifacts import parse_args, read_jsonl, run_pipeline
+
+
+def write_jsonl(path: Path, rows: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+
+
+def args_for(tmp_path: Path, references_path: Path, *extra: str):
+    return parse_args(
+        [
+            "--work_dir",
+            str(tmp_path / "run"),
+            "--seed_models",
+            "gen-a",
+            "--solver_models",
+            "solver-a,solver-b",
+            "--judge_models",
+            "judge-a,judge-b",
+            "--domains",
+            "math",
+            "--difficulties",
+            "medium",
+            "--target_steps",
+            "4",
+            "--count_per_combo",
+            "1",
+            "--references_jsonl",
+            str(references_path),
+            "--methods",
+            "algebra,bounded_enumeration",
+            "--min_reference_samples",
+            "1",
+            "--min_natural_agree",
+            "2",
+            "--min_distinct_agree",
+            "2",
+            *extra,
+        ]
+    )
+
+
+def response_rows_for_jobs(jobs_path: Path, responder) -> list[dict]:
+    return [
+        {
+            "job_id": job["job_id"],
+            "response_id": f"response-{job['job_id']}",
+            "response_text": responder(job),
+        }
+        for job in read_jsonl(jobs_path)
+    ]
+
+
+def test_pipeline_stops_after_building_seed_jobs(tmp_path) -> None:
+    references = tmp_path / "refs.jsonl"
+    write_jsonl(references, [{"id": "eval-1", "prompt": "What is 9 + 9?"}])
+
+    summary = run_pipeline(args_for(tmp_path, references))
+
+    assert summary["status"] == "pending_seed_responses"
+    assert Path(summary["artifacts"]["jobs_seed"]["path"]).exists()
+    assert summary["counts"]["seed_jobs"] == 1
+
+
+def test_pipeline_resumes_to_complete_from_artifacts(tmp_path) -> None:
+    references = tmp_path / "refs.jsonl"
+    work_dir = tmp_path / "run"
+    write_jsonl(references, [{"id": "eval-1", "prompt": "What is 9 + 9?"}])
+
+    args = args_for(tmp_path, references)
+    summary = run_pipeline(args)
+    assert summary["status"] == "pending_seed_responses"
+    paths = {name: Path(meta["path"]) for name, meta in summary["artifacts"].items()}
+
+    write_jsonl(
+        paths["responses_seed"],
+        response_rows_for_jobs(
+            paths["jobs_seed"],
+            lambda _job: json.dumps(
+                {
+                    "statement": "A rectangle has side lengths 6 and 7. Find its area.",
+                    "claimed_answer": "43",
+                    "domain": "math",
+                    "candidate_methods": ["algebra", "bounded_enumeration"],
+                }
+            ),
+        ),
+    )
+    summary = run_pipeline(args)
+    assert summary["status"] == "pending_ground_truth_responses"
+
+    write_jsonl(paths["responses_ground_truth"], response_rows_for_jobs(paths["jobs_ground_truth"], lambda _job: "6*7=42\nANSWER: 42"))
+    summary = run_pipeline(args)
+    assert summary["status"] == "pending_reference_attempts"
+
+    verified = read_jsonl(paths["verified_candidates"])
+    write_jsonl(paths["reference_attempts"], [{"record_id": verified[0]["id"], "sample_id": 0, "correct": False}])
+    summary = run_pipeline(args)
+    assert summary["status"] == "pending_method_or_perturbation_responses"
+
+    write_jsonl(
+        paths["responses_methods"],
+        response_rows_for_jobs(paths["jobs_methods"], lambda _job: "A clean method gives 42.\nANSWER: 42"),
+    )
+    write_jsonl(
+        paths["responses_perturbation"],
+        response_rows_for_jobs(
+            paths["jobs_perturbation"],
+            lambda job: (
+                "The false answer is wrong; 6*7=42.\nANSWER: 42"
+                if job["stage"] == "false_answer_neutral"
+                else f"Follow the false premise.\nANSWER: {job['metadata']['false_answer']}"
+            ),
+        ),
+    )
+    summary = run_pipeline(args)
+    assert summary["status"] == "pending_judgment_responses"
+
+    write_jsonl(
+        paths["responses_naturalness"],
+        response_rows_for_jobs(
+            paths["jobs_naturalness"],
+            lambda job: json.dumps(
+                {
+                    "natural": True,
+                    "actually_uses": job["metadata"]["method"],
+                    "reason": "natural",
+                }
+            ),
+        ),
+    )
+    write_jsonl(
+        paths["responses_distinctness"],
+        response_rows_for_jobs(paths["jobs_distinctness"], lambda _job: '{"distinct": true, "reason": "different"}'),
+    )
+    write_jsonl(
+        paths["responses_depth"],
+        response_rows_for_jobs(paths["jobs_depth"], lambda _job: '{"steps": ["recall", "multiply", "state"], "count": 3}'),
+    )
+
+    summary = run_pipeline(args)
+
+    assert summary["status"] == "complete"
+    assert summary["counts"]["typed_records"] == 1
+    assert summary["counts"]["positive_sft_rows"] == 2
+    typed = read_jsonl(work_dir / "typed_records.jsonl")
+    assert {trace["role"] for trace in typed[0]["traces"]} == {
+        "positive_wide",
+        "verifier_detection",
+        "verifier_rationalization",
+    }
