@@ -29,7 +29,10 @@ validates.
 
 ## Model Roles
 
-Use at least two strong non-Qwen models in separate roles where possible:
+Use at least two strong non-Qwen models in separate roles where possible. The
+specific provider ids are mutable configuration, for example current strong
+GPT-, Claude/Opus-, or GLM-class models, but the resolved ids must be audited
+and must not be the student base, its adapters, or Qwen-family descendants.
 
 - Generators produce candidate problems and raw traces.
 - Solvers independently derive answers for ground truth.
@@ -40,8 +43,7 @@ Use at least two strong non-Qwen models in separate roles where possible:
   `--min_distinct_agree 2`). Generated-curriculum SFT is blocked if the typed
   record report shows weaker judge agreement.
 
-Avoid using the student base, its adapters, or its teacher lineage as data
-generators. We want curriculum signal, not leakage from the model family we are
+We want curriculum signal, not leakage from the model family we are
 evaluating.
 
 ## Pipeline

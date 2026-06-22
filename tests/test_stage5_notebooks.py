@@ -170,6 +170,19 @@ def test_current_a100_action_points_to_safe_continue_routing_repair() -> None:
     assert "do **not** run GPQA" in text
 
 
+def test_runbooks_prefer_guarded_current_action_over_legacy_autopilot() -> None:
+    arc_plan = (ROOT / "docs/ARC_AGI_PROGRESS_PLAN.md").read_text(encoding="utf-8")
+    staged = (ROOT / "colab/STAGED_NOTEBOOKS.md").read_text(encoding="utf-8")
+
+    assert "prefer the maintained\ncurrent-action path" in arc_plan
+    assert "colab/CURRENT_A100_BOOTSTRAP_CELL.py" in arc_plan
+    assert "legacy\nARC-AGI-specific branch runner" in arc_plan
+    assert "For overnight runs, prefer `colab/run_stage5_arc_agi_autopilot.py`" not in arc_plan
+    assert "For unattended A100 time under the current low-credit policy" in staged
+    assert "STAGE5_CURRENT_A100_TARGET=safe_continue_execute" in staged
+    assert "older\n   `colab/run_stage5_arc_agi_autopilot.py` remains available only" in staged
+
+
 def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     text = (ROOT / "colab/STAGE5_SAFE_CONTINUE_CELL.md").read_text(encoding="utf-8")
     plain = (ROOT / "colab/STAGE5_SAFE_CONTINUE_CELL.py").read_text(encoding="utf-8")

@@ -195,9 +195,14 @@ The older split notebooks are kept only as references:
    also evaluates a disjoint synthetic holdout, configured by
    `STAGE5_ARC_AGI_SYNTHETIC_EVAL_TASKS`, so we can see whether program-trace
    training generalizes inside the taught operation family.
-   For unattended A100 time, run `colab/run_stage5_arc_agi_autopilot.py`
-   instead; it branches through those gates with explicit thresholds and writes
-   one decision report.
+   For unattended A100 time under the current low-credit policy, use
+   `colab/CURRENT_A100_BOOTSTRAP_CELL.py` with
+   `STAGE5_CURRENT_A100_TARGET=safe_continue_execute`, or run
+   `colab/run_stage5_colab_continue.py` inside the already-attached runtime.
+   These maintained paths run the current go/no-go guard, execute one
+   allowlisted planner action by default, write summaries, and stop. The older
+   `colab/run_stage5_arc_agi_autopilot.py` remains available only when the
+   planner or run card explicitly selects that ARC-AGI branch.
    To keep a live A100 session moving after any Stage 5 result lands, run
    `colab/run_stage5_colab_continue.py`. It prints GPU state, runs focused
    Stage 5 tests including the Gate 1 assessor and next-action executor, runs

@@ -38,13 +38,17 @@ not enough evidence for positive SFT.
 ## Model Roles
 
 Use at least two strong, diverse, non-Qwen models for generation and judging.
-Examples include models in the GPT, Claude/Opus, and GLM families. Do not use
-the student base, the student lineage, or close Qwen-derived teachers such as
-Qwen, QwQ, QvQ, or reuploaded Jackrong-style descendants as generators for
-this dataset.
+Examples include current strong GPT-, Claude/Opus-, and GLM-class provider
+models supplied through concrete model ids. Do not use the student base, the
+student lineage, or close Qwen-derived teachers such as Qwen, QwQ, QvQ, or
+reuploaded Jackrong-style descendants as generators for this dataset.
 This restriction is enforced both when jobs are built and when API jobs resolve
 logical names through `--model_map_json`, so a safe logical name such as
 `opus-strong` cannot silently map to a Qwen-family model for generation.
+Treat provider model names as mutable configuration, not as labels in the
+dataset. The record should preserve the resolved provider id for audit, but
+training logic must depend on verified answers, measured mode, and role labels,
+not on the provider's self-description.
 
 - `generator`: proposes problems and candidate methods.
 - `solver`: independently solves each problem for ground truth.

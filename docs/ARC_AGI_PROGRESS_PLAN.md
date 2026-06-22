@@ -353,19 +353,33 @@ inside `training/train_phase1_ponder.py`. Run
 `colab/run_stage5_arc_agi_distill_sft_gate.py` to compare the selected ARC SFT
 recipe with distillation off versus on.
 
-For overnight runs, prefer `colab/run_stage5_arc_agi_autopilot.py`. It always
-runs the candidate gate, then proceeds to trace-SFT when symbolic coverage and
-hybrid best-of-K deltas clear thresholds, then proceeds to distillation when
-trace-SFT matches or beats grid-only SFT. Thresholds:
+For low-credit or unattended paid-GPU continuation, prefer the maintained
+current-action path:
+
+```bash
+python colab/run_stage5_colab_continue.py
+```
+
+or, from a blank Colab notebook, the guarded bootstrap in
+`colab/CURRENT_A100_BOOTSTRAP_CELL.py`. These paths run the current go/no-go
+guard, execute one allowlisted planner action by default, summarize, commit
+safe text artifacts, and stop. They are the right default when A100 credits are
+tight or when a result needs review before the next GPU job.
+
+`colab/run_stage5_arc_agi_autopilot.py` remains available as a legacy
+ARC-AGI-specific branch runner. Use it only when the planner or the run card
+explicitly selects that branch. It runs the candidate gate, then proceeds to
+trace-SFT when symbolic coverage and hybrid best-of-K deltas clear thresholds,
+then proceeds to distillation when trace-SFT matches or beats grid-only SFT.
+Thresholds:
 
 - `STAGE5_ARC_AGI_AUTOPILOT_MIN_SYMBOLIC_EXACT` default `1`;
 - `STAGE5_ARC_AGI_AUTOPILOT_MIN_HYBRID_BEST_DELTA` default `0`;
 - `STAGE5_ARC_AGI_AUTOPILOT_MIN_TRACE_BEST_DELTA` default `0`.
 
 For credit-saving continuation, run `colab/run_stage5_colab_continue.py` with
-no profile override. The default now executes one allowlisted planner action,
-summarizes, commits safe text artifacts, and stops. Use this mode when A100
-credits are tight or when a result needs review before the next GPU job.
+no profile override. The default executes one allowlisted planner action,
+summarizes, commits safe text artifacts, and stops.
 
 For the maintained multi-step continuation path, set
 `STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE=same_recipe` before running
