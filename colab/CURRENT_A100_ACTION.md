@@ -1,120 +1,84 @@
-# Current A100 Action
+# Current GPU Action
 
 ## Preferred Launch Path
 
-Use the bootstrap cell from a normal Drive-backed or blank Colab notebook:
+Use the safe-continue cell from a normal Drive-backed or blank Colab notebook:
 
-[`colab/STAGE5_ARC_MIX_BOOTSTRAP_CELL.py`](STAGE5_ARC_MIX_BOOTSTRAP_CELL.py)
+[`colab/STAGE5_SAFE_CONTINUE_CELL.md`](STAGE5_SAFE_CONTINUE_CELL.md)
 
-Keep the runtime disconnected while editing the cell. Select an A100 runtime
-only immediately before running that one cell.
+Keep the runtime disconnected while editing the cell. Attach an L4/T4 if
+available; use A100 only if that is the practical available runtime. This is a
+diagnostic eval, not a training run.
 
-This is currently the most reliable path because private GitHub-backed Colab
-notebooks can pause on GitHub authorization or popup-blocker prompts before the
-runtime is even useful.
+Set:
 
-## Optional GitHub-Colab Notebook
+```python
+RUN_A100_ACTION = True
+```
 
-Open the current single-purpose Colab notebook:
-
-[09_stage5_arc_mix_recovery_once.ipynb](https://colab.research.google.com/github/mshapiro123/recurrent-qwen-svgd/blob/main/colab/09_stage5_arc_mix_recovery_once.ipynb)
-
-If Colab shows `Colab is waiting for authorization from GitHub`, a blocked
-popup, or any GitHub-private-repo authorization problem, **do not connect an
-A100 runtime**. Use the bootstrap cell above instead.
-
-Use an A100 runtime only when you intentionally want to spend one bounded proxy
-run. The notebook should:
-
-1. pull the latest `main` from GitHub;
-2. authenticate GitHub and Hugging Face from Colab secrets;
-3. mount Google Drive;
-4. print the A100 go/no-go report;
-5. install dependencies only after go/no-go allows the proxy;
-6. run `colab/run_stage5_arc_mix_recovery_once.py`;
-7. print the planner's next action from the new ARC-mix `summary.json`;
-8. push safe text artifacts through the delegated runner;
-9. disconnect the runtime when complete or when setup fails.
+only when you intentionally want the guarded action to execute. The cell pulls
+latest GitHub, authenticates GitHub/Hugging Face, mounts Drive when needed,
+runs the go/no-go guard, executes one allowlisted action, backs up/commits safe
+artifacts, and disconnects by default.
 
 ## Source Summary
 
-```text
-outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json
-```
-
-Current source result:
+The current source of truth is the failed ARC-mix recovery proxy:
 
 ```text
-status = needs_competence_recovery
-ARC-Easy:       recurrent 415/570, base 421/570, delta -6
-ARC-Challenge:  recurrent 164/299, base 167/299, delta -3
-Combined:       recurrent 579/869, base 588/869, delta -9
+outputs/stage5/stage5_arc_mix_recovery_once_20260622_030628/summary.json
 ```
+
+Key result:
+
+```text
+status = no_proxy_lift
+decision = stop_and_revise_objective
+best proxy = 66/128
+base proxy = 68/128
+start proxy = 68/128
+margin delta vs base = -0.308232
+```
+
+This means: do **not** extend ARC-mix training and do **not** run GPQA,
+Phase 2/SVGD, or scale-up. The next useful paid-GPU action is a small routing
+diagnostic.
 
 ## Experiment
 
-Run exactly one ARC-mix recovery proxy:
+Run exactly one bounded depth/width routing diagnostic:
+
+```bash
+python colab/run_stage5_routing_diagnostic.py
+```
+
+Default limits:
 
 ```text
-STAGE5_ARC_MIX_ARMS=arc_mix_response_w01_lr2e6
-STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT=2
-STAGE5_ARC_MIX_ARC_EASY_REPEAT=4
-STAGE5_ARC_MIX_ARC_EVAL_LIMIT=128
-STAGE5_ARC_MIX_OPUS_LIMIT=3000
-STAGE5_ARC_MIX_MIN_MARGIN_DELTA=-0.05
-STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT=16
+STAGE5_ROUTING_ARC_EASY_LIMIT=64
+STAGE5_ROUTING_ARC_CHALLENGE_LIMIT=64
+STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS=1
+```
+
+The runner restores the recovered deterministic Phase 1 checkpoint from Drive
+if needed, delegates to `colab/run_stage5_benchmark_suite.py`, then writes:
+
+```text
+outputs/stage5/<run_id>/benchmark_summary.json
+outputs/stage5/<run_id>/routing_assessment.json
+outputs/stage5/<run_id>/routing_assessment.md
 ```
 
 ## How To Interpret The Result
 
-New ARC-mix summaries include a machine-readable `decision` field.
+The routing assessment has a machine-readable `status`:
 
-| Decision | Meaning | Next action |
+| Status | Meaning | Next action |
 |---|---|---|
-| `run_full_balanced_assessment` | Proxy improved or matched base while preserving calibration. | Run exactly one full balanced ARC confirmation. |
-| `stop_for_calibration_repair` | Proxy accuracy moved but answer calibration degraded. | Stop A100; revise objective/data locally. |
-| `stop_and_revise_objective` | Proxy did not improve the recurrent start or close the base gap. | Stop A100; revise objective/data locally. |
+| `needs_direct_halting_repair` | Direct/base-confident rows drift or over-loop. | Train Phase 1 direct-mode recovery with base-logit distillation and shallow halt supervision. |
+| `needs_deep_narrow_recovery` | Direct rows look acceptable but deep/numeric rows do not improve. | Train Phase 1 deep-narrow recovery with repulsion off and non-collapsed halt-depth targets. |
+| `routing_diagnostic_pass` | Small diagnostic found no direct/deep blocker. | Consider a larger confirmation or the bounded direct/deep recovery ladder. |
 
-Do not run GPQA, Phase 2/SVGD, dataset audits, or model scaling from this
-state.
-
-The notebook output should now include a final ARC-mix result review after the
-proxy runner finishes. If that section says anything other than
-`Next A100 spend: YES: run exactly one full balanced ARC confirmation.`, keep
-the A100 shut down and do the next repair locally.
-
-## Fully Expanded Cell If Bootstrap Fetch Fails
-
-If the short bootstrap cell cannot fetch from GitHub, use the fully expanded
-cell. It avoids opening a private GitHub notebook through Colab and still uses
-GitHub only from inside a normal Colab Python cell via the
-`GH_TOKEN`/`GITHUB_TOKEN` Colab secret.
-
-1. Open any trusted Drive-backed Colab notebook or a blank notebook.
-2. Keep the runtime disconnected while editing the cell.
-3. Copy the fully expanded cell from
-   [`colab/STAGE5_ARC_MIX_RECOVERY_CELL.py`](STAGE5_ARC_MIX_RECOVERY_CELL.py),
-   or from the fenced code block in
-   [`colab/STAGE5_ARC_MIX_RECOVERY_CELL.md`](STAGE5_ARC_MIX_RECOVERY_CELL.md).
-4. Select an A100 runtime only immediately before running that single cell.
-5. Run no other cells in that runtime.
-
-The fallback cell performs the same no-waste sequence: clone or update the repo,
-mount Drive, run the A100 go/no-go check before installing dependencies, run
-exactly one `arc_mix_response_w01_lr2e6` proxy when allowed, print the
-post-proxy review, push safe text artifacts, and disconnect on failure or
-completion.
-
-For a clean local review after the notebook pushes artifacts, run:
-
-```bash
-python colab/review_stage5_arc_mix_result.py \
-  --summary outputs/stage5/<arc_mix_run_id>/summary.json
-```
-
-It prints whether another paid full balanced assessment is justified. The only
-acceptable "continue spending" answer is:
-
-```text
-Next A100 spend: YES: run exactly one full balanced ARC confirmation.
-```
+This diagnostic is the bridge from the failed generic ARC-mix proxy to the new
+depth/width curriculum. It tells us which part of the recurrent model to train
+next instead of spending A100 on another undifferentiated continuation.

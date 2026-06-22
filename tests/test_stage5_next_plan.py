@@ -52,6 +52,36 @@ def test_failed_candidate_distillation_recommends_baseline_curriculum(tmp_path) 
     assert "RUN_CANDIDATE_DISTILL_GATE=0" in actions[0]["command"]
 
 
+def test_failed_arc_mix_recommends_routing_diagnostic(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    payload = {
+        "kind": "stage5_balanced_arc_mix_gate",
+        "status": "no_proxy_lift",
+        "decision": "stop_and_revise_objective",
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run bounded depth/width routing diagnostic"
+    assert "python colab/run_stage5_routing_diagnostic.py" in actions[0]["command"]
+
+
+def test_arc_mix_calibration_warning_recommends_routing_diagnostic(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    payload = {
+        "kind": "stage5_balanced_arc_mix_gate",
+        "status": "proxy_lift_calibration_warning",
+        "decision": "stop_for_calibration_repair",
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run bounded depth/width routing diagnostic"
+    assert "direct-mode loop depth" in actions[0]["reason"]
+
+
 def test_generic_candidate_distillation_pass_adds_selector_exact_gate(tmp_path) -> None:
     source = tmp_path / "summary.json"
     payload = {
@@ -1974,9 +2004,10 @@ def test_balanced_arc_mix_decision_blocks_calibration_warning(tmp_path) -> None:
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Inspect ARC-mix calibration warning `proxy_lift`"
+    assert actions[0]["name"] == "Run bounded depth/width routing diagnostic"
     assert "failed calibration" in actions[0]["reason"]
     assert "run_stage5_recovery_full_assessment.py" not in actions[0]["command"]
+    assert "python colab/run_stage5_routing_diagnostic.py" in actions[0]["command"]
 
 
 def test_recovery_full_assessment_nonnegative_runs_broader_benchmarks(tmp_path) -> None:
@@ -2044,8 +2075,8 @@ def test_balanced_arc_mix_failed_inspects_summary(tmp_path) -> None:
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Inspect ARC-mix proxy gate `no_proxy_lift`"
-    assert actions[0]["command"].startswith("cat ")
+    assert actions[0]["name"] == "Run bounded depth/width routing diagnostic"
+    assert "python colab/run_stage5_routing_diagnostic.py" in actions[0]["command"]
 
 
 def test_balanced_arc_mix_calibration_warning_does_not_run_full_assessment(tmp_path) -> None:
@@ -2059,9 +2090,9 @@ def test_balanced_arc_mix_calibration_warning_does_not_run_full_assessment(tmp_p
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Inspect ARC-mix proxy gate `proxy_lift_calibration_warning`"
+    assert actions[0]["name"] == "Run bounded depth/width routing diagnostic"
     assert "run_stage5_recovery_full_assessment.py" not in actions[0]["command"]
-    assert actions[0]["command"].startswith("cat ")
+    assert "python colab/run_stage5_routing_diagnostic.py" in actions[0]["command"]
 
 
 def test_benchmark_suite_assessment_passed_builds_claim_packet(tmp_path) -> None:

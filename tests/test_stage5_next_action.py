@@ -218,6 +218,16 @@ def test_parse_action_command_allows_benchmark_suite_runner() -> None:
     assert parsed.argv == [sys.executable, "colab/run_stage5_benchmark_suite.py"]
 
 
+def test_parse_action_command_allows_routing_diagnostic_runner() -> None:
+    parsed = parse_action_command(
+        "STAGE5_ROUTING_DIAGNOSTIC_RUN_ID=route python colab/run_stage5_routing_diagnostic.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_ROUTING_DIAGNOSTIC_RUN_ID": "route"}
+    assert parsed.argv == [sys.executable, "colab/run_stage5_routing_diagnostic.py"]
+
+
 def test_parse_action_command_allows_reasoning_dataset_audit_runner() -> None:
     parsed = parse_action_command(
         "STAGE5_DATASET_AUDIT_RUN_ID=audit python colab/run_stage5_reasoning_dataset_audit.py"
@@ -371,6 +381,54 @@ def test_a100_guard_skips_local_assessment_actions() -> None:
 
     assert guard["checked"] is False
     assert guard["allowed"] is True
+
+
+def test_a100_guard_allows_bounded_routing_diagnostic(tmp_path) -> None:
+    checkpoint = tmp_path / "outputs" / "stage5" / "run" / "phase1" / "phase1_step_1.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"test")
+    source = tmp_path / "summary.json"
+    source.write_text(
+        '{"kind": "stage5_balanced_arc_mix_gate", '
+        '"status": "no_proxy_lift", '
+        f'"selected_checkpoint": "{checkpoint.as_posix()}"'
+        "}",
+        encoding="utf-8",
+    )
+    action = {
+        "name": "Run bounded depth/width routing diagnostic",
+        "command": "python colab/run_stage5_routing_diagnostic.py",
+    }
+    parsed = parse_action_command(action["command"])
+
+    guard = a100_execution_guard(action, {"source_summary": str(source)}, parsed)
+
+    assert guard["checked"] is True
+    assert guard["allowed"] is True
+    assert guard["status"] == "go_routing_diagnostic"
+    assert guard["spend_class"] == "bounded_routing_diagnostic"
+
+
+def test_a100_guard_allows_routing_diagnostic_after_calibration_warning(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    source.write_text(
+        '{"kind": "stage5_balanced_arc_mix_gate", '
+        '"status": "no_proxy_lift", '
+        '"best_arm": {"best_checkpoint": {"comparison_to_base": {"calibration_ok": false}}}}',
+        encoding="utf-8",
+    )
+    action = {
+        "name": "Run bounded depth/width routing diagnostic",
+        "command": "python colab/run_stage5_routing_diagnostic.py",
+    }
+    parsed = parse_action_command(action["command"])
+
+    guard = a100_execution_guard(action, {"source_summary": str(source)}, parsed)
+
+    assert guard["checked"] is True
+    assert guard["allowed"] is True
+    assert guard["status"] == "go_routing_diagnostic"
+    assert guard["checkpoint_preflight"]["reason"] == "Routing diagnostic restores its own recovered Phase 1 checkpoint."
 
 
 def test_local_only_guard_blocks_dataset_audit_on_gpu(monkeypatch) -> None:

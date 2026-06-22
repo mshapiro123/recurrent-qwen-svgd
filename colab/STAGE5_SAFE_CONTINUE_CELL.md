@@ -30,7 +30,7 @@ RUN_A100_ACTION = False
 DISCONNECT_RUNTIME_WHEN_DONE = True
 
 SOURCE_SUMMARY = (
-    "outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json"
+    "outputs/stage5/stage5_arc_mix_recovery_once_20260622_030628/summary.json"
 )
 GO_NO_GO_RUN_ID = "stage5_safe_continue_go_no_go"
 

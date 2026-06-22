@@ -163,12 +163,14 @@ Treat A100 time as the scarce experimental reagent. The default answer to
 5. it is not a dataset audit, unit test, notebook repair, README edit, or
    exploratory script-debugging task.
 
-Right now there is exactly one plausible A100-worthy job, and it is **not**
-automatic: one bounded ARC-mix proxy with stronger response distillation, after
-reviewing the local diagnosis. The full balanced assessment from
-`outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json`
-failed, so dataset inspection, Hugging Face trace triage, planner repairs,
-documentation, and diagnosis should stay local or on a free CPU runtime.
+Right now there is exactly one plausible GPU job, and it is **diagnostic rather
+than training**: a bounded ARC-Easy / ARC-Challenge routing diagnostic with loop
+telemetry. The ARC-mix continuation from
+`outputs/stage5/stage5_arc_mix_recovery_once_20260622_030628/summary.json`
+failed to improve the recurrent start and worsened margin calibration, so
+another undifferentiated ARC-mix run is not justified. Dataset inspection,
+Hugging Face trace triage, planner repairs, documentation, and diagnosis should
+stay local or on a free CPU runtime.
 The maintained next-action wrapper refuses long CPU/data-only dataset actions
 on an attached GPU runtime by default, so an A100 session does not sit idle
 while a Hugging Face audit runs.
@@ -177,7 +179,7 @@ Before attaching or keeping an A100, run the no-GPU spend check:
 
 ```bash
 python colab/check_stage5_a100_go_no_go.py \
-  --source-summary outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json
+  --source-summary outputs/stage5/stage5_arc_mix_recovery_once_20260622_030628/summary.json
 ```
 
 Proceed only when it reports `go_bounded_proxy`, `go_full_confirmation`, or
@@ -252,7 +254,7 @@ ARC-Challenge: base 167/299, recurrent 169/299, delta +2
 Combined:      base 588/869, recurrent 581/869, delta -7
 ```
 
-The follow-up low-credit ARC-mix recovery proxy then improved the recurrent
+The follow-up low-credit ARC-mix recovery proxy first improved the recurrent
 start and matched base:
 
 ```text
@@ -283,34 +285,35 @@ The local diagnostic report is:
 outputs/stage5/stage5_full_assessment_once_20260622_005522/mcq_regression_diagnosis.md
 ```
 
-The next A100 job should be **paused by default**. If we intentionally spend
-one more bounded proxy run, paste the short bootstrap cell from
-[`colab/STAGE5_ARC_MIX_BOOTSTRAP_CELL.py`](colab/STAGE5_ARC_MIX_BOOTSTRAP_CELL.py)
-into a normal Drive-backed or blank Colab notebook, then attach A100 only
-immediately before running it. If the bootstrap fetch fails, use the fully
-expanded cell in
-[`colab/STAGE5_ARC_MIX_RECOVERY_CELL.md`](colab/STAGE5_ARC_MIX_RECOVERY_CELL.md).
-The launcher defaults to:
+The subsequent stronger ARC-mix proxy did **not** pass:
 
-```bash
-STAGE5_ARC_MIX_ONCE_SOURCE_SUMMARY=outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json
-STAGE5_ARC_MIX_ARMS=arc_mix_response_w01_lr2e6
+```text
+run_id = stage5_arc_mix_recovery_once_20260622_030628
+status = no_proxy_lift
+decision = stop_and_revise_objective
+base proxy = 68/128
+start proxy = 68/128
+best recurrent proxy = 66/128
+mean margin delta vs base = -0.308232
 ```
 
-The concise run card with the preferred bootstrap path and optional direct
-GitHub-Colab link is
+The next GPU job should therefore be a **bounded routing diagnostic**, not more
+training. Use the safe-continue cell from
+[`colab/STAGE5_SAFE_CONTINUE_CELL.md`](colab/STAGE5_SAFE_CONTINUE_CELL.md);
+with `RUN_A100_ACTION = True`, the planner now selects
+`python colab/run_stage5_routing_diagnostic.py`. Prefer L4/T4 for this
+diagnostic if available. Use A100 only when that is the practical runtime and
+the short run is intentional.
+
+The concise run card with the preferred safe-continue path is
 [`colab/CURRENT_A100_ACTION.md`](colab/CURRENT_A100_ACTION.md).
 
-This is a hypothesis-driven calibration-recovery proxy. It should run only
-after reviewing the diagnosis. The proxy gate now requires calibration to remain
-healthy before it can pass. If it lifts raw accuracy but reports
-`proxy_lift_calibration_warning` or `proxy_matches_base_calibration_warning`,
-stop and revise the objective/data mix locally instead of running another full
-A100 confirmation.
-New ARC-mix summaries also include an explicit `decision` field:
-`run_full_balanced_assessment` is the only decision that justifies the next
-paid confirmation run; `stop_for_calibration_repair` and
-`stop_and_revise_objective` are stop signs.
+The routing diagnostic emits `routing_assessment.json` and
+`routing_assessment.md`. Its statuses map directly to the new training recipe:
+`needs_direct_halting_repair` means train shallow direct-mode/base-logit
+recovery; `needs_deep_narrow_recovery` means train deterministic depth with
+repulsion off; `routing_diagnostic_pass` is the only result that justifies a
+larger confirmation or recovery ladder.
 
 Do not run GPQA, Phase 2/SVGD, or scale-up jobs before this deterministic
 recurrent recovery question is resolved.

@@ -158,6 +158,14 @@ def apply_checkpoint_guard(
     *,
     source_payload: dict[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
+    if decision.get("spend_class") == "bounded_routing_diagnostic":
+        return decision, {
+            "checkpoint": None,
+            "available": True,
+            "exists": False,
+            "drive_candidate_exists": None,
+            "reason": "Routing diagnostic restores its own recovered Phase 1 checkpoint.",
+        }
     checkpoint = checkpoint_availability(source_payload)
     if not decision.get("go"):
         return decision, checkpoint
@@ -192,6 +200,14 @@ def classify_action(
     command = str(action.get("command", ""))
     script = command_script(command)
     source_status = str(source_payload.get("status", "unknown"))
+
+    if script == "colab/run_stage5_routing_diagnostic.py":
+        return {
+            "go": True,
+            "status": "go_routing_diagnostic",
+            "spend_class": "bounded_routing_diagnostic",
+            "reason": "Planner recommends a bounded direct/deep routing diagnostic before further training.",
+        }
 
     if source_has_calibration_warning(source_payload):
         return {

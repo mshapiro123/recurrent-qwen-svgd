@@ -11,18 +11,16 @@ For the shortest current instruction, use
 [`CURRENT_A100_ACTION.md`](CURRENT_A100_ACTION.md). It includes the direct
 GitHub-Colab URL and the post-run stop/continue decisions.
 
-The active next action is **not** another immediate A100 run. The latest full
-balanced ARC assessment landed as
-`stage5_full_assessment_once_20260622_005522` and still reported
-`needs_competence_recovery`:
+The active next action is **not** more training. The latest ARC-mix recovery
+proxy landed as `stage5_arc_mix_recovery_once_20260622_030628` and reported
+`no_proxy_lift` with `decision = stop_and_revise_objective`:
 
-- ARC-Easy: recurrent `415/570`, base `421/570`, delta `-6`;
-- ARC-Challenge: recurrent `164/299`, base `167/299`, delta `-3`;
-- combined: recurrent `579/869`, base `588/869`, delta `-9`.
+- proxy base: `68/128`;
+- proxy start: `68/128`;
+- best recurrent proxy: `66/128`;
+- mean margin delta versus base: `-0.308232`.
 
-Review
-`outputs/stage5/stage5_full_assessment_once_20260622_005522/mcq_regression_diagnosis.md`
-before spending more credits. The default Colab entrypoint is
+The default Colab entrypoint is
 [`STAGE5_SAFE_CONTINUE_CELL.md`](STAGE5_SAFE_CONTINUE_CELL.md), which pulls the
 latest repo, runs the no-GPU go/no-go check, and dry-runs the guarded
 next-action path unless `RUN_A100_ACTION = True` is set in the cell. It now
@@ -32,20 +30,16 @@ want to keep the session attached. In dry-run or blocked states it also skips
 `pip install -r requirements.txt`, so a status check is mostly Git plus stdlib
 planner work.
 
-The optional next A100 job is one bounded ARC-mix proxy using stronger response
-distillation via
-[`STAGE5_ARC_MIX_RECOVERY_CELL.md`](STAGE5_ARC_MIX_RECOVERY_CELL.md), which now
-defaults to `arc_mix_response_w01_lr2e6`, checks go/no-go before installing
-dependencies, and disconnects after completion or setup failure.
-The same single-purpose entrypoint is available as
-[`09_stage5_arc_mix_recovery_once.ipynb`](09_stage5_arc_mix_recovery_once.ipynb)
-when you want to open a notebook directly from GitHub.
-After that notebook finishes and pushes artifacts, run
-`python colab/review_stage5_arc_mix_result.py --summary outputs/stage5/<run_id>/summary.json`
-locally or in a free runtime to get the exact stop/continue answer.
+The guarded action selected from that source is one bounded depth/width routing
+diagnostic via [`run_stage5_routing_diagnostic.py`](run_stage5_routing_diagnostic.py).
+It benchmarks ARC-Easy and ARC-Challenge with loop diagnostics enabled, writes
+`routing_assessment.json` / `routing_assessment.md`, and stops. Prefer L4/T4
+for this diagnostic if available; use A100 only when that is the available
+runtime and the short run is intentional.
 
-Do not use the generic continuation cell for this narrow gate unless you
-intentionally want the planner to choose a different action.
+Do not use the ARC-mix recovery cell again from this state. The next training
+run should be chosen only after the routing assessment identifies direct-mode
+halting repair versus deep-narrow recovery.
 
 If the ARC-mix review explicitly says a full confirmation is justified,
 [`STAGE5_FULL_ASSESSMENT_CELL.md`](STAGE5_FULL_ASSESSMENT_CELL.md) and

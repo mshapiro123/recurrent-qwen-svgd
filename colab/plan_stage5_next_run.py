@@ -1580,17 +1580,27 @@ def balanced_arc_mix_actions(payload: dict[str, Any], *, source_summary: Path) -
         reason = payload.get("blocked_reason") or "The ARC-mix proxy failed calibration-preservation checks."
         return [
             make_action(
-                f"Inspect ARC-mix calibration warning `{status}`",
-                f"{reason} Do not run a full paid assessment until answer-prior drift is repaired.",
-                f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                "Run bounded depth/width routing diagnostic",
+                f"{reason} Measure direct-mode loop depth, margin drift, and deep-numeric behavior before any further training.",
+                command_env(
+                    {
+                        "STAGE5_ROUTING_DIAGNOSTIC_RUN_ID": f"{RUN_ID}_routing_diagnostic",
+                    },
+                    "python colab/run_stage5_routing_diagnostic.py",
+                ),
                 10,
             )
         ]
     return [
         make_action(
-            f"Inspect ARC-mix proxy gate `{status}`",
-            "The competence-preserving proxy did not pass; inspect the ARC-mix summary before spending more GPU.",
-            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            "Run bounded depth/width routing diagnostic",
+            "The competence-preserving proxy did not pass; measure whether the failure is direct-mode over-looping, deep-narrow weakness, or both before spending on more training.",
+            command_env(
+                {
+                    "STAGE5_ROUTING_DIAGNOSTIC_RUN_ID": f"{RUN_ID}_routing_diagnostic",
+                },
+                "python colab/run_stage5_routing_diagnostic.py",
+            ),
             10,
         )
     ]
