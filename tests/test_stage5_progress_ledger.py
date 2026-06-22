@@ -951,9 +951,21 @@ def test_progress_ledger_prefers_passed_arc_mix_gate_over_newer_release_gate(tmp
 
 def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
+    capability = scan_root / "capability_ladder" / "summary.json"
     pipeline = scan_root / "curriculum_pipeline" / "summary.json"
     gate = scan_root / "curriculum_gate" / "summary.json"
     sft = scan_root / "curriculum_sft" / "summary.json"
+    _write(
+        capability,
+        {
+            "run_id": "capability",
+            "kind": "capability_ladder_curriculum_pipeline",
+            "work_dir": "data/curriculum/capability_ladder_001",
+            "status": "complete",
+            "next_action": "Run training/check_curriculum_sft_gate.py before any GPU fine-tuning.",
+            "counts": {"positive_sft_rows": 30, "mode_counts": {"direct": 12, "deep_narrow": 18}},
+        },
+    )
     _write(
         pipeline,
         {
@@ -992,17 +1004,20 @@ def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None
 
     statuses = payload["curriculum_statuses"]
     assert [row["kind"] for row in statuses] == [
+        "capability_ladder_curriculum_pipeline",
         "curriculum_sft_gate",
         "curriculum_pipeline_from_artifacts",
         "stage5_curriculum_sft",
     ]
-    assert statuses[0]["go"] is True
-    assert statuses[0]["positive_rows"] == 24
-    assert statuses[1]["next_action"].startswith("Review typed_records")
-    assert statuses[2]["train_rows"] == 21
-    assert statuses[2]["val_rows"] == 3
-    assert statuses[2]["mean_expected_loops"] == 2.5
-    assert statuses[2]["checkpoint"] == "outputs/stage5/sft/phase1/phase1_step_150.pt"
+    assert statuses[0]["positive_rows"] == 30
+    assert statuses[0]["next_action"].startswith("Run training/check_curriculum_sft_gate.py")
+    assert statuses[1]["go"] is True
+    assert statuses[1]["positive_rows"] == 24
+    assert statuses[2]["next_action"].startswith("Review typed_records")
+    assert statuses[3]["train_rows"] == 21
+    assert statuses[3]["val_rows"] == 3
+    assert statuses[3]["mean_expected_loops"] == 2.5
+    assert statuses[3]["checkpoint"] == "outputs/stage5/sft/phase1/phase1_step_150.pt"
     assert payload["recommended_next_plan_source"] == str(sft)
 
 
@@ -1060,6 +1075,35 @@ def test_progress_ledger_prefers_complete_curriculum_pipeline_over_older_benchma
     payload = scan_progress(scan_root, run_id="ledger")
 
     assert payload["recommended_next_plan_source"] == str(pipeline)
+
+
+def test_progress_ledger_prefers_complete_capability_ladder_over_older_benchmark_gate(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    benchmark = scan_root / "benchmark_gate" / "summary.json"
+    capability = scan_root / "capability_ladder" / "summary.json"
+    _write(
+        benchmark,
+        {
+            "run_id": "benchmark_gate",
+            "gate": "stage5_broader_benchmark_suite",
+            "status": "needs_benchmark_confirmation",
+        },
+    )
+    _write(
+        capability,
+        {
+            "run_id": "capability",
+            "kind": "capability_ladder_curriculum_pipeline",
+            "status": "complete",
+            "counts": {"positive_sft_rows": 30},
+        },
+    )
+    os.utime(benchmark, (2000, 2000))
+    os.utime(capability, (1000, 1000))
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["recommended_next_plan_source"] == str(capability)
 
 
 def test_progress_ledger_does_not_prefer_pending_curriculum_pipeline_over_benchmark_gate(tmp_path) -> None:
