@@ -319,6 +319,12 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     assert "colab/STAGE5_SAFE_CONTINUE_CELL.py" in plain
     assert '"programmatic_curriculum_cpu"' in plain
     assert "colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py" in plain
+    assert '"arc_challenge_mcq_debias_confirm"' in plain
+    assert "colab/STAGE5_ARC_CHALLENGE_MCQ_DEBIAS_CELL.py" in plain
+    assert "STAGE5_ARC_CHALLENGE_MCQ_DEBIAS_CELL_VERSION" in plain
+    assert "STAGE5_MCQ_DEBIAS_QUIET_EVAL" in plain
+    assert "STAGE5_MCQ_DEBIAS_RESUME_EXISTING" in plain
+    assert "STAGE5_MCQ_DEBIAS_PUSH" in plain
     assert "training/run_programmatic_curriculum_pipeline.py" in plain
     assert "colab/publish_stage5_curriculum_gate.py" in plain
     assert "Refusing to run CPU-only programmatic curriculum generation" in plain
@@ -348,6 +354,8 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     assert "preflight" in text
     assert "programmatic_curriculum_cpu" in text
     assert "safe_continue_execute" in text
+    assert "arc_challenge_mcq_debias_confirm" in text
+    assert "cyclic-permutation MCQ diagnostic" in text
 
 
 def test_current_a100_bootstrap_plain_cell_matches_markdown_code() -> None:
@@ -355,6 +363,22 @@ def test_current_a100_bootstrap_plain_cell_matches_markdown_code() -> None:
     plain_cell = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
 
     assert plain_cell == markdown_cell
+
+
+def test_arc_challenge_mcq_debias_cell_is_bounded_and_pushes_summary() -> None:
+    plain = (ROOT / "colab/STAGE5_ARC_CHALLENGE_MCQ_DEBIAS_CELL.py").read_text(encoding="utf-8")
+    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
+
+    assert "STAGE5_ARC_CHALLENGE_MCQ_DEBIAS_CELL_VERSION" in plain
+    assert 'env["STAGE5_MCQ_DEBIAS_ARC_CONFIG"] = "ARC-Challenge"' in plain
+    assert 'env["STAGE5_MCQ_DEBIAS_QUIET_EVAL"] = "1"' in plain
+    assert 'env["STAGE5_MCQ_DEBIAS_RESUME_EXISTING"] = "1"' in plain
+    assert 'env["STAGE5_MCQ_DEBIAS_PUSH"] = "1"' in plain
+    assert "colab/run_stage5_mcq_debias_diagnostic.py" in plain
+    assert "tests/test_mcq_debias.py" in plain
+    assert "tests/test_stage5_next_plan.py" in plain
+    assert "runtime.unassign()" in plain
+    assert "STAGE5_CURRENT_A100_TARGET=arc_challenge_mcq_debias_confirm" in current_action
 
 
 def test_drive_checkpoint_preflight_cell_is_cpu_only_and_single_purpose() -> None:

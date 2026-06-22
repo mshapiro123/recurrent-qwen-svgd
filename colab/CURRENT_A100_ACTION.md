@@ -17,6 +17,10 @@ guarded action is a bounded MCQ option-label debias diagnostic that re-scores
 the same ARC-Easy slice with bare labels, label-free option-content scoring,
 and cyclic option permutation. Do not run the direct-preservation fine-tune
 until this diagnostic shows that content degradation persists after debiasing.
+The completed ARC-Easy diagnostic now reports `selection_bias_likely`; the
+next bounded run is the same cyclic-permutation confirmation on ARC-Challenge.
+Use `STAGE5_CURRENT_A100_TARGET=arc_challenge_mcq_debias_confirm` in the
+bootstrap cell for that run.
 The bootstrap now auto-resumes from
 [`config/stage5_current_source_summary.txt`](../config/stage5_current_source_summary.txt)
 when that pointer exists and targets an available summary. To force a specific
@@ -127,6 +131,8 @@ for path in [
 ### Step 1: CPU-Only Programmatic Curriculum Gate
 
 Run this on a CPU Colab runtime. If the repo is already cloned in the notebook:
+Set `STAGE5_CURRENT_A100_TARGET=programmatic_curriculum_cpu`. This target
+refuses attached GPU runtimes by default.
 
 ```python
 import os

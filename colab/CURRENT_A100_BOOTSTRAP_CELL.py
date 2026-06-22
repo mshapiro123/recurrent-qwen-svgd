@@ -10,6 +10,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "programmatic_curriculum_cpu" - generate/publish the direct/deep curriculum gate on CPU.
 #   "safe_continue_dry_run" - fetch safe-continue but do not spend GPU.
 #   "safe_continue_execute" - fetch safe-continue and opt in to the guarded paid action.
+#   "arc_challenge_mcq_debias_confirm" - bounded no-training cyclic MCQ confirmation on ARC-Challenge.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 
@@ -75,6 +76,21 @@ TARGETS = {
             "colab/run_stage5_next_action.py",
         ],
         "env": {"STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "1"},
+    },
+    "arc_challenge_mcq_debias_confirm": {
+        "path": "colab/STAGE5_ARC_CHALLENGE_MCQ_DEBIAS_CELL.py",
+        "markers": [
+            "STAGE5_ARC_CHALLENGE_MCQ_DEBIAS_CELL_VERSION",
+            "ARC-Challenge",
+            "STAGE5_MCQ_DEBIAS_QUIET_EVAL",
+            "STAGE5_MCQ_DEBIAS_RESUME_EXISTING",
+            "STAGE5_MCQ_DEBIAS_PUSH",
+            "colab/run_stage5_mcq_debias_diagnostic.py",
+            "tests/test_mcq_debias.py",
+            "tests/test_stage5_next_plan.py",
+            "runtime.unassign",
+        ],
+        "env": {},
     },
 }
 

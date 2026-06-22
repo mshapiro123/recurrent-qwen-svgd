@@ -18,6 +18,14 @@ To run a dry safe-continue status check instead:
 Set `os.environ["STAGE5_CURRENT_A100_TARGET"] = "safe_continue_dry_run"` before
 running the bootstrap cell.
 
+To confirm the MCQ option-label/position-bias result on ARC-Challenge before
+spending on more training:
+
+Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
+"arc_challenge_mcq_debias_confirm"` before running the bootstrap cell. This
+target runs the bounded cyclic-permutation MCQ diagnostic, pushes the summary,
+and disconnects.
+
 To intentionally spend GPU on the guarded action after the preflight is green,
 select an A100/H100 runtime and set:
 
@@ -45,6 +53,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "programmatic_curriculum_cpu" - generate/publish the direct/deep curriculum gate on CPU.
 #   "safe_continue_dry_run" - fetch safe-continue but do not spend GPU.
 #   "safe_continue_execute" - fetch safe-continue and opt in to the guarded paid action.
+#   "arc_challenge_mcq_debias_confirm" - bounded no-training cyclic MCQ confirmation on ARC-Challenge.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 
@@ -110,6 +119,21 @@ TARGETS = {
             "colab/run_stage5_next_action.py",
         ],
         "env": {"STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "1"},
+    },
+    "arc_challenge_mcq_debias_confirm": {
+        "path": "colab/STAGE5_ARC_CHALLENGE_MCQ_DEBIAS_CELL.py",
+        "markers": [
+            "STAGE5_ARC_CHALLENGE_MCQ_DEBIAS_CELL_VERSION",
+            "ARC-Challenge",
+            "STAGE5_MCQ_DEBIAS_QUIET_EVAL",
+            "STAGE5_MCQ_DEBIAS_RESUME_EXISTING",
+            "STAGE5_MCQ_DEBIAS_PUSH",
+            "colab/run_stage5_mcq_debias_diagnostic.py",
+            "tests/test_mcq_debias.py",
+            "tests/test_stage5_next_plan.py",
+            "runtime.unassign",
+        ],
+        "env": {},
     },
 }
 
@@ -179,4 +203,5 @@ print(
 )
 print(f"Fetched {launcher_path} from {REPO}@{REF} ({RESOLVED_REF[:12]}) sha={payload.get('sha')} target={TARGET}", flush=True)
 exec(compile(code, launcher_path, "exec"))
+
 ```
