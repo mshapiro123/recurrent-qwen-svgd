@@ -167,6 +167,52 @@ def test_child_proxy_alignment_reads_legacy_data_field() -> None:
     assert module.child_proxy_alignment(profile, payload)["ok"] is True
 
 
+def test_update_current_source_summary_writes_relative_summary_pointer(monkeypatch, tmp_path) -> None:
+    import colab.run_stage5_routing_repair as module
+
+    root = tmp_path
+    pointer = root / "config" / "stage5_current_source_summary.txt"
+    summary = root / "outputs" / "stage5" / "repair" / "summary.json"
+    summary.parent.mkdir(parents=True)
+
+    monkeypatch.setattr(module, "ROOT", root)
+
+    written = module.update_current_source_summary(summary)
+
+    assert written == pointer
+    assert pointer.read_text(encoding="utf-8") == "outputs/stage5/repair/summary.json\n"
+
+
+def test_commit_results_stages_current_source_pointer(monkeypatch, tmp_path) -> None:
+    import colab.run_stage5_routing_repair as module
+
+    root = tmp_path
+    run_dir = root / "outputs" / "stage5" / "repair"
+    run_dir.mkdir(parents=True)
+    (run_dir / "summary.json").write_text("{}", encoding="utf-8")
+    pointer = root / "config" / "stage5_current_source_summary.txt"
+    pointer.parent.mkdir(parents=True)
+    pointer.write_text("outputs/stage5/repair/summary.json\n", encoding="utf-8")
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, *, env=None, check=True):
+        commands.append([str(item) for item in cmd])
+        return subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(module, "ROOT", root)
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+    monkeypatch.setattr(module, "PUSH_RESULTS", True)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    module.commit_results()
+
+    add_commands = [cmd for cmd in commands if cmd[:2] == ["git", "add"]]
+    assert add_commands
+    staged = {item for cmd in add_commands for item in cmd[3:]}
+    assert "outputs/stage5/repair/summary.json" in staged
+    assert "config/stage5_current_source_summary.txt" in staged
+
+
 def test_resolve_source_summary_finds_latest_routing_summary(monkeypatch, tmp_path) -> None:
     import colab.run_stage5_routing_repair as module
 
@@ -226,3 +272,6 @@ def test_main_writes_failure_summary_when_child_repair_fails(monkeypatch, tmp_pa
     assert payload["arc_mix_returncode"] == 9
     assert "child failed after GPU work" in payload["arc_mix_stdout_tail"]
     assert (run_dir / "repair_run" / "child.log").exists()
+    assert (root / "config" / "stage5_current_source_summary.txt").read_text(encoding="utf-8") == (
+        "outputs/stage5/repair/summary.json\n"
+    )

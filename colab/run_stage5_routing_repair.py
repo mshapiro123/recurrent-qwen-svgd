@@ -322,10 +322,27 @@ def is_safe_output_artifact(path: Path) -> bool:
         return False
 
 
+def current_source_summary_file() -> Path:
+    return ROOT / "config" / "stage5_current_source_summary.txt"
+
+
+def update_current_source_summary(summary_path: Path) -> Path:
+    """Advance the no-argument planner/go-no-go pointer to this repair result."""
+
+    pointer = current_source_summary_file()
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text(path_for_cli(summary_path) + "\n", encoding="utf-8")
+    return pointer
+
+
 def commit_results() -> None:
     if not PUSH_RESULTS:
         return
     files = sorted(path.relative_to(ROOT).as_posix() for path in RUN_DIR.rglob("*") if is_safe_output_artifact(path))
+    pointer = current_source_summary_file()
+    if pointer.exists():
+        files.append(pointer.relative_to(ROOT).as_posix())
+    files = sorted(set(files))
     if not files:
         print("No safe routing repair artifacts to commit.")
         return
@@ -339,7 +356,9 @@ def commit_results() -> None:
 
 
 def write_report(payload: dict[str, Any]) -> None:
-    write_json(RUN_DIR / "summary.json", payload)
+    summary_path = RUN_DIR / "summary.json"
+    write_json(summary_path, payload)
+    update_current_source_summary(summary_path)
     lines = [
         f"# Stage 5 Routing Repair - {RUN_ID}",
         "",
