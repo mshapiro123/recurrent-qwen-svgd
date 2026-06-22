@@ -153,6 +153,9 @@ def test_current_a100_action_points_to_safe_continue_routing_repair() -> None:
     assert "colab/CURRENT_A100_BOOTSTRAP_CELL.py" in text
     assert "STAGE5_CURRENT_A100_TARGET=programmatic_curriculum_cpu" in text
     assert "colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py" in text
+    assert "git/ref/heads/main" in text
+    assert "resolved_ref" in text
+    assert "Fetched stale bootstrap" in text
     assert "refuses attached GPU runtimes" in text
     assert "STAGE5_CURRENT_A100_TARGET=safe_continue_execute" in text
     assert "STAGE5_CURRENT_A100_SOURCE_SUMMARY" in text
@@ -308,6 +311,8 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     assert "checkpoint_preflight" in plain
     assert "mount_drive_for_paid_action" in plain
     assert "api.github.com/repos" in plain
+    assert "git/ref/heads" in plain
+    assert "RESOLVED_REF" in plain
     assert "cache_bust" in plain
     assert '"Cache-Control": "no-cache"' in plain
     assert "GH_TOKEN" in plain

@@ -123,6 +123,26 @@ if TARGET not in TARGETS:
 GH_TOKEN = secret("GH_TOKEN", "GITHUB_TOKEN")
 assert GH_TOKEN, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
 
+
+def github_json(url):
+    request = urllib.request.Request(
+        url,
+        headers={
+            "Authorization": f"Bearer {GH_TOKEN}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "Cache-Control": "no-cache",
+        },
+    )
+    with urllib.request.urlopen(request) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+ref_payload = github_json(
+    f"https://api.github.com/repos/{REPO}/git/ref/heads/{REF}?cache_bust={int(time.time())}"
+)
+RESOLVED_REF = ((ref_payload.get("object") or {}).get("sha") or REF).strip()
+
 selected = TARGETS[TARGET]
 if SOURCE_SUMMARY_OVERRIDE:
     os.environ["STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
@@ -137,23 +157,13 @@ for key, value in selected["env"].items():
 os.environ.setdefault("STAGE5_SAFE_CONTINUE_DISCONNECT", "1")
 
 launcher_path = selected["path"]
-url = f"https://api.github.com/repos/{REPO}/contents/{launcher_path}?ref={REF}&cache_bust={int(time.time())}"
-request = urllib.request.Request(
-    url,
-    headers={
-        "Authorization": f"Bearer {GH_TOKEN}",
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "Cache-Control": "no-cache",
-    },
-)
-with urllib.request.urlopen(request) as response:
-    payload = json.loads(response.read().decode("utf-8"))
+url = f"https://api.github.com/repos/{REPO}/contents/{launcher_path}?ref={RESOLVED_REF}&cache_bust={int(time.time())}"
+payload = github_json(url)
 
 code = base64.b64decode(payload["content"]).decode("utf-8")
 missing = [marker for marker in selected["markers"] if marker not in code]
 assert not missing, f"Fetched launcher is missing expected safety markers: {missing}"
 
-print(f"Fetched {launcher_path} from {REPO}@{REF} sha={payload.get('sha')} target={TARGET}", flush=True)
+print(f"Fetched {launcher_path} from {REPO}@{REF} ({RESOLVED_REF[:12]}) sha={payload.get('sha')} target={TARGET}", flush=True)
 exec(compile(code, launcher_path, "exec"))
 ```

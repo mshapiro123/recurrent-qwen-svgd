@@ -84,16 +84,35 @@ exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
 If the repo is not already cloned, use this paste-anywhere loader instead:
 
 ```python
-import base64, json, os, urllib.request
+import base64, json, os, time, urllib.request
 from google.colab import userdata
 
 os.environ["STAGE5_CURRENT_A100_TARGET"] = "programmatic_curriculum_cpu"
 token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
 assert token, "Add GH_TOKEN or GITHUB_TOKEN to Colab secrets."
-url = "https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py?ref=main"
-req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})
-payload = json.loads(urllib.request.urlopen(req).read().decode("utf-8"))
+
+headers = {
+    "Authorization": f"Bearer {token}",
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "Cache-Control": "no-cache",
+}
+
+def gh_json(url):
+    req = urllib.request.Request(url, headers=headers)
+    return json.loads(urllib.request.urlopen(req).read().decode("utf-8"))
+
+ref_payload = gh_json(
+    f"https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/git/ref/heads/main?cache_bust={int(time.time())}"
+)
+resolved_ref = ref_payload["object"]["sha"]
+payload = gh_json(
+    "https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/"
+    f"contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py?ref={resolved_ref}&cache_bust={int(time.time())}"
+)
 code = base64.b64decode(payload["content"]).decode("utf-8")
+print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12])
+assert "RESOLVED_REF" in code, "Fetched stale bootstrap; rerun this cell."
 exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
 ```
 
