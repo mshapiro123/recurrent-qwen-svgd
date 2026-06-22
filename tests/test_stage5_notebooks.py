@@ -63,6 +63,23 @@ def test_arc_mix_recovery_cell_is_single_purpose() -> None:
     assert "colab/run_stage5_colab_continue.py" not in text
 
 
+def test_arc_mix_recovery_notebook_is_single_purpose() -> None:
+    payload = notebook_payload("colab/09_stage5_arc_mix_recovery_once.ipynb")
+    text = "\n".join(str(cell.get("source", "")) for cell in payload.get("cells", []))
+
+    assert "colab/run_stage5_arc_mix_recovery_once.py" in text
+    assert "colab/check_stage5_a100_go_no_go.py" in text
+    assert "STAGE5_ARC_MIX_ONCE_AUTO_DISCONNECT" in text
+    assert "stage5_full_assessment_once_20260622_005522/summary.json" in text
+    assert "arc_mix_response_w01_lr2e6" in text
+    assert "drive.mount" in text
+    assert "colab/run_stage5_full_assessment_once.py" not in text
+    assert "colab/run_stage5_colab_continue.py" not in text
+    assert payload["cells"][0]["cell_type"] == "markdown"
+    assert payload["cells"][1]["cell_type"] == "code"
+    assert payload["metadata"]["colab"]["gpuType"] == "A100"
+
+
 def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     text = (ROOT / "colab/STAGE5_SAFE_CONTINUE_CELL.md").read_text(encoding="utf-8")
 

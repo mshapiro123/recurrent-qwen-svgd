@@ -27,6 +27,9 @@ The optional next A100 job is one bounded ARC-mix proxy using stronger response
 distillation via
 [`STAGE5_ARC_MIX_RECOVERY_CELL.md`](STAGE5_ARC_MIX_RECOVERY_CELL.md), which now
 defaults to `arc_mix_response_w01_lr2e6` and disconnects after completion.
+The same single-purpose entrypoint is available as
+[`09_stage5_arc_mix_recovery_once.ipynb`](09_stage5_arc_mix_recovery_once.ipynb)
+when you want to open a notebook directly from GitHub.
 
 Do not use the generic continuation cell for this narrow gate unless you
 intentionally want the planner to choose a different action.
