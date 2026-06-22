@@ -25,10 +25,13 @@ The current results are consistent with a real deep-versus-wide split:
   recurrent model spends latent computation on items where the base model should
   answer directly.
 
-The latest ARC-mix recovery proxy supports this caution. It did not produce a
-competence lift and worsened margin calibration. More generic ARC-mix SFT is not
-the next obvious answer; the next question is whether halting and routing are
-learning the right computation budget for the problem type.
+The latest ARC-mix recovery proxy supports this caution, but the most recent
+MCQ debias diagnostic adds an even sharper warning: bare `A/B/C/D` scoring can
+make the recurrent model look worse because recurrence amplifies option-label
+and position bias. More generic ARC-mix SFT is not the next obvious answer; the
+next question is whether the benchmark signal survives cyclic option
+permutation and then, only if it does, whether halting and routing are learning
+the right computation budget for the problem type.
 
 ## Four Training Modes
 
@@ -235,20 +238,22 @@ The dense baseline must be strong:
 
 Weak dense baselines do not test the architectural claim.
 
-## Immediate No-GPU Repair Work
+## Immediate Repair Work
 
-Before any more A100 spend:
+Before training:
 
-1. Add loop-depth diagnostics to the ARC MCQ reports, grouped by easy/direct
-   versus hard/deep slices.
-2. Inspect examples where base and recurrent start are correct but the latest
+1. Confirm ARC-Challenge with cyclic option-permutation scoring after the
+   ARC-Easy diagnostic reported `selection_bias_likely`.
+2. Add loop-depth diagnostics to ARC MCQ reports only after scoring is no longer
+   dominated by label/position artifacts.
+3. Inspect examples where base and recurrent start are correct but the latest
    ARC-mix continuation flips the answer.
-3. Tag or construct a small typed evaluation set with direct, deep, wide, and
+4. Tag or construct a small typed evaluation set with direct, deep, wide, and
    deep-plus-wide rows.
-4. Re-plan the next Phase 1 run as direct/deep recovery, not generic ARC-mix
-   continuation.
-5. Keep Phase 2/SVGD and scale-up deferred until deterministic routing is
-   healthy.
+5. Re-plan the next Phase 1 run as direct/deep recovery only if debiased MCQ
+   scoring still shows a material recurrent gap.
+6. Keep Phase 2/SVGD and scale-up deferred until deterministic routing is
+   healthy under the debiased metric.
 
 Current implementation status:
 
@@ -274,9 +279,9 @@ Current implementation status:
 The next GPU run should be bounded and diagnostic. Use an L4 or T4 for
 diagnostic-only benchmark scoring if it fits; reserve A100/H100 for training
 runs that have already passed a local measurement gate. The immediate useful
-GPU spend is a small Stage 5 MCQ eval with loop diagnostics enabled, followed by
-a direct/deep recovery Phase 1 run only if the diagnostics confirm that shallow
-direct rows are over-looping or drifting from base calibration.
+GPU spend is the ARC-Challenge cyclic MCQ debias confirmation. A direct/deep
+recovery Phase 1 run follows only if that diagnostic shows a real recurrent gap
+after option-label/position bias is controlled.
 
 ## Open Questions For Deep Research
 

@@ -268,7 +268,8 @@ ARC-Easy. The full assessment therefore correctly remains
 `needs_competence_recovery`.
 
 That checkpoint was superseded by a later proxy-selected full confirmation run
-that trailed base on both ARC-Easy and ARC-Challenge:
+that trailed base on both ARC-Easy and ARC-Challenge under bare-label MCQ
+scoring:
 
 ```text
 run_id = stage5_full_assessment_once_20260622_005522
@@ -278,17 +279,23 @@ ARC-Challenge: base 167/299, recurrent 164/299, delta -3
 Combined:      base 588/869, recurrent 579/869, delta -9
 ```
 
-The latest diagnosis points to answer-calibration drift, not merely inadequate
-reasoning traces: the recurrent checkpoint over-predicts `C`, under-predicts
-`A`, and lowers the correct-answer margin. This makes calibration-preserving
-recurrent recovery the next gate before GPQA, Phase 2/SVGD scaling, or model
-release.
+The follow-up diagnosis points to answer-calibration drift under the bare
+`A/B/C/D` readout. A newer debias diagnostic then showed that this drift is
+substantially confounded by MCQ option-label/position bias: on ARC-Easy, loop-4
+recurrent accuracy fell from `87/128` base to `82/128` under bare labels, but
+rose to `97/128` versus `96/128` base under cyclic option-permutation
+aggregation. The current gate is therefore not more training; it is to confirm
+the same debiased scoring on ARC-Challenge before deciding whether real content
+degradation remains.
 
-The newer strategic interpretation is that this drift may be a routing failure:
-the model is spending recurrent depth on direct/easy items where the base model
-should answer with little or no latent computation. Depth and width are separate
-control surfaces. The next recovery recipe should train deterministic depth and
-direct-mode halting before reintroducing particle width. See
+See [MCQ_DEBIAS_STATUS.md](MCQ_DEBIAS_STATUS.md).
+
+If the ARC-Challenge cyclic diagnostic still leaves a material recurrent gap,
+the newer strategic interpretation remains that recurrence may be over-spending
+depth on direct/easy items where the base model should answer with little or no
+latent computation. Depth and width are separate control surfaces. In that
+case, the next recovery recipe should train deterministic depth and direct-mode
+halting before reintroducing particle width. See
 [DEPTH_WIDTH_ROUTING_RECIPE.md](DEPTH_WIDTH_ROUTING_RECIPE.md).
 
 ## 6. What Has Not Been Shown Yet
@@ -309,8 +316,9 @@ research program before the competence-recovery and selector gates have passed.
 
 ## 7. Training Required To Surpass Base
 
-The next training recipe should prioritize deterministic recurrent recovery
-before further particle training:
+After the ARC-Challenge debias confirmation, the next training recipe should
+prioritize deterministic recurrent recovery before further particle training if
+and only if a real gap persists under debiased MCQ scoring:
 
 1. **Competence-preserving recurrent SFT.** Continue Phase 1 from the best
    balanced checkpoint using a mix of Opus traces, TraceInversion traces, and
@@ -344,6 +352,12 @@ the next gate needed for the paper-level claim, and stop whenever the next
 action would be exploratory, ambiguous, or repair-oriented. Dataset audits,
 notebook editing, GitHub/Drive fixes, documentation, and CPU-sized tests should
 not run on A100.
+
+The active paid-GPU gate is now measurement rather than training: run
+`STAGE5_CURRENT_A100_TARGET=arc_challenge_mcq_debias_confirm` to confirm
+whether the ARC-Easy `selection_bias_likely` result also holds on
+ARC-Challenge. This run is bounded, no-training, quiet/resumable, summary-only,
+and auto-disconnects.
 
 The prior full balanced ARC assessment reported `needs_competence_recovery`:
 the recurrent checkpoint slightly exceeded base on ARC-Challenge but trailed on

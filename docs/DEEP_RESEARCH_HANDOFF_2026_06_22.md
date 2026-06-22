@@ -1,15 +1,17 @@
-# Deep Research Handoff: Direct-Route Preservation Before More Mechanism
+# Deep Research Handoff: MCQ Debias Before Direct-Route Training
 
 ## Purpose
 
 This handoff is for the strategy/deep-research agent. It captures the current
-state after the latest Stage 5 ARC-mix preservation failure and frames the next
-questions around evidence rather than enthusiasm for any one mechanism.
+state after the latest Stage 5 ARC-mix preservation failure and the follow-up
+MCQ debias diagnostic. It frames the next questions around evidence rather than
+enthusiasm for any one mechanism.
 
 The project is still aimed at a compact recurrent-particle reasoning model, but
-the current blocker is simpler and more severe than SVGD geometry: the
-surgically recurrent model has not yet fully preserved the base model's direct
-answer behavior.
+the current blocker is even more basic than direct-route training: the apparent
+ARC direct-regression signal is confounded by multiple-choice option-label and
+position bias. Before we train to fix the recurrent model, we need to know
+whether the model is actually wrong or whether the scoring surface is wrong.
 
 ## Current Thesis
 
@@ -69,7 +71,7 @@ checkpoint showed:
 
 This is promising but not enough for a benchmark claim.
 
-### Latest Blocker: Answer-Prior Drift
+### Latest Blocker: MCQ Option-Prior Drift
 
 The latest conservative ARC-mix preservation probe failed to recover direct
 base behavior. The diagnosis artifact is:
@@ -95,30 +97,61 @@ The label prior shifted badly:
 The failed probe barely changed the inherited prior drift. The correct reading
 is not "train longer"; it is "the objective did not target the actual failure."
 
+The next diagnostic tested whether that failure is a genuine competence loss or
+a multiple-choice scoring artifact:
+
+```text
+outputs/stage5/stage5_mcq_debias_direct_20260622_194346/summary.json
+status = selection_bias_likely
+ARC config = ARC-Easy
+```
+
+Under bare `A/B/C/D` scoring, the loop-4 recurrent checkpoint trailed base by
+`-5`. Under cyclic option-permutation aggregation, it was `+1` versus base.
+The conservative best checkpoint was `-6` under bare labels and `0` under
+cyclic aggregation. This strongly suggests that repeated recurrent computation
+is amplifying a known MCQ option-label/position bias and that bare-label ARC
+results are not a sufficient training target.
+
 ## Current Best Next Experiment
 
-The next bounded GPU action is the direct-route preservation probe now wired
-into the planner:
+The next bounded GPU action is **not training**. It is the ARC-Challenge version
+of the same debias diagnostic:
 
-`colab/run_stage5_direct_preservation_probe.py`
+```text
+STAGE5_CURRENT_A100_TARGET=arc_challenge_mcq_debias_confirm
+```
 
 This experiment should:
 
-1. evaluate the recurrent checkpoint at `max_loops=1` and `max_loops=4`;
-2. filter ARC-Easy training rows to base-correct, high-margin examples;
-3. balance labels to counter the A/D answer-prior drift;
-4. train a small max-loops-1 continuation only if the loop-1 path already trails
-   base;
-5. use strong base-logit preservation and tiny learning rate;
-6. stop unless direct-route recovery is demonstrated.
+1. compare base and recurrent on ARC-Challenge;
+2. report bare-label, content-only, and cyclic option-permutation scores;
+3. push a summary artifact;
+4. disconnect the runtime;
+5. decide whether direct-route training is still warranted.
 
-This is intentionally narrow. It asks whether the recurrent model can recover
-the base model's direct route before spending more on depth, particles, GPQA, or
-scale-up.
+This is intentionally narrow. It asks whether the recurrent model really lost
+ARC competence or whether the apparent regression is mostly a measurement
+artifact. Direct-route preservation training comes next only if cyclic scoring
+still shows a material gap.
 
 ## Strategic Questions For Deep Research
 
-### 1. What is the right preservation objective?
+### 1. What is the right MCQ scoring policy?
+
+The research agent should treat this as the immediate question. Investigate
+whether all future MCQ benchmarks should report and gate on:
+
+- cyclic-permutation aggregated likelihood;
+- content-only likelihood as a secondary diagnostic;
+- prediction-count drift by label;
+- edge-minus-middle drift;
+- paired wins/losses against base.
+
+The key decision is whether cyclic scoring is the primary fair metric for ARC,
+GPQA-style tasks, and any future MCQ benchmark claims.
+
+### 2. What is the right preservation objective if a debiased gap remains?
 
 The current failure suggests answer CE alone, or mixed ARC SFT, is not enough.
 Investigate whether preservation needs one or more of:
@@ -131,9 +164,9 @@ Investigate whether preservation needs one or more of:
 - freezing or reducing LoRA updates that perturb coda/readout calibration.
 
 The key design goal is not just accuracy. It is base-like calibration on
-base-confident rows.
+base-confident rows under debiased scoring.
 
-### 2. Is the direct route distinct enough architecturally?
+### 3. Is the direct route distinct enough architecturally?
 
 The recurrent wrapper may need an explicit direct mode, not just a shallow
 halting prior. Questions:
@@ -148,7 +181,7 @@ halting prior. Questions:
 The research agent should propose ablations that identify where the direct
 route loses calibration.
 
-### 3. How should capability-ladder depth targets be built?
+### 4. How should capability-ladder depth targets be built?
 
 The promising curriculum is:
 
@@ -163,7 +196,7 @@ The agent should refine how to obtain the labels cheaply and how to avoid
 training on larger-model hallucinations. Stronger-model success is routing
 evidence, not proof.
 
-### 4. Which data sources belong in each lane?
+### 5. Which data sources belong in each lane?
 
 Opus/Fable/TraceInversion should not be mixed blindly. A useful split is:
 
@@ -179,7 +212,7 @@ Opus/Fable/TraceInversion should not be mixed blindly. A useful split is:
 Fable-style tool traces may be valuable later for wide or agentic trajectories,
 but they may confound direct ARC/GPQA recovery if used too early.
 
-### 5. When does model size become the bottleneck?
+### 6. When does model size become the bottleneck?
 
 Qwen 0.5B is probably a mechanism testbed, not the model that proves the
 frontier-tail thesis. The agent should reason about the earliest scale at which
@@ -192,7 +225,7 @@ the architecture can fairly show upside:
 The cost question matters: particles multiply runtime, so scale should happen
 only after preservation and depth routing are proven at 0.5B.
 
-### 6. What is the fair dense baseline?
+### 7. What is the fair dense baseline?
 
 The decisive experiment is not recurrent versus raw base only. It is:
 
@@ -204,7 +237,7 @@ The decisive experiment is not recurrent versus raw base only. It is:
 The agent should specify the minimal dense-control experiment that prevents us
 from attributing a training-recipe gain to the architecture.
 
-### 7. When should SVGD come back?
+### 8. When should SVGD come back?
 
 SVGD should re-enter after deterministic recurrent recovery clears direct-route
 preservation. The right question then is not raw diversity; it is:
@@ -221,15 +254,15 @@ repair and depth-ladder data construction.
 
 The most useful response would be a concrete plan for:
 
-1. direct-route preservation losses and ablations;
-2. a capability-ladder data builder using Qwen 0.5B/1.5B/3B comparisons plus
+1. MCQ scoring policy after cyclic ARC-Challenge confirmation;
+2. direct-route preservation losses and ablations if debiased gaps persist;
+3. a capability-ladder data builder using Qwen 0.5B/1.5B/3B comparisons plus
    answer verification;
-3. a minimal dense-control baseline;
-4. a decision gate for when to resume particles/SVGD;
-5. a compute-aware path from 0.5B to 1.5B or 3B.
+4. a minimal dense-control baseline;
+5. a decision gate for when to resume particles/SVGD;
+6. a compute-aware path from 0.5B to 1.5B or 3B.
 
 Do not recommend a large A100 run unless it directly answers one of these
-questions. The current high-value GPU run is the bounded direct-preservation
-probe; everything else should either be CPU-side data/eval work or a carefully
-gated follow-up.
-
+questions. The current high-value GPU run is the bounded ARC-Challenge MCQ
+debias confirmation; everything else should either be CPU-side data/eval work
+or a carefully gated follow-up.

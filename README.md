@@ -58,28 +58,32 @@ SVGD/kernel exploration while deterministic recurrent recovery is still below
 the release bar. Paid GPU is reserved for one bounded proxy or confirmation job
 at a time, followed by review.
 
-The latest workflow change makes this stricter: ARC-mix proxy gates now inspect
-paired margin movement and answer-prior drift, not just hit count. A proxy that
-lifts accuracy but lowers the correct-answer margin or shifts predictions too
-far is recorded as a calibration warning and should **not** trigger a full paid
-assessment. This is the direct fix for the prior failure where a cheap proxy
-matched base but the full balanced ARC run regressed.
+The latest workflow change makes this stricter: MCQ benchmark claims must now
+separate content competence from option-label/position bias. The ARC-Easy
+debias diagnostic at
+`outputs/stage5/stage5_mcq_debias_direct_20260622_194346/summary.json` reports
+`selection_bias_likely`: the loop-4 recurrent checkpoint looked worse under
+bare `A/B/C/D` scoring, but matched or slightly exceeded base after cyclic
+option-permutation aggregation. See
+[docs/MCQ_DEBIAS_STATUS.md](docs/MCQ_DEBIAS_STATUS.md).
 
 As of the current checkpoint, the follow-up ARC-mix recovery proxy matched base
-on the 128-row ARC-Challenge proxy, but the full balanced ARC-Easy /
-ARC-Challenge confirmation assessment did **not** generalize. The recurrent
-checkpoint remains behind base on both ARC-Easy and ARC-Challenge. The decision
-tree is intentionally narrow:
+on the 128-row ARC-Challenge proxy, but the older full balanced ARC-Easy /
+ARC-Challenge confirmation assessment did **not** generalize under bare-label
+scoring. That result is now treated as partially confounded until ARC-Challenge
+is re-measured with cyclic scoring. The decision tree is intentionally narrow:
 
 | Current evidence | Next GPU action |
 |---|---|
-| Full balanced ARC assessment trails base | Stop A100 work and revise the data/objective mix locally. |
-| A reviewed local diagnosis selects one bounded recovery proxy | Optionally run exactly one stronger-distillation ARC-mix proxy. |
+| ARC-Easy cyclic MCQ diagnostic closes the apparent recurrent gap | Run the same bounded cyclic diagnostic on ARC-Challenge. |
+| ARC-Challenge cyclic diagnostic also closes the gap | Standardize MCQ eval on debiased/permutation scoring before further claims. |
+| ARC-Challenge cyclic diagnostic leaves a material gap | Then run a bounded depth-1 preservation or bypass probe. |
 | Auth/Drive/GitHub/notebook failure | Disconnect runtime and repair locally. |
 
 Do not spend A100 credits on GPQA Diamond, Phase 2/SVGD scaling, 1.5B/3B
-models, or more kernel geometry until deterministic recurrent recovery is at
-least base-competitive on the balanced ARC suite.
+models, or more kernel geometry until the MCQ scoring confound is resolved and
+deterministic recurrent recovery is at least base-competitive under the
+debiased ARC metric.
 
 ## Manuscript Claim Status
 
@@ -96,12 +100,13 @@ The stronger claim is not yet established:
 > The recurrent or SVGD recurrent-particle model surpasses the unmodified base
 > Qwen 0.5B model on held-out reasoning benchmarks.
 
-That stronger claim requires additional training and assessment: deterministic
-recurrent recovery must first close the remaining ARC-Easy regression while
-preserving the ARC-Challenge gain; then Phase 2/SVGD or selector-converted
-particles must beat the recovered deterministic recurrent baseline. Until that
-lands, the paper should present the surpass-base result as the next experimental
-gate, not as a conclusion.
+That stronger claim requires additional training and assessment: first,
+bare-label MCQ results must be regenerated under cyclic/permutation scoring;
+then deterministic recurrent recovery must be at least base-competitive under
+that debiased metric; finally Phase 2/SVGD or selector-converted particles must
+beat the recovered deterministic recurrent baseline. Until that lands, the
+paper should present the surpass-base result as the next experimental gate, not
+as a conclusion.
 
 In paper language, the current manuscript is a methods-and-recovery paper with
 a pending benchmark-superiority claim. The additional training required to make
@@ -126,8 +131,10 @@ The implementation has three stages:
 For the current manuscript-style status, evidence, negative results, and next
 gates, see [docs/PROJECT_STATUS_PAPER.md](docs/PROJECT_STATUS_PAPER.md). The
 program-level strategy is tracked in [docs/PROGRAM_TRACK.md](docs/PROGRAM_TRACK.md).
-The current deep-research handoff, including the latest direct-route
-answer-prior blocker, is
+The MCQ scoring-confound note is in
+[docs/MCQ_DEBIAS_STATUS.md](docs/MCQ_DEBIAS_STATUS.md). The current
+deep-research handoff, including the direct-route preservation questions that
+remain relevant if debiased scoring still shows a gap, is
 [docs/DEEP_RESEARCH_HANDOFF_2026_06_22.md](docs/DEEP_RESEARCH_HANDOFF_2026_06_22.md).
 The no-GPU reasoning-trace data plan is in
 [docs/REASONING_TRACE_DATASETS.md](docs/REASONING_TRACE_DATASETS.md). The
@@ -142,7 +149,8 @@ model can be converted into a recurrent-depth architecture with exact one-pass
 identity preservation, stable learned halting, and recoverable benchmark
 competence under small-parameter adapter/controller training.
 
-Latest balanced ARC assessment for the selected recurrent checkpoint:
+Latest bare-label balanced ARC assessment for the selected recurrent
+checkpoint:
 
 | Benchmark | Base Qwen | Recurrent Phase 1 | Delta |
 |---|---:|---:|---:|
@@ -150,11 +158,11 @@ Latest balanced ARC assessment for the selected recurrent checkpoint:
 | ARC-Challenge | `167/299` | `164/299` | `-3` |
 | Combined | `588/869` | `579/869` | `-9` |
 
-The latest proxy-selected checkpoint therefore failed the confirmation gate.
-The local regression diagnosis shows answer-calibration drift: the recurrent
-checkpoint over-predicts `C`, under-predicts `A`, and lowers the correct-answer
-margin on both ARC-Easy and ARC-Challenge. Phase 2/SVGD work resumes only after
-deterministic recurrent recovery is competitive with base.
+The proxy-selected checkpoint failed the older bare-label confirmation gate.
+However, the newer ARC-Easy debias diagnostic shows that this style of MCQ
+measurement is confounded by option-label/position bias. Phase 2/SVGD work
+resumes only after the ARC-Challenge cyclic-scoring confirmation determines
+whether a real recurrent gap remains.
 
 ## Credit-Saving Research Rule
 
@@ -169,15 +177,14 @@ Treat A100 time as the scarce experimental reagent. The default answer to
    exploratory script-debugging task.
 
 Right now there is exactly one plausible GPU job, and it is **bounded
-direct-route preservation training**: a hard `max_loops=1` Phase 1 probe on
-base-correct, high-margin, label-balanced ARC-Easy rows with strong base-logit
-preservation. The latest answer-prior diagnosis at
-`outputs/stage5/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation/answer_prior_diagnosis.json`
-showed that the conservative ARC-mix branch still harms base-confident direct
-rows and inherits large answer-label prior drift, so GPQA, Phase 2/SVGD,
-wide-particle training, and scale-up remain premature. Dataset inspection,
-Hugging Face trace triage, planner repairs, documentation, and diagnosis should
-stay local or on a free CPU runtime.
+ARC-Challenge MCQ debias confirmation**, not training:
+`STAGE5_CURRENT_A100_TARGET=arc_challenge_mcq_debias_confirm`. The latest
+ARC-Easy diagnostic showed that the apparent recurrent regression largely
+disappears after cyclic option-permutation aggregation. Direct-route
+preservation training should wait until ARC-Challenge is measured the same way.
+GPQA, Phase 2/SVGD, wide-particle training, and scale-up remain premature.
+Dataset inspection, Hugging Face trace triage, planner repairs, documentation,
+and diagnosis should stay local or on a free CPU runtime.
 The maintained next-action wrapper refuses long CPU/data-only dataset actions
 on an attached GPU runtime by default, so an A100 session does not sit idle
 while a Hugging Face audit runs.
@@ -189,10 +196,10 @@ python colab/check_stage5_a100_go_no_go.py \
   --source-summary outputs/stage5/stage5_routing_diagnostic_20260622_041706/summary.json
 ```
 
-Proceed only when it reports `go_routing_repair`, `go_bounded_proxy`,
-`go_full_confirmation`, or another explicit `go_*` status that matches the
-planned spend. Treat `no_go`, `calibration_warning_no_go`, and inspection
-actions as stop signs.
+Proceed only when it reports an explicit `go_*` status that matches the planned
+spend, such as the bounded MCQ debias diagnostic or a later proven recovery
+action. Treat `no_go`, `calibration_warning_no_go`, and inspection actions as
+stop signs.
 The go/no-go check also verifies that the selected checkpoint is present
 locally or visible in the configured Drive artifact backup before it allows a
 paid GPU action. A missing checkpoint is a local/Drive repair task, not an
