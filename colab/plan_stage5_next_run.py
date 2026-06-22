@@ -134,6 +134,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or routing_repair_payload(payload) is not None
         or programmatic_depth_repair_payload(payload) is not None
         or programmatic_depth_assessment_payload(payload) is not None
+        or arc_mix_answer_prior_payload(payload) is not None
         or claim_readiness_payload(payload) is not None
         or arc_agi_baseline_registry_payload(payload) is not None
         or arc_agi_sota_comparison_payload(payload) is not None
@@ -352,6 +353,10 @@ def programmatic_depth_repair_payload(payload: dict[str, Any]) -> dict[str, Any]
 
 def programmatic_depth_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "stage5_programmatic_depth_assessment" else None
+
+
+def arc_mix_answer_prior_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_arc_mix_answer_prior_diagnosis" else None
 
 
 def claim_readiness_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -1810,6 +1815,18 @@ def balanced_arc_mix_best_checkpoint(payload: dict[str, Any]) -> str:
     return str(checkpoint or "")
 
 
+def conservative_direct_preservation_failed(payload: dict[str, Any]) -> bool:
+    """Detect the post-routing conservative preservation probe failure."""
+
+    if str(payload.get("decision", "")) != "stop_and_revise_objective":
+        return False
+    run_id = str(payload.get("run_id") or "")
+    if "conservative_direct_preservation" in run_id:
+        return True
+    arms = payload.get("arms") or []
+    return any(isinstance(arm, dict) and arm.get("arm") == "arc_mix_response_w05_lr1e6" for arm in arms)
+
+
 def balanced_full_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     assessment = balanced_assessment_payload(payload)
     status = str(assessment.get("status", payload.get("status", "unknown")))
@@ -1911,6 +1928,24 @@ def balanced_arc_mix_actions(payload: dict[str, Any], *, source_summary: Path) -
     status = str(payload.get("status", "unknown"))
     decision = str(payload.get("decision", ""))
     checkpoint = balanced_arc_mix_best_checkpoint(payload)
+    if conservative_direct_preservation_failed(payload):
+        return [
+            make_action(
+                "Run CPU answer-prior diagnosis for failed preservation probe",
+                (
+                    "The conservative direct-preservation ARC-mix probe did not close the base gap. "
+                    "Diagnose base-vs-start and base-vs-best answer-prior drift before spending more GPU."
+                ),
+                command_env(
+                    {
+                        "STAGE5_ARC_MIX_ANSWER_PRIOR_SOURCE_SUMMARY": path_for_cli(source_summary),
+                    },
+                    "python colab/analyze_stage5_arc_mix_answer_prior.py "
+                    '--source-summary "$STAGE5_ARC_MIX_ANSWER_PRIOR_SOURCE_SUMMARY"',
+                ),
+                10,
+            )
+        ]
     if decision == "run_full_balanced_assessment" or (
         not decision and status in {"proxy_lift", "proxy_matches_base"}
     ):
@@ -2278,6 +2313,31 @@ def programmatic_depth_assessment_actions(payload: dict[str, Any], *, source_sum
         make_action(
             f"Inspect programmatic depth assessment `{status}`",
             "The constructed-curriculum repair did not clear its no-GPU assessment; inspect before spending more.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
+def arc_mix_answer_prior_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    if status == "direct_answer_prior_not_preserved":
+        return [
+            make_action(
+                "Stop A100 and design direct-route preservation objective",
+                (
+                    "The conservative ARC-mix probe did not recover the base-confident direct bucket. "
+                    "Do not run another recurrent SFT sweep until the direct route can preserve base logits "
+                    "or hard-route max_loops=1 behavior on base-correct questions."
+                ),
+                f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect ARC-mix answer-prior diagnosis `{status}`",
+            "The answer-prior diagnosis is the current source of truth; inspect it before selecting another GPU action.",
             f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
             10,
         )
@@ -3088,6 +3148,9 @@ def plan_next_actions(
     programmatic_depth_assessment = programmatic_depth_assessment_payload(payload)
     if programmatic_depth_assessment:
         return programmatic_depth_assessment_actions(programmatic_depth_assessment, source_summary=source_summary)
+    arc_mix_answer_prior = arc_mix_answer_prior_payload(payload)
+    if arc_mix_answer_prior:
+        return arc_mix_answer_prior_actions(arc_mix_answer_prior, source_summary=source_summary)
     claim_readiness = claim_readiness_payload(payload)
     if claim_readiness:
         return claim_readiness_actions(claim_readiness, source_summary=source_summary)
@@ -3474,6 +3537,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "programmatic_depth_repair"
     if programmatic_depth_assessment_payload(payload):
         return "programmatic_depth_assessment"
+    if arc_mix_answer_prior_payload(payload):
+        return "arc_mix_answer_prior_diagnosis"
     if claim_readiness_payload(payload):
         return "claim_readiness"
     if arc_agi_baseline_registry_payload(payload):

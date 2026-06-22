@@ -2653,6 +2653,41 @@ def test_balanced_arc_mix_failed_inspects_summary(tmp_path) -> None:
     assert "python colab/run_stage5_routing_diagnostic.py" in actions[0]["command"]
 
 
+def test_conservative_direct_preservation_failure_runs_cpu_answer_prior_diagnosis(tmp_path) -> None:
+    source = tmp_path / "arc_mix" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_balanced_arc_mix_gate",
+        "run_id": "stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation",
+        "status": "no_proxy_lift",
+        "decision": "stop_and_revise_objective",
+        "arms": [{"arm": "arc_mix_response_w05_lr1e6"}],
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run CPU answer-prior diagnosis for failed preservation probe"
+    assert "python colab/analyze_stage5_arc_mix_answer_prior.py" in actions[0]["command"]
+    assert "run_stage5_routing_diagnostic.py" not in actions[0]["command"]
+    assert "run_stage5_balanced_arc_mix_gate.py" not in actions[0]["command"]
+
+
+def test_arc_mix_answer_prior_diagnosis_stops_gpu_work(tmp_path) -> None:
+    source = tmp_path / "arc_mix" / "answer_prior_diagnosis.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_arc_mix_answer_prior_diagnosis",
+        "status": "direct_answer_prior_not_preserved",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Stop A100 and design direct-route preservation objective"
+    assert "hard-route max_loops=1" in actions[0]["reason"]
+    assert actions[0]["command"].startswith("cat ")
+    assert "run_stage5_balanced_arc_mix_gate.py" not in actions[0]["command"]
+
+
 def test_balanced_arc_mix_calibration_warning_does_not_run_full_assessment(tmp_path) -> None:
     source = tmp_path / "arc_mix" / "summary.json"
     source.parent.mkdir()
