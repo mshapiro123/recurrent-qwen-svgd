@@ -18,7 +18,15 @@ def green_gate(work_dir: str = "data/curriculum/programmatic_direct_deep_001") -
         "status": "go_train_recurrent_sft",
         "work_dir": work_dir,
         "summary_json": f"{work_dir}/summary.json",
-        "checks": {"positive_sft": {"rows": 128}},
+        "checks": {
+            "positive_sft": {
+                "rows": 128,
+                "mode_requirements": {
+                    "direct": {"required": 64, "observed": 64, "passed": True},
+                    "deep_narrow": {"required": 64, "observed": 64, "passed": True},
+                },
+            }
+        },
         "artifacts": {"positive_sft": f"{work_dir}/positive_sft.jsonl"},
     }
 
@@ -60,6 +68,61 @@ def test_publish_gate_refuses_no_go_payload(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(module, "ROOT", root)
 
     with pytest.raises(ValueError, match="not green"):
+        module.publish_gate(
+            gate_json=gate,
+            gate_md=None,
+            published_dir=root / "outputs" / "stage5" / "published_gate",
+        )
+
+
+def test_publish_gate_refuses_missing_handoff_fields(monkeypatch, tmp_path) -> None:
+    import colab.publish_stage5_curriculum_gate as module
+
+    root = tmp_path
+    gate = root / "gate.json"
+    payload = green_gate()
+    payload.pop("work_dir")
+    write_json(gate, payload)
+    monkeypatch.setattr(module, "ROOT", root)
+
+    with pytest.raises(ValueError, match="missing work_dir"):
+        module.publish_gate(
+            gate_json=gate,
+            gate_md=None,
+            published_dir=root / "outputs" / "stage5" / "published_gate",
+        )
+
+
+def test_publish_gate_refuses_missing_mode_requirements(monkeypatch, tmp_path) -> None:
+    import colab.publish_stage5_curriculum_gate as module
+
+    root = tmp_path
+    gate = root / "gate.json"
+    payload = green_gate()
+    payload["checks"]["positive_sft"].pop("mode_requirements")
+    write_json(gate, payload)
+    monkeypatch.setattr(module, "ROOT", root)
+
+    with pytest.raises(ValueError, match="mode_requirements"):
+        module.publish_gate(
+            gate_json=gate,
+            gate_md=None,
+            published_dir=root / "outputs" / "stage5" / "published_gate",
+        )
+
+
+def test_publish_gate_refuses_failed_mode_requirement(monkeypatch, tmp_path) -> None:
+    import colab.publish_stage5_curriculum_gate as module
+
+    root = tmp_path
+    gate = root / "gate.json"
+    payload = green_gate()
+    payload["checks"]["positive_sft"]["mode_requirements"]["direct"]["observed"] = 63
+    payload["checks"]["positive_sft"]["mode_requirements"]["direct"]["passed"] = False
+    write_json(gate, payload)
+    monkeypatch.setattr(module, "ROOT", root)
+
+    with pytest.raises(ValueError, match="mode requirement"):
         module.publish_gate(
             gate_json=gate,
             gate_md=None,

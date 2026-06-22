@@ -48,6 +48,28 @@ def validate_gate_payload(payload: dict[str, Any], *, gate_json: Path) -> None:
         raise ValueError(f"{gate_json} is not green; refusing to publish no-go gate.")
     if payload.get("status") != "go_train_recurrent_sft":
         raise ValueError(f"{gate_json} status is not go_train_recurrent_sft.")
+    if not str(payload.get("work_dir") or "").strip():
+        raise ValueError(f"{gate_json} is missing work_dir; A100 preflight cannot restore the curriculum shard.")
+    if not str(payload.get("summary_json") or "").strip():
+        raise ValueError(f"{gate_json} is missing summary_json; A100 preflight cannot validate the curriculum shard.")
+    artifacts = payload.get("artifacts")
+    if not isinstance(artifacts, dict) or not str(artifacts.get("positive_sft") or "").strip():
+        raise ValueError(f"{gate_json} is missing artifacts.positive_sft; refusing unsafe current-source handoff.")
+
+    positive_sft = ((payload.get("checks") or {}).get("positive_sft") or {})
+    mode_requirements = positive_sft.get("mode_requirements")
+    if not isinstance(mode_requirements, dict) or not mode_requirements:
+        raise ValueError(f"{gate_json} is missing checks.positive_sft.mode_requirements.")
+    for mode, requirement in sorted(mode_requirements.items()):
+        if not isinstance(requirement, dict):
+            raise ValueError(f"{gate_json} mode requirement for {mode!r} is not an object.")
+        required = int(requirement.get("required") or 0)
+        observed = int(requirement.get("observed") or 0)
+        if required <= 0 or observed < required or requirement.get("passed") is not True:
+            raise ValueError(
+                f"{gate_json} mode requirement for {mode!r} is not passed: "
+                f"required={required} observed={observed} passed={requirement.get('passed')!r}."
+            )
 
 
 def current_source_summary_file() -> Path:
