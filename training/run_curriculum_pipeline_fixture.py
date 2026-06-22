@@ -1,0 +1,263 @@
+"""Run a no-API, no-GPU fixture through the full curriculum data pipeline.
+
+This is a regression smoke for the strong-model curriculum machinery. It uses
+synthetic provider responses to exercise the same stages a real API runner will
+use: jobs, raw responses, candidate collection, cross-model answer agreement,
+method-solution collection, naturalness/depth judgments, typed record assembly,
+and positive SFT export.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import shutil
+import sys
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from training.assemble_curriculum_records import assemble_curriculum_records
+from training.build_curriculum_generation_jobs import (
+    build_depth_jobs,
+    build_ground_truth_jobs,
+    build_method_solve_jobs,
+    build_naturalness_jobs,
+    build_seed_jobs,
+)
+from training.collect_curriculum_job_outputs import (
+    collect_depth_measurements,
+    collect_naturalness_judgments,
+    ground_truth_outputs_to_verified_candidates,
+    method_outputs_to_solution_candidates,
+    seed_outputs_to_candidates,
+)
+from training.prepare_curriculum_jsonl import convert_curriculum_records
+
+
+GENERATOR_MODEL = "opus-fixture"
+SOLVER_MODELS = ["opus-fixture", "glm-fixture"]
+JUDGE_MODELS = ["opus-fixture", "glm-fixture"]
+STATEMENT = "Find the area of a rectangle with side lengths 6 and 7."
+ANSWER = "42"
+METHODS = ["algebra", "bounded_enumeration"]
+
+
+def write_json(path: str | Path, payload: dict[str, Any]) -> None:
+    out = Path(path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def write_jsonl(path: str | Path, rows: list[dict[str, Any]]) -> None:
+    out = Path(path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open("w", encoding="utf-8") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
+def seed_responses(seed_jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "job_id": job["job_id"],
+            "response_id": f"response-{job['job_id']}",
+            "response_text": json.dumps(
+                {
+                    "statement": STATEMENT,
+                    "claimed_answer": ANSWER,
+                    "domain": "math",
+                    "candidate_methods": METHODS,
+                }
+            ),
+        }
+        for job in seed_jobs
+    ]
+
+
+def ground_truth_responses(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "job_id": job["job_id"],
+            "response_id": f"response-{job['job_id']}",
+            "response_text": "The area of a rectangle is length times width: 6 * 7 = 42.\nANSWER: 42",
+        }
+        for job in jobs
+    ]
+
+
+def method_solution_text(method: str) -> str:
+    if method == "algebra":
+        return "Use the area formula A = length * width. So A = 6 * 7 = 42.\nANSWER: 42"
+    return "Count 7 unit squares in each of 6 rows, giving 6 groups of 7: 42.\nANSWER: 42"
+
+
+def method_responses(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for job in jobs:
+        metadata = job.get("metadata") if isinstance(job.get("metadata"), dict) else {}
+        method = str(metadata.get("method") or "")
+        rows.append(
+            {
+                "job_id": job["job_id"],
+                "response_id": f"response-{job['job_id']}",
+                "response_text": method_solution_text(method),
+            }
+        )
+    return rows
+
+
+def naturalness_responses(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for job in jobs:
+        metadata = job.get("metadata") if isinstance(job.get("metadata"), dict) else {}
+        method = str(metadata.get("method") or "")
+        rows.append(
+            {
+                "job_id": job["job_id"],
+                "response_id": f"response-{job['job_id']}",
+                "response_text": json.dumps(
+                    {
+                        "natural": True,
+                        "actually_uses": method,
+                        "reason": "The solution uses the requested method directly.",
+                    }
+                ),
+            }
+        )
+    return rows
+
+
+def depth_for_method(method: str) -> tuple[list[str], int]:
+    if method == "algebra":
+        return ["Recall rectangle area formula.", "Multiply 6 by 7.", "State 42."], 3
+    return ["View the rectangle as rows.", "Count 7 cells per row.", "Count 6 rows.", "Multiply 6 by 7.", "State 42."], 5
+
+
+def depth_responses(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for job in jobs:
+        metadata = job.get("metadata") if isinstance(job.get("metadata"), dict) else {}
+        method = str(metadata.get("method") or "")
+        steps, count = depth_for_method(method)
+        rows.append(
+            {
+                "job_id": job["job_id"],
+                "response_id": f"response-{job['job_id']}",
+                "response_text": json.dumps({"steps": steps, "count": count}),
+            }
+        )
+    return rows
+
+
+def run_fixture_pipeline(output_dir: str | Path, *, overwrite: bool = False) -> dict[str, Any]:
+    out = Path(output_dir)
+    if out.exists() and overwrite:
+        shutil.rmtree(out)
+    out.mkdir(parents=True, exist_ok=True)
+
+    seed_jobs = build_seed_jobs(
+        models=[GENERATOR_MODEL],
+        domains=["math"],
+        difficulties=["medium"],
+        target_steps=[4],
+        count_per_combo=1,
+    )
+    seed_raw = seed_responses(seed_jobs)
+    candidates, candidates_report = seed_outputs_to_candidates(seed_jobs, seed_raw, mark_decontaminated=True)
+
+    ground_jobs = build_ground_truth_jobs(candidates, models=SOLVER_MODELS)
+    ground_raw = ground_truth_responses(ground_jobs)
+    verified, verified_report = ground_truth_outputs_to_verified_candidates(
+        candidates,
+        ground_jobs,
+        ground_raw,
+        mark_decontaminated=True,
+    )
+
+    method_jobs = build_method_solve_jobs(verified, models=SOLVER_MODELS, fallback_methods=METHODS)
+    method_raw = method_responses(method_jobs)
+    method_solutions, method_report = method_outputs_to_solution_candidates(verified, method_jobs, method_raw)
+
+    natural_jobs = build_naturalness_jobs(method_solutions, models=JUDGE_MODELS)
+    natural_raw = naturalness_responses(natural_jobs)
+    naturalness, naturalness_report = collect_naturalness_judgments(method_solutions, natural_jobs, natural_raw)
+
+    depth_jobs = build_depth_jobs(method_solutions, models=JUDGE_MODELS)
+    depth_raw = depth_responses(depth_jobs)
+    depth, depth_report = collect_depth_measurements(method_solutions, depth_jobs, depth_raw)
+
+    records, records_report = assemble_curriculum_records(
+        verified,
+        method_solutions,
+        naturalness,
+        depth,
+        min_natural_agree=2,
+        deep_threshold=5,
+    )
+    sft_rows, sft_report = convert_curriculum_records(records)
+
+    artifacts: dict[str, Any] = {
+        "seed_jobs": seed_jobs,
+        "seed_responses": seed_raw,
+        "candidates": candidates,
+        "ground_truth_jobs": ground_jobs,
+        "ground_truth_responses": ground_raw,
+        "verified_candidates": verified,
+        "method_jobs": method_jobs,
+        "method_responses": method_raw,
+        "method_solution_candidates": method_solutions,
+        "naturalness_jobs": natural_jobs,
+        "naturalness_responses": natural_raw,
+        "naturalness_judgments": naturalness,
+        "depth_jobs": depth_jobs,
+        "depth_responses": depth_raw,
+        "depth_measurements": depth,
+        "typed_records": records,
+        "positive_sft": sft_rows,
+    }
+    reports: dict[str, Any] = {
+        "candidates": candidates_report,
+        "verified_candidates": verified_report,
+        "method_solutions": method_report,
+        "naturalness": naturalness_report,
+        "depth": depth_report,
+        "typed_records": records_report,
+        "positive_sft": sft_report,
+    }
+
+    for name, rows in artifacts.items():
+        write_jsonl(out / f"{name}.jsonl", rows)
+    for name, report in reports.items():
+        write_json(out / f"{name}_report.json", report)
+
+    summary = {
+        "output_dir": str(out),
+        "typed_records": len(records),
+        "positive_sft_rows": len(sft_rows),
+        "mode_counts": records_report["mode_counts"],
+        "reports": reports,
+    }
+    write_json(out / "summary.json", summary)
+    return summary
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output_dir", default="outputs/curriculum_fixture")
+    parser.add_argument("--overwrite", action="store_true")
+    args = parser.parse_args(argv)
+
+    summary = run_fixture_pipeline(args.output_dir, overwrite=args.overwrite)
+    print(f"output_dir={summary['output_dir']}")
+    print(f"typed_records={summary['typed_records']}")
+    print(f"positive_sft_rows={summary['positive_sft_rows']}")
+    print(f"mode_counts={summary['mode_counts']}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

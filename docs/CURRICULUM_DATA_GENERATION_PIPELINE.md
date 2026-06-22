@@ -222,6 +222,19 @@ The job builder writes JSONL records with `stage`, `role`, `model`, `prompt`,
 `expects_json`, and metadata. It does not call any provider API and blocks Qwen
 or other student-lineage ids by default.
 
+Before running provider APIs, exercise the whole data path with the no-API
+fixture:
+
+```bash
+python training/run_curriculum_pipeline_fixture.py \
+  --output_dir outputs/curriculum_fixture \
+  --overwrite
+```
+
+This writes fake raw responses, intermediate collection files, typed records,
+and positive SFT rows. It should produce one `wide` typed record and two
+`positive_wide` SFT rows.
+
 Seed problem-generation jobs:
 
 ```bash
