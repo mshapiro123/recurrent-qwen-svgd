@@ -5,11 +5,15 @@
 Use the safe-continue cell from a normal Drive-backed or blank Colab notebook:
 
 [`colab/STAGE5_SAFE_CONTINUE_CELL.md`](STAGE5_SAFE_CONTINUE_CELL.md)
+or the directly fetchable plain cell
+[`colab/STAGE5_SAFE_CONTINUE_CELL.py`](STAGE5_SAFE_CONTINUE_CELL.py).
 
 If the runtime has reset or Drive authorization is stale, first run the cheap
 preflight cell on CPU or a low-cost runtime:
 
 [`colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.md`](STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.md)
+or
+[`colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.py`](STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.py).
 
 That cell mounts Drive, verifies the recovered deterministic Phase 1 checkpoint
 is visible, runs the A100 go/no-go guard, and disconnects. Only attach an

@@ -150,6 +150,8 @@ def test_current_a100_action_points_to_safe_continue_routing_repair() -> None:
     text = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
 
     assert "colab/STAGE5_SAFE_CONTINUE_CELL.md" in text
+    assert "colab/STAGE5_SAFE_CONTINUE_CELL.py" in text
+    assert "colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.py" in text
     assert "stage5_routing_diagnostic_20260622_041706/summary.json" in text
     assert "run_stage5_routing_repair.py" in text
     assert "needs_direct_halting_repair" in text
@@ -164,11 +166,16 @@ def test_current_a100_action_points_to_safe_continue_routing_repair() -> None:
 
 def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     text = (ROOT / "colab/STAGE5_SAFE_CONTINUE_CELL.md").read_text(encoding="utf-8")
+    plain = (ROOT / "colab/STAGE5_SAFE_CONTINUE_CELL.py").read_text(encoding="utf-8")
 
     assert "RUN_A100_ACTION = False" in text
+    assert "RUN_A100_ACTION = False" in plain
     assert "colab/check_stage5_a100_go_no_go.py" in text
+    assert "colab/check_stage5_a100_go_no_go.py" in plain
     assert "colab/run_stage5_next_action.py" in text
+    assert "colab/run_stage5_next_action.py" in plain
     assert 'env["STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE"] = "1" if execute_action else "0"' in text
+    assert 'env["STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE"] = "1" if execute_action else "0"' in plain
     assert "STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS" in text
     assert "Dry run complete" in text
     assert "DISCONNECT_RUNTIME_WHEN_DONE = True" in text
@@ -190,6 +197,13 @@ def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
         '"colab/check_stage5_a100_go_no_go.py"'
     )
     assert "colab/run_stage5_full_assessment_once.py" not in text
+
+
+def test_safe_continue_plain_cell_matches_markdown_code() -> None:
+    markdown_cell = fenced_python_block("colab/STAGE5_SAFE_CONTINUE_CELL.md")
+    plain_cell = (ROOT / "colab/STAGE5_SAFE_CONTINUE_CELL.py").read_text(encoding="utf-8")
+
+    assert plain_cell == markdown_cell
 
 
 def test_safe_continue_notebook_defaults_to_dry_run_and_guarded_action() -> None:
@@ -227,9 +241,11 @@ def test_safe_continue_notebook_defaults_to_dry_run_and_guarded_action() -> None
 def test_drive_checkpoint_preflight_cell_is_cpu_only_and_single_purpose() -> None:
     text = (ROOT / "colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.md").read_text(encoding="utf-8")
     code = fenced_python_block("colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.md")
+    plain = (ROOT / "colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.py").read_text(encoding="utf-8")
 
     assert "Run this in a CPU or cheap GPU Colab runtime before attaching an A100/H100." in text
     assert "GH_TOKEN" in code
+    assert "GH_TOKEN" in plain
     assert "GITHUB_TOKEN" in code
     assert "HF_TOKEN" in code
     assert "HUGGINGFACE_HUB_TOKEN" in code
@@ -247,6 +263,13 @@ def test_drive_checkpoint_preflight_cell_is_cpu_only_and_single_purpose() -> Non
     assert "colab/run_stage5_routing_repair.py" not in code
     assert "colab/run_stage5_full_assessment_once.py" not in code
     assert "training/train_phase" not in code
+
+
+def test_drive_checkpoint_preflight_plain_cell_matches_markdown_code() -> None:
+    markdown_cell = fenced_python_block("colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.md")
+    plain_cell = (ROOT / "colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.py").read_text(encoding="utf-8")
+
+    assert plain_cell == markdown_cell
 
 
 def test_curriculum_artifact_pipeline_cell_defaults_to_no_provider_spend() -> None:
