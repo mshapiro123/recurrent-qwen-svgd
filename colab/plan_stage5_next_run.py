@@ -34,6 +34,8 @@ RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
 RUN_DIR.mkdir(parents=True, exist_ok=True)
 
 SOURCE_SUMMARY = os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_SOURCE_SUMMARY", "")
+CURRENT_SOURCE_SUMMARY = os.environ.get("STAGE5_ARC_AGI_CURRENT_SOURCE_SUMMARY", "")
+CURRENT_SOURCE_SUMMARY_FILE = ROOT / "config" / "stage5_current_source_summary.txt"
 NEXT_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_NEXT_LIMIT", "100"))
 CONFIRM_LIMIT = parse_optional_limit(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_CONFIRM_LIMIT", "400"))
 FULL_SPLIT_AFTER_LIMIT = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_FULL_SPLIT_AFTER_LIMIT", "400"))
@@ -128,6 +130,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or recovery_full_assessment_payload(payload) is not None
         or balanced_mcq_assessment_payload(payload) is not None
         or balanced_arc_mix_payload(payload) is not None
+        or routing_diagnostic_payload(payload) is not None
         or claim_readiness_payload(payload) is not None
         or arc_agi_baseline_registry_payload(payload) is not None
         or arc_agi_sota_comparison_payload(payload) is not None
@@ -156,9 +159,41 @@ def latest_summary() -> Path:
     return sorted(candidates, key=lambda item: item.stat().st_mtime, reverse=True)[0]
 
 
+def configured_current_summary() -> Path | None:
+    """Return the committed/current Stage 5 source pointer when configured.
+
+    The output tree can contain older experiments with newer mtimes than the
+    intended current branch of work. This pointer keeps no-argument planner and
+    go/no-go runs aligned with ``colab/CURRENT_A100_ACTION.md`` while preserving
+    explicit CLI/env overrides.
+    """
+
+    raw = CURRENT_SOURCE_SUMMARY.strip()
+    if not raw and CURRENT_SOURCE_SUMMARY_FILE.exists():
+        for line in CURRENT_SOURCE_SUMMARY_FILE.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#"):
+                raw = stripped
+                break
+    if not raw:
+        return None
+    path = resolve_path(raw)
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Configured current Stage 5 source summary does not exist: {path_for_cli(path)}. "
+            "Update config/stage5_current_source_summary.txt or set STAGE5_ARC_AGI_NEXT_PLAN_SOURCE_SUMMARY."
+        )
+    payload = read_json(path)
+    if not looks_like_stage5_result(payload):
+        raise ValueError(f"Configured current Stage 5 source summary is not planner-readable: {path_for_cli(path)}")
+    return path
+
+
 def resolve_source_summary(source_summary: str | None = None) -> Path:
     explicit = source_summary or SOURCE_SUMMARY
-    return resolve_path(explicit) if explicit else latest_summary()
+    if explicit:
+        return resolve_path(explicit)
+    return configured_current_summary() or latest_summary()
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

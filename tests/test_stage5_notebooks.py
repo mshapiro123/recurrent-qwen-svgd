@@ -154,6 +154,7 @@ def test_current_a100_action_points_to_safe_continue_routing_repair() -> None:
     assert "STAGE5_CURRENT_A100_TARGET=safe_continue_execute" in text
     assert "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY" in text
     assert "STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY" in text
+    assert "config/stage5_current_source_summary.txt" in text
     assert "colab/STAGE5_SAFE_CONTINUE_CELL.md" in text
     assert "colab/STAGE5_SAFE_CONTINUE_CELL.py" in text
     assert "colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.py" in text

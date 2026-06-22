@@ -35,6 +35,66 @@ def _paired(delta: int, wins: int, losses: int, ties: int) -> dict[str, object]:
     }
 
 
+def _planner_readable_summary(path, *, status: str = "needs_direct_halting_repair") -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"kind": "stage5_routing_diagnostic_assessment", "status": status}),
+        encoding="utf-8",
+    )
+
+
+def test_resolve_source_summary_prefers_explicit_source_over_current_pointer(tmp_path, monkeypatch) -> None:
+    explicit = tmp_path / "explicit" / "summary.json"
+    current = tmp_path / "current" / "summary.json"
+    _planner_readable_summary(explicit)
+    _planner_readable_summary(current)
+    pointer = tmp_path / "stage5_current_source_summary.txt"
+    pointer.write_text(current.as_posix(), encoding="utf-8")
+
+    monkeypatch.setattr(planner, "CURRENT_SOURCE_SUMMARY", "")
+    monkeypatch.setattr(planner, "CURRENT_SOURCE_SUMMARY_FILE", pointer)
+
+    assert planner.resolve_source_summary(explicit.as_posix()) == explicit
+
+
+def test_resolve_source_summary_uses_current_pointer_before_mtime_latest(tmp_path, monkeypatch) -> None:
+    current = tmp_path / "current" / "summary.json"
+    latest = tmp_path / "outputs" / "stage5" / "newer_old_branch" / "summary.json"
+    _planner_readable_summary(current)
+    _planner_readable_summary(latest)
+    pointer = tmp_path / "stage5_current_source_summary.txt"
+    pointer.write_text(current.as_posix(), encoding="utf-8")
+
+    monkeypatch.setattr(planner, "CURRENT_SOURCE_SUMMARY", "")
+    monkeypatch.setattr(planner, "CURRENT_SOURCE_SUMMARY_FILE", pointer)
+    monkeypatch.setattr(planner, "ROOT", tmp_path)
+
+    assert planner.resolve_source_summary() == current
+
+
+def test_configured_current_summary_fails_loudly_when_pointer_is_missing(tmp_path, monkeypatch) -> None:
+    missing = tmp_path / "missing" / "summary.json"
+    pointer = tmp_path / "stage5_current_source_summary.txt"
+    pointer.write_text(missing.as_posix(), encoding="utf-8")
+
+    monkeypatch.setattr(planner, "CURRENT_SOURCE_SUMMARY", "")
+    monkeypatch.setattr(planner, "CURRENT_SOURCE_SUMMARY_FILE", pointer)
+
+    try:
+        planner.configured_current_summary()
+    except FileNotFoundError as exc:
+        assert "Configured current Stage 5 source summary does not exist" in str(exc)
+    else:
+        raise AssertionError("missing current source pointer should fail loudly")
+
+
+def test_committed_current_source_summary_points_at_routing_diagnostic() -> None:
+    path = planner.configured_current_summary()
+
+    assert path is not None
+    assert path.as_posix().endswith("stage5_routing_diagnostic_20260622_041706/summary.json")
+
+
 def test_failed_candidate_distillation_recommends_baseline_curriculum(tmp_path) -> None:
     source = tmp_path / "summary.json"
     payload = {

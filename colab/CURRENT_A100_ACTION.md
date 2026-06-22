@@ -16,6 +16,9 @@ When resuming from a newer Stage 5 summary than the default one below, also set
 `STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY=outputs/stage5/<run_id>/summary.json`.
 The preflight target accepts the same value, or the explicit
 `STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY` override.
+No-argument planner/go-no-go runs also read
+[`config/stage5_current_source_summary.txt`](../config/stage5_current_source_summary.txt)
+so they follow this run card instead of the newest file mtime in `outputs/`.
 
 Use the safe-continue cell from a normal Drive-backed or blank Colab notebook:
 
