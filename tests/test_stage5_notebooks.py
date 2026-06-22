@@ -146,18 +146,18 @@ def test_arc_mix_recovery_notebook_is_single_purpose() -> None:
     assert payload["metadata"]["colab"]["gpuType"] == "A100"
 
 
-def test_current_a100_action_points_to_arc_mix_notebook() -> None:
+def test_current_a100_action_points_to_safe_continue_routing_diagnostic() -> None:
     text = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
 
-    assert "https://colab.research.google.com/github/mshapiro123/recurrent-qwen-svgd/blob/main/colab/09_stage5_arc_mix_recovery_once.ipynb" in text
-    assert "STAGE5_ARC_MIX_BOOTSTRAP_CELL.py" in text
-    assert "STAGE5_ARC_MIX_RECOVERY_CELL.py" in text
-    assert "stage5_full_assessment_once_20260622_005522/summary.json" in text
-    assert "arc_mix_response_w01_lr2e6" in text
-    assert "run_full_balanced_assessment" in text
-    assert "stop_for_calibration_repair" in text
+    assert "colab/STAGE5_SAFE_CONTINUE_CELL.md" in text
+    assert "stage5_arc_mix_recovery_once_20260622_030628/summary.json" in text
+    assert "run_stage5_routing_diagnostic.py" in text
+    assert "run_stage5_routing_repair.py" in text
+    assert "needs_direct_halting_repair" in text
+    assert "needs_deep_narrow_recovery" in text
     assert "stop_and_revise_objective" in text
-    assert "Do not run GPQA" in text
+    assert "do **not** extend ARC-mix training" in text
+    assert "do **not** run GPQA" in text
 
 
 def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
@@ -174,6 +174,10 @@ def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     assert "GO_NO_GO_RUN_ID" in text
     assert "Skipping requirements install because no paid action will execute." in text
     assert "execute_action = bool(RUN_A100_ACTION and go_allowed)" in text
+    assert "stage5_arc_mix_recovery_once_20260622_030628/summary.json" in text
+    assert "mount_drive_for_paid_action" in text
+    assert 'drive.mount("/content/drive", force_remount=True)' in text
+    assert "Mounting Google Drive so checkpoint artifacts can be restored." in text
     assert "colab/run_stage5_full_assessment_once.py" not in text
 
 
@@ -191,6 +195,10 @@ def test_safe_continue_notebook_defaults_to_dry_run_and_guarded_action() -> None
     assert "GO_NO_GO_RUN_ID" in text
     assert "Skipping requirements install because no paid action will execute." in text
     assert "execute_action = bool(RUN_A100_ACTION and go_allowed)" in text
+    assert "stage5_arc_mix_recovery_once_20260622_030628/summary.json" in text
+    assert "mount_drive_for_paid_action" in text
+    assert 'drive.mount("/content/drive", force_remount=True)' in text
+    assert "Mounting Google Drive so checkpoint artifacts can be restored." in text
     assert "colab/run_stage5_full_assessment_once.py" not in text
     assert payload["cells"][0]["cell_type"] == "markdown"
     assert payload["cells"][1]["cell_type"] == "code"

@@ -12,7 +12,10 @@ actions, such as dataset audits, while a GPU runtime is attached unless
 By default the cell disconnects the Colab runtime after the dry run or guarded
 action so an attached A100 does not sit idle. Dry-runs and blocked actions skip
 `pip install -r requirements.txt`; dependency installation happens only after
-the A100 guard allows an intentional paid action.
+the A100 guard allows an intentional paid action. When a guarded action is
+allowed, the notebook mounts Drive in the top-level Colab process before
+launching subprocess runners; Colab Drive authorization cannot reliably be
+initiated from a child Python process.
 
 ```python
 import json, os, shutil, subprocess, sys
@@ -81,6 +84,15 @@ def disconnect_runtime(reason):
     except Exception as exc:
         print(f"Runtime disconnect skipped/failed: {exc}", flush=True)
 
+def mount_drive_for_paid_action():
+    if Path("/content/drive/MyDrive").exists():
+        print("Drive already mounted.", flush=True)
+        return
+    from google.colab import drive
+
+    print("Mounting Google Drive so checkpoint artifacts can be restored.", flush=True)
+    drive.mount("/content/drive", force_remount=True)
+
 def sync_repo():
     clone_url = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
     if ROOT.exists():
@@ -125,6 +137,7 @@ if RUN_A100_ACTION and not go_allowed:
 
 execute_action = bool(RUN_A100_ACTION and go_allowed)
 if execute_action:
+    mount_drive_for_paid_action()
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"], cwd=ROOT)
     if HF_TOKEN:
         from huggingface_hub import HfApi, login
