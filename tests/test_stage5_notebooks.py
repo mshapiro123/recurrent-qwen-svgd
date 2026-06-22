@@ -186,6 +186,9 @@ def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     assert "mount_drive_for_paid_action" in text
     assert 'drive.mount("/content/drive", force_remount=True)' in text
     assert "Mounting Google Drive so checkpoint artifacts can be restored." in text
+    assert text.index("if RUN_A100_ACTION:\n    mount_drive_for_paid_action()") < text.index(
+        '"colab/check_stage5_a100_go_no_go.py"'
+    )
     assert "colab/run_stage5_full_assessment_once.py" not in text
 
 
@@ -213,6 +216,9 @@ def test_safe_continue_notebook_defaults_to_dry_run_and_guarded_action() -> None
     assert "mount_drive_for_paid_action" in text
     assert 'drive.mount("/content/drive", force_remount=True)' in text
     assert "Mounting Google Drive so checkpoint artifacts can be restored." in text
+    assert text.index("if RUN_A100_ACTION:\\n") < text.index(
+        '"colab/check_stage5_a100_go_no_go.py"'
+    )
     assert "colab/run_stage5_full_assessment_once.py" not in text
     assert payload["cells"][0]["cell_type"] == "markdown"
     assert payload["cells"][1]["cell_type"] == "code"

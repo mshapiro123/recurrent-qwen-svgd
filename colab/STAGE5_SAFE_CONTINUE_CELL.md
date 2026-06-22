@@ -12,9 +12,9 @@ actions, such as dataset audits, while a GPU runtime is attached unless
 By default the cell disconnects the Colab runtime after the dry run or guarded
 action so an attached A100 does not sit idle. Dry-runs and blocked actions skip
 `pip install -r requirements.txt`; dependency installation happens only after
-the A100 guard allows an intentional paid action. When a guarded action is
-allowed, the notebook mounts Drive in the top-level Colab process before
-launching subprocess runners; Colab Drive authorization cannot reliably be
+the A100 guard allows an intentional paid action. When a paid action is
+requested, the notebook mounts Drive in the top-level Colab process before the
+go/no-go checkpoint preflight; Colab Drive authorization cannot reliably be
 initiated from a child Python process. Paid actions also run a small focused
 preflight over the A100 guard, next-action parser, routing repair, and
 ARC-mix repair gate before launching the selected action.
@@ -117,6 +117,9 @@ run(["git", "config", "user.name", "Colab Runner"], cwd=ROOT)
 
 run(["git", "log", "--oneline", "-5"], cwd=ROOT, check=False)
 run(["nvidia-smi"], cwd=ROOT, check=False)
+
+if RUN_A100_ACTION:
+    mount_drive_for_paid_action()
 
 check_env = os.environ.copy()
 check_env["STAGE5_A100_GO_NO_GO_RUN_ID"] = GO_NO_GO_RUN_ID
