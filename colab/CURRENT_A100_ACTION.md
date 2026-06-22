@@ -12,6 +12,12 @@ The bootstrap defaults to `preflight`. To intentionally execute the guarded
 paid action after preflight is green, set
 `STAGE5_CURRENT_A100_TARGET=safe_continue_execute` before running it on an
 A100/H100 runtime.
+If the generated direct/deep curriculum gate has not been published yet, do not
+attach an A100. Run the same bootstrap on a CPU runtime with
+`STAGE5_CURRENT_A100_TARGET=programmatic_curriculum_cpu`; that target fetches
+`colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py`, refuses attached GPU runtimes
+by default, backs the generated rows up to Drive, and publishes the small green
+gate pointer to GitHub.
 The bootstrap now auto-resumes from
 [`config/stage5_current_source_summary.txt`](../config/stage5_current_source_summary.txt)
 when that pointer exists and targets an available summary. To force a specific

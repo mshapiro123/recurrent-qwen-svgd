@@ -7,6 +7,12 @@ checks safety markers, and executes it.
 Default target is `preflight`, which mounts Drive, checks checkpoint visibility,
 runs the A100 go/no-go guard, and disconnects. This is the cheap runtime path.
 
+To generate and publish the cheap direct/deep curriculum gate on a CPU runtime:
+
+Set `os.environ["STAGE5_CURRENT_A100_TARGET"] = "programmatic_curriculum_cpu"`
+before running the bootstrap cell. This target refuses attached GPU runtimes by
+default.
+
 To run a dry safe-continue status check instead:
 
 Set `os.environ["STAGE5_CURRENT_A100_TARGET"] = "safe_continue_dry_run"` before
@@ -35,6 +41,7 @@ REF = "main"
 
 # Safe default: verify Drive/checkpoint visibility on a CPU/cheap runtime.
 # Other options:
+#   "programmatic_curriculum_cpu" - generate/publish the direct/deep curriculum gate on CPU.
 #   "safe_continue_dry_run" - fetch safe-continue but do not spend GPU.
 #   "safe_continue_execute" - fetch safe-continue and opt in to the guarded paid action.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
@@ -67,6 +74,21 @@ TARGETS = {
             "Skipping requirements install because no paid action will execute.",
         ],
         "env": {"STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "0"},
+    },
+    "programmatic_curriculum_cpu": {
+        "path": "colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py",
+        "markers": [
+            "REFUSE_GPU_RUNTIME",
+            "ALLOW_GPU_RUNTIME_FOR_CPU_WORK",
+            "training/run_programmatic_curriculum_pipeline.py",
+            "training/check_curriculum_sft_gate.py",
+            "colab/publish_stage5_curriculum_gate.py",
+            "REQUIRE_DRIVE_BACKUP_FOR_PUBLISH",
+            "PUBLISH_GATE_TO_GITHUB",
+            "stage5_current_source_summary",
+            "Refusing to run CPU-only programmatic curriculum generation",
+        ],
+        "env": {},
     },
     "safe_continue_execute": {
         "path": "colab/STAGE5_SAFE_CONTINUE_CELL.py",

@@ -151,6 +151,9 @@ def test_current_a100_action_points_to_safe_continue_routing_repair() -> None:
 
     assert "colab/CURRENT_A100_BOOTSTRAP_CELL.md" in text
     assert "colab/CURRENT_A100_BOOTSTRAP_CELL.py" in text
+    assert "STAGE5_CURRENT_A100_TARGET=programmatic_curriculum_cpu" in text
+    assert "colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py" in text
+    assert "refuses attached GPU runtimes" in text
     assert "STAGE5_CURRENT_A100_TARGET=safe_continue_execute" in text
     assert "STAGE5_CURRENT_A100_SOURCE_SUMMARY" in text
     assert "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY" not in text
@@ -287,6 +290,11 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     assert 'os.environ.pop("STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY", None)' in plain
     assert "colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.py" in plain
     assert "colab/STAGE5_SAFE_CONTINUE_CELL.py" in plain
+    assert '"programmatic_curriculum_cpu"' in plain
+    assert "colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py" in plain
+    assert "training/run_programmatic_curriculum_pipeline.py" in plain
+    assert "colab/publish_stage5_curriculum_gate.py" in plain
+    assert "Refusing to run CPU-only programmatic curriculum generation" in plain
     assert '"safe_continue_execute"' in plain
     assert '"STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "1"' in plain
     assert '"STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "0"' in plain
@@ -299,6 +307,7 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     assert "required_markers" not in plain
     assert "colab/STAGE5_ARC_MIX_RECOVERY_CELL.py" not in plain
     assert "preflight" in text
+    assert "programmatic_curriculum_cpu" in text
     assert "safe_continue_execute" in text
 
 
