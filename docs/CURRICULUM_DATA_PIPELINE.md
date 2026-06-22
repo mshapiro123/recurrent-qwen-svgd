@@ -122,6 +122,19 @@ stop at the next required job file. The final handoff to GPU training is
 `positive_sft.jsonl`; negative and verifier traces remain in `typed_records.jsonl`
 and are not exported to positive SFT.
 
+Before using `positive_sft.jsonl` for any A100 fine-tune, run:
+
+```bash
+python training/check_curriculum_sft_gate.py \
+  --work_dir data/curriculum/run_001 \
+  --output_json data/curriculum/run_001/curriculum_sft_gate.json \
+  --output_md data/curriculum/run_001/curriculum_sft_gate.md \
+  --fail_on_no_go
+```
+
+The gate must report `go=true`; otherwise the shard is still CPU/API cleanup
+work, not GPU training material.
+
 The driver treats a response artifact as complete only when the number of
 non-empty response rows is at least the number of emitted job rows for that
 stage. This lets bounded provider batches resume safely: a partial

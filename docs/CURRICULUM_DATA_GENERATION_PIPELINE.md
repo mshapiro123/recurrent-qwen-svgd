@@ -265,9 +265,23 @@ file, run the same command again. The stop points are:
 - `pending_judgment_responses`
 - `complete`
 
-On completion it writes `typed_records.jsonl` and `positive_sft.jsonl`. This is
-the preferred Colab loop because it is restart-safe and burns no GPU while
-waiting on API/provider artifacts.
+On completion it writes `typed_records.jsonl` and `positive_sft.jsonl`. Before
+any GPU fine-tune, run the no-GPU SFT gate:
+
+```bash
+python training/check_curriculum_sft_gate.py \
+  --work_dir data/curriculum/run_001 \
+  --output_json data/curriculum/run_001/curriculum_sft_gate.json \
+  --output_md data/curriculum/run_001/curriculum_sft_gate.md \
+  --min_positive_rows 1 \
+  --fail_on_no_go
+```
+
+This gate checks that the pipeline is complete, generated answers used strict
+programmatic anchoring, records validate, non-positive roles did not leak into
+`positive_sft.jsonl`, and enough positive rows exist. This is the preferred
+Colab loop because it is restart-safe and burns no GPU while waiting on
+API/provider artifacts.
 
 Seed problem-generation jobs:
 

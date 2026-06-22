@@ -238,6 +238,34 @@ def backup_work_dir():
         print(f"backed up {src} -> {dst}", flush=True)
 
 
+def run_sft_gate(summary):
+    if summary.get("status") != "complete":
+        print("SFT gate skipped because curriculum pipeline is not complete.", flush=True)
+        return None
+    output_json = Path(WORK_DIR) / "curriculum_sft_gate.json"
+    output_md = Path(WORK_DIR) / "curriculum_sft_gate.md"
+    run(
+        [
+            sys.executable,
+            "training/check_curriculum_sft_gate.py",
+            "--summary_json",
+            str(Path(WORK_DIR) / "summary.json"),
+            "--output_json",
+            str(output_json),
+            "--output_md",
+            str(output_md),
+            "--min_positive_rows",
+            "1",
+            "--fail_on_no_go",
+        ],
+        cwd=ROOT,
+    )
+    gate = json.loads((ROOT / output_json).read_text(encoding="utf-8"))
+    print("sft_gate_status:", gate["status"], flush=True)
+    print("sft_gate_go:", gate["go"], flush=True)
+    return gate
+
+
 sync_repo()
 run(["git", "log", "--oneline", "-5"], cwd=ROOT, check=False)
 run(["nvidia-smi"], cwd=ROOT, check=False)
@@ -265,6 +293,7 @@ if RUN_PROVIDER_RESPONSES:
 else:
     print("Provider calls skipped. Set RUN_PROVIDER_RESPONSES=True after MODEL_MAP/API key are configured.", flush=True)
 
+run_sft_gate(summary)
 backup_work_dir()
 
 if DISCONNECT_RUNTIME_WHEN_DONE:
