@@ -1134,6 +1134,47 @@ def test_curriculum_sft_input_preflight_allows_published_gate_drive_backup(monke
     assert status["first_existing_drive_candidate"].endswith("programmatic_direct_deep_001")
 
 
+def test_trace_collection_source_from_drive_allows_curriculum_sft_preflight(monkeypatch, tmp_path) -> None:
+    import colab.check_stage5_a100_go_no_go as guard
+
+    repo_root = tmp_path / "repo"
+    drive_root = tmp_path / "drive" / "stage5_capability_ladder_trace_collection" / "trace_run"
+    backup = drive_root / "traced"
+    backup.mkdir(parents=True)
+    (backup / "summary.json").write_text("{}", encoding="utf-8")
+    (backup / "positive_sft.jsonl").write_text("{}\n", encoding="utf-8")
+    source = drive_root / "summary.json"
+    source.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_capability_ladder_trace_collection",
+                "status": "trace_curriculum_gate_ready",
+                "curriculum": {
+                    "work_dir": "data/curriculum/traced",
+                    "summary_json": "data/curriculum/traced/summary.json",
+                    "counts": {
+                        "positive_sft_rows": 24,
+                        "mode_counts": {"direct": 12, "deep_narrow": 12},
+                    },
+                },
+                "gate": {"go": True},
+                "drive_backup": {"dest_root": str(drive_root)},
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(guard, "ROOT", repo_root)
+
+    payload = build_payload(source)
+
+    assert payload["decision"]["go"] is True
+    assert payload["decision"]["status"] == "go_curriculum_sft"
+    assert payload["checkpoint_preflight"]["available"] is True
+    assert payload["checkpoint_preflight"]["input_preflight"]["local_available"] is False
+    assert payload["checkpoint_preflight"]["input_preflight"]["drive_candidate_exists"] is True
+    assert payload["checkpoint_preflight"]["input_preflight"]["first_existing_drive_candidate"] == str(backup)
+
+
 def test_curriculum_sft_input_preflight_allows_local_artifacts(tmp_path) -> None:
     work_dir = tmp_path / "data" / "curriculum" / "run_001"
     work_dir.mkdir(parents=True)
