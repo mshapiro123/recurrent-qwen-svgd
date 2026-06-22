@@ -62,6 +62,7 @@ ARC_CHALLENGE_ROUTING_TYPE = os.environ.get("STAGE5_ARC_MIX_ARC_CHALLENGE_ROUTIN
 ARC_EASY_ROUTING_TYPE = os.environ.get("STAGE5_ARC_MIX_ARC_EASY_ROUTING_TYPE", "")
 MIX_SEED = int(os.environ.get("STAGE5_ARC_MIX_SEED", "17"))
 ARC_EVAL_LIMIT = int(os.environ.get("STAGE5_ARC_MIX_ARC_EVAL_LIMIT", "128"))
+ARC_EVAL_CONFIG = os.environ.get("STAGE5_ARC_MIX_EVAL_CONFIG", "ARC-Challenge")
 MIN_PROXY_MARGIN_DELTA = float(os.environ.get("STAGE5_ARC_MIX_MIN_MARGIN_DELTA", "-0.05"))
 MAX_PROXY_PREDICTION_SHIFT = int(os.environ.get("STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT", "16"))
 INCLUDE_LOOP_DIAGNOSTICS = os.environ.get("STAGE5_ARC_MIX_INCLUDE_LOOP_DIAGNOSTICS", "1").strip().lower() in {
@@ -99,7 +100,8 @@ OPUS_VAL_JSONL = ROOT / "data" / f"{RUN_ID}_opus_val.jsonl"
 ARC_CHALLENGE_TRAIN_JSONL = ROOT / "data" / f"{RUN_ID}_arc_challenge_train_sft.jsonl"
 ARC_EASY_TRAIN_JSONL = ROOT / "data" / f"{RUN_ID}_arc_easy_train_sft.jsonl"
 MIXED_TRAIN_JSONL = ROOT / "data" / f"{RUN_ID}_mixed_train.jsonl"
-ARC_EVAL_JSONL = ROOT / "data" / f"{RUN_ID}_arc{ARC_EVAL_LIMIT}.jsonl"
+ARC_EVAL_SLUG = ARC_EVAL_CONFIG.lower().replace("-", "_").replace(" ", "_")
+ARC_EVAL_JSONL = ROOT / "data" / f"{RUN_ID}_{ARC_EVAL_SLUG}{ARC_EVAL_LIMIT}.jsonl"
 
 
 @dataclass(frozen=True)
@@ -447,7 +449,7 @@ def prepare_arc_eval(path: Path, *, limit: int | None) -> None:
         sys.executable,
         "eval/prepare_arc_mcq.py",
         "--config",
-        "ARC-Challenge",
+        ARC_EVAL_CONFIG,
         "--split",
         "validation",
         "--seed",
@@ -543,6 +545,7 @@ def build_mixed_train() -> dict[str, Any]:
         "opus_val_jsonl": path_for_cli(OPUS_VAL_JSONL),
         "arc_prompt_style": "with_options",
         "arc_score_target": "label",
+        "arc_eval_config": ARC_EVAL_CONFIG,
     }
 
 
@@ -778,6 +781,7 @@ def build_summary(
         "resume_run_id": checkpoint_run_id(resume_checkpoint),
         "data": data_summary,
         "arc_eval_limit": ARC_EVAL_LIMIT,
+        "arc_eval_config": ARC_EVAL_CONFIG,
         "proxy_calibration_thresholds": {
             "min_mean_margin_delta": MIN_PROXY_MARGIN_DELTA,
             "max_abs_prediction_count_delta": MAX_PROXY_PREDICTION_SHIFT,
@@ -805,6 +809,7 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Source summary: `{payload['source_summary']}`",
         f"- Resume checkpoint: `{payload['resume_checkpoint']}`",
         f"- Mixed rows: `{payload['data']['mixed_rows']}`",
+        f"- Proxy eval config: `{payload['arc_eval_config']}`",
         f"- Calibration thresholds: mean margin delta >= `{payload['proxy_calibration_thresholds']['min_mean_margin_delta']}`, "
         f"max prediction-count shift <= `{payload['proxy_calibration_thresholds']['max_abs_prediction_count_delta']}`",
         f"- Next step: {payload['next_step']}",

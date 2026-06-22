@@ -171,6 +171,24 @@ def test_prepare_arc_sft_passes_routing_loop_metadata(tmp_path, monkeypatch) -> 
     assert cmd[cmd.index("--limit") + 1] == "17"
 
 
+def test_prepare_arc_eval_uses_configured_proxy_split(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_balanced_arc_mix_gate as module
+
+    calls = []
+    output = tmp_path / "arc_easy_eval.jsonl"
+    monkeypatch.setattr(module, "ARC_EVAL_CONFIG", "ARC-Easy")
+    monkeypatch.setattr(module, "MIX_SEED", 11)
+    monkeypatch.setattr(module, "run", lambda cmd, **kwargs: calls.append((cmd, kwargs)))
+
+    module.prepare_arc_eval(output, limit=32)
+
+    assert calls
+    cmd, kwargs = calls[0]
+    assert kwargs["log_name"] == "prepare_arc_easy_eval.log"
+    assert cmd[cmd.index("--config") + 1] == "ARC-Easy"
+    assert cmd[cmd.index("--limit") + 1] == "32"
+
+
 def test_selected_checkpoint_accepts_top_level_checkpoint(monkeypatch, tmp_path) -> None:
     import colab.run_stage5_balanced_arc_mix_gate as module
 
@@ -211,6 +229,7 @@ def test_build_summary_passes_when_arc_mix_lifts_proxy(tmp_path) -> None:
     assert payload["decision"] == "run_full_balanced_assessment"
     assert payload["blocked_reason"] is None
     assert payload["best_arm"]["arm"] == "arc_mix"
+    assert payload["arc_eval_config"] == "ARC-Challenge"
     assert "answer-calibration drift" in payload["objective_rationale"]["failure_mode"]
     assert "response-only" in payload["objective_rationale"]["proxy_hypothesis"]
     assert "label-only completions" in payload["objective_rationale"]["response_distillation_reason"]

@@ -75,8 +75,14 @@ STAGE5_ARC_MIX_ARC_EASY_TARGET_LOOP=1
 STAGE5_ARC_MIX_ARC_CHALLENGE_TARGET_LOOP=2
 STAGE5_ARC_MIX_ARC_EASY_ROUTING_TYPE=direct
 STAGE5_ARC_MIX_ARC_CHALLENGE_ROUTING_TYPE=deep_narrow_probe
+STAGE5_ARC_MIX_EVAL_CONFIG=ARC-Easy
 STAGE5_ARC_MIX_ARMS=arc_mix_response_w02_lr2e6
 ```
+
+The proxy eval is ARC-Easy for this direct-halting repair. That is deliberate:
+the source diagnostic showed the model over-looping and regressing on
+base-confident direct rows, so the bounded repair must clear the direct/Easy
+proxy before a larger ARC-Easy/ARC-Challenge confirmation benchmark.
 
 The runner restores the recovered deterministic Phase 1 checkpoint from Drive
 if needed, delegates to `colab/run_stage5_balanced_arc_mix_gate.py`, keeps

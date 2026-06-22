@@ -16,6 +16,7 @@ def test_repair_profile_selects_direct_heavy_arc_easy_mix() -> None:
     assert profile["STAGE5_ARC_MIX_ARC_CHALLENGE_TARGET_LOOP"] == "2"
     assert profile["STAGE5_ARC_MIX_ARC_EASY_ROUTING_TYPE"] == "direct"
     assert profile["STAGE5_ARC_MIX_ARC_CHALLENGE_ROUTING_TYPE"] == "deep_narrow_probe"
+    assert profile["STAGE5_ARC_MIX_EVAL_CONFIG"] == "ARC-Easy"
     assert profile["STAGE5_ARC_MIX_MIN_MARGIN_DELTA"] == "0.0"
 
 
@@ -67,6 +68,7 @@ def test_repair_profile_selects_deep_challenge_mix() -> None:
     assert profile["STAGE5_ARC_MIX_ARC_CHALLENGE_TARGET_LOOP"] == "3"
     assert profile["STAGE5_ARC_MIX_ARC_EASY_ROUTING_TYPE"] == "direct_anchor"
     assert profile["STAGE5_ARC_MIX_ARC_CHALLENGE_ROUTING_TYPE"] == "deep_narrow"
+    assert profile["STAGE5_ARC_MIX_EVAL_CONFIG"] == "ARC-Challenge"
 
 
 def test_deep_repair_profile_audit_requires_distillation() -> None:
