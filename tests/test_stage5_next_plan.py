@@ -305,12 +305,13 @@ def test_complete_capability_ladder_curriculum_recommends_observed_count_sft_gat
     assert "run_stage5_curriculum_sft.py" not in actions[0]["command"]
 
 
-def test_capability_ladder_mcq_probe_with_rows_recommends_sft_gate_not_training(tmp_path) -> None:
+def test_capability_ladder_mcq_probe_with_rows_recommends_trace_jobs_before_sft_gate(tmp_path) -> None:
     source = tmp_path / "probe" / "summary.json"
     source.parent.mkdir()
     payload = {
         "kind": "stage5_capability_ladder_mcq_probe",
         "status": "capability_ladder_probe_needs_review",
+        "artifacts": {"scored_capability_rows": "data/stage5_capability_ladder/probe/scored_capability_rows.jsonl"},
         "curriculum": {
             "summary_json": "data/curriculum/probe/summary.json",
             "work_dir": "data/curriculum/probe",
@@ -326,14 +327,19 @@ def test_capability_ladder_mcq_probe_with_rows_recommends_sft_gate_not_training(
     actions = plan_next_actions(payload, source_summary=source)
 
     assert source_kind(payload) == "capability_ladder_mcq_probe"
-    assert actions[0]["name"] == "Run capability-ladder probe SFT safety gate"
-    assert "python training/check_curriculum_sft_gate.py" in actions[0]["command"]
-    assert "--summary_json data/curriculum/probe/summary.json" in actions[0]["command"]
-    assert "--work_dir data/curriculum/probe" in actions[0]["command"]
-    assert "--min_positive_rows 9" in actions[0]["command"]
-    assert "--min_mode_rows direct=5,deep_narrow=4" in actions[0]["command"]
-    assert "--allow_cross_model_only_answers" in actions[0]["command"]
-    assert "run_stage5_curriculum_sft.py" not in actions[0]["command"]
+    assert actions[0]["name"] == "Build capability-ladder strong-trace jobs"
+    assert "python training/build_capability_ladder_trace_jobs.py" in actions[0]["command"]
+    assert "--summary_json" in actions[0]["command"]
+    assert "--models opus-strong,glm-strong" in actions[0]["command"]
+    assert "capability_ladder_trace_jobs.jsonl" in actions[0]["command"]
+    assert actions[1]["name"] == "Run capability-ladder probe SFT safety gate"
+    assert "python training/check_curriculum_sft_gate.py" in actions[1]["command"]
+    assert "--summary_json data/curriculum/probe/summary.json" in actions[1]["command"]
+    assert "--work_dir data/curriculum/probe" in actions[1]["command"]
+    assert "--min_positive_rows 9" in actions[1]["command"]
+    assert "--min_mode_rows direct=5,deep_narrow=4" in actions[1]["command"]
+    assert "--allow_cross_model_only_answers" in actions[1]["command"]
+    assert "run_stage5_curriculum_sft.py" not in actions[1]["command"]
 
 
 def test_sparse_capability_ladder_mcq_probe_recommends_inspection_not_gpu(tmp_path) -> None:

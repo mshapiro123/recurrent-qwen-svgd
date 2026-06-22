@@ -3,7 +3,8 @@
 This no-training GPU action scores a small ARC-Train MCQ slice with Qwen
 0.5B, 1.5B, and 3B, then builds a depth-targeted capability-ladder curriculum
 candidate. It is designed to test the proposed "depth by model-scale gap"
-signal before spending A100 time on recurrent SFT.
+signal before spending A100 time on recurrent SFT. The rows are answer-only
+depth-label evidence; enrich them with strong-model trace jobs before training.
 """
 
 import os

@@ -38,7 +38,10 @@ probe is `STAGE5_CURRENT_A100_TARGET=capability_ladder_mcq_probe`. That target
 scores a small ARC-Train slice with Qwen 0.5B, 1.5B, and 3B under cheap
 content-question-only MCQ scoring, builds depth-targeted capability-ladder
 candidate rows, backs private curriculum artifacts up to Drive, pushes safe
-summaries, and disconnects.
+summaries, and disconnects. Treat those rows as depth-label evidence, not final
+reasoning SFT data; the next no-GPU step is
+`training/build_capability_ladder_trace_jobs.py` to request verified
+loop-targeted traces from strong non-student models.
 The bootstrap now auto-resumes from
 [`config/stage5_current_source_summary.txt`](../config/stage5_current_source_summary.txt)
 when that pointer exists and targets an available summary. To force a specific

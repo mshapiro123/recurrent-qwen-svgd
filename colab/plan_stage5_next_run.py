@@ -1053,8 +1053,10 @@ def capability_ladder_curriculum_actions(payload: dict[str, Any], *, source_summ
 def capability_ladder_probe_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status") or "unknown")
     curriculum = payload.get("curriculum") if isinstance(payload.get("curriculum"), dict) else {}
+    artifacts = payload.get("artifacts") if isinstance(payload.get("artifacts"), dict) else {}
     summary_json = str(curriculum.get("summary_json") or "").replace("\\", "/")
     work_dir = str(curriculum.get("work_dir") or "").replace("\\", "/")
+    scored_jsonl = str(artifacts.get("scored_capability_rows") or "").replace("\\", "/")
     counts = curriculum.get("counts") if isinstance(curriculum.get("counts"), dict) else {}
     positive_rows = int(counts.get("positive_sft_rows") or counts.get("typed_records") or 0)
     mode_counts = counts.get("mode_counts") if isinstance(counts.get("mode_counts"), dict) else {}
@@ -1062,6 +1064,8 @@ def capability_ladder_probe_actions(payload: dict[str, Any], *, source_summary: 
     deep = int(mode_counts.get("deep_narrow") or 0)
 
     if status in {"capability_ladder_probe_gate_ready", "capability_ladder_probe_needs_review"} and summary_json:
+        trace_jobs = source_summary.parent / "capability_ladder_trace_jobs.jsonl"
+        trace_report = source_summary.parent / "capability_ladder_trace_jobs_report.json"
         gate_json = source_summary.parent / "capability_ladder_probe_sft_gate.json"
         gate_md = source_summary.parent / "capability_ladder_probe_sft_gate.md"
         min_positive = max(positive_rows, 1)
@@ -1075,7 +1079,27 @@ def capability_ladder_probe_actions(payload: dict[str, Any], *, source_summary: 
         )
         min_mode_clause = f"--min_mode_rows {shlex.quote(min_mode_rows)} " if min_mode_rows else ""
         work_dir_clause = f"--work_dir {shlex.quote(work_dir)} " if work_dir else ""
-        return [
+        actions = []
+        if scored_jsonl:
+            actions.append(
+                make_action(
+                    "Build capability-ladder strong-trace jobs",
+                    (
+                        "The Qwen-scale MCQ probe found usable depth-ladder rows, but its current rows are "
+                        "answer-only. First build provider-neutral strong-model trace jobs so SFT can train on "
+                        "verified loop-targeted reasoning rather than bare labels."
+                    ),
+                    (
+                        "python training/build_capability_ladder_trace_jobs.py "
+                        f"--summary_json {shlex.quote(command_path(source_summary))} "
+                        "--models opus-strong,glm-strong "
+                        f"--output_jsonl {shlex.quote(command_path(trace_jobs))} "
+                        f"--report_json {shlex.quote(command_path(trace_report))}"
+                    ),
+                    10,
+                )
+            )
+        actions.append(
             make_action(
                 "Run capability-ladder probe SFT safety gate",
                 (
@@ -1095,7 +1119,8 @@ def capability_ladder_probe_actions(payload: dict[str, Any], *, source_summary: 
                 ),
                 10,
             )
-        ]
+        )
+        return actions
 
     return [
         make_action(

@@ -478,12 +478,36 @@ deep SFT. Use `--prediction_as_solution` only for label-surface calibration,
 not for the main reasoning curriculum.
 
 Once rows contain verified answers plus Qwen 0.5B, Qwen 1.5B, and
-stronger-model correctness flags, use the CPU-only capability adapter to assign
-deterministic depth targets:
+stronger-model correctness flags, first build provider-neutral trace jobs for a
+strong non-student model. This is still CPU-only; it prepares the prompts that
+will replace answer-only MCQ rows with real loop-targeted traces:
+
+```bash
+python training/build_capability_ladder_trace_jobs.py \
+  --scored_jsonl data/curriculum/scored_capability_rows.jsonl \
+  --models opus-strong,glm-strong \
+  --output_jsonl data/curriculum/capability_ladder_001/trace_jobs.jsonl \
+  --report_json data/curriculum/capability_ladder_001/trace_jobs_report.json
+```
+
+After external provider responses are written, collect only traces whose final
+`ANSWER:` line matches the verified benchmark answer:
+
+```bash
+python training/collect_capability_ladder_trace_outputs.py \
+  --scored_jsonl data/curriculum/scored_capability_rows.jsonl \
+  --jobs_jsonl data/curriculum/capability_ladder_001/trace_jobs.jsonl \
+  --responses_jsonl data/curriculum/capability_ladder_001/trace_responses.jsonl \
+  --output_jsonl data/curriculum/capability_ladder_001/scored_rows_with_traces.jsonl \
+  --report_json data/curriculum/capability_ladder_001/trace_collection_report.json
+```
+
+Then use the CPU-only capability adapter to assign deterministic depth targets
+and export SFT rows:
 
 ```bash
 python training/build_capability_ladder_curriculum.py \
-  --input_jsonl data/curriculum/scored_capability_rows.jsonl \
+  --input_jsonl data/curriculum/capability_ladder_001/scored_rows_with_traces.jsonl \
   --work_dir data/curriculum/capability_ladder_001 \
   --base_key qwen_0_5b \
   --mid_key qwen_1_5b \

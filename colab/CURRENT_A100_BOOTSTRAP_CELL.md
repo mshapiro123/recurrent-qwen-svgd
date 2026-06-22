@@ -41,7 +41,8 @@ Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
 "capability_ladder_mcq_probe"` before running the bootstrap cell. This target
 scores a small ARC-Train slice with Qwen 0.5B/1.5B/3B, builds depth-labeled
 capability-ladder rows, backs them up to Drive, pushes safe summaries, and
-disconnects.
+disconnects. It does not produce final reasoning traces; after it lands, use
+the planner's CPU trace-job action before recurrent SFT.
 
 To intentionally spend GPU on the guarded action after the preflight is green,
 select an A100/H100 runtime and set:

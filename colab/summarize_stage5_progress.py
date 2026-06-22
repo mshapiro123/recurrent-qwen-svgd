@@ -827,7 +827,7 @@ def curriculum_statuses(summary_files: list[Path]) -> list[dict[str, Any]]:
                     "mean_expected_loops": None,
                     "expected_ce": None,
                     "checkpoint": None,
-                    "next_action": payload.get("next_action") or "run capability-ladder probe SFT gate",
+                    "next_action": payload.get("next_action") or "build capability-ladder strong-trace jobs",
                 }
             )
         elif kind == "curriculum_sft_gate":
