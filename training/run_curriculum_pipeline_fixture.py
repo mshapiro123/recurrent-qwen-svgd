@@ -3,8 +3,8 @@
 This is a regression smoke for the strong-model curriculum machinery. It uses
 synthetic provider responses to exercise the same stages a real API runner will
 use: jobs, raw responses, candidate collection, cross-model answer agreement,
-method-solution collection, naturalness/depth judgments, typed record assembly,
-and positive SFT export.
+method-solution collection, naturalness/distinctness/depth judgments, typed
+record assembly, and positive SFT export.
 """
 
 from __future__ import annotations
@@ -23,12 +23,14 @@ if str(ROOT) not in sys.path:
 from training.assemble_curriculum_records import assemble_curriculum_records
 from training.build_curriculum_generation_jobs import (
     build_depth_jobs,
+    build_distinctness_jobs,
     build_ground_truth_jobs,
     build_method_solve_jobs,
     build_naturalness_jobs,
     build_seed_jobs,
 )
 from training.collect_curriculum_job_outputs import (
+    collect_distinctness_judgments,
     collect_depth_measurements,
     collect_naturalness_judgments,
     ground_truth_outputs_to_verified_candidates,
@@ -131,6 +133,22 @@ def naturalness_responses(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return rows
 
 
+def distinctness_responses(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "job_id": job["job_id"],
+            "response_id": f"response-{job['job_id']}",
+            "response_text": json.dumps(
+                {
+                    "distinct": True,
+                    "reason": "One solution uses a formula and the other counts rows of unit squares.",
+                }
+            ),
+        }
+        for job in jobs
+    ]
+
+
 def depth_for_method(method: str) -> tuple[list[str], int]:
     if method == "algebra":
         return ["Recall rectangle area formula.", "Multiply 6 by 7.", "State 42."], 3
@@ -186,6 +204,10 @@ def run_fixture_pipeline(output_dir: str | Path, *, overwrite: bool = False) -> 
     natural_raw = naturalness_responses(natural_jobs)
     naturalness, naturalness_report = collect_naturalness_judgments(method_solutions, natural_jobs, natural_raw)
 
+    distinct_jobs = build_distinctness_jobs(method_solutions, models=JUDGE_MODELS)
+    distinct_raw = distinctness_responses(distinct_jobs)
+    distinctness, distinctness_report = collect_distinctness_judgments(method_solutions, distinct_jobs, distinct_raw)
+
     depth_jobs = build_depth_jobs(method_solutions, models=JUDGE_MODELS)
     depth_raw = depth_responses(depth_jobs)
     depth, depth_report = collect_depth_measurements(method_solutions, depth_jobs, depth_raw)
@@ -195,7 +217,9 @@ def run_fixture_pipeline(output_dir: str | Path, *, overwrite: bool = False) -> 
         method_solutions,
         naturalness,
         depth,
+        distinctness,
         min_natural_agree=2,
+        min_distinct_agree=2,
         deep_threshold=5,
     )
     sft_rows, sft_report = convert_curriculum_records(records)
@@ -213,6 +237,9 @@ def run_fixture_pipeline(output_dir: str | Path, *, overwrite: bool = False) -> 
         "naturalness_jobs": natural_jobs,
         "naturalness_responses": natural_raw,
         "naturalness_judgments": naturalness,
+        "distinctness_jobs": distinct_jobs,
+        "distinctness_responses": distinct_raw,
+        "distinctness_judgments": distinctness,
         "depth_jobs": depth_jobs,
         "depth_responses": depth_raw,
         "depth_measurements": depth,
@@ -224,6 +251,7 @@ def run_fixture_pipeline(output_dir: str | Path, *, overwrite: bool = False) -> 
         "verified_candidates": verified_report,
         "method_solutions": method_report,
         "naturalness": naturalness_report,
+        "distinctness": distinctness_report,
         "depth": depth_report,
         "typed_records": records_report,
         "positive_sft": sft_report,

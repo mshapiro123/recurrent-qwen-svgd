@@ -372,16 +372,24 @@ python training/collect_curriculum_job_outputs.py \
 
 Only responses whose final `ANSWER:` normalizes to the verified candidate answer
 are emitted. `METHOD DOES NOT APPLY`, missing-answer, and wrong-answer responses
-are retained in the report and are not forwarded to naturalness or depth jobs.
+are retained in the report and are not forwarded to naturalness, distinctness, or
+depth jobs.
 
-Depth, naturalness, perturbation, and error-detection jobs are available through
-`--stage depth`, `--stage naturalness`, `--stage perturbation`, and
-`--stage error_detection`. These are still job construction steps; responses
-must be parsed and verified before typed curriculum records are created.
+Naturalness, pairwise method distinctness, depth, perturbation, and
+error-detection jobs are available through `--stage naturalness`,
+`--stage distinctness`, `--stage depth`, `--stage perturbation`, and
+`--stage error_detection`. These are still job construction steps; responses must
+be parsed and verified before typed curriculum records are created.
 
-Collect naturalness and depth judge responses:
+Build and collect naturalness, distinctness, and depth judge responses:
 
 ```bash
+python training/build_curriculum_generation_jobs.py \
+  --stage naturalness \
+  --models opus-strong,glm-strong \
+  --input_jsonl data/curriculum/method_solution_candidates.jsonl \
+  --output_jsonl data/curriculum/jobs_naturalness.jsonl
+
 python training/collect_curriculum_job_outputs.py \
   --mode naturalness_judgments \
   --candidates_jsonl data/curriculum/method_solution_candidates.jsonl \
@@ -389,6 +397,26 @@ python training/collect_curriculum_job_outputs.py \
   --responses_jsonl data/curriculum/responses_naturalness.jsonl \
   --output_jsonl data/curriculum/naturalness_judgments.jsonl \
   --report_json outputs/curriculum/naturalness_judgments_report.json
+
+python training/build_curriculum_generation_jobs.py \
+  --stage distinctness \
+  --models opus-strong,glm-strong \
+  --input_jsonl data/curriculum/method_solution_candidates.jsonl \
+  --output_jsonl data/curriculum/jobs_distinctness.jsonl
+
+python training/collect_curriculum_job_outputs.py \
+  --mode distinctness_judgments \
+  --candidates_jsonl data/curriculum/method_solution_candidates.jsonl \
+  --jobs_jsonl data/curriculum/jobs_distinctness.jsonl \
+  --responses_jsonl data/curriculum/responses_distinctness.jsonl \
+  --output_jsonl data/curriculum/distinctness_judgments.jsonl \
+  --report_json outputs/curriculum/distinctness_judgments_report.json
+
+python training/build_curriculum_generation_jobs.py \
+  --stage depth \
+  --models opus-strong,glm-strong \
+  --input_jsonl data/curriculum/method_solution_candidates.jsonl \
+  --output_jsonl data/curriculum/jobs_depth.jsonl
 
 python training/collect_curriculum_job_outputs.py \
   --mode depth_measurements \
@@ -407,11 +435,15 @@ python training/assemble_curriculum_records.py \
   --solution_candidates_jsonl data/curriculum/method_solution_candidates.jsonl \
   --naturalness_jsonl data/curriculum/naturalness_judgments.jsonl \
   --depth_jsonl data/curriculum/depth_measurements.jsonl \
+  --distinctness_jsonl data/curriculum/distinctness_judgments.jsonl \
   --output_jsonl data/curriculum/typed_records.jsonl \
   --report_json outputs/curriculum/typed_records_report.json
 ```
 
 Assembly rejects undecontaminated candidates by default. It also rejects method
 solutions that lack both a naturalness agreement and a positive depth
-measurement. Only after this step should `prepare_curriculum_jsonl.py` export
+measurement. When `--distinctness_jsonl` is provided, width counts only methods
+whose best natural measured solutions are pairwise judged structurally distinct;
+relabeled or degenerate duplicates collapse back to a single method before mode
+assignment. Only after this step should `prepare_curriculum_jsonl.py` export
 positive SFT rows.

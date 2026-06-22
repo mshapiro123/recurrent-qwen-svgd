@@ -453,6 +453,66 @@ def collect_naturalness_judgments(
     }
 
 
+def collect_distinctness_judgments(
+    solution_candidates: list[dict[str, Any]],
+    jobs: list[dict[str, Any]],
+    responses: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    solution_by_id = group_candidates(solution_candidates)
+    paired, issues = responses_with_jobs(jobs, responses)
+    rows: list[dict[str, Any]] = []
+    status_counts: Counter[str] = Counter()
+
+    for job, response, text in paired:
+        if job.get("stage") != "method_distinctness_judge":
+            continue
+        metadata = job.get("metadata") if isinstance(job.get("metadata"), dict) else {}
+        solution_a_id = str(metadata.get("solution_a_id") or "")
+        solution_b_id = str(metadata.get("solution_b_id") or "")
+        if solution_a_id not in solution_by_id or solution_b_id not in solution_by_id:
+            issues.append(
+                f"{job.get('job_id')}: no matching solution candidate pair "
+                f"for {solution_a_id!r}, {solution_b_id!r}"
+            )
+            status_counts["missing_solution"] += 1
+            continue
+        payload = extract_json_object(text)
+        if payload is None:
+            issues.append(f"{job.get('job_id')}: could not parse distinctness JSON")
+            status_counts["parse_error"] += 1
+            continue
+        distinct = payload.get("distinct")
+        if not isinstance(distinct, bool):
+            issues.append(f"{job.get('job_id')}: distinctness JSON missing boolean distinct")
+            status_counts["invalid_payload"] += 1
+            continue
+        status_counts["distinct_true" if distinct else "distinct_false"] += 1
+        rows.append(
+            {
+                "record_id": str(metadata.get("record_id") or ""),
+                "solution_a_id": solution_a_id,
+                "solution_b_id": solution_b_id,
+                "method_a": str(metadata.get("method_a") or ""),
+                "method_b": str(metadata.get("method_b") or ""),
+                "judge_model": job.get("model"),
+                "distinct": distinct,
+                "reason": str(payload.get("reason") or "").strip(),
+                "source_job_id": job.get("job_id"),
+                "source_response_id": response.get("response_id"),
+            }
+        )
+
+    return rows, {
+        "mode": "distinctness_judgments",
+        "solution_candidate_rows": len(solution_candidates),
+        "jobs": len(jobs),
+        "responses": len(responses),
+        "judgments": len(rows),
+        "issues": issues,
+        "status_counts": dict(sorted(status_counts.items())),
+    }
+
+
 def collect_depth_measurements(
     solution_candidates: list[dict[str, Any]],
     jobs: list[dict[str, Any]],
@@ -530,6 +590,7 @@ def main(argv: list[str] | None = None) -> int:
             "verified_candidates",
             "method_solutions",
             "naturalness_judgments",
+            "distinctness_judgments",
             "depth_measurements",
         ),
         required=True,
@@ -540,7 +601,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--report_json")
     parser.add_argument(
         "--candidates_jsonl",
-        help="Required for verified_candidates, method_solutions, naturalness_judgments, and depth_measurements modes.",
+        help=(
+            "Required for verified_candidates, method_solutions, naturalness_judgments, "
+            "distinctness_judgments, and depth_measurements modes."
+        ),
     )
     parser.add_argument("--min_agree", type=int, default=2)
     parser.add_argument("--mark_decontaminated", action="store_true")
@@ -575,6 +639,11 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError("--candidates_jsonl is required for naturalness_judgments mode.")
         candidates = read_jsonl(args.candidates_jsonl)
         rows, report = collect_naturalness_judgments(candidates, jobs, responses)
+    elif args.mode == "distinctness_judgments":
+        if not args.candidates_jsonl:
+            raise ValueError("--candidates_jsonl is required for distinctness_judgments mode.")
+        candidates = read_jsonl(args.candidates_jsonl)
+        rows, report = collect_distinctness_judgments(candidates, jobs, responses)
     else:
         if not args.candidates_jsonl:
             raise ValueError("--candidates_jsonl is required for depth_measurements mode.")

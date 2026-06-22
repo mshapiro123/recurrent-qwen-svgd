@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 from training.collect_curriculum_job_outputs import (
+    collect_distinctness_judgments,
     collect_depth_measurements,
     collect_naturalness_judgments,
     extract_answer,
@@ -338,6 +339,36 @@ def test_collect_naturalness_judgments_parses_boolean_json() -> None:
     assert rows[0]["solution_id"] == "s1"
     assert rows[0]["natural"] is True
     assert report["status_counts"] == {"natural_true": 1}
+
+
+def test_collect_distinctness_judgments_parses_boolean_json() -> None:
+    solutions = [
+        {"id": "s1", "record_id": "p1", "method": "algebra"},
+        {"id": "s2", "record_id": "p1", "method": "bounded_enumeration"},
+    ]
+    jobs = [
+        {
+            "job_id": "judge-distinct",
+            "stage": "method_distinctness_judge",
+            "role": "judge",
+            "model": "opus-judge",
+            "metadata": {
+                "record_id": "p1",
+                "solution_a_id": "s1",
+                "solution_b_id": "s2",
+                "method_a": "algebra",
+                "method_b": "bounded_enumeration",
+            },
+        }
+    ]
+    responses = [{"job_id": "judge-distinct", "response_text": '{"distinct": true, "reason": "different"}'}]
+
+    rows, report = collect_distinctness_judgments(solutions, jobs, responses)
+
+    assert rows[0]["solution_a_id"] == "s1"
+    assert rows[0]["solution_b_id"] == "s2"
+    assert rows[0]["distinct"] is True
+    assert report["status_counts"] == {"distinct_true": 1}
 
 
 def test_collect_depth_measurements_parses_positive_count_and_steps() -> None:

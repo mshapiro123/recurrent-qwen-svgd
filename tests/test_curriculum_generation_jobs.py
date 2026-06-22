@@ -5,6 +5,7 @@ import json
 import pytest
 
 from training.build_curriculum_generation_jobs import (
+    build_distinctness_jobs,
     build_ground_truth_jobs,
     build_method_solve_jobs,
     build_perturbation_jobs,
@@ -65,6 +66,42 @@ def test_method_solve_jobs_use_explicit_or_taxonomy_methods() -> None:
     assert len(jobs) == 2
     assert {job["metadata"]["method"] for job in jobs} == {"algebra", "synthetic_geometry"}
     assert "METHOD DOES NOT APPLY" in jobs[0]["prompt"]
+
+
+def test_distinctness_jobs_pair_solution_methods_within_record() -> None:
+    jobs = build_distinctness_jobs(
+        [
+            {
+                "id": "s1",
+                "record_id": "p1",
+                "statement": "Find the area.",
+                "method": "algebra",
+                "solution": "Use A = lw.",
+            },
+            {
+                "id": "s2",
+                "record_id": "p1",
+                "statement": "Find the area.",
+                "method": "bounded_enumeration",
+                "solution": "Count cells.",
+            },
+            {
+                "id": "s3",
+                "record_id": "p1",
+                "statement": "Find the area.",
+                "method": "bounded_enumeration",
+                "solution": "Count rows.",
+            },
+        ],
+        models=["opus-test", "glm-test"],
+    )
+
+    assert len(jobs) == 4
+    assert jobs[0]["stage"] == "method_distinctness_judge"
+    assert jobs[0]["expects_json"] is True
+    assert jobs[0]["metadata"]["solution_a_id"] == "s1"
+    assert jobs[0]["metadata"]["solution_b_id"] == "s2"
+    assert "structurally distinct" in jobs[0]["prompt"]
 
 
 def test_perturbation_jobs_emit_neutral_and_pressure_prompts() -> None:
@@ -134,4 +171,3 @@ def test_cli_writes_method_solve_jobs(tmp_path) -> None:
     rows = [json.loads(line) for line in output_jsonl.read_text(encoding="utf-8").splitlines()]
     assert len(rows) == 2
     assert rows[0]["stage"] == "method_constrained_solve"
-

@@ -55,6 +55,19 @@ def depth(solution_id: str, *, method: str, count: int) -> dict:
     }
 
 
+def distinct(solution_a_id: str, solution_b_id: str, *, verdict: bool = True, judge_model: str = "judge-a") -> dict:
+    return {
+        "record_id": "p1",
+        "solution_a_id": solution_a_id,
+        "solution_b_id": solution_b_id,
+        "method_a": "algebra",
+        "method_b": "bounded_enumeration",
+        "judge_model": judge_model,
+        "distinct": verdict,
+        "reason": "judged",
+    }
+
+
 def test_assemble_wide_record_and_exports_positive_sft() -> None:
     records, report = assemble_curriculum_records(
         [verified_candidate()],
@@ -83,6 +96,55 @@ def test_assemble_wide_record_and_exports_positive_sft() -> None:
     examples, export_report = convert_curriculum_records(records)
     assert len(examples) == 2
     assert export_report["exported_role_counts"] == {"positive_wide": 2}
+
+
+def test_assemble_wide_record_when_methods_are_distinct() -> None:
+    records, report = assemble_curriculum_records(
+        [verified_candidate()],
+        [
+            solution("s-algebra", method="algebra"),
+            solution("s-enum", method="bounded_enumeration"),
+        ],
+        [
+            natural("s-algebra", method="algebra"),
+            natural("s-enum", method="bounded_enumeration"),
+        ],
+        [
+            depth("s-algebra", method="algebra", count=3),
+            depth("s-enum", method="bounded_enumeration", count=4),
+        ],
+        [distinct("s-algebra", "s-enum", verdict=True)],
+        deep_threshold=5,
+    )
+
+    assert report["distinctness_required"] is True
+    assert report["mode_counts"] == {"wide": 1}
+    assert records[0]["width_signature"]["width"] == 2
+
+
+def test_assemble_prunes_non_distinct_method_from_width() -> None:
+    records, report = assemble_curriculum_records(
+        [verified_candidate()],
+        [
+            solution("s-algebra", method="algebra"),
+            solution("s-enum", method="bounded_enumeration"),
+        ],
+        [
+            natural("s-algebra", method="algebra"),
+            natural("s-enum", method="bounded_enumeration"),
+        ],
+        [
+            depth("s-algebra", method="algebra", count=3),
+            depth("s-enum", method="bounded_enumeration", count=4),
+        ],
+        [distinct("s-algebra", "s-enum", verdict=False)],
+        deep_threshold=5,
+    )
+
+    assert report["mode_counts"] == {"direct": 1}
+    assert records[0]["width_signature"] == {"methods": ["algebra"], "width": 1}
+    assert len(records[0]["traces"]) == 1
+    assert records[0]["traces"][0]["role"] == "positive_direct"
 
 
 def test_assemble_rejects_not_decontaminated_by_default() -> None:
@@ -159,4 +221,3 @@ def test_cli_assembles_curriculum_records(tmp_path) -> None:
     report = json.loads(report_path.read_text(encoding="utf-8"))
     assert rows[0]["id"] == "p1"
     assert report["records"] == 1
-

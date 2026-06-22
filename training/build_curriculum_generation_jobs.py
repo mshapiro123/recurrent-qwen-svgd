@@ -149,6 +149,22 @@ def prompt_naturalness_judge(*, statement: str, solution: str, method: str) -> s
     )
 
 
+def prompt_distinctness_judge(
+    *,
+    solution_a: str,
+    solution_b: str,
+    method_a: str,
+    method_b: str,
+) -> str:
+    return (
+        f"Two solutions to the same problem are below, claiming methods {method_a} and {method_b}.\n"
+        "Judge whether they are genuinely structurally distinct approaches or the same reasoning relabeled.\n"
+        "Return ONLY this JSON: {\"distinct\": true, \"reason\": \"...\"}\n"
+        f"Solution A ({method_a}): {solution_a}\n"
+        f"Solution B ({method_b}): {solution_b}"
+    )
+
+
 def prompt_depth_decomposition(solution: str) -> str:
     return (
         "Break the correct solution below into its minimal sequence of necessary steps, "
@@ -220,6 +236,10 @@ def statement_for(row: dict[str, Any]) -> str:
 
 def solution_for(row: dict[str, Any]) -> str:
     return str(row.get("solution") or row.get("text") or row.get("trace") or row.get("completion") or "").strip()
+
+
+def solution_id(row: dict[str, Any], index: int) -> str:
+    return str(row.get("id") or f"solution-{index:06d}")
 
 
 def explicit_methods(row: dict[str, Any]) -> list[str]:
@@ -358,6 +378,55 @@ def build_naturalness_jobs(rows: list[dict[str, Any]], *, models: list[str]) -> 
     return jobs
 
 
+def build_distinctness_jobs(rows: list[dict[str, Any]], *, models: list[str]) -> list[dict[str, Any]]:
+    jobs: list[dict[str, Any]] = []
+    rows_by_record: dict[str, list[tuple[int, dict[str, Any]]]] = {}
+    for row_index, row in enumerate(rows):
+        statement = statement_for(row)
+        solution = solution_for(row)
+        method = str(row.get("method") or "").strip()
+        parent_record_id = str(row.get("record_id") or "")
+        if not (statement and solution and method and parent_record_id):
+            continue
+        rows_by_record.setdefault(parent_record_id, []).append((row_index, row))
+
+    for parent_record_id, grouped_rows in sorted(rows_by_record.items()):
+        for left_index, (row_a_index, row_a) in enumerate(grouped_rows):
+            method_a = str(row_a.get("method") or "").strip()
+            for row_b_index, row_b in grouped_rows[left_index + 1 :]:
+                method_b = str(row_b.get("method") or "").strip()
+                if method_a == method_b:
+                    continue
+                solution_a = solution_for(row_a)
+                solution_b = solution_for(row_b)
+                solution_a_id = solution_id(row_a, row_a_index)
+                solution_b_id = solution_id(row_b, row_b_index)
+                for model in models:
+                    jobs.append(
+                        make_job(
+                            index=len(jobs),
+                            stage="method_distinctness_judge",
+                            role="judge",
+                            model=model,
+                            prompt=prompt_distinctness_judge(
+                                solution_a=solution_a,
+                                solution_b=solution_b,
+                                method_a=method_a,
+                                method_b=method_b,
+                            ),
+                            expects_json=True,
+                            metadata={
+                                "record_id": parent_record_id,
+                                "solution_a_id": solution_a_id,
+                                "solution_b_id": solution_b_id,
+                                "method_a": method_a,
+                                "method_b": method_b,
+                            },
+                        )
+                    )
+    return jobs
+
+
 def build_depth_jobs(rows: list[dict[str, Any]], *, models: list[str]) -> list[dict[str, Any]]:
     jobs: list[dict[str, Any]] = []
     for row_index, row in enumerate(rows):
@@ -476,6 +545,8 @@ def build_jobs_from_args(args: argparse.Namespace) -> list[dict[str, Any]]:
         return build_method_solve_jobs(rows, models=models, fallback_methods=split_csv(args.methods))
     if args.stage == "naturalness":
         return build_naturalness_jobs(rows, models=models)
+    if args.stage == "distinctness":
+        return build_distinctness_jobs(rows, models=models)
     if args.stage == "depth":
         return build_depth_jobs(rows, models=models)
     if args.stage == "perturbation":
@@ -490,7 +561,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--stage",
         required=True,
-        choices=("seed", "ground_truth", "method_solve", "naturalness", "depth", "perturbation", "error_detection"),
+        choices=(
+            "seed",
+            "ground_truth",
+            "method_solve",
+            "naturalness",
+            "distinctness",
+            "depth",
+            "perturbation",
+            "error_detection",
+        ),
     )
     parser.add_argument("--models", required=True, help="Comma-separated external model ids.")
     parser.add_argument("--output_jsonl", required=True)
@@ -520,4 +600,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -119,6 +119,63 @@ def depth_by_solution(measurements: list[dict[str, Any]]) -> dict[str, dict[str,
     return selected
 
 
+def pair_key(left: str, right: str) -> tuple[str, str]:
+    ordered = sorted((left, right))
+    return ordered[0], ordered[1]
+
+
+def distinct_solution_pairs(
+    judgments: list[dict[str, Any]],
+    *,
+    min_distinct_agree: int,
+) -> set[tuple[str, str]]:
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for judgment in judgments:
+        solution_a = str(judgment.get("solution_a_id") or "")
+        solution_b = str(judgment.get("solution_b_id") or "")
+        if not (solution_a and solution_b):
+            continue
+        grouped[pair_key(solution_a, solution_b)].append(judgment)
+
+    accepted: set[tuple[str, str]] = set()
+    for key, rows in grouped.items():
+        true_models = {
+            str(row.get("judge_model"))
+            for row in rows
+            if row.get("distinct") is True and str(row.get("judge_model"))
+        }
+        false_models = {
+            str(row.get("judge_model"))
+            for row in rows
+            if row.get("distinct") is False and str(row.get("judge_model"))
+        }
+        if len(true_models) >= min_distinct_agree and len(true_models) > len(false_models):
+            accepted.add(key)
+    return accepted
+
+
+def solution_id(solution: dict[str, Any]) -> str:
+    return str(solution.get("id") or "")
+
+
+def prune_to_pairwise_distinct_methods(
+    best_by_method: dict[str, tuple[dict[str, Any], dict[str, Any], dict[str, Any]]],
+    accepted_pairs: set[tuple[str, str]],
+) -> dict[str, tuple[dict[str, Any], dict[str, Any], dict[str, Any]]]:
+    selected: dict[str, tuple[dict[str, Any], dict[str, Any], dict[str, Any]]] = {}
+    for method, triple in sorted(best_by_method.items(), key=lambda item: (int(item[1][2]["count"]), item[0])):
+        current_id = solution_id(triple[0])
+        if not current_id:
+            continue
+        is_distinct_from_selected = all(
+            pair_key(current_id, solution_id(selected_triple[0])) in accepted_pairs
+            for selected_triple in selected.values()
+        )
+        if is_distinct_from_selected:
+            selected[method] = triple
+    return selected
+
+
 def build_trace(solution: dict[str, Any], *, role: str, steps: int, natural_info: dict[str, Any]) -> dict[str, Any]:
     return {
         "role": role,
@@ -139,8 +196,10 @@ def assemble_curriculum_records(
     solution_candidates: list[dict[str, Any]],
     naturalness_judgments: list[dict[str, Any]],
     depth_measurements: list[dict[str, Any]],
+    distinctness_judgments: list[dict[str, Any]] | None = None,
     *,
     min_natural_agree: int = 1,
+    min_distinct_agree: int = 1,
     deep_threshold: int = 5,
     require_decontaminated: bool = True,
     require_method_match: bool = True,
@@ -153,6 +212,11 @@ def assemble_curriculum_records(
         require_method_match=require_method_match,
     )
     depth = depth_by_solution(depth_measurements)
+    distinct_pairs = (
+        distinct_solution_pairs(distinctness_judgments, min_distinct_agree=min_distinct_agree)
+        if distinctness_judgments is not None
+        else None
+    )
     solutions_by_record: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for solution in solution_candidates:
         solutions_by_record[str(solution.get("record_id") or "")].append(solution)
@@ -188,6 +252,13 @@ def assemble_curriculum_records(
             if method not in per_method or count < per_method[method]:
                 per_method[method] = count
                 best_by_method[method] = (solution, natural_info, depth_info)
+
+        if distinct_pairs is not None:
+            best_by_method = prune_to_pairwise_distinct_methods(best_by_method, distinct_pairs)
+            per_method = {
+                method: int(depth_info["count"])
+                for method, (_solution, _natural_info, depth_info) in best_by_method.items()
+            }
 
         if not per_method:
             rejected.append({"id": record_id, "reason": "no_method_depth"})
@@ -234,6 +305,8 @@ def assemble_curriculum_records(
         "solution_candidates": len(solution_candidates),
         "naturalness_judgments": len(naturalness_judgments),
         "depth_measurements": len(depth_measurements),
+        "distinctness_judgments": 0 if distinctness_judgments is None else len(distinctness_judgments),
+        "distinctness_required": distinctness_judgments is not None,
         "records": len(records),
         "rejected": len(rejected),
         "rejected_records": rejected,
@@ -257,9 +330,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--solution_candidates_jsonl", required=True)
     parser.add_argument("--naturalness_jsonl", required=True)
     parser.add_argument("--depth_jsonl", required=True)
+    parser.add_argument("--distinctness_jsonl")
     parser.add_argument("--output_jsonl", required=True)
     parser.add_argument("--report_json")
     parser.add_argument("--min_natural_agree", type=int, default=1)
+    parser.add_argument("--min_distinct_agree", type=int, default=1)
     parser.add_argument("--deep_threshold", type=int, default=5)
     parser.add_argument("--allow_not_decontaminated", action="store_true")
     parser.add_argument("--allow_method_mismatch", action="store_true")
@@ -271,7 +346,9 @@ def main(argv: list[str] | None = None) -> int:
         read_jsonl(args.solution_candidates_jsonl),
         read_jsonl(args.naturalness_jsonl),
         read_jsonl(args.depth_jsonl),
+        read_jsonl(args.distinctness_jsonl) if args.distinctness_jsonl else None,
         min_natural_agree=args.min_natural_agree,
+        min_distinct_agree=args.min_distinct_agree,
         deep_threshold=args.deep_threshold,
         require_decontaminated=not args.allow_not_decontaminated,
         require_method_match=not args.allow_method_mismatch,
@@ -288,4 +365,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
