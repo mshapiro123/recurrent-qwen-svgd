@@ -1,0 +1,5 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=validation
+rows=128
+output_jsonl=data/stage5_mcq_debias_direct_20260622_194346/arc_easy_128.jsonl
