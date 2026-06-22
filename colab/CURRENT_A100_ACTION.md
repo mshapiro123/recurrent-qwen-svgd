@@ -12,8 +12,9 @@ The bootstrap defaults to `preflight`. To intentionally execute the guarded
 paid action after preflight is green, set
 `STAGE5_CURRENT_A100_TARGET=safe_continue_execute` before running it on an
 A100/H100 runtime.
-If the generated direct/deep curriculum gate has not been published yet, do not
-attach an A100. Run the same bootstrap on a CPU runtime with
+The current preferred path is **CPU curriculum first, A100 second**. If the
+generated direct/deep curriculum gate has not been published yet, do not attach
+an A100. Run the same bootstrap on a CPU runtime with
 `STAGE5_CURRENT_A100_TARGET=programmatic_curriculum_cpu`; that target fetches
 `colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py`, refuses attached GPU runtimes
 by default, backs the generated rows up to Drive, and publishes the small green
@@ -68,7 +69,65 @@ artifacts, and disconnects by default.
 If the go/no-go output is `routing_checkpoint_missing_no_go`, do not keep the
 GPU session alive. Disconnect and run the Drive/checkpoint preflight first.
 
-## Source Summary
+## Current Sequence
+
+### Step 1: CPU-Only Programmatic Curriculum Gate
+
+Run this on a CPU Colab runtime. If the repo is already cloned in the notebook:
+
+```python
+import os
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "programmatic_curriculum_cpu"
+exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
+```
+
+If the repo is not already cloned, use this paste-anywhere loader instead:
+
+```python
+import base64, json, os, urllib.request
+from google.colab import userdata
+
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "programmatic_curriculum_cpu"
+token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
+assert token, "Add GH_TOKEN or GITHUB_TOKEN to Colab secrets."
+url = "https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py?ref=main"
+req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})
+payload = json.loads(urllib.request.urlopen(req).read().decode("utf-8"))
+code = base64.b64decode(payload["content"]).decode("utf-8")
+exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
+```
+
+This step generates the 2000-row direct/deep-narrow constructed curriculum,
+exports only verified `positive_*` SFT rows, backs the artifact directory up to
+Drive, publishes the small green gate summary to GitHub, and updates the current
+source pointer.
+
+### Step 2: Guarded A100 Curriculum SFT
+
+Only after Step 1 succeeds and Drive is authorized, attach A100/H100 and run.
+If the repo is already cloned:
+
+```python
+import os
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "safe_continue_execute"
+exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
+```
+
+If the repo is not already cloned, rerun the paste-anywhere loader above with
+`safe_continue_execute` instead of `programmatic_curriculum_cpu`.
+
+The safe-continue cell must show a green curriculum input preflight before
+running `colab/run_stage5_curriculum_sft.py`. If it reports missing curriculum
+input artifacts, disconnect the GPU and rerun Step 1 or reauthorize Drive.
+
+### Step 3: Bounded Benchmark Only After SFT
+
+If SFT completes, the planner may recommend
+`colab/run_stage5_benchmark_suite.py`. The A100 go/no-go guard now requires
+explicit `STAGE5_BENCHMARKS` plus bounded per-benchmark limits before that
+benchmark suite can run. This prevents accidental full benchmark spending.
+
+## Previous Routing Diagnostic
 
 The current source of truth is the completed routing diagnostic:
 
@@ -86,14 +145,17 @@ ARC-Challenge direct delta = -3, mean direct loops = 2.62, mean direct margin de
 ARC-Challenge conceptual delta = +2
 ```
 
-This means: do **not** run GPQA, Phase 2/SVGD, wide-particle training, or
-scale-up yet. The model is still harming base-confident direct rows and
-over-looping on them. The next useful paid-GPU action is a direct-mode
-deterministic repair.
+This still explains why the next work is direct/deep deterministic recovery:
+do **not** run GPQA, Phase 2/SVGD, wide-particle training, or scale-up yet. The
+model is still harming base-confident direct rows and over-looping on them.
+However, the preferred recovery ingredient is now the generated
+direct/deep-narrow curriculum gate above, not another ad hoc particle or broad
+benchmark run.
 
-## Experiment
+## Previous Direct-Repair Experiment
 
-Run exactly one bounded direct-mode halting repair:
+The older direct-mode repair path remains available if the curriculum SFT gate
+fails or if we intentionally compare it as an ablation:
 
 ```bash
 python colab/run_stage5_routing_repair.py
