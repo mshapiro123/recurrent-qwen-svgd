@@ -80,6 +80,18 @@ def test_arc_mix_recovery_notebook_is_single_purpose() -> None:
     assert payload["metadata"]["colab"]["gpuType"] == "A100"
 
 
+def test_current_a100_action_points_to_arc_mix_notebook() -> None:
+    text = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
+
+    assert "https://colab.research.google.com/github/mshapiro123/recurrent-qwen-svgd/blob/main/colab/09_stage5_arc_mix_recovery_once.ipynb" in text
+    assert "stage5_full_assessment_once_20260622_005522/summary.json" in text
+    assert "arc_mix_response_w01_lr2e6" in text
+    assert "run_full_balanced_assessment" in text
+    assert "stop_for_calibration_repair" in text
+    assert "stop_and_revise_objective" in text
+    assert "Do not run GPQA" in text
+
+
 def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     text = (ROOT / "colab/STAGE5_SAFE_CONTINUE_CELL.md").read_text(encoding="utf-8")
 

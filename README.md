@@ -263,6 +263,9 @@ STAGE5_ARC_MIX_ONCE_SOURCE_SUMMARY=outputs/stage5/stage5_full_assessment_once_20
 STAGE5_ARC_MIX_ARMS=arc_mix_response_w01_lr2e6
 ```
 
+The concise run card with the direct GitHub-Colab link is
+[`colab/CURRENT_A100_ACTION.md`](colab/CURRENT_A100_ACTION.md).
+
 This is a hypothesis-driven calibration-recovery proxy. It should run only
 after reviewing the diagnosis. The proxy gate now requires calibration to remain
 healthy before it can pass. If it lifts raw accuracy but reports

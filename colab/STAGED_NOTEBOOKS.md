@@ -7,6 +7,10 @@ path below stays inside the current runtime.
 
 ## Current Low-Credit Stage 5 Action
 
+For the shortest current instruction, use
+[`CURRENT_A100_ACTION.md`](CURRENT_A100_ACTION.md). It includes the direct
+GitHub-Colab URL and the post-run stop/continue decisions.
+
 The active next action is **not** another immediate A100 run. The latest full
 balanced ARC assessment landed as
 `stage5_full_assessment_once_20260622_005522` and still reported
