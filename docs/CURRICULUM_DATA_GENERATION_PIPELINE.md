@@ -314,3 +314,40 @@ Depth, naturalness, perturbation, and error-detection jobs are available through
 `--stage depth`, `--stage naturalness`, `--stage perturbation`, and
 `--stage error_detection`. These are still job construction steps; responses
 must be parsed and verified before typed curriculum records are created.
+
+Collect naturalness and depth judge responses:
+
+```bash
+python training/collect_curriculum_job_outputs.py \
+  --mode naturalness_judgments \
+  --candidates_jsonl data/curriculum/method_solution_candidates.jsonl \
+  --jobs_jsonl data/curriculum/jobs_naturalness.jsonl \
+  --responses_jsonl data/curriculum/responses_naturalness.jsonl \
+  --output_jsonl data/curriculum/naturalness_judgments.jsonl \
+  --report_json outputs/curriculum/naturalness_judgments_report.json
+
+python training/collect_curriculum_job_outputs.py \
+  --mode depth_measurements \
+  --candidates_jsonl data/curriculum/method_solution_candidates.jsonl \
+  --jobs_jsonl data/curriculum/jobs_depth.jsonl \
+  --responses_jsonl data/curriculum/responses_depth.jsonl \
+  --output_jsonl data/curriculum/depth_measurements.jsonl \
+  --report_json outputs/curriculum/depth_measurements_report.json
+```
+
+Assemble typed curriculum records:
+
+```bash
+python training/assemble_curriculum_records.py \
+  --verified_candidates_jsonl data/curriculum/verified_candidates.jsonl \
+  --solution_candidates_jsonl data/curriculum/method_solution_candidates.jsonl \
+  --naturalness_jsonl data/curriculum/naturalness_judgments.jsonl \
+  --depth_jsonl data/curriculum/depth_measurements.jsonl \
+  --output_jsonl data/curriculum/typed_records.jsonl \
+  --report_json outputs/curriculum/typed_records_report.json
+```
+
+Assembly rejects undecontaminated candidates by default. It also rejects method
+solutions that lack both a naturalness agreement and a positive depth
+measurement. Only after this step should `prepare_curriculum_jsonl.py` export
+positive SFT rows.

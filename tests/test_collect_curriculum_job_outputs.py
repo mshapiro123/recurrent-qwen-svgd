@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 
 from training.collect_curriculum_job_outputs import (
+    collect_depth_measurements,
+    collect_naturalness_judgments,
     extract_answer,
     extract_json_object,
     ground_truth_outputs_to_verified_candidates,
@@ -311,3 +313,54 @@ def test_cli_collects_method_solution_candidates(tmp_path) -> None:
     report = json.loads(report_json.read_text(encoding="utf-8"))
     assert rows[0]["method"] == "algebra"
     assert report["solution_candidates"] == 1
+
+
+def test_collect_naturalness_judgments_parses_boolean_json() -> None:
+    solutions = [{"id": "s1", "record_id": "p1", "method": "algebra"}]
+    jobs = [
+        {
+            "job_id": "judge-natural",
+            "stage": "naturalness_judge",
+            "role": "judge",
+            "model": "opus-judge",
+            "metadata": {"record_id": "s1", "method": "algebra"},
+        }
+    ]
+    responses = [
+        {
+            "job_id": "judge-natural",
+            "response_text": '{"natural": true, "actually_uses": "algebra", "reason": "clean"}',
+        }
+    ]
+
+    rows, report = collect_naturalness_judgments(solutions, jobs, responses)
+
+    assert rows[0]["solution_id"] == "s1"
+    assert rows[0]["natural"] is True
+    assert report["status_counts"] == {"natural_true": 1}
+
+
+def test_collect_depth_measurements_parses_positive_count_and_steps() -> None:
+    solutions = [{"id": "s1", "record_id": "p1", "method": "algebra"}]
+    jobs = [
+        {
+            "job_id": "judge-depth",
+            "stage": "depth_decomposition",
+            "role": "judge",
+            "model": "glm-judge",
+            "metadata": {"record_id": "s1", "method": "algebra"},
+        }
+    ]
+    responses = [
+        {
+            "job_id": "judge-depth",
+            "response_text": '{"steps": ["compute 2+2", "state answer"], "count": 2}',
+        }
+    ]
+
+    rows, report = collect_depth_measurements(solutions, jobs, responses)
+
+    assert rows[0]["solution_id"] == "s1"
+    assert rows[0]["count"] == 2
+    assert rows[0]["steps"] == ["compute 2+2", "state answer"]
+    assert report["status_counts"] == {"valid_depth": 1}

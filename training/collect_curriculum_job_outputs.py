@@ -397,6 +397,122 @@ def method_outputs_to_solution_candidates(
     }
 
 
+def collect_naturalness_judgments(
+    solution_candidates: list[dict[str, Any]],
+    jobs: list[dict[str, Any]],
+    responses: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    solution_by_id = group_candidates(solution_candidates)
+    paired, issues = responses_with_jobs(jobs, responses)
+    rows: list[dict[str, Any]] = []
+    status_counts: Counter[str] = Counter()
+
+    for job, response, text in paired:
+        if job.get("stage") != "naturalness_judge":
+            continue
+        metadata = job.get("metadata") if isinstance(job.get("metadata"), dict) else {}
+        solution_id = str(metadata.get("record_id") or "")
+        solution = solution_by_id.get(solution_id)
+        if solution is None:
+            issues.append(f"{job.get('job_id')}: no matching solution candidate for {solution_id!r}")
+            status_counts["missing_solution"] += 1
+            continue
+        payload = extract_json_object(text)
+        if payload is None:
+            issues.append(f"{job.get('job_id')}: could not parse naturalness JSON")
+            status_counts["parse_error"] += 1
+            continue
+        natural = payload.get("natural")
+        if not isinstance(natural, bool):
+            issues.append(f"{job.get('job_id')}: naturalness JSON missing boolean natural")
+            status_counts["invalid_payload"] += 1
+            continue
+        status_counts["natural_true" if natural else "natural_false"] += 1
+        rows.append(
+            {
+                "solution_id": solution_id,
+                "record_id": solution.get("record_id"),
+                "method": solution.get("method"),
+                "judge_model": job.get("model"),
+                "natural": natural,
+                "actually_uses": str(payload.get("actually_uses") or "").strip(),
+                "reason": str(payload.get("reason") or "").strip(),
+                "source_job_id": job.get("job_id"),
+                "source_response_id": response.get("response_id"),
+            }
+        )
+
+    return rows, {
+        "mode": "naturalness_judgments",
+        "solution_candidate_rows": len(solution_candidates),
+        "jobs": len(jobs),
+        "responses": len(responses),
+        "judgments": len(rows),
+        "issues": issues,
+        "status_counts": dict(sorted(status_counts.items())),
+    }
+
+
+def collect_depth_measurements(
+    solution_candidates: list[dict[str, Any]],
+    jobs: list[dict[str, Any]],
+    responses: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    solution_by_id = group_candidates(solution_candidates)
+    paired, issues = responses_with_jobs(jobs, responses)
+    rows: list[dict[str, Any]] = []
+    status_counts: Counter[str] = Counter()
+
+    for job, response, text in paired:
+        if job.get("stage") != "depth_decomposition":
+            continue
+        metadata = job.get("metadata") if isinstance(job.get("metadata"), dict) else {}
+        solution_id = str(metadata.get("record_id") or "")
+        solution = solution_by_id.get(solution_id)
+        if solution is None:
+            issues.append(f"{job.get('job_id')}: no matching solution candidate for {solution_id!r}")
+            status_counts["missing_solution"] += 1
+            continue
+        payload = extract_json_object(text)
+        if payload is None:
+            issues.append(f"{job.get('job_id')}: could not parse depth JSON")
+            status_counts["parse_error"] += 1
+            continue
+        count = payload.get("count")
+        steps = payload.get("steps")
+        if isinstance(count, bool) or not isinstance(count, int) or count < 1:
+            issues.append(f"{job.get('job_id')}: depth JSON missing positive integer count")
+            status_counts["invalid_payload"] += 1
+            continue
+        if not isinstance(steps, list) or not all(str(step).strip() for step in steps):
+            issues.append(f"{job.get('job_id')}: depth JSON missing non-empty steps list")
+            status_counts["invalid_payload"] += 1
+            continue
+        status_counts["valid_depth"] += 1
+        rows.append(
+            {
+                "solution_id": solution_id,
+                "record_id": solution.get("record_id"),
+                "method": solution.get("method"),
+                "judge_model": job.get("model"),
+                "steps": [str(step) for step in steps],
+                "count": count,
+                "source_job_id": job.get("job_id"),
+                "source_response_id": response.get("response_id"),
+            }
+        )
+
+    return rows, {
+        "mode": "depth_measurements",
+        "solution_candidate_rows": len(solution_candidates),
+        "jobs": len(jobs),
+        "responses": len(responses),
+        "measurements": len(rows),
+        "issues": issues,
+        "status_counts": dict(sorted(status_counts.items())),
+    }
+
+
 def write_report(path: str | Path | None, report: dict[str, Any]) -> None:
     if not path:
         return
@@ -407,12 +523,25 @@ def write_report(path: str | Path | None, report: dict[str, Any]) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("seed_candidates", "verified_candidates", "method_solutions"), required=True)
+    parser.add_argument(
+        "--mode",
+        choices=(
+            "seed_candidates",
+            "verified_candidates",
+            "method_solutions",
+            "naturalness_judgments",
+            "depth_measurements",
+        ),
+        required=True,
+    )
     parser.add_argument("--jobs_jsonl", required=True)
     parser.add_argument("--responses_jsonl", required=True)
     parser.add_argument("--output_jsonl", required=True)
     parser.add_argument("--report_json")
-    parser.add_argument("--candidates_jsonl", help="Required for verified_candidates and method_solutions modes.")
+    parser.add_argument(
+        "--candidates_jsonl",
+        help="Required for verified_candidates, method_solutions, naturalness_judgments, and depth_measurements modes.",
+    )
     parser.add_argument("--min_agree", type=int, default=2)
     parser.add_argument("--mark_decontaminated", action="store_true")
     args = parser.parse_args(argv)
@@ -436,16 +565,26 @@ def main(argv: list[str] | None = None) -> int:
             min_agree=args.min_agree,
             mark_decontaminated=args.mark_decontaminated,
         )
-    else:
+    elif args.mode == "method_solutions":
         if not args.candidates_jsonl:
             raise ValueError("--candidates_jsonl is required for method_solutions mode.")
         candidates = read_jsonl(args.candidates_jsonl)
         rows, report = method_outputs_to_solution_candidates(candidates, jobs, responses)
+    elif args.mode == "naturalness_judgments":
+        if not args.candidates_jsonl:
+            raise ValueError("--candidates_jsonl is required for naturalness_judgments mode.")
+        candidates = read_jsonl(args.candidates_jsonl)
+        rows, report = collect_naturalness_judgments(candidates, jobs, responses)
+    else:
+        if not args.candidates_jsonl:
+            raise ValueError("--candidates_jsonl is required for depth_measurements mode.")
+        candidates = read_jsonl(args.candidates_jsonl)
+        rows, report = collect_depth_measurements(candidates, jobs, responses)
 
     write_jsonl(args.output_jsonl, rows)
     write_report(args.report_json, report)
     print(f"mode={report['mode']}")
-    for key in ("candidates", "verified", "solution_candidates", "rejected"):
+    for key in ("candidates", "verified", "solution_candidates", "judgments", "measurements", "rejected"):
         if key in report:
             print(f"{key}={report[key]}")
     print(f"issues={len(report['issues'])}")
