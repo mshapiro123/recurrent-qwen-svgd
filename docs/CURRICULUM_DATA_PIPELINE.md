@@ -58,6 +58,61 @@ Assign models to roles instead of treating them as interchangeable.
 - Naturalness, distinctness, and error-location judgments require agreement or
   majority. Ties are dropped or escalated for human review.
 
+## Running Provider Response Jobs
+
+The maintained pipeline is artifact-driven and resumable. It is intentionally
+CPU/network work; do not attach an A100 just to generate or collect provider
+responses.
+
+First run the artifact pipeline until it stops at the next missing response
+file:
+
+```bash
+python training/run_curriculum_pipeline_from_artifacts.py \
+  --work_dir data/curriculum/run_001 \
+  --seed_models opus-strong,glm-strong \
+  --solver_models opus-strong,glm-strong \
+  --judge_models opus-strong,glm-strong
+```
+
+Then submit the emitted jobs with either a custom command backend or an
+OpenAI-compatible chat-completions endpoint. The command backend is the escape
+hatch for Anthropic, hosted GLM, batch systems, or any provider whose API shape
+does not match chat completions:
+
+```bash
+python training/run_curriculum_job_responses.py \
+  --jobs_jsonl data/curriculum/run_001/jobs_seed.jsonl \
+  --output_jsonl data/curriculum/run_001/responses_seed.jsonl \
+  --backend command \
+  --command "python scripts/my_provider_runner.py" \
+  --resume \
+  --fail_fast
+```
+
+For OpenAI-compatible endpoints, provide a concrete model map and an API key
+through an environment variable or Colab secret:
+
+```bash
+python training/run_curriculum_job_responses.py \
+  --jobs_jsonl data/curriculum/run_001/jobs_seed.jsonl \
+  --output_jsonl data/curriculum/run_001/responses_seed.jsonl \
+  --backend openai_compatible \
+  --api_key_env OPENAI_API_KEY \
+  --base_url https://api.openai.com/v1 \
+  --model_map_json config/curriculum_model_map.example.json \
+  --json_mode \
+  --resume \
+  --fail_fast
+```
+
+After each response file lands, rerun
+`training/run_curriculum_pipeline_from_artifacts.py`. It will consume the
+responses, write validated intermediate artifacts and per-stage reports, then
+stop at the next required job file. The final handoff to GPU training is
+`positive_sft.jsonl`; negative and verifier traces remain in `typed_records.jsonl`
+and are not exported to positive SFT.
+
 ## Method Taxonomy
 
 Width is a structural count, not a surface-style count. Curate the method

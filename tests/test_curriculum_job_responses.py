@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import sys
 
+import training.run_curriculum_job_responses as runner
 from training.run_curriculum_job_responses import main, read_jsonl, run_jobs
 
 
@@ -85,6 +86,73 @@ def test_command_backend_records_errors_without_raising(tmp_path) -> None:
     assert report["errors"] == 1
     assert rows[0]["status"] == "error"
     assert rows[0]["returncode"] == 3
+
+
+def test_openai_compatible_backend_posts_chat_completion_request(tmp_path, monkeypatch) -> None:
+    output = tmp_path / "responses.jsonl"
+    seen = {}
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exc):
+            return False
+
+        def read(self):
+            return json.dumps({"choices": [{"message": {"content": "ANSWER: 4"}}]}).encode("utf-8")
+
+    def fake_urlopen(request, timeout):
+        seen["url"] = request.full_url
+        seen["timeout"] = timeout
+        seen["headers"] = dict(request.header_items())
+        seen["payload"] = json.loads(request.data.decode("utf-8"))
+        return FakeResponse()
+
+    monkeypatch.setattr(runner.urllib.request, "urlopen", fake_urlopen)
+
+    report = run_jobs(
+        [{**job("job-openai"), "model": "logical-opus", "expects_json": True}],
+        output_jsonl=output,
+        backend="openai_compatible",
+        api_key="test-key",
+        base_url="https://example.test/v1",
+        model_map={"logical-opus": "real-model"},
+        json_mode=True,
+        max_tokens=321,
+        temperature=0.0,
+        system_prompt="Return concise answers.",
+    )
+
+    rows = read_jsonl(output)
+    assert report["written"] == 1
+    assert rows[0]["backend"] == "openai_compatible"
+    assert rows[0]["status"] == "ok"
+    assert rows[0]["resolved_model"] == "real-model"
+    assert rows[0]["response_text"] == "ANSWER: 4"
+    assert seen["url"] == "https://example.test/v1/chat/completions"
+    assert seen["headers"]["Authorization"] == "Bearer test-key"
+    assert seen["payload"]["model"] == "real-model"
+    assert seen["payload"]["max_tokens"] == 321
+    assert seen["payload"]["temperature"] == 0.0
+    assert seen["payload"]["response_format"] == {"type": "json_object"}
+    assert seen["payload"]["messages"][0] == {"role": "system", "content": "Return concise answers."}
+
+
+def test_openai_compatible_backend_requires_api_key(tmp_path) -> None:
+    output = tmp_path / "responses.jsonl"
+
+    try:
+        run_jobs(
+            [job("job-openai")],
+            output_jsonl=output,
+            backend="openai_compatible",
+            api_key_env="MISSING_TEST_API_KEY",
+        )
+    except ValueError as exc:
+        assert "API key missing" in str(exc)
+    else:  # pragma: no cover - defensive
+        raise AssertionError("expected missing API key error")
 
 
 def test_cli_runs_dry_run_with_report(tmp_path) -> None:

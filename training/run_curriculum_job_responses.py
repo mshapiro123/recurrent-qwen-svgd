@@ -10,10 +10,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shlex
 import subprocess
 import sys
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -124,12 +127,174 @@ def command_response(
         }
 
 
+def load_model_map(path: str | Path | None) -> dict[str, str]:
+    if not path:
+        return {}
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("--model_map_json must contain a JSON object.")
+    return {str(key): str(value) for key, value in payload.items()}
+
+
+def concrete_model_for(job: dict[str, Any], *, model_override: str | None, model_map: dict[str, str]) -> str:
+    logical = str(job.get("model") or "").strip()
+    if model_override:
+        return model_override
+    if logical in model_map:
+        return model_map[logical]
+    if not logical:
+        raise ValueError("Job is missing model and --model_override was not provided.")
+    return logical
+
+
+def extract_chat_completion_text(payload: dict[str, Any]) -> str:
+    choices = payload.get("choices")
+    if isinstance(choices, list) and choices:
+        first = choices[0]
+        if isinstance(first, dict):
+            message = first.get("message")
+            if isinstance(message, dict):
+                content = message.get("content")
+                if isinstance(content, str):
+                    return content.strip()
+                if isinstance(content, list):
+                    parts = [
+                        str(part.get("text") or "")
+                        for part in content
+                        if isinstance(part, dict) and str(part.get("text") or "").strip()
+                    ]
+                    if parts:
+                        return "\n".join(parts).strip()
+            text = first.get("text")
+            if isinstance(text, str):
+                return text.strip()
+    output_text = payload.get("output_text")
+    if isinstance(output_text, str):
+        return output_text.strip()
+    return ""
+
+
+def openai_compatible_response(
+    job: dict[str, Any],
+    *,
+    api_key: str,
+    base_url: str,
+    model_override: str | None,
+    model_map: dict[str, str],
+    timeout_sec: float,
+    stderr_limit: int,
+    max_tokens: int,
+    temperature: float,
+    system_prompt: str | None,
+    json_mode: bool,
+) -> dict[str, Any]:
+    prompt = str(job.get("prompt") or "")
+    if not prompt:
+        return {
+            "job_id": job.get("job_id"),
+            "response_id": response_id(job, prefix="openai-compatible"),
+            "model": job.get("model"),
+            "stage": job.get("stage"),
+            "backend": "openai_compatible",
+            "status": "error",
+            "response_text": "",
+            "stderr": "job missing prompt",
+            "elapsed_sec": 0.0,
+        }
+
+    model = concrete_model_for(job, model_override=model_override, model_map=model_map)
+    messages: list[dict[str, str]] = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
+    request_payload: dict[str, Any] = {
+        "model": model,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+    }
+    if json_mode and job.get("expects_json"):
+        request_payload["response_format"] = {"type": "json_object"}
+
+    endpoint = base_url.rstrip("/") + "/chat/completions"
+    request = urllib.request.Request(
+        endpoint,
+        data=json.dumps(request_payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    started = time.monotonic()
+    try:
+        with urllib.request.urlopen(request, timeout=timeout_sec) as response:  # noqa: S310 - user-provided model API endpoint
+            raw = response.read().decode("utf-8")
+        elapsed = time.monotonic() - started
+        payload = json.loads(raw)
+        if not isinstance(payload, dict):
+            raise ValueError("response payload is not a JSON object")
+        text = extract_chat_completion_text(payload)
+        status = "ok" if text else "error"
+        return {
+            "job_id": job.get("job_id"),
+            "response_id": response_id(job, prefix="openai-compatible"),
+            "model": job.get("model"),
+            "resolved_model": model,
+            "stage": job.get("stage"),
+            "backend": "openai_compatible",
+            "status": status,
+            "response_text": text,
+            "stderr": "" if text else "empty assistant content",
+            "elapsed_sec": round(elapsed, 6),
+        }
+    except urllib.error.HTTPError as exc:
+        elapsed = time.monotonic() - started
+        body = exc.read().decode("utf-8", errors="replace")
+        return {
+            "job_id": job.get("job_id"),
+            "response_id": response_id(job, prefix="openai-compatible"),
+            "model": job.get("model"),
+            "resolved_model": model,
+            "stage": job.get("stage"),
+            "backend": "openai_compatible",
+            "status": "error",
+            "http_status": exc.code,
+            "response_text": "",
+            "stderr": truncate_text(body, limit=stderr_limit),
+            "elapsed_sec": round(elapsed, 6),
+        }
+    except (TimeoutError, urllib.error.URLError, json.JSONDecodeError, ValueError) as exc:
+        elapsed = time.monotonic() - started
+        return {
+            "job_id": job.get("job_id"),
+            "response_id": response_id(job, prefix="openai-compatible"),
+            "model": job.get("model"),
+            "resolved_model": model,
+            "stage": job.get("stage"),
+            "backend": "openai_compatible",
+            "status": "error",
+            "response_text": "",
+            "stderr": truncate_text(str(exc), limit=stderr_limit),
+            "elapsed_sec": round(elapsed, 6),
+        }
+
+
 def run_jobs(
     jobs: list[dict[str, Any]],
     *,
     output_jsonl: str | Path,
     backend: str,
     command: str | None = None,
+    api_key: str | None = None,
+    api_key_env: str = "OPENAI_API_KEY",
+    base_url: str = "https://api.openai.com/v1",
+    model_override: str | None = None,
+    model_map: dict[str, str] | None = None,
+    max_tokens: int = 2048,
+    temperature: float = 0.2,
+    system_prompt: str | None = None,
+    json_mode: bool = False,
     limit: int | None = None,
     resume: bool = False,
     fail_fast: bool = False,
@@ -141,6 +306,7 @@ def run_jobs(
     completed = existing_job_ids(output_jsonl) if resume else set()
     selected = jobs[:limit] if limit is not None else jobs
     counts = {"written": 0, "skipped": 0, "errors": 0, "timeouts": 0}
+    resolved_model_map = model_map or {}
 
     for job in selected:
         job_id = str(job.get("job_id") or "")
@@ -153,6 +319,23 @@ def run_jobs(
             if not command:
                 raise ValueError("--command is required for --backend command")
             row = command_response(job, command=command, timeout_sec=timeout_sec, stderr_limit=stderr_limit)
+        elif backend == "openai_compatible":
+            resolved_api_key = api_key or os.environ.get(api_key_env)
+            if not resolved_api_key:
+                raise ValueError(f"API key missing. Set {api_key_env} or pass --api_key.")
+            row = openai_compatible_response(
+                job,
+                api_key=resolved_api_key,
+                base_url=base_url,
+                model_override=model_override,
+                model_map=resolved_model_map,
+                timeout_sec=timeout_sec,
+                stderr_limit=stderr_limit,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                system_prompt=system_prompt,
+                json_mode=json_mode,
+            )
         else:
             raise ValueError(f"Unsupported backend {backend!r}")
 
@@ -189,8 +372,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--jobs_jsonl", required=True)
     parser.add_argument("--output_jsonl", required=True)
     parser.add_argument("--report_json")
-    parser.add_argument("--backend", choices=("dry_run", "command"), default="dry_run")
+    parser.add_argument("--backend", choices=("dry_run", "command", "openai_compatible"), default="dry_run")
     parser.add_argument("--command", help="External command for backend=command. Job JSON is passed on stdin.")
+    parser.add_argument("--api_key", help="API key for backend=openai_compatible. Prefer env vars/secrets over this flag.")
+    parser.add_argument("--api_key_env", default="OPENAI_API_KEY")
+    parser.add_argument("--base_url", default="https://api.openai.com/v1")
+    parser.add_argument("--model_override", help="Use one concrete model for every job.")
+    parser.add_argument("--model_map_json", help="JSON object mapping logical job model names to concrete API model ids.")
+    parser.add_argument("--max_tokens", type=int, default=2048)
+    parser.add_argument("--temperature", type=float, default=0.2)
+    parser.add_argument("--system_prompt")
+    parser.add_argument("--json_mode", action="store_true", help="Request JSON-object responses only for jobs with expects_json=true.")
     parser.add_argument("--limit", type=int)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--fail_fast", action="store_true")
@@ -201,11 +393,21 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     jobs = read_jsonl(args.jobs_jsonl)
+    model_map = load_model_map(args.model_map_json)
     report = run_jobs(
         jobs,
         output_jsonl=args.output_jsonl,
         backend=args.backend,
         command=args.command,
+        api_key=args.api_key,
+        api_key_env=args.api_key_env,
+        base_url=args.base_url,
+        model_override=args.model_override,
+        model_map=model_map,
+        max_tokens=args.max_tokens,
+        temperature=args.temperature,
+        system_prompt=args.system_prompt,
+        json_mode=args.json_mode,
         limit=args.limit,
         resume=args.resume,
         fail_fast=args.fail_fast,

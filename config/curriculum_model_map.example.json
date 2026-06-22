@@ -1,0 +1,6 @@
+{
+  "opus-strong": "replace-with-opus-compatible-model-id",
+  "glm-strong": "replace-with-glm-compatible-model-id",
+  "gpt-strong": "replace-with-gpt-compatible-model-id",
+  "weak-reference": "replace-with-cheap-reference-model-id"
+}
