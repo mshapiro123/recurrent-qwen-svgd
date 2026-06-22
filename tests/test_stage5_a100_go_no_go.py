@@ -854,6 +854,76 @@ def test_candidate_distill_and_autopilot_are_guarded_paid_actions() -> None:
     assert autopilot["status"] == "go_curriculum_particle_autopilot"
 
 
+def test_routing_diagnostic_blocks_curriculum_sft_validation_needs_review() -> None:
+    decision = classify_action(
+        {
+            "name": "Run routing diagnostic for generated-curriculum recurrent checkpoint",
+            "command": "python colab/run_stage5_routing_diagnostic.py",
+        },
+        source_payload={
+            "kind": "stage5_curriculum_sft",
+            "phase1_val": {"loss": 2.0, "mean_expected_loops": 3.0},
+            "validation_checks": {"status": "validation_needs_review", "issues": ["missing_mean_expected_loops"]},
+        },
+    )
+
+    assert decision["go"] is False
+    assert decision["status"] == "curriculum_sft_validation_no_go"
+    assert "validation_needs_review" in decision["reason"]
+
+
+def test_routing_diagnostic_blocks_curriculum_sft_nonfinite_validation() -> None:
+    decision = classify_action(
+        {
+            "name": "Run routing diagnostic for generated-curriculum recurrent checkpoint",
+            "command": "python colab/run_stage5_routing_diagnostic.py",
+        },
+        source_payload={
+            "kind": "stage5_curriculum_sft",
+            "phase1_val": {"loss": float("nan"), "mean_expected_loops": 3.0},
+        },
+    )
+
+    assert decision["go"] is False
+    assert decision["status"] == "curriculum_sft_validation_no_go"
+    assert "non-finite metrics" in decision["reason"]
+
+
+def test_routing_diagnostic_blocks_curriculum_sft_loop_collapse() -> None:
+    decision = classify_action(
+        {
+            "name": "Run routing diagnostic for generated-curriculum recurrent checkpoint",
+            "command": "python colab/run_stage5_routing_diagnostic.py",
+        },
+        source_payload={
+            "kind": "stage5_curriculum_sft",
+            "phase1_val": {"loss": 2.0, "mean_expected_loops": 1.0},
+            "validation_checks": {"status": "validation_sane"},
+        },
+    )
+
+    assert decision["go"] is False
+    assert decision["status"] == "curriculum_sft_validation_no_go"
+    assert "loop collapse" in decision["reason"]
+
+
+def test_routing_diagnostic_allows_sane_curriculum_sft_validation() -> None:
+    decision = classify_action(
+        {
+            "name": "Run routing diagnostic for generated-curriculum recurrent checkpoint",
+            "command": "python colab/run_stage5_routing_diagnostic.py",
+        },
+        source_payload={
+            "kind": "stage5_curriculum_sft",
+            "phase1_val": {"loss": 2.0, "mean_expected_loops": 3.0},
+            "validation_checks": {"status": "validation_sane"},
+        },
+    )
+
+    assert decision["go"] is True
+    assert decision["status"] == "go_routing_diagnostic"
+
+
 def test_curriculum_sft_checkpoint_guard_without_resume_starts_from_base(monkeypatch) -> None:
     monkeypatch.delenv("STAGE5_CURRICULUM_RESUME_FROM", raising=False)
 

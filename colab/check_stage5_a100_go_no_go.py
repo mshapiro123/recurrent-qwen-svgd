@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import shlex
 import sys
@@ -47,6 +48,9 @@ RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
 STAGE4_OPUS_APPROVED_SOURCE_KEYS = {"opus47_sft", "opus47_raw"}
 DEFAULT_CURRICULUM_MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"
 DEFAULT_TRACE_CURRICULUM_MIN_SFT_ROWS = int(os.environ.get("STAGE5_TRACE_CURRICULUM_MIN_SFT_ROWS", "16"))
+CURRICULUM_SFT_MIN_MEAN_EXPECTED_LOOPS = float(
+    os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_CURRICULUM_SFT_MIN_MEAN_EXPECTED_LOOPS", "1.05")
+)
 DEFAULT_STAGE5_PHASE1_CHECKPOINT = (
     Path("outputs")
     / "stage4"
@@ -323,6 +327,39 @@ def source_trace_curriculum_positive_rows(source_payload: dict[str, Any]) -> int
     curriculum = source_payload.get("curriculum") if isinstance(source_payload.get("curriculum"), dict) else {}
     counts = curriculum.get("counts") if isinstance(curriculum.get("counts"), dict) else {}
     return int(counts.get("positive_sft_rows") or 0)
+
+
+def curriculum_sft_validation_no_go_reason(source_payload: dict[str, Any]) -> str | None:
+    if source_payload.get("kind") != "stage5_curriculum_sft":
+        return None
+    checks = source_payload.get("validation_checks")
+    if isinstance(checks, dict):
+        status = str(checks.get("status") or "")
+        if status and status != "validation_sane":
+            return (
+                f"Curriculum SFT summary reports validation status {status!r} with "
+                f"issues {checks.get('issues') or []!r}; inspect locally before paid routing diagnostics."
+            )
+    phase1_val = source_payload.get("phase1_val")
+    if not isinstance(phase1_val, dict) or not phase1_val:
+        return "Curriculum SFT summary is missing phase1_val metrics; inspect locally before paid routing diagnostics."
+    nonfinite = [
+        key
+        for key, value in phase1_val.items()
+        if isinstance(value, (int, float)) and not math.isfinite(float(value))
+    ]
+    if nonfinite:
+        return (
+            f"Curriculum SFT validation has non-finite metrics {nonfinite}; "
+            "inspect locally before paid routing diagnostics."
+        )
+    mean_loops = phase1_val.get("mean_expected_loops")
+    if isinstance(mean_loops, (int, float)) and float(mean_loops) < CURRICULUM_SFT_MIN_MEAN_EXPECTED_LOOPS:
+        return (
+            f"Curriculum SFT mean_expected_loops={float(mean_loops):.4g} is below "
+            f"{CURRICULUM_SFT_MIN_MEAN_EXPECTED_LOOPS:.4g}; inspect loop collapse before paid routing diagnostics."
+        )
+    return None
 
 
 def source_has_calibration_warning(payload: dict[str, Any]) -> bool:
@@ -809,6 +846,14 @@ def classify_action(
     source_kind_label = source_payload_kind(source_payload)
 
     if script == "colab/run_stage5_routing_diagnostic.py":
+        validation_reason = curriculum_sft_validation_no_go_reason(source_payload)
+        if validation_reason:
+            return {
+                "go": False,
+                "status": "curriculum_sft_validation_no_go",
+                "spend_class": "none",
+                "reason": validation_reason,
+            }
         return {
             "go": True,
             "status": "go_routing_diagnostic",
