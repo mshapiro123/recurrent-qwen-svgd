@@ -348,6 +348,7 @@ def test_curriculum_artifact_pipeline_cell_defaults_to_no_provider_spend() -> No
     assert '"--min_distinct_agree"' in plain
     assert "training/run_curriculum_pipeline_from_artifacts.py" in plain
     assert "training/run_curriculum_job_responses.py" in plain
+    assert '"--command",\n            PROVIDER_COMMAND,\n            "--model_map_json",' in plain
     assert "pending_reference_attempt_responses" in plain
     assert "pending_responses" in plain
     assert "usable_job_ids" in plain

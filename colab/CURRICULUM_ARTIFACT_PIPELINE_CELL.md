@@ -264,7 +264,12 @@ def run_provider_pair(jobs, responses, model_map_path):
     if PROVIDER_LIMIT is not None:
         cmd += ["--limit", str(PROVIDER_LIMIT)]
     if PROVIDER_BACKEND == "command":
-        cmd += ["--command", PROVIDER_COMMAND]
+        cmd += [
+            "--command",
+            PROVIDER_COMMAND,
+            "--model_map_json",
+            str(model_map_path),
+        ]
     elif PROVIDER_BACKEND == "openai_compatible":
         cmd += [
             "--api_key_env",
