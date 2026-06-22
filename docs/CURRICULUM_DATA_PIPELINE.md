@@ -185,11 +185,14 @@ STAGE5_CURRICULUM_MAX_LOOPS=4
 STAGE5_CURRICULUM_RESUME_FROM=outputs/stage5/<recovered_run>/phase1/phase1_step_125.pt
 ```
 
-The driver treats a response artifact as complete only when the number of
-non-empty response rows is at least the number of emitted job rows for that
-stage. This lets bounded provider batches resume safely: a partial
-`responses_*.jsonl` remains pending rather than being interpreted as failed
-model agreement or missing training signal.
+The driver treats a response artifact as complete only when it contains usable
+successful responses for all emitted job ids. Error, timeout, or empty-response
+rows are kept as audit trail but do not satisfy the stage. This lets bounded
+provider batches resume safely: a partial or failed `responses_*.jsonl` remains
+pending rather than being interpreted as failed model agreement or missing
+training signal. The response runner's `--resume` mode similarly skips only
+completed job ids, so failed provider calls are retried instead of silently
+blocking progress.
 
 The measured-difficulty stage is also artifact-driven. After ground-truth
 verification the pipeline writes `jobs_reference_attempts.jsonl` and stops with

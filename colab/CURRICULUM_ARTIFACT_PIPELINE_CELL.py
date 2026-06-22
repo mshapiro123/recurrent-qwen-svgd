@@ -173,6 +173,24 @@ def summary_payload():
 
 
 def response_pairs(summary):
+    pending = summary.get("pending_responses") or []
+    if pending:
+        pairs = []
+        for item in pending:
+            remaining = int(item.get("remaining_rows") or 0)
+            if remaining <= 0:
+                continue
+            jobs = Path(item["jobs_jsonl"])
+            responses = Path(item["responses_jsonl"])
+            print(
+                "response pair pending: "
+                f"{item.get('name')} has usable_job_ids={item.get('usable_job_ids', item.get('existing_rows', 0))}/"
+                f"{item.get('expected_rows')} with remaining={remaining}",
+                flush=True,
+            )
+            pairs.append((jobs, responses))
+        return pairs
+
     artifacts = summary["artifacts"]
     status = summary["status"]
     mapping = {

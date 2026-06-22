@@ -36,6 +36,22 @@ def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
     return rows
 
 
+def response_has_text(row: dict[str, Any]) -> bool:
+    for key in ("response_text", "response", "output_text", "output", "text", "content"):
+        value = row.get(key)
+        if isinstance(value, str) and value.strip():
+            return True
+    message = row.get("message")
+    return isinstance(message, dict) and isinstance(message.get("content"), str) and bool(message["content"].strip())
+
+
+def is_completed_response(row: dict[str, Any]) -> bool:
+    status = str(row.get("status") or "").strip().lower()
+    if status and status not in {"ok", "success"}:
+        return False
+    return response_has_text(row)
+
+
 def existing_job_ids(path: str | Path) -> set[str]:
     out = Path(path)
     if not out.exists():
@@ -43,7 +59,7 @@ def existing_job_ids(path: str | Path) -> set[str]:
     seen: set[str] = set()
     for row in read_jsonl(out):
         job_id = str(row.get("job_id") or "")
-        if job_id:
+        if job_id and is_completed_response(row):
             seen.add(job_id)
     return seen
 

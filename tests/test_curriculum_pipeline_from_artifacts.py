@@ -81,6 +81,11 @@ def test_pipeline_stops_after_building_seed_jobs(tmp_path) -> None:
             "responses_jsonl": summary["artifacts"]["responses_seed"]["path"],
             "expected_rows": 1,
             "existing_rows": 0,
+            "usable_rows": 0,
+            "usable_job_ids": 0,
+            "error_rows": 0,
+            "timeout_rows": 0,
+            "nonusable_rows": 0,
             "remaining_rows": 1,
             "runner_template": (
                 "python training/run_curriculum_job_responses.py "
@@ -138,6 +143,37 @@ def test_pipeline_blocks_student_lineage_models_by_default(tmp_path) -> None:
         run_pipeline(args)
 
 
+def test_pipeline_does_not_count_failed_provider_rows_as_complete(tmp_path) -> None:
+    references = tmp_path / "refs.jsonl"
+    write_jsonl(references, [{"id": "eval-1", "prompt": "What is 9 + 9?"}])
+
+    args = args_for(tmp_path, references)
+    summary = run_pipeline(args)
+    paths = {name: Path(meta["path"]) for name, meta in summary["artifacts"].items()}
+    seed_job = read_jsonl(paths["jobs_seed"])[0]
+    write_jsonl(
+        paths["responses_seed"],
+        [
+            {
+                "job_id": seed_job["job_id"],
+                "response_id": "failed-seed",
+                "status": "error",
+                "response_text": "",
+                "stderr": "provider rate limit",
+            }
+        ],
+    )
+
+    summary = run_pipeline(args)
+
+    assert summary["status"] == "pending_seed_responses"
+    assert summary["artifacts"]["candidates"]["lines"] == 0
+    assert summary["pending_responses"][0]["existing_rows"] == 1
+    assert summary["pending_responses"][0]["usable_job_ids"] == 0
+    assert summary["pending_responses"][0]["error_rows"] == 1
+    assert summary["pending_responses"][0]["remaining_rows"] == 1
+
+
 def test_pipeline_waits_for_partial_response_files(tmp_path) -> None:
     references = tmp_path / "refs.jsonl"
     write_jsonl(references, [{"id": "eval-1", "prompt": "What is 9 + 9?"}])
@@ -183,6 +219,7 @@ def test_pipeline_waits_for_partial_response_files(tmp_path) -> None:
     assert summary["pending_responses"][0]["name"] == "ground_truth"
     assert summary["pending_responses"][0]["expected_rows"] == 2
     assert summary["pending_responses"][0]["existing_rows"] == 1
+    assert summary["pending_responses"][0]["usable_job_ids"] == 1
     assert summary["pending_responses"][0]["remaining_rows"] == 1
     assert summary["pending_responses"][0]["responses_jsonl"] == str(paths["responses_ground_truth"])
     assert summary["artifacts"]["verified_candidates"]["lines"] == 0

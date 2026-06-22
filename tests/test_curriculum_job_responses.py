@@ -48,6 +48,19 @@ def test_resume_skips_existing_job_ids(tmp_path) -> None:
     assert [row["job_id"] for row in rows] == ["job-1", "job-2"]
 
 
+def test_resume_retries_failed_job_ids(tmp_path) -> None:
+    output = tmp_path / "responses.jsonl"
+    write_jsonl(output, [{"job_id": "job-1", "status": "error", "response_text": "", "stderr": "rate limited"}])
+
+    report = run_jobs([job("job-1")], output_jsonl=output, backend="dry_run", resume=True)
+
+    rows = read_jsonl(output)
+    assert report["skipped"] == 0
+    assert report["written"] == 1
+    assert [row["status"] for row in rows] == ["error", "ok"]
+    assert rows[-1]["job_id"] == "job-1"
+
+
 def test_command_backend_passes_job_json_on_stdin(tmp_path) -> None:
     helper = tmp_path / "helper.py"
     helper.write_text(

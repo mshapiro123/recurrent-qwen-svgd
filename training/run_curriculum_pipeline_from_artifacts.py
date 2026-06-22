@@ -185,6 +185,47 @@ def line_count(path: Path) -> int:
     return sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
 
 
+def response_has_text(row: dict[str, Any]) -> bool:
+    for key in ("response_text", "response", "output_text", "output", "text", "content"):
+        value = row.get(key)
+        if isinstance(value, str) and value.strip():
+            return True
+    message = row.get("message")
+    return isinstance(message, dict) and isinstance(message.get("content"), str) and bool(message["content"].strip())
+
+
+def is_usable_response(row: dict[str, Any]) -> bool:
+    status = str(row.get("status") or "").strip().lower()
+    if status and status not in {"ok", "success"}:
+        return False
+    return response_has_text(row)
+
+
+def response_stats(path: Path) -> dict[str, int]:
+    if not path.exists():
+        return {
+            "rows": 0,
+            "usable_rows": 0,
+            "usable_job_ids": 0,
+            "error_rows": 0,
+            "timeout_rows": 0,
+            "nonusable_rows": 0,
+        }
+    rows = read_jsonl(path)
+    usable_ids = {str(row.get("job_id") or "") for row in rows if is_usable_response(row) and row.get("job_id")}
+    error_rows = sum(1 for row in rows if str(row.get("status") or "").strip().lower() == "error")
+    timeout_rows = sum(1 for row in rows if str(row.get("status") or "").strip().lower() == "timeout")
+    usable_rows = sum(1 for row in rows if is_usable_response(row))
+    return {
+        "rows": len(rows),
+        "usable_rows": usable_rows,
+        "usable_job_ids": len(usable_ids),
+        "error_rows": error_rows,
+        "timeout_rows": timeout_rows,
+        "nonusable_rows": len(rows) - usable_rows,
+    }
+
+
 def response_missing(path: Path) -> bool:
     return not path.exists() or line_count(path) == 0
 
@@ -192,7 +233,7 @@ def response_missing(path: Path) -> bool:
 def response_incomplete(path: Path, *, expected_rows: int) -> bool:
     if expected_rows <= 0:
         return False
-    return not path.exists() or line_count(path) < expected_rows
+    return response_stats(path)["usable_job_ids"] < expected_rows
 
 
 def pending_response_entry(
@@ -202,14 +243,21 @@ def pending_response_entry(
     responses_path: Path,
     expected_rows: int,
 ) -> dict[str, Any]:
-    existing_rows = line_count(responses_path) if responses_path.exists() else 0
-    remaining_rows = max(0, expected_rows - existing_rows)
+    stats = response_stats(responses_path)
+    existing_rows = stats["rows"]
+    usable_job_ids = stats["usable_job_ids"]
+    remaining_rows = max(0, expected_rows - usable_job_ids)
     return {
         "name": name,
         "jobs_jsonl": str(jobs_path),
         "responses_jsonl": str(responses_path),
         "expected_rows": expected_rows,
         "existing_rows": existing_rows,
+        "usable_rows": stats["usable_rows"],
+        "usable_job_ids": usable_job_ids,
+        "error_rows": stats["error_rows"],
+        "timeout_rows": stats["timeout_rows"],
+        "nonusable_rows": stats["nonusable_rows"],
         "remaining_rows": remaining_rows,
         "runner_template": (
             "python training/run_curriculum_job_responses.py "
