@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 import sys
 import time
 from pathlib import Path
@@ -42,6 +43,7 @@ RUN_ID = os.environ.get("STAGE5_A100_GO_NO_GO_RUN_ID") or time.strftime(
 )
 RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
 STAGE4_OPUS_APPROVED_SOURCE_KEYS = {"opus47_sft", "opus47_raw"}
+DEFAULT_CURRICULUM_MIN_MODE_ROWS = "direct=64,deep_narrow=64"
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -62,6 +64,56 @@ def command_script(command: str) -> str:
     if parts and parts[0] == "cat":
         return "cat"
     return ""
+
+
+def command_env_assignments(command: str) -> dict[str, str]:
+    env: dict[str, str] = {}
+    for token in shlex.split(command):
+        if token == "python" or token == "cat":
+            break
+        if "=" not in token:
+            continue
+        key, value = token.split("=", 1)
+        if key and key.upper() == key:
+            env[key] = value
+    return env
+
+
+def normalize_min_mode_rows(value: str) -> str:
+    items: list[tuple[str, int]] = []
+    for raw in str(value or "").split(","):
+        item = raw.strip()
+        if not item:
+            continue
+        if "=" in item:
+            mode, count = item.split("=", 1)
+        elif ":" in item:
+            mode, count = item.split(":", 1)
+        else:
+            return ""
+        try:
+            parsed = int(count.strip())
+        except ValueError:
+            return ""
+        if parsed > 0:
+            items.append((mode.strip(), parsed))
+    return ",".join(f"{mode}={count}" for mode, count in sorted(items))
+
+
+def source_curriculum_min_mode_rows(source_payload: dict[str, Any]) -> str:
+    mode_requirements = ((source_payload.get("checks") or {}).get("positive_sft") or {}).get("mode_requirements")
+    if isinstance(mode_requirements, dict):
+        items = []
+        for mode, payload in mode_requirements.items():
+            if not isinstance(payload, dict):
+                continue
+            count = int(payload.get("required") or 0)
+            if count > 0:
+                items.append(f"{mode}={count}")
+        parsed = normalize_min_mode_rows(",".join(items))
+        if parsed:
+            return parsed
+    return normalize_min_mode_rows(os.environ.get("STAGE5_CURRICULUM_GATE_MIN_MODE_ROWS", DEFAULT_CURRICULUM_MIN_MODE_ROWS))
 
 
 def source_has_calibration_warning(payload: dict[str, Any]) -> bool:
@@ -530,6 +582,20 @@ def classify_action(
 
     if script == "colab/run_stage5_curriculum_sft.py":
         if source_payload.get("kind") == "curriculum_sft_gate" and source_payload.get("go") is True:
+            env = command_env_assignments(command)
+            expected_min_mode_rows = source_curriculum_min_mode_rows(source_payload)
+            actual_min_mode_rows = normalize_min_mode_rows(env.get("STAGE5_CURRICULUM_MIN_MODE_ROWS", ""))
+            if expected_min_mode_rows and actual_min_mode_rows != expected_min_mode_rows:
+                return {
+                    "go": False,
+                    "status": "curriculum_sft_mode_gate_mismatch",
+                    "spend_class": "none",
+                    "reason": (
+                        "Generated curriculum SFT requires an explicit mode-coverage gate in "
+                        "STAGE5_CURRICULUM_MIN_MODE_ROWS before paid GPU training. "
+                        f"Expected {expected_min_mode_rows!r}, got {env.get('STAGE5_CURRICULUM_MIN_MODE_ROWS')!r}."
+                    ),
+                }
             return {
                 "go": True,
                 "status": "go_curriculum_sft",

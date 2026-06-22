@@ -5,9 +5,11 @@ from colab.check_stage5_a100_go_no_go import (
     build_payload,
     checkpoint_from_payload,
     classify_action,
+    command_env_assignments,
     command_script,
     curriculum_sft_checkpoint_availability,
     curriculum_sft_input_availability,
+    normalize_min_mode_rows,
     promoted_stage4_opus_sources,
     routing_repair_profile_preflight,
     routing_repair_checkpoint_availability,
@@ -365,7 +367,10 @@ def test_stage4_opus_finetune_checkpoint_guard_does_not_require_recovered_checkp
 def test_curriculum_sft_allowed_only_after_green_sft_gate() -> None:
     action = {
         "name": "Run generated curriculum SFT",
-        "command": "python colab/run_stage5_curriculum_sft.py",
+        "command": (
+            "STAGE5_CURRICULUM_MIN_MODE_ROWS=direct=64,deep_narrow=64 "
+            "python colab/run_stage5_curriculum_sft.py"
+        ),
     }
 
     blocked = classify_action(action, source_payload={"kind": "curriculum_sft_gate", "go": False})
@@ -376,6 +381,62 @@ def test_curriculum_sft_allowed_only_after_green_sft_gate() -> None:
     assert allowed["go"] is True
     assert allowed["status"] == "go_curriculum_sft"
     assert allowed["spend_class"] == "bounded_curriculum_sft"
+
+
+def test_curriculum_sft_blocks_missing_mode_gate() -> None:
+    action = {
+        "name": "Run generated curriculum SFT",
+        "command": "python colab/run_stage5_curriculum_sft.py",
+    }
+
+    decision = classify_action(action, source_payload={"kind": "curriculum_sft_gate", "go": True})
+
+    assert decision["go"] is False
+    assert decision["status"] == "curriculum_sft_mode_gate_mismatch"
+    assert "STAGE5_CURRICULUM_MIN_MODE_ROWS" in decision["reason"]
+
+
+def test_curriculum_sft_requires_gate_specific_mode_rows() -> None:
+    source_payload = {
+        "kind": "curriculum_sft_gate",
+        "go": True,
+        "checks": {
+            "positive_sft": {
+                "mode_requirements": {
+                    "wide": {"required": 64, "observed": 80, "passed": True},
+                }
+            }
+        },
+    }
+    wrong = {
+        "name": "Run generated curriculum SFT",
+        "command": (
+            "STAGE5_CURRICULUM_MIN_MODE_ROWS=direct=64,deep_narrow=64 "
+            "python colab/run_stage5_curriculum_sft.py"
+        ),
+    }
+    right = {
+        "name": "Run generated curriculum SFT",
+        "command": "STAGE5_CURRICULUM_MIN_MODE_ROWS=wide=64 python colab/run_stage5_curriculum_sft.py",
+    }
+
+    blocked = classify_action(wrong, source_payload=source_payload)
+    allowed = classify_action(right, source_payload=source_payload)
+
+    assert blocked["go"] is False
+    assert blocked["status"] == "curriculum_sft_mode_gate_mismatch"
+    assert allowed["go"] is True
+    assert allowed["status"] == "go_curriculum_sft"
+
+
+def test_curriculum_mode_row_helpers_normalize_command_env() -> None:
+    command = (
+        "STAGE5_CURRICULUM_MIN_MODE_ROWS=deep_narrow=8,direct=16 "
+        "python colab/run_stage5_curriculum_sft.py"
+    )
+
+    assert command_env_assignments(command)["STAGE5_CURRICULUM_MIN_MODE_ROWS"] == "deep_narrow=8,direct=16"
+    assert normalize_min_mode_rows("direct=16,deep_narrow=8") == "deep_narrow=8,direct=16"
 
 
 def test_curriculum_sft_checkpoint_guard_without_resume_starts_from_base(monkeypatch) -> None:
