@@ -103,6 +103,8 @@ def test_build_mixed_train_uses_separate_arc_repeats(tmp_path, monkeypatch) -> N
     assert summary["arc_challenge_repeat"] == 1
     assert summary["arc_easy_repeat"] == 3
     assert summary["mixed_rows"] == 5
+    assert summary["arc_prompt_style"] == "with_options"
+    assert summary["arc_score_target"] == "label"
     assert sum(1 for row in rows if row["id"] == "challenge") == 1
     assert sum(1 for row in rows if row["id"] == "easy") == 3
 
@@ -147,6 +149,9 @@ def test_build_summary_passes_when_arc_mix_lifts_proxy(tmp_path) -> None:
     assert payload["decision"] == "run_full_balanced_assessment"
     assert payload["blocked_reason"] is None
     assert payload["best_arm"]["arm"] == "arc_mix"
+    assert "answer-calibration drift" in payload["objective_rationale"]["failure_mode"]
+    assert "response-only" in payload["objective_rationale"]["proxy_hypothesis"]
+    assert "label-only completions" in payload["objective_rationale"]["response_distillation_reason"]
 
 
 def test_build_summary_fails_without_proxy_lift(tmp_path) -> None:

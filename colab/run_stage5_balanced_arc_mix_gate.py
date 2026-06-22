@@ -492,6 +492,8 @@ def build_mixed_train() -> dict[str, Any]:
         "mixed_rows": len(mixed),
         "mixed_train_jsonl": path_for_cli(MIXED_TRAIN_JSONL),
         "opus_val_jsonl": path_for_cli(OPUS_VAL_JSONL),
+        "arc_prompt_style": "with_options",
+        "arc_score_target": "label",
     }
 
 
@@ -707,6 +709,20 @@ def build_summary(
     return {
         "run_id": RUN_ID,
         "kind": "stage5_balanced_arc_mix_gate",
+        "objective_rationale": {
+            "failure_mode": (
+                "The previous proxy-selected recurrent checkpoint lost full balanced ARC points through "
+                "answer-calibration drift: lower correct-answer margins and answer-prior shift."
+            ),
+            "proxy_hypothesis": (
+                "Mix Opus reasoning traces with ARC-style MCQ label supervision and use response-only "
+                "frozen-base KL distillation to preserve the base model's answer-token distribution."
+            ),
+            "response_distillation_reason": (
+                "ARC MCQ SFT rows use label-only completions, so response-only distillation is concentrated "
+                "on the option label decision rather than the prompt text."
+            ),
+        },
         "source_summary": path_for_cli(source_summary),
         "source_status": source_payload.get("status"),
         "resume_checkpoint": path_for_cli(resume_checkpoint),
@@ -743,6 +759,12 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Calibration thresholds: mean margin delta >= `{payload['proxy_calibration_thresholds']['min_mean_margin_delta']}`, "
         f"max prediction-count shift <= `{payload['proxy_calibration_thresholds']['max_abs_prediction_count_delta']}`",
         f"- Next step: {payload['next_step']}",
+        "",
+        "## Objective Rationale",
+        "",
+        f"- Failure mode: {payload['objective_rationale']['failure_mode']}",
+        f"- Proxy hypothesis: {payload['objective_rationale']['proxy_hypothesis']}",
+        f"- Response distillation reason: {payload['objective_rationale']['response_distillation_reason']}",
         "",
         "## Arms",
         "",
