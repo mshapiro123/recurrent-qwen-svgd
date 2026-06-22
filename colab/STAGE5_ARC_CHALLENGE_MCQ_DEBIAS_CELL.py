@@ -6,6 +6,7 @@ Colab notebook does not fill with per-example JSON.
 """
 
 import os
+import json
 import shutil
 import subprocess
 import sys
@@ -139,6 +140,19 @@ try:
 
     pair_summary = (ROOT / "config" / "stage5_current_source_summary.txt").read_text(encoding="utf-8").strip()
     print("pair_summary:", pair_summary, flush=True)
+    pair_payload = json.loads((ROOT / pair_summary).read_text(encoding="utf-8"))
+    if pair_payload.get("status") == "mcq_selection_bias_confirmed":
+        policy_env = os.environ.copy()
+        policy_env["STAGE5_MCQ_SCORING_POLICY_SOURCE_SUMMARY"] = pair_summary
+        policy_env.setdefault(
+            "STAGE5_MCQ_SCORING_POLICY_RUN_ID",
+            "stage5_mcq_scoring_policy_" + time.strftime("%Y%m%d_%H%M%S"),
+        )
+        run([sys.executable, "colab/apply_stage5_mcq_scoring_policy.py"], env=policy_env)
+        policy_summary = (ROOT / "config" / "stage5_current_source_summary.txt").read_text(encoding="utf-8").strip()
+        print("policy_summary:", policy_summary, flush=True)
+    else:
+        print("MCQ scoring policy not activated; pair status:", pair_payload.get("status"), flush=True)
 
 finally:
     print("Disconnecting Colab runtime to conserve credits.", flush=True)

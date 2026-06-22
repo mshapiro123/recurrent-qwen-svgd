@@ -21,6 +21,12 @@ The completed ARC-Easy diagnostic now reports `selection_bias_likely`; the
 next bounded run is the same cyclic-permutation confirmation on ARC-Challenge.
 Use `STAGE5_CURRENT_A100_TARGET=arc_challenge_mcq_debias_confirm` in the
 bootstrap cell for that run.
+On current `main`, that target runs the ARC-Challenge debias diagnostic, combines
+it with the ARC-Easy result via `colab/assess_stage5_mcq_debias_pair.py`, and if
+the pair confirms selection bias it immediately writes the no-GPU
+`stage5_mcq_scoring_policy` artifact via
+`colab/apply_stage5_mcq_scoring_policy.py`. Expected terminal markers are
+`pair_summary:` and, if confirmed, `policy_summary:`.
 The bootstrap now auto-resumes from
 [`config/stage5_current_source_summary.txt`](../config/stage5_current_source_summary.txt)
 when that pointer exists and targets an available summary. To force a specific
@@ -55,9 +61,63 @@ The checkpoint preflight/restore path searches the project-scoped Drive roots
 paths such as `outputs/stage5/<run_id>/phase1/phase1_step_125.pt`.
 
 Keep the runtime disconnected while editing the cell. This is one bounded
-deterministic Phase 1 repair run; use an A100/H100 only when you intentionally
-want to spend paid GPU on it. If cheaper L4/T4 capacity is immediately
-available, it is acceptable, but expect a slower run.
+diagnostic run, not a training run. Use an A100/H100 only when you intentionally
+want to spend paid GPU on the ARC-Challenge confirmation. If cheaper L4/T4
+capacity is immediately available, it is acceptable, but expect a slower run.
+
+## Current Paste-Anywhere ARC-Challenge Cell
+
+Use this in the live Colab notebook when the repo is not already freshly cloned.
+It resolves `main`, fetches the maintained bootstrap cell, and selects the
+current bounded ARC-Challenge MCQ debias target.
+
+```python
+import base64, json, os, time, urllib.request
+from google.colab import userdata
+
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "arc_challenge_mcq_debias_confirm"
+
+def colab_secret(*names):
+    for name in names:
+        value = os.environ.get(name)
+        if value:
+            return value
+        try:
+            value = userdata.get(name)
+        except Exception:
+            value = None
+        if value:
+            return value
+    return None
+
+token = colab_secret("GH_TOKEN", "GITHUB_TOKEN")
+assert token, "Add GH_TOKEN or GITHUB_TOKEN to Colab secrets."
+
+headers = {
+    "Authorization": f"Bearer {token}",
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "Cache-Control": "no-cache",
+}
+
+def gh_json(url):
+    req = urllib.request.Request(url, headers=headers)
+    return json.loads(urllib.request.urlopen(req).read().decode("utf-8"))
+
+ref_payload = gh_json(
+    f"https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/git/ref/heads/main?cache_bust={time.time_ns()}"
+)
+resolved_ref = ref_payload["object"]["sha"]
+payload = gh_json(
+    "https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/"
+    f"contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py?ref={resolved_ref}&cache_bust={time.time_ns()}"
+)
+code = base64.b64decode(payload["content"]).decode("utf-8")
+print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12])
+assert "arc_challenge_mcq_debias_confirm" in code, "Fetched bootstrap without ARC-Challenge target."
+assert "colab/apply_stage5_mcq_scoring_policy.py" in code, "Fetched stale bootstrap; rerun after GitHub refresh."
+exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
+```
 
 Set:
 
@@ -126,7 +186,11 @@ for path in [
     print(path, "blob=", payload.get("sha"), "commit=", resolved_ref)
 ```
 
-## Current Sequence
+## Previous Curriculum Sequence
+
+This sequence is retained for the direct/deep curriculum path after the MCQ
+debias gate settles. It is not the current paid action while the ARC-Challenge
+debias confirmation is pending.
 
 ### Step 1: CPU-Only Programmatic Curriculum Gate
 

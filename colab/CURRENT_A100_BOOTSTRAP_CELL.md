@@ -130,6 +130,7 @@ TARGETS = {
             "STAGE5_MCQ_DEBIAS_PUSH",
             "colab/run_stage5_mcq_debias_diagnostic.py",
             "colab/assess_stage5_mcq_debias_pair.py",
+            "colab/apply_stage5_mcq_scoring_policy.py",
             "tests/test_mcq_debias.py",
             "tests/test_stage5_next_plan.py",
             "runtime.unassign",
