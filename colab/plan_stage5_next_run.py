@@ -1423,6 +1423,14 @@ def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summar
                                 "STAGE5_ARC_AGI_NEXT_PLAN_ARC_MIX_OPUS_LIMIT",
                                 "3000",
                             ),
+                            "STAGE5_ARC_MIX_MIN_MARGIN_DELTA": os.environ.get(
+                                "STAGE5_ARC_AGI_NEXT_PLAN_ARC_MIX_MIN_MARGIN_DELTA",
+                                "-0.05",
+                            ),
+                            "STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT": os.environ.get(
+                                "STAGE5_ARC_AGI_NEXT_PLAN_ARC_MIX_MAX_PREDICTION_SHIFT",
+                                "16",
+                            ),
                         },
                         "python colab/run_stage5_balanced_arc_mix_gate.py",
                     ),
@@ -1523,6 +1531,14 @@ def balanced_full_assessment_actions(payload: dict[str, Any], *, source_summary:
                         "STAGE5_ARC_MIX_OPUS_LIMIT": os.environ.get(
                             "STAGE5_ARC_AGI_NEXT_PLAN_ARC_MIX_OPUS_LIMIT",
                             "3000",
+                        ),
+                        "STAGE5_ARC_MIX_MIN_MARGIN_DELTA": os.environ.get(
+                            "STAGE5_ARC_AGI_NEXT_PLAN_ARC_MIX_MIN_MARGIN_DELTA",
+                            "-0.05",
+                        ),
+                        "STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT": os.environ.get(
+                            "STAGE5_ARC_AGI_NEXT_PLAN_ARC_MIX_MAX_PREDICTION_SHIFT",
+                            "16",
                         ),
                     },
                     "python colab/run_stage5_balanced_arc_mix_gate.py",

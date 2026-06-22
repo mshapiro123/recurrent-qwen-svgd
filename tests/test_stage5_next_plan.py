@@ -1899,6 +1899,8 @@ def test_benchmark_suite_assessment_credit_saver_runs_short_recovery_probe(monke
     assert "python colab/run_stage5_balanced_arc_mix_gate.py" in actions[0]["command"]
     assert "STAGE5_ARC_MIX_ARMS=arc_mix_response_w01_lr2e6" in actions[0]["command"]
     assert "STAGE5_ARC_MIX_ARC_EVAL_LIMIT=128" in actions[0]["command"]
+    assert "STAGE5_ARC_MIX_MIN_MARGIN_DELTA=-0.05" in actions[0]["command"]
+    assert "STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT=16" in actions[0]["command"]
     assert "STAGE5_ARC_MIX_SOURCE_SUMMARY=" in actions[0]["command"]
 
 
@@ -1988,6 +1990,8 @@ def test_recovery_full_assessment_negative_runs_recovery_proxy(tmp_path) -> None
     assert actions[0]["name"] == "Run another competence-preserving ARC-mix proxy gate"
     assert "python colab/run_stage5_balanced_arc_mix_gate.py" in actions[0]["command"]
     assert "STAGE5_ARC_MIX_SOURCE_SUMMARY=" in actions[0]["command"]
+    assert "STAGE5_ARC_MIX_MIN_MARGIN_DELTA=-0.05" in actions[0]["command"]
+    assert "STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT=16" in actions[0]["command"]
 
 
 def test_parse_args_accepts_source_summary() -> None:
