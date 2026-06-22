@@ -895,6 +895,89 @@ def test_progress_ledger_prefers_passed_arc_mix_gate_over_newer_release_gate(tmp
     assert payload["recommended_next_plan_source"] == str(arc_mix_source)
 
 
+def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    pipeline = scan_root / "curriculum_pipeline" / "summary.json"
+    gate = scan_root / "curriculum_gate" / "summary.json"
+    sft = scan_root / "curriculum_sft" / "summary.json"
+    _write(
+        pipeline,
+        {
+            "run_id": "pipeline",
+            "kind": "curriculum_pipeline_from_artifacts",
+            "work_dir": "data/curriculum/run_001",
+            "status": "complete",
+            "next_action": "Review typed_records.jsonl and positive_sft.jsonl before any GPU fine-tuning.",
+            "counts": {"positive_sft_rows": 24},
+        },
+    )
+    _write(
+        gate,
+        {
+            "run_id": "gate",
+            "kind": "curriculum_sft_gate",
+            "go": True,
+            "status": "go_train_recurrent_sft",
+            "work_dir": "data/curriculum/run_001",
+            "checks": {"positive_sft": {"rows": 24}},
+        },
+    )
+    _write(
+        sft,
+        {
+            "run_id": "sft",
+            "kind": "stage5_curriculum_sft",
+            "config": {"work_dir": "data/curriculum/run_001"},
+            "dataset": {"rows": 24, "train_rows": 21, "val_rows": 3},
+            "phase1_val": {"mean_expected_loops": 2.5, "expected_ce": 1.25},
+            "phase1_checkpoint": "outputs/stage5/sft/phase1/phase1_step_150.pt",
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    statuses = payload["curriculum_statuses"]
+    assert [row["kind"] for row in statuses] == [
+        "curriculum_sft_gate",
+        "curriculum_pipeline_from_artifacts",
+        "stage5_curriculum_sft",
+    ]
+    assert statuses[0]["go"] is True
+    assert statuses[0]["positive_rows"] == 24
+    assert statuses[1]["next_action"].startswith("Review typed_records")
+    assert statuses[2]["train_rows"] == 21
+    assert statuses[2]["val_rows"] == 3
+    assert statuses[2]["mean_expected_loops"] == 2.5
+    assert statuses[2]["checkpoint"] == "outputs/stage5/sft/phase1/phase1_step_150.pt"
+    assert payload["recommended_next_plan_source"] == str(sft)
+
+
+def test_progress_ledger_writes_generated_curriculum_markdown(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "curriculum_sft" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "sft",
+            "kind": "stage5_curriculum_sft",
+            "config": {"work_dir": "data/curriculum/run_001"},
+            "dataset": {"rows": 24, "train_rows": 21, "val_rows": 3},
+            "phase1_val": {"mean_expected_loops": 2.5, "expected_ce": 1.25},
+            "phase1_checkpoint": "outputs/stage5/sft/phase1/phase1_step_150.pt",
+        },
+    )
+    payload = scan_progress(scan_root, run_id="ledger")
+    output_dir = tmp_path / "ledger"
+
+    write_report(payload, output_dir)
+
+    report = (output_dir / "summary.md").read_text(encoding="utf-8")
+    assert "## Generated Curriculum Pipeline" in report
+    assert "`stage5_curriculum_sft`" in report
+    assert "21/3" in report
+    assert "`outputs/stage5/sft/phase1/phase1_step_150.pt`" in report
+
+
 def test_progress_ledger_skips_empty_and_malformed_eval_summaries(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     _write(scan_root / "empty" / "base_summary.json", {"summary": {}})

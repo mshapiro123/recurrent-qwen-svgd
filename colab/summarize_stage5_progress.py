@@ -163,6 +163,8 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         return True
     if payload.get("kind") == "stage5_reasoning_dataset_audit":
         return True
+    if payload.get("kind") in {"curriculum_pipeline_from_artifacts", "curriculum_sft_gate", "stage5_curriculum_sft"}:
+        return True
     if payload.get("kind") == "stage4_opus_finetune" or {"phase1_checkpoint", "phase2_checkpoint", "arc_ladder"} <= set(payload):
         return True
     if payload.get("gate") == "stage5_arc_agi_candidate_gate" or payload.get("kind") == "stage5_arc_agi_candidate_gate":
@@ -757,6 +759,74 @@ def arc_agi_sft_recipe_gates(summary_files: list[Path]) -> list[dict[str, Any]]:
     return sorted(gates, key=lambda item: str(item["path"]))
 
 
+def curriculum_statuses(summary_files: list[Path]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for path in summary_files:
+        payload = safe_read_json(path)
+        if not payload:
+            continue
+        kind = str(payload.get("kind") or "")
+        if kind == "curriculum_pipeline_from_artifacts":
+            counts = payload.get("counts") or {}
+            rows.append(
+                {
+                    "path": path_for_cli(path),
+                    "run_id": str(payload.get("run_id") or path.parent.name),
+                    "kind": kind,
+                    "status": payload.get("status"),
+                    "go": None,
+                    "work_dir": payload.get("work_dir"),
+                    "positive_rows": int(counts.get("positive_sft_rows", 0) or 0),
+                    "train_rows": None,
+                    "val_rows": None,
+                    "mean_expected_loops": None,
+                    "expected_ce": None,
+                    "checkpoint": None,
+                    "next_action": payload.get("next_action"),
+                }
+            )
+        elif kind == "curriculum_sft_gate":
+            positive = ((payload.get("checks") or {}).get("positive_sft") or {})
+            rows.append(
+                {
+                    "path": path_for_cli(path),
+                    "run_id": str(payload.get("run_id") or path.parent.name),
+                    "kind": kind,
+                    "status": payload.get("status"),
+                    "go": bool(payload.get("go", False)),
+                    "work_dir": payload.get("work_dir"),
+                    "positive_rows": int(positive.get("rows", 0) or 0),
+                    "train_rows": None,
+                    "val_rows": None,
+                    "mean_expected_loops": None,
+                    "expected_ce": None,
+                    "checkpoint": None,
+                    "next_action": "run_stage5_curriculum_sft.py" if payload.get("go") else "fix curriculum gate issues",
+                }
+            )
+        elif kind == "stage5_curriculum_sft":
+            dataset = payload.get("dataset") or {}
+            phase1_val = payload.get("phase1_val") or {}
+            rows.append(
+                {
+                    "path": path_for_cli(path),
+                    "run_id": str(payload.get("run_id") or path.parent.name),
+                    "kind": kind,
+                    "status": payload.get("status") or "completed",
+                    "go": None,
+                    "work_dir": ((payload.get("config") or {}).get("work_dir")),
+                    "positive_rows": int(dataset.get("rows", 0) or 0),
+                    "train_rows": int(dataset.get("train_rows", 0) or 0),
+                    "val_rows": int(dataset.get("val_rows", 0) or 0),
+                    "mean_expected_loops": phase1_val.get("mean_expected_loops"),
+                    "expected_ce": phase1_val.get("expected_ce"),
+                    "checkpoint": payload.get("phase1_checkpoint"),
+                    "next_action": "run broader base-vs-recurrent benchmark suite",
+                }
+            )
+    return sorted(rows, key=lambda item: str(item["path"]))
+
+
 def balanced_assessment_payload(payload: dict[str, Any]) -> dict[str, Any]:
     nested = payload.get("balanced_assessment")
     return nested if isinstance(nested, dict) else payload
@@ -843,6 +913,10 @@ def latest_planner_source(summary_files: list[Path]) -> str | None:
 def planner_source_priority(payload: dict[str, Any]) -> int:
     """Prefer the newest actionable recovery gate over generic readiness checks."""
 
+    if payload.get("kind") == "stage5_curriculum_sft":
+        return 95
+    if payload.get("kind") == "curriculum_sft_gate":
+        return 85 if payload.get("go") else 35
     if payload.get("kind") == "stage5_balanced_arc_mix_gate":
         if payload.get("status") in {"proxy_lift", "proxy_matches_base"}:
             return 100
@@ -936,6 +1010,7 @@ def scan_progress(scan_root: Path, *, run_id: str | None = None) -> dict[str, An
         "arc_agi_sota_comparisons": arc_agi_sota_comparisons(summary_files),
         "arc_agi_candidate_gates": arc_agi_candidate_gates(summary_files),
         "arc_agi_sft_recipe_gates": arc_agi_sft_recipe_gates(summary_files),
+        "curriculum_statuses": curriculum_statuses(summary_files),
         "recommended_next_plan_source": latest_planner_source(summary_files),
     }
 
@@ -1140,6 +1215,25 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
             )
     else:
         lines.append("- No ARC-AGI SFT recipe gate artifacts found.")
+    lines.extend(["", "## Generated Curriculum Pipeline", ""])
+    if payload["curriculum_statuses"]:
+        lines.extend(
+            [
+                "| Run | Kind | Status | Go | Positive | Train/Val | Loops | CE | Checkpoint | Next |",
+                "|---|---|---|---|---:|---:|---:|---:|---|---|",
+            ]
+        )
+        for row in payload["curriculum_statuses"][-12:]:
+            train_val = "n/a" if row.get("train_rows") is None else f"{row.get('train_rows')}/{row.get('val_rows')}"
+            loops = "n/a" if row.get("mean_expected_loops") is None else f"{float(row['mean_expected_loops']):.3f}"
+            ce = "n/a" if row.get("expected_ce") is None else f"{float(row['expected_ce']):.3f}"
+            lines.append(
+                f"| `{row['run_id']}` | `{row['kind']}` | `{row['status']}` | `{row['go']}` | "
+                f"{row['positive_rows']} | {train_val} | {loops} | {ce} | "
+                f"`{row.get('checkpoint') or ''}` | {row.get('next_action') or ''} |"
+            )
+    else:
+        lines.append("- No generated-curriculum pipeline/SFT summaries found.")
     (output_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((output_dir / "summary.md").read_text(encoding="utf-8"))
 
