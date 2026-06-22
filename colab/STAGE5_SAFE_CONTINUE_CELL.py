@@ -139,13 +139,24 @@ run(
 go_payload = json.loads((ROOT / "outputs" / "stage5" / GO_NO_GO_RUN_ID / "summary.json").read_text(encoding="utf-8"))
 go_decision = go_payload.get("decision", {})
 go_allowed = bool(go_decision.get("go"))
-checkpoint_available = bool((go_payload.get("checkpoint_preflight") or {}).get("available"))
+checkpoint_preflight = go_payload.get("checkpoint_preflight") or {}
+checkpoint_available = bool(checkpoint_preflight.get("available"))
+input_preflight = checkpoint_preflight.get("input_preflight") if isinstance(checkpoint_preflight, dict) else None
+input_available = True if not input_preflight else bool(input_preflight.get("available"))
 print("a100_guard_decision:", go_decision, flush=True)
-print("a100_checkpoint_preflight:", go_payload.get("checkpoint_preflight"), flush=True)
+print("a100_checkpoint_preflight:", checkpoint_preflight, flush=True)
+if input_preflight:
+    print("a100_input_preflight:", input_preflight, flush=True)
 if not RUN_A100_ACTION and go_allowed:
     print(
         "DRY_RUN_GREEN: guarded action is currently allowed. Set "
         "STAGE5_CURRENT_A100_TARGET=safe_continue_execute only when you intentionally want to spend paid GPU.",
+        flush=True,
+    )
+elif not RUN_A100_ACTION and not input_available:
+    print(
+        "DRY_RUN_RED: curriculum input artifacts are not visible locally or in the configured Drive backup. "
+        "Run STAGE5_CURRENT_A100_TARGET=programmatic_curriculum_cpu on a CPU runtime first, or reauthorize Drive.",
         flush=True,
     )
 elif not RUN_A100_ACTION and not checkpoint_available:

@@ -1009,6 +1009,7 @@ def write_report(payload: dict[str, Any]) -> None:
     action = payload.get("recommended_action") or {}
     decision = payload["decision"]
     checkpoint = payload.get("checkpoint_preflight") or {}
+    input_preflight = checkpoint.get("input_preflight") or {}
     routing_profile = payload.get("routing_repair_profile") or {}
     lines = [
         f"# Stage 5 A100 Go/No-Go - {payload['run_id']}",
@@ -1024,6 +1025,9 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Checkpoint available: `{checkpoint.get('available')}`",
         f"- Checkpoint exists locally: `{checkpoint.get('exists')}`",
         f"- Drive candidate visible: `{checkpoint.get('drive_candidate_exists')}`",
+        f"- Curriculum input available: `{input_preflight.get('available')}`",
+        f"- Curriculum input local: `{input_preflight.get('local_available')}`",
+        f"- Curriculum input Drive candidate visible: `{input_preflight.get('drive_candidate_exists')}`",
         f"- Routing repair mode: `{routing_profile.get('repair_mode')}`",
         f"- Routing repair proxy eval: `{routing_profile.get('expected_arc_eval_config')}`",
         f"- Routing repair arms: `{routing_profile.get('arms')}`",

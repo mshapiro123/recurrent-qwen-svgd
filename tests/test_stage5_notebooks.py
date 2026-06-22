@@ -219,6 +219,9 @@ def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     assert "DRY_RUN_GREEN" in text
     assert "DRY_RUN_RED" in text
     assert "a100_checkpoint_preflight" in text
+    assert "a100_input_preflight" in text
+    assert "curriculum input artifacts are not visible" in text
+    assert "STAGE5_CURRENT_A100_TARGET=programmatic_curriculum_cpu" in text
     assert "tests/test_stage5_routing_repair.py" in text
     assert "tests/test_stage5_balanced_arc_mix_gate.py" in text
     assert "tests/test_curriculum_sft_gate.py" in text
@@ -262,6 +265,9 @@ def test_safe_continue_notebook_defaults_to_dry_run_and_guarded_action() -> None
     assert "DRY_RUN_GREEN" in text
     assert "DRY_RUN_RED" in text
     assert "a100_checkpoint_preflight" in text
+    assert "a100_input_preflight" in text
+    assert "curriculum input artifacts are not visible" in text
+    assert "STAGE5_CURRENT_A100_TARGET=programmatic_curriculum_cpu" in text
     assert "tests/test_stage5_curriculum_sft.py" in text
     assert "tests/test_curriculum_pipeline_from_artifacts.py" in text
     assert "tests/test_curriculum_jsonl.py" in text

@@ -658,6 +658,45 @@ def test_curriculum_sft_input_preflight_allows_local_artifacts(tmp_path) -> None
     assert status["local_available"] is True
 
 
+def test_go_no_go_report_surfaces_curriculum_input_preflight(monkeypatch, tmp_path) -> None:
+    import colab.check_stage5_a100_go_no_go as guard
+
+    monkeypatch.setattr(guard, "RUN_DIR", tmp_path / "go_no_go")
+
+    guard.write_report(
+        {
+            "run_id": "go_no_go",
+            "source_summary": "outputs/stage5/curriculum_gate/curriculum_sft_gate.json",
+            "source_kind": "curriculum_sft_gate",
+            "source_status": "go_train_recurrent_sft",
+            "decision": {
+                "go": False,
+                "status": "curriculum_input_missing_no_go",
+                "spend_class": "none",
+                "reason": "missing input",
+            },
+            "checkpoint_preflight": {
+                "checkpoint": None,
+                "available": False,
+                "exists": False,
+                "drive_candidate_exists": False,
+                "input_preflight": {
+                    "available": False,
+                    "local_available": False,
+                    "drive_candidate_exists": False,
+                },
+            },
+            "routing_repair_profile": {},
+            "recommended_action": {"name": "Run generated curriculum recurrent SFT"},
+        }
+    )
+
+    report = (tmp_path / "go_no_go" / "summary.md").read_text(encoding="utf-8")
+    assert "Curriculum input available: `False`" in report
+    assert "Curriculum input local: `False`" in report
+    assert "Curriculum input Drive candidate visible: `False`" in report
+
+
 def test_routing_checkpoint_availability_reports_default_checkpoint() -> None:
     status = routing_repair_checkpoint_availability()
 
