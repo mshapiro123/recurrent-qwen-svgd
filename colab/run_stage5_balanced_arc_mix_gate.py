@@ -66,6 +66,19 @@ PUSH_RESULTS = os.environ.get("STAGE5_ARC_MIX_PUSH", "1").strip().lower() in {
     "yes",
     "y",
 }
+SAFE_OUTPUT_SUFFIXES = {
+    ".csv",
+    ".html",
+    ".json",
+    ".jsonl",
+    ".log",
+    ".md",
+    ".txt",
+    ".yaml",
+    ".yml",
+}
+BINARY_OUTPUT_SUFFIXES = {".bin", ".ckpt", ".pt", ".pth", ".safetensors"}
+MAX_COMMIT_ARTIFACT_BYTES = int(os.environ.get("STAGE5_ARC_MIX_COMMIT_MAX_ARTIFACT_BYTES", "25000000"))
 
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
@@ -823,10 +836,45 @@ def backup_to_drive() -> None:
     print(f"backed_up_to={backup}")
 
 
+def is_safe_output_artifact(path: Path, *, max_bytes: int = MAX_COMMIT_ARTIFACT_BYTES) -> bool:
+    if not path.is_file():
+        return False
+    suffix = path.suffix.lower()
+    if suffix in BINARY_OUTPUT_SUFFIXES:
+        return False
+    if suffix not in SAFE_OUTPUT_SUFFIXES:
+        return False
+    try:
+        return path.stat().st_size <= max_bytes
+    except OSError:
+        return False
+
+
+def committable_run_files() -> list[str]:
+    if not RUN_DIR.exists():
+        return []
+    files = [
+        path.relative_to(ROOT).as_posix()
+        for path in RUN_DIR.rglob("*")
+        if is_safe_output_artifact(path)
+    ]
+    return sorted(files)
+
+
+def git_add_files(paths: list[str]) -> None:
+    chunk_size = 100
+    for index in range(0, len(paths), chunk_size):
+        run(["git", "add", "-f", *paths[index : index + chunk_size]], check=False)
+
+
 def commit_results() -> None:
     if not PUSH_RESULTS:
         return
-    run(["git", "add", "-f", path_for_cli(RUN_DIR)], check=False)
+    files = committable_run_files()
+    if not files:
+        print("No safe ARC-mix gate text artifacts to commit.")
+        return
+    git_add_files(files)
     if run(["git", "diff", "--cached", "--quiet"], check=False).returncode == 0:
         print("No ARC-mix gate outputs changed.")
         return

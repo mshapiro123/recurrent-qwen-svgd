@@ -8,6 +8,7 @@ from colab.run_stage5_balanced_arc_mix_gate import (
     arm_config,
     build_summary,
     checkpoint_run_id,
+    is_safe_output_artifact,
     paired_mcq_diagnostics,
     selected_checkpoint,
 )
@@ -250,3 +251,36 @@ def test_paired_mcq_diagnostics_reports_margin_and_prediction_shift(tmp_path) ->
     assert stats["prediction_changes"] == 2
     assert stats["mean_margin_delta"] == pytest.approx(-0.2)
     assert stats["prediction_count_delta"] == {"A": 0, "B": 0}
+
+
+def test_arc_mix_commit_artifacts_exclude_checkpoints(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_balanced_arc_mix_gate as module
+
+    run_dir = tmp_path / "outputs" / "stage5" / "run"
+    phase_dir = run_dir / "arc_mix_response_w01_lr2e6" / "phase1"
+    phase_dir.mkdir(parents=True)
+    safe_summary = run_dir / "summary.json"
+    safe_report = run_dir / "summary.md"
+    safe_log = run_dir / "train.log"
+    checkpoint = phase_dir / "phase1_step_50.pt"
+    weights = phase_dir / "adapter.safetensors"
+    unknown = run_dir / "scratch.npy"
+    safe_summary.write_text("{}", encoding="utf-8")
+    safe_report.write_text("# report\n", encoding="utf-8")
+    safe_log.write_text("log\n", encoding="utf-8")
+    checkpoint.write_bytes(b"checkpoint")
+    weights.write_bytes(b"weights")
+    unknown.write_bytes(b"array")
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+
+    assert is_safe_output_artifact(safe_summary)
+    assert not is_safe_output_artifact(checkpoint)
+    assert not is_safe_output_artifact(weights)
+    assert not is_safe_output_artifact(unknown)
+    assert module.committable_run_files() == [
+        "outputs/stage5/run/summary.json",
+        "outputs/stage5/run/summary.md",
+        "outputs/stage5/run/train.log",
+    ]
