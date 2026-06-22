@@ -19,6 +19,42 @@ def test_repair_profile_selects_direct_heavy_arc_easy_mix() -> None:
     assert profile["STAGE5_ARC_MIX_MIN_MARGIN_DELTA"] == "0.0"
 
 
+def test_direct_repair_profile_audit_requires_distillation() -> None:
+    from colab.run_stage5_routing_repair import profile_objective_audit, repair_profile
+
+    audit = profile_objective_audit(repair_profile("needs_direct_halting_repair"))
+
+    assert audit["repair_mode"] == "direct_halting"
+    assert audit["requires_distillation"] is True
+    assert audit["distillation_ok"] is True
+    assert audit["arms"]
+    assert all(arm["distillation"]["enabled"] for arm in audit["arms"])
+
+
+def test_profile_objective_audit_rejects_no_distill_direct_repair() -> None:
+    import pytest
+
+    from colab.run_stage5_routing_repair import profile_objective_audit, repair_profile
+
+    profile = repair_profile("needs_direct_halting_repair")
+    profile["STAGE5_ARC_MIX_ARMS"] = "arc_mix_nodistill_lr3e6"
+
+    with pytest.raises(ValueError, match="response-distillation ARC-mix arms"):
+        profile_objective_audit(profile)
+
+
+def test_profile_objective_audit_rejects_empty_direct_repair_arms() -> None:
+    import pytest
+
+    from colab.run_stage5_routing_repair import profile_objective_audit, repair_profile
+
+    profile = repair_profile("needs_direct_halting_repair")
+    profile["STAGE5_ARC_MIX_ARMS"] = ""
+
+    with pytest.raises(ValueError, match="response-distillation ARC-mix arms"):
+        profile_objective_audit(profile)
+
+
 def test_repair_profile_selects_deep_challenge_mix() -> None:
     from colab.run_stage5_routing_repair import repair_profile
 
@@ -31,6 +67,17 @@ def test_repair_profile_selects_deep_challenge_mix() -> None:
     assert profile["STAGE5_ARC_MIX_ARC_CHALLENGE_TARGET_LOOP"] == "3"
     assert profile["STAGE5_ARC_MIX_ARC_EASY_ROUTING_TYPE"] == "direct_anchor"
     assert profile["STAGE5_ARC_MIX_ARC_CHALLENGE_ROUTING_TYPE"] == "deep_narrow"
+
+
+def test_deep_repair_profile_audit_requires_distillation() -> None:
+    from colab.run_stage5_routing_repair import profile_objective_audit, repair_profile
+
+    audit = profile_objective_audit(repair_profile("needs_deep_narrow_recovery"))
+
+    assert audit["repair_mode"] == "deep_narrow"
+    assert audit["requires_distillation"] is True
+    assert audit["distillation_ok"] is True
+    assert len(audit["arms"]) == 2
 
 
 def test_benchmark_summary_from_assessment_uses_payload_path(monkeypatch, tmp_path) -> None:

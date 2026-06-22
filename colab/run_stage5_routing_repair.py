@@ -152,6 +152,73 @@ def repair_profile(status: str) -> dict[str, str]:
     raise ValueError(f"Unsupported routing diagnostic status: {status}")
 
 
+def profile_arm_names(profile: dict[str, str]) -> list[str]:
+    return [
+        item.strip()
+        for item in profile.get("STAGE5_ARC_MIX_ARMS", "").split(",")
+        if item.strip()
+    ]
+
+
+def profile_objective_audit(profile: dict[str, str]) -> dict[str, Any]:
+    """Make the delegated ARC-mix objective explicit in this wrapper's report."""
+    repair_mode = profile["repair_mode"]
+    if repair_mode == "none":
+        return {
+            "repair_mode": repair_mode,
+            "requires_distillation": False,
+            "distillation_ok": True,
+            "arms": [],
+        }
+
+    from colab.run_stage5_balanced_arc_mix_gate import arm_config
+
+    arms = []
+    for name in profile_arm_names(profile):
+        arm = arm_config(name)
+        distill_enabled = arm.distill_enabled == "1"
+        distill_weight = float(arm.distill_weight)
+        arms.append(
+            {
+                "name": arm.name,
+                "learning_rate": float(arm.learning_rate),
+                "beta": float(arm.beta),
+                "steps": int(arm.steps),
+                "distillation": {
+                    "enabled": distill_enabled,
+                    "weight": distill_weight,
+                    "temperature": float(arm.distill_temperature),
+                    "on": arm.distill_on,
+                },
+            }
+        )
+
+    requires_distillation = repair_mode in {"direct_halting", "deep_narrow"}
+    distillation_ok = (not requires_distillation) or (
+        bool(arms)
+        and all(
+            arm["distillation"]["enabled"] and arm["distillation"]["weight"] > 0.0
+            for arm in arms
+        )
+    )
+    if requires_distillation and not distillation_ok:
+        raise ValueError(
+            f"{repair_mode} profile must use only response-distillation ARC-mix arms; "
+            f"got {profile.get('STAGE5_ARC_MIX_ARMS')!r}"
+        )
+    return {
+        "repair_mode": repair_mode,
+        "requires_distillation": requires_distillation,
+        "distillation_ok": distillation_ok,
+        "arms": arms,
+        "rationale": (
+            "The routing repair is a deterministic Phase 1 recovery run. "
+            "It uses ARC label supervision plus frozen-base response KL to repair "
+            "direct/deep allocation without launching particles."
+        ),
+    }
+
+
 def build_child_env(*, source_summary: Path, profile: dict[str, str]) -> dict[str, str]:
     env = os.environ.copy()
     env.update({key: value for key, value in profile.items() if key.startswith("STAGE5_")})
@@ -227,6 +294,7 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Source routing summary: `{payload['source_summary']}`",
         f"- Benchmark source summary: `{payload.get('benchmark_summary')}`",
         f"- ARC-mix child summary: `{payload.get('arc_mix_summary')}`",
+        f"- Objective audit: distillation_ok=`{payload['profile_objective']['distillation_ok']}`",
         f"- Next step: {payload['next_step']}",
     ]
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -239,6 +307,7 @@ def main() -> int:
     status = str(source_payload.get("status", ""))
     profile = repair_profile(status)
     repair_mode = profile["repair_mode"]
+    profile_objective = profile_objective_audit(profile)
     benchmark_summary = benchmark_summary_from_assessment(source_payload, source_summary)
 
     if repair_mode == "none":
@@ -249,6 +318,7 @@ def main() -> int:
             "repair_mode": repair_mode,
             "source_summary": path_for_cli(source_summary),
             "benchmark_summary": path_for_cli(benchmark_summary),
+            "profile_objective": profile_objective,
             "next_step": "Run a larger confirmation or proceed to the bounded direct/deep recovery ladder.",
         }
         write_report(payload)
@@ -272,6 +342,7 @@ def main() -> int:
         "source_summary": path_for_cli(source_summary),
         "benchmark_summary": path_for_cli(benchmark_summary),
         "profile": profile,
+        "profile_objective": profile_objective,
         "arc_mix_summary": path_for_cli(child_summary),
         "arc_mix": child_payload,
         "best_checkpoint": best_checkpoint,
