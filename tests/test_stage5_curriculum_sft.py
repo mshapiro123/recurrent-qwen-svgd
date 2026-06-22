@@ -14,15 +14,15 @@ def write_jsonl(path: Path, rows: list[dict]) -> None:
     path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
 
 
-def positive_row(index: int) -> dict:
+def positive_row(index: int, *, mode: str = "deep_narrow") -> dict:
     return {
         "prompt": f"<|im_start|>user\nProblem {index}<|im_end|>\n<|im_start|>assistant\n",
         "completion": f"Reasoning {index}\nANSWER: {index}",
         "trace_role": "positive_depth",
         "curriculum_id": f"p{index}",
-        "curriculum_mode": "deep_narrow",
-        "routing_type": "deep_narrow",
-        "target_loop_count": 3,
+        "curriculum_mode": mode,
+        "routing_type": mode,
+        "target_loop_count": 1 if mode == "direct" else 3,
     }
 
 
@@ -43,6 +43,29 @@ def test_split_train_val_is_deterministic_and_held_out() -> None:
     assert len(train_a) == 8
     assert len(val_a) == 2
     assert {row["curriculum_id"] for row in train_a}.isdisjoint({row["curriculum_id"] for row in val_a})
+
+
+def test_split_train_val_stratifies_direct_and_deep_modes() -> None:
+    rows = [positive_row(index, mode="direct") for index in range(8)]
+    rows.extend(positive_row(index + 100, mode="deep_narrow") for index in range(8))
+
+    train, val = runner.split_train_val(rows, val_fraction=0.125, val_min_rows=2, seed=11)
+
+    train_modes = {row["curriculum_mode"] for row in train}
+    val_modes = {row["curriculum_mode"] for row in val}
+    assert len(val) == 2
+    assert train_modes == {"direct", "deep_narrow"}
+    assert val_modes == {"direct", "deep_narrow"}
+
+
+def test_split_train_val_keeps_singleton_mode_in_train() -> None:
+    rows = [positive_row(1, mode="wide")]
+    rows.extend(positive_row(index + 10, mode="deep_narrow") for index in range(5))
+
+    train, val = runner.split_train_val(rows, val_fraction=0.33, val_min_rows=2, seed=3)
+
+    assert any(row["curriculum_mode"] == "wide" for row in train)
+    assert all(row["curriculum_mode"] != "wide" for row in val)
 
 
 def test_split_train_val_requires_two_rows() -> None:

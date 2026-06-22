@@ -281,11 +281,46 @@ def split_train_val(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     if len(rows) < 2:
         raise ValueError("At least two positive SFT rows are required for a held-out split.")
-    shuffled = list(rows)
-    random.Random(seed).shuffle(shuffled)
-    val_count = max(val_min_rows, int(round(len(shuffled) * val_fraction)))
-    val_count = min(max(val_count, 1), len(shuffled) - 1)
-    return shuffled[:-val_count], shuffled[-val_count:]
+    val_count = max(val_min_rows, int(round(len(rows) * val_fraction)))
+    val_count = min(max(val_count, 1), len(rows) - 1)
+
+    rng = random.Random(seed)
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        group = str(row.get("curriculum_mode") or row.get("routing_type") or "ungrouped")
+        grouped.setdefault(group, []).append(row)
+    for group_rows in grouped.values():
+        rng.shuffle(group_rows)
+
+    train_by_group: dict[str, list[dict[str, Any]]] = {group: [] for group in grouped}
+    val: list[dict[str, Any]] = []
+    eligible_groups = sorted(
+        (group for group, group_rows in grouped.items() if len(group_rows) > 1),
+        key=lambda group: (-len(grouped[group]), group),
+    )
+    validation_groups = set(eligible_groups[:val_count])
+
+    for group in sorted(grouped):
+        group_rows = grouped[group]
+        if group in validation_groups:
+            val.append(group_rows[0])
+            train_by_group[group].extend(group_rows[1:])
+        else:
+            train_by_group[group].extend(group_rows)
+
+    while len(val) < val_count:
+        candidates = [group for group, group_rows in train_by_group.items() if len(group_rows) > 1]
+        if not candidates:
+            break
+        group = sorted(candidates, key=lambda item: (-len(train_by_group[item]), item))[0]
+        val.append(train_by_group[group].pop(0))
+
+    train = [row for group in sorted(train_by_group) for row in train_by_group[group]]
+    if not train or not val:
+        shuffled = list(rows)
+        rng.shuffle(shuffled)
+        return shuffled[:-val_count], shuffled[-val_count:]
+    return train, val
 
 
 def prepare_train_val(gate: dict[str, Any]) -> tuple[Path, Path, dict[str, Any]]:
