@@ -39,12 +39,18 @@ def solution(solution_id: str, *, method: str, text: str = "Solve cleanly.\nANSW
     }
 
 
-def natural(solution_id: str, *, method: str, actually_uses: str | None = None) -> dict:
+def natural(
+    solution_id: str,
+    *,
+    method: str,
+    actually_uses: str | None = None,
+    judge_model: str = "judge-a",
+) -> dict:
     return {
         "solution_id": solution_id,
         "record_id": "p1",
         "method": method,
-        "judge_model": "judge-a",
+        "judge_model": judge_model,
         "natural": True,
         "actually_uses": actually_uses or method,
         "reason": "natural",
@@ -279,7 +285,13 @@ def test_cli_assembles_curriculum_records(tmp_path) -> None:
 
     verified_path.write_text(json.dumps(verified_candidate()) + "\n", encoding="utf-8")
     solutions_path.write_text(json.dumps(solution("s-algebra", method="algebra")) + "\n", encoding="utf-8")
-    natural_path.write_text(json.dumps(natural("s-algebra", method="algebra")) + "\n", encoding="utf-8")
+    natural_path.write_text(
+        json.dumps(natural("s-algebra", method="algebra", judge_model="judge-a"))
+        + "\n"
+        + json.dumps(natural("s-algebra", method="algebra", judge_model="judge-b"))
+        + "\n",
+        encoding="utf-8",
+    )
     depth_path.write_text(json.dumps(depth("s-algebra", method="algebra", count=3)) + "\n", encoding="utf-8")
 
     assert main(

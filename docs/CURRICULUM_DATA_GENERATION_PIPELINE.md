@@ -29,6 +29,10 @@ Use at least two strong non-Qwen models in separate roles where possible:
 - Solvers independently derive answers for ground truth.
 - Method-constrained solvers attempt named solution methods.
 - Judges assess naturalness, true method use, distinctness, and error location.
+  The maintained strong-model pipeline defaults to two agreeing judge models for
+  naturalness and distinctness (`--min_natural_agree 2`,
+  `--min_distinct_agree 2`). Generated-curriculum SFT is blocked if the typed
+  record report shows weaker judge agreement.
 
 Avoid using the student base, its adapters, or its teacher lineage as data
 generators. We want curriculum signal, not leakage from the model family we are
@@ -256,6 +260,8 @@ python training/run_curriculum_pipeline_from_artifacts.py \
   --seed_models opus-strong,glm-strong \
   --solver_models opus-strong,glm-strong \
   --judge_models opus-strong,glm-strong \
+  --min_natural_agree 2 \
+  --min_distinct_agree 2 \
   --require_programmatic_answer_check \
   --domains math \
   --difficulties medium,hard \

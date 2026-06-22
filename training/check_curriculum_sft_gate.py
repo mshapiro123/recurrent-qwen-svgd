@@ -273,6 +273,26 @@ def check_report_payloads(
         add_issue(issues, "typed_record_report_validation_issues", "typed_records_report contains validation issues.")
     if int(typed_report.get("unsafe_auxiliary_traces") or 0) != 0:
         add_issue(issues, "unsafe_auxiliary_traces", "typed_records_report contains unsafe auxiliary traces.")
+    min_natural_agree = typed_report.get("min_natural_agree")
+    if min_natural_agree is None or int(min_natural_agree or 0) < 2:
+        add_issue(
+            issues,
+            "naturalness_agreement_too_low",
+            (
+                "typed_records_report min_natural_agree must be at least 2 for generated curriculum SFT; "
+                f"observed {min_natural_agree!r}."
+            ),
+        )
+    min_distinct_agree = typed_report.get("min_distinct_agree")
+    if typed_report.get("distinctness_required") is True and (min_distinct_agree is None or int(min_distinct_agree or 0) < 2):
+        add_issue(
+            issues,
+            "distinctness_agreement_too_low",
+            (
+                "typed_records_report min_distinct_agree must be at least 2 when distinctness is required; "
+                f"observed {min_distinct_agree!r}."
+            ),
+        )
 
     if int(verified_report.get("verified") or 0) <= 0:
         add_issue(issues, "no_verified_candidates", "verified_candidates_report has no verified candidates.")
@@ -301,6 +321,9 @@ def check_report_payloads(
         "decontaminated": decontam_report.get("accepted"),
         "method_solutions": method_report.get("solution_candidates"),
         "naturalness_judgments": naturalness_report.get("judgments"),
+        "min_natural_agree": typed_report.get("min_natural_agree"),
+        "min_distinct_agree": typed_report.get("min_distinct_agree"),
+        "distinctness_required": typed_report.get("distinctness_required"),
         "depth_measurements": depth_report.get("measurements"),
         "difficulty_measured": difficulty_report.get("measured"),
     }

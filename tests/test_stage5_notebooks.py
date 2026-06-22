@@ -238,6 +238,8 @@ def test_curriculum_artifact_pipeline_cell_defaults_to_no_provider_spend() -> No
     assert 'MIN_MODE_ROWS = ""' in plain
     assert "--min_mode_rows" in plain
     assert "str(MIN_POSITIVE_ROWS)" in plain
+    assert '"--min_natural_agree"' in plain
+    assert '"--min_distinct_agree"' in plain
     assert "training/run_curriculum_pipeline_from_artifacts.py" in plain
     assert "training/run_curriculum_job_responses.py" in plain
     assert "pending_reference_attempt_responses" in plain

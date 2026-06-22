@@ -55,6 +55,10 @@ PIPELINE_ARGS = [
     "3",
     "--min_reference_samples",
     "1",
+    "--min_natural_agree",
+    "2",
+    "--min_distinct_agree",
+    "2",
     "--require_programmatic_answer_check",
 ]
 

@@ -70,6 +70,10 @@ Assign models to roles instead of treating them as interchangeable.
   that is correct against ground truth and judged natural by the panel.
 - Naturalness, distinctness, and error-location judgments require agreement or
   majority. Ties are dropped or escalated for human review.
+  The maintained artifact pipeline and record assembler default to at least two
+  agreeing naturalness and distinctness judge models (`--min_natural_agree 2`
+  and `--min_distinct_agree 2`). Lower values are for local smoke tests only
+  and are rejected by the generated-curriculum SFT gate.
 
 ## Running Provider Response Jobs
 
@@ -86,6 +90,8 @@ python training/run_curriculum_pipeline_from_artifacts.py \
   --seed_models opus-strong,glm-strong \
   --solver_models opus-strong,glm-strong \
   --judge_models opus-strong,glm-strong \
+  --min_natural_agree 2 \
+  --min_distinct_agree 2 \
   --require_programmatic_answer_check
 ```
 

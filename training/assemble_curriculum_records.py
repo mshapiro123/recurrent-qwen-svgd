@@ -360,6 +360,8 @@ def assemble_curriculum_records(
         "depth_measurements": len(depth_measurements),
         "distinctness_judgments": 0 if distinctness_judgments is None else len(distinctness_judgments),
         "distinctness_required": distinctness_judgments is not None,
+        "min_natural_agree": min_natural_agree,
+        "min_distinct_agree": min_distinct_agree,
         "auxiliary_traces": 0 if auxiliary_traces is None else len(auxiliary_traces),
         "unsafe_auxiliary_traces": len(unsafe_auxiliary),
         "unsafe_auxiliary_trace_rows": unsafe_auxiliary,
@@ -390,8 +392,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--auxiliary_traces_jsonl", action="append")
     parser.add_argument("--output_jsonl", required=True)
     parser.add_argument("--report_json")
-    parser.add_argument("--min_natural_agree", type=int, default=1)
-    parser.add_argument("--min_distinct_agree", type=int, default=1)
+    parser.add_argument("--min_natural_agree", type=int, default=2)
+    parser.add_argument("--min_distinct_agree", type=int, default=2)
     parser.add_argument("--deep_threshold", type=int, default=5)
     parser.add_argument("--allow_not_decontaminated", action="store_true")
     parser.add_argument("--allow_method_mismatch", action="store_true")
