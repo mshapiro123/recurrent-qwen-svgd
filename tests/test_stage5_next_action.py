@@ -528,7 +528,7 @@ def test_a100_guard_blocks_guarded_arc_runner_without_readable_source() -> None:
 
 def test_a100_guard_allows_bounded_routing_diagnostic(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(
-        "colab.check_stage5_a100_go_no_go.routing_repair_checkpoint_availability",
+        "colab.check_stage5_a100_go_no_go.default_recovered_checkpoint_availability",
         lambda: {
             "checkpoint": "outputs/stage5/recovered/phase1/phase1_step_125.pt",
             "available": True,
@@ -563,7 +563,7 @@ def test_a100_guard_allows_bounded_routing_diagnostic(tmp_path, monkeypatch) -> 
 
 def test_a100_guard_blocks_routing_diagnostic_when_recovered_checkpoint_missing(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(
-        "colab.check_stage5_a100_go_no_go.routing_repair_checkpoint_availability",
+        "colab.check_stage5_a100_go_no_go.default_recovered_checkpoint_availability",
         lambda: {
             "checkpoint": "outputs/stage5/recovered/phase1/phase1_step_125.pt",
             "available": False,
@@ -592,7 +592,7 @@ def test_a100_guard_blocks_routing_diagnostic_when_recovered_checkpoint_missing(
 
 def test_a100_guard_allows_routing_diagnostic_after_calibration_warning(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(
-        "colab.check_stage5_a100_go_no_go.routing_repair_checkpoint_availability",
+        "colab.check_stage5_a100_go_no_go.default_recovered_checkpoint_availability",
         lambda: {
             "checkpoint": "outputs/stage5/recovered/phase1/phase1_step_125.pt",
             "available": True,
@@ -624,7 +624,7 @@ def test_a100_guard_allows_routing_diagnostic_after_calibration_warning(tmp_path
 def test_a100_guard_allows_routing_repair_for_repair_status(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(
         "colab.check_stage5_a100_go_no_go.routing_repair_checkpoint_availability",
-        lambda: {
+        lambda source_payload=None: {
             "checkpoint": "outputs/stage5/recovered/phase1/phase1_step_125.pt",
             "available": True,
             "exists": False,

@@ -299,8 +299,22 @@ def checkpoint_availability(payload: dict[str, Any]) -> dict[str, Any]:
     return checkpoint_availability_for_path(checkpoint_from_payload(payload))
 
 
-def routing_repair_checkpoint_availability() -> dict[str, Any]:
-    """Preflight the recovered deterministic checkpoint used by routing jobs."""
+def checkpoint_from_summary_reference(value: str | Path | None) -> str | None:
+    if not value:
+        return None
+    path = Path(str(value))
+    path = path if path.is_absolute() else ROOT / path
+    if not path.exists():
+        return None
+    try:
+        payload = read_json(path)
+    except Exception:
+        return None
+    return checkpoint_from_payload(payload)
+
+
+def default_recovered_checkpoint_availability() -> dict[str, Any]:
+    """Preflight the default recovered deterministic checkpoint."""
 
     checkpoint = os.environ.get("STAGE5_RECOVERED_PHASE1_CHECKPOINT", DEFAULT_CHECKPOINT_REL)
     run_id = os.environ.get("STAGE5_RECOVERED_PHASE1_RUN_ID", DEFAULT_RECOVERED_RUN_ID)
@@ -312,6 +326,53 @@ def routing_repair_checkpoint_availability() -> dict[str, Any]:
     status["reason"] = (
         "Routing diagnostic/repair requires the recovered deterministic Phase 1 checkpoint. "
         "Run Drive/checkpoint preflight before attaching a paid GPU if this is unavailable."
+    )
+    return status
+
+
+def routing_repair_checkpoint_availability(source_payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Preflight the checkpoint the routing-repair child runner will consume."""
+
+    checkpoint = None
+    source = "default_recovered"
+    if source_payload:
+        checkpoint = checkpoint_from_summary_reference(source_payload.get("benchmark_summary"))
+        if checkpoint:
+            source = "benchmark_summary"
+        else:
+            checkpoint = checkpoint_from_payload(source_payload)
+            if checkpoint:
+                source = "source_payload"
+    if not checkpoint:
+        return default_recovered_checkpoint_availability()
+
+    status = checkpoint_availability_for_path(
+        checkpoint,
+        missing_reason="Routing repair requires the benchmark checkpoint selected by the routing diagnostic.",
+    )
+    status["source"] = source
+    status["reason"] = (
+        "Routing repair will delegate to the ARC-mix child runner using this selected checkpoint. "
+        "It must be local or visible in the Drive artifact backup before attaching a paid GPU."
+    )
+    return status
+
+
+def programmatic_depth_checkpoint_availability(source_payload: dict[str, Any]) -> dict[str, Any]:
+    """Preflight the checkpoint the constructed direct/deep repair will resume from."""
+
+    explicit = os.environ.get("STAGE5_PROGRAMMATIC_RESUME_CHECKPOINT", "").strip()
+    checkpoint = explicit or checkpoint_from_payload(source_payload)
+    status = checkpoint_availability_for_path(
+        checkpoint,
+        missing_reason=(
+            "Programmatic direct/deep repair requires STAGE5_PROGRAMMATIC_RESUME_CHECKPOINT "
+            "or a checkpoint in the source summary."
+        ),
+    )
+    status["reason"] = (
+        "Programmatic direct/deep repair resumes from this selected checkpoint. "
+        "It must be local or visible in the Drive artifact backup before attaching a paid GPU."
     )
     return status
 
@@ -487,13 +548,12 @@ def apply_checkpoint_guard(
     *,
     source_payload: dict[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    recovered_checkpoint_classes = {
-        "bounded_routing_diagnostic",
-        "bounded_routing_repair",
-        "bounded_programmatic_depth_repair",
-    }
-    if decision.get("spend_class") in recovered_checkpoint_classes:
-        checkpoint = routing_repair_checkpoint_availability()
+    if decision.get("spend_class") == "bounded_routing_diagnostic":
+        checkpoint = default_recovered_checkpoint_availability()
+    elif decision.get("spend_class") == "bounded_routing_repair":
+        checkpoint = routing_repair_checkpoint_availability(source_payload)
+    elif decision.get("spend_class") == "bounded_programmatic_depth_repair":
+        checkpoint = programmatic_depth_checkpoint_availability(source_payload)
     elif decision.get("spend_class") == "bounded_stage4_opus_finetune":
         checkpoint = {
             "checkpoint": None,
@@ -535,7 +595,11 @@ def apply_checkpoint_guard(
             "prior_decision": decision,
         }
         return guarded, checkpoint
-    if decision.get("spend_class") in recovered_checkpoint_classes:
+    if decision.get("spend_class") in {
+        "bounded_routing_diagnostic",
+        "bounded_routing_repair",
+        "bounded_programmatic_depth_repair",
+    }:
         guarded = {
             "go": False,
             "status": "routing_checkpoint_missing_no_go",

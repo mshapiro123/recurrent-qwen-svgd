@@ -159,7 +159,7 @@ def test_checkpoint_guard_blocks_go_without_checkpoint() -> None:
 def test_routing_repair_checkpoint_preflight_can_block(monkeypatch) -> None:
     monkeypatch.setattr(
         "colab.check_stage5_a100_go_no_go.routing_repair_checkpoint_availability",
-        lambda: {
+        lambda source_payload=None: {
             "checkpoint": "outputs/stage5/recovered/phase1/phase1_step_125.pt",
             "available": False,
             "exists": False,
@@ -213,7 +213,7 @@ def test_build_payload_includes_routing_repair_profile(monkeypatch, tmp_path) ->
 def test_routing_repair_checkpoint_preflight_allows_available(monkeypatch) -> None:
     monkeypatch.setattr(
         "colab.check_stage5_a100_go_no_go.routing_repair_checkpoint_availability",
-        lambda: {
+        lambda source_payload=None: {
             "checkpoint": "outputs/stage5/recovered/phase1/phase1_step_125.pt",
             "available": True,
             "exists": True,
@@ -231,16 +231,10 @@ def test_routing_repair_checkpoint_preflight_allows_available(monkeypatch) -> No
     assert decision["status"] == "go_routing_repair"
 
 
-def test_programmatic_depth_repair_uses_recovered_checkpoint_preflight(monkeypatch) -> None:
-    monkeypatch.setattr(
-        "colab.check_stage5_a100_go_no_go.routing_repair_checkpoint_availability",
-        lambda: {
-            "checkpoint": "outputs/stage5/recovered/phase1/phase1_step_125.pt",
-            "available": True,
-            "exists": True,
-            "drive_candidate_exists": False,
-        },
-    )
+def test_programmatic_depth_repair_uses_source_checkpoint_preflight(tmp_path) -> None:
+    resume = tmp_path / "outputs" / "stage5" / "repair" / "phase1" / "phase1_step_50.pt"
+    resume.parent.mkdir(parents=True)
+    resume.write_bytes(b"checkpoint")
 
     decision = classify_action(
         {
@@ -251,10 +245,14 @@ def test_programmatic_depth_repair_uses_recovered_checkpoint_preflight(monkeypat
     )
     guarded, checkpoint = apply_checkpoint_guard(
         decision,
-        source_payload={"status": "needs_direct_halting_repair"},
+        source_payload={
+            "status": "needs_direct_halting_repair",
+            "selected_checkpoint": str(resume),
+        },
     )
 
     assert checkpoint["available"] is True
+    assert checkpoint["checkpoint"].endswith("phase1/phase1_step_50.pt")
     assert guarded["go"] is True
     assert guarded["status"] == "go_programmatic_depth_repair"
     assert guarded["spend_class"] == "bounded_programmatic_depth_repair"
@@ -635,6 +633,23 @@ def test_routing_checkpoint_availability_reports_default_checkpoint() -> None:
 
     assert status["checkpoint"].endswith("/phase1/phase1_step_125.pt")
     assert "Routing diagnostic/repair requires" in status["reason"]
+
+
+def test_routing_checkpoint_availability_uses_benchmark_summary(tmp_path) -> None:
+    checkpoint = tmp_path / "outputs" / "stage5" / "bench" / "phase1" / "phase1_step_75.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    benchmark = tmp_path / "benchmark_summary.json"
+    benchmark.write_text(
+        f'{{"kind": "stage5_benchmark_suite", "checkpoint": "{checkpoint.as_posix()}"}}',
+        encoding="utf-8",
+    )
+
+    status = routing_repair_checkpoint_availability({"benchmark_summary": str(benchmark)})
+
+    assert status["available"] is True
+    assert status["source"] == "benchmark_summary"
+    assert status["checkpoint"].endswith("phase1/phase1_step_75.pt")
 
 
 def test_unpassed_proxy_blocks_full_confirmation() -> None:
