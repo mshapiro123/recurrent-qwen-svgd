@@ -308,7 +308,7 @@ def test_routing_diagnostic_pass_recommends_larger_confirmation(tmp_path) -> Non
     assert "STAGE5_BENCHMARK_SOURCE_SUMMARY=outputs/stage5/routing/benchmark_run/summary.json" in actions[0]["command"]
 
 
-def test_routing_repair_pass_recommends_full_assessment_from_child_summary(tmp_path) -> None:
+def test_routing_repair_pass_recommends_full_assessment_from_wrapper_summary(tmp_path) -> None:
     source = tmp_path / "routing_repair" / "summary.json"
     source.parent.mkdir()
     payload = {
@@ -323,7 +323,8 @@ def test_routing_repair_pass_recommends_full_assessment_from_child_summary(tmp_p
 
     assert actions[0]["name"] == "Run full balanced assessment for routing-repair checkpoint"
     assert "python colab/run_stage5_recovery_full_assessment.py" in actions[0]["command"]
-    assert "STAGE5_RECOVERY_FULL_ASSESS_SOURCE_SUMMARY=outputs/stage5/repair_child/summary.json" in actions[0]["command"]
+    assert f"STAGE5_RECOVERY_FULL_ASSESS_SOURCE_SUMMARY={source.as_posix()}" in actions[0]["command"]
+    assert "outputs/stage5/repair_child/summary.json" not in actions[0]["command"]
 
 
 def test_routing_repair_failure_recommends_programmatic_depth_repair(tmp_path) -> None:
