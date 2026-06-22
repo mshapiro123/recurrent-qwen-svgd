@@ -5,6 +5,7 @@ from colab.check_stage5_a100_go_no_go import (
     checkpoint_from_payload,
     classify_action,
     command_script,
+    routing_repair_checkpoint_availability,
     source_has_calibration_warning,
 )
 
@@ -97,6 +98,55 @@ def test_checkpoint_guard_blocks_go_without_checkpoint() -> None:
     assert checkpoint["available"] is False
     assert decision["go"] is False
     assert decision["status"] == "checkpoint_missing_no_go"
+
+
+def test_routing_repair_checkpoint_preflight_can_block(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "colab.check_stage5_a100_go_no_go.routing_repair_checkpoint_availability",
+        lambda: {
+            "checkpoint": "outputs/stage5/recovered/phase1/phase1_step_125.pt",
+            "available": False,
+            "exists": False,
+            "drive_candidate_exists": False,
+        },
+    )
+
+    decision, checkpoint = apply_checkpoint_guard(
+        {"go": True, "status": "go_routing_repair", "spend_class": "bounded_routing_repair"},
+        source_payload={"status": "needs_direct_halting_repair"},
+    )
+
+    assert checkpoint["available"] is False
+    assert decision["go"] is False
+    assert decision["status"] == "routing_checkpoint_missing_no_go"
+
+
+def test_routing_repair_checkpoint_preflight_allows_available(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "colab.check_stage5_a100_go_no_go.routing_repair_checkpoint_availability",
+        lambda: {
+            "checkpoint": "outputs/stage5/recovered/phase1/phase1_step_125.pt",
+            "available": True,
+            "exists": True,
+            "drive_candidate_exists": False,
+        },
+    )
+
+    decision, checkpoint = apply_checkpoint_guard(
+        {"go": True, "status": "go_routing_repair", "spend_class": "bounded_routing_repair"},
+        source_payload={"status": "needs_direct_halting_repair"},
+    )
+
+    assert checkpoint["available"] is True
+    assert decision["go"] is True
+    assert decision["status"] == "go_routing_repair"
+
+
+def test_routing_checkpoint_availability_reports_default_checkpoint() -> None:
+    status = routing_repair_checkpoint_availability()
+
+    assert status["checkpoint"].endswith("/phase1/phase1_step_125.pt")
+    assert "Routing diagnostic/repair requires" in status["reason"]
 
 
 def test_unpassed_proxy_blocks_full_confirmation() -> None:

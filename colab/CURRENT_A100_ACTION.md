@@ -6,6 +6,15 @@ Use the safe-continue cell from a normal Drive-backed or blank Colab notebook:
 
 [`colab/STAGE5_SAFE_CONTINUE_CELL.md`](STAGE5_SAFE_CONTINUE_CELL.md)
 
+If the runtime has reset or Drive authorization is stale, first run the cheap
+preflight cell on CPU or a low-cost runtime:
+
+[`colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.md`](STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.md)
+
+That cell mounts Drive, verifies the recovered deterministic Phase 1 checkpoint
+is visible, runs the A100 go/no-go guard, and disconnects. Only attach an
+A100/H100 after `checkpoint_preflight.available` is `True`.
+
 Keep the runtime disconnected while editing the cell. This is one bounded
 deterministic Phase 1 repair run; use an A100/H100 only when you intentionally
 want to spend paid GPU on it. If cheaper L4/T4 capacity is immediately
@@ -21,6 +30,9 @@ only when you intentionally want the guarded action to execute. The cell pulls
 latest GitHub, authenticates GitHub/Hugging Face, mounts Drive when needed,
 runs the go/no-go guard, executes one allowlisted action, backs up/commits safe
 artifacts, and disconnects by default.
+
+If the go/no-go output is `routing_checkpoint_missing_no_go`, do not keep the
+GPU session alive. Disconnect and run the Drive/checkpoint preflight first.
 
 ## Source Summary
 

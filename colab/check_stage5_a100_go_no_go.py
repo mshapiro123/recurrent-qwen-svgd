@@ -30,6 +30,8 @@ from colab.plan_stage5_next_run import (
     source_kind,
 )
 from colab.run_stage5_recovered_phase1_arc_gate import (
+    DEFAULT_CHECKPOINT_REL,
+    DEFAULT_RECOVERED_RUN_ID,
     candidate_drive_checkpoints,
     path_for_cli as checkpoint_path_for_cli,
 )
@@ -120,20 +122,24 @@ def checkpoint_from_payload(payload: dict[str, Any]) -> str | None:
     return None
 
 
-def checkpoint_availability(payload: dict[str, Any]) -> dict[str, Any]:
-    checkpoint = checkpoint_from_payload(payload)
+def checkpoint_availability_for_path(
+    checkpoint: str | Path | None,
+    *,
+    run_id_hint: str | None = None,
+    missing_reason: str = "No selected checkpoint was found in the source summary.",
+) -> dict[str, Any]:
     if not checkpoint:
         return {
             "checkpoint": None,
             "available": False,
             "exists": False,
             "drive_candidate_exists": False,
-            "reason": "No selected checkpoint was found in the source summary.",
+            "reason": missing_reason,
         }
 
     checkpoint_path = Path(checkpoint)
     checkpoint_path = checkpoint_path if checkpoint_path.is_absolute() else ROOT / checkpoint_path
-    run_id = infer_stage5_run_id(checkpoint_path)
+    run_id = run_id_hint or infer_stage5_run_id(checkpoint_path)
     exists = checkpoint_path.exists()
     candidates: list[Path] = []
     existing_candidates: list[Path] = []
@@ -153,24 +159,53 @@ def checkpoint_availability(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def checkpoint_availability(payload: dict[str, Any]) -> dict[str, Any]:
+    return checkpoint_availability_for_path(checkpoint_from_payload(payload))
+
+
+def routing_repair_checkpoint_availability() -> dict[str, Any]:
+    """Preflight the recovered deterministic checkpoint used by routing jobs."""
+
+    checkpoint = os.environ.get("STAGE5_RECOVERED_PHASE1_CHECKPOINT", DEFAULT_CHECKPOINT_REL)
+    run_id = os.environ.get("STAGE5_RECOVERED_PHASE1_RUN_ID", DEFAULT_RECOVERED_RUN_ID)
+    status = checkpoint_availability_for_path(
+        checkpoint,
+        run_id_hint=run_id,
+        missing_reason="Routing diagnostic/repair requires the recovered deterministic Phase 1 checkpoint.",
+    )
+    status["reason"] = (
+        "Routing diagnostic/repair requires the recovered deterministic Phase 1 checkpoint. "
+        "Run Drive/checkpoint preflight before attaching a paid GPU if this is unavailable."
+    )
+    return status
+
+
 def apply_checkpoint_guard(
     decision: dict[str, Any],
     *,
     source_payload: dict[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     if decision.get("spend_class") in {"bounded_routing_diagnostic", "bounded_routing_repair"}:
-        return decision, {
-            "checkpoint": None,
-            "available": True,
-            "exists": False,
-            "drive_candidate_exists": None,
-            "reason": "Routing diagnostic/repair runner restores its own recovered Phase 1 checkpoint.",
-        }
-    checkpoint = checkpoint_availability(source_payload)
+        checkpoint = routing_repair_checkpoint_availability()
+    else:
+        checkpoint = checkpoint_availability(source_payload)
     if not decision.get("go"):
         return decision, checkpoint
     if checkpoint.get("available"):
         return decision, checkpoint
+    if decision.get("spend_class") in {"bounded_routing_diagnostic", "bounded_routing_repair"}:
+        guarded = {
+            "go": False,
+            "status": "routing_checkpoint_missing_no_go",
+            "spend_class": "none",
+            "reason": (
+                "The planner selected a routing diagnostic/repair, but the recovered "
+                "Phase 1 checkpoint is not present locally and no mounted-Drive backup "
+                "candidate is visible. Mount/authorize Drive on a cheap runtime first."
+            ),
+            "prior_decision": decision,
+        }
+        return guarded, checkpoint
     guarded = {
         "go": False,
         "status": "checkpoint_missing_no_go",

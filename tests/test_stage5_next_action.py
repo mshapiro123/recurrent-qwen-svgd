@@ -393,7 +393,16 @@ def test_a100_guard_skips_local_assessment_actions() -> None:
     assert guard["allowed"] is True
 
 
-def test_a100_guard_allows_bounded_routing_diagnostic(tmp_path) -> None:
+def test_a100_guard_allows_bounded_routing_diagnostic(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "colab.check_stage5_a100_go_no_go.routing_repair_checkpoint_availability",
+        lambda: {
+            "checkpoint": "outputs/stage5/recovered/phase1/phase1_step_125.pt",
+            "available": True,
+            "exists": True,
+            "drive_candidate_exists": False,
+        },
+    )
     checkpoint = tmp_path / "outputs" / "stage5" / "run" / "phase1" / "phase1_step_1.pt"
     checkpoint.parent.mkdir(parents=True)
     checkpoint.write_bytes(b"test")
@@ -419,7 +428,45 @@ def test_a100_guard_allows_bounded_routing_diagnostic(tmp_path) -> None:
     assert guard["spend_class"] == "bounded_routing_diagnostic"
 
 
-def test_a100_guard_allows_routing_diagnostic_after_calibration_warning(tmp_path) -> None:
+def test_a100_guard_blocks_routing_diagnostic_when_recovered_checkpoint_missing(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "colab.check_stage5_a100_go_no_go.routing_repair_checkpoint_availability",
+        lambda: {
+            "checkpoint": "outputs/stage5/recovered/phase1/phase1_step_125.pt",
+            "available": False,
+            "exists": False,
+            "drive_candidate_exists": False,
+        },
+    )
+    source = tmp_path / "summary.json"
+    source.write_text(
+        '{"kind": "stage5_balanced_arc_mix_gate", '
+        '"status": "no_proxy_lift"}',
+        encoding="utf-8",
+    )
+    action = {
+        "name": "Run bounded depth/width routing diagnostic",
+        "command": "python colab/run_stage5_routing_diagnostic.py",
+    }
+    parsed = parse_action_command(action["command"])
+
+    guard = a100_execution_guard(action, {"source_summary": str(source)}, parsed)
+
+    assert guard["checked"] is True
+    assert guard["allowed"] is False
+    assert guard["status"] == "routing_checkpoint_missing_no_go"
+
+
+def test_a100_guard_allows_routing_diagnostic_after_calibration_warning(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "colab.check_stage5_a100_go_no_go.routing_repair_checkpoint_availability",
+        lambda: {
+            "checkpoint": "outputs/stage5/recovered/phase1/phase1_step_125.pt",
+            "available": True,
+            "exists": False,
+            "drive_candidate_exists": True,
+        },
+    )
     source = tmp_path / "summary.json"
     source.write_text(
         '{"kind": "stage5_balanced_arc_mix_gate", '
@@ -438,10 +485,19 @@ def test_a100_guard_allows_routing_diagnostic_after_calibration_warning(tmp_path
     assert guard["checked"] is True
     assert guard["allowed"] is True
     assert guard["status"] == "go_routing_diagnostic"
-    assert guard["checkpoint_preflight"]["reason"] == "Routing diagnostic/repair runner restores its own recovered Phase 1 checkpoint."
+    assert guard["checkpoint_preflight"]["available"] is True
 
 
-def test_a100_guard_allows_routing_repair_for_repair_status(tmp_path) -> None:
+def test_a100_guard_allows_routing_repair_for_repair_status(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "colab.check_stage5_a100_go_no_go.routing_repair_checkpoint_availability",
+        lambda: {
+            "checkpoint": "outputs/stage5/recovered/phase1/phase1_step_125.pt",
+            "available": True,
+            "exists": False,
+            "drive_candidate_exists": True,
+        },
+    )
     source = tmp_path / "summary.json"
     source.write_text(
         '{"kind": "stage5_routing_diagnostic_assessment", "status": "needs_direct_halting_repair"}',
