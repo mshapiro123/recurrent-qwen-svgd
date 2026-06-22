@@ -67,6 +67,7 @@ DRIVE_BACKUP_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd/curriculum_
 REQUIRE_DRIVE_BACKUP_FOR_PUBLISH = True
 PUBLISH_GATE_TO_GITHUB = True
 PUBLISHED_GATE_DIR = "outputs/stage5/programmatic_direct_deep_curriculum_gate"
+# Safety marker for the bootstrap fetch check: stage5_current_source_summary.
 REFUSE_GPU_RUNTIME = True
 ALLOW_GPU_RUNTIME_FOR_CPU_WORK = False
 DISCONNECT_RUNTIME_WHEN_DONE = False
