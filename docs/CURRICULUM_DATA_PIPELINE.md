@@ -140,11 +140,16 @@ python training/check_curriculum_sft_gate.py \
   --work_dir data/curriculum/run_001 \
   --output_json data/curriculum/run_001/curriculum_sft_gate.json \
   --output_md data/curriculum/run_001/curriculum_sft_gate.md \
+  --min_mode_rows direct=64,deep_narrow=64 \
   --fail_on_no_go
 ```
 
 The gate must report `go=true`; otherwise the shard is still CPU/API cleanup
 work, not GPU training material.
+Use `--min_mode_rows` to tie a shard to the training objective. Omit it for a
+general safety check; include it before GPU SFT when the run is supposed to be
+direct/deep calibration, wide particle supervision, or another specific mode
+mix.
 
 Once the gate is green and the shard has enough positive rows to justify GPU
 spend, the guarded deterministic recurrent SFT handoff is:

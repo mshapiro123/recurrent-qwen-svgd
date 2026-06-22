@@ -79,6 +79,38 @@ def add_issue(issues: list[dict[str, Any]], code: str, message: str, *, severity
     issues.append({"severity": severity, "code": code, "message": message})
 
 
+def parse_min_mode_rows(values: list[str] | None) -> dict[str, int]:
+    requirements: dict[str, int] = {}
+    for value in values or []:
+        for item in str(value).split(","):
+            item = item.strip()
+            if not item:
+                continue
+            if "=" in item:
+                mode, count = item.split("=", 1)
+            elif ":" in item:
+                mode, count = item.split(":", 1)
+            else:
+                raise argparse.ArgumentTypeError(
+                    f"Invalid --min_mode_rows item {item!r}; expected mode=count."
+                )
+            mode = mode.strip()
+            if mode not in {"direct", "deep_narrow", "wide", "both"}:
+                raise argparse.ArgumentTypeError(f"Invalid curriculum mode in --min_mode_rows: {mode!r}")
+            try:
+                parsed_count = int(count)
+            except ValueError as exc:
+                raise argparse.ArgumentTypeError(
+                    f"Invalid row count in --min_mode_rows item {item!r}; expected integer."
+                ) from exc
+            if parsed_count < 0:
+                raise argparse.ArgumentTypeError(
+                    f"Invalid row count in --min_mode_rows item {item!r}; expected non-negative integer."
+                )
+            requirements[mode] = parsed_count
+    return requirements
+
+
 def check_required_artifacts(
     summary: dict[str, Any],
     required: list[str],
@@ -134,6 +166,25 @@ def check_positive_sft_rows(
         "role_counts": dict(sorted(role_counts.items())),
         "mode_counts": dict(sorted(mode_counts.items())),
     }
+
+
+def check_mode_row_requirements(
+    mode_counts: dict[str, int],
+    min_mode_rows: dict[str, int],
+    issues: list[dict[str, Any]],
+) -> dict[str, Any]:
+    results: dict[str, Any] = {}
+    for mode, required in sorted(min_mode_rows.items()):
+        observed = int(mode_counts.get(mode, 0))
+        passed = observed >= required
+        results[mode] = {"required": required, "observed": observed, "passed": passed}
+        if not passed:
+            add_issue(
+                issues,
+                "too_few_mode_rows",
+                f"positive_sft has {observed} {mode!r} rows < required {required}.",
+            )
+    return results
 
 
 def check_typed_records(rows: list[dict[str, Any]], issues: list[dict[str, Any]]) -> dict[str, Any]:
@@ -328,6 +379,11 @@ def build_gate_payload(args: argparse.Namespace) -> dict[str, Any]:
                 f"positive_sft has {len(rows)} rows < {args.min_positive_rows}.",
             )
         sft_summary = check_positive_sft_rows(rows, issues, max_loop_target=args.max_loop_target)
+        sft_summary["mode_requirements"] = check_mode_row_requirements(
+            sft_summary.get("mode_counts", {}),
+            args.min_mode_rows,
+            issues,
+        )
 
     go = not any(issue.get("severity") == "blocker" for issue in issues)
     return {
@@ -389,6 +445,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--output_json")
     parser.add_argument("--output_md")
     parser.add_argument("--min_positive_rows", type=int, default=1)
+    parser.add_argument(
+        "--min_mode_rows",
+        action="append",
+        default=[],
+        help=(
+            "Optional mode coverage requirements over positive_sft rows. "
+            "Use mode=count, e.g. direct=64,deep_narrow=64. May be repeated."
+        ),
+    )
     parser.add_argument("--max_loop_target", type=int, default=8)
     parser.add_argument("--require_programmatic_answer_check", action="store_true", default=True)
     parser.add_argument(
@@ -398,7 +463,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Allow generated shards whose verified answers were only cross-model agreed, without a cheap deterministic check.",
     )
     parser.add_argument("--fail_on_no_go", action="store_true")
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    try:
+        args.min_mode_rows = parse_min_mode_rows(args.min_mode_rows)
+    except argparse.ArgumentTypeError as exc:
+        parser.error(str(exc))
+    return args
 
 
 def main(argv: list[str] | None = None) -> int:

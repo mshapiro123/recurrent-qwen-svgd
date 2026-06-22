@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from training.check_curriculum_sft_gate import build_gate_payload, main, parse_args
+from training.check_curriculum_sft_gate import build_gate_payload, main, parse_args, parse_min_mode_rows
 
 
 def write_json(path: Path, payload: dict) -> None:
@@ -137,6 +137,38 @@ def test_curriculum_sft_gate_allows_complete_strict_shard(tmp_path) -> None:
     assert payload["issues"] == []
     assert payload["checks"]["positive_sft"]["role_counts"] == {"positive_wide": 1}
     assert payload["checks"]["typed_records"]["positive_missing_answer_match"] == 0
+    assert payload["checks"]["positive_sft"]["mode_requirements"] == {}
+
+
+def test_parse_min_mode_rows_accepts_repeated_and_csv_values() -> None:
+    assert parse_min_mode_rows(["direct=8,deep_narrow:12", "wide=4"]) == {
+        "direct": 8,
+        "deep_narrow": 12,
+        "wide": 4,
+    }
+
+
+def test_curriculum_sft_gate_allows_matching_mode_requirement(tmp_path) -> None:
+    summary = write_complete_work_dir(tmp_path / "run")
+
+    payload = build_gate_payload(parse_args(["--summary_json", str(summary), "--min_mode_rows", "wide=1"]))
+
+    assert payload["go"] is True
+    assert payload["checks"]["positive_sft"]["mode_requirements"] == {
+        "wide": {"required": 1, "observed": 1, "passed": True}
+    }
+
+
+def test_curriculum_sft_gate_blocks_missing_mode_requirement(tmp_path) -> None:
+    summary = write_complete_work_dir(tmp_path / "run")
+
+    payload = build_gate_payload(parse_args(["--summary_json", str(summary), "--min_mode_rows", "direct=1"]))
+
+    assert payload["go"] is False
+    assert payload["checks"]["positive_sft"]["mode_requirements"] == {
+        "direct": {"required": 1, "observed": 0, "passed": False}
+    }
+    assert any(issue["code"] == "too_few_mode_rows" for issue in payload["issues"])
 
 
 def test_curriculum_sft_gate_blocks_incomplete_pipeline(tmp_path) -> None:

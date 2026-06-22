@@ -50,6 +50,7 @@ MODEL_NAME = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")
 WORK_DIR = Path(os.environ.get("STAGE5_CURRICULUM_WORK_DIR", "data/curriculum/run_001"))
 SUMMARY_JSON = os.environ.get("STAGE5_CURRICULUM_SUMMARY_JSON", "")
 MIN_POSITIVE_ROWS = int(os.environ.get("STAGE5_CURRICULUM_MIN_POSITIVE_ROWS", "16"))
+MIN_MODE_ROWS = os.environ.get("STAGE5_CURRICULUM_MIN_MODE_ROWS", "").strip()
 VAL_FRACTION = float(os.environ.get("STAGE5_CURRICULUM_VAL_FRACTION", "0.10"))
 VAL_MIN_ROWS = int(os.environ.get("STAGE5_CURRICULUM_VAL_MIN_ROWS", "1"))
 SPLIT_SEED = int(os.environ.get("STAGE5_CURRICULUM_SPLIT_SEED", "17"))
@@ -229,6 +230,8 @@ def run_sft_gate() -> dict[str, Any]:
         str(MAX_LOOPS),
         "--fail_on_no_go",
     ]
+    if MIN_MODE_ROWS:
+        args.extend(["--min_mode_rows", MIN_MODE_ROWS])
     gate_args = parse_gate_args(args)
     payload = build_gate_payload(gate_args)
     write_gate_outputs(payload, output_json=path_for_cli(output_json), output_md=path_for_cli(output_md))
@@ -506,6 +509,7 @@ def main() -> int:
         "curriculum_input_backup_dir": str(curriculum_input_backup_root()),
         "input_restore": input_restore,
         "min_positive_rows": MIN_POSITIVE_ROWS,
+        "min_mode_rows": MIN_MODE_ROWS,
         "max_length": MAX_LENGTH,
         "max_loops": MAX_LOOPS,
         "max_steps": MAX_STEPS,

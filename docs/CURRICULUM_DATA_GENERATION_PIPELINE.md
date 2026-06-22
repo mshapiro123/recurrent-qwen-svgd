@@ -289,15 +289,18 @@ python training/check_curriculum_sft_gate.py \
   --work_dir data/curriculum/run_001 \
   --output_json data/curriculum/run_001/curriculum_sft_gate.json \
   --output_md data/curriculum/run_001/curriculum_sft_gate.md \
+  --min_mode_rows direct=64,deep_narrow=64 \
   --min_positive_rows 1 \
   --fail_on_no_go
 ```
 
 This gate checks that the pipeline is complete, generated answers used strict
 programmatic anchoring, records validate, non-positive roles did not leak into
-`positive_sft.jsonl`, and enough positive rows exist. This is the preferred
-Colab loop because it is restart-safe and burns no GPU while waiting on
-API/provider artifacts.
+`positive_sft.jsonl`, enough positive rows exist, and any requested mode
+coverage is present. Use `--min_mode_rows` only when the upcoming GPU run has a
+specific objective; for example direct/deep calibration should not proceed on a
+mostly-wide shard. This is the preferred Colab loop because it is restart-safe
+and burns no GPU while waiting on API/provider artifacts.
 
 After a shard passes the gate and has enough positive rows for a real run, use
 the guarded GPU handoff:

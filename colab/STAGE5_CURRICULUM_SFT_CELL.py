@@ -9,6 +9,7 @@ ROOT = Path("/content/recurrent-qwen-svgd")
 # Edit these before running if your completed curriculum shard uses a different path.
 WORK_DIR = "data/curriculum/run_001"
 MIN_POSITIVE_ROWS = "16"
+MIN_MODE_ROWS = ""  # Optional, e.g. "direct=64,deep_narrow=64" or "wide=64".
 PHASE1_STEPS = "150"
 MAX_LOOPS = "4"
 DISCONNECT_RUNTIME_WHEN_DONE = False
@@ -104,6 +105,7 @@ env.update(
     {
         "STAGE5_CURRICULUM_WORK_DIR": WORK_DIR,
         "STAGE5_CURRICULUM_MIN_POSITIVE_ROWS": MIN_POSITIVE_ROWS,
+        "STAGE5_CURRICULUM_MIN_MODE_ROWS": MIN_MODE_ROWS,
         "STAGE5_CURRICULUM_PHASE1_STEPS": PHASE1_STEPS,
         "STAGE5_CURRICULUM_MAX_LOOPS": MAX_LOOPS,
         "DTYPE": "bfloat16",
