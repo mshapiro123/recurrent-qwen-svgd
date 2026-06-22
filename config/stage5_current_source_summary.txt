@@ -1,1 +1,1 @@
-outputs/stage5/stage5_routing_diagnostic_20260622_041706/summary.json
+outputs/stage5/programmatic_direct_deep_curriculum_gate/curriculum_sft_gate.json
