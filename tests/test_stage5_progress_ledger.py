@@ -533,6 +533,72 @@ def test_progress_ledger_reports_broader_benchmark_gate_assessments(tmp_path) ->
     assert payload["recommended_next_plan_source"] == str(source)
 
 
+def test_progress_ledger_reports_full_balanced_assessments(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    proxy = scan_root / "arc_mix_proxy" / "summary.json"
+    source = scan_root / "full_assessment" / "summary.json"
+    _write(
+        proxy,
+        {
+            "run_id": "arc_mix_proxy",
+            "kind": "stage5_balanced_arc_mix_gate",
+            "status": "proxy_lift",
+            "passed": True,
+        },
+    )
+    _write(
+        source,
+        {
+            "run_id": "full_assessment",
+            "kind": "stage5_recovery_full_assessment",
+            "status": "needs_competence_recovery",
+            "passed": False,
+            "selected_checkpoint": "outputs/stage5/full/phase1_step_100.pt",
+            "balanced_assessment": {
+                "status": "needs_competence_recovery",
+                "passed": False,
+                "next_step": "recover more",
+                "best_checkpoint": {
+                    "label": "step_100",
+                    "checkpoint": "outputs/stage5/full/phase1_step_100.pt",
+                    "micro_correct_delta": -1,
+                    "required_macro_accuracy_delta": -0.002,
+                    "base_correct": 588,
+                    "recurrent_correct": 587,
+                    "total": 869,
+                    "combined_wins": 34,
+                    "combined_losses": 35,
+                    "combined_ties": 800,
+                },
+            },
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["balanced_full_assessments"] == [
+        {
+            "path": str(source),
+            "run_id": "full_assessment",
+            "kind": "stage5_recovery_full_assessment",
+            "status": "needs_competence_recovery",
+            "passed": False,
+            "selected_checkpoint": "outputs/stage5/full/phase1_step_100.pt",
+            "label": "step_100",
+            "micro_correct_delta": -1,
+            "macro_accuracy_delta": -0.002,
+            "base_correct": 588,
+            "recurrent_correct": 587,
+            "total": 869,
+            "combined_wins": 34,
+            "combined_losses": 35,
+            "combined_ties": 800,
+            "next_step": "recover more",
+        }
+    ]
+    assert payload["recommended_next_plan_source"] == str(source)
+
+
 def test_progress_ledger_reports_claim_readiness_packets(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     source = scan_root / "claim" / "summary.json"

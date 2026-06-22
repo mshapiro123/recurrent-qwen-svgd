@@ -18,6 +18,26 @@ to turn near-base recurrent recovery into a robust base-model win across non-toy
 reasoning slices, then to test whether particle/SVGD trajectories produce
 selector-convertible lift over that recovered recurrent baseline.
 
+## 0. Result Maturity
+
+This document is intentionally written like a manuscript draft, but the claim is
+still in the pre-result stage for base-model superiority. The established
+results are method and recovery results:
+
+- exact one-pass identity preservation for the wrapped architecture;
+- stable learned recurrence and sequence-level halting;
+- substantial recovery of the competence lost by model surgery;
+- measurable candidate-diversity gains from particle/SVGD mechanisms on
+  controlled exact-task suites.
+
+The not-yet-established result is benchmark superiority over unmodified Qwen
+0.5B. That requires a deterministic recurrent checkpoint that is non-negative
+or positive against base on balanced held-out ARC, followed by particle or
+selector experiments that beat that recovered recurrent baseline. The paper
+should not claim that additional training has already made the recurrent/SVGD
+model surpass base until those gates are logged in `outputs/stage5` and cited
+from the exact checkpoint summaries.
+
 ## 1. Research Question
 
 The central question is not whether a transformer can be looped. The question is

@@ -1945,6 +1945,51 @@ def test_balanced_arc_mix_passed_runs_full_assessment(tmp_path) -> None:
     assert "STAGE5_RECOVERY_FULL_ASSESS_SOURCE_SUMMARY=" in actions[0]["command"]
 
 
+def test_recovery_full_assessment_nonnegative_runs_broader_benchmarks(tmp_path) -> None:
+    source = tmp_path / "full_assessment" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_recovery_full_assessment",
+        "status": "balanced_nonnegative",
+        "balanced_assessment": {
+            "status": "balanced_nonnegative",
+            "best_checkpoint": {
+                "checkpoint": "outputs/stage5/full/phase1_step_100.pt",
+                "micro_correct_delta": 1,
+            },
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run broader benchmark suite for balanced checkpoint"
+    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_CHECKPOINT=outputs/stage5/full/phase1_step_100.pt" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_SOURCE_SUMMARY=" in actions[0]["command"]
+
+
+def test_recovery_full_assessment_negative_runs_recovery_proxy(tmp_path) -> None:
+    source = tmp_path / "full_assessment" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_recovery_full_assessment",
+        "status": "needs_competence_recovery",
+        "balanced_assessment": {
+            "status": "needs_competence_recovery",
+            "best_checkpoint": {
+                "checkpoint": "outputs/stage5/full/phase1_step_100.pt",
+                "micro_correct_delta": -1,
+            },
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run another competence-preserving ARC-mix proxy gate"
+    assert "python colab/run_stage5_balanced_arc_mix_gate.py" in actions[0]["command"]
+    assert "STAGE5_ARC_MIX_SOURCE_SUMMARY=" in actions[0]["command"]
+
+
 def test_parse_args_accepts_source_summary() -> None:
     from colab.plan_stage5_next_run import parse_args
 

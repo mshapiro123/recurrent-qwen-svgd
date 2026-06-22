@@ -118,6 +118,8 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or release_gate_payload(payload) is not None
         or benchmark_suite_payload(payload) is not None
         or benchmark_suite_assessment_payload(payload) is not None
+        or recovery_full_assessment_payload(payload) is not None
+        or balanced_mcq_assessment_payload(payload) is not None
         or balanced_arc_mix_payload(payload) is not None
         or claim_readiness_payload(payload) is not None
         or arc_agi_baseline_registry_payload(payload) is not None
@@ -273,6 +275,14 @@ def benchmark_suite_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
 
 def benchmark_suite_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("gate") == "stage5_broader_benchmark_suite" else None
+
+
+def recovery_full_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_recovery_full_assessment" else None
+
+
+def balanced_mcq_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_balanced_mcq_checkpoint_assessment" else None
 
 
 def balanced_arc_mix_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -1443,6 +1453,93 @@ def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summar
     ]
 
 
+def balanced_assessment_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    nested = payload.get("balanced_assessment")
+    return nested if isinstance(nested, dict) else payload
+
+
+def balanced_assessment_best_checkpoint(payload: dict[str, Any]) -> str:
+    assessment = balanced_assessment_payload(payload)
+    best = assessment.get("best_checkpoint")
+    if isinstance(best, dict):
+        checkpoint = best.get("checkpoint")
+        if checkpoint:
+            return str(checkpoint)
+    best = payload.get("best_checkpoint")
+    if isinstance(best, dict) and best.get("checkpoint"):
+        return str(best["checkpoint"])
+    checkpoint = payload.get("selected_checkpoint") or payload.get("checkpoint")
+    return str(checkpoint or "")
+
+
+def balanced_full_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    assessment = balanced_assessment_payload(payload)
+    status = str(assessment.get("status", payload.get("status", "unknown")))
+    checkpoint = balanced_assessment_best_checkpoint(payload)
+    if status == "balanced_nonnegative":
+        if not checkpoint:
+            return [
+                make_action(
+                    "Inspect balanced assessment without checkpoint",
+                    "The balanced full assessment passed but no selected checkpoint path was recorded; inspect the summary before launching broader benchmarks.",
+                    f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                    10,
+                )
+            ]
+        return [
+            make_action(
+                "Run broader benchmark suite for balanced checkpoint",
+                "The full balanced ARC assessment is nonnegative; run ARC-Challenge plus GPQA-lite on the selected deterministic recurrent checkpoint before release or particle claims.",
+                command_env(
+                    {
+                        "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{RUN_ID}_balanced_broader_benchmarks",
+                        "STAGE5_BENCHMARK_SOURCE_SUMMARY": path_for_cli(source_summary),
+                        "STAGE5_BENCHMARK_CHECKPOINT": checkpoint,
+                        "STAGE5_BENCHMARKS": "arc_challenge,gpqa_lite",
+                        "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "full",
+                        "STAGE5_BENCHMARK_GPQA_LIMIT": "32",
+                    },
+                    "python colab/run_stage5_benchmark_suite.py",
+                ),
+                10,
+            )
+        ]
+    if status == "needs_competence_recovery":
+        return [
+            make_action(
+                "Run another competence-preserving ARC-mix proxy gate",
+                "The full balanced ARC assessment still trails base; continue deterministic Phase 1 competence recovery before spending on Phase 2/SVGD or GPQA.",
+                command_env(
+                    {
+                        "STAGE5_ARC_MIX_RUN_ID": f"{RUN_ID}_arc_mix_recovery",
+                        "STAGE5_ARC_MIX_SOURCE_SUMMARY": path_for_cli(source_summary),
+                        "STAGE5_ARC_MIX_ARMS": os.environ.get(
+                            "STAGE5_ARC_AGI_NEXT_PLAN_ARC_MIX_ARMS",
+                            "arc_mix_response_w005_lr2e6",
+                        ),
+                        "STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT": "2",
+                        "STAGE5_ARC_MIX_ARC_EASY_REPEAT": "4",
+                        "STAGE5_ARC_MIX_ARC_EVAL_LIMIT": "128",
+                        "STAGE5_ARC_MIX_OPUS_LIMIT": os.environ.get(
+                            "STAGE5_ARC_AGI_NEXT_PLAN_ARC_MIX_OPUS_LIMIT",
+                            "3000",
+                        ),
+                    },
+                    "python colab/run_stage5_balanced_arc_mix_gate.py",
+                ),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect balanced full assessment `{status}`",
+            "The completed full balanced assessment is the current source of truth; inspect it before launching more GPU work.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
 def balanced_arc_mix_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
     if status in {"proxy_lift", "proxy_matches_base"}:
@@ -2253,6 +2350,12 @@ def plan_next_actions(
     benchmark_suite_assessment = benchmark_suite_assessment_payload(payload)
     if benchmark_suite_assessment:
         return benchmark_suite_assessment_actions(benchmark_suite_assessment, source_summary=source_summary)
+    recovery_full_assessment = recovery_full_assessment_payload(payload)
+    if recovery_full_assessment:
+        return balanced_full_assessment_actions(recovery_full_assessment, source_summary=source_summary)
+    balanced_mcq_assessment = balanced_mcq_assessment_payload(payload)
+    if balanced_mcq_assessment:
+        return balanced_full_assessment_actions(balanced_mcq_assessment, source_summary=source_summary)
     balanced_arc_mix = balanced_arc_mix_payload(payload)
     if balanced_arc_mix:
         return balanced_arc_mix_actions(balanced_arc_mix, source_summary=source_summary)
@@ -2616,6 +2719,10 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "release_gate"
     if benchmark_suite_assessment_payload(payload):
         return "benchmark_suite_assessment"
+    if recovery_full_assessment_payload(payload):
+        return "recovery_full_assessment"
+    if balanced_mcq_assessment_payload(payload):
+        return "balanced_mcq_assessment"
     if balanced_arc_mix_payload(payload):
         return "balanced_arc_mix_gate"
     if claim_readiness_payload(payload):

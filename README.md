@@ -14,6 +14,51 @@ run. The central question is:
 > a recurrent-depth architecture, then use learned depth and latent particles to
 > surpass the original model on hard reasoning?
 
+## Current A100 Answer
+
+We should treat the A100 as a gated measurement instrument, not as the default
+workbench. Recent work moved in the right direction: dataset audits, planner
+repairs, README/paper writing, and unit tests now run locally or on CPU; A100
+jobs are bounded and expected to emit `summary.json` artifacts that decide the
+next action. The remaining waste risk is leaving Colab attached while fixing
+auth, notebook state, GitHub, or Drive problems. Those are stop conditions.
+
+As of the current checkpoint, the only A100-worthy next job is the full balanced
+ARC-Easy/ARC-Challenge assessment for the weak-positive ARC-mix proxy
+checkpoint. The decision tree is intentionally narrow:
+
+| Result of full balanced ARC assessment | Next GPU action |
+|---|---|
+| Recurrent checkpoint is non-negative versus base | Run the broader benchmark suite on the selected checkpoint. |
+| Recurrent checkpoint still trails base | Run one bounded competence-recovery proxy gate, then reassess. |
+| Auth/Drive/GitHub/notebook failure | Disconnect runtime and repair locally. |
+
+Do not spend A100 credits on GPQA Diamond, Phase 2/SVGD scaling, 1.5B/3B
+models, or more kernel geometry until deterministic recurrent recovery is at
+least base-competitive on the balanced ARC suite.
+
+## Manuscript Claim Status
+
+The repository is now written as the skeleton of a model-surgery paper. The
+defensible current claim is:
+
+> A pretrained dense Qwen model can be surgically converted into a recurrent
+> latent-depth architecture with exact one-pass identity preservation, stable
+> learned halting, recoverable reasoning competence under a small trainable
+> adapter/controller budget, and measurable particle-trajectory diversity.
+
+The stronger claim is not yet established:
+
+> The recurrent or SVGD recurrent-particle model surpasses the unmodified base
+> Qwen 0.5B model on held-out reasoning benchmarks.
+
+That stronger claim requires additional training and assessment: deterministic
+recurrent recovery must first close the remaining ARC-Easy regression while
+preserving the ARC-Challenge gain; then Phase 2/SVGD or selector-converted
+particles must beat the recovered deterministic recurrent baseline. Until that
+lands, the paper should present the surpass-base result as the next experimental
+gate, not as a conclusion.
+
 The implementation has three stages:
 
 1. **Identity-preserving surgery.** Split Qwen into Prelude, Recurrent Block,

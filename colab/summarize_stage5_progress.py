@@ -149,6 +149,10 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         return True
     if payload.get("gate") == "stage5_broader_benchmark_suite":
         return True
+    if payload.get("kind") == "stage5_recovery_full_assessment":
+        return True
+    if payload.get("kind") == "stage5_balanced_mcq_checkpoint_assessment":
+        return True
     if payload.get("kind") == "stage5_balanced_arc_mix_gate":
         return True
     if payload.get("gate") == "stage5_claim_readiness":
@@ -753,6 +757,44 @@ def arc_agi_sft_recipe_gates(summary_files: list[Path]) -> list[dict[str, Any]]:
     return sorted(gates, key=lambda item: str(item["path"]))
 
 
+def balanced_assessment_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    nested = payload.get("balanced_assessment")
+    return nested if isinstance(nested, dict) else payload
+
+
+def balanced_assessment_rows(summary_files: list[Path]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for path in summary_files:
+        payload = safe_read_json(path)
+        if not payload:
+            continue
+        if payload.get("kind") not in {"stage5_recovery_full_assessment", "stage5_balanced_mcq_checkpoint_assessment"}:
+            continue
+        assessment = balanced_assessment_payload(payload)
+        best = assessment.get("best_checkpoint") if isinstance(assessment.get("best_checkpoint"), dict) else {}
+        rows.append(
+            {
+                "path": path_for_cli(path),
+                "run_id": str(payload.get("run_id") or assessment.get("run_id") or path.parent.name),
+                "kind": str(payload.get("kind")),
+                "status": assessment.get("status") or payload.get("status"),
+                "passed": bool(assessment.get("passed", payload.get("passed", False))),
+                "selected_checkpoint": payload.get("selected_checkpoint") or best.get("checkpoint"),
+                "label": best.get("label"),
+                "micro_correct_delta": best.get("micro_correct_delta"),
+                "macro_accuracy_delta": best.get("required_macro_accuracy_delta"),
+                "base_correct": best.get("base_correct"),
+                "recurrent_correct": best.get("recurrent_correct"),
+                "total": best.get("total"),
+                "combined_wins": best.get("combined_wins"),
+                "combined_losses": best.get("combined_losses"),
+                "combined_ties": best.get("combined_ties"),
+                "next_step": assessment.get("next_step") or payload.get("next_step"),
+            }
+        )
+    return sorted(rows, key=lambda item: str(item["path"]))
+
+
 def iter_summary_files(scan_root: Path) -> list[Path]:
     if not scan_root.exists():
         return []
@@ -805,6 +847,10 @@ def planner_source_priority(payload: dict[str, Any]) -> int:
         if payload.get("status") in {"proxy_lift", "proxy_matches_base"}:
             return 100
         return 90
+    if payload.get("kind") == "stage5_recovery_full_assessment":
+        return 110
+    if payload.get("kind") == "stage5_balanced_mcq_checkpoint_assessment":
+        return 105
     if payload.get("kind") == "stage5_broader_benchmark_suite_assessment":
         return 80
     if payload.get("gate") == "stage5_release_benchmark_readiness":
@@ -884,6 +930,7 @@ def scan_progress(scan_root: Path, *, run_id: str | None = None) -> dict[str, An
         "release_gate_assessments": release_gate_assessments(summary_files),
         "benchmark_suite_assessments": benchmark_suite_assessments(summary_files),
         "broader_benchmark_gate_assessments": broader_benchmark_gate_assessments(summary_files),
+        "balanced_full_assessments": balanced_assessment_rows(summary_files),
         "claim_readiness_packets": claim_readiness_packets(summary_files),
         "arc_agi_baseline_registries": arc_agi_baseline_registries(summary_files),
         "arc_agi_sota_comparisons": arc_agi_sota_comparisons(summary_files),
@@ -1025,6 +1072,20 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
             )
     else:
         lines.append("- No broader benchmark gate summaries found.")
+    lines.extend(["", "## Full Balanced ARC Assessments", ""])
+    if payload["balanced_full_assessments"]:
+        for assessment in payload["balanced_full_assessments"][-10:]:
+            lines.append(
+                f"- `{assessment['run_id']}` status `{assessment['status']}` passed "
+                f"`{assessment['passed']}` label `{assessment['label']}` micro delta "
+                f"`{assessment['micro_correct_delta']}` recurrent/base "
+                f"`{assessment['recurrent_correct']}/{assessment['base_correct']}` "
+                f"W/L/T `{assessment['combined_wins']}/{assessment['combined_losses']}/"
+                f"{assessment['combined_ties']}` checkpoint `{assessment['selected_checkpoint']}`: "
+                f"{assessment['next_step']}"
+            )
+    else:
+        lines.append("- No full balanced ARC assessment summaries found.")
     lines.extend(["", "## Claim Readiness Packets", ""])
     if payload["claim_readiness_packets"]:
         for packet in payload["claim_readiness_packets"][-10:]:
