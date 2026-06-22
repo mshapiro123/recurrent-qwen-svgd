@@ -1897,7 +1897,7 @@ def test_benchmark_suite_assessment_credit_saver_runs_short_recovery_probe(monke
     assert actions[0]["name"] == "Run competence-preserving ARC-mix proxy gate"
     assert "Credit-saving probe" in actions[0]["reason"]
     assert "python colab/run_stage5_balanced_arc_mix_gate.py" in actions[0]["command"]
-    assert "STAGE5_ARC_MIX_ARMS=arc_mix_response_w005_lr2e6" in actions[0]["command"]
+    assert "STAGE5_ARC_MIX_ARMS=arc_mix_response_w01_lr2e6" in actions[0]["command"]
     assert "STAGE5_ARC_MIX_ARC_EVAL_LIMIT=128" in actions[0]["command"]
     assert "STAGE5_ARC_MIX_SOURCE_SUMMARY=" in actions[0]["command"]
 

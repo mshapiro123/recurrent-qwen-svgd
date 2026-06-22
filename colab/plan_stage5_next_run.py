@@ -1414,7 +1414,7 @@ def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summar
                             "STAGE5_ARC_MIX_SOURCE_SUMMARY": path_for_cli(source_summary),
                             "STAGE5_ARC_MIX_ARMS": os.environ.get(
                                 "STAGE5_ARC_AGI_NEXT_PLAN_ARC_MIX_ARMS",
-                                "arc_mix_response_w005_lr2e6",
+                                "arc_mix_response_w01_lr2e6",
                             ),
                             "STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT": "2",
                             "STAGE5_ARC_MIX_ARC_EASY_REPEAT": "4",
@@ -1508,14 +1508,14 @@ def balanced_full_assessment_actions(payload: dict[str, Any], *, source_summary:
         return [
             make_action(
                 "Run another competence-preserving ARC-mix proxy gate",
-                "The full balanced ARC assessment still trails base; continue deterministic Phase 1 competence recovery before spending on Phase 2/SVGD or GPQA.",
+                "The full balanced ARC assessment still trails base and the diagnosis points to answer-calibration drift; run one stronger-distillation ARC-mix proxy before spending on Phase 2/SVGD or GPQA.",
                 command_env(
                     {
                         "STAGE5_ARC_MIX_RUN_ID": f"{RUN_ID}_arc_mix_recovery",
                         "STAGE5_ARC_MIX_SOURCE_SUMMARY": path_for_cli(source_summary),
                         "STAGE5_ARC_MIX_ARMS": os.environ.get(
                             "STAGE5_ARC_AGI_NEXT_PLAN_ARC_MIX_ARMS",
-                            "arc_mix_response_w005_lr2e6",
+                            "arc_mix_response_w01_lr2e6",
                         ),
                         "STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT": "2",
                         "STAGE5_ARC_MIX_ARC_EASY_REPEAT": "4",

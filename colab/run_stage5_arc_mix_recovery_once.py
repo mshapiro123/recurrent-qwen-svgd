@@ -1,6 +1,6 @@
 """Run exactly one low-credit Stage 5 ARC-mix recovery proxy gate.
 
-Use this after ``stage5_recovery_full_assessment_current`` reports
+Use this after a full balanced ARC assessment reports
 ``needs_competence_recovery``. It runs one bounded competence-preserving
 ARC/Opus mix arm, writes the normal ARC-mix summary artifacts, pushes safe text
 outputs through the delegated runner, and optionally disconnects Colab.
@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-DEFAULT_SOURCE_SUMMARY = "outputs/stage5/stage5_recovery_full_assessment_current/summary.json"
+DEFAULT_SOURCE_SUMMARY = "outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json"
 RUN_ID = os.environ.get("STAGE5_ARC_MIX_ONCE_RUN_ID") or os.environ.get(
     "STAGE5_ARC_MIX_RUN_ID",
     time.strftime("stage5_arc_mix_recovery_once_%Y%m%d_%H%M%S"),
@@ -101,7 +101,7 @@ def child_env() -> dict[str, str]:
     env = os.environ.copy()
     env["STAGE5_ARC_MIX_RUN_ID"] = RUN_ID
     env["STAGE5_ARC_MIX_SOURCE_SUMMARY"] = SOURCE_SUMMARY
-    env.setdefault("STAGE5_ARC_MIX_ARMS", "arc_mix_response_w005_lr2e6")
+    env.setdefault("STAGE5_ARC_MIX_ARMS", "arc_mix_response_w01_lr2e6")
     env.setdefault("STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT", "2")
     env.setdefault("STAGE5_ARC_MIX_ARC_EASY_REPEAT", "4")
     env.setdefault("STAGE5_ARC_MIX_ARC_EVAL_LIMIT", "128")

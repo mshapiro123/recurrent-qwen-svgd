@@ -12,9 +12,9 @@ def test_child_env_defaults_to_distilled_easy_weighted_arc_mix(monkeypatch) -> N
 
     assert (
         env["STAGE5_ARC_MIX_SOURCE_SUMMARY"].replace("\\", "/")
-        == "outputs/stage5/stage5_recovery_full_assessment_current/summary.json"
+        == "outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json"
     )
-    assert env["STAGE5_ARC_MIX_ARMS"] == "arc_mix_response_w005_lr2e6,arc_mix_response_w01_lr2e6"
+    assert env["STAGE5_ARC_MIX_ARMS"] == "arc_mix_response_w01_lr2e6,arc_mix_response_w02_lr2e6"
     assert env["STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT"] == "2"
     assert env["STAGE5_ARC_MIX_ARC_EASY_REPEAT"] == "4"
     assert env["STAGE5_RECOVERY_FULL_ASSESS_SOURCE_SUMMARY"].replace("\\", "/").endswith("_arc_mix/summary.json")

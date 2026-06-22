@@ -321,12 +321,12 @@ action would be exploratory, ambiguous, or repair-oriented. Dataset audits,
 notebook editing, GitHub/Drive fixes, documentation, and CPU-sized tests should
 not run on A100.
 
-The most recent full balanced ARC assessment reported
-`needs_competence_recovery`: the recurrent checkpoint slightly exceeded base on
-ARC-Challenge but trailed on ARC-Easy. That result made the next justified paid
-job a single ARC-mix recovery proxy, not GPQA, not Phase 2/SVGD, and not
-another kernel-geometry sweep. The proxy resumed from the selected
-full-assessment checkpoint and ran a single mixed objective with:
+The prior full balanced ARC assessment reported `needs_competence_recovery`:
+the recurrent checkpoint slightly exceeded base on ARC-Challenge but trailed on
+ARC-Easy. That result made the next justified paid job a single ARC-mix
+recovery proxy, not GPQA, not Phase 2/SVGD, and not another kernel-geometry
+sweep. The proxy resumed from the selected full-assessment checkpoint and ran a
+single mixed objective with:
 
 - Opus reasoning traces as the general reasoning anchor;
 - ARC-Challenge training rows repeated `2x`;
@@ -358,20 +358,38 @@ gap vs base = 0
 best checkpoint = outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/arc_mix_response_w005_lr2e6/phase1/phase1_step_50.pt
 ```
 
-This is the cleanest recovery proxy so far: it improved the recurrent start and
-matched base on the 128-row ARC-Challenge proxy. The immediate confirmation
-launcher is now:
+This was the cleanest recovery proxy so far: it improved the recurrent start
+and matched base on the 128-row ARC-Challenge proxy. The immediate confirmation
+launcher was:
 
 ```bash
 python colab/run_stage5_full_assessment_once.py
 ```
 
-It defaults to
+It defaulted to
 `outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/summary.json` and
-runs the full ARC-Easy/ARC-Challenge balanced assessment for the proxy-selected
-checkpoint. This is a deliberate confirmation spend. If it remains negative
-overall, the project should stop deterministic recovery runs and revise the
-objective/data mix locally before spending more A100 time.
+ran the full ARC-Easy/ARC-Challenge balanced assessment for the proxy-selected
+checkpoint. That confirmation spend did **not** pass:
+
+```text
+run_id = stage5_full_assessment_once_20260622_005522
+status = needs_competence_recovery
+ARC-Easy:      base 421/570, recurrent 415/570, delta -6
+ARC-Challenge: base 167/299, recurrent 164/299, delta -3
+Combined:      base 588/869, recurrent 579/869, delta -9
+```
+
+The local regression diagnosis at
+`outputs/stage5/stage5_full_assessment_once_20260622_005522/mcq_regression_diagnosis.md`
+shows that the failure is not just a small count fluctuation. The recurrent
+checkpoint shifted answer calibration:
+
+- ARC-Easy: wins/losses/tie-correct/tie-wrong `18/24/397/131`, mean margin
+  delta `-1.2373`;
+- ARC-Challenge: wins/losses/tie-correct/tie-wrong `11/14/153/121`, mean
+  margin delta `-0.3608`;
+- answer prior drift: recurrent over-predicts `C` and under-predicts `A` on
+  both ARC-Easy and ARC-Challenge.
 
 This gate is intentionally deterministic Phase 1 recovery work. Phase 2/SVGD,
 GPQA Diamond, and 1.5B/3B scaling remain deferred until deterministic recurrent
@@ -379,9 +397,10 @@ competence is at least base-competitive on the balanced ARC suite.
 
 The paper should describe the training required to surpass base only after that
 surpass-base checkpoint exists. At present, the empirically supported statement
-is more modest: additional ARC-mixed recurrent SFT has closed a 128-example
-proxy gap, and the next paid experiment asks whether that proxy lift survives
-the full balanced ARC assessment.
+is more modest: additional ARC-mixed recurrent SFT closed a 128-example proxy
+gap, but the proxy lift did not survive full balanced ARC. The next hypothesis
+is that recurrence recovery needs stronger answer-calibration preservation, not
+more unbounded reasoning-trace continuation.
 
 ## 9. A100 Credit Discipline
 
@@ -393,8 +412,8 @@ The current Colab policy should be:
   checkpoint backups, and automatic next-action summaries;
 - avoid large Phase 2/SVGD training until deterministic Phase 1 is competitive
   with base;
-- run small benchmark slices first, then expand only after paired evidence is
-  non-negative;
+- run small benchmark slices first, then expand only after paired evidence and
+  margin/calibration diagnostics are non-negative;
 - stop or downgrade runtime after long cells complete.
 
 Recent automation changes support this policy: Stage 4 summaries now identify
@@ -415,11 +434,11 @@ automation fails, disconnect the runtime and repair the launch path locally.
 The project has achieved the hard first step: a pretrained Qwen model can be
 converted into a recurrent-depth model with exact identity preservation in the
 single-pass gate, stable learned halting, and recoverable benchmark competence
-under small-parameter fine-tuning. The latest recovered recurrent checkpoint is
-competitive with base Qwen on ARC-Challenge but remains behind on ARC-Easy.
-SVGD-style particles have shown useful candidate-density signals on controlled
-exact tasks, but not yet reliable lift over the strongest recovered
-deterministic recurrent model.
+under small-parameter fine-tuning. The latest proxy-selected recurrent
+checkpoint remains behind base Qwen on both ARC-Easy and ARC-Challenge in the
+full balanced assessment. SVGD-style particles have shown useful
+candidate-density signals on controlled exact tasks, but not yet reliable lift
+over the strongest recovered deterministic recurrent model.
 
 The next publishable claim should not be "SVGD beats Qwen" yet. The defensible
 claim is narrower and scientifically useful:
@@ -430,6 +449,6 @@ claim is narrower and scientifically useful:
 > instrumented with particle trajectories that produce measurable, selectable
 > candidate diversity.
 
-The decisive next result is whether the recovered recurrent model plus
-selector-converted particles can cross the base-Qwen line on held-out reasoning
-benchmarks.
+The decisive next result is whether calibration-preserving recurrent recovery
+can cross the base-Qwen line on held-out reasoning benchmarks. Only after that
+should selector-converted particles be treated as the main benchmark-lift path.

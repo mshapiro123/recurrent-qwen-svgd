@@ -1,0 +1,666 @@
+{
+  "run_id": "stage5_full_assessment_once_20260622_005522",
+  "candidate_name": "arc_mix_response_w005_lr2e6_step50",
+  "benchmarks": [
+    "arc_easy",
+    "arc_challenge"
+  ],
+  "summaries": [
+    {
+      "benchmark": "arc_easy",
+      "paired_examples": 570,
+      "base_correct": 421,
+      "candidate_correct": 415,
+      "delta": -6,
+      "changes": {
+        "tie_correct": 397,
+        "tie_wrong": 131,
+        "loss": 24,
+        "win": 18
+      },
+      "mean_margin_delta": -1.2373481740648122,
+      "mean_correct_score_delta": -0.08801730473141856,
+      "mean_question_len": 19.650877192982456,
+      "prediction_counts": {
+        "base": {
+          "B": 176,
+          "D": 118,
+          "A": 140,
+          "C": 136
+        },
+        "candidate": {
+          "B": 168,
+          "D": 119,
+          "A": 113,
+          "C": 170
+        },
+        "answer": {
+          "B": 159,
+          "D": 125,
+          "A": 145,
+          "C": 141
+        }
+      },
+      "features": {
+        "asks_best": {
+          "yes": {
+            "n": 145,
+            "delta": 3,
+            "wins": 8,
+            "losses": 5,
+            "base_correct": 107,
+            "candidate_correct": 110
+          },
+          "no": {
+            "n": 425,
+            "delta": -9,
+            "wins": 10,
+            "losses": 19,
+            "base_correct": 314,
+            "candidate_correct": 305
+          }
+        },
+        "asks_which": {
+          "yes": {
+            "n": 329,
+            "delta": 1,
+            "wins": 12,
+            "losses": 11,
+            "base_correct": 238,
+            "candidate_correct": 239
+          },
+          "no": {
+            "n": 241,
+            "delta": -7,
+            "wins": 6,
+            "losses": 13,
+            "base_correct": 183,
+            "candidate_correct": 176
+          }
+        },
+        "asks_why": {
+          "yes": {
+            "n": 11,
+            "delta": 1,
+            "wins": 2,
+            "losses": 1,
+            "base_correct": 6,
+            "candidate_correct": 7
+          },
+          "no": {
+            "n": 559,
+            "delta": -7,
+            "wins": 16,
+            "losses": 23,
+            "base_correct": 415,
+            "candidate_correct": 408
+          }
+        },
+        "diagram_like": {
+          "yes": {
+            "n": 13,
+            "delta": 1,
+            "wins": 1,
+            "losses": 0,
+            "base_correct": 10,
+            "candidate_correct": 11
+          },
+          "no": {
+            "n": 557,
+            "delta": -7,
+            "wins": 17,
+            "losses": 24,
+            "base_correct": 411,
+            "candidate_correct": 404
+          }
+        },
+        "has_math_word": {
+          "yes": {
+            "n": 63,
+            "delta": 0,
+            "wins": 1,
+            "losses": 1,
+            "base_correct": 42,
+            "candidate_correct": 42
+          },
+          "no": {
+            "n": 507,
+            "delta": -6,
+            "wins": 17,
+            "losses": 23,
+            "base_correct": 379,
+            "candidate_correct": 373
+          }
+        },
+        "has_negation": {
+          "yes": {
+            "n": 13,
+            "delta": -1,
+            "wins": 0,
+            "losses": 1,
+            "base_correct": 11,
+            "candidate_correct": 10
+          },
+          "no": {
+            "n": 557,
+            "delta": -5,
+            "wins": 18,
+            "losses": 23,
+            "base_correct": 410,
+            "candidate_correct": 405
+          }
+        },
+        "has_number": {
+          "yes": {
+            "n": 29,
+            "delta": 1,
+            "wins": 1,
+            "losses": 0,
+            "base_correct": 17,
+            "candidate_correct": 18
+          },
+          "no": {
+            "n": 541,
+            "delta": -7,
+            "wins": 17,
+            "losses": 24,
+            "base_correct": 404,
+            "candidate_correct": 397
+          }
+        }
+      },
+      "loss_examples": [
+        {
+          "id": "Mercury_7216755",
+          "answer": "B",
+          "base_prediction": "B",
+          "candidate_prediction": "C",
+          "base_margin": 0.75,
+          "candidate_margin": -0.380806565284729,
+          "margin_delta": -1.130806565284729,
+          "question": "Some people carry a mutated allele of a particular gene that makes them resistant to HIV infection and AIDS. Which best describes this type of mutation?"
+        },
+        {
+          "id": "Mercury_7014070",
+          "answer": "A",
+          "base_prediction": "A",
+          "candidate_prediction": "C",
+          "base_margin": 1.0,
+          "candidate_margin": -0.04746192693710327,
+          "margin_delta": -1.0474619269371033,
+          "question": "When pressure is released along a fault line, the energy produced spreads as mechanical waves in the form of an earthquake. The mechanical waves transferred to the air become"
+        },
+        {
+          "id": "Mercury_SC_401592",
+          "answer": "A",
+          "base_prediction": "A",
+          "candidate_prediction": "C",
+          "base_margin": 0.7500000596046448,
+          "candidate_margin": -0.2321745753288269,
+          "margin_delta": -0.9821746349334717,
+          "question": "When light reaches an eyeglass lens, the light is"
+        },
+        {
+          "id": "TIMSS_1995_8_I11",
+          "answer": "B",
+          "base_prediction": "B",
+          "candidate_prediction": "D",
+          "base_margin": 0.5000000596046448,
+          "candidate_margin": -0.35311734676361084,
+          "margin_delta": -0.8531174063682556,
+          "question": "What features do all insects have?"
+        },
+        {
+          "id": "MCAS_2013_5_29401",
+          "answer": "D",
+          "base_prediction": "D",
+          "candidate_prediction": "C",
+          "base_margin": 0.7500000596046448,
+          "candidate_margin": -0.0043795108795166016,
+          "margin_delta": -0.7543795704841614,
+          "question": "While hiking last year, Mike saw a large boulder next to a mountain trail. The boulder had no cracks. While hiking on the trail this year, he saw two large cracks in the boulder. Which of the following most likely caused these cracks to form?"
+        },
+        {
+          "id": "Mercury_7187215",
+          "answer": "A",
+          "base_prediction": "A",
+          "candidate_prediction": "B",
+          "base_margin": 0.5,
+          "candidate_margin": -0.23500609397888184,
+          "margin_delta": -0.7350060939788818,
+          "question": "After fields of crops are harvested, parts of the plants remain on the ground. For many years, farmers have mixed these plant remains into the soil. Which most likely results from this practice?"
+        },
+        {
+          "id": "NYSEDREGENTS_2014_8_2",
+          "answer": "A",
+          "base_prediction": "A",
+          "candidate_prediction": "D",
+          "base_margin": 0.4999999403953552,
+          "candidate_margin": -0.2227565050125122,
+          "margin_delta": -0.7227564454078674,
+          "question": "A major function of a plant's roots is to"
+        },
+        {
+          "id": "Mercury_SC_415396",
+          "answer": "D",
+          "base_prediction": "D",
+          "candidate_prediction": "C",
+          "base_margin": 0.5,
+          "candidate_margin": -0.22046971321105957,
+          "margin_delta": -0.7204697132110596,
+          "question": "Which kind of events can form mountains?"
+        }
+      ],
+      "win_examples": [
+        {
+          "id": "OHAT_2009_5_4",
+          "answer": "C",
+          "base_prediction": "A",
+          "candidate_prediction": "C",
+          "base_margin": -1.3749999403953552,
+          "candidate_margin": 0.09215283393859863,
+          "margin_delta": 1.4671527743339539,
+          "question": "Scientists often work together to solve a problem. Sometimes they work in laboratories. Sometimes they are outside doing fieldwork. The chart provides a list of some careers in science. Which scientists might work together to save a polluted wetland?"
+        },
+        {
+          "id": "Mercury_7080448",
+          "answer": "C",
+          "base_prediction": "A",
+          "candidate_prediction": "C",
+          "base_margin": -1.0,
+          "candidate_margin": 0.07355105876922607,
+          "margin_delta": 1.073551058769226,
+          "question": "In order to make a line graph showing the rate of erosion on the banks of a river during a week-long flood, the y-axis should be labeled as the width of the river bank, in meters. The best label for the x-axis is time, in"
+        },
+        {
+          "id": "Mercury_SC_417580",
+          "answer": "B",
+          "base_prediction": "A",
+          "candidate_prediction": "B",
+          "base_margin": -0.875,
+          "candidate_margin": 0.025805294513702393,
+          "margin_delta": 0.9008052945137024,
+          "question": "Barney is a cat. Which trait was made by his environment?"
+        },
+        {
+          "id": "MCAS_2005_5_27",
+          "answer": "C",
+          "base_prediction": "B",
+          "candidate_prediction": "C",
+          "base_margin": -0.5000000596046448,
+          "candidate_margin": 0.33830147981643677,
+          "margin_delta": 0.8383015394210815,
+          "question": "Clouds and fog are made up of"
+        },
+        {
+          "id": "Mercury_7214480",
+          "answer": "C",
+          "base_prediction": "A",
+          "candidate_prediction": "C",
+          "base_margin": -0.625,
+          "candidate_margin": 0.10949897766113281,
+          "margin_delta": 0.7344989776611328,
+          "question": "A medium-sized star in the middle of its life cycle, such as the Sun, is most likely to emit which color of light?"
+        },
+        {
+          "id": "MEA_2010_8_12",
+          "answer": "C",
+          "base_prediction": "A",
+          "candidate_prediction": "C",
+          "base_margin": -0.3750000596046448,
+          "candidate_margin": 0.3287084102630615,
+          "margin_delta": 0.7037084698677063,
+          "question": "Which statement explains why a mother's unhealthy diet during pregnancy is harmful to her embryo's development?"
+        },
+        {
+          "id": "Mercury_SC_401652",
+          "answer": "B",
+          "base_prediction": "A",
+          "candidate_prediction": "B",
+          "base_margin": 0.0,
+          "candidate_margin": 0.625825047492981,
+          "margin_delta": 0.625825047492981,
+          "question": "Before large trees could grow on Earth, what had to happen first?"
+        },
+        {
+          "id": "Mercury_SC_400058",
+          "answer": "B",
+          "base_prediction": "A",
+          "candidate_prediction": "B",
+          "base_margin": -0.375,
+          "candidate_margin": 0.18168550729751587,
+          "margin_delta": 0.5566855072975159,
+          "question": "The small stone plant has leaves that look like pebbles or stones. This characteristic helps the plant"
+        }
+      ]
+    },
+    {
+      "benchmark": "arc_challenge",
+      "paired_examples": 299,
+      "base_correct": 167,
+      "candidate_correct": 164,
+      "delta": -3,
+      "changes": {
+        "tie_correct": 153,
+        "tie_wrong": 121,
+        "win": 11,
+        "loss": 14
+      },
+      "mean_margin_delta": -0.3608454771520551,
+      "mean_correct_score_delta": 0.029695827566884634,
+      "mean_question_len": 22.859531772575252,
+      "prediction_counts": {
+        "base": {
+          "C": 94,
+          "A": 61,
+          "B": 87,
+          "D": 57
+        },
+        "candidate": {
+          "C": 119,
+          "A": 46,
+          "B": 87,
+          "D": 47
+        },
+        "answer": {
+          "C": 71,
+          "B": 72,
+          "A": 80,
+          "D": 76
+        }
+      },
+      "features": {
+        "asks_best": {
+          "yes": {
+            "n": 94,
+            "delta": -2,
+            "wins": 5,
+            "losses": 7,
+            "base_correct": 52,
+            "candidate_correct": 50
+          },
+          "no": {
+            "n": 205,
+            "delta": -1,
+            "wins": 6,
+            "losses": 7,
+            "base_correct": 115,
+            "candidate_correct": 114
+          }
+        },
+        "asks_which": {
+          "yes": {
+            "n": 189,
+            "delta": -3,
+            "wins": 7,
+            "losses": 10,
+            "base_correct": 114,
+            "candidate_correct": 111
+          },
+          "no": {
+            "n": 110,
+            "delta": 0,
+            "wins": 4,
+            "losses": 4,
+            "base_correct": 53,
+            "candidate_correct": 53
+          }
+        },
+        "asks_why": {
+          "yes": {
+            "n": 12,
+            "delta": 1,
+            "wins": 1,
+            "losses": 0,
+            "base_correct": 5,
+            "candidate_correct": 6
+          },
+          "no": {
+            "n": 287,
+            "delta": -4,
+            "wins": 10,
+            "losses": 14,
+            "base_correct": 162,
+            "candidate_correct": 158
+          }
+        },
+        "diagram_like": {
+          "yes": {
+            "n": 11,
+            "delta": -1,
+            "wins": 0,
+            "losses": 1,
+            "base_correct": 6,
+            "candidate_correct": 5
+          },
+          "no": {
+            "n": 288,
+            "delta": -2,
+            "wins": 11,
+            "losses": 13,
+            "base_correct": 161,
+            "candidate_correct": 159
+          }
+        },
+        "has_math_word": {
+          "yes": {
+            "n": 39,
+            "delta": -1,
+            "wins": 0,
+            "losses": 1,
+            "base_correct": 19,
+            "candidate_correct": 18
+          },
+          "no": {
+            "n": 260,
+            "delta": -2,
+            "wins": 11,
+            "losses": 13,
+            "base_correct": 148,
+            "candidate_correct": 146
+          }
+        },
+        "has_negation": {
+          "yes": {
+            "n": 18,
+            "delta": 0,
+            "wins": 0,
+            "losses": 0,
+            "base_correct": 11,
+            "candidate_correct": 11
+          },
+          "no": {
+            "n": 281,
+            "delta": -3,
+            "wins": 11,
+            "losses": 14,
+            "base_correct": 156,
+            "candidate_correct": 153
+          }
+        },
+        "has_number": {
+          "yes": {
+            "n": 14,
+            "delta": 0,
+            "wins": 0,
+            "losses": 0,
+            "base_correct": 7,
+            "candidate_correct": 7
+          },
+          "no": {
+            "n": 285,
+            "delta": -3,
+            "wins": 11,
+            "losses": 14,
+            "base_correct": 160,
+            "candidate_correct": 157
+          }
+        }
+      },
+      "loss_examples": [
+        {
+          "id": "Mercury_SC_402101",
+          "answer": "A",
+          "base_prediction": "A",
+          "candidate_prediction": "C",
+          "base_margin": 1.875,
+          "candidate_margin": -0.04964977502822876,
+          "margin_delta": -1.9246497750282288,
+          "question": "Which features can be found on the surface of both Earth and the Moon?"
+        },
+        {
+          "id": "Mercury_7220378",
+          "answer": "D",
+          "base_prediction": "D",
+          "candidate_prediction": "C",
+          "base_margin": 1.2500000596046448,
+          "candidate_margin": -0.16286742687225342,
+          "margin_delta": -1.4128674864768982,
+          "question": "Climate change may be reducing the amount of ice floating on the world's oceans. How can this change most likely alter the food supply available to marine consumer organisms?"
+        },
+        {
+          "id": "Mercury_7189823",
+          "answer": "D",
+          "base_prediction": "D",
+          "candidate_prediction": "C",
+          "base_margin": 0.8750000596046448,
+          "candidate_margin": -0.059751272201538086,
+          "margin_delta": -0.9347513318061829,
+          "question": "A volcano erupts and covers the surrounding area with lava and volcanic ash. As the ecosystem begins to recover, which type of plant will most likely be the first to colonize land in the area surrounding the eruption?"
+        },
+        {
+          "id": "TIMSS_2003_8_pg31",
+          "answer": "D",
+          "base_prediction": "D",
+          "candidate_prediction": "C",
+          "base_margin": 0.625,
+          "candidate_margin": -0.21189367771148682,
+          "margin_delta": -0.8368936777114868,
+          "question": "Fanning can make a wood fire burn hotter because the fanning"
+        },
+        {
+          "id": "Mercury_7218750",
+          "answer": "D",
+          "base_prediction": "D",
+          "candidate_prediction": "C",
+          "base_margin": 0.5,
+          "candidate_margin": -0.28022080659866333,
+          "margin_delta": -0.7802208065986633,
+          "question": "Which type of water reservoir could always provide freshwater?"
+        },
+        {
+          "id": "Mercury_7103180",
+          "answer": "B",
+          "base_prediction": "B",
+          "candidate_prediction": "D",
+          "base_margin": 0.625,
+          "candidate_margin": -0.14248168468475342,
+          "margin_delta": -0.7674816846847534,
+          "question": "Which biome has the most vegetation?"
+        },
+        {
+          "id": "Mercury_SC_415026",
+          "answer": "B",
+          "base_prediction": "B",
+          "candidate_prediction": "C",
+          "base_margin": 0.375,
+          "candidate_margin": -0.3740094304084778,
+          "margin_delta": -0.7490094304084778,
+          "question": "Which animals would most likely be helped by flood in a coastal area?"
+        },
+        {
+          "id": "Mercury_SC_415735",
+          "answer": "A",
+          "base_prediction": "A",
+          "candidate_prediction": "B",
+          "base_margin": 0.375,
+          "candidate_margin": -0.32574427127838135,
+          "margin_delta": -0.7007442712783813,
+          "question": "Anya placed an ice cube on the sidewalk on a warm day. The ice cube soon melted to form a puddle. What process caused the ice cube to melt?"
+        }
+      ],
+      "win_examples": [
+        {
+          "id": "Mercury_7100695",
+          "answer": "D",
+          "base_prediction": "A",
+          "candidate_prediction": "D",
+          "base_margin": -0.875,
+          "candidate_margin": 0.11527526378631592,
+          "margin_delta": 0.9902752637863159,
+          "question": "Which geologic structure will most likely take the longest time to form?"
+        },
+        {
+          "id": "Mercury_7128695",
+          "answer": "C",
+          "base_prediction": "D",
+          "candidate_prediction": "C",
+          "base_margin": -0.625,
+          "candidate_margin": 0.16466867923736572,
+          "margin_delta": 0.7896686792373657,
+          "question": "A scientist makes a discovery while performing an investigation, but fails to maintain clear records of the tests performed. In which way does a lack of record keeping affect a scientist's work?"
+        },
+        {
+          "id": "MEAP_2005_5_1",
+          "answer": "C",
+          "base_prediction": "B",
+          "candidate_prediction": "C",
+          "base_margin": -0.375,
+          "candidate_margin": 0.34245115518569946,
+          "margin_delta": 0.7174511551856995,
+          "question": "Water vapor exists in the atmosphere as ___."
+        },
+        {
+          "id": "Mercury_7130603",
+          "answer": "C",
+          "base_prediction": "B",
+          "candidate_prediction": "C",
+          "base_margin": -0.5,
+          "candidate_margin": 0.15701556205749512,
+          "margin_delta": 0.6570155620574951,
+          "question": "Which of the listed quantities is measured in a unit other than the joule?"
+        },
+        {
+          "id": "Mercury_7139790",
+          "answer": "B",
+          "base_prediction": "A",
+          "candidate_prediction": "B",
+          "base_margin": -0.375,
+          "candidate_margin": 0.2608376741409302,
+          "margin_delta": 0.6358376741409302,
+          "question": "An octopus has special cells in its skin called chromatophores which enable the octopus to change its color almost instantly. The chromatophores most likely help the octopus"
+        },
+        {
+          "id": "Mercury_SC_415491",
+          "answer": "C",
+          "base_prediction": "B",
+          "candidate_prediction": "C",
+          "base_margin": -0.5,
+          "candidate_margin": 0.1346278190612793,
+          "margin_delta": 0.6346278190612793,
+          "question": "Earth orbits the Sun once a year. About how many times does the moon orbit Earth in a year?"
+        },
+        {
+          "id": "Mercury_7233678",
+          "answer": "B",
+          "base_prediction": "D",
+          "candidate_prediction": "B",
+          "base_margin": -0.5,
+          "candidate_margin": 0.12068235874176025,
+          "margin_delta": 0.6206823587417603,
+          "question": "Scientists believe continental drift over Earth's geological history has had a significant impact on Earth's cycles of warmer and cooler climates. Which statement describes a characteristic of Earth's continents that is most likely to cause changes in global climate when continen"
+        },
+        {
+          "id": "Mercury_7026443",
+          "answer": "C",
+          "base_prediction": "D",
+          "candidate_prediction": "C",
+          "base_margin": -0.375,
+          "candidate_margin": 0.2074187994003296,
+          "margin_delta": 0.5824187994003296,
+          "question": "Which trait of a pet dog is inherited?"
+        }
+      ]
+    }
+  ]
+}

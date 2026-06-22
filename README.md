@@ -30,16 +30,16 @@ SVGD/kernel exploration while deterministic recurrent recovery is still below
 the release bar. Paid GPU is reserved for one bounded confirmation job at a
 time, followed by review.
 
-As of the current checkpoint, the follow-up ARC-mix recovery proxy has matched
-base on the 128-row ARC-Challenge proxy while improving the recurrent start.
-The only A100-worthy next job is the full balanced ARC-Easy/ARC-Challenge
-assessment for that new proxy checkpoint. The decision tree is intentionally
-narrow:
+As of the current checkpoint, the follow-up ARC-mix recovery proxy matched base
+on the 128-row ARC-Challenge proxy, but the full balanced ARC-Easy /
+ARC-Challenge confirmation assessment did **not** generalize. The recurrent
+checkpoint remains behind base on both ARC-Easy and ARC-Challenge. The decision
+tree is intentionally narrow:
 
-| Result of full balanced ARC assessment | Next GPU action |
+| Current evidence | Next GPU action |
 |---|---|
-| Recurrent checkpoint is non-negative versus base | Run the broader benchmark suite on the selected checkpoint. |
-| Recurrent checkpoint still trails base | Stop A100 work and revise the data/objective mix locally. |
+| Full balanced ARC assessment trails base | Stop A100 work and revise the data/objective mix locally. |
+| A reviewed local diagnosis selects one bounded recovery proxy | Optionally run exactly one stronger-distillation ARC-mix proxy. |
 | Auth/Drive/GitHub/notebook failure | Disconnect runtime and repair locally. |
 
 Do not spend A100 credits on GPQA Diamond, Phase 2/SVGD scaling, 1.5B/3B
@@ -70,9 +70,10 @@ gate, not as a conclusion.
 
 In paper language, the current manuscript is a methods-and-recovery paper with
 a pending benchmark-superiority claim. The additional training required to make
-the stronger claim is still being measured: the latest ARC-mix proxy has closed
-the 128-example proxy gap to base, and the next full balanced ARC assessment
-will determine whether that recovery generalizes.
+the stronger claim is still being measured: the latest ARC-mix proxy closed the
+128-example proxy gap to base, but the subsequent full balanced ARC assessment
+remained negative. The next hypothesis is that stronger answer-calibration
+preservation is required before recurrence can beat base.
 
 The implementation has three stages:
 
@@ -103,13 +104,15 @@ Latest balanced ARC assessment for the selected recurrent checkpoint:
 
 | Benchmark | Base Qwen | Recurrent Phase 1 | Delta |
 |---|---:|---:|---:|
-| ARC-Easy | `421/570` | `412/570` | `-9` |
-| ARC-Challenge | `167/299` | `169/299` | `+2` |
-| Combined | `588/869` | `581/869` | `-7` |
+| ARC-Easy | `421/570` | `415/570` | `-6` |
+| ARC-Challenge | `167/299` | `164/299` | `-3` |
+| Combined | `588/869` | `579/869` | `-9` |
 
-The next gate is competence-preserving recurrent SFT that keeps the
-ARC-Challenge gain while closing the ARC-Easy gap. Phase 2/SVGD work resumes
-after deterministic recurrent recovery is competitive with base.
+The latest proxy-selected checkpoint therefore failed the confirmation gate.
+The local regression diagnosis shows answer-calibration drift: the recurrent
+checkpoint over-predicts `C`, under-predicts `A`, and lowers the correct-answer
+margin on both ARC-Easy and ARC-Challenge. Phase 2/SVGD work resumes only after
+deterministic recurrent recovery is competitive with base.
 
 ## Credit-Saving Research Rule
 
@@ -123,10 +126,12 @@ Treat A100 time as the scarce experimental reagent. The default answer to
 5. it is not a dataset audit, unit test, notebook repair, README edit, or
    exploratory script-debugging task.
 
-Right now the only A100-worthy job is the full balanced assessment from
-`outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/summary.json`.
-Dataset inspection, Hugging Face trace triage, planner repairs, documentation,
-and small CPU tests should stay local or on a free CPU runtime.
+Right now there is no automatic A100-worthy job. The full balanced assessment
+from `outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json`
+failed, so dataset inspection, Hugging Face trace triage, planner repairs,
+documentation, and diagnosis should stay local or on a free CPU runtime. The
+only plausible next paid job is one bounded ARC-mix proxy with stronger
+response distillation, after reviewing the local diagnosis.
 
 ## What Has Been Achieved
 
@@ -190,24 +195,37 @@ gap vs base = 0
 best checkpoint = outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/arc_mix_response_w005_lr2e6/phase1/phase1_step_50.pt
 ```
 
-The next A100 job, if we choose to spend it, is the full balanced assessment
-for that proxy checkpoint:
+The full balanced confirmation assessment for that proxy checkpoint did not
+pass:
 
-```bash
-python colab/run_stage5_full_assessment_once.py
+```text
+run_id = stage5_full_assessment_once_20260622_005522
+status = needs_competence_recovery
+ARC-Easy:      base 421/570, recurrent 415/570, delta -6
+ARC-Challenge: base 167/299, recurrent 164/299, delta -3
+Combined:      base 588/869, recurrent 579/869, delta -9
 ```
 
-The notebook-ready copy/paste cell is in
-[`colab/STAGE5_FULL_ASSESSMENT_CELL.md`](colab/STAGE5_FULL_ASSESSMENT_CELL.md).
-It now defaults to:
+The local diagnostic report is:
 
 ```bash
-STAGE5_FULL_ASSESS_SOURCE_SUMMARY=outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/summary.json
+outputs/stage5/stage5_full_assessment_once_20260622_005522/mcq_regression_diagnosis.md
 ```
 
-This is a deliberate confirmation spend. If the full assessment is still
-negative, stop deterministic recovery and revise the objective/data mix before
-running more A100 work.
+The next A100 job should be **paused by default**. If we intentionally spend
+one more bounded proxy run, use
+[`colab/STAGE5_ARC_MIX_RECOVERY_CELL.md`](colab/STAGE5_ARC_MIX_RECOVERY_CELL.md),
+which now defaults to:
+
+```bash
+STAGE5_ARC_MIX_ONCE_SOURCE_SUMMARY=outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json
+STAGE5_ARC_MIX_ARMS=arc_mix_response_w01_lr2e6
+```
+
+This is a hypothesis-driven calibration-recovery proxy. It should run only
+after reviewing the diagnosis. If it does not lift the proxy without worsening
+calibration, stop deterministic recovery and revise the objective/data mix
+locally.
 
 Do not run GPQA, Phase 2/SVGD, or scale-up jobs before this deterministic
 recurrent recovery question is resolved.

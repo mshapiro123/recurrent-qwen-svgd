@@ -17,7 +17,7 @@ def test_arc_mix_recovery_once_defaults_to_low_credit_single_arm(monkeypatch) ->
 
     assert env["STAGE5_ARC_MIX_RUN_ID"] == "arc_mix_once"
     assert env["STAGE5_ARC_MIX_SOURCE_SUMMARY"] == module.DEFAULT_SOURCE_SUMMARY
-    assert env["STAGE5_ARC_MIX_ARMS"] == "arc_mix_response_w005_lr2e6"
+    assert env["STAGE5_ARC_MIX_ARMS"] == "arc_mix_response_w01_lr2e6"
     assert env["STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT"] == "2"
     assert env["STAGE5_ARC_MIX_ARC_EASY_REPEAT"] == "4"
     assert env["STAGE5_ARC_MIX_ARC_EVAL_LIMIT"] == "128"

@@ -1,10 +1,11 @@
 """Run the next Stage 5 competence-preserving mixed objective gate.
 
-This is the follow-up to ``stage5_recovery_full_assessment_current``. That
-assessment found a useful ARC-Challenge signal but an ARC-Easy competence tax.
-This runner therefore resumes from the selected recurrent checkpoint and runs
-ARC-train mixed SFT with base-logit response distillation and extra ARC-Easy
-weighting before deciding whether to spend time on a full balanced assessment.
+This is the follow-up to the latest full balanced ARC assessment. That
+assessment found that the proxy-selected recurrent checkpoint still trails base
+and exhibits answer-calibration drift. This runner therefore resumes from the
+selected recurrent checkpoint and runs ARC-train mixed SFT with stronger
+base-logit response distillation before deciding whether to spend time on a full
+balanced assessment.
 """
 
 from __future__ import annotations
@@ -32,7 +33,7 @@ RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
 SOURCE_SUMMARY = Path(
     os.environ.get(
         "STAGE5_COMPETENCE_SOURCE_SUMMARY",
-        "outputs/stage5/stage5_recovery_full_assessment_current/summary.json",
+        "outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json",
     )
 )
 if not SOURCE_SUMMARY.is_absolute():
@@ -102,7 +103,7 @@ def child_env() -> dict[str, str]:
     env.setdefault("STAGE5_ARC_MIX_SOURCE_SUMMARY", path_for_cli(SOURCE_SUMMARY))
     env.setdefault(
         "STAGE5_ARC_MIX_ARMS",
-        "arc_mix_response_w005_lr2e6,arc_mix_response_w01_lr2e6",
+        "arc_mix_response_w01_lr2e6,arc_mix_response_w02_lr2e6",
     )
     env.setdefault("STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT", "2")
     env.setdefault("STAGE5_ARC_MIX_ARC_EASY_REPEAT", "4")

@@ -1,8 +1,8 @@
 # Stage 5 ARC-Mix Recovery Single Cell
 
 Use this when the next A100 spend is one bounded competence-preserving
-ARC/Opus recovery proxy gate after
-`stage5_recovery_full_assessment_current` reports `needs_competence_recovery`.
+ARC/Opus recovery proxy gate after the latest full balanced ARC assessment
+reports `needs_competence_recovery`.
 
 This cell clones or updates the private repo, authenticates GitHub/Hugging Face
 from Colab secrets, runs exactly one ARC-mix recovery proxy, pushes safe text
@@ -89,9 +89,9 @@ try:
     env["STAGE5_ARC_MIX_ONCE_AUTO_DISCONNECT"] = "1"
     env.setdefault(
         "STAGE5_ARC_MIX_ONCE_SOURCE_SUMMARY",
-        "outputs/stage5/stage5_recovery_full_assessment_current/summary.json",
+        "outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json",
     )
-    env.setdefault("STAGE5_ARC_MIX_ARMS", "arc_mix_response_w005_lr2e6")
+    env.setdefault("STAGE5_ARC_MIX_ARMS", "arc_mix_response_w01_lr2e6")
     env.setdefault("STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT", "2")
     env.setdefault("STAGE5_ARC_MIX_ARC_EASY_REPEAT", "4")
     env.setdefault("STAGE5_ARC_MIX_ARC_EVAL_LIMIT", "128")
