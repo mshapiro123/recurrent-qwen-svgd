@@ -13,10 +13,11 @@ run. The notebook should:
 2. authenticate GitHub and Hugging Face from Colab secrets;
 3. mount Google Drive;
 4. print the A100 go/no-go report;
-5. run `colab/run_stage5_arc_mix_recovery_once.py`;
-6. print the planner's next action from the new ARC-mix `summary.json`;
-7. push safe text artifacts through the delegated runner;
-8. disconnect the runtime when complete.
+5. install dependencies only after go/no-go allows the proxy;
+6. run `colab/run_stage5_arc_mix_recovery_once.py`;
+7. print the planner's next action from the new ARC-mix `summary.json`;
+8. push safe text artifacts through the delegated runner;
+9. disconnect the runtime when complete or when setup fails.
 
 ## Source Summary
 

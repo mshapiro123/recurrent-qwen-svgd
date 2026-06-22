@@ -7,17 +7,22 @@ reports `needs_competence_recovery`.
 This cell clones or updates the private repo, authenticates GitHub/Hugging Face
 from Colab secrets, runs exactly one ARC-mix recovery proxy, pushes safe text
 artifacts, and disconnects the runtime when finished.
+It runs go/no-go before installing dependencies and disconnects on failure by
+default, so a blocked proxy does not leave an A100 attached.
 
 Do not use this for full balanced ARC assessment, Phase 2/SVGD, GPQA, dataset
 audits, or notebook repair.
 
 ```python
-import os, shutil, subprocess, sys
+import json, os, shutil, subprocess, sys
 from pathlib import Path
 from google.colab import userdata
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
+SOURCE_SUMMARY = "outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json"
+GO_NO_GO_RUN_ID = "stage5_arc_mix_recovery_once_go_no_go"
+DISCONNECT_RUNTIME_ON_FAILURE = True
 
 def secret(*names):
     for name in names:
@@ -55,6 +60,17 @@ def run(cmd, cwd=None, check=True, env=None):
         raise RuntimeError(f"failed: {printable}")
     return proc
 
+def disconnect_runtime(reason):
+    if not DISCONNECT_RUNTIME_ON_FAILURE:
+        return
+    try:
+        from google.colab import runtime
+
+        print(f"Disconnecting Colab runtime to conserve credits: {reason}", flush=True)
+        runtime.unassign()
+    except Exception as exc:
+        print(f"Runtime disconnect skipped/failed: {exc}", flush=True)
+
 def sync_repo():
     clone_url = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
     if ROOT.exists():
@@ -76,14 +92,6 @@ try:
 
     run(["git", "config", "user.email", "colab-runner@local"], cwd=ROOT)
     run(["git", "config", "user.name", "Colab Runner"], cwd=ROOT)
-    run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"], cwd=ROOT)
-
-    if HF_TOKEN:
-        from huggingface_hub import HfApi, login
-
-        login(token=HF_TOKEN, add_to_git_credential=False)
-        who = HfApi(token=HF_TOKEN).whoami()
-        print("HF auth OK:", who.get("name") or who.get("email") or "authenticated user", flush=True)
 
     try:
         from google.colab import drive
@@ -93,7 +101,11 @@ try:
     except Exception as exc:
         print(f"Drive mount skipped/failed before go/no-go: {exc}", flush=True)
 
-    SOURCE_SUMMARY = "outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json"
+    run(["git", "log", "--oneline", "-5"], cwd=ROOT, check=False)
+    run(["nvidia-smi"], cwd=ROOT, check=False)
+
+    check_env = os.environ.copy()
+    check_env["STAGE5_A100_GO_NO_GO_RUN_ID"] = GO_NO_GO_RUN_ID
     run(
         [
             sys.executable,
@@ -102,7 +114,24 @@ try:
             SOURCE_SUMMARY,
         ],
         cwd=ROOT,
+        env=check_env,
     )
+    go_payload = json.loads((ROOT / "outputs" / "stage5" / GO_NO_GO_RUN_ID / "summary.json").read_text(encoding="utf-8"))
+    go_decision = go_payload.get("decision", {})
+    go_allowed = bool(go_decision.get("go"))
+    if not go_allowed:
+        raise RuntimeError(f"A100 go/no-go blocked ARC-mix recovery: {go_decision}")
+
+    run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"], cwd=ROOT)
+
+    if HF_TOKEN:
+        from huggingface_hub import HfApi, login
+
+        login(token=HF_TOKEN, add_to_git_credential=False)
+        who = HfApi(token=HF_TOKEN).whoami()
+        print("HF auth OK:", who.get("name") or who.get("email") or "authenticated user", flush=True)
+    else:
+        print("HF auth skipped; Hub downloads will be anonymous.", flush=True)
 
     env = os.environ.copy()
     env["STAGE5_ARC_MIX_ONCE_AUTO_DISCONNECT"] = "1"
@@ -116,6 +145,7 @@ try:
     env.setdefault("STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT", "16")
     run([sys.executable, "colab/run_stage5_arc_mix_recovery_once.py"], cwd=ROOT, env=env)
 except Exception:
-    print("ARC-mix recovery cell failed. Disconnect manually if this runtime is attached to A100.", flush=True)
+    print("ARC-mix recovery cell failed.", flush=True)
+    disconnect_runtime("ARC-mix recovery cell failed")
     raise
 ```

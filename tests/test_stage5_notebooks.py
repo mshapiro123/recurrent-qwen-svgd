@@ -59,6 +59,9 @@ def test_arc_mix_recovery_cell_is_single_purpose() -> None:
     assert "stage5_full_assessment_once_20260622_005522/summary.json" in text
     assert "arc_mix_response_w01_lr2e6" in text
     assert "drive.mount" in text
+    assert "GO_NO_GO_RUN_ID" in text
+    assert "A100 go/no-go blocked ARC-mix recovery" in text
+    assert "disconnect_runtime(\"ARC-mix recovery cell failed\")" in text
     assert "colab/run_stage5_full_assessment_once.py" not in text
     assert "colab/run_stage5_colab_continue.py" not in text
 
@@ -73,6 +76,9 @@ def test_arc_mix_recovery_notebook_is_single_purpose() -> None:
     assert "stage5_full_assessment_once_20260622_005522/summary.json" in text
     assert "arc_mix_response_w01_lr2e6" in text
     assert "drive.mount" in text
+    assert "GO_NO_GO_RUN_ID" in text
+    assert "A100 go/no-go blocked ARC-mix recovery" in text
+    assert "disconnect_runtime(\"ARC-mix recovery notebook failed\")" in text
     assert "colab/run_stage5_full_assessment_once.py" not in text
     assert "colab/run_stage5_colab_continue.py" not in text
     assert payload["cells"][0]["cell_type"] == "markdown"
