@@ -1871,15 +1871,13 @@ def routing_diagnostic_actions(payload: dict[str, Any], *, source_summary: Path)
         label = "direct-mode halting" if status == "needs_direct_halting_repair" else "deep-narrow deterministic"
         return [
             make_action(
-                f"Run bounded {label} Phase 1 repair",
-                f"The routing diagnostic selected `{status}`; run one bounded deterministic repair with particles/SVGD off before broader benchmarks.",
-                command_env(
-                    {
-                        "STAGE5_ROUTING_REPAIR_RUN_ID": f"{RUN_ID}_routing_repair",
-                        "STAGE5_ROUTING_REPAIR_SOURCE_SUMMARY": path_for_cli(source_summary),
-                    },
-                    "python colab/run_stage5_routing_repair.py",
+                "Run CPU programmatic direct/deep curriculum gate",
+                (
+                    f"The routing diagnostic selected `{status}` ({label}). Generate the verified 1000 direct / "
+                    "1000 deep-narrow curriculum shard on a CPU runtime, publish its green SFT gate, and only then "
+                    "attach paid GPU time for bounded deterministic recurrent SFT."
                 ),
+                "python colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py",
                 10,
             )
         ]

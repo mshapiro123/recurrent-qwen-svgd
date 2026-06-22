@@ -87,6 +87,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/run_stage5_reasoning_dataset_audit.py",
     "colab/run_stage5_reasoning_dataset_pipeline.py",
     "colab/run_stage5_phase1_recovery_ladder.py",
+    "colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py",
     "colab/run_stage5_programmatic_depth_repair.py",
     "colab/run_stage5_publish_hf_adapter.py",
     "colab/run_stage5_recovered_phase1_arc_gate.py",
@@ -126,6 +127,7 @@ GUARDED_A100_SCRIPTS = {
     "colab/run_stage4_opus_finetune.py",
 }
 LOCAL_ONLY_LONG_SCRIPTS = {
+    "colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py",
     "colab/run_stage5_reasoning_dataset_audit.py",
     "colab/run_stage5_reasoning_dataset_pipeline.py",
 }

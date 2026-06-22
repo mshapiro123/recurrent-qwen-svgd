@@ -142,7 +142,7 @@ def test_arc_mix_calibration_warning_recommends_routing_diagnostic(tmp_path) -> 
     assert "direct-mode loop depth" in actions[0]["reason"]
 
 
-def test_routing_diagnostic_direct_status_recommends_repair(tmp_path) -> None:
+def test_routing_diagnostic_direct_status_recommends_cpu_curriculum_gate(tmp_path) -> None:
     source = tmp_path / "routing" / "summary.json"
     source.parent.mkdir()
     payload = {
@@ -153,9 +153,9 @@ def test_routing_diagnostic_direct_status_recommends_repair(tmp_path) -> None:
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Run bounded direct-mode halting Phase 1 repair"
-    assert "python colab/run_stage5_routing_repair.py" in actions[0]["command"]
-    assert "STAGE5_ROUTING_REPAIR_SOURCE_SUMMARY=" in actions[0]["command"]
+    assert actions[0]["name"] == "Run CPU programmatic direct/deep curriculum gate"
+    assert "python colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py" in actions[0]["command"]
+    assert "1000 direct / 1000 deep-narrow" in actions[0]["reason"]
 
 
 def test_green_curriculum_sft_gate_recommends_guarded_sft_runner(tmp_path) -> None:
@@ -276,7 +276,7 @@ def test_pending_curriculum_pipeline_without_structured_responses_recommends_ins
     assert actions[0]["command"].startswith("cat ")
 
 
-def test_routing_diagnostic_deep_status_recommends_repair(tmp_path) -> None:
+def test_routing_diagnostic_deep_status_recommends_cpu_curriculum_gate(tmp_path) -> None:
     source = tmp_path / "routing" / "summary.json"
     source.parent.mkdir()
     payload = {
@@ -287,8 +287,9 @@ def test_routing_diagnostic_deep_status_recommends_repair(tmp_path) -> None:
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Run bounded deep-narrow deterministic Phase 1 repair"
-    assert "python colab/run_stage5_routing_repair.py" in actions[0]["command"]
+    assert actions[0]["name"] == "Run CPU programmatic direct/deep curriculum gate"
+    assert "python colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py" in actions[0]["command"]
+    assert "deep-narrow deterministic" in actions[0]["reason"]
 
 
 def test_routing_diagnostic_pass_recommends_larger_confirmation(tmp_path) -> None:

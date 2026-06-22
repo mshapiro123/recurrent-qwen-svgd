@@ -312,6 +312,13 @@ def test_parse_action_command_allows_programmatic_curriculum_pipeline() -> None:
     ]
 
 
+def test_parse_action_command_allows_programmatic_curriculum_colab_cell() -> None:
+    parsed = parse_action_command("python colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py")
+
+    assert parsed.kind == "python"
+    assert parsed.argv == [sys.executable, "colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py"]
+
+
 def test_parse_action_command_allows_programmatic_depth_assessor() -> None:
     parsed = parse_action_command(
         "STAGE5_PROGRAMMATIC_DEPTH_ASSESS_RUN_ID=assess python colab/assess_stage5_programmatic_depth_repair.py --summary_json outputs/stage5/run/summary.json"
@@ -726,6 +733,18 @@ def test_a100_guard_allows_stage4_opus_after_promoted_audit(tmp_path) -> None:
 
 def test_local_only_guard_blocks_dataset_audit_on_gpu(monkeypatch) -> None:
     parsed = parse_action_command("python colab/run_stage5_reasoning_dataset_audit.py")
+    monkeypatch.setattr(module, "gpu_runtime_attached", lambda: True)
+    monkeypatch.setenv("STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_LOCAL_ONLY_ON_GPU", "0")
+
+    guard = local_only_runtime_guard(parsed)
+
+    assert guard["checked"] is True
+    assert guard["allowed"] is False
+    assert guard["status"] == "local_only_gpu_no_go"
+
+
+def test_local_only_guard_blocks_programmatic_curriculum_cell_on_gpu(monkeypatch) -> None:
+    parsed = parse_action_command("python colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py")
     monkeypatch.setattr(module, "gpu_runtime_attached", lambda: True)
     monkeypatch.setenv("STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_LOCAL_ONLY_ON_GPU", "0")
 
