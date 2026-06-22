@@ -128,18 +128,26 @@ def training_source_priority(payload):
 
 def latest_training_source_summary():
     candidates = []
-    for path in (ROOT / "outputs" / "stage5").glob("**/summary.json"):
-        payload = safe_read_json(path)
-        if not payload:
-            continue
-        priority = training_source_priority(payload)
-        if priority <= 0:
-            continue
-        candidates.append((priority, path.stat().st_mtime, path))
+    scan_roots = [ROOT / "outputs" / "stage5"]
+    drive_stage5 = Path("/content/drive/MyDrive/recurrent-qwen-svgd/stage5_capability_ladder_trace_collection")
+    if drive_stage5.exists():
+        scan_roots.append(drive_stage5)
+    for scan_root in scan_roots:
+        for path in scan_root.glob("**/summary.json"):
+            payload = safe_read_json(path)
+            if not payload:
+                continue
+            priority = training_source_priority(payload)
+            if priority <= 0:
+                continue
+            candidates.append((priority, path.stat().st_mtime, path))
     if not candidates:
         return ""
     selected = sorted(candidates, reverse=True)[0][2]
-    return str(selected.relative_to(ROOT))
+    try:
+        return str(selected.relative_to(ROOT))
+    except ValueError:
+        return str(selected)
 
 def resolve_source_summary():
     if SOURCE_SUMMARY_OVERRIDE:
@@ -164,10 +172,10 @@ def resolve_source_summary():
     print(f"Using fallback source summary: {DEFAULT_SOURCE_SUMMARY}", flush=True)
     return DEFAULT_SOURCE_SUMMARY
 
-SOURCE_SUMMARY = resolve_source_summary()
-
-if RUN_A100_ACTION:
+if RUN_A100_ACTION and PREFER_TRAINING_SOURCE:
     mount_drive_for_paid_action()
+
+SOURCE_SUMMARY = resolve_source_summary()
 
 check_env = os.environ.copy()
 check_env["STAGE5_A100_GO_NO_GO_RUN_ID"] = GO_NO_GO_RUN_ID

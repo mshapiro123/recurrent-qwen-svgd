@@ -249,9 +249,10 @@ def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     assert "mount_drive_for_paid_action" in text
     assert "STAGE5_SAFE_CONTINUE_PREFER_TRAINING_SOURCE" in text
     assert "latest_training_source_summary" in text
+    assert "stage5_capability_ladder_trace_collection" in text
     assert 'drive.mount("/content/drive", force_remount=True)' in text
     assert "Mounting Google Drive so checkpoint artifacts can be restored." in text
-    assert text.index("if RUN_A100_ACTION:\n    mount_drive_for_paid_action()") < text.index(
+    assert text.index("if RUN_A100_ACTION and PREFER_TRAINING_SOURCE:\n    mount_drive_for_paid_action()") < text.index(
         '"colab/check_stage5_a100_go_no_go.py"'
     )
     assert "colab/run_stage5_full_assessment_once.py" not in text
