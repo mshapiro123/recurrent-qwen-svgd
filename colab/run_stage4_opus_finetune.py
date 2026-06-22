@@ -27,6 +27,11 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 
+APPROVED_STAGE4_OPUS_DATASETS = {
+    "lordx64/reasoning-distill-opus-4-7-max-sft",
+    "lordx64/reasoning-distill-claude-opus-4-7-max",
+}
+
 RUN_ID = os.environ.get("STAGE4_RUN_ID") or time.strftime("stage4_opus_%Y%m%d_%H%M%S")
 RUN_DIR = ROOT / "outputs" / "stage4" / RUN_ID
 RUN_DIR.mkdir(parents=True, exist_ok=True)
@@ -35,6 +40,12 @@ MODEL_NAME = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")
 DATASET_ID = os.environ.get("OPUS_DATASET_ID", "lordx64/reasoning-distill-opus-4-7-max-sft")
 DATASET_NAME = os.environ.get("OPUS_DATASET_NAME", "")
 DATASET_ADAPTER = os.environ.get("OPUS_DATASET_ADAPTER", "auto")
+ALLOW_UNAPPROVED_DATASET = os.environ.get("STAGE4_OPUS_ALLOW_UNAPPROVED_SOURCE", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 DATASET_LIMIT = int(os.environ.get("OPUS_LIMIT", "3000"))
 VAL_FRACTION = float(os.environ.get("OPUS_VAL_FRACTION", "0.05"))
 MAX_TOTAL_TOKENS = int(os.environ.get("OPUS_MAX_TOTAL_TOKENS", "1024"))
@@ -83,6 +94,28 @@ def run(cmd: list[str], *, check: bool = True, log_name: str | None = None) -> s
 
 def write_yaml(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+
+
+def validate_dataset_source(
+    *,
+    dataset_id: str = DATASET_ID,
+    allow_unapproved: bool = ALLOW_UNAPPROVED_DATASET,
+) -> dict[str, Any]:
+    approved = dataset_id in APPROVED_STAGE4_OPUS_DATASETS
+    payload = {
+        "dataset_id": dataset_id,
+        "approved": approved,
+        "allow_unapproved": allow_unapproved,
+        "approved_datasets": sorted(APPROVED_STAGE4_OPUS_DATASETS),
+    }
+    if approved or allow_unapproved:
+        return payload
+    raise ValueError(
+        "Stage 4 Opus fine-tune is restricted to approved recovery datasets "
+        f"{sorted(APPROVED_STAGE4_OPUS_DATASETS)}. Got {dataset_id!r}. "
+        "Set STAGE4_OPUS_ALLOW_UNAPPROVED_SOURCE=1 only for a deliberate, "
+        "non-default experiment."
+    )
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -298,12 +331,14 @@ def ensure_drive_mount() -> None:
 
 def main() -> int:
     ensure_drive_mount()
+    dataset_source_preflight = validate_dataset_source()
     metadata = {
         "run_id": RUN_ID,
         "model_name": MODEL_NAME,
         "dataset_id": DATASET_ID,
         "dataset_name": DATASET_NAME or None,
         "dataset_adapter": DATASET_ADAPTER,
+        "dataset_source_preflight": dataset_source_preflight,
         "dataset_limit": DATASET_LIMIT,
         "val_fraction": VAL_FRACTION,
         "max_total_tokens": MAX_TOTAL_TOKENS,
