@@ -291,6 +291,42 @@ def checkpoint_candidates_from_payload(source_summary: Path | None, payload: dic
     return candidates
 
 
+def checkpoint_bearing_source_summary(source_summary: Path | None, payload: dict[str, Any] | None) -> Path | None:
+    """Follow no-weight policy/debias wrapper summaries back to the adapter source."""
+
+    if source_summary is None or payload is None:
+        return source_summary
+    current_summary = source_summary
+    current_payload = payload
+    seen: set[Path] = set()
+    for _depth in range(8):
+        if (
+            checkpoint_value_from_payload(current_payload)
+            or current_payload.get("checkpoint")
+            or current_payload.get("export_dir")
+            or (current_summary.parent / "recurrent_adapter_checkpoint.pt").exists()
+        ):
+            return current_summary
+        if current_summary in seen:
+            raise RuntimeError(f"Cycle while resolving checkpoint-bearing source summary: {current_summary}")
+        seen.add(current_summary)
+        kind = str(current_payload.get("kind") or "")
+        next_summary: str | None = None
+        if kind == "stage5_mcq_scoring_policy":
+            next_summary = current_payload.get("source_summary")
+        elif kind == "stage5_mcq_debias_pair_assessment":
+            source_summaries = current_payload.get("source_summaries") or {}
+            if isinstance(source_summaries, dict):
+                next_summary = source_summaries.get("arc_challenge") or source_summaries.get("arc_easy")
+        elif kind == "stage5_mcq_debias_diagnostic":
+            next_summary = current_payload.get("nested_source_summary") or current_payload.get("source_summary")
+        if not next_summary:
+            return current_summary
+        current_summary = resolve_path(next_summary)
+        current_payload = read_json(current_summary)
+    raise RuntimeError(f"Could not resolve checkpoint-bearing source summary from {source_summary}")
+
+
 def infer_artifact_run_id(path: str | Path) -> str | None:
     parts = Path(path).parts
     for marker in ("stage5", "stage4"):
@@ -748,6 +784,15 @@ def main() -> int:
     started = time.time()
     source_summary = resolve_source_summary()
     source_payload = read_json(source_summary) if source_summary else None
+    resolved_source_summary = checkpoint_bearing_source_summary(source_summary, source_payload)
+    if resolved_source_summary != source_summary:
+        print(
+            f"resolved_benchmark_source_summary={path_for_cli(source_summary)} -> "
+            f"{path_for_cli(resolved_source_summary)}",
+            flush=True,
+        )
+        source_summary = resolved_source_summary
+        source_payload = read_json(source_summary) if source_summary else None
     checkpoint = resolve_checkpoint(source_summary, source_payload)
     specs = benchmark_specs(parse_csv(BENCHMARKS))
     failures: list[dict[str, Any]] = []

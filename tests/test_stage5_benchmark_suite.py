@@ -153,6 +153,51 @@ def test_resolve_checkpoint_missing_error_includes_drive_diagnostics(tmp_path, m
         module.resolve_checkpoint(source, payload)
 
 
+def test_checkpoint_bearing_source_summary_follows_mcq_policy_chain(tmp_path) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    checkpoint = tmp_path / "outputs" / "stage5" / "train" / "phase1" / "phase1_step_150.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    train_summary = tmp_path / "outputs" / "stage5" / "train" / "summary.json"
+    pair_summary = tmp_path / "outputs" / "stage5" / "pair" / "summary.json"
+    policy_summary = tmp_path / "outputs" / "stage5" / "policy" / "summary.json"
+    debias_summary = tmp_path / "outputs" / "stage5" / "debias" / "summary.json"
+    _write_jsonl(train_summary, [{"kind": "stage5_curriculum_sft", "phase1_checkpoint": str(checkpoint)}])
+    _write_jsonl(
+        debias_summary,
+        [
+            {
+                "kind": "stage5_mcq_debias_diagnostic",
+                "nested_source_summary": str(train_summary),
+            }
+        ],
+    )
+    _write_jsonl(
+        pair_summary,
+        [
+            {
+                "kind": "stage5_mcq_debias_pair_assessment",
+                "source_summaries": {"arc_challenge": str(debias_summary)},
+            }
+        ],
+    )
+    _write_jsonl(
+        policy_summary,
+        [
+            {
+                "kind": "stage5_mcq_scoring_policy",
+                "status": "debiased_mcq_policy_active",
+                "source_summary": str(pair_summary),
+            }
+        ],
+    )
+
+    policy_payload = json.loads(policy_summary.read_text(encoding="utf-8").splitlines()[0])
+
+    assert module.checkpoint_bearing_source_summary(policy_summary, policy_payload) == train_summary
+
+
 def test_build_summary_compares_base_and_recurrent_rows(tmp_path) -> None:
     base_jsonl = tmp_path / "arc_base_label.jsonl"
     recurrent_jsonl = tmp_path / "arc_recurrent_label.jsonl"

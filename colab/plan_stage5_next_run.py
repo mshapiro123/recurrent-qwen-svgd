@@ -1678,14 +1678,20 @@ def stage4_opus_finetune_actions(payload: dict[str, Any], *, source_summary: Pat
 
 def benchmark_suite_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
+    assessment_env = {"STAGE5_BENCHMARK_ASSESS_RUN_ID": f"{RUN_ID}_benchmark_assessment"}
+    if "cyclic_label_aggregated" in {str(item) for item in (payload.get("score_targets") or [])}:
+        assessment_env.update(
+            {
+                "STAGE5_BENCHMARK_ASSESS_SCORE_TARGET": "cyclic_label_aggregated",
+                "STAGE5_BENCHMARK_ASSESS_AGGREGATE": "permutation_mean",
+            }
+        )
     return [
         make_action(
             f"Assess broader benchmark suite `{status}`",
             "The broader base-vs-recurrent benchmark suite finished; run the no-GPU paired-evidence gate before deciding whether to recover recurrent, expand benchmarks, or write up the result.",
             command_env(
-                {
-                    "STAGE5_BENCHMARK_ASSESS_RUN_ID": f"{RUN_ID}_benchmark_assessment",
-                },
+                assessment_env,
                 f"python colab/assess_stage5_benchmark_suite.py --summary_json {shlex.quote(path_for_cli(source_summary))}",
             ),
             10,
@@ -1712,18 +1718,24 @@ def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summar
             )
         ]
     if status == "needs_benchmark_confirmation":
+        required_score_target = str(payload.get("required_score_target") or "")
+        assignments = {
+            "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{RUN_ID}_expanded_benchmark_suite",
+            "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "256",
+            "STAGE5_BENCHMARK_GPQA_LIMIT": "32",
+        }
+        if required_score_target == "cyclic_label_aggregated":
+            assignments.update(
+                {
+                    "STAGE5_BENCHMARK_SCORE_TARGETS": "label,content_question_only,cyclic_label_aggregated",
+                    "STAGE5_BENCHMARK_AGGREGATES": "mean",
+                }
+            )
         return [
             make_action(
                 "Expand broader benchmark suite confirmation",
                 "The benchmark-suite gate found too few paired examples; rerun ARC-Challenge/GPQA-lite with larger limits before interpreting deltas.",
-                command_env(
-                    {
-                        "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{RUN_ID}_expanded_benchmark_suite",
-                        "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "256",
-                        "STAGE5_BENCHMARK_GPQA_LIMIT": "32",
-                    },
-                    "python colab/run_stage5_benchmark_suite.py",
-                ),
+                command_env(assignments, "python colab/run_stage5_benchmark_suite.py"),
                 10,
             )
         ]
@@ -2491,28 +2503,33 @@ def mcq_scoring_policy_actions(payload: dict[str, Any], *, source_summary: Path)
     status = str(payload.get("status", "unknown"))
     stale = payload.get("stale_label_only_artifacts") if isinstance(payload.get("stale_label_only_artifacts"), list) else []
     if status == "debiased_mcq_policy_active":
-        if stale:
-            return [
-                make_action(
-                    "Regenerate stale MCQ benchmark claims under debiased scoring",
-                    (
-                        "The debiased MCQ scoring policy is active and local outputs still contain label-only MCQ "
-                        "claim artifacts. Do not use those artifacts for training or release claims until they are "
-                        "rerun or explicitly annotated as diagnostic-only."
-                    ),
-                    f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
-                    10,
-                )
-            ]
+        stale_note = (
+            " Local stale label-only artifacts were found, so regenerate policy-compliant benchmark evidence before "
+            "using any MCQ deltas for training or claims."
+            if stale
+            else " No stale label-only artifacts were found locally, but the next benchmark evidence should still use the active policy."
+        )
         return [
             make_action(
-                "Resume depth/width recovery planning under debiased MCQ policy",
+                "Run bounded debiased ARC/GPQA benchmark suite",
                 (
-                    "The MCQ scoring policy is active and no stale label-only Stage 5 artifacts were found locally. "
-                    "The next GPU action should come from direct/deep recovery or particle gates, not from bare-label "
-                    "MCQ deltas."
+                    "The MCQ scoring policy is active. Run a bounded base-vs-recurrent benchmark suite with "
+                    "bare-label, content-question-only, and cyclic-permutation scoring before launching more "
+                    f"training or release claims.{stale_note}"
                 ),
-                f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                command_env(
+                    {
+                        "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{RUN_ID}_debiased_benchmark_suite",
+                        "STAGE5_BENCHMARK_SOURCE_SUMMARY": path_for_cli(source_summary),
+                        "STAGE5_BENCHMARKS": "arc_challenge,gpqa_lite",
+                        "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "128",
+                        "STAGE5_BENCHMARK_GPQA_LIMIT": "16",
+                        "STAGE5_BENCHMARK_SCORE_TARGETS": "label,content_question_only,cyclic_label_aggregated",
+                        "STAGE5_BENCHMARK_AGGREGATES": "mean",
+                        "STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS": "1",
+                    },
+                    "python colab/run_stage5_benchmark_suite.py",
+                ),
                 10,
             )
         ]

@@ -2391,6 +2391,23 @@ def test_benchmark_suite_summary_inspects_markdown(tmp_path) -> None:
     assert "--summary_json" in actions[0]["command"]
 
 
+def test_benchmark_suite_summary_with_cyclic_scores_assesses_cyclic_aggregate(tmp_path) -> None:
+    source = tmp_path / "benchmark_suite" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_benchmark_suite",
+        "status": "completed",
+        "score_targets": ["label", "content_question_only", "cyclic_label_aggregated"],
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Assess broader benchmark suite `completed`"
+    assert "python colab/assess_stage5_benchmark_suite.py" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_ASSESS_SCORE_TARGET=cyclic_label_aggregated" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_ASSESS_AGGREGATE=permutation_mean" in actions[0]["command"]
+
+
 def test_benchmark_suite_assessment_negative_runs_competence_pipeline(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(planner, "A100_BUDGET_PROFILE", "gate")
     source = tmp_path / "benchmark_assessment" / "summary.json"
@@ -2761,7 +2778,7 @@ def test_mcq_debias_pair_content_gap_routes_to_blocking_summary(tmp_path) -> Non
     assert "python colab/run_stage5_direct_preservation_probe.py" in actions[0]["command"]
 
 
-def test_mcq_scoring_policy_routes_stale_label_artifacts_to_no_gpu_claim_regeneration(tmp_path) -> None:
+def test_mcq_scoring_policy_routes_stale_label_artifacts_to_debiased_benchmark_suite(tmp_path) -> None:
     source = tmp_path / "mcq_policy" / "summary.json"
     source.parent.mkdir()
     payload = {
@@ -2774,8 +2791,31 @@ def test_mcq_scoring_policy_routes_stale_label_artifacts_to_no_gpu_claim_regener
     actions = plan_next_actions(payload, source_summary=source)
 
     assert source_kind(payload) == "mcq_scoring_policy"
-    assert actions[0]["name"] == "Regenerate stale MCQ benchmark claims under debiased scoring"
+    assert actions[0]["name"] == "Run bounded debiased ARC/GPQA benchmark suite"
+    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_SOURCE_SUMMARY=" in actions[0]["command"]
+    assert "STAGE5_BENCHMARKS=arc_challenge,gpqa_lite" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT=128" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_GPQA_LIMIT=16" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_SCORE_TARGETS=label,content_question_only,cyclic_label_aggregated" in actions[0]["command"]
     assert "direct_preservation" not in actions[0]["command"]
+
+
+def test_mcq_scoring_policy_without_stale_artifacts_still_runs_policy_compliant_benchmark(tmp_path) -> None:
+    source = tmp_path / "mcq_policy" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_mcq_scoring_policy",
+        "status": "debiased_mcq_policy_active",
+        "passed": True,
+        "stale_label_only_artifacts": [],
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run bounded debiased ARC/GPQA benchmark suite"
+    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_SCORE_TARGETS=label,content_question_only,cyclic_label_aggregated" in actions[0]["command"]
 
 
 def test_direct_preservation_probe_pass_confirms_larger_arc(tmp_path) -> None:
@@ -2837,6 +2877,23 @@ def test_benchmark_suite_assessment_low_coverage_expands_suite(tmp_path) -> None
 
     assert actions[0]["name"] == "Expand broader benchmark suite confirmation"
     assert "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT=256" in actions[0]["command"]
+    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
+
+
+def test_benchmark_suite_assessment_low_cyclic_coverage_expands_debiased_suite(tmp_path) -> None:
+    source = tmp_path / "benchmark_assessment" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_broader_benchmark_suite",
+        "status": "needs_benchmark_confirmation",
+        "required_score_target": "cyclic_label_aggregated",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Expand broader benchmark suite confirmation"
+    assert "STAGE5_BENCHMARK_SCORE_TARGETS=label,content_question_only,cyclic_label_aggregated" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_AGGREGATES=mean" in actions[0]["command"]
     assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
 
 
