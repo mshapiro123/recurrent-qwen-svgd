@@ -99,6 +99,11 @@ deterministic chains, width for multi-solution tasks, and both for the hard
 tail. This allocation view is tracked in
 [DEPTH_WIDTH_ROUTING_RECIPE.md](DEPTH_WIDTH_ROUTING_RECIPE.md).
 
+The current research-agent handoff is
+[DEEP_RESEARCH_HANDOFF_2026_06_22.md](DEEP_RESEARCH_HANDOFF_2026_06_22.md). It
+records the latest answer-prior diagnosis and reframes the immediate blocker as
+direct-route preservation before more particle geometry or scale-up.
+
 ## Near-Term Gates
 
 ### Gate 1: Measurement Before More Mechanism

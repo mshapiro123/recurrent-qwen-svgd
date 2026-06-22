@@ -126,6 +126,9 @@ The implementation has three stages:
 For the current manuscript-style status, evidence, negative results, and next
 gates, see [docs/PROJECT_STATUS_PAPER.md](docs/PROJECT_STATUS_PAPER.md). The
 program-level strategy is tracked in [docs/PROGRAM_TRACK.md](docs/PROGRAM_TRACK.md).
+The current deep-research handoff, including the latest direct-route
+answer-prior blocker, is
+[docs/DEEP_RESEARCH_HANDOFF_2026_06_22.md](docs/DEEP_RESEARCH_HANDOFF_2026_06_22.md).
 The no-GPU reasoning-trace data plan is in
 [docs/REASONING_TRACE_DATASETS.md](docs/REASONING_TRACE_DATASETS.md). The
 wide/deep curriculum data contract is in
@@ -166,15 +169,15 @@ Treat A100 time as the scarce experimental reagent. The default answer to
    exploratory script-debugging task.
 
 Right now there is exactly one plausible GPU job, and it is **bounded
-deterministic repair training**: a direct-mode Phase 1 repair with shallow
-halt supervision and base-logit response distillation. The routing diagnostic
-from
-`outputs/stage5/stage5_routing_diagnostic_20260622_041706/summary.json`
-showed that the recurrent checkpoint still harms base-confident direct rows
-while over-looping on them, so GPQA, Phase 2/SVGD, wide-particle training, and
-scale-up remain premature. Dataset inspection, Hugging Face trace triage,
-planner repairs, documentation, and diagnosis should stay local or on a free
-CPU runtime.
+direct-route preservation training**: a hard `max_loops=1` Phase 1 probe on
+base-correct, high-margin, label-balanced ARC-Easy rows with strong base-logit
+preservation. The latest answer-prior diagnosis at
+`outputs/stage5/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation/answer_prior_diagnosis.json`
+showed that the conservative ARC-mix branch still harms base-confident direct
+rows and inherits large answer-label prior drift, so GPQA, Phase 2/SVGD,
+wide-particle training, and scale-up remain premature. Dataset inspection,
+Hugging Face trace triage, planner repairs, documentation, and diagnosis should
+stay local or on a free CPU runtime.
 The maintained next-action wrapper refuses long CPU/data-only dataset actions
 on an attached GPU runtime by default, so an A100 session does not sit idle
 while a Hugging Face audit runs.
