@@ -97,6 +97,10 @@ GUARDED_A100_SCRIPTS = {
     "colab/run_stage5_benchmark_suite.py",
     "colab/run_stage5_competence_preserving_pipeline.py",
 }
+LOCAL_ONLY_LONG_SCRIPTS = {
+    "colab/run_stage5_reasoning_dataset_audit.py",
+    "colab/run_stage5_reasoning_dataset_pipeline.py",
+}
 
 
 @dataclass(frozen=True)
@@ -207,6 +211,72 @@ def parsed_python_script(parsed: ParsedCommand) -> str:
     if parsed.kind != "python" or len(parsed.argv) < 2:
         return ""
     return str(parsed.argv[1]).replace("\\", "/")
+
+
+def gpu_runtime_attached() -> bool:
+    override = os.environ.get("STAGE5_ARC_AGI_NEXT_ACTION_ASSUME_GPU", "").strip().lower()
+    if override in {"1", "true", "yes", "y"}:
+        return True
+    if override in {"0", "false", "no", "n"}:
+        return False
+    if os.environ.get("COLAB_GPU"):
+        return True
+    try:
+        proc = subprocess.run(
+            ["nvidia-smi", "-L"],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=3,
+            check=False,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
+    return proc.returncode == 0 and bool(proc.stdout.strip())
+
+
+def allow_local_only_on_gpu() -> bool:
+    return os.environ.get("STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_LOCAL_ONLY_ON_GPU", "0").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+    }
+
+
+def local_only_runtime_guard(parsed: ParsedCommand) -> dict[str, Any]:
+    script = parsed_python_script(parsed)
+    if script not in LOCAL_ONLY_LONG_SCRIPTS:
+        return {
+            "checked": False,
+            "allowed": True,
+            "reason": "Selected action is not a long CPU/data-only runner.",
+        }
+    gpu_attached = gpu_runtime_attached()
+    if not gpu_attached:
+        return {
+            "checked": True,
+            "allowed": True,
+            "status": "local_only_no_gpu_ok",
+            "reason": "Long CPU/data-only action is running without a visible GPU runtime.",
+        }
+    if allow_local_only_on_gpu():
+        return {
+            "checked": True,
+            "allowed": True,
+            "status": "local_only_gpu_override",
+            "reason": "Long CPU/data-only action is allowed on this GPU runtime by explicit override.",
+        }
+    return {
+        "checked": True,
+        "allowed": False,
+        "status": "local_only_gpu_no_go",
+        "reason": (
+            "Selected action is a long CPU/data-only job. Run it locally or on a CPU/free Colab runtime; "
+            "set STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_LOCAL_ONLY_ON_GPU=1 only if intentionally burning attached GPU time."
+        ),
+    }
 
 
 def source_payload_for_plan(plan: dict[str, Any]) -> dict[str, Any] | None:
@@ -335,6 +405,8 @@ def execute_action_loop(*, execute: bool = EXECUTE, max_actions: int = MAX_ACTIO
         }
         guard = a100_execution_guard(action, plan, parsed)
         step_payload["a100_guard"] = guard
+        local_guard = local_only_runtime_guard(parsed)
+        step_payload["local_runtime_guard"] = local_guard
         if repeated:
             step_payload["execution"] = {
                 "executed": False,
@@ -346,6 +418,15 @@ def execute_action_loop(*, execute: bool = EXECUTE, max_actions: int = MAX_ACTIO
 
         seen_commands.add(command_text)
         if execute:
+            if local_guard.get("checked") and not local_guard.get("allowed"):
+                step_payload["execution"] = {
+                    "executed": False,
+                    "stopped": True,
+                    "reason": "Local-only runtime guard blocked this action on an attached GPU runtime.",
+                    "guard_status": local_guard.get("status"),
+                }
+                steps.append(step_payload)
+                break
             if guard.get("checked") and not guard.get("allowed"):
                 step_payload["execution"] = {
                     "executed": False,
@@ -398,6 +479,7 @@ def write_report(payload: dict[str, Any]) -> None:
     parsed = first_step.get("parsed_command") or {}
     execution = first_step.get("execution") or {}
     guard = first_step.get("a100_guard") or {}
+    local_guard = first_step.get("local_runtime_guard") or {}
     lines = [
         f"# Stage 5 Next Action - {RUN_ID}",
         "",
@@ -413,6 +495,7 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Parsed kind: `{parsed.get('kind')}`",
         f"- Parsed argv: `{parsed.get('argv')}`",
         f"- A100 guard: `{guard}`",
+        f"- Local runtime guard: `{local_guard}`",
         f"- Execution: `{execution}`",
     ]
     if len(steps) > 1:
@@ -422,7 +505,7 @@ def write_report(payload: dict[str, Any]) -> None:
             lines.append(
                 f"- Step `{step.get('step')}`: `{step_action.get('name')}` "
                 f"repeat `{step.get('repeat_detected')}` guard `{step.get('a100_guard')}` "
-                f"execution `{step.get('execution')}`"
+                f"local `{step.get('local_runtime_guard')}` execution `{step.get('execution')}`"
             )
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))

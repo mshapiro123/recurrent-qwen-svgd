@@ -141,6 +141,9 @@ failed, so dataset inspection, Hugging Face trace triage, planner repairs,
 documentation, and diagnosis should stay local or on a free CPU runtime. The
 only plausible next paid job is one bounded ARC-mix proxy with stronger
 response distillation, after reviewing the local diagnosis.
+The maintained next-action wrapper refuses long CPU/data-only dataset actions
+on an attached GPU runtime by default, so an A100 session does not sit idle
+while a Hugging Face audit runs.
 
 Before attaching or keeping an A100, run the no-GPU spend check:
 
@@ -162,6 +165,9 @@ paid-GPU runners. A copied command can still be run manually, but the maintained
 path (`python colab/run_stage5_next_action.py` with execution enabled) records
 an `a100_guard` decision, includes checkpoint preflight status, and refuses
 unsafe full-assessment or benchmark spends.
+It also blocks long CPU/data-only actions such as reasoning dataset audits when
+a GPU runtime is attached, unless
+`STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_LOCAL_ONLY_ON_GPU=1` is set deliberately.
 For the lowest-friction Colab path, use
 [`colab/STAGE5_SAFE_CONTINUE_CELL.md`](colab/STAGE5_SAFE_CONTINUE_CELL.md). It
 pulls latest GitHub, runs go/no-go, and defaults to dry-run unless

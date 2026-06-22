@@ -9,6 +9,7 @@ from colab.run_stage5_next_action import (
     a100_execution_guard,
     bootstrap_plan,
     execute_action_loop,
+    local_only_runtime_guard,
     is_repeat_action,
     parse_action_command,
     run_planner,
@@ -372,6 +373,29 @@ def test_a100_guard_skips_local_assessment_actions() -> None:
     assert guard["allowed"] is True
 
 
+def test_local_only_guard_blocks_dataset_audit_on_gpu(monkeypatch) -> None:
+    parsed = parse_action_command("python colab/run_stage5_reasoning_dataset_audit.py")
+    monkeypatch.setattr(module, "gpu_runtime_attached", lambda: True)
+    monkeypatch.setenv("STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_LOCAL_ONLY_ON_GPU", "0")
+
+    guard = local_only_runtime_guard(parsed)
+
+    assert guard["checked"] is True
+    assert guard["allowed"] is False
+    assert guard["status"] == "local_only_gpu_no_go"
+
+
+def test_local_only_guard_allows_dataset_audit_without_gpu(monkeypatch) -> None:
+    parsed = parse_action_command("python colab/run_stage5_reasoning_dataset_audit.py")
+    monkeypatch.setattr(module, "gpu_runtime_attached", lambda: False)
+
+    guard = local_only_runtime_guard(parsed)
+
+    assert guard["checked"] is True
+    assert guard["allowed"] is True
+    assert guard["status"] == "local_only_no_gpu_ok"
+
+
 def test_execute_action_loop_dry_run_stops_after_one_plan(monkeypatch, tmp_path) -> None:
     calls = []
 
@@ -442,6 +466,30 @@ def test_execute_action_loop_blocks_guarded_a100_action(monkeypatch, tmp_path) -
 
     assert len(steps) == 1
     assert steps[0]["a100_guard"]["status"] == "calibration_warning_no_go"
+    assert steps[0]["execution"]["executed"] is False
+    assert steps[0]["execution"]["stopped"] is True
+
+
+def test_execute_action_loop_blocks_local_only_action_on_gpu(monkeypatch, tmp_path) -> None:
+    action = {
+        "name": "Run reasoning dataset audit",
+        "command": "python colab/run_stage5_reasoning_dataset_audit.py",
+    }
+
+    def fake_run_planner(*, step=None):
+        return tmp_path / "plan.json", {"source_summary": None, "actions": [action]}, subprocess.CompletedProcess([], 0)
+
+    def fake_execute(parsed, *, log_name="selected_action.log"):
+        raise AssertionError("local-only action should not execute on a GPU runtime")
+
+    monkeypatch.setattr(module, "run_planner", fake_run_planner)
+    monkeypatch.setattr(module, "execute_parsed_command", fake_execute)
+    monkeypatch.setattr(module, "gpu_runtime_attached", lambda: True)
+
+    steps = execute_action_loop(execute=True, max_actions=1)
+
+    assert len(steps) == 1
+    assert steps[0]["local_runtime_guard"]["status"] == "local_only_gpu_no_go"
     assert steps[0]["execution"]["executed"] is False
     assert steps[0]["execution"]["stopped"] is True
 

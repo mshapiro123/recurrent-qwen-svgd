@@ -6,7 +6,9 @@ runs the no-GPU A100 go/no-go check, and then **stops by default**.
 
 Only set `RUN_A100_ACTION = True` when you intentionally want to execute the
 guarded planner-selected action. The maintained execution path still runs the
-`a100_guard` before launching paid-GPU runners.
+`a100_guard` before launching paid-GPU runners. It also refuses long CPU/data
+actions, such as dataset audits, while a GPU runtime is attached unless
+`STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_LOCAL_ONLY_ON_GPU=1` is set deliberately.
 
 ```python
 import os, shutil, subprocess, sys
