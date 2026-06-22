@@ -36,6 +36,12 @@ or
 That cell mounts Drive, verifies the recovered deterministic Phase 1 checkpoint
 is visible, runs the A100 go/no-go guard, and disconnects. Only attach an
 A100/H100 after `checkpoint_preflight.available` is `True`.
+The checkpoint preflight/restore path searches the project-scoped Drive roots
+`recurrent-qwen-svgd-artifacts`, `recurrent-qwen-svgd`, and
+`recurrent-qwen-svgd-fresh`, plus any explicit `DRIVE_BACKUP_DIR`,
+`DRIVE_BACKUP_DIRS`, or `STAGE5_DRIVE_BACKUP_DIR`. It recognizes both
+`<run_id>/run_dir/phase1/phase1_step_125.pt` style backups and preserved repo
+paths such as `outputs/stage5/<run_id>/phase1/phase1_step_125.pt`.
 
 Keep the runtime disconnected while editing the cell. This is one bounded
 deterministic Phase 1 repair run; use an A100/H100 only when you intentionally

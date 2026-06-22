@@ -61,12 +61,49 @@ def drive_root() -> Path:
     return Path(os.environ.get("DRIVE_BACKUP_DIR", "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts"))
 
 
+def _split_drive_roots(value: str) -> list[Path]:
+    roots: list[Path] = []
+    for raw in value.split(os.pathsep):
+        item = raw.strip()
+        if item:
+            roots.append(Path(item))
+    return roots
+
+
+def drive_roots() -> list[Path]:
+    """Project-scoped Drive roots to inspect without crawling all of MyDrive."""
+
+    roots: list[Path] = []
+    if os.environ.get("DRIVE_BACKUP_DIRS"):
+        roots.extend(_split_drive_roots(os.environ["DRIVE_BACKUP_DIRS"]))
+    if os.environ.get("DRIVE_BACKUP_DIR"):
+        roots.append(drive_root())
+    else:
+        roots.append(drive_root())
+        roots.extend(
+            [
+                Path("/content/drive/MyDrive/recurrent-qwen-svgd"),
+                Path("/content/drive/MyDrive/recurrent-qwen-svgd-fresh"),
+            ]
+        )
+    if os.environ.get("STAGE5_DRIVE_BACKUP_DIR"):
+        roots.append(Path(os.environ["STAGE5_DRIVE_BACKUP_DIR"]))
+
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for root in roots:
+        key = str(root)
+        if key not in seen:
+            seen.add(key)
+            unique.append(root)
+    return unique
+
+
 def drive_diagnostics() -> str:
-    root = drive_root()
     probes = [
         Path("/content/drive"),
         Path("/content/drive/MyDrive"),
-        root,
+        *drive_roots(),
     ]
     lines = ["Drive visibility:"]
     for probe in probes:
@@ -85,15 +122,38 @@ def drive_diagnostics() -> str:
     return "\n".join(lines)
 
 
+def _append_unique(paths: list[Path], seen: set[str], candidate: Path) -> None:
+    key = str(candidate)
+    if key not in seen:
+        seen.add(key)
+        paths.append(candidate)
+
+
 def candidate_drive_checkpoints(run_id: str, filename: str) -> list[Path]:
-    root = drive_root()
-    candidates = [
-        root / run_id / "run_dir" / "phase1" / filename,
-        root / run_id / "phase1" / filename,
-    ]
-    if root.exists():
-        candidates.extend(sorted(root.glob(f"{run_id}*/run_dir/phase1/{filename}")))
-        candidates.extend(sorted(path for path in root.rglob(filename) if run_id in str(path)))
+    candidates: list[Path] = []
+    seen: set[str] = set()
+    for root in drive_roots():
+        for candidate in [
+            root / run_id / "run_dir" / "phase1" / filename,
+            root / run_id / "phase1" / filename,
+            root / "outputs" / "stage5" / run_id / "run_dir" / "phase1" / filename,
+            root / "outputs" / "stage5" / run_id / "phase1" / filename,
+            root / "stage5" / run_id / "run_dir" / "phase1" / filename,
+            root / "stage5" / run_id / "phase1" / filename,
+        ]:
+            _append_unique(candidates, seen, candidate)
+        if not root.exists():
+            continue
+        for pattern in [
+            f"{run_id}*/run_dir/phase1/{filename}",
+            f"{run_id}*/phase1/{filename}",
+            f"outputs/stage5/{run_id}*/run_dir/phase1/{filename}",
+            f"outputs/stage5/{run_id}*/phase1/{filename}",
+            f"stage5/{run_id}*/run_dir/phase1/{filename}",
+            f"stage5/{run_id}*/phase1/{filename}",
+        ]:
+            for candidate in sorted(root.glob(pattern)):
+                _append_unique(candidates, seen, candidate)
     return candidates
 
 
