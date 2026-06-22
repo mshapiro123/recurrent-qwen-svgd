@@ -2,7 +2,120 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 import colab.run_stage5_capability_ladder_trace_collect as runner
+
+
+def test_resolve_source_summary_falls_back_from_stale_pointer_to_latest_trace_response(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "repo"
+    stale = root / "outputs" / "stage5" / "old_mcq" / "summary.json"
+    response_summary = root / "outputs" / "stage5" / "trace_responses" / "summary.json"
+    trace_jobs_summary = root / "outputs" / "stage5" / "trace_jobs" / "summary.json"
+    for path in (stale, response_summary, trace_jobs_summary):
+        path.parent.mkdir(parents=True, exist_ok=True)
+    stale.write_text(
+        json.dumps({"kind": "stage5_mcq_debias_diagnostic", "status": "complete"}),
+        encoding="utf-8",
+    )
+    trace_jobs_summary.write_text(
+        json.dumps(
+            {
+                "run_id": "trace_jobs",
+                "kind": "stage5_capability_ladder_trace_jobs",
+                "status": "ready",
+                "artifacts": {
+                    "jobs_jsonl": "outputs/stage5/trace_jobs/trace_jobs.jsonl",
+                    "report_json": "outputs/stage5/trace_jobs/report.json",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    response_summary.write_text(
+        json.dumps(
+            {
+                "run_id": "trace_responses",
+                "kind": "stage5_capability_ladder_trace_responses",
+                "status": "responses_ready",
+                "source_summary": "outputs/stage5/trace_jobs/summary.json",
+                "artifacts": {
+                    "responses_jsonl": "outputs/stage5/trace_responses/trace_responses.jsonl",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    (root / "config").mkdir(parents=True)
+    (root / "config" / "stage5_current_source_summary.txt").write_text(
+        "outputs/stage5/old_mcq/summary.json\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(runner, "ROOT", root)
+    monkeypatch.setattr(runner, "SOURCE_SUMMARY", "")
+    monkeypatch.setattr(runner, "drive_search_roots", lambda: [])
+
+    assert runner.resolve_source_summary() == response_summary
+
+
+def test_resolve_source_summary_rejects_explicit_unrelated_summary(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "repo"
+    source = root / "outputs" / "stage5" / "old_mcq" / "summary.json"
+    source.parent.mkdir(parents=True)
+    source.write_text(json.dumps({"kind": "stage5_mcq_debias_diagnostic"}), encoding="utf-8")
+
+    monkeypatch.setattr(runner, "ROOT", root)
+    monkeypatch.setattr(runner, "SOURCE_SUMMARY", "outputs/stage5/old_mcq/summary.json")
+    monkeypatch.setattr(runner, "drive_search_roots", lambda: [])
+
+    with pytest.raises(ValueError, match="unsupported source summary kind"):
+        runner.resolve_source_summary()
+
+
+def test_trace_response_summary_restores_missing_trace_job_summary_from_drive(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "repo"
+    drive = tmp_path / "drive"
+    response_summary = root / "outputs" / "stage5" / "trace_responses" / "summary.json"
+    drive_jobs_summary = drive / "stage5_capability_ladder_trace_jobs" / "trace_jobs" / "summary.json"
+    response_summary.parent.mkdir(parents=True)
+    drive_jobs_summary.parent.mkdir(parents=True)
+    response_summary.write_text(
+        json.dumps(
+            {
+                "run_id": "trace_responses",
+                "kind": "stage5_capability_ladder_trace_responses",
+                "status": "responses_ready",
+                "source_summary": "outputs/stage5/trace_jobs/summary.json",
+                "artifacts": {
+                    "responses_jsonl": "outputs/stage5/trace_responses/trace_responses.jsonl",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    drive_jobs_summary.write_text(
+        json.dumps(
+            {
+                "run_id": "trace_jobs",
+                "kind": "stage5_capability_ladder_trace_jobs",
+                "status": "ready",
+                "artifacts": {
+                    "jobs_jsonl": "outputs/stage5/trace_jobs/trace_jobs.jsonl",
+                    "report_json": "outputs/stage5/trace_jobs/report.json",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(runner, "ROOT", root)
+    monkeypatch.setattr(runner, "drive_search_roots", lambda: [drive])
+
+    restored = runner.trace_jobs_summary_for_collection(response_summary)
+
+    assert restored == root / "outputs" / "stage5" / "trace_jobs" / "summary.json"
+    assert json.loads(restored.read_text(encoding="utf-8"))["run_id"] == "trace_jobs"
 
 
 def test_response_summary_resolves_trace_jobs_and_responses(tmp_path, monkeypatch) -> None:

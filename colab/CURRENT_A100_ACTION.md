@@ -23,6 +23,11 @@ target updated
 `stage5_capability_ladder_trace_responses` summary, the collector follows that
 summary back to the trace-job metadata and uses its recorded response JSONL
 directly.
+If the committed pointer is stale or still references an unrelated Stage 5
+summary, the collector searches local outputs and Drive for the newest usable
+trace-response/job summary before failing. An explicit
+`STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_SOURCE_SUMMARY` override remains strict
+and must point to a trace-response or trace-job summary.
 When that trace-collection summary reports `trace_curriculum_gate_ready`, the
 planner will now route the next guarded paid action directly to
 `colab/run_stage5_curriculum_sft.py` with the traced work dir, summary, mode

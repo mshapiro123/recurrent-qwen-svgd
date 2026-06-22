@@ -61,6 +61,9 @@ ALLOW_GPU_RUNTIME_FOR_CPU_WORK = os.environ.get(
     "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_ALLOW_GPU",
     "0",
 ).strip().lower() in {"1", "true", "yes", "y"}
+TRACE_RESPONSE_KIND = "stage5_capability_ladder_trace_responses"
+TRACE_JOBS_KIND = "stage5_capability_ladder_trace_jobs"
+SUPPORTED_SOURCE_KINDS = {TRACE_RESPONSE_KIND, TRACE_JOBS_KIND}
 
 
 def path_for_cli(path: Path) -> str:
@@ -144,41 +147,157 @@ def current_source_summary_file() -> Path:
     return ROOT / "config" / "stage5_current_source_summary.txt"
 
 
+def valid_source_summary_payload(payload: dict[str, Any]) -> bool:
+    kind = payload.get("kind")
+    status = str(payload.get("status") or "")
+    if kind == TRACE_RESPONSE_KIND:
+        return status == "responses_ready"
+    if kind == TRACE_JOBS_KIND:
+        return status in {"", "ready"}
+    return False
+
+
+def valid_source_summary_path(path: Path) -> bool:
+    if not path.exists():
+        return False
+    try:
+        return valid_source_summary_payload(read_json(path))
+    except (OSError, json.JSONDecodeError, ValueError):
+        return False
+
+
+def summary_candidates() -> list[Path]:
+    roots = [ROOT / "outputs" / "stage5", *drive_search_roots()]
+    seen: set[str] = set()
+    candidates: list[Path] = []
+    for root in roots:
+        if not root.exists():
+            continue
+        for path in root.rglob("summary.json"):
+            key = str(path.resolve())
+            if key in seen:
+                continue
+            seen.add(key)
+            candidates.append(path)
+    return candidates
+
+
+def latest_supported_source_summary() -> Path | None:
+    ranked: list[tuple[int, float, int, Path]] = []
+    for path in summary_candidates():
+        try:
+            payload = read_json(path)
+        except (OSError, json.JSONDecodeError, ValueError):
+            continue
+        if not valid_source_summary_payload(payload):
+            continue
+        kind = payload.get("kind")
+        kind_rank = 0 if kind == TRACE_RESPONSE_KIND else 1
+        try:
+            mtime = path.stat().st_mtime
+        except OSError:
+            mtime = 0.0
+        ranked.append((kind_rank, -mtime, len(str(path)), path))
+    if not ranked:
+        return None
+    ranked.sort()
+    return ranked[0][3]
+
+
+def source_summary_error(path: Path) -> str:
+    if not path.exists():
+        return f"missing source summary: {path}"
+    try:
+        payload = read_json(path)
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        return f"unreadable source summary {path}: {exc}"
+    kind = payload.get("kind")
+    status = payload.get("status")
+    if kind not in SUPPORTED_SOURCE_KINDS:
+        return f"unsupported source summary kind {kind!r} in {path}"
+    return f"source summary {path} has unsupported status {status!r} for kind {kind!r}"
+
+
 def resolve_source_summary() -> Path:
     raw = SOURCE_SUMMARY
+    explicit = bool(raw)
     if not raw:
         pointer = current_source_summary_file()
         if pointer.exists():
             raw = pointer.read_text(encoding="utf-8").strip()
     if not raw:
+        fallback = latest_supported_source_summary()
+        if fallback is not None:
+            print(f"using_latest_trace_source_summary={path_for_cli(fallback)}", flush=True)
+            return fallback
         raise FileNotFoundError(
-            "Missing source summary. Set STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_SOURCE_SUMMARY "
-            "or update config/stage5_current_source_summary.txt."
+            "Missing source summary. Set STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_SOURCE_SUMMARY, "
+            "update config/stage5_current_source_summary.txt, or run the trace-response target first."
         )
     path = resolve_path(raw)
-    if not path.exists():
-        raise FileNotFoundError(path)
+    if valid_source_summary_path(path):
+        return path
+    if explicit:
+        raise ValueError(source_summary_error(path))
+    fallback = latest_supported_source_summary()
+    if fallback is None:
+        raise ValueError(
+            source_summary_error(path)
+            + "; no local or Drive-backed trace-response/job summary was found."
+        )
+    print(
+        "current_source_summary_unusable="
+        f"{source_summary_error(path)}; using_latest_trace_source_summary={path_for_cli(fallback)}",
+        flush=True,
+    )
+    return fallback
+
+
+def restore_summary_if_missing(path: Path, *, run_id_hint: str, expected_kind: str) -> Path:
+    if path.exists():
+        return path
+    candidates: list[Path] = []
+    for candidate in summary_candidates():
+        try:
+            payload = read_json(candidate)
+        except (OSError, json.JSONDecodeError, ValueError):
+            continue
+        if payload.get("kind") != expected_kind:
+            continue
+        candidates.append(candidate)
+    candidates = sorted(
+        candidates,
+        key=lambda item: (
+            run_id_hint not in str(item) and run_id_hint != str(read_json(item).get("run_id") or ""),
+            len(str(item)),
+        ),
+    )
+    if not candidates:
+        raise FileNotFoundError(
+            f"Missing {path} and no {expected_kind} summary backup matching {run_id_hint!r} was found."
+        )
+    source = candidates[0]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, path)
+    print(f"restored_summary={{'path': '{path_for_cli(path)}', 'source': '{source}'}}", flush=True)
     return path
 
 
 def trace_jobs_summary_for_collection(source_summary: Path) -> Path:
     payload = read_json(source_summary)
-    if payload.get("kind") != "stage5_capability_ladder_trace_responses":
+    if payload.get("kind") != TRACE_RESPONSE_KIND:
         return source_summary
     raw = str(payload.get("source_summary") or "").strip()
     if not raw:
         raise ValueError(f"{source_summary} is a trace-response summary but has no source_summary.")
     trace_jobs_summary = resolve_path(raw)
-    if not trace_jobs_summary.exists():
-        raise FileNotFoundError(
-            f"Trace-response summary points at missing trace-job summary: {trace_jobs_summary}"
-        )
-    return trace_jobs_summary
+    run_id_hint = trace_jobs_summary.parent.name or str(payload.get("run_id") or source_summary.parent.name)
+    return restore_summary_if_missing(trace_jobs_summary, run_id_hint=run_id_hint, expected_kind=TRACE_JOBS_KIND)
 
 
 def response_path_from_response_summary(source_summary: Path) -> Path | None:
     payload = read_json(source_summary)
-    if payload.get("kind") != "stage5_capability_ladder_trace_responses":
+    if payload.get("kind") != TRACE_RESPONSE_KIND:
         return None
     artifacts = payload.get("artifacts") if isinstance(payload.get("artifacts"), dict) else {}
     raw = str(artifacts.get("responses_jsonl") or "").strip()
