@@ -12,13 +12,13 @@ The bootstrap defaults to `preflight`. To intentionally execute the guarded
 paid action after preflight is green, set
 `STAGE5_CURRENT_A100_TARGET=safe_continue_execute` before running it on an
 A100/H100 runtime.
-When resuming from a newer Stage 5 summary than the default one below, also set
-`STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY=outputs/stage5/<run_id>/summary.json`.
-The preflight target accepts the same value, or the explicit
-`STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY` override.
-No-argument planner/go-no-go runs also read
+The bootstrap now auto-resumes from
 [`config/stage5_current_source_summary.txt`](../config/stage5_current_source_summary.txt)
-so they follow this run card instead of the newest file mtime in `outputs/`.
+when that pointer exists and targets an available summary. To force a specific
+summary for both preflight and safe-continue, set the single bootstrap override
+`STAGE5_CURRENT_A100_SOURCE_SUMMARY=outputs/stage5/<run_id>/summary.json`.
+No-argument planner/go/no-go runs also read the same pointer, so they follow
+this run card instead of the newest file mtime in `outputs/`.
 
 Use the safe-continue cell from a normal Drive-backed or blank Colab notebook:
 
