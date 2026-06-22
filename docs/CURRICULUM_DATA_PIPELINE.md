@@ -379,7 +379,33 @@ templates can guarantee controllable step count, a single path, and a correct
 answer. Use strong models only to phrase constructed problems naturally, not to
 invent the latent answer.
 
-The maintained starter generator is:
+The maintained zero-provider path packages constructed rows into the same
+artifact shape as the provider-backed pipeline:
+
+```bash
+python training/run_programmatic_curriculum_pipeline.py \
+  --work_dir data/curriculum/programmatic_direct_deep_001 \
+  --num_direct 1000 \
+  --num_deep_narrow 1000 \
+  --direct_steps 1,2 \
+  --deep_steps 5,9 \
+  --seed 17
+
+python training/check_curriculum_sft_gate.py \
+  --work_dir data/curriculum/programmatic_direct_deep_001 \
+  --output_json data/curriculum/programmatic_direct_deep_001/curriculum_sft_gate.json \
+  --output_md data/curriculum/programmatic_direct_deep_001/curriculum_sft_gate.md \
+  --min_positive_rows 2000 \
+  --min_mode_rows direct=1000,deep_narrow=1000 \
+  --fail_on_no_go
+```
+
+After this gate passes, `colab/run_stage5_curriculum_sft.py` can consume the
+work directory. This is the preferred cheap path for the current direct/deep
+calibration phase because it burns no provider credits and no A100 time.
+
+The lower-level starter generator remains available when a caller wants only
+typed records:
 
 ```bash
 python training/generate_programmatic_curriculum.py \

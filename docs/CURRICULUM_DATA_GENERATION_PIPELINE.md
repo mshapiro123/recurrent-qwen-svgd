@@ -231,12 +231,32 @@ Proposed solution: {solution}
 
 ## Near-Term Implementation Order
 
-1. Keep using `training/generate_programmatic_curriculum.py` for cheap
-   direct/deep-narrow rows.
+1. Use `training/run_programmatic_curriculum_pipeline.py` for cheap
+   direct/deep-narrow rows. It wraps the constructed generator, exports
+   positive SFT rows, and writes a `summary.json` that the SFT gate can read:
+
+```bash
+python training/run_programmatic_curriculum_pipeline.py \
+  --work_dir data/curriculum/programmatic_direct_deep_001 \
+  --num_direct 1000 \
+  --num_deep_narrow 1000 \
+  --direct_steps 1,2 \
+  --deep_steps 5,9 \
+  --seed 17
+
+python training/check_curriculum_sft_gate.py \
+  --work_dir data/curriculum/programmatic_direct_deep_001 \
+  --output_json data/curriculum/programmatic_direct_deep_001/curriculum_sft_gate.json \
+  --output_md data/curriculum/programmatic_direct_deep_001/curriculum_sft_gate.md \
+  --min_positive_rows 2000 \
+  --min_mode_rows direct=1000,deep_narrow=1000 \
+  --fail_on_no_go
+```
+
 2. Use external-model generation only on CPU/API paths. Build provider-neutral
    prompt jobs with `training/build_curriculum_generation_jobs.py`; a separate
    runner can submit those jobs to GPT, Opus, GLM, or other non-student models.
-3. Validate and export positive SFT rows with:
+3. For custom typed-record files, validate and export positive SFT rows with:
 
 ```bash
 python training/prepare_curriculum_jsonl.py \
