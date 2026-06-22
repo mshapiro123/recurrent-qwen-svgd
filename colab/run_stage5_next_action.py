@@ -97,6 +97,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/run_stage5_routing_repair.py",
     "colab/run_stage4_opus_finetune.py",
     "training/check_curriculum_sft_gate.py",
+    "training/run_programmatic_curriculum_pipeline.py",
 }
 GUARDED_A100_SCRIPTS = {
     "colab/run_stage5_arc_agi_autopilot_followup.py",

@@ -406,3 +406,19 @@ def test_curriculum_sft_cell_defaults_to_direct_deep_objective() -> None:
     assert 'MIN_MODE_ROWS = "direct=64,deep_narrow=64"' in plain
     assert "width-only shards" in text
     assert "STAGE5_CURRICULUM_MIN_MODE_ROWS" in plain
+
+
+def test_programmatic_curriculum_cell_is_cpu_safe_and_matches_markdown_code() -> None:
+    text = (ROOT / "colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.md").read_text(encoding="utf-8")
+    plain = (ROOT / "colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py").read_text(encoding="utf-8")
+    markdown_cell = fenced_python_block("colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.md")
+
+    assert plain == markdown_cell
+    assert 'WORK_DIR = "data/curriculum/programmatic_direct_deep_001"' in plain
+    assert 'MIN_MODE_ROWS = f"direct={NUM_DIRECT},deep_narrow={NUM_DEEP_NARROW}"' in plain
+    assert "training/run_programmatic_curriculum_pipeline.py" in plain
+    assert "training/check_curriculum_sft_gate.py" in plain
+    assert "REFUSE_GPU_RUNTIME = True" in plain
+    assert "ALLOW_GPU_RUNTIME_FOR_CPU_WORK = False" in plain
+    assert "Refusing to run CPU-only programmatic curriculum generation" in plain
+    assert "zero-provider" in text

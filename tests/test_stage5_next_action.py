@@ -290,6 +290,28 @@ def test_parse_action_command_allows_curriculum_sft_gate_checker() -> None:
     ]
 
 
+def test_parse_action_command_allows_programmatic_curriculum_pipeline() -> None:
+    parsed = parse_action_command(
+        "python training/run_programmatic_curriculum_pipeline.py "
+        "--work_dir data/curriculum/programmatic_direct_deep_001 "
+        "--num_direct 64 "
+        "--num_deep_narrow 64"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {}
+    assert parsed.argv == [
+        sys.executable,
+        "training/run_programmatic_curriculum_pipeline.py",
+        "--work_dir",
+        "data/curriculum/programmatic_direct_deep_001",
+        "--num_direct",
+        "64",
+        "--num_deep_narrow",
+        "64",
+    ]
+
+
 def test_parse_action_command_allows_programmatic_depth_assessor() -> None:
     parsed = parse_action_command(
         "STAGE5_PROGRAMMATIC_DEPTH_ASSESS_RUN_ID=assess python colab/assess_stage5_programmatic_depth_repair.py --summary_json outputs/stage5/run/summary.json"

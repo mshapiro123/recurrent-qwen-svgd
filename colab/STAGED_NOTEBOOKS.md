@@ -158,8 +158,9 @@ The older split notebooks are kept only as references:
    `STAGE5_CURRICULUM_MIN_MODE_ROWS`, and Drive backup before launching Phase 1
    recurrent training. The current default is
    `direct=64,deep_narrow=64`; switch it deliberately for later width-only
-   shards. The copy/paste Colab helper is `colab/STAGE5_CURRICULUM_SFT_CELL.py`
-   with notes in
+   shards. To create a zero-provider direct/deep shard first, use
+   `colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py` on a CPU runtime. The GPU
+   copy/paste Colab helper is `colab/STAGE5_CURRICULUM_SFT_CELL.py` with notes in
    `colab/STAGE5_CURRICULUM_SFT_CELL.md`. Keep Phase 2/SVGD off until this
    deterministic recurrent checkpoint validates.
 6. Run base vs recurrent benchmarks, then run
