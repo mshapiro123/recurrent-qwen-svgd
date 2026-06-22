@@ -381,9 +381,39 @@ python training/run_curriculum_job_responses.py \
   --sleep_sec 0.5
 ```
 
+OpenAI-compatible endpoints can be used directly for GPT-, Opus-, GLM-, or
+aggregator-hosted models when they expose chat completions. The runner supports
+retries for transient rate limits, extra headers, and safe provider-specific
+request fields:
+
+```bash
+python training/run_curriculum_job_responses.py \
+  --jobs_jsonl data/curriculum/jobs_seed.jsonl \
+  --output_jsonl data/curriculum/responses_seed.jsonl \
+  --report_json outputs/curriculum/responses_seed_report.json \
+  --backend openai_compatible \
+  --api_key_env OPENROUTER_API_KEY \
+  --base_url https://openrouter.ai/api/v1 \
+  --model_map_json data/curriculum/model_map.json \
+  --extra_header "HTTP-Referer=https://colab.research.google.com" \
+  --extra_header "X-Title=recurrent-qwen-curriculum" \
+  --extra_body_json '{"top_p": 0.95}' \
+  --json_mode \
+  --max_retries 5 \
+  --retry_sleep_sec 2 \
+  --retry_backoff 2 \
+  --resume \
+  --fail_fast
+```
+
+`--extra_body_json` may add provider controls such as sampling settings, but it
+cannot override `model`, `messages`, or `stream`; the resolved provider model is
+kept auditable through `model_map.json` and the response rows.
+
 The runner writes one response JSONL row per job with `job_id`, `response_text`,
-`status`, `backend`, timing, and any command stderr. `--resume` skips job ids
-already present in the output file, which matters for paid API batches.
+`status`, `backend`, timing, attempt count for OpenAI-compatible calls, and any
+provider stderr/error body. `--resume` skips completed job ids and retries
+failed rows, which matters for paid API batches.
 
 Collect seed responses from an external API runner into candidate problems:
 

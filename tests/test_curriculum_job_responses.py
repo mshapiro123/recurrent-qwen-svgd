@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import io
 import json
 import sys
+import urllib.error
 
 import pytest
 
@@ -220,6 +222,86 @@ def test_openai_compatible_backend_posts_chat_completion_request(tmp_path, monke
     assert seen["payload"]["temperature"] == 0.0
     assert seen["payload"]["response_format"] == {"type": "json_object"}
     assert seen["payload"]["messages"][0] == {"role": "system", "content": "Return concise answers."}
+
+
+def test_openai_compatible_backend_accepts_extra_headers_and_body(tmp_path, monkeypatch) -> None:
+    output = tmp_path / "responses.jsonl"
+    seen = {}
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exc):
+            return False
+
+        def read(self):
+            return json.dumps({"choices": [{"message": {"content": "ANSWER: 4"}}]}).encode("utf-8")
+
+    def fake_urlopen(request, timeout):
+        seen["headers"] = dict(request.header_items())
+        seen["payload"] = json.loads(request.data.decode("utf-8"))
+        return FakeResponse()
+
+    monkeypatch.setattr(runner.urllib.request, "urlopen", fake_urlopen)
+
+    run_jobs(
+        [job("job-extra")],
+        output_jsonl=output,
+        backend="openai_compatible",
+        api_key="test-key",
+        extra_headers={"HTTP-Referer": "https://example.test", "X-Title": "curriculum-smoke"},
+        extra_body={"top_p": 0.9, "seed": 123},
+    )
+
+    assert seen["headers"]["Http-referer"] == "https://example.test"
+    assert seen["headers"]["X-title"] == "curriculum-smoke"
+    assert seen["payload"]["top_p"] == 0.9
+    assert seen["payload"]["seed"] == 123
+
+
+def test_openai_compatible_backend_retries_transient_http_errors(tmp_path, monkeypatch) -> None:
+    output = tmp_path / "responses.jsonl"
+    calls = {"count": 0}
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exc):
+            return False
+
+        def read(self):
+            return json.dumps({"choices": [{"message": {"content": "ANSWER: 4"}}]}).encode("utf-8")
+
+    def fake_urlopen(request, timeout):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise urllib.error.HTTPError(
+                request.full_url,
+                429,
+                "rate limit",
+                hdrs={},
+                fp=io.BytesIO(b'{"error":"rate limited"}'),
+            )
+        return FakeResponse()
+
+    monkeypatch.setattr(runner.urllib.request, "urlopen", fake_urlopen)
+
+    report = run_jobs(
+        [job("job-retry")],
+        output_jsonl=output,
+        backend="openai_compatible",
+        api_key="test-key",
+        max_retries=1,
+        retry_sleep_sec=0,
+    )
+
+    rows = read_jsonl(output)
+    assert report["written"] == 1
+    assert calls["count"] == 2
+    assert rows[0]["status"] == "ok"
+    assert rows[0]["attempts"] == 2
 
 
 def test_openai_compatible_backend_requires_api_key(tmp_path) -> None:

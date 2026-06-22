@@ -19,6 +19,11 @@ BASE_URL = "https://api.openai.com/v1"
 MAX_TOKENS = 2048
 TEMPERATURE = 0.2
 JSON_MODE = True
+EXTRA_HEADERS = {}  # Example for OpenRouter: {"HTTP-Referer": "https://colab.research.google.com", "X-Title": "recurrent-qwen-curriculum"}
+EXTRA_BODY_JSON = {}  # Provider-specific controls, e.g. {"top_p": 0.95}; may not override model/messages/stream.
+MAX_RETRIES = 3
+RETRY_SLEEP_SEC = 2.0
+RETRY_BACKOFF = 2.0
 
 MOUNT_DRIVE = True
 BACKUP_TO_DRIVE = True
@@ -268,7 +273,17 @@ def run_provider_pair(jobs, responses, model_map_path):
             str(MAX_TOKENS),
             "--temperature",
             str(TEMPERATURE),
+            "--max_retries",
+            str(MAX_RETRIES),
+            "--retry_sleep_sec",
+            str(RETRY_SLEEP_SEC),
+            "--retry_backoff",
+            str(RETRY_BACKOFF),
         ]
+        for key, value in EXTRA_HEADERS.items():
+            cmd += ["--extra_header", f"{key}={value}"]
+        if EXTRA_BODY_JSON:
+            cmd += ["--extra_body_json", json.dumps(EXTRA_BODY_JSON)]
         if JSON_MODE:
             cmd.append("--json_mode")
     run(cmd, cwd=ROOT)

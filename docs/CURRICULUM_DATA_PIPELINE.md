@@ -139,9 +139,37 @@ python training/run_curriculum_job_responses.py \
   --base_url https://api.openai.com/v1 \
   --model_map_json config/curriculum_model_map.example.json \
   --json_mode \
+  --max_retries 3 \
+  --retry_sleep_sec 2 \
   --resume \
   --fail_fast
 ```
+
+For OpenAI-compatible aggregators or hosted endpoints, add provider-specific
+headers and safe request-body fields without changing the artifact pipeline:
+
+```bash
+python training/run_curriculum_job_responses.py \
+  --jobs_jsonl data/curriculum/run_001/jobs_methods.jsonl \
+  --output_jsonl data/curriculum/run_001/responses_methods.jsonl \
+  --backend openai_compatible \
+  --api_key_env OPENROUTER_API_KEY \
+  --base_url https://openrouter.ai/api/v1 \
+  --model_map_json data/curriculum/run_001/model_map.json \
+  --extra_header "HTTP-Referer=https://colab.research.google.com" \
+  --extra_header "X-Title=recurrent-qwen-curriculum" \
+  --extra_body_json '{"top_p": 0.95}' \
+  --json_mode \
+  --max_retries 5 \
+  --retry_sleep_sec 2 \
+  --retry_backoff 2 \
+  --resume \
+  --fail_fast
+```
+
+`--extra_body_json` may add provider controls such as sampling settings, but it
+cannot override `model`, `messages`, or `stream`; the resolved provider model
+must remain auditable from `model_map.json`.
 
 After each response file lands, rerun
 `training/run_curriculum_pipeline_from_artifacts.py`. It will consume the

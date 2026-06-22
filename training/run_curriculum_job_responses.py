@@ -23,6 +23,7 @@ from typing import Any
 
 
 STUDENT_LINEAGE_PATTERNS = ("qwen", "qwq", "qvq", "jackrong")
+TRANSIENT_HTTP_STATUS_CODES = {408, 409, 429, 500, 502, 503, 504}
 
 
 def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
@@ -158,6 +159,40 @@ def load_model_map(path: str | Path | None) -> dict[str, str]:
     return {str(key): str(value) for key, value in payload.items()}
 
 
+def parse_key_value_items(values: list[str] | None) -> dict[str, str]:
+    items: dict[str, str] = {}
+    for raw in values or []:
+        if "=" not in raw:
+            raise ValueError(f"Expected KEY=VALUE for --extra_header, got {raw!r}.")
+        key, value = raw.split("=", 1)
+        key = key.strip()
+        if not key:
+            raise ValueError(f"Expected non-empty header key for --extra_header, got {raw!r}.")
+        items[key] = value.strip()
+    return items
+
+
+def load_json_object_arg(value: str | None, *, flag_name: str) -> dict[str, Any]:
+    if not value:
+        return {}
+    raw = Path(value[1:]).read_text(encoding="utf-8") if value.startswith("@") else value
+    payload = json.loads(raw)
+    if not isinstance(payload, dict):
+        raise ValueError(f"{flag_name} must be a JSON object.")
+    return payload
+
+
+def validated_extra_body(payload: dict[str, Any]) -> dict[str, Any]:
+    blocked = {"model", "messages", "stream"}
+    overlap = sorted(blocked.intersection(payload))
+    if overlap:
+        raise ValueError(
+            "--extra_body_json may not override model, messages, or stream fields: "
+            + ", ".join(overlap)
+        )
+    return payload
+
+
 def concrete_model_for(job: dict[str, Any], *, model_override: str | None, model_map: dict[str, str]) -> str:
     logical = str(job.get("model") or "").strip()
     if model_override:
@@ -226,6 +261,11 @@ def openai_compatible_response(
     temperature: float,
     system_prompt: str | None,
     json_mode: bool,
+    extra_headers: dict[str, str] | None,
+    extra_body: dict[str, Any] | None,
+    max_retries: int,
+    retry_sleep_sec: float,
+    retry_backoff: float,
 ) -> dict[str, Any]:
     prompt = str(job.get("prompt") or "")
     if not prompt:
@@ -255,69 +295,110 @@ def openai_compatible_response(
     }
     if json_mode and job.get("expects_json"):
         request_payload["response_format"] = {"type": "json_object"}
+    if extra_body:
+        request_payload.update(validated_extra_body(extra_body))
 
     endpoint = base_url.rstrip("/") + "/chat/completions"
-    request = urllib.request.Request(
-        endpoint,
-        data=json.dumps(request_payload).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    headers.update(extra_headers or {})
     started = time.monotonic()
-    try:
-        with urllib.request.urlopen(request, timeout=timeout_sec) as response:  # noqa: S310 - user-provided model API endpoint
-            raw = response.read().decode("utf-8")
-        elapsed = time.monotonic() - started
-        payload = json.loads(raw)
-        if not isinstance(payload, dict):
-            raise ValueError("response payload is not a JSON object")
-        text = extract_chat_completion_text(payload)
-        status = "ok" if text else "error"
-        return {
-            "job_id": job.get("job_id"),
-            "response_id": response_id(job, prefix="openai-compatible"),
-            "model": job.get("model"),
-            "resolved_model": model,
-            "stage": job.get("stage"),
-            "backend": "openai_compatible",
-            "status": status,
-            "response_text": text,
-            "stderr": "" if text else "empty assistant content",
-            "elapsed_sec": round(elapsed, 6),
-        }
-    except urllib.error.HTTPError as exc:
-        elapsed = time.monotonic() - started
-        body = exc.read().decode("utf-8", errors="replace")
-        return {
-            "job_id": job.get("job_id"),
-            "response_id": response_id(job, prefix="openai-compatible"),
-            "model": job.get("model"),
-            "resolved_model": model,
-            "stage": job.get("stage"),
-            "backend": "openai_compatible",
-            "status": "error",
-            "http_status": exc.code,
-            "response_text": "",
-            "stderr": truncate_text(body, limit=stderr_limit),
-            "elapsed_sec": round(elapsed, 6),
-        }
-    except (TimeoutError, urllib.error.URLError, json.JSONDecodeError, ValueError) as exc:
-        elapsed = time.monotonic() - started
-        return {
-            "job_id": job.get("job_id"),
-            "response_id": response_id(job, prefix="openai-compatible"),
-            "model": job.get("model"),
-            "resolved_model": model,
-            "stage": job.get("stage"),
-            "backend": "openai_compatible",
-            "status": "error",
-            "response_text": "",
-            "stderr": truncate_text(str(exc), limit=stderr_limit),
-            "elapsed_sec": round(elapsed, 6),
-        }
+    attempts = 0
+    max_retries = max(0, int(max_retries))
+
+    def maybe_sleep_before_retry() -> None:
+        if retry_sleep_sec <= 0:
+            return
+        delay = retry_sleep_sec * (retry_backoff ** max(0, attempts - 1))
+        time.sleep(delay)
+
+    while attempts <= max_retries:
+        attempts += 1
+        request = urllib.request.Request(
+            endpoint,
+            data=json.dumps(request_payload).encode("utf-8"),
+            headers=headers,
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=timeout_sec) as response:  # noqa: S310 - user-provided model API endpoint
+                raw = response.read().decode("utf-8")
+            elapsed = time.monotonic() - started
+            payload = json.loads(raw)
+            if not isinstance(payload, dict):
+                raise ValueError("response payload is not a JSON object")
+            text = extract_chat_completion_text(payload)
+            status = "ok" if text else "error"
+            return {
+                "job_id": job.get("job_id"),
+                "response_id": response_id(job, prefix="openai-compatible"),
+                "model": job.get("model"),
+                "resolved_model": model,
+                "stage": job.get("stage"),
+                "backend": "openai_compatible",
+                "status": status,
+                "response_text": text,
+                "stderr": "" if text else "empty assistant content",
+                "attempts": attempts,
+                "elapsed_sec": round(elapsed, 6),
+            }
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="replace")
+            if exc.code in TRANSIENT_HTTP_STATUS_CODES and attempts <= max_retries:
+                maybe_sleep_before_retry()
+                continue
+            elapsed = time.monotonic() - started
+            return {
+                "job_id": job.get("job_id"),
+                "response_id": response_id(job, prefix="openai-compatible"),
+                "model": job.get("model"),
+                "resolved_model": model,
+                "stage": job.get("stage"),
+                "backend": "openai_compatible",
+                "status": "error",
+                "http_status": exc.code,
+                "response_text": "",
+                "stderr": truncate_text(body, limit=stderr_limit),
+                "attempts": attempts,
+                "elapsed_sec": round(elapsed, 6),
+            }
+        except (TimeoutError, urllib.error.URLError) as exc:
+            if attempts <= max_retries:
+                maybe_sleep_before_retry()
+                continue
+            elapsed = time.monotonic() - started
+            return {
+                "job_id": job.get("job_id"),
+                "response_id": response_id(job, prefix="openai-compatible"),
+                "model": job.get("model"),
+                "resolved_model": model,
+                "stage": job.get("stage"),
+                "backend": "openai_compatible",
+                "status": "error",
+                "response_text": "",
+                "stderr": truncate_text(str(exc), limit=stderr_limit),
+                "attempts": attempts,
+                "elapsed_sec": round(elapsed, 6),
+            }
+        except (json.JSONDecodeError, ValueError) as exc:
+            elapsed = time.monotonic() - started
+            return {
+                "job_id": job.get("job_id"),
+                "response_id": response_id(job, prefix="openai-compatible"),
+                "model": job.get("model"),
+                "resolved_model": model,
+                "stage": job.get("stage"),
+                "backend": "openai_compatible",
+                "status": "error",
+                "response_text": "",
+                "stderr": truncate_text(str(exc), limit=stderr_limit),
+                "attempts": attempts,
+                "elapsed_sec": round(elapsed, 6),
+            }
+
+    raise RuntimeError("unreachable retry loop state")
 
 
 def run_jobs(
@@ -336,6 +417,11 @@ def run_jobs(
     temperature: float = 0.2,
     system_prompt: str | None = None,
     json_mode: bool = False,
+    extra_headers: dict[str, str] | None = None,
+    extra_body: dict[str, Any] | None = None,
+    max_retries: int = 0,
+    retry_sleep_sec: float = 2.0,
+    retry_backoff: float = 2.0,
     limit: int | None = None,
     resume: bool = False,
     fail_fast: bool = False,
@@ -395,6 +481,11 @@ def run_jobs(
                 temperature=temperature,
                 system_prompt=system_prompt,
                 json_mode=json_mode,
+                extra_headers=extra_headers,
+                extra_body=extra_body,
+                max_retries=max_retries,
+                retry_sleep_sec=retry_sleep_sec,
+                retry_backoff=retry_backoff,
             )
         else:
             raise ValueError(f"Unsupported backend {backend!r}")
@@ -452,6 +543,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--system_prompt")
     parser.add_argument("--json_mode", action="store_true", help="Request JSON-object responses only for jobs with expects_json=true.")
+    parser.add_argument(
+        "--extra_header",
+        action="append",
+        default=[],
+        help="Additional header for backend=openai_compatible as KEY=VALUE. May be repeated.",
+    )
+    parser.add_argument(
+        "--extra_body_json",
+        help="Additional JSON object merged into backend=openai_compatible request payload. Use @path to read a file.",
+    )
+    parser.add_argument("--max_retries", type=int, default=0, help="Retry transient HTTP/API failures this many times.")
+    parser.add_argument("--retry_sleep_sec", type=float, default=2.0)
+    parser.add_argument("--retry_backoff", type=float, default=2.0)
     parser.add_argument("--limit", type=int)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--fail_fast", action="store_true")
@@ -463,6 +567,8 @@ def main(argv: list[str] | None = None) -> int:
 
     jobs = read_jsonl(args.jobs_jsonl)
     model_map = load_model_map(args.model_map_json)
+    extra_headers = parse_key_value_items(args.extra_header)
+    extra_body = load_json_object_arg(args.extra_body_json, flag_name="--extra_body_json")
     report = run_jobs(
         jobs,
         output_jsonl=args.output_jsonl,
@@ -478,6 +584,11 @@ def main(argv: list[str] | None = None) -> int:
         temperature=args.temperature,
         system_prompt=args.system_prompt,
         json_mode=args.json_mode,
+        extra_headers=extra_headers,
+        extra_body=extra_body,
+        max_retries=args.max_retries,
+        retry_sleep_sec=args.retry_sleep_sec,
+        retry_backoff=args.retry_backoff,
         limit=args.limit,
         resume=args.resume,
         fail_fast=args.fail_fast,
