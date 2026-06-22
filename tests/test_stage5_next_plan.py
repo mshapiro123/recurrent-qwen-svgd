@@ -1938,6 +1938,15 @@ def test_curriculum_sft_summary_runs_routing_diagnostic_before_broader_benchmark
         "phase1_checkpoint": "outputs/stage5/curriculum_sft_run/phase1/phase1_step_150.pt",
         "dataset": {"train_rows": 40, "val_rows": 5},
         "phase1_val": {"loss": 2.5, "mean_expected_loops": 3.0},
+        "validation_checks": {
+            "status": "validation_sane",
+            "depth_gradient": {
+                "available": True,
+                "direct_mean_expected_loops": 1.2,
+                "deep_narrow_mean_expected_loops": 2.8,
+                "observed": True,
+            },
+        },
     }
 
     actions = plan_next_actions(payload, source_summary=source)
@@ -1954,6 +1963,7 @@ def test_curriculum_sft_summary_runs_routing_diagnostic_before_broader_benchmark
     assert "STAGE5_ROUTING_ARC_CHALLENGE_LIMIT=64" in actions[0]["command"]
     assert "python colab/run_stage5_routing_diagnostic.py" in actions[0]["command"]
     assert "run_stage5_benchmark_suite.py" not in actions[0]["command"]
+    assert "depth-gradient check" in actions[0]["reason"]
 
 
 def test_curriculum_sft_nonfinite_validation_blocks_next_gpu_diagnostic(tmp_path) -> None:
@@ -1972,6 +1982,28 @@ def test_curriculum_sft_nonfinite_validation_blocks_next_gpu_diagnostic(tmp_path
     assert actions[0]["name"] == "Inspect curriculum SFT validation before routing diagnostic"
     assert "non-finite metrics" in actions[0]["reason"]
     assert actions[0]["command"].startswith("cat ")
+    assert "run_stage5_routing_diagnostic.py" not in actions[0]["command"]
+
+
+def test_curriculum_sft_explicit_validation_needs_review_blocks_next_gpu_diagnostic(tmp_path) -> None:
+    source = tmp_path / "curriculum_sft" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "run_id": "curriculum_sft_run",
+        "kind": "stage5_curriculum_sft",
+        "phase1_checkpoint": "outputs/stage5/curriculum_sft_run/phase1/phase1_step_150.pt",
+        "dataset": {"train_rows": 40, "val_rows": 5},
+        "phase1_val": {"loss": 2.5, "mean_expected_loops": 3.0},
+        "validation_checks": {
+            "status": "validation_needs_review",
+            "issues": ["missing_mean_expected_loops"],
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect curriculum SFT validation before routing diagnostic"
+    assert "validation_needs_review" in actions[0]["reason"]
     assert "run_stage5_routing_diagnostic.py" not in actions[0]["command"]
 
 

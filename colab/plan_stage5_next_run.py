@@ -1351,6 +1351,15 @@ def curriculum_sft_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
 def curriculum_sft_validation_block_reason(payload: dict[str, Any], *, checkpoint: str) -> str | None:
     if not checkpoint:
         return "Curriculum SFT summary is missing phase1_checkpoint; inspect the run before routing diagnostics."
+    validation_checks = payload.get("validation_checks")
+    if isinstance(validation_checks, dict):
+        status = str(validation_checks.get("status") or "")
+        if status and status != "validation_sane":
+            issues = validation_checks.get("issues") or []
+            return (
+                f"Curriculum SFT summary reports validation status `{status}` with issues `{issues}`; "
+                "inspect validation before another GPU diagnostic."
+            )
     phase1_val = payload.get("phase1_val")
     if not isinstance(phase1_val, dict) or not phase1_val:
         return "Curriculum SFT summary is missing phase1_val metrics; inspect validation before routing diagnostics."
@@ -1375,6 +1384,8 @@ def curriculum_sft_actions(payload: dict[str, Any], *, source_summary: Path) -> 
     checkpoint = str(payload.get("phase1_checkpoint") or payload.get("checkpoint") or "")
     phase1_val = payload.get("phase1_val") or {}
     dataset = payload.get("dataset") or {}
+    validation_checks = payload.get("validation_checks") if isinstance(payload.get("validation_checks"), dict) else {}
+    depth_gradient = validation_checks.get("depth_gradient") if isinstance(validation_checks.get("depth_gradient"), dict) else {}
     block_reason = curriculum_sft_validation_block_reason(payload, checkpoint=checkpoint)
     if block_reason:
         return [
@@ -1397,7 +1408,8 @@ def curriculum_sft_actions(payload: dict[str, Any], *, source_summary: Path) -> 
     reason = (
         "Generated-curriculum Phase 1 SFT finished; first run a bounded routing/depth diagnostic before any broader ARC/GPQA or Phase 2/SVGD spend. "
         f"Checkpoint `{checkpoint or 'missing'}`; curriculum rows train/val="
-        f"{dataset.get('train_rows')}/{dataset.get('val_rows')}; val metrics `{phase1_val}`."
+        f"{dataset.get('train_rows')}/{dataset.get('val_rows')}; val metrics `{phase1_val}`; "
+        f"depth-gradient check `{depth_gradient}`."
     )
     return [
         make_action(
