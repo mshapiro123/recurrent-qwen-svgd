@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
+import sys
 
 
 def test_repair_profile_selects_direct_heavy_arc_easy_mix() -> None:
@@ -180,3 +182,47 @@ def test_resolve_source_summary_finds_latest_routing_summary(monkeypatch, tmp_pa
     os.utime(new, (2, 2))
 
     assert module.resolve_source_summary() == new
+
+
+def test_main_writes_failure_summary_when_child_repair_fails(monkeypatch, tmp_path) -> None:
+    import colab.run_stage5_routing_repair as module
+
+    root = tmp_path
+    run_dir = root / "outputs" / "stage5" / "repair"
+    source = root / "outputs" / "stage5" / "routing" / "summary.json"
+    benchmark = source.parent / "benchmark_run" / "summary.json"
+    benchmark.parent.mkdir(parents=True)
+    benchmark.write_text("{}", encoding="utf-8")
+    source.write_text(
+        json.dumps(
+            {
+                "status": "needs_direct_halting_repair",
+                "benchmark_summary": benchmark.relative_to(root).as_posix(),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_run(cmd, *, env=None, check=True):
+        assert cmd == [sys.executable, "colab/run_stage5_balanced_arc_mix_gate.py"]
+        assert env is not None
+        child_dir = root / "outputs" / "stage5" / env["STAGE5_ARC_MIX_RUN_ID"]
+        child_dir.mkdir(parents=True)
+        (child_dir / "child.log").write_text("partial child log\n", encoding="utf-8")
+        return subprocess.CompletedProcess(cmd, 9, "child failed after GPU work\n", None)
+
+    monkeypatch.setattr(module, "ROOT", root)
+    monkeypatch.setattr(module, "RUN_ID", "repair")
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+    monkeypatch.setattr(module, "SOURCE_SUMMARY", source)
+    monkeypatch.setattr(module, "PUSH_RESULTS", False)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    assert module.main() == 9
+
+    payload = json.loads((run_dir / "summary.json").read_text(encoding="utf-8"))
+    assert payload["status"] == "repair_child_failed"
+    assert payload["passed"] is False
+    assert payload["arc_mix_returncode"] == 9
+    assert "child failed after GPU work" in payload["arc_mix_stdout_tail"]
+    assert (run_dir / "repair_run" / "child.log").exists()

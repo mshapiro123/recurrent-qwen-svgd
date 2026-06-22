@@ -46,6 +46,7 @@ PUSH_RESULTS = os.environ.get("STAGE5_ROUTING_REPAIR_PUSH", "1").strip().lower()
 
 SAFE_OUTPUT_SUFFIXES = {".csv", ".html", ".json", ".jsonl", ".log", ".md", ".txt", ".yaml", ".yml"}
 MAX_COMMIT_ARTIFACT_BYTES = int(os.environ.get("STAGE5_ROUTING_REPAIR_COMMIT_MAX_ARTIFACT_BYTES", "25000000"))
+CHILD_STDOUT_TAIL_CHARS = int(os.environ.get("STAGE5_ROUTING_REPAIR_CHILD_STDOUT_TAIL_CHARS", "12000"))
 
 
 def read_json(path: str | Path) -> dict[str, Any]:
@@ -63,6 +64,12 @@ def write_json(path: str | Path, payload: dict[str, Any]) -> None:
     out = Path(path)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def tail_text(value: str, *, limit: int = CHILD_STDOUT_TAIL_CHARS) -> str:
+    if len(value) <= limit:
+        return value
+    return f"...[truncated {len(value) - limit} chars]\n{value[-limit:]}"
 
 
 def resolve_source_summary() -> Path:
@@ -374,10 +381,56 @@ def main() -> int:
         return 0
 
     child_env = build_child_env(source_summary=benchmark_summary, profile=profile)
-    run([sys.executable, "colab/run_stage5_balanced_arc_mix_gate.py"], env=child_env)
+    child_proc = run([sys.executable, "colab/run_stage5_balanced_arc_mix_gate.py"], env=child_env, check=False)
     child_summary = child_summary_path(child_env)
+    if child_proc.returncode != 0:
+        copied_child_dir = copy_child_run(child_env)
+        payload = {
+            "run_id": RUN_ID,
+            "kind": "stage5_routing_repair",
+            "status": "repair_child_failed",
+            "passed": False,
+            "repair_mode": repair_mode,
+            "source_summary": path_for_cli(source_summary),
+            "benchmark_summary": path_for_cli(benchmark_summary),
+            "profile": profile,
+            "profile_objective": profile_objective,
+            "arc_mix_summary": path_for_cli(child_summary) if child_summary.exists() else None,
+            "arc_mix_returncode": child_proc.returncode,
+            "arc_mix_stdout_tail": tail_text(child_proc.stdout or ""),
+            "repair_run_dir": path_for_cli(copied_child_dir),
+            "next_step": (
+                "The delegated ARC-mix repair command failed before producing a usable routing-repair result. "
+                "Inspect arc_mix_stdout_tail, the copied repair_run directory, and any child logs before retrying."
+            ),
+        }
+        if child_summary.exists():
+            payload["arc_mix"] = read_json(child_summary)
+        write_report(payload)
+        commit_results()
+        return child_proc.returncode or 1
     if not child_summary.exists():
-        raise FileNotFoundError(child_summary)
+        copied_child_dir = copy_child_run(child_env)
+        payload = {
+            "run_id": RUN_ID,
+            "kind": "stage5_routing_repair",
+            "status": "repair_child_missing_summary",
+            "passed": False,
+            "repair_mode": repair_mode,
+            "source_summary": path_for_cli(source_summary),
+            "benchmark_summary": path_for_cli(benchmark_summary),
+            "profile": profile,
+            "profile_objective": profile_objective,
+            "arc_mix_summary": path_for_cli(child_summary),
+            "repair_run_dir": path_for_cli(copied_child_dir),
+            "next_step": (
+                "The delegated ARC-mix command exited successfully but did not write its summary.json. "
+                "Treat this as a failed repair and inspect the child run directory before retrying."
+            ),
+        }
+        write_report(payload)
+        commit_results()
+        return 1
     child_payload = read_json(child_summary)
     copy_child_run(child_env)
     best_checkpoint = child_best_checkpoint(child_payload)
