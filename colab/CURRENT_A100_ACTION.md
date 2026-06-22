@@ -51,6 +51,12 @@ After provider responses are written, use
 runtime to verify final answers, collect traced scored rows, build the traced
 capability-ladder curriculum, run the SFT gate, push safe summaries, and
 disconnect.
+When that trace-collection summary reports `trace_curriculum_gate_ready`, the
+planner will now route the next guarded paid action directly to
+`colab/run_stage5_curriculum_sft.py` with the traced work dir, summary, mode
+counts, and Drive backup root wired in. At that point use
+`STAGE5_CURRENT_A100_TARGET=safe_continue_execute` only on an A100/H100 runtime
+you intentionally want to spend.
 The bootstrap now auto-resumes from
 [`config/stage5_current_source_summary.txt`](../config/stage5_current_source_summary.txt)
 when that pointer exists and targets an available summary. To force a specific

@@ -718,6 +718,36 @@ def test_curriculum_sft_requires_gate_specific_mode_rows() -> None:
     assert allowed["status"] == "go_curriculum_sft"
 
 
+def test_curriculum_sft_allows_gate_ready_trace_collection() -> None:
+    source_payload = {
+        "kind": "stage5_capability_ladder_trace_collection",
+        "status": "trace_curriculum_gate_ready",
+        "curriculum": {
+            "counts": {"positive_sft_rows": 6, "mode_counts": {"direct": 2, "deep_narrow": 4}},
+        },
+        "gate": {"go": True},
+    }
+    action = {
+        "name": "Run traced capability-ladder recurrent SFT",
+        "command": (
+            "STAGE5_CURRICULUM_MIN_MODE_ROWS=deep_narrow=4,direct=2 "
+            "python colab/run_stage5_curriculum_sft.py"
+        ),
+    }
+    wrong = {
+        "name": "Run traced capability-ladder recurrent SFT",
+        "command": "STAGE5_CURRICULUM_MIN_MODE_ROWS=direct=2 python colab/run_stage5_curriculum_sft.py",
+    }
+
+    allowed = classify_action(action, source_payload=source_payload)
+    blocked = classify_action(wrong, source_payload=source_payload)
+
+    assert allowed["go"] is True
+    assert allowed["status"] == "go_curriculum_sft"
+    assert blocked["go"] is False
+    assert blocked["status"] == "curriculum_sft_mode_gate_mismatch"
+
+
 def test_curriculum_mode_row_helpers_normalize_command_env() -> None:
     command = (
         "STAGE5_CURRICULUM_MIN_MODE_ROWS=deep_narrow=8,direct=16 "
@@ -897,6 +927,32 @@ def test_curriculum_sft_input_preflight_allows_drive_backup(monkeypatch, tmp_pat
     assert status["available"] is True
     assert status["local_available"] is False
     assert status["drive_candidate_exists"] is True
+
+
+def test_curriculum_sft_input_preflight_reads_trace_collection_nested_paths(tmp_path) -> None:
+    work_dir = tmp_path / "data" / "curriculum" / "traced"
+    work_dir.mkdir(parents=True)
+    (work_dir / "summary.json").write_text("{}", encoding="utf-8")
+    (work_dir / "positive_sft.jsonl").write_text("{}\n", encoding="utf-8")
+
+    status = curriculum_sft_input_availability(
+        {
+            "kind": "stage5_capability_ladder_trace_collection",
+            "status": "trace_curriculum_gate_ready",
+            "curriculum": {
+                "work_dir": str(work_dir),
+                "summary_json": str(work_dir / "summary.json"),
+            },
+            "gate": {
+                "go": True,
+                "artifacts": {"positive_sft": str(work_dir / "positive_sft.jsonl")},
+            },
+        }
+    )
+
+    assert status["available"] is True
+    assert status["local_available"] is True
+    assert status["work_dir"] == str(work_dir).replace("\\", "/")
 
 
 def test_curriculum_sft_input_preflight_allows_published_gate_drive_backup(monkeypatch, tmp_path) -> None:

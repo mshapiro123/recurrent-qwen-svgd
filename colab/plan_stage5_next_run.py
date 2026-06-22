@@ -1186,27 +1186,29 @@ def capability_ladder_trace_collection_actions(payload: dict[str, Any], *, sourc
         for mode, count in sorted(mode_counts.items())
         if int(count or 0) > 0
     )
-    if status == "trace_curriculum_gate_ready" and summary_json:
-        gate_json = source_summary.parent / "traced_curriculum_sft_gate.json"
-        gate_md = source_summary.parent / "traced_curriculum_sft_gate.md"
-        min_mode_clause = f"--min_mode_rows {shlex.quote(min_mode_rows)} " if min_mode_rows else ""
+    gate = payload.get("gate") if isinstance(payload.get("gate"), dict) else {}
+    if status == "trace_curriculum_gate_ready" and gate.get("go") is True and summary_json and work_dir:
+        assignments = {
+            "STAGE5_CURRICULUM_SFT_RUN_ID": f"{RUN_ID}_traced_curriculum_sft",
+            "STAGE5_CURRICULUM_WORK_DIR": work_dir,
+            "STAGE5_CURRICULUM_SUMMARY_JSON": summary_json,
+            "STAGE5_CURRICULUM_MIN_POSITIVE_ROWS": str(max(positive_rows, 2)),
+        }
+        if min_mode_rows:
+            assignments["STAGE5_CURRICULUM_MIN_MODE_ROWS"] = min_mode_rows
+        drive_backup = payload.get("drive_backup") if isinstance(payload.get("drive_backup"), dict) else {}
+        drive_root = str(drive_backup.get("dest_root") or "").strip()
+        if drive_root:
+            assignments["STAGE5_CURRICULUM_INPUT_BACKUP_DIR"] = drive_root
         return [
             make_action(
-                "Run traced capability-ladder SFT safety gate",
+                "Run traced capability-ladder recurrent SFT",
                 (
-                    "Provider traces were collected and verified. Re-run the no-GPU SFT gate on the traced "
-                    "capability-ladder curriculum before any recurrent fine-tune."
+                    "Provider traces were collected, answer-verified, and passed the SFT gate. Run one bounded "
+                    "deterministic recurrent Phase 1 SFT on this traced capability-ladder shard before any "
+                    "particle/SVGD training."
                 ),
-                (
-                    "python training/check_curriculum_sft_gate.py "
-                    f"--work_dir {shlex.quote(work_dir)} "
-                    f"--summary_json {shlex.quote(summary_json)} "
-                    f"--output_json {shlex.quote(command_path(gate_json))} "
-                    f"--output_md {shlex.quote(command_path(gate_md))} "
-                    f"--min_positive_rows {max(positive_rows, 1)} "
-                    f"{min_mode_clause}"
-                    "--fail_on_no_go"
-                ),
+                command_env(assignments, "python colab/run_stage5_curriculum_sft.py"),
                 10,
             )
         ]

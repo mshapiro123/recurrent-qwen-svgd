@@ -292,6 +292,15 @@ def normalize_min_mode_rows(value: str) -> str:
 
 
 def source_curriculum_min_mode_rows(source_payload: dict[str, Any]) -> str:
+    if source_payload.get("kind") == "stage5_capability_ladder_trace_collection":
+        curriculum = source_payload.get("curriculum") if isinstance(source_payload.get("curriculum"), dict) else {}
+        counts = curriculum.get("counts") if isinstance(curriculum.get("counts"), dict) else {}
+        mode_counts = counts.get("mode_counts") if isinstance(counts.get("mode_counts"), dict) else {}
+        parsed = normalize_min_mode_rows(
+            ",".join(f"{mode}={int(count or 0)}" for mode, count in mode_counts.items())
+        )
+        if parsed:
+            return parsed
     mode_requirements = ((source_payload.get("checks") or {}).get("positive_sft") or {}).get("mode_requirements")
     if isinstance(mode_requirements, dict):
         items = []
@@ -604,13 +613,19 @@ def curriculum_work_dir_backup_candidates(work_dir: Path | None) -> list[Path]:
 
 
 def curriculum_sft_input_availability(source_payload: dict[str, Any]) -> dict[str, Any]:
+    curriculum = source_payload.get("curriculum") if isinstance(source_payload.get("curriculum"), dict) else {}
+    nested_gate = source_payload.get("gate") if isinstance(source_payload.get("gate"), dict) else {}
     work_dir = resolve_repo_path(
-        os.environ.get("STAGE5_CURRICULUM_WORK_DIR") or source_payload.get("work_dir")
+        os.environ.get("STAGE5_CURRICULUM_WORK_DIR") or source_payload.get("work_dir") or curriculum.get("work_dir")
     )
     summary_json = resolve_repo_path(
-        os.environ.get("STAGE5_CURRICULUM_SUMMARY_JSON") or source_payload.get("summary_json")
+        os.environ.get("STAGE5_CURRICULUM_SUMMARY_JSON")
+        or source_payload.get("summary_json")
+        or curriculum.get("summary_json")
     )
-    positive_sft = resolve_repo_path(((source_payload.get("artifacts") or {}).get("positive_sft")))
+    source_artifacts = source_payload.get("artifacts") if isinstance(source_payload.get("artifacts"), dict) else {}
+    gate_artifacts = nested_gate.get("artifacts") if isinstance(nested_gate.get("artifacts"), dict) else {}
+    positive_sft = resolve_repo_path(source_artifacts.get("positive_sft") or gate_artifacts.get("positive_sft"))
 
     # Older summaries may not include these fields. In that case let the runner
     # perform its own validation instead of blocking a valid legacy handoff.
@@ -928,7 +943,14 @@ def classify_action(
         }
 
     if script == "colab/run_stage5_curriculum_sft.py":
-        if source_payload.get("kind") == "curriculum_sft_gate" and source_payload.get("go") is True:
+        trace_collection_gate_ready = (
+            source_payload.get("kind") == "stage5_capability_ladder_trace_collection"
+            and source_payload.get("status") == "trace_curriculum_gate_ready"
+            and isinstance(source_payload.get("gate"), dict)
+            and (source_payload.get("gate") or {}).get("go") is True
+        )
+        standalone_gate_ready = source_payload.get("kind") == "curriculum_sft_gate" and source_payload.get("go") is True
+        if standalone_gate_ready or trace_collection_gate_ready:
             env = command_env_assignments(command)
             expected_min_mode_rows = source_curriculum_min_mode_rows(source_payload)
             actual_min_mode_rows = normalize_min_mode_rows(env.get("STAGE5_CURRICULUM_MIN_MODE_ROWS", ""))
@@ -956,7 +978,11 @@ def classify_action(
             "go": False,
             "status": "curriculum_sft_blocked",
             "spend_class": "none",
-            "reason": "Generated curriculum SFT requires a source summary with kind=curriculum_sft_gate and go=true.",
+            "reason": (
+                "Generated curriculum SFT requires a source summary with kind=curriculum_sft_gate and go=true, "
+                "or a stage5_capability_ladder_trace_collection summary with status=trace_curriculum_gate_ready "
+                "and gate.go=true."
+            ),
         }
 
     if source_has_calibration_warning(source_payload):
