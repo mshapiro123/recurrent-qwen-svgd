@@ -2,6 +2,17 @@
 
 ## Preferred Launch Path
 
+Shortest path from any trusted Colab notebook:
+
+[`colab/CURRENT_A100_BOOTSTRAP_CELL.md`](CURRENT_A100_BOOTSTRAP_CELL.md)
+or
+[`colab/CURRENT_A100_BOOTSTRAP_CELL.py`](CURRENT_A100_BOOTSTRAP_CELL.py).
+
+The bootstrap defaults to `preflight`. To intentionally execute the guarded
+paid action after preflight is green, set
+`STAGE5_CURRENT_A100_TARGET=safe_continue_execute` before running it on an
+A100/H100 runtime.
+
 Use the safe-continue cell from a normal Drive-backed or blank Colab notebook:
 
 [`colab/STAGE5_SAFE_CONTINUE_CELL.md`](STAGE5_SAFE_CONTINUE_CELL.md)

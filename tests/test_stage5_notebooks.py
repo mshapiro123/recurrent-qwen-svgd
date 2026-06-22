@@ -149,6 +149,9 @@ def test_arc_mix_recovery_notebook_is_single_purpose() -> None:
 def test_current_a100_action_points_to_safe_continue_routing_repair() -> None:
     text = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
 
+    assert "colab/CURRENT_A100_BOOTSTRAP_CELL.md" in text
+    assert "colab/CURRENT_A100_BOOTSTRAP_CELL.py" in text
+    assert "STAGE5_CURRENT_A100_TARGET=safe_continue_execute" in text
     assert "colab/STAGE5_SAFE_CONTINUE_CELL.md" in text
     assert "colab/STAGE5_SAFE_CONTINUE_CELL.py" in text
     assert "colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.py" in text
@@ -168,8 +171,10 @@ def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     text = (ROOT / "colab/STAGE5_SAFE_CONTINUE_CELL.md").read_text(encoding="utf-8")
     plain = (ROOT / "colab/STAGE5_SAFE_CONTINUE_CELL.py").read_text(encoding="utf-8")
 
-    assert "RUN_A100_ACTION = False" in text
-    assert "RUN_A100_ACTION = False" in plain
+    assert 'RUN_A100_ACTION = env_bool("STAGE5_SAFE_CONTINUE_RUN_A100_ACTION", False)' in text
+    assert 'RUN_A100_ACTION = env_bool("STAGE5_SAFE_CONTINUE_RUN_A100_ACTION", False)' in plain
+    assert 'DISCONNECT_RUNTIME_WHEN_DONE = env_bool("STAGE5_SAFE_CONTINUE_DISCONNECT", True)' in text
+    assert 'DISCONNECT_RUNTIME_WHEN_DONE = env_bool("STAGE5_SAFE_CONTINUE_DISCONNECT", True)' in plain
     assert "colab/check_stage5_a100_go_no_go.py" in text
     assert "colab/check_stage5_a100_go_no_go.py" in plain
     assert "colab/run_stage5_next_action.py" in text
@@ -178,7 +183,7 @@ def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     assert 'env["STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE"] = "1" if execute_action else "0"' in plain
     assert "STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS" in text
     assert "Dry run complete" in text
-    assert "DISCONNECT_RUNTIME_WHEN_DONE = True" in text
+    assert "STAGE5_SAFE_CONTINUE_DISCONNECT" in text
     assert "runtime.unassign()" in text
     assert "GO_NO_GO_RUN_ID" in text
     assert "Skipping requirements install because no paid action will execute." in text
@@ -236,6 +241,34 @@ def test_safe_continue_notebook_defaults_to_dry_run_and_guarded_action() -> None
     assert "colab/run_stage5_full_assessment_once.py" not in text
     assert payload["cells"][0]["cell_type"] == "markdown"
     assert payload["cells"][1]["cell_type"] == "code"
+
+
+def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    plain = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+
+    assert 'TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")' in plain
+    assert "colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.py" in plain
+    assert "colab/STAGE5_SAFE_CONTINUE_CELL.py" in plain
+    assert '"safe_continue_execute"' in plain
+    assert '"STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "1"' in plain
+    assert '"STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "0"' in plain
+    assert "checkpoint_preflight" in plain
+    assert "mount_drive_for_paid_action" in plain
+    assert "api.github.com/repos" in plain
+    assert "GH_TOKEN" in plain
+    assert "GITHUB_TOKEN" in plain
+    assert "required_markers" not in plain
+    assert "colab/STAGE5_ARC_MIX_RECOVERY_CELL.py" not in plain
+    assert "preflight" in text
+    assert "safe_continue_execute" in text
+
+
+def test_current_a100_bootstrap_plain_cell_matches_markdown_code() -> None:
+    markdown_cell = fenced_python_block("colab/CURRENT_A100_BOOTSTRAP_CELL.md")
+    plain_cell = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+
+    assert plain_cell == markdown_cell
 
 
 def test_drive_checkpoint_preflight_cell_is_cpu_only_and_single_purpose() -> None:

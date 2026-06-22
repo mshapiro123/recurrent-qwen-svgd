@@ -27,12 +27,18 @@ from google.colab import userdata
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 
+def env_bool(name, default):
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
+
 # Deliberate opt-in. Leave False for a no-GPU dry run / status check.
-RUN_A100_ACTION = False
+RUN_A100_ACTION = env_bool("STAGE5_SAFE_CONTINUE_RUN_A100_ACTION", False)
 
 # Credit-saver default. Set False only if you intentionally want to keep the
 # runtime attached after the cell prints the next action.
-DISCONNECT_RUNTIME_WHEN_DONE = True
+DISCONNECT_RUNTIME_WHEN_DONE = env_bool("STAGE5_SAFE_CONTINUE_DISCONNECT", True)
 
 SOURCE_SUMMARY = (
     "outputs/stage5/stage5_routing_diagnostic_20260622_041706/summary.json"
