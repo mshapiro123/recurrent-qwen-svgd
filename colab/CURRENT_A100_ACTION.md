@@ -12,6 +12,10 @@ The bootstrap defaults to `preflight`. To intentionally execute the guarded
 paid action after preflight is green, set
 `STAGE5_CURRENT_A100_TARGET=safe_continue_execute` before running it on an
 A100/H100 runtime.
+When resuming from a newer Stage 5 summary than the default one below, also set
+`STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY=outputs/stage5/<run_id>/summary.json`.
+The preflight target accepts the same value, or the explicit
+`STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY` override.
 
 Use the safe-continue cell from a normal Drive-backed or blank Colab notebook:
 
