@@ -27,6 +27,12 @@ the pair confirms selection bias it immediately writes the no-GPU
 `stage5_mcq_scoring_policy` artifact via
 `colab/apply_stage5_mcq_scoring_policy.py`. Expected terminal markers are
 `pair_summary:` and, if confirmed, `policy_summary:`.
+After the policy summary exists, the next bounded measurement action is
+`STAGE5_CURRENT_A100_TARGET=debiased_benchmark_suite`. That target runs
+ARC-Challenge plus GPQA-lite by default, with explicit limits and MCQ score
+targets `label,content_question_only,cyclic_label_aggregated`. It assesses
+`cyclic_label_aggregated/permutation_mean`, pushes safe summaries, and
+disconnects.
 The bootstrap now auto-resumes from
 [`config/stage5_current_source_summary.txt`](../config/stage5_current_source_summary.txt)
 when that pointer exists and targets an available summary. To force a specific
@@ -116,6 +122,60 @@ code = base64.b64decode(payload["content"]).decode("utf-8")
 print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12])
 assert "arc_challenge_mcq_debias_confirm" in code, "Fetched bootstrap without ARC-Challenge target."
 assert "colab/apply_stage5_mcq_scoring_policy.py" in code, "Fetched stale bootstrap; rerun after GitHub refresh."
+exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
+```
+
+## Next Paste-Anywhere Debiased Benchmark Cell
+
+Use this after the ARC-Challenge debias cell has produced a `policy_summary:`
+line or after `config/stage5_current_source_summary.txt` points at an active
+`stage5_mcq_scoring_policy` artifact.
+
+```python
+import base64, json, os, time, urllib.request
+from google.colab import userdata
+
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "debiased_benchmark_suite"
+
+def colab_secret(*names):
+    for name in names:
+        value = os.environ.get(name)
+        if value:
+            return value
+        try:
+            value = userdata.get(name)
+        except Exception:
+            value = None
+        if value:
+            return value
+    return None
+
+token = colab_secret("GH_TOKEN", "GITHUB_TOKEN")
+assert token, "Add GH_TOKEN or GITHUB_TOKEN to Colab secrets."
+
+headers = {
+    "Authorization": f"Bearer {token}",
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "Cache-Control": "no-cache",
+}
+
+def gh_json(url):
+    req = urllib.request.Request(url, headers=headers)
+    return json.loads(urllib.request.urlopen(req).read().decode("utf-8"))
+
+ref_payload = gh_json(
+    f"https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/git/ref/heads/main?cache_bust={time.time_ns()}"
+)
+resolved_ref = ref_payload["object"]["sha"]
+payload = gh_json(
+    "https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/"
+    f"contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py?ref={resolved_ref}&cache_bust={time.time_ns()}"
+)
+code = base64.b64decode(payload["content"]).decode("utf-8")
+print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12])
+assert "debiased_benchmark_suite" in code, "Fetched stale bootstrap without debiased benchmark target."
+assert "STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py" in code, "Fetched stale bootstrap launcher."
 exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
 ```
 

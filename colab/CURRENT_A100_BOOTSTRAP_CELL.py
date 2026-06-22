@@ -11,6 +11,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "safe_continue_dry_run" - fetch safe-continue but do not spend GPU.
 #   "safe_continue_execute" - fetch safe-continue and opt in to the guarded paid action.
 #   "arc_challenge_mcq_debias_confirm" - bounded no-training cyclic MCQ confirmation on ARC-Challenge.
+#   "debiased_benchmark_suite" - bounded ARC-Challenge/GPQA-lite benchmark with debiased MCQ scoring.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 
@@ -90,6 +91,24 @@ TARGETS = {
             "colab/apply_stage5_mcq_scoring_policy.py",
             "tests/test_mcq_debias.py",
             "tests/test_stage5_next_plan.py",
+            "runtime.unassign",
+        ],
+        "env": {},
+    },
+    "debiased_benchmark_suite": {
+        "path": "colab/STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py",
+        "markers": [
+            "STAGE5_DEBIASED_BENCHMARK_SUITE_CELL_VERSION",
+            "STAGE5_BENCHMARK_SCORE_TARGETS",
+            "label,content_question_only,cyclic_label_aggregated",
+            "cyclic_label_aggregated",
+            "permutation_mean",
+            "STAGE5_DEBIASED_BENCHMARKS",
+            "arc_challenge,gpqa_lite",
+            "colab/run_stage5_benchmark_suite.py",
+            "colab/assess_stage5_benchmark_suite.py",
+            "tests/test_stage5_benchmark_suite.py",
+            "tests/test_stage5_benchmark_assessment.py",
             "runtime.unassign",
         ],
         "env": {},

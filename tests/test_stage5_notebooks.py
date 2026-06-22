@@ -387,6 +387,29 @@ def test_arc_challenge_mcq_debias_cell_is_bounded_and_pushes_summary() -> None:
     assert "STAGE5_CURRENT_A100_TARGET=arc_challenge_mcq_debias_confirm" in current_action
 
 
+def test_debiased_benchmark_suite_cell_is_bounded_and_policy_compliant() -> None:
+    plain = (ROOT / "colab/STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py").read_text(encoding="utf-8")
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
+
+    assert "STAGE5_DEBIASED_BENCHMARK_SUITE_CELL_VERSION" in plain
+    assert '"STAGE5_BENCHMARKS"] = os.environ.get("STAGE5_DEBIASED_BENCHMARKS", "arc_challenge,gpqa_lite")' in plain
+    assert '"STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT"] = os.environ.get("STAGE5_DEBIASED_ARC_CHALLENGE_LIMIT", "128")' in plain
+    assert '"STAGE5_BENCHMARK_GPQA_LIMIT"] = os.environ.get("STAGE5_DEBIASED_GPQA_LIMIT", "16")' in plain
+    assert '"STAGE5_BENCHMARK_SCORE_TARGETS"] = "label,content_question_only,cyclic_label_aggregated"' in plain
+    assert '"STAGE5_BENCHMARK_ASSESS_SCORE_TARGET"] = "cyclic_label_aggregated"' in plain
+    assert '"STAGE5_BENCHMARK_ASSESS_AGGREGATE"] = "permutation_mean"' in plain
+    assert "benchmark_source_summary" in plain
+    assert "colab/run_stage5_benchmark_suite.py" in plain
+    assert "colab/assess_stage5_benchmark_suite.py" in plain
+    assert "tests/test_stage5_benchmark_suite.py" in plain
+    assert "tests/test_stage5_benchmark_assessment.py" in plain
+    assert "runtime.unassign()" in plain
+    assert "debiased_benchmark_suite" in bootstrap
+    assert "STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py" in bootstrap
+    assert "STAGE5_CURRENT_A100_TARGET=debiased_benchmark_suite" in current_action
+
+
 def test_drive_checkpoint_preflight_cell_is_cpu_only_and_single_purpose() -> None:
     text = (ROOT / "colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.md").read_text(encoding="utf-8")
     code = fenced_python_block("colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.md")
