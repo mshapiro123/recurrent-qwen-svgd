@@ -5,6 +5,46 @@ import json
 import colab.run_stage5_capability_ladder_trace_collect as runner
 
 
+def test_response_summary_resolves_trace_jobs_and_responses(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "repo"
+    trace_jobs_summary = root / "outputs" / "stage5" / "trace_jobs" / "summary.json"
+    response_summary = root / "outputs" / "stage5" / "trace_responses" / "summary.json"
+    responses = root / "outputs" / "stage5" / "trace_responses" / "trace_responses.jsonl"
+    trace_jobs_summary.parent.mkdir(parents=True)
+    response_summary.parent.mkdir(parents=True)
+    responses.write_text("", encoding="utf-8")
+    trace_jobs_summary.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_capability_ladder_trace_jobs",
+                "artifacts": {
+                    "jobs_jsonl": "outputs/stage5/trace_jobs/trace_jobs.jsonl",
+                    "report_json": "outputs/stage5/trace_jobs/report.json",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    response_summary.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_capability_ladder_trace_responses",
+                "source_summary": "outputs/stage5/trace_jobs/summary.json",
+                "artifacts": {
+                    "responses_jsonl": "outputs/stage5/trace_responses/trace_responses.jsonl",
+                    "jobs_jsonl": "outputs/stage5/trace_jobs/trace_jobs.jsonl",
+                    "jobs_report": "outputs/stage5/trace_jobs/report.json",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(runner, "ROOT", root)
+
+    assert runner.trace_jobs_summary_for_collection(response_summary) == trace_jobs_summary
+    assert runner.response_path_from_response_summary(response_summary) == responses
+
+
 def test_write_summary_records_gate_and_artifacts(tmp_path, monkeypatch) -> None:
     root = tmp_path / "repo"
     run_dir = root / "outputs" / "stage5" / "collect"

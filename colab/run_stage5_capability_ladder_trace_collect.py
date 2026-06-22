@@ -1,10 +1,12 @@
 """Collect capability-ladder trace responses into a gated curriculum shard.
 
-This CPU-only runner starts from a ``stage5_capability_ladder_trace_jobs``
-summary and a response JSONL produced by ``training/run_curriculum_job_responses.py``.
-It verifies final answers, builds traced scored rows, exports a capability-ladder
-curriculum without ``--allow_answer_only``, runs the SFT gate, backs up to Drive,
-and optionally pushes safe summaries.
+This CPU-only runner starts from either a ``stage5_capability_ladder_trace_jobs``
+summary plus a response JSONL, or directly from a
+``stage5_capability_ladder_trace_responses`` summary produced by
+``training/run_curriculum_job_responses.py``. It verifies final answers, builds
+traced scored rows, exports a capability-ladder curriculum without
+``--allow_answer_only``, runs the SFT gate, backs up to Drive, and optionally
+pushes safe summaries.
 """
 
 from __future__ import annotations
@@ -159,6 +161,32 @@ def resolve_source_summary() -> Path:
     return path
 
 
+def trace_jobs_summary_for_collection(source_summary: Path) -> Path:
+    payload = read_json(source_summary)
+    if payload.get("kind") != "stage5_capability_ladder_trace_responses":
+        return source_summary
+    raw = str(payload.get("source_summary") or "").strip()
+    if not raw:
+        raise ValueError(f"{source_summary} is a trace-response summary but has no source_summary.")
+    trace_jobs_summary = resolve_path(raw)
+    if not trace_jobs_summary.exists():
+        raise FileNotFoundError(
+            f"Trace-response summary points at missing trace-job summary: {trace_jobs_summary}"
+        )
+    return trace_jobs_summary
+
+
+def response_path_from_response_summary(source_summary: Path) -> Path | None:
+    payload = read_json(source_summary)
+    if payload.get("kind") != "stage5_capability_ladder_trace_responses":
+        return None
+    artifacts = payload.get("artifacts") if isinstance(payload.get("artifacts"), dict) else {}
+    raw = str(artifacts.get("responses_jsonl") or "").strip()
+    if not raw:
+        raise ValueError(f"{source_summary} is a trace-response summary but has no artifacts.responses_jsonl.")
+    return resolve_path(raw)
+
+
 def artifact_path(payload: dict[str, Any], name: str) -> Path:
     artifacts = payload.get("artifacts") if isinstance(payload.get("artifacts"), dict) else {}
     raw = str(artifacts.get(name) or "").strip()
@@ -249,6 +277,19 @@ def resolve_responses(source_summary: Path) -> Path:
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(drive_candidates[0], dest)
     return dest
+
+
+def resolve_response_summary_responses(response_summary: Path) -> Path:
+    responses = response_path_from_response_summary(response_summary)
+    if responses is None:
+        raise ValueError(f"{response_summary} is not a trace-response summary.")
+    if responses.exists():
+        return responses
+    payload = read_json(response_summary)
+    run_id_hint = responses.parent.name or str(payload.get("run_id") or response_summary.parent.name)
+    restored = restore_if_missing(responses, filename=responses.name, run_id_hint=run_id_hint)
+    print(f"restored_responses={restored}", flush=True)
+    return responses
 
 
 def collect_traces(scored_jsonl: Path, jobs_jsonl: Path, responses_jsonl: Path) -> tuple[Path, Path, dict[str, Any]]:
@@ -371,6 +412,7 @@ def safe_commit(summary_path: Path) -> None:
 def write_summary(
     *,
     source_summary: Path,
+    response_summary: Path | None = None,
     scored_jsonl: Path,
     jobs_jsonl: Path,
     responses_jsonl: Path,
@@ -420,6 +462,8 @@ def write_summary(
             else "Inspect trace collection and gate output before any recurrent SFT."
         ),
     }
+    if response_summary is not None:
+        payload["response_summary"] = path_for_cli(response_summary)
     summary = RUN_DIR / "summary.json"
     write_json(summary, payload)
     (RUN_DIR / "summary.md").write_text(markdown_summary(payload), encoding="utf-8")
@@ -452,23 +496,30 @@ def main() -> int:
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     refuse_gpu_runtime_for_cpu_work()
     source_summary = resolve_source_summary()
-    source_payload = read_json(source_summary)
-    run_id_hint = str(source_payload.get("run_id") or source_summary.parent.name)
+    collection_source_summary = trace_jobs_summary_for_collection(source_summary)
+    response_summary = source_summary if source_summary != collection_source_summary else None
+    source_payload = read_json(collection_source_summary)
+    run_id_hint = str(source_payload.get("run_id") or collection_source_summary.parent.name)
     jobs_jsonl = artifact_path(source_payload, "jobs_jsonl")
     report_json = artifact_path(source_payload, "report_json")
     restore_report = {
         "jobs": restore_if_missing(jobs_jsonl, filename=jobs_jsonl.name, run_id_hint=run_id_hint),
         "report": restore_if_missing(report_json, filename=report_json.name, run_id_hint=run_id_hint),
     }
-    scored_jsonl = report_scored_path(source_summary)
+    scored_jsonl = report_scored_path(collection_source_summary)
     restore_report["scored"] = restore_if_missing(scored_jsonl, filename=scored_jsonl.name, run_id_hint=run_id_hint)
-    responses_jsonl = resolve_responses(source_summary)
+    responses_jsonl = (
+        resolve_responses(collection_source_summary)
+        if RESPONSES_JSONL or response_summary is None
+        else resolve_response_summary_responses(response_summary)
+    )
     traced_jsonl, collection_report, collection_payload = collect_traces(scored_jsonl, jobs_jsonl, responses_jsonl)
     curriculum_summary = build_curriculum(traced_jsonl)
     gate_json = gate_curriculum(curriculum_summary)
     drive_backup = backup_to_drive([RUN_DIR, WORK_DIR, traced_jsonl, collection_report, curriculum_summary, gate_json])
     summary = write_summary(
-        source_summary=source_summary,
+        source_summary=collection_source_summary,
+        response_summary=response_summary,
         scored_jsonl=scored_jsonl,
         jobs_jsonl=jobs_jsonl,
         responses_jsonl=responses_jsonl,

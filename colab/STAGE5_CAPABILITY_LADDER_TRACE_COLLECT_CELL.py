@@ -1,9 +1,9 @@
 """Colab cell: collect capability-ladder trace responses into gated SFT data.
 
-This CPU-only target follows the latest trace-job summary, requires a response
-JSONL produced by the provider runner, verifies final answers, builds traced
-capability-ladder curriculum rows, runs the SFT gate, backs up to Drive, and
-disconnects. It does not call model APIs itself.
+This CPU-only target follows the latest trace-job summary or the latest
+trace-response summary produced by the provider runner, verifies final answers,
+builds traced capability-ladder curriculum rows, runs the SFT gate, backs up to
+Drive, and disconnects. It does not call model APIs itself.
 """
 
 import os

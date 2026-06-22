@@ -55,7 +55,11 @@ After provider responses are written, use
 `STAGE5_CURRENT_A100_TARGET=capability_ladder_trace_collect_cpu` on a CPU
 runtime to verify final answers, collect traced scored rows, build the traced
 capability-ladder curriculum, run the SFT gate, push safe summaries, and
-disconnect.
+disconnect. If the response target updated
+`config/stage5_current_source_summary.txt` to a
+`stage5_capability_ladder_trace_responses` summary, the collector follows that
+summary back to the trace-job metadata and uses its recorded response JSONL
+directly.
 When that trace-collection summary reports `trace_curriculum_gate_ready`, the
 planner will now route the next guarded paid action directly to
 `colab/run_stage5_curriculum_sft.py` with the traced work dir, summary, mode
@@ -389,9 +393,10 @@ exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
 ## Next Paste-Anywhere Capability-Ladder Trace Collection Cell
 
 Use this after provider responses have been written. By default the collector
+understands the trace-response summary written by the response target. It also
 looks for `trace_responses.jsonl`, `capability_ladder_trace_responses.jsonl`, or
 `responses.jsonl` beside the trace-job summary or in the Drive backup. You can
-also set `STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_JSONL` explicitly.
+still set `STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_JSONL` explicitly.
 
 ```python
 import base64, json, os, time, urllib.request
