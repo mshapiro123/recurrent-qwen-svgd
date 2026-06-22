@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import sys
 
+import pytest
+
 import training.run_curriculum_job_responses as runner
 from training.run_curriculum_job_responses import main, read_jsonl, run_jobs
 
@@ -153,6 +155,60 @@ def test_openai_compatible_backend_requires_api_key(tmp_path) -> None:
         assert "API key missing" in str(exc)
     else:  # pragma: no cover - defensive
         raise AssertionError("expected missing API key error")
+
+
+def test_openai_compatible_blocks_student_lineage_after_model_map_resolution(tmp_path) -> None:
+    output = tmp_path / "responses.jsonl"
+
+    with pytest.raises(ValueError, match="Student-lineage models are blocked"):
+        run_jobs(
+            [{**job("job-openai"), "model": "logical-opus"}],
+            output_jsonl=output,
+            backend="openai_compatible",
+            api_key="test-key",
+            model_map={"logical-opus": "Qwen/Qwen2.5-0.5B-Instruct"},
+        )
+
+
+def test_openai_compatible_blocks_student_lineage_model_override(tmp_path) -> None:
+    output = tmp_path / "responses.jsonl"
+
+    with pytest.raises(ValueError, match="Student-lineage models are blocked"):
+        run_jobs(
+            [job("job-openai")],
+            output_jsonl=output,
+            backend="openai_compatible",
+            api_key="test-key",
+            model_override="Qwen/Qwen2.5-0.5B-Instruct",
+        )
+
+
+def test_openai_compatible_allows_student_lineage_for_reference_attempt(tmp_path, monkeypatch) -> None:
+    output = tmp_path / "responses.jsonl"
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exc):
+            return False
+
+        def read(self):
+            return json.dumps({"choices": [{"message": {"content": "ANSWER: 4"}}]}).encode("utf-8")
+
+    monkeypatch.setattr(runner.urllib.request, "urlopen", lambda request, timeout: FakeResponse())
+
+    report = run_jobs(
+        [{**job("job-openai"), "stage": "reference_attempt", "model": "weak-ref"}],
+        output_jsonl=output,
+        backend="openai_compatible",
+        api_key="test-key",
+        model_map={"weak-ref": "Qwen/Qwen2.5-0.5B-Instruct"},
+    )
+
+    rows = read_jsonl(output)
+    assert report["written"] == 1
+    assert rows[0]["resolved_model"] == "Qwen/Qwen2.5-0.5B-Instruct"
 
 
 def test_cli_runs_dry_run_with_report(tmp_path) -> None:

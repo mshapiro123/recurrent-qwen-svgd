@@ -21,6 +21,9 @@ from pathlib import Path
 from typing import Any
 
 
+STUDENT_LINEAGE_PATTERNS = ("qwen",)
+
+
 def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for line_no, line in enumerate(Path(path).read_text(encoding="utf-8-sig").splitlines(), start=1):
@@ -147,6 +150,22 @@ def concrete_model_for(job: dict[str, Any], *, model_override: str | None, model
     return logical
 
 
+def is_student_lineage_model(model: str) -> bool:
+    model_lower = model.lower()
+    return any(pattern in model_lower for pattern in STUDENT_LINEAGE_PATTERNS)
+
+
+def validate_resolved_model_for_job(job: dict[str, Any], model: str, *, allow_student_lineage: bool = False) -> None:
+    if allow_student_lineage or str(job.get("stage") or "") == "reference_attempt":
+        return
+    if is_student_lineage_model(model):
+        raise ValueError(
+            "Student-lineage models are blocked for curriculum response generation "
+            "outside reference_attempt jobs unless --allow_student_lineage is set: "
+            f"{model}"
+        )
+
+
 def extract_chat_completion_text(payload: dict[str, Any]) -> str:
     choices = payload.get("choices")
     if isinstance(choices, list) and choices:
@@ -181,6 +200,7 @@ def openai_compatible_response(
     base_url: str,
     model_override: str | None,
     model_map: dict[str, str],
+    allow_student_lineage: bool,
     timeout_sec: float,
     stderr_limit: int,
     max_tokens: int,
@@ -203,6 +223,7 @@ def openai_compatible_response(
         }
 
     model = concrete_model_for(job, model_override=model_override, model_map=model_map)
+    validate_resolved_model_for_job(job, model, allow_student_lineage=allow_student_lineage)
     messages: list[dict[str, str]] = []
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
@@ -291,6 +312,7 @@ def run_jobs(
     base_url: str = "https://api.openai.com/v1",
     model_override: str | None = None,
     model_map: dict[str, str] | None = None,
+    allow_student_lineage: bool = False,
     max_tokens: int = 2048,
     temperature: float = 0.2,
     system_prompt: str | None = None,
@@ -329,6 +351,7 @@ def run_jobs(
                 base_url=base_url,
                 model_override=model_override,
                 model_map=resolved_model_map,
+                allow_student_lineage=allow_student_lineage,
                 timeout_sec=timeout_sec,
                 stderr_limit=stderr_limit,
                 max_tokens=max_tokens,
@@ -379,6 +402,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--base_url", default="https://api.openai.com/v1")
     parser.add_argument("--model_override", help="Use one concrete model for every job.")
     parser.add_argument("--model_map_json", help="JSON object mapping logical job model names to concrete API model ids.")
+    parser.add_argument("--allow_student_lineage", action="store_true")
     parser.add_argument("--max_tokens", type=int, default=2048)
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--system_prompt")
@@ -404,6 +428,7 @@ def main(argv: list[str] | None = None) -> int:
         base_url=args.base_url,
         model_override=args.model_override,
         model_map=model_map,
+        allow_student_lineage=args.allow_student_lineage,
         max_tokens=args.max_tokens,
         temperature=args.temperature,
         system_prompt=args.system_prompt,
