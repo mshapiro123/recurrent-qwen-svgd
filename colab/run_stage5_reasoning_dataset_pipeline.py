@@ -19,6 +19,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+from colab.run_stage5_colab_continue import is_safe_output_artifact
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN_ID = os.environ.get("STAGE5_REASONING_DATASET_PIPELINE_RUN_ID") or time.strftime(
@@ -117,13 +119,20 @@ def next_action_env() -> dict[str, str]:
 def commit_results() -> None:
     if not PUSH_RESULTS:
         return
-    run(["git", "add", "-f", path_for_cli(RUN_DIR)], check=False)
     audit_dir = audit_summary_path().parent
     next_dir = next_action_summary_path().parent
-    if audit_dir.exists():
-        run(["git", "add", "-f", path_for_cli(audit_dir)], check=False)
-    if next_dir.exists():
-        run(["git", "add", "-f", path_for_cli(next_dir)], check=False)
+    safe_paths = [
+        path_for_cli(path)
+        for root in (RUN_DIR, audit_dir, next_dir)
+        if root.exists()
+        for path in sorted(root.rglob("*"))
+        if is_safe_output_artifact(path)
+    ]
+    if not safe_paths:
+        print("No safe reasoning dataset pipeline artifacts to commit.")
+        return
+    for index in range(0, len(safe_paths), 100):
+        run(["git", "add", "-f", *safe_paths[index : index + 100]], check=False)
     if run(["git", "diff", "--cached", "--quiet"], check=False).returncode == 0:
         print("No reasoning dataset pipeline outputs changed.")
         return

@@ -18,6 +18,8 @@ from typing import Any
 
 import yaml
 
+from colab.run_stage5_colab_continue import is_safe_output_artifact
+
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -264,7 +266,16 @@ def summary_markdown(payload: dict[str, Any]) -> str:
 def commit_results() -> None:
     if not PUSH_RESULTS:
         return
-    run(["git", "add", "-f", path_for_cli(RUN_DIR)], check=False)
+    safe_paths = [
+        path_for_cli(path)
+        for path in sorted(RUN_DIR.rglob("*"))
+        if is_safe_output_artifact(path)
+    ]
+    if not safe_paths:
+        print("No safe dataset audit artifacts to commit.")
+        return
+    for index in range(0, len(safe_paths), 100):
+        run(["git", "add", "-f", *safe_paths[index : index + 100]], check=False)
     if run(["git", "diff", "--cached", "--quiet"], check=False).returncode == 0:
         print("No dataset audit outputs changed.")
         return

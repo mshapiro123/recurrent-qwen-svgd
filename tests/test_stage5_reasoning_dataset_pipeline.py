@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import subprocess
+
 import colab.run_stage5_reasoning_dataset_pipeline as module
 
 
@@ -73,3 +75,34 @@ def test_pipeline_summary_reports_failure(monkeypatch, tmp_path) -> None:
     assert payload["status"] == "pipeline_failed"
     assert payload["error"] == "boom"
     assert "Inspect pipeline logs" in payload["next_step"]
+
+
+def test_pipeline_commit_results_adds_only_safe_text_artifacts(monkeypatch, tmp_path) -> None:
+    run_dir = tmp_path / "outputs" / "stage5" / "pipe"
+    audit_dir = tmp_path / "outputs" / "stage5" / "audit"
+    next_dir = tmp_path / "outputs" / "stage5" / "next"
+    for directory in (run_dir, audit_dir, next_dir):
+        directory.mkdir(parents=True)
+        (directory / "summary.json").write_text("{}", encoding="utf-8")
+        (directory / "checkpoint.pt").write_bytes(b"checkpoint")
+
+    commands: list[list[str]] = []
+
+    def fake_run(cmd: list[str], *, env=None, check: bool = True, log_name: str | None = None):
+        commands.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+    monkeypatch.setattr(module, "AUDIT_RUN_ID", "audit")
+    monkeypatch.setattr(module, "NEXT_ACTION_RUN_ID", "next")
+    monkeypatch.setattr(module, "PUSH_RESULTS", True)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    module.commit_results()
+
+    add_commands = [cmd for cmd in commands if cmd[:3] == ["git", "add", "-f"]]
+    assert add_commands
+    added = " ".join(" ".join(cmd) for cmd in add_commands)
+    assert "summary.json" in added
+    assert "checkpoint.pt" not in added

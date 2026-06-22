@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import yaml
 
+import colab.run_stage5_reasoning_dataset_audit as module
 from colab.run_stage5_reasoning_dataset_audit import (
     REGISTRY_PATH,
     audit_command,
@@ -147,3 +149,31 @@ def test_registry_tracks_core_and_extended_trace_sources() -> None:
     assert datasets["opus47_sft"]["priority"] == "immediate"
     assert datasets["fable5_flat"]["priority"] == "audit"
     assert datasets["fable5_complete_2m"]["streaming"] is True
+
+
+def test_commit_results_adds_only_safe_audit_artifacts(monkeypatch, tmp_path) -> None:
+    run_dir = tmp_path / "outputs" / "stage5" / "audit"
+    run_dir.mkdir(parents=True)
+    (run_dir / "summary.json").write_text("{}", encoding="utf-8")
+    (run_dir / "summary.md").write_text("# ok\n", encoding="utf-8")
+    (run_dir / "adapter.pt").write_bytes(b"checkpoint")
+
+    commands: list[list[str]] = []
+
+    def fake_run(cmd: list[str], *, check: bool = True, log_name: str | None = None):
+        commands.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+    monkeypatch.setattr(module, "PUSH_RESULTS", True)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    module.commit_results()
+
+    add_commands = [cmd for cmd in commands if cmd[:3] == ["git", "add", "-f"]]
+    assert add_commands
+    added = " ".join(add_commands[0])
+    assert "summary.json" in added
+    assert "summary.md" in added
+    assert "adapter.pt" not in added
