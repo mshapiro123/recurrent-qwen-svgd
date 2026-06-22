@@ -9,7 +9,7 @@ ROOT = Path("/content/recurrent-qwen-svgd")
 # Edit these before running if your completed curriculum shard uses a different path.
 WORK_DIR = "data/curriculum/run_001"
 MIN_POSITIVE_ROWS = "16"
-MIN_MODE_ROWS = ""  # Optional, e.g. "direct=64,deep_narrow=64" or "wide=64".
+MIN_MODE_ROWS = "direct=64,deep_narrow=64"  # Current objective; edit to "wide=64" for width-only shards.
 PHASE1_STEPS = "150"
 MAX_LOOPS = "4"
 DISCONNECT_RUNTIME_WHEN_DONE = False

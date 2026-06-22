@@ -49,10 +49,17 @@ A100_BUDGET_PROFILE = os.environ.get(
     "STAGE5_A100_BUDGET_PROFILE",
     os.environ.get("STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE", ""),
 ).strip().lower()
+DEFAULT_CURRICULUM_GATE_MIN_MODE_ROWS = "direct=64,deep_narrow=64"
 
 
 def credit_saver_budget() -> bool:
     return A100_BUDGET_PROFILE in {"credit_saver", "single", "low_credit", "low-credit"}
+
+
+def curriculum_gate_min_mode_rows() -> str:
+    """Default generated-curriculum SFT to direct/deep calibration unless overridden."""
+
+    return os.environ.get("STAGE5_CURRICULUM_GATE_MIN_MODE_ROWS", DEFAULT_CURRICULUM_GATE_MIN_MODE_ROWS).strip()
 
 
 def recurrent_recovery_budget_defaults() -> tuple[str, str, str]:
@@ -860,16 +867,23 @@ def curriculum_pipeline_actions(payload: dict[str, Any], *, source_summary: Path
     if status == "complete":
         gate_json = source_summary.parent / "curriculum_sft_gate.json"
         gate_md = source_summary.parent / "curriculum_sft_gate.md"
+        min_mode_rows = curriculum_gate_min_mode_rows()
+        min_mode_clause = f"--min_mode_rows {shlex.quote(min_mode_rows)} " if min_mode_rows else ""
         return [
             make_action(
                 "Run generated curriculum SFT safety gate",
-                "The provider-generated curriculum pipeline completed; run the no-GPU SFT gate to enforce answer verification, role safety, decontamination, and positive-row checks before any recurrent fine-tune.",
+                (
+                    "The provider-generated curriculum pipeline completed; run the no-GPU SFT gate to enforce answer "
+                    "verification, role safety, decontamination, positive-row checks, and the current direct/deep "
+                    "calibration objective before any recurrent fine-tune."
+                ),
                 (
                     "python training/check_curriculum_sft_gate.py "
                     f"--work_dir {shlex.quote(work_dir)} "
                     f"--summary_json {shlex.quote(command_path(source_summary))} "
                     f"--output_json {shlex.quote(command_path(gate_json))} "
                     f"--output_md {shlex.quote(command_path(gate_md))} "
+                    f"{min_mode_clause}"
                     "--fail_on_no_go"
                 ),
                 10,
@@ -913,6 +927,19 @@ def curriculum_sft_gate_actions(payload: dict[str, Any], *, source_summary: Path
     summary_json = str(payload.get("summary_json") or "").replace("\\", "/")
     gate_md = source_summary.with_suffix(".md")
     positive_rows = int(((payload.get("checks") or {}).get("positive_sft") or {}).get("rows") or 0)
+    mode_requirements = ((payload.get("checks") or {}).get("positive_sft") or {}).get("mode_requirements")
+    min_mode_rows = ""
+    if isinstance(mode_requirements, dict):
+        required = []
+        for mode, item in sorted(mode_requirements.items()):
+            if not isinstance(item, dict):
+                continue
+            count = int(item.get("required") or 0)
+            if count > 0:
+                required.append(f"{mode}={count}")
+        min_mode_rows = ",".join(required)
+    if not min_mode_rows:
+        min_mode_rows = curriculum_gate_min_mode_rows()
     min_rows = max(positive_rows, 16)
     if payload.get("go") is True:
         assignments = {
@@ -923,10 +950,15 @@ def curriculum_sft_gate_actions(payload: dict[str, Any], *, source_summary: Path
             assignments["STAGE5_CURRICULUM_WORK_DIR"] = work_dir
         if summary_json:
             assignments["STAGE5_CURRICULUM_SUMMARY_JSON"] = summary_json
+        if min_mode_rows:
+            assignments["STAGE5_CURRICULUM_MIN_MODE_ROWS"] = min_mode_rows
         return [
             make_action(
                 "Run generated curriculum recurrent SFT",
-                "The generated curriculum shard passed the strict SFT gate; run one bounded deterministic Phase 1 recurrent SFT before any particle/SVGD training.",
+                (
+                    "The generated curriculum shard passed the strict SFT gate; run one bounded deterministic Phase 1 "
+                    "recurrent SFT with the same objective-mode constraints before any particle/SVGD training."
+                ),
                 command_env(assignments, "python colab/run_stage5_curriculum_sft.py"),
                 10,
             )

@@ -106,7 +106,15 @@ def test_green_curriculum_sft_gate_recommends_guarded_sft_runner(tmp_path) -> No
         "status": "go_train_recurrent_sft",
         "work_dir": "data/curriculum/run_001",
         "summary_json": "data/curriculum/run_001/summary.json",
-        "checks": {"positive_sft": {"rows": 24}},
+        "checks": {
+            "positive_sft": {
+                "rows": 24,
+                "mode_requirements": {
+                    "direct": {"required": 16, "observed": 18, "passed": True},
+                    "deep_narrow": {"required": 8, "observed": 9, "passed": True},
+                },
+            }
+        },
     }
     source.write_text(json.dumps(payload), encoding="utf-8")
 
@@ -117,6 +125,7 @@ def test_green_curriculum_sft_gate_recommends_guarded_sft_runner(tmp_path) -> No
     assert "python colab/run_stage5_curriculum_sft.py" in actions[0]["command"]
     assert "STAGE5_CURRICULUM_WORK_DIR=data/curriculum/run_001" in actions[0]["command"]
     assert "STAGE5_CURRICULUM_MIN_POSITIVE_ROWS=24" in actions[0]["command"]
+    assert "STAGE5_CURRICULUM_MIN_MODE_ROWS=deep_narrow=8,direct=16" in actions[0]["command"]
 
 
 def test_red_curriculum_sft_gate_recommends_inspection(tmp_path) -> None:
@@ -153,6 +162,7 @@ def test_complete_curriculum_pipeline_recommends_no_gpu_sft_gate(tmp_path) -> No
     assert actions[0]["name"] == "Run generated curriculum SFT safety gate"
     assert "python training/check_curriculum_sft_gate.py" in actions[0]["command"]
     assert "--summary_json" in actions[0]["command"]
+    assert "--min_mode_rows direct=64,deep_narrow=64" in actions[0]["command"]
     assert "curriculum_sft_gate.json" in actions[0]["command"]
     assert "run_stage5_curriculum_sft.py" not in actions[0]["command"]
 

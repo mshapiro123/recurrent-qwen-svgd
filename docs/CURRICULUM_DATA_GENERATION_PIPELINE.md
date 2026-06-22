@@ -308,6 +308,10 @@ coverage is present. Use `--min_mode_rows` only when the upcoming GPU run has a
 specific objective; for example direct/deep calibration should not proceed on a
 mostly-wide shard. This is the preferred Colab loop because it is restart-safe
 and burns no GPU while waiting on API/provider artifacts.
+The maintained planner and guarded A100 SFT cell now default to the current
+direct/deep calibration objective, `direct=64,deep_narrow=64`. Override
+`STAGE5_CURRICULUM_GATE_MIN_MODE_ROWS` or edit `MIN_MODE_ROWS` only when the
+next experiment is intentionally width-only or mixed.
 
 After a shard passes the gate and has enough positive rows for a real run, use
 the guarded GPU handoff:

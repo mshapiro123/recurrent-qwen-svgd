@@ -22,17 +22,23 @@ Edit these values at the top of the cell when needed:
 ```python
 WORK_DIR = "data/curriculum/run_001"
 MIN_POSITIVE_ROWS = "16"
-MIN_MODE_ROWS = ""  # Optional objective-specific gate, e.g. "direct=64,deep_narrow=64".
+MIN_MODE_ROWS = "direct=64,deep_narrow=64"  # Current objective; edit to "wide=64" for width-only shards.
 PHASE1_STEPS = "150"
 MAX_LOOPS = "4"
 ```
 
-Use `MIN_MODE_ROWS` when a shard is meant for a specific objective. For
-example, a direct/deep calibration shard should not train just because it has
-many `wide` rows:
+Keep `MIN_MODE_ROWS` aligned with the run objective. The default protects the
+current direct/deep calibration phase, so a shard should not train just because
+it has many `wide` rows:
 
 ```python
 MIN_MODE_ROWS = "direct=64,deep_narrow=64"
+```
+
+For the later width phase, change it deliberately, for example:
+
+```python
+MIN_MODE_ROWS = "wide=64"
 ```
 
 If your CPU/API curriculum artifacts were backed up somewhere else, set:
