@@ -175,6 +175,8 @@ def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     assert 'RUN_A100_ACTION = env_bool("STAGE5_SAFE_CONTINUE_RUN_A100_ACTION", False)' in plain
     assert 'DISCONNECT_RUNTIME_WHEN_DONE = env_bool("STAGE5_SAFE_CONTINUE_DISCONNECT", True)' in text
     assert 'DISCONNECT_RUNTIME_WHEN_DONE = env_bool("STAGE5_SAFE_CONTINUE_DISCONNECT", True)' in plain
+    assert "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY" in text
+    assert "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY" in plain
     assert "colab/check_stage5_a100_go_no_go.py" in text
     assert "colab/check_stage5_a100_go_no_go.py" in plain
     assert "colab/run_stage5_next_action.py" in text
@@ -219,6 +221,7 @@ def test_safe_continue_notebook_defaults_to_dry_run_and_guarded_action() -> None
     assert "colab/check_stage5_a100_go_no_go.py" in text
     assert "colab/run_stage5_next_action.py" in text
     assert "STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE" in text
+    assert "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY" in text
     assert "Dry run complete" in text
     assert "DISCONNECT_RUNTIME_WHEN_DONE = True" in text
     assert "runtime.unassign()" in text
@@ -253,6 +256,7 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     assert '"safe_continue_execute"' in plain
     assert '"STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "1"' in plain
     assert '"STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "0"' in plain
+    assert "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY" in plain
     assert "checkpoint_preflight" in plain
     assert "mount_drive_for_paid_action" in plain
     assert "api.github.com/repos" in plain

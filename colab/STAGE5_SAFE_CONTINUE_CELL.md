@@ -18,6 +18,9 @@ go/no-go checkpoint preflight; Colab Drive authorization cannot reliably be
 initiated from a child Python process. Paid actions also run a small focused
 preflight over the A100 guard, next-action parser, routing repair, and
 ARC-mix repair gate before launching the selected action.
+Set `STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY` to point at a newer Stage 5 summary
+when resuming from a fresh result; otherwise the cell intentionally defaults to
+the last committed routing diagnostic.
 
 ```python
 import json, os, shutil, subprocess, sys
@@ -40,8 +43,9 @@ RUN_A100_ACTION = env_bool("STAGE5_SAFE_CONTINUE_RUN_A100_ACTION", False)
 # runtime attached after the cell prints the next action.
 DISCONNECT_RUNTIME_WHEN_DONE = env_bool("STAGE5_SAFE_CONTINUE_DISCONNECT", True)
 
-SOURCE_SUMMARY = (
-    "outputs/stage5/stage5_routing_diagnostic_20260622_041706/summary.json"
+SOURCE_SUMMARY = os.environ.get(
+    "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY",
+    "outputs/stage5/stage5_routing_diagnostic_20260622_041706/summary.json",
 )
 GO_NO_GO_RUN_ID = "stage5_safe_continue_go_no_go"
 

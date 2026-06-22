@@ -49,6 +49,7 @@ TARGETS = {
         "path": "colab/STAGE5_SAFE_CONTINUE_CELL.py",
         "markers": [
             "STAGE5_SAFE_CONTINUE_RUN_A100_ACTION",
+            "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY",
             "RUN_A100_ACTION",
             "colab/check_stage5_a100_go_no_go.py",
             "colab/run_stage5_next_action.py",
@@ -60,6 +61,7 @@ TARGETS = {
         "path": "colab/STAGE5_SAFE_CONTINUE_CELL.py",
         "markers": [
             "STAGE5_SAFE_CONTINUE_RUN_A100_ACTION",
+            "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY",
             "RUN_A100_ACTION",
             "mount_drive_for_paid_action",
             "tests/test_stage5_routing_repair.py",
