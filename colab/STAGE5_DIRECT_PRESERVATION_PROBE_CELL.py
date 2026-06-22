@@ -83,8 +83,12 @@ def sync_repo():
 
 
 def safe_stage_and_push(run_dir):
+    pointer = ROOT / "config" / "stage5_latest_direct_preservation_summary.txt"
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text(f"{run_dir.relative_to(ROOT).as_posix()}/summary.json\n", encoding="utf-8")
     suffixes = {".json", ".jsonl", ".md", ".txt", ".yaml", ".yml", ".log", ".csv"}
     files = [path for path in run_dir.rglob("*") if path.is_file() and path.suffix.lower() in suffixes]
+    files.append(pointer)
     if not files:
         print("No lightweight output files to commit.", flush=True)
         return
@@ -94,10 +98,13 @@ def safe_stage_and_push(run_dir):
     if not status.stdout.strip():
         print("No git changes to commit.", flush=True)
         return
-    run(["git", "commit", "-m", f"Record Stage 5 direct preservation probe {RUN_ID}"], cwd=ROOT)
-    run(["git", "fetch", "origin", "main"], cwd=ROOT)
-    run(["git", "rebase", "origin/main"], cwd=ROOT)
-    run(["git", "push", "origin", "main"], cwd=ROOT)
+    try:
+        run(["git", "commit", "-m", f"Record Stage 5 direct preservation probe {RUN_ID}"], cwd=ROOT)
+        run(["git", "fetch", "origin", "main"], cwd=ROOT)
+        run(["git", "rebase", "origin/main"], cwd=ROOT)
+        run(["git", "push", "origin", "main"], cwd=ROOT)
+    except Exception as exc:
+        print(f"WARNING: result files are backed up to Drive, but GitHub publish failed: {exc}", flush=True)
 
 
 def disconnect(reason):
