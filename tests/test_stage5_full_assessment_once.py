@@ -3,6 +3,37 @@ from __future__ import annotations
 import pytest
 
 
+def test_full_assessment_once_preflight_resolves_direct_proxy_gate(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_full_assessment_once as module
+
+    checkpoint = tmp_path / "outputs" / "stage5" / "proxy" / "phase1" / "phase1_step_100.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_text("checkpoint", encoding="utf-8")
+    source = tmp_path / "outputs" / "stage5" / "proxy" / "summary.json"
+    source.write_text(
+        """
+        {
+          "kind": "stage5_balanced_arc_mix_gate",
+          "status": "proxy_lift",
+          "passed": true,
+          "best_arm": {
+            "best_checkpoint": {
+              "checkpoint": "outputs/stage5/proxy/phase1/phase1_step_100.pt"
+            }
+          }
+        }
+        """,
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr("colab.run_stage5_recovery_full_assessment.ROOT", tmp_path)
+
+    gate, resolved = module.preflight_source_summary(source)
+
+    assert gate == "source"
+    assert resolved == checkpoint
+
+
 def test_full_assessment_once_defaults_to_latest_proxy_summary(monkeypatch) -> None:
     import colab.run_stage5_full_assessment_once as module
 
@@ -113,3 +144,34 @@ def test_full_assessment_once_disconnects_on_early_failure(tmp_path, monkeypatch
         module.main()
 
     assert disconnected is True
+
+
+def test_full_assessment_once_preflight_only_skips_cuda_and_child_run(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_full_assessment_once as module
+
+    source = tmp_path / "outputs" / "stage5" / "proxy" / "summary.json"
+    source.parent.mkdir(parents=True)
+    source.write_text("{}", encoding="utf-8")
+    called = False
+
+    def fake_preflight(path):
+        assert path == source
+        return "source", tmp_path / "checkpoint.pt"
+
+    def fake_cuda():
+        raise AssertionError("cuda should not be checked in preflight-only mode")
+
+    def fake_run(*args, **kwargs):  # noqa: ANN002, ANN003
+        nonlocal called
+        called = True
+        raise AssertionError("child run should not launch in preflight-only mode")
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "SOURCE_SUMMARY", "outputs/stage5/proxy/summary.json")
+    monkeypatch.setattr(module, "PREFLIGHT_ONLY", True)
+    monkeypatch.setattr(module, "preflight_source_summary", fake_preflight)
+    monkeypatch.setattr(module, "require_cuda_runtime", fake_cuda)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    assert module.run_assessment() == 0
+    assert called is False

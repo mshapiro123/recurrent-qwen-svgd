@@ -14,9 +14,13 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 DEFAULT_SOURCE_SUMMARY = (
     "outputs/stage5/"
     "stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe/"
@@ -37,6 +41,12 @@ AUTO_DISCONNECT = os.environ.get("STAGE5_FULL_ASSESS_AUTO_DISCONNECT", "0").stri
     "y",
 }
 ALLOW_CPU = os.environ.get("STAGE5_FULL_ASSESS_ALLOW_CPU", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
+PREFLIGHT_ONLY = os.environ.get("STAGE5_FULL_ASSESS_PREFLIGHT_ONLY", "0").strip().lower() in {
     "1",
     "true",
     "yes",
@@ -92,6 +102,23 @@ def child_env() -> dict[str, str]:
     return env
 
 
+def read_json(path: Path) -> dict[str, Any]:
+    import json
+
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def preflight_source_summary(source: Path) -> tuple[str, Path]:
+    from colab.run_stage5_recovery_full_assessment import selected_checkpoint
+
+    payload = read_json(source)
+    selected_gate, checkpoint, _ = selected_checkpoint(payload)
+    print(f"selected_gate={selected_gate}", flush=True)
+    print(f"selected_checkpoint={checkpoint}", flush=True)
+    print(f"checkpoint_exists={checkpoint.exists()}", flush=True)
+    return selected_gate, checkpoint
+
+
 def cuda_runtime_status() -> tuple[bool, str]:
     try:
         import torch
@@ -135,6 +162,10 @@ def run_assessment() -> int:
     source = ROOT / SOURCE_SUMMARY
     if not source.exists():
         raise FileNotFoundError(f"Missing source summary: {source}")
+    preflight_source_summary(source)
+    if PREFLIGHT_ONLY:
+        print("Preflight-only mode complete; no benchmark launched.", flush=True)
+        return 0
     require_cuda_runtime()
     run(["git", "status", "-sb"], check=False)
     run(["git", "log", "--oneline", "-5"], check=False)
