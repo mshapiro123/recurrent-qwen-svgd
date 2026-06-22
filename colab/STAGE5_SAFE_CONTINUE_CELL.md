@@ -18,6 +18,11 @@ go/no-go checkpoint preflight; Colab Drive authorization cannot reliably be
 initiated from a child Python process. Paid actions also run a small focused
 preflight over the A100 guard, next-action parser, routing repair, and
 ARC-mix repair gate before launching the selected action.
+The cell executes one planner action by default. To deliberately continue
+through multiple guarded actions in one runtime lease, set
+`STAGE5_SAFE_CONTINUE_MAX_ACTIONS` to a small integer such as `2`. Keep the
+default at `1` unless you are intentionally trading more GPU time for less
+manual review.
 Set `STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY` to force a specific Stage 5 summary.
 Without that override, the cell auto-resumes from
 `config/stage5_current_source_summary.txt` when the pointer exists and targets
@@ -44,6 +49,8 @@ RUN_A100_ACTION = env_bool("STAGE5_SAFE_CONTINUE_RUN_A100_ACTION", False)
 # Credit-saver default. Set False only if you intentionally want to keep the
 # runtime attached after the cell prints the next action.
 DISCONNECT_RUNTIME_WHEN_DONE = env_bool("STAGE5_SAFE_CONTINUE_DISCONNECT", True)
+MAX_NEXT_ACTIONS = int(os.environ.get("STAGE5_SAFE_CONTINUE_MAX_ACTIONS", "1"))
+ALLOW_REPEAT_NEXT_ACTION = env_bool("STAGE5_SAFE_CONTINUE_ALLOW_REPEAT", False)
 
 DEFAULT_SOURCE_SUMMARY = "outputs/stage5/stage5_routing_diagnostic_20260622_041706/summary.json"
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY", "").strip()
@@ -229,8 +236,8 @@ else:
 env = os.environ.copy()
 env["STAGE5_ARC_AGI_NEXT_ACTION_SOURCE_SUMMARY"] = SOURCE_SUMMARY
 env["STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE"] = "1" if execute_action else "0"
-env["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] = "1"
-env["STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT"] = "0"
+env["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] = str(MAX_NEXT_ACTIONS)
+env["STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT"] = "1" if ALLOW_REPEAT_NEXT_ACTION else "0"
 
 run([sys.executable, "colab/run_stage5_next_action.py"], cwd=ROOT, env=env)
 

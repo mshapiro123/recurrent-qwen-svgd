@@ -203,6 +203,10 @@ def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     assert 'RUN_A100_ACTION = env_bool("STAGE5_SAFE_CONTINUE_RUN_A100_ACTION", False)' in plain
     assert 'DISCONNECT_RUNTIME_WHEN_DONE = env_bool("STAGE5_SAFE_CONTINUE_DISCONNECT", True)' in text
     assert 'DISCONNECT_RUNTIME_WHEN_DONE = env_bool("STAGE5_SAFE_CONTINUE_DISCONNECT", True)' in plain
+    assert 'MAX_NEXT_ACTIONS = int(os.environ.get("STAGE5_SAFE_CONTINUE_MAX_ACTIONS", "1"))' in text
+    assert 'MAX_NEXT_ACTIONS = int(os.environ.get("STAGE5_SAFE_CONTINUE_MAX_ACTIONS", "1"))' in plain
+    assert 'ALLOW_REPEAT_NEXT_ACTION = env_bool("STAGE5_SAFE_CONTINUE_ALLOW_REPEAT", False)' in text
+    assert 'ALLOW_REPEAT_NEXT_ACTION = env_bool("STAGE5_SAFE_CONTINUE_ALLOW_REPEAT", False)' in plain
     assert "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY" in text
     assert "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY" in plain
     assert "SOURCE_SUMMARY_OVERRIDE" in text
@@ -218,6 +222,10 @@ def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     assert 'env["STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE"] = "1" if execute_action else "0"' in text
     assert 'env["STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE"] = "1" if execute_action else "0"' in plain
     assert "STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS" in text
+    assert 'env["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] = str(MAX_NEXT_ACTIONS)' in text
+    assert 'env["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] = str(MAX_NEXT_ACTIONS)' in plain
+    assert 'env["STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT"] = "1" if ALLOW_REPEAT_NEXT_ACTION else "0"' in text
+    assert 'env["STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT"] = "1" if ALLOW_REPEAT_NEXT_ACTION else "0"' in plain
     assert "Dry run complete" in text
     assert "STAGE5_SAFE_CONTINUE_DISCONNECT" in text
     assert "runtime.unassign()" in text
@@ -266,6 +274,8 @@ def test_safe_continue_notebook_defaults_to_dry_run_and_guarded_action() -> None
     assert 'pointer = ROOT / "config" / "stage5_current_source_summary.txt"' in text
     assert "Dry run complete" in text
     assert 'DISCONNECT_RUNTIME_WHEN_DONE = env_bool("STAGE5_SAFE_CONTINUE_DISCONNECT", True)' in text
+    assert 'MAX_NEXT_ACTIONS = int(os.environ.get("STAGE5_SAFE_CONTINUE_MAX_ACTIONS", "1"))' in text
+    assert 'ALLOW_REPEAT_NEXT_ACTION = env_bool("STAGE5_SAFE_CONTINUE_ALLOW_REPEAT", False)' in text
     assert "runtime.unassign()" in text
     assert "GO_NO_GO_RUN_ID" in text
     assert "Skipping requirements install because no paid action will execute." in text
@@ -280,6 +290,8 @@ def test_safe_continue_notebook_defaults_to_dry_run_and_guarded_action() -> None
     assert "tests/test_curriculum_pipeline_from_artifacts.py" in text
     assert "tests/test_curriculum_jsonl.py" in text
     assert "execute_action = bool(RUN_A100_ACTION and go_allowed)" in text
+    assert 'env["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] = str(MAX_NEXT_ACTIONS)' in text
+    assert 'env["STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT"] = "1" if ALLOW_REPEAT_NEXT_ACTION else "0"' in text
     assert "tests/test_stage5_routing_repair.py" in text
     assert "tests/test_stage5_balanced_arc_mix_gate.py" in text
     assert "stage5_routing_diagnostic_20260622_041706/summary.json" in text
