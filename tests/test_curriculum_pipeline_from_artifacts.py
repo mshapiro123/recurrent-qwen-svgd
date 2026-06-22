@@ -56,6 +56,10 @@ def response_rows_for_jobs(jobs_path: Path, responder) -> list[dict]:
     ]
 
 
+def read_json(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 def test_pipeline_stops_after_building_seed_jobs(tmp_path) -> None:
     references = tmp_path / "refs.jsonl"
     write_jsonl(references, [{"id": "eval-1", "prompt": "What is 9 + 9?"}])
@@ -93,15 +97,20 @@ def test_pipeline_resumes_to_complete_from_artifacts(tmp_path) -> None:
     )
     summary = run_pipeline(args)
     assert summary["status"] == "pending_ground_truth_responses"
+    assert read_json(paths["candidates_report"])["candidates"] == 1
+    assert read_json(paths["decontam_report"])["accepted"] == 1
 
     write_jsonl(paths["responses_ground_truth"], response_rows_for_jobs(paths["jobs_ground_truth"], lambda _job: "6*7=42\nANSWER: 42"))
     summary = run_pipeline(args)
     assert summary["status"] == "pending_reference_attempts"
+    assert read_json(paths["verified_candidates_report"])["verified"] == 1
 
     verified = read_jsonl(paths["verified_candidates"])
     write_jsonl(paths["reference_attempts"], [{"record_id": verified[0]["id"], "sample_id": 0, "correct": False}])
     summary = run_pipeline(args)
     assert summary["status"] == "pending_method_or_perturbation_responses"
+    assert read_json(paths["difficulty_report"])["measured"] == 1
+    assert read_json(paths["false_answers_report"])["with_false_answer"] == 1
 
     write_jsonl(
         paths["responses_methods"],
@@ -120,6 +129,8 @@ def test_pipeline_resumes_to_complete_from_artifacts(tmp_path) -> None:
     )
     summary = run_pipeline(args)
     assert summary["status"] == "pending_judgment_responses"
+    assert read_json(paths["method_solutions_report"])["solution_candidates"] == 4
+    assert read_json(paths["perturbation_report"])["traces"] == 4
 
     write_jsonl(
         paths["responses_naturalness"],
@@ -154,3 +165,25 @@ def test_pipeline_resumes_to_complete_from_artifacts(tmp_path) -> None:
         "verifier_detection",
         "verifier_rationalization",
     }
+    assert read_json(paths["naturalness_report"])["judgments"] == 8
+    assert read_json(paths["distinctness_report"])["judgments"] == 8
+    assert read_json(paths["depth_report"])["measurements"] == 8
+    assert read_json(paths["error_detection_report"])["judgments"] == 0
+    assert read_json(paths["typed_records_report"])["records"] == 1
+    assert read_json(paths["positive_sft_report"])["exported_examples"] == 2
+    for report_name in [
+        "candidates_report",
+        "decontam_report",
+        "verified_candidates_report",
+        "difficulty_report",
+        "false_answers_report",
+        "method_solutions_report",
+        "perturbation_report",
+        "naturalness_report",
+        "distinctness_report",
+        "depth_report",
+        "error_detection_report",
+        "typed_records_report",
+        "positive_sft_report",
+    ]:
+        assert summary["artifacts"][report_name]["exists"]

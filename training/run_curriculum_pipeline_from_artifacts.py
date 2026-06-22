@@ -103,35 +103,48 @@ def artifact_paths(work_dir: Path) -> dict[str, Path]:
         "jobs_seed": work_dir / "jobs_seed.jsonl",
         "responses_seed": work_dir / "responses_seed.jsonl",
         "candidates": work_dir / "candidates.jsonl",
+        "candidates_report": work_dir / "candidates_report.json",
         "candidates_decontaminated": work_dir / "candidates_decontaminated.jsonl",
         "candidates_contaminated": work_dir / "candidates_contaminated.jsonl",
+        "decontam_report": work_dir / "decontam_report.json",
         "jobs_ground_truth": work_dir / "jobs_ground_truth.jsonl",
         "responses_ground_truth": work_dir / "responses_ground_truth.jsonl",
         "verified_candidates": work_dir / "verified_candidates.jsonl",
+        "verified_candidates_report": work_dir / "verified_candidates_report.json",
         "reference_attempts": work_dir / "reference_attempts.jsonl",
         "verified_candidates_difficulty": work_dir / "verified_candidates_difficulty.jsonl",
+        "difficulty_report": work_dir / "difficulty_report.json",
         "verified_candidates_no_false_answer": work_dir / "verified_candidates_no_false_answer.jsonl",
         "verified_candidates_false_answers": work_dir / "verified_candidates_false_answers.jsonl",
+        "false_answers_report": work_dir / "false_answers_report.json",
         "jobs_methods": work_dir / "jobs_methods.jsonl",
         "responses_methods": work_dir / "responses_methods.jsonl",
         "method_solution_candidates": work_dir / "method_solution_candidates.jsonl",
+        "method_solutions_report": work_dir / "method_solutions_report.json",
         "jobs_perturbation": work_dir / "jobs_perturbation.jsonl",
         "responses_perturbation": work_dir / "responses_perturbation.jsonl",
         "perturbation_traces": work_dir / "perturbation_traces.jsonl",
+        "perturbation_report": work_dir / "perturbation_report.json",
         "jobs_naturalness": work_dir / "jobs_naturalness.jsonl",
         "responses_naturalness": work_dir / "responses_naturalness.jsonl",
         "naturalness_judgments": work_dir / "naturalness_judgments.jsonl",
+        "naturalness_report": work_dir / "naturalness_report.json",
         "jobs_distinctness": work_dir / "jobs_distinctness.jsonl",
         "responses_distinctness": work_dir / "responses_distinctness.jsonl",
         "distinctness_judgments": work_dir / "distinctness_judgments.jsonl",
+        "distinctness_report": work_dir / "distinctness_report.json",
         "jobs_depth": work_dir / "jobs_depth.jsonl",
         "responses_depth": work_dir / "responses_depth.jsonl",
         "depth_measurements": work_dir / "depth_measurements.jsonl",
+        "depth_report": work_dir / "depth_report.json",
         "jobs_error_detection": work_dir / "jobs_error_detection.jsonl",
         "responses_error_detection": work_dir / "responses_error_detection.jsonl",
         "error_detection_judgments": work_dir / "error_detection_judgments.jsonl",
+        "error_detection_report": work_dir / "error_detection_report.json",
         "typed_records": work_dir / "typed_records.jsonl",
+        "typed_records_report": work_dir / "typed_records_report.json",
         "positive_sft": work_dir / "positive_sft.jsonl",
+        "positive_sft_report": work_dir / "positive_sft_report.json",
         "summary": work_dir / "summary.json",
     }
 
@@ -201,6 +214,7 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
 
     candidates, candidates_report = seed_outputs_to_candidates(seed_jobs, read_jsonl(paths["responses_seed"]))
     write_jsonl(paths["candidates"], candidates)
+    write_json(paths["candidates_report"], candidates_report)
     reference_index = build_reference_index(
         references,
         text_fields=("statement", "prompt", "question", "problem", "input", "text"),
@@ -218,6 +232,7 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
     decontam_report.pop("annotated_rows", None)
     write_jsonl(paths["candidates_decontaminated"], decontaminated)
     write_jsonl(paths["candidates_contaminated"], contaminated)
+    write_json(paths["decontam_report"], decontam_report)
 
     ground_jobs = build_ground_truth_jobs(decontaminated, models=solver_models)
     write_jsonl(paths["jobs_ground_truth"], ground_jobs)
@@ -242,6 +257,7 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
         min_agree=args.min_ground_truth_agree,
     )
     write_jsonl(paths["verified_candidates"], verified)
+    write_json(paths["verified_candidates_report"], verified_report)
     if response_missing(paths["reference_attempts"]):
         return stop_summary(
             work_dir=work_dir,
@@ -262,12 +278,14 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
         drop_unmeasured=args.drop_unmeasured_difficulty,
     )
     write_jsonl(paths["verified_candidates_difficulty"], with_difficulty)
+    write_json(paths["difficulty_report"], difficulty_report)
     with_false, false_rejected, false_report = annotate_false_answers(
         with_difficulty,
         drop_unannotated=args.drop_unannotated_false_answers,
     )
     write_jsonl(paths["verified_candidates_no_false_answer"], false_rejected)
     write_jsonl(paths["verified_candidates_false_answers"], with_false)
+    write_json(paths["false_answers_report"], false_report)
 
     method_jobs = build_method_solve_jobs(with_false, models=solver_models, fallback_methods=methods)
     perturbation_jobs = build_perturbation_jobs(with_false, models=solver_models)
@@ -293,12 +311,14 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
         read_jsonl(paths["responses_methods"]),
     )
     write_jsonl(paths["method_solution_candidates"], method_solutions)
+    write_json(paths["method_solutions_report"], method_report)
     perturbation_traces, perturbation_report = perturbation_outputs_to_traces(
         with_false,
         perturbation_jobs,
         read_jsonl(paths["responses_perturbation"]) if perturbation_jobs else [],
     )
     write_jsonl(paths["perturbation_traces"], perturbation_traces)
+    write_json(paths["perturbation_report"], perturbation_report)
 
     naturalness_jobs = build_naturalness_jobs(method_solutions, models=judge_models)
     distinctness_jobs = build_distinctness_jobs(method_solutions, models=judge_models)
@@ -348,6 +368,9 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
     write_jsonl(paths["naturalness_judgments"], naturalness)
     write_jsonl(paths["distinctness_judgments"], distinctness)
     write_jsonl(paths["depth_measurements"], depth)
+    write_json(paths["naturalness_report"], naturalness_report)
+    write_json(paths["distinctness_report"], distinctness_report)
+    write_json(paths["depth_report"], depth_report)
     error_detection: list[dict[str, Any]] = []
     error_report: dict[str, Any] = {"judgments": 0, "issues": [], "status_counts": {}}
     if error_detection_jobs and paths["responses_error_detection"].exists() and line_count(paths["responses_error_detection"]) > 0:
@@ -357,6 +380,7 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
             read_jsonl(paths["responses_error_detection"]),
         )
         write_jsonl(paths["error_detection_judgments"], error_detection)
+    write_json(paths["error_detection_report"], error_report)
 
     records, records_report = assemble_curriculum_records(
         with_false,
@@ -370,8 +394,10 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
         deep_threshold=args.deep_threshold,
     )
     write_jsonl(paths["typed_records"], records)
+    write_json(paths["typed_records_report"], records_report)
     sft_rows, sft_report = convert_curriculum_records(records)
     write_jsonl(paths["positive_sft"], sft_rows)
+    write_json(paths["positive_sft_report"], sft_report)
 
     return stop_summary(
         work_dir=work_dir,
