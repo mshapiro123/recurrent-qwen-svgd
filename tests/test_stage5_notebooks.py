@@ -204,3 +204,26 @@ def test_safe_continue_notebook_defaults_to_dry_run_and_guarded_action() -> None
     assert "colab/run_stage5_full_assessment_once.py" not in text
     assert payload["cells"][0]["cell_type"] == "markdown"
     assert payload["cells"][1]["cell_type"] == "code"
+
+
+def test_curriculum_artifact_pipeline_cell_defaults_to_no_provider_spend() -> None:
+    text = (ROOT / "colab/CURRICULUM_ARTIFACT_PIPELINE_CELL.md").read_text(encoding="utf-8")
+    plain = (ROOT / "colab/CURRICULUM_ARTIFACT_PIPELINE_CELL.py").read_text(encoding="utf-8")
+
+    assert "RUN_PROVIDER_RESPONSES = False" in text
+    assert "RUN_PROVIDER_RESPONSES = False" in plain
+    assert "PROVIDER_LIMIT = 2" in text
+    assert "PROVIDER_LIMIT = 2" in plain
+    assert "training/run_curriculum_pipeline_from_artifacts.py" in plain
+    assert "training/run_curriculum_job_responses.py" in plain
+    assert "pending_reference_attempt_responses" in plain
+    assert "runtime.unassign()" in plain
+    assert "replace-with-opus-compatible-model-id" in plain
+    assert "Fill MODEL_MAP with concrete provider model ids" in plain
+
+
+def test_curriculum_artifact_pipeline_plain_cell_matches_markdown_code() -> None:
+    markdown_cell = fenced_python_block("colab/CURRICULUM_ARTIFACT_PIPELINE_CELL.md")
+    plain_cell = (ROOT / "colab/CURRICULUM_ARTIFACT_PIPELINE_CELL.py").read_text(encoding="utf-8")
+
+    assert plain_cell == markdown_cell
