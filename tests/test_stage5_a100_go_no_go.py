@@ -6,6 +6,7 @@ from colab.check_stage5_a100_go_no_go import (
     classify_action,
     command_script,
     curriculum_sft_checkpoint_availability,
+    curriculum_sft_input_availability,
     promoted_stage4_opus_sources,
     routing_repair_checkpoint_availability,
     source_has_calibration_warning,
@@ -315,6 +316,7 @@ def test_curriculum_sft_checkpoint_guard_without_resume_starts_from_base(monkeyp
     assert checkpoint["available"] is True
     assert checkpoint["checkpoint"] is None
     assert "starts from the base model" in checkpoint["reason"]
+    assert checkpoint["input_preflight"]["available"] is True
 
 
 def test_curriculum_sft_checkpoint_guard_blocks_missing_resume(monkeypatch) -> None:
@@ -345,6 +347,76 @@ def test_curriculum_sft_checkpoint_availability_accepts_existing_resume(monkeypa
 
     assert status["available"] is True
     assert status["exists"] is True
+
+
+def test_curriculum_sft_input_preflight_blocks_missing_work_dir(monkeypatch, tmp_path) -> None:
+    work_dir = tmp_path / "data" / "curriculum" / "run_001"
+    source_payload = {
+        "kind": "curriculum_sft_gate",
+        "go": True,
+        "work_dir": str(work_dir),
+        "summary_json": str(work_dir / "summary.json"),
+        "artifacts": {"positive_sft": str(work_dir / "positive_sft.jsonl")},
+    }
+    monkeypatch.setenv("STAGE5_CURRICULUM_INPUT_BACKUP_DIR", str(tmp_path / "drive" / "curriculum_runs"))
+
+    decision, preflight = apply_checkpoint_guard(
+        {
+            "go": True,
+            "status": "go_curriculum_sft",
+            "spend_class": "bounded_curriculum_sft",
+        },
+        source_payload=source_payload,
+    )
+
+    assert preflight["available"] is False
+    assert preflight["input_preflight"]["available"] is False
+    assert decision["go"] is False
+    assert decision["status"] == "curriculum_input_missing_no_go"
+
+
+def test_curriculum_sft_input_preflight_allows_drive_backup(monkeypatch, tmp_path) -> None:
+    work_dir = tmp_path / "workspace" / "data" / "curriculum" / "run_001"
+    backup_root = tmp_path / "drive" / "curriculum_runs"
+    backup = backup_root / "run_001"
+    backup.mkdir(parents=True)
+    (backup / "summary.json").write_text("{}", encoding="utf-8")
+    (backup / "positive_sft.jsonl").write_text("{}\n", encoding="utf-8")
+    monkeypatch.setenv("STAGE5_CURRICULUM_INPUT_BACKUP_DIR", str(backup_root))
+
+    status = curriculum_sft_input_availability(
+        {
+            "kind": "curriculum_sft_gate",
+            "go": True,
+            "work_dir": str(work_dir),
+            "summary_json": str(work_dir / "summary.json"),
+            "artifacts": {"positive_sft": str(work_dir / "positive_sft.jsonl")},
+        }
+    )
+
+    assert status["available"] is True
+    assert status["local_available"] is False
+    assert status["drive_candidate_exists"] is True
+
+
+def test_curriculum_sft_input_preflight_allows_local_artifacts(tmp_path) -> None:
+    work_dir = tmp_path / "data" / "curriculum" / "run_001"
+    work_dir.mkdir(parents=True)
+    (work_dir / "summary.json").write_text("{}", encoding="utf-8")
+    (work_dir / "positive_sft.jsonl").write_text("{}\n", encoding="utf-8")
+
+    status = curriculum_sft_input_availability(
+        {
+            "kind": "curriculum_sft_gate",
+            "go": True,
+            "work_dir": str(work_dir),
+            "summary_json": str(work_dir / "summary.json"),
+            "artifacts": {"positive_sft": str(work_dir / "positive_sft.jsonl")},
+        }
+    )
+
+    assert status["available"] is True
+    assert status["local_available"] is True
 
 
 def test_routing_checkpoint_availability_reports_default_checkpoint() -> None:

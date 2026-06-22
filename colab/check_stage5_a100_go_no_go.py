@@ -227,6 +227,123 @@ def curriculum_sft_checkpoint_availability() -> dict[str, Any]:
     return status
 
 
+def curriculum_input_backup_root() -> Path:
+    return Path(
+        os.environ.get(
+            "STAGE5_CURRICULUM_INPUT_BACKUP_DIR",
+            "/content/drive/MyDrive/recurrent-qwen-svgd/curriculum_runs",
+        )
+    )
+
+
+def resolve_repo_path(value: str | Path | None) -> Path | None:
+    if not value:
+        return None
+    path = Path(str(value))
+    return path if path.is_absolute() else ROOT / path
+
+
+def curriculum_work_dir_backup_candidates(work_dir: Path | None) -> list[Path]:
+    if work_dir is None:
+        return []
+    root = curriculum_input_backup_root()
+    candidates = [root / work_dir.name]
+    try:
+        relative = work_dir.relative_to(ROOT)
+    except ValueError:
+        relative = Path(work_dir.name)
+    candidates.append(root / relative)
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        key = str(candidate)
+        if key not in seen:
+            seen.add(key)
+            unique.append(candidate)
+    return unique
+
+
+def curriculum_sft_input_availability(source_payload: dict[str, Any]) -> dict[str, Any]:
+    work_dir = resolve_repo_path(
+        os.environ.get("STAGE5_CURRICULUM_WORK_DIR") or source_payload.get("work_dir")
+    )
+    summary_json = resolve_repo_path(
+        os.environ.get("STAGE5_CURRICULUM_SUMMARY_JSON") or source_payload.get("summary_json")
+    )
+    positive_sft = resolve_repo_path(((source_payload.get("artifacts") or {}).get("positive_sft")))
+
+    # Older summaries may not include these fields. In that case let the runner
+    # perform its own validation instead of blocking a valid legacy handoff.
+    if work_dir is None and summary_json is None and positive_sft is None:
+        return {
+            "available": True,
+            "reason": "Curriculum gate summary does not include input paths; runner will validate local artifacts.",
+            "work_dir": None,
+            "summary_json": None,
+            "positive_sft": None,
+        }
+
+    local_available = bool(
+        (work_dir is None or work_dir.exists())
+        and (summary_json is None or summary_json.exists())
+        and (positive_sft is None or positive_sft.exists())
+    )
+    if local_available:
+        return {
+            "available": True,
+            "reason": "Curriculum input artifacts are present locally.",
+            "work_dir": None if work_dir is None else path_for_cli(work_dir),
+            "summary_json": None if summary_json is None else path_for_cli(summary_json),
+            "positive_sft": None if positive_sft is None else path_for_cli(positive_sft),
+            "local_available": True,
+        }
+
+    candidates = curriculum_work_dir_backup_candidates(work_dir)
+    existing = [
+        candidate
+        for candidate in candidates
+        if (candidate / "summary.json").exists() and (candidate / "positive_sft.jsonl").exists()
+    ]
+    if existing:
+        return {
+            "available": True,
+            "reason": "Curriculum input artifacts are missing locally but visible in the Drive curriculum backup.",
+            "work_dir": None if work_dir is None else path_for_cli(work_dir),
+            "summary_json": None if summary_json is None else path_for_cli(summary_json),
+            "positive_sft": None if positive_sft is None else path_for_cli(positive_sft),
+            "local_available": False,
+            "drive_candidate_exists": True,
+            "first_existing_drive_candidate": str(existing[0]),
+            "first_drive_candidates": [str(path) for path in candidates[:12]],
+        }
+
+    return {
+        "available": False,
+        "reason": (
+            "Curriculum SFT input artifacts are not present locally and no Drive curriculum backup "
+            "with summary.json and positive_sft.jsonl is visible."
+        ),
+        "work_dir": None if work_dir is None else path_for_cli(work_dir),
+        "summary_json": None if summary_json is None else path_for_cli(summary_json),
+        "positive_sft": None if positive_sft is None else path_for_cli(positive_sft),
+        "local_available": False,
+        "drive_candidate_exists": False,
+        "first_drive_candidates": [str(path) for path in candidates[:12]],
+        "curriculum_input_backup_root": str(curriculum_input_backup_root()),
+    }
+
+
+def curriculum_sft_preflight(source_payload: dict[str, Any]) -> dict[str, Any]:
+    checkpoint = curriculum_sft_checkpoint_availability()
+    inputs = curriculum_sft_input_availability(source_payload)
+    return {
+        **checkpoint,
+        "available": bool(checkpoint.get("available") and inputs.get("available")),
+        "checkpoint_preflight": checkpoint,
+        "input_preflight": inputs,
+    }
+
+
 def apply_checkpoint_guard(
     decision: dict[str, Any],
     *,
@@ -248,13 +365,28 @@ def apply_checkpoint_guard(
             "reason": "Stage 4 Opus fine-tune starts from the base model and does not require a recovered checkpoint preflight.",
         }
     elif decision.get("spend_class") == "bounded_curriculum_sft":
-        checkpoint = curriculum_sft_checkpoint_availability()
+        checkpoint = curriculum_sft_preflight(source_payload)
     else:
         checkpoint = checkpoint_availability(source_payload)
     if not decision.get("go"):
         return decision, checkpoint
     if checkpoint.get("available"):
         return decision, checkpoint
+    if decision.get("spend_class") == "bounded_curriculum_sft" and not (
+        checkpoint.get("input_preflight") or {}
+    ).get("available"):
+        guarded = {
+            "go": False,
+            "status": "curriculum_input_missing_no_go",
+            "spend_class": "none",
+            "reason": (
+                "The planner selected generated-curriculum SFT, but the curriculum work dir "
+                "is not present locally and no Drive backup candidate is visible. Run or restore "
+                "the CPU/API curriculum artifact pipeline before attaching a paid GPU."
+            ),
+            "prior_decision": decision,
+        }
+        return guarded, checkpoint
     if decision.get("spend_class") in recovered_checkpoint_classes:
         guarded = {
             "go": False,
