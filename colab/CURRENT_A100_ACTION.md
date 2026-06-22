@@ -6,9 +6,10 @@ Use the safe-continue cell from a normal Drive-backed or blank Colab notebook:
 
 [`colab/STAGE5_SAFE_CONTINUE_CELL.md`](STAGE5_SAFE_CONTINUE_CELL.md)
 
-Keep the runtime disconnected while editing the cell. Attach an L4/T4 if
-available; use A100 only if that is the practical available runtime. This is a
-diagnostic eval, not a training run.
+Keep the runtime disconnected while editing the cell. This is one bounded
+deterministic Phase 1 repair run; use an A100/H100 only when you intentionally
+want to spend paid GPU on it. If cheaper L4/T4 capacity is immediately
+available, it is acceptable, but expect a slower run.
 
 Set:
 
@@ -23,76 +24,69 @@ artifacts, and disconnects by default.
 
 ## Source Summary
 
-The current source of truth is the failed ARC-mix recovery proxy:
+The current source of truth is the completed routing diagnostic:
 
 ```text
-outputs/stage5/stage5_arc_mix_recovery_once_20260622_030628/summary.json
+outputs/stage5/stage5_routing_diagnostic_20260622_041706/summary.json
 ```
 
 Key result:
 
 ```text
-status = no_proxy_lift
-decision = stop_and_revise_objective
-best proxy = 66/128
-base proxy = 68/128
-start proxy = 68/128
-margin delta vs base = -0.308232
+status = needs_direct_halting_repair
+next_action = Train Phase 1 direct-mode recovery with base-logit distillation and shallow halt supervision.
+ARC-Easy direct delta = -2, mean direct loops = 2.58, mean direct margin delta = -2.49
+ARC-Challenge direct delta = -3, mean direct loops = 2.62, mean direct margin delta = -2.02
+ARC-Challenge conceptual delta = +2
 ```
 
-This means: do **not** extend ARC-mix training and do **not** run GPQA,
-Phase 2/SVGD, or scale-up. The next useful paid-GPU action is a small routing
-diagnostic.
+This means: do **not** run GPQA, Phase 2/SVGD, wide-particle training, or
+scale-up yet. The model is still harming base-confident direct rows and
+over-looping on them. The next useful paid-GPU action is a direct-mode
+deterministic repair.
 
 ## Experiment
 
-Run exactly one bounded depth/width routing diagnostic:
-
-```bash
-python colab/run_stage5_routing_diagnostic.py
-```
-
-Default limits:
-
-```text
-STAGE5_ROUTING_ARC_EASY_LIMIT=64
-STAGE5_ROUTING_ARC_CHALLENGE_LIMIT=64
-STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS=1
-```
-
-The runner restores the recovered deterministic Phase 1 checkpoint from Drive
-if needed, delegates to `colab/run_stage5_benchmark_suite.py`, then writes:
-
-```text
-outputs/stage5/<run_id>/benchmark_summary.json
-outputs/stage5/<run_id>/routing_assessment.json
-outputs/stage5/<run_id>/routing_assessment.md
-```
-
-## How To Interpret The Result
-
-The routing assessment has a machine-readable `status`:
-
-| Status | Meaning | Next action |
-|---|---|---|
-| `needs_direct_halting_repair` | Direct/base-confident rows drift or over-loop. | Train Phase 1 direct-mode recovery with base-logit distillation and shallow halt supervision. |
-| `needs_deep_narrow_recovery` | Direct rows look acceptable but deep/numeric rows do not improve. | Train Phase 1 deep-narrow recovery with repulsion off and non-collapsed halt-depth targets. |
-| `routing_diagnostic_pass` | Small diagnostic found no direct/deep blocker. | Consider a larger confirmation or the bounded direct/deep recovery ladder. |
-
-This diagnostic is the bridge from the failed generic ARC-mix proxy to the new
-depth/width curriculum. It tells us which part of the recurrent model to train
-next instead of spending A100 on another undifferentiated continuation.
-
-After a diagnostic summary lands, the same safe-continue path will select the
-next action:
+Run exactly one bounded direct-mode halting repair:
 
 ```bash
 python colab/run_stage5_routing_repair.py
 ```
 
-only for `needs_direct_halting_repair` or `needs_deep_narrow_recovery`. The
-repair runner maps the diagnosis to one bounded deterministic Phase 1 profile
-and keeps particles/SVGD off. That repair now writes typed ARC rows with
-explicit loop-depth supervision: ARC-Easy/direct rows target loop `1`, while
-ARC-Challenge rows target loop `2` for direct-halting probes or loop `3` for
-deep-narrow recovery.
+The selected profile for `needs_direct_halting_repair`:
+
+```text
+repair_mode=direct_halting
+STAGE5_ARC_MIX_ARC_EASY_REPEAT=8
+STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT=1
+STAGE5_ARC_MIX_ARC_EASY_TARGET_LOOP=1
+STAGE5_ARC_MIX_ARC_CHALLENGE_TARGET_LOOP=2
+STAGE5_ARC_MIX_ARC_EASY_ROUTING_TYPE=direct
+STAGE5_ARC_MIX_ARC_CHALLENGE_ROUTING_TYPE=deep_narrow_probe
+STAGE5_ARC_MIX_ARMS=arc_mix_response_w02_lr2e6
+```
+
+The runner restores the recovered deterministic Phase 1 checkpoint from Drive
+if needed, delegates to `colab/run_stage5_balanced_arc_mix_gate.py`, keeps
+particles/SVGD off, and writes:
+
+```text
+outputs/stage5/<run_id>/repair_run/summary.json
+outputs/stage5/<run_id>/summary.json
+outputs/stage5/<run_id>/summary.md
+```
+
+## How To Interpret The Result
+
+The repair summary wraps the child ARC-mix gate status:
+
+| Status | Meaning | Next action |
+|---|---|---|
+| `repair_proxy_lift` | Direct repair lifted proxy accuracy and passed calibration. | Run the full balanced ARC confirmation. |
+| `repair_proxy_matches_base` | Direct repair restored proxy to base without calibration warning. | Run the full balanced ARC confirmation. |
+| `repair_proxy_lift_calibration_warning` | Accuracy lifted but base calibration degraded. | Stop and tighten preservation/distillation. |
+| `repair_proxy_matches_base_calibration_warning` | Accuracy matched base but calibration degraded. | Stop and tighten preservation/distillation. |
+| `repair_no_proxy_lift` | Repair did not improve the proxy. | Stop and revise direct-loop supervision. |
+
+Do not proceed to width/particles until direct rows stop regressing. This is
+the calibration floor for the wider depth/width curriculum.

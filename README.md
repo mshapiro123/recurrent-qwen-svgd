@@ -163,14 +163,16 @@ Treat A100 time as the scarce experimental reagent. The default answer to
 5. it is not a dataset audit, unit test, notebook repair, README edit, or
    exploratory script-debugging task.
 
-Right now there is exactly one plausible GPU job, and it is **diagnostic rather
-than training**: a bounded ARC-Easy / ARC-Challenge routing diagnostic with loop
-telemetry. The ARC-mix continuation from
-`outputs/stage5/stage5_arc_mix_recovery_once_20260622_030628/summary.json`
-failed to improve the recurrent start and worsened margin calibration, so
-another undifferentiated ARC-mix run is not justified. Dataset inspection,
-Hugging Face trace triage, planner repairs, documentation, and diagnosis should
-stay local or on a free CPU runtime.
+Right now there is exactly one plausible GPU job, and it is **bounded
+deterministic repair training**: a direct-mode Phase 1 repair with shallow
+halt supervision and base-logit response distillation. The routing diagnostic
+from
+`outputs/stage5/stage5_routing_diagnostic_20260622_041706/summary.json`
+showed that the recurrent checkpoint still harms base-confident direct rows
+while over-looping on them, so GPQA, Phase 2/SVGD, wide-particle training, and
+scale-up remain premature. Dataset inspection, Hugging Face trace triage,
+planner repairs, documentation, and diagnosis should stay local or on a free
+CPU runtime.
 The maintained next-action wrapper refuses long CPU/data-only dataset actions
 on an attached GPU runtime by default, so an A100 session does not sit idle
 while a Hugging Face audit runs.
@@ -179,12 +181,13 @@ Before attaching or keeping an A100, run the no-GPU spend check:
 
 ```bash
 python colab/check_stage5_a100_go_no_go.py \
-  --source-summary outputs/stage5/stage5_arc_mix_recovery_once_20260622_030628/summary.json
+  --source-summary outputs/stage5/stage5_routing_diagnostic_20260622_041706/summary.json
 ```
 
-Proceed only when it reports `go_bounded_proxy`, `go_full_confirmation`, or
-another explicit `go_*` status that matches the planned spend. Treat `no_go`,
-`calibration_warning_no_go`, and inspection actions as stop signs.
+Proceed only when it reports `go_routing_repair`, `go_bounded_proxy`,
+`go_full_confirmation`, or another explicit `go_*` status that matches the
+planned spend. Treat `no_go`, `calibration_warning_no_go`, and inspection
+actions as stop signs.
 The go/no-go check also verifies that the selected checkpoint is present
 locally or visible in the configured Drive artifact backup before it allows a
 paid GPU action. A missing checkpoint is a local/Drive repair task, not an
@@ -297,29 +300,41 @@ best recurrent proxy = 66/128
 mean margin delta vs base = -0.308232
 ```
 
-The next GPU job should therefore be a **bounded routing diagnostic**, not more
-training. Use the safe-continue cell from
+The bounded routing diagnostic then landed:
+
+```text
+run_id = stage5_routing_diagnostic_20260622_041706
+status = needs_direct_halting_repair
+ARC-Easy direct delta = -2
+ARC-Easy mean direct loops = 2.58
+ARC-Challenge direct delta = -3
+ARC-Challenge mean direct loops = 2.62
+ARC-Challenge conceptual delta = +2
+```
+
+The next GPU job should therefore be a **bounded direct-mode halting repair**,
+not Phase 2/SVGD, GPQA, or scale-up. Use the safe-continue cell from
 [`colab/STAGE5_SAFE_CONTINUE_CELL.md`](colab/STAGE5_SAFE_CONTINUE_CELL.md);
 with `RUN_A100_ACTION = True`, the planner now selects
-`python colab/run_stage5_routing_diagnostic.py`. Prefer L4/T4 for this
-diagnostic if available. Use A100 only when that is the practical runtime and
-the short run is intentional.
+`python colab/run_stage5_routing_repair.py`. The selected repair profile
+weights ARC-Easy/direct rows heavily, targets loop `1` on ARC-Easy rows, uses
+ARC-Challenge only as a light loop-`2` probe, and keeps particles/SVGD off.
 
 The concise run card with the preferred safe-continue path is
 [`colab/CURRENT_A100_ACTION.md`](colab/CURRENT_A100_ACTION.md).
 
-The routing diagnostic emits `routing_assessment.json` and
-`routing_assessment.md`. Its statuses map directly to the new training recipe:
-`needs_direct_halting_repair` means train shallow direct-mode/base-logit
-recovery; `needs_deep_narrow_recovery` means train deterministic depth with
-repulsion off; `routing_diagnostic_pass` is the only result that justifies a
-larger confirmation or recovery ladder.
+The repair runner consumes the diagnostic summary, delegates to the existing
+ARC-mix trainer with particles/SVGD off, and records the child run under a
+planner-readable summary. A `repair_proxy_lift` or `repair_proxy_matches_base`
+result can justify a full balanced ARC confirmation. Calibration warnings or
+`repair_no_proxy_lift` are stop signs for objective revision.
 
-After a routing diagnostic lands, the planner can select
-`python colab/run_stage5_routing_repair.py`. That repair runner consumes the
-diagnostic summary, chooses either a direct-heavy or deep-narrow deterministic
-Phase 1 profile, delegates to the existing ARC-mix trainer with particles/SVGD
-off, and records the child run under a planner-readable summary.
+The longer-term data plan is captured in
+[`docs/CURRICULUM_DATA_PIPELINE.md`](docs/CURRICULUM_DATA_PIPELINE.md): strong
+non-Qwen models generate and judge candidate traces, but verified answers and
+programmatic checks control labels. Positive SFT loaders may consume only
+`positive_*` roles; rationalizations and slips are reserved for verifier or
+contrastive training.
 
 Do not run GPQA, Phase 2/SVGD, or scale-up jobs before this deterministic
 recurrent recovery question is resolved.
