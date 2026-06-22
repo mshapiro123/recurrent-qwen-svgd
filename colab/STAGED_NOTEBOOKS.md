@@ -28,7 +28,9 @@ latest repo, runs the no-GPU go/no-go check, and dry-runs the guarded
 next-action path unless `RUN_A100_ACTION = True` is set in the cell. It now
 disconnects the runtime by default after printing the dry-run or guarded-action
 result; set `DISCONNECT_RUNTIME_WHEN_DONE = False` only when you intentionally
-want to keep the session attached.
+want to keep the session attached. In dry-run or blocked states it also skips
+`pip install -r requirements.txt`, so a status check is mostly Git plus stdlib
+planner work.
 
 The optional next A100 job is one bounded ARC-mix proxy using stronger response
 distillation via

@@ -10,10 +10,12 @@ guarded planner-selected action. The maintained execution path still runs the
 actions, such as dataset audits, while a GPU runtime is attached unless
 `STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_LOCAL_ONLY_ON_GPU=1` is set deliberately.
 By default the cell disconnects the Colab runtime after the dry run or guarded
-action so an attached A100 does not sit idle.
+action so an attached A100 does not sit idle. Dry-runs and blocked actions skip
+`pip install -r requirements.txt`; dependency installation happens only after
+the A100 guard allows an intentional paid action.
 
 ```python
-import os, shutil, subprocess, sys
+import json, os, shutil, subprocess, sys
 from pathlib import Path
 from google.colab import userdata
 
@@ -30,6 +32,7 @@ DISCONNECT_RUNTIME_WHEN_DONE = True
 SOURCE_SUMMARY = (
     "outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json"
 )
+GO_NO_GO_RUN_ID = "stage5_safe_continue_go_no_go"
 
 def secret(*names):
     for name in names:
@@ -97,20 +100,12 @@ def sync_repo():
 sync_repo()
 run(["git", "config", "user.email", "colab-runner@local"], cwd=ROOT)
 run(["git", "config", "user.name", "Colab Runner"], cwd=ROOT)
-run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"], cwd=ROOT)
-
-if HF_TOKEN:
-    from huggingface_hub import HfApi, login
-
-    login(token=HF_TOKEN, add_to_git_credential=False)
-    who = HfApi(token=HF_TOKEN).whoami()
-    print("HF auth OK:", who.get("name") or who.get("email") or "authenticated user", flush=True)
-else:
-    print("HF auth skipped; Hub downloads will be anonymous.", flush=True)
 
 run(["git", "log", "--oneline", "-5"], cwd=ROOT, check=False)
 run(["nvidia-smi"], cwd=ROOT, check=False)
 
+check_env = os.environ.copy()
+check_env["STAGE5_A100_GO_NO_GO_RUN_ID"] = GO_NO_GO_RUN_ID
 run(
     [
         sys.executable,
@@ -119,17 +114,38 @@ run(
         SOURCE_SUMMARY,
     ],
     cwd=ROOT,
+    env=check_env,
 )
+
+go_payload = json.loads((ROOT / "outputs" / "stage5" / GO_NO_GO_RUN_ID / "summary.json").read_text(encoding="utf-8"))
+go_decision = go_payload.get("decision", {})
+go_allowed = bool(go_decision.get("go"))
+if RUN_A100_ACTION and not go_allowed:
+    print(f"RUN_A100_ACTION requested, but a100_guard blocked spend: {go_decision}", flush=True)
+
+execute_action = bool(RUN_A100_ACTION and go_allowed)
+if execute_action:
+    run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"], cwd=ROOT)
+    if HF_TOKEN:
+        from huggingface_hub import HfApi, login
+
+        login(token=HF_TOKEN, add_to_git_credential=False)
+        who = HfApi(token=HF_TOKEN).whoami()
+        print("HF auth OK:", who.get("name") or who.get("email") or "authenticated user", flush=True)
+    else:
+        print("HF auth skipped; Hub downloads will be anonymous.", flush=True)
+else:
+    print("Skipping requirements install because no paid action will execute.", flush=True)
 
 env = os.environ.copy()
 env["STAGE5_ARC_AGI_NEXT_ACTION_SOURCE_SUMMARY"] = SOURCE_SUMMARY
-env["STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE"] = "1" if RUN_A100_ACTION else "0"
+env["STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE"] = "1" if execute_action else "0"
 env["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] = "1"
 env["STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT"] = "0"
 
 run([sys.executable, "colab/run_stage5_next_action.py"], cwd=ROOT, env=env)
 
-if not RUN_A100_ACTION:
+if not execute_action:
     print("Dry run complete. Set RUN_A100_ACTION = True only when you intentionally want to spend A100 credits.", flush=True)
 else:
     print("Guarded next action completed or stopped by a100_guard. Review the emitted summary before continuing.", flush=True)

@@ -98,11 +98,14 @@ def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     assert "RUN_A100_ACTION = False" in text
     assert "colab/check_stage5_a100_go_no_go.py" in text
     assert "colab/run_stage5_next_action.py" in text
-    assert 'env["STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE"] = "1" if RUN_A100_ACTION else "0"' in text
+    assert 'env["STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE"] = "1" if execute_action else "0"' in text
     assert "STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS" in text
     assert "Dry run complete" in text
     assert "DISCONNECT_RUNTIME_WHEN_DONE = True" in text
     assert "runtime.unassign()" in text
+    assert "GO_NO_GO_RUN_ID" in text
+    assert "Skipping requirements install because no paid action will execute." in text
+    assert "execute_action = bool(RUN_A100_ACTION and go_allowed)" in text
     assert "colab/run_stage5_full_assessment_once.py" not in text
 
 
@@ -117,6 +120,9 @@ def test_safe_continue_notebook_defaults_to_dry_run_and_guarded_action() -> None
     assert "Dry run complete" in text
     assert "DISCONNECT_RUNTIME_WHEN_DONE = True" in text
     assert "runtime.unassign()" in text
+    assert "GO_NO_GO_RUN_ID" in text
+    assert "Skipping requirements install because no paid action will execute." in text
+    assert "execute_action = bool(RUN_A100_ACTION and go_allowed)" in text
     assert "colab/run_stage5_full_assessment_once.py" not in text
     assert payload["cells"][0]["cell_type"] == "markdown"
     assert payload["cells"][1]["cell_type"] == "code"
