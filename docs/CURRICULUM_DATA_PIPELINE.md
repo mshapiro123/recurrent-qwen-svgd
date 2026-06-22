@@ -180,6 +180,22 @@ templates can guarantee controllable step count, a single path, and a correct
 answer. Use strong models only to phrase constructed problems naturally, not to
 invent the latent answer.
 
+The maintained starter generator is:
+
+```bash
+python training/generate_programmatic_curriculum.py \
+  --output_jsonl data/curriculum/programmatic_arithmetic_typed.jsonl \
+  --report_json outputs/curriculum/programmatic_arithmetic_report.json \
+  --num_direct 1000 \
+  --num_deep_narrow 1000
+```
+
+It creates verified arithmetic-chain records with `direct` rows carrying
+`target_loop_count = 1` and `deep_narrow` rows carrying larger explicit loop
+targets. The generator is intentionally simple: it is a cheap CPU source for
+testing depth supervision and loader safety, not a claim about final reasoning
+coverage.
+
 ## Prompt Library
 
 Prompts that request JSON should instruct the model to return only the JSON.
