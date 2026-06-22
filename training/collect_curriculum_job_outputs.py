@@ -168,6 +168,17 @@ def answer_consistency_check(accepted_answer: str, claimed_answer: Any) -> dict[
     }
 
 
+def verifier_label_for_claim_check(claim_check: dict[str, Any]) -> str | None:
+    if claim_check.get("matched") is not True:
+        return None
+    method = str(claim_check.get("method") or "")
+    if method == "simple_numeric":
+        return "numeric"
+    if method == "normalized_exact":
+        return "normalized_exact"
+    return None
+
+
 def index_jobs(jobs: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     indexed: dict[str, dict[str, Any]] = {}
     for job in jobs:
@@ -272,6 +283,7 @@ def ground_truth_outputs_to_verified_candidates(
     min_agree: int = 2,
     mark_decontaminated: bool = False,
     require_claimed_answer_match: bool = False,
+    require_programmatic_answer_check: bool = False,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     candidate_by_id = group_candidates(candidates)
     paired, issues = responses_with_jobs(jobs, responses)
@@ -318,7 +330,7 @@ def ground_truth_outputs_to_verified_candidates(
                 programmatic_check_counts[f"{claim_check['method']}_matched"] += 1
             elif claim_check["checked"] and claim_check["matched"] is False:
                 programmatic_check_counts[f"{claim_check['method']}_mismatched"] += 1
-                if require_claimed_answer_match:
+                if require_claimed_answer_match or require_programmatic_answer_check:
                     rejected.append(
                         {
                             "id": record_id,
@@ -340,12 +352,26 @@ def ground_truth_outputs_to_verified_candidates(
                         }
                     )
                     continue
+                if require_programmatic_answer_check:
+                    rejected.append(
+                        {
+                            "id": record_id,
+                            "reason": "programmatic_answer_check_unavailable",
+                            "answers": answers,
+                            "claim_check": claim_check,
+                        }
+                    )
+                    continue
 
+            verified_by = ["cross_model"]
+            verifier_label = verifier_label_for_claim_check(claim_check)
+            if verifier_label is not None:
+                verified_by.append(verifier_label)
             accepted = dict(candidate)
             accepted["answer"] = {
                 "value": agreeing[0]["answer"],
                 "normalized": normalized,
-                "verified_by": ["cross_model"],
+                "verified_by": verified_by,
                 "confidence": "high",
                 "agreeing_models": agreeing_models,
                 "agreement_count": len(agreeing),
@@ -373,6 +399,7 @@ def ground_truth_outputs_to_verified_candidates(
         "rejected": len(rejected),
         "min_agree": min_agree,
         "require_claimed_answer_match": require_claimed_answer_match,
+        "require_programmatic_answer_check": require_programmatic_answer_check,
         "programmatic_check_counts": dict(sorted(programmatic_check_counts.items())),
         "issues": issues,
         "rejected_records": rejected,
@@ -956,6 +983,14 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Reject verified candidates when the accepted answer cannot be matched to the seed claimed_answer by a cheap exact/numeric check.",
     )
+    parser.add_argument(
+        "--require_programmatic_answer_check",
+        action="store_true",
+        help=(
+            "Reject verified candidates unless the accepted answer is confirmed by a cheap deterministic "
+            "claimed-answer check. This is stricter than cross-model agreement and is intended for generated curriculum shards."
+        ),
+    )
     args = parser.parse_args(argv)
 
     jobs = read_jsonl(args.jobs_jsonl)
@@ -977,6 +1012,7 @@ def main(argv: list[str] | None = None) -> int:
             min_agree=args.min_agree,
             mark_decontaminated=args.mark_decontaminated,
             require_claimed_answer_match=args.require_claimed_answer_match,
+            require_programmatic_answer_check=args.require_programmatic_answer_check,
         )
     elif args.mode == "method_solutions":
         if not args.candidates_jsonl:

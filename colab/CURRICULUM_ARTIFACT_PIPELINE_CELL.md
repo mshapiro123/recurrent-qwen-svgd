@@ -64,6 +64,7 @@ PIPELINE_ARGS = [
     "3",
     "--min_reference_samples",
     "1",
+    "--require_programmatic_answer_check",
 ]
 
 

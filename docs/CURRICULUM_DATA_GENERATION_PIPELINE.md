@@ -244,6 +244,7 @@ python training/run_curriculum_pipeline_from_artifacts.py \
   --seed_models opus-strong,glm-strong \
   --solver_models opus-strong,glm-strong \
   --judge_models opus-strong,glm-strong \
+  --require_programmatic_answer_check \
   --domains math \
   --difficulties medium,hard \
   --target_steps 4,8 \

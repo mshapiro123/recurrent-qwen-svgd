@@ -80,7 +80,8 @@ python training/run_curriculum_pipeline_from_artifacts.py \
   --work_dir data/curriculum/run_001 \
   --seed_models opus-strong,glm-strong \
   --solver_models opus-strong,glm-strong \
-  --judge_models opus-strong,glm-strong
+  --judge_models opus-strong,glm-strong \
+  --require_programmatic_answer_check
 ```
 
 Then submit the emitted jobs with either a custom command backend or an

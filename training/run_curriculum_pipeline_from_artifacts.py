@@ -308,6 +308,7 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
         read_jsonl(paths["responses_ground_truth"]),
         min_agree=args.min_ground_truth_agree,
         require_claimed_answer_match=args.require_claimed_answer_match,
+        require_programmatic_answer_check=args.require_programmatic_answer_check,
     )
     write_jsonl(paths["verified_candidates"], verified)
     write_json(paths["verified_candidates_report"], verified_report)
@@ -556,6 +557,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--decontam_threshold", type=float, default=0.5)
     parser.add_argument("--min_ground_truth_agree", type=int, default=2)
     parser.add_argument("--require_claimed_answer_match", action="store_true")
+    parser.add_argument(
+        "--require_programmatic_answer_check",
+        action="store_true",
+        help=(
+            "Reject generated candidates unless the agreed solver answer passes a cheap deterministic "
+            "check against the seed claimed_answer. Use for strong-model generated shards before SFT."
+        ),
+    )
     parser.add_argument("--reference_model", default="weak-reference")
     parser.add_argument("--reference_samples", type=int, default=3)
     parser.add_argument("--min_reference_samples", type=int, default=1)

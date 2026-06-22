@@ -147,7 +147,7 @@ def test_ground_truth_outputs_accepts_cross_model_agreement() -> None:
 
     assert report["verified"] == 1
     assert report["rejected"] == 0
-    assert verified[0]["answer"]["verified_by"] == ["cross_model"]
+    assert verified[0]["answer"]["verified_by"] == ["cross_model", "numeric"]
     assert verified[0]["answer"]["normalized"] == "4"
     assert verified[0]["answer"]["programmatic_check"]["matched"] is True
     assert report["programmatic_check_counts"] == {"simple_numeric_matched": 1}
@@ -183,6 +183,37 @@ def test_ground_truth_outputs_can_strictly_reject_claimed_answer_mismatch() -> N
     assert report["rejected"] == 1
     assert report["programmatic_check_counts"] == {"simple_numeric_mismatched": 1}
     assert report["rejected_records"][0]["reason"] == "claimed_answer_programmatic_mismatch"
+
+
+def test_ground_truth_outputs_can_require_programmatic_answer_check() -> None:
+    candidates = [
+        {
+            "id": "p1",
+            "domain": "math",
+            "statement": "What is two plus two?",
+            "claimed_answer": "the number four",
+        }
+    ]
+    jobs = [
+        ground_truth_job("solve-opus", record_id="p1", model="opus-test"),
+        ground_truth_job("solve-glm", record_id="p1", model="glm-test"),
+    ]
+    responses = [
+        {"job_id": "solve-opus", "response_text": "ANSWER: four"},
+        {"job_id": "solve-glm", "response_text": "ANSWER: four"},
+    ]
+
+    verified, report = ground_truth_outputs_to_verified_candidates(
+        candidates,
+        jobs,
+        responses,
+        require_programmatic_answer_check=True,
+    )
+
+    assert verified == []
+    assert report["rejected"] == 1
+    assert report["require_programmatic_answer_check"] is True
+    assert report["rejected_records"][0]["reason"] == "programmatic_answer_check_unavailable"
 
 
 def test_ground_truth_outputs_rejects_disagreement() -> None:
