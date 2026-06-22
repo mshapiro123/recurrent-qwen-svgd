@@ -47,6 +47,21 @@ PUSH_RESULTS = os.environ.get("STAGE5_RECOVERY_FULL_ASSESS_PUSH", "1").strip().l
     "yes",
     "y",
 }
+CHILD_STDOUT_TAIL_CHARS = int(os.environ.get("STAGE5_RECOVERY_FULL_ASSESS_CHILD_STDOUT_TAIL_CHARS", "12000"))
+
+
+class ChildCommandError(RuntimeError):
+    def __init__(
+        self,
+        *,
+        status: str,
+        proc: subprocess.CompletedProcess[str],
+        summary_path: Path | None = None,
+    ) -> None:
+        super().__init__(f"{status}: command failed with exit code {proc.returncode}")
+        self.status = status
+        self.proc = proc
+        self.summary_path = summary_path
 
 
 def path_for_cli(path: Path) -> str:
@@ -69,6 +84,12 @@ def update_current_source_summary(summary_path: Path) -> Path:
 
 def read_json(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def tail_text(value: str, *, limit: int = CHILD_STDOUT_TAIL_CHARS) -> str:
+    if len(value) <= limit:
+        return value
+    return f"...[truncated {len(value) - limit} chars]\n{value[-limit:]}"
 
 
 def run(
@@ -178,13 +199,22 @@ def run_full_benchmark(checkpoint: Path) -> Path:
             "STAGE5_BENCHMARK_PUSH": "0",
         }
     )
-    run([sys.executable, "colab/run_stage5_benchmark_suite.py"], env=env, log_name="benchmark_suite.log")
+    proc = run(
+        [sys.executable, "colab/run_stage5_benchmark_suite.py"],
+        env=env,
+        check=False,
+        log_name="benchmark_suite.log",
+    )
+    if proc.returncode:
+        raise ChildCommandError(status="benchmark_child_failed", proc=proc, summary_path=benchmark_summary)
+    if not benchmark_summary.exists():
+        raise ChildCommandError(status="benchmark_child_missing_summary", proc=proc, summary_path=benchmark_summary)
     return benchmark_summary
 
 
 def run_balanced_assessment(benchmark_summary: Path) -> Path:
     assessment_dir = RUN_DIR / "balanced_assessment"
-    run(
+    proc = run(
         [
             sys.executable,
             "colab/assess_stage5_balanced_mcq.py",
@@ -195,9 +225,15 @@ def run_balanced_assessment(benchmark_summary: Path) -> Path:
             "--output_dir",
             path_for_cli(assessment_dir),
         ],
+        check=False,
         log_name="balanced_assessment.log",
     )
-    return assessment_dir / "summary.json"
+    summary = assessment_dir / "summary.json"
+    if proc.returncode:
+        raise ChildCommandError(status="balanced_assessment_child_failed", proc=proc, summary_path=summary)
+    if not summary.exists():
+        raise ChildCommandError(status="balanced_assessment_child_missing_summary", proc=proc, summary_path=summary)
+    return summary
 
 
 def write_report(payload: dict[str, Any]) -> None:
@@ -273,8 +309,42 @@ def main() -> int:
     selected_gate, checkpoint, gate_payload = selected_checkpoint(source_payload)
     restore_checkpoint_if_needed(checkpoint, run_id=infer_stage5_run_id(checkpoint))
 
-    benchmark_summary = run_full_benchmark(checkpoint)
-    assessment_summary = run_balanced_assessment(benchmark_summary)
+    benchmark_summary: Path | None = None
+    assessment_summary: Path | None = None
+    try:
+        benchmark_summary = run_full_benchmark(checkpoint)
+        assessment_summary = run_balanced_assessment(benchmark_summary)
+    except ChildCommandError as exc:
+        payload = {
+            "run_id": RUN_ID,
+            "kind": "stage5_recovery_full_assessment",
+            "source_summary": path_for_cli(SOURCE_SUMMARY),
+            "source_status": source_payload.get("status"),
+            "selected_gate": selected_gate,
+            "selected_gate_status": gate_payload.get("status"),
+            "selected_checkpoint": path_for_cli(checkpoint),
+            "benchmark_summary": None if benchmark_summary is None else path_for_cli(benchmark_summary),
+            "balanced_assessment_summary": None if assessment_summary is None else path_for_cli(assessment_summary),
+            "status": exc.status,
+            "passed": False,
+            "child_returncode": exc.proc.returncode,
+            "child_summary_path": None if exc.summary_path is None else path_for_cli(exc.summary_path),
+            "child_stdout_tail": tail_text(exc.proc.stdout or ""),
+            "next_step": (
+                "The full balanced assessment did not complete cleanly. Inspect the child stdout tail, "
+                "run logs, and any partial summaries before spending more GPU."
+            ),
+            "best_checkpoint": None,
+            "balanced_assessment": None,
+        }
+        write_report(payload)
+        result_paths = [RUN_DIR]
+        if benchmark_summary is not None:
+            result_paths.append(benchmark_summary.parent)
+        backup_to_drive(result_paths)
+        commit_results(result_paths)
+        return exc.proc.returncode or 1
+
     assessment_payload = read_json(assessment_summary)
     payload = {
         "run_id": RUN_ID,
