@@ -20,6 +20,9 @@ def test_fixture_pipeline_writes_end_to_end_artifacts(tmp_path) -> None:
 
     assert typed_rows[0]["mode"] == "wide"
     assert typed_rows[0]["width_signature"]["width"] == 2
+    assert {"negative_contrastive", "verifier_detection", "verifier_rationalization"} <= {
+        trace["role"] for trace in typed_rows[0]["traces"]
+    }
     assert {row["trace_role"] for row in sft_rows} == {"positive_wide"}
 
 
@@ -29,4 +32,3 @@ def test_fixture_pipeline_cli(tmp_path) -> None:
     summary = json.loads((tmp_path / "summary.json").read_text(encoding="utf-8"))
     assert summary["typed_records"] == 1
     assert summary["positive_sft_rows"] == 2
-

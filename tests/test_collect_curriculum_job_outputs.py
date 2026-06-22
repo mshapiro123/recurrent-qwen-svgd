@@ -5,6 +5,7 @@ import json
 from training.collect_curriculum_job_outputs import (
     collect_distinctness_judgments,
     collect_depth_measurements,
+    collect_error_detection_judgments,
     collect_naturalness_judgments,
     extract_answer,
     extract_json_object,
@@ -12,6 +13,7 @@ from training.collect_curriculum_job_outputs import (
     main,
     method_outputs_to_solution_candidates,
     normalize_answer,
+    perturbation_outputs_to_traces,
     seed_outputs_to_candidates,
 )
 
@@ -43,6 +45,16 @@ def method_job(job_id: str, *, record_id: str, method: str, model: str = "opus-t
         "role": "method_solver",
         "model": model,
         "metadata": {"record_id": record_id, "domain": "math", "method": method},
+    }
+
+
+def perturbation_job(job_id: str, *, record_id: str, stage: str, false_answer: str = "5") -> dict:
+    return {
+        "job_id": job_id,
+        "stage": stage,
+        "role": "perturbation_solver",
+        "model": "opus-test",
+        "metadata": {"record_id": record_id, "false_answer": false_answer},
     }
 
 
@@ -184,6 +196,61 @@ def test_method_outputs_reject_missing_answer() -> None:
 
     assert rows == []
     assert report["status_counts"] == {"missing_answer": 1}
+
+
+def test_perturbation_outputs_route_correct_and_rationalized_traces() -> None:
+    verified = [
+        {
+            "id": "p1",
+            "statement": "What is 2+2?",
+            "answer": {"value": "4", "normalized": "4", "verified_by": ["cross_model"]},
+        }
+    ]
+    jobs = [
+        perturbation_job("neutral", record_id="p1", stage="false_answer_neutral", false_answer="5"),
+        perturbation_job("pressure", record_id="p1", stage="false_answer_pressure", false_answer="5"),
+    ]
+    responses = [
+        {"job_id": "neutral", "response_text": "The student is wrong.\nANSWER: 4"},
+        {"job_id": "pressure", "response_text": "Rationalize the false value.\nANSWER: 5"},
+    ]
+
+    rows, report = perturbation_outputs_to_traces(verified, jobs, responses)
+
+    assert [row["role"] for row in rows] == ["verifier_detection", "verifier_rationalization"]
+    assert rows[0]["correct"] is True
+    assert rows[1]["correct"] is False
+    assert report["status_counts"] == {
+        "detected_or_resisted_falsehood": 1,
+        "rationalized_false_answer": 1,
+    }
+
+
+def test_error_detection_judgments_parse_verdict_json() -> None:
+    traces = [{"id": "t1", "record_id": "p1", "role": "negative_contrastive", "text": "Bad trace"}]
+    jobs = [
+        {
+            "job_id": "detect",
+            "stage": "error_detection",
+            "role": "judge",
+            "model": "opus-judge",
+            "metadata": {"record_id": "t1", "parent_record_id": "p1"},
+        }
+    ]
+    responses = [
+        {
+            "job_id": "detect",
+            "response_text": '{"verdict": "incorrect", "first_error_step": 2, "explanation": "bad step"}',
+        }
+    ]
+
+    rows, report = collect_error_detection_judgments(traces, jobs, responses)
+
+    assert rows[0]["record_id"] == "p1"
+    assert rows[0]["role"] == "verifier_detection"
+    assert rows[0]["detected"] is True
+    assert rows[0]["first_error_step"] == 2
+    assert report["status_counts"] == {"verdict_incorrect": 1}
 
 
 def test_cli_collects_seed_candidates(tmp_path) -> None:

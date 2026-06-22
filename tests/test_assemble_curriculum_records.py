@@ -147,6 +147,43 @@ def test_assemble_prunes_non_distinct_method_from_width() -> None:
     assert records[0]["traces"][0]["role"] == "positive_direct"
 
 
+def test_assemble_attaches_auxiliary_negative_and_verifier_traces() -> None:
+    records, report = assemble_curriculum_records(
+        [verified_candidate()],
+        [solution("s-algebra", method="algebra")],
+        [natural("s-algebra", method="algebra")],
+        [depth("s-algebra", method="algebra", count=3)],
+        None,
+        [
+            {
+                "id": "n1",
+                "record_id": "p1",
+                "role": "negative_contrastive",
+                "correct": False,
+                "error_type": "genuine_slip",
+                "source_model": "opus-test",
+                "text": "Wrong trace",
+            },
+            {
+                "id": "v1",
+                "record_id": "p1",
+                "role": "verifier_detection",
+                "correct": True,
+                "detected": True,
+                "source_model": "glm-test",
+                "text": "Detected an error",
+            },
+        ],
+    )
+
+    assert report["auxiliary_traces"] == 2
+    assert {trace["role"] for trace in records[0]["traces"]} == {
+        "positive_direct",
+        "negative_contrastive",
+        "verifier_detection",
+    }
+
+
 def test_assemble_rejects_not_decontaminated_by_default() -> None:
     records, report = assemble_curriculum_records(
         [verified_candidate(decontaminated=False)],

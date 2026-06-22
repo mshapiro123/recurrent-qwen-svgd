@@ -191,12 +191,37 @@ def build_trace(solution: dict[str, Any], *, role: str, steps: int, natural_info
     }
 
 
+def build_auxiliary_trace(row: dict[str, Any]) -> dict[str, Any]:
+    trace: dict[str, Any] = {
+        "role": row.get("role"),
+        "correct": row.get("correct"),
+        "source_model": row.get("source_model"),
+        "source_job_id": row.get("source_job_id"),
+        "source_response_id": row.get("source_response_id"),
+        "text": str(row.get("text") or row.get("solution") or row.get("explanation") or ""),
+    }
+    for key in (
+        "detected",
+        "error_type",
+        "injected",
+        "false_answer",
+        "first_error_step",
+        "verdict",
+        "explanation",
+        "source_trace_id",
+    ):
+        if key in row:
+            trace[key] = row[key]
+    return trace
+
+
 def assemble_curriculum_records(
     verified_candidates: list[dict[str, Any]],
     solution_candidates: list[dict[str, Any]],
     naturalness_judgments: list[dict[str, Any]],
     depth_measurements: list[dict[str, Any]],
     distinctness_judgments: list[dict[str, Any]] | None = None,
+    auxiliary_traces: list[dict[str, Any]] | None = None,
     *,
     min_natural_agree: int = 1,
     min_distinct_agree: int = 1,
@@ -220,6 +245,9 @@ def assemble_curriculum_records(
     solutions_by_record: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for solution in solution_candidates:
         solutions_by_record[str(solution.get("record_id") or "")].append(solution)
+    auxiliary_by_record: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for trace in auxiliary_traces or []:
+        auxiliary_by_record[str(trace.get("record_id") or "")].append(trace)
 
     records: list[dict[str, Any]] = []
     rejected: list[dict[str, Any]] = []
@@ -272,6 +300,7 @@ def assemble_curriculum_records(
             build_trace(solution, role=role, steps=int(depth_info["count"]), natural_info=natural_info)
             for method, (solution, natural_info, depth_info) in sorted(best_by_method.items())
         ]
+        traces.extend(build_auxiliary_trace(trace) for trace in auxiliary_by_record.get(record_id, []))
         answer = candidate.get("answer") if isinstance(candidate.get("answer"), dict) else {}
         record = {
             "id": record_id,
@@ -307,6 +336,7 @@ def assemble_curriculum_records(
         "depth_measurements": len(depth_measurements),
         "distinctness_judgments": 0 if distinctness_judgments is None else len(distinctness_judgments),
         "distinctness_required": distinctness_judgments is not None,
+        "auxiliary_traces": 0 if auxiliary_traces is None else len(auxiliary_traces),
         "records": len(records),
         "rejected": len(rejected),
         "rejected_records": rejected,
@@ -331,6 +361,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--naturalness_jsonl", required=True)
     parser.add_argument("--depth_jsonl", required=True)
     parser.add_argument("--distinctness_jsonl")
+    parser.add_argument("--auxiliary_traces_jsonl", action="append")
     parser.add_argument("--output_jsonl", required=True)
     parser.add_argument("--report_json")
     parser.add_argument("--min_natural_agree", type=int, default=1)
@@ -347,6 +378,7 @@ def main(argv: list[str] | None = None) -> int:
         read_jsonl(args.naturalness_jsonl),
         read_jsonl(args.depth_jsonl),
         read_jsonl(args.distinctness_jsonl) if args.distinctness_jsonl else None,
+        [row for path in (args.auxiliary_traces_jsonl or []) for row in read_jsonl(path)],
         min_natural_agree=args.min_natural_agree,
         min_distinct_agree=args.min_distinct_agree,
         deep_threshold=args.deep_threshold,

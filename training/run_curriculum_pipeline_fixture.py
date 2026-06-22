@@ -26,17 +26,21 @@ from training.assemble_curriculum_records import assemble_curriculum_records
 from training.build_curriculum_generation_jobs import (
     build_depth_jobs,
     build_distinctness_jobs,
+    build_error_detection_jobs,
     build_ground_truth_jobs,
     build_method_solve_jobs,
     build_naturalness_jobs,
+    build_perturbation_jobs,
     build_seed_jobs,
 )
 from training.collect_curriculum_job_outputs import (
     collect_distinctness_judgments,
     collect_depth_measurements,
+    collect_error_detection_judgments,
     collect_naturalness_judgments,
     ground_truth_outputs_to_verified_candidates,
     method_outputs_to_solution_candidates,
+    perturbation_outputs_to_traces,
     seed_outputs_to_candidates,
 )
 from training.prepare_curriculum_jsonl import convert_curriculum_records
@@ -188,6 +192,42 @@ def reference_attempts(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]
     return rows
 
 
+def perturbation_responses(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for job in jobs:
+        if job["stage"] == "false_answer_neutral" and job.get("model") == SOLVER_MODELS[0]:
+            text = "The proposed answer is not correct. The area is 6 * 7 = 42.\nANSWER: 42"
+        elif job["stage"] == "false_answer_neutral":
+            text = "A careless calculation gives 6 * 7 = 41.\nANSWER: 41"
+        else:
+            text = "If we mistakenly add the side lengths, 6 + 7 = 13, so the answer is 13.\nANSWER: 13"
+        rows.append(
+            {
+                "job_id": job["job_id"],
+                "response_id": f"response-{job['job_id']}",
+                "response_text": text,
+            }
+        )
+    return rows
+
+
+def error_detection_responses(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "job_id": job["job_id"],
+            "response_id": f"response-{job['job_id']}",
+            "response_text": json.dumps(
+                {
+                    "verdict": "incorrect",
+                    "first_error_step": 1,
+                    "explanation": "The trace adds side lengths instead of multiplying for area.",
+                }
+            ),
+        }
+        for job in jobs
+    ]
+
+
 def run_fixture_pipeline(output_dir: str | Path, *, overwrite: bool = False) -> dict[str, Any]:
     out = Path(output_dir)
     if out.exists() and overwrite:
@@ -220,6 +260,24 @@ def run_fixture_pipeline(output_dir: str | Path, *, overwrite: bool = False) -> 
         reference_model="weak-fixture",
         min_samples=4,
     )
+    for candidate in verified_with_difficulty:
+        candidate["false_answer"] = "13"
+
+    perturbation_jobs = build_perturbation_jobs(verified_with_difficulty, models=SOLVER_MODELS)
+    perturbation_raw = perturbation_responses(perturbation_jobs)
+    perturbation_traces, perturbation_report = perturbation_outputs_to_traces(
+        verified_with_difficulty,
+        perturbation_jobs,
+        perturbation_raw,
+    )
+
+    error_detection_jobs = build_error_detection_jobs(perturbation_traces, models=JUDGE_MODELS)
+    error_detection_raw = error_detection_responses(error_detection_jobs)
+    error_detection, error_detection_report = collect_error_detection_judgments(
+        perturbation_traces,
+        error_detection_jobs,
+        error_detection_raw,
+    )
 
     method_jobs = build_method_solve_jobs(verified_with_difficulty, models=SOLVER_MODELS, fallback_methods=METHODS)
     method_raw = method_responses(method_jobs)
@@ -243,6 +301,7 @@ def run_fixture_pipeline(output_dir: str | Path, *, overwrite: bool = False) -> 
         naturalness,
         depth,
         distinctness,
+        [*perturbation_traces, *error_detection],
         min_natural_agree=2,
         min_distinct_agree=2,
         deep_threshold=5,
@@ -259,6 +318,12 @@ def run_fixture_pipeline(output_dir: str | Path, *, overwrite: bool = False) -> 
         "difficulty_attempts": difficulty_attempts,
         "difficulty_rejected": difficulty_rejected,
         "verified_candidates_difficulty": verified_with_difficulty,
+        "perturbation_jobs": perturbation_jobs,
+        "perturbation_responses": perturbation_raw,
+        "perturbation_traces": perturbation_traces,
+        "error_detection_jobs": error_detection_jobs,
+        "error_detection_responses": error_detection_raw,
+        "error_detection_judgments": error_detection,
         "method_jobs": method_jobs,
         "method_responses": method_raw,
         "method_solution_candidates": method_solutions,
@@ -278,6 +343,8 @@ def run_fixture_pipeline(output_dir: str | Path, *, overwrite: bool = False) -> 
         "candidates": candidates_report,
         "verified_candidates": verified_report,
         "difficulty": difficulty_report,
+        "perturbation": perturbation_report,
+        "error_detection": error_detection_report,
         "method_solutions": method_report,
         "naturalness": naturalness_report,
         "distinctness": distinctness_report,

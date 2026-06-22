@@ -452,6 +452,48 @@ python training/collect_curriculum_job_outputs.py \
   --report_json outputs/curriculum/depth_measurements_report.json
 ```
 
+Build and collect adversarial perturbation traces only after answer verification:
+
+```bash
+python training/build_curriculum_generation_jobs.py \
+  --stage perturbation \
+  --models opus-strong,glm-strong \
+  --input_jsonl data/curriculum/verified_candidates_difficulty.jsonl \
+  --output_jsonl data/curriculum/jobs_perturbation.jsonl
+
+python training/collect_curriculum_job_outputs.py \
+  --mode perturbation_traces \
+  --candidates_jsonl data/curriculum/verified_candidates_difficulty.jsonl \
+  --jobs_jsonl data/curriculum/jobs_perturbation.jsonl \
+  --responses_jsonl data/curriculum/responses_perturbation.jsonl \
+  --output_jsonl data/curriculum/perturbation_traces.jsonl \
+  --report_json outputs/curriculum/perturbation_traces_report.json
+```
+
+The perturbation collector routes traces conservatively. A response that returns
+the verified answer becomes `verifier_detection`; a pressure-prompt response or
+false-answer match becomes `verifier_rationalization`; other wrong or missing
+answers become `negative_contrastive`. None of these roles are positive SFT
+roles.
+
+Optionally build first-error-location judgments over perturbation traces:
+
+```bash
+python training/build_curriculum_generation_jobs.py \
+  --stage error_detection \
+  --models opus-strong,glm-strong \
+  --input_jsonl data/curriculum/perturbation_traces.jsonl \
+  --output_jsonl data/curriculum/jobs_error_detection.jsonl
+
+python training/collect_curriculum_job_outputs.py \
+  --mode error_detection_judgments \
+  --candidates_jsonl data/curriculum/perturbation_traces.jsonl \
+  --jobs_jsonl data/curriculum/jobs_error_detection.jsonl \
+  --responses_jsonl data/curriculum/responses_error_detection.jsonl \
+  --output_jsonl data/curriculum/error_detection_judgments.jsonl \
+  --report_json outputs/curriculum/error_detection_judgments_report.json
+```
+
 Assemble typed curriculum records:
 
 ```bash
@@ -461,6 +503,8 @@ python training/assemble_curriculum_records.py \
   --naturalness_jsonl data/curriculum/naturalness_judgments.jsonl \
   --depth_jsonl data/curriculum/depth_measurements.jsonl \
   --distinctness_jsonl data/curriculum/distinctness_judgments.jsonl \
+  --auxiliary_traces_jsonl data/curriculum/perturbation_traces.jsonl \
+  --auxiliary_traces_jsonl data/curriculum/error_detection_judgments.jsonl \
   --output_jsonl data/curriculum/typed_records.jsonl \
   --report_json outputs/curriculum/typed_records_report.json
 ```
@@ -470,5 +514,6 @@ solutions that lack both a naturalness agreement and a positive depth
 measurement. When `--distinctness_jsonl` is provided, width counts only methods
 whose best natural measured solutions are pairwise judged structurally distinct;
 relabeled or degenerate duplicates collapse back to a single method before mode
-assignment. Only after this step should `prepare_curriculum_jsonl.py` export
-positive SFT rows.
+assignment. Auxiliary perturbation and error-detection rows are attached to the
+typed records as verifier/negative roles, but `prepare_curriculum_jsonl.py`
+exports only roles beginning with `positive_`.

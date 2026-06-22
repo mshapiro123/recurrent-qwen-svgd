@@ -280,6 +280,10 @@ def sanitize_id(value: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_.:-]+", "-", value).strip("-").lower()
 
 
+def candidate_statement(candidate: dict[str, Any]) -> str:
+    return str(candidate.get("statement") or candidate.get("prompt") or "")
+
+
 def method_outputs_to_solution_candidates(
     verified_candidates: list[dict[str, Any]],
     jobs: list[dict[str, Any]],
@@ -394,6 +398,147 @@ def method_outputs_to_solution_candidates(
         "issues": issues,
         "status_counts": dict(sorted(status_counts.items())),
         "rejected_records": rejected,
+    }
+
+
+def perturbation_outputs_to_traces(
+    verified_candidates: list[dict[str, Any]],
+    jobs: list[dict[str, Any]],
+    responses: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    candidate_by_id = group_candidates(verified_candidates)
+    paired, issues = responses_with_jobs(jobs, responses)
+    rows: list[dict[str, Any]] = []
+    status_counts: Counter[str] = Counter()
+
+    for job, response, text in paired:
+        stage = str(job.get("stage") or "")
+        if stage not in {"false_answer_neutral", "false_answer_pressure"}:
+            continue
+        metadata = job.get("metadata") if isinstance(job.get("metadata"), dict) else {}
+        record_id = str(metadata.get("record_id") or "")
+        candidate = candidate_by_id.get(record_id)
+        if candidate is None:
+            issues.append(f"{job.get('job_id')}: no matching verified candidate for {record_id!r}")
+            status_counts["missing_candidate"] += 1
+            continue
+
+        verified = verified_answer_normalized(candidate)
+        parsed_answer = extract_answer(text)
+        parsed_normalized = normalize_answer(parsed_answer) if parsed_answer else ""
+        false_answer = str(metadata.get("false_answer") or candidate.get("false_answer") or "").strip()
+        false_normalized = normalize_answer(false_answer) if false_answer else ""
+
+        if parsed_normalized and verified and parsed_normalized == verified:
+            role = "verifier_detection"
+            correct = True
+            status = "detected_or_resisted_falsehood"
+            detected = True
+            error_type = None
+        elif stage == "false_answer_pressure" or (false_normalized and parsed_normalized == false_normalized):
+            role = "verifier_rationalization"
+            correct = False
+            status = "rationalized_false_answer"
+            detected = False
+            error_type = "rationalization"
+        else:
+            role = "negative_contrastive"
+            correct = False
+            status = "wrong_or_unverified_answer"
+            detected = False
+            error_type = "genuine_slip" if parsed_normalized else "missing_answer"
+
+        status_counts[status] += 1
+        row: dict[str, Any] = {
+            "id": sanitize_id(f"{record_id}:{stage}:{job.get('job_id')}"),
+            "record_id": record_id,
+            "statement": candidate_statement(candidate),
+            "role": role,
+            "correct": correct,
+            "detected": detected,
+            "error_type": error_type,
+            "injected": "false_answer",
+            "false_answer": false_answer,
+            "parsed_answer": parsed_answer,
+            "parsed_answer_normalized": parsed_normalized,
+            "verified_answer_normalized": verified,
+            "source_model": job.get("model"),
+            "source_job_id": job.get("job_id"),
+            "source_response_id": response.get("response_id"),
+            "text": text,
+        }
+        rows.append(row)
+
+    return rows, {
+        "mode": "perturbation_traces",
+        "verified_candidate_rows": len(verified_candidates),
+        "jobs": len(jobs),
+        "responses": len(responses),
+        "traces": len(rows),
+        "issues": issues,
+        "status_counts": dict(sorted(status_counts.items())),
+    }
+
+
+def collect_error_detection_judgments(
+    trace_candidates: list[dict[str, Any]],
+    jobs: list[dict[str, Any]],
+    responses: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    trace_by_id = group_candidates(trace_candidates)
+    paired, issues = responses_with_jobs(jobs, responses)
+    rows: list[dict[str, Any]] = []
+    status_counts: Counter[str] = Counter()
+
+    for job, response, text in paired:
+        if job.get("stage") != "error_detection":
+            continue
+        metadata = job.get("metadata") if isinstance(job.get("metadata"), dict) else {}
+        source_trace_id = str(metadata.get("record_id") or "")
+        source = trace_by_id.get(source_trace_id)
+        if source is None:
+            issues.append(f"{job.get('job_id')}: no matching trace candidate for {source_trace_id!r}")
+            status_counts["missing_trace"] += 1
+            continue
+        payload = extract_json_object(text)
+        if payload is None:
+            issues.append(f"{job.get('job_id')}: could not parse error-detection JSON")
+            status_counts["parse_error"] += 1
+            continue
+        verdict = str(payload.get("verdict") or "").strip().lower()
+        if verdict not in {"correct", "incorrect"}:
+            issues.append(f"{job.get('job_id')}: invalid error-detection verdict {verdict!r}")
+            status_counts["invalid_payload"] += 1
+            continue
+
+        status_counts[f"verdict_{verdict}"] += 1
+        parent_record_id = str(source.get("record_id") or metadata.get("parent_record_id") or "")
+        rows.append(
+            {
+                "id": sanitize_id(f"{source_trace_id}:error_detection:{job.get('job_id')}"),
+                "record_id": parent_record_id,
+                "source_trace_id": source_trace_id,
+                "role": "verifier_detection",
+                "detected": verdict == "incorrect",
+                "verdict": verdict,
+                "first_error_step": payload.get("first_error_step"),
+                "explanation": str(payload.get("explanation") or "").strip(),
+                "correct": verdict == "correct",
+                "source_model": job.get("model"),
+                "source_job_id": job.get("job_id"),
+                "source_response_id": response.get("response_id"),
+                "text": text,
+            }
+        )
+
+    return rows, {
+        "mode": "error_detection_judgments",
+        "trace_candidate_rows": len(trace_candidates),
+        "jobs": len(jobs),
+        "responses": len(responses),
+        "judgments": len(rows),
+        "issues": issues,
+        "status_counts": dict(sorted(status_counts.items())),
     }
 
 
@@ -589,9 +734,11 @@ def main(argv: list[str] | None = None) -> int:
             "seed_candidates",
             "verified_candidates",
             "method_solutions",
+            "perturbation_traces",
             "naturalness_judgments",
             "distinctness_judgments",
             "depth_measurements",
+            "error_detection_judgments",
         ),
         required=True,
     )
@@ -603,7 +750,8 @@ def main(argv: list[str] | None = None) -> int:
         "--candidates_jsonl",
         help=(
             "Required for verified_candidates, method_solutions, naturalness_judgments, "
-            "distinctness_judgments, and depth_measurements modes."
+            "distinctness_judgments, depth_measurements, perturbation_traces, "
+            "and error_detection_judgments modes."
         ),
     )
     parser.add_argument("--min_agree", type=int, default=2)
@@ -634,6 +782,11 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError("--candidates_jsonl is required for method_solutions mode.")
         candidates = read_jsonl(args.candidates_jsonl)
         rows, report = method_outputs_to_solution_candidates(candidates, jobs, responses)
+    elif args.mode == "perturbation_traces":
+        if not args.candidates_jsonl:
+            raise ValueError("--candidates_jsonl is required for perturbation_traces mode.")
+        candidates = read_jsonl(args.candidates_jsonl)
+        rows, report = perturbation_outputs_to_traces(candidates, jobs, responses)
     elif args.mode == "naturalness_judgments":
         if not args.candidates_jsonl:
             raise ValueError("--candidates_jsonl is required for naturalness_judgments mode.")
@@ -644,6 +797,11 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError("--candidates_jsonl is required for distinctness_judgments mode.")
         candidates = read_jsonl(args.candidates_jsonl)
         rows, report = collect_distinctness_judgments(candidates, jobs, responses)
+    elif args.mode == "error_detection_judgments":
+        if not args.candidates_jsonl:
+            raise ValueError("--candidates_jsonl is required for error_detection_judgments mode.")
+        candidates = read_jsonl(args.candidates_jsonl)
+        rows, report = collect_error_detection_judgments(candidates, jobs, responses)
     else:
         if not args.candidates_jsonl:
             raise ValueError("--candidates_jsonl is required for depth_measurements mode.")
@@ -653,7 +811,7 @@ def main(argv: list[str] | None = None) -> int:
     write_jsonl(args.output_jsonl, rows)
     write_report(args.report_json, report)
     print(f"mode={report['mode']}")
-    for key in ("candidates", "verified", "solution_candidates", "judgments", "measurements", "rejected"):
+    for key in ("candidates", "verified", "solution_candidates", "traces", "judgments", "measurements", "rejected"):
         if key in report:
             print(f"{key}={report[key]}")
     print(f"issues={len(report['issues'])}")

@@ -498,7 +498,10 @@ def build_error_detection_jobs(rows: list[dict[str, Any]], *, models: list[str])
                     model=model,
                     prompt=prompt_error_detection(statement=statement, solution=solution),
                     expects_json=True,
-                    metadata={"record_id": record_id(row, row_index)},
+                    metadata={
+                        "record_id": record_id(row, row_index),
+                        "parent_record_id": row.get("record_id") or row.get("curriculum_id"),
+                    },
                 )
             )
     return jobs
