@@ -101,6 +101,8 @@ def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     assert 'env["STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE"] = "1" if RUN_A100_ACTION else "0"' in text
     assert "STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS" in text
     assert "Dry run complete" in text
+    assert "DISCONNECT_RUNTIME_WHEN_DONE = True" in text
+    assert "runtime.unassign()" in text
     assert "colab/run_stage5_full_assessment_once.py" not in text
 
 
@@ -113,6 +115,8 @@ def test_safe_continue_notebook_defaults_to_dry_run_and_guarded_action() -> None
     assert "colab/run_stage5_next_action.py" in text
     assert "STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE" in text
     assert "Dry run complete" in text
+    assert "DISCONNECT_RUNTIME_WHEN_DONE = True" in text
+    assert "runtime.unassign()" in text
     assert "colab/run_stage5_full_assessment_once.py" not in text
     assert payload["cells"][0]["cell_type"] == "markdown"
     assert payload["cells"][1]["cell_type"] == "code"

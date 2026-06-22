@@ -9,6 +9,8 @@ guarded planner-selected action. The maintained execution path still runs the
 `a100_guard` before launching paid-GPU runners. It also refuses long CPU/data
 actions, such as dataset audits, while a GPU runtime is attached unless
 `STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_LOCAL_ONLY_ON_GPU=1` is set deliberately.
+By default the cell disconnects the Colab runtime after the dry run or guarded
+action so an attached A100 does not sit idle.
 
 ```python
 import os, shutil, subprocess, sys
@@ -20,6 +22,10 @@ ROOT = Path("/content/recurrent-qwen-svgd")
 
 # Deliberate opt-in. Leave False for a no-GPU dry run / status check.
 RUN_A100_ACTION = False
+
+# Credit-saver default. Set False only if you intentionally want to keep the
+# runtime attached after the cell prints the next action.
+DISCONNECT_RUNTIME_WHEN_DONE = True
 
 SOURCE_SUMMARY = (
     "outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json"
@@ -60,6 +66,17 @@ def run(cmd, cwd=None, check=True, env=None):
     if check and proc.returncode:
         raise RuntimeError(f"failed: {printable}")
     return proc
+
+def disconnect_runtime(reason):
+    if not DISCONNECT_RUNTIME_WHEN_DONE:
+        return
+    try:
+        from google.colab import runtime
+
+        print(f"Disconnecting Colab runtime to conserve credits: {reason}", flush=True)
+        runtime.unassign()
+    except Exception as exc:
+        print(f"Runtime disconnect skipped/failed: {exc}", flush=True)
 
 def sync_repo():
     clone_url = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
@@ -116,4 +133,6 @@ if not RUN_A100_ACTION:
     print("Dry run complete. Set RUN_A100_ACTION = True only when you intentionally want to spend A100 credits.", flush=True)
 else:
     print("Guarded next action completed or stopped by a100_guard. Review the emitted summary before continuing.", flush=True)
+
+disconnect_runtime("safe continue cell finished")
 ```
