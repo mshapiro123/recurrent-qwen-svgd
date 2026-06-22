@@ -1797,6 +1797,19 @@ def balanced_assessment_best_checkpoint(payload: dict[str, Any]) -> str:
     return str(checkpoint or "")
 
 
+def balanced_arc_mix_best_checkpoint(payload: dict[str, Any]) -> str:
+    best_arm = payload.get("best_arm")
+    if isinstance(best_arm, dict):
+        best = best_arm.get("best_checkpoint")
+        if isinstance(best, dict) and best.get("checkpoint"):
+            return str(best["checkpoint"])
+    best = payload.get("best_checkpoint")
+    if isinstance(best, dict) and best.get("checkpoint"):
+        return str(best["checkpoint"])
+    checkpoint = payload.get("selected_checkpoint") or payload.get("checkpoint")
+    return str(checkpoint or "")
+
+
 def balanced_full_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     assessment = balanced_assessment_payload(payload)
     status = str(assessment.get("status", payload.get("status", "unknown")))
@@ -1897,6 +1910,7 @@ def balanced_full_assessment_actions(payload: dict[str, Any], *, source_summary:
 def balanced_arc_mix_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
     decision = str(payload.get("decision", ""))
+    checkpoint = balanced_arc_mix_best_checkpoint(payload)
     if decision == "run_full_balanced_assessment" or (
         not decision and status in {"proxy_lift", "proxy_matches_base"}
     ):
@@ -1916,27 +1930,35 @@ def balanced_arc_mix_actions(payload: dict[str, Any], *, source_summary: Path) -
         ]
     if decision == "stop_for_calibration_repair":
         reason = payload.get("blocked_reason") or "The ARC-mix proxy failed calibration-preservation checks."
+        env = {
+            "STAGE5_ROUTING_DIAGNOSTIC_RUN_ID": f"{RUN_ID}_routing_diagnostic",
+        }
+        if checkpoint:
+            env["STAGE5_RECOVERED_PHASE1_CHECKPOINT"] = checkpoint.replace("\\", "/")
+            env["STAGE5_RECOVERED_SOURCE_SUMMARY"] = path_for_cli(source_summary)
         return [
             make_action(
                 "Run bounded depth/width routing diagnostic",
                 f"{reason} Measure direct-mode loop depth, margin drift, and deep-numeric behavior before any further training.",
                 command_env(
-                    {
-                        "STAGE5_ROUTING_DIAGNOSTIC_RUN_ID": f"{RUN_ID}_routing_diagnostic",
-                    },
+                    env,
                     "python colab/run_stage5_routing_diagnostic.py",
                 ),
                 10,
             )
         ]
+    env = {
+        "STAGE5_ROUTING_DIAGNOSTIC_RUN_ID": f"{RUN_ID}_routing_diagnostic",
+    }
+    if checkpoint:
+        env["STAGE5_RECOVERED_PHASE1_CHECKPOINT"] = checkpoint.replace("\\", "/")
+        env["STAGE5_RECOVERED_SOURCE_SUMMARY"] = path_for_cli(source_summary)
     return [
         make_action(
             "Run bounded depth/width routing diagnostic",
             "The competence-preserving proxy did not pass; measure whether the failure is direct-mode over-looping, deep-narrow weakness, or both before spending on more training.",
             command_env(
-                {
-                    "STAGE5_ROUTING_DIAGNOSTIC_RUN_ID": f"{RUN_ID}_routing_diagnostic",
-                },
+                env,
                 "python colab/run_stage5_routing_diagnostic.py",
             ),
             10,

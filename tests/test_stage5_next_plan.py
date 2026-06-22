@@ -2491,6 +2491,28 @@ def test_balanced_arc_mix_decision_blocks_calibration_warning(tmp_path) -> None:
     assert "python colab/run_stage5_routing_diagnostic.py" in actions[0]["command"]
 
 
+def test_balanced_arc_mix_routing_diagnostic_uses_best_checkpoint(tmp_path) -> None:
+    source = tmp_path / "arc_mix" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_balanced_arc_mix_gate",
+        "status": "proxy_lift_calibration_warning",
+        "decision": "stop_for_calibration_repair",
+        "best_arm": {
+            "best_checkpoint": {
+                "checkpoint": "outputs/stage5/arc_mix/arm/phase1/phase1_step_50.pt"
+            }
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run bounded depth/width routing diagnostic"
+    assert "STAGE5_RECOVERED_PHASE1_CHECKPOINT=outputs/stage5/arc_mix/arm/phase1/phase1_step_50.pt" in actions[0]["command"]
+    assert "STAGE5_RECOVERED_SOURCE_SUMMARY=" in actions[0]["command"]
+    assert "python colab/run_stage5_routing_diagnostic.py" in actions[0]["command"]
+
+
 def test_recovery_full_assessment_nonnegative_runs_broader_benchmarks(tmp_path) -> None:
     source = tmp_path / "full_assessment" / "summary.json"
     source.parent.mkdir()
