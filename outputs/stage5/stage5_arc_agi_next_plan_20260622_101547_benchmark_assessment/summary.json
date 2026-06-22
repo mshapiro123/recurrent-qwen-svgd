@@ -1,0 +1,156 @@
+{
+  "run_id": "stage5_arc_agi_next_plan_20260622_101547_benchmark_assessment",
+  "gate": "stage5_broader_benchmark_suite",
+  "source_summary": "outputs/stage5/stage5_arc_agi_next_action_20260622_134618_plan_curriculum_sft_benchmark_suite/summary.json",
+  "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_134618_plan_curriculum_sft/phase1/phase1_step_150.pt",
+  "status": "needs_review",
+  "passed": false,
+  "next_step": "Inspect benchmark-suite logs and rerun failed slices before using the result.",
+  "required_score_target": "label",
+  "required_aggregate": "mean",
+  "allowed_negative_delta": 0,
+  "benchmarks": [
+    {
+      "benchmark": "arc_challenge",
+      "present": true,
+      "required_examples": 128,
+      "paired_examples": 128,
+      "base_correct": 72,
+      "recurrent_correct": 62,
+      "correct_delta_recurrent_vs_base": -10,
+      "wins": 18,
+      "losses": 28,
+      "ties": 82,
+      "sign_test_p_value": 0.18392482137699062
+    },
+    {
+      "benchmark": "arc_easy",
+      "present": true,
+      "required_examples": 1,
+      "paired_examples": 128,
+      "base_correct": 86,
+      "recurrent_correct": 71,
+      "correct_delta_recurrent_vs_base": -15,
+      "wins": 7,
+      "losses": 22,
+      "ties": 99,
+      "sign_test_p_value": 0.008130058646202087
+    },
+    {
+      "benchmark": "gpqa_lite",
+      "present": false,
+      "required_examples": 16,
+      "paired_examples": 0,
+      "correct_delta_recurrent_vs_base": 0,
+      "wins": 0,
+      "losses": 0,
+      "ties": 0,
+      "sign_test_p_value": null
+    }
+  ],
+  "criteria": [
+    {
+      "name": "suite_completed",
+      "passed": false,
+      "reason": "Benchmark suite had failures or did not complete.",
+      "evidence": {
+        "status": "completed_with_failures",
+        "failures": [
+          {
+            "stage": "prepare",
+            "benchmark": "gpqa_lite",
+            "error": "command failed: /usr/bin/python3 eval/prepare_gpqa_mcq.py --config gpqa_diamond --split train --limit 16 --seed 0 --output_jsonl /content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_arc_agi_next_action_20260622_134618_plan_curriculum_sft_benchmark_suite/gpqa_diamond_16.jsonl"
+          }
+        ]
+      }
+    },
+    {
+      "name": "paired_coverage",
+      "passed": false,
+      "reason": "Need more paired examples before interpreting broader benchmark deltas.",
+      "evidence": [
+        {
+          "benchmark": "arc_challenge",
+          "present": true,
+          "required_examples": 128,
+          "paired_examples": 128,
+          "base_correct": 72,
+          "recurrent_correct": 62,
+          "correct_delta_recurrent_vs_base": -10,
+          "wins": 18,
+          "losses": 28,
+          "ties": 82,
+          "sign_test_p_value": 0.18392482137699062
+        },
+        {
+          "benchmark": "arc_easy",
+          "present": true,
+          "required_examples": 1,
+          "paired_examples": 128,
+          "base_correct": 86,
+          "recurrent_correct": 71,
+          "correct_delta_recurrent_vs_base": -15,
+          "wins": 7,
+          "losses": 22,
+          "ties": 99,
+          "sign_test_p_value": 0.008130058646202087
+        },
+        {
+          "benchmark": "gpqa_lite",
+          "present": false,
+          "required_examples": 16,
+          "paired_examples": 0,
+          "correct_delta_recurrent_vs_base": 0,
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "sign_test_p_value": null
+        }
+      ]
+    },
+    {
+      "name": "recurrent_nonnegative_vs_base",
+      "passed": false,
+      "reason": "Recurrent trails base on at least one paired benchmark slice.",
+      "evidence": [
+        {
+          "benchmark": "arc_challenge",
+          "present": true,
+          "required_examples": 128,
+          "paired_examples": 128,
+          "base_correct": 72,
+          "recurrent_correct": 62,
+          "correct_delta_recurrent_vs_base": -10,
+          "wins": 18,
+          "losses": 28,
+          "ties": 82,
+          "sign_test_p_value": 0.18392482137699062
+        },
+        {
+          "benchmark": "arc_easy",
+          "present": true,
+          "required_examples": 1,
+          "paired_examples": 128,
+          "base_correct": 86,
+          "recurrent_correct": 71,
+          "correct_delta_recurrent_vs_base": -15,
+          "wins": 7,
+          "losses": 22,
+          "ties": 99,
+          "sign_test_p_value": 0.008130058646202087
+        },
+        {
+          "benchmark": "gpqa_lite",
+          "present": false,
+          "required_examples": 16,
+          "paired_examples": 0,
+          "correct_delta_recurrent_vs_base": 0,
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "sign_test_p_value": null
+        }
+      ]
+    }
+  ]
+}

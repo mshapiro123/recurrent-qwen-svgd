@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import time
 from pathlib import Path
 from typing import Any
@@ -25,6 +26,12 @@ MIN_GPQA_EXAMPLES = int(os.environ.get("STAGE5_BENCHMARK_ASSESS_MIN_GPQA_EXAMPLE
 REQUIRED_SCORE_TARGET = os.environ.get("STAGE5_BENCHMARK_ASSESS_SCORE_TARGET", "label")
 REQUIRED_AGGREGATE = os.environ.get("STAGE5_BENCHMARK_ASSESS_AGGREGATE", "mean")
 ALLOWED_NEGATIVE_DELTA = int(os.environ.get("STAGE5_BENCHMARK_ASSESS_ALLOWED_NEGATIVE_DELTA", "0"))
+PUSH_RESULTS = os.environ.get("STAGE5_BENCHMARK_ASSESS_PUSH", "1").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 
 
 def path_for_cli(path: Path) -> str:
@@ -41,6 +48,27 @@ def resolve_path(value: str | Path) -> Path:
 
 def read_json(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def run(cmd: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
+    print("$", " ".join(cmd))
+    result = subprocess.run(cmd, cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    if result.stdout:
+        print(result.stdout)
+    if check and result.returncode != 0:
+        raise RuntimeError(f"command failed: {' '.join(cmd)}")
+    return result
+
+
+def current_source_summary_file() -> Path:
+    return ROOT / "config" / "stage5_current_source_summary.txt"
+
+
+def update_current_source_summary(summary_path: Path) -> Path:
+    pointer = current_source_summary_file()
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text(path_for_cli(summary_path) + "\n", encoding="utf-8")
+    return pointer
 
 
 def safe_read_json(path: Path) -> dict[str, Any] | None:
@@ -224,6 +252,22 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
     print(output_md.read_text(encoding="utf-8"))
 
 
+def commit_results(run_dir: Path) -> None:
+    if not PUSH_RESULTS:
+        return
+    run(["git", "status", "-sb"], check=False)
+    run(["git", "add", "-f", path_for_cli(run_dir)], check=False)
+    pointer = current_source_summary_file()
+    if pointer.exists():
+        run(["git", "add", "-f", path_for_cli(pointer)], check=False)
+    status = run(["git", "diff", "--cached", "--quiet"], check=False)
+    if status.returncode == 0:
+        print("No benchmark assessment outputs changed.")
+        return
+    run(["git", "commit", "-m", f"Record Stage 5 benchmark assessment {RUN_ID}"])
+    run(["git", "push", "origin", "main"], check=False)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--summary_json", help="Benchmark suite summary. Defaults to latest Stage 5 benchmark suite.")
@@ -242,6 +286,9 @@ def main() -> int:
     output_md = resolve_path(args.output_md) if args.output_md else output_json.with_suffix(".md")
     assessment = assess_benchmark_suite(summary_json=summary, payload=payload)
     write_report(assessment, output_json=output_json, output_md=output_md)
+    if not args.output_json:
+        update_current_source_summary(output_json)
+        commit_results(output_json.parent)
     return 0
 
 

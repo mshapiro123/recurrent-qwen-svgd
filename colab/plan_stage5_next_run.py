@@ -1670,6 +1670,8 @@ def benchmark_suite_actions(payload: dict[str, Any], *, source_summary: Path) ->
 
 def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
+    if status == "needs_review" and benchmark_assessment_shows_recurrent_regression(payload):
+        status = "needs_recurrent_recovery"
     if status == "passed":
         return [
             make_action(
@@ -1757,6 +1759,23 @@ def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summar
             10,
         )
     ]
+
+
+def benchmark_assessment_shows_recurrent_regression(payload: dict[str, Any]) -> bool:
+    rows = payload.get("benchmarks") or []
+    if not isinstance(rows, list):
+        return False
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if not row.get("present"):
+            continue
+        paired = int(row.get("paired_examples", 0) or 0)
+        required = int(row.get("required_examples", 0) or 0)
+        delta = int(row.get("correct_delta_recurrent_vs_base", 0) or 0)
+        if paired >= max(required, 1) and delta < 0:
+            return True
+    return False
 
 
 def balanced_assessment_payload(payload: dict[str, Any]) -> dict[str, Any]:

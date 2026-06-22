@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 
 from colab.assess_stage5_benchmark_suite import assess_benchmark_suite, main
 
@@ -112,3 +113,59 @@ def test_benchmark_assessment_cli_writes_outputs(tmp_path, monkeypatch) -> None:
     assert main() == 0
     assert json.loads(output_json.read_text(encoding="utf-8"))["status"] == "passed"
     assert "Stage 5 Broader Benchmark Assessment" in output_md.read_text(encoding="utf-8")
+
+
+def test_benchmark_assessment_updates_current_source_summary(tmp_path, monkeypatch) -> None:
+    import colab.assess_stage5_benchmark_suite as module
+
+    source = tmp_path / "suite" / "summary.json"
+    output_json = tmp_path / "outputs" / "stage5" / "assessment" / "summary.json"
+    output_md = output_json.with_suffix(".md")
+    _write(source, _suite(arc_delta=1, gpqa_delta=1))
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "PUSH_RESULTS", False)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "assess_stage5_benchmark_suite.py",
+            "--summary_json",
+            str(source),
+        ],
+    )
+    monkeypatch.setattr(module, "RUN_ID", "assessment")
+
+    assert main() == 0
+    assert output_json.exists()
+    assert output_md.exists()
+    assert (tmp_path / "config" / "stage5_current_source_summary.txt").read_text(
+        encoding="utf-8"
+    ) == "outputs/stage5/assessment/summary.json\n"
+
+
+def test_benchmark_assessment_commit_stages_current_source_pointer(tmp_path, monkeypatch) -> None:
+    import colab.assess_stage5_benchmark_suite as module
+
+    run_dir = tmp_path / "outputs" / "stage5" / "assessment"
+    pointer = tmp_path / "config" / "stage5_current_source_summary.txt"
+    run_dir.mkdir(parents=True)
+    pointer.parent.mkdir(parents=True)
+    (run_dir / "summary.json").write_text("{}", encoding="utf-8")
+    pointer.write_text("outputs/stage5/assessment/summary.json\n", encoding="utf-8")
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, *, check=True):
+        commands.append([str(item) for item in cmd])
+        return subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_ID", "assessment")
+    monkeypatch.setattr(module, "PUSH_RESULTS", True)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    module.commit_results(run_dir)
+
+    add_commands = [cmd for cmd in commands if cmd[:2] == ["git", "add"]]
+    assert add_commands
+    staged = {item for cmd in add_commands for item in cmd[3:]}
+    assert "outputs/stage5/assessment" in staged
+    assert "config/stage5_current_source_summary.txt" in staged

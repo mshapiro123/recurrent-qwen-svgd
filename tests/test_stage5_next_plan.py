@@ -88,11 +88,13 @@ def test_configured_current_summary_fails_loudly_when_pointer_is_missing(tmp_pat
         raise AssertionError("missing current source pointer should fail loudly")
 
 
-def test_committed_current_source_summary_points_at_programmatic_curriculum_gate() -> None:
+def test_committed_current_source_summary_points_at_valid_stage5_source() -> None:
     path = planner.configured_current_summary()
 
     assert path is not None
-    assert path.as_posix().endswith("programmatic_direct_deep_curriculum_gate/curriculum_sft_gate.json")
+    assert path.exists()
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert source_kind(payload) != "unknown"
 
 
 def test_failed_candidate_distillation_recommends_baseline_curriculum(tmp_path) -> None:
@@ -2378,6 +2380,39 @@ def test_benchmark_suite_assessment_credit_saver_runs_short_recovery_probe(monke
     assert "STAGE5_ARC_MIX_MIN_MARGIN_DELTA=-0.05" in actions[0]["command"]
     assert "STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT=16" in actions[0]["command"]
     assert "STAGE5_ARC_MIX_SOURCE_SUMMARY=" in actions[0]["command"]
+
+
+def test_benchmark_suite_assessment_needs_review_with_negative_arc_runs_short_recovery_probe(
+    monkeypatch, tmp_path
+) -> None:
+    monkeypatch.setattr(planner, "A100_BUDGET_PROFILE", "credit_saver")
+    source = tmp_path / "benchmark_assessment" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_broader_benchmark_suite",
+        "status": "needs_review",
+        "benchmarks": [
+            {
+                "benchmark": "arc_challenge",
+                "present": True,
+                "required_examples": 128,
+                "paired_examples": 128,
+                "correct_delta_recurrent_vs_base": -10,
+            },
+            {
+                "benchmark": "gpqa_lite",
+                "present": False,
+                "required_examples": 16,
+                "paired_examples": 0,
+                "correct_delta_recurrent_vs_base": 0,
+            },
+        ],
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run competence-preserving ARC-mix proxy gate"
+    assert "python colab/run_stage5_balanced_arc_mix_gate.py" in actions[0]["command"]
 
 
 def test_benchmark_suite_assessment_credit_saver_keeps_source_summary_boundary(tmp_path, monkeypatch) -> None:
