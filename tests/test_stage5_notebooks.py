@@ -44,6 +44,10 @@ def test_full_arc_assessment_notebook_is_single_purpose() -> None:
     assert "colab/run_stage5_full_assessment_once.py" in text
     assert "STAGE5_FULL_ASSESS_AUTO_DISCONNECT" in text
     assert "stage5_arc_mix_recovery_once_20260622_003331/summary.json" in text
+    assert "colab/check_stage5_a100_go_no_go.py" in text
+    assert "GO_NO_GO_RUN_ID" in text
+    assert "A100 go/no-go blocked full ARC assessment" in text
+    assert "disconnect_runtime(\"full assessment notebook failed\")" in text
     assert "colab/run_stage5_colab_continue.py" not in text
     assert "colab/run_stage5_reasoning_dataset_pipeline.py" not in text
     assert payload["cells"][0]["cell_type"] == "markdown"

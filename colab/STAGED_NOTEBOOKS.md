@@ -47,6 +47,13 @@ locally or in a free runtime to get the exact stop/continue answer.
 Do not use the generic continuation cell for this narrow gate unless you
 intentionally want the planner to choose a different action.
 
+If the ARC-mix review explicitly says a full confirmation is justified,
+[`STAGE5_FULL_ASSESSMENT_CELL.md`](STAGE5_FULL_ASSESSMENT_CELL.md) and
+[`07_stage5_full_arc_assessment.ipynb`](07_stage5_full_arc_assessment.ipynb)
+now apply the same policy: mount Drive, run go/no-go, install dependencies only
+after approval, run exactly one full balanced assessment, and disconnect on
+completion or setup failure.
+
 ## Legacy Stage 1 Cell
 
 The following older cell is kept for reference when restarting the full staged
