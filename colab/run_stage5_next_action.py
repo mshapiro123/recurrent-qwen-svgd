@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from colab.check_stage5_a100_go_no_go import classify_action  # noqa: E402
+from colab.check_stage5_a100_go_no_go import apply_checkpoint_guard, classify_action  # noqa: E402
 
 RUN_ID = os.environ.get("STAGE5_ARC_AGI_NEXT_ACTION_RUN_ID") or time.strftime(
     "stage5_arc_agi_next_action_%Y%m%d_%H%M%S"
@@ -242,9 +242,11 @@ def a100_execution_guard(
             "reason": "Guarded A100 action has no readable source summary.",
         }
     decision = classify_action(action, source_payload=source_payload)
+    decision, checkpoint = apply_checkpoint_guard(decision, source_payload=source_payload)
     return {
         "checked": True,
         "allowed": bool(decision.get("go")),
+        "checkpoint_preflight": checkpoint,
         **decision,
     }
 

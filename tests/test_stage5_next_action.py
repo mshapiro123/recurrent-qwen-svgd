@@ -318,9 +318,15 @@ def test_repeat_guard_uses_command_fingerprint() -> None:
 
 
 def test_a100_guard_allows_bounded_arc_mix_proxy(tmp_path) -> None:
+    checkpoint = tmp_path / "outputs" / "stage5" / "run" / "phase1" / "phase1_step_1.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"test")
     source = tmp_path / "summary.json"
     source.write_text(
-        '{"kind": "stage5_recovery_full_assessment", "status": "needs_competence_recovery"}',
+        '{"kind": "stage5_recovery_full_assessment", '
+        '"status": "needs_competence_recovery", '
+        f'"selected_checkpoint": "{checkpoint.as_posix()}"'
+        "}",
         encoding="utf-8",
     )
     action = {
@@ -334,6 +340,7 @@ def test_a100_guard_allows_bounded_arc_mix_proxy(tmp_path) -> None:
     assert guard["checked"] is True
     assert guard["allowed"] is True
     assert guard["status"] == "go_bounded_proxy"
+    assert guard["checkpoint_preflight"]["available"] is True
 
 
 def test_a100_guard_blocks_full_assessment_after_calibration_warning(tmp_path) -> None:

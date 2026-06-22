@@ -29,6 +29,10 @@ from colab.plan_stage5_next_run import (
     resolve_source_summary,
     source_kind,
 )
+from colab.run_stage5_recovered_phase1_arc_gate import (
+    candidate_drive_checkpoints,
+    path_for_cli as checkpoint_path_for_cli,
+)
 
 
 RUN_ID = os.environ.get("STAGE5_A100_GO_NO_GO_RUN_ID") or time.strftime(
@@ -67,6 +71,107 @@ def source_has_calibration_warning(payload: dict[str, Any]) -> bool:
         if comparison.get("calibration_ok") is False:
             return True
     return False
+
+
+def infer_stage5_run_id(path: str | Path) -> str | None:
+    parts = Path(path).parts
+    for idx, part in enumerate(parts):
+        if part == "stage5" and idx + 1 < len(parts):
+            return parts[idx + 1]
+    return None
+
+
+def checkpoint_from_payload(payload: dict[str, Any]) -> str | None:
+    """Find the checkpoint the guarded next action is expected to consume."""
+
+    direct = payload.get("selected_checkpoint") or payload.get("checkpoint")
+    if direct:
+        return str(direct)
+
+    for key_path in [
+        ("best_checkpoint", "checkpoint"),
+        ("best_arm", "best_checkpoint", "checkpoint"),
+        ("balanced_assessment", "best_checkpoint", "checkpoint"),
+    ]:
+        current: Any = payload
+        for key in key_path:
+            if not isinstance(current, dict):
+                current = None
+                break
+            current = current.get(key)
+        if current:
+            return str(current)
+
+    source_summary = payload.get("source_summary")
+    if source_summary:
+        source_path = Path(str(source_summary))
+        source_path = source_path if source_path.is_absolute() else ROOT / source_path
+        if source_path.exists():
+            try:
+                nested = read_json(source_path)
+            except Exception:
+                nested = {}
+            nested_checkpoint = checkpoint_from_payload(nested)
+            if nested_checkpoint:
+                return nested_checkpoint
+
+    return None
+
+
+def checkpoint_availability(payload: dict[str, Any]) -> dict[str, Any]:
+    checkpoint = checkpoint_from_payload(payload)
+    if not checkpoint:
+        return {
+            "checkpoint": None,
+            "available": False,
+            "exists": False,
+            "drive_candidate_exists": False,
+            "reason": "No selected checkpoint was found in the source summary.",
+        }
+
+    checkpoint_path = Path(checkpoint)
+    checkpoint_path = checkpoint_path if checkpoint_path.is_absolute() else ROOT / checkpoint_path
+    run_id = infer_stage5_run_id(checkpoint_path)
+    exists = checkpoint_path.exists()
+    candidates: list[Path] = []
+    existing_candidates: list[Path] = []
+    if not exists and run_id:
+        candidates = candidate_drive_checkpoints(run_id, checkpoint_path.name)
+        existing_candidates = [path for path in candidates if path.exists()]
+
+    return {
+        "checkpoint": checkpoint_path_for_cli(checkpoint_path).replace("\\", "/"),
+        "available": bool(exists or existing_candidates),
+        "exists": exists,
+        "run_id": run_id,
+        "drive_candidates_checked": min(len(candidates), 12),
+        "drive_candidate_exists": bool(existing_candidates),
+        "first_existing_drive_candidate": str(existing_candidates[0]) if existing_candidates else None,
+        "first_drive_candidates": [str(path) for path in candidates[:12]],
+    }
+
+
+def apply_checkpoint_guard(
+    decision: dict[str, Any],
+    *,
+    source_payload: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    checkpoint = checkpoint_availability(source_payload)
+    if not decision.get("go"):
+        return decision, checkpoint
+    if checkpoint.get("available"):
+        return decision, checkpoint
+    guarded = {
+        "go": False,
+        "status": "checkpoint_missing_no_go",
+        "spend_class": "none",
+        "reason": (
+            "The planner selected a paid-GPU action, but the checkpoint is not "
+            "present locally and no Drive backup candidate is visible."
+        ),
+        "prior_decision": decision,
+    }
+    return guarded, checkpoint
 
 
 def classify_action(
@@ -138,6 +243,7 @@ def build_payload(source_summary: Path) -> dict[str, Any]:
     actions = plan_next_actions(source_payload, source_summary=source_summary)
     action = actions[0] if actions else None
     decision = classify_action(action, source_payload=source_payload)
+    decision, checkpoint = apply_checkpoint_guard(decision, source_payload=source_payload)
     return {
         "run_id": RUN_ID,
         "kind": "stage5_a100_go_no_go",
@@ -145,6 +251,7 @@ def build_payload(source_summary: Path) -> dict[str, Any]:
         "source_kind": source_kind(source_payload),
         "source_status": source_payload.get("status"),
         "decision": decision,
+        "checkpoint_preflight": checkpoint,
         "recommended_action": action,
         "all_actions": actions,
     }
@@ -155,6 +262,7 @@ def write_report(payload: dict[str, Any]) -> None:
     (RUN_DIR / "summary.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
     action = payload.get("recommended_action") or {}
     decision = payload["decision"]
+    checkpoint = payload.get("checkpoint_preflight") or {}
     lines = [
         f"# Stage 5 A100 Go/No-Go - {payload['run_id']}",
         "",
@@ -165,6 +273,10 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Go: `{decision['go']}`",
         f"- Spend class: `{decision['spend_class']}`",
         f"- Reason: {decision['reason']}",
+        f"- Checkpoint: `{checkpoint.get('checkpoint')}`",
+        f"- Checkpoint available: `{checkpoint.get('available')}`",
+        f"- Checkpoint exists locally: `{checkpoint.get('exists')}`",
+        f"- Drive candidate visible: `{checkpoint.get('drive_candidate_exists')}`",
         "",
         "## Planner Action",
         "",

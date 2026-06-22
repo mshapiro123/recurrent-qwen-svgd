@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from colab.check_stage5_a100_go_no_go import classify_action, command_script, source_has_calibration_warning
+from colab.check_stage5_a100_go_no_go import (
+    apply_checkpoint_guard,
+    checkpoint_from_payload,
+    classify_action,
+    command_script,
+    source_has_calibration_warning,
+)
 
 
 def test_command_script_extracts_python_runner() -> None:
@@ -60,6 +66,33 @@ def test_clean_proxy_pass_allows_full_confirmation() -> None:
 
     assert decision["go"] is True
     assert decision["status"] == "go_full_confirmation"
+
+
+def test_checkpoint_from_payload_uses_selected_checkpoint() -> None:
+    payload = {"selected_checkpoint": "outputs/stage5/run/phase1/phase1_step_1.pt"}
+
+    assert checkpoint_from_payload(payload) == "outputs/stage5/run/phase1/phase1_step_1.pt"
+
+
+def test_checkpoint_from_payload_uses_nested_best_checkpoint() -> None:
+    payload = {
+        "best_arm": {
+            "best_checkpoint": {"checkpoint": "outputs/stage5/run/phase1/phase1_step_2.pt"},
+        },
+    }
+
+    assert checkpoint_from_payload(payload) == "outputs/stage5/run/phase1/phase1_step_2.pt"
+
+
+def test_checkpoint_guard_blocks_go_without_checkpoint() -> None:
+    decision, checkpoint = apply_checkpoint_guard(
+        {"go": True, "status": "go_bounded_proxy", "spend_class": "single_arc_mix_proxy"},
+        source_payload={"status": "needs_competence_recovery"},
+    )
+
+    assert checkpoint["available"] is False
+    assert decision["go"] is False
+    assert decision["status"] == "checkpoint_missing_no_go"
 
 
 def test_unpassed_proxy_blocks_full_confirmation() -> None:
