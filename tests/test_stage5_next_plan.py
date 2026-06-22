@@ -395,7 +395,7 @@ def test_capability_ladder_trace_collection_gate_ready_recommends_sft_gate(tmp_p
         "curriculum": {
             "summary_json": "data/curriculum/traced/summary.json",
             "work_dir": "data/curriculum/traced",
-            "counts": {"positive_sft_rows": 6, "mode_counts": {"direct": 2, "deep_narrow": 4}},
+            "counts": {"positive_sft_rows": 24, "mode_counts": {"direct": 12, "deep_narrow": 12}},
         },
         "gate": {"go": True},
         "drive_backup": {"dest_root": "/content/drive/MyDrive/recurrent-qwen-svgd/stage5_capability_ladder_trace_collection/run"},
@@ -409,9 +409,31 @@ def test_capability_ladder_trace_collection_gate_ready_recommends_sft_gate(tmp_p
     assert "python colab/run_stage5_curriculum_sft.py" in actions[0]["command"]
     assert "STAGE5_CURRICULUM_WORK_DIR=data/curriculum/traced" in actions[0]["command"]
     assert "STAGE5_CURRICULUM_SUMMARY_JSON=data/curriculum/traced/summary.json" in actions[0]["command"]
-    assert "STAGE5_CURRICULUM_MIN_POSITIVE_ROWS=6" in actions[0]["command"]
-    assert "STAGE5_CURRICULUM_MIN_MODE_ROWS=deep_narrow=4,direct=2" in actions[0]["command"]
+    assert "STAGE5_CURRICULUM_MIN_POSITIVE_ROWS=24" in actions[0]["command"]
+    assert "STAGE5_CURRICULUM_MIN_MODE_ROWS=deep_narrow=12,direct=12" in actions[0]["command"]
     assert "STAGE5_CURRICULUM_INPUT_BACKUP_DIR=/content/drive/MyDrive/recurrent-qwen-svgd/stage5_capability_ladder_trace_collection/run" in actions[0]["command"]
+
+
+def test_tiny_capability_ladder_trace_collection_requires_more_rows(tmp_path) -> None:
+    source = tmp_path / "trace_collection" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_capability_ladder_trace_collection",
+        "status": "trace_curriculum_gate_ready",
+        "curriculum": {
+            "summary_json": "data/curriculum/traced/summary.json",
+            "work_dir": "data/curriculum/traced",
+            "counts": {"positive_sft_rows": 6, "mode_counts": {"direct": 2, "deep_narrow": 4}},
+        },
+        "gate": {"go": True},
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Collect more traced capability-ladder rows before recurrent SFT"
+    assert "python colab/run_stage5_curriculum_sft.py" not in actions[0]["command"]
+    assert actions[0]["command"].startswith("cat ")
 
 
 def test_incomplete_capability_ladder_curriculum_recommends_inspection_not_gpu(tmp_path) -> None:

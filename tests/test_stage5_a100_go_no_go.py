@@ -723,6 +723,36 @@ def test_curriculum_sft_allows_gate_ready_trace_collection() -> None:
         "kind": "stage5_capability_ladder_trace_collection",
         "status": "trace_curriculum_gate_ready",
         "curriculum": {
+            "counts": {"positive_sft_rows": 24, "mode_counts": {"direct": 12, "deep_narrow": 12}},
+        },
+        "gate": {"go": True},
+    }
+    action = {
+        "name": "Run traced capability-ladder recurrent SFT",
+        "command": (
+            "STAGE5_CURRICULUM_MIN_MODE_ROWS=deep_narrow=12,direct=12 "
+            "python colab/run_stage5_curriculum_sft.py"
+        ),
+    }
+    wrong = {
+        "name": "Run traced capability-ladder recurrent SFT",
+        "command": "STAGE5_CURRICULUM_MIN_MODE_ROWS=direct=12 python colab/run_stage5_curriculum_sft.py",
+    }
+
+    allowed = classify_action(action, source_payload=source_payload)
+    blocked = classify_action(wrong, source_payload=source_payload)
+
+    assert allowed["go"] is True
+    assert allowed["status"] == "go_curriculum_sft"
+    assert blocked["go"] is False
+    assert blocked["status"] == "curriculum_sft_mode_gate_mismatch"
+
+
+def test_curriculum_sft_blocks_tiny_trace_collection() -> None:
+    source_payload = {
+        "kind": "stage5_capability_ladder_trace_collection",
+        "status": "trace_curriculum_gate_ready",
+        "curriculum": {
             "counts": {"positive_sft_rows": 6, "mode_counts": {"direct": 2, "deep_narrow": 4}},
         },
         "gate": {"go": True},
@@ -734,18 +764,12 @@ def test_curriculum_sft_allows_gate_ready_trace_collection() -> None:
             "python colab/run_stage5_curriculum_sft.py"
         ),
     }
-    wrong = {
-        "name": "Run traced capability-ladder recurrent SFT",
-        "command": "STAGE5_CURRICULUM_MIN_MODE_ROWS=direct=2 python colab/run_stage5_curriculum_sft.py",
-    }
 
-    allowed = classify_action(action, source_payload=source_payload)
-    blocked = classify_action(wrong, source_payload=source_payload)
+    decision = classify_action(action, source_payload=source_payload)
 
-    assert allowed["go"] is True
-    assert allowed["status"] == "go_curriculum_sft"
-    assert blocked["go"] is False
-    assert blocked["status"] == "curriculum_sft_mode_gate_mismatch"
+    assert decision["go"] is False
+    assert decision["status"] == "curriculum_sft_too_few_trace_rows"
+    assert "at least 16" in decision["reason"]
 
 
 def test_curriculum_mode_row_helpers_normalize_command_env() -> None:

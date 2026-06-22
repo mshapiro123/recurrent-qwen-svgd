@@ -47,6 +47,7 @@ DEFAULT_TRACE_SFT_GATE_ARMS = os.environ.get(
 MIN_SYMBOLIC_EXACT = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_MIN_SYMBOLIC_EXACT", "1"))
 MIN_HYBRID_BEST_DELTA = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_MIN_HYBRID_BEST_DELTA", "0"))
 MIN_TRACE_BEST_DELTA = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_MIN_TRACE_BEST_DELTA", "0"))
+MIN_TRACE_CURRICULUM_SFT_ROWS = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_TRACE_CURRICULUM_MIN_SFT_ROWS", "16"))
 A100_BUDGET_PROFILE = os.environ.get(
     "STAGE5_A100_BUDGET_PROFILE",
     os.environ.get("STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE", ""),
@@ -1188,11 +1189,25 @@ def capability_ladder_trace_collection_actions(payload: dict[str, Any], *, sourc
     )
     gate = payload.get("gate") if isinstance(payload.get("gate"), dict) else {}
     if status == "trace_curriculum_gate_ready" and gate.get("go") is True and summary_json and work_dir:
+        if positive_rows < MIN_TRACE_CURRICULUM_SFT_ROWS:
+            return [
+                make_action(
+                    "Collect more traced capability-ladder rows before recurrent SFT",
+                    (
+                        f"The traced curriculum gate is green, but only `{positive_rows}` positive rows were collected. "
+                        f"The default A100 floor is `{MIN_TRACE_CURRICULUM_SFT_ROWS}` rows; collect more provider "
+                        "responses or deliberately lower STAGE5_ARC_AGI_NEXT_PLAN_TRACE_CURRICULUM_MIN_SFT_ROWS for "
+                        "a tiny smoke run."
+                    ),
+                    f"cat {shlex.quote(command_path(source_summary))}",
+                    10,
+                )
+            ]
         assignments = {
             "STAGE5_CURRICULUM_SFT_RUN_ID": f"{RUN_ID}_traced_curriculum_sft",
             "STAGE5_CURRICULUM_WORK_DIR": work_dir,
             "STAGE5_CURRICULUM_SUMMARY_JSON": summary_json,
-            "STAGE5_CURRICULUM_MIN_POSITIVE_ROWS": str(max(positive_rows, 2)),
+            "STAGE5_CURRICULUM_MIN_POSITIVE_ROWS": str(max(positive_rows, MIN_TRACE_CURRICULUM_SFT_ROWS)),
         }
         if min_mode_rows:
             assignments["STAGE5_CURRICULUM_MIN_MODE_ROWS"] = min_mode_rows

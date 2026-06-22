@@ -56,7 +56,10 @@ planner will now route the next guarded paid action directly to
 `colab/run_stage5_curriculum_sft.py` with the traced work dir, summary, mode
 counts, and Drive backup root wired in. At that point use
 `STAGE5_CURRENT_A100_TARGET=safe_continue_execute` only on an A100/H100 runtime
-you intentionally want to spend.
+you intentionally want to spend. The default planner/guard floor is 16
+answer-verified traced rows before it will spend GPU on this SFT path; smaller
+collections remain CPU-side inspection/collect-more tasks unless explicitly
+overridden for a tiny smoke run.
 The bootstrap now auto-resumes from
 [`config/stage5_current_source_summary.txt`](../config/stage5_current_source_summary.txt)
 when that pointer exists and targets an available summary. To force a specific

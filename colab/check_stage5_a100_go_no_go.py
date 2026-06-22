@@ -46,6 +46,7 @@ RUN_ID = os.environ.get("STAGE5_A100_GO_NO_GO_RUN_ID") or time.strftime(
 RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
 STAGE4_OPUS_APPROVED_SOURCE_KEYS = {"opus47_sft", "opus47_raw"}
 DEFAULT_CURRICULUM_MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"
+DEFAULT_TRACE_CURRICULUM_MIN_SFT_ROWS = int(os.environ.get("STAGE5_TRACE_CURRICULUM_MIN_SFT_ROWS", "16"))
 DEFAULT_STAGE5_PHASE1_CHECKPOINT = (
     Path("outputs")
     / "stage4"
@@ -314,6 +315,14 @@ def source_curriculum_min_mode_rows(source_payload: dict[str, Any]) -> str:
         if parsed:
             return parsed
     return normalize_min_mode_rows(os.environ.get("STAGE5_CURRICULUM_GATE_MIN_MODE_ROWS", DEFAULT_CURRICULUM_MIN_MODE_ROWS))
+
+
+def source_trace_curriculum_positive_rows(source_payload: dict[str, Any]) -> int:
+    if source_payload.get("kind") != "stage5_capability_ladder_trace_collection":
+        return 0
+    curriculum = source_payload.get("curriculum") if isinstance(source_payload.get("curriculum"), dict) else {}
+    counts = curriculum.get("counts") if isinstance(curriculum.get("counts"), dict) else {}
+    return int(counts.get("positive_sft_rows") or 0)
 
 
 def source_has_calibration_warning(payload: dict[str, Any]) -> bool:
@@ -952,6 +961,25 @@ def classify_action(
         standalone_gate_ready = source_payload.get("kind") == "curriculum_sft_gate" and source_payload.get("go") is True
         if standalone_gate_ready or trace_collection_gate_ready:
             env = command_env_assignments(command)
+            if trace_collection_gate_ready:
+                min_trace_rows = int(
+                    env.get("STAGE5_TRACE_CURRICULUM_MIN_SFT_ROWS")
+                    or os.environ.get("STAGE5_TRACE_CURRICULUM_MIN_SFT_ROWS")
+                    or DEFAULT_TRACE_CURRICULUM_MIN_SFT_ROWS
+                )
+                observed_trace_rows = source_trace_curriculum_positive_rows(source_payload)
+                if observed_trace_rows < min_trace_rows:
+                    return {
+                        "go": False,
+                        "status": "curriculum_sft_too_few_trace_rows",
+                        "spend_class": "none",
+                        "reason": (
+                            "Traced capability-ladder SFT requires enough answer-verified rows before paid GPU "
+                            f"training. Expected at least {min_trace_rows}, got {observed_trace_rows}. "
+                            "Collect more provider responses or deliberately lower STAGE5_TRACE_CURRICULUM_MIN_SFT_ROWS "
+                            "for a tiny smoke run."
+                        ),
+                    }
             expected_min_mode_rows = source_curriculum_min_mode_rows(source_payload)
             actual_min_mode_rows = normalize_min_mode_rows(env.get("STAGE5_CURRICULUM_MIN_MODE_ROWS", ""))
             if expected_min_mode_rows and actual_min_mode_rows != expected_min_mode_rows:
