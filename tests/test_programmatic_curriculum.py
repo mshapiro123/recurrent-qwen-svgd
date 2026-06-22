@@ -36,6 +36,13 @@ def test_make_arithmetic_record_is_verified_and_depth_typed() -> None:
     assert record["width_signature"]["width"] == 1
     assert record["answer"]["value"] == answer_from_trace(record["traces"][0]["text"])
     assert record["traces"][0]["role"] == "positive_depth"
+    assert record["traces"][0]["answer_match"] == {
+        "matched": True,
+        "source": "constructed_python_eval",
+        "parsed_answer": record["answer"]["value"],
+        "parsed_answer_normalized": record["answer"]["value"],
+        "verified_answer_normalized": record["answer"]["value"],
+    }
 
 
 def test_direct_records_get_shallow_loop_targets() -> None:
@@ -52,6 +59,7 @@ def test_direct_records_get_shallow_loop_targets() -> None:
 
     assert record["target_loop_count"] == 1
     assert record["traces"][0]["role"] == "positive_direct"
+    assert record["traces"][0]["answer_match"]["matched"] is True
 
 
 def test_generate_records_mixes_direct_and_deep_narrow_and_converts_to_sft() -> None:

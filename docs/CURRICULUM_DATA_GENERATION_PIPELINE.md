@@ -14,9 +14,10 @@ positive reasoning set. The code boundary for this rule is
 `training/prepare_curriculum_jsonl.py`: only roles beginning with `positive_`
 are exported to causal SFT rows, and positive traces must be correct, natural,
 and step-labeled.
-The SFT gate adds a second boundary: every positive trace must include
-`answer_match.matched=true`, copied from the method-solution collector after
-its final `ANSWER:` line was matched to the verified answer. A positive role
+The SFT converter and gate add a second boundary: every positive trace must
+include `answer_match.matched=true`, copied from the method-solution collector
+after its final `ANSWER:` line was matched to the verified answer, or from a
+constructed-data verifier such as `constructed_python_eval`. A positive role
 without this proof is treated as unsafe, even if the rest of the record
 validates.
 

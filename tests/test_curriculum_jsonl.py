@@ -30,6 +30,13 @@ def curriculum_record() -> dict:
                 "natural": True,
                 "steps": 3,
                 "source_model": "teacher-a",
+                "answer_match": {
+                    "matched": True,
+                    "source": "method_constrained_answer_line",
+                    "parsed_answer": "40 mph",
+                    "parsed_answer_normalized": "40 mph",
+                    "verified_answer_normalized": "40 mph",
+                },
                 "text": "Divide distance by time: 120 / 3 = 40 mph.",
             },
             {
@@ -58,6 +65,7 @@ def test_curriculum_converter_exports_only_positive_traces() -> None:
     assert "120 mph" not in examples[0]["completion"]
     assert examples[0]["target_loop_count"] == 1
     assert examples[0]["routing_type"] == "direct"
+    assert examples[0]["answer_match"]["matched"] is True
     assert report["role_counts"] == {
         "negative_contrastive": 1,
         "positive_depth": 1,
@@ -121,6 +129,15 @@ def test_positive_trace_must_be_natural_and_stepped() -> None:
 
     assert any("positive trace must have natural=true" in issue for issue in issues)
     assert any("positive trace steps must be a positive integer" in issue for issue in issues)
+
+
+def test_positive_trace_requires_answer_match_proof() -> None:
+    record = curriculum_record()
+    record["traces"][0].pop("answer_match")
+
+    issues = validate_curriculum_record(record)
+
+    assert any("positive trace missing answer_match proof" in issue for issue in issues)
 
 
 def test_answer_requires_trusted_verification_anchor() -> None:

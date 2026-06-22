@@ -123,6 +123,7 @@ def make_arithmetic_record(
     start = rng.randint(2, 25)
     operations, trace = generate_operations(rng, steps=steps, start=start, max_abs_value=max_abs_value)
     answer = trace[-1][1]
+    answer_normalized = str(answer)
     target_loop = depth_to_target_loop(mode, steps, max_target_loops=max_target_loops)
     role = "positive_direct" if mode == "direct" else "positive_depth"
     difficulty_pass_rate = 0.9 if mode == "direct" else max(0.05, round(0.9 - 0.08 * steps, 3))
@@ -160,6 +161,13 @@ def make_arithmetic_record(
                 "natural": True,
                 "steps": steps,
                 "source_model": "programmatic_generator",
+                "answer_match": {
+                    "matched": True,
+                    "source": "constructed_python_eval",
+                    "parsed_answer": answer_normalized,
+                    "parsed_answer_normalized": answer_normalized,
+                    "verified_answer_normalized": answer_normalized,
+                },
                 "text": solution_text(trace),
             }
         ],

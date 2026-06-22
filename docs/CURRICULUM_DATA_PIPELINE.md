@@ -29,11 +29,11 @@ Auxiliary traces are the inverse boundary: they may only carry `negative_` or
 `verifier_` roles. Positive traces must be created only from verified,
 natural, method/depth-measured solution candidates, never from perturbation or
 auxiliary files.
-Every positive trace must also carry an `answer_match` proof copied from the
-method-solution collector. The required proof is `matched=true` plus the
-normalized parsed answer and normalized verified answer. This makes the hard
-rule auditable row by row: a role label alone is not enough evidence for
-positive SFT.
+Every positive trace must also carry an `answer_match` proof from the
+method-solution collector or a constructed-data verifier. The required proof is
+`matched=true` plus the normalized parsed answer and normalized verified
+answer. This makes the hard rule auditable row by row: a role label alone is
+not enough evidence for positive SFT.
 
 ## Model Roles
 
@@ -487,6 +487,12 @@ One record per problem:
       "correct": true,
       "steps": 12,
       "source_model": "string",
+      "answer_match": {
+        "matched": true,
+        "source": "method_constrained_answer_line|constructed_python_eval",
+        "parsed_answer_normalized": "string",
+        "verified_answer_normalized": "string"
+      },
       "text": "string"
     },
     {
@@ -541,9 +547,10 @@ python training/prepare_curriculum_jsonl.py \
 ```
 
 That script validates the typed records and exports ordinary
-`prompt`/`completion` rows only from roles beginning with `positive_`. It counts
-negative and verifier traces in the report, but never writes them to the
-positive SFT output.
+`prompt`/`completion` rows only from roles beginning with `positive_`. It also
+requires positive traces to carry `answer_match.matched=true`, then preserves
+that provenance in exported rows for audit. It counts negative and verifier
+traces in the report, but never writes them to the positive SFT output.
 
 If `--allow_validation_issues` is used for auditing a partial artifact, records
 with validation issues are still skipped by default. The debug-only

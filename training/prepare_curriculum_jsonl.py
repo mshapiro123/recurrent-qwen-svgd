@@ -80,6 +80,20 @@ def int_value(value: Any) -> int | None:
     return None
 
 
+def validate_positive_answer_match(trace: dict[str, Any], *, label: str) -> list[str]:
+    answer_match = trace.get("answer_match")
+    if not isinstance(answer_match, dict):
+        return [f"{label}positive trace missing answer_match proof"]
+    issues: list[str] = []
+    if answer_match.get("matched") is not True:
+        issues.append(f"{label}positive trace answer_match.matched must be true")
+    if not str(answer_match.get("verified_answer_normalized") or "").strip():
+        issues.append(f"{label}positive trace answer_match missing verified_answer_normalized")
+    if not str(answer_match.get("parsed_answer_normalized") or "").strip():
+        issues.append(f"{label}positive trace answer_match missing parsed_answer_normalized")
+    return issues
+
+
 def validate_curriculum_record(record: dict[str, Any], *, line_no: int | None = None) -> list[str]:
     label = f"line {line_no}: " if line_no is not None else ""
     issues: list[str] = []
@@ -163,6 +177,7 @@ def validate_curriculum_record(record: dict[str, Any], *, line_no: int | None = 
             trace_steps = int_value(trace.get("steps"))
             if trace_steps is None or trace_steps < 1:
                 issues.append(f"{trace_label}positive trace steps must be a positive integer")
+            issues.extend(validate_positive_answer_match(trace, label=trace_label))
             method = str(trace.get("method") or "").strip()
             if role == "positive_wide":
                 if not method:
@@ -237,6 +252,8 @@ def positive_trace_to_causal_example(
     }
     if isinstance(trace.get("steps"), int):
         example["reasoning_steps"] = int(trace["steps"])
+    if isinstance(trace.get("answer_match"), dict):
+        example["answer_match"] = trace["answer_match"]
 
     target_loop = inherited_target_loop(
         record,
