@@ -1,0 +1,23 @@
+# Stage 5 Balanced MCQ Checkpoint Assessment - stage5_balanced_mcq_20260622_010722
+
+- Status: `needs_competence_recovery`
+- Passed: `False`
+- ARC-Easy sweep: `outputs/stage5/stage5_full_assessment_once_20260622_005522_balanced_full/summary.json`
+- ARC-Challenge summaries: `['outputs/stage5/stage5_full_assessment_once_20260622_005522_balanced_full/summary.json']`
+- Required benchmarks: `['arc_easy', 'arc_challenge']`
+- Next step: Use the selected checkpoint as the current balanced baseline, then train with a competence-preserving mixed objective before returning to particles/SVGD.
+
+## Ranked Checkpoints
+
+| rank | label | full coverage | macro delta | micro delta | recurrent/base | W/L/T | checkpoint |
+|---:|---|---:|---:|---:|---:|---|---|
+| 1 | `step_050` | `True` | -0.010280 | -9 | 579/588 | 29/38/802 | `outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/arc_mix_response_w005_lr2e6/phase1/phase1_step_50.pt` |
+
+## Benchmark Details
+
+### `step_050`
+
+- `arc_easy`: recurrent `415/570`, base `421/570`, delta `-6`, accuracy delta `-0.010526`, W/L/T `18/24/528`, p `0.44079906734259566`
+- `arc_challenge`: recurrent `164/299`, base `167/299`, delta `-3`, accuracy delta `-0.010033`, W/L/T `11/14/274`, p `0.6900379657745361`
+
+

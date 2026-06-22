@@ -1,0 +1,189 @@
+{
+  "run_id": "stage5_full_assessment_once_20260622_005522",
+  "kind": "stage5_recovery_full_assessment",
+  "source_summary": "outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/summary.json",
+  "source_status": "proxy_lift",
+  "selected_gate": "source",
+  "selected_gate_status": "proxy_lift",
+  "selected_checkpoint": "outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/arc_mix_response_w005_lr2e6/phase1/phase1_step_50.pt",
+  "benchmark_summary": "outputs/stage5/stage5_full_assessment_once_20260622_005522_balanced_full/summary.json",
+  "balanced_assessment_summary": "outputs/stage5/stage5_full_assessment_once_20260622_005522/balanced_assessment/summary.json",
+  "status": "needs_competence_recovery",
+  "passed": false,
+  "next_step": "Use the selected checkpoint as the current balanced baseline, then train with a competence-preserving mixed objective before returning to particles/SVGD.",
+  "best_checkpoint": {
+    "label": "step_050",
+    "checkpoint": "outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/arc_mix_response_w005_lr2e6/phase1/phase1_step_50.pt",
+    "benchmarks": {
+      "arc_easy": {
+        "benchmark": "arc_easy",
+        "source_summary": "outputs/stage5/stage5_full_assessment_once_20260622_005522_balanced_full/summary.json",
+        "base_correct": 421,
+        "recurrent_correct": 415,
+        "total": 570,
+        "correct_delta_recurrent_vs_base": -6,
+        "base_accuracy": 0.7385964912280701,
+        "recurrent_accuracy": 0.7280701754385965,
+        "accuracy_delta_recurrent_vs_base": -0.010526315789473606,
+        "wins": 18,
+        "losses": 24,
+        "ties": 528,
+        "sign_test_p_value": 0.44079906734259566
+      },
+      "arc_challenge": {
+        "benchmark": "arc_challenge",
+        "source_summary": "outputs/stage5/stage5_full_assessment_once_20260622_005522_balanced_full/summary.json",
+        "base_correct": 167,
+        "recurrent_correct": 164,
+        "total": 299,
+        "correct_delta_recurrent_vs_base": -3,
+        "base_accuracy": 0.5585284280936454,
+        "recurrent_accuracy": 0.5484949832775919,
+        "accuracy_delta_recurrent_vs_base": -0.010033444816053505,
+        "wins": 11,
+        "losses": 14,
+        "ties": 274,
+        "sign_test_p_value": 0.6900379657745361
+      }
+    },
+    "present_benchmarks": [
+      "arc_challenge",
+      "arc_easy"
+    ],
+    "missing_required_benchmarks": [],
+    "full_required_coverage": true,
+    "macro_accuracy_delta": -0.010279880302763555,
+    "required_macro_accuracy_delta": -0.010279880302763555,
+    "micro_correct_delta": -9,
+    "base_correct": 588,
+    "recurrent_correct": 579,
+    "total": 869,
+    "combined_wins": 29,
+    "combined_losses": 38,
+    "combined_ties": 802,
+    "combined_sign_test_p_value": 0.3284320626971899
+  },
+  "balanced_assessment": {
+    "run_id": "stage5_balanced_mcq_20260622_010722",
+    "kind": "stage5_balanced_mcq_checkpoint_assessment",
+    "arc_easy_sweep": "outputs/stage5/stage5_full_assessment_once_20260622_005522_balanced_full/summary.json",
+    "arc_challenge_summaries": [
+      "outputs/stage5/stage5_full_assessment_once_20260622_005522_balanced_full/summary.json"
+    ],
+    "required_benchmarks": [
+      "arc_easy",
+      "arc_challenge"
+    ],
+    "score_target": "label",
+    "aggregate": "mean",
+    "status": "needs_competence_recovery",
+    "passed": false,
+    "next_step": "Use the selected checkpoint as the current balanced baseline, then train with a competence-preserving mixed objective before returning to particles/SVGD.",
+    "best_checkpoint": {
+      "label": "step_050",
+      "checkpoint": "outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/arc_mix_response_w005_lr2e6/phase1/phase1_step_50.pt",
+      "benchmarks": {
+        "arc_easy": {
+          "benchmark": "arc_easy",
+          "source_summary": "outputs/stage5/stage5_full_assessment_once_20260622_005522_balanced_full/summary.json",
+          "base_correct": 421,
+          "recurrent_correct": 415,
+          "total": 570,
+          "correct_delta_recurrent_vs_base": -6,
+          "base_accuracy": 0.7385964912280701,
+          "recurrent_accuracy": 0.7280701754385965,
+          "accuracy_delta_recurrent_vs_base": -0.010526315789473606,
+          "wins": 18,
+          "losses": 24,
+          "ties": 528,
+          "sign_test_p_value": 0.44079906734259566
+        },
+        "arc_challenge": {
+          "benchmark": "arc_challenge",
+          "source_summary": "outputs/stage5/stage5_full_assessment_once_20260622_005522_balanced_full/summary.json",
+          "base_correct": 167,
+          "recurrent_correct": 164,
+          "total": 299,
+          "correct_delta_recurrent_vs_base": -3,
+          "base_accuracy": 0.5585284280936454,
+          "recurrent_accuracy": 0.5484949832775919,
+          "accuracy_delta_recurrent_vs_base": -0.010033444816053505,
+          "wins": 11,
+          "losses": 14,
+          "ties": 274,
+          "sign_test_p_value": 0.6900379657745361
+        }
+      },
+      "present_benchmarks": [
+        "arc_challenge",
+        "arc_easy"
+      ],
+      "missing_required_benchmarks": [],
+      "full_required_coverage": true,
+      "macro_accuracy_delta": -0.010279880302763555,
+      "required_macro_accuracy_delta": -0.010279880302763555,
+      "micro_correct_delta": -9,
+      "base_correct": 588,
+      "recurrent_correct": 579,
+      "total": 869,
+      "combined_wins": 29,
+      "combined_losses": 38,
+      "combined_ties": 802,
+      "combined_sign_test_p_value": 0.3284320626971899
+    },
+    "ranked_checkpoints": [
+      {
+        "label": "step_050",
+        "checkpoint": "outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/arc_mix_response_w005_lr2e6/phase1/phase1_step_50.pt",
+        "benchmarks": {
+          "arc_easy": {
+            "benchmark": "arc_easy",
+            "source_summary": "outputs/stage5/stage5_full_assessment_once_20260622_005522_balanced_full/summary.json",
+            "base_correct": 421,
+            "recurrent_correct": 415,
+            "total": 570,
+            "correct_delta_recurrent_vs_base": -6,
+            "base_accuracy": 0.7385964912280701,
+            "recurrent_accuracy": 0.7280701754385965,
+            "accuracy_delta_recurrent_vs_base": -0.010526315789473606,
+            "wins": 18,
+            "losses": 24,
+            "ties": 528,
+            "sign_test_p_value": 0.44079906734259566
+          },
+          "arc_challenge": {
+            "benchmark": "arc_challenge",
+            "source_summary": "outputs/stage5/stage5_full_assessment_once_20260622_005522_balanced_full/summary.json",
+            "base_correct": 167,
+            "recurrent_correct": 164,
+            "total": 299,
+            "correct_delta_recurrent_vs_base": -3,
+            "base_accuracy": 0.5585284280936454,
+            "recurrent_accuracy": 0.5484949832775919,
+            "accuracy_delta_recurrent_vs_base": -0.010033444816053505,
+            "wins": 11,
+            "losses": 14,
+            "ties": 274,
+            "sign_test_p_value": 0.6900379657745361
+          }
+        },
+        "present_benchmarks": [
+          "arc_challenge",
+          "arc_easy"
+        ],
+        "missing_required_benchmarks": [],
+        "full_required_coverage": true,
+        "macro_accuracy_delta": -0.010279880302763555,
+        "required_macro_accuracy_delta": -0.010279880302763555,
+        "micro_correct_delta": -9,
+        "base_correct": 588,
+        "recurrent_correct": 579,
+        "total": 869,
+        "combined_wins": 29,
+        "combined_losses": 38,
+        "combined_ties": 802,
+        "combined_sign_test_p_value": 0.3284320626971899
+      }
+    ]
+  }
+}
