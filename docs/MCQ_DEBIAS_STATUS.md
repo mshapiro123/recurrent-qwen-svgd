@@ -102,6 +102,7 @@ For MCQ tasks, report at least:
 
 - bare-label score;
 - cyclic-permutation aggregated score;
+- content-question-only score when the benchmark format supports it;
 - prediction-count drift by label;
 - edge-minus-middle drift;
 - paired wins/losses against base.
@@ -109,3 +110,15 @@ For MCQ tasks, report at least:
 Content-only scoring remains useful but is not yet the primary proof metric
 because the current ARC-Easy run showed it can underperform both base and
 recurrent while cyclic scoring removes the apparent recurrent gap.
+
+The benchmark suite can now emit the policy metrics directly by setting:
+
+```text
+STAGE5_BENCHMARK_SCORE_TARGETS=label,content_question_only,cyclic_label_aggregated
+```
+
+`content_question_only` scores option content without showing the option list in
+the prompt. `cyclic_label_aggregated` runs label scoring across cyclic option
+permutations, then averages scores back into the original content-label space.
+Use these as measurement tools. Do not treat them as a training objective by
+themselves.

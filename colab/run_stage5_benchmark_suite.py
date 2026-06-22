@@ -35,6 +35,7 @@ from eval.analyze_mcq_regressions import (
     rows_by_id as mcq_rows_by_id,
     summarize as summarize_mcq_regressions,
 )
+from eval.mcq_debias import aggregate_permutation_scores, cyclic_permutation_rows, read_jsonl, write_jsonl
 
 
 RUN_ID = os.environ.get("STAGE5_BENCHMARK_SUITE_RUN_ID") or time.strftime(
@@ -107,6 +108,8 @@ class EvalJob:
     score_target: str
     output_jsonl: Path
     cmd: list[str]
+    eval_output_jsonl: Path | None = None
+    permutation_jsonl: Path | None = None
 
 
 def path_for_cli(path: Path) -> str:
@@ -162,6 +165,74 @@ def run(cmd: list[str], *, check: bool = True, log_name: str | None = None) -> s
 
 def parse_csv(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
+
+
+CYCLIC_LABEL_TARGETS = {"cyclic_label", "cyclic_label_aggregated"}
+
+
+def public_score_target(score_target: str) -> str:
+    if score_target in CYCLIC_LABEL_TARGETS:
+        return "cyclic_label_aggregated"
+    return score_target
+
+
+def eval_score_target(score_target: str) -> str:
+    if score_target == "content_question_only":
+        return "option_text"
+    if score_target in CYCLIC_LABEL_TARGETS:
+        return "label"
+    return score_target
+
+
+def prompt_style_for_score_target(score_target: str) -> str:
+    if score_target == "content_question_only":
+        return "question_only"
+    return "with_options"
+
+
+def cyclic_permutation_jsonl(spec: BenchmarkSpec) -> Path:
+    path = PRIVATE_DATA_DIR / f"{spec.data_jsonl.stem}_cyclic_permuted.jsonl"
+    if not spec.data_jsonl.exists():
+        return path
+    if not path.exists():
+        write_jsonl(path, cyclic_permutation_rows(read_jsonl(spec.data_jsonl)))
+    return path
+
+
+def aggregate_cyclic_label_output(job: EvalJob) -> None:
+    if not job.permutation_jsonl or not job.eval_output_jsonl:
+        return
+    scored_rows = read_jsonl(job.eval_output_jsonl)
+    permutation_rows = read_jsonl(job.permutation_jsonl)
+    aggregates = sorted({str(row.get("aggregate") or "mean") for row in scored_rows})
+    output_rows: list[dict[str, Any]] = []
+    for aggregate in aggregates:
+        aggregate_rows = [row for row in scored_rows if str(row.get("aggregate") or "mean") == aggregate]
+        for row in aggregate_permutation_scores(aggregate_rows, permutation_rows):
+            row["aggregate"] = f"permutation_{aggregate}"
+            output_rows.append(row)
+    write_jsonl(job.output_jsonl, output_rows)
+
+
+def effective_score_targets() -> list[str]:
+    targets: list[str] = []
+    for score_target in parse_csv(SCORE_TARGETS):
+        public = public_score_target(score_target)
+        if public not in targets:
+            targets.append(public)
+    return targets
+
+
+def configured_score_targets() -> list[str]:
+    targets: list[str] = []
+    seen_public: set[str] = set()
+    for score_target in parse_csv(SCORE_TARGETS):
+        public = public_score_target(score_target)
+        if public in seen_public:
+            continue
+        seen_public.add(public)
+        targets.append(score_target)
+    return targets
 
 
 def parse_optional_limit(value: str) -> int | None:
@@ -355,16 +426,24 @@ def eval_jobs(specs: list[BenchmarkSpec], *, checkpoint: Path) -> list[EvalJob]:
         if RECURRENT_SVGD_KERNEL_PROJECTION_PATH:
             recurrent_extra.extend(["--svgd_kernel_projection_path", RECURRENT_SVGD_KERNEL_PROJECTION_PATH])
     for spec in specs:
-        for score_target in parse_csv(SCORE_TARGETS):
+        for score_target in configured_score_targets():
+            public_target = public_score_target(score_target)
+            data_jsonl = spec.data_jsonl
+            output_suffix = public_target
+            permutation_jsonl: Path | None = None
+            if score_target in CYCLIC_LABEL_TARGETS:
+                permutation_jsonl = cyclic_permutation_jsonl(spec)
+                data_jsonl = permutation_jsonl
+                output_suffix = "cyclic_label_raw"
             common = [
                 sys.executable,
                 "eval/eval_mcq.py",
                 "--data_jsonl",
-                path_for_cli(spec.data_jsonl),
+                path_for_cli(data_jsonl),
                 "--prompt_style",
-                "with_options",
+                prompt_style_for_score_target(score_target),
                 "--score_target",
-                score_target,
+                eval_score_target(score_target),
                 "--aggregates",
                 AGGREGATES,
                 "--dtype",
@@ -380,15 +459,23 @@ def eval_jobs(specs: list[BenchmarkSpec], *, checkpoint: Path) -> list[EvalJob]:
                 ("base", "base", []),
                 ("recurrent", RECURRENT_MODE, recurrent_extra),
             ):
-                output = RUN_DIR / f"{spec.name}_{arm}_{score_target}.jsonl"
+                eval_output = RUN_DIR / f"{spec.name}_{arm}_{output_suffix}.jsonl"
+                output = (
+                    RUN_DIR / f"{spec.name}_{arm}_{public_target}.jsonl"
+                    if permutation_jsonl is not None
+                    else eval_output
+                )
                 loop_diagnostics = ["--include_loop_diagnostics"] if arm == "recurrent" and INCLUDE_LOOP_DIAGNOSTICS else []
                 jobs.append(
                     EvalJob(
                         benchmark=spec.name,
                         arm=arm,
-                        score_target=score_target,
+                        score_target=public_target,
                         output_jsonl=output,
-                        cmd=common + ["--mode", mode, *extra, *loop_diagnostics, "--output_jsonl", path_for_cli(output)],
+                        cmd=common
+                        + ["--mode", mode, *extra, *loop_diagnostics, "--output_jsonl", path_for_cli(eval_output)],
+                        eval_output_jsonl=eval_output,
+                        permutation_jsonl=permutation_jsonl,
                     )
                 )
     return jobs
@@ -565,7 +652,7 @@ def build_summary(
         "source_summary": path_for_cli(source_summary) if source_summary else None,
         "checkpoint": path_for_cli(checkpoint),
         "benchmarks": [spec.name for spec in specs],
-        "score_targets": parse_csv(SCORE_TARGETS),
+        "score_targets": effective_score_targets(),
         "aggregates": parse_csv(AGGREGATES),
         "recurrent_mode": RECURRENT_MODE,
         "recurrent_num_trajectories": RECURRENT_NUM_TRAJECTORIES,
@@ -680,10 +767,14 @@ def main() -> int:
         data_path = resolve_path(job.cmd[job.cmd.index("--data_jsonl") + 1])
         if not data_path.exists():
             continue
+        eval_output = job.eval_output_jsonl or job.output_jsonl
+        if eval_output.exists():
+            eval_output.unlink()
         if job.output_jsonl.exists():
             job.output_jsonl.unlink()
         try:
-            run(job.cmd, log_name=f"{job.output_jsonl.stem}.log")
+            run(job.cmd, log_name=f"{eval_output.stem}.log")
+            aggregate_cyclic_label_output(job)
         except Exception as exc:
             failures.append(
                 {

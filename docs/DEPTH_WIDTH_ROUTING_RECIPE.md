@@ -187,6 +187,11 @@ per-item content consistency: the same question should induce the same
 content-answer distribution across option permutations, even though the correct
 letter changes.
 
+Do not confuse this with marginal answer-key balancing. Balanced A/B/C/D
+frequencies only remove a dataset prior; they do not prove the model keeps the
+same content answer for the same item under different option orders. The
+objective, if used, must be conditional and per item.
+
 Use it only after recovery and debiased MCQ measurement are clean:
 
 - keep the depth-one direct path matched to base;
@@ -204,6 +209,11 @@ per-item consistency loss, and the reinforcement-phase form is a
 permutation-aware policy objective with a consistency reward. Do not introduce
 either form before the debiased measurement gate decides whether a real
 residual content gap remains.
+
+The intended placement is the signal/reinforcement phase, or at most a small
+auxiliary in the width phase after recovery. It should never be a standalone
+multiple-choice cleanup stage, because that spends scarce small-model capacity
+on a format nuisance the evaluator can already neutralize.
 
 ## Conditional Width Gate
 

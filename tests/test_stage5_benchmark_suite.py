@@ -272,6 +272,116 @@ def test_eval_jobs_include_loop_diagnostics_only_for_recurrent(tmp_path, monkeyp
     assert "--include_loop_diagnostics" in recurrent_cmd
 
 
+def test_eval_jobs_support_content_question_only_target(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    monkeypatch.setattr(module, "SCORE_TARGETS", "content_question_only")
+    monkeypatch.setattr(module, "RUN_DIR", tmp_path / "run")
+
+    jobs = module.eval_jobs([BenchmarkSpec("arc_challenge", tmp_path / "arc.jsonl", [])], checkpoint=tmp_path / "phase1.pt")
+    base_job = next(job for job in jobs if job.arm == "base")
+
+    assert base_job.score_target == "content_question_only"
+    assert base_job.cmd[base_job.cmd.index("--prompt_style") + 1] == "question_only"
+    assert base_job.cmd[base_job.cmd.index("--score_target") + 1] == "option_text"
+
+
+def test_eval_jobs_support_cyclic_label_aggregation_target(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    data = tmp_path / "arc.jsonl"
+    _write_jsonl(
+        data,
+        [
+            {
+                "id": "item",
+                "question": "Which number is even?",
+                "choices": {"A": "three", "B": "four"},
+                "answer": "B",
+            }
+        ],
+    )
+    monkeypatch.setattr(module, "SCORE_TARGETS", "cyclic_label_aggregated")
+    monkeypatch.setattr(module, "RUN_DIR", tmp_path / "run")
+    monkeypatch.setattr(module, "PRIVATE_DATA_DIR", tmp_path / "private")
+
+    jobs = module.eval_jobs([BenchmarkSpec("arc_challenge", data, [])], checkpoint=tmp_path / "phase1.pt")
+    base_job = next(job for job in jobs if job.arm == "base")
+
+    assert base_job.score_target == "cyclic_label_aggregated"
+    assert base_job.output_jsonl.name == "arc_challenge_base_cyclic_label_aggregated.jsonl"
+    assert base_job.eval_output_jsonl.name == "arc_challenge_base_cyclic_label_raw.jsonl"
+    assert base_job.permutation_jsonl is not None
+    assert base_job.permutation_jsonl.exists()
+    assert base_job.cmd[base_job.cmd.index("--data_jsonl") + 1].endswith("_cyclic_permuted.jsonl")
+    assert base_job.cmd[base_job.cmd.index("--prompt_style") + 1] == "with_options"
+    assert base_job.cmd[base_job.cmd.index("--score_target") + 1] == "label"
+
+
+def test_aggregate_cyclic_label_output_writes_public_rows(tmp_path) -> None:
+    import colab.run_stage5_benchmark_suite as module
+    from eval.mcq_debias import cyclic_permutation_rows
+
+    original = [
+        {
+            "id": "item",
+            "question": "Which number is even?",
+            "choices": {"A": "three", "B": "four"},
+            "answer": "B",
+        }
+    ]
+    permutation_jsonl = tmp_path / "permuted.jsonl"
+    raw_jsonl = tmp_path / "raw.jsonl"
+    public_jsonl = tmp_path / "public.jsonl"
+    _write_jsonl(permutation_jsonl, cyclic_permutation_rows(original))
+    _write_jsonl(
+        raw_jsonl,
+        [
+            {
+                "id": "item::perm0",
+                "aggregate": "mean",
+                "prediction": "B",
+                "answer": "B",
+                "hit": True,
+                "scores": {"A": 0.0, "B": 2.0},
+            },
+            {
+                "id": "item::perm1",
+                "aggregate": "mean",
+                "prediction": "A",
+                "answer": "A",
+                "hit": True,
+                "scores": {"A": 2.0, "B": 0.0},
+            },
+        ],
+    )
+    job = module.EvalJob(
+        "arc_challenge",
+        "base",
+        "cyclic_label_aggregated",
+        public_jsonl,
+        [],
+        eval_output_jsonl=raw_jsonl,
+        permutation_jsonl=permutation_jsonl,
+    )
+
+    module.aggregate_cyclic_label_output(job)
+
+    rows = [json.loads(line) for line in public_jsonl.read_text(encoding="utf-8").splitlines()]
+    assert rows == [
+        {
+            "id": "item",
+            "aggregate": "permutation_mean",
+            "prediction": "B",
+            "answer": "B",
+            "hit": True,
+            "scores": {"A": 0.0, "B": 2.0},
+            "num_permutations": 2,
+            "permutation_prediction_counts": {"B": 2},
+        }
+    ]
+
+
 def test_benchmark_specs_supports_arc_easy(tmp_path, monkeypatch) -> None:
     import colab.run_stage5_benchmark_suite as module
 
