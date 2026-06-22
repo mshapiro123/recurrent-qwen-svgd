@@ -1,0 +1,5 @@
+dataset_id=lordx64/reasoning-distill-opus-4-7-max-sft
+adapter=auto
+train_rows=1985
+val_rows=104
+skipped_rows=911

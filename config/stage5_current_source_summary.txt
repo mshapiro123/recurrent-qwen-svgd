@@ -1,1 +1,1 @@
-outputs/stage5/stage5_arc_agi_next_plan_20260622_101547_benchmark_assessment/summary.json
+outputs/stage5/stage5_arc_agi_next_action_20260622_145746_plan_arc_mix_probe/summary.json

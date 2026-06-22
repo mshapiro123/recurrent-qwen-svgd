@@ -1,0 +1,18 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6200.35it/s]
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6142.40it/s]
+distillation_teacher=Qwen/Qwen2.5-0.5B-Instruct
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_arc_agi_next_action_20260622_134618_plan_curriculum_sft/phase1/phase1_step_150.pt loaded_keys=173
+step=0 mean_expected_loops=3.0568 mean_halt_entropy=1.1804 expected_ce=1.9509 halting_kl=0.7518 loss=2.1913 base_distill_kl=1.5017
+step=25 mean_expected_loops=3.0709 mean_halt_entropy=1.1700 expected_ce=1.5211 halting_kl=0.7706 loss=1.7745 base_distill_kl=1.6088
+saved_checkpoint=outputs/stage5/stage5_arc_agi_next_action_20260622_145746_plan_arc_mix_probe/arc_mix_response_w01_lr2e6/phase1/phase1_step_50.pt
+step=50 mean_expected_loops=3.0581 mean_halt_entropy=1.1779 expected_ce=1.7463 halting_kl=0.7551 loss=1.9929 base_distill_kl=1.5596
+step=75 mean_expected_loops=3.0639 mean_halt_entropy=1.1769 expected_ce=1.2185 halting_kl=0.7595 loss=1.4348 base_distill_kl=1.2511
+saved_checkpoint=outputs/stage5/stage5_arc_agi_next_action_20260622_145746_plan_arc_mix_probe/arc_mix_response_w01_lr2e6/phase1/phase1_step_100.pt
+step=100 mean_expected_loops=3.0470 mean_halt_entropy=1.1870 expected_ce=1.8663 halting_kl=0.7393 loss=2.1657 base_distill_kl=2.1068
+step=125 mean_expected_loops=3.0316 mean_halt_entropy=1.1958 expected_ce=1.5499 halting_kl=0.7213 loss=1.7747 base_distill_kl=1.3823
+saved_checkpoint=outputs/stage5/stage5_arc_agi_next_action_20260622_145746_plan_arc_mix_probe/arc_mix_response_w01_lr2e6/phase1/phase1_step_150.pt
