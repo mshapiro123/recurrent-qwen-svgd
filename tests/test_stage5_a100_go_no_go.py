@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from colab.check_stage5_a100_go_no_go import (
     apply_checkpoint_guard,
+    build_payload,
     checkpoint_from_payload,
     classify_action,
     command_script,
     curriculum_sft_checkpoint_availability,
     curriculum_sft_input_availability,
     promoted_stage4_opus_sources,
+    routing_repair_profile_preflight,
     routing_repair_checkpoint_availability,
     source_has_calibration_warning,
 )
@@ -128,6 +130,39 @@ def test_routing_repair_checkpoint_preflight_can_block(monkeypatch) -> None:
     assert checkpoint["available"] is False
     assert decision["go"] is False
     assert decision["status"] == "routing_checkpoint_missing_no_go"
+
+
+def test_routing_repair_profile_preflight_exposes_expected_proxy() -> None:
+    status = routing_repair_profile_preflight({"status": "needs_direct_halting_repair"})
+
+    assert status["checked"] is True
+    assert status["repair_mode"] == "direct_halting"
+    assert status["expected_arc_eval_config"] == "ARC-Easy"
+    assert status["arms"] == "arc_mix_response_w02_lr2e6"
+
+
+def test_build_payload_includes_routing_repair_profile(monkeypatch, tmp_path) -> None:
+    import colab.check_stage5_a100_go_no_go as module
+
+    source = tmp_path / "summary.json"
+    source.write_text('{"status": "needs_direct_halting_repair"}', encoding="utf-8")
+    monkeypatch.setattr(
+        module,
+        "plan_next_actions",
+        lambda payload, source_summary: [
+            {"name": "Run routing repair", "command": "python colab/run_stage5_routing_repair.py"}
+        ],
+    )
+    monkeypatch.setattr(
+        module,
+        "apply_checkpoint_guard",
+        lambda decision, source_payload: (decision, {"available": True}),
+    )
+
+    payload = build_payload(source)
+
+    assert payload["routing_repair_profile"]["repair_mode"] == "direct_halting"
+    assert payload["routing_repair_profile"]["expected_arc_eval_config"] == "ARC-Easy"
 
 
 def test_routing_repair_checkpoint_preflight_allows_available(monkeypatch) -> None:

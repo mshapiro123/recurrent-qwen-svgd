@@ -83,6 +83,9 @@ The proxy eval is ARC-Easy for this direct-halting repair. That is deliberate:
 the source diagnostic showed the model over-looping and regressing on
 base-confident direct rows, so the bounded repair must clear the direct/Easy
 proxy before a larger ARC-Easy/ARC-Challenge confirmation benchmark.
+The A100 go/no-go summary should show
+`routing_repair_profile.expected_arc_eval_config = "ARC-Easy"` before you
+allow the paid action to run.
 
 The runner restores the recovered deterministic Phase 1 checkpoint from Drive
 if needed, delegates to `colab/run_stage5_balanced_arc_mix_gate.py`, keeps

@@ -200,6 +200,28 @@ def routing_repair_checkpoint_availability() -> dict[str, Any]:
     return status
 
 
+def routing_repair_profile_preflight(source_payload: dict[str, Any]) -> dict[str, Any]:
+    status = str(source_payload.get("status") or "")
+    if status not in {"needs_direct_halting_repair", "needs_deep_narrow_recovery"}:
+        return {
+            "checked": False,
+            "status": status,
+            "reason": "Source status is not a routing-repair status.",
+        }
+    from colab.run_stage5_routing_repair import repair_profile
+
+    profile = repair_profile(status)
+    return {
+        "checked": True,
+        "status": status,
+        "repair_mode": profile.get("repair_mode"),
+        "expected_arc_eval_config": profile.get("STAGE5_ARC_MIX_EVAL_CONFIG"),
+        "arms": profile.get("STAGE5_ARC_MIX_ARMS"),
+        "arc_easy_target_loop": profile.get("STAGE5_ARC_MIX_ARC_EASY_TARGET_LOOP"),
+        "arc_challenge_target_loop": profile.get("STAGE5_ARC_MIX_ARC_CHALLENGE_TARGET_LOOP"),
+    }
+
+
 def curriculum_sft_checkpoint_availability() -> dict[str, Any]:
     resume_from = os.environ.get("STAGE5_CURRICULUM_RESUME_FROM", "").strip()
     if not resume_from:
@@ -563,6 +585,7 @@ def build_payload(source_summary: Path) -> dict[str, Any]:
     action = actions[0] if actions else None
     decision = classify_action(action, source_payload=source_payload)
     decision, checkpoint = apply_checkpoint_guard(decision, source_payload=source_payload)
+    routing_profile = routing_repair_profile_preflight(source_payload)
     return {
         "run_id": RUN_ID,
         "kind": "stage5_a100_go_no_go",
@@ -571,6 +594,7 @@ def build_payload(source_summary: Path) -> dict[str, Any]:
         "source_status": source_payload.get("status"),
         "decision": decision,
         "checkpoint_preflight": checkpoint,
+        "routing_repair_profile": routing_profile,
         "recommended_action": action,
         "all_actions": actions,
     }
@@ -582,6 +606,7 @@ def write_report(payload: dict[str, Any]) -> None:
     action = payload.get("recommended_action") or {}
     decision = payload["decision"]
     checkpoint = payload.get("checkpoint_preflight") or {}
+    routing_profile = payload.get("routing_repair_profile") or {}
     lines = [
         f"# Stage 5 A100 Go/No-Go - {payload['run_id']}",
         "",
@@ -596,6 +621,9 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Checkpoint available: `{checkpoint.get('available')}`",
         f"- Checkpoint exists locally: `{checkpoint.get('exists')}`",
         f"- Drive candidate visible: `{checkpoint.get('drive_candidate_exists')}`",
+        f"- Routing repair mode: `{routing_profile.get('repair_mode')}`",
+        f"- Routing repair proxy eval: `{routing_profile.get('expected_arc_eval_config')}`",
+        f"- Routing repair arms: `{routing_profile.get('arms')}`",
         "",
         "## Planner Action",
         "",
