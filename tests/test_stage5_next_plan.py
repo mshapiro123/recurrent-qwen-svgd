@@ -130,6 +130,42 @@ def test_routing_diagnostic_pass_recommends_larger_confirmation(tmp_path) -> Non
     assert "STAGE5_BENCHMARK_SOURCE_SUMMARY=outputs/stage5/routing/benchmark_run/summary.json" in actions[0]["command"]
 
 
+def test_routing_repair_pass_recommends_full_assessment_from_child_summary(tmp_path) -> None:
+    source = tmp_path / "routing_repair" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_routing_repair",
+        "status": "repair_proxy_lift",
+        "passed": True,
+        "arc_mix_summary": "outputs/stage5/repair_child/summary.json",
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run full balanced assessment for routing-repair checkpoint"
+    assert "python colab/run_stage5_recovery_full_assessment.py" in actions[0]["command"]
+    assert "STAGE5_RECOVERY_FULL_ASSESS_SOURCE_SUMMARY=outputs/stage5/repair_child/summary.json" in actions[0]["command"]
+
+
+def test_routing_repair_failure_recommends_programmatic_depth_repair(tmp_path) -> None:
+    source = tmp_path / "routing_repair" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_routing_repair",
+        "status": "repair_no_proxy_lift",
+        "next_step": "Stop and revise direct-loop supervision.",
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run bounded programmatic direct/deep repair"
+    assert "python colab/run_stage5_programmatic_depth_repair.py" in actions[0]["command"]
+    assert f"STAGE5_PROGRAMMATIC_SOURCE_SUMMARY={source.as_posix()}" in actions[0]["command"]
+    assert actions[1]["name"] == "Inspect routing repair `repair_no_proxy_lift`"
+
+
 def test_generic_candidate_distillation_pass_adds_selector_exact_gate(tmp_path) -> None:
     source = tmp_path / "summary.json"
     payload = {

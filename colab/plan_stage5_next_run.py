@@ -293,6 +293,10 @@ def routing_diagnostic_payload(payload: dict[str, Any]) -> dict[str, Any] | None
     return payload if payload.get("kind") == "stage5_routing_diagnostic_assessment" else None
 
 
+def routing_repair_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_routing_repair" else None
+
+
 def claim_readiness_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("gate") == "stage5_claim_readiness" else None
 
@@ -1659,6 +1663,86 @@ def routing_diagnostic_actions(payload: dict[str, Any], *, source_summary: Path)
     ]
 
 
+def routing_repair_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    if status in {"repair_proxy_lift", "repair_proxy_matches_base"} or bool(payload.get("passed")):
+        source_for_full = str(payload.get("arc_mix_summary") or path_for_cli(source_summary)).replace("\\", "/")
+        return [
+            make_action(
+                "Run full balanced assessment for routing-repair checkpoint",
+                (
+                    f"The routing repair reported `{status}`; confirm on full ARC-Easy and "
+                    "ARC-Challenge before particles/SVGD or GPQA spend."
+                ),
+                command_env(
+                    {
+                        "STAGE5_RECOVERY_FULL_ASSESS_RUN_ID": f"{RUN_ID}_routing_repair_full_assessment",
+                        "STAGE5_RECOVERY_FULL_ASSESS_SOURCE_SUMMARY": source_for_full,
+                    },
+                    "python colab/run_stage5_recovery_full_assessment.py",
+                ),
+                10,
+            )
+        ]
+    if status in {
+        "repair_no_proxy_lift",
+        "repair_proxy_lift_calibration_warning",
+        "repair_proxy_matches_base_calibration_warning",
+    }:
+        reason = payload.get("blocked_reason") or payload.get("next_step") or "The deterministic routing repair did not clear the calibration gate."
+        return [
+            make_action(
+                "Run bounded programmatic direct/deep repair",
+                (
+                    f"{reason} Try one constructed direct/deep-narrow calibration pass "
+                    "with particles/SVGD off, then re-run the ARC routing gate."
+                ),
+                command_env(
+                    {
+                        "STAGE5_PROGRAMMATIC_DEPTH_RUN_ID": f"{RUN_ID}_programmatic_depth_repair",
+                        "STAGE5_PROGRAMMATIC_SOURCE_SUMMARY": path_for_cli(source_summary),
+                    },
+                    "python colab/run_stage5_programmatic_depth_repair.py",
+                ),
+                9,
+            ),
+            make_action(
+                f"Inspect routing repair `{status}`",
+                "The repair did not pass cleanly; inspect the summary before any larger GPU run.",
+                f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                8,
+            ),
+        ]
+    if status == "no_repair_needed":
+        return [
+            make_action(
+                "Run larger routing confirmation benchmark",
+                "The routing repair wrapper found no repair was needed; confirm the routing diagnostic on a larger ARC slice.",
+                command_env(
+                    {
+                        "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{RUN_ID}_routing_confirmation",
+                        "STAGE5_BENCHMARKS": "arc_easy,arc_challenge",
+                        "STAGE5_BENCHMARK_ARC_EASY_LIMIT": "256",
+                        "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "256",
+                        "STAGE5_BENCHMARK_SCORE_TARGETS": "label",
+                        "STAGE5_BENCHMARK_AGGREGATES": "mean",
+                        "STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS": "1",
+                    },
+                    "python colab/run_stage5_benchmark_suite.py",
+                ),
+                9,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect routing repair `{status}`",
+            "Routing repair status is not mapped to another GPU action; inspect the summary before spending more.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
 def claim_readiness_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
     if status == "needs_selector_replication":
@@ -2454,6 +2538,9 @@ def plan_next_actions(
     routing_diagnostic = routing_diagnostic_payload(payload)
     if routing_diagnostic:
         return routing_diagnostic_actions(routing_diagnostic, source_summary=source_summary)
+    routing_repair = routing_repair_payload(payload)
+    if routing_repair:
+        return routing_repair_actions(routing_repair, source_summary=source_summary)
     claim_readiness = claim_readiness_payload(payload)
     if claim_readiness:
         return claim_readiness_actions(claim_readiness, source_summary=source_summary)
@@ -2822,6 +2909,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "balanced_arc_mix_gate"
     if routing_diagnostic_payload(payload):
         return "routing_diagnostic"
+    if routing_repair_payload(payload):
+        return "routing_repair"
     if claim_readiness_payload(payload):
         return "claim_readiness"
     if arc_agi_baseline_registry_payload(payload):

@@ -169,6 +169,21 @@ def child_summary_path(env: dict[str, str]) -> Path:
     return ROOT / "outputs" / "stage5" / env["STAGE5_ARC_MIX_RUN_ID"] / "summary.json"
 
 
+def child_best_checkpoint(child_payload: dict[str, Any]) -> dict[str, Any] | None:
+    best_arm = child_payload.get("best_arm")
+    if isinstance(best_arm, dict):
+        best_checkpoint = best_arm.get("best_checkpoint")
+        if isinstance(best_checkpoint, dict):
+            return best_checkpoint
+    best_checkpoint = child_payload.get("best_checkpoint")
+    return best_checkpoint if isinstance(best_checkpoint, dict) else None
+
+
+def child_passed(child_payload: dict[str, Any]) -> bool:
+    status = str(child_payload.get("status", ""))
+    return bool(child_payload.get("passed")) or status in {"proxy_lift", "proxy_matches_base"}
+
+
 def copy_child_run(env: dict[str, str]) -> Path:
     child_dir = ROOT / "outputs" / "stage5" / env["STAGE5_ARC_MIX_RUN_ID"]
     target = RUN_DIR / "repair_run"
@@ -247,16 +262,19 @@ def main() -> int:
         raise FileNotFoundError(child_summary)
     child_payload = read_json(child_summary)
     copy_child_run(child_env)
+    best_checkpoint = child_best_checkpoint(child_payload)
     payload = {
         "run_id": RUN_ID,
         "kind": "stage5_routing_repair",
         "status": f"repair_{child_payload.get('status', 'unknown')}",
+        "passed": child_passed(child_payload),
         "repair_mode": repair_mode,
         "source_summary": path_for_cli(source_summary),
         "benchmark_summary": path_for_cli(benchmark_summary),
         "profile": profile,
         "arc_mix_summary": path_for_cli(child_summary),
         "arc_mix": child_payload,
+        "best_checkpoint": best_checkpoint,
         "next_step": child_payload.get("next_step") or "Review ARC-mix child summary.",
     }
     write_report(payload)

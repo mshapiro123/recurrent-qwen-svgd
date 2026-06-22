@@ -60,6 +60,24 @@ def test_build_child_env_points_arc_mix_at_benchmark_summary(monkeypatch, tmp_pa
     assert env["STAGE5_ARC_MIX_PUSH"] == "0"
 
 
+def test_child_best_checkpoint_and_passed_extract_child_gate() -> None:
+    import colab.run_stage5_routing_repair as module
+
+    payload = {
+        "status": "proxy_lift",
+        "best_arm": {
+            "best_checkpoint": {
+                "checkpoint": "outputs/stage5/child/phase1/phase1_step_150.pt",
+            }
+        },
+    }
+
+    assert module.child_passed(payload) is True
+    assert module.child_best_checkpoint(payload) == {
+        "checkpoint": "outputs/stage5/child/phase1/phase1_step_150.pt",
+    }
+
+
 def test_resolve_source_summary_finds_latest_routing_summary(monkeypatch, tmp_path) -> None:
     import colab.run_stage5_routing_repair as module
 

@@ -104,11 +104,32 @@ def resolve_resume_checkpoint() -> Path:
         )
     source_path = ROOT / source_summary if not Path(source_summary).is_absolute() else Path(source_summary)
     payload = read_json(source_path)
-    best = payload.get("best_checkpoint") or {}
-    checkpoint = best.get("checkpoint") or payload.get("checkpoint") or payload.get("selected_checkpoint")
+    checkpoint = checkpoint_from_payload(payload)
     if not checkpoint:
         raise ValueError(f"Source summary does not contain a checkpoint: {source_path}")
     return ROOT / checkpoint if not Path(str(checkpoint)).is_absolute() else Path(str(checkpoint))
+
+
+def checkpoint_from_payload(payload: dict[str, Any]) -> str | None:
+    for key in ("best_checkpoint", "checkpoint", "selected_checkpoint"):
+        value = payload.get(key)
+        if isinstance(value, dict) and value.get("checkpoint"):
+            return str(value["checkpoint"])
+        if isinstance(value, str) and value:
+            return value
+
+    best_arm = payload.get("best_arm")
+    if isinstance(best_arm, dict):
+        nested = best_arm.get("best_checkpoint")
+        if isinstance(nested, dict) and nested.get("checkpoint"):
+            return str(nested["checkpoint"])
+
+    arc_mix = payload.get("arc_mix")
+    if isinstance(arc_mix, dict):
+        checkpoint = checkpoint_from_payload(arc_mix)
+        if checkpoint:
+            return checkpoint
+    return None
 
 
 def checkpoint_run_id(checkpoint: Path) -> str:

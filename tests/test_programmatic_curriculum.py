@@ -100,3 +100,20 @@ def test_programmatic_curriculum_cli_writes_jsonl_and_report(tmp_path) -> None:
     assert len(rows) == 4
     assert report["records"] == 4
     assert report["by_mode"] == {"deep_narrow": 2, "direct": 2}
+
+
+def test_programmatic_depth_runner_finds_nested_arc_mix_checkpoint() -> None:
+    from colab.run_stage5_programmatic_depth_repair import checkpoint_from_payload
+
+    assert checkpoint_from_payload(
+        {
+            "kind": "stage5_routing_repair",
+            "arc_mix": {
+                "best_arm": {
+                    "best_checkpoint": {
+                        "checkpoint": "outputs/stage5/child/phase1/phase1_step_150.pt",
+                    }
+                }
+            },
+        }
+    ) == "outputs/stage5/child/phase1/phase1_step_150.pt"
