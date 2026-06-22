@@ -136,6 +136,44 @@ def test_red_curriculum_sft_gate_recommends_inspection(tmp_path) -> None:
     assert "run_stage5_curriculum_sft.py" not in actions[0]["command"]
 
 
+def test_complete_curriculum_pipeline_recommends_no_gpu_sft_gate(tmp_path) -> None:
+    source = tmp_path / "curriculum" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "curriculum_pipeline_from_artifacts",
+        "status": "complete",
+        "work_dir": "data/curriculum/run_001",
+        "counts": {"positive_sft_rows": 24},
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert source_kind(payload) == "curriculum_pipeline"
+    assert actions[0]["name"] == "Run generated curriculum SFT safety gate"
+    assert "python training/check_curriculum_sft_gate.py" in actions[0]["command"]
+    assert "--summary_json" in actions[0]["command"]
+    assert "curriculum_sft_gate.json" in actions[0]["command"]
+    assert "run_stage5_curriculum_sft.py" not in actions[0]["command"]
+
+
+def test_pending_curriculum_pipeline_recommends_inspection_not_gpu(tmp_path) -> None:
+    source = tmp_path / "curriculum" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "curriculum_pipeline_from_artifacts",
+        "status": "pending_method_or_perturbation_responses",
+        "next_action": "Run provider responses for jobs_methods.jsonl",
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect generated curriculum pipeline `pending_method_or_perturbation_responses`"
+    assert actions[0]["command"].startswith("cat ")
+    assert "run_stage5_curriculum_sft.py" not in actions[0]["command"]
+
+
 def test_routing_diagnostic_deep_status_recommends_repair(tmp_path) -> None:
     source = tmp_path / "routing" / "summary.json"
     source.parent.mkdir()

@@ -264,6 +264,27 @@ def test_parse_action_command_allows_curriculum_sft_runner() -> None:
     assert parsed.argv == [sys.executable, "colab/run_stage5_curriculum_sft.py"]
 
 
+def test_parse_action_command_allows_curriculum_sft_gate_checker() -> None:
+    parsed = parse_action_command(
+        "python training/check_curriculum_sft_gate.py "
+        "--summary_json data/curriculum/run_001/summary.json "
+        "--output_json data/curriculum/run_001/curriculum_sft_gate.json "
+        "--fail_on_no_go"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {}
+    assert parsed.argv == [
+        sys.executable,
+        "training/check_curriculum_sft_gate.py",
+        "--summary_json",
+        "data/curriculum/run_001/summary.json",
+        "--output_json",
+        "data/curriculum/run_001/curriculum_sft_gate.json",
+        "--fail_on_no_go",
+    ]
+
+
 def test_parse_action_command_allows_programmatic_depth_assessor() -> None:
     parsed = parse_action_command(
         "STAGE5_PROGRAMMATIC_DEPTH_ASSESS_RUN_ID=assess python colab/assess_stage5_programmatic_depth_repair.py --summary_json outputs/stage5/run/summary.json"

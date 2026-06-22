@@ -127,6 +127,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or candidate_gate_payload(payload) is not None
         or trace_sft_gate_payload(payload) is not None
         or distill_sft_gate_payload(payload) is not None
+        or curriculum_pipeline_payload(payload) is not None
         or curriculum_sft_gate_payload(payload) is not None
         or curriculum_sft_payload(payload) is not None
         or reasoning_dataset_audit_payload(payload) is not None
@@ -847,6 +848,41 @@ def dataset_audit_summary_md(source_summary: Path) -> Path:
 
 def curriculum_sft_gate_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "curriculum_sft_gate" else None
+
+
+def curriculum_pipeline_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "curriculum_pipeline_from_artifacts" else None
+
+
+def curriculum_pipeline_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status") or "unknown")
+    work_dir = str(payload.get("work_dir") or source_summary.parent).replace("\\", "/")
+    if status == "complete":
+        gate_json = source_summary.parent / "curriculum_sft_gate.json"
+        gate_md = source_summary.parent / "curriculum_sft_gate.md"
+        return [
+            make_action(
+                "Run generated curriculum SFT safety gate",
+                "The provider-generated curriculum pipeline completed; run the no-GPU SFT gate to enforce answer verification, role safety, decontamination, and positive-row checks before any recurrent fine-tune.",
+                (
+                    "python training/check_curriculum_sft_gate.py "
+                    f"--work_dir {shlex.quote(work_dir)} "
+                    f"--summary_json {shlex.quote(command_path(source_summary))} "
+                    f"--output_json {shlex.quote(command_path(gate_json))} "
+                    f"--output_md {shlex.quote(command_path(gate_md))} "
+                    "--fail_on_no_go"
+                ),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect generated curriculum pipeline `{status}`",
+            "The provider-generated curriculum pipeline has not completed; continue CPU/API response collection before attaching paid GPU time.",
+            f"cat {shlex.quote(command_path(source_summary))}",
+            10,
+        )
+    ]
 
 
 def curriculum_sft_gate_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
@@ -2716,6 +2752,9 @@ def plan_next_actions(
     reasoning_audit = reasoning_dataset_audit_payload(payload)
     if reasoning_audit:
         return reasoning_dataset_audit_actions(reasoning_audit, source_summary=source_summary)
+    curriculum_pipeline = curriculum_pipeline_payload(payload)
+    if curriculum_pipeline:
+        return curriculum_pipeline_actions(curriculum_pipeline, source_summary=source_summary)
     curriculum_sft_gate = curriculum_sft_gate_payload(payload)
     if curriculum_sft_gate:
         return curriculum_sft_gate_actions(curriculum_sft_gate, source_summary=source_summary)
@@ -3092,6 +3131,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "arc_agi_sota_comparison"
     if reasoning_dataset_audit_payload(payload):
         return "reasoning_dataset_audit"
+    if curriculum_pipeline_payload(payload):
+        return "curriculum_pipeline"
     if curriculum_sft_gate_payload(payload):
         return "curriculum_sft_gate"
     if curriculum_sft_payload(payload):

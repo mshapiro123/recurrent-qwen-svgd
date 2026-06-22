@@ -2,7 +2,7 @@
 
 This is the "keep the A100 moving" wrapper. It deliberately does not execute
 arbitrary shell text. Planner commands are parsed into environment assignments
-plus an allowlisted ``python colab/...py`` runner, or a read-only ``cat`` action.
+plus an allowlisted Python runner, or a read-only ``cat`` action.
 Set ``STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE=1`` to run the selected action.
 Without that flag, the script writes a dry-run summary.
 """
@@ -95,6 +95,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/run_stage5_routing_diagnostic.py",
     "colab/run_stage5_routing_repair.py",
     "colab/run_stage4_opus_finetune.py",
+    "training/check_curriculum_sft_gate.py",
 }
 GUARDED_A100_SCRIPTS = {
     "colab/run_stage5_balanced_arc_mix_gate.py",
