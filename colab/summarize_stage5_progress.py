@@ -917,6 +917,8 @@ def planner_source_priority(payload: dict[str, Any]) -> int:
         return 95
     if payload.get("kind") == "curriculum_sft_gate":
         return 85 if payload.get("go") else 35
+    if payload.get("kind") == "curriculum_pipeline_from_artifacts":
+        return 84 if payload.get("status") == "complete" else 25
     if payload.get("kind") == "stage5_balanced_arc_mix_gate":
         if payload.get("status") in {"proxy_lift", "proxy_matches_base"}:
             return 100

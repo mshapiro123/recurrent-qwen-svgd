@@ -978,6 +978,64 @@ def test_progress_ledger_writes_generated_curriculum_markdown(tmp_path) -> None:
     assert "`outputs/stage5/sft/phase1/phase1_step_150.pt`" in report
 
 
+def test_progress_ledger_prefers_complete_curriculum_pipeline_over_older_benchmark_gate(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    benchmark = scan_root / "benchmark_gate" / "summary.json"
+    pipeline = scan_root / "curriculum_pipeline" / "summary.json"
+    _write(
+        benchmark,
+        {
+            "run_id": "benchmark_gate",
+            "gate": "stage5_broader_benchmark_suite",
+            "status": "needs_benchmark_confirmation",
+        },
+    )
+    _write(
+        pipeline,
+        {
+            "run_id": "pipeline",
+            "kind": "curriculum_pipeline_from_artifacts",
+            "status": "complete",
+            "work_dir": "data/curriculum/run_001",
+            "counts": {"positive_sft_rows": 24},
+        },
+    )
+    os.utime(benchmark, (1000, 1000))
+    os.utime(pipeline, (2000, 2000))
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["recommended_next_plan_source"] == str(pipeline)
+
+
+def test_progress_ledger_does_not_prefer_pending_curriculum_pipeline_over_benchmark_gate(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    benchmark = scan_root / "benchmark_gate" / "summary.json"
+    pipeline = scan_root / "curriculum_pipeline" / "summary.json"
+    _write(
+        benchmark,
+        {
+            "run_id": "benchmark_gate",
+            "gate": "stage5_broader_benchmark_suite",
+            "status": "needs_benchmark_confirmation",
+        },
+    )
+    _write(
+        pipeline,
+        {
+            "run_id": "pipeline",
+            "kind": "curriculum_pipeline_from_artifacts",
+            "status": "pending_method_or_perturbation_responses",
+        },
+    )
+    os.utime(benchmark, (1000, 1000))
+    os.utime(pipeline, (2000, 2000))
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["recommended_next_plan_source"] == str(benchmark)
+
+
 def test_progress_ledger_skips_empty_and_malformed_eval_summaries(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     _write(scan_root / "empty" / "base_summary.json", {"summary": {}})
