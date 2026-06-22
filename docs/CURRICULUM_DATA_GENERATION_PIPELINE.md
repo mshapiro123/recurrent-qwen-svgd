@@ -246,6 +246,43 @@ python training/build_curriculum_generation_jobs.py \
   --output_jsonl data/curriculum/jobs_ground_truth.jsonl
 ```
 
+Collect seed responses from an external API runner into candidate problems:
+
+```bash
+python training/collect_curriculum_job_outputs.py \
+  --mode seed_candidates \
+  --jobs_jsonl data/curriculum/jobs_seed.jsonl \
+  --responses_jsonl data/curriculum/responses_seed.jsonl \
+  --output_jsonl data/curriculum/candidates.jsonl \
+  --report_json outputs/curriculum/candidates_report.json
+```
+
+The response JSONL should contain at least:
+
+```json
+{"job_id": "seed-000000-generator-opus-strong", "response_text": "{...raw model response...}"}
+```
+
+The collector also accepts `response`, `output_text`, `output`, `text`,
+`content`, or `message.content` fields. It parses JSON from raw text or fenced
+JSON blocks.
+
+Collect ground-truth solver responses into verified candidates:
+
+```bash
+python training/collect_curriculum_job_outputs.py \
+  --mode verified_candidates \
+  --candidates_jsonl data/curriculum/candidates.jsonl \
+  --jobs_jsonl data/curriculum/jobs_ground_truth.jsonl \
+  --responses_jsonl data/curriculum/responses_ground_truth.jsonl \
+  --output_jsonl data/curriculum/verified_candidates.jsonl \
+  --report_json outputs/curriculum/verified_candidates_report.json
+```
+
+The verified-candidate collector requires at least two distinct solver models
+to agree on the normalized `ANSWER:` line by default. Disagreements are written
+to the report and are not promoted.
+
 Method-constrained width jobs:
 
 ```bash
