@@ -254,6 +254,9 @@ def positive_trace_to_causal_example(
     }
     if trace.get("logical_source_model"):
         example["logical_source_model"] = trace.get("logical_source_model")
+    for key in ("capability_tier", "capability_ladder"):
+        if key in record:
+            example[key] = record[key]
     if isinstance(trace.get("steps"), int):
         example["reasoning_steps"] = int(trace["steps"])
     if isinstance(trace.get("answer_match"), dict):

@@ -78,6 +78,27 @@ def test_curriculum_converter_exports_only_positive_traces() -> None:
     assert report["exported_source_model_counts"] == {"teacher-a": 1}
 
 
+def test_curriculum_converter_preserves_capability_ladder_metadata() -> None:
+    record = curriculum_record()
+    record["mode"] = "deep_narrow"
+    record["target_loop_count"] = 2
+    record["capability_tier"] = "qwen_0_5b_miss_qwen_1_5b_solve"
+    record["capability_ladder"] = {
+        "qwen_0_5b_correct": False,
+        "qwen_1_5b_correct": True,
+        "qwen_3b_correct": True,
+        "verified_answer_source": "cross_model",
+    }
+
+    examples, _report = convert_curriculum_records([record])
+
+    assert examples[0]["target_loop_count"] == 2
+    assert examples[0]["routing_type"] == "deep_narrow"
+    assert examples[0]["capability_tier"] == "qwen_0_5b_miss_qwen_1_5b_solve"
+    assert examples[0]["capability_ladder"]["qwen_0_5b_correct"] is False
+    assert examples[0]["capability_ladder"]["qwen_1_5b_correct"] is True
+
+
 def test_positive_trace_with_false_correctness_is_validation_error() -> None:
     record = curriculum_record()
     record["traces"][0]["correct"] = False

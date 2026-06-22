@@ -18,6 +18,37 @@ Models generate a wide and deliberately messy distribution of traces. The
 verified answer sorts those traces into roles. No model self-assessment of
 correctness, method, difficulty, or number of solution paths is trusted.
 
+Capability labels are routing hints, not correctness labels. A row may record
+whether Qwen 0.5B, Qwen 1.5B, Qwen 3B, or a non-student strong solver answered
+correctly, but positive SFT still requires independent answer verification.
+Use that capability ladder to assign deterministic depth:
+
+- base-known rows become `direct` preservation rows with
+  `target_loop_count = 1`;
+- rows missed by Qwen 0.5B but solved by a verified stronger model become
+  depth-upgrade rows, usually `deep_narrow` with `target_loop_count = 2`;
+- rows missed by Qwen 0.5B and 1.5B but solved by a verified 3B/stronger solver
+  may receive `target_loop_count = 3` or `4`;
+- unresolved or unverified rows remain negative, verifier, selector, or audit
+  material and must not be exported to `positive_sft.jsonl`.
+
+Use these optional record fields so the routing evidence survives conversion
+into SFT rows:
+
+```json
+"capability_tier": "qwen_0_5b_miss_qwen_1_5b_solve",
+"capability_ladder": {
+  "qwen_0_5b_correct": false,
+  "qwen_1_5b_correct": true,
+  "qwen_3b_correct": true,
+  "verified_answer_source": "cross_model"
+}
+```
+
+`training/prepare_curriculum_jsonl.py` preserves those fields when exporting
+positive SFT rows. The trainer still acts on `target_loop_count`; the capability
+fields are for audit, stratified validation, and later curriculum analysis.
+
 The hard routing rule is:
 
 > A trace that reaches a wrong answer may train a verifier, selector, or

@@ -44,10 +44,25 @@ Use a mixed objective:
 
 Recommended run ladder:
 
-- Phase1 500 steps, already done.
-- Phase1 1k steps on 3k Opus rows.
-- Phase1 2k steps on 5k-8k filtered Opus rows if validation CE and ARC do not
-  regress.
+- Depth-1 preservation pass on base-known direct rows. Force or strongly target
+  loop `1`, include base-logit/answer-margin distillation, and measure whether
+  the recurrent wrapper stops regressing on examples the original Qwen 0.5B
+  already solves.
+- Capability-ladder pass on verified rows that separate base misses from
+  stronger-model successes:
+  - Qwen 0.5B correct -> depth `1` rehearsal/preservation.
+  - Qwen 0.5B misses but Qwen 1.5B succeeds with independent verification ->
+    depth `2` deterministic recurrent upgrade.
+  - Qwen 0.5B and 1.5B miss but Qwen 3B or a stronger non-student solver
+    succeeds with independent verification -> depth `3-4` deterministic
+    recurrent upgrade.
+  - unresolved or unverified rows -> selector/verifier/error-analysis data, not
+    positive SFT.
+- Phase1 500 steps, already done, remains the historical baseline.
+- Phase1 1k steps on a filtered direct/deep mix only after the depth-1
+  preservation check is non-negative.
+- Phase1 2k steps on 5k-8k filtered Opus or capability-ladder rows if
+  validation CE, ARC, and direct-mode calibration do not regress.
 - Evaluate each checkpoint against base on ARC-128, ARC-512, GSM8K-mini, and the
   exact smoke suite.
 - For generated width/depth curriculum shards, run

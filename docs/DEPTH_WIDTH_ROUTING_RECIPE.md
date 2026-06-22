@@ -85,6 +85,47 @@ Gate:
 - recurrent Phase 1 improves or stays non-negative on deep rows;
 - direct rows show low loop depth rather than forced latent computation.
 
+### 1a. Capability-Ladder Depth Targets
+
+The cleanest recovery curriculum is a capability ladder, not a uniform reasoning
+trace mixture. The ladder separates "preserve what the base already knows" from
+"teach recurrence on problems that exceed the base."
+
+Use model comparisons only as routing evidence, never as final correctness
+proof:
+
+| Tier | Selection rule | Training role | Target depth |
+|---|---|---|---:|
+| Base-preservation | Qwen 0.5B is correct, preferably with high margin | Match base answer/logits; repair direct calibration | `1` |
+| Shallow-upgrade | Qwen 0.5B misses or is low confidence, Qwen 1.5B solves, answer verified | Teach deterministic recurrent improvement over base | `2` |
+| Deeper-upgrade | Qwen 0.5B and 1.5B miss, Qwen 3B or stronger solver succeeds, answer verified | Teach genuinely deeper recurrent computation | `3-4` |
+| Unresolved/hard | Larger teacher disagreement or no independent verification | Selector/verifier/error analysis only | no positive SFT |
+
+This is a better framing than asking the recurrent 0.5B model to learn all
+reasoning traces at the same loop budget. It makes the first objective
+identity-like: at depth `1`, the recurrent model should behave like the base
+model on base-known rows. Only examples outside the base capability envelope
+should create pressure for additional recurrent depth.
+
+Training shape:
+
+- interleave depth-1 base-preservation batches throughout the run;
+- apply base-logit or answer-margin distillation on depth-1 rows;
+- use answer CE plus halting supervision on depth-2/3/4 rows;
+- keep particle width off while learning this ladder;
+- require independent answer verification before any stronger-model trace
+  becomes positive SFT.
+
+Diagnostics:
+
+- depth-1 rows: recurrent-vs-base accuracy, margin delta, answer-prior shift,
+  and expected loop count close to `1`;
+- depth-2 rows: recurrent lift over base and expected loop count near `2`;
+- depth-3/4 rows: lift over base and smaller models, without collapsing all
+  examples to max depth;
+- cross-tier interference: depth-2/3 gains must not erase depth-1 base
+  preservation.
+
 ### 2. Width On Top Of A Depth-Competent Base
 
 Only add particle width after Phase 1 is no longer broken on direct/deep rows.
