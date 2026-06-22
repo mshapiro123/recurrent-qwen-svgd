@@ -505,6 +505,63 @@ def method_outputs_to_solution_candidates(
     }
 
 
+def reference_outputs_to_attempts(
+    verified_candidates: list[dict[str, Any]],
+    jobs: list[dict[str, Any]],
+    responses: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    candidate_by_id = group_candidates(verified_candidates)
+    paired, issues = responses_with_jobs(jobs, responses)
+    rows: list[dict[str, Any]] = []
+    status_counts: Counter[str] = Counter()
+
+    for job, response, text in paired:
+        if job.get("stage") != "reference_attempt":
+            continue
+        metadata = job.get("metadata") if isinstance(job.get("metadata"), dict) else {}
+        record_id = str(metadata.get("record_id") or "")
+        candidate = candidate_by_id.get(record_id)
+        if not record_id or candidate is None:
+            issues.append(f"{job.get('job_id')}: no matching verified candidate for {record_id!r}")
+            status_counts["missing_candidate"] += 1
+            continue
+        parsed_answer = extract_answer(text)
+        parsed_normalized = normalize_answer(parsed_answer) if parsed_answer else ""
+        verified = verified_answer_normalized(candidate)
+        correct = bool(parsed_normalized and verified and parsed_normalized == verified)
+        if correct:
+            status_counts["correct"] += 1
+        elif parsed_answer:
+            status_counts["wrong_answer"] += 1
+        else:
+            status_counts["missing_answer"] += 1
+
+        rows.append(
+            {
+                "record_id": record_id,
+                "sample_id": metadata.get("sample_id"),
+                "model": job.get("model"),
+                "correct": correct,
+                "parsed_answer": parsed_answer,
+                "parsed_answer_normalized": parsed_normalized,
+                "verified_answer_normalized": verified,
+                "source_job_id": job.get("job_id"),
+                "source_response_id": response.get("response_id"),
+                "text": text,
+            }
+        )
+
+    return rows, {
+        "mode": "reference_attempts",
+        "verified_candidate_rows": len(verified_candidates),
+        "jobs": len(jobs),
+        "responses": len(responses),
+        "attempts": len(rows),
+        "issues": issues,
+        "status_counts": dict(sorted(status_counts.items())),
+    }
+
+
 def perturbation_outputs_to_traces(
     verified_candidates: list[dict[str, Any]],
     jobs: list[dict[str, Any]],
@@ -838,6 +895,7 @@ def main(argv: list[str] | None = None) -> int:
             "seed_candidates",
             "verified_candidates",
             "method_solutions",
+            "reference_attempts",
             "perturbation_traces",
             "naturalness_judgments",
             "distinctness_judgments",
@@ -853,7 +911,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--candidates_jsonl",
         help=(
-            "Required for verified_candidates, method_solutions, naturalness_judgments, "
+            "Required for verified_candidates, method_solutions, reference_attempts, naturalness_judgments, "
             "distinctness_judgments, depth_measurements, perturbation_traces, "
             "and error_detection_judgments modes."
         ),
@@ -892,6 +950,11 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError("--candidates_jsonl is required for method_solutions mode.")
         candidates = read_jsonl(args.candidates_jsonl)
         rows, report = method_outputs_to_solution_candidates(candidates, jobs, responses)
+    elif args.mode == "reference_attempts":
+        if not args.candidates_jsonl:
+            raise ValueError("--candidates_jsonl is required for reference_attempts mode.")
+        candidates = read_jsonl(args.candidates_jsonl)
+        rows, report = reference_outputs_to_attempts(candidates, jobs, responses)
     elif args.mode == "perturbation_traces":
         if not args.candidates_jsonl:
             raise ValueError("--candidates_jsonl is required for perturbation_traces mode.")
@@ -921,7 +984,16 @@ def main(argv: list[str] | None = None) -> int:
     write_jsonl(args.output_jsonl, rows)
     write_report(args.report_json, report)
     print(f"mode={report['mode']}")
-    for key in ("candidates", "verified", "solution_candidates", "traces", "judgments", "measurements", "rejected"):
+    for key in (
+        "candidates",
+        "verified",
+        "solution_candidates",
+        "attempts",
+        "traces",
+        "judgments",
+        "measurements",
+        "rejected",
+    ):
         if key in report:
             print(f"{key}={report[key]}")
     print(f"issues={len(report['issues'])}")

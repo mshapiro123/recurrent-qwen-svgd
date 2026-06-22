@@ -16,6 +16,7 @@ from training.collect_curriculum_job_outputs import (
     normalize_answer,
     perturbation_outputs_to_traces,
     parse_numeric_answer,
+    reference_outputs_to_attempts,
     seed_outputs_to_candidates,
 )
 
@@ -47,6 +48,16 @@ def method_job(job_id: str, *, record_id: str, method: str, model: str = "opus-t
         "role": "method_solver",
         "model": model,
         "metadata": {"record_id": record_id, "domain": "math", "method": method},
+    }
+
+
+def reference_job(job_id: str, *, record_id: str, sample_id: int, model: str = "weak-ref") -> dict:
+    return {
+        "job_id": job_id,
+        "stage": "reference_attempt",
+        "role": "weak_reference",
+        "model": model,
+        "metadata": {"record_id": record_id, "sample_id": sample_id},
     }
 
 
@@ -243,6 +254,33 @@ def test_method_outputs_reject_missing_answer() -> None:
 
     assert rows == []
     assert report["status_counts"] == {"missing_answer": 1}
+
+
+def test_reference_outputs_to_attempts_labels_correctness_against_verified_answer() -> None:
+    verified = [
+        {
+            "id": "p1",
+            "statement": "What is 6*7?",
+            "answer": {"value": "42", "normalized": "42", "verified_by": ["cross_model"]},
+        }
+    ]
+    jobs = [
+        reference_job("ref-0", record_id="p1", sample_id=0),
+        reference_job("ref-1", record_id="p1", sample_id=1),
+        reference_job("ref-2", record_id="p1", sample_id=2),
+    ]
+    responses = [
+        {"job_id": "ref-0", "response_id": "r0", "response_text": "6*7=42\nANSWER: 42"},
+        {"job_id": "ref-1", "response_id": "r1", "response_text": "Bad math.\nANSWER: 43"},
+        {"job_id": "ref-2", "response_id": "r2", "response_text": "No final marker."},
+    ]
+
+    rows, report = reference_outputs_to_attempts(verified, jobs, responses)
+
+    assert [row["correct"] for row in rows] == [True, False, False]
+    assert [row["sample_id"] for row in rows] == [0, 1, 2]
+    assert report["attempts"] == 3
+    assert report["status_counts"] == {"correct": 1, "missing_answer": 1, "wrong_answer": 1}
 
 
 def test_perturbation_outputs_route_correct_and_rationalized_traces() -> None:

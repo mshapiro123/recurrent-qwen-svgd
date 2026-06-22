@@ -38,6 +38,8 @@ def args_for(tmp_path: Path, references_path: Path, *extra: str):
             "algebra,bounded_enumeration",
             "--min_reference_samples",
             "1",
+            "--reference_samples",
+            "1",
             "--min_natural_agree",
             "2",
             "--min_distinct_agree",
@@ -151,13 +153,16 @@ def test_pipeline_resumes_to_complete_from_artifacts(tmp_path) -> None:
 
     write_jsonl(paths["responses_ground_truth"], response_rows_for_jobs(paths["jobs_ground_truth"], lambda _job: "6*7=42\nANSWER: 42"))
     summary = run_pipeline(args)
-    assert summary["status"] == "pending_reference_attempts"
+    assert summary["status"] == "pending_reference_attempt_responses"
     assert read_json(paths["verified_candidates_report"])["verified"] == 1
 
-    verified = read_jsonl(paths["verified_candidates"])
-    write_jsonl(paths["reference_attempts"], [{"record_id": verified[0]["id"], "sample_id": 0, "correct": False}])
+    write_jsonl(
+        paths["responses_reference_attempts"],
+        response_rows_for_jobs(paths["jobs_reference_attempts"], lambda _job: "Weak model misses.\nANSWER: 41"),
+    )
     summary = run_pipeline(args)
     assert summary["status"] == "pending_method_or_perturbation_responses"
+    assert read_json(paths["reference_attempts_report"])["attempts"] == 1
     assert read_json(paths["difficulty_report"])["measured"] == 1
     assert read_json(paths["false_answers_report"])["with_false_answer"] == 1
 
@@ -224,6 +229,7 @@ def test_pipeline_resumes_to_complete_from_artifacts(tmp_path) -> None:
         "candidates_report",
         "decontam_report",
         "verified_candidates_report",
+        "reference_attempts_report",
         "difficulty_report",
         "false_answers_report",
         "method_solutions_report",

@@ -113,6 +113,13 @@ stop at the next required job file. The final handoff to GPU training is
 `positive_sft.jsonl`; negative and verifier traces remain in `typed_records.jsonl`
 and are not exported to positive SFT.
 
+The measured-difficulty stage is also artifact-driven. After ground-truth
+verification the pipeline writes `jobs_reference_attempts.jsonl` and stops with
+`pending_reference_attempt_responses`; run those jobs through the same response
+runner to produce `responses_reference_attempts.jsonl`. The collector labels
+each weak-reference attempt correct or incorrect against the verified answer,
+then difficulty is computed as pass rate.
+
 ## Method Taxonomy
 
 Width is a structural count, not a surface-style count. Curate the method

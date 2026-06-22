@@ -259,7 +259,7 @@ file, run the same command again. The stop points are:
 
 - `pending_seed_responses`
 - `pending_ground_truth_responses`
-- `pending_reference_attempts`
+- `pending_reference_attempt_responses`
 - `pending_method_or_perturbation_responses`
 - `pending_judgment_responses`
 - `complete`
@@ -380,7 +380,31 @@ The verified-candidate collector requires at least two distinct solver models
 to agree on the normalized `ANSWER:` line by default. Disagreements are written
 to the report and are not promoted.
 
-Annotate difficulty from weak-reference attempts:
+Build weak-reference attempt jobs from verified candidates:
+
+```bash
+python training/build_curriculum_generation_jobs.py \
+  --stage reference_attempt \
+  --models qwen-0.5b-base-greedy \
+  --input_jsonl data/curriculum/verified_candidates.jsonl \
+  --reference_samples 4 \
+  --output_jsonl data/curriculum/jobs_reference_attempts.jsonl
+```
+
+Run the jobs through the response runner, then collect correctness labels
+against the verified answer:
+
+```bash
+python training/collect_curriculum_job_outputs.py \
+  --mode reference_attempts \
+  --candidates_jsonl data/curriculum/verified_candidates.jsonl \
+  --jobs_jsonl data/curriculum/jobs_reference_attempts.jsonl \
+  --responses_jsonl data/curriculum/responses_reference_attempts.jsonl \
+  --output_jsonl data/curriculum/reference_attempts.jsonl \
+  --report_json outputs/curriculum/reference_attempts_report.json
+```
+
+Annotate difficulty from the collected weak-reference attempts:
 
 ```bash
 python training/annotate_curriculum_difficulty.py \

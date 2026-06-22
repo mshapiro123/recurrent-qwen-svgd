@@ -9,6 +9,7 @@ from training.build_curriculum_generation_jobs import (
     build_ground_truth_jobs,
     build_method_solve_jobs,
     build_perturbation_jobs,
+    build_reference_attempt_jobs,
     build_seed_jobs,
     main,
     validate_external_models,
@@ -37,6 +38,30 @@ def test_student_lineage_models_are_blocked_by_default() -> None:
         validate_external_models(["Qwen/Qwen2.5-0.5B-Instruct"])
 
 
+def test_reference_attempt_stage_allows_student_lineage_weak_reference(tmp_path) -> None:
+    input_jsonl = tmp_path / "verified.jsonl"
+    output_jsonl = tmp_path / "jobs.jsonl"
+    input_jsonl.write_text(
+        json.dumps({"id": "p1", "statement": "What is 2+2?", "domain": "math"}) + "\n",
+        encoding="utf-8",
+    )
+
+    assert main(
+        [
+            "--stage",
+            "reference_attempt",
+            "--models",
+            "Qwen/Qwen2.5-0.5B-Instruct",
+            "--input_jsonl",
+            str(input_jsonl),
+            "--reference_samples",
+            "1",
+            "--output_jsonl",
+            str(output_jsonl),
+        ]
+    ) == 0
+
+
 def test_ground_truth_jobs_use_answer_anchor_prompt() -> None:
     jobs = build_ground_truth_jobs(
         [{"id": "p1", "domain": "math", "statement": "What is 2+2?"}],
@@ -47,6 +72,20 @@ def test_ground_truth_jobs_use_answer_anchor_prompt() -> None:
     assert jobs[0]["stage"] == "ground_truth_solve"
     assert "ANSWER:" in jobs[0]["prompt"]
     assert jobs[0]["metadata"]["record_id"] == "p1"
+
+
+def test_reference_attempt_jobs_sample_weak_reference_attempts() -> None:
+    jobs = build_reference_attempt_jobs(
+        [{"id": "p1", "domain": "math", "statement": "What is 2+2?"}],
+        model="weak-ref",
+        samples=3,
+    )
+
+    assert len(jobs) == 3
+    assert {job["stage"] for job in jobs} == {"reference_attempt"}
+    assert {job["role"] for job in jobs} == {"weak_reference"}
+    assert [job["metadata"]["sample_id"] for job in jobs] == [0, 1, 2]
+    assert "ANSWER:" in jobs[0]["prompt"]
 
 
 def test_method_solve_jobs_use_explicit_or_taxonomy_methods() -> None:

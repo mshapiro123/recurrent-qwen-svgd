@@ -310,6 +310,38 @@ def build_ground_truth_jobs(rows: list[dict[str, Any]], *, models: list[str]) ->
     return jobs
 
 
+def build_reference_attempt_jobs(
+    rows: list[dict[str, Any]],
+    *,
+    model: str,
+    samples: int,
+) -> list[dict[str, Any]]:
+    if samples < 1:
+        raise ValueError("samples must be positive")
+    jobs: list[dict[str, Any]] = []
+    for row_index, row in enumerate(rows):
+        statement = statement_for(row)
+        if not statement:
+            continue
+        for sample_id in range(samples):
+            jobs.append(
+                make_job(
+                    index=len(jobs),
+                    stage="reference_attempt",
+                    role="weak_reference",
+                    model=model,
+                    prompt=prompt_independent_solve(statement),
+                    expects_json=False,
+                    metadata={
+                        "record_id": record_id(row, row_index),
+                        "domain": row.get("domain"),
+                        "sample_id": sample_id,
+                    },
+                )
+            )
+    return jobs
+
+
 def methods_for_row(row: dict[str, Any], *, fallback_methods: list[str]) -> dict[str, str]:
     domain_methods = method_taxonomy(str(row.get("domain") or "math"))
     selected = explicit_methods(row) or fallback_methods or list(domain_methods)
@@ -528,7 +560,10 @@ def build_jobs_from_args(args: argparse.Namespace) -> list[dict[str, Any]]:
     models = split_csv(args.models)
     if not models:
         raise ValueError("--models is required")
-    validate_external_models(models, allow_student_lineage=args.allow_student_lineage)
+    validate_external_models(
+        models,
+        allow_student_lineage=args.allow_student_lineage or args.stage == "reference_attempt",
+    )
 
     if args.stage == "seed":
         return build_seed_jobs(
@@ -544,6 +579,10 @@ def build_jobs_from_args(args: argparse.Namespace) -> list[dict[str, Any]]:
     rows = read_jsonl(args.input_jsonl)
     if args.stage == "ground_truth":
         return build_ground_truth_jobs(rows, models=models)
+    if args.stage == "reference_attempt":
+        if len(models) != 1:
+            raise ValueError("reference_attempt stage expects exactly one weak reference model.")
+        return build_reference_attempt_jobs(rows, model=models[0], samples=args.reference_samples)
     if args.stage == "method_solve":
         return build_method_solve_jobs(rows, models=models, fallback_methods=split_csv(args.methods))
     if args.stage == "naturalness":
@@ -567,6 +606,7 @@ def main(argv: list[str] | None = None) -> int:
         choices=(
             "seed",
             "ground_truth",
+            "reference_attempt",
             "method_solve",
             "naturalness",
             "distinctness",
@@ -584,6 +624,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--target_steps", type=parse_int_csv, default=[4])
     parser.add_argument("--count_per_combo", type=int, default=1)
     parser.add_argument("--methods", help="Optional comma-separated method names for method_solve.")
+    parser.add_argument("--reference_samples", type=int, default=3)
     parser.add_argument("--allow_student_lineage", action="store_true")
     args = parser.parse_args(argv)
 

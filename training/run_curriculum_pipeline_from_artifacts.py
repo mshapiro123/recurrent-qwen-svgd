@@ -31,6 +31,7 @@ from training.build_curriculum_generation_jobs import (
     build_method_solve_jobs,
     build_naturalness_jobs,
     build_perturbation_jobs,
+    build_reference_attempt_jobs,
     build_seed_jobs,
     validate_external_models,
 )
@@ -42,6 +43,7 @@ from training.collect_curriculum_job_outputs import (
     ground_truth_outputs_to_verified_candidates,
     method_outputs_to_solution_candidates,
     perturbation_outputs_to_traces,
+    reference_outputs_to_attempts,
     seed_outputs_to_candidates,
 )
 from training.decontaminate_curriculum_candidates import (
@@ -112,7 +114,10 @@ def artifact_paths(work_dir: Path) -> dict[str, Path]:
         "responses_ground_truth": work_dir / "responses_ground_truth.jsonl",
         "verified_candidates": work_dir / "verified_candidates.jsonl",
         "verified_candidates_report": work_dir / "verified_candidates_report.json",
+        "jobs_reference_attempts": work_dir / "jobs_reference_attempts.jsonl",
+        "responses_reference_attempts": work_dir / "responses_reference_attempts.jsonl",
         "reference_attempts": work_dir / "reference_attempts.jsonl",
+        "reference_attempts_report": work_dir / "reference_attempts_report.json",
         "verified_candidates_difficulty": work_dir / "verified_candidates_difficulty.jsonl",
         "difficulty_report": work_dir / "difficulty_report.json",
         "verified_candidates_no_false_answer": work_dir / "verified_candidates_no_false_answer.jsonl",
@@ -294,6 +299,42 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
     )
     write_jsonl(paths["verified_candidates"], verified)
     write_json(paths["verified_candidates_report"], verified_report)
+
+    reference_jobs = build_reference_attempt_jobs(
+        verified,
+        model=args.reference_model,
+        samples=args.reference_samples,
+    )
+    write_jsonl(paths["jobs_reference_attempts"], reference_jobs)
+    if response_missing(paths["reference_attempts"]):
+        if response_missing(paths["responses_reference_attempts"]):
+            return stop_summary(
+                work_dir=work_dir,
+                status="pending_reference_attempt_responses",
+                next_action=f"Run provider responses for {paths['jobs_reference_attempts']}",
+                artifacts=paths,
+                counts={
+                    "verified": verified_report["verified"],
+                    "ground_truth_rejected": verified_report["rejected"],
+                    "reference_attempt_jobs": len(reference_jobs),
+                },
+            )
+        reference_attempts, reference_attempts_report = reference_outputs_to_attempts(
+            verified,
+            reference_jobs,
+            read_jsonl(paths["responses_reference_attempts"]),
+        )
+        write_jsonl(paths["reference_attempts"], reference_attempts)
+        write_json(paths["reference_attempts_report"], reference_attempts_report)
+    else:
+        reference_attempts = read_jsonl(paths["reference_attempts"])
+        reference_attempts_report = {
+            "mode": "reference_attempts_existing",
+            "attempts": len(reference_attempts),
+            "issues": [],
+        }
+        write_json(paths["reference_attempts_report"], reference_attempts_report)
+
     if response_missing(paths["reference_attempts"]):
         return stop_summary(
             work_dir=work_dir,
@@ -308,7 +349,7 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
 
     with_difficulty, difficulty_rejected, difficulty_report = annotate_difficulty(
         verified,
-        read_jsonl(paths["reference_attempts"]),
+        reference_attempts,
         reference_model=args.reference_model,
         min_samples=args.min_reference_samples,
         drop_unmeasured=args.drop_unmeasured_difficulty,
@@ -335,6 +376,7 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
             artifacts=paths,
             counts={
                 "verified_with_difficulty": difficulty_report["annotated"],
+                "reference_attempts": reference_attempts_report["attempts"],
                 "false_answers": false_report["with_false_answer"],
                 "method_jobs": len(method_jobs),
                 "perturbation_jobs": len(perturbation_jobs),
@@ -444,6 +486,7 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
             "seed_candidates": candidates_report["candidates"],
             "decontaminated": decontam_report["accepted"],
             "verified": verified_report["verified"],
+            "reference_attempts": reference_attempts_report["attempts"],
             "difficulty_measured": difficulty_report["measured"],
             "false_answers": false_report["with_false_answer"],
             "method_solutions": method_report["solution_candidates"],
@@ -479,6 +522,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--min_ground_truth_agree", type=int, default=2)
     parser.add_argument("--require_claimed_answer_match", action="store_true")
     parser.add_argument("--reference_model", default="weak-reference")
+    parser.add_argument("--reference_samples", type=int, default=3)
     parser.add_argument("--min_reference_samples", type=int, default=1)
     parser.add_argument("--drop_unmeasured_difficulty", action="store_true")
     parser.add_argument("--drop_unannotated_false_answers", action="store_true")
