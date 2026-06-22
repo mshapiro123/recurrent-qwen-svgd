@@ -1,5 +1,22 @@
 # Deep Research Handoff: MCQ Debias Before Direct-Route Training
 
+## Status Update
+
+The MCQ-debias work remains important, but it is no longer the only active
+front-of-queue blocker. The implementation has advanced to the
+capability-ladder trace curriculum path:
+
+1. collect provider trace responses into answer-verified curriculum rows;
+2. gate those rows before any GPU training;
+3. run one bounded deterministic recurrent Phase 1 SFT only after the
+   `trace_curriculum_gate_ready` summary lands;
+4. require post-SFT validation to be finite and non-collapsed before routing
+   diagnostics or any Phase 2/SVGD spend.
+
+This update should be read as a continuation of the same scientific program:
+the MCQ work protects measurement quality, while the trace curriculum tests the
+depth-label hypothesis directly.
+
 ## Purpose
 
 This handoff is for the strategy/deep-research agent. It captures the current

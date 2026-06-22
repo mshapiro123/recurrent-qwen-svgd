@@ -58,32 +58,29 @@ SVGD/kernel exploration while deterministic recurrent recovery is still below
 the release bar. Paid GPU is reserved for one bounded proxy or confirmation job
 at a time, followed by review.
 
-The latest workflow change makes this stricter: MCQ benchmark claims must now
-separate content competence from option-label/position bias. The ARC-Easy
-debias diagnostic at
-`outputs/stage5/stage5_mcq_debias_direct_20260622_194346/summary.json` reports
+The latest workflow change makes this stricter: MCQ benchmark claims must
+separate content competence from option-label/position bias, and training spend
+must now go through a trace-curriculum gate. The ARC-Easy debias diagnostic at
+`outputs/stage5/stage5_mcq_debias_direct_20260622_194346/summary.json` reported
 `selection_bias_likely`: the loop-4 recurrent checkpoint looked worse under
 bare `A/B/C/D` scoring, but matched or slightly exceeded base after cyclic
 option-permutation aggregation. See
 [docs/MCQ_DEBIAS_STATUS.md](docs/MCQ_DEBIAS_STATUS.md).
 
-As of the current checkpoint, the follow-up ARC-mix recovery proxy matched base
-on the 128-row ARC-Challenge proxy, but the older full balanced ARC-Easy /
-ARC-Challenge confirmation assessment did **not** generalize under bare-label
-scoring. That result is now treated as partially confounded until ARC-Challenge
-is re-measured with cyclic scoring. The decision tree is intentionally narrow:
+The current front-of-queue action has moved past raw MCQ diagnosis into the
+capability-ladder trace curriculum. The intended sequence is:
 
-| Current evidence | Next GPU action |
-|---|---|
-| ARC-Easy cyclic MCQ diagnostic closes the apparent recurrent gap | Run the same bounded cyclic diagnostic on ARC-Challenge. |
-| ARC-Challenge cyclic diagnostic also closes the gap | Standardize MCQ eval on debiased/permutation scoring before further claims. |
-| ARC-Challenge cyclic diagnostic leaves a material gap | Then run a bounded depth-1 preservation or bypass probe. |
-| Auth/Drive/GitHub/notebook failure | Disconnect runtime and repair locally. |
+| Stage | Runtime | Purpose |
+|---|---|---|
+| `capability_ladder_trace_collect_cpu` | CPU/network-free Colab | Verify provider trace final answers, build a traced curriculum shard, run the SFT gate, and back up safe artifacts. |
+| `safe_continue_execute` after `trace_curriculum_gate_ready` | A100/H100 | Run one bounded deterministic recurrent Phase 1 SFT on the answer-verified traced curriculum. |
+| Post-SFT routing diagnostic | A100/H100, bounded | Check finite validation, non-collapsed loop depth, and whether direct/deep curriculum modes produce the expected depth gradient before any Phase 2/SVGD spend. |
 
 Do not spend A100 credits on GPQA Diamond, Phase 2/SVGD scaling, 1.5B/3B
-models, or more kernel geometry until the MCQ scoring confound is resolved and
-deterministic recurrent recovery is at least base-competitive under the
-debiased ARC metric.
+models, or more kernel geometry until the traced deterministic recurrent SFT
+path produces a sane checkpoint and a paired routing/benchmark diagnostic.
+Auth, Drive, GitHub, notebook-state, source-pointer, and dataset-prep failures
+are CPU/local repair tasks, not GPU tasks.
 
 ## Manuscript Claim Status
 
