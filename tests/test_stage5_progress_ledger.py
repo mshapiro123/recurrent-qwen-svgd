@@ -952,6 +952,7 @@ def test_progress_ledger_prefers_passed_arc_mix_gate_over_newer_release_gate(tmp
 def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     capability = scan_root / "capability_ladder" / "summary.json"
+    probe = scan_root / "capability_ladder_probe" / "summary.json"
     pipeline = scan_root / "curriculum_pipeline" / "summary.json"
     gate = scan_root / "curriculum_gate" / "summary.json"
     sft = scan_root / "curriculum_sft" / "summary.json"
@@ -964,6 +965,19 @@ def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None
             "status": "complete",
             "next_action": "Run training/check_curriculum_sft_gate.py before any GPU fine-tuning.",
             "counts": {"positive_sft_rows": 30, "mode_counts": {"direct": 12, "deep_narrow": 18}},
+        },
+    )
+    _write(
+        probe,
+        {
+            "run_id": "probe",
+            "kind": "stage5_capability_ladder_mcq_probe",
+            "status": "capability_ladder_probe_needs_review",
+            "next_action": "Run no-GPU probe SFT gate.",
+            "curriculum": {
+                "work_dir": "data/curriculum/probe",
+                "counts": {"positive_sft_rows": 9, "mode_counts": {"direct": 5, "deep_narrow": 4}},
+            },
         },
     )
     _write(
@@ -1003,21 +1017,25 @@ def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None
     payload = scan_progress(scan_root, run_id="ledger")
 
     statuses = payload["curriculum_statuses"]
+    by_kind = {row["kind"]: row for row in statuses}
     assert [row["kind"] for row in statuses] == [
         "capability_ladder_curriculum_pipeline",
+        "stage5_capability_ladder_mcq_probe",
         "curriculum_sft_gate",
         "curriculum_pipeline_from_artifacts",
         "stage5_curriculum_sft",
     ]
-    assert statuses[0]["positive_rows"] == 30
-    assert statuses[0]["next_action"].startswith("Run training/check_curriculum_sft_gate.py")
-    assert statuses[1]["go"] is True
-    assert statuses[1]["positive_rows"] == 24
-    assert statuses[2]["next_action"].startswith("Review typed_records")
-    assert statuses[3]["train_rows"] == 21
-    assert statuses[3]["val_rows"] == 3
-    assert statuses[3]["mean_expected_loops"] == 2.5
-    assert statuses[3]["checkpoint"] == "outputs/stage5/sft/phase1/phase1_step_150.pt"
+    assert by_kind["capability_ladder_curriculum_pipeline"]["positive_rows"] == 30
+    assert by_kind["capability_ladder_curriculum_pipeline"]["next_action"].startswith("Run training/check_curriculum_sft_gate.py")
+    assert by_kind["curriculum_sft_gate"]["go"] is True
+    assert by_kind["curriculum_sft_gate"]["positive_rows"] == 24
+    assert by_kind["stage5_capability_ladder_mcq_probe"]["positive_rows"] == 9
+    assert by_kind["stage5_capability_ladder_mcq_probe"]["work_dir"] == "data/curriculum/probe"
+    assert by_kind["curriculum_pipeline_from_artifacts"]["next_action"].startswith("Review typed_records")
+    assert by_kind["stage5_curriculum_sft"]["train_rows"] == 21
+    assert by_kind["stage5_curriculum_sft"]["val_rows"] == 3
+    assert by_kind["stage5_curriculum_sft"]["mean_expected_loops"] == 2.5
+    assert by_kind["stage5_curriculum_sft"]["checkpoint"] == "outputs/stage5/sft/phase1/phase1_step_150.pt"
     assert payload["recommended_next_plan_source"] == str(sft)
 
 

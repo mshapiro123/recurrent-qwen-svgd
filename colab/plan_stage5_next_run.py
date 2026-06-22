@@ -146,6 +146,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or trace_sft_gate_payload(payload) is not None
         or distill_sft_gate_payload(payload) is not None
         or curriculum_pipeline_payload(payload) is not None
+        or capability_ladder_probe_payload(payload) is not None
         or capability_ladder_curriculum_payload(payload) is not None
         or curriculum_sft_gate_payload(payload) is not None
         or curriculum_sft_payload(payload) is not None
@@ -929,6 +930,10 @@ def capability_ladder_curriculum_payload(payload: dict[str, Any]) -> dict[str, A
     return payload if payload.get("kind") == "capability_ladder_curriculum_pipeline" else None
 
 
+def capability_ladder_probe_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_capability_ladder_mcq_probe" else None
+
+
 def mode_rows_from_counts(payload: dict[str, Any]) -> str:
     counts = payload.get("counts") if isinstance(payload.get("counts"), dict) else {}
     mode_counts = counts.get("mode_counts") if isinstance(counts.get("mode_counts"), dict) else {}
@@ -1039,6 +1044,67 @@ def capability_ladder_curriculum_actions(payload: dict[str, Any], *, source_summ
         make_action(
             f"Inspect capability-ladder curriculum `{status}`",
             "The capability-ladder curriculum is not complete; inspect the CPU scored-row adapter output before attaching paid GPU time.",
+            f"cat {shlex.quote(command_path(source_summary))}",
+            10,
+        )
+    ]
+
+
+def capability_ladder_probe_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status") or "unknown")
+    curriculum = payload.get("curriculum") if isinstance(payload.get("curriculum"), dict) else {}
+    summary_json = str(curriculum.get("summary_json") or "").replace("\\", "/")
+    work_dir = str(curriculum.get("work_dir") or "").replace("\\", "/")
+    counts = curriculum.get("counts") if isinstance(curriculum.get("counts"), dict) else {}
+    positive_rows = int(counts.get("positive_sft_rows") or counts.get("typed_records") or 0)
+    mode_counts = counts.get("mode_counts") if isinstance(counts.get("mode_counts"), dict) else {}
+    direct = int(mode_counts.get("direct") or 0)
+    deep = int(mode_counts.get("deep_narrow") or 0)
+
+    if status in {"capability_ladder_probe_gate_ready", "capability_ladder_probe_needs_review"} and summary_json:
+        gate_json = source_summary.parent / "capability_ladder_probe_sft_gate.json"
+        gate_md = source_summary.parent / "capability_ladder_probe_sft_gate.md"
+        min_positive = max(positive_rows, 1)
+        min_mode_rows = ",".join(
+            item
+            for item in (
+                f"direct={direct}" if direct > 0 else "",
+                f"deep_narrow={deep}" if deep > 0 else "",
+            )
+            if item
+        )
+        min_mode_clause = f"--min_mode_rows {shlex.quote(min_mode_rows)} " if min_mode_rows else ""
+        work_dir_clause = f"--work_dir {shlex.quote(work_dir)} " if work_dir else ""
+        return [
+            make_action(
+                "Run capability-ladder probe SFT safety gate",
+                (
+                    "The Qwen-scale MCQ probe found usable depth-ladder rows. Run the no-GPU SFT gate against the "
+                    "generated capability-ladder curriculum before any recurrent training. Treat the output as "
+                    "answer-only depth-label evidence unless richer traces are added."
+                ),
+                (
+                    "python training/check_curriculum_sft_gate.py "
+                    f"{work_dir_clause}"
+                    f"--summary_json {shlex.quote(summary_json)} "
+                    f"--output_json {shlex.quote(command_path(gate_json))} "
+                    f"--output_md {shlex.quote(command_path(gate_md))} "
+                    f"--min_positive_rows {min_positive} "
+                    f"{min_mode_clause}"
+                    "--allow_cross_model_only_answers"
+                ),
+                10,
+            )
+        ]
+
+    return [
+        make_action(
+            f"Inspect capability-ladder MCQ probe `{status}`",
+            (
+                "The model-scale probe did not yet yield a balanced direct/deep depth ladder, or its curriculum "
+                "summary is missing. Inspect tier counts before spending more A100 time; likely next choices are a "
+                "larger bounded ARC slice, cyclic scoring on a smaller slice, or richer trace generation."
+            ),
             f"cat {shlex.quote(command_path(source_summary))}",
             10,
         )
@@ -3412,6 +3478,9 @@ def plan_next_actions(
     curriculum_pipeline = curriculum_pipeline_payload(payload)
     if curriculum_pipeline:
         return curriculum_pipeline_actions(curriculum_pipeline, source_summary=source_summary)
+    capability_ladder_probe = capability_ladder_probe_payload(payload)
+    if capability_ladder_probe:
+        return capability_ladder_probe_actions(capability_ladder_probe, source_summary=source_summary)
     capability_ladder = capability_ladder_curriculum_payload(payload)
     if capability_ladder:
         return capability_ladder_curriculum_actions(capability_ladder, source_summary=source_summary)
@@ -3803,6 +3872,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "reasoning_dataset_audit"
     if curriculum_pipeline_payload(payload):
         return "curriculum_pipeline"
+    if capability_ladder_probe_payload(payload):
+        return "capability_ladder_mcq_probe"
     if capability_ladder_curriculum_payload(payload):
         return "capability_ladder_curriculum"
     if curriculum_sft_gate_payload(payload):

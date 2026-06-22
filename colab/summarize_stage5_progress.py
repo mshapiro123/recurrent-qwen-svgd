@@ -164,6 +164,7 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
     if payload.get("kind") == "stage5_reasoning_dataset_audit":
         return True
     if payload.get("kind") in {
+        "stage5_capability_ladder_mcq_probe",
         "capability_ladder_curriculum_pipeline",
         "curriculum_pipeline_from_artifacts",
         "curriculum_sft_gate",
@@ -809,6 +810,26 @@ def curriculum_statuses(summary_files: list[Path]) -> list[dict[str, Any]]:
                     "next_action": payload.get("next_action") or "run capability-ladder SFT gate",
                 }
             )
+        elif kind == "stage5_capability_ladder_mcq_probe":
+            curriculum = payload.get("curriculum") or {}
+            counts = curriculum.get("counts") or {}
+            rows.append(
+                {
+                    "path": path_for_cli(path),
+                    "run_id": str(payload.get("run_id") or path.parent.name),
+                    "kind": kind,
+                    "status": payload.get("status"),
+                    "go": None,
+                    "work_dir": curriculum.get("work_dir"),
+                    "positive_rows": int(counts.get("positive_sft_rows", 0) or 0),
+                    "train_rows": None,
+                    "val_rows": None,
+                    "mean_expected_loops": None,
+                    "expected_ce": None,
+                    "checkpoint": None,
+                    "next_action": payload.get("next_action") or "run capability-ladder probe SFT gate",
+                }
+            )
         elif kind == "curriculum_sft_gate":
             positive = ((payload.get("checks") or {}).get("positive_sft") or {})
             rows.append(
@@ -944,6 +965,8 @@ def planner_source_priority(payload: dict[str, Any]) -> int:
         return 95
     if payload.get("kind") == "curriculum_sft_gate":
         return 85 if payload.get("go") else 35
+    if payload.get("kind") == "stage5_capability_ladder_mcq_probe":
+        return 83 if str(payload.get("status") or "").endswith(("gate_ready", "needs_review")) else 25
     if payload.get("kind") == "capability_ladder_curriculum_pipeline":
         return 84 if payload.get("status") == "complete" else 25
     if payload.get("kind") == "curriculum_pipeline_from_artifacts":

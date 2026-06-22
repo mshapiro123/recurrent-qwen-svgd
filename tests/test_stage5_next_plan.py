@@ -305,6 +305,61 @@ def test_complete_capability_ladder_curriculum_recommends_observed_count_sft_gat
     assert "run_stage5_curriculum_sft.py" not in actions[0]["command"]
 
 
+def test_capability_ladder_mcq_probe_with_rows_recommends_sft_gate_not_training(tmp_path) -> None:
+    source = tmp_path / "probe" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_capability_ladder_mcq_probe",
+        "status": "capability_ladder_probe_needs_review",
+        "curriculum": {
+            "summary_json": "data/curriculum/probe/summary.json",
+            "work_dir": "data/curriculum/probe",
+            "counts": {
+                "typed_records": 9,
+                "positive_sft_rows": 9,
+                "mode_counts": {"direct": 5, "deep_narrow": 4},
+            },
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert source_kind(payload) == "capability_ladder_mcq_probe"
+    assert actions[0]["name"] == "Run capability-ladder probe SFT safety gate"
+    assert "python training/check_curriculum_sft_gate.py" in actions[0]["command"]
+    assert "--summary_json data/curriculum/probe/summary.json" in actions[0]["command"]
+    assert "--work_dir data/curriculum/probe" in actions[0]["command"]
+    assert "--min_positive_rows 9" in actions[0]["command"]
+    assert "--min_mode_rows direct=5,deep_narrow=4" in actions[0]["command"]
+    assert "--allow_cross_model_only_answers" in actions[0]["command"]
+    assert "run_stage5_curriculum_sft.py" not in actions[0]["command"]
+
+
+def test_sparse_capability_ladder_mcq_probe_recommends_inspection_not_gpu(tmp_path) -> None:
+    source = tmp_path / "probe" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_capability_ladder_mcq_probe",
+        "status": "capability_ladder_probe_sparse",
+        "curriculum": {
+            "counts": {
+                "typed_records": 3,
+                "positive_sft_rows": 3,
+                "mode_counts": {"direct": 3},
+            },
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert source_kind(payload) == "capability_ladder_mcq_probe"
+    assert actions[0]["name"] == "Inspect capability-ladder MCQ probe `capability_ladder_probe_sparse`"
+    assert actions[0]["command"].startswith("cat ")
+    assert "run_stage5_curriculum_sft.py" not in actions[0]["command"]
+
+
 def test_incomplete_capability_ladder_curriculum_recommends_inspection_not_gpu(tmp_path) -> None:
     source = tmp_path / "capability_ladder" / "summary.json"
     source.parent.mkdir()
@@ -1632,6 +1687,7 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"gate": "stage5_same_recipe_architecture"}) == "recipe_control_assessment"
     assert source_kind({"gate": "stage5_release_benchmark_readiness"}) == "release_gate"
     assert source_kind({"kind": "stage5_benchmark_suite"}) == "benchmark_suite"
+    assert source_kind({"kind": "stage5_capability_ladder_mcq_probe"}) == "capability_ladder_mcq_probe"
     assert source_kind({"gate": "stage5_broader_benchmark_suite"}) == "benchmark_suite_assessment"
     assert source_kind({"kind": "stage5_balanced_arc_mix_gate"}) == "balanced_arc_mix_gate"
     assert source_kind({"kind": "stage5_routing_diagnostic_assessment"}) == "routing_diagnostic"
