@@ -204,6 +204,41 @@ def test_benchmark_suite_guard_blocks_unbounded_limits() -> None:
     assert "requires STAGE5_A100_ALLOW_FULL_BENCHMARKS=1" in decision["reason"]
 
 
+def test_capability_ladder_probe_guard_allows_bounded_limit() -> None:
+    decision = classify_action(
+        {
+            "name": "Run capability-ladder MCQ probe",
+            "command": (
+                "STAGE5_CAPABILITY_LADDER_ARC_LIMIT=48 "
+                "python colab/run_stage5_capability_ladder_mcq_probe.py"
+            ),
+        },
+        source_payload={"kind": "stage5_mcq_scoring_policy"},
+    )
+
+    assert decision["go"] is True
+    assert decision["status"] == "go_capability_ladder_mcq_probe"
+    assert decision["spend_class"] == "bounded_capability_ladder_mcq_probe"
+    assert decision["capability_ladder_probe_budget"]["limit"]["value"] == 48
+
+
+def test_capability_ladder_probe_guard_blocks_oversized_limit() -> None:
+    decision = classify_action(
+        {
+            "name": "Run oversized capability-ladder MCQ probe",
+            "command": (
+                "STAGE5_CAPABILITY_LADDER_ARC_LIMIT=512 "
+                "python colab/run_stage5_capability_ladder_mcq_probe.py"
+            ),
+        },
+        source_payload={"kind": "stage5_mcq_scoring_policy"},
+    )
+
+    assert decision["go"] is False
+    assert decision["status"] == "capability_ladder_probe_limit_no_go"
+    assert "exceeds conservative cap" in decision["reason"]
+
+
 def test_curriculum_sft_benchmark_guard_blocks_missing_phase1_checkpoint() -> None:
     source_payload = {
         "kind": "stage5_curriculum_sft",

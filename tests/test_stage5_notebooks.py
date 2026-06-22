@@ -357,6 +357,7 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     assert "programmatic_curriculum_cpu" in text
     assert "safe_continue_execute" in text
     assert "arc_challenge_mcq_debias_confirm" in text
+    assert "capability_ladder_mcq_probe" in text
     assert "cyclic-permutation MCQ diagnostic" in text
 
 
@@ -408,6 +409,24 @@ def test_debiased_benchmark_suite_cell_is_bounded_and_policy_compliant() -> None
     assert "debiased_benchmark_suite" in bootstrap
     assert "STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py" in bootstrap
     assert "STAGE5_CURRENT_A100_TARGET=debiased_benchmark_suite" in current_action
+
+
+def test_capability_ladder_mcq_probe_cell_is_bounded_and_depth_ladder_focused() -> None:
+    plain = (ROOT / "colab/STAGE5_CAPABILITY_LADDER_MCQ_PROBE_CELL.py").read_text(encoding="utf-8")
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+
+    assert "STAGE5_CAPABILITY_LADDER_MCQ_PROBE_CELL_VERSION" in plain
+    assert "Qwen/Qwen2.5-0.5B-Instruct" in plain
+    assert "Qwen/Qwen2.5-1.5B-Instruct" in plain
+    assert "Qwen/Qwen2.5-3B-Instruct" in plain
+    assert '"STAGE5_CAPABILITY_LADDER_ARC_LIMIT",\n        "48"' in plain
+    assert '"STAGE5_CAPABILITY_LADDER_SCORE_MODE",\n        "content_question_only"' in plain
+    assert '"STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE"] = "1"' in plain
+    assert "colab/run_stage5_capability_ladder_mcq_probe.py" in plain
+    assert "tests/test_stage5_capability_ladder_mcq_probe.py" in plain
+    assert "runtime.unassign()" in plain
+    assert "capability_ladder_mcq_probe" in bootstrap
+    assert "STAGE5_CAPABILITY_LADDER_MCQ_PROBE_CELL.py" in bootstrap
 
 
 def test_drive_checkpoint_preflight_cell_is_cpu_only_and_single_purpose() -> None:

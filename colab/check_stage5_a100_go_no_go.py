@@ -183,6 +183,48 @@ def benchmark_suite_budget_preflight(command: str) -> dict[str, Any]:
     }
 
 
+def capability_ladder_probe_budget_preflight(command: str) -> dict[str, Any]:
+    """Require a bounded ARC slice before spending GPU on model-scale scoring."""
+
+    env = command_env_assignments(command)
+    allow_large = _truthy_env("STAGE5_A100_ALLOW_LARGE_CAPABILITY_LADDER_PROBE")
+    raw_limit = env.get("STAGE5_CAPABILITY_LADDER_ARC_LIMIT")
+    value, status = _parse_benchmark_limit(raw_limit)
+    max_limit = 96
+    failures: list[str] = []
+    if status == "missing":
+        failures.append("missing STAGE5_CAPABILITY_LADDER_ARC_LIMIT")
+    elif status == "invalid":
+        failures.append(f"invalid STAGE5_CAPABILITY_LADDER_ARC_LIMIT={raw_limit!r}")
+    elif status == "unbounded" and not allow_large:
+        failures.append(
+            "unbounded STAGE5_CAPABILITY_LADDER_ARC_LIMIT requires "
+            "STAGE5_A100_ALLOW_LARGE_CAPABILITY_LADDER_PROBE=1"
+        )
+    elif value is not None and value > max_limit and not allow_large:
+        failures.append(
+            f"STAGE5_CAPABILITY_LADDER_ARC_LIMIT={value} exceeds conservative cap {max_limit}; "
+            "set STAGE5_A100_ALLOW_LARGE_CAPABILITY_LADDER_PROBE=1 for deliberate expansion"
+        )
+
+    return {
+        "go": not failures,
+        "reason": (
+            "Capability-ladder probe limit is explicit and bounded."
+            if not failures
+            else "; ".join(failures)
+        ),
+        "limit": {
+            "env": "STAGE5_CAPABILITY_LADDER_ARC_LIMIT",
+            "raw": raw_limit,
+            "status": status,
+            "value": value,
+            "max_without_override": max_limit,
+        },
+        "allow_large_override": allow_large,
+    }
+
+
 def source_payload_kind(source_payload: dict[str, Any]) -> str:
     if source_payload.get("kind"):
         return source_kind(source_payload)
@@ -1164,6 +1206,27 @@ def classify_action(
             "spend_class": "bounded_benchmark_suite",
             "reason": "Planner found a nonnegative balanced checkpoint and recommends broader benchmarks.",
             "benchmark_budget": benchmark_budget,
+        }
+
+    if script == "colab/run_stage5_capability_ladder_mcq_probe.py":
+        probe_budget = capability_ladder_probe_budget_preflight(command)
+        if not probe_budget["go"]:
+            return {
+                "go": False,
+                "status": "capability_ladder_probe_limit_no_go",
+                "spend_class": "none",
+                "reason": probe_budget["reason"],
+                "capability_ladder_probe_budget": probe_budget,
+            }
+        return {
+            "go": True,
+            "status": "go_capability_ladder_mcq_probe",
+            "spend_class": "bounded_capability_ladder_mcq_probe",
+            "reason": (
+                "Planner/user selected a bounded no-training model-scale MCQ scoring probe "
+                "to build depth-targeted capability-ladder rows."
+            ),
+            "capability_ladder_probe_budget": probe_budget,
         }
 
     return {

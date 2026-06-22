@@ -12,6 +12,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "safe_continue_execute" - fetch safe-continue and opt in to the guarded paid action.
 #   "arc_challenge_mcq_debias_confirm" - bounded no-training cyclic MCQ confirmation on ARC-Challenge.
 #   "debiased_benchmark_suite" - bounded ARC-Challenge/GPQA-lite benchmark with debiased MCQ scoring.
+#   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 
@@ -109,6 +110,22 @@ TARGETS = {
             "colab/assess_stage5_benchmark_suite.py",
             "tests/test_stage5_benchmark_suite.py",
             "tests/test_stage5_benchmark_assessment.py",
+            "runtime.unassign",
+        ],
+        "env": {},
+    },
+    "capability_ladder_mcq_probe": {
+        "path": "colab/STAGE5_CAPABILITY_LADDER_MCQ_PROBE_CELL.py",
+        "markers": [
+            "STAGE5_CAPABILITY_LADDER_MCQ_PROBE_CELL_VERSION",
+            "capability_ladder_mcq_probe",
+            "Qwen/Qwen2.5-0.5B-Instruct",
+            "Qwen/Qwen2.5-1.5B-Instruct",
+            "Qwen/Qwen2.5-3B-Instruct",
+            "STAGE5_CAPABILITY_LADDER_ARC_LIMIT",
+            "content_question_only",
+            "colab/run_stage5_capability_ladder_mcq_probe.py",
+            "tests/test_stage5_capability_ladder_mcq_probe.py",
             "runtime.unassign",
         ],
         "env": {},

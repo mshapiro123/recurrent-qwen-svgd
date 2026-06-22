@@ -220,6 +220,21 @@ def test_parse_action_command_allows_benchmark_suite_runner() -> None:
     assert parsed.argv == [sys.executable, "colab/run_stage5_benchmark_suite.py"]
 
 
+def test_parse_action_command_allows_capability_ladder_mcq_probe_runner() -> None:
+    parsed = parse_action_command(
+        "STAGE5_CAPABILITY_LADDER_ARC_LIMIT=48 "
+        "STAGE5_CAPABILITY_LADDER_SCORE_MODE=content_question_only "
+        "python colab/run_stage5_capability_ladder_mcq_probe.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {
+        "STAGE5_CAPABILITY_LADDER_ARC_LIMIT": "48",
+        "STAGE5_CAPABILITY_LADDER_SCORE_MODE": "content_question_only",
+    }
+    assert parsed.argv == [sys.executable, "colab/run_stage5_capability_ladder_mcq_probe.py"]
+
+
 def test_parse_action_command_allows_routing_diagnostic_runner() -> None:
     parsed = parse_action_command(
         "STAGE5_ROUTING_DIAGNOSTIC_RUN_ID=route python colab/run_stage5_routing_diagnostic.py"
@@ -505,6 +520,7 @@ def test_paid_gpu_arc_runners_are_a100_guarded() -> None:
         "colab/run_stage5_arc_agi_recovered_benchmark.py",
         "colab/run_stage5_arc_agi_recovery_particle_gate.py",
         "colab/run_stage5_arc_agi_tta_sweep.py",
+        "colab/run_stage5_capability_ladder_mcq_probe.py",
         "colab/run_stage5_phase1_recovery_ladder.py",
         "colab/run_stage5_direct_preservation_probe.py",
         "colab/run_stage5_mcq_debias_diagnostic.py",

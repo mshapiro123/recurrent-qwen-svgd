@@ -33,6 +33,12 @@ ARC-Challenge plus GPQA-lite by default, with explicit limits and MCQ score
 targets `label,content_question_only,cyclic_label_aggregated`. It assesses
 `cyclic_label_aggregated/permutation_mean`, pushes safe summaries, and
 disconnects.
+After the debiased benchmark suite lands, the next bounded curriculum-data
+probe is `STAGE5_CURRENT_A100_TARGET=capability_ladder_mcq_probe`. That target
+scores a small ARC-Train slice with Qwen 0.5B, 1.5B, and 3B under cheap
+content-question-only MCQ scoring, builds depth-targeted capability-ladder
+candidate rows, backs private curriculum artifacts up to Drive, pushes safe
+summaries, and disconnects.
 The bootstrap now auto-resumes from
 [`config/stage5_current_source_summary.txt`](../config/stage5_current_source_summary.txt)
 when that pointer exists and targets an available summary. To force a specific
@@ -176,6 +182,61 @@ code = base64.b64decode(payload["content"]).decode("utf-8")
 print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12])
 assert "debiased_benchmark_suite" in code, "Fetched stale bootstrap without debiased benchmark target."
 assert "STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py" in code, "Fetched stale bootstrap launcher."
+exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
+```
+
+## Next Paste-Anywhere Capability-Ladder Probe Cell
+
+Use this after the debiased benchmark suite has landed and we want to test
+whether Qwen model scale gives a useful depth-label ladder before training.
+
+```python
+import base64, json, os, time, urllib.request
+from google.colab import userdata
+
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_mcq_probe"
+os.environ.setdefault("STAGE5_CAPABILITY_LADDER_ARC_LIMIT", "48")
+os.environ.setdefault("STAGE5_CAPABILITY_LADDER_SCORE_MODE", "content_question_only")
+
+def colab_secret(*names):
+    for name in names:
+        value = os.environ.get(name)
+        if value:
+            return value
+        try:
+            value = userdata.get(name)
+        except Exception:
+            value = None
+        if value:
+            return value
+    return None
+
+token = colab_secret("GH_TOKEN", "GITHUB_TOKEN")
+assert token, "Add GH_TOKEN or GITHUB_TOKEN to Colab secrets."
+
+headers = {
+    "Authorization": f"Bearer {token}",
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "Cache-Control": "no-cache",
+}
+
+def gh_json(url):
+    req = urllib.request.Request(url, headers=headers)
+    return json.loads(urllib.request.urlopen(req).read().decode("utf-8"))
+
+ref_payload = gh_json(
+    f"https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/git/ref/heads/main?cache_bust={time.time_ns()}"
+)
+resolved_ref = ref_payload["object"]["sha"]
+payload = gh_json(
+    "https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/"
+    f"contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py?ref={resolved_ref}&cache_bust={time.time_ns()}"
+)
+code = base64.b64decode(payload["content"]).decode("utf-8")
+print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12])
+assert "capability_ladder_mcq_probe" in code, "Fetched stale bootstrap without capability-ladder target."
+assert "STAGE5_CAPABILITY_LADDER_MCQ_PROBE_CELL.py" in code, "Fetched stale capability-ladder launcher."
 exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
 ```
 
