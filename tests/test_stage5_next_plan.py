@@ -144,7 +144,7 @@ def test_arc_mix_calibration_warning_recommends_routing_diagnostic(tmp_path) -> 
     assert "direct-mode loop depth" in actions[0]["reason"]
 
 
-def test_routing_diagnostic_direct_status_recommends_cpu_curriculum_gate(tmp_path) -> None:
+def test_routing_diagnostic_direct_status_recommends_routing_repair(tmp_path) -> None:
     source = tmp_path / "routing" / "summary.json"
     source.parent.mkdir()
     payload = {
@@ -155,9 +155,10 @@ def test_routing_diagnostic_direct_status_recommends_cpu_curriculum_gate(tmp_pat
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Run CPU programmatic direct/deep curriculum gate"
-    assert "python colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py" in actions[0]["command"]
-    assert "1000 direct / 1000 deep-narrow" in actions[0]["reason"]
+    assert actions[0]["name"] == "Run bounded deterministic routing repair"
+    assert "python colab/run_stage5_routing_repair.py" in actions[0]["command"]
+    assert f"STAGE5_ROUTING_REPAIR_SOURCE_SUMMARY={source.as_posix()}" in actions[0]["command"]
+    assert "base-logit distillation" in actions[0]["reason"]
 
 
 def test_green_curriculum_sft_gate_recommends_guarded_sft_runner(tmp_path) -> None:
@@ -321,7 +322,7 @@ def test_incomplete_capability_ladder_curriculum_recommends_inspection_not_gpu(t
     assert "run_stage5_curriculum_sft.py" not in actions[0]["command"]
 
 
-def test_routing_diagnostic_deep_status_recommends_cpu_curriculum_gate(tmp_path) -> None:
+def test_routing_diagnostic_deep_status_recommends_routing_repair(tmp_path) -> None:
     source = tmp_path / "routing" / "summary.json"
     source.parent.mkdir()
     payload = {
@@ -332,8 +333,9 @@ def test_routing_diagnostic_deep_status_recommends_cpu_curriculum_gate(tmp_path)
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Run CPU programmatic direct/deep curriculum gate"
-    assert "python colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py" in actions[0]["command"]
+    assert actions[0]["name"] == "Run bounded deterministic routing repair"
+    assert "python colab/run_stage5_routing_repair.py" in actions[0]["command"]
+    assert f"STAGE5_ROUTING_REPAIR_SOURCE_SUMMARY={source.as_posix()}" in actions[0]["command"]
     assert "deep-narrow deterministic" in actions[0]["reason"]
 
 
