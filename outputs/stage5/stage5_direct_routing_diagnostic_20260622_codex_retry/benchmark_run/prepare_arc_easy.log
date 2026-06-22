@@ -1,0 +1,14 @@
+
+Generating train split:   0%|          | 0/2251 [00:00<?, ? examples/s]
+Generating train split: 100%|██████████| 2251/2251 [00:00<00:00, 73292.95 examples/s]
+
+Generating test split:   0%|          | 0/2376 [00:00<?, ? examples/s]
+Generating test split: 100%|██████████| 2376/2376 [00:00<00:00, 410616.66 examples/s]
+
+Generating validation split:   0%|          | 0/570 [00:00<?, ? examples/s]
+Generating validation split: 100%|██████████| 570/570 [00:00<00:00, 184301.05 examples/s]
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=validation
+rows=64
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_direct_routing_diagnostic_20260622_codex_retry_arc_easy64_challenge64/arc_easy_validation_64.jsonl
