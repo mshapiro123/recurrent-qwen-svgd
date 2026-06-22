@@ -42,6 +42,12 @@ class MCQExample:
     answer: str
 
 
+@dataclass(frozen=True)
+class CompletionScore:
+    scores: torch.Tensor
+    diagnostics: dict[str, Any]
+
+
 def read_examples(path: str | Path) -> list[MCQExample]:
     examples: list[MCQExample] = []
     for idx, line in enumerate(Path(path).read_text(encoding="utf-8").splitlines()):
@@ -170,7 +176,7 @@ def score_completion(
     prompt: str,
     completion: str,
     args: argparse.Namespace,
-) -> torch.Tensor:
+) -> CompletionScore:
     prompt_ids = tokenizer(prompt, add_special_tokens=True)["input_ids"]
     encoded = tokenizer(prompt + completion, return_tensors="pt", add_special_tokens=True).to(args.device)
     labels = encoded["input_ids"].clone()
@@ -214,10 +220,35 @@ def score_completion(
         raise RuntimeError("Expected trajectory_logits when num_trajectories > 1")
     if trajectory_logits is not None:
         logits = trajectory_logits.reshape(-1, *trajectory_logits.shape[2:])
+    diagnostics = extract_loop_diagnostics(output) if args.include_loop_diagnostics else {}
     scores = sequence_logprobs(logits, labels, normalize=args.normalize_option_score).cpu()
     if args.num_trajectories > 1 and scores.numel() != args.num_trajectories:
         raise RuntimeError(f"Expected {args.num_trajectories} trajectory scores, got {scores.numel()}")
-    return scores
+    return CompletionScore(scores=scores, diagnostics=diagnostics)
+
+
+def scalarize_tensor(value: Any) -> Any:
+    if torch.is_tensor(value):
+        detached = value.detach().float().cpu()
+        if detached.numel() == 1:
+            return float(detached.item())
+        return [float(item) for item in detached.flatten().tolist()]
+    return value
+
+
+def extract_loop_diagnostics(output: Any) -> dict[str, Any]:
+    diagnostics: dict[str, Any] = {}
+    metrics = getattr(output, "metrics", {}) or {}
+    for key in ("mean_expected_loops", "mean_halt_entropy", "trajectory_diversity"):
+        if key in metrics:
+            diagnostics[key] = scalarize_tensor(metrics[key])
+    expected_loops = getattr(output, "expected_loops", None)
+    if expected_loops is not None:
+        diagnostics["expected_loops"] = scalarize_tensor(expected_loops)
+    halting_weights = getattr(output, "halting_weights", None)
+    if halting_weights is not None:
+        diagnostics["mean_halting_weights"] = scalarize_tensor(halting_weights.detach().float().mean(dim=tuple(range(halting_weights.dim() - 1))))
+    return diagnostics
 
 
 def aggregate(scores: torch.Tensor, method: str) -> float:
@@ -239,6 +270,45 @@ def predict_from_scores(option_scores: dict[str, torch.Tensor], aggregate_method
         return prediction, mean_scores
     scalar_scores = {label: aggregate(scores, aggregate_method) for label, scores in option_scores.items()}
     return max(scalar_scores, key=scalar_scores.get), scalar_scores
+
+
+def mean_numeric(values: list[Any]) -> float | None:
+    finite = [float(value) for value in values if isinstance(value, (int, float))]
+    if not finite:
+        return None
+    return sum(finite) / len(finite)
+
+
+def aggregate_loop_diagnostics(
+    option_diagnostics: dict[str, dict[str, Any]],
+    answer: str,
+    prediction: str,
+) -> dict[str, Any]:
+    if not option_diagnostics:
+        return {}
+    all_expected = [
+        diagnostics.get("mean_expected_loops")
+        for diagnostics in option_diagnostics.values()
+        if diagnostics.get("mean_expected_loops") is not None
+    ]
+    all_entropy = [
+        diagnostics.get("mean_halt_entropy")
+        for diagnostics in option_diagnostics.values()
+        if diagnostics.get("mean_halt_entropy") is not None
+    ]
+    result: dict[str, Any] = {
+        "mean_expected_loops": mean_numeric(all_expected),
+        "mean_halt_entropy": mean_numeric(all_entropy),
+    }
+    if answer in option_diagnostics:
+        answer_diag = option_diagnostics[answer]
+        result["answer_expected_loops"] = answer_diag.get("mean_expected_loops")
+        result["answer_halt_entropy"] = answer_diag.get("mean_halt_entropy")
+    if prediction in option_diagnostics:
+        pred_diag = option_diagnostics[prediction]
+        result["prediction_expected_loops"] = pred_diag.get("mean_expected_loops")
+        result["prediction_halt_entropy"] = pred_diag.get("mean_halt_entropy")
+    return {key: value for key, value in result.items() if value is not None}
 
 
 def append_jsonl(path: str | Path | None, row: dict[str, Any]) -> None:
@@ -265,6 +335,11 @@ def main() -> int:
         help="Optional comma-separated aggregate list, e.g. mean,max,vote. Reuses option scores in one model pass.",
     )
     parser.add_argument("--normalize_option_score", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument(
+        "--include_loop_diagnostics",
+        action="store_true",
+        help="For recurrent modes, record expected loop and halting telemetry for each scored option.",
+    )
     parser.add_argument("--split", default="6,18")
     parser.add_argument("--max_loops", type=int, default=4)
     parser.add_argument("--num_trajectories", type=int, default=1)
@@ -318,9 +393,13 @@ def main() -> int:
     for example in examples:
         prompt = format_prompt(example, args.prompt_style)
         option_scores: dict[str, torch.Tensor] = {}
+        option_loop_diagnostics: dict[str, dict[str, Any]] = {}
         for label, text in example.choices:
             completion = format_completion(label, text, args.score_target)
-            option_scores[label] = score_completion(model_or_wrapper, tokenizer, prompt, completion, args)
+            completion_score = score_completion(model_or_wrapper, tokenizer, prompt, completion, args)
+            option_scores[label] = completion_score.scores
+            if completion_score.diagnostics:
+                option_loop_diagnostics[label] = completion_score.diagnostics
         trajectory_scores = {label: [float(x) for x in scores.tolist()] for label, scores in option_scores.items()}
         for aggregate_name in aggregates:
             prediction, scalar_scores = predict_from_scores(option_scores, aggregate_name)
@@ -340,6 +419,13 @@ def main() -> int:
                 "scores": scalar_scores,
                 "trajectory_scores": trajectory_scores,
             }
+            if option_loop_diagnostics:
+                row["option_loop_diagnostics"] = option_loop_diagnostics
+                row["loop_diagnostics"] = aggregate_loop_diagnostics(
+                    option_loop_diagnostics,
+                    answer=example.answer,
+                    prediction=prediction,
+                )
             print(json.dumps(row, ensure_ascii=False))
             append_jsonl(args.output_jsonl, row)
 

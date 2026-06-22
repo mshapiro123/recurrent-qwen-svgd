@@ -34,6 +34,19 @@ learning the right computation budget for the problem type.
 
 The taxonomy is a data and evaluation scaffold, not a hard runtime classifier.
 Real prompts lie on a continuum, and the model should learn a soft allocation.
+Construct typed data by measurement rather than by trusting dataset labels:
+
+1. sample several teacher solutions per problem;
+2. keep only verified correct solutions where a verifier or answer check exists;
+3. estimate **depth** from necessary reasoning steps, teacher trace structure,
+   verifier/search difficulty, or recurrent loss by loop;
+4. estimate **width** from distinct correct solution clusters, using explicit
+   method labels where available or solution embeddings plus manual spot checks;
+5. bin examples into direct, deep narrow, wide, or deep plus wide for curriculum
+   and evaluation.
+
+Trace length alone is not a depth label. It can help, but should be combined
+with correctness, base confidence, verifier difficulty, and problem family.
 
 | Mode | Desired allocation | Example families | Main risk |
 |---|---|---|---|
@@ -122,6 +135,29 @@ Possible training signals:
 - deep-plus-wide rows: reward both depth and correct diverse coverage, then
   selected-answer conversion.
 
+## Conditional Width Gate
+
+The first allocation mechanism should be cheap and reversible. Do not build a
+new learned routing head before this is tested.
+
+Version 1 gates particle repulsion with an existing signal:
+
+- halt-depth estimate from the deterministic recurrent path;
+- early-state uncertainty, such as option-margin softness or candidate entropy;
+- base confidence on direct/easy MCQ items.
+
+Expected behavior:
+
+- base-confident/direct rows: repulsion off or near zero;
+- deep narrow rows: repulsion off, depth allowed;
+- wide rows: repulsion on when candidate coverage is valuable;
+- deep-plus-wide rows: depth and repulsion both on.
+
+If the cheap gate cannot separate direct/deep/wide behavior, then introduce a
+small allocation predictor over the prelude pooled state. That predictor should
+emit a depth budget and width budget per problem, and it should be treated as
+the novel and least certain component.
+
 ## Evaluation Design
 
 Future reports should stratify by type as well as difficulty:
@@ -146,6 +182,17 @@ dense model with temperature sampling is already a strong width baseline. The
 recurrent-particle claim is strongest in the deep-plus-wide quadrant, where
 latent recurrent computation might produce several well-developed approaches
 without paying all reasoning cost in output tokens.
+
+The dense baseline must be strong:
+
+- same base model family;
+- same training data where possible;
+- same or explicitly reported trainable-parameter budget;
+- output-space depth through chain-of-thought or longer generation;
+- output-space width through temperature sampling or best-of-K;
+- the same selector/verifier applied to both dense and recurrent candidates.
+
+Weak dense baselines do not test the architectural claim.
 
 ## Immediate No-GPU Repair Work
 

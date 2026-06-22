@@ -65,6 +65,14 @@ def correct_score(row: dict[str, Any]) -> float | None:
     return float(scores[answer])
 
 
+def loop_metric(row: dict[str, Any], key: str) -> float | None:
+    diagnostics = row.get("loop_diagnostics") or {}
+    value = diagnostics.get(key)
+    if isinstance(value, (int, float)) and math.isfinite(float(value)):
+        return float(value)
+    return None
+
+
 def text_features(question: str) -> dict[str, bool]:
     q = question.casefold()
     return {
@@ -76,6 +84,26 @@ def text_features(question: str) -> dict[str, bool]:
         "asks_best": any(word in q for word in ["best", "most likely", "main reason", "primary"]),
         "diagram_like": any(word in q for word in ["diagram", "picture", "graph", "table", "model", "shown"]),
     }
+
+
+def routing_bucket(row: dict[str, Any]) -> str:
+    """Assign a coarse depth/width diagnostic bucket.
+
+    This is a proxy for local diagnosis, not a ground-truth task label. The
+    strongest direct signal is high base confidence on a correct base answer.
+    Numeric/math-word questions are treated as deep-narrow candidates, because
+    this is where particle diversity has tended to hurt.
+    """
+
+    base_margin = row.get("base_margin")
+    features = row.get("features") or {}
+    if row.get("base_hit") and isinstance(base_margin, (int, float)) and float(base_margin) >= 1.0:
+        return "base_confident_direct_proxy"
+    if features.get("has_number") or features.get("has_math_word"):
+        return "deep_numeric_proxy"
+    if features.get("asks_why") or features.get("asks_best") or features.get("diagram_like"):
+        return "conceptual_reasoning_proxy"
+    return "ambiguous_proxy"
 
 
 def paired_rows(
@@ -103,26 +131,29 @@ def paired_rows(
         cand_margin = score_margin(cand_row)
         base_correct_score = correct_score(base_row)
         cand_correct_score = correct_score(cand_row)
-        rows.append(
-            {
-                "id": row_id,
-                "change": change,
-                "answer": base_row.get("answer"),
-                "base_prediction": base_row.get("prediction"),
-                "candidate_prediction": cand_row.get("prediction"),
-                "base_hit": base_hit,
-                "candidate_hit": cand_hit,
-                "base_margin": base_margin,
-                "candidate_margin": cand_margin,
-                "margin_delta": None if base_margin is None or cand_margin is None else cand_margin - base_margin,
-                "correct_score_delta": None
-                if base_correct_score is None or cand_correct_score is None
-                else cand_correct_score - base_correct_score,
-                "question": question,
-                "question_len": len(question.split()),
-                "features": text_features(question),
-            }
-        )
+        row = {
+            "id": row_id,
+            "change": change,
+            "answer": base_row.get("answer"),
+            "base_prediction": base_row.get("prediction"),
+            "candidate_prediction": cand_row.get("prediction"),
+            "base_hit": base_hit,
+            "candidate_hit": cand_hit,
+            "base_margin": base_margin,
+            "candidate_margin": cand_margin,
+            "margin_delta": None if base_margin is None or cand_margin is None else cand_margin - base_margin,
+            "correct_score_delta": None
+            if base_correct_score is None or cand_correct_score is None
+            else cand_correct_score - base_correct_score,
+            "candidate_mean_expected_loops": loop_metric(cand_row, "mean_expected_loops"),
+            "candidate_answer_expected_loops": loop_metric(cand_row, "answer_expected_loops"),
+            "candidate_prediction_expected_loops": loop_metric(cand_row, "prediction_expected_loops"),
+            "question": question,
+            "question_len": len(question.split()),
+            "features": text_features(question),
+        }
+        row["routing_bucket"] = routing_bucket(row)
+        rows.append(row)
     return rows
 
 
@@ -150,6 +181,10 @@ def summarize(rows: list[dict[str, Any]], benchmark: str) -> dict[str, Any]:
             "yes": feature_summary(yes),
             "no": feature_summary(no),
         }
+    by_routing_bucket = {
+        bucket: bucket_summary([row for row in rows if row["routing_bucket"] == bucket])
+        for bucket in sorted({row["routing_bucket"] for row in rows})
+    }
     return {
         "benchmark": benchmark,
         "paired_examples": len(rows),
@@ -162,6 +197,7 @@ def summarize(rows: list[dict[str, Any]], benchmark: str) -> dict[str, Any]:
         "mean_question_len": mean([float(row["question_len"]) for row in rows]),
         "prediction_counts": pred_counts,
         "features": by_feature,
+        "routing_buckets": by_routing_bucket,
         "loss_examples": example_rows([row for row in rows if row["change"] == "loss"], reverse=False),
         "win_examples": example_rows([row for row in rows if row["change"] == "win"], reverse=True),
     }
@@ -179,6 +215,18 @@ def feature_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "base_correct": base_correct,
         "candidate_correct": candidate_correct,
     }
+
+
+def bucket_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    summary = feature_summary(rows)
+    summary.update(
+        {
+            "mean_margin_delta": mean([row["margin_delta"] for row in rows]),
+            "mean_candidate_expected_loops": mean([row["candidate_mean_expected_loops"] for row in rows]),
+            "mean_candidate_answer_expected_loops": mean([row["candidate_answer_expected_loops"] for row in rows]),
+        }
+    )
+    return summary
 
 
 def example_rows(rows: list[dict[str, Any]], reverse: bool) -> list[dict[str, Any]]:
@@ -234,6 +282,29 @@ def markdown_report(payload: dict[str, Any]) -> str:
         for feature, values in summary["features"].items():
             lines.append(
                 f"| `{feature}` | {values['yes']['n']} | {values['yes']['delta']:+d} | {values['no']['n']} | {values['no']['delta']:+d} |"
+            )
+    lines.extend(["", "## Routing Buckets"])
+    for summary in payload["summaries"]:
+        lines.extend(
+            [
+                "",
+                f"### {summary['benchmark']}",
+                "",
+                "| Bucket | n | delta | wins | losses | mean margin delta | mean loops |",
+                "|---|---:|---:|---:|---:|---:|---:|",
+            ]
+        )
+        for bucket, values in summary["routing_buckets"].items():
+            lines.append(
+                "| {bucket} | {n} | {delta:+d} | {wins} | {losses} | {margin} | {loops} |".format(
+                    bucket=f"`{bucket}`",
+                    n=values["n"],
+                    delta=values["delta"],
+                    wins=values["wins"],
+                    losses=values["losses"],
+                    margin=format_float(values["mean_margin_delta"]),
+                    loops=format_float(values["mean_candidate_expected_loops"]),
+                )
             )
     lines.extend(["", "## Largest Regressions"])
     for summary in payload["summaries"]:
