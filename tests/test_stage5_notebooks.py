@@ -206,6 +206,9 @@ def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     assert "GO_NO_GO_RUN_ID" in text
     assert "Skipping requirements install because no paid action will execute." in text
     assert "execute_action = bool(RUN_A100_ACTION and go_allowed)" in text
+    assert "DRY_RUN_GREEN" in text
+    assert "DRY_RUN_RED" in text
+    assert "a100_checkpoint_preflight" in text
     assert "tests/test_stage5_routing_repair.py" in text
     assert "tests/test_stage5_balanced_arc_mix_gate.py" in text
     assert "tests/test_curriculum_sft_gate.py" in text
@@ -244,6 +247,9 @@ def test_safe_continue_notebook_defaults_to_dry_run_and_guarded_action() -> None
     assert "GO_NO_GO_RUN_ID" in text
     assert "Skipping requirements install because no paid action will execute." in text
     assert "tests/test_curriculum_sft_gate.py" in text
+    assert "DRY_RUN_GREEN" in text
+    assert "DRY_RUN_RED" in text
+    assert "a100_checkpoint_preflight" in text
     assert "tests/test_stage5_curriculum_sft.py" in text
     assert "tests/test_curriculum_pipeline_from_artifacts.py" in text
     assert "tests/test_curriculum_jsonl.py" in text
@@ -313,6 +319,9 @@ def test_drive_checkpoint_preflight_cell_is_cpu_only_and_single_purpose() -> Non
     assert '"colab/check_stage5_a100_go_no_go.py"' in code
     assert '"--source-summary"' in code
     assert "checkpoint_preflight" in code
+    assert "PREFLIGHT_GREEN" in code
+    assert "PREFLIGHT_RED" in code
+    assert "PREFLIGHT_BLOCKED" in code
     assert "summary[\"decision\"]" in code
     assert "runtime.unassign()" in code
     assert '["git", "pull", "--ff-only", "origin", "main"]' in code

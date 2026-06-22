@@ -106,6 +106,27 @@ summary_path = ROOT / "outputs" / "stage5" / GO_NO_GO_RUN_ID / "summary.json"
 summary = json.loads(summary_path.read_text(encoding="utf-8"))
 print("decision:", summary["decision"], flush=True)
 print("checkpoint_preflight:", summary["checkpoint_preflight"], flush=True)
+decision_go = bool((summary.get("decision") or {}).get("go"))
+checkpoint_available = bool((summary.get("checkpoint_preflight") or {}).get("available"))
+if decision_go and checkpoint_available:
+    print(
+        "PREFLIGHT_GREEN: checkpoint is visible and the guarded action is allowed. "
+        "Reconnect with an A100/H100 and run this bootstrap with "
+        "STAGE5_CURRENT_A100_TARGET=safe_continue_execute.",
+        flush=True,
+    )
+elif not checkpoint_available:
+    print(
+        "PREFLIGHT_RED: checkpoint is not visible. Do not attach a paid GPU yet; "
+        "reauthorize Drive or fix the Drive backup path, then rerun preflight.",
+        flush=True,
+    )
+else:
+    print(
+        "PREFLIGHT_BLOCKED: checkpoint is visible but the go/no-go guard blocked the paid action. "
+        "Inspect the printed decision before spending GPU.",
+        flush=True,
+    )
 
 if DISCONNECT_RUNTIME_WHEN_DONE:
     print("Disconnecting preflight runtime; reconnect with A100 only after checkpoint_preflight.available is True.", flush=True)
