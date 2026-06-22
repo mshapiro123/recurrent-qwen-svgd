@@ -395,7 +395,8 @@ def test_arc_challenge_mcq_debias_cell_is_bounded_and_pushes_summary() -> None:
     assert "tests/test_mcq_debias.py" in plain
     assert "tests/test_stage5_next_plan.py" in plain
     assert "runtime.unassign()" in plain
-    assert "STAGE5_CURRENT_A100_TARGET=arc_challenge_mcq_debias_confirm" in current_action
+    assert "Previous Paste-Anywhere ARC-Challenge Cell" in current_action
+    assert '"STAGE5_CURRENT_A100_TARGET"] = "arc_challenge_mcq_debias_confirm"' in current_action
 
 
 def test_debiased_benchmark_suite_cell_is_bounded_and_policy_compliant() -> None:
@@ -418,7 +419,8 @@ def test_debiased_benchmark_suite_cell_is_bounded_and_policy_compliant() -> None
     assert "runtime.unassign()" in plain
     assert "debiased_benchmark_suite" in bootstrap
     assert "STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py" in bootstrap
-    assert "STAGE5_CURRENT_A100_TARGET=debiased_benchmark_suite" in current_action
+    assert "Next Paste-Anywhere Debiased Benchmark Cell" in current_action
+    assert '"STAGE5_CURRENT_A100_TARGET"] = "debiased_benchmark_suite"' in current_action
 
 
 def test_capability_ladder_mcq_probe_cell_is_bounded_and_depth_ladder_focused() -> None:
@@ -452,7 +454,8 @@ def test_capability_ladder_trace_jobs_cell_is_cpu_only_and_depth_ladder_focused(
     assert "runtime.unassign()" in plain
     assert "capability_ladder_trace_jobs_cpu" in bootstrap
     assert "STAGE5_CAPABILITY_LADDER_TRACE_JOBS_CELL.py" in bootstrap
-    assert "STAGE5_CURRENT_A100_TARGET=capability_ladder_trace_jobs_cpu" in current_action
+    assert "Next Paste-Anywhere Capability-Ladder Trace Jobs Cell" in current_action
+    assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_trace_jobs_cpu"' in current_action
 
 
 def test_capability_ladder_trace_collect_cell_is_cpu_only_and_response_driven() -> None:
@@ -486,7 +489,8 @@ def test_capability_ladder_trace_responses_cell_is_cpu_only_and_provider_opt_in(
     assert "runtime.unassign()" in plain
     assert "capability_ladder_trace_responses_cpu" in bootstrap
     assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_CELL.py" in bootstrap
-    assert "STAGE5_CURRENT_A100_TARGET=capability_ladder_trace_responses_cpu" in current_action
+    assert "Next Paste-Anywhere Capability-Ladder Trace Responses Cell" in current_action
+    assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_trace_responses_cpu"' in current_action
 
 
 def test_drive_checkpoint_preflight_cell_is_cpu_only_and_single_purpose() -> None:

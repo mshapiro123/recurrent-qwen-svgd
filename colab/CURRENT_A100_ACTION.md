@@ -12,50 +12,13 @@ The bootstrap defaults to `preflight`. To intentionally execute the guarded
 paid action after preflight is green, set
 `STAGE5_CURRENT_A100_TARGET=safe_continue_execute` before running it on an
 A100/H100 runtime.
-The current preferred path is **measurement before more training**. The next
-guarded action is a bounded MCQ option-label debias diagnostic that re-scores
-the same ARC-Easy slice with bare labels, label-free option-content scoring,
-and cyclic option permutation. Do not run the direct-preservation fine-tune
-until this diagnostic shows that content degradation persists after debiasing.
-The completed ARC-Easy diagnostic now reports `selection_bias_likely`; the
-next bounded run is the same cyclic-permutation confirmation on ARC-Challenge.
-Use `STAGE5_CURRENT_A100_TARGET=arc_challenge_mcq_debias_confirm` in the
-bootstrap cell for that run.
-On current `main`, that target runs the ARC-Challenge debias diagnostic, combines
-it with the ARC-Easy result via `colab/assess_stage5_mcq_debias_pair.py`, and if
-the pair confirms selection bias it immediately writes the no-GPU
-`stage5_mcq_scoring_policy` artifact via
-`colab/apply_stage5_mcq_scoring_policy.py`. Expected terminal markers are
-`pair_summary:` and, if confirmed, `policy_summary:`.
-After the policy summary exists, the next bounded measurement action is
-`STAGE5_CURRENT_A100_TARGET=debiased_benchmark_suite`. That target runs
-ARC-Challenge plus GPQA-lite by default, with explicit limits and MCQ score
-targets `label,content_question_only,cyclic_label_aggregated`. It assesses
-`cyclic_label_aggregated/permutation_mean`, pushes safe summaries, and
-disconnects.
-After the debiased benchmark suite lands, the next bounded curriculum-data
-probe is `STAGE5_CURRENT_A100_TARGET=capability_ladder_mcq_probe`. That target
-scores a small ARC-Train slice with Qwen 0.5B, 1.5B, and 3B under cheap
-content-question-only MCQ scoring, builds depth-targeted capability-ladder
-candidate rows, backs private curriculum artifacts up to Drive, pushes safe
-summaries, and disconnects. Treat those rows as depth-label evidence, not final
-reasoning SFT data; the next no-GPU step is
-`training/build_capability_ladder_trace_jobs.py` to request verified
-loop-targeted traces from strong non-student models.
-Use `STAGE5_CURRENT_A100_TARGET=capability_ladder_trace_jobs_cpu` on a CPU
-runtime for that trace-job build step. It follows the current probe summary,
-restores private scored rows from Drive if needed, writes provider-neutral trace
-jobs, pushes safe summaries, and disconnects.
-Then use `STAGE5_CURRENT_A100_TARGET=capability_ladder_trace_responses_cpu` on
-a CPU runtime for provider/API responses. This target refuses provider spend
-unless `STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER=1` is set, writes
-`trace_responses.jsonl`, backs raw responses up to Drive, pushes safe metadata,
-and disconnects.
-After provider responses are written, use
-`STAGE5_CURRENT_A100_TARGET=capability_ladder_trace_collect_cpu` on a CPU
-runtime to verify final answers, collect traced scored rows, build the traced
-capability-ladder curriculum, run the SFT gate, push safe summaries, and
-disconnect. If the response target updated
+The current preferred path is **trace collection before more training**. The
+next action is CPU-only unless the trace-collection gate has already passed.
+Use `STAGE5_CURRENT_A100_TARGET=capability_ladder_trace_collect_cpu` on a CPU
+runtime after provider responses have been written. This verifies final answers,
+collects traced scored rows, builds the traced capability-ladder curriculum,
+runs the SFT gate, pushes safe summaries, and disconnects. If the response
+target updated
 `config/stage5_current_source_summary.txt` to a
 `stage5_capability_ladder_trace_responses` summary, the collector follows that
 summary back to the trace-job metadata and uses its recorded response JSONL
@@ -69,6 +32,10 @@ you intentionally want to spend. The default planner/guard floor is 16
 answer-verified traced rows before it will spend GPU on this SFT path; smaller
 collections remain CPU-side inspection/collect-more tasks unless explicitly
 overridden for a tiny smoke run.
+The older MCQ debias, debiased benchmark, capability-ladder probe, trace-job,
+and trace-response targets are retained below as historical/fallback cells, but
+they are no longer the current front-of-queue action unless the source pointer
+is deliberately moved back to one of those stages.
 The bootstrap now auto-resumes from
 [`config/stage5_current_source_summary.txt`](../config/stage5_current_source_summary.txt)
 when that pointer exists and targets an available summary. To force a specific
@@ -102,12 +69,11 @@ The checkpoint preflight/restore path searches the project-scoped Drive roots
 `<run_id>/run_dir/phase1/phase1_step_125.pt` style backups and preserved repo
 paths such as `outputs/stage5/<run_id>/phase1/phase1_step_125.pt`.
 
-Keep the runtime disconnected while editing the cell. This is one bounded
-diagnostic run, not a training run. Use an A100/H100 only when you intentionally
-want to spend paid GPU on the ARC-Challenge confirmation. If cheaper L4/T4
-capacity is immediately available, it is acceptable, but expect a slower run.
+Keep the runtime disconnected while editing cells. Use CPU for trace collection.
+Use an A100/H100 only after the planner/go-no-go guard reports that the traced
+curriculum gate is green and the next action is the bounded recurrent SFT.
 
-## Current Paste-Anywhere ARC-Challenge Cell
+## Previous Paste-Anywhere ARC-Challenge Cell
 
 Use this in the live Colab notebook when the repo is not already freshly cloned.
 It resolves `main`, fetches the maintained bootstrap cell, and selects the
@@ -390,7 +356,7 @@ assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_CELL.py" in code, "Fetched stal
 exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
 ```
 
-## Next Paste-Anywhere Capability-Ladder Trace Collection Cell
+## Current Paste-Anywhere Capability-Ladder Trace Collection Cell
 
 Use this after provider responses have been written. By default the collector
 understands the trace-response summary written by the response target. It also
