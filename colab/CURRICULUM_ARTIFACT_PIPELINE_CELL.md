@@ -7,6 +7,8 @@ one bounded provider-response batch, and backs up the work directory to Drive.
 Default behavior is safe: it does **not** call provider APIs. Fill `MODEL_MAP`,
 set the provider secret, and flip `RUN_PROVIDER_RESPONSES = True` only when you
 want to spend API credits. Keep `PROVIDER_LIMIT = 2` for the first smoke.
+Repeated runs resume partial `responses_*.jsonl` files until each pending
+response file has at least as many rows as its matching `jobs_*.jsonl`.
 
 ```python
 import json, os, shutil, subprocess, sys
@@ -164,7 +166,13 @@ def response_pairs(summary):
     for jobs_key, responses_key in mapping.get(status, []):
         jobs = Path(artifacts[jobs_key]["path"])
         responses = Path(artifacts[responses_key]["path"])
-        if artifacts[jobs_key]["lines"] > 0 and not responses.exists():
+        job_lines = int(artifacts[jobs_key]["lines"])
+        response_lines = int(artifacts[responses_key]["lines"])
+        if job_lines > 0 and response_lines < job_lines:
+            print(
+                f"response pair pending: {responses_key} has {response_lines}/{job_lines} rows",
+                flush=True,
+            )
             pairs.append((jobs, responses))
     return pairs
 

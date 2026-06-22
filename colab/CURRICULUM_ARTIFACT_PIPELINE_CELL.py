@@ -153,7 +153,13 @@ def response_pairs(summary):
     for jobs_key, responses_key in mapping.get(status, []):
         jobs = Path(artifacts[jobs_key]["path"])
         responses = Path(artifacts[responses_key]["path"])
-        if artifacts[jobs_key]["lines"] > 0 and not responses.exists():
+        job_lines = int(artifacts[jobs_key]["lines"])
+        response_lines = int(artifacts[responses_key]["lines"])
+        if job_lines > 0 and response_lines < job_lines:
+            print(
+                f"response pair pending: {responses_key} has {response_lines}/{job_lines} rows",
+                flush=True,
+            )
             pairs.append((jobs, responses))
     return pairs
 
