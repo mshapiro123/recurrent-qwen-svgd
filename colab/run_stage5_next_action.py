@@ -74,6 +74,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/run_stage5_arc_agi_curriculum_particle_autopilot.py",
     "colab/run_stage5_arc_agi_recovered_benchmark.py",
     "colab/run_stage5_arc_agi_recovery_particle_gate.py",
+    "colab/run_stage5_arc_agi_distill_sft_gate.py",
     "colab/run_stage5_arc_agi_rescore_selectors.py",
     "colab/run_stage5_arc_agi_sft.py",
     "colab/run_stage5_arc_agi_dense_sft.py",
@@ -98,11 +99,26 @@ ALLOWED_PYTHON_SCRIPTS = {
     "training/check_curriculum_sft_gate.py",
 }
 GUARDED_A100_SCRIPTS = {
+    "colab/run_stage5_arc_agi_autopilot_followup.py",
+    "colab/run_stage5_arc_agi_candidate_distill_gate.py",
+    "colab/run_stage5_arc_agi_candidate_gate.py",
+    "colab/run_stage5_arc_agi_curriculum_particle_autopilot.py",
+    "colab/run_stage5_arc_agi_dense_sft.py",
+    "colab/run_stage5_arc_agi_distill_sft_gate.py",
+    "colab/run_stage5_arc_agi_recovered_benchmark.py",
+    "colab/run_stage5_arc_agi_recovery_particle_gate.py",
+    "colab/run_stage5_arc_agi_sft.py",
+    "colab/run_stage5_arc_agi_trace_sft_gate.py",
+    "colab/run_stage5_arc_agi_tta_sweep.py",
     "colab/run_stage5_balanced_arc_mix_gate.py",
     "colab/run_stage5_recovery_full_assessment.py",
     "colab/run_stage5_benchmark_suite.py",
     "colab/run_stage5_competence_preserving_pipeline.py",
+    "colab/run_stage5_phase1_recovery_ladder.py",
     "colab/run_stage5_programmatic_depth_repair.py",
+    "colab/run_stage5_recovered_phase1_arc_gate.py",
+    "colab/run_stage5_recovered_phase1_particle_arc_gate.py",
+    "colab/run_stage5_recovered_phase2_smoke.py",
     "colab/run_stage5_curriculum_sft.py",
     "colab/run_stage5_routing_diagnostic.py",
     "colab/run_stage5_routing_repair.py",
@@ -293,6 +309,8 @@ def local_only_runtime_guard(parsed: ParsedCommand) -> dict[str, Any]:
 def source_payload_for_plan(plan: dict[str, Any]) -> dict[str, Any] | None:
     source_summary = plan.get("source_summary")
     if not source_summary:
+        if plan.get("source_kind") == "bootstrap":
+            return plan
         return None
     source_path = Path(str(source_summary))
     source_path = source_path if source_path.is_absolute() else ROOT / source_path

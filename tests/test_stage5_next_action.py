@@ -373,6 +373,34 @@ def test_parse_action_command_allows_dense_and_recurrent_sft_runners() -> None:
     assert recurrent.argv == [sys.executable, "colab/run_stage5_arc_agi_sft.py"]
 
 
+def test_parse_action_command_allows_distill_sft_gate_runner() -> None:
+    parsed = parse_action_command("python colab/run_stage5_arc_agi_distill_sft_gate.py")
+
+    assert parsed.argv == [sys.executable, "colab/run_stage5_arc_agi_distill_sft_gate.py"]
+
+
+def test_paid_gpu_arc_runners_are_a100_guarded() -> None:
+    expected = {
+        "colab/run_stage5_arc_agi_candidate_gate.py",
+        "colab/run_stage5_arc_agi_trace_sft_gate.py",
+        "colab/run_stage5_arc_agi_distill_sft_gate.py",
+        "colab/run_stage5_arc_agi_dense_sft.py",
+        "colab/run_stage5_arc_agi_sft.py",
+        "colab/run_stage5_arc_agi_candidate_distill_gate.py",
+        "colab/run_stage5_arc_agi_curriculum_particle_autopilot.py",
+        "colab/run_stage5_arc_agi_autopilot_followup.py",
+        "colab/run_stage5_arc_agi_recovered_benchmark.py",
+        "colab/run_stage5_arc_agi_recovery_particle_gate.py",
+        "colab/run_stage5_arc_agi_tta_sweep.py",
+        "colab/run_stage5_phase1_recovery_ladder.py",
+        "colab/run_stage5_recovered_phase1_arc_gate.py",
+        "colab/run_stage5_recovered_phase1_particle_arc_gate.py",
+        "colab/run_stage5_recovered_phase2_smoke.py",
+    }
+
+    assert expected <= module.GUARDED_A100_SCRIPTS
+
+
 def test_parse_action_command_rejects_arbitrary_shell() -> None:
     try:
         parse_action_command("rm -rf outputs")
@@ -458,6 +486,44 @@ def test_a100_guard_skips_local_assessment_actions() -> None:
 
     assert guard["checked"] is False
     assert guard["allowed"] is True
+
+
+def test_a100_guard_allows_bootstrap_candidate_gate(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "colab.check_stage5_a100_go_no_go.checkpoint_availability_for_path",
+        lambda checkpoint: {
+            "checkpoint": str(checkpoint),
+            "available": True,
+            "exists": True,
+            "drive_candidate_exists": False,
+        },
+    )
+    action = {
+        "name": "Run Stage 5 ARC-AGI candidate gate",
+        "command": "python colab/run_stage5_arc_agi_candidate_gate.py",
+    }
+    parsed = parse_action_command(action["command"])
+
+    guard = a100_execution_guard(action, {"source_kind": "bootstrap", "source_summary": None}, parsed)
+
+    assert guard["checked"] is True
+    assert guard["allowed"] is True
+    assert guard["status"] == "go_arc_agi_candidate_gate"
+    assert guard["spend_class"] == "bounded_arc_agi_candidate_gate"
+
+
+def test_a100_guard_blocks_guarded_arc_runner_without_readable_source() -> None:
+    action = {
+        "name": "Run dense ARC-AGI SFT control",
+        "command": "python colab/run_stage5_arc_agi_dense_sft.py",
+    }
+    parsed = parse_action_command(action["command"])
+
+    guard = a100_execution_guard(action, {"source_summary": None}, parsed)
+
+    assert guard["checked"] is True
+    assert guard["allowed"] is False
+    assert guard["status"] == "missing_source_summary"
 
 
 def test_a100_guard_allows_bounded_routing_diagnostic(tmp_path, monkeypatch) -> None:

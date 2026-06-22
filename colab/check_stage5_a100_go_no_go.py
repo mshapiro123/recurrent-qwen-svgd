@@ -44,6 +44,13 @@ RUN_ID = os.environ.get("STAGE5_A100_GO_NO_GO_RUN_ID") or time.strftime(
 RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
 STAGE4_OPUS_APPROVED_SOURCE_KEYS = {"opus47_sft", "opus47_raw"}
 DEFAULT_CURRICULUM_MIN_MODE_ROWS = "direct=64,deep_narrow=64"
+DEFAULT_STAGE5_PHASE1_CHECKPOINT = (
+    Path("outputs")
+    / "stage4"
+    / "stage4_opus_a100_20260620"
+    / "phase1"
+    / "phase1_step_500.pt"
+)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -77,6 +84,49 @@ def command_env_assignments(command: str) -> dict[str, str]:
         if key and key.upper() == key:
             env[key] = value
     return env
+
+
+def source_payload_kind(source_payload: dict[str, Any]) -> str:
+    explicit = source_payload.get("source_kind")
+    if explicit:
+        return str(explicit)
+    return source_kind(source_payload)
+
+
+def default_phase1_checkpoint(command: str) -> str:
+    env = command_env_assignments(command)
+    return str(env.get("STAGE5_PHASE1_CKPT") or DEFAULT_STAGE5_PHASE1_CHECKPOINT).replace("\\", "/")
+
+
+def recovered_checkpoint_from_command(command: str) -> str | None:
+    env = command_env_assignments(command)
+    for key in (
+        "STAGE5_ARC_AGI_RECOVERED_CKPT",
+        "STAGE5_ARC_AGI_CANDIDATE_DISTILL_SOURCE_CHECKPOINT",
+        "STAGE5_PHASE1_CKPT",
+    ):
+        value = env.get(key)
+        if value:
+            return str(value).replace("\\", "/")
+    return None
+
+
+def go_paid_gpu_action(
+    *,
+    status: str,
+    spend_class: str,
+    reason: str,
+    checkpoint: str | None = None,
+) -> dict[str, Any]:
+    decision = {
+        "go": True,
+        "status": status,
+        "spend_class": spend_class,
+        "reason": reason,
+    }
+    if checkpoint:
+        decision["checkpoint"] = checkpoint
+    return decision
 
 
 def normalize_min_mode_rows(value: str) -> str:
@@ -454,6 +504,16 @@ def apply_checkpoint_guard(
         }
     elif decision.get("spend_class") == "bounded_curriculum_sft":
         checkpoint = curriculum_sft_preflight(source_payload)
+    elif decision.get("checkpoint"):
+        checkpoint = checkpoint_availability_for_path(str(decision["checkpoint"]))
+    elif decision.get("spend_class") in {"bounded_dense_arc_sft"}:
+        checkpoint = {
+            "checkpoint": None,
+            "available": True,
+            "exists": False,
+            "drive_candidate_exists": False,
+            "reason": "Dense ARC SFT is the standard-model control and starts from the base model.",
+        }
     else:
         checkpoint = checkpoint_availability(source_payload)
     if not decision.get("go"):
@@ -517,6 +577,7 @@ def classify_action(
     command = str(action.get("command", ""))
     script = command_script(command)
     source_status = str(source_payload.get("status", "unknown"))
+    source_kind_label = source_payload_kind(source_payload)
 
     if script == "colab/run_stage5_routing_diagnostic.py":
         return {
@@ -618,6 +679,204 @@ def classify_action(
             "status": "calibration_warning_no_go",
             "spend_class": "none",
             "reason": "Source summary reports calibration warning; inspect locally before using A100.",
+        }
+
+    if script == "colab/run_stage5_arc_agi_candidate_gate.py":
+        if source_kind_label == "bootstrap":
+            return go_paid_gpu_action(
+                status="go_arc_agi_candidate_gate",
+                spend_class="bounded_arc_agi_candidate_gate",
+                checkpoint=default_phase1_checkpoint(command),
+                reason="No Stage 5 summary exists yet; one bounded ARC-AGI candidate-source gate is the planned bootstrap.",
+            )
+        return {
+            "go": False,
+            "status": "candidate_gate_blocked",
+            "spend_class": "none",
+            "reason": f"ARC-AGI candidate gate is only allowed as the bootstrap paid-GPU action, got source kind {source_kind_label!r}.",
+        }
+
+    if script == "colab/run_stage5_arc_agi_trace_sft_gate.py":
+        if source_kind_label in {"candidate_gate", "recovery_particle_gate"}:
+            return go_paid_gpu_action(
+                status="go_trace_sft_gate",
+                spend_class="bounded_trace_sft_gate",
+                checkpoint=default_phase1_checkpoint(command),
+                reason="Planner selected a bounded trace-target SFT gate from candidate or recovery evidence.",
+            )
+        return {
+            "go": False,
+            "status": "trace_sft_gate_blocked",
+            "spend_class": "none",
+            "reason": f"Trace SFT gate requires candidate/recovery-particle evidence, got {source_kind_label!r}.",
+        }
+
+    if script == "colab/run_stage5_arc_agi_distill_sft_gate.py":
+        if source_kind_label == "trace_sft_gate":
+            return go_paid_gpu_action(
+                status="go_distill_sft_gate",
+                spend_class="bounded_distill_sft_gate",
+                checkpoint=default_phase1_checkpoint(command),
+                reason="Trace-SFT gate selected a recipe arm; one bounded distillation gate is allowed.",
+            )
+        return {
+            "go": False,
+            "status": "distill_sft_gate_blocked",
+            "spend_class": "none",
+            "reason": f"Distillation gate requires trace-SFT gate evidence, got {source_kind_label!r}.",
+        }
+
+    if script == "colab/run_stage5_arc_agi_dense_sft.py":
+        if source_kind_label in {"candidate_gate", "trace_sft_gate", "distill_sft_gate", "recipe_control_assessment"}:
+            return go_paid_gpu_action(
+                status="go_dense_arc_sft_control",
+                spend_class="bounded_dense_arc_sft",
+                reason="Planner selected a bounded dense same-recipe control needed before architecture-lift claims.",
+            )
+        return {
+            "go": False,
+            "status": "dense_arc_sft_blocked",
+            "spend_class": "none",
+            "reason": f"Dense ARC SFT control requires gate/control evidence, got {source_kind_label!r}.",
+        }
+
+    if script == "colab/run_stage5_arc_agi_sft.py":
+        if source_kind_label == "dense_sft_control":
+            return go_paid_gpu_action(
+                status="go_matched_recurrent_arc_sft",
+                spend_class="bounded_matched_recurrent_arc_sft",
+                checkpoint=default_phase1_checkpoint(command),
+                reason="Dense control exists; run the matched recurrent recipe arm under the same ARC row recipe.",
+            )
+        return {
+            "go": False,
+            "status": "matched_recurrent_arc_sft_blocked",
+            "spend_class": "none",
+            "reason": f"Matched recurrent ARC SFT requires a dense-control source, got {source_kind_label!r}.",
+        }
+
+    if script == "colab/run_stage5_arc_agi_candidate_distill_gate.py":
+        if source_kind_label in {"benchmark", "autopilot", "followup", "selector_rescore"}:
+            return go_paid_gpu_action(
+                status="go_candidate_distill_gate",
+                spend_class="bounded_candidate_distill_gate",
+                checkpoint=recovered_checkpoint_from_command(command) or default_phase1_checkpoint(command),
+                reason="Planner selected a bounded candidate-distillation diagnostic/gate after benchmark or selector evidence.",
+            )
+        return {
+            "go": False,
+            "status": "candidate_distill_gate_blocked",
+            "spend_class": "none",
+            "reason": f"Candidate distillation gate requires benchmark/autopilot/selector evidence, got {source_kind_label!r}.",
+        }
+
+    if script == "colab/run_stage5_arc_agi_curriculum_particle_autopilot.py":
+        if source_kind_label in {"benchmark", "autopilot", "followup"}:
+            return go_paid_gpu_action(
+                status="go_curriculum_particle_autopilot",
+                spend_class="bounded_curriculum_particle_autopilot",
+                checkpoint=default_phase1_checkpoint(command),
+                reason="Planner selected a bounded deterministic curriculum/particle autopilot from benchmark evidence.",
+            )
+        return {
+            "go": False,
+            "status": "curriculum_particle_autopilot_blocked",
+            "spend_class": "none",
+            "reason": f"Curriculum-particle autopilot requires benchmark/autopilot evidence, got {source_kind_label!r}.",
+        }
+
+    if script == "colab/run_stage5_arc_agi_autopilot_followup.py":
+        if source_kind_label in {"autopilot", "benchmark", "followup"}:
+            return go_paid_gpu_action(
+                status="go_autopilot_followup",
+                spend_class="bounded_autopilot_followup",
+                checkpoint=recovered_checkpoint_from_command(command) or checkpoint_from_payload(source_payload),
+                reason="Planner selected a bounded follow-up evaluation from an autopilot/benchmark summary.",
+            )
+        return {
+            "go": False,
+            "status": "autopilot_followup_blocked",
+            "spend_class": "none",
+            "reason": f"Autopilot follow-up requires autopilot/benchmark evidence, got {source_kind_label!r}.",
+        }
+
+    if script == "colab/run_stage5_arc_agi_recovered_benchmark.py":
+        if source_kind_label in {"recovery_particle_gate", "autopilot", "selector_rescore", "followup"}:
+            return go_paid_gpu_action(
+                status="go_recovered_arc_benchmark",
+                spend_class="bounded_recovered_arc_benchmark",
+                checkpoint=recovered_checkpoint_from_command(command) or checkpoint_from_payload(source_payload),
+                reason="Planner selected a bounded recovered-vs-base ARC benchmark from recovered checkpoint evidence.",
+            )
+        return {
+            "go": False,
+            "status": "recovered_arc_benchmark_blocked",
+            "spend_class": "none",
+            "reason": f"Recovered ARC benchmark requires recovery/autopilot/selector evidence, got {source_kind_label!r}.",
+        }
+
+    if script == "colab/run_stage5_arc_agi_recovery_particle_gate.py":
+        if source_kind_label == "recovery_particle_gate":
+            return go_paid_gpu_action(
+                status="go_recovery_particle_gate",
+                spend_class="bounded_recovery_particle_gate",
+                checkpoint=default_phase1_checkpoint(command),
+                reason="Planner selected a bounded replicated recovery/particle gate from prior recovery-particle evidence.",
+            )
+        return {
+            "go": False,
+            "status": "recovery_particle_gate_blocked",
+            "spend_class": "none",
+            "reason": f"Recovery-particle gate requires recovery-particle source evidence, got {source_kind_label!r}.",
+        }
+
+    if script == "colab/run_stage5_arc_agi_tta_sweep.py":
+        if source_kind_label in {"autopilot", "followup", "benchmark", "selector_rescore"}:
+            return go_paid_gpu_action(
+                status="go_arc_tta_sweep",
+                spend_class="bounded_arc_tta_sweep",
+                checkpoint=recovered_checkpoint_from_command(command) or checkpoint_from_payload(source_payload),
+                reason="Planner selected a bounded ARC TTA/selector sweep from existing benchmark evidence.",
+            )
+        return {
+            "go": False,
+            "status": "arc_tta_sweep_blocked",
+            "spend_class": "none",
+            "reason": f"ARC TTA sweep requires benchmark/autopilot/selector evidence, got {source_kind_label!r}.",
+        }
+
+    if script == "colab/run_stage5_phase1_recovery_ladder.py":
+        if source_kind_label == "stage4_opus_finetune":
+            return go_paid_gpu_action(
+                status="go_phase1_recovery_ladder",
+                spend_class="bounded_phase1_recovery_ladder",
+                checkpoint=default_phase1_checkpoint(command),
+                reason="Planner selected bounded deterministic recurrent recovery after Stage 4 Opus fine-tune evidence.",
+            )
+        return {
+            "go": False,
+            "status": "phase1_recovery_ladder_blocked",
+            "spend_class": "none",
+            "reason": f"Phase1 recovery ladder requires Stage 4 Opus evidence, got {source_kind_label!r}.",
+        }
+
+    if script in {
+        "colab/run_stage5_recovered_phase1_arc_gate.py",
+        "colab/run_stage5_recovered_phase1_particle_arc_gate.py",
+        "colab/run_stage5_recovered_phase2_smoke.py",
+    }:
+        if source_kind_label in {"stage4_opus_finetune", "recurrent_sft", "benchmark", "autopilot"}:
+            return go_paid_gpu_action(
+                status="go_recovered_stage5_gate",
+                spend_class="bounded_recovered_stage5_gate",
+                checkpoint=recovered_checkpoint_from_command(command) or checkpoint_from_payload(source_payload),
+                reason="Planner selected a bounded recovered-checkpoint gate from prior training evidence.",
+            )
+        return {
+            "go": False,
+            "status": "recovered_stage5_gate_blocked",
+            "spend_class": "none",
+            "reason": f"Recovered checkpoint gates require training/benchmark evidence, got {source_kind_label!r}.",
         }
 
     if script == "colab/run_stage5_balanced_arc_mix_gate.py":

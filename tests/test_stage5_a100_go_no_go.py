@@ -439,6 +439,78 @@ def test_curriculum_mode_row_helpers_normalize_command_env() -> None:
     assert normalize_min_mode_rows("direct=16,deep_narrow=8") == "deep_narrow=8,direct=16"
 
 
+def test_candidate_gate_allowed_only_for_bootstrap_source() -> None:
+    action = {
+        "name": "Run Stage 5 ARC-AGI candidate gate",
+        "command": "python colab/run_stage5_arc_agi_candidate_gate.py",
+    }
+
+    allowed = classify_action(action, source_payload={"source_kind": "bootstrap"})
+    blocked = classify_action(action, source_payload={"kind": "stage5_reasoning_dataset_audit"})
+
+    assert allowed["go"] is True
+    assert allowed["status"] == "go_arc_agi_candidate_gate"
+    assert allowed["spend_class"] == "bounded_arc_agi_candidate_gate"
+    assert allowed["checkpoint"].endswith("outputs/stage4/stage4_opus_a100_20260620/phase1/phase1_step_500.pt")
+    assert blocked["go"] is False
+    assert blocked["status"] == "candidate_gate_blocked"
+
+
+def test_arc_gate_chain_classifies_by_source_kind() -> None:
+    trace = classify_action(
+        {"name": "Compare trace targets", "command": "python colab/run_stage5_arc_agi_trace_sft_gate.py"},
+        source_payload={"kind": "stage5_arc_agi_candidate_gate"},
+    )
+    distill = classify_action(
+        {"name": "Compare distillation", "command": "python colab/run_stage5_arc_agi_distill_sft_gate.py"},
+        source_payload={"kind": "trace_sft_gate"},
+    )
+    dense = classify_action(
+        {"name": "Run dense control", "command": "python colab/run_stage5_arc_agi_dense_sft.py"},
+        source_payload={"kind": "trace_sft_gate"},
+    )
+    recurrent = classify_action(
+        {"name": "Run matched recurrent", "command": "python colab/run_stage5_arc_agi_sft.py"},
+        source_payload={"kind": "dense_sft_control"},
+    )
+
+    assert trace["status"] == "go_trace_sft_gate"
+    assert distill["status"] == "go_distill_sft_gate"
+    assert dense["status"] == "go_dense_arc_sft_control"
+    assert recurrent["status"] == "go_matched_recurrent_arc_sft"
+
+
+def test_arc_gate_chain_blocks_wrong_source_kind() -> None:
+    action = {"name": "Run matched recurrent", "command": "python colab/run_stage5_arc_agi_sft.py"}
+
+    decision = classify_action(action, source_payload={"kind": "stage5_arc_agi_candidate_gate"})
+
+    assert decision["go"] is False
+    assert decision["status"] == "matched_recurrent_arc_sft_blocked"
+
+
+def test_candidate_distill_and_autopilot_are_guarded_paid_actions() -> None:
+    candidate = classify_action(
+        {
+            "name": "Run candidate-distill diagnostic",
+            "command": "python colab/run_stage5_arc_agi_candidate_distill_gate.py",
+        },
+        source_payload={"recovered_benchmark": {}, "selected_checkpoint": "outputs/stage5/run/phase1/phase1.pt"},
+    )
+    autopilot = classify_action(
+        {
+            "name": "Scale deterministic curriculum",
+            "command": "python colab/run_stage5_arc_agi_curriculum_particle_autopilot.py",
+        },
+        source_payload={"recovered_benchmark": {}, "selected_checkpoint": "outputs/stage5/run/phase1/phase1.pt"},
+    )
+
+    assert candidate["go"] is True
+    assert candidate["status"] == "go_candidate_distill_gate"
+    assert autopilot["go"] is True
+    assert autopilot["status"] == "go_curriculum_particle_autopilot"
+
+
 def test_curriculum_sft_checkpoint_guard_without_resume_starts_from_base(monkeypatch) -> None:
     monkeypatch.delenv("STAGE5_CURRICULUM_RESUME_FROM", raising=False)
 
