@@ -1,0 +1,151 @@
+{
+  "run_id": "stage5_arc_agi_next_action_20260622_134618_plan_curriculum_sft",
+  "kind": "stage5_curriculum_sft",
+  "config": {
+    "run_id": "stage5_arc_agi_next_action_20260622_134618_plan_curriculum_sft",
+    "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+    "work_dir": "data/curriculum/programmatic_direct_deep_001",
+    "summary_json": "data/curriculum/programmatic_direct_deep_001/summary.json",
+    "curriculum_input_backup_dir": "/content/drive/MyDrive/recurrent-qwen-svgd/curriculum_runs",
+    "input_restore": {
+      "restored": true,
+      "source": "/content/drive/MyDrive/recurrent-qwen-svgd/curriculum_runs/programmatic_direct_deep_001",
+      "work_dir": "data/curriculum/programmatic_direct_deep_001",
+      "summary_json": "data/curriculum/programmatic_direct_deep_001/summary.json"
+    },
+    "min_positive_rows": 2000,
+    "min_mode_rows": "deep_narrow=1000,direct=1000",
+    "max_length": 512,
+    "max_loops": 4,
+    "max_steps": 150,
+    "learning_rate": 1e-05,
+    "beta": 0.08,
+    "dtype": "bfloat16",
+    "adapter_dtype": "float32"
+  },
+  "sft_gate": {
+    "status": "go_train_recurrent_sft",
+    "go": true,
+    "issues": [],
+    "checks": {
+      "reports": {
+        "exported_examples": 2000,
+        "typed_records": 2000,
+        "verified": 2000,
+        "decontaminated": 2000,
+        "method_solutions": 2000,
+        "naturalness_judgments": 2000,
+        "min_natural_agree": 2,
+        "min_distinct_agree": 2,
+        "distinctness_required": false,
+        "depth_measurements": 2000,
+        "difficulty_measured": 2000
+      },
+      "typed_records": {
+        "rows": 2000,
+        "invalid_rows": 0,
+        "positive_missing_answer_match": 0,
+        "mode_counts": {
+          "deep_narrow": 1000,
+          "direct": 1000
+        },
+        "role_counts": {
+          "positive_depth": 1000,
+          "positive_direct": 1000
+        }
+      },
+      "positive_sft": {
+        "rows": 2000,
+        "bad_rows": 0,
+        "role_counts": {
+          "positive_depth": 1000,
+          "positive_direct": 1000
+        },
+        "mode_counts": {
+          "deep_narrow": 1000,
+          "direct": 1000
+        },
+        "source_model_counts": {
+          "programmatic_generator": 2000
+        },
+        "mode_requirements": {
+          "deep_narrow": {
+            "required": 1000,
+            "observed": 1000,
+            "passed": true
+          },
+          "direct": {
+            "required": 1000,
+            "observed": 1000,
+            "passed": true
+          }
+        }
+      }
+    }
+  },
+  "input_restore": {
+    "restored": true,
+    "source": "/content/drive/MyDrive/recurrent-qwen-svgd/curriculum_runs/programmatic_direct_deep_001",
+    "work_dir": "data/curriculum/programmatic_direct_deep_001",
+    "summary_json": "data/curriculum/programmatic_direct_deep_001/summary.json"
+  },
+  "dataset": {
+    "source_positive_sft": "data/curriculum/programmatic_direct_deep_001/positive_sft.jsonl",
+    "rows": 2000,
+    "train_rows": 1800,
+    "val_rows": 200,
+    "val_fraction": 0.1,
+    "val_min_rows": 1,
+    "split_seed": 17
+  },
+  "drive_preflight": {
+    "drive_root": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts",
+    "available": true,
+    "allow_no_backup": false
+  },
+  "backup": {
+    "backed_up": true,
+    "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5_arc_agi_next_action_20260622_134618_plan_curriculum_sft"
+  },
+  "resume_from": null,
+  "phase1_checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_134618_plan_curriculum_sft/phase1/phase1_step_150.pt",
+  "phase1_val": {
+    "lora_recurrent_modules": 84.0,
+    "examples": 200.0,
+    "expected_ce": 0.18099,
+    "halting_kl": 0.428164,
+    "loss": 0.215243,
+    "mean_expected_loops": 2.954928,
+    "mean_halt_entropy": 1.233534,
+    "group/curriculum_mode/deep_narrow/examples": 97.0,
+    "group/curriculum_mode/deep_narrow/expected_ce": 0.255056,
+    "group/curriculum_mode/deep_narrow/halting_kl": 0.202681,
+    "group/curriculum_mode/deep_narrow/loss": 0.271271,
+    "group/curriculum_mode/deep_narrow/mean_expected_loops": 2.953152,
+    "group/curriculum_mode/deep_narrow/mean_halt_entropy": 1.235421,
+    "group/curriculum_mode/direct/examples": 103.0,
+    "group/curriculum_mode/direct/expected_ce": 0.111238,
+    "group/curriculum_mode/direct/halting_kl": 0.640512,
+    "group/curriculum_mode/direct/loss": 0.162479,
+    "group/curriculum_mode/direct/mean_expected_loops": 2.9566,
+    "group/curriculum_mode/direct/mean_halt_entropy": 1.231757
+  },
+  "phase1_val_by_mode": {
+    "deep_narrow": {
+      "examples": 97.0,
+      "expected_ce": 0.255056,
+      "halting_kl": 0.202681,
+      "loss": 0.271271,
+      "mean_expected_loops": 2.953152,
+      "mean_halt_entropy": 1.235421
+    },
+    "direct": {
+      "examples": 103.0,
+      "expected_ce": 0.111238,
+      "halting_kl": 0.640512,
+      "loss": 0.162479,
+      "mean_expected_loops": 2.9566,
+      "mean_halt_entropy": 1.231757
+    }
+  }
+}

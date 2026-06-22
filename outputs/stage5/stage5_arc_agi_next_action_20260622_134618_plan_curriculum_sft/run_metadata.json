@@ -1,0 +1,22 @@
+{
+  "run_id": "stage5_arc_agi_next_action_20260622_134618_plan_curriculum_sft",
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "work_dir": "data/curriculum/programmatic_direct_deep_001",
+  "summary_json": "data/curriculum/programmatic_direct_deep_001/summary.json",
+  "curriculum_input_backup_dir": "/content/drive/MyDrive/recurrent-qwen-svgd/curriculum_runs",
+  "input_restore": {
+    "restored": true,
+    "source": "/content/drive/MyDrive/recurrent-qwen-svgd/curriculum_runs/programmatic_direct_deep_001",
+    "work_dir": "data/curriculum/programmatic_direct_deep_001",
+    "summary_json": "data/curriculum/programmatic_direct_deep_001/summary.json"
+  },
+  "min_positive_rows": 2000,
+  "min_mode_rows": "deep_narrow=1000,direct=1000",
+  "max_length": 512,
+  "max_loops": 4,
+  "max_steps": 150,
+  "learning_rate": 1e-05,
+  "beta": 0.08,
+  "dtype": "bfloat16",
+  "adapter_dtype": "float32"
+}
