@@ -74,6 +74,22 @@ def test_pipeline_stops_after_building_seed_jobs(tmp_path) -> None:
     assert summary["status"] == "pending_seed_responses"
     assert Path(summary["artifacts"]["jobs_seed"]["path"]).exists()
     assert summary["counts"]["seed_jobs"] == 1
+    assert summary["pending_responses"] == [
+        {
+            "name": "seed",
+            "jobs_jsonl": summary["artifacts"]["jobs_seed"]["path"],
+            "responses_jsonl": summary["artifacts"]["responses_seed"]["path"],
+            "expected_rows": 1,
+            "existing_rows": 0,
+            "remaining_rows": 1,
+            "runner_template": (
+                "python training/run_curriculum_job_responses.py "
+                f"--jobs_jsonl {summary['artifacts']['jobs_seed']['path']} "
+                f"--output_jsonl {summary['artifacts']['responses_seed']['path']} "
+                "--backend command --command \"python scripts/provider_runner.py\" --resume --fail_fast"
+            ),
+        }
+    ]
 
 
 def test_pipeline_requires_diverse_external_models_by_default(tmp_path) -> None:
@@ -164,6 +180,11 @@ def test_pipeline_waits_for_partial_response_files(tmp_path) -> None:
     assert summary["status"] == "pending_ground_truth_responses"
     assert summary["counts"]["ground_truth_jobs"] == 2
     assert summary["counts"]["ground_truth_response_rows"] == 1
+    assert summary["pending_responses"][0]["name"] == "ground_truth"
+    assert summary["pending_responses"][0]["expected_rows"] == 2
+    assert summary["pending_responses"][0]["existing_rows"] == 1
+    assert summary["pending_responses"][0]["remaining_rows"] == 1
+    assert summary["pending_responses"][0]["responses_jsonl"] == str(paths["responses_ground_truth"])
     assert summary["artifacts"]["verified_candidates"]["lines"] == 0
 
 
@@ -210,6 +231,8 @@ def test_pipeline_resumes_to_complete_from_artifacts(tmp_path) -> None:
     assert read_json(paths["reference_attempts_report"])["attempts"] == 1
     assert read_json(paths["difficulty_report"])["measured"] == 1
     assert read_json(paths["false_answers_report"])["with_false_answer"] == 1
+    assert {row["name"] for row in summary["pending_responses"]} == {"method_solve", "perturbation"}
+    assert all(row["remaining_rows"] > 0 for row in summary["pending_responses"])
 
     write_jsonl(
         paths["responses_methods"],

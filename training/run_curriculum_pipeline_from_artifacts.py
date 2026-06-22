@@ -162,6 +162,7 @@ def stop_summary(
     next_action: str,
     artifacts: dict[str, Path],
     counts: dict[str, Any] | None = None,
+    pending_responses: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     summary = {
         "kind": "curriculum_pipeline_from_artifacts",
@@ -174,6 +175,8 @@ def stop_summary(
         },
         "counts": counts or {},
     }
+    if pending_responses:
+        summary["pending_responses"] = pending_responses
     write_json(artifacts["summary"], summary)
     return summary
 
@@ -190,6 +193,33 @@ def response_incomplete(path: Path, *, expected_rows: int) -> bool:
     if expected_rows <= 0:
         return False
     return not path.exists() or line_count(path) < expected_rows
+
+
+def pending_response_entry(
+    name: str,
+    *,
+    jobs_path: Path,
+    responses_path: Path,
+    expected_rows: int,
+) -> dict[str, Any]:
+    existing_rows = line_count(responses_path) if responses_path.exists() else 0
+    remaining_rows = max(0, expected_rows - existing_rows)
+    return {
+        "name": name,
+        "jobs_jsonl": str(jobs_path),
+        "responses_jsonl": str(responses_path),
+        "expected_rows": expected_rows,
+        "existing_rows": existing_rows,
+        "remaining_rows": remaining_rows,
+        "runner_template": (
+            "python training/run_curriculum_job_responses.py "
+            f"--jobs_jsonl {jobs_path} "
+            f"--output_jsonl {responses_path} "
+            "--backend command "
+            "--command \"python scripts/provider_runner.py\" "
+            "--resume --fail_fast"
+        ),
+    }
 
 
 def validate_role_models(
@@ -259,6 +289,14 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
                 "seed_jobs": len(seed_jobs),
                 "seed_response_rows": line_count(paths["responses_seed"]) if paths["responses_seed"].exists() else 0,
             },
+            pending_responses=[
+                pending_response_entry(
+                    "seed",
+                    jobs_path=paths["jobs_seed"],
+                    responses_path=paths["responses_seed"],
+                    expected_rows=len(seed_jobs),
+                )
+            ],
         )
 
     candidates, candidates_report = seed_outputs_to_candidates(seed_jobs, read_jsonl(paths["responses_seed"]))
@@ -300,6 +338,14 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
                 if paths["responses_ground_truth"].exists()
                 else 0,
             },
+            pending_responses=[
+                pending_response_entry(
+                    "ground_truth",
+                    jobs_path=paths["jobs_ground_truth"],
+                    responses_path=paths["responses_ground_truth"],
+                    expected_rows=len(ground_jobs),
+                )
+            ],
         )
 
     verified, verified_report = ground_truth_outputs_to_verified_candidates(
@@ -334,6 +380,14 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
                     if paths["responses_reference_attempts"].exists()
                     else 0,
                 },
+                pending_responses=[
+                    pending_response_entry(
+                        "reference_attempt",
+                        jobs_path=paths["jobs_reference_attempts"],
+                        responses_path=paths["responses_reference_attempts"],
+                        expected_rows=len(reference_jobs),
+                    )
+                ],
             )
         reference_attempts, reference_attempts_report = reference_outputs_to_attempts(
             verified,
@@ -404,6 +458,28 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
                 if paths["responses_perturbation"].exists()
                 else 0,
             },
+            pending_responses=[
+                entry
+                for entry in [
+                    pending_response_entry(
+                        "method_solve",
+                        jobs_path=paths["jobs_methods"],
+                        responses_path=paths["responses_methods"],
+                        expected_rows=len(method_jobs),
+                    )
+                    if response_incomplete(paths["responses_methods"], expected_rows=len(method_jobs))
+                    else None,
+                    pending_response_entry(
+                        "perturbation",
+                        jobs_path=paths["jobs_perturbation"],
+                        responses_path=paths["responses_perturbation"],
+                        expected_rows=len(perturbation_jobs),
+                    )
+                    if response_incomplete(paths["responses_perturbation"], expected_rows=len(perturbation_jobs))
+                    else None,
+                ]
+                if entry is not None
+            ],
         )
 
     method_solutions, method_report = method_outputs_to_solution_candidates(
@@ -466,6 +542,45 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
                 if paths["responses_error_detection"].exists()
                 else 0,
             },
+            pending_responses=[
+                entry
+                for entry in [
+                    pending_response_entry(
+                        "naturalness",
+                        jobs_path=paths["jobs_naturalness"],
+                        responses_path=paths["responses_naturalness"],
+                        expected_rows=len(naturalness_jobs),
+                    )
+                    if response_incomplete(paths["responses_naturalness"], expected_rows=len(naturalness_jobs))
+                    else None,
+                    pending_response_entry(
+                        "distinctness",
+                        jobs_path=paths["jobs_distinctness"],
+                        responses_path=paths["responses_distinctness"],
+                        expected_rows=len(distinctness_jobs),
+                    )
+                    if response_incomplete(paths["responses_distinctness"], expected_rows=len(distinctness_jobs))
+                    else None,
+                    pending_response_entry(
+                        "depth",
+                        jobs_path=paths["jobs_depth"],
+                        responses_path=paths["responses_depth"],
+                        expected_rows=len(depth_jobs),
+                    )
+                    if response_incomplete(paths["responses_depth"], expected_rows=len(depth_jobs))
+                    else None,
+                    pending_response_entry(
+                        "error_detection",
+                        jobs_path=paths["jobs_error_detection"],
+                        responses_path=paths["responses_error_detection"],
+                        expected_rows=len(error_detection_jobs),
+                    )
+                    if args.require_error_detection
+                    and response_incomplete(paths["responses_error_detection"], expected_rows=len(error_detection_jobs))
+                    else None,
+                ]
+                if entry is not None
+            ],
         )
 
     naturalness, naturalness_report = collect_naturalness_judgments(

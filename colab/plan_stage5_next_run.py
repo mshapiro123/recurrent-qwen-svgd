@@ -875,6 +875,29 @@ def curriculum_pipeline_actions(payload: dict[str, Any], *, source_summary: Path
                 10,
             )
         ]
+    pending = [row for row in payload.get("pending_responses", []) if isinstance(row, dict)]
+    if pending:
+        names = ", ".join(str(row.get("name") or "unknown") for row in pending)
+        remaining = sum(int(row.get("remaining_rows") or 0) for row in pending)
+        details = "; ".join(
+            (
+                f"{row.get('name')}: {row.get('remaining_rows', 0)} remaining "
+                f"({row.get('existing_rows', 0)}/{row.get('expected_rows', 0)} present)"
+            )
+            for row in pending
+        )
+        return [
+            make_action(
+                f"Continue generated curriculum responses: {names}",
+                (
+                    "The provider-generated curriculum pipeline is waiting on CPU/API responses, not GPU work. "
+                    f"Remaining response rows: {remaining}. {details}. Use the `pending_responses` runner templates "
+                    "from the summary, then rerun the artifact driver."
+                ),
+                f"cat {shlex.quote(command_path(source_summary))}",
+                10,
+            )
+        ]
     return [
         make_action(
             f"Inspect generated curriculum pipeline `{status}`",

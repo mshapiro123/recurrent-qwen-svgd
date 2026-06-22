@@ -265,6 +265,11 @@ file, run the same command again. The stop points are:
 - `pending_judgment_responses`
 - `complete`
 
+Pending summaries also include `pending_responses`: a structured list with each
+needed job file, response file, expected row count, existing row count,
+remaining rows, and a provider-runner command template. This is the handoff for
+CPU/API generation work and should not be treated as an A100 action.
+
 On completion it writes `typed_records.jsonl` and `positive_sft.jsonl`. Before
 any GPU fine-tune, run the no-GPU SFT gate:
 

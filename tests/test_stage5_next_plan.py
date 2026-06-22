@@ -164,14 +164,46 @@ def test_pending_curriculum_pipeline_recommends_inspection_not_gpu(tmp_path) -> 
         "kind": "curriculum_pipeline_from_artifacts",
         "status": "pending_method_or_perturbation_responses",
         "next_action": "Run provider responses for jobs_methods.jsonl",
+        "pending_responses": [
+            {
+                "name": "method_solve",
+                "expected_rows": 8,
+                "existing_rows": 3,
+                "remaining_rows": 5,
+            },
+            {
+                "name": "perturbation",
+                "expected_rows": 16,
+                "existing_rows": 0,
+                "remaining_rows": 16,
+            },
+        ],
     }
     source.write_text(json.dumps(payload), encoding="utf-8")
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Inspect generated curriculum pipeline `pending_method_or_perturbation_responses`"
+    assert actions[0]["name"] == "Continue generated curriculum responses: method_solve, perturbation"
     assert actions[0]["command"].startswith("cat ")
+    assert "Remaining response rows: 21" in actions[0]["reason"]
+    assert "method_solve: 5 remaining" in actions[0]["reason"]
     assert "run_stage5_curriculum_sft.py" not in actions[0]["command"]
+
+
+def test_pending_curriculum_pipeline_without_structured_responses_recommends_inspection(tmp_path) -> None:
+    source = tmp_path / "curriculum" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "curriculum_pipeline_from_artifacts",
+        "status": "pending_seed_responses",
+        "next_action": "Run provider responses for jobs_seed.jsonl",
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect generated curriculum pipeline `pending_seed_responses`"
+    assert actions[0]["command"].startswith("cat ")
 
 
 def test_routing_diagnostic_deep_status_recommends_repair(tmp_path) -> None:

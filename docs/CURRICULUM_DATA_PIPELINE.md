@@ -122,6 +122,12 @@ stop at the next required job file. The final handoff to GPU training is
 `positive_sft.jsonl`; negative and verifier traces remain in `typed_records.jsonl`
 and are not exported to positive SFT.
 
+When the driver stops on a missing or partial response file, `summary.json`
+includes a `pending_responses` list. Each entry gives the job file, target
+response file, expected rows, existing rows, remaining rows, and a
+`training/run_curriculum_job_responses.py` command template. Treat those
+entries as CPU/API work. They are not A100 tasks.
+
 Before using `positive_sft.jsonl` for any A100 fine-tune, run:
 
 ```bash
