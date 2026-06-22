@@ -86,8 +86,20 @@ def test_build_mixed_train_uses_separate_arc_repeats(tmp_path, monkeypatch) -> N
     module.write_jsonl(arc_challenge, [{"id": "challenge"}])
     module.write_jsonl(arc_easy, [{"id": "easy"}])
 
+    prepare_calls = []
+
+    def fake_prepare_arc_sft(config, output, *, target_loop="", routing_type=""):
+        prepare_calls.append(
+            {
+                "config": config,
+                "output": output,
+                "target_loop": target_loop,
+                "routing_type": routing_type,
+            }
+        )
+
     monkeypatch.setattr(module, "prepare_opus", lambda: None)
-    monkeypatch.setattr(module, "prepare_arc_sft", lambda config, output: None)
+    monkeypatch.setattr(module, "prepare_arc_sft", fake_prepare_arc_sft)
     monkeypatch.setattr(module, "OPUS_TRAIN_JSONL", opus)
     monkeypatch.setattr(module, "OPUS_VAL_JSONL", opus_val)
     monkeypatch.setattr(module, "ARC_CHALLENGE_TRAIN_JSONL", arc_challenge)
@@ -96,6 +108,10 @@ def test_build_mixed_train_uses_separate_arc_repeats(tmp_path, monkeypatch) -> N
     monkeypatch.setattr(module, "ARC_REPEAT", 2)
     monkeypatch.setattr(module, "ARC_CHALLENGE_REPEAT", 1)
     monkeypatch.setattr(module, "ARC_EASY_REPEAT", 3)
+    monkeypatch.setattr(module, "ARC_CHALLENGE_TARGET_LOOP", "3")
+    monkeypatch.setattr(module, "ARC_EASY_TARGET_LOOP", "1")
+    monkeypatch.setattr(module, "ARC_CHALLENGE_ROUTING_TYPE", "deep_narrow")
+    monkeypatch.setattr(module, "ARC_EASY_ROUTING_TYPE", "direct")
 
     summary = module.build_mixed_train()
     rows = module.read_jsonl(mixed)
@@ -103,11 +119,56 @@ def test_build_mixed_train_uses_separate_arc_repeats(tmp_path, monkeypatch) -> N
     assert summary["arc_repeat"] == 2
     assert summary["arc_challenge_repeat"] == 1
     assert summary["arc_easy_repeat"] == 3
+    assert summary["arc_challenge_target_loop"] == "3"
+    assert summary["arc_easy_target_loop"] == "1"
+    assert summary["arc_challenge_routing_type"] == "deep_narrow"
+    assert summary["arc_easy_routing_type"] == "direct"
     assert summary["mixed_rows"] == 5
     assert summary["arc_prompt_style"] == "with_options"
     assert summary["arc_score_target"] == "label"
     assert sum(1 for row in rows if row["id"] == "challenge") == 1
     assert sum(1 for row in rows if row["id"] == "easy") == 3
+    assert prepare_calls == [
+        {
+            "config": "ARC-Challenge",
+            "output": arc_challenge,
+            "target_loop": "3",
+            "routing_type": "deep_narrow",
+        },
+        {
+            "config": "ARC-Easy",
+            "output": arc_easy,
+            "target_loop": "1",
+            "routing_type": "direct",
+        },
+    ]
+
+
+def test_prepare_arc_sft_passes_routing_loop_metadata(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_balanced_arc_mix_gate as module
+
+    calls = []
+    output = tmp_path / "arc_easy.jsonl"
+    monkeypatch.setattr(module, "MIX_SEED", 11)
+    monkeypatch.setattr(module, "ARC_TRAIN_LIMIT", "17")
+    monkeypatch.setattr(module, "run", lambda cmd, **kwargs: calls.append((cmd, kwargs)))
+
+    module.prepare_arc_sft(
+        "ARC-Easy",
+        output,
+        target_loop="1",
+        routing_type="direct",
+    )
+
+    assert calls
+    cmd, kwargs = calls[0]
+    assert kwargs["log_name"] == "prepare_arc_easy.log"
+    assert "--target_loop_count" in cmd
+    assert cmd[cmd.index("--target_loop_count") + 1] == "1"
+    assert "--routing_type" in cmd
+    assert cmd[cmd.index("--routing_type") + 1] == "direct"
+    assert "--limit" in cmd
+    assert cmd[cmd.index("--limit") + 1] == "17"
 
 
 def test_selected_checkpoint_accepts_top_level_checkpoint(monkeypatch, tmp_path) -> None:

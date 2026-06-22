@@ -12,6 +12,10 @@ def test_repair_profile_selects_direct_heavy_arc_easy_mix() -> None:
     assert profile["repair_mode"] == "direct_halting"
     assert profile["STAGE5_ARC_MIX_ARC_EASY_REPEAT"] == "8"
     assert profile["STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT"] == "1"
+    assert profile["STAGE5_ARC_MIX_ARC_EASY_TARGET_LOOP"] == "1"
+    assert profile["STAGE5_ARC_MIX_ARC_CHALLENGE_TARGET_LOOP"] == "2"
+    assert profile["STAGE5_ARC_MIX_ARC_EASY_ROUTING_TYPE"] == "direct"
+    assert profile["STAGE5_ARC_MIX_ARC_CHALLENGE_ROUTING_TYPE"] == "deep_narrow_probe"
     assert profile["STAGE5_ARC_MIX_MIN_MARGIN_DELTA"] == "0.0"
 
 
@@ -23,6 +27,10 @@ def test_repair_profile_selects_deep_challenge_mix() -> None:
     assert profile["repair_mode"] == "deep_narrow"
     assert profile["STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT"] == "5"
     assert profile["STAGE5_ARC_MIX_ARC_EASY_REPEAT"] == "2"
+    assert profile["STAGE5_ARC_MIX_ARC_EASY_TARGET_LOOP"] == "1"
+    assert profile["STAGE5_ARC_MIX_ARC_CHALLENGE_TARGET_LOOP"] == "3"
+    assert profile["STAGE5_ARC_MIX_ARC_EASY_ROUTING_TYPE"] == "direct_anchor"
+    assert profile["STAGE5_ARC_MIX_ARC_CHALLENGE_ROUTING_TYPE"] == "deep_narrow"
 
 
 def test_benchmark_summary_from_assessment_uses_payload_path(monkeypatch, tmp_path) -> None:

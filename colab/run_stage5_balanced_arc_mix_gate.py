@@ -56,6 +56,10 @@ ARC_TRAIN_LIMIT = os.environ.get("STAGE5_ARC_MIX_ARC_TRAIN_LIMIT", "0")
 ARC_REPEAT = int(os.environ.get("STAGE5_ARC_MIX_ARC_REPEAT", "2"))
 ARC_CHALLENGE_REPEAT = int(os.environ.get("STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT", str(ARC_REPEAT)))
 ARC_EASY_REPEAT = int(os.environ.get("STAGE5_ARC_MIX_ARC_EASY_REPEAT", str(ARC_REPEAT)))
+ARC_CHALLENGE_TARGET_LOOP = os.environ.get("STAGE5_ARC_MIX_ARC_CHALLENGE_TARGET_LOOP", "")
+ARC_EASY_TARGET_LOOP = os.environ.get("STAGE5_ARC_MIX_ARC_EASY_TARGET_LOOP", "")
+ARC_CHALLENGE_ROUTING_TYPE = os.environ.get("STAGE5_ARC_MIX_ARC_CHALLENGE_ROUTING_TYPE", "")
+ARC_EASY_ROUTING_TYPE = os.environ.get("STAGE5_ARC_MIX_ARC_EASY_ROUTING_TYPE", "")
 MIX_SEED = int(os.environ.get("STAGE5_ARC_MIX_SEED", "17"))
 ARC_EVAL_LIMIT = int(os.environ.get("STAGE5_ARC_MIX_ARC_EVAL_LIMIT", "128"))
 MIN_PROXY_MARGIN_DELTA = float(os.environ.get("STAGE5_ARC_MIX_MIN_MARGIN_DELTA", "-0.05"))
@@ -400,7 +404,13 @@ def prepare_opus() -> None:
     )
 
 
-def prepare_arc_sft(config: str, output: Path) -> None:
+def prepare_arc_sft(
+    config: str,
+    output: Path,
+    *,
+    target_loop: str = "",
+    routing_type: str = "",
+) -> None:
     if output.exists():
         return
     cmd = [
@@ -425,6 +435,10 @@ def prepare_arc_sft(config: str, output: Path) -> None:
     ]
     if ARC_TRAIN_LIMIT.strip().lower() not in {"", "0", "none", "all", "full"}:
         cmd.extend(["--limit", ARC_TRAIN_LIMIT])
+    if target_loop.strip():
+        cmd.extend(["--target_loop_count", target_loop.strip()])
+    if routing_type.strip():
+        cmd.extend(["--routing_type", routing_type.strip()])
     run(cmd, log_name=f"prepare_{output.stem}.log")
 
 
@@ -490,8 +504,18 @@ def eval_arc(label: str, mode: str, data_jsonl: Path, checkpoint: Path | None = 
 
 def build_mixed_train() -> dict[str, Any]:
     prepare_opus()
-    prepare_arc_sft("ARC-Challenge", ARC_CHALLENGE_TRAIN_JSONL)
-    prepare_arc_sft("ARC-Easy", ARC_EASY_TRAIN_JSONL)
+    prepare_arc_sft(
+        "ARC-Challenge",
+        ARC_CHALLENGE_TRAIN_JSONL,
+        target_loop=ARC_CHALLENGE_TARGET_LOOP,
+        routing_type=ARC_CHALLENGE_ROUTING_TYPE,
+    )
+    prepare_arc_sft(
+        "ARC-Easy",
+        ARC_EASY_TRAIN_JSONL,
+        target_loop=ARC_EASY_TARGET_LOOP,
+        routing_type=ARC_EASY_ROUTING_TYPE,
+    )
 
     opus_rows = read_jsonl(OPUS_TRAIN_JSONL)
     arc_challenge_rows = read_jsonl(ARC_CHALLENGE_TRAIN_JSONL)
@@ -510,6 +534,10 @@ def build_mixed_train() -> dict[str, Any]:
         "arc_repeat": ARC_REPEAT,
         "arc_challenge_repeat": ARC_CHALLENGE_REPEAT,
         "arc_easy_repeat": ARC_EASY_REPEAT,
+        "arc_challenge_target_loop": ARC_CHALLENGE_TARGET_LOOP or None,
+        "arc_easy_target_loop": ARC_EASY_TARGET_LOOP or None,
+        "arc_challenge_routing_type": ARC_CHALLENGE_ROUTING_TYPE or None,
+        "arc_easy_routing_type": ARC_EASY_ROUTING_TYPE or None,
         "mixed_rows": len(mixed),
         "mixed_train_jsonl": path_for_cli(MIXED_TRAIN_JSONL),
         "opus_val_jsonl": path_for_cli(OPUS_VAL_JSONL),

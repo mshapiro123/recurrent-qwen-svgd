@@ -18,6 +18,9 @@ class JsonlCausalDataset(Dataset):
     Optional fields:
         cot: String chain-of-thought/reference reasoning trace for loop target.
         cot_tokens: Precomputed integer CoT token count.
+        target_loop_count: Explicit 1-indexed loop-depth target. This is used
+            for typed direct/deep curriculum rows and overrides the token-count
+            heuristic.
     """
 
     def __init__(
@@ -75,7 +78,13 @@ class JsonlCausalDataset(Dataset):
             cot_len = max(1, labels.ne(-100).sum().item())
 
         input_len = int(input_ids.numel())
-        target_loops = target_loop_counts(input_len, cot_len, self.max_train_loops)
+        if "target_loop_count" in row:
+            target_loops = torch.tensor(
+                int(row["target_loop_count"]),
+                dtype=torch.long,
+            ).clamp(1, self.max_train_loops)
+        else:
+            target_loops = target_loop_counts(input_len, cot_len, self.max_train_loops)
         return {
             "input_ids": input_ids,
             "labels": labels,

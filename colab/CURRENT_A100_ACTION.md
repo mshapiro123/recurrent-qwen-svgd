@@ -92,4 +92,7 @@ python colab/run_stage5_routing_repair.py
 
 only for `needs_direct_halting_repair` or `needs_deep_narrow_recovery`. The
 repair runner maps the diagnosis to one bounded deterministic Phase 1 profile
-and keeps particles/SVGD off.
+and keeps particles/SVGD off. That repair now writes typed ARC rows with
+explicit loop-depth supervision: ARC-Easy/direct rows target loop `1`, while
+ARC-Challenge rows target loop `2` for direct-halting probes or loop `3` for
+deep-narrow recovery.

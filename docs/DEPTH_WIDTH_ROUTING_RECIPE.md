@@ -223,6 +223,12 @@ Current implementation status:
   halting or deep-narrow recovery.
 - `colab/run_stage5_routing_repair.py` consumes that diagnostic and launches
   one bounded deterministic Phase 1 repair profile with particles/SVGD off.
+- ARC MCQ SFT rows can now carry explicit `target_loop_count` and
+  `routing_type` fields. The deterministic dataset loader honors
+  `target_loop_count` before falling back to the trace-length heuristic. Current
+  routing repair profiles use ARC-Easy as a shallow direct anchor
+  (`target_loop_count=1`) and ARC-Challenge as a deeper deterministic probe
+  (`target_loop_count=2` or `3`, depending on the diagnosis).
 
 The next GPU run should be bounded and diagnostic. Use an L4 or T4 for
 diagnostic-only benchmark scoring if it fits; reserve A100/H100 for training

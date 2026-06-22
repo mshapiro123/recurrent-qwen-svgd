@@ -33,6 +33,8 @@ def arc_row_to_sft(
     shuffle_choices: bool,
     prompt_style: str,
     score_target: str,
+    target_loop_count: int | None = None,
+    routing_type: str | None = None,
 ) -> dict[str, Any]:
     mcq = row_to_mcq(row, index=index, seed=seed, shuffle_choices=shuffle_choices)
     choices = [(str(label), str(text)) for label, text in mcq["choices"].items()]
@@ -44,7 +46,7 @@ def arc_row_to_sft(
         choices=choices,
         answer=answer,
     )
-    return {
+    example_row = {
         "prompt": format_prompt(example, prompt_style),
         "completion": format_completion(answer, choice_text, score_target),
         "cot_tokens": 1,
@@ -54,6 +56,11 @@ def arc_row_to_sft(
         "arc_id": str(mcq["id"]),
         "answer": answer,
     }
+    if target_loop_count is not None:
+        example_row["target_loop_count"] = int(target_loop_count)
+    if routing_type:
+        example_row["routing_type"] = routing_type
+    return example_row
 
 
 def write_jsonl(path: str | Path, rows: list[dict[str, Any]]) -> None:
@@ -77,6 +84,15 @@ def main() -> int:
     parser.add_argument("--score_target", choices=("label", "option_text", "label_and_text"), default="label")
     parser.add_argument("--no_shuffle_choices", action="store_true")
     parser.add_argument("--max_total_tokens", type=int, default=512)
+    parser.add_argument(
+        "--target_loop_count",
+        type=int,
+        help="Optional explicit recurrent loop target for all emitted rows.",
+    )
+    parser.add_argument(
+        "--routing_type",
+        help="Optional curriculum tag such as direct or deep_narrow.",
+    )
     args = parser.parse_args()
 
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name)
@@ -98,6 +114,8 @@ def main() -> int:
             shuffle_choices=not args.no_shuffle_choices,
             prompt_style=args.prompt_style,
             score_target=args.score_target,
+            target_loop_count=args.target_loop_count,
+            routing_type=args.routing_type,
         )
         total_tokens = len(
             tokenizer(
