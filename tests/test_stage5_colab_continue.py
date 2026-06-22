@@ -34,6 +34,7 @@ def test_colab_continue_focuses_gate1_and_next_action_tests() -> None:
     assert "tests/test_stage5_arc_agi_sota_comparison.py" in paths
     assert "tests/test_stage5_progress_ledger.py" in paths
     assert "tests/test_stage5_benchmark_suite.py" in paths
+    assert "tests/test_stage5_routing_repair.py" in paths
     assert "tests/test_lora.py" in paths
     assert "tests/test_stage5_dense_sft_control.py" in paths
 
