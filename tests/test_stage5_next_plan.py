@@ -1956,6 +1956,43 @@ def test_curriculum_sft_summary_runs_routing_diagnostic_before_broader_benchmark
     assert "run_stage5_benchmark_suite.py" not in actions[0]["command"]
 
 
+def test_curriculum_sft_nonfinite_validation_blocks_next_gpu_diagnostic(tmp_path) -> None:
+    source = tmp_path / "curriculum_sft" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "run_id": "curriculum_sft_run",
+        "kind": "stage5_curriculum_sft",
+        "phase1_checkpoint": "outputs/stage5/curriculum_sft_run/phase1/phase1_step_150.pt",
+        "dataset": {"train_rows": 40, "val_rows": 5},
+        "phase1_val": {"loss": float("nan"), "mean_expected_loops": 3.0},
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect curriculum SFT validation before routing diagnostic"
+    assert "non-finite metrics" in actions[0]["reason"]
+    assert actions[0]["command"].startswith("cat ")
+    assert "run_stage5_routing_diagnostic.py" not in actions[0]["command"]
+
+
+def test_curriculum_sft_collapsed_loop_validation_blocks_next_gpu_diagnostic(tmp_path) -> None:
+    source = tmp_path / "curriculum_sft" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "run_id": "curriculum_sft_run",
+        "kind": "stage5_curriculum_sft",
+        "phase1_checkpoint": "outputs/stage5/curriculum_sft_run/phase1/phase1_step_150.pt",
+        "dataset": {"train_rows": 40, "val_rows": 5},
+        "phase1_val": {"loss": 2.5, "mean_expected_loops": 1.0},
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect curriculum SFT validation before routing diagnostic"
+    assert "loop collapse" in actions[0]["reason"]
+    assert "run_stage5_routing_diagnostic.py" not in actions[0]["command"]
+
+
 def test_candidate_gate_plans_trace_sft_when_symbolic_hybrid_signal_exists(tmp_path) -> None:
     source = tmp_path / "candidate_gate" / "summary.json"
     source.parent.mkdir()

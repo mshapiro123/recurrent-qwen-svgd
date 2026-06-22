@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import shlex
 import time
@@ -56,6 +57,9 @@ TRACE_CURRICULUM_MAX_PHASE1_STEPS = int(
 )
 TRACE_CURRICULUM_STEPS_PER_ROW = int(
     os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_TRACE_CURRICULUM_STEPS_PER_ROW", "4")
+)
+CURRICULUM_SFT_MIN_MEAN_EXPECTED_LOOPS = float(
+    os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_CURRICULUM_SFT_MIN_MEAN_EXPECTED_LOOPS", "1.05")
 )
 A100_BUDGET_PROFILE = os.environ.get(
     "STAGE5_A100_BUDGET_PROFILE",
@@ -1344,11 +1348,43 @@ def curriculum_sft_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "stage5_curriculum_sft" else None
 
 
+def curriculum_sft_validation_block_reason(payload: dict[str, Any], *, checkpoint: str) -> str | None:
+    if not checkpoint:
+        return "Curriculum SFT summary is missing phase1_checkpoint; inspect the run before routing diagnostics."
+    phase1_val = payload.get("phase1_val")
+    if not isinstance(phase1_val, dict) or not phase1_val:
+        return "Curriculum SFT summary is missing phase1_val metrics; inspect validation before routing diagnostics."
+    nonfinite = [
+        key
+        for key, value in phase1_val.items()
+        if isinstance(value, (int, float)) and not math.isfinite(float(value))
+    ]
+    if nonfinite:
+        return f"Curriculum SFT validation has non-finite metrics {nonfinite}; do not run another GPU diagnostic yet."
+    mean_loops = phase1_val.get("mean_expected_loops")
+    if isinstance(mean_loops, (int, float)) and float(mean_loops) < CURRICULUM_SFT_MIN_MEAN_EXPECTED_LOOPS:
+        return (
+            f"Curriculum SFT mean_expected_loops={float(mean_loops):.4g} is below "
+            f"{CURRICULUM_SFT_MIN_MEAN_EXPECTED_LOOPS:.4g}; inspect loop collapse before more GPU spend."
+        )
+    return None
+
+
 def curriculum_sft_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     run_id = str(payload.get("run_id") or source_summary.parent.name or RUN_ID)
     checkpoint = str(payload.get("phase1_checkpoint") or payload.get("checkpoint") or "")
     phase1_val = payload.get("phase1_val") or {}
     dataset = payload.get("dataset") or {}
+    block_reason = curriculum_sft_validation_block_reason(payload, checkpoint=checkpoint)
+    if block_reason:
+        return [
+            make_action(
+                "Inspect curriculum SFT validation before routing diagnostic",
+                block_reason,
+                f"cat {shlex.quote(command_path(source_summary))}",
+                10,
+            )
+        ]
     assignments = {
         "STAGE5_ROUTING_DIAGNOSTIC_RUN_ID": f"{run_id}_routing_diagnostic",
         "STAGE5_RECOVERED_SOURCE_SUMMARY": command_path(source_summary),
