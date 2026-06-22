@@ -22,6 +22,8 @@ def test_arc_mix_recovery_once_defaults_to_low_credit_single_arm(monkeypatch) ->
     assert env["STAGE5_ARC_MIX_ARC_EASY_REPEAT"] == "4"
     assert env["STAGE5_ARC_MIX_ARC_EVAL_LIMIT"] == "128"
     assert env["STAGE5_ARC_MIX_OPUS_LIMIT"] == "3000"
+    assert env["STAGE5_ARC_MIX_MIN_MARGIN_DELTA"] == "-0.05"
+    assert env["STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT"] == "16"
     assert env["STAGE5_ARC_MIX_PUSH"] == "1"
 
 

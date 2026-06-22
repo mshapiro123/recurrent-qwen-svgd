@@ -96,6 +96,8 @@ try:
     env.setdefault("STAGE5_ARC_MIX_ARC_EASY_REPEAT", "4")
     env.setdefault("STAGE5_ARC_MIX_ARC_EVAL_LIMIT", "128")
     env.setdefault("STAGE5_ARC_MIX_OPUS_LIMIT", "3000")
+    env.setdefault("STAGE5_ARC_MIX_MIN_MARGIN_DELTA", "-0.05")
+    env.setdefault("STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT", "16")
     run([sys.executable, "colab/run_stage5_arc_mix_recovery_once.py"], cwd=ROOT, env=env)
 except Exception:
     print("ARC-mix recovery cell failed. Disconnect manually if this runtime is attached to A100.", flush=True)

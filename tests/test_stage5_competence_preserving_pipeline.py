@@ -25,6 +25,8 @@ def test_arc_mix_passed_accepts_lift_or_base_match() -> None:
 
     assert module.arc_mix_passed({"status": "proxy_lift"}) is True
     assert module.arc_mix_passed({"status": "proxy_matches_base"}) is True
+    assert module.arc_mix_passed({"status": "proxy_lift_calibration_warning"}) is False
+    assert module.arc_mix_passed({"status": "proxy_matches_base_calibration_warning"}) is False
     assert module.arc_mix_passed({"status": "no_proxy_lift"}) is False
     assert module.arc_mix_passed(None) is False
 

@@ -2012,6 +2012,22 @@ def test_balanced_arc_mix_failed_inspects_summary(tmp_path) -> None:
     assert actions[0]["command"].startswith("cat ")
 
 
+def test_balanced_arc_mix_calibration_warning_does_not_run_full_assessment(tmp_path) -> None:
+    source = tmp_path / "arc_mix" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_balanced_arc_mix_gate",
+        "status": "proxy_lift_calibration_warning",
+        "passed": False,
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect ARC-mix proxy gate `proxy_lift_calibration_warning`"
+    assert "run_stage5_recovery_full_assessment.py" not in actions[0]["command"]
+    assert actions[0]["command"].startswith("cat ")
+
+
 def test_benchmark_suite_assessment_passed_builds_claim_packet(tmp_path) -> None:
     source = tmp_path / "benchmark_assessment" / "summary.json"
     source.parent.mkdir()

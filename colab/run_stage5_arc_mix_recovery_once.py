@@ -106,6 +106,8 @@ def child_env() -> dict[str, str]:
     env.setdefault("STAGE5_ARC_MIX_ARC_EASY_REPEAT", "4")
     env.setdefault("STAGE5_ARC_MIX_ARC_EVAL_LIMIT", "128")
     env.setdefault("STAGE5_ARC_MIX_OPUS_LIMIT", "3000")
+    env.setdefault("STAGE5_ARC_MIX_MIN_MARGIN_DELTA", "-0.05")
+    env.setdefault("STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT", "16")
     env.setdefault("STAGE5_ARC_MIX_PUSH", "1")
     return env
 
@@ -185,6 +187,8 @@ def run_recovery_gate() -> int:
     print(f"ARMS={env['STAGE5_ARC_MIX_ARMS']}", flush=True)
     print(f"ARC_EVAL_LIMIT={env['STAGE5_ARC_MIX_ARC_EVAL_LIMIT']}", flush=True)
     print(f"OPUS_LIMIT={env['STAGE5_ARC_MIX_OPUS_LIMIT']}", flush=True)
+    print(f"MIN_MARGIN_DELTA={env['STAGE5_ARC_MIX_MIN_MARGIN_DELTA']}", flush=True)
+    print(f"MAX_PREDICTION_SHIFT={env['STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT']}", flush=True)
     run([sys.executable, "colab/run_stage5_balanced_arc_mix_gate.py"], env=env)
     return 0
 
