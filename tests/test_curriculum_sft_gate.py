@@ -96,6 +96,7 @@ def write_complete_work_dir(work_dir: Path, *, strict: bool = True) -> Path:
             "distinctness_required": True,
             "min_natural_agree": 2,
             "min_distinct_agree": 2,
+            "distinctness_judgments": 2,
             "mode_counts": {"wide": 1},
         },
     )
@@ -221,6 +222,21 @@ def test_curriculum_sft_gate_blocks_low_judge_agreement(tmp_path) -> None:
     assert result["go"] is False
     assert any(issue["code"] == "naturalness_agreement_too_low" for issue in result["issues"])
     assert any(issue["code"] == "distinctness_agreement_too_low" for issue in result["issues"])
+
+
+def test_curriculum_sft_gate_blocks_wide_rows_without_distinctness_gate(tmp_path) -> None:
+    summary = write_complete_work_dir(tmp_path / "run")
+    report_path = tmp_path / "run" / "typed_records_report.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    report["distinctness_required"] = False
+    report["distinctness_judgments"] = 0
+    write_json(report_path, report)
+
+    result = build_gate_payload(parse_args(["--summary_json", str(summary)]))
+
+    assert result["go"] is False
+    assert any(issue["code"] == "wide_rows_without_distinctness_gate" for issue in result["issues"])
+    assert any(issue["code"] == "wide_rows_without_distinctness_judgments" for issue in result["issues"])
 
 
 def test_curriculum_sft_gate_cli_writes_reports(tmp_path) -> None:

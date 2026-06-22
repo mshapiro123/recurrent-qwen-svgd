@@ -156,6 +156,10 @@ Use `--min_mode_rows` to tie a shard to the training objective. Omit it for a
 general safety check; include it before GPU SFT when the run is supposed to be
 direct/deep calibration, wide particle supervision, or another specific mode
 mix.
+For any shard containing `wide` or `both` rows, the gate also requires collected
+method-distinctness judgments. This prevents a generator's candidate-method
+labels or forced method-count perturbations from silently becoming particle
+diversity supervision.
 
 Once the gate is green and the shard has enough positive rows to justify GPU
 spend, the guarded deterministic recurrent SFT handoff is:

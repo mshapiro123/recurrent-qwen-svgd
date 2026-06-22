@@ -283,8 +283,29 @@ def check_report_payloads(
                 f"observed {min_natural_agree!r}."
             ),
         )
+    typed_mode_counts = typed_report.get("mode_counts")
+    typed_modes = set(typed_mode_counts) if isinstance(typed_mode_counts, dict) else set()
+    exported_wide_roles = (
+        isinstance(exported_roles, dict)
+        and any(str(role) == "positive_wide" for role in exported_roles)
+    )
+    wide_or_both_rows = bool({"wide", "both"} & typed_modes) or exported_wide_roles
+    if wide_or_both_rows and typed_report.get("distinctness_required") is not True:
+        add_issue(
+            issues,
+            "wide_rows_without_distinctness_gate",
+            "wide/both generated curriculum rows require method-distinctness judgments before SFT.",
+        )
+    if wide_or_both_rows and int(typed_report.get("distinctness_judgments") or 0) <= 0:
+        add_issue(
+            issues,
+            "wide_rows_without_distinctness_judgments",
+            "wide/both generated curriculum rows require at least one collected distinctness judgment.",
+        )
     min_distinct_agree = typed_report.get("min_distinct_agree")
-    if typed_report.get("distinctness_required") is True and (min_distinct_agree is None or int(min_distinct_agree or 0) < 2):
+    if typed_report.get("distinctness_required") is True and (
+        min_distinct_agree is None or int(min_distinct_agree or 0) < 2
+    ):
         add_issue(
             issues,
             "distinctness_agreement_too_low",
