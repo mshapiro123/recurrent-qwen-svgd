@@ -51,6 +51,8 @@ TARGETS = {
             "drive.mount",
             "runtime.unassign",
             "colab/check_stage5_a100_go_no_go.py",
+            "stage5_current_source_summary.txt",
+            "Using current source summary pointer",
         ],
         "env": {},
     },

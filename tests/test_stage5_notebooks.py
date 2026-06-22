@@ -325,6 +325,12 @@ def test_drive_checkpoint_preflight_cell_is_cpu_only_and_single_purpose() -> Non
     assert "STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY" in plain
     assert "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY" in code
     assert "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY" in plain
+    assert "SOURCE_SUMMARY_OVERRIDE" in code
+    assert "SOURCE_SUMMARY_OVERRIDE" in plain
+    assert 'pointer = ROOT / "config" / "stage5_current_source_summary.txt"' in code
+    assert 'pointer = ROOT / "config" / "stage5_current_source_summary.txt"' in plain
+    assert "Using current source summary pointer" in code
+    assert "Using current source summary pointer" in plain
     assert "drive.mount(\"/content/drive\", force_remount=True)" in code
     assert "stage5_routing_diagnostic_20260622_041706/summary.json" in code
     assert 'GO_NO_GO_RUN_ID = "stage5_drive_checkpoint_preflight"' in code
