@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 
-STUDENT_LINEAGE_PATTERNS = ("qwen",)
+STUDENT_LINEAGE_PATTERNS = ("qwen", "qwq", "qvq", "jackrong")
 
 
 def read_jsonl(path: str | Path) -> list[dict[str, Any]]:

@@ -170,6 +170,19 @@ def test_openai_compatible_blocks_student_lineage_after_model_map_resolution(tmp
         )
 
 
+def test_openai_compatible_blocks_qwq_and_reupload_lineage_after_model_map_resolution(tmp_path) -> None:
+    output = tmp_path / "responses.jsonl"
+
+    with pytest.raises(ValueError, match="Student-lineage models are blocked"):
+        run_jobs(
+            [{**job("job-openai"), "model": "logical-opus"}],
+            output_jsonl=output,
+            backend="openai_compatible",
+            api_key="test-key",
+            model_map={"logical-opus": "Jackrong/QwQ-reasoner"},
+        )
+
+
 def test_openai_compatible_blocks_student_lineage_model_override(tmp_path) -> None:
     output = tmp_path / "responses.jsonl"
 

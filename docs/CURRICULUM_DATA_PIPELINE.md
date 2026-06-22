@@ -34,8 +34,9 @@ auxiliary files.
 
 Use at least two strong, diverse, non-Qwen models for generation and judging.
 Examples include models in the GPT, Claude/Opus, and GLM families. Do not use
-the student base, the student lineage, or close Qwen-derived teachers as
-generators for this dataset.
+the student base, the student lineage, or close Qwen-derived teachers such as
+Qwen, QwQ, QvQ, or reuploaded Jackrong-style descendants as generators for
+this dataset.
 This restriction is enforced both when jobs are built and when API jobs resolve
 logical names through `--model_map_json`, so a safe logical name such as
 `opus-strong` cannot silently map to a Qwen-family model for generation.

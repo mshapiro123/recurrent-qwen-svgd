@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 
-STUDENT_LINEAGE_PATTERNS = ("qwen",)
+STUDENT_LINEAGE_PATTERNS = ("qwen", "qwq", "qvq", "jackrong")
 
 MATH_METHODS: dict[str, str] = {
     "algebra": "algebraic manipulation of equations, expressions, or identities",

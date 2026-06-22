@@ -38,6 +38,11 @@ def test_student_lineage_models_are_blocked_by_default() -> None:
         validate_external_models(["Qwen/Qwen2.5-0.5B-Instruct"])
 
 
+def test_student_lineage_blocklist_catches_qwq_and_reupload_names() -> None:
+    with pytest.raises(ValueError, match="Student-lineage models are blocked"):
+        validate_external_models(["some-org/QwQ-32B-preview", "Jackrong/reuploaded-reasoner"])
+
+
 def test_reference_attempt_stage_allows_student_lineage_weak_reference(tmp_path) -> None:
     input_jsonl = tmp_path / "verified.jsonl"
     output_jsonl = tmp_path / "jobs.jsonl"
