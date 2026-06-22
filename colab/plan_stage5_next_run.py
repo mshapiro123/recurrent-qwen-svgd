@@ -48,6 +48,15 @@ MIN_SYMBOLIC_EXACT = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_MIN_SYMBOLIC_E
 MIN_HYBRID_BEST_DELTA = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_MIN_HYBRID_BEST_DELTA", "0"))
 MIN_TRACE_BEST_DELTA = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_MIN_TRACE_BEST_DELTA", "0"))
 MIN_TRACE_CURRICULUM_SFT_ROWS = int(os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_TRACE_CURRICULUM_MIN_SFT_ROWS", "16"))
+TRACE_CURRICULUM_MIN_PHASE1_STEPS = int(
+    os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_TRACE_CURRICULUM_MIN_PHASE1_STEPS", "50")
+)
+TRACE_CURRICULUM_MAX_PHASE1_STEPS = int(
+    os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_TRACE_CURRICULUM_MAX_PHASE1_STEPS", "150")
+)
+TRACE_CURRICULUM_STEPS_PER_ROW = int(
+    os.environ.get("STAGE5_ARC_AGI_NEXT_PLAN_TRACE_CURRICULUM_STEPS_PER_ROW", "4")
+)
 A100_BUDGET_PROFILE = os.environ.get(
     "STAGE5_A100_BUDGET_PROFILE",
     os.environ.get("STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE", ""),
@@ -950,6 +959,11 @@ def capability_ladder_trace_collection_payload(payload: dict[str, Any]) -> dict[
     return payload if payload.get("kind") == "stage5_capability_ladder_trace_collection" else None
 
 
+def traced_curriculum_phase1_steps(positive_rows: int) -> int:
+    scaled = max(positive_rows, 0) * max(TRACE_CURRICULUM_STEPS_PER_ROW, 0)
+    return max(TRACE_CURRICULUM_MIN_PHASE1_STEPS, min(TRACE_CURRICULUM_MAX_PHASE1_STEPS, scaled))
+
+
 def mode_rows_from_counts(payload: dict[str, Any]) -> str:
     counts = payload.get("counts") if isinstance(payload.get("counts"), dict) else {}
     mode_counts = counts.get("mode_counts") if isinstance(counts.get("mode_counts"), dict) else {}
@@ -1245,6 +1259,7 @@ def capability_ladder_trace_collection_actions(payload: dict[str, Any], *, sourc
             "STAGE5_CURRICULUM_WORK_DIR": work_dir,
             "STAGE5_CURRICULUM_SUMMARY_JSON": summary_json,
             "STAGE5_CURRICULUM_MIN_POSITIVE_ROWS": str(max(positive_rows, MIN_TRACE_CURRICULUM_SFT_ROWS)),
+            "STAGE5_CURRICULUM_PHASE1_STEPS": str(traced_curriculum_phase1_steps(positive_rows)),
         }
         if min_mode_rows:
             assignments["STAGE5_CURRICULUM_MIN_MODE_ROWS"] = min_mode_rows

@@ -434,6 +434,7 @@ def test_capability_ladder_trace_collection_gate_ready_recommends_sft_gate(tmp_p
     assert "STAGE5_CURRICULUM_SUMMARY_JSON=data/curriculum/traced/summary.json" in actions[0]["command"]
     assert "STAGE5_CURRICULUM_MIN_POSITIVE_ROWS=24" in actions[0]["command"]
     assert "STAGE5_CURRICULUM_MIN_MODE_ROWS=deep_narrow=12,direct=12" in actions[0]["command"]
+    assert "STAGE5_CURRICULUM_PHASE1_STEPS=96" in actions[0]["command"]
     assert "STAGE5_CURRICULUM_INPUT_BACKUP_DIR=/content/drive/MyDrive/recurrent-qwen-svgd/stage5_capability_ladder_trace_collection/run" in actions[0]["command"]
 
 
