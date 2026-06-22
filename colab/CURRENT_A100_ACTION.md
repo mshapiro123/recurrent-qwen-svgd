@@ -102,3 +102,20 @@ The repair summary wraps the child ARC-mix gate status:
 
 Do not proceed to width/particles until direct rows stop regressing. This is
 the calibration floor for the wider depth/width curriculum.
+
+## Optional Constructed-Curriculum Lever
+
+If the routing repair still reports direct/deep calibration problems, the repo
+also contains a bounded constructed-curriculum runner:
+
+```bash
+STAGE5_PROGRAMMATIC_SOURCE_SUMMARY=outputs/stage5/<source_run>/summary.json \
+python colab/run_stage5_programmatic_depth_repair.py
+```
+
+That runner generates verified direct/deep-narrow arithmetic-chain rows on CPU,
+exports only `positive_direct` and `positive_depth` traces, performs one short
+Phase 1 continuation with base-logit distillation, and evaluates on a held-out
+constructed split. Treat it as a calibration ingredient only. Any checkpoint it
+produces still needs the ARC routing/benchmark gate before particles, SVGD,
+or wider data should resume.

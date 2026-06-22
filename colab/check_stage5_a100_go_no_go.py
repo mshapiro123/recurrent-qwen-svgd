@@ -185,7 +185,12 @@ def apply_checkpoint_guard(
     *,
     source_payload: dict[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    if decision.get("spend_class") in {"bounded_routing_diagnostic", "bounded_routing_repair"}:
+    recovered_checkpoint_classes = {
+        "bounded_routing_diagnostic",
+        "bounded_routing_repair",
+        "bounded_programmatic_depth_repair",
+    }
+    if decision.get("spend_class") in recovered_checkpoint_classes:
         checkpoint = routing_repair_checkpoint_availability()
     else:
         checkpoint = checkpoint_availability(source_payload)
@@ -193,7 +198,7 @@ def apply_checkpoint_guard(
         return decision, checkpoint
     if checkpoint.get("available"):
         return decision, checkpoint
-    if decision.get("spend_class") in {"bounded_routing_diagnostic", "bounded_routing_repair"}:
+    if decision.get("spend_class") in recovered_checkpoint_classes:
         guarded = {
             "go": False,
             "status": "routing_checkpoint_missing_no_go",
@@ -258,6 +263,25 @@ def classify_action(
             "status": "routing_repair_blocked",
             "spend_class": "none",
             "reason": f"Routing repair requires a repair status, got {routing_status!r}.",
+        }
+
+    if script == "colab/run_stage5_programmatic_depth_repair.py":
+        routing_status = str(source_payload.get("status", ""))
+        if routing_status in {"needs_direct_halting_repair", "needs_deep_narrow_recovery"}:
+            return {
+                "go": True,
+                "status": "go_programmatic_depth_repair",
+                "spend_class": "bounded_programmatic_depth_repair",
+                "reason": (
+                    "A routing diagnostic indicates deterministic depth/direct repair is still needed; "
+                    "one bounded constructed-curriculum repair is allowed."
+                ),
+            }
+        return {
+            "go": False,
+            "status": "programmatic_depth_repair_blocked",
+            "spend_class": "none",
+            "reason": f"Programmatic depth repair requires a repair status, got {routing_status!r}.",
         }
 
     if source_has_calibration_warning(source_payload):

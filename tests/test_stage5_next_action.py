@@ -238,6 +238,16 @@ def test_parse_action_command_allows_routing_repair_runner() -> None:
     assert parsed.argv == [sys.executable, "colab/run_stage5_routing_repair.py"]
 
 
+def test_parse_action_command_allows_programmatic_depth_repair_runner() -> None:
+    parsed = parse_action_command(
+        "STAGE5_PROGRAMMATIC_DEPTH_RUN_ID=depth python colab/run_stage5_programmatic_depth_repair.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_PROGRAMMATIC_DEPTH_RUN_ID": "depth"}
+    assert parsed.argv == [sys.executable, "colab/run_stage5_programmatic_depth_repair.py"]
+
+
 def test_parse_action_command_allows_reasoning_dataset_audit_runner() -> None:
     parsed = parse_action_command(
         "STAGE5_DATASET_AUDIT_RUN_ID=audit python colab/run_stage5_reasoning_dataset_audit.py"

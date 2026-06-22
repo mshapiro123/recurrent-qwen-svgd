@@ -142,6 +142,48 @@ def test_routing_repair_checkpoint_preflight_allows_available(monkeypatch) -> No
     assert decision["status"] == "go_routing_repair"
 
 
+def test_programmatic_depth_repair_uses_recovered_checkpoint_preflight(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "colab.check_stage5_a100_go_no_go.routing_repair_checkpoint_availability",
+        lambda: {
+            "checkpoint": "outputs/stage5/recovered/phase1/phase1_step_125.pt",
+            "available": True,
+            "exists": True,
+            "drive_candidate_exists": False,
+        },
+    )
+
+    decision = classify_action(
+        {
+            "name": "Run constructed depth repair",
+            "command": "python colab/run_stage5_programmatic_depth_repair.py",
+        },
+        source_payload={"status": "needs_direct_halting_repair"},
+    )
+    guarded, checkpoint = apply_checkpoint_guard(
+        decision,
+        source_payload={"status": "needs_direct_halting_repair"},
+    )
+
+    assert checkpoint["available"] is True
+    assert guarded["go"] is True
+    assert guarded["status"] == "go_programmatic_depth_repair"
+    assert guarded["spend_class"] == "bounded_programmatic_depth_repair"
+
+
+def test_programmatic_depth_repair_blocks_when_no_repair_needed() -> None:
+    decision = classify_action(
+        {
+            "name": "Run constructed depth repair",
+            "command": "python colab/run_stage5_programmatic_depth_repair.py",
+        },
+        source_payload={"status": "proxy_lift", "passed": True},
+    )
+
+    assert decision["go"] is False
+    assert decision["status"] == "programmatic_depth_repair_blocked"
+
+
 def test_routing_checkpoint_availability_reports_default_checkpoint() -> None:
     status = routing_repair_checkpoint_availability()
 
