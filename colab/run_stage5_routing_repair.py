@@ -253,6 +253,51 @@ def child_passed(child_payload: dict[str, Any]) -> bool:
     return bool(child_payload.get("passed")) or status in {"proxy_lift", "proxy_matches_base"}
 
 
+def child_proxy_alignment(profile: dict[str, str], child_payload: dict[str, Any]) -> dict[str, Any]:
+    """Check that the delegated proxy eval matched this repair's objective."""
+
+    expected = str(profile.get("STAGE5_ARC_MIX_EVAL_CONFIG") or "").strip()
+    actual = str(child_payload.get("arc_eval_config") or (child_payload.get("data") or {}).get("arc_eval_config") or "").strip()
+    if not expected:
+        return {
+            "checked": False,
+            "ok": True,
+            "expected_arc_eval_config": None,
+            "actual_arc_eval_config": actual or None,
+            "reason": "Repair profile did not request a specific proxy eval config.",
+        }
+    return {
+        "checked": True,
+        "ok": actual == expected,
+        "expected_arc_eval_config": expected,
+        "actual_arc_eval_config": actual or None,
+        "reason": (
+            "Child ARC-mix proxy matched the repair objective."
+            if actual == expected
+            else "Child ARC-mix proxy did not match the repair objective; do not advance this checkpoint."
+        ),
+    }
+
+
+def repair_child_outcome(profile: dict[str, str], child_payload: dict[str, Any]) -> dict[str, Any]:
+    proxy_alignment = child_proxy_alignment(profile, child_payload)
+    child_status = str(child_payload.get("status", "unknown"))
+    passed = child_passed(child_payload) and bool(proxy_alignment.get("ok", True))
+    status = f"repair_{child_status}" if proxy_alignment.get("ok", True) else "repair_proxy_misaligned"
+    next_step = child_payload.get("next_step") or "Review ARC-mix child summary."
+    if not proxy_alignment.get("ok", True):
+        next_step = (
+            "Do not use this repair result for full assessment; rerun the routing repair after confirming "
+            "STAGE5_ARC_MIX_EVAL_CONFIG matches the selected repair mode."
+        )
+    return {
+        "status": status,
+        "passed": passed,
+        "next_step": next_step,
+        "proxy_alignment": proxy_alignment,
+    }
+
+
 def copy_child_run(env: dict[str, str]) -> Path:
     child_dir = ROOT / "outputs" / "stage5" / env["STAGE5_ARC_MIX_RUN_ID"]
     target = RUN_DIR / "repair_run"
@@ -297,6 +342,7 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Benchmark source summary: `{payload.get('benchmark_summary')}`",
         f"- ARC-mix child summary: `{payload.get('arc_mix_summary')}`",
         f"- Objective audit: distillation_ok=`{payload['profile_objective']['distillation_ok']}`",
+        f"- Proxy alignment: `{(payload.get('proxy_alignment') or {}).get('ok', 'n/a')}`",
         f"- Next step: {payload['next_step']}",
     ]
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -335,20 +381,22 @@ def main() -> int:
     child_payload = read_json(child_summary)
     copy_child_run(child_env)
     best_checkpoint = child_best_checkpoint(child_payload)
+    child_outcome = repair_child_outcome(profile, child_payload)
     payload = {
         "run_id": RUN_ID,
         "kind": "stage5_routing_repair",
-        "status": f"repair_{child_payload.get('status', 'unknown')}",
-        "passed": child_passed(child_payload),
+        "status": child_outcome["status"],
+        "passed": child_outcome["passed"],
         "repair_mode": repair_mode,
         "source_summary": path_for_cli(source_summary),
         "benchmark_summary": path_for_cli(benchmark_summary),
         "profile": profile,
         "profile_objective": profile_objective,
+        "proxy_alignment": child_outcome["proxy_alignment"],
         "arc_mix_summary": path_for_cli(child_summary),
         "arc_mix": child_payload,
         "best_checkpoint": best_checkpoint,
-        "next_step": child_payload.get("next_step") or "Review ARC-mix child summary.",
+        "next_step": child_outcome["next_step"],
     }
     write_report(payload)
     commit_results()

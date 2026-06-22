@@ -127,6 +127,44 @@ def test_child_best_checkpoint_and_passed_extract_child_gate() -> None:
     }
 
 
+def test_repair_child_outcome_passes_only_when_proxy_matches_profile() -> None:
+    import colab.run_stage5_routing_repair as module
+
+    profile = module.repair_profile("needs_direct_halting_repair")
+    payload = {"status": "proxy_lift", "passed": True, "arc_eval_config": "ARC-Easy"}
+
+    outcome = module.repair_child_outcome(profile, payload)
+
+    assert outcome["status"] == "repair_proxy_lift"
+    assert outcome["passed"] is True
+    assert outcome["proxy_alignment"]["ok"] is True
+    assert outcome["proxy_alignment"]["expected_arc_eval_config"] == "ARC-Easy"
+
+
+def test_repair_child_outcome_blocks_stale_or_misconfigured_proxy() -> None:
+    import colab.run_stage5_routing_repair as module
+
+    profile = module.repair_profile("needs_direct_halting_repair")
+    payload = {"status": "proxy_lift", "passed": True, "arc_eval_config": "ARC-Challenge"}
+
+    outcome = module.repair_child_outcome(profile, payload)
+
+    assert outcome["status"] == "repair_proxy_misaligned"
+    assert outcome["passed"] is False
+    assert outcome["proxy_alignment"]["ok"] is False
+    assert outcome["proxy_alignment"]["actual_arc_eval_config"] == "ARC-Challenge"
+    assert "Do not use this repair result" in outcome["next_step"]
+
+
+def test_child_proxy_alignment_reads_legacy_data_field() -> None:
+    import colab.run_stage5_routing_repair as module
+
+    profile = module.repair_profile("needs_deep_narrow_recovery")
+    payload = {"status": "proxy_matches_base", "data": {"arc_eval_config": "ARC-Challenge"}}
+
+    assert module.child_proxy_alignment(profile, payload)["ok"] is True
+
+
 def test_resolve_source_summary_finds_latest_routing_summary(monkeypatch, tmp_path) -> None:
     import colab.run_stage5_routing_repair as module
 
