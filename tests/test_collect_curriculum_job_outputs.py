@@ -123,6 +123,91 @@ def test_seed_outputs_to_candidates_parses_only_valid_seed_json() -> None:
     assert candidates[0]["decontaminated"] is False
 
 
+def test_collectors_preserve_resolved_provider_model_ids() -> None:
+    seed_candidates, _report = seed_outputs_to_candidates(
+        [seed_job()],
+        [
+            {
+                "job_id": "seed-000001-generator-opus-test",
+                "response_id": "r-seed",
+                "resolved_model": "anthropic/claude-opus-4.8",
+                "response_text": json.dumps(
+                    {
+                        "statement": "What is 6*7?",
+                        "claimed_answer": "42",
+                        "domain": "math",
+                        "candidate_methods": ["algebra"],
+                    }
+                ),
+            }
+        ],
+    )
+    assert seed_candidates[0]["generator_model"] == "anthropic/claude-opus-4.8"
+    assert seed_candidates[0]["logical_generator_model"] == "opus-test"
+
+    verified, _report = ground_truth_outputs_to_verified_candidates(
+        seed_candidates,
+        [
+            ground_truth_job("solve-opus", record_id=seed_candidates[0]["id"], model="opus-test"),
+            ground_truth_job("solve-glm", record_id=seed_candidates[0]["id"], model="glm-test"),
+        ],
+        [
+            {
+                "job_id": "solve-opus",
+                "response_id": "r-opus",
+                "resolved_model": "anthropic/claude-opus-4.8",
+                "response_text": "ANSWER: 42",
+            },
+            {
+                "job_id": "solve-glm",
+                "response_id": "r-glm",
+                "resolved_model": "glm/glm-5.2",
+                "response_text": "ANSWER: 42",
+            },
+        ],
+    )
+    assert verified[0]["answer"]["agreeing_models"] == ["anthropic/claude-opus-4.8", "glm/glm-5.2"]
+    assert {row["logical_model"] for row in verified[0]["ground_truth_solutions"]} == {"opus-test", "glm-test"}
+
+    solutions, _report = method_outputs_to_solution_candidates(
+        verified,
+        [method_job("method-opus", record_id=seed_candidates[0]["id"], method="algebra")],
+        [
+            {
+                "job_id": "method-opus",
+                "response_id": "r-method",
+                "resolved_model": "anthropic/claude-opus-4.8",
+                "response_text": "Use multiplication.\nANSWER: 42",
+            }
+        ],
+    )
+    assert solutions[0]["source_model"] == "anthropic/claude-opus-4.8"
+    assert solutions[0]["logical_source_model"] == "opus-test"
+
+    naturalness, _report = collect_naturalness_judgments(
+        solutions,
+        [
+            {
+                "job_id": "judge-natural",
+                "stage": "naturalness_judge",
+                "role": "judge",
+                "model": "judge-opus",
+                "metadata": {"record_id": solutions[0]["id"], "method": "algebra"},
+            }
+        ],
+        [
+            {
+                "job_id": "judge-natural",
+                "response_id": "r-judge",
+                "resolved_model": "anthropic/claude-opus-4.8",
+                "response_text": '{"natural": true, "actually_uses": "algebra", "reason": "clean"}',
+            }
+        ],
+    )
+    assert naturalness[0]["judge_model"] == "anthropic/claude-opus-4.8"
+    assert naturalness[0]["logical_judge_model"] == "judge-opus"
+
+
 def test_ground_truth_outputs_accepts_cross_model_agreement() -> None:
     candidates = [
         {

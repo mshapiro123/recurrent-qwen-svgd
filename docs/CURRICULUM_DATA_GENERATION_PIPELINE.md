@@ -33,6 +33,10 @@ Use at least two strong non-Qwen models in separate roles where possible. The
 specific provider ids are mutable configuration, for example current strong
 GPT-, Claude/Opus-, or GLM-class models, but the resolved ids must be audited
 and must not be the student base, its adapters, or Qwen-family descendants.
+The response runner records concrete `resolved_model` ids for
+OpenAI-compatible calls, and the collectors carry those concrete ids into
+`generator_model`, `source_model`, and `judge_model` while retaining the
+logical aliases in `logical_*` fields.
 
 - Generators produce candidate problems and raw traces.
 - Solvers independently derive answers for ground truth.

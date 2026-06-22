@@ -141,6 +141,8 @@ def test_openai_compatible_backend_posts_chat_completion_request(tmp_path, monke
 
     rows = read_jsonl(output)
     assert report["written"] == 1
+    assert report["logical_model_counts"] == {"logical-opus": 1}
+    assert report["resolved_model_counts"] == {"real-model": 1}
     assert rows[0]["backend"] == "openai_compatible"
     assert rows[0]["status"] == "ok"
     assert rows[0]["resolved_model"] == "real-model"

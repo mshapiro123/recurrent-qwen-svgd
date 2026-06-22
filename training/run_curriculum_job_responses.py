@@ -17,6 +17,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -345,6 +346,8 @@ def run_jobs(
     selected = jobs[:limit] if limit is not None else jobs
     counts = {"written": 0, "skipped": 0, "errors": 0, "timeouts": 0}
     resolved_model_map = model_map or {}
+    logical_model_counts: Counter[str] = Counter()
+    resolved_model_counts: Counter[str] = Counter()
 
     for job in selected:
         job_id = str(job.get("job_id") or "")
@@ -380,6 +383,12 @@ def run_jobs(
 
         append_jsonl(output_jsonl, row)
         counts["written"] += 1
+        logical = str(row.get("model") or job.get("model") or "").strip()
+        resolved = str(row.get("resolved_model") or logical).strip()
+        if logical:
+            logical_model_counts[logical] += 1
+        if resolved:
+            resolved_model_counts[resolved] += 1
         if row.get("status") == "error":
             counts["errors"] += 1
         if row.get("status") == "timeout":
@@ -395,6 +404,8 @@ def run_jobs(
         "selected": len(selected),
         **counts,
         "output_jsonl": str(output_jsonl),
+        "logical_model_counts": dict(sorted(logical_model_counts.items())),
+        "resolved_model_counts": dict(sorted(resolved_model_counts.items())),
     }
 
 

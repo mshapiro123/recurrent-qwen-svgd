@@ -49,6 +49,12 @@ Treat provider model names as mutable configuration, not as labels in the
 dataset. The record should preserve the resolved provider id for audit, but
 training logic must depend on verified answers, measured mode, and role labels,
 not on the provider's self-description.
+Response collectors preserve both sides of this mapping: fields such as
+`generator_model`, `source_model`, and `judge_model` use the concrete resolved
+provider id when available, while `logical_generator_model`,
+`logical_source_model`, and `logical_judge_model` keep the role alias from the
+job file. This lets a shard prove which model produced each accepted trace even
+when Colab used logical names such as `opus-strong` and `glm-strong`.
 
 - `generator`: proposes problems and candidate methods.
 - `solver`: independently solves each problem for ground truth.

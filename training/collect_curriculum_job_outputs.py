@@ -209,6 +209,16 @@ def responses_with_jobs(
     return paired, issues
 
 
+def resolved_model_name(job: dict[str, Any], response: dict[str, Any]) -> str:
+    """Return the concrete provider model id when the response runner recorded one."""
+
+    return str(response.get("resolved_model") or job.get("model") or "").strip()
+
+
+def logical_model_name(job: dict[str, Any]) -> str:
+    return str(job.get("model") or "").strip()
+
+
 def candidate_id(job: dict[str, Any]) -> str:
     metadata = job.get("metadata") if isinstance(job.get("metadata"), dict) else {}
     parts = [
@@ -252,7 +262,8 @@ def seed_outputs_to_candidates(
                 "candidate_methods": [str(method) for method in methods if str(method).strip()],
                 "source_job_id": job.get("job_id"),
                 "source_response_id": response.get("response_id"),
-                "generator_model": job.get("model"),
+                "generator_model": resolved_model_name(job, response),
+                "logical_generator_model": logical_model_name(job),
                 "target_steps_hint": metadata.get("target_steps"),
                 "difficulty_hint": metadata.get("difficulty"),
                 "decontaminated": bool(mark_decontaminated),
@@ -304,7 +315,8 @@ def ground_truth_outputs_to_verified_candidates(
         answers_by_record[record_id].append(
             {
                 "job_id": job.get("job_id"),
-                "model": job.get("model"),
+                "model": resolved_model_name(job, response),
+                "logical_model": logical_model_name(job),
                 "answer": answer,
                 "normalized": normalize_answer(answer),
                 "response_id": response.get("response_id"),
@@ -468,7 +480,8 @@ def method_outputs_to_solution_candidates(
                     "record_id": record_id,
                     "method": method,
                     "status": status,
-                    "model": job.get("model"),
+                    "model": resolved_model_name(job, response),
+                    "logical_model": logical_model_name(job),
                 }
             )
             continue
@@ -483,7 +496,8 @@ def method_outputs_to_solution_candidates(
                     "record_id": record_id,
                     "method": method,
                     "status": status,
-                    "model": job.get("model"),
+                    "model": resolved_model_name(job, response),
+                    "logical_model": logical_model_name(job),
                 }
             )
             continue
@@ -499,7 +513,8 @@ def method_outputs_to_solution_candidates(
                     "record_id": record_id,
                     "method": method,
                     "status": status,
-                    "model": job.get("model"),
+                    "model": resolved_model_name(job, response),
+                    "logical_model": logical_model_name(job),
                     "parsed_answer": parsed_answer,
                     "parsed_answer_normalized": normalized,
                     "verified_answer_normalized": verified,
@@ -523,7 +538,8 @@ def method_outputs_to_solution_candidates(
                 "domain": candidate.get("domain"),
                 "statement": candidate.get("statement"),
                 "method": method,
-                "source_model": job.get("model"),
+                "source_model": resolved_model_name(job, response),
+                "logical_source_model": logical_model_name(job),
                 "source_job_id": job.get("job_id"),
                 "source_response_id": response.get("response_id"),
                 "text": text,
@@ -585,7 +601,8 @@ def reference_outputs_to_attempts(
             {
                 "record_id": record_id,
                 "sample_id": metadata.get("sample_id"),
-                "model": job.get("model"),
+                "model": resolved_model_name(job, response),
+                "logical_model": logical_model_name(job),
                 "correct": correct,
                 "parsed_answer": parsed_answer,
                 "parsed_answer_normalized": parsed_normalized,
@@ -691,7 +708,8 @@ def perturbation_outputs_to_traces(
             "parsed_answer": parsed_answer,
             "parsed_answer_normalized": parsed_normalized,
             "verified_answer_normalized": verified,
-            "source_model": job.get("model"),
+            "source_model": resolved_model_name(job, response),
+            "logical_source_model": logical_model_name(job),
             "source_job_id": job.get("job_id"),
             "source_response_id": response.get("response_id"),
             "text": text,
@@ -753,7 +771,8 @@ def collect_error_detection_judgments(
                 "first_error_step": payload.get("first_error_step"),
                 "explanation": str(payload.get("explanation") or "").strip(),
                 "correct": verdict == "correct",
-                "source_model": job.get("model"),
+                "source_model": resolved_model_name(job, response),
+                "logical_source_model": logical_model_name(job),
                 "source_job_id": job.get("job_id"),
                 "source_response_id": response.get("response_id"),
                 "text": text,
@@ -807,7 +826,8 @@ def collect_naturalness_judgments(
                 "solution_id": solution_id,
                 "record_id": solution.get("record_id"),
                 "method": solution.get("method"),
-                "judge_model": job.get("model"),
+                "judge_model": resolved_model_name(job, response),
+                "logical_judge_model": logical_model_name(job),
                 "natural": natural,
                 "actually_uses": str(payload.get("actually_uses") or "").strip(),
                 "reason": str(payload.get("reason") or "").strip(),
@@ -868,7 +888,8 @@ def collect_distinctness_judgments(
                 "solution_b_id": solution_b_id,
                 "method_a": str(metadata.get("method_a") or ""),
                 "method_b": str(metadata.get("method_b") or ""),
-                "judge_model": job.get("model"),
+                "judge_model": resolved_model_name(job, response),
+                "logical_judge_model": logical_model_name(job),
                 "distinct": distinct,
                 "reason": str(payload.get("reason") or "").strip(),
                 "source_job_id": job.get("job_id"),
@@ -928,7 +949,8 @@ def collect_depth_measurements(
                 "solution_id": solution_id,
                 "record_id": solution.get("record_id"),
                 "method": solution.get("method"),
-                "judge_model": job.get("model"),
+                "judge_model": resolved_model_name(job, response),
+                "logical_judge_model": logical_model_name(job),
                 "steps": [str(step) for step in steps],
                 "count": count,
                 "source_job_id": job.get("job_id"),
