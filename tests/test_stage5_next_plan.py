@@ -1723,7 +1723,7 @@ def test_legacy_stage4_opus_finetune_summary_runs_benchmark_suite(tmp_path) -> N
     assert "STAGE5_BENCHMARK_CHECKPOINT=outputs/stage4/legacy/phase1.pt" in actions[0]["command"]
 
 
-def test_curriculum_sft_summary_runs_benchmark_suite(tmp_path) -> None:
+def test_curriculum_sft_summary_runs_routing_diagnostic_before_broader_benchmarks(tmp_path) -> None:
     source = tmp_path / "curriculum_sft" / "summary.json"
     source.parent.mkdir()
     payload = {
@@ -1737,16 +1737,17 @@ def test_curriculum_sft_summary_runs_benchmark_suite(tmp_path) -> None:
     actions = plan_next_actions(payload, source_summary=source)
 
     assert source_kind(payload) == "curriculum_sft"
-    assert actions[0]["name"] == "Run benchmark suite for generated-curriculum recurrent checkpoint"
-    assert "STAGE5_BENCHMARK_SUITE_RUN_ID=curriculum_sft_run_benchmark_suite" in actions[0]["command"]
-    assert "STAGE5_BENCHMARK_SOURCE_SUMMARY=" in actions[0]["command"]
+    assert actions[0]["name"] == "Run routing diagnostic for generated-curriculum recurrent checkpoint"
+    assert "STAGE5_ROUTING_DIAGNOSTIC_RUN_ID=curriculum_sft_run_routing_diagnostic" in actions[0]["command"]
+    assert "STAGE5_RECOVERED_SOURCE_SUMMARY=" in actions[0]["command"]
     assert (
-        "STAGE5_BENCHMARK_CHECKPOINT=outputs/stage5/curriculum_sft_run/phase1/phase1_step_150.pt"
+        "STAGE5_RECOVERED_PHASE1_CHECKPOINT=outputs/stage5/curriculum_sft_run/phase1/phase1_step_150.pt"
         in actions[0]["command"]
     )
-    assert "STAGE5_BENCHMARK_RECURRENT_MODE=phase1" in actions[0]["command"]
-    assert "STAGE5_BENCHMARK_NUM_TRAJECTORIES=1" in actions[0]["command"]
-    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
+    assert "STAGE5_ROUTING_ARC_EASY_LIMIT=64" in actions[0]["command"]
+    assert "STAGE5_ROUTING_ARC_CHALLENGE_LIMIT=64" in actions[0]["command"]
+    assert "python colab/run_stage5_routing_diagnostic.py" in actions[0]["command"]
+    assert "run_stage5_benchmark_suite.py" not in actions[0]["command"]
 
 
 def test_candidate_gate_plans_trace_sft_when_symbolic_hybrid_signal_exists(tmp_path) -> None:

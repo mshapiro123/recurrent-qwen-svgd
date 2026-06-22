@@ -209,12 +209,14 @@ The safe-continue cell must show a green curriculum input preflight before
 running `colab/run_stage5_curriculum_sft.py`. If it reports missing curriculum
 input artifacts, disconnect the GPU and rerun Step 1 or reauthorize Drive.
 
-### Step 3: Bounded Benchmark Only After SFT
+### Step 3: Routing Diagnostic Only After SFT
 
 If SFT completes, the planner may recommend
-`colab/run_stage5_benchmark_suite.py`. The A100 go/no-go guard now requires
-explicit `STAGE5_BENCHMARKS` plus bounded per-benchmark limits before that
-benchmark suite can run. This prevents accidental full benchmark spending.
+`colab/run_stage5_routing_diagnostic.py`. Run that before any broader
+ARC/GPQA benchmark expansion. The diagnostic checks whether the new
+direct/deep curriculum actually moved base-confident direct rows toward
+shallower loop use while preserving deep-narrow behavior. Only after that
+passes should the planner advance to larger benchmark confirmation.
 
 ## Previous Routing Diagnostic
 

@@ -1078,27 +1078,24 @@ def curriculum_sft_actions(payload: dict[str, Any], *, source_summary: Path) -> 
     phase1_val = payload.get("phase1_val") or {}
     dataset = payload.get("dataset") or {}
     assignments = {
-        "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{run_id}_benchmark_suite",
-        "STAGE5_BENCHMARK_SOURCE_SUMMARY": command_path(source_summary),
-        "STAGE5_BENCHMARKS": "arc_challenge,arc_easy,gpqa_lite",
-        "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "128",
-        "STAGE5_BENCHMARK_ARC_EASY_LIMIT": "128",
-        "STAGE5_BENCHMARK_GPQA_LIMIT": "16",
-        "STAGE5_BENCHMARK_RECURRENT_MODE": "phase1",
-        "STAGE5_BENCHMARK_NUM_TRAJECTORIES": "1",
+        "STAGE5_ROUTING_DIAGNOSTIC_RUN_ID": f"{run_id}_routing_diagnostic",
+        "STAGE5_RECOVERED_SOURCE_SUMMARY": command_path(source_summary),
+        "STAGE5_RECOVERED_PHASE1_RUN_ID": run_id,
+        "STAGE5_ROUTING_ARC_EASY_LIMIT": "64",
+        "STAGE5_ROUTING_ARC_CHALLENGE_LIMIT": "64",
     }
     if checkpoint:
-        assignments["STAGE5_BENCHMARK_CHECKPOINT"] = checkpoint
+        assignments["STAGE5_RECOVERED_PHASE1_CHECKPOINT"] = checkpoint
     reason = (
-        "Generated-curriculum Phase 1 SFT finished; run the broader base-vs-deterministic-recurrent benchmark suite before any Phase 2/SVGD training. "
+        "Generated-curriculum Phase 1 SFT finished; first run a bounded routing/depth diagnostic before any broader ARC/GPQA or Phase 2/SVGD spend. "
         f"Checkpoint `{checkpoint or 'missing'}`; curriculum rows train/val="
         f"{dataset.get('train_rows')}/{dataset.get('val_rows')}; val metrics `{phase1_val}`."
     )
     return [
         make_action(
-            "Run benchmark suite for generated-curriculum recurrent checkpoint",
+            "Run routing diagnostic for generated-curriculum recurrent checkpoint",
             reason,
-            command_env(assignments, "python colab/run_stage5_benchmark_suite.py"),
+            command_env(assignments, "python colab/run_stage5_routing_diagnostic.py"),
             10,
         )
     ]
