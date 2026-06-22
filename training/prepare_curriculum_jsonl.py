@@ -242,18 +242,25 @@ def convert_curriculum_records(
     prompt_style: str = "qwen_instruct",
     default_direct_target_loop: int | None = 1,
     fail_on_validation: bool = True,
+    export_invalid_records: bool = False,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     exported: list[dict[str, Any]] = []
     issues: list[str] = []
     role_counts: Counter[str] = Counter()
     mode_counts: Counter[str] = Counter()
     exported_role_counts: Counter[str] = Counter()
+    invalid_records = 0
+    skipped_invalid_records = 0
 
     for line_no, record in enumerate(records, start=1):
         record_issues = validate_curriculum_record(record, line_no=line_no)
         if record_issues:
+            invalid_records += 1
             issues.extend(record_issues)
             if fail_on_validation:
+                continue
+            if not export_invalid_records:
+                skipped_invalid_records += 1
                 continue
 
         mode = str(record.get("mode") or "")
@@ -285,6 +292,9 @@ def convert_curriculum_records(
     report = {
         "records": len(records),
         "exported_examples": len(exported),
+        "invalid_records": invalid_records,
+        "skipped_invalid_records": skipped_invalid_records,
+        "export_invalid_records": export_invalid_records,
         "issues": issues,
         "role_counts": dict(sorted(role_counts.items())),
         "mode_counts": dict(sorted(mode_counts.items())),
@@ -311,7 +321,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--prompt_style", choices=("qwen_instruct", "plain"), default="qwen_instruct")
     parser.add_argument("--default_direct_target_loop", type=int, default=1)
     parser.add_argument("--allow_validation_issues", action="store_true")
+    parser.add_argument(
+        "--export_invalid_records",
+        action="store_true",
+        help="Debug-only: export positive traces from records with validation issues.",
+    )
     args = parser.parse_args(argv)
+    if args.export_invalid_records and not args.allow_validation_issues:
+        parser.error("--export_invalid_records requires --allow_validation_issues")
 
     records = read_jsonl(args.input_jsonl)
     examples, report = convert_curriculum_records(
@@ -320,6 +337,7 @@ def main(argv: list[str] | None = None) -> int:
         prompt_style=args.prompt_style,
         default_direct_target_loop=args.default_direct_target_loop,
         fail_on_validation=not args.allow_validation_issues,
+        export_invalid_records=args.export_invalid_records,
     )
     write_jsonl(args.output_jsonl, examples)
     if args.report_json:
@@ -329,6 +347,8 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"records={report['records']}")
     print(f"exported_examples={report['exported_examples']}")
+    print(f"invalid_records={report['invalid_records']}")
+    print(f"skipped_invalid_records={report['skipped_invalid_records']}")
     print(f"issues={len(report['issues'])}")
     print(f"role_counts={report['role_counts']}")
     print(f"exported_role_counts={report['exported_role_counts']}")

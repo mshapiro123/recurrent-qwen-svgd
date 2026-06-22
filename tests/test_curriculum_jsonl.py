@@ -83,6 +83,35 @@ def test_converter_fails_on_invalid_positive_trace_by_default() -> None:
         convert_curriculum_records([record])
 
 
+def test_allow_validation_issues_skips_invalid_records_by_default() -> None:
+    record = curriculum_record()
+    record["decontaminated"] = False
+
+    examples, report = convert_curriculum_records([record], fail_on_validation=False)
+
+    assert examples == []
+    assert report["invalid_records"] == 1
+    assert report["skipped_invalid_records"] == 1
+    assert report["exported_examples"] == 0
+    assert any("decontaminated must be true" in issue for issue in report["issues"])
+
+
+def test_debug_export_invalid_records_is_explicit() -> None:
+    record = curriculum_record()
+    record["decontaminated"] = False
+
+    examples, report = convert_curriculum_records(
+        [record],
+        fail_on_validation=False,
+        export_invalid_records=True,
+    )
+
+    assert len(examples) == 1
+    assert report["invalid_records"] == 1
+    assert report["skipped_invalid_records"] == 0
+    assert report["export_invalid_records"] is True
+
+
 def test_positive_trace_must_be_natural_and_stepped() -> None:
     record = curriculum_record()
     record["traces"][0]["natural"] = False
@@ -194,3 +223,24 @@ def test_cli_writes_safe_positive_jsonl(tmp_path) -> None:
     assert len(rows) == 1
     assert rows[0]["trace_role"] == "positive_depth"
     assert report["exported_examples"] == 1
+
+
+def test_cli_debug_export_invalid_requires_allow_validation_issues(tmp_path) -> None:
+    from training.prepare_curriculum_jsonl import main
+
+    input_jsonl = tmp_path / "curriculum.jsonl"
+    output_jsonl = tmp_path / "train.jsonl"
+    input_jsonl.write_text(json.dumps(curriculum_record()) + "\n", encoding="utf-8")
+
+    with pytest.raises(SystemExit) as exc:
+        main(
+            [
+                "--input_jsonl",
+                str(input_jsonl),
+                "--output_jsonl",
+                str(output_jsonl),
+                "--export_invalid_records",
+            ]
+        )
+
+    assert exc.value.code == 2

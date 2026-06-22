@@ -474,6 +474,11 @@ That script validates the typed records and exports ordinary
 negative and verifier traces in the report, but never writes them to the
 positive SFT output.
 
+If `--allow_validation_issues` is used for auditing a partial artifact, records
+with validation issues are still skipped by default. The debug-only
+`--export_invalid_records` flag is required to export those rows, and outputs
+created with that flag must not be used for GPU SFT.
+
 ## Worked Example
 
 Problem:
