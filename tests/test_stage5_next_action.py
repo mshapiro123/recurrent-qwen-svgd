@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 
@@ -559,6 +560,32 @@ def test_a100_guard_blocks_routing_repair_when_no_repair_needed(tmp_path) -> Non
     assert guard["checked"] is True
     assert guard["allowed"] is False
     assert guard["status"] == "routing_repair_blocked"
+
+
+def test_a100_guard_allows_stage4_opus_after_promoted_audit(tmp_path) -> None:
+    source = tmp_path / "audit" / "summary.json"
+    source.parent.mkdir()
+    source.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_reasoning_dataset_audit",
+                "recommendations": [{"status": "promote_to_small_train_mix", "key": "opus47_sft"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    action = {
+        "name": "Run audited modified-Opus recurrent fine-tune",
+        "command": "python colab/run_stage4_opus_finetune.py",
+    }
+    parsed = parse_action_command(action["command"])
+
+    guard = a100_execution_guard(action, {"source_summary": str(source)}, parsed)
+
+    assert guard["checked"] is True
+    assert guard["allowed"] is True
+    assert guard["status"] == "go_stage4_opus_finetune"
+    assert guard["checkpoint_preflight"]["available"] is True
 
 
 def test_local_only_guard_blocks_dataset_audit_on_gpu(monkeypatch) -> None:

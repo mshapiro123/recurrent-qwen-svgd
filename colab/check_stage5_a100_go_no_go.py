@@ -192,6 +192,14 @@ def apply_checkpoint_guard(
     }
     if decision.get("spend_class") in recovered_checkpoint_classes:
         checkpoint = routing_repair_checkpoint_availability()
+    elif decision.get("spend_class") == "bounded_stage4_opus_finetune":
+        checkpoint = {
+            "checkpoint": None,
+            "available": True,
+            "exists": False,
+            "drive_candidate_exists": False,
+            "reason": "Stage 4 Opus fine-tune starts from the base model and does not require a recovered checkpoint preflight.",
+        }
     else:
         checkpoint = checkpoint_availability(source_payload)
     if not decision.get("go"):
@@ -282,6 +290,26 @@ def classify_action(
             "status": "programmatic_depth_repair_blocked",
             "spend_class": "none",
             "reason": f"Programmatic depth repair requires a repair status, got {routing_status!r}.",
+        }
+
+    if script == "colab/run_stage4_opus_finetune.py":
+        promoted = [
+            item
+            for item in source_payload.get("recommendations", [])
+            if isinstance(item, dict) and item.get("status") == "promote_to_small_train_mix"
+        ]
+        if promoted:
+            return {
+                "go": True,
+                "status": "go_stage4_opus_finetune",
+                "spend_class": "bounded_stage4_opus_finetune",
+                "reason": "Dataset audit promoted a compatible Opus-style trace source; one bounded Stage 4 fine-tune is allowed.",
+            }
+        return {
+            "go": False,
+            "status": "stage4_opus_finetune_blocked",
+            "spend_class": "none",
+            "reason": "Stage 4 Opus fine-tune requires a dataset audit with a promoted trace source.",
         }
 
     if source_has_calibration_warning(source_payload):

@@ -27,7 +27,7 @@ RUN_ID = os.environ.get("STAGE5_REASONING_DATASET_PIPELINE_RUN_ID") or time.strf
 RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
 AUDIT_RUN_ID = os.environ.get("STAGE5_REASONING_DATASET_PIPELINE_AUDIT_RUN_ID", f"{RUN_ID}_audit")
 NEXT_ACTION_RUN_ID = os.environ.get("STAGE5_REASONING_DATASET_PIPELINE_NEXT_ACTION_RUN_ID", f"{RUN_ID}_next")
-EXECUTE_NEXT = os.environ.get("STAGE5_REASONING_DATASET_PIPELINE_EXECUTE_NEXT", "1").strip().lower() in {
+EXECUTE_NEXT = os.environ.get("STAGE5_REASONING_DATASET_PIPELINE_EXECUTE_NEXT", "0").strip().lower() in {
     "1",
     "true",
     "yes",

@@ -184,6 +184,46 @@ def test_programmatic_depth_repair_blocks_when_no_repair_needed() -> None:
     assert decision["status"] == "programmatic_depth_repair_blocked"
 
 
+def test_stage4_opus_finetune_allowed_only_after_dataset_promotion() -> None:
+    action = {
+        "name": "Run audited modified-Opus recurrent fine-tune",
+        "command": "python colab/run_stage4_opus_finetune.py",
+    }
+
+    blocked = classify_action(action, source_payload={"kind": "stage5_reasoning_dataset_audit", "recommendations": []})
+    allowed = classify_action(
+        action,
+        source_payload={
+            "kind": "stage5_reasoning_dataset_audit",
+            "recommendations": [{"status": "promote_to_small_train_mix", "key": "opus47_sft"}],
+        },
+    )
+
+    assert blocked["go"] is False
+    assert blocked["status"] == "stage4_opus_finetune_blocked"
+    assert allowed["go"] is True
+    assert allowed["status"] == "go_stage4_opus_finetune"
+    assert allowed["spend_class"] == "bounded_stage4_opus_finetune"
+
+
+def test_stage4_opus_finetune_checkpoint_guard_does_not_require_recovered_checkpoint() -> None:
+    decision, checkpoint = apply_checkpoint_guard(
+        {
+            "go": True,
+            "status": "go_stage4_opus_finetune",
+            "spend_class": "bounded_stage4_opus_finetune",
+        },
+        source_payload={
+            "kind": "stage5_reasoning_dataset_audit",
+            "recommendations": [{"status": "promote_to_small_train_mix", "key": "opus47_sft"}],
+        },
+    )
+
+    assert decision["go"] is True
+    assert checkpoint["available"] is True
+    assert checkpoint["checkpoint"] is None
+
+
 def test_routing_checkpoint_availability_reports_default_checkpoint() -> None:
     status = routing_repair_checkpoint_availability()
 

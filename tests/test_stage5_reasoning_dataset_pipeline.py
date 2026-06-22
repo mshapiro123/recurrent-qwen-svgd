@@ -16,6 +16,10 @@ def test_pipeline_audit_env_sets_safe_defaults(monkeypatch) -> None:
     assert env["STAGE5_DATASET_AUDIT_PUSH"] == "0"
 
 
+def test_pipeline_defaults_to_planning_next_action() -> None:
+    assert module.EXECUTE_NEXT is False
+
+
 def test_pipeline_next_action_env_points_to_audit_summary(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(module, "ROOT", tmp_path)
     monkeypatch.setattr(module, "AUDIT_RUN_ID", "audit")
