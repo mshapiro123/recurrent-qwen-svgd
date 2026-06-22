@@ -243,6 +243,11 @@ def test_curriculum_artifact_pipeline_cell_defaults_to_no_provider_spend() -> No
     assert "runtime.unassign()" in plain
     assert "replace-with-opus-compatible-model-id" in plain
     assert "Fill MODEL_MAP with concrete provider model ids" in plain
+    assert "REFUSE_GPU_RUNTIME = True" in plain
+    assert "ALLOW_GPU_RUNTIME_FOR_CPU_API_CELL = False" in plain
+    assert "attached_gpu_names" in plain
+    assert "refuse_gpu_runtime_for_cpu_api_work()" in plain
+    assert "Refusing to run CPU/API curriculum pipeline on an attached GPU runtime" in plain
 
 
 def test_curriculum_artifact_pipeline_plain_cell_matches_markdown_code() -> None:

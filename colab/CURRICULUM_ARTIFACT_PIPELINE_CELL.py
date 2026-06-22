@@ -22,6 +22,8 @@ JSON_MODE = True
 MOUNT_DRIVE = True
 BACKUP_TO_DRIVE = True
 DISCONNECT_RUNTIME_WHEN_DONE = False
+REFUSE_GPU_RUNTIME = True
+ALLOW_GPU_RUNTIME_FOR_CPU_API_CELL = False
 
 MODEL_MAP = {
     "opus-strong": "replace-with-opus-compatible-model-id",
@@ -101,6 +103,38 @@ def run(cmd, cwd=None, env=None, check=True):
     if check and proc.returncode:
         raise RuntimeError(f"failed: {printable}")
     return proc
+
+
+def attached_gpu_names():
+    try:
+        proc = subprocess.run(
+            ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+    except FileNotFoundError:
+        return []
+    if proc.returncode != 0:
+        return []
+    return [line.strip() for line in proc.stdout.splitlines() if line.strip()]
+
+
+def refuse_gpu_runtime_for_cpu_api_work():
+    names = attached_gpu_names()
+    if not names:
+        return
+    print("GPU runtime detected:", names, flush=True)
+    if REFUSE_GPU_RUNTIME and not ALLOW_GPU_RUNTIME_FOR_CPU_API_CELL:
+        print(
+            "Refusing to run CPU/API curriculum pipeline on an attached GPU runtime. "
+            "Switch to CPU/cheap runtime, or set ALLOW_GPU_RUNTIME_FOR_CPU_API_CELL=True deliberately.",
+            flush=True,
+        )
+        if DISCONNECT_RUNTIME_WHEN_DONE:
+            runtime.unassign()
+        raise RuntimeError("CPU/API curriculum pipeline refused attached GPU runtime.")
 
 
 def sync_repo():
@@ -254,6 +288,7 @@ def run_sft_gate(summary):
     return gate
 
 
+refuse_gpu_runtime_for_cpu_api_work()
 sync_repo()
 run(["git", "log", "--oneline", "-5"], cwd=ROOT, check=False)
 run(["nvidia-smi"], cwd=ROOT, check=False)
