@@ -6,6 +6,11 @@ Open the current single-purpose Colab notebook:
 
 [09_stage5_arc_mix_recovery_once.ipynb](https://colab.research.google.com/github/mshapiro123/recurrent-qwen-svgd/blob/main/colab/09_stage5_arc_mix_recovery_once.ipynb)
 
+If Colab shows `Colab is waiting for authorization from GitHub`, a blocked
+popup, or any GitHub-private-repo authorization problem, **do not connect an
+A100 runtime**. Use the fallback below from any normal Drive or blank Colab
+notebook instead.
+
 Use an A100 runtime only when you intentionally want to spend one bounded proxy
 run. The notebook should:
 
@@ -65,6 +70,25 @@ The notebook output should now include a final ARC-mix result review after the
 proxy runner finishes. If that section says anything other than
 `Next A100 spend: YES: run exactly one full balanced ARC confirmation.`, keep
 the A100 shut down and do the next repair locally.
+
+## Fallback When GitHub-Colab Auth Blocks The Notebook
+
+This fallback avoids opening a private GitHub notebook through Colab. It still
+uses GitHub, but only from inside a normal Colab Python cell via the
+`GH_TOKEN`/`GITHUB_TOKEN` Colab secret.
+
+1. Open any trusted Drive-backed Colab notebook or a blank notebook.
+2. Keep the runtime disconnected while editing the cell.
+3. Copy the single cell from
+   [`colab/STAGE5_ARC_MIX_RECOVERY_CELL.md`](STAGE5_ARC_MIX_RECOVERY_CELL.md).
+4. Select an A100 runtime only immediately before running that single cell.
+5. Run no other cells in that runtime.
+
+The fallback cell performs the same no-waste sequence: clone or update the repo,
+mount Drive, run the A100 go/no-go check before installing dependencies, run
+exactly one `arc_mix_response_w01_lr2e6` proxy when allowed, print the
+post-proxy review, push safe text artifacts, and disconnect on failure or
+completion.
 
 For a clean local review after the notebook pushes artifacts, run:
 
