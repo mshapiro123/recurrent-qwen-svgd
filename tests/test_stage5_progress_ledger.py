@@ -953,6 +953,7 @@ def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None
     scan_root = tmp_path / "outputs" / "stage5"
     capability = scan_root / "capability_ladder" / "summary.json"
     probe = scan_root / "capability_ladder_probe" / "summary.json"
+    trace_jobs = scan_root / "capability_ladder_trace_jobs" / "summary.json"
     pipeline = scan_root / "curriculum_pipeline" / "summary.json"
     gate = scan_root / "curriculum_gate" / "summary.json"
     sft = scan_root / "curriculum_sft" / "summary.json"
@@ -978,6 +979,16 @@ def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None
                 "work_dir": "data/curriculum/probe",
                 "counts": {"positive_sft_rows": 9, "mode_counts": {"direct": 5, "deep_narrow": 4}},
             },
+        },
+    )
+    _write(
+        trace_jobs,
+        {
+            "run_id": "trace_jobs",
+            "kind": "stage5_capability_ladder_trace_jobs",
+            "status": "ready",
+            "trace_jobs": {"jobs": 18, "selected_rows": 9, "by_target_loop": {"1": 5, "2": 4}},
+            "next_action": "Run provider responses then collect traced rows.",
         },
     )
     _write(
@@ -1021,6 +1032,7 @@ def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None
     assert [row["kind"] for row in statuses] == [
         "capability_ladder_curriculum_pipeline",
         "stage5_capability_ladder_mcq_probe",
+        "stage5_capability_ladder_trace_jobs",
         "curriculum_sft_gate",
         "curriculum_pipeline_from_artifacts",
         "stage5_curriculum_sft",
@@ -1031,6 +1043,8 @@ def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None
     assert by_kind["curriculum_sft_gate"]["positive_rows"] == 24
     assert by_kind["stage5_capability_ladder_mcq_probe"]["positive_rows"] == 9
     assert by_kind["stage5_capability_ladder_mcq_probe"]["work_dir"] == "data/curriculum/probe"
+    assert by_kind["stage5_capability_ladder_trace_jobs"]["positive_rows"] == 9
+    assert by_kind["stage5_capability_ladder_trace_jobs"]["next_action"].startswith("Run provider responses")
     assert by_kind["curriculum_pipeline_from_artifacts"]["next_action"].startswith("Review typed_records")
     assert by_kind["stage5_curriculum_sft"]["train_rows"] == 21
     assert by_kind["stage5_curriculum_sft"]["val_rows"] == 3

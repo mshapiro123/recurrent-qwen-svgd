@@ -346,6 +346,27 @@ def test_parse_action_command_allows_capability_ladder_curriculum_builder() -> N
     ]
 
 
+def test_parse_action_command_allows_capability_ladder_trace_job_tools() -> None:
+    build = parse_action_command(
+        "python training/build_capability_ladder_trace_jobs.py "
+        "--summary_json outputs/stage5/probe/summary.json "
+        "--models opus-strong,glm-strong "
+        "--output_jsonl outputs/stage5/probe/trace_jobs.jsonl"
+    )
+    collect = parse_action_command(
+        "python training/collect_capability_ladder_trace_outputs.py "
+        "--scored_jsonl data/scored.jsonl "
+        "--jobs_jsonl outputs/jobs.jsonl "
+        "--responses_jsonl outputs/responses.jsonl "
+        "--output_jsonl data/with_traces.jsonl"
+    )
+    runner = parse_action_command("python colab/run_stage5_capability_ladder_trace_jobs.py")
+
+    assert build.argv[:2] == [sys.executable, "training/build_capability_ladder_trace_jobs.py"]
+    assert collect.argv[:2] == [sys.executable, "training/collect_capability_ladder_trace_outputs.py"]
+    assert runner.argv == [sys.executable, "colab/run_stage5_capability_ladder_trace_jobs.py"]
+
+
 def test_parse_action_command_allows_capability_score_row_merger() -> None:
     parsed = parse_action_command(
         "python training/merge_capability_score_rows.py "
@@ -893,6 +914,18 @@ def test_local_only_guard_blocks_capability_ladder_builder_on_gpu(monkeypatch) -
     parsed = parse_action_command(
         "python training/build_capability_ladder_curriculum.py --input_jsonl scored.jsonl --work_dir ladder"
     )
+    monkeypatch.setattr(module, "gpu_runtime_attached", lambda: True)
+    monkeypatch.setenv("STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_LOCAL_ONLY_ON_GPU", "0")
+
+    guard = local_only_runtime_guard(parsed)
+
+    assert guard["checked"] is True
+    assert guard["allowed"] is False
+    assert guard["status"] == "local_only_gpu_no_go"
+
+
+def test_local_only_guard_blocks_capability_ladder_trace_jobs_on_gpu(monkeypatch) -> None:
+    parsed = parse_action_command("python colab/run_stage5_capability_ladder_trace_jobs.py")
     monkeypatch.setattr(module, "gpu_runtime_attached", lambda: True)
     monkeypatch.setenv("STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_LOCAL_ONLY_ON_GPU", "0")
 

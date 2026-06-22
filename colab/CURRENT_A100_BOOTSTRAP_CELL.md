@@ -44,6 +44,14 @@ capability-ladder rows, backs them up to Drive, pushes safe summaries, and
 disconnects. It does not produce final reasoning traces; after it lands, use
 the planner's CPU trace-job action before recurrent SFT.
 
+To build capability-ladder trace-generation jobs without GPU:
+
+Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
+"capability_ladder_trace_jobs_cpu"` before running the bootstrap cell. This
+target follows the current capability-ladder probe summary, restores private
+scored rows from Drive if needed, builds provider-neutral strong-model trace
+jobs, pushes safe summaries, and disconnects.
+
 To intentionally spend GPU on the guarded action after the preflight is green,
 select an A100/H100 runtime and set:
 
@@ -74,6 +82,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "arc_challenge_mcq_debias_confirm" - bounded no-training cyclic MCQ confirmation on ARC-Challenge.
 #   "debiased_benchmark_suite" - bounded ARC-Challenge/GPQA-lite benchmark with debiased MCQ scoring.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
+#   "capability_ladder_trace_jobs_cpu" - CPU-only trace-job build from latest capability ladder probe.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 
@@ -187,6 +196,19 @@ TARGETS = {
             "content_question_only",
             "colab/run_stage5_capability_ladder_mcq_probe.py",
             "tests/test_stage5_capability_ladder_mcq_probe.py",
+            "runtime.unassign",
+        ],
+        "env": {},
+    },
+    "capability_ladder_trace_jobs_cpu": {
+        "path": "colab/STAGE5_CAPABILITY_LADDER_TRACE_JOBS_CELL.py",
+        "markers": [
+            "STAGE5_CAPABILITY_LADDER_TRACE_JOBS_CELL_VERSION",
+            "capability_ladder_trace_jobs_cpu",
+            "STAGE5_CAPABILITY_LADDER_TRACE_ALLOW_GPU",
+            "colab/run_stage5_capability_ladder_trace_jobs.py",
+            "training/build_capability_ladder_trace_jobs.py",
+            "tests/test_capability_ladder_trace_jobs.py",
             "runtime.unassign",
         ],
         "env": {},

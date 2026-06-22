@@ -147,6 +147,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or distill_sft_gate_payload(payload) is not None
         or curriculum_pipeline_payload(payload) is not None
         or capability_ladder_probe_payload(payload) is not None
+        or capability_ladder_trace_jobs_payload(payload) is not None
         or capability_ladder_curriculum_payload(payload) is not None
         or curriculum_sft_gate_payload(payload) is not None
         or curriculum_sft_payload(payload) is not None
@@ -934,6 +935,10 @@ def capability_ladder_probe_payload(payload: dict[str, Any]) -> dict[str, Any] |
     return payload if payload.get("kind") == "stage5_capability_ladder_mcq_probe" else None
 
 
+def capability_ladder_trace_jobs_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_capability_ladder_trace_jobs" else None
+
+
 def mode_rows_from_counts(payload: dict[str, Any]) -> str:
     counts = payload.get("counts") if isinstance(payload.get("counts"), dict) else {}
     mode_counts = counts.get("mode_counts") if isinstance(counts.get("mode_counts"), dict) else {}
@@ -1130,6 +1135,33 @@ def capability_ladder_probe_actions(payload: dict[str, Any], *, source_summary: 
                 "summary is missing. Inspect tier counts before spending more A100 time; likely next choices are a "
                 "larger bounded ARC slice, cyclic scoring on a smaller slice, or richer trace generation."
             ),
+            f"cat {shlex.quote(command_path(source_summary))}",
+            10,
+        )
+    ]
+
+
+def capability_ladder_trace_jobs_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status") or "unknown")
+    trace_jobs = payload.get("trace_jobs") if isinstance(payload.get("trace_jobs"), dict) else {}
+    jobs = int(trace_jobs.get("jobs") or 0)
+    if status == "ready" and jobs > 0:
+        summary_md = source_summary.with_suffix(".md")
+        return [
+            make_action(
+                "Inspect capability-ladder trace jobs before provider spend",
+                (
+                    "Trace-generation jobs are ready. Inspect the summary and then run the provider response "
+                    "backend only after model-map/API secrets are configured."
+                ),
+                f"cat {shlex.quote(command_path(summary_md))}",
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect capability-ladder trace jobs `{status}`",
+            "The trace-job build did not produce usable jobs; inspect the report before generating responses.",
             f"cat {shlex.quote(command_path(source_summary))}",
             10,
         )
@@ -3506,6 +3538,9 @@ def plan_next_actions(
     capability_ladder_probe = capability_ladder_probe_payload(payload)
     if capability_ladder_probe:
         return capability_ladder_probe_actions(capability_ladder_probe, source_summary=source_summary)
+    capability_ladder_trace_jobs = capability_ladder_trace_jobs_payload(payload)
+    if capability_ladder_trace_jobs:
+        return capability_ladder_trace_jobs_actions(capability_ladder_trace_jobs, source_summary=source_summary)
     capability_ladder = capability_ladder_curriculum_payload(payload)
     if capability_ladder:
         return capability_ladder_curriculum_actions(capability_ladder, source_summary=source_summary)
@@ -3899,6 +3934,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "curriculum_pipeline"
     if capability_ladder_probe_payload(payload):
         return "capability_ladder_mcq_probe"
+    if capability_ladder_trace_jobs_payload(payload):
+        return "capability_ladder_trace_jobs"
     if capability_ladder_curriculum_payload(payload):
         return "capability_ladder_curriculum"
     if curriculum_sft_gate_payload(payload):

@@ -83,6 +83,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/run_stage5_arc_agi_tta_sweep.py",
     "colab/run_stage5_benchmark_suite.py",
     "colab/run_stage5_capability_ladder_mcq_probe.py",
+    "colab/run_stage5_capability_ladder_trace_jobs.py",
     "colab/apply_stage5_mcq_scoring_policy.py",
     "colab/run_stage5_balanced_arc_mix_gate.py",
     "colab/run_stage5_competence_preserving_pipeline.py",
@@ -103,6 +104,8 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/run_stage5_routing_repair.py",
     "colab/run_stage4_opus_finetune.py",
     "training/build_capability_ladder_curriculum.py",
+    "training/build_capability_ladder_trace_jobs.py",
+    "training/collect_capability_ladder_trace_outputs.py",
     "training/check_curriculum_sft_gate.py",
     "training/merge_capability_score_rows.py",
     "training/run_programmatic_curriculum_pipeline.py",
@@ -138,9 +141,12 @@ GUARDED_A100_SCRIPTS = {
 }
 LOCAL_ONLY_LONG_SCRIPTS = {
     "colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py",
+    "colab/run_stage5_capability_ladder_trace_jobs.py",
     "colab/run_stage5_reasoning_dataset_audit.py",
     "colab/run_stage5_reasoning_dataset_pipeline.py",
     "training/build_capability_ladder_curriculum.py",
+    "training/build_capability_ladder_trace_jobs.py",
+    "training/collect_capability_ladder_trace_outputs.py",
     "training/merge_capability_score_rows.py",
 }
 

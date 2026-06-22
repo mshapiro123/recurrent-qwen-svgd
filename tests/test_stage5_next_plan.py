@@ -366,6 +366,26 @@ def test_sparse_capability_ladder_mcq_probe_recommends_inspection_not_gpu(tmp_pa
     assert "run_stage5_curriculum_sft.py" not in actions[0]["command"]
 
 
+def test_capability_ladder_trace_jobs_recommends_inspection_before_provider_spend(tmp_path) -> None:
+    source = tmp_path / "trace_jobs" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_capability_ladder_trace_jobs",
+        "status": "ready",
+        "trace_jobs": {"jobs": 18, "selected_rows": 9, "by_target_loop": {"1": 5, "2": 4}},
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+    source.with_suffix(".md").write_text("# Trace jobs", encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert source_kind(payload) == "capability_ladder_trace_jobs"
+    assert actions[0]["name"] == "Inspect capability-ladder trace jobs before provider spend"
+    assert actions[0]["command"].startswith("cat ")
+    assert actions[0]["command"].endswith("summary.md")
+    assert "run_curriculum_job_responses.py" not in actions[0]["command"]
+
+
 def test_incomplete_capability_ladder_curriculum_recommends_inspection_not_gpu(tmp_path) -> None:
     source = tmp_path / "capability_ladder" / "summary.json"
     source.parent.mkdir()
@@ -1694,6 +1714,7 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"gate": "stage5_release_benchmark_readiness"}) == "release_gate"
     assert source_kind({"kind": "stage5_benchmark_suite"}) == "benchmark_suite"
     assert source_kind({"kind": "stage5_capability_ladder_mcq_probe"}) == "capability_ladder_mcq_probe"
+    assert source_kind({"kind": "stage5_capability_ladder_trace_jobs"}) == "capability_ladder_trace_jobs"
     assert source_kind({"gate": "stage5_broader_benchmark_suite"}) == "benchmark_suite_assessment"
     assert source_kind({"kind": "stage5_balanced_arc_mix_gate"}) == "balanced_arc_mix_gate"
     assert source_kind({"kind": "stage5_routing_diagnostic_assessment"}) == "routing_diagnostic"

@@ -358,7 +358,11 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     assert "safe_continue_execute" in text
     assert "arc_challenge_mcq_debias_confirm" in text
     assert "capability_ladder_mcq_probe" in text
+    assert "capability_ladder_trace_jobs_cpu" in text
     assert "cyclic-permutation MCQ diagnostic" in text
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_JOBS_CELL.py" in plain
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_JOBS_CELL_VERSION" in plain
+    assert "training/build_capability_ladder_trace_jobs.py" in plain
 
 
 def test_current_a100_bootstrap_plain_cell_matches_markdown_code() -> None:
@@ -427,6 +431,22 @@ def test_capability_ladder_mcq_probe_cell_is_bounded_and_depth_ladder_focused() 
     assert "runtime.unassign()" in plain
     assert "capability_ladder_mcq_probe" in bootstrap
     assert "STAGE5_CAPABILITY_LADDER_MCQ_PROBE_CELL.py" in bootstrap
+
+
+def test_capability_ladder_trace_jobs_cell_is_cpu_only_and_depth_ladder_focused() -> None:
+    plain = (ROOT / "colab/STAGE5_CAPABILITY_LADDER_TRACE_JOBS_CELL.py").read_text(encoding="utf-8")
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
+
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_JOBS_CELL_VERSION" in plain
+    assert "capability_ladder_trace_jobs_cpu" in plain
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_ALLOW_GPU" in plain
+    assert "colab/run_stage5_capability_ladder_trace_jobs.py" in plain
+    assert "tests/test_capability_ladder_trace_jobs.py" in plain
+    assert "runtime.unassign()" in plain
+    assert "capability_ladder_trace_jobs_cpu" in bootstrap
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_JOBS_CELL.py" in bootstrap
+    assert "STAGE5_CURRENT_A100_TARGET=capability_ladder_trace_jobs_cpu" in current_action
 
 
 def test_drive_checkpoint_preflight_cell_is_cpu_only_and_single_purpose() -> None:
