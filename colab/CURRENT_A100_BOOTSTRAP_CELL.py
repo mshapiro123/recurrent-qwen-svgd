@@ -3,7 +3,7 @@ from google.colab import userdata
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 REF = "main"
-BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v2"
+BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 
 # Safe default: verify Drive/checkpoint visibility on a CPU/cheap runtime.
 # Other options:
@@ -52,7 +52,10 @@ TARGETS = {
             "REQUIRE_DRIVE_BACKUP_FOR_PUBLISH",
             "PUBLISH_GATE_TO_GITHUB",
             "stage5_current_source_summary",
-            "except FileNotFoundError:",
+            "PROGRAMMATIC_CURRICULUM_CELL_VERSION",
+            "shutil.which(\"nvidia-smi\")",
+            "FileNotFoundError",
+            "OSError",
             "Refusing to run CPU-only programmatic curriculum generation",
         ],
         "env": {},

@@ -330,6 +330,30 @@ def test_parse_action_command_allows_capability_ladder_curriculum_builder() -> N
     ]
 
 
+def test_parse_action_command_allows_capability_score_row_merger() -> None:
+    parsed = parse_action_command(
+        "python training/merge_capability_score_rows.py "
+        "--tasks_jsonl data/curriculum/tasks.jsonl "
+        "--result qwen_0_5b=outputs/base.jsonl "
+        "--result qwen_1_5b=outputs/qwen15.jsonl "
+        "--output_jsonl data/curriculum/scored.jsonl"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.argv == [
+        sys.executable,
+        "training/merge_capability_score_rows.py",
+        "--tasks_jsonl",
+        "data/curriculum/tasks.jsonl",
+        "--result",
+        "qwen_0_5b=outputs/base.jsonl",
+        "--result",
+        "qwen_1_5b=outputs/qwen15.jsonl",
+        "--output_jsonl",
+        "data/curriculum/scored.jsonl",
+    ]
+
+
 def test_parse_action_command_allows_programmatic_curriculum_colab_cell() -> None:
     parsed = parse_action_command("python colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py")
 
@@ -776,6 +800,20 @@ def test_local_only_guard_blocks_programmatic_curriculum_cell_on_gpu(monkeypatch
 def test_local_only_guard_blocks_capability_ladder_builder_on_gpu(monkeypatch) -> None:
     parsed = parse_action_command(
         "python training/build_capability_ladder_curriculum.py --input_jsonl scored.jsonl --work_dir ladder"
+    )
+    monkeypatch.setattr(module, "gpu_runtime_attached", lambda: True)
+    monkeypatch.setenv("STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_LOCAL_ONLY_ON_GPU", "0")
+
+    guard = local_only_runtime_guard(parsed)
+
+    assert guard["checked"] is True
+    assert guard["allowed"] is False
+    assert guard["status"] == "local_only_gpu_no_go"
+
+
+def test_local_only_guard_blocks_capability_score_row_merger_on_gpu(monkeypatch) -> None:
+    parsed = parse_action_command(
+        "python training/merge_capability_score_rows.py --tasks_jsonl tasks.jsonl --result base=base.jsonl --output_jsonl scored.jsonl"
     )
     monkeypatch.setattr(module, "gpu_runtime_attached", lambda: True)
     monkeypatch.setenv("STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_LOCAL_ONLY_ON_GPU", "0")

@@ -88,11 +88,11 @@ def test_configured_current_summary_fails_loudly_when_pointer_is_missing(tmp_pat
         raise AssertionError("missing current source pointer should fail loudly")
 
 
-def test_committed_current_source_summary_points_at_routing_diagnostic() -> None:
+def test_committed_current_source_summary_points_at_programmatic_curriculum_gate() -> None:
     path = planner.configured_current_summary()
 
     assert path is not None
-    assert path.as_posix().endswith("stage5_routing_diagnostic_20260622_041706/summary.json")
+    assert path.as_posix().endswith("programmatic_direct_deep_curriculum_gate/curriculum_sft_gate.json")
 
 
 def test_failed_candidate_distillation_recommends_baseline_curriculum(tmp_path) -> None:

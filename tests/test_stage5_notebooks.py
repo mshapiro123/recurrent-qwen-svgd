@@ -319,8 +319,12 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     assert "git/ref/heads" in plain
     assert "RESOLVED_REF" in plain
     assert "BOOTSTRAP_VERSION" in plain
-    assert "sha_resolved_nested_fetch_v2" in plain
-    assert "except FileNotFoundError:" in plain
+    assert "sha_resolved_nested_fetch_v3" in plain
+    assert "PROGRAMMATIC_CURRICULUM_CELL_VERSION" in plain
+    assert "shutil.which" in plain
+    assert "nvidia-smi" in plain
+    assert "FileNotFoundError" in plain
+    assert "OSError" in plain
     assert "cache_bust" in plain
     assert '"Cache-Control": "no-cache"' in plain
     assert "GH_TOKEN" in plain
@@ -459,6 +463,9 @@ def test_programmatic_curriculum_cell_is_cpu_safe_and_matches_markdown_code() ->
     assert "stage5_current_source_summary" in plain
     assert "REFUSE_GPU_RUNTIME = True" in plain
     assert "ALLOW_GPU_RUNTIME_FOR_CPU_WORK = False" in plain
-    assert "except FileNotFoundError:" in plain
+    assert "PROGRAMMATIC_CURRICULUM_CELL_VERSION" in plain
+    assert 'shutil.which("nvidia-smi")' in plain
+    assert "FileNotFoundError" in plain
+    assert "OSError" in plain
     assert "Refusing to run CPU-only programmatic curriculum generation" in plain
     assert "zero-provider" in text

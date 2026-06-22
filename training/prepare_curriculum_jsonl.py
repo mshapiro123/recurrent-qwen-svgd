@@ -27,7 +27,7 @@ NON_POSITIVE_PREFIXES = ("negative_", "verifier_")
 POSITIVE_REASONING_ROLES = {"positive_direct", "positive_depth", "positive_wide"}
 NEGATIVE_REASONING_ROLES = {"negative_contrastive"}
 VERIFIER_ROLES = {"verifier_rationalization", "verifier_detection"}
-TRUSTED_ANSWER_VERIFIERS = {"cross_model", "constructed"}
+TRUSTED_ANSWER_VERIFIERS = {"benchmark_ground_truth", "cross_model", "constructed"}
 
 
 def qwen_instruct_prompt(statement: str) -> str:

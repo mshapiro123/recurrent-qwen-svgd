@@ -108,7 +108,7 @@ def has_trusted_answer(row: dict[str, Any]) -> bool:
     if not payload:
         return False
     verified_by = {str(item) for item in payload.get("verified_by") or []}
-    return bool({"cross_model", "constructed"} & verified_by)
+    return bool({"benchmark_ground_truth", "cross_model", "constructed"} & verified_by)
 
 
 def model_result(row: dict[str, Any], key: str) -> dict[str, Any]:

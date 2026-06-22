@@ -99,6 +99,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/run_stage4_opus_finetune.py",
     "training/build_capability_ladder_curriculum.py",
     "training/check_curriculum_sft_gate.py",
+    "training/merge_capability_score_rows.py",
     "training/run_programmatic_curriculum_pipeline.py",
 }
 GUARDED_A100_SCRIPTS = {
@@ -132,6 +133,7 @@ LOCAL_ONLY_LONG_SCRIPTS = {
     "colab/run_stage5_reasoning_dataset_audit.py",
     "colab/run_stage5_reasoning_dataset_pipeline.py",
     "training/build_capability_ladder_curriculum.py",
+    "training/merge_capability_score_rows.py",
 }
 
 

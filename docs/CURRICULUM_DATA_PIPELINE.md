@@ -458,9 +458,28 @@ coverage.
 
 ### Stage 8: Capability-Ladder Curriculum From Scored Rows
 
-After a benchmark or model-scoring job produces verified rows with Qwen 0.5B,
-Qwen 1.5B, and stronger-model correctness flags, use the CPU-only capability
-adapter to assign deterministic depth targets:
+After a benchmark or model-scoring job produces per-model JSONL outputs, first
+merge those outputs into scored capability rows. For example, MCQ likelihood
+outputs from `eval/eval_mcq.py` can be combined with the source task JSONL:
+
+```bash
+python training/merge_capability_score_rows.py \
+  --tasks_jsonl data/curriculum/arc_train_mcq.jsonl \
+  --result qwen_0_5b=outputs/arc_qwen_0_5b.jsonl \
+  --result qwen_1_5b=outputs/arc_qwen_1_5b.jsonl \
+  --result qwen_3b=outputs/arc_qwen_3b.jsonl \
+  --output_jsonl data/curriculum/scored_capability_rows.jsonl \
+  --assume_decontaminated
+```
+
+Plain MCQ score rows are useful for capability-tier assignment, but richer
+result rows with `solution`, `trace`, or `completion` fields are preferred for
+deep SFT. Use `--prediction_as_solution` only for label-surface calibration,
+not for the main reasoning curriculum.
+
+Once rows contain verified answers plus Qwen 0.5B, Qwen 1.5B, and
+stronger-model correctness flags, use the CPU-only capability adapter to assign
+deterministic depth targets:
 
 ```bash
 python training/build_capability_ladder_curriculum.py \

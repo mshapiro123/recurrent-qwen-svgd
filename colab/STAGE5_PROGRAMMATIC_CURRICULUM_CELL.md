@@ -48,6 +48,7 @@ from google.colab import drive, runtime, userdata
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
+PROGRAMMATIC_CURRICULUM_CELL_VERSION = "cpu_runtime_nvidia_smi_missing_ok_v1"
 
 # CPU-only direct/deep shard. Run this before any generated-curriculum GPU SFT.
 WORK_DIR = "data/curriculum/programmatic_direct_deep_001"
@@ -113,6 +114,8 @@ def run(cmd, cwd=None, env=None, check=True):
 
 
 def attached_gpu_names():
+    if shutil.which("nvidia-smi") is None:
+        return []
     try:
         proc = subprocess.run(
             ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader"],
@@ -121,7 +124,7 @@ def attached_gpu_names():
             stderr=subprocess.STDOUT,
             check=False,
         )
-    except FileNotFoundError:
+    except (FileNotFoundError, OSError):
         return []
     if proc.returncode:
         return []
@@ -159,6 +162,7 @@ def backup_work_dir():
 
 
 refuse_gpu_runtime_for_cpu_work()
+print(f"PROGRAMMATIC_CURRICULUM_CELL_VERSION={PROGRAMMATIC_CURRICULUM_CELL_VERSION}", flush=True)
 
 clone_url = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
 if ROOT.exists():
