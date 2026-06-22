@@ -147,6 +147,8 @@ def test_routing_diagnostic_commit_stages_current_source_pointer(monkeypatch, tm
 
     module.commit_results()
 
+    assert ["git", "config", "user.email", "colab-runner@local"] in commands
+    assert ["git", "config", "user.name", "Colab Runner"] in commands
     add_commands = [cmd for cmd in commands if cmd[:2] == ["git", "add"]]
     staged = {item for cmd in add_commands for item in cmd[3:]}
     assert "outputs/stage5/routing" in staged

@@ -257,6 +257,8 @@ def write_report(payload: dict[str, Any]) -> None:
 def commit_results() -> None:
     if not PUSH_RESULTS:
         return
+    run(["git", "config", "user.email", "colab-runner@local"], check=False)
+    run(["git", "config", "user.name", "Colab Runner"], check=False)
     run(["git", "status", "-sb"], check=False)
     run(["git", "add", "-f", path_for_cli(RUN_DIR)], check=False)
     pointer = current_source_summary_file()
