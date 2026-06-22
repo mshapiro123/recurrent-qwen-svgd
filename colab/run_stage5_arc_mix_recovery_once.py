@@ -146,13 +146,14 @@ def print_next_plan(summary: Path) -> None:
         print(f"next_plan_skipped=missing_summary:{path_for_cli(summary)}", flush=True)
         return
     print("", flush=True)
-    print("=== Planner next action from ARC-mix summary ===", flush=True)
+    print("=== ARC-mix result review ===", flush=True)
     run(
         [
             sys.executable,
-            "colab/plan_stage5_next_run.py",
-            "--source-summary",
+            "colab/review_stage5_arc_mix_result.py",
+            "--summary",
             path_for_cli(summary),
+            "--no-write",
         ],
         check=False,
     )

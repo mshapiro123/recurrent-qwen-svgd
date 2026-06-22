@@ -40,6 +40,9 @@ dependencies, and disconnects after completion or setup failure.
 The same single-purpose entrypoint is available as
 [`09_stage5_arc_mix_recovery_once.ipynb`](09_stage5_arc_mix_recovery_once.ipynb)
 when you want to open a notebook directly from GitHub.
+After that notebook finishes and pushes artifacts, run
+`python colab/review_stage5_arc_mix_result.py --summary outputs/stage5/<run_id>/summary.json`
+locally or in a free runtime to get the exact stop/continue answer.
 
 Do not use the generic continuation cell for this narrow gate unless you
 intentionally want the planner to choose a different action.

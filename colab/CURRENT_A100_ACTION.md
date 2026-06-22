@@ -61,7 +61,21 @@ New ARC-mix summaries include a machine-readable `decision` field.
 Do not run GPQA, Phase 2/SVGD, dataset audits, or model scaling from this
 state.
 
-The notebook output should now include a final planner section after the proxy
-runner finishes. If that section says anything other than
-`run_full_balanced_assessment`, keep the A100 shut down and do the next repair
-locally.
+The notebook output should now include a final ARC-mix result review after the
+proxy runner finishes. If that section says anything other than
+`Next A100 spend: YES: run exactly one full balanced ARC confirmation.`, keep
+the A100 shut down and do the next repair locally.
+
+For a clean local review after the notebook pushes artifacts, run:
+
+```bash
+python colab/review_stage5_arc_mix_result.py \
+  --summary outputs/stage5/<arc_mix_run_id>/summary.json
+```
+
+It prints whether another paid full balanced assessment is justified. The only
+acceptable “continue spending” answer is:
+
+```text
+Next A100 spend: YES: run exactly one full balanced ARC confirmation.
+```

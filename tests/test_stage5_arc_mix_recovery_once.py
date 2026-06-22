@@ -155,9 +155,10 @@ def test_arc_mix_recovery_once_prints_next_plan_after_child_run(tmp_path, monkey
     assert [sys.executable, "colab/run_stage5_balanced_arc_mix_gate.py"] in calls
     assert [
         sys.executable,
-        "colab/plan_stage5_next_run.py",
-        "--source-summary",
+        "colab/review_stage5_arc_mix_result.py",
+        "--summary",
         "outputs/stage5/arc_once/summary.json",
+        "--no-write",
     ] in calls
 
 
