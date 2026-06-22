@@ -3,8 +3,9 @@
 This is a regression smoke for the strong-model curriculum machinery. It uses
 synthetic provider responses to exercise the same stages a real API runner will
 use: jobs, raw responses, candidate collection, cross-model answer agreement,
-method-solution collection, naturalness/distinctness/depth judgments, typed
-record assembly, and positive SFT export.
+measured difficulty, method-solution collection,
+naturalness/distinctness/depth judgments, typed record assembly, and positive
+SFT export.
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from training.annotate_curriculum_difficulty import annotate_difficulty
 from training.assemble_curriculum_records import assemble_curriculum_records
 from training.build_curriculum_generation_jobs import (
     build_depth_jobs,
@@ -171,6 +173,21 @@ def depth_responses(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return rows
 
 
+def reference_attempts(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for candidate in candidates:
+        record_id = str(candidate.get("id") or "")
+        rows.extend(
+            [
+                {"record_id": record_id, "sample_id": 0, "correct": True},
+                {"record_id": record_id, "sample_id": 1, "correct": False},
+                {"record_id": record_id, "sample_id": 2, "correct": True},
+                {"record_id": record_id, "sample_id": 3, "correct": True},
+            ]
+        )
+    return rows
+
+
 def run_fixture_pipeline(output_dir: str | Path, *, overwrite: bool = False) -> dict[str, Any]:
     out = Path(output_dir)
     if out.exists() and overwrite:
@@ -196,9 +213,17 @@ def run_fixture_pipeline(output_dir: str | Path, *, overwrite: bool = False) -> 
         mark_decontaminated=True,
     )
 
-    method_jobs = build_method_solve_jobs(verified, models=SOLVER_MODELS, fallback_methods=METHODS)
+    difficulty_attempts = reference_attempts(verified)
+    verified_with_difficulty, difficulty_rejected, difficulty_report = annotate_difficulty(
+        verified,
+        difficulty_attempts,
+        reference_model="weak-fixture",
+        min_samples=4,
+    )
+
+    method_jobs = build_method_solve_jobs(verified_with_difficulty, models=SOLVER_MODELS, fallback_methods=METHODS)
     method_raw = method_responses(method_jobs)
-    method_solutions, method_report = method_outputs_to_solution_candidates(verified, method_jobs, method_raw)
+    method_solutions, method_report = method_outputs_to_solution_candidates(verified_with_difficulty, method_jobs, method_raw)
 
     natural_jobs = build_naturalness_jobs(method_solutions, models=JUDGE_MODELS)
     natural_raw = naturalness_responses(natural_jobs)
@@ -213,7 +238,7 @@ def run_fixture_pipeline(output_dir: str | Path, *, overwrite: bool = False) -> 
     depth, depth_report = collect_depth_measurements(method_solutions, depth_jobs, depth_raw)
 
     records, records_report = assemble_curriculum_records(
-        verified,
+        verified_with_difficulty,
         method_solutions,
         naturalness,
         depth,
@@ -231,6 +256,9 @@ def run_fixture_pipeline(output_dir: str | Path, *, overwrite: bool = False) -> 
         "ground_truth_jobs": ground_jobs,
         "ground_truth_responses": ground_raw,
         "verified_candidates": verified,
+        "difficulty_attempts": difficulty_attempts,
+        "difficulty_rejected": difficulty_rejected,
+        "verified_candidates_difficulty": verified_with_difficulty,
         "method_jobs": method_jobs,
         "method_responses": method_raw,
         "method_solution_candidates": method_solutions,
@@ -249,6 +277,7 @@ def run_fixture_pipeline(output_dir: str | Path, *, overwrite: bool = False) -> 
     reports: dict[str, Any] = {
         "candidates": candidates_report,
         "verified_candidates": verified_report,
+        "difficulty": difficulty_report,
         "method_solutions": method_report,
         "naturalness": naturalness_report,
         "distinctness": distinctness_report,

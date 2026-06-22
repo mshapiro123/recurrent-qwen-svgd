@@ -347,6 +347,31 @@ The verified-candidate collector requires at least two distinct solver models
 to agree on the normalized `ANSWER:` line by default. Disagreements are written
 to the report and are not promoted.
 
+Annotate difficulty from weak-reference attempts:
+
+```bash
+python training/annotate_curriculum_difficulty.py \
+  --candidates_jsonl data/curriculum/verified_candidates.jsonl \
+  --attempts_jsonl data/curriculum/reference_attempts.jsonl \
+  --output_jsonl data/curriculum/verified_candidates_difficulty.jsonl \
+  --rejected_jsonl data/curriculum/verified_candidates_unmeasured.jsonl \
+  --report_json outputs/curriculum/difficulty_report.json \
+  --reference_model qwen-0.5b-base-greedy \
+  --min_samples 4
+```
+
+The attempts file is runner-neutral. Each row should carry a problem id
+(`record_id`, `id`, `problem_id`, or `curriculum_id`) and a boolean correctness
+field (`correct`, `is_correct`, `matched`, or `success`). For example:
+
+```json
+{"record_id": "candidate-math-hard-8-seed-000001", "sample_id": 0, "correct": false}
+```
+
+Difficulty is the measured pass rate of the fixed weak reference model. Use
+`--drop_unmeasured` when building a training set that must exclude candidates
+without enough reference samples.
+
 Method-constrained width jobs:
 
 ```bash
@@ -354,7 +379,7 @@ python training/build_curriculum_generation_jobs.py \
   --stage method_solve \
   --models opus-strong,glm-strong \
   --methods algebra,number_theory,bounded_enumeration \
-  --input_jsonl data/curriculum/verified_candidates.jsonl \
+  --input_jsonl data/curriculum/verified_candidates_difficulty.jsonl \
   --output_jsonl data/curriculum/jobs_methods.jsonl
 ```
 
@@ -363,7 +388,7 @@ Collect method-constrained responses into correct-answer solution candidates:
 ```bash
 python training/collect_curriculum_job_outputs.py \
   --mode method_solutions \
-  --candidates_jsonl data/curriculum/verified_candidates.jsonl \
+  --candidates_jsonl data/curriculum/verified_candidates_difficulty.jsonl \
   --jobs_jsonl data/curriculum/jobs_methods.jsonl \
   --responses_jsonl data/curriculum/responses_methods.jsonl \
   --output_jsonl data/curriculum/method_solution_candidates.jsonl \
@@ -431,7 +456,7 @@ Assemble typed curriculum records:
 
 ```bash
 python training/assemble_curriculum_records.py \
-  --verified_candidates_jsonl data/curriculum/verified_candidates.jsonl \
+  --verified_candidates_jsonl data/curriculum/verified_candidates_difficulty.jsonl \
   --solution_candidates_jsonl data/curriculum/method_solution_candidates.jsonl \
   --naturalness_jsonl data/curriculum/naturalness_judgments.jsonl \
   --depth_jsonl data/curriculum/depth_measurements.jsonl \
