@@ -74,7 +74,10 @@ To intentionally spend GPU on the guarded action after the preflight is green,
 select an A100/H100 runtime and set:
 
 Set `os.environ["STAGE5_CURRENT_A100_TARGET"] = "safe_continue_execute"` before
-running the bootstrap cell.
+running the bootstrap cell. This target enables
+`STAGE5_SAFE_CONTINUE_PREFER_TRAINING_SOURCE=1`, so if no explicit source
+summary is provided it first uses the newest gate-ready traced curriculum or
+validated curriculum-SFT summary before falling back to the repository pointer.
 
 To force a specific source summary, set
 `os.environ["STAGE5_CURRENT_A100_SOURCE_SUMMARY"] =
@@ -160,6 +163,7 @@ TARGETS = {
         "markers": [
             "STAGE5_SAFE_CONTINUE_RUN_A100_ACTION",
             "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY",
+            "STAGE5_SAFE_CONTINUE_PREFER_TRAINING_SOURCE",
             "RUN_A100_ACTION",
             "mount_drive_for_paid_action",
             "tests/test_stage5_routing_repair.py",
@@ -167,7 +171,10 @@ TARGETS = {
             "tests/test_mcq_debias.py",
             "colab/run_stage5_next_action.py",
         ],
-        "env": {"STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "1"},
+        "env": {
+            "STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "1",
+            "STAGE5_SAFE_CONTINUE_PREFER_TRAINING_SOURCE": "1",
+        },
     },
     "arc_challenge_mcq_debias_confirm": {
         "path": "colab/STAGE5_ARC_CHALLENGE_MCQ_DEBIAS_CELL.py",
@@ -328,5 +335,5 @@ print(
 )
 print(f"Fetched {launcher_path} from {REPO}@{REF} ({RESOLVED_REF[:12]}) sha={payload.get('sha')} target={TARGET}", flush=True)
 exec(compile(code, launcher_path, "exec"))
-
 ```
+

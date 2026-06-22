@@ -247,6 +247,8 @@ def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     assert "tests/test_curriculum_jsonl.py" in text
     assert "stage5_routing_diagnostic_20260622_041706/summary.json" in text
     assert "mount_drive_for_paid_action" in text
+    assert "STAGE5_SAFE_CONTINUE_PREFER_TRAINING_SOURCE" in text
+    assert "latest_training_source_summary" in text
     assert 'drive.mount("/content/drive", force_remount=True)' in text
     assert "Mounting Google Drive so checkpoint artifacts can be restored." in text
     assert text.index("if RUN_A100_ACTION:\n    mount_drive_for_paid_action()") < text.index(
@@ -332,6 +334,7 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     assert "Refusing to run CPU-only programmatic curriculum generation" in plain
     assert '"safe_continue_execute"' in plain
     assert '"STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "1"' in plain
+    assert '"STAGE5_SAFE_CONTINUE_PREFER_TRAINING_SOURCE": "1"' in plain
     assert '"STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "0"' in plain
     assert "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY" in plain
     assert "checkpoint_preflight" in plain

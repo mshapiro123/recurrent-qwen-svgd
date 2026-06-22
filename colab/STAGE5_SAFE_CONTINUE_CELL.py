@@ -20,6 +20,7 @@ DISCONNECT_RUNTIME_WHEN_DONE = env_bool("STAGE5_SAFE_CONTINUE_DISCONNECT", True)
 MAX_NEXT_ACTIONS = int(os.environ.get("STAGE5_SAFE_CONTINUE_MAX_ACTIONS", "1"))
 ALLOW_REPEAT_NEXT_ACTION = env_bool("STAGE5_SAFE_CONTINUE_ALLOW_REPEAT", False)
 A100_BUDGET_PROFILE = os.environ.get("STAGE5_A100_BUDGET_PROFILE", "credit_saver").strip()
+PREFER_TRAINING_SOURCE = env_bool("STAGE5_SAFE_CONTINUE_PREFER_TRAINING_SOURCE", False)
 
 DEFAULT_SOURCE_SUMMARY = "outputs/stage5/stage5_routing_diagnostic_20260622_041706/summary.json"
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY", "").strip()
@@ -104,10 +105,52 @@ run(["git", "config", "user.name", "Colab Runner"], cwd=ROOT)
 run(["git", "log", "--oneline", "-5"], cwd=ROOT, check=False)
 run(["nvidia-smi"], cwd=ROOT, check=False)
 
+def safe_read_json(path):
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+def training_source_priority(payload):
+    kind = payload.get("kind")
+    if kind == "stage5_capability_ladder_trace_collection":
+        gate = payload.get("gate") if isinstance(payload.get("gate"), dict) else {}
+        if payload.get("status") == "trace_curriculum_gate_ready" and gate.get("go") is True:
+            return 100
+    if kind == "curriculum_sft_gate" and payload.get("go") is True:
+        return 90
+    if kind == "stage5_curriculum_sft":
+        checks = payload.get("validation_checks") if isinstance(payload.get("validation_checks"), dict) else {}
+        if checks.get("status") == "validation_sane":
+            return 80
+    return 0
+
+def latest_training_source_summary():
+    candidates = []
+    for path in (ROOT / "outputs" / "stage5").glob("**/summary.json"):
+        payload = safe_read_json(path)
+        if not payload:
+            continue
+        priority = training_source_priority(payload)
+        if priority <= 0:
+            continue
+        candidates.append((priority, path.stat().st_mtime, path))
+    if not candidates:
+        return ""
+    selected = sorted(candidates, reverse=True)[0][2]
+    return str(selected.relative_to(ROOT))
+
 def resolve_source_summary():
     if SOURCE_SUMMARY_OVERRIDE:
         print(f"Using explicit STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY={SOURCE_SUMMARY_OVERRIDE}", flush=True)
         return SOURCE_SUMMARY_OVERRIDE
+    if PREFER_TRAINING_SOURCE:
+        latest = latest_training_source_summary()
+        if latest:
+            print(f"Using latest training source summary: {latest}", flush=True)
+            return latest
+        print("No gate-ready training source summary found; falling back to current pointer.", flush=True)
     pointer = ROOT / "config" / "stage5_current_source_summary.txt"
     if pointer.exists():
         value = pointer.read_text(encoding="utf-8").strip()

@@ -73,6 +73,7 @@ TARGETS = {
         "markers": [
             "STAGE5_SAFE_CONTINUE_RUN_A100_ACTION",
             "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY",
+            "STAGE5_SAFE_CONTINUE_PREFER_TRAINING_SOURCE",
             "RUN_A100_ACTION",
             "mount_drive_for_paid_action",
             "tests/test_stage5_routing_repair.py",
@@ -80,7 +81,10 @@ TARGETS = {
             "tests/test_mcq_debias.py",
             "colab/run_stage5_next_action.py",
         ],
-        "env": {"STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "1"},
+        "env": {
+            "STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "1",
+            "STAGE5_SAFE_CONTINUE_PREFER_TRAINING_SOURCE": "1",
+        },
     },
     "arc_challenge_mcq_debias_confirm": {
         "path": "colab/STAGE5_ARC_CHALLENGE_MCQ_DEBIAS_CELL.py",
