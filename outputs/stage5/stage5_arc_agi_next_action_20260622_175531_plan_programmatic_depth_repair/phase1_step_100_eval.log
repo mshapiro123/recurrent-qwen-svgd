@@ -1,0 +1,11 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6191.74it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_arc_agi_next_action_20260622_175531_plan_programmatic_depth_repair/phase1/phase1_step_100.pt loaded_keys=173
+examples=240
+expected_ce=0.210110
+halting_kl=0.397264
+loss=0.257781
+mean_expected_loops=2.916304
+mean_halt_entropy=1.253344

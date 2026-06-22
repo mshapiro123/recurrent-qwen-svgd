@@ -1,0 +1,23 @@
+{
+  "records": 2000,
+  "exported_examples": 2000,
+  "invalid_records": 0,
+  "skipped_invalid_records": 0,
+  "export_invalid_records": false,
+  "issues": [],
+  "role_counts": {
+    "positive_depth": 800,
+    "positive_direct": 1200
+  },
+  "mode_counts": {
+    "deep_narrow": 800,
+    "direct": 1200
+  },
+  "exported_role_counts": {
+    "positive_depth": 800,
+    "positive_direct": 1200
+  },
+  "exported_source_model_counts": {
+    "programmatic_generator": 2000
+  }
+}

@@ -1,0 +1,7 @@
+records=240
+exported_examples=240
+invalid_records=0
+skipped_invalid_records=0
+issues=0
+role_counts={'positive_depth': 120, 'positive_direct': 120}
+exported_role_counts={'positive_depth': 120, 'positive_direct': 120}
