@@ -59,6 +59,21 @@ def test_validate_drive_backup_blocks_missing_drive(tmp_path) -> None:
     assert runner.validate_drive_backup(drive_root=missing, allow_no_backup=True)["available"] is False
 
 
+def test_validate_drive_backup_creates_default_root_when_drive_mounted(monkeypatch, tmp_path) -> None:
+    mydrive = tmp_path / "MyDrive"
+    mydrive.mkdir()
+    backup_root = mydrive / "recurrent-qwen-svgd-artifacts"
+
+    monkeypatch.setattr(runner, "mydrive_root", lambda: mydrive)
+    monkeypatch.setattr(runner, "drive_backup_root", lambda: backup_root)
+    monkeypatch.setattr(runner, "mount_drive_if_possible", lambda: None)
+
+    payload = runner.validate_drive_backup(allow_no_backup=False)
+
+    assert payload["available"] is True
+    assert backup_root.exists()
+
+
 def test_restore_work_dir_from_drive_backup(monkeypatch, tmp_path) -> None:
     local = tmp_path / "workspace" / "data" / "curriculum" / "run_001"
     backup_root = tmp_path / "drive" / "curriculum_runs"

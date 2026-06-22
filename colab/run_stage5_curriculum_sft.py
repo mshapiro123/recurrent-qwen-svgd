@@ -315,8 +315,12 @@ def drive_backup_root() -> Path:
     return Path(os.environ.get("DRIVE_BACKUP_DIR", "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts"))
 
 
+def mydrive_root() -> Path:
+    return Path("/content/drive/MyDrive")
+
+
 def mount_drive_if_possible() -> None:
-    if Path("/content/drive/MyDrive").exists():
+    if mydrive_root().exists():
         return
     try:
         from google.colab import drive  # type: ignore
@@ -331,7 +335,12 @@ def validate_drive_backup(
     drive_root: Path | None = None,
     allow_no_backup: bool = ALLOW_NO_DRIVE_BACKUP,
 ) -> dict[str, Any]:
+    is_default_root = drive_root is None
     root = drive_root or drive_backup_root()
+    if not root.exists() and not allow_no_backup and is_default_root:
+        mount_drive_if_possible()
+        if mydrive_root().exists() and root.parent.exists():
+            root.mkdir(parents=True, exist_ok=True)
     payload = {
         "drive_root": str(root),
         "available": root.exists(),
