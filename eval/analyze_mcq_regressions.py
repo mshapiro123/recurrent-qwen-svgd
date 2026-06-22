@@ -173,6 +173,8 @@ def summarize(rows: list[dict[str, Any]], benchmark: str) -> dict[str, Any]:
         "candidate": dict(Counter(str(row["candidate_prediction"]) for row in rows)),
         "answer": dict(Counter(str(row["answer"]) for row in rows)),
     }
+    pred_drift = prediction_prior_drift(pred_counts)
+    pred_transitions = prediction_transition_counts(rows)
     by_feature = {}
     for feature in sorted(next(iter(rows), {"features": {}})["features"]):
         yes = [row for row in rows if row["features"].get(feature)]
@@ -196,10 +198,50 @@ def summarize(rows: list[dict[str, Any]], benchmark: str) -> dict[str, Any]:
         "mean_correct_score_delta": mean([row["correct_score_delta"] for row in rows]),
         "mean_question_len": mean([float(row["question_len"]) for row in rows]),
         "prediction_counts": pred_counts,
+        "prediction_count_deltas": pred_drift,
+        "prediction_transition_counts": pred_transitions,
         "features": by_feature,
         "routing_buckets": by_routing_bucket,
         "loss_examples": example_rows([row for row in rows if row["change"] == "loss"], reverse=False),
         "win_examples": example_rows([row for row in rows if row["change"] == "win"], reverse=True),
+    }
+
+
+def count_delta(left: dict[str, int], right: dict[str, int]) -> dict[str, int]:
+    labels = sorted(set(left) | set(right))
+    return {label: int(left.get(label, 0)) - int(right.get(label, 0)) for label in labels}
+
+
+def max_abs_count_delta(delta: dict[str, int]) -> int:
+    return max([abs(value) for value in delta.values()] or [0])
+
+
+def prediction_prior_drift(pred_counts: dict[str, dict[str, int]]) -> dict[str, Any]:
+    candidate_minus_base = count_delta(pred_counts["candidate"], pred_counts["base"])
+    candidate_minus_answer = count_delta(pred_counts["candidate"], pred_counts["answer"])
+    base_minus_answer = count_delta(pred_counts["base"], pred_counts["answer"])
+    return {
+        "candidate_minus_base": candidate_minus_base,
+        "candidate_minus_answer": candidate_minus_answer,
+        "base_minus_answer": base_minus_answer,
+        "max_abs_candidate_minus_base": max_abs_count_delta(candidate_minus_base),
+        "max_abs_candidate_minus_answer": max_abs_count_delta(candidate_minus_answer),
+        "max_abs_base_minus_answer": max_abs_count_delta(base_minus_answer),
+    }
+
+
+def prediction_transition_counts(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    flat = Counter(f"{row['base_prediction']}->{row['candidate_prediction']}" for row in rows)
+    matrix: dict[str, dict[str, int]] = {}
+    for row in rows:
+        base_prediction = str(row["base_prediction"])
+        candidate_prediction = str(row["candidate_prediction"])
+        matrix.setdefault(base_prediction, {})
+        matrix[base_prediction][candidate_prediction] = matrix[base_prediction].get(candidate_prediction, 0) + 1
+    return {
+        "flat": dict(sorted(flat.items())),
+        "matrix": {key: dict(sorted(value.items())) for key, value in sorted(matrix.items())},
+        "changed_predictions": sum(1 for row in rows if row["base_prediction"] != row["candidate_prediction"]),
     }
 
 
@@ -306,6 +348,47 @@ def markdown_report(payload: dict[str, Any]) -> str:
                     loops=format_float(values["mean_candidate_expected_loops"]),
                 )
             )
+    lines.extend(["", "## Answer Prior Drift"])
+    for summary in payload["summaries"]:
+        drift = summary["prediction_count_deltas"]
+        transitions = summary["prediction_transition_counts"]
+        lines.extend(
+            [
+                "",
+                f"### {summary['benchmark']}",
+                "",
+                f"- Max abs candidate-base prediction count delta: `{drift['max_abs_candidate_minus_base']}`",
+                f"- Max abs candidate-answer prediction count delta: `{drift['max_abs_candidate_minus_answer']}`",
+                f"- Changed predictions: `{transitions['changed_predictions']}/{summary['paired_examples']}`",
+                "",
+                "| Label | Base count | Candidate count | Answer count | Candidate-base | Candidate-answer |",
+                "|---|---:|---:|---:|---:|---:|",
+            ]
+        )
+        labels = sorted(
+            set(summary["prediction_counts"]["base"])
+            | set(summary["prediction_counts"]["candidate"])
+            | set(summary["prediction_counts"]["answer"])
+        )
+        for label in labels:
+            lines.append(
+                "| `{label}` | {base} | {candidate} | {answer} | {cb:+d} | {ca:+d} |".format(
+                    label=label,
+                    base=summary["prediction_counts"]["base"].get(label, 0),
+                    candidate=summary["prediction_counts"]["candidate"].get(label, 0),
+                    answer=summary["prediction_counts"]["answer"].get(label, 0),
+                    cb=drift["candidate_minus_base"].get(label, 0),
+                    ca=drift["candidate_minus_answer"].get(label, 0),
+                )
+            )
+        top_transitions = sorted(
+            transitions["flat"].items(),
+            key=lambda item: (-item[1], item[0]),
+        )[:8]
+        if top_transitions:
+            lines.extend(["", "Top prediction transitions:"])
+            for transition, count in top_transitions:
+                lines.append(f"- `{transition}`: {count}")
     lines.extend(["", "## Largest Regressions"])
     for summary in payload["summaries"]:
         lines.extend(["", f"### {summary['benchmark']}"])

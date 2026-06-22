@@ -29,6 +29,11 @@ def test_paired_rows_classifies_wins_losses_and_margin_delta() -> None:
     assert summary["changes"] == {"loss": 1, "win": 1, "tie_correct": 1}
     assert summary["features"]["has_number"]["yes"]["delta"] == 1
     assert summary["features"]["asks_why"]["yes"]["delta"] == 0
+    assert summary["prediction_count_deltas"]["candidate_minus_base"] == {"A": -2, "B": 2}
+    assert summary["prediction_count_deltas"]["candidate_minus_answer"] == {"A": -1, "B": 1}
+    assert summary["prediction_count_deltas"]["max_abs_candidate_minus_base"] == 2
+    assert summary["prediction_transition_counts"]["flat"] == {"A->A": 1, "A->B": 2}
+    assert summary["prediction_transition_counts"]["changed_predictions"] == 2
     assert rows[0]["routing_bucket"] == "ambiguous_proxy"
     assert rows[1]["routing_bucket"] == "deep_numeric_proxy"
     assert rows[2]["routing_bucket"] == "conceptual_reasoning_proxy"

@@ -131,6 +131,9 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or balanced_mcq_assessment_payload(payload) is not None
         or balanced_arc_mix_payload(payload) is not None
         or routing_diagnostic_payload(payload) is not None
+        or routing_repair_payload(payload) is not None
+        or programmatic_depth_repair_payload(payload) is not None
+        or programmatic_depth_assessment_payload(payload) is not None
         or claim_readiness_payload(payload) is not None
         or arc_agi_baseline_registry_payload(payload) is not None
         or arc_agi_sota_comparison_payload(payload) is not None

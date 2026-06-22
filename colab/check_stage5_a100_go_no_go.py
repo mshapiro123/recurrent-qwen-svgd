@@ -765,13 +765,19 @@ def classify_action(
 
     if script == "colab/run_stage5_programmatic_depth_repair.py":
         routing_status = str(source_payload.get("status", ""))
-        if routing_status in {"needs_direct_halting_repair", "needs_deep_narrow_recovery"}:
+        if routing_status in {
+            "needs_direct_halting_repair",
+            "needs_deep_narrow_recovery",
+            "repair_no_proxy_lift",
+            "repair_proxy_lift_calibration_warning",
+            "repair_proxy_matches_base_calibration_warning",
+        }:
             return {
                 "go": True,
                 "status": "go_programmatic_depth_repair",
                 "spend_class": "bounded_programmatic_depth_repair",
                 "reason": (
-                    "A routing diagnostic indicates deterministic depth/direct repair is still needed; "
+                    "Routing/repair evidence indicates deterministic depth/direct repair is still needed; "
                     "one bounded constructed-curriculum repair is allowed."
                 ),
             }

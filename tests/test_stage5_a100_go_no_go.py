@@ -348,6 +348,33 @@ def test_programmatic_depth_repair_uses_source_checkpoint_preflight(tmp_path) ->
     assert guarded["spend_class"] == "bounded_programmatic_depth_repair"
 
 
+def test_programmatic_depth_repair_allows_repair_calibration_warning(tmp_path) -> None:
+    resume = tmp_path / "outputs" / "stage5" / "repair" / "phase1" / "phase1_step_50.pt"
+    resume.parent.mkdir(parents=True)
+    resume.write_bytes(b"checkpoint")
+
+    decision = classify_action(
+        {
+            "name": "Run constructed depth repair",
+            "command": "python colab/run_stage5_programmatic_depth_repair.py",
+        },
+        source_payload={"status": "repair_proxy_lift_calibration_warning"},
+    )
+    guarded, checkpoint = apply_checkpoint_guard(
+        decision,
+        source_payload={
+            "status": "repair_proxy_lift_calibration_warning",
+            "best_checkpoint": {"checkpoint": str(resume)},
+        },
+    )
+
+    assert checkpoint["available"] is True
+    assert checkpoint["checkpoint"].endswith("phase1/phase1_step_50.pt")
+    assert guarded["go"] is True
+    assert guarded["status"] == "go_programmatic_depth_repair"
+    assert guarded["spend_class"] == "bounded_programmatic_depth_repair"
+
+
 def test_programmatic_depth_repair_blocks_when_no_repair_needed() -> None:
     decision = classify_action(
         {
