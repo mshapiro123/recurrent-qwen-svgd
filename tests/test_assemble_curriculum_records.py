@@ -184,6 +184,43 @@ def test_assemble_attaches_auxiliary_negative_and_verifier_traces() -> None:
     }
 
 
+def test_assemble_drops_positive_auxiliary_traces_before_sft_export() -> None:
+    records, report = assemble_curriculum_records(
+        [verified_candidate()],
+        [solution("s-algebra", method="algebra")],
+        [natural("s-algebra", method="algebra")],
+        [depth("s-algebra", method="algebra", count=3)],
+        None,
+        [
+            {
+                "id": "leaky-positive",
+                "record_id": "p1",
+                "role": "positive_direct",
+                "correct": True,
+                "natural": True,
+                "steps": 1,
+                "source_model": "unsafe-aux-source",
+                "text": "This should not enter through the auxiliary path.",
+            }
+        ],
+    )
+
+    assert report["unsafe_auxiliary_traces"] == 1
+    assert report["unsafe_auxiliary_trace_rows"] == [
+        {
+            "record_id": "p1",
+            "id": "leaky-positive",
+            "role": "positive_direct",
+            "reason": "auxiliary traces must be negative_ or verifier_ roles",
+        }
+    ]
+    assert {trace["role"] for trace in records[0]["traces"]} == {"positive_direct"}
+    examples, export_report = convert_curriculum_records(records)
+    assert len(examples) == 1
+    assert export_report["exported_examples"] == 1
+    assert examples[0]["source_model"] == "opus-test"
+
+
 def test_assemble_rejects_not_decontaminated_by_default() -> None:
     records, report = assemble_curriculum_records(
         [verified_candidate(decontaminated=False)],

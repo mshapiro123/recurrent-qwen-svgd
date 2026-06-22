@@ -16,6 +16,9 @@ from typing import Any
 from training.prepare_curriculum_jsonl import validate_curriculum_record
 
 
+AUXILIARY_ROLE_PREFIXES = ("negative_", "verifier_")
+
+
 def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for line_no, line in enumerate(Path(path).read_text(encoding="utf-8").splitlines(), start=1):
@@ -215,6 +218,11 @@ def build_auxiliary_trace(row: dict[str, Any]) -> dict[str, Any]:
     return trace
 
 
+def is_safe_auxiliary_trace(row: dict[str, Any]) -> bool:
+    role = str(row.get("role") or "").strip()
+    return role.startswith(AUXILIARY_ROLE_PREFIXES)
+
+
 def assemble_curriculum_records(
     verified_candidates: list[dict[str, Any]],
     solution_candidates: list[dict[str, Any]],
@@ -251,6 +259,7 @@ def assemble_curriculum_records(
 
     records: list[dict[str, Any]] = []
     rejected: list[dict[str, Any]] = []
+    unsafe_auxiliary: list[dict[str, Any]] = []
     validation_issues: list[str] = []
 
     for record_id, candidate in sorted(candidate_by_id.items()):
@@ -300,7 +309,18 @@ def assemble_curriculum_records(
             build_trace(solution, role=role, steps=int(depth_info["count"]), natural_info=natural_info)
             for method, (solution, natural_info, depth_info) in sorted(best_by_method.items())
         ]
-        traces.extend(build_auxiliary_trace(trace) for trace in auxiliary_by_record.get(record_id, []))
+        for trace in auxiliary_by_record.get(record_id, []):
+            if not is_safe_auxiliary_trace(trace):
+                unsafe_auxiliary.append(
+                    {
+                        "record_id": record_id,
+                        "id": trace.get("id"),
+                        "role": trace.get("role"),
+                        "reason": "auxiliary traces must be negative_ or verifier_ roles",
+                    }
+                )
+                continue
+            traces.append(build_auxiliary_trace(trace))
         answer = candidate.get("answer") if isinstance(candidate.get("answer"), dict) else {}
         record = {
             "id": record_id,
@@ -337,6 +357,8 @@ def assemble_curriculum_records(
         "distinctness_judgments": 0 if distinctness_judgments is None else len(distinctness_judgments),
         "distinctness_required": distinctness_judgments is not None,
         "auxiliary_traces": 0 if auxiliary_traces is None else len(auxiliary_traces),
+        "unsafe_auxiliary_traces": len(unsafe_auxiliary),
+        "unsafe_auxiliary_trace_rows": unsafe_auxiliary,
         "records": len(records),
         "rejected": len(rejected),
         "rejected_records": rejected,

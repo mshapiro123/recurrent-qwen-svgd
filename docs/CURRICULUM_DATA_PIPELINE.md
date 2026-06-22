@@ -25,6 +25,10 @@ The hard routing rule is:
 
 Positive reasoning consumers must load only roles that begin with
 `positive_`. Enforce this in code, not by convention.
+Auxiliary traces are the inverse boundary: they may only carry `negative_` or
+`verifier_` roles. Positive traces must be created only from verified,
+natural, method/depth-measured solution candidates, never from perturbation or
+auxiliary files.
 
 ## Model Roles
 
