@@ -36,6 +36,12 @@ AUTO_DISCONNECT = os.environ.get("STAGE5_FULL_ASSESS_AUTO_DISCONNECT", "0").stri
     "yes",
     "y",
 }
+ALLOW_CPU = os.environ.get("STAGE5_FULL_ASSESS_ALLOW_CPU", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 
 
 def mask(value: str) -> str:
@@ -86,6 +92,33 @@ def child_env() -> dict[str, str]:
     return env
 
 
+def cuda_runtime_status() -> tuple[bool, str]:
+    try:
+        import torch
+    except Exception as exc:  # pragma: no cover - dependency/environment guard
+        return False, f"torch import failed: {exc}"
+    if not torch.cuda.is_available():
+        return False, "torch.cuda.is_available() is false"
+    try:
+        return True, torch.cuda.get_device_name(0)
+    except Exception as exc:  # pragma: no cover - unusual CUDA state
+        return True, f"cuda available, device name unavailable: {exc}"
+
+
+def require_cuda_runtime() -> None:
+    if ALLOW_CPU:
+        print("CPU fallback allowed by STAGE5_FULL_ASSESS_ALLOW_CPU=1.", flush=True)
+        return
+    available, detail = cuda_runtime_status()
+    if not available:
+        raise RuntimeError(
+            "Refusing to run full ARC assessment without CUDA. "
+            "Attach an A100/GPU runtime or set STAGE5_FULL_ASSESS_ALLOW_CPU=1 for an intentional CPU run. "
+            f"Detail: {detail}"
+        )
+    print(f"CUDA runtime OK: {detail}", flush=True)
+
+
 def disconnect_if_requested() -> None:
     if not AUTO_DISCONNECT:
         return
@@ -98,20 +131,25 @@ def disconnect_if_requested() -> None:
         print(f"Runtime disconnect skipped/failed: {exc}", flush=True)
 
 
-def main() -> int:
+def run_assessment() -> int:
     source = ROOT / SOURCE_SUMMARY
     if not source.exists():
         raise FileNotFoundError(f"Missing source summary: {source}")
+    require_cuda_runtime()
     run(["git", "status", "-sb"], check=False)
     run(["git", "log", "--oneline", "-5"], check=False)
     run(["nvidia-smi"], check=False)
     print(f"RUN_ID={RUN_ID}", flush=True)
     print(f"SOURCE_SUMMARY={SOURCE_SUMMARY}", flush=True)
+    run([sys.executable, "colab/run_stage5_recovery_full_assessment.py"], env=child_env())
+    return 0
+
+
+def main() -> int:
     try:
-        run([sys.executable, "colab/run_stage5_recovery_full_assessment.py"], env=child_env())
+        return run_assessment()
     finally:
         disconnect_if_requested()
-    return 0
 
 
 if __name__ == "__main__":

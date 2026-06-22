@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 
 def test_full_assessment_once_defaults_to_latest_proxy_summary(monkeypatch) -> None:
     import colab.run_stage5_full_assessment_once as module
@@ -64,3 +66,50 @@ def test_full_assessment_once_run_tolerates_missing_optional_command(monkeypatch
 
     assert proc.returncode == 127
     assert "command not found" in proc.stdout
+
+
+def test_full_assessment_once_refuses_cpu_by_default(monkeypatch) -> None:
+    import colab.run_stage5_full_assessment_once as module
+
+    monkeypatch.setattr(module, "ALLOW_CPU", False)
+    monkeypatch.setattr(module, "cuda_runtime_status", lambda: (False, "no cuda"))
+
+    with pytest.raises(RuntimeError, match="Refusing to run full ARC assessment without CUDA"):
+        module.require_cuda_runtime()
+
+
+def test_full_assessment_once_allows_explicit_cpu(monkeypatch) -> None:
+    import colab.run_stage5_full_assessment_once as module
+
+    called = False
+
+    def fake_status() -> tuple[bool, str]:
+        nonlocal called
+        called = True
+        return False, "no cuda"
+
+    monkeypatch.setattr(module, "ALLOW_CPU", True)
+    monkeypatch.setattr(module, "cuda_runtime_status", fake_status)
+
+    module.require_cuda_runtime()
+
+    assert called is False
+
+
+def test_full_assessment_once_disconnects_on_early_failure(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_full_assessment_once as module
+
+    disconnected = False
+
+    def fake_disconnect() -> None:
+        nonlocal disconnected
+        disconnected = True
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "SOURCE_SUMMARY", "missing/summary.json")
+    monkeypatch.setattr(module, "disconnect_if_requested", fake_disconnect)
+
+    with pytest.raises(FileNotFoundError):
+        module.main()
+
+    assert disconnected is True
