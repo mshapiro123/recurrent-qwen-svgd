@@ -80,6 +80,12 @@ def test_checkpoint_from_payload_uses_selected_checkpoint() -> None:
     assert checkpoint_from_payload(payload) == "outputs/stage5/run/phase1/phase1_step_1.pt"
 
 
+def test_checkpoint_from_payload_uses_phase1_checkpoint() -> None:
+    payload = {"phase1_checkpoint": "outputs/stage5/run/phase1/phase1_step_150.pt"}
+
+    assert checkpoint_from_payload(payload) == "outputs/stage5/run/phase1/phase1_step_150.pt"
+
+
 def test_checkpoint_from_payload_uses_nested_best_checkpoint() -> None:
     payload = {
         "best_arm": {

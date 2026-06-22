@@ -128,6 +128,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or trace_sft_gate_payload(payload) is not None
         or distill_sft_gate_payload(payload) is not None
         or curriculum_sft_gate_payload(payload) is not None
+        or curriculum_sft_payload(payload) is not None
         or reasoning_dataset_audit_payload(payload) is not None
         or stage4_opus_finetune_payload(payload) is not None
     )
@@ -876,6 +877,42 @@ def curriculum_sft_gate_actions(payload: dict[str, Any], *, source_summary: Path
             "Inspect generated curriculum SFT gate",
             "The generated curriculum shard is not safe for GPU training yet; inspect the gate issues and fix the CPU/API artifacts before attaching paid GPU time.",
             f"cat {command_path(gate_md if gate_md.exists() else source_summary)}",
+            10,
+        )
+    ]
+
+
+def curriculum_sft_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_curriculum_sft" else None
+
+
+def curriculum_sft_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    run_id = str(payload.get("run_id") or source_summary.parent.name or RUN_ID)
+    checkpoint = str(payload.get("phase1_checkpoint") or payload.get("checkpoint") or "")
+    phase1_val = payload.get("phase1_val") or {}
+    dataset = payload.get("dataset") or {}
+    assignments = {
+        "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{run_id}_benchmark_suite",
+        "STAGE5_BENCHMARK_SOURCE_SUMMARY": command_path(source_summary),
+        "STAGE5_BENCHMARKS": "arc_challenge,arc_easy,gpqa_lite",
+        "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "128",
+        "STAGE5_BENCHMARK_ARC_EASY_LIMIT": "128",
+        "STAGE5_BENCHMARK_GPQA_LIMIT": "16",
+        "STAGE5_BENCHMARK_RECURRENT_MODE": "phase1",
+        "STAGE5_BENCHMARK_NUM_TRAJECTORIES": "1",
+    }
+    if checkpoint:
+        assignments["STAGE5_BENCHMARK_CHECKPOINT"] = checkpoint
+    reason = (
+        "Generated-curriculum Phase 1 SFT finished; run the broader base-vs-deterministic-recurrent benchmark suite before any Phase 2/SVGD training. "
+        f"Checkpoint `{checkpoint or 'missing'}`; curriculum rows train/val="
+        f"{dataset.get('train_rows')}/{dataset.get('val_rows')}; val metrics `{phase1_val}`."
+    )
+    return [
+        make_action(
+            "Run benchmark suite for generated-curriculum recurrent checkpoint",
+            reason,
+            command_env(assignments, "python colab/run_stage5_benchmark_suite.py"),
             10,
         )
     ]
@@ -2682,6 +2719,9 @@ def plan_next_actions(
     curriculum_sft_gate = curriculum_sft_gate_payload(payload)
     if curriculum_sft_gate:
         return curriculum_sft_gate_actions(curriculum_sft_gate, source_summary=source_summary)
+    curriculum_sft = curriculum_sft_payload(payload)
+    if curriculum_sft:
+        return curriculum_sft_actions(curriculum_sft, source_summary=source_summary)
     stage4_opus = stage4_opus_finetune_payload(payload)
     if stage4_opus:
         return stage4_opus_finetune_actions(stage4_opus, source_summary=source_summary)
@@ -3054,6 +3094,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "reasoning_dataset_audit"
     if curriculum_sft_gate_payload(payload):
         return "curriculum_sft_gate"
+    if curriculum_sft_payload(payload):
+        return "curriculum_sft"
     if stage4_opus_finetune_payload(payload):
         return "stage4_opus_finetune"
     if benchmark_suite_payload(payload):

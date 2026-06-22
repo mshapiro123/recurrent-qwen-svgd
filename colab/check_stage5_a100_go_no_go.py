@@ -108,7 +108,7 @@ def infer_stage5_run_id(path: str | Path) -> str | None:
 def checkpoint_from_payload(payload: dict[str, Any]) -> str | None:
     """Find the checkpoint the guarded next action is expected to consume."""
 
-    direct = payload.get("selected_checkpoint") or payload.get("checkpoint")
+    direct = payload.get("selected_checkpoint") or payload.get("checkpoint") or payload.get("phase1_checkpoint")
     if direct:
         return str(direct)
 
