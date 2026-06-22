@@ -52,6 +52,37 @@ def test_validate_drive_backup_blocks_missing_drive(tmp_path) -> None:
     assert runner.validate_drive_backup(drive_root=missing, allow_no_backup=True)["available"] is False
 
 
+def test_restore_work_dir_from_drive_backup(monkeypatch, tmp_path) -> None:
+    local = tmp_path / "workspace" / "data" / "curriculum" / "run_001"
+    backup_root = tmp_path / "drive" / "curriculum_runs"
+    backup = backup_root / "run_001"
+    backup.mkdir(parents=True)
+    (backup / "summary.json").write_text(json.dumps({"status": "complete"}), encoding="utf-8")
+    (backup / "positive_sft.jsonl").write_text(json.dumps(positive_row(1)) + "\n", encoding="utf-8")
+
+    monkeypatch.setattr(runner, "CURRICULUM_INPUT_BACKUP_DIR", str(backup_root))
+    monkeypatch.setattr(runner, "SUMMARY_JSON", "")
+    monkeypatch.setattr(runner, "mount_drive_if_possible", lambda: None)
+
+    result = runner.restore_work_dir_if_needed(local)
+
+    assert result["restored"] is True
+    assert (local / "summary.json").exists()
+    assert (local / "positive_sft.jsonl").exists()
+
+
+def test_restore_work_dir_raises_when_local_and_backup_missing(monkeypatch, tmp_path) -> None:
+    local = tmp_path / "workspace" / "data" / "curriculum" / "run_001"
+    backup_root = tmp_path / "drive" / "curriculum_runs"
+
+    monkeypatch.setattr(runner, "CURRICULUM_INPUT_BACKUP_DIR", str(backup_root))
+    monkeypatch.setattr(runner, "SUMMARY_JSON", "")
+    monkeypatch.setattr(runner, "mount_drive_if_possible", lambda: None)
+
+    with pytest.raises(FileNotFoundError, match="Missing curriculum work dir"):
+        runner.restore_work_dir_if_needed(local)
+
+
 def test_prepare_train_val_uses_gate_positive_sft(monkeypatch, tmp_path) -> None:
     positive_sft = tmp_path / "positive_sft.jsonl"
     write_jsonl(positive_sft, [positive_row(index) for index in range(5)])

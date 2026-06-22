@@ -77,6 +77,10 @@ ALLOW_NO_DRIVE_BACKUP = os.environ.get("STAGE5_CURRICULUM_ALLOW_NO_DRIVE_BACKUP"
     "yes",
     "y",
 }
+CURRICULUM_INPUT_BACKUP_DIR = os.environ.get(
+    "STAGE5_CURRICULUM_INPUT_BACKUP_DIR",
+    "/content/drive/MyDrive/recurrent-qwen-svgd/curriculum_runs",
+)
 
 
 def resolve_path(value: str | Path, *, base: Path = ROOT) -> Path:
@@ -148,6 +152,60 @@ def summary_path_for_work_dir(work_dir: Path = WORK_DIR) -> Path:
     if SUMMARY_JSON:
         return resolve_path(SUMMARY_JSON)
     return resolve_path(work_dir) / "summary.json"
+
+
+def curriculum_input_backup_root() -> Path:
+    return Path(CURRICULUM_INPUT_BACKUP_DIR)
+
+
+def curriculum_work_dir_backup_candidates(work_dir: Path) -> list[Path]:
+    root = curriculum_input_backup_root()
+    local = resolve_path(work_dir)
+    candidates = [root / local.name]
+    try:
+        relative = local.relative_to(ROOT)
+    except ValueError:
+        relative = Path(local.name)
+    candidates.append(root / relative)
+    # Preserve order while removing duplicates.
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        key = str(candidate)
+        if key not in seen:
+            seen.add(key)
+            unique.append(candidate)
+    return unique
+
+
+def restore_work_dir_if_needed(work_dir: Path = WORK_DIR) -> dict[str, Any]:
+    local = resolve_path(work_dir)
+    summary = summary_path_for_work_dir(work_dir)
+    if local.exists() and summary.exists():
+        return {"restored": False, "work_dir": path_for_cli(local), "summary_json": path_for_cli(summary)}
+
+    mount_drive_if_possible()
+    candidates = curriculum_work_dir_backup_candidates(work_dir)
+    for candidate in candidates:
+        if (candidate / "summary.json").exists():
+            local.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(candidate, local, dirs_exist_ok=True)
+            print(f"restored_curriculum_work_dir={candidate} -> {local}", flush=True)
+            return {
+                "restored": True,
+                "source": str(candidate),
+                "work_dir": path_for_cli(local),
+                "summary_json": path_for_cli(summary),
+            }
+
+    searched = [str(path) for path in candidates]
+    if not local.exists() or not summary.exists():
+        raise FileNotFoundError(
+            f"Missing curriculum work dir or summary before GPU training: work_dir={local}, summary={summary}. "
+            f"Searched Drive backups under {curriculum_input_backup_root()}: {searched}. "
+            "Run the CPU/API curriculum artifact cell first, or set STAGE5_CURRICULUM_INPUT_BACKUP_DIR."
+        )
+    return {"restored": False, "work_dir": path_for_cli(local), "summary_json": path_for_cli(summary)}
 
 
 def run_sft_gate() -> dict[str, Any]:
@@ -415,6 +473,7 @@ def write_summary(payload: dict[str, Any]) -> None:
         "",
         "## Safety",
         f"- SFT gate: `{payload['sft_gate']['status']}`",
+        f"- Input restore: `{payload['input_restore']}`",
         f"- Positive rows: `{payload['dataset']['rows']}`",
         f"- Train / validation rows: `{payload['dataset']['train_rows']}` / `{payload['dataset']['val_rows']}`",
         f"- Drive preflight: `{payload['drive_preflight']}`",
@@ -438,11 +497,14 @@ def write_summary(payload: dict[str, Any]) -> None:
 
 def main() -> int:
     RUN_DIR.mkdir(parents=True, exist_ok=True)
+    input_restore = restore_work_dir_if_needed()
     metadata = {
         "run_id": RUN_ID,
         "model_name": MODEL_NAME,
         "work_dir": path_for_cli(resolve_path(WORK_DIR)),
         "summary_json": path_for_cli(summary_path_for_work_dir(WORK_DIR)),
+        "curriculum_input_backup_dir": str(curriculum_input_backup_root()),
+        "input_restore": input_restore,
         "min_positive_rows": MIN_POSITIVE_ROWS,
         "max_length": MAX_LENGTH,
         "max_loops": MAX_LOOPS,
@@ -474,6 +536,7 @@ def main() -> int:
             "issues": gate.get("issues", []),
             "checks": gate.get("checks", {}),
         },
+        "input_restore": input_restore,
         "dataset": dataset_summary,
         "drive_preflight": drive_preflight,
         "backup": backup,
