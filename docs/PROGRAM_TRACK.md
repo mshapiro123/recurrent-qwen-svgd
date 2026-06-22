@@ -90,6 +90,15 @@ and the selector can extract a correct claim from several plausible paths.
 Broad aggregate gains are useful, but the project claim depends on hard-tail
 lift under a matched recipe.
 
+The current mechanism should be understood as two control surfaces plus a
+routing problem. Recurrent halting controls latent depth. Particles and SVGD
+control latent width. The architecture's next proof obligation is not simply
+that either surface can move, but that the model can allocate them correctly:
+little depth or width for direct/base-known items, depth without width for deep
+deterministic chains, width for multi-solution tasks, and both for the hard
+tail. This allocation view is tracked in
+[DEPTH_WIDTH_ROUTING_RECIPE.md](DEPTH_WIDTH_ROUTING_RECIPE.md).
+
 ## Near-Term Gates
 
 ### Gate 1: Measurement Before More Mechanism

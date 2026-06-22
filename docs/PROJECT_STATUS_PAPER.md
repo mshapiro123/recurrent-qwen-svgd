@@ -284,6 +284,13 @@ reasoning traces: the recurrent checkpoint over-predicts `C`, under-predicts
 recurrent recovery the next gate before GPQA, Phase 2/SVGD scaling, or model
 release.
 
+The newer strategic interpretation is that this drift may be a routing failure:
+the model is spending recurrent depth on direct/easy items where the base model
+should answer with little or no latent computation. Depth and width are separate
+control surfaces. The next recovery recipe should train deterministic depth and
+direct-mode halting before reintroducing particle width. See
+[DEPTH_WIDTH_ROUTING_RECIPE.md](DEPTH_WIDTH_ROUTING_RECIPE.md).
+
 ## 6. What Has Not Been Shown Yet
 
 The project has not yet shown:

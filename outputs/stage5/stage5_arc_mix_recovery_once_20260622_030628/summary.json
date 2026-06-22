@@ -1,0 +1,100 @@
+{
+  "run_id": "stage5_arc_mix_recovery_once_20260622_030628",
+  "kind": "stage5_balanced_arc_mix_gate",
+  "source_summary": "outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json",
+  "source_status": "needs_competence_recovery",
+  "resume_checkpoint": "outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/arc_mix_response_w005_lr2e6/phase1/phase1_step_50.pt",
+  "resume_run_id": "stage5_arc_mix_recovery_once_20260622_003331",
+  "data": {
+    "mixed_rows": 13227
+  },
+  "arc_eval_limit": 128,
+  "proxy_calibration_thresholds": {
+    "min_mean_margin_delta": -0.05,
+    "max_abs_prediction_count_delta": 16
+  },
+  "status": "no_proxy_lift",
+  "passed": false,
+  "decision": "stop_and_revise_objective",
+  "blocked_reason": "Best ARC-mix checkpoint did not improve over the recurrent start or close the base gap.",
+  "next_step": "Do not extend this ARC-mix setting; inspect failures or revise supervision mix.",
+  "drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5_arc_mix_recovery_once_20260622_030628",
+  "colab_push_note": "The runner committed locally in Colab but git push was rejected because a notebook autosave commit reached main first; this compact summary preserves the planner-relevant result.",
+  "objective_rationale": {
+    "failure_mode": "The previous proxy-selected recurrent checkpoint lost full balanced ARC points through answer-calibration drift: lower correct-answer margins and answer-prior shift.",
+    "proxy_hypothesis": "Mix Opus reasoning traces with ARC-style MCQ label supervision and use response-only frozen-base KL distillation to preserve the base model's answer-token distribution.",
+    "response_distillation_reason": "ARC MCQ SFT rows use label-only completions, so response-only distillation is concentrated on the option label decision rather than the prompt text."
+  },
+  "best_arm": {
+    "arm": "arc_mix_response_w01_lr2e6",
+    "base_arc": {
+      "mean": {
+        "correct": 68,
+        "total": 128,
+        "accuracy": 0.53125
+      }
+    },
+    "phase1_start": {
+      "checkpoint": "outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/arc_mix_response_w005_lr2e6/phase1/phase1_step_50.pt",
+      "arc": {
+        "mean": {
+          "correct": 68,
+          "total": 128,
+          "accuracy": 0.53125
+        }
+      }
+    },
+    "best_checkpoint": {
+      "checkpoint": "outputs/stage5/stage5_arc_mix_recovery_once_20260622_030628/arc_mix_response_w01_lr2e6/phase1/phase1_step_50.pt",
+      "arc": {
+        "mean": {
+          "correct": 66,
+          "total": 128,
+          "accuracy": 0.515625
+        }
+      },
+      "comparison_to_base": {
+        "mean_margin_delta": -0.308232,
+        "max_abs_prediction_count_delta": 10,
+        "calibration_ok": false
+      }
+    }
+  },
+  "arms": [
+    {
+      "arm": "arc_mix_response_w01_lr2e6",
+      "base_arc": {
+        "mean": {
+          "correct": 68,
+          "total": 128,
+          "accuracy": 0.53125
+        }
+      },
+      "phase1_start": {
+        "checkpoint": "outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/arc_mix_response_w005_lr2e6/phase1/phase1_step_50.pt",
+        "arc": {
+          "mean": {
+            "correct": 68,
+            "total": 128,
+            "accuracy": 0.53125
+          }
+        }
+      },
+      "best_checkpoint": {
+        "checkpoint": "outputs/stage5/stage5_arc_mix_recovery_once_20260622_030628/arc_mix_response_w01_lr2e6/phase1/phase1_step_50.pt",
+        "arc": {
+          "mean": {
+            "correct": 66,
+            "total": 128,
+            "accuracy": 0.515625
+          }
+        },
+        "comparison_to_base": {
+          "mean_margin_delta": -0.308232,
+          "max_abs_prediction_count_delta": 10,
+          "calibration_ok": false
+        }
+      }
+    }
+  ]
+}

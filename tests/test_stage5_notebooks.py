@@ -81,6 +81,8 @@ def test_arc_mix_recovery_cell_is_single_purpose() -> None:
     assert "GO_NO_GO_RUN_ID" in plain
     assert "A100 go/no-go blocked ARC-mix recovery" in text
     assert "A100 go/no-go blocked ARC-mix recovery" in plain
+    assert 'go_decision.get("spend_class") != "single_arc_mix_proxy"' in text
+    assert 'go_decision.get("spend_class") != "single_arc_mix_proxy"' in plain
     assert "disconnect_runtime(\"ARC-mix recovery cell failed\")" in text
     assert "disconnect_runtime(\"ARC-mix recovery cell failed\")" in plain
     assert "colab/run_stage5_full_assessment_once.py" not in text
@@ -135,6 +137,7 @@ def test_arc_mix_recovery_notebook_is_single_purpose() -> None:
     assert "drive.mount" in text
     assert "GO_NO_GO_RUN_ID" in text
     assert "A100 go/no-go blocked ARC-mix recovery" in text
+    assert 'go_decision.get("spend_class") != "single_arc_mix_proxy"' in text
     assert "disconnect_runtime(\"ARC-mix recovery notebook failed\")" in text
     assert "colab/run_stage5_full_assessment_once.py" not in text
     assert "colab/run_stage5_colab_continue.py" not in text

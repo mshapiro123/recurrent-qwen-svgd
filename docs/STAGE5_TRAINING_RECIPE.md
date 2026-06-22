@@ -17,6 +17,14 @@ base Qwen scored 72/128, trained Phase1 recurrent scored 70/128, and the current
 Phase2/SVGD candidate scored 69/128. This means recurrent recovery is working,
 but particle training is not yet adding reliable lift.
 
+The latest ARC-mix recovery failure refines the framing. The key control
+problem is not only "more recurrence" or "more particles"; it is allocation of
+depth and width. Depth is the learned recurrent loop count. Width is particle
+spread. Direct/easy tasks should use little of either, deep deterministic tasks
+should use depth without particle spread, wide tasks should use particle
+coverage, and hard multi-approach tasks may need both. The detailed training
+handoff is [DEPTH_WIDTH_ROUTING_RECIPE.md](DEPTH_WIDTH_ROUTING_RECIPE.md).
+
 ## Stage 5A: Recurrent Competence Recovery
 
 Goal: train the deterministic recurrent model until it matches or beats base
@@ -29,6 +37,8 @@ Use a mixed objective:
   the recurrent model does not drift away from base capabilities unnecessarily.
 - PonderNet halting KL with non-collapsed loop depth.
 - Small bridge/LoRA regularization to preserve the surgery identity path.
+- Direct-mode pressure: easy/base-known rows should halt shallowly rather than
+  being forced through latent computation that can shift answer calibration.
 
 Recommended run ladder:
 
@@ -44,6 +54,10 @@ Gate to proceed:
 - Phase1 recurrent matches or beats base on at least one non-toy slice, or
   remains within a small gap while improving exact reasoning and loop telemetry.
 - Mean loop depth remains non-collapsed.
+- Loop-depth telemetry is sensible by task type: direct/easy rows are shallower
+  than deep deterministic rows.
+- Correct-answer margins and answer priors do not drift materially versus base
+  on MCQ rows.
 
 ## Stage 5B: Particle Mechanism Screening
 

@@ -105,6 +105,8 @@ try:
     go_allowed = bool(go_decision.get("go"))
     if not go_allowed:
         raise RuntimeError(f"A100 go/no-go blocked ARC-mix recovery: {go_decision}")
+    if go_decision.get("spend_class") != "single_arc_mix_proxy":
+        raise RuntimeError(f"Unexpected A100 spend class for ARC-mix recovery: {go_decision}")
 
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"], cwd=ROOT)
 

@@ -1,0 +1,32 @@
+{
+  "run_id": "stage5_arc_mix_review_20260622_031727",
+  "kind": "stage5_arc_mix_result_review",
+  "source_summary": "outputs/stage5/stage5_arc_mix_recovery_once_20260622_030628/summary.json",
+  "source_status": "no_proxy_lift",
+  "source_passed": false,
+  "decision": "stop_and_revise_objective",
+  "blocked_reason": "Best ARC-mix checkpoint did not improve over the recurrent start or close the base gap.",
+  "next_step": "Do not extend this ARC-mix setting; inspect failures or revise supervision mix.",
+  "full_assessment_justified": false,
+  "decision_basis": "explicit_decision",
+  "best_arm": {
+    "arm": "arc_mix_response_w01_lr2e6",
+    "checkpoint": "outputs/stage5/stage5_arc_mix_recovery_once_20260622_030628/arc_mix_response_w01_lr2e6/phase1/phase1_step_50.pt",
+    "best_correct": 66,
+    "best_total": 128,
+    "start_correct": 68,
+    "start_total": 128,
+    "base_correct": 68,
+    "base_total": 128,
+    "lift_vs_start": -2,
+    "gap_vs_base": -2,
+    "mean_margin_delta": -0.308232,
+    "max_abs_prediction_count_delta": 10,
+    "calibration_ok": false
+  },
+  "recommended_action": {
+    "name": "Inspect ARC-mix proxy gate no_proxy_lift",
+    "priority": 10,
+    "command": "cat outputs/stage5/stage5_arc_mix_recovery_once_20260622_030628/summary.md"
+  }
+}
