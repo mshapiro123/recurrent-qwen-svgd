@@ -20,19 +20,19 @@ Default behavior:
 Edit these values at the top of the cell when needed:
 
 ```python
-WORK_DIR = "data/curriculum/run_001"
-MIN_POSITIVE_ROWS = "16"
-MIN_MODE_ROWS = "direct=64,deep_narrow=64"  # Current objective; edit to "wide=64" for width-only shards.
+WORK_DIR = "data/curriculum/programmatic_direct_deep_001"
+MIN_POSITIVE_ROWS = "2000"
+MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"  # Current objective; edit deliberately for other shards.
 PHASE1_STEPS = "150"
 MAX_LOOPS = "4"
 ```
 
 Keep `MIN_MODE_ROWS` aligned with the run objective. The default protects the
-current direct/deep calibration phase, so a shard should not train just because
-it has many `wide` rows:
+current direct/deep calibration phase, so a stale tiny shard should not train
+just because it has a few valid rows:
 
 ```python
-MIN_MODE_ROWS = "direct=64,deep_narrow=64"
+MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"
 ```
 
 For the later width phase, change it deliberately, for example:

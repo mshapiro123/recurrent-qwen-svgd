@@ -366,7 +366,7 @@ def test_curriculum_sft_allowed_only_after_green_sft_gate() -> None:
     action = {
         "name": "Run generated curriculum SFT",
         "command": (
-            "STAGE5_CURRICULUM_MIN_MODE_ROWS=direct=64,deep_narrow=64 "
+            "STAGE5_CURRICULUM_MIN_MODE_ROWS=direct=1000,deep_narrow=1000 "
             "python colab/run_stage5_curriculum_sft.py"
         ),
     }
@@ -409,7 +409,7 @@ def test_curriculum_sft_requires_gate_specific_mode_rows() -> None:
     wrong = {
         "name": "Run generated curriculum SFT",
         "command": (
-            "STAGE5_CURRICULUM_MIN_MODE_ROWS=direct=64,deep_narrow=64 "
+            "STAGE5_CURRICULUM_MIN_MODE_ROWS=direct=1000,deep_narrow=1000 "
             "python colab/run_stage5_curriculum_sft.py"
         ),
     }

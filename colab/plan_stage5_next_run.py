@@ -51,7 +51,7 @@ A100_BUDGET_PROFILE = os.environ.get(
     "STAGE5_A100_BUDGET_PROFILE",
     os.environ.get("STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE", ""),
 ).strip().lower()
-DEFAULT_CURRICULUM_GATE_MIN_MODE_ROWS = "direct=64,deep_narrow=64"
+DEFAULT_CURRICULUM_GATE_MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"
 
 
 def credit_saver_budget() -> bool:

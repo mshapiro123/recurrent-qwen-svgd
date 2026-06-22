@@ -222,7 +222,7 @@ def test_complete_curriculum_pipeline_recommends_no_gpu_sft_gate(tmp_path) -> No
     assert actions[0]["name"] == "Run generated curriculum SFT safety gate"
     assert "python training/check_curriculum_sft_gate.py" in actions[0]["command"]
     assert "--summary_json" in actions[0]["command"]
-    assert "--min_mode_rows direct=64,deep_narrow=64" in actions[0]["command"]
+    assert "--min_mode_rows direct=1000,deep_narrow=1000" in actions[0]["command"]
     assert "curriculum_sft_gate.json" in actions[0]["command"]
     assert "run_stage5_curriculum_sft.py" not in actions[0]["command"]
 

@@ -47,10 +47,18 @@ RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
 DATA_DIR = RUN_DIR / "data"
 
 MODEL_NAME = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")
-WORK_DIR = Path(os.environ.get("STAGE5_CURRICULUM_WORK_DIR", "data/curriculum/run_001"))
+WORK_DIR = Path(
+    os.environ.get(
+        "STAGE5_CURRICULUM_WORK_DIR",
+        "data/curriculum/programmatic_direct_deep_001",
+    )
+)
 SUMMARY_JSON = os.environ.get("STAGE5_CURRICULUM_SUMMARY_JSON", "")
-MIN_POSITIVE_ROWS = int(os.environ.get("STAGE5_CURRICULUM_MIN_POSITIVE_ROWS", "16"))
-MIN_MODE_ROWS = os.environ.get("STAGE5_CURRICULUM_MIN_MODE_ROWS", "").strip()
+MIN_POSITIVE_ROWS = int(os.environ.get("STAGE5_CURRICULUM_MIN_POSITIVE_ROWS", "2000"))
+MIN_MODE_ROWS = os.environ.get(
+    "STAGE5_CURRICULUM_MIN_MODE_ROWS",
+    "direct=1000,deep_narrow=1000",
+).strip()
 VAL_FRACTION = float(os.environ.get("STAGE5_CURRICULUM_VAL_FRACTION", "0.10"))
 VAL_MIN_ROWS = int(os.environ.get("STAGE5_CURRICULUM_VAL_MIN_ROWS", "1"))
 SPLIT_SEED = int(os.environ.get("STAGE5_CURRICULUM_SPLIT_SEED", "17"))

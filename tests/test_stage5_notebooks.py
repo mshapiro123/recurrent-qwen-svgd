@@ -402,9 +402,13 @@ def test_curriculum_sft_cell_defaults_to_direct_deep_objective() -> None:
     text = (ROOT / "colab/STAGE5_CURRICULUM_SFT_CELL.md").read_text(encoding="utf-8")
     plain = (ROOT / "colab/STAGE5_CURRICULUM_SFT_CELL.py").read_text(encoding="utf-8")
 
-    assert 'MIN_MODE_ROWS = "direct=64,deep_narrow=64"' in text
-    assert 'MIN_MODE_ROWS = "direct=64,deep_narrow=64"' in plain
-    assert "width-only shards" in text
+    assert 'WORK_DIR = "data/curriculum/programmatic_direct_deep_001"' in text
+    assert 'WORK_DIR = "data/curriculum/programmatic_direct_deep_001"' in plain
+    assert 'MIN_POSITIVE_ROWS = "2000"' in text
+    assert 'MIN_POSITIVE_ROWS = "2000"' in plain
+    assert 'MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"' in text
+    assert 'MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"' in plain
+    assert "stale tiny shard" in text
     assert "STAGE5_CURRICULUM_MIN_MODE_ROWS" in plain
 
 

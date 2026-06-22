@@ -43,7 +43,7 @@ RUN_ID = os.environ.get("STAGE5_A100_GO_NO_GO_RUN_ID") or time.strftime(
 )
 RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
 STAGE4_OPUS_APPROVED_SOURCE_KEYS = {"opus47_sft", "opus47_raw"}
-DEFAULT_CURRICULUM_MIN_MODE_ROWS = "direct=64,deep_narrow=64"
+DEFAULT_CURRICULUM_MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"
 DEFAULT_STAGE5_PHASE1_CHECKPOINT = (
     Path("outputs")
     / "stage4"

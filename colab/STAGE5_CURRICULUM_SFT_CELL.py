@@ -6,10 +6,11 @@ from google.colab import drive, userdata
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 
-# Edit these before running if your completed curriculum shard uses a different path.
-WORK_DIR = "data/curriculum/run_001"
-MIN_POSITIVE_ROWS = "16"
-MIN_MODE_ROWS = "direct=64,deep_narrow=64"  # Current objective; edit to "wide=64" for width-only shards.
+# Default generated shard from colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py.
+# Edit these only when intentionally training a different completed curriculum shard.
+WORK_DIR = "data/curriculum/programmatic_direct_deep_001"
+MIN_POSITIVE_ROWS = "2000"
+MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"  # Current objective; edit deliberately for other shards.
 PHASE1_STEPS = "150"
 MAX_LOOPS = "4"
 DISCONNECT_RUNTIME_WHEN_DONE = False

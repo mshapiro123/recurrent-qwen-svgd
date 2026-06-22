@@ -252,7 +252,7 @@ def test_parse_action_command_allows_programmatic_depth_repair_runner() -> None:
 def test_parse_action_command_allows_curriculum_sft_runner() -> None:
     parsed = parse_action_command(
         "STAGE5_CURRICULUM_WORK_DIR=data/curriculum/run_001 "
-        "STAGE5_CURRICULUM_MIN_MODE_ROWS=direct=64,deep_narrow=64 "
+        "STAGE5_CURRICULUM_MIN_MODE_ROWS=direct=1000,deep_narrow=1000 "
         "STAGE5_CURRICULUM_PHASE1_STEPS=150 "
         "python colab/run_stage5_curriculum_sft.py"
     )
@@ -260,7 +260,7 @@ def test_parse_action_command_allows_curriculum_sft_runner() -> None:
     assert parsed.kind == "python"
     assert parsed.env == {
         "STAGE5_CURRICULUM_WORK_DIR": "data/curriculum/run_001",
-        "STAGE5_CURRICULUM_MIN_MODE_ROWS": "direct=64,deep_narrow=64",
+        "STAGE5_CURRICULUM_MIN_MODE_ROWS": "direct=1000,deep_narrow=1000",
         "STAGE5_CURRICULUM_PHASE1_STEPS": "150",
     }
     assert parsed.argv == [sys.executable, "colab/run_stage5_curriculum_sft.py"]
@@ -271,7 +271,7 @@ def test_parse_action_command_allows_curriculum_sft_gate_checker() -> None:
         "python training/check_curriculum_sft_gate.py "
         "--summary_json data/curriculum/run_001/summary.json "
         "--output_json data/curriculum/run_001/curriculum_sft_gate.json "
-        "--min_mode_rows direct=64,deep_narrow=64 "
+        "--min_mode_rows direct=1000,deep_narrow=1000 "
         "--fail_on_no_go"
     )
 
@@ -285,7 +285,7 @@ def test_parse_action_command_allows_curriculum_sft_gate_checker() -> None:
         "--output_json",
         "data/curriculum/run_001/curriculum_sft_gate.json",
         "--min_mode_rows",
-        "direct=64,deep_narrow=64",
+        "direct=1000,deep_narrow=1000",
         "--fail_on_no_go",
     ]
 

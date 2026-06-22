@@ -332,8 +332,8 @@ python training/check_curriculum_sft_gate.py \
   --work_dir data/curriculum/run_001 \
   --output_json data/curriculum/run_001/curriculum_sft_gate.json \
   --output_md data/curriculum/run_001/curriculum_sft_gate.md \
-  --min_mode_rows direct=64,deep_narrow=64 \
-  --min_positive_rows 1 \
+  --min_mode_rows direct=1000,deep_narrow=1000 \
+  --min_positive_rows 2000 \
   --fail_on_no_go
 ```
 
@@ -345,7 +345,7 @@ specific objective; for example direct/deep calibration should not proceed on a
 mostly-wide shard. This is the preferred Colab loop because it is restart-safe
 and burns no GPU while waiting on API/provider artifacts.
 The maintained planner and guarded A100 SFT cell now default to the current
-direct/deep calibration objective, `direct=64,deep_narrow=64`. Override
+direct/deep calibration objective, `direct=1000,deep_narrow=1000`. Override
 `STAGE5_CURRICULUM_GATE_MIN_MODE_ROWS` or edit `MIN_MODE_ROWS` only when the
 next experiment is intentionally width-only or mixed.
 

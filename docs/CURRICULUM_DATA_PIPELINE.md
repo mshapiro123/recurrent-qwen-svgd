@@ -191,7 +191,7 @@ python training/check_curriculum_sft_gate.py \
   --work_dir data/curriculum/run_001 \
   --output_json data/curriculum/run_001/curriculum_sft_gate.json \
   --output_md data/curriculum/run_001/curriculum_sft_gate.md \
-  --min_mode_rows direct=64,deep_narrow=64 \
+  --min_mode_rows direct=1000,deep_narrow=1000 \
   --fail_on_no_go
 ```
 
@@ -202,7 +202,7 @@ general safety check; include it before GPU SFT when the run is supposed to be
 direct/deep calibration, wide particle supervision, or another specific mode
 mix.
 The Stage 5 planner and guarded A100 SFT cell default the current generated-data
-GPU objective to `direct=64,deep_narrow=64`; set
+GPU objective to `direct=1000,deep_narrow=1000`; set
 `STAGE5_CURRICULUM_GATE_MIN_MODE_ROWS` or edit `MIN_MODE_ROWS` deliberately for
 a later width-only or mixed-particle curriculum.
 For any shard containing `wide` or `both` rows, the gate also requires collected
@@ -224,15 +224,19 @@ Phase 1 recurrent model, validates the checkpoint on the held-out curriculum
 split, and backs checkpoints/data up to Drive. It does not train Phase 2
 particles or SVGD; those remain a separate post-recovery gate.
 
-Useful Colab overrides:
+Useful current Colab overrides for the zero-provider direct/deep shard:
 
 ```bash
-STAGE5_CURRICULUM_WORK_DIR=data/curriculum/run_001
-STAGE5_CURRICULUM_MIN_POSITIVE_ROWS=16
+STAGE5_CURRICULUM_WORK_DIR=data/curriculum/programmatic_direct_deep_001
+STAGE5_CURRICULUM_MIN_POSITIVE_ROWS=2000
+STAGE5_CURRICULUM_MIN_MODE_ROWS=direct=1000,deep_narrow=1000
 STAGE5_CURRICULUM_PHASE1_STEPS=150
 STAGE5_CURRICULUM_MAX_LOOPS=4
 STAGE5_CURRICULUM_RESUME_FROM=outputs/stage5/<recovered_run>/phase1/phase1_step_125.pt
 ```
+
+For provider/API artifact runs, replace `STAGE5_CURRICULUM_WORK_DIR` and the
+mode-row requirements with the green shard's own gate values.
 
 The driver treats a response artifact as complete only when it contains usable
 successful responses for all emitted job ids. Error, timeout, or empty-response

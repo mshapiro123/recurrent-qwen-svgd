@@ -25,8 +25,8 @@ RUN_PROVIDER_RESPONSES = False
 PROVIDER_BACKEND = "openai_compatible"  # or "command"
 PROVIDER_COMMAND = "python scripts/my_provider_runner.py"
 PROVIDER_LIMIT = 2  # keep tiny for first smoke; set None for a full response batch.
-MIN_POSITIVE_ROWS = 16  # must match or exceed the guarded GPU SFT runner default.
-MIN_MODE_ROWS = ""  # Optional, e.g. "direct=64,deep_narrow=64" or "wide=64".
+MIN_POSITIVE_ROWS = 16  # CPU/API smoke gate; raise before any real GPU SFT.
+MIN_MODE_ROWS = ""  # Optional, e.g. "direct=1000,deep_narrow=1000" or "wide=64".
 
 API_KEY_ENV = "OPENAI_API_KEY"
 BASE_URL = "https://api.openai.com/v1"

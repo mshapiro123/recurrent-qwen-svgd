@@ -26,6 +26,12 @@ def positive_row(index: int) -> dict:
     }
 
 
+def test_default_curriculum_sft_target_is_programmatic_direct_deep_shard() -> None:
+    assert runner.WORK_DIR.as_posix() == "data/curriculum/programmatic_direct_deep_001"
+    assert runner.MIN_POSITIVE_ROWS == 2000
+    assert runner.MIN_MODE_ROWS == "direct=1000,deep_narrow=1000"
+
+
 def test_split_train_val_is_deterministic_and_held_out() -> None:
     rows = [positive_row(index) for index in range(10)]
 
