@@ -140,6 +140,17 @@ documentation, and diagnosis should stay local or on a free CPU runtime. The
 only plausible next paid job is one bounded ARC-mix proxy with stronger
 response distillation, after reviewing the local diagnosis.
 
+Before attaching or keeping an A100, run the no-GPU spend check:
+
+```bash
+python colab/check_stage5_a100_go_no_go.py \
+  --source-summary outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json
+```
+
+Proceed only when it reports `go_bounded_proxy`, `go_full_confirmation`, or
+another explicit `go_*` status that matches the planned spend. Treat `no_go`,
+`calibration_warning_no_go`, and inspection actions as stop signs.
+
 ## What Has Been Achieved
 
 - **Exact identity gate passed.** The manually wrapped Qwen path can reproduce
