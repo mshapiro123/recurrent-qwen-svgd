@@ -1,0 +1,5 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=validation
+rows=128
+output_jsonl=outputs/stage5/stage5_direct_preservation_loop1_20260622_232720/arc_easy_eval_mcq.jsonl

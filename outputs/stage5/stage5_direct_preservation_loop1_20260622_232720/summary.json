@@ -1,0 +1,193 @@
+{
+  "kind": "stage5_direct_preservation_probe",
+  "run_id": "stage5_direct_preservation_loop1_20260622_232720",
+  "status": "direct_route_loop1_matches_base_without_training",
+  "passed": true,
+  "source_summary": "outputs/stage5/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation/summary.json",
+  "source_status": "no_proxy_lift",
+  "resume_checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft/phase1/phase1_step_150.pt",
+  "config": {
+    "arc_train_limit": "512",
+    "arc_eval_limit": 128,
+    "min_base_margin": 1.0,
+    "max_steps": 75,
+    "learning_rate": 5e-07,
+    "distill_weight": 1.0,
+    "max_loops": 1
+  },
+  "data": {
+    "train_mcq": "outputs/stage5/stage5_direct_preservation_loop1_20260622_232720/arc_easy_train_mcq.jsonl",
+    "eval_mcq": "outputs/stage5/stage5_direct_preservation_loop1_20260622_232720/arc_easy_eval_mcq.jsonl",
+    "direct_sft": {
+      "input_mcq_rows": 512,
+      "input_eval_rows": 512,
+      "selected_rows": 252,
+      "skipped": {
+        "base_wrong": 148,
+        "low_margin": 53
+      },
+      "pre_balance_answer_counts": {
+        "A": 81,
+        "B": 91,
+        "C": 76,
+        "D": 63
+      },
+      "answer_counts": {
+        "A": 63,
+        "B": 63,
+        "C": 63,
+        "D": 63
+      },
+      "min_base_margin": 1.0,
+      "balance_labels": true,
+      "max_rows_per_label": null,
+      "target_loop_count": 1,
+      "routing_type": "direct_base_preserve"
+    }
+  },
+  "base_eval": {
+    "correct": 86,
+    "total": 128,
+    "accuracy": 0.671875,
+    "prediction_counts": {
+      "C": 27,
+      "B": 39,
+      "D": 28,
+      "A": 34
+    },
+    "answer_counts": {
+      "C": 26,
+      "B": 40,
+      "D": 30,
+      "A": 32
+    }
+  },
+  "start_loop1_eval": {
+    "correct": 91,
+    "total": 128,
+    "accuracy": 0.7109375,
+    "prediction_counts": {
+      "C": 29,
+      "B": 39,
+      "D": 30,
+      "A": 30
+    },
+    "answer_counts": {
+      "C": 26,
+      "B": 40,
+      "D": 30,
+      "A": 32
+    }
+  },
+  "start_loop4_eval": {
+    "correct": 72,
+    "total": 128,
+    "accuracy": 0.5625,
+    "prediction_counts": {
+      "D": 44,
+      "A": 51,
+      "B": 12,
+      "C": 21
+    },
+    "answer_counts": {
+      "C": 26,
+      "B": 40,
+      "D": 30,
+      "A": 32
+    }
+  },
+  "start_loop1_comparison_to_base": {
+    "helped": 5,
+    "hurt": 0,
+    "tied": 123,
+    "prediction_changes": 5,
+    "mean_margin_delta": 0.1567382680477749,
+    "reference_prediction_counts": {
+      "B": 39,
+      "D": 28,
+      "A": 34,
+      "C": 27
+    },
+    "candidate_prediction_counts": {
+      "B": 39,
+      "D": 30,
+      "A": 30,
+      "C": 29
+    },
+    "prediction_count_delta": {
+      "A": -4,
+      "B": 0,
+      "C": 2,
+      "D": 2
+    },
+    "max_abs_prediction_count_delta": 4,
+    "calibration_ok": true
+  },
+  "checkpoints": [],
+  "best_checkpoint": {
+    "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft/phase1/phase1_step_150.pt",
+    "loop1_eval": {
+      "correct": 91,
+      "total": 128,
+      "accuracy": 0.7109375,
+      "prediction_counts": {
+        "C": 29,
+        "B": 39,
+        "D": 30,
+        "A": 30
+      },
+      "answer_counts": {
+        "C": 26,
+        "B": 40,
+        "D": 30,
+        "A": 32
+      }
+    },
+    "loop4_eval": {
+      "correct": 72,
+      "total": 128,
+      "accuracy": 0.5625,
+      "prediction_counts": {
+        "D": 44,
+        "A": 51,
+        "B": 12,
+        "C": 21
+      },
+      "answer_counts": {
+        "C": 26,
+        "B": 40,
+        "D": 30,
+        "A": 32
+      }
+    },
+    "comparison_to_base": {
+      "helped": 5,
+      "hurt": 0,
+      "tied": 123,
+      "prediction_changes": 5,
+      "mean_margin_delta": 0.1567382680477749,
+      "reference_prediction_counts": {
+        "B": 39,
+        "D": 28,
+        "A": 34,
+        "C": 27
+      },
+      "candidate_prediction_counts": {
+        "B": 39,
+        "D": 30,
+        "A": 30,
+        "C": 29
+      },
+      "prediction_count_delta": {
+        "A": -4,
+        "B": 0,
+        "C": 2,
+        "D": 2
+      },
+      "max_abs_prediction_count_delta": 4,
+      "calibration_ok": true
+    },
+    "trained": false
+  },
+  "next_step": "Use max_loops=1 routing for base-confident direct examples; confirm on larger ARC slices."
+}
