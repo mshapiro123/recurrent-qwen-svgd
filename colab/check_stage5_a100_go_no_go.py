@@ -78,6 +78,20 @@ def source_has_calibration_warning(payload: dict[str, Any]) -> bool:
     return False
 
 
+def source_is_clean_full_confirmation_proxy(payload: dict[str, Any]) -> bool:
+    status = str(payload.get("status", ""))
+    if not bool(payload.get("passed", False)):
+        return False
+    if status in {"proxy_lift", "proxy_matches_base"}:
+        return True
+    if status in {"repair_proxy_lift", "repair_proxy_matches_base"}:
+        alignment = payload.get("proxy_alignment")
+        if isinstance(alignment, dict) and alignment.get("ok") is False:
+            return False
+        return True
+    return False
+
+
 def promoted_stage4_opus_sources(source_payload: dict[str, Any]) -> list[dict[str, Any]]:
     promoted: list[dict[str, Any]] = []
     for item in source_payload.get("recommendations", []):
@@ -549,7 +563,7 @@ def classify_action(
         }
 
     if script == "colab/run_stage5_recovery_full_assessment.py":
-        if source_status in {"proxy_lift", "proxy_matches_base"} and bool(source_payload.get("passed", False)):
+        if source_is_clean_full_confirmation_proxy(source_payload):
             return {
                 "go": True,
                 "status": "go_full_confirmation",

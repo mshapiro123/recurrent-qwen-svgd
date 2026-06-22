@@ -12,6 +12,7 @@ from colab.check_stage5_a100_go_no_go import (
     routing_repair_profile_preflight,
     routing_repair_checkpoint_availability,
     source_has_calibration_warning,
+    source_is_clean_full_confirmation_proxy,
 )
 
 
@@ -76,6 +77,48 @@ def test_clean_proxy_pass_allows_full_confirmation() -> None:
 
     assert decision["go"] is True
     assert decision["status"] == "go_full_confirmation"
+
+
+def test_routing_repair_proxy_pass_allows_full_confirmation() -> None:
+    source_payload = {
+        "kind": "stage5_routing_repair",
+        "status": "repair_proxy_lift",
+        "passed": True,
+        "proxy_alignment": {"ok": True},
+    }
+
+    assert source_is_clean_full_confirmation_proxy(source_payload) is True
+    decision = classify_action(
+        {
+            "name": "Run full balanced assessment for routing-repair checkpoint",
+            "command": "STAGE5_X=1 python colab/run_stage5_recovery_full_assessment.py",
+        },
+        source_payload=source_payload,
+    )
+
+    assert decision["go"] is True
+    assert decision["status"] == "go_full_confirmation"
+
+
+def test_routing_repair_proxy_misalignment_blocks_full_confirmation() -> None:
+    source_payload = {
+        "kind": "stage5_routing_repair",
+        "status": "repair_proxy_lift",
+        "passed": True,
+        "proxy_alignment": {"ok": False},
+    }
+
+    assert source_is_clean_full_confirmation_proxy(source_payload) is False
+    decision = classify_action(
+        {
+            "name": "Run full balanced assessment for routing-repair checkpoint",
+            "command": "STAGE5_X=1 python colab/run_stage5_recovery_full_assessment.py",
+        },
+        source_payload=source_payload,
+    )
+
+    assert decision["go"] is False
+    assert decision["status"] == "full_assessment_blocked"
 
 
 def test_checkpoint_from_payload_uses_selected_checkpoint() -> None:

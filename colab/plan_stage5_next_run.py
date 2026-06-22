@@ -1823,7 +1823,7 @@ def routing_diagnostic_actions(payload: dict[str, Any], *, source_summary: Path)
 
 def routing_repair_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
-    if status in {"repair_proxy_lift", "repair_proxy_matches_base"} or bool(payload.get("passed")):
+    if status in {"repair_proxy_lift", "repair_proxy_matches_base"} and bool(payload.get("passed", False)):
         source_for_full = str(payload.get("arc_mix_summary") or path_for_cli(source_summary)).replace("\\", "/")
         return [
             make_action(

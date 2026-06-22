@@ -293,6 +293,24 @@ def test_routing_repair_misaligned_proxy_recommends_inspection_only(tmp_path) ->
     assert "run_stage5_programmatic_depth_repair.py" not in actions[0]["command"]
 
 
+def test_routing_repair_unexpected_pass_status_recommends_inspection_only(tmp_path) -> None:
+    source = tmp_path / "repair" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_routing_repair",
+        "status": "repair_unknown",
+        "passed": True,
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect routing repair `repair_unknown`"
+    assert actions[0]["command"].startswith("cat ")
+    assert "run_stage5_recovery_full_assessment.py" not in actions[0]["command"]
+    assert "run_stage5_programmatic_depth_repair.py" not in actions[0]["command"]
+
+
 def test_programmatic_depth_repair_complete_recommends_no_gpu_assessment(tmp_path) -> None:
     source = tmp_path / "programmatic" / "summary.json"
     source.parent.mkdir()
