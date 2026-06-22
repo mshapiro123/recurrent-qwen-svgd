@@ -26,6 +26,7 @@ PROVIDER_BACKEND = "openai_compatible"  # or "command"
 PROVIDER_COMMAND = "python scripts/my_provider_runner.py"
 PROVIDER_LIMIT = 2  # keep tiny for first smoke; set None for a full response batch.
 MIN_POSITIVE_ROWS = 16  # must match or exceed the guarded GPU SFT runner default.
+MIN_MODE_ROWS = ""  # Optional, e.g. "direct=64,deep_narrow=64" or "wide=64".
 
 API_KEY_ENV = "OPENAI_API_KEY"
 BASE_URL = "https://api.openai.com/v1"
@@ -280,22 +281,22 @@ def run_sft_gate(summary):
         return None
     output_json = Path(WORK_DIR) / "curriculum_sft_gate.json"
     output_md = Path(WORK_DIR) / "curriculum_sft_gate.md"
-    run(
-        [
-            sys.executable,
-            "training/check_curriculum_sft_gate.py",
-            "--summary_json",
-            str(Path(WORK_DIR) / "summary.json"),
-            "--output_json",
-            str(output_json),
-            "--output_md",
-            str(output_md),
-            "--min_positive_rows",
-            str(MIN_POSITIVE_ROWS),
-            "--fail_on_no_go",
-        ],
-        cwd=ROOT,
-    )
+    cmd = [
+        sys.executable,
+        "training/check_curriculum_sft_gate.py",
+        "--summary_json",
+        str(Path(WORK_DIR) / "summary.json"),
+        "--output_json",
+        str(output_json),
+        "--output_md",
+        str(output_md),
+        "--min_positive_rows",
+        str(MIN_POSITIVE_ROWS),
+        "--fail_on_no_go",
+    ]
+    if MIN_MODE_ROWS:
+        cmd += ["--min_mode_rows", MIN_MODE_ROWS]
+    run(cmd, cwd=ROOT)
     gate = json.loads((ROOT / output_json).read_text(encoding="utf-8"))
     print("sft_gate_status:", gate["status"], flush=True)
     print("sft_gate_go:", gate["go"], flush=True)
