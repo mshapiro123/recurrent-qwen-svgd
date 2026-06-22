@@ -608,6 +608,36 @@ def test_curriculum_sft_input_preflight_allows_drive_backup(monkeypatch, tmp_pat
     assert status["drive_candidate_exists"] is True
 
 
+def test_curriculum_sft_input_preflight_allows_published_gate_drive_backup(monkeypatch, tmp_path) -> None:
+    import colab.check_stage5_a100_go_no_go as guard
+
+    repo_root = tmp_path / "repo"
+    backup_root = tmp_path / "drive" / "curriculum_runs"
+    backup = backup_root / "programmatic_direct_deep_001"
+    backup.mkdir(parents=True)
+    (backup / "summary.json").write_text("{}", encoding="utf-8")
+    (backup / "positive_sft.jsonl").write_text("{}\n", encoding="utf-8")
+    monkeypatch.setattr(guard, "ROOT", repo_root)
+    monkeypatch.setenv("STAGE5_CURRICULUM_INPUT_BACKUP_DIR", str(backup_root))
+
+    status = guard.curriculum_sft_input_availability(
+        {
+            "kind": "curriculum_sft_gate",
+            "go": True,
+            "work_dir": "data/curriculum/programmatic_direct_deep_001",
+            "summary_json": "data/curriculum/programmatic_direct_deep_001/summary.json",
+            "artifacts": {
+                "positive_sft": "data/curriculum/programmatic_direct_deep_001/positive_sft.jsonl"
+            },
+        }
+    )
+
+    assert status["available"] is True
+    assert status["local_available"] is False
+    assert status["drive_candidate_exists"] is True
+    assert status["first_existing_drive_candidate"].endswith("programmatic_direct_deep_001")
+
+
 def test_curriculum_sft_input_preflight_allows_local_artifacts(tmp_path) -> None:
     work_dir = tmp_path / "data" / "curriculum" / "run_001"
     work_dir.mkdir(parents=True)
