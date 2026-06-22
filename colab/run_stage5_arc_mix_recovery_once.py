@@ -130,6 +130,25 @@ def preflight_source_summary(source: Path) -> tuple[str | None, Path]:
     return status, checkpoint
 
 
+def require_go_no_go(source: Path) -> dict[str, Any]:
+    from colab.check_stage5_a100_go_no_go import build_payload
+    from colab.run_stage5_recovered_phase1_arc_gate import mount_drive_if_possible
+
+    mount_drive_if_possible()
+    payload = build_payload(source)
+    decision = payload.get("decision") or {}
+    checkpoint = payload.get("checkpoint_preflight") or {}
+    print(f"go_no_go_status={decision.get('status')}", flush=True)
+    print(f"go_no_go={decision.get('go')}", flush=True)
+    print(f"spend_class={decision.get('spend_class')}", flush=True)
+    print(f"checkpoint_available={checkpoint.get('available')}", flush=True)
+    if not decision.get("go"):
+        raise RuntimeError(f"A100 go/no-go blocked ARC-mix recovery: {decision}")
+    if decision.get("spend_class") != "single_arc_mix_proxy":
+        raise RuntimeError(f"ARC-mix recovery runner expected single_arc_mix_proxy, got: {decision}")
+    return payload
+
+
 def cuda_runtime_status() -> tuple[bool, str]:
     try:
         import torch
@@ -173,6 +192,7 @@ def run_recovery_gate() -> int:
     source = ROOT / SOURCE_SUMMARY
     if not source.exists():
         raise FileNotFoundError(f"Missing source summary: {source}")
+    require_go_no_go(source)
     preflight_source_summary(source)
     if PREFLIGHT_ONLY:
         print("Preflight-only mode complete; no training launched.", flush=True)

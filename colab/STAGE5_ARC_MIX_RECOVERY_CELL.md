@@ -85,12 +85,28 @@ try:
         who = HfApi(token=HF_TOKEN).whoami()
         print("HF auth OK:", who.get("name") or who.get("email") or "authenticated user", flush=True)
 
+    try:
+        from google.colab import drive
+
+        if not Path("/content/drive/MyDrive").exists():
+            drive.mount("/content/drive")
+    except Exception as exc:
+        print(f"Drive mount skipped/failed before go/no-go: {exc}", flush=True)
+
+    SOURCE_SUMMARY = "outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json"
+    run(
+        [
+            sys.executable,
+            "colab/check_stage5_a100_go_no_go.py",
+            "--source-summary",
+            SOURCE_SUMMARY,
+        ],
+        cwd=ROOT,
+    )
+
     env = os.environ.copy()
     env["STAGE5_ARC_MIX_ONCE_AUTO_DISCONNECT"] = "1"
-    env.setdefault(
-        "STAGE5_ARC_MIX_ONCE_SOURCE_SUMMARY",
-        "outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json",
-    )
+    env.setdefault("STAGE5_ARC_MIX_ONCE_SOURCE_SUMMARY", SOURCE_SUMMARY)
     env.setdefault("STAGE5_ARC_MIX_ARMS", "arc_mix_response_w01_lr2e6")
     env.setdefault("STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT", "2")
     env.setdefault("STAGE5_ARC_MIX_ARC_EASY_REPEAT", "4")

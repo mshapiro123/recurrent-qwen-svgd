@@ -82,6 +82,13 @@ def test_arc_mix_recovery_once_preflight_only_skips_cuda_and_child_run(tmp_path,
         assert path == source
         return "needs_competence_recovery", tmp_path / "checkpoint.pt"
 
+    def fake_go_no_go(path):
+        assert path == source
+        return {
+            "decision": {"go": True, "status": "go_bounded_proxy", "spend_class": "single_arc_mix_proxy"},
+            "checkpoint_preflight": {"available": True},
+        }
+
     def fake_cuda():
         raise AssertionError("cuda should not be checked in preflight-only mode")
 
@@ -93,12 +100,36 @@ def test_arc_mix_recovery_once_preflight_only_skips_cuda_and_child_run(tmp_path,
     monkeypatch.setattr(module, "ROOT", tmp_path)
     monkeypatch.setattr(module, "SOURCE_SUMMARY", "outputs/stage5/assessment/summary.json")
     monkeypatch.setattr(module, "PREFLIGHT_ONLY", True)
+    monkeypatch.setattr(module, "require_go_no_go", fake_go_no_go)
     monkeypatch.setattr(module, "preflight_source_summary", fake_preflight)
     monkeypatch.setattr(module, "require_cuda_runtime", fake_cuda)
     monkeypatch.setattr(module, "run", fake_run)
 
     assert module.run_recovery_gate() == 0
     assert called is False
+
+
+def test_arc_mix_recovery_once_go_no_go_blocks_unapproved_spend(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_arc_mix_recovery_once as module
+
+    source = tmp_path / "outputs" / "stage5" / "assessment" / "summary.json"
+    source.parent.mkdir(parents=True)
+    source.write_text("{}", encoding="utf-8")
+
+    def fake_go_no_go(path):
+        assert path == source
+        raise RuntimeError("A100 go/no-go blocked ARC-mix recovery")
+
+    def fake_preflight(path):
+        raise AssertionError("source preflight should not run after go/no-go blocks")
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "SOURCE_SUMMARY", "outputs/stage5/assessment/summary.json")
+    monkeypatch.setattr(module, "require_go_no_go", fake_go_no_go)
+    monkeypatch.setattr(module, "preflight_source_summary", fake_preflight)
+
+    with pytest.raises(RuntimeError, match="go/no-go blocked"):
+        module.run_recovery_gate()
 
 
 def test_arc_mix_recovery_once_refuses_cpu_by_default(monkeypatch) -> None:

@@ -54,9 +54,11 @@ def test_arc_mix_recovery_cell_is_single_purpose() -> None:
     text = (ROOT / "colab/STAGE5_ARC_MIX_RECOVERY_CELL.md").read_text(encoding="utf-8")
 
     assert "colab/run_stage5_arc_mix_recovery_once.py" in text
+    assert "colab/check_stage5_a100_go_no_go.py" in text
     assert "STAGE5_ARC_MIX_ONCE_AUTO_DISCONNECT" in text
     assert "stage5_full_assessment_once_20260622_005522/summary.json" in text
     assert "arc_mix_response_w01_lr2e6" in text
+    assert "drive.mount" in text
     assert "colab/run_stage5_full_assessment_once.py" not in text
     assert "colab/run_stage5_colab_continue.py" not in text
 
