@@ -169,8 +169,21 @@ def validate_curriculum_record(record: dict[str, Any], *, line_no: int | None = 
                     issues.append(f"{trace_label}positive_wide trace missing method")
                 elif methods and method not in {str(item) for item in methods}:
                     issues.append(f"{trace_label}positive_wide method must appear in width_signature.methods")
-        elif role in NEGATIVE_REASONING_ROLES | {"verifier_rationalization"} and trace.get("correct") is True:
-            issues.append(f"{trace_label}{role} must not have correct=true")
+        elif role in NEGATIVE_REASONING_ROLES:
+            if trace.get("correct") is not False:
+                issues.append(f"{trace_label}{role} must have correct=false")
+            if not str(trace.get("text") or "").strip():
+                issues.append(f"{trace_label}{role} missing text")
+        elif role == "verifier_rationalization":
+            if trace.get("correct") is not False:
+                issues.append(f"{trace_label}{role} must have correct=false")
+            if not str(trace.get("text") or "").strip():
+                issues.append(f"{trace_label}{role} missing text")
+        elif role == "verifier_detection":
+            if not isinstance(trace.get("detected"), bool):
+                issues.append(f"{trace_label}{role} must have detected=true|false")
+            if not str(trace.get("text") or "").strip():
+                issues.append(f"{trace_label}{role} missing text")
         elif role.startswith("negative_") and role not in NEGATIVE_REASONING_ROLES:
             issues.append(f"{trace_label}unknown negative role {role!r}")
         elif role.startswith("verifier_") and role not in VERIFIER_ROLES:

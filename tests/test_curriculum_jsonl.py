@@ -163,6 +163,25 @@ def test_verifier_detection_is_not_exported_to_positive_sft() -> None:
     assert report["exported_role_counts"] == {"positive_depth": 1}
 
 
+def test_negative_and_verifier_traces_have_required_supervision_fields() -> None:
+    record = curriculum_record()
+    record["traces"][1].pop("correct")
+    record["traces"][2]["text"] = ""
+    record["traces"].append(
+        {
+            "role": "verifier_detection",
+            "source_model": "judge-a",
+            "text": "The proposed solution is wrong.",
+        }
+    )
+
+    issues = validate_curriculum_record(record)
+
+    assert any("negative_contrastive must have correct=false" in issue for issue in issues)
+    assert any("verifier_rationalization missing text" in issue for issue in issues)
+    assert any("verifier_detection must have detected=true|false" in issue for issue in issues)
+
+
 def test_wide_mode_rejects_single_method_width() -> None:
     record = curriculum_record()
     record["mode"] = "wide"

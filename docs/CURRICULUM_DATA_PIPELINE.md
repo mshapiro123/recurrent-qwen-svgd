@@ -479,6 +479,12 @@ with validation issues are still skipped by default. The debug-only
 `--export_invalid_records` flag is required to export those rows, and outputs
 created with that flag must not be used for GPU SFT.
 
+Non-positive traces are validated even though this converter does not export
+them to positive SFT. `negative_contrastive` and `verifier_rationalization`
+must carry explicit `correct=false` supervision and text; `verifier_detection`
+must carry a boolean `detected` label and text so later selector/verifier
+training cannot consume unlabeled traces by accident.
+
 ## Worked Example
 
 Problem:
