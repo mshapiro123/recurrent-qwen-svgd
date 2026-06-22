@@ -176,6 +176,8 @@ def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     assert "GO_NO_GO_RUN_ID" in text
     assert "Skipping requirements install because no paid action will execute." in text
     assert "execute_action = bool(RUN_A100_ACTION and go_allowed)" in text
+    assert "tests/test_stage5_routing_repair.py" in text
+    assert "tests/test_stage5_balanced_arc_mix_gate.py" in text
     assert "stage5_routing_diagnostic_20260622_041706/summary.json" in text
     assert "mount_drive_for_paid_action" in text
     assert 'drive.mount("/content/drive", force_remount=True)' in text
@@ -197,6 +199,8 @@ def test_safe_continue_notebook_defaults_to_dry_run_and_guarded_action() -> None
     assert "GO_NO_GO_RUN_ID" in text
     assert "Skipping requirements install because no paid action will execute." in text
     assert "execute_action = bool(RUN_A100_ACTION and go_allowed)" in text
+    assert "tests/test_stage5_routing_repair.py" in text
+    assert "tests/test_stage5_balanced_arc_mix_gate.py" in text
     assert "stage5_routing_diagnostic_20260622_041706/summary.json" in text
     assert "mount_drive_for_paid_action" in text
     assert 'drive.mount("/content/drive", force_remount=True)' in text

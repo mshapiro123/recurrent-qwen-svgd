@@ -15,7 +15,9 @@ action so an attached A100 does not sit idle. Dry-runs and blocked actions skip
 the A100 guard allows an intentional paid action. When a guarded action is
 allowed, the notebook mounts Drive in the top-level Colab process before
 launching subprocess runners; Colab Drive authorization cannot reliably be
-initiated from a child Python process.
+initiated from a child Python process. Paid actions also run a small focused
+preflight over the A100 guard, next-action parser, routing repair, and
+ARC-mix repair gate before launching the selected action.
 
 ```python
 import json, os, shutil, subprocess, sys
@@ -139,6 +141,19 @@ execute_action = bool(RUN_A100_ACTION and go_allowed)
 if execute_action:
     mount_drive_for_paid_action()
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"], cwd=ROOT)
+    run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "-q",
+            "tests/test_stage5_a100_go_no_go.py",
+            "tests/test_stage5_next_action.py",
+            "tests/test_stage5_routing_repair.py",
+            "tests/test_stage5_balanced_arc_mix_gate.py",
+        ],
+        cwd=ROOT,
+    )
     if HF_TOKEN:
         from huggingface_hub import HfApi, login
 
