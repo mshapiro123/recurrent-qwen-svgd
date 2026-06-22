@@ -276,6 +276,49 @@ def test_pending_curriculum_pipeline_without_structured_responses_recommends_ins
     assert actions[0]["command"].startswith("cat ")
 
 
+def test_complete_capability_ladder_curriculum_recommends_observed_count_sft_gate(tmp_path) -> None:
+    source = tmp_path / "capability_ladder" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "capability_ladder_curriculum_pipeline",
+        "status": "complete",
+        "counts": {
+            "typed_records": 30,
+            "positive_sft_rows": 30,
+            "mode_counts": {"direct": 12, "deep_narrow": 18},
+        },
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert source_kind(payload) == "capability_ladder_curriculum"
+    assert actions[0]["name"] == "Run capability-ladder SFT safety gate"
+    assert "python training/check_curriculum_sft_gate.py" in actions[0]["command"]
+    assert "--work_dir" in actions[0]["command"]
+    assert "capability_ladder/curriculum_sft_gate.json" in actions[0]["command"].replace("\\", "/")
+    assert "--min_positive_rows 30" in actions[0]["command"]
+    assert "--min_mode_rows deep_narrow=18,direct=12" in actions[0]["command"]
+    assert "run_stage5_curriculum_sft.py" not in actions[0]["command"]
+
+
+def test_incomplete_capability_ladder_curriculum_recommends_inspection_not_gpu(tmp_path) -> None:
+    source = tmp_path / "capability_ladder" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "capability_ladder_curriculum_pipeline",
+        "status": "complete_with_skips_warning",
+        "counts": {"typed_records": 0, "positive_sft_rows": 0},
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect capability-ladder curriculum `complete_with_skips_warning`"
+    assert actions[0]["command"].startswith("cat ")
+    assert "run_stage5_curriculum_sft.py" not in actions[0]["command"]
+
+
 def test_routing_diagnostic_deep_status_recommends_cpu_curriculum_gate(tmp_path) -> None:
     source = tmp_path / "routing" / "summary.json"
     source.parent.mkdir()

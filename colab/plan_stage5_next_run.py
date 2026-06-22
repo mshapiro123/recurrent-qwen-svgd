@@ -138,6 +138,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or trace_sft_gate_payload(payload) is not None
         or distill_sft_gate_payload(payload) is not None
         or curriculum_pipeline_payload(payload) is not None
+        or capability_ladder_curriculum_payload(payload) is not None
         or curriculum_sft_gate_payload(payload) is not None
         or curriculum_sft_payload(payload) is not None
         or reasoning_dataset_audit_payload(payload) is not None
@@ -896,6 +897,24 @@ def curriculum_pipeline_payload(payload: dict[str, Any]) -> dict[str, Any] | Non
     return payload if payload.get("kind") == "curriculum_pipeline_from_artifacts" else None
 
 
+def capability_ladder_curriculum_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "capability_ladder_curriculum_pipeline" else None
+
+
+def mode_rows_from_counts(payload: dict[str, Any]) -> str:
+    counts = payload.get("counts") if isinstance(payload.get("counts"), dict) else {}
+    mode_counts = counts.get("mode_counts") if isinstance(counts.get("mode_counts"), dict) else {}
+    rows = []
+    for mode, count in sorted(mode_counts.items()):
+        try:
+            value = int(count)
+        except (TypeError, ValueError):
+            continue
+        if value > 0:
+            rows.append(f"{mode}={value}")
+    return ",".join(rows)
+
+
 def curriculum_pipeline_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status") or "unknown")
     work_dir = str(payload.get("work_dir") or source_summary.parent).replace("\\", "/")
@@ -951,6 +970,47 @@ def curriculum_pipeline_actions(payload: dict[str, Any], *, source_summary: Path
         make_action(
             f"Inspect generated curriculum pipeline `{status}`",
             "The provider-generated curriculum pipeline has not completed; continue CPU/API response collection before attaching paid GPU time.",
+            f"cat {shlex.quote(command_path(source_summary))}",
+            10,
+        )
+    ]
+
+
+def capability_ladder_curriculum_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status") or "unknown")
+    work_dir = str(payload.get("work_dir") or source_summary.parent).replace("\\", "/")
+    if status == "complete":
+        gate_json = source_summary.parent / "curriculum_sft_gate.json"
+        gate_md = source_summary.parent / "curriculum_sft_gate.md"
+        counts = payload.get("counts") if isinstance(payload.get("counts"), dict) else {}
+        min_positive = int(counts.get("positive_sft_rows") or counts.get("typed_records") or 0)
+        min_mode_rows = mode_rows_from_counts(payload)
+        min_positive_clause = f"--min_positive_rows {min_positive} " if min_positive > 0 else ""
+        min_mode_clause = f"--min_mode_rows {shlex.quote(min_mode_rows)} " if min_mode_rows else ""
+        return [
+            make_action(
+                "Run capability-ladder SFT safety gate",
+                (
+                    "The capability-ladder adapter produced verified direct/deep rows from scored model outputs; "
+                    "run the no-GPU SFT gate using the observed mode counts before any recurrent fine-tune."
+                ),
+                (
+                    "python training/check_curriculum_sft_gate.py "
+                    f"--work_dir {shlex.quote(work_dir)} "
+                    f"--summary_json {shlex.quote(command_path(source_summary))} "
+                    f"--output_json {shlex.quote(command_path(gate_json))} "
+                    f"--output_md {shlex.quote(command_path(gate_md))} "
+                    f"{min_positive_clause}"
+                    f"{min_mode_clause}"
+                    "--fail_on_no_go"
+                ),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect capability-ladder curriculum `{status}`",
+            "The capability-ladder curriculum is not complete; inspect the CPU scored-row adapter output before attaching paid GPU time.",
             f"cat {shlex.quote(command_path(source_summary))}",
             10,
         )
@@ -2869,6 +2929,9 @@ def plan_next_actions(
     curriculum_pipeline = curriculum_pipeline_payload(payload)
     if curriculum_pipeline:
         return curriculum_pipeline_actions(curriculum_pipeline, source_summary=source_summary)
+    capability_ladder = capability_ladder_curriculum_payload(payload)
+    if capability_ladder:
+        return capability_ladder_curriculum_actions(capability_ladder, source_summary=source_summary)
     curriculum_sft_gate = curriculum_sft_gate_payload(payload)
     if curriculum_sft_gate:
         return curriculum_sft_gate_actions(curriculum_sft_gate, source_summary=source_summary)
@@ -3247,6 +3310,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "reasoning_dataset_audit"
     if curriculum_pipeline_payload(payload):
         return "curriculum_pipeline"
+    if capability_ladder_curriculum_payload(payload):
+        return "capability_ladder_curriculum"
     if curriculum_sft_gate_payload(payload):
         return "curriculum_sft_gate"
     if curriculum_sft_payload(payload):
