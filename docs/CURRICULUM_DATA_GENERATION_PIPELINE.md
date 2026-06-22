@@ -249,6 +249,34 @@ python training/build_curriculum_generation_jobs.py \
   --report_json outputs/curriculum/jobs_seed_report.json
 ```
 
+Run prompt jobs through a backend:
+
+```bash
+python training/run_curriculum_job_responses.py \
+  --jobs_jsonl data/curriculum/jobs_seed.jsonl \
+  --output_jsonl data/curriculum/responses_seed.jsonl \
+  --report_json outputs/curriculum/responses_seed_report.json \
+  --backend dry_run
+```
+
+For a real provider, wrap the provider call in a small command that reads one
+job JSON object from stdin and writes the raw model response to stdout. Then use:
+
+```bash
+python training/run_curriculum_job_responses.py \
+  --jobs_jsonl data/curriculum/jobs_seed.jsonl \
+  --output_jsonl data/curriculum/responses_seed.jsonl \
+  --report_json outputs/curriculum/responses_seed_report.json \
+  --backend command \
+  --command "python provider_runner.py" \
+  --resume \
+  --sleep_sec 0.5
+```
+
+The runner writes one response JSONL row per job with `job_id`, `response_text`,
+`status`, `backend`, timing, and any command stderr. `--resume` skips job ids
+already present in the output file, which matters for paid API batches.
+
 Ground-truth solve jobs from generated candidates:
 
 ```bash
