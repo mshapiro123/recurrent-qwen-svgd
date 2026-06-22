@@ -41,8 +41,10 @@ or
 [`colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.py`](STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.py).
 
 That cell mounts Drive, verifies the recovered deterministic Phase 1 checkpoint
-is visible, runs the A100 go/no-go guard, and disconnects. Only attach an
-A100/H100 after `checkpoint_preflight.available` is `True`.
+is visible, runs the A100 go/no-go guard, runs the same next-action dry-run
+wrapper that will execute on GPU, and disconnects. Only attach an A100/H100
+after `checkpoint_preflight.available` is `True` and `next_action_guard.allowed`
+is `True`.
 The checkpoint preflight/restore path searches the project-scoped Drive roots
 `recurrent-qwen-svgd-artifacts`, `recurrent-qwen-svgd`, and
 `recurrent-qwen-svgd-fresh`, plus any explicit `DRIVE_BACKUP_DIR`,
@@ -153,7 +155,7 @@ payload = gh_json(
 code = base64.b64decode(payload["content"]).decode("utf-8")
 print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12])
 assert "RESOLVED_REF" in code, "Fetched stale bootstrap; rerun this cell."
-assert "sha_resolved_nested_fetch_v2" in code, "Fetched stale bootstrap version; rerun this cell."
+assert "sha_resolved_nested_fetch_v3" in code, "Fetched stale bootstrap version; rerun this cell."
 exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
 ```
 

@@ -25,6 +25,7 @@ SOURCE_SUMMARY_OVERRIDE = os.environ.get(
     os.environ.get("STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY", ""),
 ).strip()
 GO_NO_GO_RUN_ID = "stage5_drive_checkpoint_preflight"
+NEXT_ACTION_RUN_ID = "stage5_drive_checkpoint_preflight_next_action"
 DISCONNECT_RUNTIME_WHEN_DONE = True
 
 def secret(*names):
@@ -119,15 +120,35 @@ run(
     env=env,
 )
 
+next_env = os.environ.copy()
+next_env["STAGE5_ARC_AGI_NEXT_ACTION_RUN_ID"] = NEXT_ACTION_RUN_ID
+next_env["STAGE5_ARC_AGI_NEXT_ACTION_SOURCE_SUMMARY"] = SOURCE_SUMMARY
+next_env["STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE"] = "0"
+next_env["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] = "1"
+run(
+    [
+        sys.executable,
+        "colab/run_stage5_next_action.py",
+    ],
+    cwd=ROOT,
+    env=next_env,
+)
+
 summary_path = ROOT / "outputs" / "stage5" / GO_NO_GO_RUN_ID / "summary.json"
 summary = json.loads(summary_path.read_text(encoding="utf-8"))
+next_summary_path = ROOT / "outputs" / "stage5" / NEXT_ACTION_RUN_ID / "summary.json"
+next_summary = json.loads(next_summary_path.read_text(encoding="utf-8"))
+next_step = (next_summary.get("steps") or [{}])[0]
+next_guard = next_step.get("a100_guard") or {}
 print("decision:", summary["decision"], flush=True)
 print("checkpoint_preflight:", summary["checkpoint_preflight"], flush=True)
+print("next_action_guard:", next_guard, flush=True)
 decision_go = bool((summary.get("decision") or {}).get("go"))
 checkpoint_available = bool((summary.get("checkpoint_preflight") or {}).get("available"))
-if decision_go and checkpoint_available:
+next_allowed = bool(next_guard.get("allowed"))
+if decision_go and checkpoint_available and next_allowed:
     print(
-        "PREFLIGHT_GREEN: checkpoint is visible and the guarded action is allowed. "
+        "PREFLIGHT_GREEN: checkpoint is visible and both guarded dry-runs are allowed. "
         "Reconnect with an A100/H100 and run this bootstrap with "
         "STAGE5_CURRENT_A100_TARGET=safe_continue_execute.",
         flush=True,
@@ -140,8 +161,8 @@ elif not checkpoint_available:
     )
 else:
     print(
-        "PREFLIGHT_BLOCKED: checkpoint is visible but the go/no-go guard blocked the paid action. "
-        "Inspect the printed decision before spending GPU.",
+        "PREFLIGHT_BLOCKED: checkpoint is visible but a guard blocked the paid action. "
+        "Inspect the printed decision and next_action_guard before spending GPU.",
         flush=True,
     )
 

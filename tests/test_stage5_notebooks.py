@@ -156,7 +156,8 @@ def test_current_a100_action_points_to_safe_continue_routing_repair() -> None:
     assert "git/ref/heads/main" in text
     assert "resolved_ref" in text
     assert "Fetched stale bootstrap" in text
-    assert "sha_resolved_nested_fetch_v2" in text
+    assert "sha_resolved_nested_fetch_v3" in text
+    assert "next_action_guard.allowed" in text
     assert "refuses attached GPU runtimes" in text
     assert "STAGE5_CURRENT_A100_TARGET=safe_continue_execute" in text
     assert "STAGE5_CURRENT_A100_SOURCE_SUMMARY" in text
@@ -326,6 +327,7 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     assert '"STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "0"' in plain
     assert "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY" in plain
     assert "checkpoint_preflight" in plain
+    assert "next_action_guard" in plain
     assert "mount_drive_for_paid_action" in plain
     assert "api.github.com/repos" in plain
     assert "git/ref/heads" in plain
@@ -381,16 +383,19 @@ def test_drive_checkpoint_preflight_cell_is_cpu_only_and_single_purpose() -> Non
     assert "stage5_routing_diagnostic_20260622_041706/summary.json" in code
     assert 'GO_NO_GO_RUN_ID = "stage5_drive_checkpoint_preflight"' in code
     assert '"colab/check_stage5_a100_go_no_go.py"' in code
+    assert '"colab/run_stage5_next_action.py"' in code
+    assert '"STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE"] = "0"' in code
+    assert "next_action_guard" in code
     assert '"--source-summary"' in code
     assert "checkpoint_preflight" in code
     assert "PREFLIGHT_GREEN" in code
+    assert "both guarded dry-runs are allowed" in code
     assert "PREFLIGHT_RED" in code
     assert "PREFLIGHT_BLOCKED" in code
     assert "summary[\"decision\"]" in code
     assert "runtime.unassign()" in code
     assert '["git", "pull", "--ff-only", "origin", "main"]' in code
     assert "pip install" not in code
-    assert "colab/run_stage5_next_action.py" not in code
     assert "colab/run_stage5_routing_repair.py" not in code
     assert "colab/run_stage5_full_assessment_once.py" not in code
     assert "training/train_phase" not in code
