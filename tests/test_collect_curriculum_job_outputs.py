@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 from training.collect_curriculum_job_outputs import (
+    answer_consistency_check,
     collect_distinctness_judgments,
     collect_depth_measurements,
     collect_error_detection_judgments,
@@ -14,6 +15,7 @@ from training.collect_curriculum_job_outputs import (
     method_outputs_to_solution_candidates,
     normalize_answer,
     perturbation_outputs_to_traces,
+    parse_numeric_answer,
     seed_outputs_to_candidates,
 )
 
@@ -73,6 +75,17 @@ def test_extract_and_normalize_answer() -> None:
     assert normalize_answer(extract_answer(text) or "") == "1200 mph"
 
 
+def test_answer_consistency_check_handles_simple_numeric_units() -> None:
+    assert parse_numeric_answer("1,200 mph") == parse_numeric_answer("1200 miles per hour")
+    assert parse_numeric_answer("50%") == parse_numeric_answer("0.5")
+
+    check = answer_consistency_check("40 miles per hour", "40 mph")
+
+    assert check["checked"] is True
+    assert check["matched"] is True
+    assert check["method"] == "simple_numeric"
+
+
 def test_seed_outputs_to_candidates_parses_only_valid_seed_json() -> None:
     candidates, report = seed_outputs_to_candidates(
         [seed_job()],
@@ -105,6 +118,7 @@ def test_ground_truth_outputs_accepts_cross_model_agreement() -> None:
             "id": "p1",
             "domain": "math",
             "statement": "What is 2+2?",
+            "claimed_answer": "4.0",
             "candidate_methods": ["algebra"],
             "decontaminated": True,
         }
@@ -124,7 +138,40 @@ def test_ground_truth_outputs_accepts_cross_model_agreement() -> None:
     assert report["rejected"] == 0
     assert verified[0]["answer"]["verified_by"] == ["cross_model"]
     assert verified[0]["answer"]["normalized"] == "4"
+    assert verified[0]["answer"]["programmatic_check"]["matched"] is True
+    assert report["programmatic_check_counts"] == {"simple_numeric_matched": 1}
     assert verified[0]["decontaminated"] is True
+
+
+def test_ground_truth_outputs_can_strictly_reject_claimed_answer_mismatch() -> None:
+    candidates = [
+        {
+            "id": "p1",
+            "domain": "math",
+            "statement": "What is 2+2?",
+            "claimed_answer": "5",
+        }
+    ]
+    jobs = [
+        ground_truth_job("solve-opus", record_id="p1", model="opus-test"),
+        ground_truth_job("solve-glm", record_id="p1", model="glm-test"),
+    ]
+    responses = [
+        {"job_id": "solve-opus", "response_text": "ANSWER: 4"},
+        {"job_id": "solve-glm", "response_text": "ANSWER: 4"},
+    ]
+
+    verified, report = ground_truth_outputs_to_verified_candidates(
+        candidates,
+        jobs,
+        responses,
+        require_claimed_answer_match=True,
+    )
+
+    assert verified == []
+    assert report["rejected"] == 1
+    assert report["programmatic_check_counts"] == {"simple_numeric_mismatched": 1}
+    assert report["rejected_records"][0]["reason"] == "claimed_answer_programmatic_mismatch"
 
 
 def test_ground_truth_outputs_rejects_disagreement() -> None:

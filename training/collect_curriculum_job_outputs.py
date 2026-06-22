@@ -12,6 +12,8 @@ import argparse
 import json
 import re
 from collections import Counter, defaultdict
+from decimal import Decimal, InvalidOperation
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +21,9 @@ from typing import Any
 ANSWER_RE = re.compile(r"^\s*ANSWER:\s*(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
 FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.IGNORECASE | re.DOTALL)
 METHOD_DOES_NOT_APPLY_RE = re.compile(r"^\s*METHOD DOES NOT APPLY\b", re.IGNORECASE)
+NUMERIC_RE = re.compile(
+    r"[-+]?(?:(?:\d{1,3}(?:,\d{3})+)|\d+)(?:\.\d+)?(?:\s*/\s*[-+]?\d+(?:\.\d+)?)?%?"
+)
 
 
 def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
@@ -85,6 +90,72 @@ def normalize_answer(answer: str) -> str:
     normalized = normalized.rstrip(".;")
     normalized = normalized.replace(",", "")
     return normalized
+
+
+def parse_numeric_answer(answer: str) -> Fraction | None:
+    """Extract a simple numeric value from an answer string.
+
+    This intentionally handles only cheap, auditable cases: integers, decimals,
+    fractions, optional commas, and percentages. It is a consistency check, not
+    a general theorem prover.
+    """
+
+    match = NUMERIC_RE.search(answer.strip())
+    if match is None:
+        return None
+    token = match.group(0).replace(",", "").replace(" ", "")
+    is_percent = token.endswith("%")
+    if is_percent:
+        token = token[:-1]
+    try:
+        if "/" in token:
+            numerator, denominator = token.split("/", 1)
+            value = Fraction(Decimal(numerator)) / Fraction(Decimal(denominator))
+        else:
+            value = Fraction(Decimal(token))
+    except (InvalidOperation, ValueError, ZeroDivisionError):
+        return None
+    return value / 100 if is_percent else value
+
+
+def answer_consistency_check(accepted_answer: str, claimed_answer: Any) -> dict[str, Any]:
+    claimed = str(claimed_answer or "").strip()
+    accepted = str(accepted_answer or "").strip()
+    if not claimed or not accepted:
+        return {"checked": False, "matched": None, "method": None, "reason": "missing_answer"}
+
+    accepted_normalized = normalize_answer(accepted)
+    claimed_normalized = normalize_answer(claimed)
+    if accepted_normalized == claimed_normalized:
+        return {
+            "checked": True,
+            "matched": True,
+            "method": "normalized_exact",
+            "accepted": accepted,
+            "claimed": claimed,
+        }
+
+    accepted_numeric = parse_numeric_answer(accepted)
+    claimed_numeric = parse_numeric_answer(claimed)
+    if accepted_numeric is None or claimed_numeric is None:
+        return {
+            "checked": False,
+            "matched": None,
+            "method": None,
+            "reason": "not_simple_numeric",
+            "accepted": accepted,
+            "claimed": claimed,
+        }
+
+    return {
+        "checked": True,
+        "matched": accepted_numeric == claimed_numeric,
+        "method": "simple_numeric",
+        "accepted": accepted,
+        "claimed": claimed,
+        "accepted_numeric": str(accepted_numeric),
+        "claimed_numeric": str(claimed_numeric),
+    }
 
 
 def index_jobs(jobs: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
@@ -190,6 +261,7 @@ def ground_truth_outputs_to_verified_candidates(
     *,
     min_agree: int = 2,
     mark_decontaminated: bool = False,
+    require_claimed_answer_match: bool = False,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     candidate_by_id = group_candidates(candidates)
     paired, issues = responses_with_jobs(jobs, responses)
@@ -219,6 +291,7 @@ def ground_truth_outputs_to_verified_candidates(
 
     verified: list[dict[str, Any]] = []
     rejected: list[dict[str, Any]] = []
+    programmatic_check_counts: Counter[str] = Counter()
     for record_id, answers in sorted(answers_by_record.items()):
         candidate = candidate_by_id.get(record_id)
         if candidate is None:
@@ -230,6 +303,34 @@ def ground_truth_outputs_to_verified_candidates(
         normalized, agreeing = max(by_answer.items(), key=lambda item: (len(item[1]), item[0]))
         agreeing_models = sorted({str(item["model"]) for item in agreeing})
         if len(agreeing_models) >= min_agree:
+            claim_check = answer_consistency_check(agreeing[0]["answer"], candidate.get("claimed_answer"))
+            if claim_check["checked"] and claim_check["matched"] is True:
+                programmatic_check_counts[f"{claim_check['method']}_matched"] += 1
+            elif claim_check["checked"] and claim_check["matched"] is False:
+                programmatic_check_counts[f"{claim_check['method']}_mismatched"] += 1
+                if require_claimed_answer_match:
+                    rejected.append(
+                        {
+                            "id": record_id,
+                            "reason": "claimed_answer_programmatic_mismatch",
+                            "answers": answers,
+                            "claim_check": claim_check,
+                        }
+                    )
+                    continue
+            else:
+                programmatic_check_counts[str(claim_check.get("reason") or "not_checked")] += 1
+                if require_claimed_answer_match:
+                    rejected.append(
+                        {
+                            "id": record_id,
+                            "reason": "claimed_answer_programmatic_check_unavailable",
+                            "answers": answers,
+                            "claim_check": claim_check,
+                        }
+                    )
+                    continue
+
             accepted = dict(candidate)
             accepted["answer"] = {
                 "value": agreeing[0]["answer"],
@@ -238,6 +339,7 @@ def ground_truth_outputs_to_verified_candidates(
                 "confidence": "high",
                 "agreeing_models": agreeing_models,
                 "agreement_count": len(agreeing),
+                "programmatic_check": claim_check,
             }
             accepted["ground_truth_solutions"] = answers
             accepted["decontaminated"] = bool(candidate.get("decontaminated") or mark_decontaminated)
@@ -260,6 +362,8 @@ def ground_truth_outputs_to_verified_candidates(
         "verified": len(verified),
         "rejected": len(rejected),
         "min_agree": min_agree,
+        "require_claimed_answer_match": require_claimed_answer_match,
+        "programmatic_check_counts": dict(sorted(programmatic_check_counts.items())),
         "issues": issues,
         "rejected_records": rejected,
     }
@@ -756,6 +860,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--min_agree", type=int, default=2)
     parser.add_argument("--mark_decontaminated", action="store_true")
+    parser.add_argument(
+        "--require_claimed_answer_match",
+        action="store_true",
+        help="Reject verified candidates when the accepted answer cannot be matched to the seed claimed_answer by a cheap exact/numeric check.",
+    )
     args = parser.parse_args(argv)
 
     jobs = read_jsonl(args.jobs_jsonl)
@@ -776,6 +885,7 @@ def main(argv: list[str] | None = None) -> int:
             responses,
             min_agree=args.min_agree,
             mark_decontaminated=args.mark_decontaminated,
+            require_claimed_answer_match=args.require_claimed_answer_match,
         )
     elif args.mode == "method_solutions":
         if not args.candidates_jsonl:

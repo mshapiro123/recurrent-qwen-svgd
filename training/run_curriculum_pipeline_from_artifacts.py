@@ -255,6 +255,7 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
         ground_jobs,
         read_jsonl(paths["responses_ground_truth"]),
         min_agree=args.min_ground_truth_agree,
+        require_claimed_answer_match=args.require_claimed_answer_match,
     )
     write_jsonl(paths["verified_candidates"], verified)
     write_json(paths["verified_candidates_report"], verified_report)
@@ -439,6 +440,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--decontam_min_ngram_size", type=int, default=3)
     parser.add_argument("--decontam_threshold", type=float, default=0.5)
     parser.add_argument("--min_ground_truth_agree", type=int, default=2)
+    parser.add_argument("--require_claimed_answer_match", action="store_true")
     parser.add_argument("--reference_model", default="weak-reference")
     parser.add_argument("--min_reference_samples", type=int, default=1)
     parser.add_argument("--drop_unmeasured_difficulty", action="store_true")
