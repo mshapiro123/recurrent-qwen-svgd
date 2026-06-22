@@ -200,6 +200,33 @@ def routing_repair_checkpoint_availability() -> dict[str, Any]:
     return status
 
 
+def curriculum_sft_checkpoint_availability() -> dict[str, Any]:
+    resume_from = os.environ.get("STAGE5_CURRICULUM_RESUME_FROM", "").strip()
+    if not resume_from:
+        return {
+            "checkpoint": None,
+            "available": True,
+            "exists": False,
+            "drive_candidate_exists": False,
+            "reason": (
+                "Generated-curriculum SFT starts from the base model because "
+                "STAGE5_CURRICULUM_RESUME_FROM is not set."
+            ),
+        }
+    status = checkpoint_availability_for_path(
+        resume_from,
+        missing_reason=(
+            "Generated-curriculum SFT was configured with "
+            "STAGE5_CURRICULUM_RESUME_FROM, but that checkpoint was not found."
+        ),
+    )
+    status["reason"] = (
+        "Generated-curriculum SFT will resume from STAGE5_CURRICULUM_RESUME_FROM; "
+        "the checkpoint must be local or visible in the Drive artifact backup before using a paid GPU."
+    )
+    return status
+
+
 def apply_checkpoint_guard(
     decision: dict[str, Any],
     *,
@@ -221,16 +248,7 @@ def apply_checkpoint_guard(
             "reason": "Stage 4 Opus fine-tune starts from the base model and does not require a recovered checkpoint preflight.",
         }
     elif decision.get("spend_class") == "bounded_curriculum_sft":
-        checkpoint = {
-            "checkpoint": None,
-            "available": True,
-            "exists": False,
-            "drive_candidate_exists": False,
-            "reason": (
-                "Generated-curriculum SFT starts from base or from an optional "
-                "STAGE5_CURRICULUM_RESUME_FROM checkpoint that the runner validates."
-            ),
-        }
+        checkpoint = curriculum_sft_checkpoint_availability()
     else:
         checkpoint = checkpoint_availability(source_payload)
     if not decision.get("go"):

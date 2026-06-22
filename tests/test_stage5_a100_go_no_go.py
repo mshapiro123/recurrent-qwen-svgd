@@ -5,6 +5,7 @@ from colab.check_stage5_a100_go_no_go import (
     checkpoint_from_payload,
     classify_action,
     command_script,
+    curriculum_sft_checkpoint_availability,
     promoted_stage4_opus_sources,
     routing_repair_checkpoint_availability,
     source_has_calibration_warning,
@@ -298,7 +299,9 @@ def test_curriculum_sft_allowed_only_after_green_sft_gate() -> None:
     assert allowed["spend_class"] == "bounded_curriculum_sft"
 
 
-def test_curriculum_sft_checkpoint_guard_does_not_require_recovered_checkpoint() -> None:
+def test_curriculum_sft_checkpoint_guard_without_resume_starts_from_base(monkeypatch) -> None:
+    monkeypatch.delenv("STAGE5_CURRICULUM_RESUME_FROM", raising=False)
+
     decision, checkpoint = apply_checkpoint_guard(
         {
             "go": True,
@@ -311,6 +314,37 @@ def test_curriculum_sft_checkpoint_guard_does_not_require_recovered_checkpoint()
     assert decision["go"] is True
     assert checkpoint["available"] is True
     assert checkpoint["checkpoint"] is None
+    assert "starts from the base model" in checkpoint["reason"]
+
+
+def test_curriculum_sft_checkpoint_guard_blocks_missing_resume(monkeypatch) -> None:
+    monkeypatch.setenv("STAGE5_CURRICULUM_RESUME_FROM", "outputs/stage5/run/phase1/missing.pt")
+
+    decision, checkpoint = apply_checkpoint_guard(
+        {
+            "go": True,
+            "status": "go_curriculum_sft",
+            "spend_class": "bounded_curriculum_sft",
+        },
+        source_payload={"kind": "curriculum_sft_gate", "go": True},
+    )
+
+    assert checkpoint["available"] is False
+    assert checkpoint["checkpoint"].endswith("outputs/stage5/run/phase1/missing.pt")
+    assert decision["go"] is False
+    assert decision["status"] == "checkpoint_missing_no_go"
+
+
+def test_curriculum_sft_checkpoint_availability_accepts_existing_resume(monkeypatch, tmp_path) -> None:
+    checkpoint = tmp_path / "outputs" / "stage5" / "run" / "phase1" / "phase1_step_150.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    monkeypatch.setenv("STAGE5_CURRICULUM_RESUME_FROM", str(checkpoint))
+
+    status = curriculum_sft_checkpoint_availability()
+
+    assert status["available"] is True
+    assert status["exists"] is True
 
 
 def test_routing_checkpoint_availability_reports_default_checkpoint() -> None:
