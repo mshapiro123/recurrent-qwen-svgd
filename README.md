@@ -151,6 +151,11 @@ Proceed only when it reports `go_bounded_proxy`, `go_full_confirmation`, or
 another explicit `go_*` status that matches the planned spend. Treat `no_go`,
 `calibration_warning_no_go`, and inspection actions as stop signs.
 
+The Colab next-action wrapper enforces the same policy before executing guarded
+paid-GPU runners. A copied command can still be run manually, but the maintained
+path (`python colab/run_stage5_next_action.py` with execution enabled) records
+an `a100_guard` decision and refuses unsafe full-assessment or benchmark spends.
+
 ## What Has Been Achieved
 
 - **Exact identity gate passed.** The manually wrapped Qwen path can reproduce

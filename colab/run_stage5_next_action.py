@@ -23,6 +23,11 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from colab.check_stage5_a100_go_no_go import classify_action  # noqa: E402
+
 RUN_ID = os.environ.get("STAGE5_ARC_AGI_NEXT_ACTION_RUN_ID") or time.strftime(
     "stage5_arc_agi_next_action_%Y%m%d_%H%M%S"
 )
@@ -85,6 +90,12 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/run_stage5_recovered_phase2_smoke.py",
     "colab/run_stage5_recovery_full_assessment.py",
     "colab/run_stage4_opus_finetune.py",
+}
+GUARDED_A100_SCRIPTS = {
+    "colab/run_stage5_balanced_arc_mix_gate.py",
+    "colab/run_stage5_recovery_full_assessment.py",
+    "colab/run_stage5_benchmark_suite.py",
+    "colab/run_stage5_competence_preserving_pipeline.py",
 }
 
 
@@ -192,6 +203,52 @@ def execute_parsed_command(parsed: ParsedCommand, *, log_name: str = "selected_a
     return run(parsed.argv, env=env, log_name=log_name)
 
 
+def parsed_python_script(parsed: ParsedCommand) -> str:
+    if parsed.kind != "python" or len(parsed.argv) < 2:
+        return ""
+    return str(parsed.argv[1]).replace("\\", "/")
+
+
+def source_payload_for_plan(plan: dict[str, Any]) -> dict[str, Any] | None:
+    source_summary = plan.get("source_summary")
+    if not source_summary:
+        return None
+    source_path = Path(str(source_summary))
+    source_path = source_path if source_path.is_absolute() else ROOT / source_path
+    if not source_path.exists():
+        return None
+    return read_json(source_path)
+
+
+def a100_execution_guard(
+    action: dict[str, Any],
+    plan: dict[str, Any],
+    parsed: ParsedCommand,
+) -> dict[str, Any]:
+    script = parsed_python_script(parsed)
+    if script not in GUARDED_A100_SCRIPTS:
+        return {
+            "checked": False,
+            "allowed": True,
+            "reason": "Selected action is not a guarded paid-GPU runner.",
+        }
+    source_payload = source_payload_for_plan(plan)
+    if source_payload is None:
+        return {
+            "checked": True,
+            "allowed": False,
+            "status": "missing_source_summary",
+            "spend_class": "none",
+            "reason": "Guarded A100 action has no readable source summary.",
+        }
+    decision = classify_action(action, source_payload=source_payload)
+    return {
+        "checked": True,
+        "allowed": bool(decision.get("go")),
+        **decision,
+    }
+
+
 def bootstrap_plan(plan_run_id: str, *, reason: str) -> dict[str, Any]:
     """First Stage 5 action when no prior result summary exists."""
 
@@ -274,6 +331,8 @@ def execute_action_loop(*, execute: bool = EXECUTE, max_actions: int = MAX_ACTIO
             "parsed_command": {"kind": parsed.kind, "env": parsed.env, "argv": parsed.argv},
             "repeat_detected": repeated,
         }
+        guard = a100_execution_guard(action, plan, parsed)
+        step_payload["a100_guard"] = guard
         if repeated:
             step_payload["execution"] = {
                 "executed": False,
@@ -285,6 +344,15 @@ def execute_action_loop(*, execute: bool = EXECUTE, max_actions: int = MAX_ACTIO
 
         seen_commands.add(command_text)
         if execute:
+            if guard.get("checked") and not guard.get("allowed"):
+                step_payload["execution"] = {
+                    "executed": False,
+                    "stopped": True,
+                    "reason": "A100 go/no-go guard blocked this paid-GPU action.",
+                    "guard_status": guard.get("status"),
+                }
+                steps.append(step_payload)
+                break
             proc = execute_parsed_command(parsed, log_name=f"selected_action_{step_index:02d}.log")
             step_payload["execution"] = {"executed": True, "returncode": proc.returncode}
             steps.append(step_payload)
@@ -327,6 +395,7 @@ def write_report(payload: dict[str, Any]) -> None:
     action = first_step.get("selected_action") or {}
     parsed = first_step.get("parsed_command") or {}
     execution = first_step.get("execution") or {}
+    guard = first_step.get("a100_guard") or {}
     lines = [
         f"# Stage 5 Next Action - {RUN_ID}",
         "",
@@ -341,6 +410,7 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Command: `{action.get('command')}`",
         f"- Parsed kind: `{parsed.get('kind')}`",
         f"- Parsed argv: `{parsed.get('argv')}`",
+        f"- A100 guard: `{guard}`",
         f"- Execution: `{execution}`",
     ]
     if len(steps) > 1:
@@ -349,7 +419,8 @@ def write_report(payload: dict[str, Any]) -> None:
             step_action = step.get("selected_action") or {}
             lines.append(
                 f"- Step `{step.get('step')}`: `{step_action.get('name')}` "
-                f"repeat `{step.get('repeat_detected')}` execution `{step.get('execution')}`"
+                f"repeat `{step.get('repeat_detected')}` guard `{step.get('a100_guard')}` "
+                f"execution `{step.get('execution')}`"
             )
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))

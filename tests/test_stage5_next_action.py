@@ -6,6 +6,7 @@ import sys
 import colab.run_stage5_next_action as module
 from colab.run_stage5_next_action import (
     action_fingerprint,
+    a100_execution_guard,
     bootstrap_plan,
     execute_action_loop,
     is_repeat_action,
@@ -316,6 +317,54 @@ def test_repeat_guard_uses_command_fingerprint() -> None:
     assert is_repeat_action(action, seen, allow_repeat=True) is False
 
 
+def test_a100_guard_allows_bounded_arc_mix_proxy(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    source.write_text(
+        '{"kind": "stage5_recovery_full_assessment", "status": "needs_competence_recovery"}',
+        encoding="utf-8",
+    )
+    action = {
+        "name": "Run another competence-preserving ARC-mix proxy gate",
+        "command": "python colab/run_stage5_balanced_arc_mix_gate.py",
+    }
+    parsed = parse_action_command(action["command"])
+
+    guard = a100_execution_guard(action, {"source_summary": str(source)}, parsed)
+
+    assert guard["checked"] is True
+    assert guard["allowed"] is True
+    assert guard["status"] == "go_bounded_proxy"
+
+
+def test_a100_guard_blocks_full_assessment_after_calibration_warning(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    source.write_text(
+        '{"kind": "stage5_balanced_arc_mix_gate", "status": "proxy_lift_calibration_warning", "passed": false}',
+        encoding="utf-8",
+    )
+    action = {
+        "name": "Run full balanced assessment for ARC-mix checkpoint",
+        "command": "python colab/run_stage5_recovery_full_assessment.py",
+    }
+    parsed = parse_action_command(action["command"])
+
+    guard = a100_execution_guard(action, {"source_summary": str(source)}, parsed)
+
+    assert guard["checked"] is True
+    assert guard["allowed"] is False
+    assert guard["status"] == "calibration_warning_no_go"
+
+
+def test_a100_guard_skips_local_assessment_actions() -> None:
+    action = {"name": "Plan", "command": "python colab/plan_stage5_next_run.py"}
+    parsed = parse_action_command(action["command"])
+
+    guard = a100_execution_guard(action, {"source_summary": None}, parsed)
+
+    assert guard["checked"] is False
+    assert guard["allowed"] is True
+
+
 def test_execute_action_loop_dry_run_stops_after_one_plan(monkeypatch, tmp_path) -> None:
     calls = []
 
@@ -360,6 +409,34 @@ def test_execute_action_loop_stops_on_repeated_action(monkeypatch, tmp_path) -> 
     assert steps[0]["execution"]["executed"] is True
     assert steps[1]["repeat_detected"] is True
     assert steps[1]["execution"]["stopped"] is True
+
+
+def test_execute_action_loop_blocks_guarded_a100_action(monkeypatch, tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    source.write_text(
+        '{"kind": "stage5_balanced_arc_mix_gate", "status": "proxy_lift_calibration_warning", "passed": false}',
+        encoding="utf-8",
+    )
+    action = {
+        "name": "Run full balanced assessment for ARC-mix checkpoint",
+        "command": "python colab/run_stage5_recovery_full_assessment.py",
+    }
+
+    def fake_run_planner(*, step=None):
+        return tmp_path / "plan.json", {"source_summary": str(source), "actions": [action]}, subprocess.CompletedProcess([], 0)
+
+    def fake_execute(parsed, *, log_name="selected_action.log"):
+        raise AssertionError("guarded A100 action should not execute")
+
+    monkeypatch.setattr(module, "run_planner", fake_run_planner)
+    monkeypatch.setattr(module, "execute_parsed_command", fake_execute)
+
+    steps = execute_action_loop(execute=True, max_actions=1)
+
+    assert len(steps) == 1
+    assert steps[0]["a100_guard"]["status"] == "calibration_warning_no_go"
+    assert steps[0]["execution"]["executed"] is False
+    assert steps[0]["execution"]["stopped"] is True
 
 
 def test_execute_action_loop_rejects_nonpositive_max_actions() -> None:
