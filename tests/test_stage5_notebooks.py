@@ -48,3 +48,14 @@ def test_full_arc_assessment_notebook_is_single_purpose() -> None:
     assert "colab/run_stage5_reasoning_dataset_pipeline.py" not in text
     assert payload["cells"][0]["cell_type"] == "markdown"
     assert payload["cells"][1]["cell_type"] == "code"
+
+
+def test_arc_mix_recovery_cell_is_single_purpose() -> None:
+    text = (ROOT / "colab/STAGE5_ARC_MIX_RECOVERY_CELL.md").read_text(encoding="utf-8")
+
+    assert "colab/run_stage5_arc_mix_recovery_once.py" in text
+    assert "STAGE5_ARC_MIX_ONCE_AUTO_DISCONNECT" in text
+    assert "stage5_recovery_full_assessment_current/summary.json" in text
+    assert "arc_mix_response_w005_lr2e6" in text
+    assert "colab/run_stage5_full_assessment_once.py" not in text
+    assert "colab/run_stage5_colab_continue.py" not in text

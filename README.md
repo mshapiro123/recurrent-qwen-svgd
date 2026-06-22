@@ -23,14 +23,16 @@ jobs are bounded and expected to emit `summary.json` artifacts that decide the
 next action. The remaining waste risk is leaving Colab attached while fixing
 auth, notebook state, GitHub, or Drive problems. Those are stop conditions.
 
-As of the current checkpoint, the only A100-worthy next job is the full balanced
-ARC-Easy/ARC-Challenge assessment for the weak-positive ARC-mix proxy
-checkpoint. The decision tree is intentionally narrow:
+As of the current checkpoint, the full balanced ARC-Easy/ARC-Challenge
+assessment has already landed and did **not** justify moving to GPQA, Phase 2,
+or scale-up. The only A100-worthy next job is one bounded competence-preserving
+ARC-mix recovery proxy from the selected full-assessment checkpoint. The
+decision tree is intentionally narrow:
 
-| Result of full balanced ARC assessment | Next GPU action |
+| Result of one ARC-mix recovery proxy | Next GPU action |
 |---|---|
-| Recurrent checkpoint is non-negative versus base | Run the broader benchmark suite on the selected checkpoint. |
-| Recurrent checkpoint still trails base | Run one bounded competence-recovery proxy gate, then reassess. |
+| Proxy improves recurrent start and is non-negative or near-base | Decide whether to spend on a full balanced ARC assessment. |
+| Proxy does not lift the recurrent start | Stop A100 work and revise the data/objective mix locally. |
 | Auth/Drive/GitHub/notebook failure | Disconnect runtime and repair locally. |
 
 Do not spend A100 credits on GPQA Diamond, Phase 2/SVGD scaling, 1.5B/3B
@@ -108,8 +110,8 @@ Treat A100 time as the scarce experimental reagent. The default answer to
 5. it is not a dataset audit, unit test, notebook repair, README edit, or
    exploratory script-debugging task.
 
-Right now the only A100-worthy job is the full balanced ARC-Easy/ARC-Challenge
-assessment for the latest weak-positive ARC-mix proxy checkpoint. Dataset
+Right now the only A100-worthy job is a single ARC-mix recovery proxy from
+`outputs/stage5/stage5_recovery_full_assessment_current/summary.json`. Dataset
 inspection, Hugging Face trace triage, planner repairs, documentation, and
 small CPU tests should stay local or on a free CPU runtime.
 
@@ -150,41 +152,43 @@ time.
 
 ## Active Next A100 Action
 
-Credits are tight, so A100 work is deliberately gate-based. The latest
-credit-saver ARC-mix proxy gate completed:
+Credits are tight, so A100 work is deliberately gate-based. The full balanced
+assessment for the latest selected checkpoint has completed and remains
+negative overall:
 
 ```text
-run_id = stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe
-status = proxy_lift
-base proxy = 68/128
-start proxy = 66/128
-best recurrent proxy = 67/128
-best checkpoint = outputs/stage5/stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe/arc_mix_response_w005_lr2e6/phase1/phase1_step_100.pt
+run_id = stage5_recovery_full_assessment_current
+status = needs_competence_recovery
+ARC-Easy:      base 421/570, recurrent 412/570, delta -9
+ARC-Challenge: base 167/299, recurrent 169/299, delta +2
+Combined:      base 588/869, recurrent 581/869, delta -7
 ```
 
-The lift is real but weak: `+1` versus the recurrent starting checkpoint and
-`-1` versus base on the 128-example proxy. The planner's next action, if we
-choose to spend the A100 time, is the full balanced ARC-Easy/ARC-Challenge
-assessment for that checkpoint:
+The current training question is whether a competence-preserving mixed
+objective can close the ARC-Easy tax without erasing the ARC-Challenge gain.
+The next A100 job, if we choose to spend it, is one bounded ARC-mix recovery
+proxy:
 
 ```bash
-STAGE5_ARC_AGI_NEXT_PLAN_SOURCE_SUMMARY=outputs/stage5/stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe/summary.json \
-python colab/plan_stage5_next_run.py
-```
-
-For a low-credit Colab session, use the single-purpose launcher instead of the
-generic continuation loop:
-
-```bash
-python colab/run_stage5_full_assessment_once.py
+python colab/run_stage5_arc_mix_recovery_once.py
 ```
 
 The notebook-ready copy/paste cell is in
-[`colab/STAGE5_FULL_ASSESSMENT_CELL.md`](colab/STAGE5_FULL_ASSESSMENT_CELL.md).
-The direct notebook version is
-[`colab/07_stage5_full_arc_assessment.ipynb`](colab/07_stage5_full_arc_assessment.ipynb).
-Both clone or update the private repo, run exactly this assessment, push safe
-text artifacts, and disconnect the Colab runtime when finished.
+[`colab/STAGE5_ARC_MIX_RECOVERY_CELL.md`](colab/STAGE5_ARC_MIX_RECOVERY_CELL.md).
+It runs the low-credit default selected by the planner:
+
+```bash
+STAGE5_ARC_MIX_SOURCE_SUMMARY=outputs/stage5/stage5_recovery_full_assessment_current/summary.json
+STAGE5_ARC_MIX_ARMS=arc_mix_response_w005_lr2e6
+STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT=2
+STAGE5_ARC_MIX_ARC_EASY_REPEAT=4
+STAGE5_ARC_MIX_ARC_EVAL_LIMIT=128
+STAGE5_ARC_MIX_OPUS_LIMIT=3000
+```
+
+Only if that proxy is positive should we spend another A100 block on
+[`colab/STAGE5_FULL_ASSESSMENT_CELL.md`](colab/STAGE5_FULL_ASSESSMENT_CELL.md)
+or [`colab/07_stage5_full_arc_assessment.ipynb`](colab/07_stage5_full_arc_assessment.ipynb).
 
 Do not run GPQA, Phase 2/SVGD, or scale-up jobs before this deterministic
 recurrent recovery question is resolved.

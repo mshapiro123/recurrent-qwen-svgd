@@ -315,12 +315,17 @@ or GPQA Diamond.
 
 ## 8. Immediate Credit-Saving Gate
 
-The first A100 credit-saving recovery probe has now run. It was a bounded
-competence-preserving proxy rather than another SVGD/kernel sweep. The broader
-benchmark failure was concentrated in ARC-Easy: the recurrent checkpoint
-slightly exceeded base on ARC-Challenge but trailed on ARC-Easy. The probe
-therefore resumed from the selected balanced checkpoint and ran a single mixed
-objective with:
+The first A100 credit-saving recovery probe ran as a bounded
+competence-preserving proxy rather than another SVGD/kernel sweep. It produced
+weak proxy lift, but the subsequent full balanced ARC assessment still reported
+`needs_competence_recovery`: the recurrent checkpoint slightly exceeded base on
+ARC-Challenge but trailed on ARC-Easy. That assessment is now the current
+source of truth.
+
+The next paid job should therefore be another single ARC-mix recovery proxy,
+not GPQA, not Phase 2/SVGD, and not another full assessment. The proxy resumes
+from the selected full-assessment checkpoint and runs a single mixed objective
+with:
 
 - Opus reasoning traces as the general reasoning anchor;
 - ARC-Challenge training rows repeated `2x`;
@@ -329,8 +334,8 @@ objective with:
 - learning rate `2e-6`;
 - proxy MCQ eval limit `128`.
 
-The completed Colab planner action was `Run competence-preserving ARC-mix proxy
-gate`, producing:
+The prior Colab planner action, `Run competence-preserving ARC-mix proxy gate`,
+produced:
 
 ```text
 run_id = stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe
@@ -343,9 +348,28 @@ best checkpoint = outputs/stage5/stage5_arc_agi_colab_continue_20260621_232031_p
 
 This is a weak but positive proxy result. It improves the recurrent start by
 one example but remains one example below base on the 128-example proxy. The
-next planner action is therefore the full balanced ARC-Easy/ARC-Challenge
-assessment for the best proxy checkpoint, but it should be launched only as a
-deliberate A100 spend, not as an automatic continuation.
+full balanced assessment that followed was still negative overall:
+
+```text
+run_id = stage5_recovery_full_assessment_current
+status = needs_competence_recovery
+ARC-Easy:      base 421/570, recurrent 412/570, delta -9
+ARC-Challenge: base 167/299, recurrent 169/299, delta +2
+Combined:      base 588/869, recurrent 581/869, delta -7
+```
+
+The immediate low-credit launcher is:
+
+```bash
+python colab/run_stage5_arc_mix_recovery_once.py
+```
+
+It defaults to `outputs/stage5/stage5_recovery_full_assessment_current/summary.json`,
+the `arc_mix_response_w005_lr2e6` arm, a `128`-example proxy, `2x`
+ARC-Challenge, `4x` ARC-Easy, and `3000` Opus rows. It stops after that proxy
+gate. A later full balanced assessment should be launched only if this proxy
+lifts the recurrent start and is non-negative or close enough to base to justify
+the extra A100 spend.
 
 This gate is intentionally deterministic Phase 1 recovery work. Phase 2/SVGD,
 GPQA Diamond, and 1.5B/3B scaling remain deferred until deterministic recurrent
