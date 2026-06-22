@@ -46,6 +46,12 @@ ALLOW_UNAPPROVED_DATASET = os.environ.get("STAGE4_OPUS_ALLOW_UNAPPROVED_SOURCE",
     "yes",
     "y",
 }
+ALLOW_NO_DRIVE_BACKUP = os.environ.get("STAGE4_ALLOW_NO_DRIVE_BACKUP", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 DATASET_LIMIT = int(os.environ.get("OPUS_LIMIT", "3000"))
 VAL_FRACTION = float(os.environ.get("OPUS_VAL_FRACTION", "0.05"))
 MAX_TOTAL_TOKENS = int(os.environ.get("OPUS_MAX_TOTAL_TOKENS", "1024"))
@@ -115,6 +121,30 @@ def validate_dataset_source(
         f"{sorted(APPROVED_STAGE4_OPUS_DATASETS)}. Got {dataset_id!r}. "
         "Set STAGE4_OPUS_ALLOW_UNAPPROVED_SOURCE=1 only for a deliberate, "
         "non-default experiment."
+    )
+
+
+def drive_backup_root() -> Path:
+    return Path(os.environ.get("DRIVE_BACKUP_DIR", "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts"))
+
+
+def validate_drive_backup(
+    *,
+    drive_root: Path | None = None,
+    allow_no_backup: bool = ALLOW_NO_DRIVE_BACKUP,
+) -> dict[str, Any]:
+    root = drive_root or drive_backup_root()
+    payload = {
+        "drive_root": str(root),
+        "available": root.exists(),
+        "allow_no_backup": allow_no_backup,
+    }
+    if root.exists() or allow_no_backup:
+        return payload
+    raise RuntimeError(
+        f"Stage 4 fine-tune requires a mounted Drive backup directory before A100 training: {root}. "
+        "Mount/authorize Google Drive first, or set STAGE4_ALLOW_NO_DRIVE_BACKUP=1 for a deliberate "
+        "non-default run."
     )
 
 
@@ -307,7 +337,7 @@ def eval_arc(label: str, mode: str, checkpoint: Path | None = None, projection: 
 
 
 def backup_to_drive() -> None:
-    drive_root = Path(os.environ.get("DRIVE_BACKUP_DIR", "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts"))
+    drive_root = drive_backup_root()
     if not drive_root.exists():
         print(f"Drive backup skipped; missing {drive_root}")
         return
@@ -326,11 +356,12 @@ def backup_to_drive() -> None:
 def ensure_drive_mount() -> None:
     if Path("/content/drive/MyDrive").exists():
         return
-    print("Drive is not mounted; checkpoint backup will be skipped unless the notebook mounts Drive before launch.")
+    print("Drive is not mounted; Stage 4 will stop unless STAGE4_ALLOW_NO_DRIVE_BACKUP=1 is set.")
 
 
 def main() -> int:
     ensure_drive_mount()
+    drive_backup_preflight = validate_drive_backup()
     dataset_source_preflight = validate_dataset_source()
     metadata = {
         "run_id": RUN_ID,
@@ -339,6 +370,7 @@ def main() -> int:
         "dataset_name": DATASET_NAME or None,
         "dataset_adapter": DATASET_ADAPTER,
         "dataset_source_preflight": dataset_source_preflight,
+        "drive_backup_preflight": drive_backup_preflight,
         "dataset_limit": DATASET_LIMIT,
         "val_fraction": VAL_FRACTION,
         "max_total_tokens": MAX_TOTAL_TOKENS,
