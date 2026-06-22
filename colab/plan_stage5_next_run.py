@@ -1194,8 +1194,7 @@ def capability_ladder_trace_responses_actions(payload: dict[str, Any], *, source
                 ),
                 command_env(
                     {
-                        "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_SOURCE_SUMMARY": trace_jobs_summary,
-                        "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_JSONL": responses_jsonl,
+                        "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_SOURCE_SUMMARY": command_path(source_summary),
                     },
                     "python colab/run_stage5_capability_ladder_trace_collect.py",
                 ),

@@ -403,13 +403,10 @@ def test_capability_ladder_trace_responses_ready_recommends_collection(tmp_path)
     assert actions[0]["name"] == "Collect verified capability-ladder trace rows"
     assert "python colab/run_stage5_capability_ladder_trace_collect.py" in actions[0]["command"]
     assert (
-        "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_SOURCE_SUMMARY=outputs/stage5/trace_jobs/summary.json"
+        f"STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_SOURCE_SUMMARY={source.as_posix()}"
         in actions[0]["command"]
     )
-    assert (
-        "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_JSONL=outputs/stage5/trace_responses/trace_responses.jsonl"
-        in actions[0]["command"]
-    )
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_JSONL" not in actions[0]["command"]
 
 
 def test_capability_ladder_trace_collection_gate_ready_recommends_sft_gate(tmp_path) -> None:
