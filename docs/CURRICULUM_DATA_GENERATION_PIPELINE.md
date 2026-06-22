@@ -372,6 +372,22 @@ Difficulty is the measured pass rate of the fixed weak reference model. Use
 `--drop_unmeasured` when building a training set that must exclude candidates
 without enough reference samples.
 
+Annotate plausible false answers after ground-truth verification:
+
+```bash
+python training/annotate_curriculum_false_answers.py \
+  --candidates_jsonl data/curriculum/verified_candidates_difficulty.jsonl \
+  --output_jsonl data/curriculum/verified_candidates_false_answers.jsonl \
+  --rejected_jsonl data/curriculum/verified_candidates_no_false_answer.jsonl \
+  --report_json outputs/curriculum/false_answers_report.json
+```
+
+The annotator first reuses a seed `claimed_answer` or existing
+`plausible_false_answers` entry when it disagrees with the verified answer. If
+none exists, it creates a deterministic numeric near-miss while preserving
+simple units or prefixes. Use `--drop_unannotated` when perturbation coverage is
+required for every downstream row.
+
 Method-constrained width jobs:
 
 ```bash
@@ -379,7 +395,7 @@ python training/build_curriculum_generation_jobs.py \
   --stage method_solve \
   --models opus-strong,glm-strong \
   --methods algebra,number_theory,bounded_enumeration \
-  --input_jsonl data/curriculum/verified_candidates_difficulty.jsonl \
+  --input_jsonl data/curriculum/verified_candidates_false_answers.jsonl \
   --output_jsonl data/curriculum/jobs_methods.jsonl
 ```
 
@@ -388,7 +404,7 @@ Collect method-constrained responses into correct-answer solution candidates:
 ```bash
 python training/collect_curriculum_job_outputs.py \
   --mode method_solutions \
-  --candidates_jsonl data/curriculum/verified_candidates_difficulty.jsonl \
+  --candidates_jsonl data/curriculum/verified_candidates_false_answers.jsonl \
   --jobs_jsonl data/curriculum/jobs_methods.jsonl \
   --responses_jsonl data/curriculum/responses_methods.jsonl \
   --output_jsonl data/curriculum/method_solution_candidates.jsonl \
@@ -458,12 +474,12 @@ Build and collect adversarial perturbation traces only after answer verification
 python training/build_curriculum_generation_jobs.py \
   --stage perturbation \
   --models opus-strong,glm-strong \
-  --input_jsonl data/curriculum/verified_candidates_difficulty.jsonl \
+  --input_jsonl data/curriculum/verified_candidates_false_answers.jsonl \
   --output_jsonl data/curriculum/jobs_perturbation.jsonl
 
 python training/collect_curriculum_job_outputs.py \
   --mode perturbation_traces \
-  --candidates_jsonl data/curriculum/verified_candidates_difficulty.jsonl \
+  --candidates_jsonl data/curriculum/verified_candidates_false_answers.jsonl \
   --jobs_jsonl data/curriculum/jobs_perturbation.jsonl \
   --responses_jsonl data/curriculum/responses_perturbation.jsonl \
   --output_jsonl data/curriculum/perturbation_traces.jsonl \
@@ -498,7 +514,7 @@ Assemble typed curriculum records:
 
 ```bash
 python training/assemble_curriculum_records.py \
-  --verified_candidates_jsonl data/curriculum/verified_candidates_difficulty.jsonl \
+  --verified_candidates_jsonl data/curriculum/verified_candidates_false_answers.jsonl \
   --solution_candidates_jsonl data/curriculum/method_solution_candidates.jsonl \
   --naturalness_jsonl data/curriculum/naturalness_judgments.jsonl \
   --depth_jsonl data/curriculum/depth_measurements.jsonl \
