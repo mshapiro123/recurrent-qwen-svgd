@@ -24,7 +24,6 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from colab.run_stage5_recovered_phase1_arc_gate import (  # noqa: E402
-    path_for_cli,
     restore_checkpoint_if_needed,
 )
 
@@ -48,6 +47,24 @@ PUSH_RESULTS = os.environ.get("STAGE5_RECOVERY_FULL_ASSESS_PUSH", "1").strip().l
     "yes",
     "y",
 }
+
+
+def path_for_cli(path: Path) -> str:
+    try:
+        return path.relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def current_source_summary_file() -> Path:
+    return ROOT / "config" / "stage5_current_source_summary.txt"
+
+
+def update_current_source_summary(summary_path: Path) -> Path:
+    pointer = current_source_summary_file()
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text(path_for_cli(summary_path) + "\n", encoding="utf-8")
+    return pointer
 
 
 def read_json(path: str | Path) -> dict[str, Any]:
@@ -185,7 +202,9 @@ def run_balanced_assessment(benchmark_summary: Path) -> Path:
 
 def write_report(payload: dict[str, Any]) -> None:
     RUN_DIR.mkdir(parents=True, exist_ok=True)
-    (RUN_DIR / "summary.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    summary_path = RUN_DIR / "summary.json"
+    summary_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    update_current_source_summary(summary_path)
     lines = [
         f"# Stage 5 Recovery Full Assessment - {RUN_ID}",
         "",
@@ -232,7 +251,11 @@ def backup_to_drive(paths: list[Path]) -> None:
 def commit_results(paths: list[Path]) -> None:
     if not PUSH_RESULTS:
         return
-    for path in paths:
+    staged_paths = list(paths)
+    pointer = current_source_summary_file()
+    if pointer.exists():
+        staged_paths.append(pointer)
+    for path in staged_paths:
         if path.exists():
             run(["git", "add", "-f", path_for_cli(path)], check=False)
     if run(["git", "diff", "--cached", "--quiet"], check=False).returncode == 0:
