@@ -16,6 +16,8 @@ TARGETS = {
         "markers": [
             "stage5_drive_checkpoint_preflight",
             "checkpoint_preflight",
+            "STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY",
+            "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY",
             "drive.mount",
             "runtime.unassign",
             "colab/check_stage5_a100_go_no_go.py",

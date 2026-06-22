@@ -4,7 +4,13 @@ from google.colab import drive, runtime, userdata
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
-SOURCE_SUMMARY = "outputs/stage5/stage5_routing_diagnostic_20260622_041706/summary.json"
+SOURCE_SUMMARY = os.environ.get(
+    "STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY",
+    os.environ.get(
+        "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY",
+        "outputs/stage5/stage5_routing_diagnostic_20260622_041706/summary.json",
+    ),
+)
 GO_NO_GO_RUN_ID = "stage5_drive_checkpoint_preflight"
 DISCONNECT_RUNTIME_WHEN_DONE = True
 
