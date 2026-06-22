@@ -155,6 +155,10 @@ The Colab next-action wrapper enforces the same policy before executing guarded
 paid-GPU runners. A copied command can still be run manually, but the maintained
 path (`python colab/run_stage5_next_action.py` with execution enabled) records
 an `a100_guard` decision and refuses unsafe full-assessment or benchmark spends.
+For the lowest-friction Colab path, use
+[`colab/STAGE5_SAFE_CONTINUE_CELL.md`](colab/STAGE5_SAFE_CONTINUE_CELL.md). It
+pulls latest GitHub, runs go/no-go, and defaults to dry-run unless
+`RUN_A100_ACTION = True` is set deliberately.
 
 ## What Has Been Achieved
 

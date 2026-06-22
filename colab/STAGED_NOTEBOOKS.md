@@ -18,8 +18,13 @@ balanced ARC assessment landed as
 
 Review
 `outputs/stage5/stage5_full_assessment_once_20260622_005522/mcq_regression_diagnosis.md`
-before spending more credits. The optional next A100 job is one bounded
-ARC-mix proxy using stronger response distillation via
+before spending more credits. The default Colab entrypoint is
+[`STAGE5_SAFE_CONTINUE_CELL.md`](STAGE5_SAFE_CONTINUE_CELL.md), which pulls the
+latest repo, runs the no-GPU go/no-go check, and dry-runs the guarded
+next-action path unless `RUN_A100_ACTION = True` is set in the cell.
+
+The optional next A100 job is one bounded ARC-mix proxy using stronger response
+distillation via
 [`STAGE5_ARC_MIX_RECOVERY_CELL.md`](STAGE5_ARC_MIX_RECOVERY_CELL.md), which now
 defaults to `arc_mix_response_w01_lr2e6` and disconnects after completion.
 

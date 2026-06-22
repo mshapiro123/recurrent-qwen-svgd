@@ -59,3 +59,15 @@ def test_arc_mix_recovery_cell_is_single_purpose() -> None:
     assert "arc_mix_response_w01_lr2e6" in text
     assert "colab/run_stage5_full_assessment_once.py" not in text
     assert "colab/run_stage5_colab_continue.py" not in text
+
+
+def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
+    text = (ROOT / "colab/STAGE5_SAFE_CONTINUE_CELL.md").read_text(encoding="utf-8")
+
+    assert "RUN_A100_ACTION = False" in text
+    assert "colab/check_stage5_a100_go_no_go.py" in text
+    assert "colab/run_stage5_next_action.py" in text
+    assert 'env["STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE"] = "1" if RUN_A100_ACTION else "0"' in text
+    assert "STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS" in text
+    assert "Dry run complete" in text
+    assert "colab/run_stage5_full_assessment_once.py" not in text
