@@ -9,7 +9,7 @@ runtime when finished.
 Do not use this for dataset audits, notebook repair, Phase 2/SVGD, or GPQA.
 
 ```python
-import os, subprocess, sys
+import os, shutil, subprocess, sys
 from pathlib import Path
 from google.colab import userdata
 
@@ -52,14 +52,24 @@ def run(cmd, cwd=None, check=True, env=None):
         raise RuntimeError(f"failed: {printable}")
     return proc
 
-try:
+def sync_repo():
+    clone_url = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
     if ROOT.exists():
-        run(["git", "remote", "set-url", "origin", f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"], cwd=ROOT)
-        run(["git", "fetch", "origin", "main"], cwd=ROOT)
-        run(["git", "checkout", "main"], cwd=ROOT)
-        run(["git", "pull", "--ff-only", "origin", "main"], cwd=ROOT)
-    else:
-        run(["git", "clone", f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git", str(ROOT)])
+        try:
+            run(["git", "remote", "set-url", "origin", clone_url], cwd=ROOT)
+            run(["git", "fetch", "origin", "main"], cwd=ROOT)
+            run(["git", "checkout", "main"], cwd=ROOT)
+            pull = run(["git", "pull", "--ff-only", "origin", "main"], cwd=ROOT, check=False)
+            if pull.returncode == 0:
+                return
+            print("Existing clone could not fast-forward; recloning cleanly.", flush=True)
+        except Exception as exc:
+            print(f"Existing clone refresh failed; recloning cleanly: {exc}", flush=True)
+        shutil.rmtree(ROOT)
+    run(["git", "clone", clone_url, str(ROOT)])
+
+try:
+    sync_repo()
 
     run(["git", "config", "user.email", "colab-runner@local"], cwd=ROOT)
     run(["git", "config", "user.name", "Colab Runner"], cwd=ROOT)
