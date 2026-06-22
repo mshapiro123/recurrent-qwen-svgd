@@ -372,6 +372,20 @@ contrastive consumers read the rest. Nothing crosses that boundary.
 
 No positive SFT loader should read `negative_` or `verifier_` roles.
 
+The maintained conversion boundary is:
+
+```bash
+python training/prepare_curriculum_jsonl.py \
+  --input_jsonl data/curriculum/typed_records.jsonl \
+  --output_jsonl data/curriculum/positive_sft.jsonl \
+  --report_json outputs/curriculum/positive_sft_report.json
+```
+
+That script validates the typed records and exports ordinary
+`prompt`/`completion` rows only from roles beginning with `positive_`. It counts
+negative and verifier traces in the report, but never writes them to the
+positive SFT output.
+
 ## Worked Example
 
 Problem:
