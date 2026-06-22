@@ -180,7 +180,7 @@ def prune_to_pairwise_distinct_methods(
 
 
 def build_trace(solution: dict[str, Any], *, role: str, steps: int, natural_info: dict[str, Any]) -> dict[str, Any]:
-    return {
+    trace = {
         "role": role,
         "method": solution.get("method"),
         "correct": True,
@@ -192,6 +192,10 @@ def build_trace(solution: dict[str, Any], *, role: str, steps: int, natural_info
         "naturalness_judges": natural_info.get("agreeing_models", []),
         "text": str(solution.get("text") or solution.get("solution") or ""),
     }
+    answer_match = solution.get("answer_match")
+    if isinstance(answer_match, dict):
+        trace["answer_match"] = answer_match
+    return trace
 
 
 def build_auxiliary_trace(row: dict[str, Any]) -> dict[str, Any]:

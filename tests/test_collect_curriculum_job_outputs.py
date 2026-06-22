@@ -261,6 +261,13 @@ def test_method_outputs_keep_only_correct_verified_answer_solutions() -> None:
     assert rows[0]["method"] == "algebra"
     assert rows[0]["correct"] is True
     assert rows[0]["natural"] is None
+    assert rows[0]["answer_match"] == {
+        "matched": True,
+        "source": "method_constrained_answer_line",
+        "parsed_answer": "42",
+        "parsed_answer_normalized": "42",
+        "verified_answer_normalized": "42",
+    }
     assert report["status_counts"] == {
         "correct_answer": 1,
         "method_does_not_apply": 1,

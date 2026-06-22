@@ -41,6 +41,13 @@ def typed_record() -> dict:
                 "natural": True,
                 "steps": 3,
                 "source_model": "solver-a",
+                "answer_match": {
+                    "matched": True,
+                    "source": "method_constrained_answer_line",
+                    "parsed_answer": "42",
+                    "parsed_answer_normalized": "42",
+                    "verified_answer_normalized": "42",
+                },
                 "text": "Multiply the sides: 6 * 7 = 42.\nANSWER: 42",
             },
             {
@@ -129,6 +136,7 @@ def test_curriculum_sft_gate_allows_complete_strict_shard(tmp_path) -> None:
     assert payload["status"] == "go_train_recurrent_sft"
     assert payload["issues"] == []
     assert payload["checks"]["positive_sft"]["role_counts"] == {"positive_wide": 1}
+    assert payload["checks"]["typed_records"]["positive_missing_answer_match"] == 0
 
 
 def test_curriculum_sft_gate_blocks_incomplete_pipeline(tmp_path) -> None:
@@ -150,6 +158,19 @@ def test_curriculum_sft_gate_blocks_cross_model_only_generated_answers(tmp_path)
 
     assert result["go"] is False
     assert any(issue["code"] == "programmatic_check_not_required" for issue in result["issues"])
+
+
+def test_curriculum_sft_gate_blocks_positive_trace_without_answer_match(tmp_path) -> None:
+    summary = write_complete_work_dir(tmp_path / "run")
+    typed_path = tmp_path / "run" / "typed_records.jsonl"
+    record = typed_record()
+    record["traces"][0].pop("answer_match")
+    write_jsonl(typed_path, [record])
+
+    result = build_gate_payload(parse_args(["--summary_json", str(summary)]))
+
+    assert result["go"] is False
+    assert any(issue["code"] == "positive_trace_missing_answer_match" for issue in result["issues"])
 
 
 def test_curriculum_sft_gate_cli_writes_reports(tmp_path) -> None:

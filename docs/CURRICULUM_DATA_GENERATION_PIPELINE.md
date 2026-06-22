@@ -14,6 +14,11 @@ positive reasoning set. The code boundary for this rule is
 `training/prepare_curriculum_jsonl.py`: only roles beginning with `positive_`
 are exported to causal SFT rows, and positive traces must be correct, natural,
 and step-labeled.
+The SFT gate adds a second boundary: every positive trace must include
+`answer_match.matched=true`, copied from the method-solution collector after
+its final `ANSWER:` line was matched to the verified answer. A positive role
+without this proof is treated as unsafe, even if the rest of the record
+validates.
 
 ## Model Roles
 
@@ -108,6 +113,12 @@ One curriculum record represents one verified problem:
       "natural": true,
       "steps": 6,
       "source_model": "strong-model-a",
+      "answer_match": {
+        "matched": true,
+        "source": "method_constrained_answer_line",
+        "parsed_answer_normalized": "42",
+        "verified_answer_normalized": "42"
+      },
       "text": "..."
     },
     {

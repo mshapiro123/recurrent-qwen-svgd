@@ -140,11 +140,34 @@ def check_typed_records(rows: list[dict[str, Any]], issues: list[dict[str, Any]]
     mode_counts: Counter[str] = Counter()
     role_counts: Counter[str] = Counter()
     invalid = 0
+    positive_missing_answer_match = 0
     for index, row in enumerate(rows, start=1):
         mode_counts[str(row.get("mode") or "")] += 1
         for trace in row.get("traces") if isinstance(row.get("traces"), list) else []:
             if isinstance(trace, dict):
                 role_counts[str(trace.get("role") or "")] += 1
+                if role_starts_positive(trace.get("role")):
+                    answer_match = trace.get("answer_match")
+                    if not isinstance(answer_match, dict) or answer_match.get("matched") is not True:
+                        positive_missing_answer_match += 1
+                        add_issue(
+                            issues,
+                            "positive_trace_missing_answer_match",
+                            (
+                                f"typed record {index} has positive trace role={trace.get('role')!r} "
+                                "without answer_match.matched=true."
+                            ),
+                        )
+                    elif not str(answer_match.get("verified_answer_normalized") or "").strip():
+                        positive_missing_answer_match += 1
+                        add_issue(
+                            issues,
+                            "positive_trace_missing_verified_answer",
+                            (
+                                f"typed record {index} has positive trace role={trace.get('role')!r} "
+                                "without answer_match.verified_answer_normalized."
+                            ),
+                        )
         row_issues = validate_curriculum_record(row, line_no=index)
         if row_issues:
             invalid += 1
@@ -153,6 +176,7 @@ def check_typed_records(rows: list[dict[str, Any]], issues: list[dict[str, Any]]
     return {
         "rows": len(rows),
         "invalid_rows": invalid,
+        "positive_missing_answer_match": positive_missing_answer_match,
         "mode_counts": dict(sorted(mode_counts.items())),
         "role_counts": dict(sorted(role_counts.items())),
     }

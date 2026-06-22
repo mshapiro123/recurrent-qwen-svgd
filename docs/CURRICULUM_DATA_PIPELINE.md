@@ -29,6 +29,11 @@ Auxiliary traces are the inverse boundary: they may only carry `negative_` or
 `verifier_` roles. Positive traces must be created only from verified,
 natural, method/depth-measured solution candidates, never from perturbation or
 auxiliary files.
+Every positive trace must also carry an `answer_match` proof copied from the
+method-solution collector. The required proof is `matched=true` plus the
+normalized parsed answer and normalized verified answer. This makes the hard
+rule auditable row by row: a role label alone is not enough evidence for
+positive SFT.
 
 ## Model Roles
 
@@ -463,6 +468,12 @@ One record per problem:
       "natural": true,
       "steps": 9,
       "source_model": "string",
+      "answer_match": {
+        "matched": true,
+        "source": "method_constrained_answer_line",
+        "parsed_answer_normalized": "string",
+        "verified_answer_normalized": "string"
+      },
       "text": "string"
     },
     {

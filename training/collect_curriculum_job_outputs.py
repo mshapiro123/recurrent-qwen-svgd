@@ -509,6 +509,13 @@ def method_outputs_to_solution_candidates(
 
         status_counts["correct_answer"] += 1
         answer = candidate.get("answer") if isinstance(candidate.get("answer"), dict) else {}
+        answer_match = {
+            "matched": True,
+            "source": "method_constrained_answer_line",
+            "parsed_answer": parsed_answer,
+            "parsed_answer_normalized": normalized,
+            "verified_answer_normalized": verified,
+        }
         rows.append(
             {
                 "id": sanitize_id(f"{record_id}:{method}:{job.get('job_id')}"),
@@ -524,6 +531,7 @@ def method_outputs_to_solution_candidates(
                 "answer": answer,
                 "parsed_answer": parsed_answer,
                 "parsed_answer_normalized": normalized,
+                "answer_match": answer_match,
                 "correct": True,
                 "natural": None,
                 "candidate_methods": candidate.get("candidate_methods"),

@@ -28,6 +28,13 @@ def solution(solution_id: str, *, method: str, text: str = "Solve cleanly.\nANSW
         "text": text,
         "solution": text,
         "answer": {"value": "42", "normalized": "42", "verified_by": ["cross_model"]},
+        "answer_match": {
+            "matched": True,
+            "source": "method_constrained_answer_line",
+            "parsed_answer": "42",
+            "parsed_answer_normalized": "42",
+            "verified_answer_normalized": "42",
+        },
         "correct": True,
     }
 
@@ -92,6 +99,7 @@ def test_assemble_wide_record_and_exports_positive_sft() -> None:
     assert record["mode"] == "wide"
     assert record["width_signature"] == {"methods": ["algebra", "bounded_enumeration"], "width": 2}
     assert {trace["role"] for trace in record["traces"]} == {"positive_wide"}
+    assert all(trace["answer_match"]["matched"] is True for trace in record["traces"])
 
     examples, export_report = convert_curriculum_records(records)
     assert len(examples) == 2
