@@ -277,16 +277,6 @@ The runner writes one response JSONL row per job with `job_id`, `response_text`,
 `status`, `backend`, timing, and any command stderr. `--resume` skips job ids
 already present in the output file, which matters for paid API batches.
 
-Ground-truth solve jobs from generated candidates:
-
-```bash
-python training/build_curriculum_generation_jobs.py \
-  --stage ground_truth \
-  --models opus-strong,glm-strong \
-  --input_jsonl data/curriculum/candidates.jsonl \
-  --output_jsonl data/curriculum/jobs_ground_truth.jsonl
-```
-
 Collect seed responses from an external API runner into candidate problems:
 
 ```bash
@@ -308,12 +298,45 @@ The collector also accepts `response`, `output_text`, `output`, `text`,
 `content`, or `message.content` fields. It parses JSON from raw text or fenced
 JSON blocks.
 
+Decontaminate generated candidates before any more API or GPU compute is spent:
+
+```bash
+python training/decontaminate_curriculum_candidates.py \
+  --candidates_jsonl data/curriculum/candidates.jsonl \
+  --references_jsonl eval/smoke_exact_tasks_v2.jsonl \
+  --references_jsonl eval/smoke_mcq_tasks.jsonl \
+  --output_jsonl data/curriculum/candidates_decontaminated.jsonl \
+  --rejected_jsonl data/curriculum/candidates_contaminated.jsonl \
+  --annotated_jsonl data/curriculum/candidates_decontam_annotated.jsonl \
+  --report_json outputs/curriculum/candidates_decontam_report.json \
+  --ngram_size 5 \
+  --min_ngram_size 3 \
+  --threshold 0.5
+```
+
+This first pass is deterministic token 3-to-5-gram overlap with Jaccard and
+containment checks. It is deliberately cheap and conservative: exact benchmark
+copies and benchmark prompts embedded inside longer generated statements are
+rejected. For real benchmark suites, pass every local eval JSONL prepared for
+ARC, GPQA, GSM-style smoke tasks, and any held-out custom set. Only
+`candidates_decontaminated.jsonl` should feed the next stage.
+
+Ground-truth solve jobs from decontaminated candidates:
+
+```bash
+python training/build_curriculum_generation_jobs.py \
+  --stage ground_truth \
+  --models opus-strong,glm-strong \
+  --input_jsonl data/curriculum/candidates_decontaminated.jsonl \
+  --output_jsonl data/curriculum/jobs_ground_truth.jsonl
+```
+
 Collect ground-truth solver responses into verified candidates:
 
 ```bash
 python training/collect_curriculum_job_outputs.py \
   --mode verified_candidates \
-  --candidates_jsonl data/curriculum/candidates.jsonl \
+  --candidates_jsonl data/curriculum/candidates_decontaminated.jsonl \
   --jobs_jsonl data/curriculum/jobs_ground_truth.jsonl \
   --responses_jsonl data/curriculum/responses_ground_truth.jsonl \
   --output_jsonl data/curriculum/verified_candidates.jsonl \
