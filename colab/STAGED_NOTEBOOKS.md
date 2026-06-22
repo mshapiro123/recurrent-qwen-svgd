@@ -99,8 +99,13 @@ run([sys.executable, "colab/run_stage1_single_runtime.py"], cwd=ROOT)
 
 ## Optional Notebook Reference
 
-Open `colab/00_single_a100_runbook.ipynb` only when you want a clean notebook
-layout. Once it is open, keep all stage execution inside that one notebook.
+Open `colab/08_stage5_safe_continue.ipynb` when you want the safest current
+single-notebook path. It defaults to a no-GPU dry run and requires
+`RUN_A100_ACTION = True` before executing the guarded next action. Once it is
+open, keep all stage execution inside that one notebook.
+
+Open `colab/00_single_a100_runbook.ipynb` only when you want the older broad
+launcher layout.
 
 The older split notebooks are kept only as references:
 

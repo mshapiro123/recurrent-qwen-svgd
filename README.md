@@ -158,7 +158,8 @@ an `a100_guard` decision and refuses unsafe full-assessment or benchmark spends.
 For the lowest-friction Colab path, use
 [`colab/STAGE5_SAFE_CONTINUE_CELL.md`](colab/STAGE5_SAFE_CONTINUE_CELL.md). It
 pulls latest GitHub, runs go/no-go, and defaults to dry-run unless
-`RUN_A100_ACTION = True` is set deliberately.
+`RUN_A100_ACTION = True` is set deliberately. The same flow is available as
+[`colab/08_stage5_safe_continue.ipynb`](colab/08_stage5_safe_continue.ipynb).
 
 ## What Has Been Achieved
 

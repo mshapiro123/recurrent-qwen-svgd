@@ -71,3 +71,17 @@ def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     assert "STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS" in text
     assert "Dry run complete" in text
     assert "colab/run_stage5_full_assessment_once.py" not in text
+
+
+def test_safe_continue_notebook_defaults_to_dry_run_and_guarded_action() -> None:
+    payload = notebook_payload("colab/08_stage5_safe_continue.ipynb")
+    text = "\n".join(str(cell.get("source", "")) for cell in payload.get("cells", []))
+
+    assert "RUN_A100_ACTION = False" in text
+    assert "colab/check_stage5_a100_go_no_go.py" in text
+    assert "colab/run_stage5_next_action.py" in text
+    assert "STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE" in text
+    assert "Dry run complete" in text
+    assert "colab/run_stage5_full_assessment_once.py" not in text
+    assert payload["cells"][0]["cell_type"] == "markdown"
+    assert payload["cells"][1]["cell_type"] == "code"
