@@ -224,6 +224,31 @@ def test_safe_continue_notebook_defaults_to_dry_run_and_guarded_action() -> None
     assert payload["cells"][1]["cell_type"] == "code"
 
 
+def test_drive_checkpoint_preflight_cell_is_cpu_only_and_single_purpose() -> None:
+    text = (ROOT / "colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.md").read_text(encoding="utf-8")
+    code = fenced_python_block("colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.md")
+
+    assert "Run this in a CPU or cheap GPU Colab runtime before attaching an A100/H100." in text
+    assert "GH_TOKEN" in code
+    assert "GITHUB_TOKEN" in code
+    assert "HF_TOKEN" in code
+    assert "HUGGINGFACE_HUB_TOKEN" in code
+    assert "drive.mount(\"/content/drive\", force_remount=True)" in code
+    assert "stage5_routing_diagnostic_20260622_041706/summary.json" in code
+    assert 'GO_NO_GO_RUN_ID = "stage5_drive_checkpoint_preflight"' in code
+    assert '"colab/check_stage5_a100_go_no_go.py"' in code
+    assert '"--source-summary"' in code
+    assert "checkpoint_preflight" in code
+    assert "summary[\"decision\"]" in code
+    assert "runtime.unassign()" in code
+    assert '["git", "pull", "--ff-only", "origin", "main"]' in code
+    assert "pip install" not in code
+    assert "colab/run_stage5_next_action.py" not in code
+    assert "colab/run_stage5_routing_repair.py" not in code
+    assert "colab/run_stage5_full_assessment_once.py" not in code
+    assert "training/train_phase" not in code
+
+
 def test_curriculum_artifact_pipeline_cell_defaults_to_no_provider_spend() -> None:
     text = (ROOT / "colab/CURRICULUM_ARTIFACT_PIPELINE_CELL.md").read_text(encoding="utf-8")
     plain = (ROOT / "colab/CURRICULUM_ARTIFACT_PIPELINE_CELL.py").read_text(encoding="utf-8")
