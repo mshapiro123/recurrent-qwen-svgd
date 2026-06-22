@@ -1,5 +1,11 @@
 # Curriculum Data Generation And Validation Pipeline
 
+This is the concise provider-job companion to the authoritative curriculum
+data contract in [`CURRICULUM_DATA_PIPELINE.md`](CURRICULUM_DATA_PIPELINE.md).
+When the two documents differ, follow `CURRICULUM_DATA_PIPELINE.md`: it carries
+the full width/depth role schema, the generated-curriculum SFT boundary, and
+the no-A100 artifact workflow.
+
 This is the data contract for building the recurrent model's wide-and-deep
 training curriculum with strong external generators. The goal is not to trust a
 strong model's explanation. The goal is to generate a broad distribution of

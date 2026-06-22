@@ -37,7 +37,7 @@ without damaging ARC-style multiple choice behavior?"
 
 Hugging Face trace corpora are only one source. The separate strong-model API
 lane is documented in
-[`CURRICULUM_DATA_GENERATION_PIPELINE.md`](CURRICULUM_DATA_GENERATION_PIPELINE.md).
+[`CURRICULUM_DATA_PIPELINE.md`](CURRICULUM_DATA_PIPELINE.md).
 That lane uses diverse non-student models to generate and judge candidate
 problems, but labels every trace from independent answer verification,
 method-constrained naturalness checks, depth decomposition, weak-reference
