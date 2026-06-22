@@ -2390,23 +2390,23 @@ def mcq_debias_diagnostic_actions(payload: dict[str, Any], *, source_summary: Pa
     if status == "selection_bias_likely":
         return [
             make_action(
-                "Regenerate MCQ benchmark claims with debiased scoring",
+                "Confirm MCQ debias on ARC-Challenge with cyclic scoring",
                 (
                     "The debias diagnostic indicates the apparent direct-route regression is mostly an option-ID "
-                    "selection-bias artifact. Do not train direct preservation yet; rerun MCQ benchmark claims "
-                    "with option-content and cyclic-permutation scoring as the comparison metric."
+                    "selection-bias artifact. Do not train direct preservation yet; run the same cyclic "
+                    "permutation diagnostic on ARC-Challenge, where the older benchmark claims were most likely "
+                    "to be distorted by bare A/B/C/D scoring."
                 ),
                 command_env(
                     {
-                        "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{RUN_ID}_mcq_debiased_confirmation",
-                        "STAGE5_BENCHMARK_SOURCE_SUMMARY": path_for_cli(source_summary),
-                        "STAGE5_BENCHMARKS": "arc_easy,arc_challenge",
-                        "STAGE5_BENCHMARK_ARC_EASY_LIMIT": "256",
-                        "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "256",
-                        "STAGE5_BENCHMARK_SCORE_TARGETS": "option_text",
-                        "STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS": "1",
+                        "STAGE5_MCQ_DEBIAS_RUN_ID": f"{RUN_ID}_arc_challenge_mcq_debias",
+                        "STAGE5_MCQ_DEBIAS_SOURCE_SUMMARY": path_for_cli(source_summary),
+                        "STAGE5_MCQ_DEBIAS_ARC_CONFIG": "ARC-Challenge",
+                        "STAGE5_MCQ_DEBIAS_ARC_LIMIT": "128",
+                        "STAGE5_MCQ_DEBIAS_QUIET_EVAL": "1",
+                        "STAGE5_MCQ_DEBIAS_RESUME_EXISTING": "1",
                     },
-                    "python colab/run_stage5_benchmark_suite.py",
+                    "python colab/run_stage5_mcq_debias_diagnostic.py",
                 ),
                 9,
             )

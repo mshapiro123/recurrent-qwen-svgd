@@ -2701,10 +2701,12 @@ def test_mcq_debias_selection_bias_likely_avoids_training(tmp_path) -> None:
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Regenerate MCQ benchmark claims with debiased scoring"
+    assert actions[0]["name"] == "Confirm MCQ debias on ARC-Challenge with cyclic scoring"
     assert "do not train" in actions[0]["reason"].lower()
-    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
-    assert "STAGE5_BENCHMARK_SCORE_TARGETS=option_text" in actions[0]["command"]
+    assert "python colab/run_stage5_mcq_debias_diagnostic.py" in actions[0]["command"]
+    assert "STAGE5_MCQ_DEBIAS_ARC_CONFIG=ARC-Challenge" in actions[0]["command"]
+    assert "STAGE5_MCQ_DEBIAS_QUIET_EVAL=1" in actions[0]["command"]
+    assert "STAGE5_MCQ_DEBIAS_RESUME_EXISTING=1" in actions[0]["command"]
     assert "run_stage5_direct_preservation_probe.py" not in actions[0]["command"]
 
 
