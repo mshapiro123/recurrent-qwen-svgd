@@ -65,6 +65,18 @@ PUSH_RESULTS = os.environ.get("STAGE5_MCQ_DEBIAS_PUSH", "1").strip().lower() in 
 MAX_DEBIASED_GAP = int(os.environ.get("STAGE5_MCQ_DEBIAS_MAX_DEBIASED_GAP", "2"))
 MIN_CLOSURE = int(os.environ.get("STAGE5_MCQ_DEBIAS_MIN_CLOSURE", "3"))
 MIN_LABEL_GAP = int(os.environ.get("STAGE5_MCQ_DEBIAS_MIN_LABEL_GAP", "3"))
+QUIET_EVAL = os.environ.get("STAGE5_MCQ_DEBIAS_QUIET_EVAL", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
+RESUME_EXISTING = os.environ.get("STAGE5_MCQ_DEBIAS_RESUME_EXISTING", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 
 DATA_DIR = ROOT / "data" / RUN_ID
 ARC_JSONL = DATA_DIR / f"{ARC_CONFIG.lower().replace('-', '_')}_{ARC_LIMIT}.jsonl"
@@ -102,6 +114,32 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
 
 def run(cmd: list[str], *, check: bool = True, log_name: str | None = None) -> subprocess.CompletedProcess[str]:
     print("$", " ".join(map(str, cmd)), flush=True)
+    if QUIET_EVAL and log_name:
+        proc = subprocess.run(
+            cmd,
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        stdout = proc.stdout or ""
+        (RUN_DIR / log_name).write_text(stdout, encoding="utf-8")
+        summary_lines = [
+            line
+            for line in stdout.splitlines()
+            if line.startswith(("aggregate=", "dataset_id=", "config=", "split=", "rows=", "output_jsonl="))
+            or "loaded_checkpoint=" in line
+            or line.startswith("lora_recurrent_modules=")
+        ]
+        for line in summary_lines[-20:]:
+            print(line, flush=True)
+        if check and proc.returncode:
+            print("FAILED_TAIL_START", flush=True)
+            print("\n".join(stdout.splitlines()[-80:]), flush=True)
+            print("FAILED_TAIL_END", flush=True)
+            raise RuntimeError(f"command failed: {' '.join(map(str, cmd))}")
+        return proc
+
     process = subprocess.Popen(
         cmd,
         cwd=ROOT,
@@ -122,6 +160,25 @@ def run(cmd: list[str], *, check: bool = True, log_name: str | None = None) -> s
     if check and proc.returncode:
         raise RuntimeError(f"command failed: {' '.join(map(str, cmd))}")
     return proc
+
+
+def existing_complete_jsonl(path: Path, expected_rows: int) -> bool:
+    if not path.exists():
+        return False
+    try:
+        rows = read_jsonl(path)
+    except Exception as exc:
+        print(f"discarding invalid existing output: {path_for_cli(path)} ({exc})", flush=True)
+        path.unlink(missing_ok=True)
+        return False
+    if len(rows) != expected_rows:
+        print(
+            f"discarding incomplete existing output: {path_for_cli(path)} rows={len(rows)} expected={expected_rows}",
+            flush=True,
+        )
+        path.unlink(missing_ok=True)
+        return False
+    return True
 
 
 def current_source_summary_file() -> Path:
@@ -198,8 +255,11 @@ def restore_arm_checkpoints(summary: dict[str, Any], arms: list[Arm]) -> None:
 
 def eval_mcq(arm: Arm, *, data_jsonl: Path, prompt_style: str, score_target: str, suffix: str) -> Path:
     output = RUN_DIR / f"{arm.name}_{suffix}.jsonl"
-    if output.exists():
-        output.unlink()
+    expected_rows = len(read_jsonl(data_jsonl))
+    if RESUME_EXISTING and existing_complete_jsonl(output, expected_rows):
+        print(f"reuse_existing={path_for_cli(output)} rows={expected_rows}", flush=True)
+        return output
+    output.unlink(missing_ok=True)
     cmd = [
         sys.executable,
         "eval/eval_mcq.py",
