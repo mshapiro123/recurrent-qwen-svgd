@@ -249,6 +249,13 @@ Sort all perturbation traces against ground truth:
 - Spurious methods from method-count perturbation are discarded or used only as
   hard negatives for the distinctness judge.
 
+The current provider-neutral job path implements `P6a`, `P6b`, and both `P7`
+structural perturbations. Structural perturbations remain non-positive even if
+the final answer is correct: they are verifier/contrastive material unless the
+response explicitly rejects the forced step or method count. This is intentional
+because the failure being targeted is fluent rationalization of a false
+structure, not only wrong final answers.
+
 ### Stage 7: Programmatic Deep-Narrow Generation
 
 Generate deep-narrow data programmatically where possible. Constructed

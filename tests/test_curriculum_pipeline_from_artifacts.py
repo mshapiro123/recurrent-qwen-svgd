@@ -229,7 +229,7 @@ def test_pipeline_resumes_to_complete_from_artifacts(tmp_path) -> None:
     summary = run_pipeline(args)
     assert summary["status"] == "pending_judgment_responses"
     assert read_json(paths["method_solutions_report"])["solution_candidates"] == 4
-    assert read_json(paths["perturbation_report"])["traces"] == 4
+    assert read_json(paths["perturbation_report"])["traces"] == 8
 
     write_jsonl(
         paths["responses_naturalness"],
@@ -260,6 +260,7 @@ def test_pipeline_resumes_to_complete_from_artifacts(tmp_path) -> None:
     assert summary["counts"]["positive_sft_rows"] == 2
     typed = read_jsonl(work_dir / "typed_records.jsonl")
     assert {trace["role"] for trace in typed[0]["traces"]} == {
+        "negative_contrastive",
         "positive_wide",
         "verifier_detection",
         "verifier_rationalization",

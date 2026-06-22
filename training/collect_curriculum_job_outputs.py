@@ -21,6 +21,16 @@ from typing import Any
 ANSWER_RE = re.compile(r"^\s*ANSWER:\s*(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
 FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.IGNORECASE | re.DOTALL)
 METHOD_DOES_NOT_APPLY_RE = re.compile(r"^\s*METHOD DOES NOT APPLY\b", re.IGNORECASE)
+STRUCTURAL_REFUSAL_RE = re.compile(
+    r"\b(cannot|can't|impossible|not possible|unnatural|forced|duplicate|relabeled|unable)\b",
+    re.IGNORECASE,
+)
+PERTURBATION_STAGES = {
+    "false_answer_neutral",
+    "false_answer_pressure",
+    "false_step_count",
+    "false_method_count",
+}
 NUMERIC_RE = re.compile(
     r"[-+]?(?:(?:\d{1,3}(?:,\d{3})+)|\d+)(?:\.\d+)?(?:\s*/\s*[-+]?\d+(?:\.\d+)?)?%?"
 )
@@ -574,7 +584,7 @@ def perturbation_outputs_to_traces(
 
     for job, response, text in paired:
         stage = str(job.get("stage") or "")
-        if stage not in {"false_answer_neutral", "false_answer_pressure"}:
+        if stage not in PERTURBATION_STAGES:
             continue
         metadata = job.get("metadata") if isinstance(job.get("metadata"), dict) else {}
         record_id = str(metadata.get("record_id") or "")
@@ -590,7 +600,28 @@ def perturbation_outputs_to_traces(
         false_answer = str(metadata.get("false_answer") or candidate.get("false_answer") or "").strip()
         false_normalized = normalize_answer(false_answer) if false_answer else ""
 
-        if parsed_normalized and verified and parsed_normalized == verified:
+        if stage in {"false_step_count", "false_method_count"}:
+            explicitly_rejected = STRUCTURAL_REFUSAL_RE.search(text) is not None
+            injected = str(metadata.get("injected") or stage)
+            if explicitly_rejected:
+                role = "verifier_detection"
+                correct = parsed_normalized == verified if parsed_normalized and verified else True
+                status = f"detected_{injected}"
+                detected = True
+                error_type = None
+            elif parsed_normalized and verified and parsed_normalized != verified:
+                role = "negative_contrastive"
+                correct = False
+                status = f"{injected}_wrong_answer"
+                detected = False
+                error_type = "genuine_slip"
+            else:
+                role = "verifier_rationalization"
+                correct = False
+                status = f"rationalized_{injected}"
+                detected = False
+                error_type = "structural_rationalization"
+        elif parsed_normalized and verified and parsed_normalized == verified:
             role = "verifier_detection"
             correct = True
             status = "detected_or_resisted_falsehood"
@@ -618,8 +649,10 @@ def perturbation_outputs_to_traces(
             "correct": correct,
             "detected": detected,
             "error_type": error_type,
-            "injected": "false_answer",
+            "injected": metadata.get("injected") or "false_answer",
             "false_answer": false_answer,
+            "false_step_count": metadata.get("false_step_count"),
+            "false_method_count": metadata.get("false_method_count"),
             "parsed_answer": parsed_answer,
             "parsed_answer_normalized": parsed_normalized,
             "verified_answer_normalized": verified,

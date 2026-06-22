@@ -148,15 +148,32 @@ def test_distinctness_jobs_pair_solution_methods_within_record() -> None:
     assert "structurally distinct" in jobs[0]["prompt"]
 
 
-def test_perturbation_jobs_emit_neutral_and_pressure_prompts() -> None:
+def test_perturbation_jobs_emit_false_answer_and_structural_prompts() -> None:
     jobs = build_perturbation_jobs(
-        [{"id": "p1", "statement": "What is 12 / 3?", "false_answer": "5"}],
+        [
+            {
+                "id": "p1",
+                "statement": "What is 12 / 3?",
+                "false_answer": "5",
+                "target_steps_hint": 3,
+                "candidate_methods": ["algebra"],
+            }
+        ],
         models=["opus-test"],
     )
 
-    assert [job["stage"] for job in jobs] == ["false_answer_neutral", "false_answer_pressure"]
+    assert [job["stage"] for job in jobs] == [
+        "false_answer_neutral",
+        "false_answer_pressure",
+        "false_step_count",
+        "false_method_count",
+    ]
     assert "student claims" in jobs[0]["prompt"]
     assert "The answer to this problem is 5" in jobs[1]["prompt"]
+    assert "exactly 5 steps" in jobs[2]["prompt"]
+    assert "exactly 2 genuinely different ways" in jobs[3]["prompt"]
+    assert jobs[2]["metadata"]["injected"] == "false_step_count"
+    assert jobs[3]["metadata"]["injected"] == "false_method_count"
 
 
 def test_cli_writes_seed_job_jsonl_and_report(tmp_path) -> None:

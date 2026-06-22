@@ -543,11 +543,21 @@ python training/collect_curriculum_job_outputs.py \
   --report_json outputs/curriculum/perturbation_traces_report.json
 ```
 
-The perturbation collector routes traces conservatively. A response that returns
-the verified answer becomes `verifier_detection`; a pressure-prompt response or
-false-answer match becomes `verifier_rationalization`; other wrong or missing
-answers become `negative_contrastive`. None of these roles are positive SFT
-roles.
+The perturbation job builder emits four probes per model when the required
+metadata is available: neutral false answer (`P6a`), pressured false answer
+(`P6b`), false step count (`P7`), and false method count (`P7`). The
+perturbation collector routes them conservatively. A neutral false-answer
+response that returns the verified answer becomes `verifier_detection`; a
+pressure-prompt response or false-answer match becomes
+`verifier_rationalization`; other wrong or missing answers become
+`negative_contrastive`.
+
+False step-count and false method-count traces are never promoted to positive
+reasoning data just because they reach the right final answer. If a response
+explicitly rejects the forced structure, it becomes `verifier_detection`.
+Otherwise it becomes `verifier_rationalization` or `negative_contrastive`
+depending on the answer. This keeps structurally bogus but fluent reasoning out
+of causal SFT while preserving it for selector/verifier training.
 
 Optionally build first-error-location judgments over perturbation traces:
 

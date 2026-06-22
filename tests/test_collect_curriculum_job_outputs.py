@@ -311,6 +311,43 @@ def test_perturbation_outputs_route_correct_and_rationalized_traces() -> None:
     }
 
 
+def test_perturbation_outputs_keep_structural_perturbations_non_positive() -> None:
+    verified = [
+        {
+            "id": "p1",
+            "statement": "What is 2+2?",
+            "answer": {"value": "4", "normalized": "4", "verified_by": ["cross_model"]},
+        }
+    ]
+    jobs = [
+        {
+            **perturbation_job("step-rationalized", record_id="p1", stage="false_step_count"),
+            "metadata": {"record_id": "p1", "injected": "false_step_count", "false_step_count": 6},
+        },
+        {
+            **perturbation_job("method-rejected", record_id="p1", stage="false_method_count"),
+            "metadata": {"record_id": "p1", "injected": "false_method_count", "false_method_count": 4},
+        },
+    ]
+    responses = [
+        {"job_id": "step-rationalized", "response_text": "Step 1... Step 6.\nANSWER: 4"},
+        {"job_id": "method-rejected", "response_text": "That count is forced and relabeled.\nANSWER: 4"},
+    ]
+
+    rows, report = perturbation_outputs_to_traces(verified, jobs, responses)
+
+    assert [row["role"] for row in rows] == ["verifier_rationalization", "verifier_detection"]
+    assert rows[0]["correct"] is False
+    assert rows[0]["error_type"] == "structural_rationalization"
+    assert rows[0]["injected"] == "false_step_count"
+    assert rows[1]["detected"] is True
+    assert rows[1]["injected"] == "false_method_count"
+    assert report["status_counts"] == {
+        "detected_false_method_count": 1,
+        "rationalized_false_step_count": 1,
+    }
+
+
 def test_error_detection_judgments_parse_verdict_json() -> None:
     traces = [{"id": "t1", "record_id": "p1", "role": "negative_contrastive", "text": "Bad trace"}]
     jobs = [
