@@ -50,7 +50,7 @@ def jsonl_line_count(path: Path) -> int:
 
 
 def artifact_entry(path: Path) -> dict[str, Any]:
-    payload = {"path": str(path), "exists": path.exists()}
+    payload = {"path": path.as_posix(), "exists": path.exists()}
     if path.suffix == ".jsonl" and path.exists():
         payload["lines"] = jsonl_line_count(path)
     return payload

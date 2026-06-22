@@ -5,53 +5,53 @@
   "next_action": "Run training/check_curriculum_sft_gate.py before any GPU fine-tuning.",
   "artifacts": {
     "decontam_report": {
-      "path": "data\\curriculum\\programmatic_direct_deep_001\\decontam_report.json",
+      "path": "data/curriculum/programmatic_direct_deep_001/decontam_report.json",
       "exists": true
     },
     "depth_report": {
-      "path": "data\\curriculum\\programmatic_direct_deep_001\\depth_report.json",
+      "path": "data/curriculum/programmatic_direct_deep_001/depth_report.json",
       "exists": true
     },
     "difficulty_report": {
-      "path": "data\\curriculum\\programmatic_direct_deep_001\\difficulty_report.json",
+      "path": "data/curriculum/programmatic_direct_deep_001/difficulty_report.json",
       "exists": true
     },
     "method_solutions_report": {
-      "path": "data\\curriculum\\programmatic_direct_deep_001\\method_solutions_report.json",
+      "path": "data/curriculum/programmatic_direct_deep_001/method_solutions_report.json",
       "exists": true
     },
     "naturalness_report": {
-      "path": "data\\curriculum\\programmatic_direct_deep_001\\naturalness_report.json",
+      "path": "data/curriculum/programmatic_direct_deep_001/naturalness_report.json",
       "exists": true
     },
     "positive_sft": {
-      "path": "data\\curriculum\\programmatic_direct_deep_001\\positive_sft.jsonl",
+      "path": "data/curriculum/programmatic_direct_deep_001/positive_sft.jsonl",
       "exists": true,
       "lines": 2000
     },
     "positive_sft_report": {
-      "path": "data\\curriculum\\programmatic_direct_deep_001\\positive_sft_report.json",
+      "path": "data/curriculum/programmatic_direct_deep_001/positive_sft_report.json",
       "exists": true
     },
     "programmatic_report": {
-      "path": "data\\curriculum\\programmatic_direct_deep_001\\programmatic_report.json",
+      "path": "data/curriculum/programmatic_direct_deep_001/programmatic_report.json",
       "exists": true
     },
     "summary": {
-      "path": "data\\curriculum\\programmatic_direct_deep_001\\summary.json",
+      "path": "data/curriculum/programmatic_direct_deep_001/summary.json",
       "exists": true
     },
     "typed_records": {
-      "path": "data\\curriculum\\programmatic_direct_deep_001\\typed_records.jsonl",
+      "path": "data/curriculum/programmatic_direct_deep_001/typed_records.jsonl",
       "exists": true,
       "lines": 2000
     },
     "typed_records_report": {
-      "path": "data\\curriculum\\programmatic_direct_deep_001\\typed_records_report.json",
+      "path": "data/curriculum/programmatic_direct_deep_001/typed_records_report.json",
       "exists": true
     },
     "verified_candidates_report": {
-      "path": "data\\curriculum\\programmatic_direct_deep_001\\verified_candidates_report.json",
+      "path": "data/curriculum/programmatic_direct_deep_001/verified_candidates_report.json",
       "exists": true
     }
   },

@@ -37,6 +37,7 @@ def test_programmatic_curriculum_pipeline_writes_gate_ready_work_dir(tmp_path, m
     assert summary["status"] == "complete"
     assert summary["counts"]["typed_records"] == 7
     assert summary["counts"]["positive_sft_rows"] == 7
+    assert all("\\" not in item["path"] for item in summary["artifacts"].values())
 
     typed_rows = read_jsonl(work_dir / "typed_records.jsonl")
     sft_rows = read_jsonl(work_dir / "positive_sft.jsonl")

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from training.check_curriculum_sft_gate import build_gate_payload, main, parse_args, parse_min_mode_rows
+from training.check_curriculum_sft_gate import build_gate_payload, main, parse_args, parse_min_mode_rows, resolve_path
 
 
 def write_json(path: Path, payload: dict) -> None:
@@ -151,6 +151,12 @@ def test_curriculum_sft_gate_allows_complete_strict_shard(tmp_path) -> None:
     assert payload["checks"]["positive_sft"]["source_model_counts"] == {"solver-a": 1}
     assert payload["checks"]["typed_records"]["positive_missing_answer_match"] == 0
     assert payload["checks"]["positive_sft"]["mode_requirements"] == {}
+
+
+def test_resolve_path_accepts_legacy_backslash_relative_paths(tmp_path) -> None:
+    path = resolve_path("data\\curriculum\\run_001\\positive_sft.jsonl", base=tmp_path)
+
+    assert path == tmp_path / "data" / "curriculum" / "run_001" / "positive_sft.jsonl"
 
 
 def test_parse_min_mode_rows_accepts_repeated_and_csv_values() -> None:

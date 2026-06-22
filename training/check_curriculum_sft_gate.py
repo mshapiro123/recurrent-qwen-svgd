@@ -13,7 +13,7 @@ import json
 import sys
 import time
 from collections import Counter
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any
 
 
@@ -56,7 +56,11 @@ def line_count(path: Path) -> int:
 
 
 def resolve_path(value: str | Path, *, base: Path = ROOT) -> Path:
-    path = Path(value)
+    text = str(value)
+    windows_path = PureWindowsPath(text)
+    if "\\" in text and not windows_path.drive and not text.startswith("\\\\"):
+        text = text.replace("\\", "/")
+    path = Path(text)
     return path if path.is_absolute() else base / path
 
 

@@ -138,6 +138,7 @@ def test_capability_ladder_cli_writes_gate_ready_artifacts(tmp_path) -> None:
     assert summary["kind"] == "capability_ladder_curriculum_pipeline"
     assert summary["status"] == "complete"
     assert summary["counts"]["target_loop_counts"] == {"1": 1, "2": 1, "3": 1}
+    assert all("\\" not in item["path"] for item in summary["artifacts"].values())
     assert len(typed_rows) == 3
     assert len(sft_rows) == 3
     assert report["tier_counts"]["base_preservation"] == 1
