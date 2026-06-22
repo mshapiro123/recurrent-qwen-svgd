@@ -78,6 +78,22 @@ datasets:
       - Very large deduplicated FABLE/Mythos trace compilation.
       - Use streaming audit and strict filters before any conversion.
 
+  fable5_agentic_sft:
+    dataset_id: lordx64/agentic-distill-fable-5-sft
+    split: train
+    adapter: auto
+    license: agpl-3.0
+    priority: later_audit
+    train_role:
+      - agentic_sft_trace_candidate
+      - coding_tool_trajectory_source
+    avoid_for_now:
+      - ARC/GPQA competence recovery
+      - blind mixed SFT with MCQ recovery data
+    notes:
+      - Compact SFT projection of Fable-style agentic traces.
+      - Audit as a possible bridge between Fable traces and ordinary SFT, but keep out of deterministic competence recovery until filtered.
+
   jackrong_opus47_trace_inversion:
     dataset_id: Jackrong/Claude-opus-4.7-TraceInversion-5000x
     split: train
@@ -92,6 +108,20 @@ datasets:
       - Preserve inverted_reasoning as recurrent latent reasoning supervision.
       - Needs source/difficulty filtering before mixing with Opus SFT.
 
+  jackrong_opus46_trace_inversion:
+    dataset_id: Jackrong/Claude-opus-4.6-TraceInversion-9000x
+    hf_file: claude-opus-4.6-traceInversion-9000x.jsonl
+    split: train
+    adapter: trace_inversion
+    license: apache-2.0 packaging; inspect upstream output terms
+    priority: audit
+    train_role:
+      - alternative_opus_reasoning_trace_source
+      - easy_hard_curriculum_candidate
+    notes:
+      - Larger 4.6 trace-inversion sibling of the 4.7 dataset.
+      - Audit separately; do not assume it improves the 4.7 source.
+
   jackrong_glm51_reasoning_1m:
     dataset_id: Jackrong/GLM-5.1-Reasoning-1M-Cleaned
     split: train
@@ -103,3 +133,80 @@ datasets:
     notes:
       - Potential high-volume source for later curriculum.
       - Do not use before small audited subsets prove compatibility.
+
+  jackrong_kimi25_reasoning_1m:
+    dataset_id: Jackrong/Kimi-K2.5-Reasoning-1M-Cleaned
+    split: train
+    adapter: auto
+    streaming: true
+    audit_limit: 500
+    license: apache-2.0 packaging; inspect upstream output terms
+    priority: later_audit
+    train_role:
+      - high_volume_reasoning_trace_candidate
+      - non_opus_teacher_diversification
+    notes:
+      - Large Kimi reasoning source. Use only after Opus/TraceInversion recovery is stable.
+      - Candidate for teacher diversification, not the first recovery mix.
+
+  gryphe_opus46_reasoning_24k:
+    dataset_id: Gryphe/Opus-4.6-Reasoning-24k
+    hf_file: Opus-4.6-Reasoning-24k.jsonl
+    split: train
+    adapter: auto
+    license: apache-2.0 packaging; inspect upstream output terms
+    priority: audit
+    train_role:
+      - opus_reasoning_trace_candidate
+      - curriculum_diversification_candidate
+    notes:
+      - Medium-size Opus 4.6 reasoning source.
+      - Audit schema and answer style before mixing with 4.7 traces.
+
+  angrygiraffe_opus46_47_reasoning_87k:
+    dataset_id: angrygiraffe/claude-opus-4.6-4.7-reasoning-8.7k
+    hf_file: full_train.jsonl
+    split: train
+    adapter: auto
+    license: apache-2.0 packaging; inspect upstream output terms
+    priority: audit
+    train_role:
+      - opus_reasoning_trace_candidate
+      - code_reasoning_split_candidate
+    notes:
+      - Provides full, code, and instruct train files plus no-reasoning controls.
+      - Audit full_train first; code_train may be useful after MCQ competence recovers.
+
+  withinus_claude_mythos_25k:
+    dataset_id: WithinUsAI/claude_mythos_distilled_25k
+    hf_file: claude_mythos_distilled_25k.jsonl
+    split: train
+    adapter: auto
+    license: apache-2.0 packaging; inspect upstream output terms
+    priority: later_audit
+    train_role:
+      - agentic_reasoning_candidate
+      - trajectory_diversity_candidate
+    avoid_for_now:
+      - direct ARC/GPQA recovery without filter
+    notes:
+      - Agentic/Mythos-style distilled traces.
+      - More relevant to particle trajectory diversity than immediate deterministic recovery.
+
+  avtrkrb_combined_reasoning_1m:
+    dataset_id: Avtrkrb/combined-reasoning-opus-4.6-opus-4.7-kimi-k2.5-kimi-k2.6-glm-5.1
+    split: train
+    adapter: auto
+    streaming: true
+    audit_limit: 500
+    license: other; inspect before use
+    priority: later_audit_only
+    train_role:
+      - large_scale_multi_teacher_mining
+      - teacher_diversification_candidate
+    avoid_for_now:
+      - direct 0.5B competence recovery
+      - unfiltered supervised fine-tuning
+    notes:
+      - Very large mixed-teacher corpus.
+      - Useful only after we have a validated filter and a reason to diversify away from Opus.

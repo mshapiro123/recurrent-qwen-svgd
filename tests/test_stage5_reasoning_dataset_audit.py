@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import yaml
+
 from colab.run_stage5_reasoning_dataset_audit import (
+    REGISTRY_PATH,
     audit_command,
     recommendation_for,
     sort_recommendations,
@@ -117,3 +120,30 @@ def test_summary_markdown_renders_table() -> None:
     assert "# Stage 5 Reasoning Dataset Audit - run" in markdown
     assert "| `opus47_sft` |" in markdown
     assert "90.0%" in markdown
+
+
+def test_registry_tracks_core_and_extended_trace_sources() -> None:
+    registry = yaml.safe_load(REGISTRY_PATH.read_text(encoding="utf-8"))
+    datasets = registry["datasets"]
+
+    for key in [
+        "opus47_sft",
+        "opus47_raw",
+        "jackrong_opus47_trace_inversion",
+        "jackrong_opus46_trace_inversion",
+        "fable5_pi_agent",
+        "fable5_flat",
+        "fable5_agentic_sft",
+        "fable5_complete_2m",
+        "jackrong_glm51_reasoning_1m",
+        "jackrong_kimi25_reasoning_1m",
+        "gryphe_opus46_reasoning_24k",
+        "angrygiraffe_opus46_47_reasoning_87k",
+        "withinus_claude_mythos_25k",
+        "avtrkrb_combined_reasoning_1m",
+    ]:
+        assert key in datasets
+
+    assert datasets["opus47_sft"]["priority"] == "immediate"
+    assert datasets["fable5_flat"]["priority"] == "audit"
+    assert datasets["fable5_complete_2m"]["streaming"] is True

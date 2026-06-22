@@ -98,6 +98,8 @@ The implementation has three stages:
 For the current manuscript-style status, evidence, negative results, and next
 gates, see [docs/PROJECT_STATUS_PAPER.md](docs/PROJECT_STATUS_PAPER.md). The
 program-level strategy is tracked in [docs/PROGRAM_TRACK.md](docs/PROGRAM_TRACK.md).
+The no-GPU reasoning-trace data plan is in
+[docs/REASONING_TRACE_DATASETS.md](docs/REASONING_TRACE_DATASETS.md).
 
 ## Current Result
 
@@ -390,6 +392,13 @@ Current dataset triage:
 | [`Jackrong/Claude-opus-4.7-TraceInversion-5000x`](https://huggingface.co/datasets/Jackrong/Claude-opus-4.7-TraceInversion-5000x) | Immediate audit candidate for alternative reasoning-trace supervision. | CPU audit first, then small mixed pilot only if promoted. |
 | [`Glint-Research/Fable-5-traces`](https://huggingface.co/datasets/Glint-Research/Fable-5-traces) | Agent/tool/coding trace diversity source. | Hold for filter design; no blind ARC/GPQA recovery SFT. |
 | [`Glint-Research/Complete-FABLE.5-traces-2M`](https://huggingface.co/datasets/Glint-Research/Complete-FABLE.5-traces-2M) | Large trace-mining source. | Streaming CPU audit only until a precise filter exists. |
+
+Additional Opus/Kimi/GLM/Fable/Mythos candidates are registered in
+[`config/reasoning_dataset_registry.yaml`](config/reasoning_dataset_registry.yaml)
+and summarized in
+[`docs/REASONING_TRACE_DATASETS.md`](docs/REASONING_TRACE_DATASETS.md). They
+are intentionally marked as audit or later-audit candidates, not automatic
+training data.
 
 ## Phase 2 Stochastic Trajectories
 
