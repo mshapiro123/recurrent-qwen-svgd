@@ -665,6 +665,8 @@ def build_summary(
     if best is None:
         status = "no_arms"
         next_step = "Run at least one ARC-mix arm."
+        decision = "rerun_with_valid_arm"
+        blocked_reason = "No ARC-mix arms were evaluated."
     else:
         lift = correct(best["best_checkpoint"]["arc"]) - correct(best["phase1_start"]["arc"])
         gap = correct(best["best_checkpoint"]["arc"]) - correct(best["base_arc"])
@@ -673,24 +675,34 @@ def build_summary(
         if lift > 0 and calibration_ok:
             status = "proxy_lift"
             next_step = "Run full ARC-Easy and ARC-Challenge balanced benchmark on the best ARC-mix checkpoint."
+            decision = "run_full_balanced_assessment"
+            blocked_reason = None
         elif gap >= 0 and calibration_ok:
             status = "proxy_matches_base"
             next_step = "Run full balanced benchmark on the best ARC-mix checkpoint; proxy no longer trails base."
+            decision = "run_full_balanced_assessment"
+            blocked_reason = None
         elif lift > 0:
             status = "proxy_lift_calibration_warning"
             next_step = (
                 "Do not run the full paid assessment yet; the proxy lifted accuracy but degraded "
                 "base-comparison calibration. Increase preservation/distillation or inspect answer-prior drift."
             )
+            decision = "stop_for_calibration_repair"
+            blocked_reason = "Proxy lifted accuracy but failed the calibration-preservation threshold."
         elif gap >= 0:
             status = "proxy_matches_base_calibration_warning"
             next_step = (
                 "Do not run the full paid assessment yet; the proxy matched base accuracy but degraded "
                 "base-comparison calibration. Tighten the recovery objective before spending A100 on confirmation."
             )
+            decision = "stop_for_calibration_repair"
+            blocked_reason = "Proxy matched base accuracy but failed the calibration-preservation threshold."
         else:
             status = "no_proxy_lift"
             next_step = "Do not extend this ARC-mix setting; inspect failures or revise supervision mix."
+            decision = "stop_and_revise_objective"
+            blocked_reason = "Best ARC-mix checkpoint did not improve over the recurrent start or close the base gap."
 
     return {
         "run_id": RUN_ID,
@@ -707,6 +719,8 @@ def build_summary(
         },
         "status": status,
         "passed": status in {"proxy_lift", "proxy_matches_base"},
+        "decision": decision,
+        "blocked_reason": blocked_reason,
         "next_step": next_step,
         "best_arm": best,
         "arms": ranked,
@@ -721,6 +735,8 @@ def write_report(payload: dict[str, Any]) -> None:
         "",
         f"- Status: `{payload['status']}`",
         f"- Passed: `{payload['passed']}`",
+        f"- Decision: `{payload['decision']}`",
+        f"- Blocked reason: {payload['blocked_reason'] or 'none'}",
         f"- Source summary: `{payload['source_summary']}`",
         f"- Resume checkpoint: `{payload['resume_checkpoint']}`",
         f"- Mixed rows: `{payload['data']['mixed_rows']}`",

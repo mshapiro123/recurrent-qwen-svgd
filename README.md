@@ -269,6 +269,10 @@ healthy before it can pass. If it lifts raw accuracy but reports
 `proxy_lift_calibration_warning` or `proxy_matches_base_calibration_warning`,
 stop and revise the objective/data mix locally instead of running another full
 A100 confirmation.
+New ARC-mix summaries also include an explicit `decision` field:
+`run_full_balanced_assessment` is the only decision that justifies the next
+paid confirmation run; `stop_for_calibration_repair` and
+`stop_and_revise_objective` are stop signs.
 
 Do not run GPQA, Phase 2/SVGD, or scale-up jobs before this deterministic
 recurrent recovery question is resolved.

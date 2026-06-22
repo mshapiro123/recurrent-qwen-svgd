@@ -144,6 +144,8 @@ def test_build_summary_passes_when_arc_mix_lifts_proxy(tmp_path) -> None:
 
     assert payload["status"] == "proxy_lift"
     assert payload["passed"] is True
+    assert payload["decision"] == "run_full_balanced_assessment"
+    assert payload["blocked_reason"] is None
     assert payload["best_arm"]["arm"] == "arc_mix"
 
 
@@ -158,6 +160,8 @@ def test_build_summary_fails_without_proxy_lift(tmp_path) -> None:
 
     assert payload["status"] == "no_proxy_lift"
     assert payload["passed"] is False
+    assert payload["decision"] == "stop_and_revise_objective"
+    assert payload["blocked_reason"]
 
 
 def test_build_summary_blocks_lift_with_calibration_warning(tmp_path) -> None:
@@ -181,6 +185,8 @@ def test_build_summary_blocks_lift_with_calibration_warning(tmp_path) -> None:
 
     assert payload["status"] == "proxy_lift_calibration_warning"
     assert payload["passed"] is False
+    assert payload["decision"] == "stop_for_calibration_repair"
+    assert "calibration" in payload["blocked_reason"]
     assert "Do not run the full paid assessment" in payload["next_step"]
 
 

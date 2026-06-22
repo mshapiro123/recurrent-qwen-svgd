@@ -63,6 +63,8 @@ def command_script(command: str) -> str:
 
 def source_has_calibration_warning(payload: dict[str, Any]) -> bool:
     status = str(payload.get("status", ""))
+    if payload.get("decision") == "stop_for_calibration_repair":
+        return True
     if status.endswith("_calibration_warning"):
         return True
     best = payload.get("best_arm") or {}

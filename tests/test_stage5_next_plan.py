@@ -1947,6 +1947,38 @@ def test_balanced_arc_mix_passed_runs_full_assessment(tmp_path) -> None:
     assert "STAGE5_RECOVERY_FULL_ASSESS_SOURCE_SUMMARY=" in actions[0]["command"]
 
 
+def test_balanced_arc_mix_decision_runs_full_assessment(tmp_path) -> None:
+    source = tmp_path / "arc_mix" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_balanced_arc_mix_gate",
+        "status": "proxy_lift",
+        "decision": "run_full_balanced_assessment",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run full balanced assessment for ARC-mix checkpoint"
+    assert "python colab/run_stage5_recovery_full_assessment.py" in actions[0]["command"]
+
+
+def test_balanced_arc_mix_decision_blocks_calibration_warning(tmp_path) -> None:
+    source = tmp_path / "arc_mix" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_balanced_arc_mix_gate",
+        "status": "proxy_lift",
+        "decision": "stop_for_calibration_repair",
+        "blocked_reason": "Proxy lifted accuracy but failed calibration.",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect ARC-mix calibration warning `proxy_lift`"
+    assert "failed calibration" in actions[0]["reason"]
+    assert "run_stage5_recovery_full_assessment.py" not in actions[0]["command"]
+
+
 def test_recovery_full_assessment_nonnegative_runs_broader_benchmarks(tmp_path) -> None:
     source = tmp_path / "full_assessment" / "summary.json"
     source.parent.mkdir()

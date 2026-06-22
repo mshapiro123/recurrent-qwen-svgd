@@ -55,6 +55,10 @@ def test_nested_calibration_warning_blocks_a100() -> None:
     assert source_has_calibration_warning(payload) is True
 
 
+def test_decision_calibration_repair_blocks_a100() -> None:
+    assert source_has_calibration_warning({"decision": "stop_for_calibration_repair"}) is True
+
+
 def test_clean_proxy_pass_allows_full_confirmation() -> None:
     decision = classify_action(
         {

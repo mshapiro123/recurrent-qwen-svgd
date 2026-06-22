@@ -1558,7 +1558,10 @@ def balanced_full_assessment_actions(payload: dict[str, Any], *, source_summary:
 
 def balanced_arc_mix_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
-    if status in {"proxy_lift", "proxy_matches_base"}:
+    decision = str(payload.get("decision", ""))
+    if decision == "run_full_balanced_assessment" or (
+        not decision and status in {"proxy_lift", "proxy_matches_base"}
+    ):
         return [
             make_action(
                 "Run full balanced assessment for ARC-mix checkpoint",
@@ -1570,6 +1573,16 @@ def balanced_arc_mix_actions(payload: dict[str, Any], *, source_summary: Path) -
                     },
                     "python colab/run_stage5_recovery_full_assessment.py",
                 ),
+                10,
+            )
+        ]
+    if decision == "stop_for_calibration_repair":
+        reason = payload.get("blocked_reason") or "The ARC-mix proxy failed calibration-preservation checks."
+        return [
+            make_action(
+                f"Inspect ARC-mix calibration warning `{status}`",
+                f"{reason} Do not run a full paid assessment until answer-prior drift is repaired.",
+                f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
                 10,
             )
         ]
