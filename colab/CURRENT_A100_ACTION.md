@@ -74,7 +74,7 @@ python colab/review_stage5_arc_mix_result.py \
 ```
 
 It prints whether another paid full balanced assessment is justified. The only
-acceptable “continue spending” answer is:
+acceptable "continue spending" answer is:
 
 ```text
 Next A100 spend: YES: run exactly one full balanced ARC confirmation.
