@@ -18,6 +18,7 @@ from typing import Any
 
 ANSWER_RE = re.compile(r"^\s*ANSWER:\s*(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
 FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.IGNORECASE | re.DOTALL)
+METHOD_DOES_NOT_APPLY_RE = re.compile(r"^\s*METHOD DOES NOT APPLY\b", re.IGNORECASE)
 
 
 def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
@@ -264,6 +265,138 @@ def ground_truth_outputs_to_verified_candidates(
     }
 
 
+def verified_answer_normalized(candidate: dict[str, Any]) -> str:
+    answer = candidate.get("answer")
+    if not isinstance(answer, dict):
+        return ""
+    normalized = str(answer.get("normalized") or "").strip()
+    if normalized:
+        return normalized
+    value = str(answer.get("value") or "").strip()
+    return normalize_answer(value) if value else ""
+
+
+def sanitize_id(value: str) -> str:
+    return re.sub(r"[^a-zA-Z0-9_.:-]+", "-", value).strip("-").lower()
+
+
+def method_outputs_to_solution_candidates(
+    verified_candidates: list[dict[str, Any]],
+    jobs: list[dict[str, Any]],
+    responses: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Collect correct method-constrained solutions for naturalness/depth jobs.
+
+    The output intentionally includes only responses that reached the verified
+    answer. Inapplicable methods and wrong/missing answers are preserved in the
+    report, not forwarded to the next positive-data stage.
+    """
+
+    candidate_by_id = group_candidates(verified_candidates)
+    paired, issues = responses_with_jobs(jobs, responses)
+    rows: list[dict[str, Any]] = []
+    rejected: list[dict[str, Any]] = []
+    status_counts: Counter[str] = Counter()
+
+    for job, response, text in paired:
+        if job.get("stage") != "method_constrained_solve":
+            continue
+        metadata = job.get("metadata") if isinstance(job.get("metadata"), dict) else {}
+        record_id = str(metadata.get("record_id") or "")
+        method = str(metadata.get("method") or "").strip()
+        candidate = candidate_by_id.get(record_id)
+        if not record_id or candidate is None:
+            issues.append(f"{job.get('job_id')}: no matching verified candidate for {record_id!r}")
+            status_counts["missing_candidate"] += 1
+            continue
+        if not method:
+            issues.append(f"{job.get('job_id')}: missing method metadata")
+            status_counts["missing_method"] += 1
+            continue
+
+        if METHOD_DOES_NOT_APPLY_RE.search(text):
+            status = "method_does_not_apply"
+            status_counts[status] += 1
+            rejected.append(
+                {
+                    "job_id": job.get("job_id"),
+                    "record_id": record_id,
+                    "method": method,
+                    "status": status,
+                    "model": job.get("model"),
+                }
+            )
+            continue
+
+        parsed_answer = extract_answer(text)
+        if not parsed_answer:
+            status = "missing_answer"
+            status_counts[status] += 1
+            rejected.append(
+                {
+                    "job_id": job.get("job_id"),
+                    "record_id": record_id,
+                    "method": method,
+                    "status": status,
+                    "model": job.get("model"),
+                }
+            )
+            continue
+
+        normalized = normalize_answer(parsed_answer)
+        verified = verified_answer_normalized(candidate)
+        if not verified or normalized != verified:
+            status = "wrong_answer"
+            status_counts[status] += 1
+            rejected.append(
+                {
+                    "job_id": job.get("job_id"),
+                    "record_id": record_id,
+                    "method": method,
+                    "status": status,
+                    "model": job.get("model"),
+                    "parsed_answer": parsed_answer,
+                    "parsed_answer_normalized": normalized,
+                    "verified_answer_normalized": verified,
+                }
+            )
+            continue
+
+        status_counts["correct_answer"] += 1
+        answer = candidate.get("answer") if isinstance(candidate.get("answer"), dict) else {}
+        rows.append(
+            {
+                "id": sanitize_id(f"{record_id}:{method}:{job.get('job_id')}"),
+                "record_id": record_id,
+                "domain": candidate.get("domain"),
+                "statement": candidate.get("statement"),
+                "method": method,
+                "source_model": job.get("model"),
+                "source_job_id": job.get("job_id"),
+                "source_response_id": response.get("response_id"),
+                "text": text,
+                "solution": text,
+                "answer": answer,
+                "parsed_answer": parsed_answer,
+                "parsed_answer_normalized": normalized,
+                "correct": True,
+                "natural": None,
+                "candidate_methods": candidate.get("candidate_methods"),
+            }
+        )
+
+    return rows, {
+        "mode": "method_solutions",
+        "verified_candidate_rows": len(verified_candidates),
+        "jobs": len(jobs),
+        "responses": len(responses),
+        "solution_candidates": len(rows),
+        "issues": issues,
+        "status_counts": dict(sorted(status_counts.items())),
+        "rejected_records": rejected,
+    }
+
+
 def write_report(path: str | Path | None, report: dict[str, Any]) -> None:
     if not path:
         return
@@ -274,12 +407,12 @@ def write_report(path: str | Path | None, report: dict[str, Any]) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("seed_candidates", "verified_candidates"), required=True)
+    parser.add_argument("--mode", choices=("seed_candidates", "verified_candidates", "method_solutions"), required=True)
     parser.add_argument("--jobs_jsonl", required=True)
     parser.add_argument("--responses_jsonl", required=True)
     parser.add_argument("--output_jsonl", required=True)
     parser.add_argument("--report_json")
-    parser.add_argument("--candidates_jsonl", help="Required for --mode verified_candidates.")
+    parser.add_argument("--candidates_jsonl", help="Required for verified_candidates and method_solutions modes.")
     parser.add_argument("--min_agree", type=int, default=2)
     parser.add_argument("--mark_decontaminated", action="store_true")
     args = parser.parse_args(argv)
@@ -292,7 +425,7 @@ def main(argv: list[str] | None = None) -> int:
             responses,
             mark_decontaminated=args.mark_decontaminated,
         )
-    else:
+    elif args.mode == "verified_candidates":
         if not args.candidates_jsonl:
             raise ValueError("--candidates_jsonl is required for verified_candidates mode.")
         candidates = read_jsonl(args.candidates_jsonl)
@@ -303,11 +436,16 @@ def main(argv: list[str] | None = None) -> int:
             min_agree=args.min_agree,
             mark_decontaminated=args.mark_decontaminated,
         )
+    else:
+        if not args.candidates_jsonl:
+            raise ValueError("--candidates_jsonl is required for method_solutions mode.")
+        candidates = read_jsonl(args.candidates_jsonl)
+        rows, report = method_outputs_to_solution_candidates(candidates, jobs, responses)
 
     write_jsonl(args.output_jsonl, rows)
     write_report(args.report_json, report)
     print(f"mode={report['mode']}")
-    for key in ("candidates", "verified", "rejected"):
+    for key in ("candidates", "verified", "solution_candidates", "rejected"):
         if key in report:
             print(f"{key}={report[key]}")
     print(f"issues={len(report['issues'])}")
@@ -316,4 +454,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

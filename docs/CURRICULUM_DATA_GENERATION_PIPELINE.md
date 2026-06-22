@@ -294,6 +294,22 @@ python training/build_curriculum_generation_jobs.py \
   --output_jsonl data/curriculum/jobs_methods.jsonl
 ```
 
+Collect method-constrained responses into correct-answer solution candidates:
+
+```bash
+python training/collect_curriculum_job_outputs.py \
+  --mode method_solutions \
+  --candidates_jsonl data/curriculum/verified_candidates.jsonl \
+  --jobs_jsonl data/curriculum/jobs_methods.jsonl \
+  --responses_jsonl data/curriculum/responses_methods.jsonl \
+  --output_jsonl data/curriculum/method_solution_candidates.jsonl \
+  --report_json outputs/curriculum/method_solution_candidates_report.json
+```
+
+Only responses whose final `ANSWER:` normalizes to the verified candidate answer
+are emitted. `METHOD DOES NOT APPLY`, missing-answer, and wrong-answer responses
+are retained in the report and are not forwarded to naturalness or depth jobs.
+
 Depth, naturalness, perturbation, and error-detection jobs are available through
 `--stage depth`, `--stage naturalness`, `--stage perturbation`, and
 `--stage error_detection`. These are still job construction steps; responses
