@@ -2496,6 +2496,7 @@ def test_balanced_arc_mix_routing_diagnostic_uses_best_checkpoint(tmp_path) -> N
     source.parent.mkdir()
     payload = {
         "kind": "stage5_balanced_arc_mix_gate",
+        "run_id": "stage5_arc_mix",
         "status": "proxy_lift_calibration_warning",
         "decision": "stop_for_calibration_repair",
         "best_arm": {
@@ -2510,6 +2511,7 @@ def test_balanced_arc_mix_routing_diagnostic_uses_best_checkpoint(tmp_path) -> N
     assert actions[0]["name"] == "Run bounded depth/width routing diagnostic"
     assert "STAGE5_RECOVERED_PHASE1_CHECKPOINT=outputs/stage5/arc_mix/arm/phase1/phase1_step_50.pt" in actions[0]["command"]
     assert "STAGE5_RECOVERED_SOURCE_SUMMARY=" in actions[0]["command"]
+    assert "STAGE5_RECOVERED_PHASE1_RUN_ID=" in actions[0]["command"]
     assert "python colab/run_stage5_routing_diagnostic.py" in actions[0]["command"]
 
 

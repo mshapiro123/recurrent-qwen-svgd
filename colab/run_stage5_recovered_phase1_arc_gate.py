@@ -146,10 +146,13 @@ def candidate_drive_checkpoints(run_id: str, filename: str) -> list[Path]:
             continue
         for pattern in [
             f"{run_id}*/run_dir/phase1/{filename}",
+            f"{run_id}*/run_dir/*/phase1/{filename}",
             f"{run_id}*/phase1/{filename}",
             f"outputs/stage5/{run_id}*/run_dir/phase1/{filename}",
+            f"outputs/stage5/{run_id}*/run_dir/*/phase1/{filename}",
             f"outputs/stage5/{run_id}*/phase1/{filename}",
             f"stage5/{run_id}*/run_dir/phase1/{filename}",
+            f"stage5/{run_id}*/run_dir/*/phase1/{filename}",
             f"stage5/{run_id}*/phase1/{filename}",
         ]:
             for candidate in sorted(root.glob(pattern)):

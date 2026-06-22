@@ -1936,6 +1936,8 @@ def balanced_arc_mix_actions(payload: dict[str, Any], *, source_summary: Path) -
         if checkpoint:
             env["STAGE5_RECOVERED_PHASE1_CHECKPOINT"] = checkpoint.replace("\\", "/")
             env["STAGE5_RECOVERED_SOURCE_SUMMARY"] = path_for_cli(source_summary)
+            if payload.get("run_id"):
+                env["STAGE5_RECOVERED_PHASE1_RUN_ID"] = str(payload["run_id"])
         return [
             make_action(
                 "Run bounded depth/width routing diagnostic",
@@ -1953,6 +1955,8 @@ def balanced_arc_mix_actions(payload: dict[str, Any], *, source_summary: Path) -
     if checkpoint:
         env["STAGE5_RECOVERED_PHASE1_CHECKPOINT"] = checkpoint.replace("\\", "/")
         env["STAGE5_RECOVERED_SOURCE_SUMMARY"] = path_for_cli(source_summary)
+        if payload.get("run_id"):
+            env["STAGE5_RECOVERED_PHASE1_RUN_ID"] = str(payload["run_id"])
     return [
         make_action(
             "Run bounded depth/width routing diagnostic",

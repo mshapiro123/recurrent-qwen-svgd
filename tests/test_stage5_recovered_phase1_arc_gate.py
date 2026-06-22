@@ -38,6 +38,30 @@ def test_candidate_drive_checkpoints_finds_repo_output_shape(monkeypatch, tmp_pa
     assert candidates.index(exact) < 12
 
 
+def test_candidate_drive_checkpoints_finds_arc_mix_arm_shape(monkeypatch, tmp_path) -> None:
+    import colab.run_stage5_recovered_phase1_arc_gate as module
+
+    monkeypatch.setenv("DRIVE_BACKUP_DIR", str(tmp_path / "drive"))
+    monkeypatch.delenv("DRIVE_BACKUP_DIRS", raising=False)
+    monkeypatch.delenv("STAGE5_DRIVE_BACKUP_DIR", raising=False)
+    run_id = "stage5_arc_agi_next_action_20260622_145746_plan_arc_mix_probe"
+    exact = (
+        tmp_path
+        / "drive"
+        / run_id
+        / "run_dir"
+        / "arc_mix_response_w01_lr2e6"
+        / "phase1"
+        / "phase1_step_50.pt"
+    )
+    exact.parent.mkdir(parents=True)
+    exact.write_bytes(b"checkpoint")
+
+    candidates = module.candidate_drive_checkpoints(run_id, "phase1_step_50.pt")
+
+    assert exact in candidates
+
+
 def test_restore_checkpoint_copies_from_drive(monkeypatch, tmp_path) -> None:
     import colab.run_stage5_recovered_phase1_arc_gate as module
 
