@@ -41,7 +41,22 @@ def mask(text: str, token: str | None) -> str:
 def run(cmd: list[str], *, cwd: Path | None = None, env: dict[str, str] | None = None) -> None:
     shown = mask(" ".join(map(str, cmd)), GH_TOKEN)
     print("$", shown, flush=True)
-    subprocess.run(cmd, cwd=str(cwd or ROOT), env=env, check=True, text=True)
+    proc = subprocess.run(
+        cmd,
+        cwd=str(cwd or ROOT),
+        env=env,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    output = mask(proc.stdout or "", GH_TOKEN)
+    if output:
+        print(output, flush=True)
+    if proc.returncode:
+        print("FAILED_COMMAND_TAIL_START", flush=True)
+        print("\n".join(output.splitlines()[-120:]), flush=True)
+        print("FAILED_COMMAND_TAIL_END", flush=True)
+        raise subprocess.CalledProcessError(proc.returncode, cmd, output=proc.stdout)
 
 
 GH_TOKEN = secret("GH_TOKEN", "GITHUB_TOKEN")

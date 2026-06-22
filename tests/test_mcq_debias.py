@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+
+from colab import run_stage5_mcq_debias_diagnostic as diagnostic
 from eval.mcq_debias import aggregate_permutation_scores, cyclic_permutation_rows, edge_minus_middle, rotate_mcq_row
 
 
@@ -57,3 +60,29 @@ def test_aggregate_permutation_scores_maps_scores_back_to_original_labels() -> N
 def test_edge_minus_middle_exposes_first_last_bias() -> None:
     assert edge_minus_middle({"A": 58, "B": 15, "C": 22, "D": 33}) == 54
 
+
+def test_debias_diagnostic_source_payloads_follow_prior_debias_nested_summary(tmp_path, monkeypatch) -> None:
+    nested = tmp_path / "arc_mix" / "summary.json"
+    nested.parent.mkdir()
+    nested.write_text(json.dumps({"run_id": "arc_mix", "resume_checkpoint": "checkpoint.pt"}), encoding="utf-8")
+    source = tmp_path / "debias" / "summary.json"
+    source.parent.mkdir()
+    source.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_mcq_debias_diagnostic",
+                "status": "selection_bias_likely",
+                "nested_source_summary": str(nested),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(diagnostic, "SOURCE_SUMMARY", str(source))
+
+    source_path, source_payload, nested_path, nested_payload = diagnostic.source_payloads()
+
+    assert source_path == source
+    assert source_payload["kind"] == "stage5_mcq_debias_diagnostic"
+    assert nested_path == nested
+    assert nested_payload["resume_checkpoint"] == "checkpoint.pt"

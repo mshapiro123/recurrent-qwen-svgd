@@ -486,6 +486,34 @@ def test_mcq_debias_diagnostic_allowed_from_answer_prior_diagnosis(tmp_path) -> 
     assert guarded["spend_class"] == "bounded_mcq_debias_diagnostic"
 
 
+def test_mcq_debias_diagnostic_allowed_after_selection_bias_likely(tmp_path) -> None:
+    checkpoint = tmp_path / "outputs" / "stage5" / "phase1" / "phase1_step_150.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    nested = tmp_path / "failed_arc_mix" / "summary.json"
+    nested.parent.mkdir()
+    nested.write_text(json.dumps({"resume_checkpoint": str(checkpoint)}), encoding="utf-8")
+    source_payload = {
+        "kind": "stage5_mcq_debias_diagnostic",
+        "status": "selection_bias_likely",
+        "nested_source_summary": str(nested),
+    }
+
+    decision = classify_action(
+        {
+            "name": "Confirm MCQ debias on ARC-Challenge with cyclic scoring",
+            "command": "python colab/run_stage5_mcq_debias_diagnostic.py",
+        },
+        source_payload=source_payload,
+    )
+    guarded, checkpoint_status = apply_checkpoint_guard(decision, source_payload=source_payload)
+
+    assert checkpoint_status["available"] is True
+    assert guarded["go"] is True
+    assert guarded["status"] == "go_mcq_debias_diagnostic"
+    assert guarded["spend_class"] == "bounded_mcq_debias_diagnostic"
+
+
 def test_mcq_debias_diagnostic_blocked_from_other_sources() -> None:
     decision = classify_action(
         {

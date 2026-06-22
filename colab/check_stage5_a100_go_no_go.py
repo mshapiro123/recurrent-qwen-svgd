@@ -829,8 +829,16 @@ def classify_action(
         }
 
     if script == "colab/run_stage5_mcq_debias_diagnostic.py":
-        if source_kind_label == "arc_mix_answer_prior_diagnosis" and source_payload.get("status") == "direct_answer_prior_not_preserved":
-            source_summary = str(source_payload.get("source_summary") or "").strip()
+        initial_debias_source = (
+            source_kind_label == "arc_mix_answer_prior_diagnosis"
+            and source_payload.get("status") == "direct_answer_prior_not_preserved"
+        )
+        confirmation_debias_source = (
+            source_kind_label == "mcq_debias_diagnostic"
+            and source_payload.get("status") == "selection_bias_likely"
+        )
+        if initial_debias_source or confirmation_debias_source:
+            source_summary = str(source_payload.get("nested_source_summary") or source_payload.get("source_summary") or "").strip()
             checkpoint = None
             if source_summary:
                 try:
@@ -843,7 +851,7 @@ def classify_action(
                 spend_class="bounded_mcq_debias_diagnostic",
                 checkpoint=checkpoint,
                 reason=(
-                    "Answer-prior drift may be MCQ option-label selection bias; one bounded no-training "
+                    "MCQ option-label selection bias is unresolved; one bounded no-training "
                     "label/content/permutation debias diagnostic is allowed before direct-preservation training."
                 ),
             )
@@ -852,8 +860,9 @@ def classify_action(
             "status": "mcq_debias_diagnostic_blocked",
             "spend_class": "none",
             "reason": (
-                "MCQ debias diagnostic requires source kind arc_mix_answer_prior_diagnosis with "
-                "status direct_answer_prior_not_preserved."
+                "MCQ debias diagnostic requires either source kind arc_mix_answer_prior_diagnosis with "
+                "status direct_answer_prior_not_preserved, or source kind mcq_debias_diagnostic with "
+                "status selection_bias_likely."
             ),
         }
 

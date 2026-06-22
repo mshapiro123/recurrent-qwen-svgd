@@ -197,6 +197,11 @@ def source_payloads() -> tuple[Path, dict[str, Any], Path, dict[str, Any]]:
     if source.get("kind") == "stage5_arc_mix_answer_prior_diagnosis":
         nested = resolve_path(str(source.get("source_summary") or ""))
         return source_path, source, nested, read_json(nested)
+    if source.get("kind") == "stage5_mcq_debias_diagnostic":
+        nested_ref = str(source.get("nested_source_summary") or source.get("source_summary") or "").strip()
+        if nested_ref:
+            nested = resolve_path(nested_ref)
+            return source_path, source, nested, read_json(nested)
     return source_path, source, source_path, source
 
 
