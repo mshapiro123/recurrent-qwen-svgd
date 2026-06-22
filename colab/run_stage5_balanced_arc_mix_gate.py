@@ -28,7 +28,6 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from colab.run_stage5_recovered_phase1_arc_gate import (  # noqa: E402
-    path_for_cli,
     restore_checkpoint_if_needed,
 )
 
@@ -179,6 +178,24 @@ ARM_NAMES = [
     for item in os.environ.get("STAGE5_ARC_MIX_ARMS", "arc_mix_nodistill_lr3e6").split(",")
     if item.strip()
 ]
+
+
+def path_for_cli(path: Path) -> str:
+    try:
+        return path.relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def current_source_summary_file() -> Path:
+    return ROOT / "config" / "stage5_current_source_summary.txt"
+
+
+def update_current_source_summary(summary_path: Path) -> Path:
+    pointer = current_source_summary_file()
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text(path_for_cli(summary_path) + "\n", encoding="utf-8")
+    return pointer
 
 
 def resolve_path(value: str | Path) -> Path:
@@ -798,7 +815,9 @@ def build_summary(
 
 def write_report(payload: dict[str, Any]) -> None:
     RUN_DIR.mkdir(parents=True, exist_ok=True)
-    (RUN_DIR / "summary.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    summary_path = RUN_DIR / "summary.json"
+    summary_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    update_current_source_summary(summary_path)
     lines = [
         f"# Stage 5 Balanced ARC-Mix Gate - {RUN_ID}",
         "",
@@ -912,6 +931,10 @@ def commit_results() -> None:
     if not PUSH_RESULTS:
         return
     files = committable_run_files()
+    pointer = current_source_summary_file()
+    if pointer.exists():
+        files.append(path_for_cli(pointer))
+    files = sorted(set(files))
     if not files:
         print("No safe ARC-mix gate text artifacts to commit.")
         return

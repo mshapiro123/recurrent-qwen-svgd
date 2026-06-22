@@ -23,9 +23,6 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from colab.run_stage5_recovered_phase1_arc_gate import path_for_cli  # noqa: E402
-
-
 RUN_ID = os.environ.get("STAGE5_COMPETENCE_PIPELINE_RUN_ID") or time.strftime(
     "stage5_competence_preserving_%Y%m%d_%H%M%S"
 )
@@ -47,6 +44,24 @@ PUSH_RESULTS = os.environ.get("STAGE5_COMPETENCE_PIPELINE_PUSH", "1").strip().lo
     "yes",
     "y",
 }
+
+
+def path_for_cli(path: Path) -> str:
+    try:
+        return path.relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def current_source_summary_file() -> Path:
+    return ROOT / "config" / "stage5_current_source_summary.txt"
+
+
+def update_current_source_summary(summary_path: Path) -> Path:
+    pointer = current_source_summary_file()
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text(path_for_cli(summary_path) + "\n", encoding="utf-8")
+    return pointer
 
 
 def read_json(path: str | Path) -> dict[str, Any]:
@@ -119,6 +134,9 @@ def commit_results() -> None:
     if not PUSH_RESULTS:
         return
     run(["git", "add", "-f", path_for_cli(RUN_DIR)], check=False)
+    pointer = current_source_summary_file()
+    if pointer.exists():
+        run(["git", "add", "-f", path_for_cli(pointer)], check=False)
     if run(["git", "diff", "--cached", "--quiet"], check=False).returncode == 0:
         print("No competence-preserving pipeline outputs changed.")
         return
@@ -128,7 +146,9 @@ def commit_results() -> None:
 
 def write_report(payload: dict[str, Any]) -> None:
     RUN_DIR.mkdir(parents=True, exist_ok=True)
-    (RUN_DIR / "summary.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    summary_path = RUN_DIR / "summary.json"
+    summary_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    update_current_source_summary(summary_path)
     lines = [
         f"# Stage 5 Competence-Preserving Pipeline - {RUN_ID}",
         "",

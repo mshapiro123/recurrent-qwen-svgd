@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -382,3 +383,44 @@ def test_arc_mix_commit_artifacts_exclude_checkpoints(tmp_path, monkeypatch) -> 
         "outputs/stage5/run/summary.md",
         "outputs/stage5/run/train.log",
     ]
+
+
+def test_arc_mix_updates_current_source_summary(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_balanced_arc_mix_gate as module
+
+    summary = tmp_path / "outputs" / "stage5" / "run" / "summary.json"
+    summary.parent.mkdir(parents=True)
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+
+    written = module.update_current_source_summary(summary)
+
+    assert written == tmp_path / "config" / "stage5_current_source_summary.txt"
+    assert written.read_text(encoding="utf-8") == "outputs/stage5/run/summary.json\n"
+
+
+def test_arc_mix_commit_stages_current_source_pointer(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_balanced_arc_mix_gate as module
+
+    run_dir = tmp_path / "outputs" / "stage5" / "run"
+    pointer = tmp_path / "config" / "stage5_current_source_summary.txt"
+    run_dir.mkdir(parents=True)
+    pointer.parent.mkdir(parents=True)
+    (run_dir / "summary.json").write_text("{}", encoding="utf-8")
+    pointer.write_text("outputs/stage5/run/summary.json\n", encoding="utf-8")
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, *, check=True, log_name=None):
+        commands.append([str(item) for item in cmd])
+        return subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+    monkeypatch.setattr(module, "PUSH_RESULTS", True)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    module.commit_results()
+
+    add_commands = [cmd for cmd in commands if cmd[:2] == ["git", "add"]]
+    staged = {item for cmd in add_commands for item in cmd[3:]}
+    assert "outputs/stage5/run/summary.json" in staged
+    assert "config/stage5_current_source_summary.txt" in staged

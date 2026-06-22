@@ -73,6 +73,30 @@ VAL_JSONL = ROOT / "data" / f"{RUN_ID}_opus_val.jsonl"
 ARC_JSONL = ROOT / "data" / f"{RUN_ID}_arc{ARC_LIMIT}.jsonl"
 
 
+def path_for_cli(path: Path) -> str:
+    try:
+        return path.relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def current_source_summary_file() -> Path:
+    return ROOT / "config" / "stage5_current_source_summary.txt"
+
+
+def update_current_source_summary(summary_path: Path) -> Path:
+    pointer = current_source_summary_file()
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text(path_for_cli(summary_path) + "\n", encoding="utf-8")
+    return pointer
+
+
+def stage_current_source_pointer() -> None:
+    pointer = current_source_summary_file()
+    if pointer.exists():
+        run(["git", "add", "-f", path_for_cli(pointer)], check=False)
+
+
 def run(cmd: list[str], *, check: bool = True, log_name: str | None = None) -> subprocess.CompletedProcess[str]:
     print("$", " ".join(map(str, cmd)))
     process = subprocess.Popen(
@@ -641,7 +665,9 @@ def main() -> int:
         "arc_ladder": ladder,
         "exact_generation_ran": RUN_EXACT,
     }
-    (RUN_DIR / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    summary_path = RUN_DIR / "summary.json"
+    summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    update_current_source_summary(summary_path)
 
     lines = [
         f"# Stage 4 Opus Fine-Tune Summary - {RUN_ID}",
@@ -683,6 +709,7 @@ def main() -> int:
     run(["git", "add", "-f", str((RUN_DIR / "*.log").relative_to(ROOT))], check=False)
     run(["git", "add", "-f", str((RUN_DIR / "arc_*.jsonl").relative_to(ROOT))], check=False)
     run(["git", "add", "-f", str((RUN_DIR / "exact_phase1_vs_phase2.jsonl").relative_to(ROOT))], check=False)
+    stage_current_source_pointer()
     status = run(["git", "diff", "--cached", "--quiet"], check=False)
     if status.returncode == 0:
         print("No stage4 summary changes to commit.")

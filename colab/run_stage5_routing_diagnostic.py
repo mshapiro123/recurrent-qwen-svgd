@@ -32,7 +32,6 @@ from colab.run_stage5_recovered_phase1_arc_gate import (  # noqa: E402
     DEFAULT_CHECKPOINT_REL,
     DEFAULT_RECOVERED_RUN_ID,
     DEFAULT_SOURCE_SUMMARY_REL,
-    path_for_cli,
     restore_checkpoint_if_needed,
 )
 
@@ -49,6 +48,24 @@ PUSH_RESULTS = os.environ.get("STAGE5_ROUTING_DIAGNOSTIC_PUSH", "1").strip().low
     "yes",
     "y",
 }
+
+
+def path_for_cli(path: Path) -> str:
+    try:
+        return path.relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def current_source_summary_file() -> Path:
+    return ROOT / "config" / "stage5_current_source_summary.txt"
+
+
+def update_current_source_summary(summary_path: Path) -> Path:
+    pointer = current_source_summary_file()
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text(path_for_cli(summary_path) + "\n", encoding="utf-8")
+    return pointer
 
 
 def resolve_root_path(value: str | Path) -> Path:
@@ -204,7 +221,9 @@ def assess(summary: dict[str, Any]) -> dict[str, Any]:
 
 def write_report(payload: dict[str, Any]) -> None:
     write_json(RUN_DIR / "routing_assessment.json", payload)
-    write_json(RUN_DIR / "summary.json", payload)
+    summary_path = RUN_DIR / "summary.json"
+    write_json(summary_path, payload)
+    update_current_source_summary(summary_path)
     lines = [
         f"# Stage 5 Routing Diagnostic - {RUN_ID}",
         "",
@@ -240,6 +259,9 @@ def commit_results() -> None:
         return
     run(["git", "status", "-sb"], check=False)
     run(["git", "add", "-f", path_for_cli(RUN_DIR)], check=False)
+    pointer = current_source_summary_file()
+    if pointer.exists():
+        run(["git", "add", "-f", path_for_cli(pointer)], check=False)
     status = run(["git", "diff", "--cached", "--quiet"], check=False)
     if status.returncode == 0:
         print("No routing diagnostic outputs changed.")
