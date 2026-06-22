@@ -21,7 +21,11 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from training.prepare_curriculum_jsonl import validate_curriculum_record  # noqa: E402
+from training.prepare_curriculum_jsonl import (  # noqa: E402
+    POSITIVE_REASONING_ROLES,
+    validate_curriculum_record,
+    validate_positive_answer_match,
+)
 
 
 RUN_ID = time.strftime("curriculum_sft_gate_%Y%m%d_%H%M%S")
@@ -156,6 +160,13 @@ def check_positive_sft_rows(
         if not role_starts_positive(role):
             bad_rows += 1
             add_issue(issues, "non_positive_sft_row", f"positive_sft row {index} has non-positive trace_role={role!r}.")
+        elif role not in POSITIVE_REASONING_ROLES:
+            bad_rows += 1
+            add_issue(issues, "unknown_positive_sft_role", f"positive_sft row {index} has unknown positive trace_role={role!r}.")
+        else:
+            for issue in validate_positive_answer_match(row, label=f"positive_sft row {index}: "):
+                bad_rows += 1
+                add_issue(issues, "missing_sft_answer_match", issue)
         if not str(row.get("prompt") or "").strip():
             bad_rows += 1
             add_issue(issues, "missing_sft_prompt", f"positive_sft row {index} is missing prompt.")

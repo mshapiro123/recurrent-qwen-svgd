@@ -69,6 +69,13 @@ def positive_sft_row() -> dict:
         "routing_type": "wide",
         "source_model": "solver-a",
         "target_loop_count": 2,
+        "answer_match": {
+            "matched": True,
+            "source": "method_constrained_answer_line",
+            "parsed_answer": "42",
+            "parsed_answer_normalized": "42",
+            "verified_answer_normalized": "42",
+        },
     }
 
 
@@ -222,6 +229,32 @@ def test_curriculum_sft_gate_blocks_positive_sft_without_source_model(tmp_path) 
 
     assert result["go"] is False
     assert any(issue["code"] == "missing_sft_source_model" for issue in result["issues"])
+
+
+def test_curriculum_sft_gate_blocks_positive_sft_without_answer_match(tmp_path) -> None:
+    summary = write_complete_work_dir(tmp_path / "run")
+    sft_path = tmp_path / "run" / "positive_sft.jsonl"
+    row = positive_sft_row()
+    row.pop("answer_match")
+    write_jsonl(sft_path, [row])
+
+    result = build_gate_payload(parse_args(["--summary_json", str(summary)]))
+
+    assert result["go"] is False
+    assert any(issue["code"] == "missing_sft_answer_match" for issue in result["issues"])
+
+
+def test_curriculum_sft_gate_blocks_unknown_positive_sft_role(tmp_path) -> None:
+    summary = write_complete_work_dir(tmp_path / "run")
+    sft_path = tmp_path / "run" / "positive_sft.jsonl"
+    row = positive_sft_row()
+    row["trace_role"] = "positive_rationalization"
+    write_jsonl(sft_path, [row])
+
+    result = build_gate_payload(parse_args(["--summary_json", str(summary)]))
+
+    assert result["go"] is False
+    assert any(issue["code"] == "unknown_positive_sft_role" for issue in result["issues"])
 
 
 def test_curriculum_sft_gate_blocks_low_judge_agreement(tmp_path) -> None:
