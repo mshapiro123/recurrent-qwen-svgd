@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from colab.run_stage5_colab_continue import (
+    auto_pull_enabled,
     committable_stage5_files,
     continuation_profile,
     default_env,
     default_max_actions,
+    fast_forward_pull_latest,
     focused_test_paths,
     is_safe_output_artifact,
     mask_command,
@@ -50,6 +52,13 @@ def test_colab_continue_defaults_to_credit_saving_single_action_loop(monkeypatch
     assert continuation_profile() == "credit_saver"
     assert env["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] == "1"
     assert env["STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT"] == "0"
+    assert auto_pull_enabled()
+
+
+def test_colab_continue_auto_pull_can_be_disabled(monkeypatch) -> None:
+    monkeypatch.setenv("STAGE5_ARC_AGI_COLAB_CONTINUE_AUTO_PULL", "0")
+
+    assert not auto_pull_enabled()
 
 
 def test_colab_continue_gate_profile_runs_three_action_loop(monkeypatch) -> None:
@@ -88,6 +97,42 @@ def test_colab_continue_max_actions_can_be_overridden(monkeypatch) -> None:
 
 def test_colab_continue_commits_stage5_and_hf_export_outputs() -> None:
     assert stage5_output_paths() == ["outputs/stage5", "outputs/hf_exports"]
+
+
+def test_fast_forward_pull_latest_skips_dirty_worktree(monkeypatch) -> None:
+    import colab.run_stage5_colab_continue as module
+
+    calls: list[list[str]] = []
+
+    def fake_run(cmd, *, check=True, env=None):
+        calls.append(cmd)
+        if cmd == ["git", "status", "--porcelain"]:
+            return module.subprocess.CompletedProcess(cmd, 0, " M file.py\n", None)
+        raise AssertionError(f"unexpected command: {cmd}")
+
+    monkeypatch.setattr(module, "run", fake_run)
+
+    assert fast_forward_pull_latest() == {"status": "dirty_worktree"}
+    assert calls == [["git", "status", "--porcelain"]]
+
+
+def test_fast_forward_pull_latest_fetches_and_pulls_clean_worktree(monkeypatch) -> None:
+    import colab.run_stage5_colab_continue as module
+
+    calls: list[list[str]] = []
+
+    def fake_run(cmd, *, check=True, env=None):
+        calls.append(cmd)
+        return module.subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(module, "run", fake_run)
+
+    assert fast_forward_pull_latest() == {"status": "ok"}
+    assert calls == [
+        ["git", "status", "--porcelain"],
+        ["git", "fetch", "origin", "main"],
+        ["git", "pull", "--ff-only", "origin", "main"],
+    ]
 
 
 def test_colab_continue_only_commits_safe_text_artifacts(monkeypatch, tmp_path) -> None:

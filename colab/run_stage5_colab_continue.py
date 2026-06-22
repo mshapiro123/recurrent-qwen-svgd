@@ -111,6 +111,15 @@ def default_env() -> dict[str, str]:
     }
 
 
+def auto_pull_enabled() -> bool:
+    return os.environ.get("STAGE5_ARC_AGI_COLAB_CONTINUE_AUTO_PULL", "1").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+    }
+
+
 def stage5_output_paths() -> list[str]:
     return ["outputs/stage5", "outputs/hf_exports"]
 
@@ -209,6 +218,40 @@ def ensure_git_identity() -> None:
     run(["git", "config", "user.name", "Colab Runner"], check=False)
 
 
+def fast_forward_pull_latest() -> dict[str, str]:
+    """Best-effort update for long-lived Colab runtimes.
+
+    This intentionally refuses to pull over local changes. Colab often has a
+    private token-bearing remote, but when GitHub auth is unavailable the
+    continuation run should still proceed with an explicit warning instead of
+    wasting the attached GPU on a hard setup failure.
+    """
+
+    if not auto_pull_enabled():
+        print("auto_pull=disabled", flush=True)
+        return {"status": "disabled"}
+
+    status = run(["git", "status", "--porcelain"], check=False)
+    if status.returncode:
+        print("auto_pull=skipped status=git_status_failed", flush=True)
+        return {"status": "git_status_failed"}
+    if status.stdout.strip():
+        print("auto_pull=skipped status=dirty_worktree", flush=True)
+        return {"status": "dirty_worktree"}
+
+    fetch = run(["git", "fetch", "origin", "main"], check=False)
+    if fetch.returncode:
+        print("auto_pull=skipped status=fetch_failed", flush=True)
+        return {"status": "fetch_failed"}
+
+    pull = run(["git", "pull", "--ff-only", "origin", "main"], check=False)
+    if pull.returncode:
+        print("auto_pull=skipped status=pull_failed", flush=True)
+        return {"status": "pull_failed"}
+    print("auto_pull=ok", flush=True)
+    return {"status": "ok"}
+
+
 def commit_stage5_outputs() -> None:
     run(["git", "status", "-sb"], check=False)
     files = committable_stage5_files()
@@ -229,6 +272,7 @@ def main() -> int:
     os.environ.update({key: value for key, value in default_env().items() if key not in os.environ})
     mount_drive_if_available()
     ensure_git_identity()
+    fast_forward_pull_latest()
     run(["nvidia-smi"], check=False)
     run([sys.executable, "-m", "pytest", "-q", *focused_test_paths()])
     print("RUN_ID", RUN_ID)
