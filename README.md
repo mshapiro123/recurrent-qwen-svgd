@@ -284,16 +284,21 @@ outputs/stage5/stage5_full_assessment_once_20260622_005522/mcq_regression_diagno
 ```
 
 The next A100 job should be **paused by default**. If we intentionally spend
-one more bounded proxy run, use
-[`colab/STAGE5_ARC_MIX_RECOVERY_CELL.md`](colab/STAGE5_ARC_MIX_RECOVERY_CELL.md),
-which now defaults to:
+one more bounded proxy run, paste the short bootstrap cell from
+[`colab/STAGE5_ARC_MIX_BOOTSTRAP_CELL.py`](colab/STAGE5_ARC_MIX_BOOTSTRAP_CELL.py)
+into a normal Drive-backed or blank Colab notebook, then attach A100 only
+immediately before running it. If the bootstrap fetch fails, use the fully
+expanded cell in
+[`colab/STAGE5_ARC_MIX_RECOVERY_CELL.md`](colab/STAGE5_ARC_MIX_RECOVERY_CELL.md).
+The launcher defaults to:
 
 ```bash
 STAGE5_ARC_MIX_ONCE_SOURCE_SUMMARY=outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json
 STAGE5_ARC_MIX_ARMS=arc_mix_response_w01_lr2e6
 ```
 
-The concise run card with the direct GitHub-Colab link is
+The concise run card with the preferred bootstrap path and optional direct
+GitHub-Colab link is
 [`colab/CURRENT_A100_ACTION.md`](colab/CURRENT_A100_ACTION.md).
 
 This is a hypothesis-driven calibration-recovery proxy. It should run only

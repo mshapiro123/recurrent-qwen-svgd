@@ -1,6 +1,19 @@
 # Current A100 Action
 
-## Run This Notebook
+## Preferred Launch Path
+
+Use the bootstrap cell from a normal Drive-backed or blank Colab notebook:
+
+[`colab/STAGE5_ARC_MIX_BOOTSTRAP_CELL.py`](STAGE5_ARC_MIX_BOOTSTRAP_CELL.py)
+
+Keep the runtime disconnected while editing the cell. Select an A100 runtime
+only immediately before running that one cell.
+
+This is currently the most reliable path because private GitHub-backed Colab
+notebooks can pause on GitHub authorization or popup-blocker prompts before the
+runtime is even useful.
+
+## Optional GitHub-Colab Notebook
 
 Open the current single-purpose Colab notebook:
 
@@ -8,8 +21,7 @@ Open the current single-purpose Colab notebook:
 
 If Colab shows `Colab is waiting for authorization from GitHub`, a blocked
 popup, or any GitHub-private-repo authorization problem, **do not connect an
-A100 runtime**. Use the fallback below from any normal Drive or blank Colab
-notebook instead.
+A100 runtime**. Use the bootstrap cell above instead.
 
 Use an A100 runtime only when you intentionally want to spend one bounded proxy
 run. The notebook should:
@@ -71,19 +83,16 @@ proxy runner finishes. If that section says anything other than
 `Next A100 spend: YES: run exactly one full balanced ARC confirmation.`, keep
 the A100 shut down and do the next repair locally.
 
-## Fallback When GitHub-Colab Auth Blocks The Notebook
+## Fully Expanded Cell If Bootstrap Fetch Fails
 
-This fallback avoids opening a private GitHub notebook through Colab. It still
-uses GitHub, but only from inside a normal Colab Python cell via the
+If the short bootstrap cell cannot fetch from GitHub, use the fully expanded
+cell. It avoids opening a private GitHub notebook through Colab and still uses
+GitHub only from inside a normal Colab Python cell via the
 `GH_TOKEN`/`GITHUB_TOKEN` Colab secret.
 
 1. Open any trusted Drive-backed Colab notebook or a blank notebook.
 2. Keep the runtime disconnected while editing the cell.
-3. Prefer the shorter bootstrap cell in
-   [`colab/STAGE5_ARC_MIX_BOOTSTRAP_CELL.py`](STAGE5_ARC_MIX_BOOTSTRAP_CELL.py).
-   It fetches the maintained full launcher from GitHub using the Colab
-   `GH_TOKEN`/`GITHUB_TOKEN` secret and executes it after checking safety
-   markers. If you want the fully expanded cell instead, copy it from
+3. Copy the fully expanded cell from
    [`colab/STAGE5_ARC_MIX_RECOVERY_CELL.py`](STAGE5_ARC_MIX_RECOVERY_CELL.py),
    or from the fenced code block in
    [`colab/STAGE5_ARC_MIX_RECOVERY_CELL.md`](STAGE5_ARC_MIX_RECOVERY_CELL.md).
