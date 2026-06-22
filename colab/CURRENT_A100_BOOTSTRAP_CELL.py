@@ -1,4 +1,4 @@
-import base64, json, os, urllib.request
+import base64, json, os, time, urllib.request
 from google.colab import userdata
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
@@ -102,13 +102,14 @@ for key, value in selected["env"].items():
 os.environ.setdefault("STAGE5_SAFE_CONTINUE_DISCONNECT", "1")
 
 launcher_path = selected["path"]
-url = f"https://api.github.com/repos/{REPO}/contents/{launcher_path}?ref={REF}"
+url = f"https://api.github.com/repos/{REPO}/contents/{launcher_path}?ref={REF}&cache_bust={int(time.time())}"
 request = urllib.request.Request(
     url,
     headers={
         "Authorization": f"Bearer {GH_TOKEN}",
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
+        "Cache-Control": "no-cache",
     },
 )
 with urllib.request.urlopen(request) as response:

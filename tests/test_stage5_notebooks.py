@@ -308,6 +308,8 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     assert "checkpoint_preflight" in plain
     assert "mount_drive_for_paid_action" in plain
     assert "api.github.com/repos" in plain
+    assert "cache_bust" in plain
+    assert '"Cache-Control": "no-cache"' in plain
     assert "GH_TOKEN" in plain
     assert "GITHUB_TOKEN" in plain
     assert "required_markers" not in plain
