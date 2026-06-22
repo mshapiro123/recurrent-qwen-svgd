@@ -28,6 +28,7 @@ from colab.plan_stage5_next_run import (
     path_for_cli,
     plan_next_actions,
     read_json,
+    resolve_path,
     resolve_source_summary,
     source_kind,
 )
@@ -786,6 +787,35 @@ def classify_action(
             "status": "programmatic_depth_repair_blocked",
             "spend_class": "none",
             "reason": f"Programmatic depth repair requires a repair status, got {routing_status!r}.",
+        }
+
+    if script == "colab/run_stage5_direct_preservation_probe.py":
+        if source_kind_label == "arc_mix_answer_prior_diagnosis" and source_payload.get("status") == "direct_answer_prior_not_preserved":
+            source_summary = str(source_payload.get("source_summary") or "").strip()
+            checkpoint = None
+            if source_summary:
+                try:
+                    nested = read_json(resolve_path(source_summary))
+                    checkpoint = str(nested.get("resume_checkpoint") or "").replace("\\", "/")
+                except Exception:
+                    checkpoint = None
+            return go_paid_gpu_action(
+                status="go_direct_preservation_probe",
+                spend_class="bounded_direct_preservation_probe",
+                checkpoint=checkpoint,
+                reason=(
+                    "Answer-prior diagnosis shows the direct route is not preserving base-confident examples; "
+                    "one bounded max_loops=1 direct-preservation probe is allowed."
+                ),
+            )
+        return {
+            "go": False,
+            "status": "direct_preservation_probe_blocked",
+            "spend_class": "none",
+            "reason": (
+                "Direct preservation probe requires source kind arc_mix_answer_prior_diagnosis with "
+                "status direct_answer_prior_not_preserved."
+            ),
         }
 
     if script == "colab/run_stage4_opus_finetune.py":

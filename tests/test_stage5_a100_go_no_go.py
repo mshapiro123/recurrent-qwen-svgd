@@ -390,6 +390,47 @@ def test_programmatic_depth_repair_blocks_when_no_repair_needed() -> None:
     assert decision["status"] == "programmatic_depth_repair_blocked"
 
 
+def test_direct_preservation_probe_allowed_from_answer_prior_diagnosis(tmp_path) -> None:
+    checkpoint = tmp_path / "outputs" / "stage5" / "phase1" / "phase1_step_150.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    nested = tmp_path / "failed_arc_mix" / "summary.json"
+    nested.parent.mkdir()
+    nested.write_text(json.dumps({"resume_checkpoint": str(checkpoint)}), encoding="utf-8")
+    source_payload = {
+        "kind": "stage5_arc_mix_answer_prior_diagnosis",
+        "status": "direct_answer_prior_not_preserved",
+        "source_summary": str(nested),
+    }
+
+    decision = classify_action(
+        {
+            "name": "Run bounded max_loops=1 direct-preservation probe",
+            "command": "python colab/run_stage5_direct_preservation_probe.py",
+        },
+        source_payload=source_payload,
+    )
+    guarded, checkpoint_status = apply_checkpoint_guard(decision, source_payload=source_payload)
+
+    assert checkpoint_status["available"] is True
+    assert guarded["go"] is True
+    assert guarded["status"] == "go_direct_preservation_probe"
+    assert guarded["spend_class"] == "bounded_direct_preservation_probe"
+
+
+def test_direct_preservation_probe_blocked_from_other_sources() -> None:
+    decision = classify_action(
+        {
+            "name": "Run bounded max_loops=1 direct-preservation probe",
+            "command": "python colab/run_stage5_direct_preservation_probe.py",
+        },
+        source_payload={"kind": "stage5_balanced_arc_mix_gate", "status": "no_proxy_lift"},
+    )
+
+    assert decision["go"] is False
+    assert decision["status"] == "direct_preservation_probe_blocked"
+
+
 def test_stage4_opus_finetune_allowed_only_after_dataset_promotion() -> None:
     action = {
         "name": "Run audited modified-Opus recurrent fine-tune",

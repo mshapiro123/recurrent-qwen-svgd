@@ -2682,10 +2682,26 @@ def test_arc_mix_answer_prior_diagnosis_stops_gpu_work(tmp_path) -> None:
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Stop A100 and design direct-route preservation objective"
-    assert "hard-route max_loops=1" in actions[0]["reason"]
-    assert actions[0]["command"].startswith("cat ")
+    assert actions[0]["name"] == "Run bounded max_loops=1 direct-preservation probe"
+    assert "loop-1 preservation probe" in actions[0]["reason"]
+    assert "python colab/run_stage5_direct_preservation_probe.py" in actions[0]["command"]
     assert "run_stage5_balanced_arc_mix_gate.py" not in actions[0]["command"]
+
+
+def test_direct_preservation_probe_pass_confirms_larger_arc(tmp_path) -> None:
+    source = tmp_path / "direct_preserve" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_direct_preservation_probe",
+        "status": "direct_route_matches_base",
+        "passed": True,
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Confirm direct-route preservation on larger ARC slices"
+    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
+    assert "STAGE5_BENCHMARKS=arc_easy,arc_challenge" in actions[0]["command"]
 
 
 def test_balanced_arc_mix_calibration_warning_does_not_run_full_assessment(tmp_path) -> None:

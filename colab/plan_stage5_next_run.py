@@ -135,6 +135,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or programmatic_depth_repair_payload(payload) is not None
         or programmatic_depth_assessment_payload(payload) is not None
         or arc_mix_answer_prior_payload(payload) is not None
+        or direct_preservation_probe_payload(payload) is not None
         or claim_readiness_payload(payload) is not None
         or arc_agi_baseline_registry_payload(payload) is not None
         or arc_agi_sota_comparison_payload(payload) is not None
@@ -357,6 +358,10 @@ def programmatic_depth_assessment_payload(payload: dict[str, Any]) -> dict[str, 
 
 def arc_mix_answer_prior_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "stage5_arc_mix_answer_prior_diagnosis" else None
+
+
+def direct_preservation_probe_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_direct_preservation_probe" else None
 
 
 def claim_readiness_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -2324,13 +2329,23 @@ def arc_mix_answer_prior_actions(payload: dict[str, Any], *, source_summary: Pat
     if status == "direct_answer_prior_not_preserved":
         return [
             make_action(
-                "Stop A100 and design direct-route preservation objective",
+                "Run bounded max_loops=1 direct-preservation probe",
                 (
                     "The conservative ARC-mix probe did not recover the base-confident direct bucket. "
-                    "Do not run another recurrent SFT sweep until the direct route can preserve base logits "
-                    "or hard-route max_loops=1 behavior on base-correct questions."
+                    "Run one narrow loop-1 preservation probe: evaluate loop-1 vs loop-4, train only on "
+                    "label-balanced base-correct ARC-Easy rows if needed, and stop unless the direct route recovers."
                 ),
-                f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                command_env(
+                    {
+                        "STAGE5_DIRECT_PRESERVE_RUN_ID": f"{RUN_ID}_direct_preservation",
+                        "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY": path_for_cli(source_summary),
+                        "STAGE5_DIRECT_PRESERVE_ARC_TRAIN_LIMIT": "512",
+                        "STAGE5_DIRECT_PRESERVE_ARC_EVAL_LIMIT": "128",
+                        "STAGE5_DIRECT_PRESERVE_MAX_STEPS": "75",
+                        "STAGE5_DIRECT_PRESERVE_MIN_BASE_MARGIN": "1.0",
+                    },
+                    "python colab/run_stage5_direct_preservation_probe.py",
+                ),
                 10,
             )
         ]
@@ -2338,6 +2353,41 @@ def arc_mix_answer_prior_actions(payload: dict[str, Any], *, source_summary: Pat
         make_action(
             f"Inspect ARC-mix answer-prior diagnosis `{status}`",
             "The answer-prior diagnosis is the current source of truth; inspect it before selecting another GPU action.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
+def direct_preservation_probe_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    if status in {"direct_route_matches_base", "direct_route_loop1_matches_base_without_training", "direct_route_lift"}:
+        return [
+            make_action(
+                "Confirm direct-route preservation on larger ARC slices",
+                (
+                    f"The direct-preservation probe reported `{status}`. Confirm on larger ARC-Easy and "
+                    "ARC-Challenge slices before returning to depth/particle training."
+                ),
+                command_env(
+                    {
+                        "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{RUN_ID}_direct_preservation_confirmation",
+                        "STAGE5_BENCHMARK_SOURCE_SUMMARY": path_for_cli(source_summary),
+                        "STAGE5_BENCHMARKS": "arc_easy,arc_challenge",
+                        "STAGE5_BENCHMARK_ARC_EASY_LIMIT": "256",
+                        "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "256",
+                        "STAGE5_BENCHMARK_SCORE_TARGETS": "label",
+                        "STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS": "1",
+                    },
+                    "python colab/run_stage5_benchmark_suite.py",
+                ),
+                9,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect direct-preservation probe `{status}`",
+            "The direct-route preservation probe did not clear its proxy; inspect before spending more GPU.",
             f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
             10,
         )
@@ -3151,6 +3201,9 @@ def plan_next_actions(
     arc_mix_answer_prior = arc_mix_answer_prior_payload(payload)
     if arc_mix_answer_prior:
         return arc_mix_answer_prior_actions(arc_mix_answer_prior, source_summary=source_summary)
+    direct_preservation_probe = direct_preservation_probe_payload(payload)
+    if direct_preservation_probe:
+        return direct_preservation_probe_actions(direct_preservation_probe, source_summary=source_summary)
     claim_readiness = claim_readiness_payload(payload)
     if claim_readiness:
         return claim_readiness_actions(claim_readiness, source_summary=source_summary)
@@ -3539,6 +3592,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "programmatic_depth_assessment"
     if arc_mix_answer_prior_payload(payload):
         return "arc_mix_answer_prior_diagnosis"
+    if direct_preservation_probe_payload(payload):
+        return "direct_preservation_probe"
     if claim_readiness_payload(payload):
         return "claim_readiness"
     if arc_agi_baseline_registry_payload(payload):
