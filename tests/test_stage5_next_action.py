@@ -898,8 +898,8 @@ def test_execute_action_loop_stops_on_repeated_action(monkeypatch, tmp_path) -> 
         calls.append(step)
         return tmp_path / f"plan_{step}.json", {"actions": [action]}, subprocess.CompletedProcess([], 0)
 
-    def fake_execute(parsed, *, log_name="selected_action.log"):
-        executed.append((parsed.argv, log_name))
+    def fake_execute(parsed, *, check=False, log_name="selected_action.log"):
+        executed.append((parsed.argv, check, log_name))
         return subprocess.CompletedProcess(parsed.argv, 0)
 
     monkeypatch.setattr(module, "run_planner", fake_run_planner)
@@ -909,10 +909,36 @@ def test_execute_action_loop_stops_on_repeated_action(monkeypatch, tmp_path) -> 
 
     assert calls == [0, 1]
     assert len(executed) == 1
+    assert executed[0][1] is False
     assert len(steps) == 2
     assert steps[0]["execution"]["executed"] is True
     assert steps[1]["repeat_detected"] is True
     assert steps[1]["execution"]["stopped"] is True
+
+
+def test_execute_action_loop_records_failed_selected_action(monkeypatch, tmp_path) -> None:
+    action = {"name": "Failing allowed action", "command": "python colab/plan_stage5_next_run.py"}
+
+    def fake_run_planner(*, step=None):
+        return tmp_path / "plan.json", {"source_summary": None, "actions": [action]}, subprocess.CompletedProcess([], 0)
+
+    def fake_execute(parsed, *, check=False, log_name="selected_action.log"):
+        assert check is False
+        return subprocess.CompletedProcess(parsed.argv, 7, stdout="first line\nfailure tail\n", stderr=None)
+
+    monkeypatch.setattr(module, "run_planner", fake_run_planner)
+    monkeypatch.setattr(module, "execute_parsed_command", fake_execute)
+    monkeypatch.setattr(module, "RUN_DIR", tmp_path / "run")
+
+    steps = execute_action_loop(execute=True, max_actions=1)
+
+    assert len(steps) == 1
+    execution = steps[0]["execution"]
+    assert execution["executed"] is True
+    assert execution["returncode"] == 7
+    assert execution["status"] == "selected_action_failed"
+    assert execution["log"].endswith("selected_action_00.log")
+    assert "failure tail" in execution["tail"]
 
 
 def test_execute_action_loop_blocks_guarded_a100_action(monkeypatch, tmp_path) -> None:
@@ -929,7 +955,7 @@ def test_execute_action_loop_blocks_guarded_a100_action(monkeypatch, tmp_path) -
     def fake_run_planner(*, step=None):
         return tmp_path / "plan.json", {"source_summary": str(source), "actions": [action]}, subprocess.CompletedProcess([], 0)
 
-    def fake_execute(parsed, *, log_name="selected_action.log"):
+    def fake_execute(parsed, *, check=False, log_name="selected_action.log"):
         raise AssertionError("guarded A100 action should not execute")
 
     monkeypatch.setattr(module, "run_planner", fake_run_planner)
@@ -952,7 +978,7 @@ def test_execute_action_loop_blocks_local_only_action_on_gpu(monkeypatch, tmp_pa
     def fake_run_planner(*, step=None):
         return tmp_path / "plan.json", {"source_summary": None, "actions": [action]}, subprocess.CompletedProcess([], 0)
 
-    def fake_execute(parsed, *, log_name="selected_action.log"):
+    def fake_execute(parsed, *, check=False, log_name="selected_action.log"):
         raise AssertionError("local-only action should not execute on a GPU runtime")
 
     monkeypatch.setattr(module, "run_planner", fake_run_planner)

@@ -241,12 +241,19 @@ env["STAGE5_ARC_AGI_NEXT_ACTION_MAX_ACTIONS"] = str(MAX_NEXT_ACTIONS)
 env["STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_REPEAT"] = "1" if ALLOW_REPEAT_NEXT_ACTION else "0"
 env["STAGE5_A100_BUDGET_PROFILE"] = A100_BUDGET_PROFILE
 
-run([sys.executable, "colab/run_stage5_next_action.py"], cwd=ROOT, env=env)
+next_action_proc = run([sys.executable, "colab/run_stage5_next_action.py"], cwd=ROOT, env=env, check=False)
+print(f"next_action_returncode={next_action_proc.returncode}", flush=True)
 
 if not execute_action:
     print("Dry run complete. Set RUN_A100_ACTION = True only when you intentionally want to spend A100 credits.", flush=True)
-else:
+elif next_action_proc.returncode == 0:
     print("Guarded next action completed or stopped by a100_guard. Review the emitted summary before continuing.", flush=True)
+else:
+    print(
+        "Guarded next action returned nonzero after writing its summary/log. "
+        "Review the emitted Stage 5 Next Action summary before continuing.",
+        flush=True,
+    )
 
 disconnect_runtime("safe continue cell finished")
 ```

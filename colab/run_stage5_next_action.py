@@ -248,12 +248,17 @@ def run_cat(argv: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.CompletedProcess(argv, 0, "".join(chunks), None)
 
 
-def execute_parsed_command(parsed: ParsedCommand, *, log_name: str = "selected_action.log") -> subprocess.CompletedProcess[str]:
+def execute_parsed_command(
+    parsed: ParsedCommand,
+    *,
+    check: bool = False,
+    log_name: str = "selected_action.log",
+) -> subprocess.CompletedProcess[str]:
     if parsed.kind == "cat":
         return run_cat(parsed.argv)
     env = os.environ.copy()
     env.update(parsed.env)
-    return run(parsed.argv, env=env, log_name=log_name)
+    return run(parsed.argv, env=env, check=check, log_name=log_name)
 
 
 def parsed_python_script(parsed: ParsedCommand) -> str:
@@ -488,8 +493,16 @@ def execute_action_loop(*, execute: bool = EXECUTE, max_actions: int = MAX_ACTIO
                 }
                 steps.append(step_payload)
                 break
-            proc = execute_parsed_command(parsed, log_name=f"selected_action_{step_index:02d}.log")
-            step_payload["execution"] = {"executed": True, "returncode": proc.returncode}
+            log_name = f"selected_action_{step_index:02d}.log"
+            proc = execute_parsed_command(parsed, check=False, log_name=log_name)
+            step_payload["execution"] = {
+                "executed": True,
+                "returncode": proc.returncode,
+                "log": path_for_cli(RUN_DIR / log_name),
+            }
+            if proc.returncode:
+                step_payload["execution"]["status"] = "selected_action_failed"
+                step_payload["execution"]["tail"] = proc.stdout[-4000:]
             steps.append(step_payload)
             if proc.returncode:
                 break
