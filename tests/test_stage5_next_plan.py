@@ -98,6 +98,44 @@ def test_routing_diagnostic_direct_status_recommends_repair(tmp_path) -> None:
     assert "STAGE5_ROUTING_REPAIR_SOURCE_SUMMARY=" in actions[0]["command"]
 
 
+def test_green_curriculum_sft_gate_recommends_guarded_sft_runner(tmp_path) -> None:
+    source = tmp_path / "curriculum_sft_gate.json"
+    payload = {
+        "kind": "curriculum_sft_gate",
+        "go": True,
+        "status": "go_train_recurrent_sft",
+        "work_dir": "data/curriculum/run_001",
+        "summary_json": "data/curriculum/run_001/summary.json",
+        "checks": {"positive_sft": {"rows": 24}},
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert source_kind(payload) == "curriculum_sft_gate"
+    assert actions[0]["name"] == "Run generated curriculum recurrent SFT"
+    assert "python colab/run_stage5_curriculum_sft.py" in actions[0]["command"]
+    assert "STAGE5_CURRICULUM_WORK_DIR=data/curriculum/run_001" in actions[0]["command"]
+    assert "STAGE5_CURRICULUM_MIN_POSITIVE_ROWS=24" in actions[0]["command"]
+
+
+def test_red_curriculum_sft_gate_recommends_inspection(tmp_path) -> None:
+    source = tmp_path / "curriculum_sft_gate.json"
+    payload = {
+        "kind": "curriculum_sft_gate",
+        "go": False,
+        "status": "no_go",
+        "issues": [{"code": "too_few_positive_sft_lines"}],
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect generated curriculum SFT gate"
+    assert actions[0]["command"].startswith("cat ")
+    assert "run_stage5_curriculum_sft.py" not in actions[0]["command"]
+
+
 def test_routing_diagnostic_deep_status_recommends_repair(tmp_path) -> None:
     source = tmp_path / "routing" / "summary.json"
     source.parent.mkdir()

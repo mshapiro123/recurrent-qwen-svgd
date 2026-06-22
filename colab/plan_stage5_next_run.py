@@ -127,6 +127,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or candidate_gate_payload(payload) is not None
         or trace_sft_gate_payload(payload) is not None
         or distill_sft_gate_payload(payload) is not None
+        or curriculum_sft_gate_payload(payload) is not None
         or reasoning_dataset_audit_payload(payload) is not None
         or stage4_opus_finetune_payload(payload) is not None
     )
@@ -841,6 +842,43 @@ def dataset_audit_recommendations(
 
 def dataset_audit_summary_md(source_summary: Path) -> Path:
     return source_summary.with_suffix(".md")
+
+
+def curriculum_sft_gate_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "curriculum_sft_gate" else None
+
+
+def curriculum_sft_gate_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    work_dir = str(payload.get("work_dir") or "").replace("\\", "/")
+    summary_json = str(payload.get("summary_json") or "").replace("\\", "/")
+    gate_md = source_summary.with_suffix(".md")
+    positive_rows = int(((payload.get("checks") or {}).get("positive_sft") or {}).get("rows") or 0)
+    min_rows = max(positive_rows, 16)
+    if payload.get("go") is True:
+        assignments = {
+            "STAGE5_CURRICULUM_SFT_RUN_ID": f"{RUN_ID}_curriculum_sft",
+            "STAGE5_CURRICULUM_MIN_POSITIVE_ROWS": str(min_rows),
+        }
+        if work_dir:
+            assignments["STAGE5_CURRICULUM_WORK_DIR"] = work_dir
+        if summary_json:
+            assignments["STAGE5_CURRICULUM_SUMMARY_JSON"] = summary_json
+        return [
+            make_action(
+                "Run generated curriculum recurrent SFT",
+                "The generated curriculum shard passed the strict SFT gate; run one bounded deterministic Phase 1 recurrent SFT before any particle/SVGD training.",
+                command_env(assignments, "python colab/run_stage5_curriculum_sft.py"),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            "Inspect generated curriculum SFT gate",
+            "The generated curriculum shard is not safe for GPU training yet; inspect the gate issues and fix the CPU/API artifacts before attaching paid GPU time.",
+            f"cat {command_path(gate_md if gate_md.exists() else source_summary)}",
+            10,
+        )
+    ]
 
 
 STAGE4_OPUS_APPROVED_SOURCE_KEYS = {"opus47_sft", "opus47_raw"}
@@ -2641,6 +2679,9 @@ def plan_next_actions(
     reasoning_audit = reasoning_dataset_audit_payload(payload)
     if reasoning_audit:
         return reasoning_dataset_audit_actions(reasoning_audit, source_summary=source_summary)
+    curriculum_sft_gate = curriculum_sft_gate_payload(payload)
+    if curriculum_sft_gate:
+        return curriculum_sft_gate_actions(curriculum_sft_gate, source_summary=source_summary)
     stage4_opus = stage4_opus_finetune_payload(payload)
     if stage4_opus:
         return stage4_opus_finetune_actions(stage4_opus, source_summary=source_summary)
@@ -3011,6 +3052,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "arc_agi_sota_comparison"
     if reasoning_dataset_audit_payload(payload):
         return "reasoning_dataset_audit"
+    if curriculum_sft_gate_payload(payload):
+        return "curriculum_sft_gate"
     if stage4_opus_finetune_payload(payload):
         return "stage4_opus_finetune"
     if benchmark_suite_payload(payload):
