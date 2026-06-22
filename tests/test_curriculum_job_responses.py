@@ -85,6 +85,72 @@ def test_command_backend_passes_job_json_on_stdin(tmp_path) -> None:
     assert rows[0]["response_text"] == "ANSWER: job-abc"
 
 
+def test_command_backend_passes_resolved_model_and_reports_it(tmp_path) -> None:
+    helper = tmp_path / "helper.py"
+    helper.write_text(
+        "import json, sys\n"
+        "job = json.loads(sys.stdin.read())\n"
+        "print('MODEL: ' + job['resolved_model'])\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "responses.jsonl"
+
+    report = run_jobs(
+        [{**job("job-model"), "model": "logical-opus"}],
+        output_jsonl=output,
+        backend="command",
+        command=f"{sys.executable} {helper}",
+        model_map={"logical-opus": "anthropic/claude-opus-4.8"},
+    )
+
+    rows = read_jsonl(output)
+    assert report["logical_model_counts"] == {"logical-opus": 1}
+    assert report["resolved_model_counts"] == {"anthropic/claude-opus-4.8": 1}
+    assert rows[0]["model"] == "logical-opus"
+    assert rows[0]["resolved_model"] == "anthropic/claude-opus-4.8"
+    assert rows[0]["response_text"] == "MODEL: anthropic/claude-opus-4.8"
+
+
+def test_command_backend_blocks_student_lineage_after_model_map_resolution(tmp_path) -> None:
+    helper = tmp_path / "helper.py"
+    helper.write_text("print('should not run')\n", encoding="utf-8")
+    output = tmp_path / "responses.jsonl"
+
+    with pytest.raises(ValueError, match="Student-lineage models are blocked"):
+        run_jobs(
+            [{**job("job-command"), "model": "logical-opus"}],
+            output_jsonl=output,
+            backend="command",
+            command=f"{sys.executable} {helper}",
+            model_map={"logical-opus": "Qwen/Qwen2.5-0.5B-Instruct"},
+        )
+
+    assert not output.exists()
+
+
+def test_command_backend_allows_student_lineage_for_reference_attempt(tmp_path) -> None:
+    helper = tmp_path / "helper.py"
+    helper.write_text(
+        "import json, sys\n"
+        "job = json.loads(sys.stdin.read())\n"
+        "print(job['resolved_model'])\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "responses.jsonl"
+
+    report = run_jobs(
+        [{**job("job-command-ref"), "stage": "reference_attempt", "model": "weak-ref"}],
+        output_jsonl=output,
+        backend="command",
+        command=f"{sys.executable} {helper}",
+        model_map={"weak-ref": "Qwen/Qwen2.5-0.5B-Instruct"},
+    )
+
+    rows = read_jsonl(output)
+    assert report["resolved_model_counts"] == {"Qwen/Qwen2.5-0.5B-Instruct": 1}
+    assert rows[0]["resolved_model"] == "Qwen/Qwen2.5-0.5B-Instruct"
+
+
 def test_command_backend_records_errors_without_raising(tmp_path) -> None:
     helper = tmp_path / "bad_helper.py"
     helper.write_text("import sys\nprint('bad')\nsys.exit(3)\n", encoding="utf-8")

@@ -112,7 +112,10 @@ python training/run_curriculum_pipeline_from_artifacts.py \
 Then submit the emitted jobs with either a custom command backend or an
 OpenAI-compatible chat-completions endpoint. The command backend is the escape
 hatch for Anthropic, hosted GLM, batch systems, or any provider whose API shape
-does not match chat completions:
+does not match chat completions. It receives the original logical `model` field
+and, when `--model_map_json` or `--model_override` is supplied, a concrete
+`resolved_model` field on stdin. Student-lineage resolved models remain blocked
+for every provider backend except `reference_attempt` jobs:
 
 ```bash
 python training/run_curriculum_job_responses.py \

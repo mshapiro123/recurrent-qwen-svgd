@@ -123,6 +123,7 @@ def command_response(
             "job_id": job.get("job_id"),
             "response_id": response_id(job, prefix="command"),
             "model": job.get("model"),
+            "resolved_model": job.get("resolved_model"),
             "stage": job.get("stage"),
             "backend": "command",
             "status": status,
@@ -137,6 +138,7 @@ def command_response(
             "job_id": job.get("job_id"),
             "response_id": response_id(job, prefix="command"),
             "model": job.get("model"),
+            "resolved_model": job.get("resolved_model"),
             "stage": job.get("stage"),
             "backend": "command",
             "status": "timeout",
@@ -359,7 +361,23 @@ def run_jobs(
         elif backend == "command":
             if not command:
                 raise ValueError("--command is required for --backend command")
-            row = command_response(job, command=command, timeout_sec=timeout_sec, stderr_limit=stderr_limit)
+            resolved_model = concrete_model_for(
+                job,
+                model_override=model_override,
+                model_map=resolved_model_map,
+            )
+            validate_resolved_model_for_job(
+                job,
+                resolved_model,
+                allow_student_lineage=allow_student_lineage,
+            )
+            command_job = {**job, "resolved_model": resolved_model}
+            row = command_response(
+                command_job,
+                command=command,
+                timeout_sec=timeout_sec,
+                stderr_limit=stderr_limit,
+            )
         elif backend == "openai_compatible":
             resolved_api_key = api_key or os.environ.get(api_key_env)
             if not resolved_api_key:
