@@ -1,0 +1,30 @@
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+dtype: bfloat16
+adapter_dtype: float32
+layer_split: 6,18
+max_length: 512
+max_loops: 4
+initial_halt_prob: 0.15
+beta: 0.12
+batch_size: 1
+learning_rate: 2.0e-06
+weight_decay: 0.0
+max_grad_norm: 0.3
+max_steps: 150
+save_every: 50
+log_every: 25
+train_on_prompt: false
+output_dir: outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/arc_mix_response_w005_lr2e6/phase1
+resume_from: outputs/stage5/stage5_balanced_recovery_autopilot_current_arc_mix/arc_mix_nodistill_lr3e6/phase1/phase1_step_150.pt
+lora:
+  enabled: true
+  rank: 8
+  alpha: 16
+  dropout: 0.0
+distillation:
+  enabled: true
+  weight: 0.05
+  temperature: 2.0
+  'on': response
+  teacher_model_name: Qwen/Qwen2.5-0.5B-Instruct
+  dtype: bfloat16
