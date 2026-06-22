@@ -1508,6 +1508,11 @@ def release_gate_actions(payload: dict[str, Any], *, source_summary: Path) -> li
                 command_env(
                     {
                         "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{RUN_ID}_benchmark_suite",
+                        "STAGE5_BENCHMARK_SOURCE_SUMMARY": path_for_cli(source_summary),
+                        "STAGE5_BENCHMARKS": "arc_challenge,arc_easy,gpqa_lite",
+                        "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "128",
+                        "STAGE5_BENCHMARK_ARC_EASY_LIMIT": "128",
+                        "STAGE5_BENCHMARK_GPQA_LIMIT": "16",
                     },
                     "python colab/run_stage5_benchmark_suite.py",
                 ),
@@ -1758,7 +1763,7 @@ def balanced_full_assessment_actions(payload: dict[str, Any], *, source_summary:
                         "STAGE5_BENCHMARK_SOURCE_SUMMARY": path_for_cli(source_summary),
                         "STAGE5_BENCHMARK_CHECKPOINT": checkpoint,
                         "STAGE5_BENCHMARKS": "arc_challenge,gpqa_lite",
-                        "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "full",
+                        "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "256",
                         "STAGE5_BENCHMARK_GPQA_LIMIT": "32",
                     },
                     "python colab/run_stage5_benchmark_suite.py",

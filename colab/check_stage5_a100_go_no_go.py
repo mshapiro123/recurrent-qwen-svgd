@@ -86,6 +86,87 @@ def command_env_assignments(command: str) -> dict[str, str]:
     return env
 
 
+def _truthy_env(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _csv_set(value: str | None) -> set[str]:
+    return {part.strip() for part in str(value or "").split(",") if part.strip()}
+
+
+def _parse_benchmark_limit(value: str | None) -> tuple[int | None, str]:
+    raw = str(value or "").strip().lower()
+    if not raw:
+        return None, "missing"
+    if raw in {"none", "full", "all", "unbounded", "-1"}:
+        return None, "unbounded"
+    try:
+        limit = int(raw)
+    except ValueError:
+        return None, "invalid"
+    if limit <= 0:
+        return None, "invalid"
+    return limit, "bounded"
+
+
+def benchmark_suite_budget_preflight(command: str) -> dict[str, Any]:
+    """Conservatively require explicit bounded benchmark limits before A100 spend."""
+
+    env = command_env_assignments(command)
+    allow_full = _truthy_env("STAGE5_A100_ALLOW_FULL_BENCHMARKS")
+    benchmarks = _csv_set(env.get("STAGE5_BENCHMARKS"))
+    if not benchmarks:
+        return {
+            "go": False,
+            "reason": (
+                "Benchmark suite commands must declare STAGE5_BENCHMARKS and explicit "
+                "per-benchmark limits before paid GPU spend."
+            ),
+            "limits": {},
+        }
+
+    limit_specs = {
+        "arc_challenge": ("STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT", 256),
+        "arc_easy": ("STAGE5_BENCHMARK_ARC_EASY_LIMIT", 256),
+        "gpqa_lite": ("STAGE5_BENCHMARK_GPQA_LIMIT", 32),
+    }
+    limits: dict[str, Any] = {}
+    failures: list[str] = []
+    for benchmark in sorted(benchmarks):
+        spec = limit_specs.get(benchmark)
+        if spec is None:
+            failures.append(f"{benchmark}: unsupported benchmark for A100 budget preflight")
+            continue
+        env_name, max_limit = spec
+        value, status = _parse_benchmark_limit(env.get(env_name))
+        limits[benchmark] = {
+            "env": env_name,
+            "raw": env.get(env_name),
+            "status": status,
+            "value": value,
+            "max_without_override": max_limit,
+        }
+        if status == "missing":
+            failures.append(f"{benchmark}: missing {env_name}")
+        elif status == "invalid":
+            failures.append(f"{benchmark}: invalid {env_name}={env.get(env_name)!r}")
+        elif status == "unbounded" and not allow_full:
+            failures.append(f"{benchmark}: unbounded {env_name} requires STAGE5_A100_ALLOW_FULL_BENCHMARKS=1")
+        elif value is not None and value > max_limit and not allow_full:
+            failures.append(
+                f"{benchmark}: {env_name}={value} exceeds conservative cap {max_limit}; "
+                "set STAGE5_A100_ALLOW_FULL_BENCHMARKS=1 for deliberate expansion"
+            )
+
+    return {
+        "go": not failures,
+        "reason": "Benchmark suite limits are explicit and bounded." if not failures else "; ".join(failures),
+        "benchmarks": sorted(benchmarks),
+        "limits": limits,
+        "allow_full_override": allow_full,
+    }
+
+
 def source_payload_kind(source_payload: dict[str, Any]) -> str:
     explicit = source_payload.get("source_kind")
     if explicit:
@@ -967,11 +1048,21 @@ def classify_action(
         }
 
     if script == "colab/run_stage5_benchmark_suite.py":
+        benchmark_budget = benchmark_suite_budget_preflight(command)
+        if not benchmark_budget["go"]:
+            return {
+                "go": False,
+                "status": "benchmark_suite_limit_no_go",
+                "spend_class": "none",
+                "reason": benchmark_budget["reason"],
+                "benchmark_budget": benchmark_budget,
+            }
         return {
             "go": True,
             "status": "go_broader_benchmark",
             "spend_class": "bounded_benchmark_suite",
             "reason": "Planner found a nonnegative balanced checkpoint and recommends broader benchmarks.",
+            "benchmark_budget": benchmark_budget,
         }
 
     return {

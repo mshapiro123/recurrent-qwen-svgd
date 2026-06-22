@@ -156,6 +156,52 @@ def test_checkpoint_guard_blocks_go_without_checkpoint() -> None:
     assert decision["status"] == "checkpoint_missing_no_go"
 
 
+def bounded_benchmark_command(checkpoint: str | None = None) -> str:
+    parts = [
+        "STAGE5_BENCHMARKS=arc_challenge,arc_easy,gpqa_lite",
+        "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT=128",
+        "STAGE5_BENCHMARK_ARC_EASY_LIMIT=128",
+        "STAGE5_BENCHMARK_GPQA_LIMIT=16",
+    ]
+    if checkpoint:
+        parts.append(f"STAGE5_BENCHMARK_CHECKPOINT={checkpoint}")
+    parts.append("python colab/run_stage5_benchmark_suite.py")
+    return " ".join(parts)
+
+
+def test_benchmark_suite_guard_blocks_implicit_limits() -> None:
+    decision = classify_action(
+        {
+            "name": "Run benchmark suite without explicit limits",
+            "command": "python colab/run_stage5_benchmark_suite.py",
+        },
+        source_payload={"kind": "stage5_curriculum_sft"},
+    )
+
+    assert decision["go"] is False
+    assert decision["status"] == "benchmark_suite_limit_no_go"
+    assert "STAGE5_BENCHMARKS" in decision["reason"]
+
+
+def test_benchmark_suite_guard_blocks_unbounded_limits() -> None:
+    decision = classify_action(
+        {
+            "name": "Run unbounded benchmark suite",
+            "command": (
+                "STAGE5_BENCHMARKS=arc_challenge,gpqa_lite "
+                "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT=full "
+                "STAGE5_BENCHMARK_GPQA_LIMIT=32 "
+                "python colab/run_stage5_benchmark_suite.py"
+            ),
+        },
+        source_payload={"kind": "stage5_curriculum_sft"},
+    )
+
+    assert decision["go"] is False
+    assert decision["status"] == "benchmark_suite_limit_no_go"
+    assert "requires STAGE5_A100_ALLOW_FULL_BENCHMARKS=1" in decision["reason"]
+
+
 def test_curriculum_sft_benchmark_guard_blocks_missing_phase1_checkpoint() -> None:
     source_payload = {
         "kind": "stage5_curriculum_sft",
@@ -163,7 +209,7 @@ def test_curriculum_sft_benchmark_guard_blocks_missing_phase1_checkpoint() -> No
     }
     action = {
         "name": "Run benchmark suite for generated-curriculum recurrent checkpoint",
-        "command": "python colab/run_stage5_benchmark_suite.py",
+        "command": bounded_benchmark_command(),
     }
 
     decision = classify_action(action, source_payload=source_payload)
@@ -188,7 +234,7 @@ def test_curriculum_sft_benchmark_guard_allows_visible_phase1_checkpoint(monkeyp
     }
     action = {
         "name": "Run benchmark suite for generated-curriculum recurrent checkpoint",
-        "command": "python colab/run_stage5_benchmark_suite.py",
+        "command": bounded_benchmark_command(),
     }
 
     decision = guard.classify_action(action, source_payload=source_payload)
