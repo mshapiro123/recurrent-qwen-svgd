@@ -95,6 +95,8 @@ def safe_stage_and_push(run_dir):
         print("No git changes to commit.", flush=True)
         return
     run(["git", "commit", "-m", f"Record Stage 5 direct preservation probe {RUN_ID}"], cwd=ROOT)
+    run(["git", "fetch", "origin", "main"], cwd=ROOT)
+    run(["git", "rebase", "origin/main"], cwd=ROOT)
     run(["git", "push", "origin", "main"], cwd=ROOT)
 
 
