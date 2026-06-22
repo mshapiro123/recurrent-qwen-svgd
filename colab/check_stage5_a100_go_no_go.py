@@ -41,6 +41,7 @@ RUN_ID = os.environ.get("STAGE5_A100_GO_NO_GO_RUN_ID") or time.strftime(
     "stage5_a100_go_no_go_%Y%m%d_%H%M%S"
 )
 RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
+STAGE4_OPUS_APPROVED_SOURCE_KEYS = {"opus47_sft", "opus47_raw"}
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -75,6 +76,25 @@ def source_has_calibration_warning(payload: dict[str, Any]) -> bool:
         if comparison.get("calibration_ok") is False:
             return True
     return False
+
+
+def promoted_stage4_opus_sources(source_payload: dict[str, Any]) -> list[dict[str, Any]]:
+    promoted: list[dict[str, Any]] = []
+    for item in source_payload.get("recommendations", []):
+        if not isinstance(item, dict):
+            continue
+        if item.get("status") != "promote_to_small_train_mix":
+            continue
+        if str(item.get("key") or "") not in STAGE4_OPUS_APPROVED_SOURCE_KEYS:
+            continue
+        if item.get("avoid_for_now"):
+            continue
+        if int(item.get("converted_rows") or 0) <= 0:
+            continue
+        if float(item.get("conversion_rate") or 0.0) < 0.5:
+            continue
+        promoted.append(item)
+    return promoted
 
 
 def infer_stage5_run_id(path: str | Path) -> str | None:
@@ -293,11 +313,7 @@ def classify_action(
         }
 
     if script == "colab/run_stage4_opus_finetune.py":
-        promoted = [
-            item
-            for item in source_payload.get("recommendations", [])
-            if isinstance(item, dict) and item.get("status") == "promote_to_small_train_mix"
-        ]
+        promoted = promoted_stage4_opus_sources(source_payload)
         if promoted:
             return {
                 "go": True,
@@ -309,7 +325,10 @@ def classify_action(
             "go": False,
             "status": "stage4_opus_finetune_blocked",
             "spend_class": "none",
-            "reason": "Stage 4 Opus fine-tune requires a dataset audit with a promoted trace source.",
+            "reason": (
+                "Stage 4 Opus fine-tune requires a dataset audit with a promoted, approved "
+                "Opus recovery source such as opus47_sft or opus47_raw."
+            ),
         }
 
     if source_has_calibration_warning(source_payload):

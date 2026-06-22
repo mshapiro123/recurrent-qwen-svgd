@@ -1371,6 +1371,30 @@ def test_reasoning_dataset_audit_promotes_opus_finetune(tmp_path) -> None:
     assert "python colab/run_stage4_opus_finetune.py" in actions[0]["command"]
 
 
+def test_reasoning_dataset_audit_inspects_unapproved_promoted_opus_source(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    payload = {
+        "run_id": "audit_run",
+        "kind": "stage5_reasoning_dataset_audit",
+        "recommendations": [
+            {
+                "key": "jackrong_opus47_trace_inversion",
+                "dataset_id": "Jackrong/Claude-opus-4.7-TraceInversion-5000x",
+                "status": "promote_to_small_train_mix",
+                "converted_rows": 900,
+                "conversion_rate": 0.9,
+            },
+        ],
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect promoted non-Opus trace source"
+    assert actions[0]["command"].startswith("cat ")
+    assert "run_stage4_opus_finetune.py" not in actions[0]["command"]
+
+
 def test_reasoning_dataset_audit_holds_fable_without_training(tmp_path) -> None:
     source = tmp_path / "summary.json"
     payload = {

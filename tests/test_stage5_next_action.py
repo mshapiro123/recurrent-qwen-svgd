@@ -567,11 +567,18 @@ def test_a100_guard_allows_stage4_opus_after_promoted_audit(tmp_path) -> None:
     source.parent.mkdir()
     source.write_text(
         json.dumps(
-            {
-                "kind": "stage5_reasoning_dataset_audit",
-                "recommendations": [{"status": "promote_to_small_train_mix", "key": "opus47_sft"}],
-            }
-        ),
+                {
+                    "kind": "stage5_reasoning_dataset_audit",
+                    "recommendations": [
+                        {
+                            "status": "promote_to_small_train_mix",
+                            "key": "opus47_sft",
+                            "converted_rows": 900,
+                            "conversion_rate": 0.9,
+                        }
+                    ],
+                }
+            ),
         encoding="utf-8",
     )
     action = {

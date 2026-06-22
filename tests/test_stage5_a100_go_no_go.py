@@ -5,6 +5,7 @@ from colab.check_stage5_a100_go_no_go import (
     checkpoint_from_payload,
     classify_action,
     command_script,
+    promoted_stage4_opus_sources,
     routing_repair_checkpoint_availability,
     source_has_calibration_warning,
 )
@@ -195,7 +196,14 @@ def test_stage4_opus_finetune_allowed_only_after_dataset_promotion() -> None:
         action,
         source_payload={
             "kind": "stage5_reasoning_dataset_audit",
-            "recommendations": [{"status": "promote_to_small_train_mix", "key": "opus47_sft"}],
+            "recommendations": [
+                {
+                    "status": "promote_to_small_train_mix",
+                    "key": "opus47_sft",
+                    "converted_rows": 900,
+                    "conversion_rate": 0.9,
+                }
+            ],
         },
     )
 
@@ -204,6 +212,43 @@ def test_stage4_opus_finetune_allowed_only_after_dataset_promotion() -> None:
     assert allowed["go"] is True
     assert allowed["status"] == "go_stage4_opus_finetune"
     assert allowed["spend_class"] == "bounded_stage4_opus_finetune"
+
+
+def test_stage4_opus_finetune_blocks_unapproved_promoted_opus_source() -> None:
+    action = {
+        "name": "Run audited modified-Opus recurrent fine-tune",
+        "command": "python colab/run_stage4_opus_finetune.py",
+    }
+    decision = classify_action(
+        action,
+        source_payload={
+            "kind": "stage5_reasoning_dataset_audit",
+            "recommendations": [
+                {
+                    "status": "promote_to_small_train_mix",
+                    "key": "jackrong_opus47_trace_inversion",
+                    "dataset_id": "Jackrong/Claude-opus-4.7-TraceInversion-5000x",
+                    "converted_rows": 800,
+                    "conversion_rate": 0.8,
+                }
+            ],
+        },
+    )
+
+    assert promoted_stage4_opus_sources(
+        {
+            "recommendations": [
+                {
+                    "status": "promote_to_small_train_mix",
+                    "key": "jackrong_opus47_trace_inversion",
+                    "converted_rows": 800,
+                    "conversion_rate": 0.8,
+                }
+            ]
+        }
+    ) == []
+    assert decision["go"] is False
+    assert decision["status"] == "stage4_opus_finetune_blocked"
 
 
 def test_stage4_opus_finetune_checkpoint_guard_does_not_require_recovered_checkpoint() -> None:
@@ -215,7 +260,14 @@ def test_stage4_opus_finetune_checkpoint_guard_does_not_require_recovered_checkp
         },
         source_payload={
             "kind": "stage5_reasoning_dataset_audit",
-            "recommendations": [{"status": "promote_to_small_train_mix", "key": "opus47_sft"}],
+            "recommendations": [
+                {
+                    "status": "promote_to_small_train_mix",
+                    "key": "opus47_sft",
+                    "converted_rows": 900,
+                    "conversion_rate": 0.9,
+                }
+            ],
         },
     )
 

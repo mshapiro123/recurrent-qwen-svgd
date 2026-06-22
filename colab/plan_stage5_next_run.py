@@ -843,6 +843,26 @@ def dataset_audit_summary_md(source_summary: Path) -> Path:
     return source_summary.with_suffix(".md")
 
 
+STAGE4_OPUS_APPROVED_SOURCE_KEYS = {"opus47_sft", "opus47_raw"}
+
+
+def stage4_opus_recovery_sources(recommendations: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    sources: list[dict[str, Any]] = []
+    for row in recommendations:
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("key") or "") not in STAGE4_OPUS_APPROVED_SOURCE_KEYS:
+            continue
+        if row.get("avoid_for_now"):
+            continue
+        if int(row.get("converted_rows") or 0) <= 0:
+            continue
+        if float(row.get("conversion_rate") or 0.0) < 0.5:
+            continue
+        sources.append(row)
+    return sources
+
+
 def reasoning_dataset_audit_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     promoted = dataset_audit_recommendations(payload, status="promote_to_small_train_mix")
     fable_hold = dataset_audit_recommendations(payload, status="hold_for_agent_tool_filter")
@@ -864,11 +884,7 @@ def reasoning_dataset_audit_actions(payload: dict[str, Any], *, source_summary: 
             )
         ]
 
-    opus_like = [
-        row
-        for row in promoted
-        if "opus" in str(row.get("key", "")).lower() or "opus" in str(row.get("dataset_id", "")).lower()
-    ]
+    opus_like = stage4_opus_recovery_sources(promoted)
     if opus_like:
         source = opus_like[0]
         assignments = {
