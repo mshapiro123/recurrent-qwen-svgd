@@ -79,7 +79,11 @@ uses GitHub, but only from inside a normal Colab Python cell via the
 
 1. Open any trusted Drive-backed Colab notebook or a blank notebook.
 2. Keep the runtime disconnected while editing the cell.
-3. Copy the single cell from the plain Python mirror
+3. Prefer the shorter bootstrap cell in
+   [`colab/STAGE5_ARC_MIX_BOOTSTRAP_CELL.py`](STAGE5_ARC_MIX_BOOTSTRAP_CELL.py).
+   It fetches the maintained full launcher from GitHub using the Colab
+   `GH_TOKEN`/`GITHUB_TOKEN` secret and executes it after checking safety
+   markers. If you want the fully expanded cell instead, copy it from
    [`colab/STAGE5_ARC_MIX_RECOVERY_CELL.py`](STAGE5_ARC_MIX_RECOVERY_CELL.py),
    or from the fenced code block in
    [`colab/STAGE5_ARC_MIX_RECOVERY_CELL.md`](STAGE5_ARC_MIX_RECOVERY_CELL.md).

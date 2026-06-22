@@ -97,6 +97,32 @@ def test_arc_mix_recovery_plain_cell_matches_markdown_code() -> None:
     assert plain_cell == markdown_cell
 
 
+def test_arc_mix_bootstrap_cell_fetches_recovery_cell_safely() -> None:
+    text = (ROOT / "colab/STAGE5_ARC_MIX_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    plain = (ROOT / "colab/STAGE5_ARC_MIX_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+
+    assert "STAGE5_ARC_MIX_RECOVERY_CELL.py" in text
+    assert "STAGE5_ARC_MIX_RECOVERY_CELL.py" in plain
+    assert "api.github.com/repos" in plain
+    assert "GH_TOKEN" in plain
+    assert "GITHUB_TOKEN" in plain
+    assert "required_markers" in plain
+    assert "colab/run_stage5_arc_mix_recovery_once.py" in plain
+    assert "colab/check_stage5_a100_go_no_go.py" in plain
+    assert "arc_mix_response_w01_lr2e6" in plain
+    assert "STAGE5_ARC_MIX_ONCE_AUTO_DISCONNECT" in plain
+    assert "exec(compile(code" in plain
+    assert "colab/run_stage5_full_assessment_once.py" not in plain
+    assert "colab/run_stage5_colab_continue.py" not in plain
+
+
+def test_arc_mix_bootstrap_plain_cell_matches_markdown_code() -> None:
+    markdown_cell = fenced_python_block("colab/STAGE5_ARC_MIX_BOOTSTRAP_CELL.md")
+    plain_cell = (ROOT / "colab/STAGE5_ARC_MIX_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+
+    assert plain_cell == markdown_cell
+
+
 def test_arc_mix_recovery_notebook_is_single_purpose() -> None:
     payload = notebook_payload("colab/09_stage5_arc_mix_recovery_once.ipynb")
     text = "\n".join(str(cell.get("source", "")) for cell in payload.get("cells", []))
@@ -121,6 +147,7 @@ def test_current_a100_action_points_to_arc_mix_notebook() -> None:
     text = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
 
     assert "https://colab.research.google.com/github/mshapiro123/recurrent-qwen-svgd/blob/main/colab/09_stage5_arc_mix_recovery_once.ipynb" in text
+    assert "STAGE5_ARC_MIX_BOOTSTRAP_CELL.py" in text
     assert "STAGE5_ARC_MIX_RECOVERY_CELL.py" in text
     assert "stage5_full_assessment_once_20260622_005522/summary.json" in text
     assert "arc_mix_response_w01_lr2e6" in text
