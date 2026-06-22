@@ -1,0 +1,8 @@
+{
+  "verified": 2000,
+  "require_programmatic_answer_check": true,
+  "programmatic_check_counts": {
+    "constructed_python_eval": 2000
+  },
+  "source": "programmatic_generator"
+}

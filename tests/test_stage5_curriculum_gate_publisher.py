@@ -54,6 +54,9 @@ def test_publish_gate_updates_current_source_pointer(monkeypatch, tmp_path) -> N
     assert (root / "config" / "stage5_current_source_summary.txt").read_text(
         encoding="utf-8"
     ) == "outputs/stage5/published_gate/curriculum_sft_gate.json\n"
+    published_payload = json.loads((root / result["published_gate"]).read_text(encoding="utf-8"))
+    assert published_payload["work_dir"] == "data/curriculum/programmatic_direct_deep_001"
+    assert published_payload["summary_json"] == "data/curriculum/programmatic_direct_deep_001/summary.json"
 
 
 def test_publish_gate_refuses_no_go_payload(monkeypatch, tmp_path) -> None:
@@ -160,12 +163,12 @@ def test_gate_publisher_git_commit_stages_gate_and_pointer(monkeypatch, tmp_path
         push=True,
     ) is True
 
-    assert commands[0] == [
+    assert [
         "git",
         "add",
         "-f",
         "outputs/stage5/published_gate/curriculum_sft_gate.json",
         "config/stage5_current_source_summary.txt",
-    ]
+    ] in commands
     assert ["git", "commit", "-m", "Publish gate"] in commands
     assert ["git", "push", "origin", "main"] in commands

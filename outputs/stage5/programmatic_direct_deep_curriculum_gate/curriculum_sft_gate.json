@@ -1,8 +1,8 @@
 {
-  "run_id": "curriculum_sft_gate_20260622_132411",
+  "run_id": "curriculum_sft_gate_20260622_124255",
   "kind": "curriculum_sft_gate",
-  "summary_json": "/content/recurrent-qwen-svgd/data/curriculum/programmatic_direct_deep_001/summary.json",
-  "work_dir": "/content/recurrent-qwen-svgd/data/curriculum/programmatic_direct_deep_001",
+  "summary_json": "data/curriculum/programmatic_direct_deep_001/summary.json",
+  "work_dir": "data/curriculum/programmatic_direct_deep_001",
   "go": true,
   "status": "go_train_recurrent_sft",
   "issues": [],
@@ -62,16 +62,16 @@
     }
   },
   "artifacts": {
-    "decontam_report": "/content/recurrent-qwen-svgd/data/curriculum/programmatic_direct_deep_001/decontam_report.json",
-    "depth_report": "/content/recurrent-qwen-svgd/data/curriculum/programmatic_direct_deep_001/depth_report.json",
-    "difficulty_report": "/content/recurrent-qwen-svgd/data/curriculum/programmatic_direct_deep_001/difficulty_report.json",
-    "method_solutions_report": "/content/recurrent-qwen-svgd/data/curriculum/programmatic_direct_deep_001/method_solutions_report.json",
-    "naturalness_report": "/content/recurrent-qwen-svgd/data/curriculum/programmatic_direct_deep_001/naturalness_report.json",
-    "positive_sft": "/content/recurrent-qwen-svgd/data/curriculum/programmatic_direct_deep_001/positive_sft.jsonl",
-    "positive_sft_report": "/content/recurrent-qwen-svgd/data/curriculum/programmatic_direct_deep_001/positive_sft_report.json",
-    "summary": "/content/recurrent-qwen-svgd/data/curriculum/programmatic_direct_deep_001/summary.json",
-    "typed_records": "/content/recurrent-qwen-svgd/data/curriculum/programmatic_direct_deep_001/typed_records.jsonl",
-    "typed_records_report": "/content/recurrent-qwen-svgd/data/curriculum/programmatic_direct_deep_001/typed_records_report.json",
-    "verified_candidates_report": "/content/recurrent-qwen-svgd/data/curriculum/programmatic_direct_deep_001/verified_candidates_report.json"
+    "decontam_report": "data/curriculum/programmatic_direct_deep_001/decontam_report.json",
+    "depth_report": "data/curriculum/programmatic_direct_deep_001/depth_report.json",
+    "difficulty_report": "data/curriculum/programmatic_direct_deep_001/difficulty_report.json",
+    "method_solutions_report": "data/curriculum/programmatic_direct_deep_001/method_solutions_report.json",
+    "naturalness_report": "data/curriculum/programmatic_direct_deep_001/naturalness_report.json",
+    "positive_sft": "data/curriculum/programmatic_direct_deep_001/positive_sft.jsonl",
+    "positive_sft_report": "data/curriculum/programmatic_direct_deep_001/positive_sft_report.json",
+    "summary": "data/curriculum/programmatic_direct_deep_001/summary.json",
+    "typed_records": "data/curriculum/programmatic_direct_deep_001/typed_records.jsonl",
+    "typed_records_report": "data/curriculum/programmatic_direct_deep_001/typed_records_report.json",
+    "verified_candidates_report": "data/curriculum/programmatic_direct_deep_001/verified_candidates_report.json"
   }
 }

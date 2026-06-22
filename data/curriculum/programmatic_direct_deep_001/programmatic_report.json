@@ -1,0 +1,30 @@
+{
+  "records": 2000,
+  "by_mode": {
+    "direct": 1000,
+    "deep_narrow": 1000
+  },
+  "target_loop_ranges": {
+    "deep_narrow": {
+      "min": 3,
+      "max": 4
+    },
+    "direct": {
+      "min": 1,
+      "max": 1
+    }
+  },
+  "depth_ranges": {
+    "deep_narrow": {
+      "min": 5,
+      "max": 9
+    },
+    "direct": {
+      "min": 1,
+      "max": 2
+    }
+  },
+  "source": "programmatic_generator",
+  "trusted_answer_source": "constructed_python_eval",
+  "positive_sft_rows": 2000
+}

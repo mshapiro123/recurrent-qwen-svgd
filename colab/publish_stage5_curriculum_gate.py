@@ -10,6 +10,7 @@ runtime discover the next guarded action through
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import shutil
 import subprocess
@@ -32,6 +33,28 @@ def path_for_cli(path: Path) -> str:
         return path.relative_to(ROOT).as_posix()
     except ValueError:
         return str(path)
+
+
+def repo_relative_value(value: Any) -> Any:
+    if not isinstance(value, str) or not value.strip():
+        return value
+    path = Path(value)
+    if not path.is_absolute():
+        return value.replace("\\", "/")
+    try:
+        return path.resolve().relative_to(ROOT.resolve()).as_posix()
+    except ValueError:
+        return value
+
+
+def normalize_gate_paths(payload: dict[str, Any]) -> dict[str, Any]:
+    normalized = copy.deepcopy(payload)
+    for key in ("work_dir", "summary_json"):
+        normalized[key] = repo_relative_value(normalized.get(key))
+    artifacts = normalized.get("artifacts")
+    if isinstance(artifacts, dict):
+        normalized["artifacts"] = {key: repo_relative_value(value) for key, value in artifacts.items()}
+    return normalized
 
 
 def read_json(path: Path) -> dict[str, Any]:
@@ -104,12 +127,12 @@ def publish_gate(
     gate_md: Path | None,
     published_dir: Path,
 ) -> dict[str, str]:
-    payload = read_json(gate_json)
+    payload = normalize_gate_paths(read_json(gate_json))
     validate_gate_payload(payload, gate_json=gate_json)
 
     published_dir.mkdir(parents=True, exist_ok=True)
     published_gate = published_dir / "curriculum_sft_gate.json"
-    shutil.copy2(gate_json, published_gate)
+    published_gate.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     published_md = published_dir / "curriculum_sft_gate.md"
     if gate_md and gate_md.exists():
         shutil.copy2(gate_md, published_md)
@@ -123,6 +146,8 @@ def publish_gate(
 
 
 def git_commit_and_push(paths: list[str], *, commit_message: str, push: bool) -> bool:
+    run(["git", "config", "user.email", "colab-runner@local"], check=False)
+    run(["git", "config", "user.name", "Colab Runner"], check=False)
     run(["git", "add", "-f", *paths])
     diff = run(["git", "diff", "--cached", "--quiet"], check=False)
     if diff.returncode == 0:

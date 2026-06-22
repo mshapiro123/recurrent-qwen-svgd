@@ -491,6 +491,8 @@ def backup_to_drive(train_jsonl: Path, val_jsonl: Path) -> dict[str, Any]:
 
 
 def git_commit_results() -> None:
+    run(["git", "config", "user.email", "colab-runner@local"], check=False)
+    run(["git", "config", "user.name", "Colab Runner"], check=False)
     safe_patterns = [
         "curriculum_sft_gate.json",
         "curriculum_sft_gate.md",

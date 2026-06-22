@@ -1,0 +1,19 @@
+{
+  "records": 2000,
+  "validation_issues": [],
+  "unsafe_auxiliary_traces": 0,
+  "mode_counts": {
+    "deep_narrow": 1000,
+    "direct": 1000
+  },
+  "role_counts": {
+    "positive_depth": 1000,
+    "positive_direct": 1000
+  },
+  "positive_traces": 2000,
+  "distinctness_required": false,
+  "min_natural_agree": 2,
+  "min_distinct_agree": 2,
+  "distinctness_judgments": 0,
+  "source": "programmatic_generator"
+}
