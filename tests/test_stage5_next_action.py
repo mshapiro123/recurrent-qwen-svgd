@@ -481,6 +481,17 @@ def test_parse_action_command_allows_mcq_debias_diagnostic_runner() -> None:
     assert parsed.argv == [sys.executable, "colab/run_stage5_mcq_debias_diagnostic.py"]
 
 
+def test_parse_action_command_allows_mcq_scoring_policy_runner() -> None:
+    parsed = parse_action_command(
+        "STAGE5_MCQ_SCORING_POLICY_RUN_ID=policy "
+        "python colab/apply_stage5_mcq_scoring_policy.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_MCQ_SCORING_POLICY_RUN_ID": "policy"}
+    assert parsed.argv == [sys.executable, "colab/apply_stage5_mcq_scoring_policy.py"]
+
+
 def test_paid_gpu_arc_runners_are_a100_guarded() -> None:
     expected = {
         "colab/run_stage5_arc_agi_candidate_gate.py",

@@ -2738,8 +2738,9 @@ def test_mcq_debias_pair_confirmed_stops_training_and_adopts_debiased_scoring(tm
     actions = plan_next_actions(payload, source_summary=source)
 
     assert source_kind(payload) == "mcq_debias_pair_assessment"
-    assert actions[0]["name"] == "Adopt debiased MCQ scoring before more training"
+    assert actions[0]["name"] == "Activate debiased MCQ scoring policy"
     assert "Do not spend A100 time" in actions[0]["reason"]
+    assert "python colab/apply_stage5_mcq_scoring_policy.py" in actions[0]["command"]
     assert "run_stage5_direct_preservation_probe.py" not in actions[0]["command"]
 
 
@@ -2758,6 +2759,23 @@ def test_mcq_debias_pair_content_gap_routes_to_blocking_summary(tmp_path) -> Non
     assert actions[0]["name"] == "Run bounded max_loops=1 direct-preservation probe"
     assert "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY=outputs/stage5/challenge_debias/summary.json" in actions[0]["command"]
     assert "python colab/run_stage5_direct_preservation_probe.py" in actions[0]["command"]
+
+
+def test_mcq_scoring_policy_routes_stale_label_artifacts_to_no_gpu_claim_regeneration(tmp_path) -> None:
+    source = tmp_path / "mcq_policy" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_mcq_scoring_policy",
+        "status": "debiased_mcq_policy_active",
+        "passed": True,
+        "stale_label_only_artifacts": [{"summary": "outputs/stage5/old/summary.json"}],
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert source_kind(payload) == "mcq_scoring_policy"
+    assert actions[0]["name"] == "Regenerate stale MCQ benchmark claims under debiased scoring"
+    assert "direct_preservation" not in actions[0]["command"]
 
 
 def test_direct_preservation_probe_pass_confirms_larger_arc(tmp_path) -> None:

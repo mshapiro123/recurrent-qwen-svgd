@@ -84,6 +84,11 @@ The preferred artifact after the ARC-Challenge run is now
 - `status=mcq_debias_mixed_or_inconclusive`: inspect rows before choosing a
   GPU action.
 
+If the pair assessment confirms selection bias, run
+`colab/apply_stage5_mcq_scoring_policy.py`. It writes
+`kind=stage5_mcq_scoring_policy`, makes cyclic/content scoring the MCQ policy
+for future claims, and flags stale label-only artifacts in `outputs/stage5`.
+
 ## Policy
 
 Do not use bare `A/B/C/D` accuracy alone to justify:

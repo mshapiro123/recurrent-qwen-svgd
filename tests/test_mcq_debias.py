@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 from colab import run_stage5_mcq_debias_diagnostic as diagnostic
+from colab import apply_stage5_mcq_scoring_policy as scoring_policy
 from colab.assess_stage5_mcq_debias_pair import assess_pair
 from eval.mcq_debias import aggregate_permutation_scores, cyclic_permutation_rows, edge_minus_middle, rotate_mcq_row
 
@@ -158,3 +159,35 @@ def test_mcq_debias_pair_routes_residual_content_gap_to_blocking_summary(tmp_pat
     assert payload["status"] == "mcq_content_gap_persists"
     assert payload["passed"] is False
     assert payload["blocking_summary"] == str(challenge_path).replace("\\", "/")
+
+
+def test_mcq_scoring_policy_activates_from_confirmed_pair_and_flags_stale_label_artifacts(
+    tmp_path, monkeypatch
+) -> None:
+    outputs = tmp_path / "outputs" / "stage5" / "old_balanced"
+    outputs.mkdir(parents=True)
+    (outputs / "summary.json").write_text(
+        json.dumps(
+            {
+                "kind": "stage5_balanced_mcq_checkpoint_assessment",
+                "score_target": "label",
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(scoring_policy, "ROOT", tmp_path)
+
+    payload = scoring_policy.build_policy(
+        source_summary=tmp_path / "pair" / "summary.json",
+        source_payload={
+            "kind": "stage5_mcq_debias_pair_assessment",
+            "status": "mcq_selection_bias_confirmed",
+        },
+    )
+
+    assert payload["kind"] == "stage5_mcq_scoring_policy"
+    assert payload["status"] == "debiased_mcq_policy_active"
+    assert payload["passed"] is True
+    assert payload["primary_metrics"] == ["cyclic_label_aggregated", "content_question_only"]
+    assert payload["diagnostic_only_metrics"] == ["label"]
+    assert payload["stale_label_only_artifacts"][0]["summary"] == "outputs/stage5/old_balanced/summary.json"

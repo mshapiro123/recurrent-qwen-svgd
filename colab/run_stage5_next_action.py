@@ -82,6 +82,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/run_stage5_arc_agi_trace_sft_gate.py",
     "colab/run_stage5_arc_agi_tta_sweep.py",
     "colab/run_stage5_benchmark_suite.py",
+    "colab/apply_stage5_mcq_scoring_policy.py",
     "colab/run_stage5_balanced_arc_mix_gate.py",
     "colab/run_stage5_competence_preserving_pipeline.py",
     "colab/run_stage5_curriculum_sft.py",

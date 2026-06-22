@@ -137,6 +137,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or arc_mix_answer_prior_payload(payload) is not None
         or mcq_debias_diagnostic_payload(payload) is not None
         or mcq_debias_pair_assessment_payload(payload) is not None
+        or mcq_scoring_policy_payload(payload) is not None
         or direct_preservation_probe_payload(payload) is not None
         or claim_readiness_payload(payload) is not None
         or arc_agi_baseline_registry_payload(payload) is not None
@@ -368,6 +369,10 @@ def mcq_debias_diagnostic_payload(payload: dict[str, Any]) -> dict[str, Any] | N
 
 def mcq_debias_pair_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "stage5_mcq_debias_pair_assessment" else None
+
+
+def mcq_scoring_policy_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_mcq_scoring_policy" else None
 
 
 def direct_preservation_probe_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -2431,13 +2436,19 @@ def mcq_debias_pair_assessment_actions(payload: dict[str, Any], *, source_summar
     if status == "mcq_selection_bias_confirmed":
         return [
             make_action(
-                "Adopt debiased MCQ scoring before more training",
+                "Activate debiased MCQ scoring policy",
                 (
                     "ARC-Easy and ARC-Challenge both indicate the apparent recurrent/base MCQ gap is mostly a "
                     "bare option-label artifact. Do not spend A100 time on direct-preservation training until "
                     "benchmark claims are regenerated with content/cyclic scoring and open-ended replay metrics."
                 ),
-                f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                command_env(
+                    {
+                        "STAGE5_MCQ_SCORING_POLICY_RUN_ID": f"{RUN_ID}_mcq_scoring_policy",
+                        "STAGE5_MCQ_SCORING_POLICY_SOURCE_SUMMARY": path_for_cli(source_summary),
+                    },
+                    "python colab/apply_stage5_mcq_scoring_policy.py",
+                ),
                 10,
             )
         ]
@@ -2470,6 +2481,45 @@ def mcq_debias_pair_assessment_actions(payload: dict[str, Any], *, source_summar
         make_action(
             f"Inspect paired MCQ debias assessment `{status}`",
             "ARC-Easy and ARC-Challenge did not cleanly agree; inspect the pair assessment before spending GPU time.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
+def mcq_scoring_policy_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    stale = payload.get("stale_label_only_artifacts") if isinstance(payload.get("stale_label_only_artifacts"), list) else []
+    if status == "debiased_mcq_policy_active":
+        if stale:
+            return [
+                make_action(
+                    "Regenerate stale MCQ benchmark claims under debiased scoring",
+                    (
+                        "The debiased MCQ scoring policy is active and local outputs still contain label-only MCQ "
+                        "claim artifacts. Do not use those artifacts for training or release claims until they are "
+                        "rerun or explicitly annotated as diagnostic-only."
+                    ),
+                    f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                    10,
+                )
+            ]
+        return [
+            make_action(
+                "Resume depth/width recovery planning under debiased MCQ policy",
+                (
+                    "The MCQ scoring policy is active and no stale label-only Stage 5 artifacts were found locally. "
+                    "The next GPU action should come from direct/deep recovery or particle gates, not from bare-label "
+                    "MCQ deltas."
+                ),
+                f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect MCQ scoring policy `{status}`",
+            "The MCQ scoring policy was not activated; inspect the source pair assessment before using MCQ claims.",
             f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
             10,
         )
@@ -3324,6 +3374,9 @@ def plan_next_actions(
     mcq_debias_pair = mcq_debias_pair_assessment_payload(payload)
     if mcq_debias_pair:
         return mcq_debias_pair_assessment_actions(mcq_debias_pair, source_summary=source_summary)
+    mcq_policy = mcq_scoring_policy_payload(payload)
+    if mcq_policy:
+        return mcq_scoring_policy_actions(mcq_policy, source_summary=source_summary)
     direct_preservation_probe = direct_preservation_probe_payload(payload)
     if direct_preservation_probe:
         return direct_preservation_probe_actions(direct_preservation_probe, source_summary=source_summary)
@@ -3719,6 +3772,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "mcq_debias_diagnostic"
     if mcq_debias_pair_assessment_payload(payload):
         return "mcq_debias_pair_assessment"
+    if mcq_scoring_policy_payload(payload):
+        return "mcq_scoring_policy"
     if direct_preservation_probe_payload(payload):
         return "direct_preservation_probe"
     if claim_readiness_payload(payload):
