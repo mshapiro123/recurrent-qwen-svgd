@@ -70,6 +70,12 @@ RECURRENT_SVGD_KERNEL_PROJECTION_DIM = os.environ.get("STAGE5_BENCHMARK_SVGD_KER
 RECURRENT_SVGD_KERNEL_PROJECTION_PATH = os.environ.get("STAGE5_BENCHMARK_SVGD_KERNEL_PROJECTION_PATH", "")
 RECURRENT_SVGD_KERNEL_GEOMETRY = os.environ.get("STAGE5_BENCHMARK_SVGD_KERNEL_GEOMETRY", "euclidean")
 RECURRENT_SVGD_PROJECTION_SEED = os.environ.get("STAGE5_BENCHMARK_SVGD_PROJECTION_SEED", "0")
+INCLUDE_LOOP_DIAGNOSTICS = os.environ.get("STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS", "1").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
 DEVICE = os.environ.get("DEVICE", "cuda")
@@ -325,13 +331,14 @@ def eval_jobs(specs: list[BenchmarkSpec], *, checkpoint: Path) -> list[EvalJob]:
                 ("recurrent", RECURRENT_MODE, recurrent_extra),
             ):
                 output = RUN_DIR / f"{spec.name}_{arm}_{score_target}.jsonl"
+                loop_diagnostics = ["--include_loop_diagnostics"] if arm == "recurrent" and INCLUDE_LOOP_DIAGNOSTICS else []
                 jobs.append(
                     EvalJob(
                         benchmark=spec.name,
                         arm=arm,
                         score_target=score_target,
                         output_jsonl=output,
-                        cmd=common + ["--mode", mode, *extra, "--output_jsonl", path_for_cli(output)],
+                        cmd=common + ["--mode", mode, *extra, *loop_diagnostics, "--output_jsonl", path_for_cli(output)],
                     )
                 )
     return jobs

@@ -184,6 +184,22 @@ def test_eval_jobs_passes_phase2_svgd_flags(tmp_path, monkeypatch) -> None:
     assert recurrent_cmd[recurrent_cmd.index("--svgd_repulsion_max_norm") + 1] == "none"
     assert recurrent_cmd[recurrent_cmd.index("--svgd_kernel_projection_dim") + 1] == "8"
     assert recurrent_cmd[recurrent_cmd.index("--svgd_kernel_projection_path") + 1] == "outputs/calibration/proj.pt"
+    assert "--include_loop_diagnostics" in recurrent_cmd
+
+
+def test_eval_jobs_include_loop_diagnostics_only_for_recurrent(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    monkeypatch.setattr(module, "RECURRENT_MODE", "phase1")
+    monkeypatch.setattr(module, "RECURRENT_NUM_TRAJECTORIES", 1)
+    monkeypatch.setattr(module, "INCLUDE_LOOP_DIAGNOSTICS", True)
+
+    jobs = module.eval_jobs([BenchmarkSpec("arc_challenge", tmp_path / "arc.jsonl", [])], checkpoint=tmp_path / "phase1.pt")
+    base_cmd = next(job.cmd for job in jobs if job.arm == "base")
+    recurrent_cmd = next(job.cmd for job in jobs if job.arm == "recurrent")
+
+    assert "--include_loop_diagnostics" not in base_cmd
+    assert "--include_loop_diagnostics" in recurrent_cmd
 
 
 def test_benchmark_specs_supports_arc_easy(tmp_path, monkeypatch) -> None:

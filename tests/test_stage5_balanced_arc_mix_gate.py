@@ -253,6 +253,24 @@ def test_paired_mcq_diagnostics_reports_margin_and_prediction_shift(tmp_path) ->
     assert stats["prediction_count_delta"] == {"A": 0, "B": 0}
 
 
+def test_eval_arc_includes_loop_diagnostics_for_phase1(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_balanced_arc_mix_gate as module
+
+    calls = []
+    data = tmp_path / "arc.jsonl"
+    checkpoint = tmp_path / "phase1.pt"
+    data.write_text("", encoding="utf-8")
+    checkpoint.write_bytes(b"checkpoint")
+    monkeypatch.setattr(module, "RUN_DIR", tmp_path / "run")
+    monkeypatch.setattr(module, "INCLUDE_LOOP_DIAGNOSTICS", True)
+    monkeypatch.setattr(module, "run", lambda cmd, **_kwargs: calls.append(cmd))
+
+    module.eval_arc("candidate", "phase1", data, checkpoint)
+
+    assert calls
+    assert "--include_loop_diagnostics" in calls[0]
+
+
 def test_arc_mix_commit_artifacts_exclude_checkpoints(tmp_path, monkeypatch) -> None:
     import colab.run_stage5_balanced_arc_mix_gate as module
 

@@ -60,6 +60,12 @@ MIX_SEED = int(os.environ.get("STAGE5_ARC_MIX_SEED", "17"))
 ARC_EVAL_LIMIT = int(os.environ.get("STAGE5_ARC_MIX_ARC_EVAL_LIMIT", "128"))
 MIN_PROXY_MARGIN_DELTA = float(os.environ.get("STAGE5_ARC_MIX_MIN_MARGIN_DELTA", "-0.05"))
 MAX_PROXY_PREDICTION_SHIFT = int(os.environ.get("STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT", "16"))
+INCLUDE_LOOP_DIAGNOSTICS = os.environ.get("STAGE5_ARC_MIX_INCLUDE_LOOP_DIAGNOSTICS", "1").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 PUSH_RESULTS = os.environ.get("STAGE5_ARC_MIX_PUSH", "1").strip().lower() in {
     "1",
     "true",
@@ -476,6 +482,8 @@ def eval_arc(label: str, mode: str, data_jsonl: Path, checkpoint: Path | None = 
             "--num_trajectories",
             "1",
         ]
+        if INCLUDE_LOOP_DIAGNOSTICS:
+            cmd.append("--include_loop_diagnostics")
     run(cmd + ["--output_jsonl", path_for_cli(output)], log_name=f"{data_jsonl.stem}_{label}.log")
     return output
 
