@@ -2682,10 +2682,46 @@ def test_arc_mix_answer_prior_diagnosis_stops_gpu_work(tmp_path) -> None:
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Run bounded max_loops=1 direct-preservation probe"
-    assert "loop-1 preservation probe" in actions[0]["reason"]
-    assert "python colab/run_stage5_direct_preservation_probe.py" in actions[0]["command"]
+    assert actions[0]["name"] == "Run bounded MCQ selection-bias debias diagnostic"
+    assert "option-ID selection-bias artifact" in actions[0]["reason"]
+    assert "python colab/run_stage5_mcq_debias_diagnostic.py" in actions[0]["command"]
+    assert "STAGE5_MCQ_DEBIAS_ARC_LIMIT=128" in actions[0]["command"]
+    assert "run_stage5_direct_preservation_probe.py" not in actions[0]["command"]
     assert "run_stage5_balanced_arc_mix_gate.py" not in actions[0]["command"]
+
+
+def test_mcq_debias_selection_bias_likely_avoids_training(tmp_path) -> None:
+    source = tmp_path / "mcq_debias" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_mcq_debias_diagnostic",
+        "status": "selection_bias_likely",
+        "passed": True,
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Regenerate MCQ benchmark claims with debiased scoring"
+    assert "do not train" in actions[0]["reason"].lower()
+    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_SCORE_TARGETS=option_text" in actions[0]["command"]
+    assert "run_stage5_direct_preservation_probe.py" not in actions[0]["command"]
+
+
+def test_mcq_debias_content_degradation_persists_runs_direct_preservation(tmp_path) -> None:
+    source = tmp_path / "mcq_debias" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_mcq_debias_diagnostic",
+        "status": "content_degradation_persists",
+        "passed": False,
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run bounded max_loops=1 direct-preservation probe"
+    assert "still shows a base gap" in actions[0]["reason"].lower()
+    assert "python colab/run_stage5_direct_preservation_probe.py" in actions[0]["command"]
 
 
 def test_direct_preservation_probe_pass_confirms_larger_arc(tmp_path) -> None:

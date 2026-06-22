@@ -12,13 +12,11 @@ The bootstrap defaults to `preflight`. To intentionally execute the guarded
 paid action after preflight is green, set
 `STAGE5_CURRENT_A100_TARGET=safe_continue_execute` before running it on an
 A100/H100 runtime.
-The current preferred path is **CPU curriculum first, A100 second**. If the
-generated direct/deep curriculum gate has not been published yet, do not attach
-an A100. Run the same bootstrap on a CPU runtime with
-`STAGE5_CURRENT_A100_TARGET=programmatic_curriculum_cpu`; that target fetches
-`colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py`, refuses attached GPU runtimes
-by default, backs the generated rows up to Drive, and publishes the small green
-gate pointer to GitHub.
+The current preferred path is **measurement before more training**. The next
+guarded action is a bounded MCQ option-label debias diagnostic that re-scores
+the same ARC-Easy slice with bare labels, label-free option-content scoring,
+and cyclic option permutation. Do not run the direct-preservation fine-tune
+until this diagnostic shows that content degradation persists after debiasing.
 The bootstrap now auto-resumes from
 [`config/stage5_current_source_summary.txt`](../config/stage5_current_source_summary.txt)
 when that pointer exists and targets an available summary. To force a specific

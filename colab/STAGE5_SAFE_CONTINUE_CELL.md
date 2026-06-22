@@ -219,6 +219,8 @@ if execute_action:
             "tests/test_curriculum_sft_gate.py",
             "tests/test_stage5_curriculum_sft.py",
             "tests/test_curriculum_pipeline_from_artifacts.py",
+            "tests/test_filter_mcq_sft_by_eval.py",
+            "tests/test_mcq_debias.py",
             "tests/test_curriculum_jsonl.py",
         ],
         cwd=ROOT,

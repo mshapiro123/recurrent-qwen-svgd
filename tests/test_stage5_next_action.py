@@ -451,6 +451,36 @@ def test_parse_action_command_allows_distill_sft_gate_runner() -> None:
     assert parsed.argv == [sys.executable, "colab/run_stage5_arc_agi_distill_sft_gate.py"]
 
 
+def test_parse_action_command_allows_direct_preservation_probe_runner() -> None:
+    parsed = parse_action_command(
+        "STAGE5_DIRECT_PRESERVE_RUN_ID=direct "
+        "STAGE5_DIRECT_PRESERVE_ARC_EVAL_LIMIT=128 "
+        "python colab/run_stage5_direct_preservation_probe.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {
+        "STAGE5_DIRECT_PRESERVE_RUN_ID": "direct",
+        "STAGE5_DIRECT_PRESERVE_ARC_EVAL_LIMIT": "128",
+    }
+    assert parsed.argv == [sys.executable, "colab/run_stage5_direct_preservation_probe.py"]
+
+
+def test_parse_action_command_allows_mcq_debias_diagnostic_runner() -> None:
+    parsed = parse_action_command(
+        "STAGE5_MCQ_DEBIAS_RUN_ID=debias "
+        "STAGE5_MCQ_DEBIAS_ARC_LIMIT=128 "
+        "python colab/run_stage5_mcq_debias_diagnostic.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {
+        "STAGE5_MCQ_DEBIAS_RUN_ID": "debias",
+        "STAGE5_MCQ_DEBIAS_ARC_LIMIT": "128",
+    }
+    assert parsed.argv == [sys.executable, "colab/run_stage5_mcq_debias_diagnostic.py"]
+
+
 def test_paid_gpu_arc_runners_are_a100_guarded() -> None:
     expected = {
         "colab/run_stage5_arc_agi_candidate_gate.py",
@@ -465,6 +495,8 @@ def test_paid_gpu_arc_runners_are_a100_guarded() -> None:
         "colab/run_stage5_arc_agi_recovery_particle_gate.py",
         "colab/run_stage5_arc_agi_tta_sweep.py",
         "colab/run_stage5_phase1_recovery_ladder.py",
+        "colab/run_stage5_direct_preservation_probe.py",
+        "colab/run_stage5_mcq_debias_diagnostic.py",
         "colab/run_stage5_recovered_phase1_arc_gate.py",
         "colab/run_stage5_recovered_phase1_particle_arc_gate.py",
         "colab/run_stage5_recovered_phase2_smoke.py",

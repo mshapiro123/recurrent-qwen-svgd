@@ -184,6 +184,8 @@ def benchmark_suite_budget_preflight(command: str) -> dict[str, Any]:
 
 
 def source_payload_kind(source_payload: dict[str, Any]) -> str:
+    if source_payload.get("kind"):
+        return source_kind(source_payload)
     explicit = source_payload.get("source_kind")
     if explicit:
         return str(explicit)
@@ -790,8 +792,15 @@ def classify_action(
         }
 
     if script == "colab/run_stage5_direct_preservation_probe.py":
-        if source_kind_label == "arc_mix_answer_prior_diagnosis" and source_payload.get("status") == "direct_answer_prior_not_preserved":
-            source_summary = str(source_payload.get("source_summary") or "").strip()
+        direct_preservation_source = (
+            source_kind_label == "arc_mix_answer_prior_diagnosis"
+            and source_payload.get("status") == "direct_answer_prior_not_preserved"
+        ) or (
+            source_kind_label == "mcq_debias_diagnostic"
+            and source_payload.get("status") == "content_degradation_persists"
+        )
+        if direct_preservation_source:
+            source_summary = str(source_payload.get("nested_source_summary") or source_payload.get("source_summary") or "").strip()
             checkpoint = None
             if source_summary:
                 try:
@@ -804,7 +813,7 @@ def classify_action(
                 spend_class="bounded_direct_preservation_probe",
                 checkpoint=checkpoint,
                 reason=(
-                    "Answer-prior diagnosis shows the direct route is not preserving base-confident examples; "
+                    "Debiased evidence still shows the direct route is not preserving base-confident examples; "
                     "one bounded max_loops=1 direct-preservation probe is allowed."
                 ),
             )
@@ -813,7 +822,37 @@ def classify_action(
             "status": "direct_preservation_probe_blocked",
             "spend_class": "none",
             "reason": (
-                "Direct preservation probe requires source kind arc_mix_answer_prior_diagnosis with "
+                "Direct preservation probe requires either source kind arc_mix_answer_prior_diagnosis with "
+                "status direct_answer_prior_not_preserved, or source kind mcq_debias_diagnostic with "
+                "status content_degradation_persists."
+            ),
+        }
+
+    if script == "colab/run_stage5_mcq_debias_diagnostic.py":
+        if source_kind_label == "arc_mix_answer_prior_diagnosis" and source_payload.get("status") == "direct_answer_prior_not_preserved":
+            source_summary = str(source_payload.get("source_summary") or "").strip()
+            checkpoint = None
+            if source_summary:
+                try:
+                    nested = read_json(resolve_path(source_summary))
+                    checkpoint = str(nested.get("resume_checkpoint") or "").replace("\\", "/")
+                except Exception:
+                    checkpoint = None
+            return go_paid_gpu_action(
+                status="go_mcq_debias_diagnostic",
+                spend_class="bounded_mcq_debias_diagnostic",
+                checkpoint=checkpoint,
+                reason=(
+                    "Answer-prior drift may be MCQ option-label selection bias; one bounded no-training "
+                    "label/content/permutation debias diagnostic is allowed before direct-preservation training."
+                ),
+            )
+        return {
+            "go": False,
+            "status": "mcq_debias_diagnostic_blocked",
+            "spend_class": "none",
+            "reason": (
+                "MCQ debias diagnostic requires source kind arc_mix_answer_prior_diagnosis with "
                 "status direct_answer_prior_not_preserved."
             ),
         }

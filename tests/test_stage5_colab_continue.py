@@ -42,6 +42,8 @@ def test_colab_continue_focuses_gate1_and_next_action_tests() -> None:
     assert "tests/test_stage5_curriculum_sft.py" in paths
     assert "tests/test_curriculum_sft_gate.py" in paths
     assert "tests/test_curriculum_pipeline_from_artifacts.py" in paths
+    assert "tests/test_filter_mcq_sft_by_eval.py" in paths
+    assert "tests/test_mcq_debias.py" in paths
     assert "tests/test_curriculum_pipeline_fixture.py" in paths
     assert "tests/test_curriculum_generation_jobs.py" in paths
     assert "tests/test_collect_curriculum_job_outputs.py" in paths

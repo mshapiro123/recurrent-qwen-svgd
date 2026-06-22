@@ -135,6 +135,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or programmatic_depth_repair_payload(payload) is not None
         or programmatic_depth_assessment_payload(payload) is not None
         or arc_mix_answer_prior_payload(payload) is not None
+        or mcq_debias_diagnostic_payload(payload) is not None
         or direct_preservation_probe_payload(payload) is not None
         or claim_readiness_payload(payload) is not None
         or arc_agi_baseline_registry_payload(payload) is not None
@@ -358,6 +359,10 @@ def programmatic_depth_assessment_payload(payload: dict[str, Any]) -> dict[str, 
 
 def arc_mix_answer_prior_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "stage5_arc_mix_answer_prior_diagnosis" else None
+
+
+def mcq_debias_diagnostic_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_mcq_debias_diagnostic" else None
 
 
 def direct_preservation_probe_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -2329,10 +2334,43 @@ def arc_mix_answer_prior_actions(payload: dict[str, Any], *, source_summary: Pat
     if status == "direct_answer_prior_not_preserved":
         return [
             make_action(
+                "Run bounded MCQ selection-bias debias diagnostic",
+                (
+                    "The conservative ARC-mix probe shifted mass from middle options to A/D, which matches a "
+                    "known MCQ option-ID selection-bias artifact. Re-score the same ARC-Easy slice with bare "
+                    "labels, label-free option-content scoring, and cyclic option permutation before spending "
+                    "on direct-preservation training."
+                ),
+                command_env(
+                    {
+                        "STAGE5_MCQ_DEBIAS_RUN_ID": f"{RUN_ID}_mcq_debias",
+                        "STAGE5_MCQ_DEBIAS_SOURCE_SUMMARY": path_for_cli(source_summary),
+                        "STAGE5_MCQ_DEBIAS_ARC_LIMIT": "128",
+                    },
+                    "python colab/run_stage5_mcq_debias_diagnostic.py",
+                ),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect ARC-mix answer-prior diagnosis `{status}`",
+            "The answer-prior diagnosis is the current source of truth; inspect it before selecting another GPU action.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
+def mcq_debias_diagnostic_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    if status == "content_degradation_persists":
+        return [
+            make_action(
                 "Run bounded max_loops=1 direct-preservation probe",
                 (
-                    "The conservative ARC-mix probe did not recover the base-confident direct bucket. "
-                    "Run one narrow loop-1 preservation probe: evaluate loop-1 vs loop-4, train only on "
+                    "The MCQ debias diagnostic still shows a base gap after option-content and cyclic-permutation "
+                    "scoring. Run one narrow loop-1 preservation probe: evaluate loop-1 vs loop-4, train only on "
                     "label-balanced base-correct ARC-Easy rows if needed, and stop unless the direct route recovers."
                 ),
                 command_env(
@@ -2349,10 +2387,34 @@ def arc_mix_answer_prior_actions(payload: dict[str, Any], *, source_summary: Pat
                 10,
             )
         ]
+    if status == "selection_bias_likely":
+        return [
+            make_action(
+                "Regenerate MCQ benchmark claims with debiased scoring",
+                (
+                    "The debias diagnostic indicates the apparent direct-route regression is mostly an option-ID "
+                    "selection-bias artifact. Do not train direct preservation yet; rerun MCQ benchmark claims "
+                    "with option-content and cyclic-permutation scoring as the comparison metric."
+                ),
+                command_env(
+                    {
+                        "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{RUN_ID}_mcq_debiased_confirmation",
+                        "STAGE5_BENCHMARK_SOURCE_SUMMARY": path_for_cli(source_summary),
+                        "STAGE5_BENCHMARKS": "arc_easy,arc_challenge",
+                        "STAGE5_BENCHMARK_ARC_EASY_LIMIT": "256",
+                        "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "256",
+                        "STAGE5_BENCHMARK_SCORE_TARGETS": "option_text",
+                        "STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS": "1",
+                    },
+                    "python colab/run_stage5_benchmark_suite.py",
+                ),
+                9,
+            )
+        ]
     return [
         make_action(
-            f"Inspect ARC-mix answer-prior diagnosis `{status}`",
-            "The answer-prior diagnosis is the current source of truth; inspect it before selecting another GPU action.",
+            f"Inspect MCQ debias diagnostic `{status}`",
+            "The debias diagnostic did not cleanly resolve selection bias versus content degradation; inspect rows before training.",
             f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
             10,
         )
@@ -3201,6 +3263,9 @@ def plan_next_actions(
     arc_mix_answer_prior = arc_mix_answer_prior_payload(payload)
     if arc_mix_answer_prior:
         return arc_mix_answer_prior_actions(arc_mix_answer_prior, source_summary=source_summary)
+    mcq_debias = mcq_debias_diagnostic_payload(payload)
+    if mcq_debias:
+        return mcq_debias_diagnostic_actions(mcq_debias, source_summary=source_summary)
     direct_preservation_probe = direct_preservation_probe_payload(payload)
     if direct_preservation_probe:
         return direct_preservation_probe_actions(direct_preservation_probe, source_summary=source_summary)
@@ -3592,6 +3657,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "programmatic_depth_assessment"
     if arc_mix_answer_prior_payload(payload):
         return "arc_mix_answer_prior_diagnosis"
+    if mcq_debias_diagnostic_payload(payload):
+        return "mcq_debias_diagnostic"
     if direct_preservation_probe_payload(payload):
         return "direct_preservation_probe"
     if claim_readiness_payload(payload):

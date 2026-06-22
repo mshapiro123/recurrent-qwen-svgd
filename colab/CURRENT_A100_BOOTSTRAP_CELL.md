@@ -105,6 +105,8 @@ TARGETS = {
             "RUN_A100_ACTION",
             "mount_drive_for_paid_action",
             "tests/test_stage5_routing_repair.py",
+            "tests/test_filter_mcq_sft_by_eval.py",
+            "tests/test_mcq_debias.py",
             "colab/run_stage5_next_action.py",
         ],
         "env": {"STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "1"},
