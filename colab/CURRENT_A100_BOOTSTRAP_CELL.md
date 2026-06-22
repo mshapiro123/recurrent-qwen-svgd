@@ -59,14 +59,14 @@ Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
 This target follows the current trace-job summary, requires explicit
 `STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER=1` before provider spend,
 writes `trace_responses.jsonl`, backs it up to Drive, pushes safe summaries, and
-disconnects.
+disconnects. Its summary becomes the preferred input to trace collection.
 
 To collect completed trace responses into gated curriculum data without GPU:
 
 Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
 "capability_ladder_trace_collect_cpu"` before running the bootstrap cell. This
-target follows the current trace-job summary, expects a trace response JSONL
-beside that summary or via `STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_JSONL`,
+target follows either the current trace-response summary or the original
+trace-job summary plus an explicit `STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_JSONL`,
 verifies final answers, builds traced curriculum rows, runs the SFT gate, pushes
 safe summaries, and disconnects.
 
