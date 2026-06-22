@@ -16,6 +16,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "capability_ladder_trace_jobs_cpu" - CPU-only trace-job build from latest capability ladder probe.
 #   "capability_ladder_trace_responses_cpu" - CPU/network provider responses for trace jobs.
 #   "capability_ladder_trace_collect_cpu" - CPU-only trace-response collection into gated SFT data.
+#   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 
@@ -177,6 +178,19 @@ TARGETS = {
         ],
         "env": {},
     },
+    "direct_preservation_probe": {
+        "path": "colab/STAGE5_DIRECT_PRESERVATION_PROBE_CELL.py",
+        "markers": [
+            "STAGE5_DIRECT_PRESERVATION_PROBE_CELL_VERSION",
+            "direct_preservation_probe",
+            "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY",
+            "STAGE5_DIRECT_PRESERVE_MAX_STEPS",
+            "colab/run_stage5_direct_preservation_probe.py",
+            "stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation",
+            "runtime.unassign",
+        ],
+        "env": {},
+    },
 }
 
 def secret(*names):
@@ -222,11 +236,13 @@ selected = TARGETS[TARGET]
 if SOURCE_SUMMARY_OVERRIDE:
     os.environ["STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
     os.environ["STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
+    os.environ["STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
 else:
     # Avoid accidentally pinning a new session to an old target-specific source
     # summary. The safe-continue launcher will follow config/stage5_current_source_summary.txt.
     os.environ.pop("STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY", None)
     os.environ.pop("STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY", None)
+    os.environ.pop("STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY", None)
 for key, value in selected["env"].items():
     os.environ[key] = value
 os.environ.setdefault("STAGE5_SAFE_CONTINUE_DISCONNECT", "1")
