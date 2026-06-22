@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 
@@ -630,6 +631,38 @@ def test_a100_guard_allows_bounded_routing_diagnostic(tmp_path, monkeypatch) -> 
     assert guard["allowed"] is True
     assert guard["status"] == "go_routing_diagnostic"
     assert guard["spend_class"] == "bounded_routing_diagnostic"
+
+
+def test_a100_guard_uses_parsed_recovered_checkpoint_env(tmp_path, monkeypatch) -> None:
+    monkeypatch.delenv("STAGE5_RECOVERED_PHASE1_CHECKPOINT", raising=False)
+    monkeypatch.delenv("STAGE5_RECOVERED_PHASE1_RUN_ID", raising=False)
+    checkpoint = tmp_path / "outputs" / "stage5" / "arc_mix" / "arm" / "phase1" / "phase1_step_50.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    source = tmp_path / "summary.json"
+    source.write_text(
+        '{"kind": "stage5_balanced_arc_mix_gate", '
+        '"status": "proxy_lift_calibration_warning", '
+        '"decision": "stop_for_calibration_repair"}',
+        encoding="utf-8",
+    )
+    action = {
+        "name": "Run bounded depth/width routing diagnostic",
+        "command": (
+            f"STAGE5_RECOVERED_PHASE1_CHECKPOINT={checkpoint.as_posix()} "
+            "STAGE5_RECOVERED_PHASE1_RUN_ID=arc_mix "
+            "python colab/run_stage5_routing_diagnostic.py"
+        ),
+    }
+    parsed = parse_action_command(action["command"])
+
+    guard = a100_execution_guard(action, {"source_summary": str(source)}, parsed)
+
+    assert guard["allowed"] is True
+    assert guard["status"] == "go_routing_diagnostic"
+    assert guard["checkpoint_preflight"]["available"] is True
+    assert guard["checkpoint_preflight"]["checkpoint"].endswith("phase1/phase1_step_50.pt")
+    assert "STAGE5_RECOVERED_PHASE1_CHECKPOINT" not in os.environ
 
 
 def test_a100_guard_blocks_routing_diagnostic_when_recovered_checkpoint_missing(tmp_path, monkeypatch) -> None:

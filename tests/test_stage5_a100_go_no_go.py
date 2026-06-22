@@ -811,6 +811,43 @@ def test_routing_checkpoint_availability_uses_benchmark_summary(tmp_path) -> Non
     assert status["checkpoint"].endswith("phase1/phase1_step_75.pt")
 
 
+def test_build_payload_uses_recovered_checkpoint_env_from_planner_action(tmp_path, monkeypatch) -> None:
+    import colab.check_stage5_a100_go_no_go as module
+
+    monkeypatch.delenv("STAGE5_RECOVERED_PHASE1_CHECKPOINT", raising=False)
+    monkeypatch.delenv("STAGE5_RECOVERED_PHASE1_RUN_ID", raising=False)
+    checkpoint = tmp_path / "outputs" / "stage5" / "arc_mix" / "arm" / "phase1" / "phase1_step_50.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    source = tmp_path / "summary.json"
+    source.write_text(
+        '{"kind": "stage5_balanced_arc_mix_gate", '
+        '"status": "proxy_lift_calibration_warning"}',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        module,
+        "plan_next_actions",
+        lambda source_payload, source_summary=None: [
+            {
+                "name": "Run bounded depth/width routing diagnostic",
+                "command": (
+                    f"STAGE5_RECOVERED_PHASE1_CHECKPOINT={checkpoint.as_posix()} "
+                    "STAGE5_RECOVERED_PHASE1_RUN_ID=arc_mix "
+                    "python colab/run_stage5_routing_diagnostic.py"
+                ),
+            }
+        ],
+    )
+
+    payload = build_payload(source)
+
+    assert payload["decision"]["go"] is True
+    assert payload["decision"]["status"] == "go_routing_diagnostic"
+    assert payload["checkpoint_preflight"]["available"] is True
+    assert payload["checkpoint_preflight"]["checkpoint"].endswith("phase1/phase1_step_50.pt")
+
+
 def test_unpassed_proxy_blocks_full_confirmation() -> None:
     decision = classify_action(
         {

@@ -15,6 +15,7 @@ import os
 import shlex
 import sys
 import time
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -84,6 +85,20 @@ def command_env_assignments(command: str) -> dict[str, str]:
         if key and key.upper() == key:
             env[key] = value
     return env
+
+
+@contextmanager
+def scoped_environ(updates: dict[str, str]):
+    previous: dict[str, str | None] = {key: os.environ.get(key) for key in updates}
+    os.environ.update({key: str(value) for key, value in updates.items()})
+    try:
+        yield
+    finally:
+        for key, value in previous.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
 
 
 def _truthy_env(name: str) -> bool:
@@ -1077,8 +1092,10 @@ def build_payload(source_summary: Path) -> dict[str, Any]:
     source_payload = read_json(source_summary)
     actions = plan_next_actions(source_payload, source_summary=source_summary)
     action = actions[0] if actions else None
-    decision = classify_action(action, source_payload=source_payload)
-    decision, checkpoint = apply_checkpoint_guard(decision, source_payload=source_payload)
+    action_env = command_env_assignments(str((action or {}).get("command", "")))
+    with scoped_environ(action_env):
+        decision = classify_action(action, source_payload=source_payload)
+        decision, checkpoint = apply_checkpoint_guard(decision, source_payload=source_payload)
     routing_profile = routing_repair_profile_preflight(source_payload)
     return {
         "run_id": RUN_ID,

@@ -17,6 +17,7 @@ import shutil
 import subprocess
 import sys
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -153,6 +154,20 @@ def path_for_cli(path: Path) -> str:
 
 def read_json(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+@contextmanager
+def scoped_environ(updates: dict[str, str]):
+    previous: dict[str, str | None] = {key: os.environ.get(key) for key in updates}
+    os.environ.update({key: str(value) for key, value in updates.items()})
+    try:
+        yield
+    finally:
+        for key, value in previous.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
 
 
 def write_json(path: str | Path, payload: dict[str, Any]) -> None:
@@ -347,8 +362,9 @@ def a100_execution_guard(
             "spend_class": "none",
             "reason": "Guarded A100 action has no readable source summary.",
         }
-    decision = classify_action(action, source_payload=source_payload)
-    decision, checkpoint = apply_checkpoint_guard(decision, source_payload=source_payload)
+    with scoped_environ(parsed.env):
+        decision = classify_action(action, source_payload=source_payload)
+        decision, checkpoint = apply_checkpoint_guard(decision, source_payload=source_payload)
     return {
         "checked": True,
         "allowed": bool(decision.get("go")),
