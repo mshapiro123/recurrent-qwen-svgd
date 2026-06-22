@@ -1,0 +1,95 @@
+{
+  "run_id": "stage5_routing_diagnostic_20260622_041706",
+  "kind": "stage5_routing_diagnostic_assessment",
+  "benchmark_summary": "outputs/stage5/stage5_routing_diagnostic_20260622_041706/benchmark_run/summary.json",
+  "status": "needs_direct_halting_repair",
+  "next_action": "Train Phase 1 direct-mode recovery with base-logit distillation and shallow halt supervision.",
+  "rollup": {
+    "arc_easy": {
+      "paired_examples": 64,
+      "delta": -1,
+      "direct": {
+        "n": 41,
+        "delta": -2,
+        "wins": 0,
+        "losses": 2,
+        "base_correct": 41,
+        "candidate_correct": 39,
+        "mean_margin_delta": -2.4873468239519108,
+        "mean_candidate_expected_loops": 2.5804901690017887,
+        "mean_candidate_answer_expected_loops": 2.580386743312929
+      },
+      "deep_numeric": {
+        "n": 5,
+        "delta": 0,
+        "wins": 0,
+        "losses": 0,
+        "base_correct": 2,
+        "candidate_correct": 2,
+        "mean_margin_delta": 0.19665260314941407,
+        "mean_candidate_expected_loops": 2.6235814332962035,
+        "mean_candidate_answer_expected_loops": 2.6234336376190184
+      },
+      "conceptual": {
+        "n": 5,
+        "delta": 0,
+        "wins": 0,
+        "losses": 0,
+        "base_correct": 2,
+        "candidate_correct": 2,
+        "mean_margin_delta": 0.5295848071575164,
+        "mean_candidate_expected_loops": 2.602752709388733,
+        "mean_candidate_answer_expected_loops": 2.602708435058594
+      },
+      "direct_delta": -2.0,
+      "direct_mean_loops": 2.5804901690017887,
+      "direct_mean_margin_delta": -2.4873468239519108,
+      "deep_delta": 0.0,
+      "deep_mean_loops": 2.6235814332962035,
+      "conceptual_delta": 0.0
+    },
+    "arc_challenge": {
+      "paired_examples": 64,
+      "delta": 2,
+      "direct": {
+        "n": 27,
+        "delta": -3,
+        "wins": 0,
+        "losses": 3,
+        "base_correct": 27,
+        "candidate_correct": 24,
+        "mean_margin_delta": -2.016581752234035,
+        "mean_candidate_expected_loops": 2.61728823405725,
+        "mean_candidate_answer_expected_loops": 2.617276942288434
+      },
+      "deep_numeric": {
+        "n": 8,
+        "delta": 0,
+        "wins": 0,
+        "losses": 0,
+        "base_correct": 2,
+        "candidate_correct": 2,
+        "mean_margin_delta": 0.6717620473355055,
+        "mean_candidate_expected_loops": 2.5764594773451486,
+        "mean_candidate_answer_expected_loops": 2.5763037502765656
+      },
+      "conceptual": {
+        "n": 12,
+        "delta": 2,
+        "wins": 3,
+        "losses": 1,
+        "base_correct": 4,
+        "candidate_correct": 6,
+        "mean_margin_delta": 0.30147182444731396,
+        "mean_candidate_expected_loops": 2.603570267558098,
+        "mean_candidate_answer_expected_loops": 2.603669226169586
+      },
+      "direct_delta": -3.0,
+      "direct_mean_loops": 2.61728823405725,
+      "direct_mean_margin_delta": -2.016581752234035,
+      "deep_delta": 0.0,
+      "deep_mean_loops": 2.5764594773451486,
+      "conceptual_delta": 2.0
+    }
+  }
+}
