@@ -418,6 +418,10 @@ def test_programmatic_curriculum_cell_is_cpu_safe_and_matches_markdown_code() ->
     assert 'MIN_MODE_ROWS = f"direct={NUM_DIRECT},deep_narrow={NUM_DEEP_NARROW}"' in plain
     assert "training/run_programmatic_curriculum_pipeline.py" in plain
     assert "training/check_curriculum_sft_gate.py" in plain
+    assert "colab/publish_stage5_curriculum_gate.py" in plain
+    assert "REQUIRE_DRIVE_BACKUP_FOR_PUBLISH = True" in plain
+    assert "PUBLISH_GATE_TO_GITHUB = True" in plain
+    assert "stage5_current_source_summary" in text
     assert "REFUSE_GPU_RUNTIME = True" in plain
     assert "ALLOW_GPU_RUNTIME_FOR_CPU_WORK = False" in plain
     assert "Refusing to run CPU-only programmatic curriculum generation" in plain

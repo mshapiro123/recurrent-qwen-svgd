@@ -20,6 +20,9 @@ MIN_MODE_ROWS = f"direct={NUM_DIRECT},deep_narrow={NUM_DEEP_NARROW}"
 MOUNT_DRIVE = True
 BACKUP_TO_DRIVE = True
 DRIVE_BACKUP_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd/curriculum_runs")
+REQUIRE_DRIVE_BACKUP_FOR_PUBLISH = True
+PUBLISH_GATE_TO_GITHUB = True
+PUBLISHED_GATE_DIR = "outputs/stage5/programmatic_direct_deep_curriculum_gate"
 REFUSE_GPU_RUNTIME = True
 ALLOW_GPU_RUNTIME_FOR_CPU_WORK = False
 DISCONNECT_RUNTIME_WHEN_DONE = False
@@ -93,16 +96,18 @@ def refuse_gpu_runtime_for_cpu_work():
 
 def backup_work_dir():
     if not BACKUP_TO_DRIVE:
-        return
+        return None
     if not Path("/content/drive/MyDrive").exists():
         print("Drive not mounted; skipping backup.", flush=True)
-        return
+        return None
     src = ROOT / WORK_DIR
     dst = DRIVE_BACKUP_ROOT / Path(WORK_DIR).name
     if src.exists():
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(src, dst, dirs_exist_ok=True)
         print(f"backed_up_work_dir={dst}", flush=True)
+        return dst
+    return None
 
 
 refuse_gpu_runtime_for_cpu_work()
@@ -178,14 +183,35 @@ run(
     cwd=ROOT,
 )
 
-backup_work_dir()
+backup_path = backup_work_dir()
+
+if PUBLISH_GATE_TO_GITHUB:
+    if REQUIRE_DRIVE_BACKUP_FOR_PUBLISH and backup_path is None:
+        raise RuntimeError(
+            "Refusing to publish the green curriculum gate without a Drive backup of the work directory."
+        )
+    run(
+        [
+            sys.executable,
+            "colab/publish_stage5_curriculum_gate.py",
+            "--gate_json",
+            str(Path(WORK_DIR) / "curriculum_sft_gate.json"),
+            "--gate_md",
+            str(Path(WORK_DIR) / "curriculum_sft_gate.md"),
+            "--published_dir",
+            PUBLISHED_GATE_DIR,
+            "--push",
+        ],
+        cwd=ROOT,
+    )
 
 print("Programmatic direct/deep curriculum shard is gate-green.", flush=True)
 print("WORK_DIR =", WORK_DIR, flush=True)
 print("MIN_POSITIVE_ROWS =", MIN_POSITIVE_ROWS, flush=True)
 print("MIN_MODE_ROWS =", MIN_MODE_ROWS, flush=True)
+print("Published current-source gate =", PUBLISHED_GATE_DIR + "/curriculum_sft_gate.json", flush=True)
 print("Next GPU step, only after choosing an A100 runtime:", flush=True)
-print("  run colab/STAGE5_CURRICULUM_SFT_CELL.py with matching WORK_DIR/MIN_* settings", flush=True)
+print("  run colab/CURRENT_A100_BOOTSTRAP_CELL.py with STAGE5_CURRENT_A100_TARGET=safe_continue_execute", flush=True)
 
 if DISCONNECT_RUNTIME_WHEN_DONE:
     runtime.unassign()
