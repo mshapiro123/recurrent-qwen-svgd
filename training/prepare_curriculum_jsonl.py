@@ -24,6 +24,10 @@ if str(ROOT) not in sys.path:
 VALID_MODES = {"direct", "deep_narrow", "wide", "both"}
 POSITIVE_PREFIX = "positive_"
 NON_POSITIVE_PREFIXES = ("negative_", "verifier_")
+POSITIVE_REASONING_ROLES = {"positive_direct", "positive_depth", "positive_wide"}
+NEGATIVE_REASONING_ROLES = {"negative_contrastive"}
+VERIFIER_ROLES = {"verifier_rationalization", "verifier_detection"}
+TRUSTED_ANSWER_VERIFIERS = {"cross_model", "constructed"}
 
 
 def qwen_instruct_prompt(statement: str) -> str:
@@ -64,6 +68,18 @@ def is_positive_trace(trace: dict[str, Any], *, role_prefix: str = POSITIVE_PREF
     return trace_role(trace).startswith(role_prefix)
 
 
+def list_value(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else []
+
+
+def int_value(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    return None
+
+
 def validate_curriculum_record(record: dict[str, Any], *, line_no: int | None = None) -> list[str]:
     label = f"line {line_no}: " if line_no is not None else ""
     issues: list[str] = []
@@ -79,9 +95,42 @@ def validate_curriculum_record(record: dict[str, Any], *, line_no: int | None = 
     answer = record.get("answer")
     if not isinstance(answer, dict) or not str(answer.get("value") or "").strip():
         issues.append(f"{label}missing verified answer.value")
+    elif not (TRUSTED_ANSWER_VERIFIERS & {str(item) for item in list_value(answer.get("verified_by"))}):
+        issues.append(f"{label}answer must be verified by cross_model or constructed")
 
     if record.get("decontaminated") is not True:
         issues.append(f"{label}decontaminated must be true")
+
+    width_signature = record.get("width_signature")
+    width: int | None = None
+    methods: list[Any] = []
+    if not isinstance(width_signature, dict):
+        issues.append(f"{label}missing width_signature")
+    else:
+        width = int_value(width_signature.get("width"))
+        methods = list_value(width_signature.get("methods"))
+        if width is None or width < 1:
+            issues.append(f"{label}width_signature.width must be a positive integer")
+        if not methods or not all(str(method).strip() for method in methods):
+            issues.append(f"{label}width_signature.methods must be non-empty")
+        if width is not None and methods and width != len(set(str(method) for method in methods)):
+            issues.append(f"{label}width_signature.width must match distinct method count")
+        if mode in {"wide", "both"} and width is not None and width < 2:
+            issues.append(f"{label}{mode} mode requires width >= 2")
+        if mode == "deep_narrow" and width is not None and width != 1:
+            issues.append(f"{label}deep_narrow mode requires width == 1")
+
+    depth = record.get("depth")
+    min_steps: int | None = None
+    if not isinstance(depth, dict):
+        issues.append(f"{label}missing depth")
+    else:
+        min_steps = int_value(depth.get("min_steps"))
+        per_method = depth.get("per_method")
+        if min_steps is None or min_steps < 1:
+            issues.append(f"{label}depth.min_steps must be a positive integer")
+        if not isinstance(per_method, dict) or not per_method:
+            issues.append(f"{label}depth.per_method must be non-empty")
 
     traces = record.get("traces")
     if not isinstance(traces, list) or not traces:
@@ -103,14 +152,29 @@ def validate_curriculum_record(record: dict[str, Any], *, line_no: int | None = 
 
         if role.startswith(POSITIVE_PREFIX):
             positive_count += 1
+            if role not in POSITIVE_REASONING_ROLES:
+                issues.append(f"{trace_label}unknown positive role {role!r}")
             if trace.get("correct") is not True:
                 issues.append(f"{trace_label}positive trace must have correct=true")
             if not str(trace.get("text") or "").strip():
                 issues.append(f"{trace_label}positive trace missing text")
-            if trace.get("natural") is False:
-                issues.append(f"{trace_label}positive trace marked natural=false")
-        elif role in {"negative_contrastive", "verifier_rationalization"} and trace.get("correct") is True:
+            if trace.get("natural") is not True:
+                issues.append(f"{trace_label}positive trace must have natural=true")
+            trace_steps = int_value(trace.get("steps"))
+            if trace_steps is None or trace_steps < 1:
+                issues.append(f"{trace_label}positive trace steps must be a positive integer")
+            method = str(trace.get("method") or "").strip()
+            if role == "positive_wide":
+                if not method:
+                    issues.append(f"{trace_label}positive_wide trace missing method")
+                elif methods and method not in {str(item) for item in methods}:
+                    issues.append(f"{trace_label}positive_wide method must appear in width_signature.methods")
+        elif role in NEGATIVE_REASONING_ROLES | {"verifier_rationalization"} and trace.get("correct") is True:
             issues.append(f"{trace_label}{role} must not have correct=true")
+        elif role.startswith("negative_") and role not in NEGATIVE_REASONING_ROLES:
+            issues.append(f"{trace_label}unknown negative role {role!r}")
+        elif role.startswith("verifier_") and role not in VERIFIER_ROLES:
+            issues.append(f"{trace_label}unknown verifier role {role!r}")
 
     if positive_count == 0:
         issues.append(f"{label}record has no positive traces")

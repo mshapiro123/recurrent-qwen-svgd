@@ -24,6 +24,8 @@ spread. Direct/easy tasks should use little of either, deep deterministic tasks
 should use depth without particle spread, wide tasks should use particle
 coverage, and hard multi-approach tasks may need both. The detailed training
 handoff is [DEPTH_WIDTH_ROUTING_RECIPE.md](DEPTH_WIDTH_ROUTING_RECIPE.md).
+The typed data-generation contract for external strong-model curriculum traces
+is [CURRICULUM_DATA_GENERATION_PIPELINE.md](CURRICULUM_DATA_GENERATION_PIPELINE.md).
 
 ## Stage 5A: Recurrent Competence Recovery
 

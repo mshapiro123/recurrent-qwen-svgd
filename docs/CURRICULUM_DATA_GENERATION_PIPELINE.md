@@ -1,0 +1,217 @@
+# Curriculum Data Generation And Validation Pipeline
+
+This is the data contract for building the recurrent model's wide-and-deep
+training curriculum with strong external generators. The goal is not to trust a
+strong model's explanation. The goal is to generate a broad distribution of
+candidate traces, verify the answer independently, then route each trace by
+measured correctness and role.
+
+## Core Rule
+
+Generation and labeling are separate. A trace that reaches the wrong answer may
+train a verifier or serve as a contrastive negative, but it must never enter a
+positive reasoning set. The code boundary for this rule is
+`training/prepare_curriculum_jsonl.py`: only roles beginning with `positive_`
+are exported to causal SFT rows, and positive traces must be correct, natural,
+and step-labeled.
+
+## Model Roles
+
+Use at least two strong non-Qwen models in separate roles where possible:
+
+- Generators produce candidate problems and raw traces.
+- Solvers independently derive answers for ground truth.
+- Method-constrained solvers attempt named solution methods.
+- Judges assess naturalness, true method use, distinctness, and error location.
+
+Avoid using the student base, its adapters, or its teacher lineage as data
+generators. We want curriculum signal, not leakage from the model family we are
+evaluating.
+
+## Pipeline
+
+1. Seed candidate problems from curated sources and generators.
+2. Decontaminate against evaluation sets before spending more compute.
+3. Verify the answer through cross-model agreement plus a programmatic check
+   when the domain permits it.
+4. Measure width with method-constrained solving. A method counts only when a
+   correct solution is also judged natural and structurally distinct.
+5. Measure depth by decomposing correct solutions into minimal necessary steps.
+6. Measure difficulty by pass rate of a fixed weak reference model, not by
+   model self-report.
+7. Assign mode:
+   - `direct`: low depth, width one, easy.
+   - `deep_narrow`: high depth, width one.
+   - `wide`: width two or more, low to moderate depth.
+   - `both`: high depth and width two or more.
+8. Generate adversarial perturbations only after ground truth is verified.
+   Correct resisters can become positives or verifier-detection examples.
+   Rationalizations and slips become non-positive verifier/contrastive rows.
+9. Generate deep-narrow rows programmatically when controllable depth is more
+   important than natural problem variety.
+
+## Method Taxonomy
+
+Method labels should be structural, not cosmetic.
+
+Math examples:
+
+- algebraic manipulation
+- coordinate geometry
+- synthetic geometry
+- trigonometry
+- induction
+- modular arithmetic or number theory
+- combinatorial or bijective argument
+- generating functions
+- inequalities
+- extremal or pigeonhole
+- complex numbers
+- calculus or limits
+- bounded enumeration
+
+Code examples:
+
+- iterative
+- recursive
+- dynamic programming
+- greedy
+- divide and conquer
+- graph or search based
+- mathematical closed form
+- hashing or set based
+
+## Record Schema
+
+One curriculum record represents one verified problem:
+
+```json
+{
+  "id": "string",
+  "domain": "math",
+  "statement": "problem text",
+  "answer": {
+    "value": "verified answer",
+    "verified_by": ["cross_model", "sympy"],
+    "confidence": "high"
+  },
+  "difficulty": {"pass_rate": 0.42, "reference_model": "weak-ref"},
+  "width_signature": {"methods": ["algebra", "unit_cancellation"], "width": 2},
+  "depth": {"per_method": {"algebra": 6, "unit_cancellation": 4}, "min_steps": 4},
+  "mode": "wide",
+  "decontaminated": true,
+  "traces": [
+    {
+      "role": "positive_wide",
+      "method": "algebra",
+      "correct": true,
+      "natural": true,
+      "steps": 6,
+      "source_model": "strong-model-a",
+      "text": "..."
+    },
+    {
+      "role": "negative_contrastive",
+      "correct": false,
+      "error_type": "unit_slip",
+      "source_model": "strong-model-b",
+      "text": "..."
+    },
+    {
+      "role": "verifier_rationalization",
+      "correct": false,
+      "first_error_step": 3,
+      "source_model": "strong-model-b",
+      "text": "..."
+    }
+  ]
+}
+```
+
+Positive reasoning consumers read only:
+
+- `positive_direct`
+- `positive_depth`
+- `positive_wide`
+
+Verifier and contrastive consumers may read:
+
+- `negative_contrastive`
+- `verifier_rationalization`
+- `verifier_detection`
+
+## Prompt Templates
+
+These are implementation prompts, not labels. Every output still goes through
+verification and routing.
+
+### Problem Generation
+
+```text
+Generate one {difficulty} {domain} problem for a reasoning dataset.
+Requirements:
+- It must have a single, unambiguous final answer that can be verified.
+- State the problem precisely. Do NOT include a solution.
+- Calibrate difficulty so a competent non-expert needs roughly {target_steps} steps.
+Return ONLY JSON:
+{"statement": "...", "claimed_answer": "...", "domain": "{domain}", "candidate_methods": ["...", "..."]}
+```
+
+### Independent Solve
+
+```text
+Solve the problem. Reason rigorously and do not assume any externally provided answer.
+End with the final answer on its own line beginning "ANSWER:".
+Problem: {statement}
+```
+
+### Method-Constrained Solve
+
+```text
+Solve the problem using ONLY the method: {method} ({method_description}).
+If {method} does not naturally apply, reply exactly:
+METHOD DOES NOT APPLY
+followed by one sentence on why.
+If it applies, give a clean, natural solution, then the final answer on its own line beginning "ANSWER:".
+Problem: {statement}
+```
+
+### Naturalness Judge
+
+```text
+A solution below claims to use {method}. Judge whether it is a genuine and natural use of {method}.
+Return ONLY JSON:
+{"natural": true|false, "actually_uses": "{method_or_real_method}", "reason": "..."}
+Problem: {statement}
+Solution: {solution}
+```
+
+### Error Detection
+
+```text
+A problem and proposed solution are below. The solution may be correct or may contain an error.
+If incorrect, identify the FIRST step where reasoning goes wrong.
+Return ONLY JSON:
+{"verdict": "correct"|"incorrect", "first_error_step": <integer or null>, "explanation": "..."}
+Problem: {statement}
+Proposed solution: {solution}
+```
+
+## Near-Term Implementation Order
+
+1. Keep using `training/generate_programmatic_curriculum.py` for cheap
+   direct/deep-narrow rows.
+2. Use external-model generation only on CPU/API paths and write typed records
+   matching this schema.
+3. Validate and export positive SFT rows with:
+
+```bash
+python training/prepare_curriculum_jsonl.py \
+  --input_jsonl data/curriculum/typed_records.jsonl \
+  --output_jsonl data/curriculum/positive_sft.jsonl \
+  --report_json outputs/curriculum/positive_sft_report.json
+```
+
+4. Train only after the report confirms no validation issues and no non-positive
+   roles were exported.
+

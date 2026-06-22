@@ -83,11 +83,73 @@ def test_converter_fails_on_invalid_positive_trace_by_default() -> None:
         convert_curriculum_records([record])
 
 
+def test_positive_trace_must_be_natural_and_stepped() -> None:
+    record = curriculum_record()
+    record["traces"][0]["natural"] = False
+    record["traces"][0].pop("steps")
+
+    issues = validate_curriculum_record(record)
+
+    assert any("positive trace must have natural=true" in issue for issue in issues)
+    assert any("positive trace steps must be a positive integer" in issue for issue in issues)
+
+
+def test_answer_requires_trusted_verification_anchor() -> None:
+    record = curriculum_record()
+    record["answer"]["verified_by"] = ["self_report"]
+
+    issues = validate_curriculum_record(record)
+
+    assert any("answer must be verified by cross_model or constructed" in issue for issue in issues)
+
+
+def test_wide_mode_requires_method_consistent_positive_wide_trace() -> None:
+    record = curriculum_record()
+    record["mode"] = "wide"
+    record["width_signature"] = {"methods": ["algebra", "unit_cancellation"], "width": 2}
+    record["depth"] = {"per_method": {"algebra": 3, "unit_cancellation": 4}, "min_steps": 3}
+    record["traces"][0]["role"] = "positive_wide"
+    record["traces"][0]["method"] = "fake_method"
+
+    issues = validate_curriculum_record(record)
+
+    assert any("positive_wide method must appear in width_signature.methods" in issue for issue in issues)
+
+
+def test_verifier_detection_is_not_exported_to_positive_sft() -> None:
+    record = curriculum_record()
+    record["traces"].append(
+        {
+            "role": "verifier_detection",
+            "detected": True,
+            "source_model": "judge-a",
+            "text": "The proposed answer is incorrect at step 2.",
+        }
+    )
+
+    examples, report = convert_curriculum_records([record])
+
+    assert len(examples) == 1
+    assert "verifier_detection" in report["role_counts"]
+    assert report["exported_role_counts"] == {"positive_depth": 1}
+
+
+def test_wide_mode_rejects_single_method_width() -> None:
+    record = curriculum_record()
+    record["mode"] = "wide"
+
+    issues = validate_curriculum_record(record)
+
+    assert any("wide mode requires width >= 2" in issue for issue in issues)
+
+
 def test_converter_can_filter_modes_without_leaking_negatives() -> None:
     direct = curriculum_record()
     wide = curriculum_record()
     wide["id"] = "math-002"
     wide["mode"] = "wide"
+    wide["width_signature"] = {"methods": ["algebra", "unit_cancellation"], "width": 2}
+    wide["depth"] = {"per_method": {"algebra": 3, "unit_cancellation": 4}, "min_steps": 3}
     wide["traces"][0]["role"] = "positive_wide"
 
     examples, report = convert_curriculum_records([direct, wide], modes={"wide"})
