@@ -218,6 +218,9 @@ def test_curriculum_artifact_pipeline_cell_defaults_to_no_provider_spend() -> No
     assert "RUN_PROVIDER_RESPONSES = False" in plain
     assert "PROVIDER_LIMIT = 2" in text
     assert "PROVIDER_LIMIT = 2" in plain
+    assert "MIN_POSITIVE_ROWS = 16" in text
+    assert "MIN_POSITIVE_ROWS = 16" in plain
+    assert "str(MIN_POSITIVE_ROWS)" in plain
     assert "training/run_curriculum_pipeline_from_artifacts.py" in plain
     assert "training/run_curriculum_job_responses.py" in plain
     assert "pending_reference_attempt_responses" in plain

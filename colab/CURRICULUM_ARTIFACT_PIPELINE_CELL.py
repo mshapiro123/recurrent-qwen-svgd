@@ -11,6 +11,7 @@ RUN_PROVIDER_RESPONSES = False
 PROVIDER_BACKEND = "openai_compatible"  # or "command"
 PROVIDER_COMMAND = "python scripts/my_provider_runner.py"
 PROVIDER_LIMIT = 2  # keep tiny for first smoke; set None for a full response batch.
+MIN_POSITIVE_ROWS = 16  # must match or exceed the guarded GPU SFT runner default.
 
 API_KEY_ENV = "OPENAI_API_KEY"
 BASE_URL = "https://api.openai.com/v1"
@@ -242,7 +243,7 @@ def run_sft_gate(summary):
             "--output_md",
             str(output_md),
             "--min_positive_rows",
-            "1",
+            str(MIN_POSITIVE_ROWS),
             "--fail_on_no_go",
         ],
         cwd=ROOT,
