@@ -41,6 +41,7 @@ MAX_COMMIT_ARTIFACT_BYTES = int(os.environ.get("STAGE5_ARC_AGI_COMMIT_MAX_ARTIFA
 def focused_test_paths() -> list[str]:
     return [
         "tests/test_stage5_autopilot.py",
+        "tests/test_stage5_colab_continue.py",
         "tests/test_arc_agi_training_signal.py",
         "tests/test_stage5_next_plan.py",
         "tests/test_stage5_next_action.py",
