@@ -768,6 +768,35 @@ def arc_agi_sft_recipe_gates(summary_files: list[Path]) -> list[dict[str, Any]]:
     return sorted(gates, key=lambda item: str(item["path"]))
 
 
+def curriculum_sft_validation_checks(payload: dict[str, Any]) -> dict[str, Any]:
+    checks = payload.get("validation_checks")
+    return checks if isinstance(checks, dict) else {}
+
+
+def curriculum_sft_validation_status(payload: dict[str, Any]) -> str:
+    checks = curriculum_sft_validation_checks(payload)
+    if checks:
+        return str(checks.get("status") or payload.get("status") or "unknown")
+    return str(payload.get("status") or "legacy")
+
+
+def curriculum_sft_validation_issues(payload: dict[str, Any]) -> list[str]:
+    checks = curriculum_sft_validation_checks(payload)
+    issues = checks.get("issues")
+    if isinstance(issues, list):
+        return [str(issue) for issue in issues]
+    return []
+
+
+def curriculum_sft_depth_gradient_observed(payload: dict[str, Any]) -> bool | None:
+    checks = curriculum_sft_validation_checks(payload)
+    gradient = checks.get("depth_gradient")
+    if not isinstance(gradient, dict):
+        return None
+    observed = gradient.get("observed")
+    return bool(observed) if observed is not None else None
+
+
 def curriculum_statuses(summary_files: list[Path]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for path in summary_files:
@@ -913,6 +942,14 @@ def curriculum_statuses(summary_files: list[Path]) -> list[dict[str, Any]]:
         elif kind == "stage5_curriculum_sft":
             dataset = payload.get("dataset") or {}
             phase1_val = payload.get("phase1_val") or {}
+            validation_status = curriculum_sft_validation_status(payload)
+            validation_issues = curriculum_sft_validation_issues(payload)
+            has_validation_checks = bool(curriculum_sft_validation_checks(payload))
+            next_action = (
+                "inspect curriculum SFT validation before GPU diagnostics"
+                if has_validation_checks and validation_status != "validation_sane"
+                else "run bounded routing diagnostic before broader benchmark suite"
+            )
             rows.append(
                 {
                     "path": path_for_cli(path),
@@ -927,7 +964,10 @@ def curriculum_statuses(summary_files: list[Path]) -> list[dict[str, Any]]:
                     "mean_expected_loops": phase1_val.get("mean_expected_loops"),
                     "expected_ce": phase1_val.get("expected_ce"),
                     "checkpoint": payload.get("phase1_checkpoint"),
-                    "next_action": "run broader base-vs-recurrent benchmark suite",
+                    "validation_status": validation_status,
+                    "validation_issues": validation_issues,
+                    "depth_gradient_observed": curriculum_sft_depth_gradient_observed(payload),
+                    "next_action": next_action,
                 }
             )
     return sorted(rows, key=lambda item: str(item["path"]))
@@ -1023,6 +1063,11 @@ def planner_source_priority(payload: dict[str, Any]) -> int:
     """Prefer the newest actionable recovery gate over generic readiness checks."""
 
     if payload.get("kind") == "stage5_curriculum_sft":
+        checks = curriculum_sft_validation_checks(payload)
+        if checks and checks.get("status") != "validation_sane":
+            return 40
+        if payload.get("status") == "validation_needs_review":
+            return 40
         return 95
     if payload.get("kind") == "curriculum_sft_gate":
         return 85 if payload.get("go") else 35
@@ -1346,16 +1391,20 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
     if payload["curriculum_statuses"]:
         lines.extend(
             [
-                "| Run | Kind | Status | Go | Positive | Train/Val | Loops | CE | Checkpoint | Next |",
-                "|---|---|---|---|---:|---:|---:|---:|---|---|",
+                "| Run | Kind | Status | Validation | Depth Grad | Go | Positive | Train/Val | Loops | CE | Checkpoint | Next |",
+                "|---|---|---|---|---|---|---:|---:|---:|---:|---|---|",
             ]
         )
         for row in payload["curriculum_statuses"][-12:]:
             train_val = "n/a" if row.get("train_rows") is None else f"{row.get('train_rows')}/{row.get('val_rows')}"
             loops = "n/a" if row.get("mean_expected_loops") is None else f"{float(row['mean_expected_loops']):.3f}"
             ce = "n/a" if row.get("expected_ce") is None else f"{float(row['expected_ce']):.3f}"
+            validation = str(row.get("validation_status") or "n/a")
+            depth_gradient = row.get("depth_gradient_observed")
+            depth_gradient_text = "n/a" if depth_gradient is None else str(bool(depth_gradient))
             lines.append(
-                f"| `{row['run_id']}` | `{row['kind']}` | `{row['status']}` | `{row['go']}` | "
+                f"| `{row['run_id']}` | `{row['kind']}` | `{row['status']}` | "
+                f"`{validation}` | `{depth_gradient_text}` | `{row['go']}` | "
                 f"{row['positive_rows']} | {train_val} | {loops} | {ce} | "
                 f"`{row.get('checkpoint') or ''}` | {row.get('next_action') or ''} |"
             )

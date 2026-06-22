@@ -1044,10 +1044,16 @@ def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None
         {
             "run_id": "sft",
             "kind": "stage5_curriculum_sft",
+            "status": "validation_sane",
             "config": {"work_dir": "data/curriculum/run_001"},
             "dataset": {"rows": 24, "train_rows": 21, "val_rows": 3},
             "phase1_val": {"mean_expected_loops": 2.5, "expected_ce": 1.25},
             "phase1_checkpoint": "outputs/stage5/sft/phase1/phase1_step_150.pt",
+            "validation_checks": {
+                "status": "validation_sane",
+                "issues": [],
+                "depth_gradient": {"observed": True, "direct_mean_expected_loops": 1.2, "deep_mean_expected_loops": 2.5},
+            },
         },
     )
 
@@ -1084,6 +1090,10 @@ def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None
     assert by_kind["stage5_curriculum_sft"]["val_rows"] == 3
     assert by_kind["stage5_curriculum_sft"]["mean_expected_loops"] == 2.5
     assert by_kind["stage5_curriculum_sft"]["checkpoint"] == "outputs/stage5/sft/phase1/phase1_step_150.pt"
+    assert by_kind["stage5_curriculum_sft"]["validation_status"] == "validation_sane"
+    assert by_kind["stage5_curriculum_sft"]["validation_issues"] == []
+    assert by_kind["stage5_curriculum_sft"]["depth_gradient_observed"] is True
+    assert by_kind["stage5_curriculum_sft"]["next_action"].startswith("run bounded routing diagnostic")
     assert payload["recommended_next_plan_source"] == str(sft)
 
 
@@ -1095,10 +1105,16 @@ def test_progress_ledger_writes_generated_curriculum_markdown(tmp_path) -> None:
         {
             "run_id": "sft",
             "kind": "stage5_curriculum_sft",
+            "status": "validation_sane",
             "config": {"work_dir": "data/curriculum/run_001"},
             "dataset": {"rows": 24, "train_rows": 21, "val_rows": 3},
             "phase1_val": {"mean_expected_loops": 2.5, "expected_ce": 1.25},
             "phase1_checkpoint": "outputs/stage5/sft/phase1/phase1_step_150.pt",
+            "validation_checks": {
+                "status": "validation_sane",
+                "issues": [],
+                "depth_gradient": {"observed": True},
+            },
         },
     )
     payload = scan_progress(scan_root, run_id="ledger")
@@ -1109,8 +1125,54 @@ def test_progress_ledger_writes_generated_curriculum_markdown(tmp_path) -> None:
     report = (output_dir / "summary.md").read_text(encoding="utf-8")
     assert "## Generated Curriculum Pipeline" in report
     assert "`stage5_curriculum_sft`" in report
+    assert "`validation_sane`" in report
+    assert "`True`" in report
     assert "21/3" in report
     assert "`outputs/stage5/sft/phase1/phase1_step_150.pt`" in report
+
+
+def test_progress_ledger_does_not_recommend_failed_curriculum_sft(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    trace_collection = scan_root / "trace_collection" / "summary.json"
+    sft = scan_root / "curriculum_sft" / "summary.json"
+    _write(
+        trace_collection,
+        {
+            "run_id": "trace_collection",
+            "kind": "stage5_capability_ladder_trace_collection",
+            "status": "trace_curriculum_gate_ready",
+            "curriculum": {"work_dir": "data/curriculum/traced", "counts": {"positive_sft_rows": 16}},
+            "gate": {"go": True},
+        },
+    )
+    _write(
+        sft,
+        {
+            "run_id": "sft",
+            "kind": "stage5_curriculum_sft",
+            "status": "validation_needs_review",
+            "config": {"work_dir": "data/curriculum/run_001"},
+            "dataset": {"rows": 24, "train_rows": 21, "val_rows": 3},
+            "phase1_val": {"mean_expected_loops": 1.05, "expected_ce": 2.25},
+            "phase1_checkpoint": "outputs/stage5/sft/phase1/phase1_step_150.pt",
+            "validation_checks": {
+                "status": "validation_needs_review",
+                "issues": ["mean_expected_loops below threshold", "depth gradient not observed"],
+                "depth_gradient": {"observed": False},
+            },
+        },
+    )
+    os.utime(trace_collection, (1000, 1000))
+    os.utime(sft, (2000, 2000))
+
+    payload = scan_progress(scan_root, run_id="ledger")
+    sft_row = next(row for row in payload["curriculum_statuses"] if row["kind"] == "stage5_curriculum_sft")
+
+    assert sft_row["validation_status"] == "validation_needs_review"
+    assert sft_row["validation_issues"] == ["mean_expected_loops below threshold", "depth gradient not observed"]
+    assert sft_row["depth_gradient_observed"] is False
+    assert sft_row["next_action"].startswith("inspect curriculum SFT validation")
+    assert payload["recommended_next_plan_source"] == str(trace_collection)
 
 
 def test_progress_ledger_prefers_complete_curriculum_pipeline_over_older_benchmark_gate(tmp_path) -> None:
