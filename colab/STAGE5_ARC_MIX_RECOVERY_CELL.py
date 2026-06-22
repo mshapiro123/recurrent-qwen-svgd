@@ -1,23 +1,3 @@
-# Stage 5 ARC-Mix Recovery Single Cell
-
-Use this when the next A100 spend is one bounded competence-preserving
-ARC/Opus recovery proxy gate after the latest full balanced ARC assessment
-reports `needs_competence_recovery`.
-
-This cell clones or updates the private repo, authenticates GitHub/Hugging Face
-from Colab secrets, runs exactly one ARC-mix recovery proxy, pushes safe text
-artifacts, and disconnects the runtime when finished.
-It runs go/no-go before installing dependencies and disconnects on failure by
-default, so a blocked proxy does not leave an A100 attached.
-
-Do not use this for full balanced ARC assessment, Phase 2/SVGD, GPQA, dataset
-audits, or notebook repair.
-
-For easier copy/paste from GitHub, the same cell is mirrored as plain Python in
-[`STAGE5_ARC_MIX_RECOVERY_CELL.py`](STAGE5_ARC_MIX_RECOVERY_CELL.py). Keep the
-two copies identical.
-
-```python
 import json, os, shutil, subprocess, sys
 from pathlib import Path
 from google.colab import userdata
@@ -152,4 +132,3 @@ except Exception:
     print("ARC-mix recovery cell failed.", flush=True)
     disconnect_runtime("ARC-mix recovery cell failed")
     raise
-```

@@ -79,7 +79,9 @@ uses GitHub, but only from inside a normal Colab Python cell via the
 
 1. Open any trusted Drive-backed Colab notebook or a blank notebook.
 2. Keep the runtime disconnected while editing the cell.
-3. Copy the single cell from
+3. Copy the single cell from the plain Python mirror
+   [`colab/STAGE5_ARC_MIX_RECOVERY_CELL.py`](STAGE5_ARC_MIX_RECOVERY_CELL.py),
+   or from the fenced code block in
    [`colab/STAGE5_ARC_MIX_RECOVERY_CELL.md`](STAGE5_ARC_MIX_RECOVERY_CELL.md).
 4. Select an A100 runtime only immediately before running that single cell.
 5. Run no other cells in that runtime.
