@@ -127,7 +127,9 @@ For the current manuscript-style status, evidence, negative results, and next
 gates, see [docs/PROJECT_STATUS_PAPER.md](docs/PROJECT_STATUS_PAPER.md). The
 program-level strategy is tracked in [docs/PROGRAM_TRACK.md](docs/PROGRAM_TRACK.md).
 The no-GPU reasoning-trace data plan is in
-[docs/REASONING_TRACE_DATASETS.md](docs/REASONING_TRACE_DATASETS.md).
+[docs/REASONING_TRACE_DATASETS.md](docs/REASONING_TRACE_DATASETS.md). The
+wide/deep curriculum generation contract is in
+[docs/CURRICULUM_DATA_GENERATION_PIPELINE.md](docs/CURRICULUM_DATA_GENERATION_PIPELINE.md).
 
 ## Current Result
 
@@ -481,7 +483,9 @@ Additional Opus/Kimi/GLM/Fable/Mythos candidates are registered in
 and summarized in
 [`docs/REASONING_TRACE_DATASETS.md`](docs/REASONING_TRACE_DATASETS.md). They
 are intentionally marked as audit or later-audit candidates, not automatic
-training data.
+training data. The strong-model API workflow for converting verified problems
+into width/depth/mode-labeled curriculum records is documented in
+[`docs/CURRICULUM_DATA_GENERATION_PIPELINE.md`](docs/CURRICULUM_DATA_GENERATION_PIPELINE.md).
 
 ## Phase 2 Stochastic Trajectories
 

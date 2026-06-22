@@ -33,6 +33,26 @@ without damaging ARC-style multiple choice behavior?"
 4. **Large mining only after filters:** GLM/Kimi/combined million-row corpora.
    These are candidate reservoirs, not direct 0.5B recovery data.
 
+## Generated Wide/Deep Curriculum Lane
+
+Hugging Face trace corpora are only one source. The separate strong-model API
+lane is documented in
+[`CURRICULUM_DATA_GENERATION_PIPELINE.md`](CURRICULUM_DATA_GENERATION_PIPELINE.md).
+That lane uses diverse non-student models to generate and judge candidate
+problems, but labels every trace from independent answer verification,
+method-constrained naturalness checks, depth decomposition, weak-reference
+pass rate, and adversarial perturbation sorting.
+
+The two lanes should not be confused:
+
+- HF trace datasets are audited reservoirs.
+- Generated curriculum records are typed supervision with measured
+  `direct`, `deep_narrow`, `wide`, and `both` modes.
+- Positive recurrent SFT consumes only `positive_*` roles from verified
+  curriculum records.
+- Rationalizations, wrong traces, and detector traces stay in verifier or
+  selector training.
+
 ## Registry
 
 The authoritative local registry is

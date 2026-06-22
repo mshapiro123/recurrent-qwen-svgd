@@ -12,6 +12,9 @@ from training.build_curriculum_generation_jobs import (
     build_reference_attempt_jobs,
     build_seed_jobs,
     main,
+    prompt_distinctness_judge,
+    prompt_error_detection,
+    prompt_naturalness_judge,
     validate_external_models,
 )
 
@@ -146,6 +149,29 @@ def test_distinctness_jobs_pair_solution_methods_within_record() -> None:
     assert jobs[0]["metadata"]["solution_a_id"] == "s1"
     assert jobs[0]["metadata"]["solution_b_id"] == "s2"
     assert "structurally distinct" in jobs[0]["prompt"]
+
+
+def test_judge_prompts_expose_both_verdict_labels() -> None:
+    naturalness = prompt_naturalness_judge(
+        statement="What is 2+2?",
+        solution="2+2=4",
+        method="algebra",
+    )
+    distinctness = prompt_distinctness_judge(
+        solution_a="Solve by algebra.",
+        solution_b="Solve by enumeration.",
+        method_a="algebra",
+        method_b="bounded_enumeration",
+    )
+    error_detection = prompt_error_detection(
+        statement="What is 2+2?",
+        solution="2+2=5",
+    )
+
+    assert '"natural": true|false' in naturalness
+    assert '"distinct": true|false' in distinctness
+    assert '"verdict": "correct"|"incorrect"' in error_detection
+    assert "<integer or null>" in error_detection
 
 
 def test_perturbation_jobs_emit_false_answer_and_structural_prompts() -> None:

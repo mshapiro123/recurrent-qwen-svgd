@@ -143,7 +143,7 @@ def prompt_naturalness_judge(*, statement: str, solution: str, method: str) -> s
         f"A solution below claims to use {method}. Judge whether it is a genuine and natural "
         "use of that method, or forced or degenerate.\n"
         "Return ONLY this JSON:\n"
-        "{\"natural\": true, \"actually_uses\": \"method_or_real_method\", \"reason\": \"...\"}\n"
+        "{\"natural\": true|false, \"actually_uses\": \"method_or_real_method\", \"reason\": \"...\"}\n"
         f"Problem: {statement}\n"
         f"Solution: {solution}"
     )
@@ -159,7 +159,7 @@ def prompt_distinctness_judge(
     return (
         f"Two solutions to the same problem are below, claiming methods {method_a} and {method_b}.\n"
         "Judge whether they are genuinely structurally distinct approaches or the same reasoning relabeled.\n"
-        "Return ONLY this JSON: {\"distinct\": true, \"reason\": \"...\"}\n"
+        "Return ONLY this JSON: {\"distinct\": true|false, \"reason\": \"...\"}\n"
         f"Solution A ({method_a}): {solution_a}\n"
         f"Solution B ({method_b}): {solution_b}"
     )
@@ -212,7 +212,7 @@ def prompt_error_detection(*, statement: str, solution: str) -> str:
         "A problem and a proposed solution are below. The solution may be correct or may contain an error.\n"
         "Decide. If incorrect, identify the FIRST step where the reasoning goes wrong and explain.\n"
         "Return ONLY this JSON:\n"
-        "{\"verdict\": \"correct\", \"first_error_step\": null, \"explanation\": \"...\"}\n"
+        "{\"verdict\": \"correct\"|\"incorrect\", \"first_error_step\": <integer or null>, \"explanation\": \"...\"}\n"
         f"Problem: {statement}\n"
         f"Proposed solution: {solution}"
     )
