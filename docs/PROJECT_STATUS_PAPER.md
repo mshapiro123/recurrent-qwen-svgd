@@ -315,17 +315,18 @@ or GPQA Diamond.
 
 ## 8. Immediate Credit-Saving Gate
 
-The first A100 credit-saving recovery probe ran as a bounded
-competence-preserving proxy rather than another SVGD/kernel sweep. It produced
-weak proxy lift, but the subsequent full balanced ARC assessment still reported
-`needs_competence_recovery`: the recurrent checkpoint slightly exceeded base on
-ARC-Challenge but trailed on ARC-Easy. That assessment is now the current
-source of truth.
+The current A100 policy is deliberately conservative: spend paid GPU only on
+the next gate needed for the paper-level claim, and stop whenever the next
+action would be exploratory, ambiguous, or repair-oriented. Dataset audits,
+notebook editing, GitHub/Drive fixes, documentation, and CPU-sized tests should
+not run on A100.
 
-The next paid job should therefore be another single ARC-mix recovery proxy,
-not GPQA, not Phase 2/SVGD, and not another full assessment. The proxy resumes
-from the selected full-assessment checkpoint and runs a single mixed objective
-with:
+The most recent full balanced ARC assessment reported
+`needs_competence_recovery`: the recurrent checkpoint slightly exceeded base on
+ARC-Challenge but trailed on ARC-Easy. That result made the next justified paid
+job a single ARC-mix recovery proxy, not GPQA, not Phase 2/SVGD, and not
+another kernel-geometry sweep. The proxy resumed from the selected
+full-assessment checkpoint and ran a single mixed objective with:
 
 - Opus reasoning traces as the general reasoning anchor;
 - ARC-Challenge training rows repeated `2x`;
@@ -334,21 +335,7 @@ with:
 - learning rate `2e-6`;
 - proxy MCQ eval limit `128`.
 
-The prior Colab planner action, `Run competence-preserving ARC-mix proxy gate`,
-produced:
-
-```text
-run_id = stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe
-status = proxy_lift
-base proxy = 68/128
-start proxy = 66/128
-best recurrent proxy = 67/128
-best checkpoint = outputs/stage5/stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe/arc_mix_response_w005_lr2e6/phase1/phase1_step_100.pt
-```
-
-This is a weak but positive proxy result. It improves the recurrent start by
-one example but remains one example below base on the 128-example proxy. The
-full balanced assessment that followed was still negative overall:
+The full balanced assessment that motivated this recovery proxy was:
 
 ```text
 run_id = stage5_recovery_full_assessment_current
@@ -358,22 +345,43 @@ ARC-Challenge: base 167/299, recurrent 169/299, delta +2
 Combined:      base 588/869, recurrent 581/869, delta -7
 ```
 
-The immediate low-credit launcher is:
+The new proxy run was:
 
-```bash
-python colab/run_stage5_arc_mix_recovery_once.py
+```text
+run_id = stage5_arc_mix_recovery_once_20260622_003331
+status = proxy_lift
+base proxy = 68/128
+start proxy = 66/128
+best recurrent proxy = 68/128
+lift vs start = +2
+gap vs base = 0
+best checkpoint = outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/arc_mix_response_w005_lr2e6/phase1/phase1_step_50.pt
 ```
 
-It defaults to `outputs/stage5/stage5_recovery_full_assessment_current/summary.json`,
-the `arc_mix_response_w005_lr2e6` arm, a `128`-example proxy, `2x`
-ARC-Challenge, `4x` ARC-Easy, and `3000` Opus rows. It stops after that proxy
-gate. A later full balanced assessment should be launched only if this proxy
-lifts the recurrent start and is non-negative or close enough to base to justify
-the extra A100 spend.
+This is the cleanest recovery proxy so far: it improved the recurrent start and
+matched base on the 128-row ARC-Challenge proxy. The immediate confirmation
+launcher is now:
+
+```bash
+python colab/run_stage5_full_assessment_once.py
+```
+
+It defaults to
+`outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/summary.json` and
+runs the full ARC-Easy/ARC-Challenge balanced assessment for the proxy-selected
+checkpoint. This is a deliberate confirmation spend. If it remains negative
+overall, the project should stop deterministic recovery runs and revise the
+objective/data mix locally before spending more A100 time.
 
 This gate is intentionally deterministic Phase 1 recovery work. Phase 2/SVGD,
 GPQA Diamond, and 1.5B/3B scaling remain deferred until deterministic recurrent
 competence is at least base-competitive on the balanced ARC suite.
+
+The paper should describe the training required to surpass base only after that
+surpass-base checkpoint exists. At present, the empirically supported statement
+is more modest: additional ARC-mixed recurrent SFT has closed a 128-example
+proxy gap, and the next paid experiment asks whether that proxy lift survives
+the full balanced ARC assessment.
 
 ## 9. A100 Credit Discipline
 

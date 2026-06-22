@@ -23,7 +23,7 @@ if str(ROOT) not in sys.path:
 
 DEFAULT_SOURCE_SUMMARY = (
     "outputs/stage5/"
-    "stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe/"
+    "stage5_arc_mix_recovery_once_20260622_003331/"
     "summary.json"
 )
 RUN_ID = os.environ.get("STAGE5_FULL_ASSESS_ONCE_RUN_ID") or os.environ.get(

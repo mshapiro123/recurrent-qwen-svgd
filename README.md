@@ -23,16 +23,23 @@ jobs are bounded and expected to emit `summary.json` artifacts that decide the
 next action. The remaining waste risk is leaving Colab attached while fixing
 auth, notebook state, GitHub, or Drive problems. Those are stop conditions.
 
-As of the current checkpoint, the full balanced ARC-Easy/ARC-Challenge
-assessment has already landed and did **not** justify moving to GPQA, Phase 2,
-or scale-up. The only A100-worthy next job is one bounded competence-preserving
-ARC-mix recovery proxy from the selected full-assessment checkpoint. The
-decision tree is intentionally narrow:
+The current answer to "are we using A100 judiciously?" is: mostly yes now, but
+only because the workflow has been narrowed. The project should not use A100 for
+open-ended training, notebook debugging, Hugging Face dataset discovery, or
+SVGD/kernel exploration while deterministic recurrent recovery is still below
+the release bar. Paid GPU is reserved for one bounded confirmation job at a
+time, followed by review.
 
-| Result of one ARC-mix recovery proxy | Next GPU action |
+As of the current checkpoint, the follow-up ARC-mix recovery proxy has matched
+base on the 128-row ARC-Challenge proxy while improving the recurrent start.
+The only A100-worthy next job is the full balanced ARC-Easy/ARC-Challenge
+assessment for that new proxy checkpoint. The decision tree is intentionally
+narrow:
+
+| Result of full balanced ARC assessment | Next GPU action |
 |---|---|
-| Proxy improves recurrent start and is non-negative or near-base | Decide whether to spend on a full balanced ARC assessment. |
-| Proxy does not lift the recurrent start | Stop A100 work and revise the data/objective mix locally. |
+| Recurrent checkpoint is non-negative versus base | Run the broader benchmark suite on the selected checkpoint. |
+| Recurrent checkpoint still trails base | Stop A100 work and revise the data/objective mix locally. |
 | Auth/Drive/GitHub/notebook failure | Disconnect runtime and repair locally. |
 
 Do not spend A100 credits on GPQA Diamond, Phase 2/SVGD scaling, 1.5B/3B
@@ -60,6 +67,12 @@ preserving the ARC-Challenge gain; then Phase 2/SVGD or selector-converted
 particles must beat the recovered deterministic recurrent baseline. Until that
 lands, the paper should present the surpass-base result as the next experimental
 gate, not as a conclusion.
+
+In paper language, the current manuscript is a methods-and-recovery paper with
+a pending benchmark-superiority claim. The additional training required to make
+the stronger claim is still being measured: the latest ARC-mix proxy has closed
+the 128-example proxy gap to base, and the next full balanced ARC assessment
+will determine whether that recovery generalizes.
 
 The implementation has three stages:
 
@@ -110,10 +123,10 @@ Treat A100 time as the scarce experimental reagent. The default answer to
 5. it is not a dataset audit, unit test, notebook repair, README edit, or
    exploratory script-debugging task.
 
-Right now the only A100-worthy job is a single ARC-mix recovery proxy from
-`outputs/stage5/stage5_recovery_full_assessment_current/summary.json`. Dataset
-inspection, Hugging Face trace triage, planner repairs, documentation, and
-small CPU tests should stay local or on a free CPU runtime.
+Right now the only A100-worthy job is the full balanced assessment from
+`outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/summary.json`.
+Dataset inspection, Hugging Face trace triage, planner repairs, documentation,
+and small CPU tests should stay local or on a free CPU runtime.
 
 ## What Has Been Achieved
 
@@ -152,9 +165,8 @@ time.
 
 ## Active Next A100 Action
 
-Credits are tight, so A100 work is deliberately gate-based. The full balanced
-assessment for the latest selected checkpoint has completed and remains
-negative overall:
+Credits are tight, so A100 work is deliberately gate-based. The previous full
+balanced assessment remained negative overall:
 
 ```text
 run_id = stage5_recovery_full_assessment_current
@@ -164,31 +176,38 @@ ARC-Challenge: base 167/299, recurrent 169/299, delta +2
 Combined:      base 588/869, recurrent 581/869, delta -7
 ```
 
-The current training question is whether a competence-preserving mixed
-objective can close the ARC-Easy tax without erasing the ARC-Challenge gain.
-The next A100 job, if we choose to spend it, is one bounded ARC-mix recovery
-proxy:
+The follow-up low-credit ARC-mix recovery proxy then improved the recurrent
+start and matched base:
+
+```text
+run_id = stage5_arc_mix_recovery_once_20260622_003331
+status = proxy_lift
+base proxy = 68/128
+start proxy = 66/128
+best recurrent proxy = 68/128
+lift vs start = +2
+gap vs base = 0
+best checkpoint = outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/arc_mix_response_w005_lr2e6/phase1/phase1_step_50.pt
+```
+
+The next A100 job, if we choose to spend it, is the full balanced assessment
+for that proxy checkpoint:
 
 ```bash
-python colab/run_stage5_arc_mix_recovery_once.py
+python colab/run_stage5_full_assessment_once.py
 ```
 
 The notebook-ready copy/paste cell is in
-[`colab/STAGE5_ARC_MIX_RECOVERY_CELL.md`](colab/STAGE5_ARC_MIX_RECOVERY_CELL.md).
-It runs the low-credit default selected by the planner:
+[`colab/STAGE5_FULL_ASSESSMENT_CELL.md`](colab/STAGE5_FULL_ASSESSMENT_CELL.md).
+It now defaults to:
 
 ```bash
-STAGE5_ARC_MIX_SOURCE_SUMMARY=outputs/stage5/stage5_recovery_full_assessment_current/summary.json
-STAGE5_ARC_MIX_ARMS=arc_mix_response_w005_lr2e6
-STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT=2
-STAGE5_ARC_MIX_ARC_EASY_REPEAT=4
-STAGE5_ARC_MIX_ARC_EVAL_LIMIT=128
-STAGE5_ARC_MIX_OPUS_LIMIT=3000
+STAGE5_FULL_ASSESS_SOURCE_SUMMARY=outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/summary.json
 ```
 
-Only if that proxy is positive should we spend another A100 block on
-[`colab/STAGE5_FULL_ASSESSMENT_CELL.md`](colab/STAGE5_FULL_ASSESSMENT_CELL.md)
-or [`colab/07_stage5_full_arc_assessment.ipynb`](colab/07_stage5_full_arc_assessment.ipynb).
+This is a deliberate confirmation spend. If the full assessment is still
+negative, stop deterministic recovery and revise the objective/data mix before
+running more A100 work.
 
 Do not run GPQA, Phase 2/SVGD, or scale-up jobs before this deterministic
 recurrent recovery question is resolved.

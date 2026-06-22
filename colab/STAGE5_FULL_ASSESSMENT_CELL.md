@@ -86,7 +86,7 @@ try:
     env["STAGE5_FULL_ASSESS_AUTO_DISCONNECT"] = "1"
     env.setdefault(
         "STAGE5_FULL_ASSESS_SOURCE_SUMMARY",
-        "outputs/stage5/stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe/summary.json",
+        "outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/summary.json",
     )
     run([sys.executable, "colab/run_stage5_full_assessment_once.py"], cwd=ROOT, env=env)
 except Exception:

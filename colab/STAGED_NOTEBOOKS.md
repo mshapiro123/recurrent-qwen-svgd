@@ -7,26 +7,22 @@ path below stays inside the current runtime.
 
 ## Current Low-Credit Stage 5 Action
 
-The active next A100-worthy job is not Stage 1. The full balanced
-ARC-Easy/ARC-Challenge assessment has already landed and says
-`needs_competence_recovery`. The current low-credit action is one bounded
-ARC-mix recovery proxy. Use
-[`STAGE5_ARC_MIX_RECOVERY_CELL.md`](STAGE5_ARC_MIX_RECOVERY_CELL.md) when
-credits are tight: it updates the repo, runs exactly
-`colab/run_stage5_arc_mix_recovery_once.py`, commits safe text artifacts through
-the delegated runner, and disconnects the runtime after completion.
-
-Only after that proxy is positive should you use
+The active next A100-worthy job is not Stage 1. The latest ARC-mix recovery
+proxy matched base on the 128-row ARC-Challenge proxy and lifted the recurrent
+start, so the current low-credit action is the full balanced ARC-Easy /
+ARC-Challenge confirmation assessment. Use
 [`07_stage5_full_arc_assessment.ipynb`](07_stage5_full_arc_assessment.ipynb) or
-[`STAGE5_FULL_ASSESSMENT_CELL.md`](STAGE5_FULL_ASSESSMENT_CELL.md) for another
-full balanced assessment. Do not use the generic continuation cell for this
-narrow gate unless you intentionally want the planner to choose a different
-action.
+[`STAGE5_FULL_ASSESSMENT_CELL.md`](STAGE5_FULL_ASSESSMENT_CELL.md): both update
+the repo, run exactly `colab/run_stage5_full_assessment_once.py`, commit safe
+text artifacts, and disconnect the runtime after completion.
+
+Do not use the generic continuation cell for this narrow gate unless you
+intentionally want the planner to choose a different action.
 
 ## Legacy Stage 1 Cell
 
 The following older cell is kept for reference when restarting the full staged
-program. Do not run it for the current low-credit ARC-mix recovery gate.
+program. Do not run it for the current low-credit full-assessment gate.
 
 ```python
 import os, subprocess, sys

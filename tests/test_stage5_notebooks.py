@@ -43,7 +43,7 @@ def test_full_arc_assessment_notebook_is_single_purpose() -> None:
 
     assert "colab/run_stage5_full_assessment_once.py" in text
     assert "STAGE5_FULL_ASSESS_AUTO_DISCONNECT" in text
-    assert "stage5_arc_agi_colab_continue_20260621_232031_plan_arc_mix_probe/summary.json" in text
+    assert "stage5_arc_mix_recovery_once_20260622_003331/summary.json" in text
     assert "colab/run_stage5_colab_continue.py" not in text
     assert "colab/run_stage5_reasoning_dataset_pipeline.py" not in text
     assert payload["cells"][0]["cell_type"] == "markdown"
