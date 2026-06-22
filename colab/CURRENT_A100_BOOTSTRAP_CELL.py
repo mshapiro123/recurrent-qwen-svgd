@@ -14,6 +14,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "debiased_benchmark_suite" - bounded ARC-Challenge/GPQA-lite benchmark with debiased MCQ scoring.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
 #   "capability_ladder_trace_jobs_cpu" - CPU-only trace-job build from latest capability ladder probe.
+#   "capability_ladder_trace_collect_cpu" - CPU-only trace-response collection into gated SFT data.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 
@@ -140,6 +141,19 @@ TARGETS = {
             "colab/run_stage5_capability_ladder_trace_jobs.py",
             "training/build_capability_ladder_trace_jobs.py",
             "tests/test_capability_ladder_trace_jobs.py",
+            "runtime.unassign",
+        ],
+        "env": {},
+    },
+    "capability_ladder_trace_collect_cpu": {
+        "path": "colab/STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_CELL.py",
+        "markers": [
+            "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_CELL_VERSION",
+            "capability_ladder_trace_collect_cpu",
+            "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_ALLOW_GPU",
+            "colab/run_stage5_capability_ladder_trace_collect.py",
+            "training/collect_capability_ladder_trace_outputs.py",
+            "tests/test_stage5_capability_ladder_trace_collect_runner.py",
             "runtime.unassign",
         ],
         "env": {},

@@ -148,6 +148,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or curriculum_pipeline_payload(payload) is not None
         or capability_ladder_probe_payload(payload) is not None
         or capability_ladder_trace_jobs_payload(payload) is not None
+        or capability_ladder_trace_collection_payload(payload) is not None
         or capability_ladder_curriculum_payload(payload) is not None
         or curriculum_sft_gate_payload(payload) is not None
         or curriculum_sft_payload(payload) is not None
@@ -939,6 +940,10 @@ def capability_ladder_trace_jobs_payload(payload: dict[str, Any]) -> dict[str, A
     return payload if payload.get("kind") == "stage5_capability_ladder_trace_jobs" else None
 
 
+def capability_ladder_trace_collection_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_capability_ladder_trace_collection" else None
+
+
 def mode_rows_from_counts(payload: dict[str, Any]) -> str:
     counts = payload.get("counts") if isinstance(payload.get("counts"), dict) else {}
     mode_counts = counts.get("mode_counts") if isinstance(counts.get("mode_counts"), dict) else {}
@@ -1162,6 +1167,53 @@ def capability_ladder_trace_jobs_actions(payload: dict[str, Any], *, source_summ
         make_action(
             f"Inspect capability-ladder trace jobs `{status}`",
             "The trace-job build did not produce usable jobs; inspect the report before generating responses.",
+            f"cat {shlex.quote(command_path(source_summary))}",
+            10,
+        )
+    ]
+
+
+def capability_ladder_trace_collection_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status") or "unknown")
+    curriculum = payload.get("curriculum") if isinstance(payload.get("curriculum"), dict) else {}
+    summary_json = str(curriculum.get("summary_json") or "").replace("\\", "/")
+    work_dir = str(curriculum.get("work_dir") or "").replace("\\", "/")
+    counts = curriculum.get("counts") if isinstance(curriculum.get("counts"), dict) else {}
+    positive_rows = int(counts.get("positive_sft_rows") or 0)
+    mode_counts = counts.get("mode_counts") if isinstance(counts.get("mode_counts"), dict) else {}
+    min_mode_rows = ",".join(
+        f"{mode}={int(count)}"
+        for mode, count in sorted(mode_counts.items())
+        if int(count or 0) > 0
+    )
+    if status == "trace_curriculum_gate_ready" and summary_json:
+        gate_json = source_summary.parent / "traced_curriculum_sft_gate.json"
+        gate_md = source_summary.parent / "traced_curriculum_sft_gate.md"
+        min_mode_clause = f"--min_mode_rows {shlex.quote(min_mode_rows)} " if min_mode_rows else ""
+        return [
+            make_action(
+                "Run traced capability-ladder SFT safety gate",
+                (
+                    "Provider traces were collected and verified. Re-run the no-GPU SFT gate on the traced "
+                    "capability-ladder curriculum before any recurrent fine-tune."
+                ),
+                (
+                    "python training/check_curriculum_sft_gate.py "
+                    f"--work_dir {shlex.quote(work_dir)} "
+                    f"--summary_json {shlex.quote(summary_json)} "
+                    f"--output_json {shlex.quote(command_path(gate_json))} "
+                    f"--output_md {shlex.quote(command_path(gate_md))} "
+                    f"--min_positive_rows {max(positive_rows, 1)} "
+                    f"{min_mode_clause}"
+                    "--fail_on_no_go"
+                ),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect traced capability-ladder collection `{status}`",
+            "The traced capability-ladder collection is not gate-ready; inspect collection and gate reports before training.",
             f"cat {shlex.quote(command_path(source_summary))}",
             10,
         )
@@ -3541,6 +3593,9 @@ def plan_next_actions(
     capability_ladder_trace_jobs = capability_ladder_trace_jobs_payload(payload)
     if capability_ladder_trace_jobs:
         return capability_ladder_trace_jobs_actions(capability_ladder_trace_jobs, source_summary=source_summary)
+    capability_ladder_trace_collection = capability_ladder_trace_collection_payload(payload)
+    if capability_ladder_trace_collection:
+        return capability_ladder_trace_collection_actions(capability_ladder_trace_collection, source_summary=source_summary)
     capability_ladder = capability_ladder_curriculum_payload(payload)
     if capability_ladder:
         return capability_ladder_curriculum_actions(capability_ladder, source_summary=source_summary)
@@ -3936,6 +3991,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "capability_ladder_mcq_probe"
     if capability_ladder_trace_jobs_payload(payload):
         return "capability_ladder_trace_jobs"
+    if capability_ladder_trace_collection_payload(payload):
+        return "capability_ladder_trace_collection"
     if capability_ladder_curriculum_payload(payload):
         return "capability_ladder_curriculum"
     if curriculum_sft_gate_payload(payload):

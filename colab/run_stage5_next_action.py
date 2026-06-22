@@ -83,6 +83,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/run_stage5_arc_agi_tta_sweep.py",
     "colab/run_stage5_benchmark_suite.py",
     "colab/run_stage5_capability_ladder_mcq_probe.py",
+    "colab/run_stage5_capability_ladder_trace_collect.py",
     "colab/run_stage5_capability_ladder_trace_jobs.py",
     "colab/apply_stage5_mcq_scoring_policy.py",
     "colab/run_stage5_balanced_arc_mix_gate.py",
@@ -141,6 +142,7 @@ GUARDED_A100_SCRIPTS = {
 }
 LOCAL_ONLY_LONG_SCRIPTS = {
     "colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py",
+    "colab/run_stage5_capability_ladder_trace_collect.py",
     "colab/run_stage5_capability_ladder_trace_jobs.py",
     "colab/run_stage5_reasoning_dataset_audit.py",
     "colab/run_stage5_reasoning_dataset_pipeline.py",

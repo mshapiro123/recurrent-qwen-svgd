@@ -954,6 +954,7 @@ def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None
     capability = scan_root / "capability_ladder" / "summary.json"
     probe = scan_root / "capability_ladder_probe" / "summary.json"
     trace_jobs = scan_root / "capability_ladder_trace_jobs" / "summary.json"
+    trace_collection = scan_root / "capability_ladder_trace_collection" / "summary.json"
     pipeline = scan_root / "curriculum_pipeline" / "summary.json"
     gate = scan_root / "curriculum_gate" / "summary.json"
     sft = scan_root / "curriculum_sft" / "summary.json"
@@ -989,6 +990,20 @@ def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None
             "status": "ready",
             "trace_jobs": {"jobs": 18, "selected_rows": 9, "by_target_loop": {"1": 5, "2": 4}},
             "next_action": "Run provider responses then collect traced rows.",
+        },
+    )
+    _write(
+        trace_collection,
+        {
+            "run_id": "trace_collection",
+            "kind": "stage5_capability_ladder_trace_collection",
+            "status": "trace_curriculum_gate_ready",
+            "next_action": "If the gate is green, run the recurrent SFT gate/training path.",
+            "curriculum": {
+                "work_dir": "data/curriculum/traced",
+                "counts": {"positive_sft_rows": 7, "mode_counts": {"direct": 3, "deep_narrow": 4}},
+            },
+            "gate": {"go": True},
         },
     )
     _write(
@@ -1032,6 +1047,7 @@ def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None
     assert [row["kind"] for row in statuses] == [
         "capability_ladder_curriculum_pipeline",
         "stage5_capability_ladder_mcq_probe",
+        "stage5_capability_ladder_trace_collection",
         "stage5_capability_ladder_trace_jobs",
         "curriculum_sft_gate",
         "curriculum_pipeline_from_artifacts",
@@ -1045,6 +1061,10 @@ def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None
     assert by_kind["stage5_capability_ladder_mcq_probe"]["work_dir"] == "data/curriculum/probe"
     assert by_kind["stage5_capability_ladder_trace_jobs"]["positive_rows"] == 9
     assert by_kind["stage5_capability_ladder_trace_jobs"]["next_action"].startswith("Run provider responses")
+    assert by_kind["stage5_capability_ladder_trace_collection"]["positive_rows"] == 7
+    assert by_kind["stage5_capability_ladder_trace_collection"]["go"] is True
+    assert by_kind["stage5_capability_ladder_trace_collection"]["work_dir"] == "data/curriculum/traced"
+    assert by_kind["stage5_capability_ladder_trace_collection"]["next_action"].startswith("If the gate is green")
     assert by_kind["curriculum_pipeline_from_artifacts"]["next_action"].startswith("Review typed_records")
     assert by_kind["stage5_curriculum_sft"]["train_rows"] == 21
     assert by_kind["stage5_curriculum_sft"]["val_rows"] == 3

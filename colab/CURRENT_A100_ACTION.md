@@ -46,6 +46,11 @@ Use `STAGE5_CURRENT_A100_TARGET=capability_ladder_trace_jobs_cpu` on a CPU
 runtime for that trace-job build step. It follows the current probe summary,
 restores private scored rows from Drive if needed, writes provider-neutral trace
 jobs, pushes safe summaries, and disconnects.
+After provider responses are written, use
+`STAGE5_CURRENT_A100_TARGET=capability_ladder_trace_collect_cpu` on a CPU
+runtime to verify final answers, collect traced scored rows, build the traced
+capability-ladder curriculum, run the SFT gate, push safe summaries, and
+disconnect.
 The bootstrap now auto-resumes from
 [`config/stage5_current_source_summary.txt`](../config/stage5_current_source_summary.txt)
 when that pointer exists and targets an available summary. To force a specific
@@ -299,6 +304,63 @@ code = base64.b64decode(payload["content"]).decode("utf-8")
 print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12])
 assert "capability_ladder_trace_jobs_cpu" in code, "Fetched stale bootstrap without trace-jobs target."
 assert "STAGE5_CAPABILITY_LADDER_TRACE_JOBS_CELL.py" in code, "Fetched stale trace-jobs launcher."
+exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
+```
+
+## Next Paste-Anywhere Capability-Ladder Trace Collection Cell
+
+Use this after provider responses have been written. By default the collector
+looks for `trace_responses.jsonl`, `capability_ladder_trace_responses.jsonl`, or
+`responses.jsonl` beside the trace-job summary or in the Drive backup. You can
+also set `STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_JSONL` explicitly.
+
+```python
+import base64, json, os, time, urllib.request
+from google.colab import userdata
+
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_trace_collect_cpu"
+# Optional explicit response path:
+# os.environ["STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_JSONL"] = "outputs/stage5/<trace_job_run>/trace_responses.jsonl"
+
+def colab_secret(*names):
+    for name in names:
+        value = os.environ.get(name)
+        if value:
+            return value
+        try:
+            value = userdata.get(name)
+        except Exception:
+            value = None
+        if value:
+            return value
+    return None
+
+token = colab_secret("GH_TOKEN", "GITHUB_TOKEN")
+assert token, "Add GH_TOKEN or GITHUB_TOKEN to Colab secrets."
+
+headers = {
+    "Authorization": f"Bearer {token}",
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "Cache-Control": "no-cache",
+}
+
+def gh_json(url):
+    req = urllib.request.Request(url, headers=headers)
+    return json.loads(urllib.request.urlopen(req).read().decode("utf-8"))
+
+ref_payload = gh_json(
+    f"https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/git/ref/heads/main?cache_bust={time.time_ns()}"
+)
+resolved_ref = ref_payload["object"]["sha"]
+payload = gh_json(
+    "https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/"
+    f"contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py?ref={resolved_ref}&cache_bust={time.time_ns()}"
+)
+code = base64.b64decode(payload["content"]).decode("utf-8")
+print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12])
+assert "capability_ladder_trace_collect_cpu" in code, "Fetched stale bootstrap without trace-collection target."
+assert "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_CELL.py" in code, "Fetched stale trace-collection launcher."
 exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
 ```
 
