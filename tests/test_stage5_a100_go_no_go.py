@@ -898,7 +898,10 @@ def test_routing_diagnostic_blocks_curriculum_sft_loop_collapse() -> None:
         source_payload={
             "kind": "stage5_curriculum_sft",
             "phase1_val": {"loss": 2.0, "mean_expected_loops": 1.0},
-            "validation_checks": {"status": "validation_sane"},
+            "validation_checks": {
+                "status": "validation_sane",
+                "depth_gradient": {"available": True, "observed": True},
+            },
         },
     )
 
@@ -916,12 +919,64 @@ def test_routing_diagnostic_allows_sane_curriculum_sft_validation() -> None:
         source_payload={
             "kind": "stage5_curriculum_sft",
             "phase1_val": {"loss": 2.0, "mean_expected_loops": 3.0},
-            "validation_checks": {"status": "validation_sane"},
+            "validation_checks": {
+                "status": "validation_sane",
+                "depth_gradient": {
+                    "available": True,
+                    "direct_mean_expected_loops": 1.2,
+                    "deep_narrow_mean_expected_loops": 2.8,
+                    "observed": True,
+                },
+            },
         },
     )
 
     assert decision["go"] is True
     assert decision["status"] == "go_routing_diagnostic"
+
+
+def test_routing_diagnostic_blocks_missing_curriculum_sft_depth_gradient() -> None:
+    decision = classify_action(
+        {
+            "name": "Run routing diagnostic for generated-curriculum recurrent checkpoint",
+            "command": "python colab/run_stage5_routing_diagnostic.py",
+        },
+        source_payload={
+            "kind": "stage5_curriculum_sft",
+            "phase1_val": {"loss": 2.0, "mean_expected_loops": 3.0},
+            "validation_checks": {"status": "validation_sane"},
+        },
+    )
+
+    assert decision["go"] is False
+    assert decision["status"] == "curriculum_sft_validation_no_go"
+    assert "no depth-gradient diagnostic" in decision["reason"]
+
+
+def test_routing_diagnostic_blocks_failed_curriculum_sft_depth_gradient() -> None:
+    decision = classify_action(
+        {
+            "name": "Run routing diagnostic for generated-curriculum recurrent checkpoint",
+            "command": "python colab/run_stage5_routing_diagnostic.py",
+        },
+        source_payload={
+            "kind": "stage5_curriculum_sft",
+            "phase1_val": {"loss": 2.0, "mean_expected_loops": 3.0},
+            "validation_checks": {
+                "status": "validation_sane",
+                "depth_gradient": {
+                    "available": True,
+                    "direct_mean_expected_loops": 2.2,
+                    "deep_narrow_mean_expected_loops": 2.1,
+                    "observed": False,
+                },
+            },
+        },
+    )
+
+    assert decision["go"] is False
+    assert decision["status"] == "curriculum_sft_validation_no_go"
+    assert "did not observe" in decision["reason"]
 
 
 def test_curriculum_sft_checkpoint_guard_without_resume_starts_from_base(monkeypatch) -> None:

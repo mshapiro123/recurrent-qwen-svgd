@@ -340,6 +340,23 @@ def curriculum_sft_validation_no_go_reason(source_payload: dict[str, Any]) -> st
                 f"Curriculum SFT summary reports validation status {status!r} with "
                 f"issues {checks.get('issues') or []!r}; inspect locally before paid routing diagnostics."
             )
+        depth_gradient = checks.get("depth_gradient")
+        if isinstance(depth_gradient, dict):
+            if depth_gradient.get("available") is False:
+                return (
+                    f"Curriculum SFT summary is missing direct/deep depth-gradient metrics {depth_gradient!r}; "
+                    "inspect locally before paid routing diagnostics."
+                )
+            if depth_gradient.get("observed") is False:
+                return (
+                    f"Curriculum SFT summary did not observe the required direct-vs-deep depth gradient "
+                    f"{depth_gradient!r}; inspect locally before paid routing diagnostics."
+                )
+        elif checks:
+            return (
+                "Curriculum SFT summary has validation checks but no depth-gradient diagnostic; "
+                "inspect locally before paid routing diagnostics."
+            )
     phase1_val = source_payload.get("phase1_val")
     if not isinstance(phase1_val, dict) or not phase1_val:
         return "Curriculum SFT summary is missing phase1_val metrics; inspect locally before paid routing diagnostics."

@@ -2007,6 +2007,52 @@ def test_curriculum_sft_explicit_validation_needs_review_blocks_next_gpu_diagnos
     assert "run_stage5_routing_diagnostic.py" not in actions[0]["command"]
 
 
+def test_curriculum_sft_missing_depth_gradient_blocks_next_gpu_diagnostic(tmp_path) -> None:
+    source = tmp_path / "curriculum_sft" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "run_id": "curriculum_sft_run",
+        "kind": "stage5_curriculum_sft",
+        "phase1_checkpoint": "outputs/stage5/curriculum_sft_run/phase1/phase1_step_150.pt",
+        "dataset": {"train_rows": 40, "val_rows": 5},
+        "phase1_val": {"loss": 2.5, "mean_expected_loops": 3.0},
+        "validation_checks": {"status": "validation_sane"},
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect curriculum SFT validation before routing diagnostic"
+    assert "no depth-gradient diagnostic" in actions[0]["reason"]
+    assert "run_stage5_routing_diagnostic.py" not in actions[0]["command"]
+
+
+def test_curriculum_sft_failed_depth_gradient_blocks_next_gpu_diagnostic(tmp_path) -> None:
+    source = tmp_path / "curriculum_sft" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "run_id": "curriculum_sft_run",
+        "kind": "stage5_curriculum_sft",
+        "phase1_checkpoint": "outputs/stage5/curriculum_sft_run/phase1/phase1_step_150.pt",
+        "dataset": {"train_rows": 40, "val_rows": 5},
+        "phase1_val": {"loss": 2.5, "mean_expected_loops": 3.0},
+        "validation_checks": {
+            "status": "validation_sane",
+            "depth_gradient": {
+                "available": True,
+                "direct_mean_expected_loops": 2.2,
+                "deep_narrow_mean_expected_loops": 2.1,
+                "observed": False,
+            },
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect curriculum SFT validation before routing diagnostic"
+    assert "did not observe" in actions[0]["reason"]
+    assert "run_stage5_routing_diagnostic.py" not in actions[0]["command"]
+
+
 def test_curriculum_sft_collapsed_loop_validation_blocks_next_gpu_diagnostic(tmp_path) -> None:
     source = tmp_path / "curriculum_sft" / "summary.json"
     source.parent.mkdir()

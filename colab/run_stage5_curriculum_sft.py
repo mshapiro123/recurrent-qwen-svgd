@@ -76,6 +76,12 @@ BETA = float(os.environ.get("STAGE5_CURRICULUM_PHASE1_BETA", "0.08"))
 MAX_GRAD_NORM = float(os.environ.get("STAGE5_CURRICULUM_PHASE1_MAX_GRAD_NORM", "0.3"))
 MIN_MEAN_EXPECTED_LOOPS = float(os.environ.get("STAGE5_CURRICULUM_SFT_MIN_MEAN_EXPECTED_LOOPS", "1.05"))
 DEPTH_GRADIENT_MARGIN = float(os.environ.get("STAGE5_CURRICULUM_SFT_DEPTH_GRADIENT_MARGIN", "0.25"))
+REQUIRE_DEPTH_GRADIENT = os.environ.get("STAGE5_CURRICULUM_SFT_REQUIRE_DEPTH_GRADIENT", "1").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 RESUME_FROM = os.environ.get("STAGE5_CURRICULUM_RESUME_FROM", "").strip()
 PUSH_RESULTS = os.environ.get("STAGE5_CURRICULUM_SFT_PUSH", "1").strip().lower() in {
     "1",
@@ -511,6 +517,11 @@ def validation_checks(
         issues.append("missing_mean_expected_loops")
     elif loop_collapse:
         issues.append("mean_expected_loops_collapsed")
+    if REQUIRE_DEPTH_GRADIENT:
+        if not depth_gradient["available"]:
+            issues.append("missing_depth_gradient_metrics")
+        elif depth_gradient["observed"] is False:
+            issues.append("depth_gradient_not_observed")
     status = "validation_sane" if not issues else "validation_needs_review"
     return {
         "status": status,
@@ -518,6 +529,7 @@ def validation_checks(
         "nonfinite_metrics": nonfinite,
         "min_mean_expected_loops": MIN_MEAN_EXPECTED_LOOPS,
         "mean_expected_loops": mean_loops,
+        "require_depth_gradient": REQUIRE_DEPTH_GRADIENT,
         "depth_gradient": depth_gradient,
     }
 

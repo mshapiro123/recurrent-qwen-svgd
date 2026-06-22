@@ -1360,6 +1360,23 @@ def curriculum_sft_validation_block_reason(payload: dict[str, Any], *, checkpoin
                 f"Curriculum SFT summary reports validation status `{status}` with issues `{issues}`; "
                 "inspect validation before another GPU diagnostic."
             )
+        depth_gradient = validation_checks.get("depth_gradient")
+        if isinstance(depth_gradient, dict):
+            if depth_gradient.get("available") is False:
+                return (
+                    f"Curriculum SFT summary is missing direct/deep depth-gradient metrics `{depth_gradient}`; "
+                    "inspect validation before another GPU diagnostic."
+                )
+            if depth_gradient.get("observed") is False:
+                return (
+                    f"Curriculum SFT summary did not observe the required direct-vs-deep depth gradient "
+                    f"`{depth_gradient}`; inspect or retune the curriculum before another GPU diagnostic."
+                )
+        elif validation_checks:
+            return (
+                "Curriculum SFT summary has validation checks but no depth-gradient diagnostic; "
+                "inspect validation before another GPU diagnostic."
+            )
     phase1_val = payload.get("phase1_val")
     if not isinstance(phase1_val, dict) or not phase1_val:
         return "Curriculum SFT summary is missing phase1_val metrics; inspect validation before routing diagnostics."

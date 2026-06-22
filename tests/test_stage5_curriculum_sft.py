@@ -204,7 +204,33 @@ def test_validation_checks_flag_nonfinite_and_loop_collapse() -> None:
     assert checks["status"] == "validation_needs_review"
     assert checks["nonfinite_metrics"] == ["loss"]
     assert "mean_expected_loops_collapsed" in checks["issues"]
+    assert "depth_gradient_not_observed" in checks["issues"]
     assert checks["depth_gradient"]["observed"] is False
+
+
+def test_validation_checks_require_depth_gradient() -> None:
+    checks = runner.validation_checks(
+        {"loss": 2.0, "mean_expected_loops": 2.4},
+        {
+            "direct": {"mean_expected_loops": 1.4},
+            "deep_narrow": {"mean_expected_loops": 1.5},
+        },
+    )
+
+    assert checks["status"] == "validation_needs_review"
+    assert "depth_gradient_not_observed" in checks["issues"]
+    assert checks["depth_gradient"]["observed"] is False
+
+
+def test_validation_checks_flag_missing_depth_gradient_metrics() -> None:
+    checks = runner.validation_checks(
+        {"loss": 2.0, "mean_expected_loops": 2.4},
+        {"direct": {"mean_expected_loops": 1.4}},
+    )
+
+    assert checks["status"] == "validation_needs_review"
+    assert "missing_depth_gradient_metrics" in checks["issues"]
+    assert checks["depth_gradient"]["available"] is False
 
 
 def test_eval_jsonl_requests_single_pass_curriculum_mode_groups(monkeypatch, tmp_path) -> None:
