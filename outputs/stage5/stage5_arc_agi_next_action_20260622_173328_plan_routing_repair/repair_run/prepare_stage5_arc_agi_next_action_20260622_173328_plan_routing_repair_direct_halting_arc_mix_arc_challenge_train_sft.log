@@ -1,0 +1,15 @@
+
+Generating train split:   0%|          | 0/1119 [00:00<?, ? examples/s]
+Generating train split: 100%|██████████| 1119/1119 [00:00<00:00, 196426.98 examples/s]
+
+Generating test split:   0%|          | 0/1172 [00:00<?, ? examples/s]
+Generating test split: 100%|██████████| 1172/1172 [00:00<00:00, 266377.17 examples/s]
+
+Generating validation split:   0%|          | 0/299 [00:00<?, ? examples/s]
+Generating validation split: 100%|██████████| 299/299 [00:00<00:00, 121005.10 examples/s]
+dataset_id=allenai/ai2_arc
+config=ARC-Challenge
+split=train
+rows=1119
+skipped_rows=0
+output_jsonl=data/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix_arc_challenge_train_sft.jsonl

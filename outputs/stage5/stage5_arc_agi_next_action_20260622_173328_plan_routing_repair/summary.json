@@ -1,0 +1,1041 @@
+{
+  "run_id": "stage5_arc_agi_next_action_20260622_173328_plan_routing_repair",
+  "kind": "stage5_routing_repair",
+  "status": "repair_proxy_lift_calibration_warning",
+  "passed": false,
+  "repair_mode": "direct_halting",
+  "source_summary": "outputs/stage5/stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft_routing_diagnostic/summary.json",
+  "benchmark_summary": "outputs/stage5/stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft_routing_diagnostic/benchmark_run/summary.json",
+  "profile": {
+    "repair_mode": "direct_halting",
+    "STAGE5_ARC_MIX_ARMS": "arc_mix_response_w02_lr2e6",
+    "STAGE5_ARC_MIX_ARC_EASY_REPEAT": "8",
+    "STAGE5_ARC_MIX_ARC_CHALLENGE_REPEAT": "1",
+    "STAGE5_ARC_MIX_ARC_EASY_TARGET_LOOP": "1",
+    "STAGE5_ARC_MIX_ARC_CHALLENGE_TARGET_LOOP": "2",
+    "STAGE5_ARC_MIX_ARC_EASY_ROUTING_TYPE": "direct",
+    "STAGE5_ARC_MIX_ARC_CHALLENGE_ROUTING_TYPE": "deep_narrow_probe",
+    "STAGE5_ARC_MIX_EVAL_CONFIG": "ARC-Easy",
+    "STAGE5_ARC_MIX_OPUS_LIMIT": "1500",
+    "STAGE5_ARC_MIX_ARC_EVAL_LIMIT": "128",
+    "STAGE5_ARC_MIX_MIN_MARGIN_DELTA": "0.0",
+    "STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT": "8"
+  },
+  "profile_objective": {
+    "repair_mode": "direct_halting",
+    "requires_distillation": true,
+    "distillation_ok": true,
+    "arms": [
+      {
+        "name": "arc_mix_response_w02_lr2e6",
+        "learning_rate": 2e-06,
+        "beta": 0.12,
+        "steps": 150,
+        "distillation": {
+          "enabled": true,
+          "weight": 0.2,
+          "temperature": 2.0,
+          "on": "response"
+        }
+      }
+    ],
+    "rationale": "The routing repair is a deterministic Phase 1 recovery run. It uses ARC label supervision plus frozen-base response KL to repair direct/deep allocation without launching particles."
+  },
+  "proxy_alignment": {
+    "checked": true,
+    "ok": true,
+    "expected_arc_eval_config": "ARC-Easy",
+    "actual_arc_eval_config": "ARC-Easy",
+    "reason": "Child ARC-mix proxy matched the repair objective."
+  },
+  "arc_mix_summary": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/summary.json",
+  "arc_mix": {
+    "run_id": "stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix",
+    "kind": "stage5_balanced_arc_mix_gate",
+    "objective_rationale": {
+      "failure_mode": "The previous proxy-selected recurrent checkpoint lost full balanced ARC points through answer-calibration drift: lower correct-answer margins and answer-prior shift.",
+      "proxy_hypothesis": "Mix Opus reasoning traces with ARC-style MCQ label supervision and use response-only frozen-base KL distillation to preserve the base model's answer-token distribution.",
+      "response_distillation_reason": "ARC MCQ SFT rows use label-only completions, so response-only distillation is concentrated on the option label decision rather than the prompt text."
+    },
+    "source_summary": "outputs/stage5/stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft_routing_diagnostic/benchmark_run/summary.json",
+    "source_status": "completed",
+    "resume_checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft/phase1/phase1_step_150.pt",
+    "resume_run_id": "stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft",
+    "data": {
+      "opus_rows": 998,
+      "arc_challenge_rows": 1119,
+      "arc_easy_rows": 2251,
+      "arc_repeat": 2,
+      "arc_challenge_repeat": 1,
+      "arc_easy_repeat": 8,
+      "arc_challenge_target_loop": "2",
+      "arc_easy_target_loop": "1",
+      "arc_challenge_routing_type": "deep_narrow_probe",
+      "arc_easy_routing_type": "direct",
+      "mixed_rows": 20125,
+      "mixed_train_jsonl": "data/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix_mixed_train.jsonl",
+      "opus_val_jsonl": "data/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix_opus_val.jsonl",
+      "arc_prompt_style": "with_options",
+      "arc_score_target": "label",
+      "arc_eval_config": "ARC-Easy"
+    },
+    "arc_eval_limit": 128,
+    "arc_eval_config": "ARC-Easy",
+    "proxy_calibration_thresholds": {
+      "min_mean_margin_delta": 0.0,
+      "max_abs_prediction_count_delta": 8
+    },
+    "status": "proxy_lift_calibration_warning",
+    "passed": false,
+    "decision": "stop_for_calibration_repair",
+    "blocked_reason": "Proxy lifted accuracy but failed the calibration-preservation threshold.",
+    "next_step": "Do not run the full paid assessment yet; the proxy lifted accuracy but degraded base-comparison calibration. Increase preservation/distillation or inspect answer-prior drift.",
+    "best_arm": {
+      "arm": "arc_mix_response_w02_lr2e6",
+      "base_arc": {
+        "mean": {
+          "correct": 87,
+          "total": 128,
+          "accuracy": 0.6796875
+        }
+      },
+      "phase1_start": {
+        "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft/phase1/phase1_step_150.pt",
+        "val": {
+          "lora_recurrent_modules": 84.0,
+          "examples": 52.0,
+          "expected_ce": 3.36654,
+          "halting_kl": 0.708944,
+          "loss": 3.451613,
+          "mean_expected_loops": 3.094619,
+          "mean_halt_entropy": 1.156482
+        },
+        "arc": {
+          "mean": {
+            "correct": 82,
+            "total": 128,
+            "accuracy": 0.640625
+          }
+        }
+      },
+      "checkpoints": [
+        {
+          "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 52.0,
+            "expected_ce": 3.367093,
+            "halting_kl": 0.702826,
+            "loss": 3.451432,
+            "mean_expected_loops": 3.089496,
+            "mean_halt_entropy": 1.160042
+          },
+          "arc_path": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix_arc_easy128_arc_mix_response_w02_lr2e6_phase1_step_50_label.jsonl",
+          "arc": {
+            "mean": {
+              "correct": 84,
+              "total": 128,
+              "accuracy": 0.65625
+            }
+          },
+          "comparison_to_start": {
+            "helped": 3,
+            "hurt": 1,
+            "tied": 124,
+            "prediction_changes": 7,
+            "mean_margin_delta": 0.04362923407461494,
+            "mean_correct_score_delta": 0.2480443863896653,
+            "reference_prediction_counts": {
+              "D": 33,
+              "A": 58,
+              "C": 22,
+              "B": 15
+            },
+            "variant_prediction_counts": {
+              "D": 30,
+              "A": 59,
+              "C": 22,
+              "B": 17
+            },
+            "answer_counts": {
+              "D": 33,
+              "A": 30,
+              "C": 38,
+              "B": 27
+            },
+            "prediction_count_delta": {
+              "A": 1,
+              "B": 2,
+              "C": 0,
+              "D": -3
+            },
+            "max_abs_prediction_count_delta": 3,
+            "calibration_ok": true,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": 0.0,
+              "max_abs_prediction_count_delta": 8
+            }
+          },
+          "comparison_to_base": {
+            "helped": 14,
+            "hurt": 17,
+            "tied": 97,
+            "prediction_changes": 38,
+            "mean_margin_delta": -1.5559766787882836,
+            "mean_correct_score_delta": -0.4753754452940484,
+            "reference_prediction_counts": {
+              "D": 17,
+              "A": 36,
+              "C": 42,
+              "B": 33
+            },
+            "variant_prediction_counts": {
+              "D": 30,
+              "A": 59,
+              "C": 22,
+              "B": 17
+            },
+            "answer_counts": {
+              "D": 33,
+              "A": 30,
+              "C": 38,
+              "B": 27
+            },
+            "prediction_count_delta": {
+              "A": 23,
+              "B": -16,
+              "C": -20,
+              "D": 13
+            },
+            "max_abs_prediction_count_delta": 23,
+            "calibration_ok": false,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": 0.0,
+              "max_abs_prediction_count_delta": 8
+            }
+          }
+        },
+        {
+          "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/arc_mix_response_w02_lr2e6/phase1/phase1_step_100.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 52.0,
+            "expected_ce": 3.365057,
+            "halting_kl": 0.696182,
+            "loss": 3.448599,
+            "mean_expected_loops": 3.083913,
+            "mean_halt_entropy": 1.163905
+          },
+          "arc_path": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix_arc_easy128_arc_mix_response_w02_lr2e6_phase1_step_100_label.jsonl",
+          "arc": {
+            "mean": {
+              "correct": 81,
+              "total": 128,
+              "accuracy": 0.6328125
+            }
+          },
+          "comparison_to_start": {
+            "helped": 6,
+            "hurt": 7,
+            "tied": 115,
+            "prediction_changes": 18,
+            "mean_margin_delta": 0.1296354114310816,
+            "mean_correct_score_delta": 0.38180588965769857,
+            "reference_prediction_counts": {
+              "D": 33,
+              "A": 58,
+              "C": 22,
+              "B": 15
+            },
+            "variant_prediction_counts": {
+              "D": 28,
+              "A": 52,
+              "C": 29,
+              "B": 19
+            },
+            "answer_counts": {
+              "D": 33,
+              "A": 30,
+              "C": 38,
+              "B": 27
+            },
+            "prediction_count_delta": {
+              "A": -6,
+              "B": 4,
+              "C": 7,
+              "D": -5
+            },
+            "max_abs_prediction_count_delta": 7,
+            "calibration_ok": true,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": 0.0,
+              "max_abs_prediction_count_delta": 8
+            }
+          },
+          "comparison_to_base": {
+            "helped": 9,
+            "hurt": 15,
+            "tied": 104,
+            "prediction_changes": 32,
+            "mean_margin_delta": -1.469970501431817,
+            "mean_correct_score_delta": -0.34161394202601514,
+            "reference_prediction_counts": {
+              "D": 17,
+              "A": 36,
+              "C": 42,
+              "B": 33
+            },
+            "variant_prediction_counts": {
+              "D": 28,
+              "A": 52,
+              "C": 29,
+              "B": 19
+            },
+            "answer_counts": {
+              "D": 33,
+              "A": 30,
+              "C": 38,
+              "B": 27
+            },
+            "prediction_count_delta": {
+              "A": 16,
+              "B": -14,
+              "C": -13,
+              "D": 11
+            },
+            "max_abs_prediction_count_delta": 16,
+            "calibration_ok": false,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": 0.0,
+              "max_abs_prediction_count_delta": 8
+            }
+          }
+        },
+        {
+          "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 52.0,
+            "expected_ce": 3.366809,
+            "halting_kl": 0.690139,
+            "loss": 3.449626,
+            "mean_expected_loops": 3.078772,
+            "mean_halt_entropy": 1.167397
+          },
+          "arc_path": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix_arc_easy128_arc_mix_response_w02_lr2e6_phase1_step_150_label.jsonl",
+          "arc": {
+            "mean": {
+              "correct": 82,
+              "total": 128,
+              "accuracy": 0.640625
+            }
+          },
+          "comparison_to_start": {
+            "helped": 5,
+            "hurt": 5,
+            "tied": 118,
+            "prediction_changes": 17,
+            "mean_margin_delta": 0.15457737096585333,
+            "mean_correct_score_delta": 0.4366718796081841,
+            "reference_prediction_counts": {
+              "D": 33,
+              "A": 58,
+              "C": 22,
+              "B": 15
+            },
+            "variant_prediction_counts": {
+              "D": 26,
+              "A": 58,
+              "C": 25,
+              "B": 19
+            },
+            "answer_counts": {
+              "D": 33,
+              "A": 30,
+              "C": 38,
+              "B": 27
+            },
+            "prediction_count_delta": {
+              "A": 0,
+              "B": 4,
+              "C": 3,
+              "D": -7
+            },
+            "max_abs_prediction_count_delta": 7,
+            "calibration_ok": true,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": 0.0,
+              "max_abs_prediction_count_delta": 8
+            }
+          },
+          "comparison_to_base": {
+            "helped": 11,
+            "hurt": 16,
+            "tied": 101,
+            "prediction_changes": 33,
+            "mean_margin_delta": -1.4450285418970452,
+            "mean_correct_score_delta": -0.2867479520755296,
+            "reference_prediction_counts": {
+              "D": 17,
+              "A": 36,
+              "C": 42,
+              "B": 33
+            },
+            "variant_prediction_counts": {
+              "D": 26,
+              "A": 58,
+              "C": 25,
+              "B": 19
+            },
+            "answer_counts": {
+              "D": 33,
+              "A": 30,
+              "C": 38,
+              "B": 27
+            },
+            "prediction_count_delta": {
+              "A": 22,
+              "B": -14,
+              "C": -17,
+              "D": 9
+            },
+            "max_abs_prediction_count_delta": 22,
+            "calibration_ok": false,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": 0.0,
+              "max_abs_prediction_count_delta": 8
+            }
+          }
+        }
+      ],
+      "best_checkpoint": {
+        "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt",
+        "val": {
+          "lora_recurrent_modules": 84.0,
+          "examples": 52.0,
+          "expected_ce": 3.367093,
+          "halting_kl": 0.702826,
+          "loss": 3.451432,
+          "mean_expected_loops": 3.089496,
+          "mean_halt_entropy": 1.160042
+        },
+        "arc_path": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix_arc_easy128_arc_mix_response_w02_lr2e6_phase1_step_50_label.jsonl",
+        "arc": {
+          "mean": {
+            "correct": 84,
+            "total": 128,
+            "accuracy": 0.65625
+          }
+        },
+        "comparison_to_start": {
+          "helped": 3,
+          "hurt": 1,
+          "tied": 124,
+          "prediction_changes": 7,
+          "mean_margin_delta": 0.04362923407461494,
+          "mean_correct_score_delta": 0.2480443863896653,
+          "reference_prediction_counts": {
+            "D": 33,
+            "A": 58,
+            "C": 22,
+            "B": 15
+          },
+          "variant_prediction_counts": {
+            "D": 30,
+            "A": 59,
+            "C": 22,
+            "B": 17
+          },
+          "answer_counts": {
+            "D": 33,
+            "A": 30,
+            "C": 38,
+            "B": 27
+          },
+          "prediction_count_delta": {
+            "A": 1,
+            "B": 2,
+            "C": 0,
+            "D": -3
+          },
+          "max_abs_prediction_count_delta": 3,
+          "calibration_ok": true,
+          "calibration_thresholds": {
+            "min_mean_margin_delta": 0.0,
+            "max_abs_prediction_count_delta": 8
+          }
+        },
+        "comparison_to_base": {
+          "helped": 14,
+          "hurt": 17,
+          "tied": 97,
+          "prediction_changes": 38,
+          "mean_margin_delta": -1.5559766787882836,
+          "mean_correct_score_delta": -0.4753754452940484,
+          "reference_prediction_counts": {
+            "D": 17,
+            "A": 36,
+            "C": 42,
+            "B": 33
+          },
+          "variant_prediction_counts": {
+            "D": 30,
+            "A": 59,
+            "C": 22,
+            "B": 17
+          },
+          "answer_counts": {
+            "D": 33,
+            "A": 30,
+            "C": 38,
+            "B": 27
+          },
+          "prediction_count_delta": {
+            "A": 23,
+            "B": -16,
+            "C": -20,
+            "D": 13
+          },
+          "max_abs_prediction_count_delta": 23,
+          "calibration_ok": false,
+          "calibration_thresholds": {
+            "min_mean_margin_delta": 0.0,
+            "max_abs_prediction_count_delta": 8
+          }
+        }
+      },
+      "distillation": {
+        "enabled": true,
+        "weight": 0.2,
+        "temperature": 2.0,
+        "on": "response"
+      },
+      "learning_rate": 2e-06,
+      "beta": 0.12,
+      "steps": 150
+    },
+    "arms": [
+      {
+        "arm": "arc_mix_response_w02_lr2e6",
+        "base_arc": {
+          "mean": {
+            "correct": 87,
+            "total": 128,
+            "accuracy": 0.6796875
+          }
+        },
+        "phase1_start": {
+          "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft/phase1/phase1_step_150.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 52.0,
+            "expected_ce": 3.36654,
+            "halting_kl": 0.708944,
+            "loss": 3.451613,
+            "mean_expected_loops": 3.094619,
+            "mean_halt_entropy": 1.156482
+          },
+          "arc": {
+            "mean": {
+              "correct": 82,
+              "total": 128,
+              "accuracy": 0.640625
+            }
+          }
+        },
+        "checkpoints": [
+          {
+            "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt",
+            "val": {
+              "lora_recurrent_modules": 84.0,
+              "examples": 52.0,
+              "expected_ce": 3.367093,
+              "halting_kl": 0.702826,
+              "loss": 3.451432,
+              "mean_expected_loops": 3.089496,
+              "mean_halt_entropy": 1.160042
+            },
+            "arc_path": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix_arc_easy128_arc_mix_response_w02_lr2e6_phase1_step_50_label.jsonl",
+            "arc": {
+              "mean": {
+                "correct": 84,
+                "total": 128,
+                "accuracy": 0.65625
+              }
+            },
+            "comparison_to_start": {
+              "helped": 3,
+              "hurt": 1,
+              "tied": 124,
+              "prediction_changes": 7,
+              "mean_margin_delta": 0.04362923407461494,
+              "mean_correct_score_delta": 0.2480443863896653,
+              "reference_prediction_counts": {
+                "D": 33,
+                "A": 58,
+                "C": 22,
+                "B": 15
+              },
+              "variant_prediction_counts": {
+                "D": 30,
+                "A": 59,
+                "C": 22,
+                "B": 17
+              },
+              "answer_counts": {
+                "D": 33,
+                "A": 30,
+                "C": 38,
+                "B": 27
+              },
+              "prediction_count_delta": {
+                "A": 1,
+                "B": 2,
+                "C": 0,
+                "D": -3
+              },
+              "max_abs_prediction_count_delta": 3,
+              "calibration_ok": true,
+              "calibration_thresholds": {
+                "min_mean_margin_delta": 0.0,
+                "max_abs_prediction_count_delta": 8
+              }
+            },
+            "comparison_to_base": {
+              "helped": 14,
+              "hurt": 17,
+              "tied": 97,
+              "prediction_changes": 38,
+              "mean_margin_delta": -1.5559766787882836,
+              "mean_correct_score_delta": -0.4753754452940484,
+              "reference_prediction_counts": {
+                "D": 17,
+                "A": 36,
+                "C": 42,
+                "B": 33
+              },
+              "variant_prediction_counts": {
+                "D": 30,
+                "A": 59,
+                "C": 22,
+                "B": 17
+              },
+              "answer_counts": {
+                "D": 33,
+                "A": 30,
+                "C": 38,
+                "B": 27
+              },
+              "prediction_count_delta": {
+                "A": 23,
+                "B": -16,
+                "C": -20,
+                "D": 13
+              },
+              "max_abs_prediction_count_delta": 23,
+              "calibration_ok": false,
+              "calibration_thresholds": {
+                "min_mean_margin_delta": 0.0,
+                "max_abs_prediction_count_delta": 8
+              }
+            }
+          },
+          {
+            "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/arc_mix_response_w02_lr2e6/phase1/phase1_step_100.pt",
+            "val": {
+              "lora_recurrent_modules": 84.0,
+              "examples": 52.0,
+              "expected_ce": 3.365057,
+              "halting_kl": 0.696182,
+              "loss": 3.448599,
+              "mean_expected_loops": 3.083913,
+              "mean_halt_entropy": 1.163905
+            },
+            "arc_path": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix_arc_easy128_arc_mix_response_w02_lr2e6_phase1_step_100_label.jsonl",
+            "arc": {
+              "mean": {
+                "correct": 81,
+                "total": 128,
+                "accuracy": 0.6328125
+              }
+            },
+            "comparison_to_start": {
+              "helped": 6,
+              "hurt": 7,
+              "tied": 115,
+              "prediction_changes": 18,
+              "mean_margin_delta": 0.1296354114310816,
+              "mean_correct_score_delta": 0.38180588965769857,
+              "reference_prediction_counts": {
+                "D": 33,
+                "A": 58,
+                "C": 22,
+                "B": 15
+              },
+              "variant_prediction_counts": {
+                "D": 28,
+                "A": 52,
+                "C": 29,
+                "B": 19
+              },
+              "answer_counts": {
+                "D": 33,
+                "A": 30,
+                "C": 38,
+                "B": 27
+              },
+              "prediction_count_delta": {
+                "A": -6,
+                "B": 4,
+                "C": 7,
+                "D": -5
+              },
+              "max_abs_prediction_count_delta": 7,
+              "calibration_ok": true,
+              "calibration_thresholds": {
+                "min_mean_margin_delta": 0.0,
+                "max_abs_prediction_count_delta": 8
+              }
+            },
+            "comparison_to_base": {
+              "helped": 9,
+              "hurt": 15,
+              "tied": 104,
+              "prediction_changes": 32,
+              "mean_margin_delta": -1.469970501431817,
+              "mean_correct_score_delta": -0.34161394202601514,
+              "reference_prediction_counts": {
+                "D": 17,
+                "A": 36,
+                "C": 42,
+                "B": 33
+              },
+              "variant_prediction_counts": {
+                "D": 28,
+                "A": 52,
+                "C": 29,
+                "B": 19
+              },
+              "answer_counts": {
+                "D": 33,
+                "A": 30,
+                "C": 38,
+                "B": 27
+              },
+              "prediction_count_delta": {
+                "A": 16,
+                "B": -14,
+                "C": -13,
+                "D": 11
+              },
+              "max_abs_prediction_count_delta": 16,
+              "calibration_ok": false,
+              "calibration_thresholds": {
+                "min_mean_margin_delta": 0.0,
+                "max_abs_prediction_count_delta": 8
+              }
+            }
+          },
+          {
+            "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt",
+            "val": {
+              "lora_recurrent_modules": 84.0,
+              "examples": 52.0,
+              "expected_ce": 3.366809,
+              "halting_kl": 0.690139,
+              "loss": 3.449626,
+              "mean_expected_loops": 3.078772,
+              "mean_halt_entropy": 1.167397
+            },
+            "arc_path": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix_arc_easy128_arc_mix_response_w02_lr2e6_phase1_step_150_label.jsonl",
+            "arc": {
+              "mean": {
+                "correct": 82,
+                "total": 128,
+                "accuracy": 0.640625
+              }
+            },
+            "comparison_to_start": {
+              "helped": 5,
+              "hurt": 5,
+              "tied": 118,
+              "prediction_changes": 17,
+              "mean_margin_delta": 0.15457737096585333,
+              "mean_correct_score_delta": 0.4366718796081841,
+              "reference_prediction_counts": {
+                "D": 33,
+                "A": 58,
+                "C": 22,
+                "B": 15
+              },
+              "variant_prediction_counts": {
+                "D": 26,
+                "A": 58,
+                "C": 25,
+                "B": 19
+              },
+              "answer_counts": {
+                "D": 33,
+                "A": 30,
+                "C": 38,
+                "B": 27
+              },
+              "prediction_count_delta": {
+                "A": 0,
+                "B": 4,
+                "C": 3,
+                "D": -7
+              },
+              "max_abs_prediction_count_delta": 7,
+              "calibration_ok": true,
+              "calibration_thresholds": {
+                "min_mean_margin_delta": 0.0,
+                "max_abs_prediction_count_delta": 8
+              }
+            },
+            "comparison_to_base": {
+              "helped": 11,
+              "hurt": 16,
+              "tied": 101,
+              "prediction_changes": 33,
+              "mean_margin_delta": -1.4450285418970452,
+              "mean_correct_score_delta": -0.2867479520755296,
+              "reference_prediction_counts": {
+                "D": 17,
+                "A": 36,
+                "C": 42,
+                "B": 33
+              },
+              "variant_prediction_counts": {
+                "D": 26,
+                "A": 58,
+                "C": 25,
+                "B": 19
+              },
+              "answer_counts": {
+                "D": 33,
+                "A": 30,
+                "C": 38,
+                "B": 27
+              },
+              "prediction_count_delta": {
+                "A": 22,
+                "B": -14,
+                "C": -17,
+                "D": 9
+              },
+              "max_abs_prediction_count_delta": 22,
+              "calibration_ok": false,
+              "calibration_thresholds": {
+                "min_mean_margin_delta": 0.0,
+                "max_abs_prediction_count_delta": 8
+              }
+            }
+          }
+        ],
+        "best_checkpoint": {
+          "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 52.0,
+            "expected_ce": 3.367093,
+            "halting_kl": 0.702826,
+            "loss": 3.451432,
+            "mean_expected_loops": 3.089496,
+            "mean_halt_entropy": 1.160042
+          },
+          "arc_path": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix_arc_easy128_arc_mix_response_w02_lr2e6_phase1_step_50_label.jsonl",
+          "arc": {
+            "mean": {
+              "correct": 84,
+              "total": 128,
+              "accuracy": 0.65625
+            }
+          },
+          "comparison_to_start": {
+            "helped": 3,
+            "hurt": 1,
+            "tied": 124,
+            "prediction_changes": 7,
+            "mean_margin_delta": 0.04362923407461494,
+            "mean_correct_score_delta": 0.2480443863896653,
+            "reference_prediction_counts": {
+              "D": 33,
+              "A": 58,
+              "C": 22,
+              "B": 15
+            },
+            "variant_prediction_counts": {
+              "D": 30,
+              "A": 59,
+              "C": 22,
+              "B": 17
+            },
+            "answer_counts": {
+              "D": 33,
+              "A": 30,
+              "C": 38,
+              "B": 27
+            },
+            "prediction_count_delta": {
+              "A": 1,
+              "B": 2,
+              "C": 0,
+              "D": -3
+            },
+            "max_abs_prediction_count_delta": 3,
+            "calibration_ok": true,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": 0.0,
+              "max_abs_prediction_count_delta": 8
+            }
+          },
+          "comparison_to_base": {
+            "helped": 14,
+            "hurt": 17,
+            "tied": 97,
+            "prediction_changes": 38,
+            "mean_margin_delta": -1.5559766787882836,
+            "mean_correct_score_delta": -0.4753754452940484,
+            "reference_prediction_counts": {
+              "D": 17,
+              "A": 36,
+              "C": 42,
+              "B": 33
+            },
+            "variant_prediction_counts": {
+              "D": 30,
+              "A": 59,
+              "C": 22,
+              "B": 17
+            },
+            "answer_counts": {
+              "D": 33,
+              "A": 30,
+              "C": 38,
+              "B": 27
+            },
+            "prediction_count_delta": {
+              "A": 23,
+              "B": -16,
+              "C": -20,
+              "D": 13
+            },
+            "max_abs_prediction_count_delta": 23,
+            "calibration_ok": false,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": 0.0,
+              "max_abs_prediction_count_delta": 8
+            }
+          }
+        },
+        "distillation": {
+          "enabled": true,
+          "weight": 0.2,
+          "temperature": 2.0,
+          "on": "response"
+        },
+        "learning_rate": 2e-06,
+        "beta": 0.12,
+        "steps": 150
+      }
+    ]
+  },
+  "best_checkpoint": {
+    "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt",
+    "val": {
+      "lora_recurrent_modules": 84.0,
+      "examples": 52.0,
+      "expected_ce": 3.367093,
+      "halting_kl": 0.702826,
+      "loss": 3.451432,
+      "mean_expected_loops": 3.089496,
+      "mean_halt_entropy": 1.160042
+    },
+    "arc_path": "outputs/stage5/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix/stage5_arc_agi_next_action_20260622_173328_plan_routing_repair_direct_halting_arc_mix_arc_easy128_arc_mix_response_w02_lr2e6_phase1_step_50_label.jsonl",
+    "arc": {
+      "mean": {
+        "correct": 84,
+        "total": 128,
+        "accuracy": 0.65625
+      }
+    },
+    "comparison_to_start": {
+      "helped": 3,
+      "hurt": 1,
+      "tied": 124,
+      "prediction_changes": 7,
+      "mean_margin_delta": 0.04362923407461494,
+      "mean_correct_score_delta": 0.2480443863896653,
+      "reference_prediction_counts": {
+        "D": 33,
+        "A": 58,
+        "C": 22,
+        "B": 15
+      },
+      "variant_prediction_counts": {
+        "D": 30,
+        "A": 59,
+        "C": 22,
+        "B": 17
+      },
+      "answer_counts": {
+        "D": 33,
+        "A": 30,
+        "C": 38,
+        "B": 27
+      },
+      "prediction_count_delta": {
+        "A": 1,
+        "B": 2,
+        "C": 0,
+        "D": -3
+      },
+      "max_abs_prediction_count_delta": 3,
+      "calibration_ok": true,
+      "calibration_thresholds": {
+        "min_mean_margin_delta": 0.0,
+        "max_abs_prediction_count_delta": 8
+      }
+    },
+    "comparison_to_base": {
+      "helped": 14,
+      "hurt": 17,
+      "tied": 97,
+      "prediction_changes": 38,
+      "mean_margin_delta": -1.5559766787882836,
+      "mean_correct_score_delta": -0.4753754452940484,
+      "reference_prediction_counts": {
+        "D": 17,
+        "A": 36,
+        "C": 42,
+        "B": 33
+      },
+      "variant_prediction_counts": {
+        "D": 30,
+        "A": 59,
+        "C": 22,
+        "B": 17
+      },
+      "answer_counts": {
+        "D": 33,
+        "A": 30,
+        "C": 38,
+        "B": 27
+      },
+      "prediction_count_delta": {
+        "A": 23,
+        "B": -16,
+        "C": -20,
+        "D": 13
+      },
+      "max_abs_prediction_count_delta": 23,
+      "calibration_ok": false,
+      "calibration_thresholds": {
+        "min_mean_margin_delta": 0.0,
+        "max_abs_prediction_count_delta": 8
+      }
+    }
+  },
+  "next_step": "Do not run the full paid assessment yet; the proxy lifted accuracy but degraded base-comparison calibration. Increase preservation/distillation or inspect answer-prior drift."
+}
