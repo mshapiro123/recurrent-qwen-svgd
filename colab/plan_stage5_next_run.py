@@ -297,6 +297,14 @@ def routing_repair_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "stage5_routing_repair" else None
 
 
+def programmatic_depth_repair_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_programmatic_depth_repair" else None
+
+
+def programmatic_depth_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_programmatic_depth_assessment" else None
+
+
 def claim_readiness_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("gate") == "stage5_claim_readiness" else None
 
@@ -1743,6 +1751,64 @@ def routing_repair_actions(payload: dict[str, Any], *, source_summary: Path) -> 
     ]
 
 
+def programmatic_depth_repair_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    if status == "complete":
+        return [
+            make_action(
+                "Assess programmatic direct/deep repair",
+                "The constructed-curriculum repair completed; run the no-GPU assessor before using its checkpoint in ARC routing diagnostics.",
+                command_env(
+                    {
+                        "STAGE5_PROGRAMMATIC_DEPTH_ASSESS_RUN_ID": f"{RUN_ID}_programmatic_depth_assessment",
+                    },
+                    f"python colab/assess_stage5_programmatic_depth_repair.py --summary_json {shlex.quote(path_for_cli(source_summary))}",
+                ),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect programmatic depth repair `{status}`",
+            "Programmatic depth repair did not complete cleanly; inspect before spending more GPU.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
+def programmatic_depth_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    checkpoint = payload.get("checkpoint")
+    if bool(payload.get("passed")) and checkpoint:
+        return [
+            make_action(
+                "Run ARC routing diagnostic for programmatic-depth checkpoint",
+                (
+                    f"The constructed-curriculum assessor reported `{status}`. Run the bounded "
+                    "ARC routing diagnostic on this checkpoint before any broader benchmark or particle spend."
+                ),
+                command_env(
+                    {
+                        "STAGE5_ROUTING_DIAGNOSTIC_RUN_ID": f"{RUN_ID}_programmatic_depth_routing",
+                        "STAGE5_RECOVERED_PHASE1_CHECKPOINT": str(checkpoint).replace("\\", "/"),
+                        "STAGE5_RECOVERED_SOURCE_SUMMARY": path_for_cli(source_summary),
+                    },
+                    "python colab/run_stage5_routing_diagnostic.py",
+                ),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect programmatic depth assessment `{status}`",
+            "The constructed-curriculum repair did not clear its no-GPU assessment; inspect before spending more.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
 def claim_readiness_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
     if status == "needs_selector_replication":
@@ -2541,6 +2607,12 @@ def plan_next_actions(
     routing_repair = routing_repair_payload(payload)
     if routing_repair:
         return routing_repair_actions(routing_repair, source_summary=source_summary)
+    programmatic_depth = programmatic_depth_repair_payload(payload)
+    if programmatic_depth:
+        return programmatic_depth_repair_actions(programmatic_depth, source_summary=source_summary)
+    programmatic_depth_assessment = programmatic_depth_assessment_payload(payload)
+    if programmatic_depth_assessment:
+        return programmatic_depth_assessment_actions(programmatic_depth_assessment, source_summary=source_summary)
     claim_readiness = claim_readiness_payload(payload)
     if claim_readiness:
         return claim_readiness_actions(claim_readiness, source_summary=source_summary)
@@ -2911,6 +2983,10 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "routing_diagnostic"
     if routing_repair_payload(payload):
         return "routing_repair"
+    if programmatic_depth_repair_payload(payload):
+        return "programmatic_depth_repair"
+    if programmatic_depth_assessment_payload(payload):
+        return "programmatic_depth_assessment"
     if claim_readiness_payload(payload):
         return "claim_readiness"
     if arc_agi_baseline_registry_payload(payload):

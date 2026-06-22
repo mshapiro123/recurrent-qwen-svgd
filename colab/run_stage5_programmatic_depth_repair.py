@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -55,6 +56,15 @@ LEARNING_RATE = float(os.environ.get("STAGE5_PROGRAMMATIC_LR", "2e-6"))
 BETA = float(os.environ.get("STAGE5_PROGRAMMATIC_BETA", "0.12"))
 DISTILL_WEIGHT = float(os.environ.get("STAGE5_PROGRAMMATIC_DISTILL_WEIGHT", "0.20"))
 DISTILL_TEMPERATURE = float(os.environ.get("STAGE5_PROGRAMMATIC_DISTILL_TEMPERATURE", "2.0"))
+PUSH_RESULTS = os.environ.get("STAGE5_PROGRAMMATIC_PUSH", "1").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
+SAFE_OUTPUT_SUFFIXES = {".csv", ".html", ".json", ".jsonl", ".log", ".md", ".txt", ".yaml", ".yml"}
+BINARY_OUTPUT_SUFFIXES = {".bin", ".ckpt", ".pt", ".pth", ".safetensors"}
+MAX_COMMIT_ARTIFACT_BYTES = int(os.environ.get("STAGE5_PROGRAMMATIC_COMMIT_MAX_ARTIFACT_BYTES", "25000000"))
 
 
 def read_json(path: str | Path) -> dict[str, Any]:
@@ -278,6 +288,57 @@ def write_report(payload: dict[str, Any]) -> None:
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))
 
 
+def backup_to_drive() -> None:
+    if not Path("/content/drive/MyDrive").exists():
+        try:
+            from google.colab import drive  # type: ignore
+
+            drive.mount("/content/drive")
+        except Exception as exc:  # pragma: no cover - Colab only
+            print(f"Drive mount skipped/failed: {exc}")
+            return
+    drive_root = Path(os.environ.get("DRIVE_BACKUP_DIR", "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts"))
+    if not drive_root.exists():
+        print(f"Drive backup skipped; missing {drive_root}")
+        return
+    backup = drive_root / RUN_ID
+    backup.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(RUN_DIR, backup / "run_dir", dirs_exist_ok=True)
+    print(f"backed_up_to={backup}")
+
+
+def is_safe_output_artifact(path: Path, *, max_bytes: int = MAX_COMMIT_ARTIFACT_BYTES) -> bool:
+    if not path.is_file():
+        return False
+    suffix = path.suffix.lower()
+    if suffix in BINARY_OUTPUT_SUFFIXES or suffix not in SAFE_OUTPUT_SUFFIXES:
+        return False
+    try:
+        return path.stat().st_size <= max_bytes
+    except OSError:
+        return False
+
+
+def commit_results() -> None:
+    if not PUSH_RESULTS:
+        return
+    files = sorted(
+        path.relative_to(ROOT).as_posix()
+        for path in RUN_DIR.rglob("*")
+        if is_safe_output_artifact(path)
+    )
+    if not files:
+        print("No safe programmatic-depth artifacts to commit.")
+        return
+    for index in range(0, len(files), 100):
+        run(["git", "add", "-f", *files[index : index + 100]], check=False)
+    if run(["git", "diff", "--cached", "--quiet"], check=False).returncode == 0:
+        print("No programmatic-depth outputs changed.")
+        return
+    run(["git", "commit", "-m", f"Record Stage 5 programmatic depth repair {RUN_ID}"])
+    run(["git", "push", "origin", "main"], check=False)
+
+
 def main() -> int:
     resume_checkpoint = resolve_resume_checkpoint()
     restore_checkpoint_if_needed(resume_checkpoint, run_id=checkpoint_run_id(resume_checkpoint))
@@ -335,6 +396,8 @@ def main() -> int:
         ),
     }
     write_report(payload)
+    backup_to_drive()
+    commit_results()
     return 0
 
 

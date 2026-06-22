@@ -166,6 +166,57 @@ def test_routing_repair_failure_recommends_programmatic_depth_repair(tmp_path) -
     assert actions[1]["name"] == "Inspect routing repair `repair_no_proxy_lift`"
 
 
+def test_programmatic_depth_repair_complete_recommends_no_gpu_assessment(tmp_path) -> None:
+    source = tmp_path / "programmatic" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_programmatic_depth_repair",
+        "status": "complete",
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Assess programmatic direct/deep repair"
+    assert "python colab/assess_stage5_programmatic_depth_repair.py" in actions[0]["command"]
+    assert f"--summary_json {source.as_posix()}" in actions[0]["command"]
+
+
+def test_programmatic_depth_assessment_pass_recommends_routing_diagnostic(tmp_path) -> None:
+    source = tmp_path / "programmatic_assess" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_programmatic_depth_assessment",
+        "status": "programmatic_depth_lift",
+        "passed": True,
+        "checkpoint": "outputs/stage5/programmatic/phase1/phase1_step_100.pt",
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run ARC routing diagnostic for programmatic-depth checkpoint"
+    assert "python colab/run_stage5_routing_diagnostic.py" in actions[0]["command"]
+    assert "STAGE5_RECOVERED_PHASE1_CHECKPOINT=outputs/stage5/programmatic/phase1/phase1_step_100.pt" in actions[0]["command"]
+    assert f"STAGE5_RECOVERED_SOURCE_SUMMARY={source.as_posix()}" in actions[0]["command"]
+
+
+def test_programmatic_depth_assessment_failure_inspects(tmp_path) -> None:
+    source = tmp_path / "programmatic_assess" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_programmatic_depth_assessment",
+        "status": "programmatic_depth_no_lift",
+        "passed": False,
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect programmatic depth assessment `programmatic_depth_no_lift`"
+    assert "summary.md" in actions[0]["command"]
+
+
 def test_generic_candidate_distillation_pass_adds_selector_exact_gate(tmp_path) -> None:
     source = tmp_path / "summary.json"
     payload = {
