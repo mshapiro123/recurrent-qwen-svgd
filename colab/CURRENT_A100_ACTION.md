@@ -14,8 +14,9 @@ run. The notebook should:
 3. mount Google Drive;
 4. print the A100 go/no-go report;
 5. run `colab/run_stage5_arc_mix_recovery_once.py`;
-6. push safe text artifacts through the delegated runner;
-7. disconnect the runtime when complete.
+6. print the planner's next action from the new ARC-mix `summary.json`;
+7. push safe text artifacts through the delegated runner;
+8. disconnect the runtime when complete.
 
 ## Source Summary
 
@@ -58,3 +59,8 @@ New ARC-mix summaries include a machine-readable `decision` field.
 
 Do not run GPQA, Phase 2/SVGD, dataset audits, or model scaling from this
 state.
+
+The notebook output should now include a final planner section after the proxy
+runner finishes. If that section says anything other than
+`run_full_balanced_assessment`, keep the A100 shut down and do the next repair
+locally.

@@ -130,6 +130,34 @@ def preflight_source_summary(source: Path) -> tuple[str | None, Path]:
     return status, checkpoint
 
 
+def path_for_cli(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT)).replace("\\", "/")
+    except ValueError:
+        return str(path).replace("\\", "/")
+
+
+def arc_mix_summary_path() -> Path:
+    return ROOT / "outputs" / "stage5" / RUN_ID / "summary.json"
+
+
+def print_next_plan(summary: Path) -> None:
+    if not summary.exists():
+        print(f"next_plan_skipped=missing_summary:{path_for_cli(summary)}", flush=True)
+        return
+    print("", flush=True)
+    print("=== Planner next action from ARC-mix summary ===", flush=True)
+    run(
+        [
+            sys.executable,
+            "colab/plan_stage5_next_run.py",
+            "--source-summary",
+            path_for_cli(summary),
+        ],
+        check=False,
+    )
+
+
 def require_go_no_go(source: Path) -> dict[str, Any]:
     from colab.check_stage5_a100_go_no_go import build_payload
     from colab.run_stage5_recovered_phase1_arc_gate import mount_drive_if_possible
@@ -210,6 +238,7 @@ def run_recovery_gate() -> int:
     print(f"MIN_MARGIN_DELTA={env['STAGE5_ARC_MIX_MIN_MARGIN_DELTA']}", flush=True)
     print(f"MAX_PREDICTION_SHIFT={env['STAGE5_ARC_MIX_MAX_PREDICTION_SHIFT']}", flush=True)
     run([sys.executable, "colab/run_stage5_balanced_arc_mix_gate.py"], env=env)
+    print_next_plan(arc_mix_summary_path())
     return 0
 
 

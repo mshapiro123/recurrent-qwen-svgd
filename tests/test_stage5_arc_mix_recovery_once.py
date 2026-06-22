@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import subprocess
+import sys
+
 import pytest
 
 
@@ -107,6 +110,72 @@ def test_arc_mix_recovery_once_preflight_only_skips_cuda_and_child_run(tmp_path,
 
     assert module.run_recovery_gate() == 0
     assert called is False
+
+
+def test_arc_mix_recovery_once_prints_next_plan_after_child_run(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_arc_mix_recovery_once as module
+
+    source = tmp_path / "outputs" / "stage5" / "assessment" / "summary.json"
+    source.parent.mkdir(parents=True)
+    source.write_text("{}", encoding="utf-8")
+    output_summary = tmp_path / "outputs" / "stage5" / "arc_once" / "summary.json"
+    output_summary.parent.mkdir(parents=True)
+    output_summary.write_text(
+        '{"kind": "stage5_balanced_arc_mix_gate", "decision": "stop_and_revise_objective"}',
+        encoding="utf-8",
+    )
+    calls: list[list[str]] = []
+
+    def fake_go_no_go(path):
+        assert path == source
+        return {
+            "decision": {"go": True, "status": "go_bounded_proxy", "spend_class": "single_arc_mix_proxy"},
+            "checkpoint_preflight": {"available": True},
+        }
+
+    def fake_preflight(path):
+        assert path == source
+        return "needs_competence_recovery", tmp_path / "checkpoint.pt"
+
+    def fake_run(cmd, **kwargs):  # noqa: ANN001, ANN003
+        calls.append(list(cmd))
+        return subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "SOURCE_SUMMARY", "outputs/stage5/assessment/summary.json")
+    monkeypatch.setattr(module, "RUN_ID", "arc_once")
+    monkeypatch.setattr(module, "PREFLIGHT_ONLY", False)
+    monkeypatch.setattr(module, "require_go_no_go", fake_go_no_go)
+    monkeypatch.setattr(module, "preflight_source_summary", fake_preflight)
+    monkeypatch.setattr(module, "require_cuda_runtime", lambda: None)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    assert module.run_recovery_gate() == 0
+
+    assert [sys.executable, "colab/run_stage5_balanced_arc_mix_gate.py"] in calls
+    assert [
+        sys.executable,
+        "colab/plan_stage5_next_run.py",
+        "--source-summary",
+        "outputs/stage5/arc_once/summary.json",
+    ] in calls
+
+
+def test_arc_mix_recovery_once_skips_next_plan_when_summary_missing(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_arc_mix_recovery_once as module
+
+    calls: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):  # noqa: ANN001, ANN003
+        calls.append(list(cmd))
+        return subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    module.print_next_plan(tmp_path / "outputs" / "stage5" / "missing" / "summary.json")
+
+    assert calls == []
 
 
 def test_arc_mix_recovery_once_go_no_go_blocks_unapproved_spend(tmp_path, monkeypatch) -> None:
