@@ -37,6 +37,9 @@ def test_programmatic_curriculum_pipeline_writes_gate_ready_work_dir(tmp_path) -
     assert {row["mode"] for row in typed_rows} == {"direct", "deep_narrow"}
     assert {row["curriculum_mode"] for row in sft_rows} == {"direct", "deep_narrow"}
     assert all(row["trace_role"].startswith("positive_") for row in sft_rows)
+    assert all(row["answer_match"]["matched"] is True for row in sft_rows)
+    assert all(row["answer_match"]["source"] == "constructed_python_eval" for row in sft_rows)
+    assert all(row["source_model"] == "programmatic_generator" for row in sft_rows)
 
     gate = build_gate_payload(
         parse_args(
