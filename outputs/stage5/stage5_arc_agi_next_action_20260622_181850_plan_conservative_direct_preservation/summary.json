@@ -1,0 +1,700 @@
+{
+  "run_id": "stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation",
+  "kind": "stage5_balanced_arc_mix_gate",
+  "objective_rationale": {
+    "failure_mode": "The previous proxy-selected recurrent checkpoint lost full balanced ARC points through answer-calibration drift: lower correct-answer margins and answer-prior shift.",
+    "proxy_hypothesis": "Mix Opus reasoning traces with ARC-style MCQ label supervision and use response-only frozen-base KL distillation to preserve the base model's answer-token distribution.",
+    "response_distillation_reason": "ARC MCQ SFT rows use label-only completions, so response-only distillation is concentrated on the option label decision rather than the prompt text."
+  },
+  "source_summary": "outputs/stage5/stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft_routing_diagnostic/benchmark_run/summary.json",
+  "source_status": "completed",
+  "resume_checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft/phase1/phase1_step_150.pt",
+  "resume_run_id": "stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft",
+  "data": {
+    "opus_rows": 998,
+    "arc_challenge_rows": 1119,
+    "arc_easy_rows": 2251,
+    "arc_repeat": 2,
+    "arc_challenge_repeat": 1,
+    "arc_easy_repeat": 4,
+    "arc_challenge_target_loop": "2",
+    "arc_easy_target_loop": "1",
+    "arc_challenge_routing_type": "deep_narrow_probe",
+    "arc_easy_routing_type": "direct",
+    "mixed_rows": 11121,
+    "mixed_train_jsonl": "data/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation_mixed_train.jsonl",
+    "opus_val_jsonl": "data/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation_opus_val.jsonl",
+    "arc_prompt_style": "with_options",
+    "arc_score_target": "label",
+    "arc_eval_config": "ARC-Easy"
+  },
+  "arc_eval_limit": 128,
+  "arc_eval_config": "ARC-Easy",
+  "proxy_calibration_thresholds": {
+    "min_mean_margin_delta": 0.0,
+    "max_abs_prediction_count_delta": 8
+  },
+  "status": "no_proxy_lift",
+  "passed": false,
+  "decision": "stop_and_revise_objective",
+  "blocked_reason": "Best ARC-mix checkpoint did not improve over the recurrent start or close the base gap.",
+  "next_step": "Do not extend this ARC-mix setting; inspect failures or revise supervision mix.",
+  "best_arm": {
+    "arm": "arc_mix_response_w05_lr1e6",
+    "base_arc": {
+      "mean": {
+        "correct": 87,
+        "total": 128,
+        "accuracy": 0.6796875
+      }
+    },
+    "phase1_start": {
+      "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft/phase1/phase1_step_150.pt",
+      "val": {
+        "lora_recurrent_modules": 84.0,
+        "examples": 52.0,
+        "expected_ce": 3.36654,
+        "halting_kl": 0.708944,
+        "loss": 3.451613,
+        "mean_expected_loops": 3.094619,
+        "mean_halt_entropy": 1.156482
+      },
+      "arc": {
+        "mean": {
+          "correct": 82,
+          "total": 128,
+          "accuracy": 0.640625
+        }
+      }
+    },
+    "checkpoints": [
+      {
+        "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation/arc_mix_response_w05_lr1e6/phase1/phase1_step_50.pt",
+        "val": {
+          "lora_recurrent_modules": 84.0,
+          "examples": 52.0,
+          "expected_ce": 3.362331,
+          "halting_kl": 0.705701,
+          "loss": 3.447015,
+          "mean_expected_loops": 3.091901,
+          "mean_halt_entropy": 1.158364
+        },
+        "arc_path": "outputs/stage5/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation_arc_easy128_arc_mix_response_w05_lr1e6_phase1_step_50_label.jsonl",
+        "arc": {
+          "mean": {
+            "correct": 79,
+            "total": 128,
+            "accuracy": 0.6171875
+          }
+        },
+        "comparison_to_start": {
+          "helped": 1,
+          "hurt": 4,
+          "tied": 123,
+          "prediction_changes": 8,
+          "mean_margin_delta": 0.04480189806781709,
+          "mean_correct_score_delta": 0.1556928267236799,
+          "reference_prediction_counts": {
+            "D": 33,
+            "A": 58,
+            "C": 22,
+            "B": 15
+          },
+          "variant_prediction_counts": {
+            "D": 29,
+            "A": 58,
+            "C": 25,
+            "B": 16
+          },
+          "answer_counts": {
+            "D": 33,
+            "A": 30,
+            "C": 38,
+            "B": 27
+          },
+          "prediction_count_delta": {
+            "A": 0,
+            "B": 1,
+            "C": 3,
+            "D": -4
+          },
+          "max_abs_prediction_count_delta": 4,
+          "calibration_ok": true,
+          "calibration_thresholds": {
+            "min_mean_margin_delta": 0.0,
+            "max_abs_prediction_count_delta": 8
+          }
+        },
+        "comparison_to_base": {
+          "helped": 11,
+          "hurt": 19,
+          "tied": 98,
+          "prediction_changes": 39,
+          "mean_margin_delta": -1.5548040147950815,
+          "mean_correct_score_delta": -0.5677270049600338,
+          "reference_prediction_counts": {
+            "D": 17,
+            "A": 36,
+            "C": 42,
+            "B": 33
+          },
+          "variant_prediction_counts": {
+            "D": 29,
+            "A": 58,
+            "C": 25,
+            "B": 16
+          },
+          "answer_counts": {
+            "D": 33,
+            "A": 30,
+            "C": 38,
+            "B": 27
+          },
+          "prediction_count_delta": {
+            "A": 22,
+            "B": -17,
+            "C": -17,
+            "D": 12
+          },
+          "max_abs_prediction_count_delta": 22,
+          "calibration_ok": false,
+          "calibration_thresholds": {
+            "min_mean_margin_delta": 0.0,
+            "max_abs_prediction_count_delta": 8
+          }
+        }
+      },
+      {
+        "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation/arc_mix_response_w05_lr1e6/phase1/phase1_step_100.pt",
+        "val": {
+          "lora_recurrent_modules": 84.0,
+          "examples": 52.0,
+          "expected_ce": 3.360386,
+          "halting_kl": 0.702313,
+          "loss": 3.444664,
+          "mean_expected_loops": 3.089046,
+          "mean_halt_entropy": 1.160333
+        },
+        "arc_path": "outputs/stage5/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation_arc_easy128_arc_mix_response_w05_lr1e6_phase1_step_100_label.jsonl",
+        "arc": {
+          "mean": {
+            "correct": 81,
+            "total": 128,
+            "accuracy": 0.6328125
+          }
+        },
+        "comparison_to_start": {
+          "helped": 4,
+          "hurt": 5,
+          "tied": 119,
+          "prediction_changes": 11,
+          "mean_margin_delta": 0.07514114025980234,
+          "mean_correct_score_delta": 0.26328465319238603,
+          "reference_prediction_counts": {
+            "D": 33,
+            "A": 58,
+            "C": 22,
+            "B": 15
+          },
+          "variant_prediction_counts": {
+            "D": 28,
+            "A": 56,
+            "C": 26,
+            "B": 18
+          },
+          "answer_counts": {
+            "D": 33,
+            "A": 30,
+            "C": 38,
+            "B": 27
+          },
+          "prediction_count_delta": {
+            "A": -2,
+            "B": 3,
+            "C": 4,
+            "D": -5
+          },
+          "max_abs_prediction_count_delta": 5,
+          "calibration_ok": true,
+          "calibration_thresholds": {
+            "min_mean_margin_delta": 0.0,
+            "max_abs_prediction_count_delta": 8
+          }
+        },
+        "comparison_to_base": {
+          "helped": 11,
+          "hurt": 17,
+          "tied": 100,
+          "prediction_changes": 36,
+          "mean_margin_delta": -1.5244647726030962,
+          "mean_correct_score_delta": -0.4601351784913277,
+          "reference_prediction_counts": {
+            "D": 17,
+            "A": 36,
+            "C": 42,
+            "B": 33
+          },
+          "variant_prediction_counts": {
+            "D": 28,
+            "A": 56,
+            "C": 26,
+            "B": 18
+          },
+          "answer_counts": {
+            "D": 33,
+            "A": 30,
+            "C": 38,
+            "B": 27
+          },
+          "prediction_count_delta": {
+            "A": 20,
+            "B": -15,
+            "C": -16,
+            "D": 11
+          },
+          "max_abs_prediction_count_delta": 20,
+          "calibration_ok": false,
+          "calibration_thresholds": {
+            "min_mean_margin_delta": 0.0,
+            "max_abs_prediction_count_delta": 8
+          }
+        }
+      }
+    ],
+    "best_checkpoint": {
+      "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation/arc_mix_response_w05_lr1e6/phase1/phase1_step_100.pt",
+      "val": {
+        "lora_recurrent_modules": 84.0,
+        "examples": 52.0,
+        "expected_ce": 3.360386,
+        "halting_kl": 0.702313,
+        "loss": 3.444664,
+        "mean_expected_loops": 3.089046,
+        "mean_halt_entropy": 1.160333
+      },
+      "arc_path": "outputs/stage5/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation_arc_easy128_arc_mix_response_w05_lr1e6_phase1_step_100_label.jsonl",
+      "arc": {
+        "mean": {
+          "correct": 81,
+          "total": 128,
+          "accuracy": 0.6328125
+        }
+      },
+      "comparison_to_start": {
+        "helped": 4,
+        "hurt": 5,
+        "tied": 119,
+        "prediction_changes": 11,
+        "mean_margin_delta": 0.07514114025980234,
+        "mean_correct_score_delta": 0.26328465319238603,
+        "reference_prediction_counts": {
+          "D": 33,
+          "A": 58,
+          "C": 22,
+          "B": 15
+        },
+        "variant_prediction_counts": {
+          "D": 28,
+          "A": 56,
+          "C": 26,
+          "B": 18
+        },
+        "answer_counts": {
+          "D": 33,
+          "A": 30,
+          "C": 38,
+          "B": 27
+        },
+        "prediction_count_delta": {
+          "A": -2,
+          "B": 3,
+          "C": 4,
+          "D": -5
+        },
+        "max_abs_prediction_count_delta": 5,
+        "calibration_ok": true,
+        "calibration_thresholds": {
+          "min_mean_margin_delta": 0.0,
+          "max_abs_prediction_count_delta": 8
+        }
+      },
+      "comparison_to_base": {
+        "helped": 11,
+        "hurt": 17,
+        "tied": 100,
+        "prediction_changes": 36,
+        "mean_margin_delta": -1.5244647726030962,
+        "mean_correct_score_delta": -0.4601351784913277,
+        "reference_prediction_counts": {
+          "D": 17,
+          "A": 36,
+          "C": 42,
+          "B": 33
+        },
+        "variant_prediction_counts": {
+          "D": 28,
+          "A": 56,
+          "C": 26,
+          "B": 18
+        },
+        "answer_counts": {
+          "D": 33,
+          "A": 30,
+          "C": 38,
+          "B": 27
+        },
+        "prediction_count_delta": {
+          "A": 20,
+          "B": -15,
+          "C": -16,
+          "D": 11
+        },
+        "max_abs_prediction_count_delta": 20,
+        "calibration_ok": false,
+        "calibration_thresholds": {
+          "min_mean_margin_delta": 0.0,
+          "max_abs_prediction_count_delta": 8
+        }
+      }
+    },
+    "distillation": {
+      "enabled": true,
+      "weight": 0.5,
+      "temperature": 2.0,
+      "on": "response"
+    },
+    "learning_rate": 1e-06,
+    "beta": 0.12,
+    "steps": 100
+  },
+  "arms": [
+    {
+      "arm": "arc_mix_response_w05_lr1e6",
+      "base_arc": {
+        "mean": {
+          "correct": 87,
+          "total": 128,
+          "accuracy": 0.6796875
+        }
+      },
+      "phase1_start": {
+        "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft/phase1/phase1_step_150.pt",
+        "val": {
+          "lora_recurrent_modules": 84.0,
+          "examples": 52.0,
+          "expected_ce": 3.36654,
+          "halting_kl": 0.708944,
+          "loss": 3.451613,
+          "mean_expected_loops": 3.094619,
+          "mean_halt_entropy": 1.156482
+        },
+        "arc": {
+          "mean": {
+            "correct": 82,
+            "total": 128,
+            "accuracy": 0.640625
+          }
+        }
+      },
+      "checkpoints": [
+        {
+          "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation/arc_mix_response_w05_lr1e6/phase1/phase1_step_50.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 52.0,
+            "expected_ce": 3.362331,
+            "halting_kl": 0.705701,
+            "loss": 3.447015,
+            "mean_expected_loops": 3.091901,
+            "mean_halt_entropy": 1.158364
+          },
+          "arc_path": "outputs/stage5/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation_arc_easy128_arc_mix_response_w05_lr1e6_phase1_step_50_label.jsonl",
+          "arc": {
+            "mean": {
+              "correct": 79,
+              "total": 128,
+              "accuracy": 0.6171875
+            }
+          },
+          "comparison_to_start": {
+            "helped": 1,
+            "hurt": 4,
+            "tied": 123,
+            "prediction_changes": 8,
+            "mean_margin_delta": 0.04480189806781709,
+            "mean_correct_score_delta": 0.1556928267236799,
+            "reference_prediction_counts": {
+              "D": 33,
+              "A": 58,
+              "C": 22,
+              "B": 15
+            },
+            "variant_prediction_counts": {
+              "D": 29,
+              "A": 58,
+              "C": 25,
+              "B": 16
+            },
+            "answer_counts": {
+              "D": 33,
+              "A": 30,
+              "C": 38,
+              "B": 27
+            },
+            "prediction_count_delta": {
+              "A": 0,
+              "B": 1,
+              "C": 3,
+              "D": -4
+            },
+            "max_abs_prediction_count_delta": 4,
+            "calibration_ok": true,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": 0.0,
+              "max_abs_prediction_count_delta": 8
+            }
+          },
+          "comparison_to_base": {
+            "helped": 11,
+            "hurt": 19,
+            "tied": 98,
+            "prediction_changes": 39,
+            "mean_margin_delta": -1.5548040147950815,
+            "mean_correct_score_delta": -0.5677270049600338,
+            "reference_prediction_counts": {
+              "D": 17,
+              "A": 36,
+              "C": 42,
+              "B": 33
+            },
+            "variant_prediction_counts": {
+              "D": 29,
+              "A": 58,
+              "C": 25,
+              "B": 16
+            },
+            "answer_counts": {
+              "D": 33,
+              "A": 30,
+              "C": 38,
+              "B": 27
+            },
+            "prediction_count_delta": {
+              "A": 22,
+              "B": -17,
+              "C": -17,
+              "D": 12
+            },
+            "max_abs_prediction_count_delta": 22,
+            "calibration_ok": false,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": 0.0,
+              "max_abs_prediction_count_delta": 8
+            }
+          }
+        },
+        {
+          "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation/arc_mix_response_w05_lr1e6/phase1/phase1_step_100.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 52.0,
+            "expected_ce": 3.360386,
+            "halting_kl": 0.702313,
+            "loss": 3.444664,
+            "mean_expected_loops": 3.089046,
+            "mean_halt_entropy": 1.160333
+          },
+          "arc_path": "outputs/stage5/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation_arc_easy128_arc_mix_response_w05_lr1e6_phase1_step_100_label.jsonl",
+          "arc": {
+            "mean": {
+              "correct": 81,
+              "total": 128,
+              "accuracy": 0.6328125
+            }
+          },
+          "comparison_to_start": {
+            "helped": 4,
+            "hurt": 5,
+            "tied": 119,
+            "prediction_changes": 11,
+            "mean_margin_delta": 0.07514114025980234,
+            "mean_correct_score_delta": 0.26328465319238603,
+            "reference_prediction_counts": {
+              "D": 33,
+              "A": 58,
+              "C": 22,
+              "B": 15
+            },
+            "variant_prediction_counts": {
+              "D": 28,
+              "A": 56,
+              "C": 26,
+              "B": 18
+            },
+            "answer_counts": {
+              "D": 33,
+              "A": 30,
+              "C": 38,
+              "B": 27
+            },
+            "prediction_count_delta": {
+              "A": -2,
+              "B": 3,
+              "C": 4,
+              "D": -5
+            },
+            "max_abs_prediction_count_delta": 5,
+            "calibration_ok": true,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": 0.0,
+              "max_abs_prediction_count_delta": 8
+            }
+          },
+          "comparison_to_base": {
+            "helped": 11,
+            "hurt": 17,
+            "tied": 100,
+            "prediction_changes": 36,
+            "mean_margin_delta": -1.5244647726030962,
+            "mean_correct_score_delta": -0.4601351784913277,
+            "reference_prediction_counts": {
+              "D": 17,
+              "A": 36,
+              "C": 42,
+              "B": 33
+            },
+            "variant_prediction_counts": {
+              "D": 28,
+              "A": 56,
+              "C": 26,
+              "B": 18
+            },
+            "answer_counts": {
+              "D": 33,
+              "A": 30,
+              "C": 38,
+              "B": 27
+            },
+            "prediction_count_delta": {
+              "A": 20,
+              "B": -15,
+              "C": -16,
+              "D": 11
+            },
+            "max_abs_prediction_count_delta": 20,
+            "calibration_ok": false,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": 0.0,
+              "max_abs_prediction_count_delta": 8
+            }
+          }
+        }
+      ],
+      "best_checkpoint": {
+        "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation/arc_mix_response_w05_lr1e6/phase1/phase1_step_100.pt",
+        "val": {
+          "lora_recurrent_modules": 84.0,
+          "examples": 52.0,
+          "expected_ce": 3.360386,
+          "halting_kl": 0.702313,
+          "loss": 3.444664,
+          "mean_expected_loops": 3.089046,
+          "mean_halt_entropy": 1.160333
+        },
+        "arc_path": "outputs/stage5/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation_arc_easy128_arc_mix_response_w05_lr1e6_phase1_step_100_label.jsonl",
+        "arc": {
+          "mean": {
+            "correct": 81,
+            "total": 128,
+            "accuracy": 0.6328125
+          }
+        },
+        "comparison_to_start": {
+          "helped": 4,
+          "hurt": 5,
+          "tied": 119,
+          "prediction_changes": 11,
+          "mean_margin_delta": 0.07514114025980234,
+          "mean_correct_score_delta": 0.26328465319238603,
+          "reference_prediction_counts": {
+            "D": 33,
+            "A": 58,
+            "C": 22,
+            "B": 15
+          },
+          "variant_prediction_counts": {
+            "D": 28,
+            "A": 56,
+            "C": 26,
+            "B": 18
+          },
+          "answer_counts": {
+            "D": 33,
+            "A": 30,
+            "C": 38,
+            "B": 27
+          },
+          "prediction_count_delta": {
+            "A": -2,
+            "B": 3,
+            "C": 4,
+            "D": -5
+          },
+          "max_abs_prediction_count_delta": 5,
+          "calibration_ok": true,
+          "calibration_thresholds": {
+            "min_mean_margin_delta": 0.0,
+            "max_abs_prediction_count_delta": 8
+          }
+        },
+        "comparison_to_base": {
+          "helped": 11,
+          "hurt": 17,
+          "tied": 100,
+          "prediction_changes": 36,
+          "mean_margin_delta": -1.5244647726030962,
+          "mean_correct_score_delta": -0.4601351784913277,
+          "reference_prediction_counts": {
+            "D": 17,
+            "A": 36,
+            "C": 42,
+            "B": 33
+          },
+          "variant_prediction_counts": {
+            "D": 28,
+            "A": 56,
+            "C": 26,
+            "B": 18
+          },
+          "answer_counts": {
+            "D": 33,
+            "A": 30,
+            "C": 38,
+            "B": 27
+          },
+          "prediction_count_delta": {
+            "A": 20,
+            "B": -15,
+            "C": -16,
+            "D": 11
+          },
+          "max_abs_prediction_count_delta": 20,
+          "calibration_ok": false,
+          "calibration_thresholds": {
+            "min_mean_margin_delta": 0.0,
+            "max_abs_prediction_count_delta": 8
+          }
+        }
+      },
+      "distillation": {
+        "enabled": true,
+        "weight": 0.5,
+        "temperature": 2.0,
+        "on": "response"
+      },
+      "learning_rate": 1e-06,
+      "beta": 0.12,
+      "steps": 100
+    }
+  ]
+}

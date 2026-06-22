@@ -1,0 +1,11 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6223.80it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation/arc_mix_response_w05_lr1e6/phase1/phase1_step_100.pt loaded_keys=173
+examples=52
+expected_ce=3.360386
+halting_kl=0.702313
+loss=3.444664
+mean_expected_loops=3.089046
+mean_halt_entropy=1.160333
