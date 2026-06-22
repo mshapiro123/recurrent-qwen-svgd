@@ -160,6 +160,10 @@ def test_current_a100_action_points_to_safe_continue_routing_repair() -> None:
     assert "refuses attached GPU runtimes" in text
     assert "STAGE5_CURRENT_A100_TARGET=safe_continue_execute" in text
     assert "STAGE5_CURRENT_A100_SOURCE_SUMMARY" in text
+    assert "## Fetch Doctor" in text
+    assert "diagnostic-only cell" in text
+    assert "colab/CURRENT_A100_BOOTSTRAP_CELL.py" in text
+    assert "colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py" in text
     assert "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY" not in text
     assert "STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY" not in text
     assert "config/stage5_current_source_summary.txt" in text

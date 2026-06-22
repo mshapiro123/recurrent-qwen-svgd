@@ -69,6 +69,46 @@ artifacts, and disconnects by default.
 If the go/no-go output is `routing_checkpoint_missing_no_go`, do not keep the
 GPU session alive. Disconnect and run the Drive/checkpoint preflight first.
 
+## Fetch Doctor
+
+If Colab appears to fetch stale GitHub contents, run this diagnostic-only cell
+on CPU before launching anything. It resolves `main` to an immutable commit and
+prints the exact bootstrap and programmatic launcher blobs that Colab sees.
+
+```python
+import json, os, time, urllib.request
+from google.colab import userdata
+
+token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
+assert token, "Add GH_TOKEN or GITHUB_TOKEN to Colab secrets."
+
+headers = {
+    "Authorization": f"Bearer {token}",
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "Cache-Control": "no-cache",
+}
+
+def gh_json(url):
+    req = urllib.request.Request(url, headers=headers)
+    return json.loads(urllib.request.urlopen(req).read().decode("utf-8"))
+
+ref_payload = gh_json(
+    f"https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/git/ref/heads/main?cache_bust={int(time.time())}"
+)
+resolved_ref = ref_payload["object"]["sha"]
+
+for path in [
+    "colab/CURRENT_A100_BOOTSTRAP_CELL.py",
+    "colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py",
+]:
+    payload = gh_json(
+        "https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/"
+        f"contents/{path}?ref={resolved_ref}&cache_bust={int(time.time())}"
+    )
+    print(path, "blob=", payload.get("sha"), "commit=", resolved_ref)
+```
+
 ## Current Sequence
 
 ### Step 1: CPU-Only Programmatic Curriculum Gate
