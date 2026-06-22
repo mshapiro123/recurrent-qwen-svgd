@@ -154,9 +154,12 @@ The older split notebooks are kept only as references:
 5. Fine-tune on modified Opus traces, or on a generated width/depth curriculum
    shard after it passes `training/check_curriculum_sft_gate.py`. The guarded
    generated-curriculum handoff is `colab/run_stage5_curriculum_sft.py`: it
-   requires a green SFT gate, enough `positive_*` rows, and Drive backup before
-   launching Phase 1 recurrent training. The copy/paste Colab helper is
-   `colab/STAGE5_CURRICULUM_SFT_CELL.py` with notes in
+   requires a green SFT gate, enough `positive_*` rows, explicit
+   `STAGE5_CURRICULUM_MIN_MODE_ROWS`, and Drive backup before launching Phase 1
+   recurrent training. The current default is
+   `direct=64,deep_narrow=64`; switch it deliberately for later width-only
+   shards. The copy/paste Colab helper is `colab/STAGE5_CURRICULUM_SFT_CELL.py`
+   with notes in
    `colab/STAGE5_CURRICULUM_SFT_CELL.md`. Keep Phase 2/SVGD off until this
    deterministic recurrent checkpoint validates.
 6. Run base vs recurrent benchmarks, then run
