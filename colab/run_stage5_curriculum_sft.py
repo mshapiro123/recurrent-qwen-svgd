@@ -17,6 +17,7 @@ deterministic recurrent checkpoint trained on the generated curriculum is sane.
 from __future__ import annotations
 
 import json
+import math
 import os
 import random
 import shutil
@@ -73,6 +74,8 @@ SAVE_EVERY = int(os.environ.get("STAGE5_CURRICULUM_PHASE1_SAVE_EVERY", "0"))
 LEARNING_RATE = float(os.environ.get("STAGE5_CURRICULUM_PHASE1_LR", "1e-5"))
 BETA = float(os.environ.get("STAGE5_CURRICULUM_PHASE1_BETA", "0.08"))
 MAX_GRAD_NORM = float(os.environ.get("STAGE5_CURRICULUM_PHASE1_MAX_GRAD_NORM", "0.3"))
+MIN_MEAN_EXPECTED_LOOPS = float(os.environ.get("STAGE5_CURRICULUM_SFT_MIN_MEAN_EXPECTED_LOOPS", "1.05"))
+DEPTH_GRADIENT_MARGIN = float(os.environ.get("STAGE5_CURRICULUM_SFT_DEPTH_GRADIENT_MARGIN", "0.25"))
 RESUME_FROM = os.environ.get("STAGE5_CURRICULUM_RESUME_FROM", "").strip()
 PUSH_RESULTS = os.environ.get("STAGE5_CURRICULUM_SFT_PUSH", "1").strip().lower() in {
     "1",
@@ -440,6 +443,50 @@ def grouped_eval_metrics(metrics: dict[str, float], *, group_field: str) -> dict
     return grouped
 
 
+def validation_checks(
+    phase1_val: dict[str, float],
+    phase1_val_by_mode: dict[str, dict[str, float]],
+) -> dict[str, Any]:
+    nonfinite = sorted(
+        key
+        for key, value in phase1_val.items()
+        if isinstance(value, (int, float)) and not math.isfinite(float(value))
+    )
+    mean_loops = phase1_val.get("mean_expected_loops")
+    loop_collapse = (
+        isinstance(mean_loops, (int, float))
+        and math.isfinite(float(mean_loops))
+        and float(mean_loops) < MIN_MEAN_EXPECTED_LOOPS
+    )
+    direct_loops = phase1_val_by_mode.get("direct", {}).get("mean_expected_loops")
+    deep_loops = phase1_val_by_mode.get("deep_narrow", {}).get("mean_expected_loops")
+    depth_gradient: dict[str, Any] = {
+        "available": isinstance(direct_loops, (int, float)) and isinstance(deep_loops, (int, float)),
+        "direct_mean_expected_loops": direct_loops,
+        "deep_narrow_mean_expected_loops": deep_loops,
+        "required_margin": DEPTH_GRADIENT_MARGIN,
+        "observed": None,
+    }
+    if depth_gradient["available"]:
+        depth_gradient["observed"] = float(deep_loops) >= float(direct_loops) + DEPTH_GRADIENT_MARGIN
+    issues: list[str] = []
+    if nonfinite:
+        issues.append("nonfinite_validation_metrics")
+    if mean_loops is None:
+        issues.append("missing_mean_expected_loops")
+    elif loop_collapse:
+        issues.append("mean_expected_loops_collapsed")
+    status = "validation_sane" if not issues else "validation_needs_review"
+    return {
+        "status": status,
+        "issues": issues,
+        "nonfinite_metrics": nonfinite,
+        "min_mean_expected_loops": MIN_MEAN_EXPECTED_LOOPS,
+        "mean_expected_loops": mean_loops,
+        "depth_gradient": depth_gradient,
+    }
+
+
 def eval_jsonl(label: str, data_jsonl: Path, checkpoint: Path) -> dict[str, float]:
     proc = run(
         [
@@ -532,6 +579,8 @@ def write_summary(payload: dict[str, Any]) -> None:
         f"- Positive rows: `{payload['dataset']['rows']}`",
         f"- Train / validation rows: `{payload['dataset']['train_rows']}` / `{payload['dataset']['val_rows']}`",
         f"- Drive preflight: `{payload['drive_preflight']}`",
+        f"- Validation status: `{payload.get('validation_checks', {}).get('status')}`",
+        f"- Validation issues: `{payload.get('validation_checks', {}).get('issues', [])}`",
         "",
         "## Training",
         f"- Resume from: `{payload['resume_from']}`",
@@ -547,6 +596,11 @@ def write_summary(payload: dict[str, Any]) -> None:
         "## Validation By Curriculum Mode",
         "```json",
         json.dumps(payload.get("phase1_val_by_mode", {}), indent=2),
+        "```",
+        "",
+        "## Validation Checks",
+        "```json",
+        json.dumps(payload.get("validation_checks", {}), indent=2),
         "```",
         "",
         "## Next Decision",
@@ -586,11 +640,13 @@ def main() -> int:
     checkpoint = train_phase1(train_jsonl, resume_from=resume_from)
     phase1_val = eval_jsonl("phase1_curriculum_sft", val_jsonl, checkpoint)
     phase1_val_by_mode = grouped_eval_metrics(phase1_val, group_field="curriculum_mode")
+    checks = validation_checks(phase1_val, phase1_val_by_mode)
     backup = backup_to_drive(train_jsonl, val_jsonl)
 
     summary = {
         "run_id": RUN_ID,
         "kind": "stage5_curriculum_sft",
+        "status": checks["status"],
         "config": metadata,
         "sft_gate": {
             "status": gate.get("status"),
@@ -606,6 +662,7 @@ def main() -> int:
         "phase1_checkpoint": path_for_cli(checkpoint),
         "phase1_val": phase1_val,
         "phase1_val_by_mode": phase1_val_by_mode,
+        "validation_checks": checks,
     }
     write_summary(summary)
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"), flush=True)

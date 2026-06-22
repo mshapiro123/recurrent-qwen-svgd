@@ -155,6 +155,35 @@ def test_grouped_eval_metrics_extracts_curriculum_mode_metrics() -> None:
     }
 
 
+def test_validation_checks_report_sane_depth_gradient() -> None:
+    checks = runner.validation_checks(
+        {"loss": 2.0, "mean_expected_loops": 2.4},
+        {
+            "direct": {"mean_expected_loops": 1.1},
+            "deep_narrow": {"mean_expected_loops": 2.8},
+        },
+    )
+
+    assert checks["status"] == "validation_sane"
+    assert checks["issues"] == []
+    assert checks["depth_gradient"]["observed"] is True
+
+
+def test_validation_checks_flag_nonfinite_and_loop_collapse() -> None:
+    checks = runner.validation_checks(
+        {"loss": float("nan"), "mean_expected_loops": 1.0},
+        {
+            "direct": {"mean_expected_loops": 1.2},
+            "deep_narrow": {"mean_expected_loops": 1.3},
+        },
+    )
+
+    assert checks["status"] == "validation_needs_review"
+    assert checks["nonfinite_metrics"] == ["loss"]
+    assert "mean_expected_loops_collapsed" in checks["issues"]
+    assert checks["depth_gradient"]["observed"] is False
+
+
 def test_eval_jsonl_requests_single_pass_curriculum_mode_groups(monkeypatch, tmp_path) -> None:
     calls: list[list[str]] = []
 
@@ -187,11 +216,13 @@ def test_curriculum_sft_updates_current_source_summary(monkeypatch, tmp_path) ->
             "config": {"max_steps": 150, "max_loops": 4},
             "phase1_val": {"loss": 2.5},
             "phase1_val_by_mode": {"direct": {"loss": 2.0}, "deep_narrow": {"loss": 3.0}},
+            "validation_checks": {"status": "validation_sane", "issues": []},
         }
     )
 
     assert (run_dir / "summary.json").exists()
     assert "Validation By Curriculum Mode" in (run_dir / "summary.md").read_text(encoding="utf-8")
+    assert "Validation Checks" in (run_dir / "summary.md").read_text(encoding="utf-8")
     assert (tmp_path / "config" / "stage5_current_source_summary.txt").read_text(
         encoding="utf-8"
     ) == "outputs/stage5/curriculum_sft/summary.json\n"
