@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 
 import pytest
 
@@ -295,3 +296,62 @@ def test_benchmark_specs_supports_limited_arc_easy(tmp_path, monkeypatch) -> Non
 
     assert spec.data_jsonl == tmp_path / "arc_easy_validation_64.jsonl"
     assert spec.prepare_cmd[spec.prepare_cmd.index("--limit") + 1] == "64"
+
+
+def test_benchmark_suite_updates_current_source_summary(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    run_dir = tmp_path / "outputs" / "stage5" / "bench"
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+    monkeypatch.setattr(module, "RUN_ID", "bench")
+
+    module.write_report(
+        {
+            "status": "completed",
+            "source_summary": "outputs/stage5/source/summary.json",
+            "checkpoint": "outputs/stage5/source/phase1/phase1_step_150.pt",
+            "benchmarks": ["arc_challenge"],
+            "recurrent_mode": "phase1",
+            "recurrent_num_trajectories": 1,
+            "elapsed_seconds": 1.0,
+            "comparisons": {},
+            "paired_comparisons": {},
+            "routing_diagnostics": {},
+            "failures": [],
+        }
+    )
+
+    assert (run_dir / "summary.json").exists()
+    assert (tmp_path / "config" / "stage5_current_source_summary.txt").read_text(
+        encoding="utf-8"
+    ) == "outputs/stage5/bench/summary.json\n"
+
+
+def test_benchmark_suite_commit_stages_current_source_pointer(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    run_dir = tmp_path / "outputs" / "stage5" / "bench"
+    pointer = tmp_path / "config" / "stage5_current_source_summary.txt"
+    run_dir.mkdir(parents=True)
+    pointer.parent.mkdir(parents=True)
+    (run_dir / "summary.json").write_text("{}", encoding="utf-8")
+    pointer.write_text("outputs/stage5/bench/summary.json\n", encoding="utf-8")
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, *, check=True, log_name=None):
+        commands.append([str(item) for item in cmd])
+        return subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+    monkeypatch.setattr(module, "PUSH_RESULTS", True)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    module.commit_results()
+
+    add_commands = [cmd for cmd in commands if cmd[:2] == ["git", "add"]]
+    assert add_commands
+    staged = {item for cmd in add_commands for item in cmd[3:]}
+    assert "outputs/stage5/bench" in staged
+    assert "config/stage5_current_source_summary.txt" in staged

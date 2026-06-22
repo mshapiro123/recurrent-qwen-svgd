@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -114,3 +115,54 @@ def test_prepare_train_val_blocks_tiny_shard(monkeypatch, tmp_path) -> None:
 
     with pytest.raises(RuntimeError, match="positive_sft has 2 rows"):
         runner.prepare_train_val({"artifacts": {"positive_sft": str(positive_sft)}})
+
+
+def test_curriculum_sft_updates_current_source_summary(monkeypatch, tmp_path) -> None:
+    run_dir = tmp_path / "outputs" / "stage5" / "curriculum_sft"
+    monkeypatch.setattr(runner, "ROOT", tmp_path)
+    monkeypatch.setattr(runner, "RUN_DIR", run_dir)
+    monkeypatch.setattr(runner, "RUN_ID", "curriculum_sft")
+
+    runner.write_summary(
+        {
+            "sft_gate": {"status": "go"},
+            "input_restore": {"restored": False},
+            "dataset": {"rows": 16, "train_rows": 15, "val_rows": 1},
+            "drive_preflight": {"available": True},
+            "resume_from": None,
+            "phase1_checkpoint": "outputs/stage5/curriculum_sft/phase1/phase1_step_150.pt",
+            "config": {"max_steps": 150, "max_loops": 4},
+            "phase1_val": {"loss": 2.5},
+        }
+    )
+
+    assert (run_dir / "summary.json").exists()
+    assert (tmp_path / "config" / "stage5_current_source_summary.txt").read_text(
+        encoding="utf-8"
+    ) == "outputs/stage5/curriculum_sft/summary.json\n"
+
+
+def test_curriculum_sft_commit_stages_current_source_pointer(monkeypatch, tmp_path) -> None:
+    run_dir = tmp_path / "outputs" / "stage5" / "curriculum_sft"
+    pointer = tmp_path / "config" / "stage5_current_source_summary.txt"
+    run_dir.mkdir(parents=True)
+    pointer.parent.mkdir(parents=True)
+    (run_dir / "summary.json").write_text("{}", encoding="utf-8")
+    pointer.write_text("outputs/stage5/curriculum_sft/summary.json\n", encoding="utf-8")
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, *, check=True, log_name=None):
+        commands.append([str(item) for item in cmd])
+        return subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(runner, "ROOT", tmp_path)
+    monkeypatch.setattr(runner, "RUN_DIR", run_dir)
+    monkeypatch.setattr(runner, "run", fake_run)
+
+    runner.git_commit_results()
+
+    add_commands = [cmd for cmd in commands if cmd[:2] == ["git", "add"]]
+    assert add_commands
+    staged = {item for cmd in add_commands for item in cmd[3:]}
+    assert "outputs/stage5/curriculum_sft/summary.json" in staged
+    assert "config/stage5_current_source_summary.txt" in staged

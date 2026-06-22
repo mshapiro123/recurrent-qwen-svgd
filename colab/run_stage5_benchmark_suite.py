@@ -111,9 +111,20 @@ class EvalJob:
 
 def path_for_cli(path: Path) -> str:
     try:
-        return str(path.relative_to(ROOT))
+        return path.relative_to(ROOT).as_posix()
     except ValueError:
         return str(path)
+
+
+def current_source_summary_file() -> Path:
+    return ROOT / "config" / "stage5_current_source_summary.txt"
+
+
+def update_current_source_summary(summary_path: Path) -> Path:
+    pointer = current_source_summary_file()
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text(path_for_cli(summary_path) + "\n", encoding="utf-8")
+    return pointer
 
 
 def resolve_path(value: str | Path) -> Path:
@@ -568,7 +579,10 @@ def build_summary(
 
 
 def write_report(payload: dict[str, Any]) -> None:
-    (RUN_DIR / "summary.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    RUN_DIR.mkdir(parents=True, exist_ok=True)
+    summary_path = RUN_DIR / "summary.json"
+    summary_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    update_current_source_summary(summary_path)
     lines = [
         f"# Stage 5 Benchmark Suite - {RUN_ID}",
         "",
@@ -630,6 +644,9 @@ def commit_results() -> None:
         return
     run(["git", "status", "-sb"], check=False)
     run(["git", "add", "-f", path_for_cli(RUN_DIR)], check=False)
+    pointer = current_source_summary_file()
+    if pointer.exists():
+        run(["git", "add", "-f", path_for_cli(pointer)], check=False)
     status = run(["git", "diff", "--cached", "--quiet"], check=False)
     if status.returncode == 0:
         print("No benchmark suite outputs changed.")

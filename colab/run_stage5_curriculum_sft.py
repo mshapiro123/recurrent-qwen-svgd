@@ -96,6 +96,17 @@ def path_for_cli(path: Path) -> str:
         return str(path)
 
 
+def current_source_summary_file() -> Path:
+    return ROOT / "config" / "stage5_current_source_summary.txt"
+
+
+def update_current_source_summary(summary_path: Path) -> Path:
+    pointer = current_source_summary_file()
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text(path_for_cli(summary_path) + "\n", encoding="utf-8")
+    return pointer
+
+
 def read_json(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -459,6 +470,9 @@ def git_commit_results() -> None:
     for pattern in safe_patterns:
         for path in RUN_DIR.glob(pattern):
             run(["git", "add", "-f", path_for_cli(path)], check=False)
+    pointer = current_source_summary_file()
+    if pointer.exists():
+        run(["git", "add", "-f", path_for_cli(pointer)], check=False)
     if run(["git", "diff", "--cached", "--quiet"], check=False).returncode == 0:
         print("No Stage 5 curriculum SFT summary outputs changed.", flush=True)
         return
@@ -467,7 +481,10 @@ def git_commit_results() -> None:
 
 
 def write_summary(payload: dict[str, Any]) -> None:
-    (RUN_DIR / "summary.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    RUN_DIR.mkdir(parents=True, exist_ok=True)
+    summary_path = RUN_DIR / "summary.json"
+    summary_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    update_current_source_summary(summary_path)
     lines = [
         f"# Stage 5 Curriculum SFT - {RUN_ID}",
         "",
