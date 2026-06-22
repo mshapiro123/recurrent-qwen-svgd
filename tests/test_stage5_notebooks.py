@@ -363,6 +363,9 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     assert "STAGE5_CAPABILITY_LADDER_TRACE_JOBS_CELL.py" in plain
     assert "STAGE5_CAPABILITY_LADDER_TRACE_JOBS_CELL_VERSION" in plain
     assert "training/build_capability_ladder_trace_jobs.py" in plain
+    assert "capability_ladder_trace_responses_cpu" in text
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_CELL.py" in plain
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_CELL_VERSION" in plain
     assert "capability_ladder_trace_collect_cpu" in text
     assert "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_CELL.py" in plain
     assert "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_CELL_VERSION" in plain
@@ -466,6 +469,24 @@ def test_capability_ladder_trace_collect_cell_is_cpu_only_and_response_driven() 
     assert "capability_ladder_trace_collect_cpu" in bootstrap
     assert "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_CELL.py" in bootstrap
     assert "STAGE5_CURRENT_A100_TARGET=capability_ladder_trace_collect_cpu" in current_action
+
+
+def test_capability_ladder_trace_responses_cell_is_cpu_only_and_provider_opt_in() -> None:
+    plain = (ROOT / "colab/STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_CELL.py").read_text(encoding="utf-8")
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
+
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_CELL_VERSION" in plain
+    assert "capability_ladder_trace_responses_cpu" in plain
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER" in plain
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_ALLOW_GPU" in plain
+    assert "colab/run_stage5_capability_ladder_trace_responses.py" in plain
+    assert "training/run_curriculum_job_responses.py" in bootstrap
+    assert "tests/test_stage5_capability_ladder_trace_responses_runner.py" in plain
+    assert "runtime.unassign()" in plain
+    assert "capability_ladder_trace_responses_cpu" in bootstrap
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_CELL.py" in bootstrap
+    assert "STAGE5_CURRENT_A100_TARGET=capability_ladder_trace_responses_cpu" in current_action
 
 
 def test_drive_checkpoint_preflight_cell_is_cpu_only_and_single_purpose() -> None:

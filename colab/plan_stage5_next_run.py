@@ -149,6 +149,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or curriculum_pipeline_payload(payload) is not None
         or capability_ladder_probe_payload(payload) is not None
         or capability_ladder_trace_jobs_payload(payload) is not None
+        or capability_ladder_trace_responses_payload(payload) is not None
         or capability_ladder_trace_collection_payload(payload) is not None
         or capability_ladder_curriculum_payload(payload) is not None
         or curriculum_sft_gate_payload(payload) is not None
@@ -941,6 +942,10 @@ def capability_ladder_trace_jobs_payload(payload: dict[str, Any]) -> dict[str, A
     return payload if payload.get("kind") == "stage5_capability_ladder_trace_jobs" else None
 
 
+def capability_ladder_trace_responses_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_capability_ladder_trace_responses" else None
+
+
 def capability_ladder_trace_collection_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "stage5_capability_ladder_trace_collection" else None
 
@@ -1168,6 +1173,39 @@ def capability_ladder_trace_jobs_actions(payload: dict[str, Any], *, source_summ
         make_action(
             f"Inspect capability-ladder trace jobs `{status}`",
             "The trace-job build did not produce usable jobs; inspect the report before generating responses.",
+            f"cat {shlex.quote(command_path(source_summary))}",
+            10,
+        )
+    ]
+
+
+def capability_ladder_trace_responses_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status") or "unknown")
+    artifacts = payload.get("artifacts") if isinstance(payload.get("artifacts"), dict) else {}
+    trace_jobs_summary = str(payload.get("source_summary") or "").replace("\\", "/")
+    responses_jsonl = str(artifacts.get("responses_jsonl") or "").replace("\\", "/")
+    if status == "responses_ready" and trace_jobs_summary and responses_jsonl:
+        return [
+            make_action(
+                "Collect verified capability-ladder trace rows",
+                (
+                    "Provider trace responses are available. Verify final ANSWER lines, build traced scored rows, "
+                    "export the capability-ladder curriculum, and run the no-GPU SFT gate before any A100 training."
+                ),
+                command_env(
+                    {
+                        "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_SOURCE_SUMMARY": trace_jobs_summary,
+                        "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_JSONL": responses_jsonl,
+                    },
+                    "python colab/run_stage5_capability_ladder_trace_collect.py",
+                ),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect capability-ladder trace responses `{status}`",
+            "Trace responses are not ready for collection; inspect provider response status and rerun/resume if needed.",
             f"cat {shlex.quote(command_path(source_summary))}",
             10,
         )
@@ -3610,6 +3648,9 @@ def plan_next_actions(
     capability_ladder_trace_jobs = capability_ladder_trace_jobs_payload(payload)
     if capability_ladder_trace_jobs:
         return capability_ladder_trace_jobs_actions(capability_ladder_trace_jobs, source_summary=source_summary)
+    capability_ladder_trace_responses = capability_ladder_trace_responses_payload(payload)
+    if capability_ladder_trace_responses:
+        return capability_ladder_trace_responses_actions(capability_ladder_trace_responses, source_summary=source_summary)
     capability_ladder_trace_collection = capability_ladder_trace_collection_payload(payload)
     if capability_ladder_trace_collection:
         return capability_ladder_trace_collection_actions(capability_ladder_trace_collection, source_summary=source_summary)
@@ -4008,6 +4049,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "capability_ladder_mcq_probe"
     if capability_ladder_trace_jobs_payload(payload):
         return "capability_ladder_trace_jobs"
+    if capability_ladder_trace_responses_payload(payload):
+        return "capability_ladder_trace_responses"
     if capability_ladder_trace_collection_payload(payload):
         return "capability_ladder_trace_collection"
     if capability_ladder_curriculum_payload(payload):

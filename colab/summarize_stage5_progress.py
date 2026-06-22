@@ -166,6 +166,7 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
     if payload.get("kind") in {
         "stage5_capability_ladder_mcq_probe",
         "stage5_capability_ladder_trace_jobs",
+        "stage5_capability_ladder_trace_responses",
         "stage5_capability_ladder_trace_collection",
         "capability_ladder_curriculum_pipeline",
         "curriculum_pipeline_from_artifacts",
@@ -851,6 +852,25 @@ def curriculum_statuses(summary_files: list[Path]) -> list[dict[str, Any]]:
                     "next_action": payload.get("next_action") or "run provider responses then collect traced rows",
                 }
             )
+        elif kind == "stage5_capability_ladder_trace_responses":
+            report = payload.get("response_report") or {}
+            rows.append(
+                {
+                    "path": path_for_cli(path),
+                    "run_id": str(payload.get("run_id") or path.parent.name),
+                    "kind": kind,
+                    "status": payload.get("status"),
+                    "go": None,
+                    "work_dir": payload.get("work_dir") or path_for_cli(path.parent),
+                    "positive_rows": int(report.get("written", 0) or 0) + int(report.get("skipped", 0) or 0),
+                    "train_rows": None,
+                    "val_rows": None,
+                    "mean_expected_loops": None,
+                    "expected_ce": None,
+                    "checkpoint": None,
+                    "next_action": payload.get("next_action") or "collect capability-ladder trace rows",
+                }
+            )
         elif kind == "stage5_capability_ladder_trace_collection":
             curriculum = payload.get("curriculum") or {}
             counts = curriculum.get("counts") or {}
@@ -1010,6 +1030,8 @@ def planner_source_priority(payload: dict[str, Any]) -> int:
         return 83 if str(payload.get("status") or "").endswith(("gate_ready", "needs_review")) else 25
     if payload.get("kind") == "stage5_capability_ladder_trace_jobs":
         return 82 if payload.get("status") == "ready" else 25
+    if payload.get("kind") == "stage5_capability_ladder_trace_responses":
+        return 83 if payload.get("status") == "responses_ready" else 28
     if payload.get("kind") == "stage5_capability_ladder_trace_collection":
         return 84 if payload.get("status") == "trace_curriculum_gate_ready" else 30
     if payload.get("kind") == "capability_ladder_curriculum_pipeline":

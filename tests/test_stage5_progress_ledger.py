@@ -954,6 +954,7 @@ def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None
     capability = scan_root / "capability_ladder" / "summary.json"
     probe = scan_root / "capability_ladder_probe" / "summary.json"
     trace_jobs = scan_root / "capability_ladder_trace_jobs" / "summary.json"
+    trace_responses = scan_root / "capability_ladder_trace_responses" / "summary.json"
     trace_collection = scan_root / "capability_ladder_trace_collection" / "summary.json"
     pipeline = scan_root / "curriculum_pipeline" / "summary.json"
     gate = scan_root / "curriculum_gate" / "summary.json"
@@ -990,6 +991,16 @@ def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None
             "status": "ready",
             "trace_jobs": {"jobs": 18, "selected_rows": 9, "by_target_loop": {"1": 5, "2": 4}},
             "next_action": "Run provider responses then collect traced rows.",
+        },
+    )
+    _write(
+        trace_responses,
+        {
+            "run_id": "trace_responses",
+            "kind": "stage5_capability_ladder_trace_responses",
+            "status": "responses_ready",
+            "response_report": {"written": 8, "skipped": 1, "errors": 0, "timeouts": 0},
+            "next_action": "Run capability_ladder_trace_collect_cpu to verify final answers.",
         },
     )
     _write(
@@ -1049,6 +1060,7 @@ def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None
         "stage5_capability_ladder_mcq_probe",
         "stage5_capability_ladder_trace_collection",
         "stage5_capability_ladder_trace_jobs",
+        "stage5_capability_ladder_trace_responses",
         "curriculum_sft_gate",
         "curriculum_pipeline_from_artifacts",
         "stage5_curriculum_sft",
@@ -1061,6 +1073,8 @@ def test_progress_ledger_reports_generated_curriculum_statuses(tmp_path) -> None
     assert by_kind["stage5_capability_ladder_mcq_probe"]["work_dir"] == "data/curriculum/probe"
     assert by_kind["stage5_capability_ladder_trace_jobs"]["positive_rows"] == 9
     assert by_kind["stage5_capability_ladder_trace_jobs"]["next_action"].startswith("Run provider responses")
+    assert by_kind["stage5_capability_ladder_trace_responses"]["positive_rows"] == 9
+    assert by_kind["stage5_capability_ladder_trace_responses"]["next_action"].startswith("Run capability_ladder_trace_collect_cpu")
     assert by_kind["stage5_capability_ladder_trace_collection"]["positive_rows"] == 7
     assert by_kind["stage5_capability_ladder_trace_collection"]["go"] is True
     assert by_kind["stage5_capability_ladder_trace_collection"]["work_dir"] == "data/curriculum/traced"

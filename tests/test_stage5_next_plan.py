@@ -386,6 +386,32 @@ def test_capability_ladder_trace_jobs_recommends_inspection_before_provider_spen
     assert "run_curriculum_job_responses.py" not in actions[0]["command"]
 
 
+def test_capability_ladder_trace_responses_ready_recommends_collection(tmp_path) -> None:
+    source = tmp_path / "trace_responses" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_capability_ladder_trace_responses",
+        "status": "responses_ready",
+        "source_summary": "outputs/stage5/trace_jobs/summary.json",
+        "artifacts": {"responses_jsonl": "outputs/stage5/trace_responses/trace_responses.jsonl"},
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert source_kind(payload) == "capability_ladder_trace_responses"
+    assert actions[0]["name"] == "Collect verified capability-ladder trace rows"
+    assert "python colab/run_stage5_capability_ladder_trace_collect.py" in actions[0]["command"]
+    assert (
+        "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_SOURCE_SUMMARY=outputs/stage5/trace_jobs/summary.json"
+        in actions[0]["command"]
+    )
+    assert (
+        "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_JSONL=outputs/stage5/trace_responses/trace_responses.jsonl"
+        in actions[0]["command"]
+    )
+
+
 def test_capability_ladder_trace_collection_gate_ready_recommends_sft_gate(tmp_path) -> None:
     source = tmp_path / "trace_collection" / "summary.json"
     source.parent.mkdir()
@@ -1765,6 +1791,7 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"kind": "stage5_benchmark_suite"}) == "benchmark_suite"
     assert source_kind({"kind": "stage5_capability_ladder_mcq_probe"}) == "capability_ladder_mcq_probe"
     assert source_kind({"kind": "stage5_capability_ladder_trace_jobs"}) == "capability_ladder_trace_jobs"
+    assert source_kind({"kind": "stage5_capability_ladder_trace_responses"}) == "capability_ladder_trace_responses"
     assert source_kind({"kind": "stage5_capability_ladder_trace_collection"}) == "capability_ladder_trace_collection"
     assert source_kind({"gate": "stage5_broader_benchmark_suite"}) == "benchmark_suite_assessment"
     assert source_kind({"kind": "stage5_balanced_arc_mix_gate"}) == "balanced_arc_mix_gate"

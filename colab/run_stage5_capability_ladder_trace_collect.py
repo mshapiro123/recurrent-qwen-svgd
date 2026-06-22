@@ -183,6 +183,7 @@ def drive_search_roots() -> list[Path]:
     if not drive.exists():
         return []
     return [
+        drive / "recurrent-qwen-svgd" / "stage5_capability_ladder_trace_responses",
         drive / "recurrent-qwen-svgd" / "stage5_capability_ladder_trace_jobs",
         drive / "recurrent-qwen-svgd" / "stage5_capability_ladder",
         drive / "recurrent-qwen-svgd",
@@ -213,8 +214,13 @@ def restore_if_missing(path: Path, *, filename: str, run_id_hint: str) -> dict[s
 def resolve_responses(source_summary: Path) -> Path:
     if RESPONSES_JSONL:
         path = resolve_path(RESPONSES_JSONL)
-        if not path.exists():
-            raise FileNotFoundError(path)
+        if path.exists():
+            return path
+        run_id_hint = path.parent.name or str(read_json(source_summary).get("run_id") or source_summary.parent.name)
+        restored = restore_if_missing(path, filename=path.name, run_id_hint=run_id_hint)
+        print(f"restored_responses={restored}", flush=True)
+        if path.exists():
+            return path
         return path
     local_candidates = [
         source_summary.parent / "trace_responses.jsonl",
