@@ -136,12 +136,23 @@ def check_positive_sft_rows(
 ) -> dict[str, Any]:
     role_counts: Counter[str] = Counter()
     mode_counts: Counter[str] = Counter()
+    source_model_counts: Counter[str] = Counter()
     bad_rows = 0
     for index, row in enumerate(rows):
         role = str(row.get("trace_role") or "")
         mode = str(row.get("curriculum_mode") or row.get("routing_type") or "")
+        source_model = str(row.get("source_model") or "").strip()
         role_counts[role] += 1
         mode_counts[mode] += 1
+        if source_model:
+            source_model_counts[source_model] += 1
+        else:
+            bad_rows += 1
+            add_issue(
+                issues,
+                "missing_sft_source_model",
+                f"positive_sft row {index} is missing source_model provenance.",
+            )
         if not role_starts_positive(role):
             bad_rows += 1
             add_issue(issues, "non_positive_sft_row", f"positive_sft row {index} has non-positive trace_role={role!r}.")
@@ -165,6 +176,7 @@ def check_positive_sft_rows(
         "bad_rows": bad_rows,
         "role_counts": dict(sorted(role_counts.items())),
         "mode_counts": dict(sorted(mode_counts.items())),
+        "source_model_counts": dict(sorted(source_model_counts.items())),
     }
 
 

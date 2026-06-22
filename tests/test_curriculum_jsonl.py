@@ -30,6 +30,7 @@ def curriculum_record() -> dict:
                 "natural": True,
                 "steps": 3,
                 "source_model": "teacher-a",
+                "logical_source_model": "logical-teacher-a",
                 "answer_match": {
                     "matched": True,
                     "source": "method_constrained_answer_line",
@@ -66,12 +67,15 @@ def test_curriculum_converter_exports_only_positive_traces() -> None:
     assert examples[0]["target_loop_count"] == 1
     assert examples[0]["routing_type"] == "direct"
     assert examples[0]["answer_match"]["matched"] is True
+    assert examples[0]["source_model"] == "teacher-a"
+    assert examples[0]["logical_source_model"] == "logical-teacher-a"
     assert report["role_counts"] == {
         "negative_contrastive": 1,
         "positive_depth": 1,
         "verifier_rationalization": 1,
     }
     assert report["exported_role_counts"] == {"positive_depth": 1}
+    assert report["exported_source_model_counts"] == {"teacher-a": 1}
 
 
 def test_positive_trace_with_false_correctness_is_validation_error() -> None:
@@ -129,6 +133,15 @@ def test_positive_trace_must_be_natural_and_stepped() -> None:
 
     assert any("positive trace must have natural=true" in issue for issue in issues)
     assert any("positive trace steps must be a positive integer" in issue for issue in issues)
+
+
+def test_positive_trace_requires_source_model_provenance() -> None:
+    record = curriculum_record()
+    record["traces"][0].pop("source_model")
+
+    issues = validate_curriculum_record(record)
+
+    assert any("positive trace missing source_model provenance" in issue for issue in issues)
 
 
 def test_positive_trace_requires_answer_match_proof() -> None:

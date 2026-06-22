@@ -174,6 +174,8 @@ def validate_curriculum_record(record: dict[str, Any], *, line_no: int | None = 
                 issues.append(f"{trace_label}positive trace missing text")
             if trace.get("natural") is not True:
                 issues.append(f"{trace_label}positive trace must have natural=true")
+            if not str(trace.get("source_model") or "").strip():
+                issues.append(f"{trace_label}positive trace missing source_model provenance")
             trace_steps = int_value(trace.get("steps"))
             if trace_steps is None or trace_steps < 1:
                 issues.append(f"{trace_label}positive trace steps must be a positive integer")
@@ -250,6 +252,8 @@ def positive_trace_to_causal_example(
         "source_model": trace.get("source_model"),
         "verified_answer": answer.get("value"),
     }
+    if trace.get("logical_source_model"):
+        example["logical_source_model"] = trace.get("logical_source_model")
     if isinstance(trace.get("steps"), int):
         example["reasoning_steps"] = int(trace["steps"])
     if isinstance(trace.get("answer_match"), dict):
@@ -279,6 +283,7 @@ def convert_curriculum_records(
     role_counts: Counter[str] = Counter()
     mode_counts: Counter[str] = Counter()
     exported_role_counts: Counter[str] = Counter()
+    exported_source_model_counts: Counter[str] = Counter()
     invalid_records = 0
     skipped_invalid_records = 0
 
@@ -318,6 +323,9 @@ def convert_curriculum_records(
             )
             exported.append(example)
             exported_role_counts[role] += 1
+            source_model = str(example.get("source_model") or "").strip()
+            if source_model:
+                exported_source_model_counts[source_model] += 1
 
     report = {
         "records": len(records),
@@ -329,6 +337,7 @@ def convert_curriculum_records(
         "role_counts": dict(sorted(role_counts.items())),
         "mode_counts": dict(sorted(mode_counts.items())),
         "exported_role_counts": dict(sorted(exported_role_counts.items())),
+        "exported_source_model_counts": dict(sorted(exported_source_model_counts.items())),
     }
     if fail_on_validation and issues:
         raise ValueError("Curriculum validation failed:\n" + "\n".join(issues[:50]))

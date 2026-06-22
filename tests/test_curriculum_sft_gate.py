@@ -67,6 +67,7 @@ def positive_sft_row() -> dict:
         "curriculum_id": "p1",
         "curriculum_mode": "wide",
         "routing_type": "wide",
+        "source_model": "solver-a",
         "target_loop_count": 2,
     }
 
@@ -140,6 +141,7 @@ def test_curriculum_sft_gate_allows_complete_strict_shard(tmp_path) -> None:
     assert payload["status"] == "go_train_recurrent_sft"
     assert payload["issues"] == []
     assert payload["checks"]["positive_sft"]["role_counts"] == {"positive_wide": 1}
+    assert payload["checks"]["positive_sft"]["source_model_counts"] == {"solver-a": 1}
     assert payload["checks"]["typed_records"]["positive_missing_answer_match"] == 0
     assert payload["checks"]["positive_sft"]["mode_requirements"] == {}
 
@@ -207,6 +209,19 @@ def test_curriculum_sft_gate_blocks_positive_trace_without_answer_match(tmp_path
 
     assert result["go"] is False
     assert any(issue["code"] == "positive_trace_missing_answer_match" for issue in result["issues"])
+
+
+def test_curriculum_sft_gate_blocks_positive_sft_without_source_model(tmp_path) -> None:
+    summary = write_complete_work_dir(tmp_path / "run")
+    sft_path = tmp_path / "run" / "positive_sft.jsonl"
+    row = positive_sft_row()
+    row.pop("source_model")
+    write_jsonl(sft_path, [row])
+
+    result = build_gate_payload(parse_args(["--summary_json", str(summary)]))
+
+    assert result["go"] is False
+    assert any(issue["code"] == "missing_sft_source_model" for issue in result["issues"])
 
 
 def test_curriculum_sft_gate_blocks_low_judge_agreement(tmp_path) -> None:

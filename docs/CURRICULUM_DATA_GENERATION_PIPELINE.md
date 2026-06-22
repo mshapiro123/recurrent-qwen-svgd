@@ -26,6 +26,10 @@ after its final `ANSWER:` line was matched to the verified answer, or from a
 constructed-data verifier such as `constructed_python_eval`. A positive role
 without this proof is treated as unsafe, even if the rest of the record
 validates.
+Positive traces must also keep `source_model` provenance through the
+`positive_sft.jsonl` export. The GPU SFT gate blocks rows that lack it, so a
+training shard remains auditable back to the concrete resolved provider model
+or deterministic programmatic generator.
 
 ## Model Roles
 

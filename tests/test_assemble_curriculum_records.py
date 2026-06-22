@@ -25,6 +25,7 @@ def solution(solution_id: str, *, method: str, text: str = "Solve cleanly.\nANSW
         "statement": "Find the area of a rectangle with sides 6 and 7.",
         "method": method,
         "source_model": "opus-test",
+        "logical_source_model": "logical-opus-test",
         "text": text,
         "solution": text,
         "answer": {"value": "42", "normalized": "42", "verified_by": ["cross_model"]},
@@ -105,10 +106,12 @@ def test_assemble_wide_record_and_exports_positive_sft() -> None:
     assert record["mode"] == "wide"
     assert record["width_signature"] == {"methods": ["algebra", "bounded_enumeration"], "width": 2}
     assert {trace["role"] for trace in record["traces"]} == {"positive_wide"}
+    assert {trace["logical_source_model"] for trace in record["traces"]} == {"logical-opus-test"}
     assert all(trace["answer_match"]["matched"] is True for trace in record["traces"])
 
     examples, export_report = convert_curriculum_records(records)
     assert len(examples) == 2
+    assert {example["logical_source_model"] for example in examples} == {"logical-opus-test"}
     assert export_report["exported_role_counts"] == {"positive_wide": 2}
 
 

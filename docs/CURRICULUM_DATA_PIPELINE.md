@@ -34,6 +34,10 @@ method-solution collector or a constructed-data verifier. The required proof is
 `matched=true` plus the normalized parsed answer and normalized verified
 answer. This makes the hard rule auditable row by row: a role label alone is
 not enough evidence for positive SFT.
+Every positive trace must also carry `source_model` provenance. For external
+provider shards this is the resolved concrete provider id; for constructed data
+it is a deterministic generator id such as `programmatic_generator`. The SFT
+gate blocks positive rows that lose this provenance before GPU training.
 
 ## Model Roles
 
@@ -575,9 +579,10 @@ python training/prepare_curriculum_jsonl.py \
 
 That script validates the typed records and exports ordinary
 `prompt`/`completion` rows only from roles beginning with `positive_`. It also
-requires positive traces to carry `answer_match.matched=true`, then preserves
-that provenance in exported rows for audit. It counts negative and verifier
-traces in the report, but never writes them to the positive SFT output.
+requires positive traces to carry `answer_match.matched=true` and `source_model`
+provenance, then preserves that provenance in exported rows for audit. It
+counts negative and verifier traces in the report, but never writes them to the
+positive SFT output.
 
 If `--allow_validation_issues` is used for auditing a partial artifact, records
 with validation issues are still skipped by default. The debug-only
