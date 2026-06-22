@@ -193,6 +193,12 @@ def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
     assert 'DISCONNECT_RUNTIME_WHEN_DONE = env_bool("STAGE5_SAFE_CONTINUE_DISCONNECT", True)' in plain
     assert "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY" in text
     assert "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY" in plain
+    assert "SOURCE_SUMMARY_OVERRIDE" in text
+    assert "SOURCE_SUMMARY_OVERRIDE" in plain
+    assert 'pointer = ROOT / "config" / "stage5_current_source_summary.txt"' in text
+    assert 'pointer = ROOT / "config" / "stage5_current_source_summary.txt"' in plain
+    assert "Using current source summary pointer" in text
+    assert "Using current source summary pointer" in plain
     assert "colab/check_stage5_a100_go_no_go.py" in text
     assert "colab/check_stage5_a100_go_no_go.py" in plain
     assert "colab/run_stage5_next_action.py" in text
@@ -236,13 +242,15 @@ def test_safe_continue_notebook_defaults_to_dry_run_and_guarded_action() -> None
     payload = notebook_payload("colab/08_stage5_safe_continue.ipynb")
     text = "\n".join(str(cell.get("source", "")) for cell in payload.get("cells", []))
 
-    assert "RUN_A100_ACTION = False" in text
+    assert 'RUN_A100_ACTION = env_bool("STAGE5_SAFE_CONTINUE_RUN_A100_ACTION", False)' in text
     assert "colab/check_stage5_a100_go_no_go.py" in text
     assert "colab/run_stage5_next_action.py" in text
     assert "STAGE5_ARC_AGI_NEXT_ACTION_EXECUTE" in text
     assert "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY" in text
+    assert "Using current source summary pointer" in text
+    assert 'pointer = ROOT / "config" / "stage5_current_source_summary.txt"' in text
     assert "Dry run complete" in text
-    assert "DISCONNECT_RUNTIME_WHEN_DONE = True" in text
+    assert 'DISCONNECT_RUNTIME_WHEN_DONE = env_bool("STAGE5_SAFE_CONTINUE_DISCONNECT", True)' in text
     assert "runtime.unassign()" in text
     assert "GO_NO_GO_RUN_ID" in text
     assert "Skipping requirements install because no paid action will execute." in text

@@ -18,9 +18,11 @@ go/no-go checkpoint preflight; Colab Drive authorization cannot reliably be
 initiated from a child Python process. Paid actions also run a small focused
 preflight over the A100 guard, next-action parser, routing repair, and
 ARC-mix repair gate before launching the selected action.
-Set `STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY` to point at a newer Stage 5 summary
-when resuming from a fresh result; otherwise the cell intentionally defaults to
-the last committed routing diagnostic.
+Set `STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY` to force a specific Stage 5 summary.
+Without that override, the cell auto-resumes from
+`config/stage5_current_source_summary.txt` when the pointer exists and targets
+an existing summary. If no valid pointer is available, it falls back to the last
+committed routing diagnostic.
 
 ```python
 import json, os, shutil, subprocess, sys
@@ -43,10 +45,8 @@ RUN_A100_ACTION = env_bool("STAGE5_SAFE_CONTINUE_RUN_A100_ACTION", False)
 # runtime attached after the cell prints the next action.
 DISCONNECT_RUNTIME_WHEN_DONE = env_bool("STAGE5_SAFE_CONTINUE_DISCONNECT", True)
 
-SOURCE_SUMMARY = os.environ.get(
-    "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY",
-    "outputs/stage5/stage5_routing_diagnostic_20260622_041706/summary.json",
-)
+DEFAULT_SOURCE_SUMMARY = "outputs/stage5/stage5_routing_diagnostic_20260622_041706/summary.json"
+SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY", "").strip()
 GO_NO_GO_RUN_ID = "stage5_safe_continue_go_no_go"
 
 def secret(*names):
@@ -127,6 +127,25 @@ run(["git", "config", "user.name", "Colab Runner"], cwd=ROOT)
 
 run(["git", "log", "--oneline", "-5"], cwd=ROOT, check=False)
 run(["nvidia-smi"], cwd=ROOT, check=False)
+
+def resolve_source_summary():
+    if SOURCE_SUMMARY_OVERRIDE:
+        print(f"Using explicit STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY={SOURCE_SUMMARY_OVERRIDE}", flush=True)
+        return SOURCE_SUMMARY_OVERRIDE
+    pointer = ROOT / "config" / "stage5_current_source_summary.txt"
+    if pointer.exists():
+        value = pointer.read_text(encoding="utf-8").strip()
+        if value:
+            target = Path(value)
+            target = target if target.is_absolute() else ROOT / target
+            if target.exists():
+                print(f"Using current source summary pointer: {value}", flush=True)
+                return value
+            print(f"Current source summary pointer target is missing, using fallback: {value}", flush=True)
+    print(f"Using fallback source summary: {DEFAULT_SOURCE_SUMMARY}", flush=True)
+    return DEFAULT_SOURCE_SUMMARY
+
+SOURCE_SUMMARY = resolve_source_summary()
 
 if RUN_A100_ACTION:
     mount_drive_for_paid_action()
