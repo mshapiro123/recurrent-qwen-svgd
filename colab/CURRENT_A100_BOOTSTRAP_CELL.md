@@ -18,6 +18,12 @@ select an A100/H100 runtime and set:
 Set `os.environ["STAGE5_CURRENT_A100_TARGET"] = "safe_continue_execute"` before
 running the bootstrap cell.
 
+To force a specific source summary, set
+`os.environ["STAGE5_CURRENT_A100_SOURCE_SUMMARY"] =
+"outputs/stage5/<run_id>/summary.json"`. If that variable is not set, the
+bootstrap clears older target-specific source overrides so the fetched launcher
+can follow `config/stage5_current_source_summary.txt`.
+
 Then run the bootstrap cell:
 
 ```python
@@ -32,6 +38,7 @@ REF = "main"
 #   "safe_continue_dry_run" - fetch safe-continue but do not spend GPU.
 #   "safe_continue_execute" - fetch safe-continue and opt in to the guarded paid action.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
+SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 
 TARGETS = {
     "preflight": {
@@ -93,6 +100,14 @@ GH_TOKEN = secret("GH_TOKEN", "GITHUB_TOKEN")
 assert GH_TOKEN, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
 
 selected = TARGETS[TARGET]
+if SOURCE_SUMMARY_OVERRIDE:
+    os.environ["STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
+    os.environ["STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
+else:
+    # Avoid accidentally pinning a new session to an old target-specific source
+    # summary. The safe-continue launcher will follow config/stage5_current_source_summary.txt.
+    os.environ.pop("STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY", None)
+    os.environ.pop("STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY", None)
 for key, value in selected["env"].items():
     os.environ[key] = value
 os.environ.setdefault("STAGE5_SAFE_CONTINUE_DISCONNECT", "1")

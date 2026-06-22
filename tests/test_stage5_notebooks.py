@@ -281,6 +281,9 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     plain = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
 
     assert 'TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")' in plain
+    assert "STAGE5_CURRENT_A100_SOURCE_SUMMARY" in plain
+    assert 'os.environ.pop("STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY", None)' in plain
+    assert 'os.environ.pop("STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY", None)' in plain
     assert "colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.py" in plain
     assert "colab/STAGE5_SAFE_CONTINUE_CELL.py" in plain
     assert '"safe_continue_execute"' in plain

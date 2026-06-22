@@ -9,6 +9,7 @@ REF = "main"
 #   "safe_continue_dry_run" - fetch safe-continue but do not spend GPU.
 #   "safe_continue_execute" - fetch safe-continue and opt in to the guarded paid action.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
+SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 
 TARGETS = {
     "preflight": {
@@ -70,6 +71,14 @@ GH_TOKEN = secret("GH_TOKEN", "GITHUB_TOKEN")
 assert GH_TOKEN, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
 
 selected = TARGETS[TARGET]
+if SOURCE_SUMMARY_OVERRIDE:
+    os.environ["STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
+    os.environ["STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
+else:
+    # Avoid accidentally pinning a new session to an old target-specific source
+    # summary. The safe-continue launcher will follow config/stage5_current_source_summary.txt.
+    os.environ.pop("STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY", None)
+    os.environ.pop("STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY", None)
 for key, value in selected["env"].items():
     os.environ[key] = value
 os.environ.setdefault("STAGE5_SAFE_CONTINUE_DISCONNECT", "1")
