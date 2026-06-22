@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from colab.run_stage5_benchmark_suite import (
     EvalJob,
     BenchmarkSpec,
@@ -112,6 +114,42 @@ def test_resolve_checkpoint_prefers_existing_export_adapter(tmp_path, monkeypatc
     monkeypatch.setattr(module, "EXPLICIT_CHECKPOINT", "")
 
     assert resolve_checkpoint(source, payload) == checkpoint
+
+
+def test_resolve_checkpoint_restores_missing_stage5_checkpoint_from_drive(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    source = tmp_path / "outputs" / "stage5" / "run_a" / "summary.json"
+    checkpoint = tmp_path / "outputs" / "stage5" / "run_a" / "phase1" / "phase1_step_150.pt"
+    drive_checkpoint = tmp_path / "drive" / "run_a" / "run_dir" / "phase1" / "phase1_step_150.pt"
+    drive_checkpoint.parent.mkdir(parents=True)
+    drive_checkpoint.write_bytes(b"checkpoint")
+    payload = {"phase1_checkpoint": str(checkpoint)}
+
+    monkeypatch.setattr(module, "EXPLICIT_CHECKPOINT", "")
+    monkeypatch.setattr(module, "mount_drive_if_possible", lambda: None)
+    monkeypatch.setattr(module, "candidate_drive_checkpoints", lambda run_id, filename: [drive_checkpoint])
+
+    restored = module.resolve_checkpoint(source, payload)
+
+    assert restored == checkpoint
+    assert checkpoint.read_bytes() == b"checkpoint"
+
+
+def test_resolve_checkpoint_missing_error_includes_drive_diagnostics(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    source = tmp_path / "outputs" / "stage5" / "run_a" / "summary.json"
+    checkpoint = tmp_path / "outputs" / "stage5" / "run_a" / "phase1" / "phase1_step_150.pt"
+    payload = {"phase1_checkpoint": str(checkpoint)}
+
+    monkeypatch.setattr(module, "EXPLICIT_CHECKPOINT", "")
+    monkeypatch.setattr(module, "mount_drive_if_possible", lambda: None)
+    monkeypatch.setattr(module, "candidate_drive_checkpoints", lambda run_id, filename: [])
+    monkeypatch.setattr(module, "drive_diagnostics", lambda: "Drive visibility: mocked")
+
+    with pytest.raises(FileNotFoundError, match="Drive visibility: mocked"):
+        module.resolve_checkpoint(source, payload)
 
 
 def test_build_summary_compares_base_and_recurrent_rows(tmp_path) -> None:

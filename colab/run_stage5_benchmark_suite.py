@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -24,6 +25,11 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from colab.run_stage5_publish_hf_adapter import checkpoint_value_from_payload
+from colab.run_stage5_recovered_phase1_arc_gate import (
+    candidate_drive_checkpoints,
+    drive_diagnostics,
+    mount_drive_if_possible,
+)
 from eval.analyze_mcq_regressions import (
     paired_rows as paired_mcq_regression_rows,
     rows_by_id as mcq_rows_by_id,
@@ -203,12 +209,40 @@ def checkpoint_candidates_from_payload(source_summary: Path | None, payload: dic
     return candidates
 
 
+def infer_artifact_run_id(path: str | Path) -> str | None:
+    parts = Path(path).parts
+    for marker in ("stage5", "stage4"):
+        for idx, part in enumerate(parts):
+            if part == marker and idx + 1 < len(parts):
+                return parts[idx + 1]
+    return None
+
+
+def restore_checkpoint_from_drive(candidate: Path) -> Path | None:
+    run_id = infer_artifact_run_id(candidate)
+    if not run_id:
+        return None
+    mount_drive_if_possible()
+    for drive_candidate in candidate_drive_checkpoints(run_id, candidate.name):
+        if drive_candidate.exists():
+            candidate.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(drive_candidate, candidate)
+            print(f"restored_benchmark_checkpoint={drive_candidate} -> {candidate}", flush=True)
+            return candidate
+    return None
+
+
 def resolve_checkpoint(source_summary: Path | None, payload: dict[str, Any] | None) -> Path:
-    for candidate in checkpoint_candidates_from_payload(source_summary, payload):
+    candidates = checkpoint_candidates_from_payload(source_summary, payload)
+    for candidate in candidates:
         if candidate.exists():
             return candidate
-    searched = [path_for_cli(path) for path in checkpoint_candidates_from_payload(source_summary, payload)]
-    raise FileNotFoundError(f"No recurrent checkpoint found. Searched: {searched}")
+    for candidate in candidates:
+        restored = restore_checkpoint_from_drive(candidate)
+        if restored and restored.exists():
+            return restored
+    searched = [path_for_cli(path) for path in candidates]
+    raise FileNotFoundError(f"No recurrent checkpoint found. Searched: {searched}\n{drive_diagnostics()}")
 
 
 def benchmark_specs(names: list[str]) -> list[BenchmarkSpec]:
