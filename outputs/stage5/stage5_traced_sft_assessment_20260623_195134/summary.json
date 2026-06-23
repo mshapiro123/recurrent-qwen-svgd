@@ -1,0 +1,288 @@
+{
+  "run_id": "stage5_traced_sft_assessment_20260623_195134",
+  "kind": "stage5_traced_sft_assessment",
+  "source_summary": "outputs/stage5/stage5_local_hf_traced_sft_benchmark_20260623_194626/summary.json",
+  "sft_summary": "outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_194543/summary.json",
+  "checkpoint": "outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_194543/phase1/phase1_step_200.pt",
+  "status": "needs_depth_routing_repair",
+  "passed": false,
+  "next_step": "Repair learned-loop supervision before scaling data or adding particles.",
+  "thresholds": {
+    "min_paired_examples": 96,
+    "target_trace_rows_for_phase2": 96,
+    "allowed_content_negative_delta": 1,
+    "allowed_cyclic_negative_delta": 0
+  },
+  "trace_rows": 63,
+  "benchmarks": [
+    {
+      "benchmark": "arc_easy",
+      "content": {
+        "present": true,
+        "paired_examples": 128,
+        "base_correct": 75,
+        "recurrent_correct": 68,
+        "delta": -7,
+        "wins": 3,
+        "losses": 10,
+        "ties": 115,
+        "sign_test_p_value": 0.09228515625
+      },
+      "cyclic": {
+        "present": true,
+        "paired_examples": 128,
+        "base_correct": 95,
+        "recurrent_correct": 100,
+        "delta": 5,
+        "wins": 6,
+        "losses": 1,
+        "ties": 121,
+        "sign_test_p_value": 0.125
+      }
+    },
+    {
+      "benchmark": "arc_challenge",
+      "content": {
+        "present": true,
+        "paired_examples": 128,
+        "base_correct": 43,
+        "recurrent_correct": 46,
+        "delta": 3,
+        "wins": 4,
+        "losses": 1,
+        "ties": 123,
+        "sign_test_p_value": 0.375
+      },
+      "cyclic": {
+        "present": true,
+        "paired_examples": 128,
+        "base_correct": 68,
+        "recurrent_correct": 69,
+        "delta": 1,
+        "wins": 4,
+        "losses": 3,
+        "ties": 121,
+        "sign_test_p_value": 1.0
+      }
+    }
+  ],
+  "depth": {
+    "available": true,
+    "direct_mean_expected_loops": 1.350744,
+    "deep_narrow_mean_expected_loops": 1.987598,
+    "margin": 0.636854,
+    "max_direct_mean_loops": 1.35,
+    "min_deep_mean_loops": 1.5,
+    "min_depth_margin": 0.5,
+    "direct_under_max": false,
+    "deep_over_min": true,
+    "margin_passed": true,
+    "passed": false
+  },
+  "criteria": [
+    {
+      "name": "suite_completed",
+      "passed": true,
+      "reason": "Benchmark suite completed without failures.",
+      "evidence": {
+        "status": "completed",
+        "failures": []
+      }
+    },
+    {
+      "name": "benchmark_coverage",
+      "passed": true,
+      "reason": "Content and cyclic paired comparisons have enough examples.",
+      "evidence": [
+        {
+          "benchmark": "arc_easy",
+          "content": {
+            "present": true,
+            "paired_examples": 128,
+            "base_correct": 75,
+            "recurrent_correct": 68,
+            "delta": -7,
+            "wins": 3,
+            "losses": 10,
+            "ties": 115,
+            "sign_test_p_value": 0.09228515625
+          },
+          "cyclic": {
+            "present": true,
+            "paired_examples": 128,
+            "base_correct": 95,
+            "recurrent_correct": 100,
+            "delta": 5,
+            "wins": 6,
+            "losses": 1,
+            "ties": 121,
+            "sign_test_p_value": 0.125
+          }
+        },
+        {
+          "benchmark": "arc_challenge",
+          "content": {
+            "present": true,
+            "paired_examples": 128,
+            "base_correct": 43,
+            "recurrent_correct": 46,
+            "delta": 3,
+            "wins": 4,
+            "losses": 1,
+            "ties": 123,
+            "sign_test_p_value": 0.375
+          },
+          "cyclic": {
+            "present": true,
+            "paired_examples": 128,
+            "base_correct": 68,
+            "recurrent_correct": 69,
+            "delta": 1,
+            "wins": 4,
+            "losses": 3,
+            "ties": 121,
+            "sign_test_p_value": 1.0
+          }
+        }
+      ]
+    },
+    {
+      "name": "content_near_base",
+      "passed": false,
+      "reason": "Content-only scoring regressed beyond the allowed tolerance.",
+      "evidence": {
+        "allowed_negative_delta": 1,
+        "benchmarks": [
+          {
+            "benchmark": "arc_easy",
+            "content": {
+              "present": true,
+              "paired_examples": 128,
+              "base_correct": 75,
+              "recurrent_correct": 68,
+              "delta": -7,
+              "wins": 3,
+              "losses": 10,
+              "ties": 115,
+              "sign_test_p_value": 0.09228515625
+            },
+            "cyclic": {
+              "present": true,
+              "paired_examples": 128,
+              "base_correct": 95,
+              "recurrent_correct": 100,
+              "delta": 5,
+              "wins": 6,
+              "losses": 1,
+              "ties": 121,
+              "sign_test_p_value": 0.125
+            }
+          },
+          {
+            "benchmark": "arc_challenge",
+            "content": {
+              "present": true,
+              "paired_examples": 128,
+              "base_correct": 43,
+              "recurrent_correct": 46,
+              "delta": 3,
+              "wins": 4,
+              "losses": 1,
+              "ties": 123,
+              "sign_test_p_value": 0.375
+            },
+            "cyclic": {
+              "present": true,
+              "paired_examples": 128,
+              "base_correct": 68,
+              "recurrent_correct": 69,
+              "delta": 1,
+              "wins": 4,
+              "losses": 3,
+              "ties": 121,
+              "sign_test_p_value": 1.0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "cyclic_nonnegative",
+      "passed": true,
+      "reason": "Cyclic label-aggregated scoring is nonnegative versus base.",
+      "evidence": {
+        "allowed_negative_delta": 0,
+        "benchmarks": [
+          {
+            "benchmark": "arc_easy",
+            "content": {
+              "present": true,
+              "paired_examples": 128,
+              "base_correct": 75,
+              "recurrent_correct": 68,
+              "delta": -7,
+              "wins": 3,
+              "losses": 10,
+              "ties": 115,
+              "sign_test_p_value": 0.09228515625
+            },
+            "cyclic": {
+              "present": true,
+              "paired_examples": 128,
+              "base_correct": 95,
+              "recurrent_correct": 100,
+              "delta": 5,
+              "wins": 6,
+              "losses": 1,
+              "ties": 121,
+              "sign_test_p_value": 0.125
+            }
+          },
+          {
+            "benchmark": "arc_challenge",
+            "content": {
+              "present": true,
+              "paired_examples": 128,
+              "base_correct": 43,
+              "recurrent_correct": 46,
+              "delta": 3,
+              "wins": 4,
+              "losses": 1,
+              "ties": 123,
+              "sign_test_p_value": 0.375
+            },
+            "cyclic": {
+              "present": true,
+              "paired_examples": 128,
+              "base_correct": 68,
+              "recurrent_correct": 69,
+              "delta": 1,
+              "wins": 4,
+              "losses": 3,
+              "ties": 121,
+              "sign_test_p_value": 1.0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "depth_gradient",
+      "passed": false,
+      "reason": "Depth routing is missing, weak, or overthinking direct rows.",
+      "evidence": {
+        "available": true,
+        "direct_mean_expected_loops": 1.350744,
+        "deep_narrow_mean_expected_loops": 1.987598,
+        "margin": 0.636854,
+        "max_direct_mean_loops": 1.35,
+        "min_deep_mean_loops": 1.5,
+        "min_depth_margin": 0.5,
+        "direct_under_max": false,
+        "deep_over_min": true,
+        "margin_passed": true,
+        "passed": false
+      }
+    }
+  ]
+}
