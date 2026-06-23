@@ -1,0 +1,15 @@
+
+Generating train split:   0%|          | 0/2251 [00:00<?, ? examples/s]
+Generating train split: 100%|██████████| 2251/2251 [00:00<00:00, 91133.00 examples/s]
+
+Generating test split:   0%|          | 0/2376 [00:00<?, ? examples/s]
+Generating test split: 100%|██████████| 2376/2376 [00:00<00:00, 1026753.17 examples/s]
+
+Generating validation split:   0%|          | 0/570 [00:00<?, ? examples/s]
+Generating validation split: 100%|██████████| 570/570 [00:00<00:00, 471735.06 examples/s]
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=train
+offset=0
+rows=512
+output_jsonl=outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_baseline/arc_easy_train_mcq.jsonl

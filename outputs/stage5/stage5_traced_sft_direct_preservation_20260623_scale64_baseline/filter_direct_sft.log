@@ -1,0 +1,11 @@
+input_mcq_rows=512
+input_eval_rows=512
+selected_rows=124
+skipped={'base_wrong': 211, 'low_margin': 157}
+pre_balance_answer_counts={'A': 40, 'B': 37, 'C': 36, 'D': 31}
+answer_counts={'A': 31, 'B': 31, 'C': 31, 'D': 31}
+min_base_margin=1.0
+balance_labels=True
+max_rows_per_label=None
+target_loop_count=1
+routing_type=direct_base_preserve
