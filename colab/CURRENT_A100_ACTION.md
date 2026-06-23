@@ -29,14 +29,13 @@ trace-response/job summary before failing. An explicit
 `STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_SOURCE_SUMMARY` override remains strict
 and must point to a trace-response or trace-job summary.
 When that trace-collection summary reports `trace_curriculum_gate_ready`, the
-planner will now route the next guarded paid action directly to
-`colab/run_stage5_curriculum_sft.py` with the traced work dir, summary, mode
-counts, and Drive backup root wired in. At that point use
-`STAGE5_CURRENT_A100_TARGET=safe_continue_execute` only on an A100/H100 runtime
-you intentionally want to spend. The `safe_continue_execute` bootstrap target
-sets `STAGE5_SAFE_CONTINUE_PREFER_TRAINING_SOURCE=1`, so it prefers the newest
-gate-ready traced curriculum or validated curriculum-SFT summary before falling
-back to the stale repository pointer. The default planner/guard floor is 16
+use `STAGE5_CURRENT_A100_TARGET=traced_capability_ladder_sft` on the attached
+GPU runtime. That target follows the latest gate-ready traced collection,
+derives `STAGE5_CURRICULUM_WORK_DIR`, `STAGE5_CURRICULUM_SUMMARY_JSON`, row
+gates, mode gates, max loops, Drive backup root, and bounded Phase 1 steps from
+the summary, then runs `colab/run_stage5_curriculum_sft.py`. The older
+`safe_continue_execute` target can still route through the planner, but the
+direct traced-SFT target is the cleaner current path. The default floor is 16
 answer-verified traced rows before it will spend GPU on this SFT path; smaller
 collections remain CPU-side inspection/collect-more tasks unless explicitly
 overridden for a tiny smoke run.

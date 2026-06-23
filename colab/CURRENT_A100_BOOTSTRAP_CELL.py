@@ -18,6 +18,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "capability_ladder_trace_responses_cpu" - CPU/network provider responses for trace jobs.
 #   "capability_ladder_trace_collect_cpu" - CPU-only trace-response collection into gated SFT data.
 #   "capability_ladder_trace_response_collect_cpu" - CPU/network provider responses then immediate collection.
+#   "traced_capability_ladder_sft" - GPU Phase 1 SFT from the latest gate-ready traced capability ladder.
 #   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
 #   "depth_sweep_heldout" - L4/T4 held-out ARC tail loop-depth sweep for routing validation.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
@@ -229,6 +230,23 @@ TARGETS = {
             "colab/run_stage5_capability_ladder_trace_collect.py",
             "tests/test_stage5_capability_ladder_trace_responses_runner.py",
             "tests/test_stage5_capability_ladder_trace_collect_runner.py",
+            "runtime.unassign",
+        ],
+        "env": {},
+    },
+    "traced_capability_ladder_sft": {
+        "path": "colab/STAGE5_TRACED_CAPABILITY_LADDER_SFT_CELL.py",
+        "markers": [
+            "STAGE5_TRACED_CAPABILITY_LADDER_SFT_CELL_VERSION",
+            "traced_capability_ladder_sft",
+            "stage5_capability_ladder_trace_collection",
+            "STAGE5_TRACED_CAPABILITY_SFT_SOURCE_SUMMARY",
+            "STAGE5_CURRICULUM_WORK_DIR",
+            "STAGE5_CURRICULUM_MIN_POSITIVE_ROWS",
+            "STAGE5_CURRICULUM_MIN_MODE_ROWS",
+            "colab/run_stage5_curriculum_sft.py",
+            "tests/test_stage5_curriculum_sft.py",
+            "tests/test_curriculum_sft_gate.py",
             "runtime.unassign",
         ],
         "env": {},
