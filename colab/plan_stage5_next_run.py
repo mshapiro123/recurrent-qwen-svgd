@@ -2197,6 +2197,41 @@ def mcq_recipe_control_assessment_actions(payload: dict[str, Any], *, source_sum
                 10,
             )
         ]
+    if status == "no_architecture_lift_vs_dense":
+        return [
+            make_action(
+                "Run capability-ladder MCQ depth-label probe",
+                (
+                    "The same-recipe dense control did not show recurrent architecture lift yet. "
+                    "Do not spend on particles; build a Qwen 0.5B/1.5B/3B capability ladder "
+                    "to create explicit depth-target rows for the recurrent model."
+                ),
+                command_env(
+                    {
+                        "STAGE5_CAPABILITY_LADDER_RUN_ID": f"{RUN_ID}_capability_ladder_after_dense_no_lift",
+                        "STAGE5_CAPABILITY_LADDER_ARC_LIMIT": os.environ.get(
+                            "STAGE5_ARC_AGI_NEXT_PLAN_CAPABILITY_LADDER_ARC_LIMIT",
+                            "96",
+                        ),
+                        "STAGE5_CAPABILITY_LADDER_SCORE_MODE": "content_question_only",
+                        "STAGE5_CAPABILITY_LADDER_MODEL_LADDER": "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3",
+                        "STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE": "0",
+                    },
+                    "python colab/run_stage5_capability_ladder_mcq_probe.py",
+                ),
+                10,
+            ),
+            make_action(
+                "Inspect MCQ same-recipe architecture assessment `no_architecture_lift_vs_dense`",
+                (
+                    "The dense-vs-recurrent MCQ control did not show hard-tail recurrent lift. "
+                    "Keep the report as the decision record while the depth-label probe tests "
+                    "whether explicit recurrence targets are the missing ingredient."
+                ),
+                f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                4,
+            ),
+        ]
     return [
         make_action(
             f"Inspect MCQ same-recipe architecture assessment `{status}`",

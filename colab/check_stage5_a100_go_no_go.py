@@ -802,6 +802,17 @@ def apply_checkpoint_guard(
             "drive_candidate_exists": False,
             "reason": "Dense ARC SFT is the standard-model control and starts from the base model.",
         }
+    elif decision.get("spend_class") == "bounded_capability_ladder_mcq_probe":
+        checkpoint = {
+            "checkpoint": None,
+            "available": True,
+            "exists": False,
+            "drive_candidate_exists": False,
+            "reason": (
+                "Capability-ladder MCQ probing scores base Qwen scale models to build "
+                "depth-label rows and does not require a recurrent checkpoint."
+            ),
+        }
     else:
         checkpoint = checkpoint_availability(source_payload)
     if not decision.get("go"):

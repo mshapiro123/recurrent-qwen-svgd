@@ -222,6 +222,29 @@ def test_capability_ladder_probe_guard_allows_bounded_limit() -> None:
     assert decision["capability_ladder_probe_budget"]["limit"]["value"] == 48
 
 
+def test_capability_ladder_probe_does_not_require_recurrent_checkpoint() -> None:
+    decision = classify_action(
+        {
+            "name": "Run capability-ladder MCQ probe",
+            "command": (
+                "STAGE5_CAPABILITY_LADDER_ARC_LIMIT=48 "
+                "python colab/run_stage5_capability_ladder_mcq_probe.py"
+            ),
+        },
+        source_payload={"kind": "stage5_mcq_recipe_control_assessment"},
+    )
+
+    guarded, checkpoint = apply_checkpoint_guard(
+        decision,
+        source_payload={"kind": "stage5_mcq_recipe_control_assessment"},
+    )
+
+    assert checkpoint["available"] is True
+    assert checkpoint["checkpoint"] is None
+    assert guarded["go"] is True
+    assert guarded["status"] == "go_capability_ladder_mcq_probe"
+
+
 def test_capability_ladder_probe_guard_blocks_oversized_limit() -> None:
     decision = classify_action(
         {

@@ -3752,5 +3752,8 @@ def test_mcq_recipe_control_no_lift_routes_to_inspection(tmp_path) -> None:
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Inspect MCQ same-recipe architecture assessment `no_architecture_lift_vs_dense`"
-    assert "summary.md" in actions[0]["command"]
+    assert actions[0]["name"] == "Run capability-ladder MCQ depth-label probe"
+    assert "python colab/run_stage5_capability_ladder_mcq_probe.py" in actions[0]["command"]
+    assert "STAGE5_CAPABILITY_LADDER_MODEL_LADDER=qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3" in actions[0]["command"]
+    assert actions[1]["name"] == "Inspect MCQ same-recipe architecture assessment `no_architecture_lift_vs_dense`"
+    assert "summary.md" in actions[1]["command"]
