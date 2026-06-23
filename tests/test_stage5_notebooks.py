@@ -455,7 +455,9 @@ def test_debiased_benchmark_suite_cell_is_bounded_and_policy_compliant() -> None
     assert '"STAGE5_BENCHMARKS"] = os.environ.get("STAGE5_DEBIASED_BENCHMARKS", "arc_challenge,gpqa_lite")' in plain
     assert '"STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT"] = os.environ.get("STAGE5_DEBIASED_ARC_CHALLENGE_LIMIT", "128")' in plain
     assert '"STAGE5_BENCHMARK_GPQA_LIMIT"] = os.environ.get("STAGE5_DEBIASED_GPQA_LIMIT", "16")' in plain
-    assert '"STAGE5_BENCHMARK_SCORE_TARGETS"] = "label,content_question_only,cyclic_label_aggregated"' in plain
+    assert '"STAGE5_BENCHMARK_SCORE_TARGETS"] = os.environ.get(' in plain
+    assert '"STAGE5_DEBIASED_SCORE_TARGETS",' in plain
+    assert '"label,content_question_only,cyclic_label_aggregated",' in plain
     assert '"STAGE5_BENCHMARK_ASSESS_SCORE_TARGET"] = "cyclic_label_aggregated"' in plain
     assert '"STAGE5_BENCHMARK_ASSESS_AGGREGATE"] = "permutation_mean"' in plain
     assert "benchmark_source_summary" in plain

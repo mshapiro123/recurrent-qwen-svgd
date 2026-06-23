@@ -159,6 +159,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "safe_continue_execute" - fetch safe-continue and opt in to the guarded paid action.
 #   "arc_challenge_mcq_debias_confirm" - bounded no-training cyclic MCQ confirmation on ARC-Challenge.
 #   "debiased_benchmark_suite" - bounded ARC-Challenge/GPQA-lite benchmark with debiased MCQ scoring.
+#   "arc_mix_offset_confirm" - bounded ARC-Easy/Challenge offset-256 confirmation for the latest ARC-mix checkpoint.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
 #   "capability_ladder_7b_mcq_probe" - high-memory Qwen 0.5B/1.5B/3B/7B ARC MCQ scoring for depth-4 data.
 #   "capability_ladder_7b_trace_chain" - high-memory 7B ladder probe followed by trace-job build.
@@ -276,6 +277,30 @@ TARGETS = {
             "runtime.unassign",
         ],
         "env": {},
+    },
+    "arc_mix_offset_confirm": {
+        "path": "colab/STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py",
+        "markers": [
+            "STAGE5_DEBIASED_BENCHMARK_SUITE_CELL_VERSION",
+            "STAGE5_DEBIASED_ARC_CHALLENGE_OFFSET",
+            "STAGE5_DEBIASED_ARC_EASY_OFFSET",
+            "STAGE5_DEBIASED_SCORE_TARGETS",
+            "content_question_only",
+            "cyclic_label_aggregated",
+            "permutation_mean",
+            "colab/run_stage5_benchmark_suite.py",
+            "tests/test_stage5_benchmark_suite.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_DEBIASED_BENCHMARKS": "arc_easy,arc_challenge",
+            "STAGE5_DEBIASED_ARC_EASY_LIMIT": "256",
+            "STAGE5_DEBIASED_ARC_CHALLENGE_LIMIT": "256",
+            "STAGE5_DEBIASED_ARC_EASY_OFFSET": "256",
+            "STAGE5_DEBIASED_ARC_CHALLENGE_OFFSET": "256",
+            "STAGE5_DEBIASED_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
+            "STAGE5_BENCHMARK_SUITE_RUN_ID": "stage5_content_arcmix_qonly_optiontext_arc256_offset256_confirm",
+        },
     },
     "capability_ladder_mcq_probe": {
         "path": "colab/STAGE5_CAPABILITY_LADDER_MCQ_PROBE_CELL.py",

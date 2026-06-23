@@ -12,9 +12,23 @@ The bootstrap defaults to `preflight`. To intentionally execute the guarded
 paid action after preflight is green, set
 `STAGE5_CURRENT_A100_TARGET=safe_continue_execute` before running it on an
 A100/H100 runtime.
-The current preferred path is **depth-conditional deterministic recovery**. The
-CE8 balanced ARC depth curve showed a useful hard-slice depth signal but a
-serious easy/content calibration gap:
+The current preferred path is **ARC-mix offset confirmation before
+depth-routing training**. The latest targeted ARC-mix checkpoint beat base on
+the first 256-example ARC-Easy/ARC-Challenge content slice and stayed
+non-negative under cyclic option-permutation scoring. The next measurement
+action is:
+
+```text
+STAGE5_CURRENT_A100_TARGET=arc_mix_offset_confirm
+```
+
+This runs the same checkpoint on ARC-Easy and ARC-Challenge with
+`limit=256`, `offset=256`, and score targets
+`content_question_only,cyclic_label_aggregated`. If this confirmation holds,
+the next training action is depth-conditional deterministic recovery.
+
+The earlier CE8 balanced ARC depth curve showed a useful hard-slice depth
+signal but a serious easy/content calibration gap:
 
 ```text
 ARC-Easy cyclic best:       depth 1, recurrent 206/256 vs base 202/256, delta +4
@@ -23,7 +37,7 @@ ARC-Challenge cyclic best:  depth 2-4, recurrent 153/256 vs base 154/256, delta 
 ARC-Challenge content best: depth 3-4, recurrent 92/256 vs base 87/256, delta +5
 ```
 
-The next guarded GPU action should therefore preserve depth 1 on
+The next training action should therefore preserve depth 1 on
 easy/direct/base-correct rows while routing hard rows toward depth 2-3. Keep
 particles/SVGD off. Treat ARC-Easy content-only regression as a stop condition.
 The reference artifact is:
@@ -56,6 +70,19 @@ summary for both preflight and safe-continue, set the single bootstrap override
 `STAGE5_CURRENT_A100_SOURCE_SUMMARY=outputs/stage5/<run_id>/summary.json`.
 No-argument planner/go/no-go runs also read the same pointer, so they follow
 this run card instead of the newest file mtime in `outputs/`.
+
+## Current Paste-Anywhere ARC-Mix Offset Confirmation Cell
+
+Use this from a live Colab notebook after pulling the latest `main`.
+
+```python
+import os
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "arc_mix_offset_confirm"
+exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
+```
+
+If the repo is not already cloned, use the preferred bootstrap loader above;
+set the same target before executing the fetched bootstrap.
 
 Use the safe-continue cell from a normal Drive-backed or blank Colab notebook:
 
@@ -512,6 +539,8 @@ looks for `trace_responses.jsonl`, `capability_ladder_trace_responses.jsonl`, or
 `responses.jsonl` beside the trace-job summary or in the Drive backup. You can
 still set `STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_JSONL` explicitly.
 
+Target breadcrumb: `STAGE5_CURRENT_A100_TARGET=capability_ladder_trace_collect_cpu`.
+
 ```python
 import base64, json, os, time, urllib.request
 from google.colab import userdata
@@ -560,6 +589,20 @@ print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12]
 assert "capability_ladder_trace_collect_cpu" in code, "Fetched stale bootstrap without trace-collection target."
 assert "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_CELL.py" in code, "Fetched stale trace-collection launcher."
 exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
+```
+
+## Current Paste-Anywhere Traced Capability-Ladder SFT Cell
+
+Use this only after a gate-ready capability-ladder trace collection exists.
+This is the depth-ladder training branch, not the immediate ARC-mix offset
+confirmation.
+
+Target breadcrumb: `STAGE5_CURRENT_A100_TARGET=traced_capability_ladder_sft`.
+
+```python
+import os
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_capability_ladder_sft"
+exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
 ```
 
 Set:

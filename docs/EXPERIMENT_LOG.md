@@ -159,3 +159,37 @@ Interpretation:
 - `repulsion=4.0` is the best oracle setting and may be the best selector-facing setting if majority/verifier can handle the changed task profile.
 - The effect is task-redistributive, not uniformly better: higher repulsion helps train speed and letter count but can damage arithmetic add/multiply.
 - Next step is a robustness sweep over seeds `0..4` for `proj_dim=32`, `repulsion=0.5` and `4.0`, with raw hidden `repulsion=1.0` retained as the baseline.
+
+## 2026-06-23: ARC-Mix Content-Surface Recovery Confirmation
+
+Checkpoint:
+
+```text
+outputs/stage5/stage5_content_arcmix_qonly_optiontext_20260623_121707/
+  arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt
+```
+
+Confirmation run:
+
+```text
+outputs/stage5/stage5_content_arcmix_qonly_optiontext_arc256_check_20260623_123424/summary.json
+```
+
+Results on the 256-example confirmation slice:
+
+| Benchmark | Scoring | Base | Recurrent | Delta |
+| --- | --- | ---: | ---: | ---: |
+| ARC-Easy | cyclic option permutation | `202/256` | `204/256` | `+2` |
+| ARC-Easy | content question-only | `146/256` | `155/256` | `+9` |
+| ARC-Challenge | cyclic option permutation | `154/256` | `154/256` | `0` |
+| ARC-Challenge | content question-only | `87/256` | `97/256` | `+10` |
+
+Interpretation:
+
+- This is the first bounded non-toy recurrent-vs-base win after the model
+  surgery.
+- The result is still bounded; paired sign-test p-values are positive but not
+  decisive.
+- The next GPU-worthy action is an offset-256 confirmation with the same
+  checkpoint and scoring surfaces before further training or Phase 2/SVGD
+  scaling.

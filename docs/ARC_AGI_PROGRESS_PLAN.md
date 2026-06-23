@@ -12,15 +12,27 @@ Latest proxy ladder:
 - Stage 4 Phase1 deterministic recurrent: 70/128.
 - Stage 4 Phase2/SVGD recurrent: 69/128.
 
-Interpretation: deterministic recurrent recovery is working; current
-particle/SVGD settings have not shown reliable lift.
+Latest bounded ARC recovery confirmation:
+
+- ARC-Easy content-question-only, 256-example slice: recurrent 155/256 versus
+  base 146/256.
+- ARC-Challenge content-question-only, 256-example slice: recurrent 97/256
+  versus base 87/256.
+- ARC-Easy cyclic option-permutation scoring: recurrent 204/256 versus base
+  202/256.
+- ARC-Challenge cyclic option-permutation scoring: recurrent 154/256 versus
+  base 154/256.
+
+Interpretation: deterministic recurrent recovery is working and has crossed the
+base line on a bounded non-toy ARC slice. Current particle/SVGD settings have
+not shown reliable lift over the strongest deterministic checkpoint.
 
 ## Near-Term Goal
 
 Before claiming progress toward ARC-AGI, establish this sequence:
 
-1. Recover deterministic recurrent performance to match or beat base Qwen on
-   ARC-Challenge proxy slices.
+1. Replicate deterministic recurrent performance on an independent ARC offset
+   or larger split so the bounded recovery win is not a slice artifact.
 2. Prove whether particles/SVGD provide non-negative lift over that recovered
    recurrent baseline.
 3. Build an ARC-AGI-1/2 public-eval harness and report zero-shot or

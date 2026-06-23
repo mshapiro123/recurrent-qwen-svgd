@@ -12,18 +12,22 @@ model. The fair research program is:
 4. Only then test whether the recurrent model can surpass unmodified Qwen 0.5B
    on non-toy benchmarks.
 
-As of 2026-06-20, Stage 4 Phase1 already nearly closes the ARC-128 base gap:
-base Qwen scored 72/128, trained Phase1 recurrent scored 70/128, and the current
-Phase2/SVGD candidate scored 69/128. This means recurrent recovery is working,
-but particle training is not yet adding reliable lift.
+As of 2026-06-20, Stage 4 Phase1 already nearly closed the ARC-128 base gap:
+base Qwen scored 72/128, trained Phase1 recurrent scored 70/128, and the then
+current Phase2/SVGD candidate scored 69/128. Subsequent Stage 5 ARC-mixed
+training produced a stronger deterministic Phase 1 checkpoint that beats base
+on a bounded 256-example ARC-Easy/ARC-Challenge content-question confirmation
+slice and remains non-negative under cyclic option-permutation scoring. This
+means recurrent recovery is working. Particle training is still not yet adding
+reliable lift over the strongest deterministic checkpoint.
 
-The latest ARC-mix recovery failure refines the framing. The key control
-problem is not only "more recurrence" or "more particles"; it is allocation of
-depth and width. Depth is the learned recurrent loop count. Width is particle
-spread. Direct/easy tasks should use little of either, deep deterministic tasks
-should use depth without particle spread, wide tasks should use particle
-coverage, and hard multi-approach tasks may need both. The detailed training
-handoff is [DEPTH_WIDTH_ROUTING_RECIPE.md](DEPTH_WIDTH_ROUTING_RECIPE.md).
+The latest ARC-mix recovery results refine the framing. The key control problem
+is not only "more recurrence" or "more particles"; it is allocation of depth
+and width. Depth is the learned recurrent loop count. Width is particle spread.
+Direct/easy tasks should use little of either, deep deterministic tasks should
+use depth without particle spread, wide tasks should use particle coverage, and
+hard multi-approach tasks may need both. The detailed training handoff is
+[DEPTH_WIDTH_ROUTING_RECIPE.md](DEPTH_WIDTH_ROUTING_RECIPE.md).
 The typed data-generation contract for external strong-model curriculum traces
 is [CURRICULUM_DATA_PIPELINE.md](CURRICULUM_DATA_PIPELINE.md).
 
@@ -76,6 +80,8 @@ Gate to proceed:
 
 - Phase1 recurrent matches or beats base on at least one non-toy slice, or
   remains within a small gap while improving exact reasoning and loop telemetry.
+- Any bounded surpass-base result replicates on an independent offset or larger
+  split before it is treated as a robust benchmark claim.
 - Mean loop depth remains non-collapsed.
 - Loop-depth telemetry is sensible by task type: direct/easy rows are shallower
   than deep deterministic rows.
@@ -202,7 +208,9 @@ Only move toward Hugging Face packaging and GPQA Diamond when:
 
 Initial benchmark set:
 
-- ARC-Challenge 512 or full validation.
+- Independent ARC-Easy/ARC-Challenge offset confirmation for the current
+  positive ARC-mix checkpoint.
+- ARC-Challenge 512 or full validation after offset confirmation.
 - GSM8K subset, then full if stable.
 - GPQA-lite before GPQA Diamond.
 - Exact smoke suite for regression.

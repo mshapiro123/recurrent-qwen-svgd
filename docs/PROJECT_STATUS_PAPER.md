@@ -8,35 +8,40 @@ budget so that reasoning moves partly into latent iterative computation. The
 current system wraps `Qwen/Qwen2.5-0.5B-Instruct` into a
 Prelude/Recurrent-Block/Coda architecture, adds sequence-level PonderNet-style
 halting, and extends the recurrent state into a family of particle trajectories
-with stochastic latent injection or SVGD-style repulsion. The strongest result
-so far is not yet a final benchmark win over the unmodified base model. It is a
-mechanistic result: the surgery can preserve identity under the one-pass gate,
-the deterministic recurrent model can recover much of the ARC regression after
-targeted adapter training, and SVGD-style particle updates can increase useful
-candidate density on controlled exact-task suites. The next scientific gate is
-to turn near-base recurrent recovery into a robust base-model win across non-toy
-reasoning slices, then to test whether particle/SVGD trajectories produce
-selector-convertible lift over that recovered recurrent baseline.
+with stochastic latent injection or SVGD-style repulsion. The strongest current
+result is a bounded non-toy recovery result: a targeted ARC-mixed Phase 1
+checkpoint beats the unmodified base model on a 256-example ARC-Easy and
+ARC-Challenge confirmation slice under content-question scoring, while matching
+or slightly exceeding base under cyclic option-permutation scoring. This is not
+yet a full-dataset or GPQA claim. It does show that the surgery can preserve
+identity under the one-pass gate, that deterministic recurrent training can
+cross the base-model line on a bounded ARC slice, and that SVGD-style particle
+updates can increase useful candidate density on controlled exact-task suites.
+The next scientific gate is replication on an independent ARC offset slice,
+then selector/depth routing and particle/SVGD tests against the recovered
+Phase 1 baseline.
 
 ## 0. Result Maturity
 
 This document is intentionally written like a manuscript draft, but the claim is
-still in the pre-result stage for base-model superiority. The established
-results are method and recovery results:
+still bounded. The project now has an ARC-256 surpass-base result, not a
+full-benchmark or release claim. The established results are method and bounded
+recovery results:
 
 - exact one-pass identity preservation for the wrapped architecture;
 - stable learned recurrence and sequence-level halting;
 - substantial recovery of the competence lost by model surgery;
+- a bounded ARC-256 recurrent-vs-base win for a targeted deterministic Phase 1
+  checkpoint;
 - measurable candidate-diversity gains from particle/SVGD mechanisms on
   controlled exact-task suites.
 
-The not-yet-established result is benchmark superiority over unmodified Qwen
-0.5B. That requires a deterministic recurrent checkpoint that is non-negative
-or positive against base on balanced held-out ARC, followed by particle or
-selector experiments that beat that recovered recurrent baseline. The paper
-should not claim that additional training has already made the recurrent/SVGD
-model surpass base until those gates are logged in `outputs/stage5` and cited
-from the exact checkpoint summaries.
+The not-yet-established result is robust benchmark superiority over unmodified
+Qwen 0.5B. That requires the current positive ARC-256 result to replicate on an
+independent offset or full split, followed by particle or selector experiments
+that beat that recovered recurrent baseline. The paper should not claim that
+SVGD or particles have made the model surpass base until those gates are logged
+in `outputs/stage5` and cited from the exact checkpoint summaries.
 
 ## 1. Research Question
 
@@ -315,12 +320,37 @@ should therefore train deterministic depth allocation and direct-mode answer
 calibration before reintroducing particle width. See
 [DEPTH_WIDTH_ROUTING_RECIPE.md](DEPTH_WIDTH_ROUTING_RECIPE.md).
 
+The first targeted ARC-mix follow-up after that diagnosis produced the first
+bounded non-toy recurrent-vs-base win. The selected checkpoint is:
+
+```text
+outputs/stage5/stage5_content_arcmix_qonly_optiontext_20260623_121707/
+  arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt
+```
+
+On the 256-example ARC confirmation slice:
+
+| Benchmark | Scoring | Base | Recurrent | Delta |
+|---|---|---:|---:|---:|
+| ARC-Easy | cyclic option permutation | `202/256` | `204/256` | `+2` |
+| ARC-Easy | content question-only | `146/256` | `155/256` | `+9` |
+| ARC-Challenge | cyclic option permutation | `154/256` | `154/256` | `0` |
+| ARC-Challenge | content question-only | `87/256` | `97/256` | `+10` |
+
+The run is
+`outputs/stage5/stage5_content_arcmix_qonly_optiontext_arc256_check_20260623_123424/summary.json`.
+There were no evaluation failures. The paired evidence is positive but still
+not decisive on sign-test p-values (`p=0.136` for ARC-Easy content and
+`p=0.110` for ARC-Challenge content), so the correct next step is an
+independent offset-256 confirmation using the same checkpoint, not immediate
+Phase 2 scaling or a public benchmark claim.
+
 ## 6. What Has Not Been Shown Yet
 
 The project has not yet shown:
 
-- a recurrent checkpoint that robustly surpasses base Qwen 0.5B on a non-toy
-  benchmark;
+- a recurrent checkpoint that robustly surpasses base Qwen 0.5B across an
+  independent offset or full non-toy benchmark split;
 - a Phase 2/SVGD checkpoint that beats the strongest recovered Phase 1
   recurrent checkpoint on ARC/GPQA-style tasks;
 - a claim-level selector that converts recurrent candidate coverage into
@@ -366,10 +396,11 @@ notebook editing, GitHub/Drive fixes, documentation, and CPU-sized tests should
 not run on A100.
 
 The active paid-GPU gate has moved from MCQ debias confirmation to
-depth-conditional deterministic recovery. The bounded CE8 depth curve already
-shows where recurrence helps and where it hurts. The next spend should either
-train a shallow-preserving/deep-routing checkpoint or build the selector needed
-to deploy that split.
+deterministic recovery replication. The bounded CE8 depth curve showed where
+recurrence helped and where it hurt; the follow-up ARC-mixed content objective
+then produced a positive 256-example confirmation slice. The next spend should
+replicate that checkpoint on an independent ARC offset before launching more
+training.
 
 The prior full balanced ARC assessment reported `needs_competence_recovery`:
 the recurrent checkpoint slightly exceeded base on ARC-Challenge but trailed on
@@ -453,12 +484,14 @@ assessment. This makes the next A100 spend answer the actual recovery question:
 whether the recurrent model is improving while preserving the base model's
 answer distribution, rather than merely moving errors around.
 
-The paper should describe the training required to surpass base only after that
-surpass-base checkpoint exists. At present, the empirically supported statement
-is more modest: additional ARC-mixed recurrent SFT closed a 128-example proxy
-gap, but the proxy lift did not survive full balanced ARC. The next hypothesis
-is that recurrence recovery needs stronger answer-calibration preservation, not
-more unbounded reasoning-trace continuation.
+The newer content-question ARC-mix run supersedes this older failed
+confirmation as the active recovery candidate. It shows that additional
+ARC-mixed recurrent SFT can cross the base line on a bounded non-toy slice, but
+the result still needs independent-offset or full-split confirmation before it
+can carry a paper-level benchmark claim. The next hypothesis is no longer
+"blindly add traces"; it is that direct content-surface ARC supervision plus
+moderate base-response distillation can repair the recurrent answer surface
+without sacrificing cyclic/debiased performance.
 
 ## 9. A100 Credit Discipline
 
@@ -492,10 +525,10 @@ automation fails, disconnect the runtime and repair the launch path locally.
 The project has achieved the hard first step: a pretrained Qwen model can be
 converted into a recurrent-depth model with exact identity preservation in the
 single-pass gate, stable learned halting, and recoverable benchmark competence
-under small-parameter fine-tuning. The latest CE8 depth curve is mixed rather
-than uniformly negative: it is positive on ARC-Easy cyclic scoring at depth 1
-and positive on ARC-Challenge content scoring at depth 3-4, but still negative
-on ARC-Easy content scoring. SVGD-style particles have shown useful
+under small-parameter fine-tuning. The latest ARC-mixed Phase 1 checkpoint now
+beats the unmodified base model on a bounded 256-example ARC confirmation slice
+under the content-question surface, while remaining non-negative under cyclic
+option-permutation scoring. SVGD-style particles have shown useful
 candidate-density signals on controlled exact tasks, but not yet reliable lift
 over the strongest recovered deterministic recurrent model.
 
@@ -508,7 +541,7 @@ claim is narrower and scientifically useful:
 > instrumented with particle trajectories that produce measurable, selectable
 > candidate diversity.
 
-The decisive next result is whether calibration-preserving selected-depth
-recurrent recovery can cross the base-Qwen line on held-out reasoning
-benchmarks. Only after that should selector-converted particles be treated as
-the main benchmark-lift path.
+The decisive next result is whether this ARC-mixed recurrent recovery
+replicates on an independent offset or full held-out reasoning split. Only
+after that should selector-converted particles be treated as the main
+benchmark-lift path.

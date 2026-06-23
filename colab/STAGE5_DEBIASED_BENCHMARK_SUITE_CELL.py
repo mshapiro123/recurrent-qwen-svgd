@@ -200,8 +200,13 @@ try:
     env["STAGE5_BENCHMARKS"] = os.environ.get("STAGE5_DEBIASED_BENCHMARKS", "arc_challenge,gpqa_lite")
     env["STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT"] = os.environ.get("STAGE5_DEBIASED_ARC_CHALLENGE_LIMIT", "128")
     env["STAGE5_BENCHMARK_ARC_EASY_LIMIT"] = os.environ.get("STAGE5_DEBIASED_ARC_EASY_LIMIT", "128")
+    env["STAGE5_BENCHMARK_ARC_CHALLENGE_OFFSET"] = os.environ.get("STAGE5_DEBIASED_ARC_CHALLENGE_OFFSET", "0")
+    env["STAGE5_BENCHMARK_ARC_EASY_OFFSET"] = os.environ.get("STAGE5_DEBIASED_ARC_EASY_OFFSET", "0")
     env["STAGE5_BENCHMARK_GPQA_LIMIT"] = os.environ.get("STAGE5_DEBIASED_GPQA_LIMIT", "16")
-    env["STAGE5_BENCHMARK_SCORE_TARGETS"] = "label,content_question_only,cyclic_label_aggregated"
+    env["STAGE5_BENCHMARK_SCORE_TARGETS"] = os.environ.get(
+        "STAGE5_DEBIASED_SCORE_TARGETS",
+        "label,content_question_only,cyclic_label_aggregated",
+    )
     env["STAGE5_BENCHMARK_AGGREGATES"] = "mean"
     env["STAGE5_BENCHMARK_PUSH"] = "1"
     env["MODEL_NAME"] = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")

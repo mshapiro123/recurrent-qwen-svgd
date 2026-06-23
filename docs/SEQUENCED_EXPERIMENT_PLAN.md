@@ -18,6 +18,8 @@ The current evidence says the architecture is promising but not yet proven:
 
 - one-pass identity preservation is solved under strict settings;
 - loop-1 recurrent behavior is close to, and sometimes above, base Qwen 0.5B;
+- targeted ARC-mixed Phase 1 recovery has crossed the base line on a bounded
+  256-example ARC-Easy/ARC-Challenge confirmation slice;
 - unconditional deeper loops are harmful on easy tasks;
 - deeper loops contain unique correct answers on hard ARC-Challenge examples;
 - the next bottleneck is routing/selection and depth supervision, not more
@@ -134,6 +136,31 @@ Observed held-out tail:
 Interpretation: the held-out signal is directionally consistent with the
 allocation story, but ARC-Challenge tail size is too small for strong claims.
 Depth 2 may help hard examples, but easy tasks strongly prefer shallow routing.
+
+### ARC-Mix Content-Surface Confirmation
+
+The latest targeted ARC-mix run is now the active deterministic recovery
+candidate:
+
+```text
+source = outputs/stage5/stage5_content_arcmix_qonly_optiontext_20260623_121707/summary.json
+checkpoint = outputs/stage5/stage5_content_arcmix_qonly_optiontext_20260623_121707/arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt
+confirmation = outputs/stage5/stage5_content_arcmix_qonly_optiontext_arc256_check_20260623_123424/summary.json
+```
+
+On the 256-example confirmation slice:
+
+- ARC-Easy cyclic: recurrent `204/256`, base `202/256`, delta `+2`;
+- ARC-Easy content-question-only: recurrent `155/256`, base `146/256`, delta
+  `+9`;
+- ARC-Challenge cyclic: recurrent `154/256`, base `154/256`, delta `0`;
+- ARC-Challenge content-question-only: recurrent `97/256`, base `87/256`,
+  delta `+10`.
+
+This is the first bounded non-toy recurrent-vs-base win after model surgery.
+It is not yet a robust benchmark claim because the p-values are still
+non-decisive and the slice begins at offset 0. The immediate action is
+independent offset confirmation with the same checkpoint and scoring surfaces.
 
 ### Particle / SVGD Status
 
@@ -764,28 +791,34 @@ Stop or avoid GPU when:
 
 ## Current Next-Best Order
 
-The CE8 balanced ARC depth curve has replaced the older "recover held-out
-depth-sweep artifact" action. The current order is:
+The ARC-mix content-surface confirmation has replaced the older "recover
+held-out depth-sweep artifact" action. The current order is:
 
-1. Promote the CE8 depth curve into the fixed readout for later runs:
+1. Replicate the positive ARC-mix checkpoint on an independent offset-256
+   ARC-Easy/ARC-Challenge slice with content-question-only and cyclic scoring.
+2. If the offset confirmation is non-negative on both benchmarks, run a larger
+   ARC confirmation or release-gate assessment before claiming robust recovery.
+3. If the offset confirmation fails, diagnose per-bucket regressions and return
+   to ARC-mixed content calibration before more training.
+4. Promote the CE8 depth curve into the fixed readout for later runs:
    [STAGE5_CE8_DEPTH_CURVE_2026_06_23.md](STAGE5_CE8_DEPTH_CURVE_2026_06_23.md).
-2. Build a selector or training objective that can preserve depth 1 on
+5. Build a selector or training objective that can preserve depth 1 on
    easy/direct rows while using depth 2-3 on hard/ambiguous rows.
-3. Keep debiased/cyclic MCQ scoring as the default benchmark harness, but keep
+6. Keep debiased/cyclic MCQ scoring as the default benchmark harness, but keep
    content-question-only scoring as a guardrail because ARC-Easy content
-   calibration remains badly behind base.
-4. Audit and type trace data before more SFT consumes it.
-5. Add and run a no-training 1.5B recurrent viability probe only after the 0.5B
+   calibration has been the main failure surface.
+7. Audit and type trace data before more SFT consumes it.
+8. Add and run a no-training 1.5B recurrent viability probe only after the 0.5B
    depth-routing gate is clearer, unless GPU availability makes the probe very
    cheap.
-6. Run depth-conditional preservation SFT:
+9. Run depth-conditional preservation SFT:
    depth 1 for base-correct/direct/easy rows, depth 2-3 for verified hard rows.
-7. Evaluate fixed depths, learned router, and selector on the same balanced
+10. Evaluate fixed depths, learned router, and selector on the same balanced
    ARC slices.
-8. Compare against a same-recipe dense LoRA control.
-9. Re-test particles/SVGD only after deterministic selected depth is useful.
-10. Run broader GPQA/ARC-AGI-style benchmark gates.
-11. Package HF artifacts and paper claims only after held-out surpass-base or
+11. Compare against a same-recipe dense LoRA control.
+12. Re-test particles/SVGD only after deterministic selected depth is useful.
+13. Run broader GPQA/ARC-AGI-style benchmark gates.
+14. Package HF artifacts and paper claims only after held-out surpass-base or
     same-recipe architecture evidence exists.
 
 The immediate strategic question for the deep-research agent is not whether
