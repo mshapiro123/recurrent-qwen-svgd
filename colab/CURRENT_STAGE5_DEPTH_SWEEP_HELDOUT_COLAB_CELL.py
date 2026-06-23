@@ -20,6 +20,7 @@ os.environ["STAGE5_DEPTH_SWEEP_RUN_ID"] = time.strftime(
     "stage5_depth_sweep_arc_heldout_tail_loop123_%Y%m%d_%H%M%S"
 )
 os.environ["STAGE5_DEPTH_SWEEP_DISCONNECT"] = "0"
+os.environ["STAGE5_DEPTH_SWEEP_DRIVE_BACKUP"] = "0"
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 REF = "main"

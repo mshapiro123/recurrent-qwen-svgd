@@ -2,8 +2,8 @@
 
 This is meant for T4/L4. It runs the existing benchmark suite repeatedly with
 ``max_loops`` set to 1, 2, 3, and 4, using one final GitHub publish step after
-all runs finish. Each run is also copied to Drive before publish, so a GitHub
-push failure does not lose GPU work.
+all runs finish. GitHub is the primary artifact store; Drive backup is optional
+via ``STAGE5_DEPTH_SWEEP_DRIVE_BACKUP=1``.
 """
 
 import json
