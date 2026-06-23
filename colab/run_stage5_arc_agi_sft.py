@@ -668,7 +668,7 @@ def git_commit_results() -> None:
     if run(["git", "diff", "--cached", "--quiet"], check=False).returncode == 0:
         print("No ARC-AGI SFT outputs changed.")
         return
-    run(["git", "commit", "-m", "Record Stage 5 ARC-AGI SFT smoke"])
+    run(["git", "commit", "-m", "Record Stage 5 ARC-AGI SFT smoke [skip ci]"])
     run(["git", "push", "origin", "main"], check=False)
 
 

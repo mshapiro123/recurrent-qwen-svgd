@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
+import colab.run_stage5_arc_agi_sft as module
 from colab.run_stage5_arc_agi_sft import (
     best_ladder_row,
     candidate_distill_sources,
@@ -79,3 +81,26 @@ def test_compact_eval_payload_keeps_summary_and_diagnostics() -> None:
     assert compact["summary"]["best_of_k_exact"] == 3
     assert compact["eval_diagnostics"]["task_family_summary"]["frame_object"]["selected_exact"] == 2
     assert compact["eval_diagnostics"]["program_verifier_summary"]["candidates_with_program"] == 2
+
+
+def test_recurrent_arc_sft_commit_uses_skip_ci(monkeypatch, tmp_path) -> None:
+    run_dir = tmp_path / "outputs" / "stage5" / "recurrent"
+    run_dir.mkdir(parents=True)
+    (run_dir / "summary.json").write_text("{}", encoding="utf-8")
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, *, check=True, log_name=None):
+        commands.append([str(item) for item in cmd])
+        if [str(item) for item in cmd] == ["git", "diff", "--cached", "--quiet"]:
+            return subprocess.CompletedProcess(cmd, 1, "", None)
+        return subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    module.git_commit_results()
+
+    commit_commands = [cmd for cmd in commands if cmd[:2] == ["git", "commit"]]
+    assert commit_commands
+    assert "[skip ci]" in " ".join(commit_commands[0])
