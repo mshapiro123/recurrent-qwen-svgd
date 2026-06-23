@@ -8,196 +8,13 @@ For a restarted runtime, prefer fetching this bootstrap from GitHub rather than
 opening a local copy from `/content`; Colab can keep stale files around between
 runtime changes.
 
-```text
-import base64, json, os, urllib.request
-from google.colab import userdata
-
-gh = userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
-assert gh, "Add GH_TOKEN or GITHUB_TOKEN to Colab secrets."
-hf = userdata.get("HF_TOKEN")
-if hf:
-    os.environ["HF_TOKEN"] = hf
-    os.environ["HUGGINGFACE_HUB_TOKEN"] = hf
-
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_direct_preservation_probe"
-url = (
-    "https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/"
-    "contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py?ref=main"
-)
-req = urllib.request.Request(
-    url,
-    headers={"Authorization": f"Bearer {gh}", "Accept": "application/vnd.github+json"},
-)
-payload = json.loads(urllib.request.urlopen(req).read().decode("utf-8"))
-code = base64.b64decode(payload["content"]).decode("utf-8")
-assert "sha_resolved_nested_fetch_v3" in code
-assert "traced_sft_direct_preservation_probe" in code
-print("Fetched bootstrap sha:", payload.get("sha"))
-exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
-```
-
 Default target is `preflight`, which mounts Drive, checks checkpoint visibility,
 runs the A100 go/no-go guard, and disconnects. This is the cheap runtime path.
 
-To generate and publish the cheap direct/deep curriculum gate on a CPU runtime:
-
-Set `os.environ["STAGE5_CURRENT_A100_TARGET"] = "programmatic_curriculum_cpu"`
-before running the bootstrap cell. This target refuses attached GPU runtimes by
-default.
-
-To run a dry safe-continue status check instead:
-
-Set `os.environ["STAGE5_CURRENT_A100_TARGET"] = "safe_continue_dry_run"` before
-running the bootstrap cell.
-
-To confirm the MCQ option-label/position-bias result on ARC-Challenge before
-spending on more training:
-
-Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
-"arc_challenge_mcq_debias_confirm"` before running the bootstrap cell. This
-target runs the bounded cyclic-permutation MCQ diagnostic, pushes the summary,
-and disconnects.
-
-To run the next bounded benchmark pass with the active debiased MCQ scoring
-policy:
-
-Set `os.environ["STAGE5_CURRENT_A100_TARGET"] = "debiased_benchmark_suite"`
-before running the bootstrap cell. This target defaults to ARC-Challenge plus
-GPQA-lite with explicit limits, runs `label`, `content_question_only`, and
-`cyclic_label_aggregated` scoring, assesses the cyclic aggregate, pushes
-summaries, and disconnects.
-
-To run the bounded capability-ladder MCQ scoring probe:
-
-Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
-"capability_ladder_mcq_probe"` before running the bootstrap cell. This target
-scores a small ARC-Train slice with Qwen 0.5B/1.5B/3B, builds depth-labeled
-capability-ladder rows, backs them up to Drive, pushes safe summaries, and
-disconnects. It does not produce final reasoning traces; after it lands, use
-the planner's CPU trace-job action before recurrent SFT.
-The maintained target defaults to 96 ARC-Train examples with
-`qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3`.
-
-To run a high-memory capability-ladder probe including Qwen 7B as depth 4:
-
-Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
-"capability_ladder_7b_mcq_probe"` before running the bootstrap cell. This
-target scores ARC-Challenge train examples with Qwen 0.5B/1.5B/3B/7B and
-builds a depth-1/2/3/4 capability-ladder shard. Use it only on a runtime with
-enough VRAM for Qwen 7B.
-
-To run the high-memory 7B capability-ladder probe and immediately build trace
-jobs in the same runtime:
-
-Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
-"capability_ladder_7b_trace_chain"` before running the bootstrap cell. This is
-the preferred overnight target on a high-memory GPU when the next objective is
-to produce provider-neutral strong-trace jobs, because it keeps the raw scored
-rows alive between the probe and trace-job build.
-
-To build capability-ladder trace-generation jobs without GPU:
-
-Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
-"capability_ladder_trace_jobs_cpu"` before running the bootstrap cell. This
-target follows the current capability-ladder probe summary, restores private
-scored rows from Drive if needed, builds provider-neutral strong-model trace
-jobs, pushes safe summaries, and disconnects.
-
-To run provider/API responses for capability-ladder trace jobs without GPU:
-
-Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
-"capability_ladder_trace_responses_cpu"` before running the bootstrap cell.
-This target follows the current trace-job summary, requires explicit
-`STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER=1` before provider spend,
-writes `trace_responses.jsonl`, backs it up to Drive, pushes safe summaries, and
-disconnects. Its summary becomes the preferred input to trace collection.
-
-To collect completed trace responses into gated curriculum data without GPU:
-
-Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
-"capability_ladder_trace_collect_cpu"` before running the bootstrap cell. This
-target follows either the current trace-response summary or the original
-trace-job summary plus an explicit `STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_JSONL`,
-verifies final answers, builds traced curriculum rows, runs the SFT gate, pushes
-safe summaries, and disconnects.
-
-To run provider/API trace responses and collect accepted traces in one CPU
-runtime:
-
-Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
-"capability_ladder_trace_response_collect_cpu"` before running the bootstrap
-cell. This target follows the current trace-job summary, requires explicit
-`STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER=1` before provider spend,
-writes and persists `trace_responses.jsonl`, immediately verifies the responses
-into traced curriculum rows, runs the SFT gate, pushes summaries, and
-disconnects.
-
-To use the attached high-memory GPU as a local Hugging Face trace generator and
-collect accepted traces immediately:
-
-Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
-"capability_ladder_local_hf_trace_collect"` before running the bootstrap cell.
-This target follows the current trace-job summary, runs `Qwen/Qwen2.5-7B-Instruct`
-locally as an explicit student-lineage baseline, limits the first pass to 32
-jobs, collects answer-verified traces, pushes summaries, and disconnects. It
-does not require provider/API spend and disables Drive backup by default to
-avoid reauthorization stalls.
-
-To run local Hugging Face trace generation, trace collection, and bounded
-recurrent SFT in one unattended high-memory GPU session:
-
-Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
-"capability_ladder_local_hf_trace_sft"` before running the bootstrap cell.
-This target follows the current trace-job summary, runs
-`Qwen/Qwen2.5-7B-Instruct` locally on the first 32 trace jobs, collects
-answer-verified traces, and starts Phase 1 recurrent SFT only if the traced
-curriculum gate passes. It avoids provider/API spend and disables Drive backup
-by default to reduce Colab reauthorization stalls.
-
-To scale the completed local-HF traced run to 64 trace jobs, continue SFT from
-the latest traced checkpoint, and benchmark ARC-Easy plus ARC-Challenge:
-
-Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
-"capability_ladder_local_hf_trace_sft_scale64"` before running the bootstrap
-cell. This target explicitly follows the original capability-ladder trace-job
-summary, reuses the committed 32-response local-HF run and resumes it to 64
-responses, uses `Qwen/Qwen2.5-7B-Instruct` locally, requires at least 48
-accepted trace rows, resumes SFT from
-`outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_191843/phase1/phase1_step_150.pt`,
-and disconnects after pushing the post-SFT benchmark.
-
-To train deterministic recurrent Phase 1 from the latest gate-ready traced
-capability-ladder curriculum:
-
-Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
-"traced_capability_ladder_sft"` before running the bootstrap cell. This target
-requires a GPU runtime, follows the latest
-`stage5_capability_ladder_trace_collection` summary, derives row and mode gates
-from that artifact, runs `colab/run_stage5_curriculum_sft.py`, pushes the
-summary, and disconnects by default.
-
-To run the no-training Qwen model viability probe:
-
-Set `os.environ["STAGE5_CURRENT_A100_TARGET"] = "model_viability_probe"` before
-running the bootstrap cell. This target defaults to Qwen 1.5B, runs strict
-identity, loop-1 preservation, and a tiny loop-depth sweep without SFT. Override
-`STAGE5_MODEL_PROBE_MODEL_NAME` to probe Qwen 3B or a larger compatible Qwen
-checkpoint with the same path.
-
-To intentionally spend GPU on the guarded action after the preflight is green,
-select an A100/H100 runtime and set:
-
-Set `os.environ["STAGE5_CURRENT_A100_TARGET"] = "safe_continue_execute"` before
-running the bootstrap cell. This target enables
-`STAGE5_SAFE_CONTINUE_PREFER_TRAINING_SOURCE=1`, so if no explicit source
-summary is provided it first uses the newest gate-ready traced curriculum or
-validated curriculum-SFT summary before falling back to the repository pointer.
-
-To force a specific source summary, set
-`os.environ["STAGE5_CURRENT_A100_SOURCE_SUMMARY"] =
-"outputs/stage5/<run_id>/summary.json"`. If that variable is not set, the
-bootstrap clears older target-specific source overrides so the fetched launcher
-can follow `config/stage5_current_source_summary.txt`.
+To run a maintained target, set `os.environ["STAGE5_CURRENT_A100_TARGET"]` before
+executing the bootstrap cell. The target registry in the cell includes the full
+current list, including the bounded cyclic-permutation MCQ diagnostic,
+`traced_sft_surface_alignment_repair`, and `dense_mcq_trace_sft_control`.
 
 Then run the bootstrap cell:
 
@@ -235,6 +52,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "traced_sft_direct_preservation_recover_only" - publish surviving direct-preservation output without rerunning training.
 #   "traced_sft_direct_preservation_confirm" - larger loop-1 ARC confirmation after direct preservation passes.
 #   "traced_sft_surface_alignment_repair" - repair ARC-Easy content/cyclic surface mismatch.
+#   "dense_mcq_trace_sft_control" - train/evaluate standard Qwen LoRA on the same traced MCQ curriculum.
 #   "traced_sft_competence_preserving_pipeline" - mixed recovery after confirmation still trails base.
 #   "traced_sft_depth_router_after_direct_preserve" - learned-depth continuation from a passed direct-preservation checkpoint.
 #   "traced_capability_ladder_sft" - GPU Phase 1 SFT from the latest gate-ready traced capability ladder.
@@ -904,6 +722,36 @@ TARGETS = {
             "STAGE5_SURFACE_ALIGN_DISTILL_WEIGHT": "0.05",
             "STAGE5_SURFACE_ALIGN_PUSH": "1",
             "STAGE5_SURFACE_ALIGN_DISCONNECT": "1",
+        },
+    },
+    "dense_mcq_trace_sft_control": {
+        "path": "colab/STAGE5_DENSE_MCQ_TRACE_SFT_CONTROL_CELL.py",
+        "markers": [
+            "STAGE5_DENSE_MCQ_TRACE_SFT_CONTROL_CELL_VERSION",
+            "dense_mcq_trace_sft_control_v1",
+            "dense_mcq_trace_sft_control",
+            "STAGE5_DENSE_MCQ_SOURCE_SUMMARY",
+            "stage5_local_hf_traced_capability_sft_20260623_194543",
+            "training/train_dense_lora.py",
+            "eval/eval_mcq.py --mode base --checkpoint",
+            "colab/run_stage5_mcq_dense_sft_control.py",
+            "tests/test_eval_mcq_dense_lora.py",
+            "tests/test_stage5_mcq_dense_sft_control.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_DENSE_MCQ_SOURCE_SUMMARY": (
+                "outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_194543/summary.json"
+            ),
+            "STAGE5_DENSE_MCQ_RUN_ID": "stage5_dense_mcq_trace_sft_control_20260623",
+            "STAGE5_DENSE_MCQ_BENCHMARKS": "arc_easy,arc_challenge",
+            "STAGE5_DENSE_MCQ_ARC_EASY_LIMIT": "256",
+            "STAGE5_DENSE_MCQ_ARC_CHALLENGE_LIMIT": "256",
+            "STAGE5_DENSE_MCQ_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
+            "STAGE5_DENSE_MCQ_AGGREGATES": "mean",
+            "STAGE5_DENSE_MCQ_COMMIT_CHECKPOINT": "0",
+            "STAGE5_DENSE_MCQ_PUSH": "1",
+            "STAGE5_DENSE_MCQ_DISCONNECT": "1",
         },
     },
     "traced_sft_competence_preserving_pipeline": {

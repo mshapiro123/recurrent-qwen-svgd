@@ -26,7 +26,7 @@ if str(ROOT) not in sys.path:
 
 from eval.eval_identity import model_load_kwargs, parse_split, resolve_dtype
 from eval.eval_best_of_k_jsonl import parse_optional_float
-from models.lora import apply_lora_to_recurrent_block
+from models.lora import apply_lora_to_qwen_layers, apply_lora_to_recurrent_block
 from models.recurrent_wrapper import RecurrentQwenForCausalLM
 from training.checkpointing import load_trainable_checkpoint
 
@@ -114,11 +114,37 @@ def format_completion(label: str, text: str, score_target: str) -> str:
     raise ValueError(f"Unknown score_target={score_target}")
 
 
-def load_base_model(args: argparse.Namespace):
+def parse_base_lora_layer_range(value: str, num_layers: int) -> tuple[int, int]:
+    if value.lower() in {"", "auto", "all"}:
+        return 0, num_layers
+    left, right = value.split(",", maxsplit=1)
+    start, end = int(left), int(right)
+    if not 0 <= start < end <= num_layers:
+        raise ValueError(f"Invalid base LoRA layer range {value!r} for {num_layers} layers")
+    return start, end
+
+
+def load_base_model(args: argparse.Namespace, *, load_dense_lora_checkpoint: bool = False):
     model = AutoModelForCausalLM.from_pretrained(
         args.model_name,
         **model_load_kwargs(args.dtype, args.attn_implementation),
     ).to(args.device)
+    if load_dense_lora_checkpoint and args.checkpoint:
+        start, end = parse_base_lora_layer_range(args.base_lora_layer_range, len(model.model.layers))
+        replaced = apply_lora_to_qwen_layers(
+            model,
+            start_layer=start,
+            end_layer=end,
+            rank=args.lora_rank,
+            alpha=args.lora_alpha,
+            dropout=0.0,
+            adapter_dtype=resolve_dtype(args.adapter_dtype),
+        )
+        print(f"dense_lora_modules={replaced} layer_range={start},{end}")
+        load_info = load_trainable_checkpoint(model, args.checkpoint)
+        print(f"loaded_base_lora_checkpoint={args.checkpoint} loaded_keys={len(load_info['loaded_keys'])}")
+        if load_info["skipped"]:
+            print(f"skipped_keys={len(load_info['skipped'])}")
     model.eval()
     return model
 
@@ -130,7 +156,7 @@ def set_seed(seed: int) -> None:
 
 
 def load_recurrent_wrapper(args: argparse.Namespace, checkpoint: str | None) -> RecurrentQwenForCausalLM:
-    model = load_base_model(args)
+    model = load_base_model(args, load_dense_lora_checkpoint=False)
     wrapper = RecurrentQwenForCausalLM(model, layer_split=parse_split(args.split)).to(args.device)
     adapter_dtype = resolve_dtype(args.adapter_dtype)
     replaced = apply_lora_to_recurrent_block(
@@ -326,7 +352,13 @@ def main() -> int:
     parser.add_argument("--model_name", default="Qwen/Qwen2.5-0.5B-Instruct")
     parser.add_argument("--data_jsonl", required=True)
     parser.add_argument("--mode", choices=("base", "phase1", "phase2"), default="base")
-    parser.add_argument("--checkpoint", help="Trainable recurrent checkpoint for phase1/phase2 modes.")
+    parser.add_argument(
+        "--checkpoint",
+        help=(
+            "Trainable checkpoint. For phase1/phase2 this is a recurrent adapter; "
+            "for base mode this may be a dense base-model LoRA checkpoint."
+        ),
+    )
     parser.add_argument(
         "--allow_untrained_recurrent",
         action="store_true",
@@ -363,6 +395,11 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--lora_rank", type=int, default=8)
     parser.add_argument("--lora_alpha", type=int, default=16)
+    parser.add_argument(
+        "--base_lora_layer_range",
+        default="6,18",
+        help="Layer range for loading a dense base-mode LoRA checkpoint. Use all/auto or start,end.",
+    )
     parser.add_argument("--adapter_dtype", default="float32")
     parser.add_argument("--sample_latents", action="store_true")
     parser.add_argument("--latent_injection_mode", default="post", choices=("pre", "post", "both"))
@@ -388,7 +425,7 @@ def main() -> int:
     set_seed(args.seed)
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     model_or_wrapper = (
-        load_base_model(args)
+        load_base_model(args, load_dense_lora_checkpoint=True)
         if args.mode == "base"
         else load_recurrent_wrapper(args, args.checkpoint)
     )

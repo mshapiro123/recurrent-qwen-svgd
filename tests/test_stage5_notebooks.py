@@ -973,6 +973,26 @@ def test_traced_sft_surface_alignment_repair_target_is_bootstrapped() -> None:
     assert "prioritize_content_cyclic_surface_alignment" in current_action
 
 
+def test_dense_mcq_trace_sft_control_target_is_bootstrapped() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_DENSE_MCQ_TRACE_SFT_CONTROL_CELL.py").read_text(encoding="utf-8")
+
+    assert "dense_mcq_trace_sft_control" in bootstrap
+    assert "dense_mcq_trace_sft_control" in bootstrap_md
+    assert "colab/STAGE5_DENSE_MCQ_TRACE_SFT_CONTROL_CELL.py" in bootstrap
+    assert "STAGE5_DENSE_MCQ_TRACE_SFT_CONTROL_CELL_VERSION" in cell
+    assert "dense_mcq_trace_sft_control_v1" in cell
+    assert "STAGE5_DENSE_MCQ_SOURCE_SUMMARY" in cell
+    assert "stage5_local_hf_traced_capability_sft_20260623_194543" in cell
+    assert "training/train_dense_lora.py" in cell
+    assert "eval/eval_mcq.py --mode base --checkpoint" in cell
+    assert "colab/run_stage5_mcq_dense_sft_control.py" in cell
+    assert "tests/test_eval_mcq_dense_lora.py" in cell
+    assert "tests/test_stage5_mcq_dense_sft_control.py" in cell
+    assert "runtime.unassign" in cell
+
+
 def test_traced_sft_competence_preserving_pipeline_target_is_bootstrapped() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

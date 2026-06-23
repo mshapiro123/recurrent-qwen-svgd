@@ -31,6 +31,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "traced_sft_direct_preservation_recover_only" - publish surviving direct-preservation output without rerunning training.
 #   "traced_sft_direct_preservation_confirm" - larger loop-1 ARC confirmation after direct preservation passes.
 #   "traced_sft_surface_alignment_repair" - repair ARC-Easy content/cyclic surface mismatch.
+#   "dense_mcq_trace_sft_control" - train/evaluate standard Qwen LoRA on the same traced MCQ curriculum.
 #   "traced_sft_competence_preserving_pipeline" - mixed recovery after confirmation still trails base.
 #   "traced_sft_depth_router_after_direct_preserve" - learned-depth continuation from a passed direct-preservation checkpoint.
 #   "traced_capability_ladder_sft" - GPU Phase 1 SFT from the latest gate-ready traced capability ladder.
@@ -700,6 +701,36 @@ TARGETS = {
             "STAGE5_SURFACE_ALIGN_DISTILL_WEIGHT": "0.05",
             "STAGE5_SURFACE_ALIGN_PUSH": "1",
             "STAGE5_SURFACE_ALIGN_DISCONNECT": "1",
+        },
+    },
+    "dense_mcq_trace_sft_control": {
+        "path": "colab/STAGE5_DENSE_MCQ_TRACE_SFT_CONTROL_CELL.py",
+        "markers": [
+            "STAGE5_DENSE_MCQ_TRACE_SFT_CONTROL_CELL_VERSION",
+            "dense_mcq_trace_sft_control_v1",
+            "dense_mcq_trace_sft_control",
+            "STAGE5_DENSE_MCQ_SOURCE_SUMMARY",
+            "stage5_local_hf_traced_capability_sft_20260623_194543",
+            "training/train_dense_lora.py",
+            "eval/eval_mcq.py --mode base --checkpoint",
+            "colab/run_stage5_mcq_dense_sft_control.py",
+            "tests/test_eval_mcq_dense_lora.py",
+            "tests/test_stage5_mcq_dense_sft_control.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_DENSE_MCQ_SOURCE_SUMMARY": (
+                "outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_194543/summary.json"
+            ),
+            "STAGE5_DENSE_MCQ_RUN_ID": "stage5_dense_mcq_trace_sft_control_20260623",
+            "STAGE5_DENSE_MCQ_BENCHMARKS": "arc_easy,arc_challenge",
+            "STAGE5_DENSE_MCQ_ARC_EASY_LIMIT": "256",
+            "STAGE5_DENSE_MCQ_ARC_CHALLENGE_LIMIT": "256",
+            "STAGE5_DENSE_MCQ_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
+            "STAGE5_DENSE_MCQ_AGGREGATES": "mean",
+            "STAGE5_DENSE_MCQ_COMMIT_CHECKPOINT": "0",
+            "STAGE5_DENSE_MCQ_PUSH": "1",
+            "STAGE5_DENSE_MCQ_DISCONNECT": "1",
         },
     },
     "traced_sft_competence_preserving_pipeline": {
