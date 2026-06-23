@@ -210,6 +210,29 @@ try:
 
     pointer = ROOT / "config" / "stage5_current_source_summary.txt"
     if pointer.exists():
+        benchmark_summary = pointer.read_text(encoding="utf-8").strip()
+        print("benchmark_summary:", benchmark_summary, flush=True)
+        assess_env = os.environ.copy()
+        assess_env.update(
+            {
+                "STAGE5_BENCHMARK_ASSESS_RUN_ID": os.environ.get("STAGE5_DIRECT_CONFIRM_ASSESS_RUN_ID")
+                or f"{run_id}_assessment",
+                "STAGE5_BENCHMARK_ASSESS_SCORE_TARGET": os.environ.get(
+                    "STAGE5_DIRECT_CONFIRM_ASSESS_SCORE_TARGET",
+                    "content_question_only",
+                ),
+                "STAGE5_BENCHMARK_ASSESS_MIN_ARC_EXAMPLES": os.environ.get(
+                    "STAGE5_DIRECT_CONFIRM_ASSESS_MIN_ARC_EXAMPLES",
+                    "128",
+                ),
+                "STAGE5_BENCHMARK_ASSESS_PUSH": "1",
+            }
+        )
+        run(
+            [sys.executable, "colab/assess_stage5_benchmark_suite.py", "--summary_json", benchmark_summary],
+            cwd=ROOT,
+            env=assess_env,
+        )
         print("current_source_summary:", pointer.read_text(encoding="utf-8").strip(), flush=True)
     disconnect("direct preservation confirmation finished")
 except Exception:

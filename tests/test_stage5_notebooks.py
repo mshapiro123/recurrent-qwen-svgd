@@ -791,6 +791,10 @@ def test_traced_sft_direct_preservation_confirm_target_is_bootstrapped() -> None
     assert "content_question_only,cyclic_label_aggregated" in confirm_cell
     assert "STAGE5_BENCHMARK_PUSH" in confirm_cell
     assert "colab/run_stage5_benchmark_suite.py" in confirm_cell
+    assert "colab/assess_stage5_benchmark_suite.py" in confirm_cell
+    assert "STAGE5_BENCHMARK_ASSESS_SCORE_TARGET" in confirm_cell
+    assert "content_question_only" in confirm_cell
+    assert "colab/assess_stage5_benchmark_suite.py" in bootstrap
     assert '"STAGE5_CURRENT_A100_TARGET", "preflight"' in bootstrap
 
 
