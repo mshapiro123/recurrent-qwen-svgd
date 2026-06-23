@@ -140,7 +140,7 @@ def commit_results() -> None:
     if run(["git", "diff", "--cached", "--quiet"], check=False).returncode == 0:
         print("No competence-preserving pipeline outputs changed.")
         return
-    run(["git", "commit", "-m", f"Record Stage 5 competence-preserving pipeline {RUN_ID}"])
+    run(["git", "commit", "-m", f"Record Stage 5 competence-preserving pipeline {RUN_ID} [skip ci]"])
     run(["git", "push", "origin", "main"], check=False)
 
 

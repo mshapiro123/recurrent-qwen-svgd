@@ -96,6 +96,8 @@ def test_competence_pipeline_commit_stages_current_source_pointer(monkeypatch, t
 
     def fake_run(cmd, *, env=None, check=True, log_name=None):
         commands.append([str(item) for item in cmd])
+        if [str(item) for item in cmd] == ["git", "diff", "--cached", "--quiet"]:
+            return subprocess.CompletedProcess(cmd, 1, "", None)
         return subprocess.CompletedProcess(cmd, 0, "", None)
 
     monkeypatch.setattr(module, "ROOT", tmp_path)
@@ -109,3 +111,6 @@ def test_competence_pipeline_commit_stages_current_source_pointer(monkeypatch, t
     staged = {item for cmd in add_commands for item in cmd[3:]}
     assert "outputs/stage5/competence" in staged
     assert "config/stage5_current_source_summary.txt" in staged
+    commit_commands = [cmd for cmd in commands if cmd[:2] == ["git", "commit"]]
+    assert commit_commands
+    assert "[skip ci]" in " ".join(commit_commands[0])
