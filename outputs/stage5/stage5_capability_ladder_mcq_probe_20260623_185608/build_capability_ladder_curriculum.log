@@ -1,0 +1,8 @@
+status=complete
+input_rows=96
+typed_records=66
+positive_sft_rows=66
+tier_counts={'base_preservation': 34, 'qwen_0_5b_miss_qwen_1_5b_miss_qwen_3b_solve': 12, 'qwen_0_5b_miss_qwen_1_5b_solve': 20}
+target_loop_counts={'1': 34, '2': 20, '3': 12}
+skipped={'unresolved_capability': 30}
+summary_json=data/curriculum/stage5_capability_ladder_mcq_probe_20260623_185608/summary.json

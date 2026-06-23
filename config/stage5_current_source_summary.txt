@@ -1,1 +1,1 @@
-outputs/stage5/stage5_arc_mix_survival_depth_full_balanced_20260623_assessment/summary.json
+outputs/stage5/stage5_capability_ladder_mcq_probe_20260623_185608/summary.json

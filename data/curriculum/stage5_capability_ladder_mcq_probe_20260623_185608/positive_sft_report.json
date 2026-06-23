@@ -1,0 +1,25 @@
+{
+  "records": 66,
+  "exported_examples": 66,
+  "invalid_records": 0,
+  "skipped_invalid_records": 0,
+  "export_invalid_records": false,
+  "issues": [],
+  "role_counts": {
+    "positive_depth": 32,
+    "positive_direct": 34
+  },
+  "mode_counts": {
+    "deep_narrow": 32,
+    "direct": 34
+  },
+  "exported_role_counts": {
+    "positive_depth": 32,
+    "positive_direct": 34
+  },
+  "exported_source_model_counts": {
+    "qwen_0_5b": 34,
+    "qwen_1_5b": 20,
+    "qwen_3b": 12
+  }
+}
