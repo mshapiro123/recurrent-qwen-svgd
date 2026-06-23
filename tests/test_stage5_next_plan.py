@@ -3511,3 +3511,95 @@ def test_arc_agi_sota_comparison_missing_registry_builds_reproduced_registry_whe
     assert "--summary_json outputs/stage5/candidate/summary.json" in actions[0]["command"]
     assert "--labels base" in actions[0]["command"]
     assert "--validation_json outputs/stage5/" in actions[0]["command"]
+
+
+def test_surface_alignment_passed_routes_to_dense_mcq_control(tmp_path) -> None:
+    source = tmp_path / "surface" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_surface_alignment_repair",
+        "status": "surface_alignment_passed",
+        "passed": True,
+        "benchmark_summary": "outputs/stage5/repaired_benchmark/summary.json",
+        "surface_repair_assessment_status": "surface_repair_passed",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run dense MCQ same-curriculum control"
+    assert "STAGE5_CURRENT_A100_TARGET=dense_mcq_trace_sft_control" in actions[0]["command"]
+    assert (
+        "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY=outputs/stage5/repaired_benchmark/summary.json"
+        in actions[0]["command"]
+    )
+
+
+def test_surface_alignment_partial_still_routes_to_dense_control_at_lower_priority(tmp_path) -> None:
+    source = tmp_path / "surface" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_surface_alignment_repair",
+        "status": "surface_alignment_partial",
+        "passed": False,
+        "benchmark_summary": "outputs/stage5/repaired_benchmark/summary.json",
+        "surface_repair_assessment_status": "surface_repair_partial",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run dense MCQ same-curriculum control"
+    assert actions[0]["priority"] == 9
+    assert "partial_surface_repair" in actions[0]["command"]
+
+
+def test_surface_alignment_tradeoff_blocks_dense_control(tmp_path) -> None:
+    source = tmp_path / "surface" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_surface_alignment_repair",
+        "status": "surface_alignment_tradeoff",
+        "passed": False,
+        "surface_repair_assessment_status": "surface_repair_tradeoff",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect surface-repair hard-tail tradeoff"
+    assert "dense_mcq_trace_sft_control" not in actions[0]["command"]
+
+
+def test_mcq_recipe_control_hard_tail_lift_routes_to_confirmation(tmp_path) -> None:
+    source = tmp_path / "mcq_recipe" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_mcq_recipe_control_assessment",
+        "gate": "stage5_same_recipe_mcq_architecture",
+        "status": "hard_tail_lift_vs_dense",
+        "passed": True,
+        "recurrent_summary": "outputs/stage5/repaired_benchmark/summary.json",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run larger recurrent MCQ confirmation"
+    assert "STAGE5_BENCHMARK_SOURCE_SUMMARY=outputs/stage5/repaired_benchmark/summary.json" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT=299" in actions[0]["command"]
+    assert actions[1]["name"] == "Run dense MCQ same-curriculum control"
+    assert "mcq_recurrent_confirm/summary.json" in actions[1]["command"]
+    assert actions[2]["name"] == "Build claim-readiness packet with MCQ architecture evidence"
+
+
+def test_mcq_recipe_control_no_lift_routes_to_inspection(tmp_path) -> None:
+    source = tmp_path / "mcq_recipe" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_mcq_recipe_control_assessment",
+        "gate": "stage5_same_recipe_mcq_architecture",
+        "status": "no_architecture_lift_vs_dense",
+        "passed": False,
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect MCQ same-recipe architecture assessment `no_architecture_lift_vs_dense`"
+    assert "summary.md" in actions[0]["command"]

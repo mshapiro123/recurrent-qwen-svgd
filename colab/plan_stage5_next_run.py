@@ -138,6 +138,9 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or selector_replication_payload(payload) is not None
         or recipe_selector_conversion_payload(payload) is not None
         or recipe_control_assessment_payload(payload) is not None
+        or mcq_recipe_control_assessment_payload(payload) is not None
+        or surface_alignment_repair_payload(payload) is not None
+        or surface_repair_assessment_payload(payload) is not None
         or release_gate_payload(payload) is not None
         or benchmark_suite_payload(payload) is not None
         or benchmark_suite_assessment_payload(payload) is not None
@@ -338,6 +341,22 @@ def recipe_selector_conversion_payload(payload: dict[str, Any]) -> dict[str, Any
 
 def recipe_control_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("gate") == "stage5_same_recipe_architecture" else None
+
+
+def mcq_recipe_control_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    if payload.get("gate") == "stage5_same_recipe_mcq_architecture":
+        return payload
+    if payload.get("kind") == "stage5_mcq_recipe_control_assessment":
+        return payload
+    return None
+
+
+def surface_alignment_repair_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_surface_alignment_repair" else None
+
+
+def surface_repair_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_surface_repair_assessment" else None
 
 
 def release_gate_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -1901,6 +1920,201 @@ def recipe_control_assessment_actions(payload: dict[str, Any], *, source_summary
         make_action(
             f"Inspect same-recipe assessment `{status}`",
             "The recurrent-vs-dense same-recipe gate did not clear cleanly; inspect the assessment before scaling recurrent-specific training.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
+def dense_mcq_trace_sft_control_action(
+    *,
+    recurrent_benchmark_summary: str,
+    run_suffix: str,
+    reason: str,
+    priority: int = 10,
+) -> dict[str, Any]:
+    return make_action(
+        "Run dense MCQ same-curriculum control",
+        reason,
+        command_env(
+            {
+                "STAGE5_CURRENT_A100_TARGET": "dense_mcq_trace_sft_control",
+                "STAGE5_DENSE_MCQ_RUN_ID": f"{RUN_ID}_{run_suffix}",
+                "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY": recurrent_benchmark_summary,
+            },
+            "python colab/CURRENT_A100_BOOTSTRAP_CELL.py",
+        ),
+        priority,
+    )
+
+
+def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    surface_status = str(payload.get("surface_repair_assessment_status") or "")
+    benchmark_summary = str(payload.get("benchmark_summary") or "").strip()
+    if status == "surface_alignment_passed" and benchmark_summary:
+        return [
+            dense_mcq_trace_sft_control_action(
+                recurrent_benchmark_summary=benchmark_summary,
+                run_suffix="dense_mcq_after_surface_repair",
+                reason=(
+                    "The surface-alignment repair passed both the generic benchmark gate and the before/after surface-repair gate; run the standard-Qwen same-curriculum dense control against the repaired recurrent benchmark."
+                ),
+            )
+        ]
+    if surface_status == "surface_repair_partial" and benchmark_summary:
+        return [
+            dense_mcq_trace_sft_control_action(
+                recurrent_benchmark_summary=benchmark_summary,
+                run_suffix="dense_mcq_after_partial_surface_repair",
+                reason=(
+                    "The surface repair improved ARC-Easy content and preserved hard surfaces, but did not fully restore base parity; run the dense control as an interpretability check before deciding whether another repair pass is worthwhile."
+                ),
+                priority=9,
+            )
+        ]
+    if surface_status == "surface_repair_tradeoff":
+        return [
+            make_action(
+                "Inspect surface-repair hard-tail tradeoff",
+                "The surface repair helped the easy content surface but regressed at least one ARC-Challenge surface. Do not run dense control yet; inspect the before/after deltas and tighten the repair objective.",
+                f"cat {shlex.quote(path_for_cli(source_summary.with_name('surface_repair_assessment.md')))}",
+                10,
+            )
+        ]
+    if surface_status == "surface_repair_no_easy_content_lift":
+        return [
+            make_action(
+                "Revise surface-alignment objective",
+                "The surface-alignment repair did not improve ARC-Easy content versus the source recurrent checkpoint; inspect training rows and consider explicit score-level/content-vs-cyclic alignment rather than rerunning the same SFT shard.",
+                f"cat {shlex.quote(path_for_cli(source_summary.with_name('surface_repair_assessment.md')))}",
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect surface-alignment repair `{status}`",
+            "The surface-alignment run did not produce a clean passed/partial/tradeoff status. Inspect the summary before spending more GPU.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
+def surface_repair_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    repaired_benchmark = str(payload.get("repaired_benchmark_summary") or "").strip()
+    if status == "surface_repair_passed" and repaired_benchmark:
+        return [
+            dense_mcq_trace_sft_control_action(
+                recurrent_benchmark_summary=repaired_benchmark,
+                run_suffix="dense_mcq_after_surface_repair_assessment",
+                reason=(
+                    "The before/after surface-repair assessment passed; run the dense same-curriculum MCQ control against the repaired recurrent benchmark."
+                ),
+            )
+        ]
+    if status == "surface_repair_partial" and repaired_benchmark:
+        return [
+            dense_mcq_trace_sft_control_action(
+                recurrent_benchmark_summary=repaired_benchmark,
+                run_suffix="dense_mcq_after_partial_surface_repair_assessment",
+                reason=(
+                    "The before/after surface assessment shows easy-content improvement with hard-tail preservation, but base parity is not fully restored; run dense control to determine whether recurrence still contributes beyond trace data."
+                ),
+                priority=9,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect surface-repair assessment `{status}`",
+            "The before/after surface-repair assessment did not clear enough to justify dense-control spending.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
+def mcq_recipe_control_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    if status == "hard_tail_lift_vs_dense":
+        recurrent_summary = str(payload.get("recurrent_summary") or "").strip()
+        if not recurrent_summary:
+            return [
+                make_action(
+                    "Inspect MCQ same-recipe architecture assessment metadata",
+                    "The MCQ same-recipe gate passed, but the recurrent benchmark summary path is missing, so the larger held-out confirmation cannot be constructed automatically.",
+                    f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                    10,
+                )
+            ]
+        confirmation_run = f"{RUN_ID}_mcq_recurrent_confirm"
+        confirmation_summary = f"outputs/stage5/{confirmation_run}/summary.json"
+        return [
+            make_action(
+                "Run larger recurrent MCQ confirmation",
+                "The recurrent same-curriculum MCQ arm beat the dense control on the hard-tail surface; first run a larger recurrent-vs-base ARC MCQ confirmation for the same recurrent checkpoint.",
+                command_env(
+                    {
+                        "STAGE5_BENCHMARK_SUITE_RUN_ID": confirmation_run,
+                        "STAGE5_BENCHMARK_SOURCE_SUMMARY": recurrent_summary,
+                        "STAGE5_BENCHMARKS": "arc_easy,arc_challenge",
+                        "STAGE5_BENCHMARK_ARC_EASY_LIMIT": "512",
+                        "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "299",
+                        "STAGE5_BENCHMARK_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
+                        "STAGE5_BENCHMARK_AGGREGATES": "mean",
+                    },
+                    "python colab/run_stage5_benchmark_suite.py",
+                ),
+                10,
+            ),
+            dense_mcq_trace_sft_control_action(
+                recurrent_benchmark_summary=confirmation_summary,
+                run_suffix="dense_mcq_after_mcq_recurrent_confirm",
+                reason=(
+                    "After the larger recurrent MCQ confirmation lands, rerun the dense same-curriculum control against that larger recurrent benchmark so the architecture comparison remains paired and matched."
+                ),
+                priority=9,
+            ),
+            make_action(
+                "Build claim-readiness packet with MCQ architecture evidence",
+                "Same-recipe dense control favors recurrent on the hard-tail MCQ surface. Package the evidence, but keep it secondary until a larger held-out confirmation lands.",
+                command_env(
+                    {
+                        "STAGE5_CLAIM_PACKET_RUN_ID": f"{RUN_ID}_claim_packet_from_mcq_recipe_control",
+                    },
+                    "python colab/build_stage5_claim_packet.py",
+                ),
+                5,
+            ),
+        ]
+    if status == "mixed_hard_tail_signal_vs_dense":
+        return [
+            make_action(
+                "Inspect mixed MCQ architecture signal",
+                "At least one ARC-Challenge surface favors recurrent over dense, but the hard-tail evidence is not clean across surfaces. Inspect per-surface deltas before more training.",
+                f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                10,
+            )
+        ]
+    if status == "easy_surface_invariance_issue":
+        return [
+            make_action(
+                "Run targeted surface-invariance repair",
+                "The MCQ recipe control points to an easy-surface invariance issue rather than a clean architecture lift. Return to the surface-alignment repair path before scaling.",
+                command_env(
+                    {
+                        "STAGE5_CURRENT_A100_TARGET": "traced_sft_surface_alignment_repair",
+                    },
+                    "python colab/CURRENT_A100_BOOTSTRAP_CELL.py",
+                ),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect MCQ same-recipe architecture assessment `{status}`",
+            "The dense-vs-recurrent MCQ control did not show hard-tail recurrent lift; inspect the assessment before spending on recurrent-specific training.",
             f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
             10,
         )
@@ -3933,6 +4147,15 @@ def plan_next_actions(
     recipe_control = recipe_control_assessment_payload(payload)
     if recipe_control:
         return recipe_control_assessment_actions(recipe_control, source_summary=source_summary)
+    mcq_recipe_control = mcq_recipe_control_assessment_payload(payload)
+    if mcq_recipe_control:
+        return mcq_recipe_control_assessment_actions(mcq_recipe_control, source_summary=source_summary)
+    surface_alignment = surface_alignment_repair_payload(payload)
+    if surface_alignment:
+        return surface_alignment_repair_actions(surface_alignment, source_summary=source_summary)
+    surface_repair = surface_repair_assessment_payload(payload)
+    if surface_repair:
+        return surface_repair_assessment_actions(surface_repair, source_summary=source_summary)
     release_gate = release_gate_payload(payload)
     if release_gate:
         return release_gate_actions(release_gate, source_summary=source_summary)
@@ -4363,6 +4586,12 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "recipe_selector_conversion"
     if recipe_control_assessment_payload(payload):
         return "recipe_control_assessment"
+    if mcq_recipe_control_assessment_payload(payload):
+        return "mcq_recipe_control_assessment"
+    if surface_alignment_repair_payload(payload):
+        return "surface_alignment_repair"
+    if surface_repair_assessment_payload(payload):
+        return "surface_repair_assessment"
     if release_gate_payload(payload):
         return "release_gate"
     if benchmark_suite_assessment_payload(payload):
