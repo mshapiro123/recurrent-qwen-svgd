@@ -1,1 +1,1 @@
-outputs/stage5/stage5_content_direct_preserve_m05_arc256_check_20260623_113424/summary.json
+outputs/stage5/stage5_content_arcmix_qonly_optiontext_20260623_121707/summary.json

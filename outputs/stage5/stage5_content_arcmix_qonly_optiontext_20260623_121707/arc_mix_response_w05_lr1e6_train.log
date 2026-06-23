@@ -1,0 +1,17 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6411.21it/s]
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6052.15it/s]
+distillation_teacher=Qwen/Qwen2.5-0.5B-Instruct
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_content_direct_preserve_m05_20260623_1122/phase1_direct_preserve/phase1_step_150.pt loaded_keys=179
+optimizer_parameter_tensors=179
+step=0 mean_expected_loops=1.5745 mean_halt_entropy=0.7717 expected_ce=1.8095 halting_kl=0.2742 target_mean_loops=1.0000 target_loop_abs_error=0.5745 loss=2.0600 base_distill_kl=0.4353
+step=25 mean_expected_loops=1.5235 mean_halt_entropy=0.7728 expected_ce=4.1035 halting_kl=0.2428 target_mean_loops=1.0000 target_loop_abs_error=0.5235 loss=4.2550 base_distill_kl=0.2447
+saved_checkpoint=outputs/stage5/stage5_content_arcmix_qonly_optiontext_20260623_121707/arc_mix_response_w05_lr1e6/phase1/phase1_step_50.pt
+step=50 mean_expected_loops=1.5118 mean_halt_entropy=0.7776 expected_ce=2.8635 halting_kl=0.2308 target_mean_loops=1.0000 target_loop_abs_error=0.5118 loss=2.9938 base_distill_kl=0.2052
+step=75 mean_expected_loops=1.8141 mean_halt_entropy=0.7975 expected_ce=3.4679 halting_kl=0.3918 target_mean_loops=1.0000 target_loop_abs_error=0.8141 loss=4.1274 base_distill_kl=1.2251
+saved_checkpoint=outputs/stage5/stage5_content_arcmix_qonly_optiontext_20260623_121707/arc_mix_response_w05_lr1e6/phase1/phase1_step_100.pt

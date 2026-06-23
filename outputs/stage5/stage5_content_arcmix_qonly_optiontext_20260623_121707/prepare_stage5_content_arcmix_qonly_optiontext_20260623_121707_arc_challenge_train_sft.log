@@ -1,0 +1,7 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+dataset_id=allenai/ai2_arc
+config=ARC-Challenge
+split=train
+rows=768
+skipped_rows=0
+output_jsonl=data/stage5_content_arcmix_qonly_optiontext_20260623_121707_arc_challenge_train_sft.jsonl
