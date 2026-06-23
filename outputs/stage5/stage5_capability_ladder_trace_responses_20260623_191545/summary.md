@@ -3,9 +3,9 @@
 - Status: `responses_ready`
 - Backend: `hf_local`
 - HF model: `Qwen/Qwen2.5-7B-Instruct`
-- Selected jobs: `32`
+- Selected jobs: `64`
 - Written: `32`
-- Skipped: `0`
+- Skipped: `32`
 - Errors: `0`
 - Timeouts: `0`
 - Responses JSONL: `outputs/stage5/stage5_capability_ladder_trace_responses_20260623_191545/trace_responses.jsonl`
