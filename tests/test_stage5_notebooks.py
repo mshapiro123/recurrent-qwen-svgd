@@ -81,7 +81,29 @@ def test_direct_preservation_precheck_notebook_is_fresh_runtime_safe() -> None:
     assert "GITHUB_TOKEN" in text
     assert "HF_TOKEN" in text
     assert "HUGGINGFACE_HUB_TOKEN" in text
+    assert "STAGE5_DIRECT_PRESERVE_DRIVE_BACKUP" in text
     assert "Cache-Control" in text
+    assert "exec(compile(code" in text
+    assert "exec(open(" not in text
+    assert "capability_ladder_local_hf_trace_sft_scale64" not in text
+    assert payload["cells"][0]["cell_type"] == "markdown"
+    assert payload["cells"][1]["cell_type"] == "code"
+    assert payload["metadata"]["accelerator"] == "GPU"
+
+
+def test_direct_preservation_g4_auto_notebook_runs_bounded_probe_not_scale64() -> None:
+    payload = notebook_payload("colab/11_stage5_direct_preservation_g4_auto.ipynb")
+    text = "\n".join(str(cell.get("source", "")) for cell in payload.get("cells", []))
+
+    assert "traced_sft_direct_preservation_probe" in text
+    assert "STAGE5_DIRECT_PRESERVE_SWEEP" in text
+    assert "STAGE5_DIRECT_PRESERVE_CHAIN_CONFIRM" in text
+    assert "STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER" in text
+    assert "STAGE5_DIRECT_PRESERVE_DRIVE_BACKUP" in text
+    assert "direct_route_precheck_needs_training" in text
+    assert "api.github.com/repos/mshapiro123/recurrent-qwen-svgd" in text
+    assert "GH_TOKEN" in text
+    assert "HF_TOKEN" in text
     assert "exec(compile(code" in text
     assert "exec(open(" not in text
     assert "capability_ladder_local_hf_trace_sft_scale64" not in text
@@ -198,6 +220,7 @@ def test_current_a100_action_points_to_safe_continue_routing_repair() -> None:
     assert "colab/CURRENT_A100_BOOTSTRAP_CELL.md" in text
     assert "colab/CURRENT_A100_BOOTSTRAP_CELL.py" in text
     assert "10_stage5_direct_preservation_precheck.ipynb" in text
+    assert "11_stage5_direct_preservation_g4_auto.ipynb" in text
     assert "STAGE5_CURRENT_A100_TARGET=programmatic_curriculum_cpu" in text
     assert "colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py" in text
     assert "git/ref/heads/main" in text

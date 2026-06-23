@@ -66,6 +66,14 @@ and run its single cell. That notebook fetches the current GitHub bootstrap
 and avoids the stale local `exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py"))`
 path that fails after a runtime reset.
 
+If you have a fresh G4/L4/A100 runtime and want the bounded continuation
+without babysitting a second cell, open
+[`11_stage5_direct_preservation_g4_auto.ipynb`](11_stage5_direct_preservation_g4_auto.ipynb)
+instead. It targets `traced_sft_direct_preservation_probe`, which performs the
+same loop-1 precheck internally, skips training if loop-1 already matches base,
+and otherwise runs only the bounded direct-preservation repair sweep. It does
+not rerun the long scale64 trace-SFT job.
+
 This evaluates base, recurrent loop-1, and recurrent loop-4 on the
 scale64 checkpoint using `question_only` / `option_text` scoring, writes a
 Stage 5 direct-preservation summary, publishes it to GitHub, and stops before

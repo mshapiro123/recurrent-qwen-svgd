@@ -17,6 +17,13 @@ It fetches the latest GitHub bootstrap and runs only
 `STAGE5_CURRENT_A100_TARGET=traced_sft_direct_preservation_precheck`; it does
 not rerun the long scale64 trace-SFT job.
 
+For a fresh G4/L4/A100 runtime where it is acceptable to continue into the
+bounded repair if the precheck fails, use
+[`11_stage5_direct_preservation_g4_auto.ipynb`](11_stage5_direct_preservation_g4_auto.ipynb).
+It launches `traced_sft_direct_preservation_probe`, whose runner performs the
+same precheck internally and trains only when the direct loop-1 route still
+fails to preserve base behavior.
+
 The active next action is **not** more training. The latest ARC-mix recovery
 proxy landed as `stage5_arc_mix_recovery_once_20260622_030628` and reported
 `no_proxy_lift` with `decision = stop_and_revise_objective`:
