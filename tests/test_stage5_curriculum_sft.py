@@ -77,6 +77,20 @@ def test_split_train_val_balances_imbalanced_modes_proportionally() -> None:
     assert train_counts == {"direct": 30, "deep_narrow": 36}
 
 
+def test_insert_depth_hint_keeps_chat_turn_order() -> None:
+    prompt = "<|im_start|>user\nWhat is 2+2?<|im_end|>\n<|im_start|>assistant\n"
+
+    updated = runner.insert_depth_hint(prompt, "Depth hint: answer directly.")
+
+    assert updated.startswith("<|im_start|>user\nDepth hint: answer directly.\n\nWhat is 2+2?")
+    assert updated.endswith("<|im_start|>assistant\n")
+
+
+def test_depth_hint_for_row_follows_curriculum_mode() -> None:
+    assert "shallow" in runner.depth_hint_for_row(positive_row(1, mode="direct"))
+    assert "multi-step" in runner.depth_hint_for_row(positive_row(2, mode="deep_narrow"))
+
+
 def test_split_train_val_keeps_singleton_mode_in_train() -> None:
     rows = [positive_row(1, mode="wide")]
     rows.extend(positive_row(index + 10, mode="deep_narrow") for index in range(5))

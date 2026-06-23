@@ -75,6 +75,7 @@ LEARNING_RATE = float(os.environ.get("STAGE5_CURRICULUM_PHASE1_LR", "1e-5"))
 BETA = float(os.environ.get("STAGE5_CURRICULUM_PHASE1_BETA", "0.08"))
 HALT_TARGET_NLL_WEIGHT = float(os.environ.get("STAGE5_CURRICULUM_HALT_TARGET_NLL_WEIGHT", "0.0"))
 OPTIMIZER_MODULES = os.environ.get("STAGE5_CURRICULUM_OPTIMIZER_MODULES", "all").strip() or "all"
+DEPTH_HINT_STYLE = os.environ.get("STAGE5_CURRICULUM_DEPTH_HINT_STYLE", "none").strip().lower()
 MAX_GRAD_NORM = float(os.environ.get("STAGE5_CURRICULUM_PHASE1_MAX_GRAD_NORM", "0.3"))
 MIN_MEAN_EXPECTED_LOOPS = float(os.environ.get("STAGE5_CURRICULUM_SFT_MIN_MEAN_EXPECTED_LOOPS", "1.05"))
 DEPTH_GRADIENT_MARGIN = float(os.environ.get("STAGE5_CURRICULUM_SFT_DEPTH_GRADIENT_MARGIN", "0.25"))
@@ -298,6 +299,36 @@ def positive_sft_path_from_gate(gate: dict[str, Any]) -> Path:
     return resolve_path(str(artifacts["positive_sft"]))
 
 
+def depth_hint_for_row(row: dict[str, Any]) -> str:
+    mode = str(row.get("curriculum_mode") or row.get("routing_type") or "")
+    if mode == "direct":
+        return "Depth hint: use shallow direct reasoning and answer in one short pass."
+    if mode == "deep_narrow":
+        return "Depth hint: use deeper multi-step reasoning before answering."
+    return "Depth hint: choose the reasoning depth that fits the problem."
+
+
+def insert_depth_hint(prompt: str, hint: str) -> str:
+    user_marker = "<|im_start|>user\n"
+    if user_marker in prompt:
+        return prompt.replace(user_marker, user_marker + hint + "\n\n", 1)
+    return hint + "\n\n" + prompt
+
+
+def maybe_apply_depth_hints(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if DEPTH_HINT_STYLE in {"", "none", "off", "0"}:
+        return rows
+    if DEPTH_HINT_STYLE not in {"natural", "natural_language"}:
+        raise ValueError("STAGE5_CURRICULUM_DEPTH_HINT_STYLE must be one of: none, natural")
+    hinted: list[dict[str, Any]] = []
+    for row in rows:
+        updated = dict(row)
+        updated["prompt"] = insert_depth_hint(str(row.get("prompt") or ""), depth_hint_for_row(row))
+        updated["depth_hint_style"] = DEPTH_HINT_STYLE
+        hinted.append(updated)
+    return hinted
+
+
 def split_train_val(
     rows: list[dict[str, Any]],
     *,
@@ -370,6 +401,7 @@ def prepare_train_val(gate: dict[str, Any]) -> tuple[Path, Path, dict[str, Any]]
     rows = read_jsonl(positive_sft)
     if len(rows) < MIN_POSITIVE_ROWS:
         raise RuntimeError(f"positive_sft has {len(rows)} rows < required {MIN_POSITIVE_ROWS}.")
+    rows = maybe_apply_depth_hints(rows)
     train_rows, val_rows = split_train_val(
         rows,
         val_fraction=VAL_FRACTION,
@@ -396,6 +428,7 @@ def prepare_train_val(gate: dict[str, Any]) -> tuple[Path, Path, dict[str, Any]]
         "val_fraction": VAL_FRACTION,
         "val_min_rows": VAL_MIN_ROWS,
         "split_seed": SPLIT_SEED,
+        "depth_hint_style": DEPTH_HINT_STYLE,
         "train_mode_counts": train_mode_counts,
         "val_mode_counts": val_mode_counts,
     }
@@ -684,6 +717,9 @@ def write_summary(payload: dict[str, Any]) -> None:
         f"- Input restore: `{payload['input_restore']}`",
         f"- Positive rows: `{payload['dataset']['rows']}`",
         f"- Train / validation rows: `{payload['dataset']['train_rows']}` / `{payload['dataset']['val_rows']}`",
+        f"- Train mode counts: `{payload['dataset'].get('train_mode_counts')}`",
+        f"- Validation mode counts: `{payload['dataset'].get('val_mode_counts')}`",
+        f"- Depth hint style: `{payload['dataset'].get('depth_hint_style')}`",
         f"- Drive preflight: `{payload['drive_preflight']}`",
         f"- Validation status: `{payload.get('validation_checks', {}).get('status')}`",
         f"- Validation issues: `{payload.get('validation_checks', {}).get('issues', [])}`",
@@ -734,6 +770,7 @@ def main() -> int:
         "beta": BETA,
         "halt_target_nll_weight": HALT_TARGET_NLL_WEIGHT,
         "optimizer_modules": OPTIMIZER_MODULES,
+        "depth_hint_style": DEPTH_HINT_STYLE,
         "dtype": DTYPE,
         "adapter_dtype": ADAPTER_DTYPE,
         "commit_checkpoints": COMMIT_CHECKPOINTS,
