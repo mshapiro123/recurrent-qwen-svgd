@@ -107,3 +107,30 @@ def test_write_summary_updates_current_pointer(monkeypatch, tmp_path) -> None:
     assert (tmp_path / "config" / "stage5_current_source_summary.txt").read_text(encoding="utf-8").strip() == (
         "outputs/stage5/dense/summary.json"
     )
+
+
+def test_write_summary_points_front_of_queue_to_recipe_assessment(monkeypatch, tmp_path) -> None:
+    run_dir = tmp_path / "outputs" / "stage5" / "dense"
+    assessment = run_dir / "mcq_recipe_control_assessment.json"
+    assessment.parent.mkdir(parents=True)
+    assessment.write_text(json.dumps({"kind": "stage5_mcq_recipe_control_assessment"}), encoding="utf-8")
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+    payload = {
+        "run_id": "dense",
+        "source_summary": "outputs/source/summary.json",
+        "dataset": {"rows": 3},
+        "dense_checkpoint": "outputs/dense/dense_lora.pt",
+        "config": {"dense_lora_layer_range": "6,18"},
+        "paired_comparisons": {},
+        "recipe_control_assessment": {
+            "ran": True,
+            "summary_json": "outputs/stage5/dense/mcq_recipe_control_assessment.json",
+        },
+    }
+
+    module.write_summary(payload)
+
+    assert (tmp_path / "config" / "stage5_current_source_summary.txt").read_text(encoding="utf-8").strip() == (
+        "outputs/stage5/dense/mcq_recipe_control_assessment.json"
+    )

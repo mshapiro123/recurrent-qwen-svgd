@@ -529,10 +529,19 @@ def update_current_source_summary(summary_path: Path) -> None:
     pointer.write_text(path_for_cli(summary_path) + "\n", encoding="utf-8")
 
 
+def front_of_queue_summary_path(payload: dict[str, Any], dense_summary_json: Path) -> Path:
+    assessment = payload.get("recipe_control_assessment")
+    if isinstance(assessment, dict) and assessment.get("ran") is True and assessment.get("summary_json"):
+        assessment_path = resolve_path(str(assessment["summary_json"]))
+        if assessment_path.exists():
+            return assessment_path
+    return dense_summary_json
+
+
 def write_summary(payload: dict[str, Any]) -> Path:
     summary_json = RUN_DIR / "summary.json"
     write_json(summary_json, payload)
-    update_current_source_summary(summary_json)
+    update_current_source_summary(front_of_queue_summary_path(payload, summary_json))
     lines = [
         f"# Stage 5 Dense MCQ Trace-SFT Control - {RUN_ID}",
         "",
