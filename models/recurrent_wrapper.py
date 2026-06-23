@@ -446,7 +446,7 @@ class RecurrentQwenForCausalLM(nn.Module):
                 latent_kls.append(latent_stats.kl)
 
             pooled = masked_mean(recurrent_state, flat_attention_mask)
-            halt_probs.append(self.halt_predictor(pooled).squeeze(-1))
+            halt_probs.append(self.halt_predictor(pooled, loop_idx=loop_idx).squeeze(-1))
 
             coda_hidden, attentions = self._run_layer_range(
                 start=self.layer_split.recurrent_end,

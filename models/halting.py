@@ -40,19 +40,35 @@ def masked_mean(
 class SequenceHaltingPredictor(nn.Module):
     """Predicts a single halt probability per sequence and recurrent pass."""
 
-    def __init__(self, hidden_size: int, initial_halt_prob: float = 0.25) -> None:
+    def __init__(
+        self,
+        hidden_size: int,
+        initial_halt_prob: float = 0.25,
+        max_loop_embeddings: int = 16,
+    ) -> None:
         super().__init__()
         if not 0.0 < initial_halt_prob < 1.0:
             raise ValueError("initial_halt_prob must be in (0, 1)")
+        if max_loop_embeddings < 1:
+            raise ValueError("max_loop_embeddings must be >= 1")
 
         self.proj = nn.Linear(hidden_size, 1)
+        self.loop_embedding = nn.Embedding(max_loop_embeddings, hidden_size)
+        self.loop_bias = nn.Parameter(torch.zeros(max_loop_embeddings))
         with torch.no_grad():
             nn.init.zeros_(self.proj.weight)
             self.proj.bias.fill_(math.log(initial_halt_prob / (1.0 - initial_halt_prob)))
+            nn.init.zeros_(self.loop_embedding.weight)
 
-    def forward(self, pooled_hidden: torch.Tensor) -> torch.Tensor:
+    def forward(self, pooled_hidden: torch.Tensor, loop_idx: int | None = None) -> torch.Tensor:
         pooled = pooled_hidden.to(dtype=self.proj.weight.dtype)
-        return torch.sigmoid(self.proj(pooled))
+        logit = self.proj(pooled).squeeze(-1)
+        if loop_idx is not None:
+            index = min(max(int(loop_idx), 0), self.loop_embedding.num_embeddings - 1)
+            loop_embedding = self.loop_embedding.weight[index].to(device=pooled.device, dtype=pooled.dtype)
+            loop_bias = self.loop_bias[index].to(device=pooled.device, dtype=pooled.dtype)
+            logit = self.proj(pooled + loop_embedding.unsqueeze(0)).squeeze(-1) + loop_bias
+        return torch.sigmoid(logit).unsqueeze(-1)
 
 
 def pondernet_halting_probabilities(
