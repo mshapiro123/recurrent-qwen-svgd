@@ -1,0 +1,12 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]
+Loading weights:  20%|█▉        | 67/338 [00:00<00:00, 669.72it/s]
+Loading weights:  43%|████▎     | 147/338 [00:00<00:00, 743.51it/s]
+Loading weights:  68%|██████▊   | 231/338 [00:00<00:00, 766.53it/s]
+Loading weights:  91%|█████████ | 308/338 [00:00<00:00, 761.43it/s]
+Loading weights: 100%|██████████| 338/338 [00:00<00:00, 781.37it/s]
+max_abs_diff=0.00000000
+mean_abs_diff=0.00000000
+threshold=0.00100000
+PASS: identity wrapper drift is within threshold
