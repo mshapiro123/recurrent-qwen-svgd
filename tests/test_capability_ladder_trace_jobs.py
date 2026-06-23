@@ -15,30 +15,38 @@ def scored_row(
     base_correct: bool,
     mid_correct: bool,
     high_correct: bool,
+    seven_correct: bool | None = None,
 ) -> dict:
+    model_results = {
+        "qwen_0_5b": {
+            "correct": base_correct,
+            "model": "Qwen/Qwen2.5-0.5B-Instruct",
+            "prediction": "A" if not base_correct else "B",
+        },
+        "qwen_1_5b": {
+            "correct": mid_correct,
+            "model": "Qwen/Qwen2.5-1.5B-Instruct",
+            "prediction": "B" if mid_correct else "A",
+        },
+        "qwen_3b": {
+            "correct": high_correct,
+            "model": "Qwen/Qwen2.5-3B-Instruct",
+            "prediction": "B" if high_correct else "A",
+        },
+    }
+    if seven_correct is not None:
+        model_results["qwen_7b"] = {
+            "correct": seven_correct,
+            "model": "Qwen/Qwen2.5-7B-Instruct",
+            "prediction": "B" if seven_correct else "A",
+        }
     return {
         "id": row_id,
         "domain": "science",
         "statement": "Which option is the answer?\nA. Three\nB. Forty two\nC. Seven",
         "answer": {"value": "B", "choice_text": "Forty two", "verified_by": ["benchmark_ground_truth"]},
         "decontaminated": True,
-        "model_results": {
-            "qwen_0_5b": {
-                "correct": base_correct,
-                "model": "Qwen/Qwen2.5-0.5B-Instruct",
-                "prediction": "A" if not base_correct else "B",
-            },
-            "qwen_1_5b": {
-                "correct": mid_correct,
-                "model": "Qwen/Qwen2.5-1.5B-Instruct",
-                "prediction": "B" if mid_correct else "A",
-            },
-            "qwen_3b": {
-                "correct": high_correct,
-                "model": "Qwen/Qwen2.5-3B-Instruct",
-                "prediction": "B" if high_correct else "A",
-            },
-        },
+        "model_results": model_results,
     }
 
 
@@ -65,6 +73,32 @@ def test_build_trace_jobs_targets_capability_tiers_and_depths() -> None:
     assert "avoid label-position shortcuts" in jobs[0]["prompt"]
     assert jobs[1]["metadata"]["solver_key"] == "qwen_1_5b"
     assert jobs[2]["metadata"]["solver_key"] == "qwen_3b"
+
+
+def test_build_trace_jobs_honors_arbitrary_model_ladder() -> None:
+    jobs, report = build_trace_jobs(
+        [
+            scored_row("base", base_correct=True, mid_correct=True, high_correct=True, seven_correct=True),
+            scored_row("seven", base_correct=False, mid_correct=False, high_correct=False, seven_correct=True),
+        ],
+        models=["opus-test"],
+        base_key="unused_base",
+        mid_key="unused_mid",
+        high_keys=[],
+        high_target_loop=3,
+        model_ladder=[
+            {"key": "qwen_0_5b", "target_loop_count": 1},
+            {"key": "qwen_1_5b", "target_loop_count": 2},
+            {"key": "qwen_3b", "target_loop_count": 3},
+            {"key": "qwen_7b", "target_loop_count": 4},
+        ],
+    )
+
+    assert report["jobs"] == 2
+    assert report["by_target_loop"] == {"1": 1, "4": 1}
+    assert report["model_ladder"][-1] == {"key": "qwen_7b", "target_loop_count": 4}
+    assert jobs[1]["metadata"]["target_loop_count"] == 4
+    assert jobs[1]["metadata"]["solver_key"] == "qwen_7b"
 
 
 def test_trace_job_cli_blocks_student_lineage_by_default(tmp_path) -> None:

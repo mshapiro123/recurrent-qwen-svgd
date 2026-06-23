@@ -1,9 +1,10 @@
 """Build capability-ladder strong-trace jobs from the latest probe summary.
 
 This is a no-GPU Colab/CPU runner. It consumes a
-``stage5_capability_ladder_mcq_probe`` summary, restores the private scored rows
-from Drive if needed, builds provider-neutral trace-generation jobs, backs them
-up to Drive, and optionally commits safe run metadata to GitHub.
+``stage5_capability_ladder_mcq_probe`` summary, restores or deterministically
+reconstructs the private scored rows if needed, builds provider-neutral
+trace-generation jobs, backs them up to Drive, and optionally commits safe run
+metadata to GitHub.
 """
 
 from __future__ import annotations
@@ -29,6 +30,7 @@ RUN_ID = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RUN_ID") or time.strftim
 RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
 SOURCE_SUMMARY = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_SOURCE_SUMMARY", "").strip()
 MODELS = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_MODELS", "opus-strong,glm-strong")
+MODEL_LADDER = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_MODEL_LADDER", "").strip()
 MAX_ROWS = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_MAX_ROWS", "").strip()
 MAX_PER_TIER = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_MAX_PER_TIER", "").strip()
 PUSH_RESULTS = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_PUSH", "1").strip().lower() in {
@@ -162,6 +164,80 @@ def scored_path_from_summary(source_summary: Path) -> Path:
     return path
 
 
+def resolve_repo_path(value: str | Path) -> Path:
+    path = Path(value)
+    return path if path.is_absolute() else ROOT / path
+
+
+def reconstruct_scored_rows_if_possible(source_summary: Path, expected: Path) -> dict[str, Any] | None:
+    payload = read_json(source_summary)
+    arc = payload.get("arc") if isinstance(payload.get("arc"), dict) else {}
+    score_summaries = (
+        payload.get("score_summaries")
+        if isinstance(payload.get("score_summaries"), dict)
+        else {}
+    )
+    required_arc = ["config", "split", "limit", "seed"]
+    if not arc or not score_summaries or any(key not in arc for key in required_arc):
+        return None
+
+    result_specs: list[tuple[str, Path]] = []
+    for key, summary in sorted(score_summaries.items()):
+        if not isinstance(summary, dict):
+            continue
+        raw_path = str(summary.get("path") or "").strip()
+        if not raw_path:
+            continue
+        path = resolve_repo_path(raw_path)
+        if not path.exists():
+            return None
+        result_specs.append((str(key), path))
+    if not result_specs:
+        return None
+
+    expected.parent.mkdir(parents=True, exist_ok=True)
+    tasks_jsonl = expected.parent / "arc_mcq_reconstructed.jsonl"
+    run(
+        [
+            sys.executable,
+            "eval/prepare_arc_mcq.py",
+            "--config",
+            str(arc["config"]),
+            "--split",
+            str(arc["split"]),
+            "--limit",
+            str(int(arc["limit"])),
+            "--seed",
+            str(int(arc["seed"])),
+            "--output_jsonl",
+            path_for_cli(tasks_jsonl),
+        ],
+        log_name="reconstruct_prepare_arc_mcq.log",
+    )
+    cmd = [
+        sys.executable,
+        "training/merge_capability_score_rows.py",
+        "--tasks_jsonl",
+        path_for_cli(tasks_jsonl),
+        "--output_jsonl",
+        path_for_cli(expected),
+        "--verified_by",
+        "benchmark_ground_truth",
+        "--assume_decontaminated",
+        "--prediction_as_solution",
+    ]
+    for key, path in result_specs:
+        cmd.extend(["--result", f"{key}={path_for_cli(path)}"])
+    run(cmd, log_name="reconstruct_merge_capability_score_rows.log")
+    return {
+        "restored": True,
+        "path": path_for_cli(expected),
+        "source": "reconstructed_from_public_score_artifacts",
+        "tasks_jsonl": path_for_cli(tasks_jsonl),
+        "result_keys": [key for key, _path in result_specs],
+    }
+
+
 def drive_search_roots() -> list[Path]:
     drive = Path("/content/drive/MyDrive")
     if not drive.exists():
@@ -178,6 +254,10 @@ def restore_scored_rows_if_needed(source_summary: Path) -> dict[str, Any]:
     expected = scored_path_from_summary(source_summary)
     if expected.exists():
         return {"restored": False, "path": path_for_cli(expected), "source": "local"}
+
+    reconstructed = reconstruct_scored_rows_if_possible(source_summary, expected)
+    if reconstructed is not None and expected.exists():
+        return reconstructed
 
     run_id = str(read_json(source_summary).get("run_id") or source_summary.parent.name)
     candidates: list[Path] = []
@@ -202,6 +282,25 @@ def restore_scored_rows_if_needed(source_summary: Path) -> dict[str, Any]:
         "source": str(source),
         "candidates": len(candidates),
     }
+
+
+def model_ladder_from_source_summary(source_summary: Path) -> str:
+    if MODEL_LADDER:
+        return MODEL_LADDER
+    payload = read_json(source_summary)
+    ladder_keys = payload.get("ladder_keys") if isinstance(payload.get("ladder_keys"), dict) else {}
+    ladder = ladder_keys.get("model_ladder")
+    if not isinstance(ladder, list):
+        return ""
+    parts: list[str] = []
+    for item in ladder:
+        if not isinstance(item, dict):
+            continue
+        key = str(item.get("key") or "").strip()
+        loop = item.get("target_loop_count")
+        if key and isinstance(loop, int):
+            parts.append(f"{key}:{loop}")
+    return ",".join(parts)
 
 
 def backup_to_drive(paths: list[Path]) -> dict[str, Any]:
@@ -241,13 +340,17 @@ def safe_commit(summary_path: Path) -> None:
     if not PUSH_RESULTS:
         return
     pointer = update_current_source_summary(summary_path)
-    run(["git", "add", path_for_cli(RUN_DIR), path_for_cli(pointer)], check=False, log_name="git_add.log")
+    run(["git", "add", "-f", path_for_cli(RUN_DIR), path_for_cli(pointer)], check=False, log_name="git_add.log")
     diff = run(["git", "diff", "--cached", "--quiet"], check=False)
     if diff.returncode == 0:
         print("No safe trace-job result changes to commit.", flush=True)
         return
     run(["git", "commit", "-m", "Record capability-ladder trace jobs"], check=True, log_name="git_commit.log")
-    run(["git", "push", "origin", "main"], check=True, log_name="git_push.log")
+    push = run(["git", "push", "origin", "main"], check=False, log_name="git_push.log")
+    if push.returncode == 0:
+        return
+    run(["git", "pull", "--rebase", "origin", "main"], check=True, log_name="git_pull_rebase.log")
+    run(["git", "push", "origin", "main"], check=True, log_name="git_push_retry.log")
 
 
 def build_jobs(source_summary: Path) -> tuple[Path, Path, dict[str, Any]]:
@@ -269,6 +372,9 @@ def build_jobs(source_summary: Path) -> tuple[Path, Path, dict[str, Any]]:
         cmd.extend(["--max_rows", MAX_ROWS])
     if MAX_PER_TIER:
         cmd.extend(["--max_per_tier", MAX_PER_TIER])
+    model_ladder = model_ladder_from_source_summary(source_summary)
+    if model_ladder:
+        cmd.extend(["--model_ladder", model_ladder])
     run(cmd, log_name="build_capability_ladder_trace_jobs.log")
     return jobs_jsonl, report_json, read_json(report_json)
 

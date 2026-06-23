@@ -26,8 +26,10 @@ from training.build_capability_ladder_curriculum import (  # noqa: E402
     answer_value,
     has_trusted_answer,
     model_correct,
+    parse_model_ladder,
     read_jsonl,
     tier_for_row,
+    tier_for_model_ladder,
 )
 from training.build_curriculum_generation_jobs import (  # noqa: E402
     make_job,
@@ -134,6 +136,7 @@ def candidate_rows(
     mid_key: str,
     high_keys: list[str],
     high_target_loop: int,
+    model_ladder: list[dict[str, Any]] | None = None,
     assume_decontaminated: bool,
     include_direct: bool,
     include_deep: bool,
@@ -144,13 +147,16 @@ def candidate_rows(
     skipped: Counter[str] = Counter()
     tier_counts: Counter[str] = Counter()
     for row_index, row in enumerate(rows):
-        tier = tier_for_row(
-            row,
-            base_key=base_key,
-            mid_key=mid_key,
-            high_keys=high_keys,
-            high_target_loop=high_target_loop,
-        )
+        if model_ladder:
+            tier = tier_for_model_ladder(row, model_ladder)
+        else:
+            tier = tier_for_row(
+                row,
+                base_key=base_key,
+                mid_key=mid_key,
+                high_keys=high_keys,
+                high_target_loop=high_target_loop,
+            )
         if tier is None:
             skipped["unresolved_capability"] += 1
             continue
@@ -179,6 +185,18 @@ def candidate_rows(
         tier_counts[tier_name] += 1
         if max_rows is not None and len(selected) >= max_rows:
             break
+    if model_ladder:
+        ladder_keys = [str(entry["key"]) for entry in model_ladder]
+        model_correct_counts = {
+            key: sum(1 for row in rows if model_correct(row, key))
+            for key in ladder_keys
+        }
+    else:
+        model_correct_counts = {
+            base_key: sum(1 for row in rows if model_correct(row, base_key)),
+            mid_key: sum(1 for row in rows if model_correct(row, mid_key)),
+            **{key: sum(1 for row in rows if model_correct(row, key)) for key in high_keys},
+        }
     report = {
         "input_rows": len(rows),
         "selected_rows": len(selected),
@@ -188,12 +206,10 @@ def candidate_rows(
         "mid_key": mid_key,
         "high_keys": high_keys,
         "high_target_loop": high_target_loop,
-        "model_correct_counts": {
-            base_key: sum(1 for row in rows if model_correct(row, base_key)),
-            mid_key: sum(1 for row in rows if model_correct(row, mid_key)),
-            **{key: sum(1 for row in rows if model_correct(row, key)) for key in high_keys},
-        },
+        "model_correct_counts": model_correct_counts,
     }
+    if model_ladder:
+        report["model_ladder"] = model_ladder
     return selected, report
 
 
@@ -205,6 +221,7 @@ def build_trace_jobs(
     mid_key: str,
     high_keys: list[str],
     high_target_loop: int,
+    model_ladder: list[dict[str, Any]] | None = None,
     assume_decontaminated: bool = False,
     include_direct: bool = True,
     include_deep: bool = True,
@@ -217,6 +234,7 @@ def build_trace_jobs(
         mid_key=mid_key,
         high_keys=high_keys,
         high_target_loop=high_target_loop,
+        model_ladder=model_ladder,
         assume_decontaminated=assume_decontaminated,
         include_direct=include_direct,
         include_deep=include_deep,
@@ -283,6 +301,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--mid_key", default="qwen_1_5b")
     parser.add_argument("--high_keys", default="qwen_3b,strong_solver")
     parser.add_argument("--high_target_loop", type=int, default=3)
+    parser.add_argument(
+        "--model_ladder",
+        type=parse_model_ladder,
+        help=(
+            "Ordered model-to-depth ladder as KEY:LOOP entries, for example "
+            "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3,qwen_7b:4. "
+            "When provided, this supersedes --base_key/--mid_key/--high_keys."
+        ),
+    )
     parser.add_argument("--assume_decontaminated", action="store_true")
     parser.add_argument("--include_direct", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--include_deep", action=argparse.BooleanOptionalAction, default=True)
@@ -304,6 +331,7 @@ def main(argv: list[str] | None = None) -> int:
         mid_key=args.mid_key,
         high_keys=parse_csv(args.high_keys),
         high_target_loop=args.high_target_loop,
+        model_ladder=args.model_ladder,
         assume_decontaminated=args.assume_decontaminated,
         include_direct=args.include_direct,
         include_deep=args.include_deep,
