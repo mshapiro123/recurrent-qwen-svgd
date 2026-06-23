@@ -319,6 +319,7 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Launched depth routing: `{payload['depth_launched']}`",
         f"- Offset summary: `{payload['offset_summary']}`",
         f"- Depth summary: `{payload.get('depth_summary') or 'not_run'}`",
+        f"- Post-depth debiased summary: `{payload.get('post_depth_debiased_summary') or 'not_run'}`",
         f"- Checkpoint: `{payload.get('checkpoint') or 'none'}`",
         f"- Next step: {payload['next_step']}",
         "",
@@ -332,6 +333,23 @@ def write_report(payload: dict[str, Any]) -> None:
             f"W/L/T `{row.get('wins', 0)}/{row.get('losses', 0)}/{row.get('ties', 0)}`, "
             f"passed `{row['passed']}`"
         )
+    if payload.get("post_depth_debiased_assessment"):
+        lines.extend(
+            [
+                "",
+                "## Post-Depth Debiased Evidence",
+                "",
+                "Cyclic-debiased scoring is the primary survival gate here; content-question scoring is a leading indicator.",
+                "",
+            ]
+        )
+        for row in payload["post_depth_debiased_assessment"]["evidence"]:
+            lines.append(
+                f"- `{row['benchmark']}` `{row['score_target']}` / `{row['aggregate']}`: "
+                f"paired `{row['paired_examples']}`, delta `{row['correct_delta_recurrent_vs_base']}`, "
+                f"W/L/T `{row.get('wins', 0)}/{row.get('losses', 0)}/{row.get('ties', 0)}`, "
+                f"passed `{row['passed']}`"
+            )
     report.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(report.read_text(encoding="utf-8"), flush=True)
 
