@@ -93,6 +93,12 @@ PUSH_RESULTS = os.environ.get("STAGE5_CURRICULUM_SFT_PUSH", "1").strip().lower()
     "yes",
     "y",
 }
+COMMIT_CHECKPOINTS = os.environ.get("STAGE5_CURRICULUM_SFT_COMMIT_CHECKPOINTS", "1").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 ALLOW_NO_DRIVE_BACKUP = os.environ.get("STAGE5_CURRICULUM_ALLOW_NO_DRIVE_BACKUP", "0").strip().lower() in {
     "1",
     "true",
@@ -605,6 +611,17 @@ def git_commit_results() -> None:
     for pattern in safe_patterns:
         for path in RUN_DIR.glob(pattern):
             run(["git", "add", "-f", path_for_cli(path)], check=False)
+    if COMMIT_CHECKPOINTS:
+        checkpoints = sorted(
+            (RUN_DIR / "phase1").glob("phase1_step_*.pt"),
+            key=lambda p: int(p.stem.rsplit("_", 1)[-1]),
+        )
+        if checkpoints:
+            latest_checkpoint = checkpoints[-1]
+            run(["git", "add", "-f", path_for_cli(latest_checkpoint)], check=False)
+            print(f"staged_checkpoint={path_for_cli(latest_checkpoint)}", flush=True)
+        else:
+            print(f"checkpoint_commit_enabled_but_missing={path_for_cli(RUN_DIR / 'phase1')}", flush=True)
     pointer = current_source_summary_file()
     if pointer.exists():
         run(["git", "add", "-f", path_for_cli(pointer)], check=False)
@@ -681,6 +698,7 @@ def main() -> int:
         "beta": BETA,
         "dtype": DTYPE,
         "adapter_dtype": ADAPTER_DTYPE,
+        "commit_checkpoints": COMMIT_CHECKPOINTS,
     }
     (RUN_DIR / "run_metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
     print(json.dumps(metadata, indent=2), flush=True)

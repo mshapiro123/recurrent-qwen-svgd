@@ -221,6 +221,7 @@ def derive_training_env(summary_path):
             "ADAPTER_DTYPE": os.environ.get("ADAPTER_DTYPE", "float32"),
             "DEVICE": os.environ.get("DEVICE", "cuda"),
             "STAGE5_CURRICULUM_ALLOW_ANSWER_LINE_VERIFICATION": "1",
+            "STAGE5_CURRICULUM_SFT_COMMIT_CHECKPOINTS": "1",
         }
     )
     if min_mode_rows:

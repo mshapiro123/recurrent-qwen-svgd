@@ -302,6 +302,10 @@ def test_curriculum_sft_commit_stages_current_source_pointer(monkeypatch, tmp_pa
     run_dir = tmp_path / "outputs" / "stage5" / "curriculum_sft"
     pointer = tmp_path / "config" / "stage5_current_source_summary.txt"
     run_dir.mkdir(parents=True)
+    phase1_dir = run_dir / "phase1"
+    phase1_dir.mkdir()
+    (phase1_dir / "phase1_step_50.pt").write_bytes(b"old checkpoint")
+    (phase1_dir / "phase1_step_150.pt").write_bytes(b"latest checkpoint")
     pointer.parent.mkdir(parents=True)
     (run_dir / "summary.json").write_text("{}", encoding="utf-8")
     pointer.write_text("outputs/stage5/curriculum_sft/summary.json\n", encoding="utf-8")
@@ -313,6 +317,7 @@ def test_curriculum_sft_commit_stages_current_source_pointer(monkeypatch, tmp_pa
 
     monkeypatch.setattr(runner, "ROOT", tmp_path)
     monkeypatch.setattr(runner, "RUN_DIR", run_dir)
+    monkeypatch.setattr(runner, "COMMIT_CHECKPOINTS", True)
     monkeypatch.setattr(runner, "run", fake_run)
 
     runner.git_commit_results()
@@ -322,3 +327,5 @@ def test_curriculum_sft_commit_stages_current_source_pointer(monkeypatch, tmp_pa
     staged = {item for cmd in add_commands for item in cmd[3:]}
     assert "outputs/stage5/curriculum_sft/summary.json" in staged
     assert "config/stage5_current_source_summary.txt" in staged
+    assert "outputs/stage5/curriculum_sft/phase1/phase1_step_150.pt" in staged
+    assert "outputs/stage5/curriculum_sft/phase1/phase1_step_50.pt" not in staged
