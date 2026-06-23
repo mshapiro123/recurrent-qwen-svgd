@@ -1,0 +1,5 @@
+status=no_go
+go=False
+issues=1
+output_json=/content/recurrent-qwen-svgd/outputs/stage5/stage5_capability_ladder_trace_collection_20260623_040333/curriculum_sft_gate.json
+output_md=/content/recurrent-qwen-svgd/outputs/stage5/stage5_capability_ladder_trace_collection_20260623_040333/curriculum_sft_gate.md

@@ -1,0 +1,26 @@
+{
+  "kind": "capability_ladder_trace_collection",
+  "status": "ready",
+  "scored_rows": 96,
+  "jobs": 146,
+  "responses": 32,
+  "accepted_rows": 32,
+  "status_counts": {
+    "accepted": 32,
+    "missing_response": 114
+  },
+  "tier_counts": {
+    "base_preservation": 8,
+    "qwen_0_5b_miss_qwen_1_5b_miss_qwen_3b_miss_qwen_7b_solve": 10,
+    "qwen_0_5b_miss_qwen_1_5b_miss_qwen_3b_solve": 4,
+    "qwen_0_5b_miss_qwen_1_5b_solve": 10
+  },
+  "target_loop_counts": {
+    "1": 8,
+    "2": 10,
+    "3": 4,
+    "4": 10
+  },
+  "issues": [],
+  "next_action": "Run training/build_capability_ladder_curriculum.py on output_jsonl without --allow_answer_only."
+}

@@ -1,1 +1,1 @@
-outputs/stage5/stage5_capability_ladder_trace_responses_20260623_040007/summary.json
+outputs/stage5/stage5_capability_ladder_trace_collection_20260623_040333/summary.json
