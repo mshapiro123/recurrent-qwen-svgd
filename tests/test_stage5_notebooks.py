@@ -652,6 +652,32 @@ def test_capability_ladder_local_hf_trace_collect_target_is_bootstrapped() -> No
     assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_local_hf_trace_collect"' in current_action
 
 
+def test_capability_ladder_local_hf_trace_sft_target_is_bootstrapped() -> None:
+    plain = (ROOT / "colab/STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_CELL.py").read_text(encoding="utf-8")
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
+
+    assert "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_CELL_VERSION" in plain
+    assert "capability_ladder_local_hf_trace_sft" in plain
+    assert "Qwen/Qwen2.5-7B-Instruct" in plain
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_LOCAL_HF" in plain
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_ALLOW_STUDENT_LINEAGE" in plain
+    assert "colab/run_stage5_capability_ladder_trace_responses.py" in plain
+    assert "colab/run_stage5_capability_ladder_trace_collect.py" in plain
+    assert "stage5_capability_ladder_trace_collection" in plain
+    assert "colab/run_stage5_curriculum_sft.py" in plain
+    assert "STAGE5_CURRICULUM_USE_LEARNED_LOOP_CONTROL" in plain
+    assert "STAGE5_CURRICULUM_LOOP_CONTROL_CE_WEIGHT" in plain
+    assert "STAGE5_CURRICULUM_HALT_TARGET_NLL_WEIGHT" in plain
+    assert "runtime.unassign()" in plain
+    assert "capability_ladder_local_hf_trace_sft" in bootstrap
+    assert "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_CELL.py" in bootstrap
+    assert "capability_ladder_local_hf_trace_sft" in bootstrap_md
+    assert "Next Paste-Anywhere Local-HF Trace-to-SFT Chain Cell" in current_action
+    assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_local_hf_trace_sft"' in current_action
+
+
 def test_traced_capability_ladder_sft_cell_derives_training_env_from_collection() -> None:
     plain = (ROOT / "colab/STAGE5_TRACED_CAPABILITY_LADDER_SFT_CELL.py").read_text(encoding="utf-8")
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")

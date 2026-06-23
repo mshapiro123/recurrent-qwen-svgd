@@ -472,6 +472,66 @@ assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME" in code, "Fetched
 exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
 ```
 
+## Next Paste-Anywhere Local-HF Trace-to-SFT Chain Cell
+
+Use this on a high-memory GPU runtime when you want the trace pilot and the
+first recurrent SFT pass to run unattended in one session. It runs local
+`Qwen/Qwen2.5-7B-Instruct` on the current trace jobs, collects answer-verified
+traces, and starts bounded learned-depth Phase 1 SFT only if the trace gate is
+green. Default trace limit is 32 jobs.
+
+```python
+import base64, json, os, time, urllib.request
+from google.colab import userdata
+
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_local_hf_trace_sft"
+
+# Optional knobs for a longer run after the 32-job pilot is healthy.
+# os.environ["STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_LIMIT"] = "64"
+# os.environ["STAGE5_TRACED_CAPABILITY_SFT_PHASE1_STEPS"] = "250"
+
+def colab_secret(*names):
+    for name in names:
+        value = os.environ.get(name)
+        if value:
+            return value
+        try:
+            value = userdata.get(name)
+        except Exception:
+            value = None
+        if value:
+            return value
+    return None
+
+token = colab_secret("GH_TOKEN", "GITHUB_TOKEN")
+assert token, "Add GH_TOKEN or GITHUB_TOKEN to Colab secrets."
+
+headers = {
+    "Authorization": f"Bearer {token}",
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "Cache-Control": "no-cache",
+}
+
+def gh_json(url):
+    req = urllib.request.Request(url, headers=headers)
+    return json.loads(urllib.request.urlopen(req).read().decode("utf-8"))
+
+ref_payload = gh_json(
+    f"https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/git/ref/heads/main?cache_bust={time.time_ns()}"
+)
+resolved_ref = ref_payload["object"]["sha"]
+payload = gh_json(
+    "https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/"
+    f"contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py?ref={resolved_ref}&cache_bust={time.time_ns()}"
+)
+code = base64.b64decode(payload["content"]).decode("utf-8")
+print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12])
+assert "capability_ladder_local_hf_trace_sft" in code, "Fetched stale bootstrap without trace-to-SFT target."
+assert "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_CELL.py" in code, "Fetched stale trace-to-SFT path."
+exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
+```
+
 ## Next Paste-Anywhere Capability-Ladder Trace Response+Collection Cell
 
 Use this after trace jobs are ready. Prefer CPU. It will not call a provider

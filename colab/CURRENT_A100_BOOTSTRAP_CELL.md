@@ -111,6 +111,17 @@ jobs, collects answer-verified traces, pushes summaries, and disconnects. It
 does not require provider/API spend and disables Drive backup by default to
 avoid reauthorization stalls.
 
+To run local Hugging Face trace generation, trace collection, and bounded
+recurrent SFT in one unattended high-memory GPU session:
+
+Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
+"capability_ladder_local_hf_trace_sft"` before running the bootstrap cell.
+This target follows the current trace-job summary, runs
+`Qwen/Qwen2.5-7B-Instruct` locally on the first 32 trace jobs, collects
+answer-verified traces, and starts Phase 1 recurrent SFT only if the traced
+curriculum gate passes. It avoids provider/API spend and disables Drive backup
+by default to reduce Colab reauthorization stalls.
+
 To train deterministic recurrent Phase 1 from the latest gate-ready traced
 capability-ladder curriculum:
 
@@ -173,6 +184,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "capability_ladder_trace_collect_cpu" - CPU-only trace-response collection into gated SFT data.
 #   "capability_ladder_trace_response_collect_cpu" - CPU/network provider responses then immediate collection.
 #   "capability_ladder_local_hf_trace_collect" - GPU local-HF responses then immediate collection.
+#   "capability_ladder_local_hf_trace_sft" - GPU local-HF traces, collection, then bounded recurrent SFT.
 #   "traced_capability_ladder_sft" - GPU Phase 1 SFT from the latest gate-ready traced capability ladder.
 #   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
 #   "depth_sweep_heldout" - L4/T4 held-out ARC tail loop-depth sweep for routing validation.
@@ -539,6 +551,34 @@ TARGETS = {
             "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BACKUP_DRIVE": "0",
             "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_BACKUP_DRIVE": "0",
             "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COLLECT_DISCONNECT": "1",
+        },
+    },
+    "capability_ladder_local_hf_trace_sft": {
+        "path": "colab/STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_CELL.py",
+        "markers": [
+            "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_CELL_VERSION",
+            "capability_ladder_local_hf_trace_sft",
+            "hf_local",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_LOCAL_HF",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_ALLOW_STUDENT_LINEAGE",
+            "colab/run_stage5_capability_ladder_trace_responses.py",
+            "colab/run_stage5_capability_ladder_trace_collect.py",
+            "stage5_capability_ladder_trace_collection",
+            "colab/run_stage5_curriculum_sft.py",
+            "STAGE5_CURRICULUM_USE_LEARNED_LOOP_CONTROL",
+            "STAGE5_CURRICULUM_LOOP_CONTROL_CE_WEIGHT",
+            "tests/test_stage5_curriculum_sft.py",
+            "tests/test_curriculum_sft_gate.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_LIMIT": "32",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME": "Qwen/Qwen2.5-7B-Instruct",
+            "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_RUN_SFT": "1",
+            "STAGE5_TRACED_CAPABILITY_SFT_PHASE1_STEPS": "150",
+            "STAGE5_TRACED_CAPABILITY_SFT_ALLOW_NO_DRIVE_BACKUP": "1",
+            "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_DISCONNECT": "1",
         },
     },
     "traced_capability_ladder_sft": {
