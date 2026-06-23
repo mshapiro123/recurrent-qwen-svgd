@@ -30,6 +30,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "traced_sft_direct_preservation_probe" - content-route direct preservation from the scale64 checkpoint.
 #   "traced_sft_direct_preservation_recover_only" - publish surviving direct-preservation output without rerunning training.
 #   "traced_sft_direct_preservation_confirm" - larger loop-1 ARC confirmation after direct preservation passes.
+#   "traced_sft_surface_alignment_repair" - repair ARC-Easy content/cyclic surface mismatch.
 #   "traced_sft_competence_preserving_pipeline" - mixed recovery after confirmation still trails base.
 #   "traced_sft_depth_router_after_direct_preserve" - learned-depth continuation from a passed direct-preservation checkpoint.
 #   "traced_capability_ladder_sft" - GPU Phase 1 SFT from the latest gate-ready traced capability ladder.
@@ -670,6 +671,35 @@ TARGETS = {
             "STAGE5_DIRECT_CONFIRM_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
             "STAGE5_DIRECT_CONFIRM_ASSESS_SCORE_TARGET": "content_question_only",
             "STAGE5_DIRECT_CONFIRM_DISCONNECT": "1",
+        },
+    },
+    "traced_sft_surface_alignment_repair": {
+        "path": "colab/STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL.py",
+        "markers": [
+            "STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL_VERSION",
+            "surface_alignment_repair_v1",
+            "traced_sft_surface_alignment_repair",
+            "STAGE5_SURFACE_ALIGN_SOURCE_SUMMARY",
+            "stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment",
+            "eval/analyze_mcq_surface_mismatch.py",
+            "training/prepare_mcq_surface_alignment_jsonl.py",
+            "colab/run_stage5_surface_alignment_repair.py",
+            "tests/test_prepare_mcq_surface_alignment_jsonl.py",
+            "tests/test_stage5_surface_alignment_repair.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_SURFACE_ALIGN_SOURCE_SUMMARY": (
+                "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment/summary.json"
+            ),
+            "STAGE5_SURFACE_ALIGN_RUN_ID": (
+                "stage5_surface_alignment_repair_from_direct_confirm_20260623"
+            ),
+            "STAGE5_SURFACE_ALIGN_MAX_STEPS": "50",
+            "STAGE5_SURFACE_ALIGN_LR": "5e-7",
+            "STAGE5_SURFACE_ALIGN_DISTILL_WEIGHT": "0.05",
+            "STAGE5_SURFACE_ALIGN_PUSH": "1",
+            "STAGE5_SURFACE_ALIGN_DISCONNECT": "1",
         },
     },
     "traced_sft_competence_preserving_pipeline": {

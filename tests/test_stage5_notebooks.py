@@ -843,8 +843,8 @@ def test_traced_sft_scale64_benchmark_target_is_bootstrapped() -> None:
     assert "STAGE5_ALLOW_STALE_SCALE64_BENCHMARK" in bootstrap_md
     assert '"traced_sft_scale64_benchmark is complete; rerouting to "' in bootstrap_md
     assert '"traced_sft_direct_preservation_probe. Set "' in bootstrap_md
-    assert "competence-preserving recurrent recovery pipeline" in current_action
-    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_competence_preserving_pipeline" in current_action
+    assert "content/cyclic surface-alignment repair" in current_action
+    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_surface_alignment_repair" in current_action
     assert "STAGE5_CURRENT_A100_TARGET=traced_sft_scale64_benchmark" in current_action
 
 
@@ -872,8 +872,8 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert "traced_sft_direct_preservation_probe" in bootstrap_md
     assert "traced_sft_direct_preservation_precheck" in bootstrap_md
     assert "traced_sft_direct_preservation_recover_only" in bootstrap_md
-    assert "competence-preserving recurrent recovery pipeline" in current_action
-    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_competence_preserving_pipeline" in current_action
+    assert "content/cyclic surface-alignment repair" in current_action
+    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_surface_alignment_repair" in current_action
     assert "ARC-Easy content:      recurrent 140/256 vs base 148/256, delta -8" in current_action
     assert "ARC-Challenge content: recurrent 86/256 vs base 87/256, delta -1" in current_action
     assert "ARC-Easy content delta: -7" in current_action
@@ -889,8 +889,8 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert "before commit `d7682ec`" in current_action
     assert "Stale-safe fresh-runtime launcher" in current_action
     assert "api.github.com/repos/mshapiro123/recurrent-qwen-svgd" in current_action
-    assert "STAGE5_COMPETENCE_PRESERVING_PIPELINE_CELL_VERSION" in current_action
-    assert '"STAGE5_CURRENT_A100_TARGET"] = "traced_sft_competence_preserving_pipeline"' in current_action
+    assert "STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL_VERSION" in current_action
+    assert '"STAGE5_CURRENT_A100_TARGET"] = "traced_sft_surface_alignment_repair"' in current_action
     assert "stage5_latest_direct_preservation_summary.txt" in direct_cell
     assert "stage5_current_source_summary.txt" in direct_cell
     assert "stage5_direct_preservation_probe_failure" in direct_cell
@@ -950,10 +950,32 @@ def test_traced_sft_direct_preservation_confirm_target_is_bootstrapped() -> None
     assert '"STAGE5_CURRENT_A100_TARGET", "preflight"' in bootstrap
 
 
-def test_traced_sft_competence_preserving_pipeline_target_is_bootstrapped() -> None:
+def test_traced_sft_surface_alignment_repair_target_is_bootstrapped() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
     current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL.py").read_text(encoding="utf-8")
+
+    assert "traced_sft_surface_alignment_repair" in bootstrap
+    assert "traced_sft_surface_alignment_repair" in bootstrap_md
+    assert "colab/STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL.py" in bootstrap
+    assert "STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL_VERSION" in cell
+    assert "surface_alignment_repair_v1" in cell
+    assert "STAGE5_SURFACE_ALIGN_SOURCE_SUMMARY" in cell
+    assert "stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment" in cell
+    assert "eval/analyze_mcq_surface_mismatch.py" in cell
+    assert "training/prepare_mcq_surface_alignment_jsonl.py" in cell
+    assert "colab/run_stage5_surface_alignment_repair.py" in cell
+    assert "tests/test_prepare_mcq_surface_alignment_jsonl.py" in cell
+    assert "tests/test_stage5_surface_alignment_repair.py" in cell
+    assert "runtime.unassign" in cell
+    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_surface_alignment_repair" in current_action
+    assert "prioritize_content_cyclic_surface_alignment" in current_action
+
+
+def test_traced_sft_competence_preserving_pipeline_target_is_bootstrapped() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
     cell = (ROOT / "colab/STAGE5_COMPETENCE_PRESERVING_PIPELINE_CELL.py").read_text(encoding="utf-8")
 
     assert "traced_sft_competence_preserving_pipeline" in bootstrap
@@ -967,7 +989,6 @@ def test_traced_sft_competence_preserving_pipeline_target_is_bootstrapped() -> N
     assert "tests/test_stage5_competence_preserving_pipeline.py" in cell
     assert "tests/test_stage5_balanced_arc_mix_gate.py" in cell
     assert "runtime.unassign" in cell
-    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_competence_preserving_pipeline" in current_action
 
 
 def test_traced_capability_ladder_sft_cell_derives_training_env_from_collection() -> None:

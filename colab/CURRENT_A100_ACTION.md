@@ -63,16 +63,20 @@ ARC-Challenge cyclic:  recurrent 151/256 vs base 156/256, delta -5
 ```
 
 The direct-preservation repair recovered part of the direct-route loss, but it
-did **not** pass the broader nonnegative gate. The next action is the
-competence-preserving recurrent recovery pipeline:
+did **not** pass the broader nonnegative gate. The latest surface diagnosis
+shows that most ARC-Easy content losses are still recovered by cyclic scoring,
+so the next action is the narrower content/cyclic surface-alignment repair, not
+another broad competence-recovery pass:
 
 ```text
-STAGE5_CURRENT_A100_TARGET=traced_sft_competence_preserving_pipeline
+STAGE5_CURRENT_A100_TARGET=traced_sft_surface_alignment_repair
 ```
 
-This target runs the existing mixed ARC competence-recovery objective from the
-confirmed assessment and stops/publishes its result. A G4/L4 is appropriate;
-use A100/H100 only if availability/queueing makes it cheaper in practice.
+This target diagnoses the confirmed ARC-Easy content/cyclic mismatch, builds a
+small SFT shard from stable cyclic-rescue rows, trains a bounded Phase 1
+continuation, benchmarks ARC-Easy/ARC-Challenge, assesses the result, pushes
+artifacts with `[skip ci]`, and disconnects. A G4/L4 is appropriate; use
+A100/H100 only if availability/queueing makes it cheaper in practice.
 
 The repair checkpoint being recovered from is still:
 
@@ -83,8 +87,8 @@ loop-1 ARC-Easy: 72/128 vs base 75/128
 status: direct_route_lift
 ```
 
-Do not scale traces or add particles yet. The immediate job is still
-deterministic recurrent competence recovery.
+Do not scale traces or add particles yet. The immediate job is deterministic
+surface recovery while preserving the hard-slice signal.
 
 Cheap CPU diagnostic before the confirmation:
 
@@ -128,14 +132,32 @@ content-loss answer rank under content scoring: rank 2 on 9/10, rank 3 on 1/10
 recommendation: prioritize_content_cyclic_surface_alignment
 ```
 
-Interpretation: the recurrent checkpoint usually still ranks the correct
-answer just below the chosen wrong answer on the content-only surface, while
-the cyclic surface recovers the correct answer stably. This is stronger
-evidence for a content-vs-cyclic scoring-surface mismatch than for broad
-knowledge erosion. The current competence-preserving pipeline can still run as
-the bounded recovery step, but the next training variant should explicitly
-target content/cyclic surface alignment rather than only increasing
-base-imitation strength.
+Post-confirmation surface diagnostic:
+
+```text
+outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm/arc_easy_surface_mismatch_diagnosis.json
+```
+
+Result:
+
+```text
+ARC-Easy content delta: -8
+content losses: 16
+cyclic rescues: 14/16
+stable cyclic rescues: 8/16
+unrescued losses: 2/16
+order-sensitive losses: 6/16
+content/cyclic disagreement on losses: 15/16
+content-loss answer rank under content scoring: rank 2 on 14/16, rank 3 on 2/16
+recommendation: prioritize_content_cyclic_surface_alignment
+```
+
+Interpretation: the recurrent checkpoint usually still places the correct
+answer near the top under content-only scoring, while the cyclic surface often
+recovers it. This is stronger evidence for a content-vs-cyclic scoring-surface
+mismatch than for broad knowledge erosion. The next repair should therefore
+target content/cyclic alignment and keep the hard-row behavior as intact as
+possible.
 
 The older precheck notebook remains available for provenance:
 [`10_stage5_direct_preservation_precheck.ipynb`](10_stage5_direct_preservation_precheck.ipynb)
@@ -216,7 +238,7 @@ if hf:
     os.environ["HF_TOKEN"] = hf
     os.environ["HUGGINGFACE_HUB_TOKEN"] = hf
 
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_competence_preserving_pipeline"
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_surface_alignment_repair"
 
 url = (
     "https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/"
@@ -233,10 +255,11 @@ payload = json.loads(urllib.request.urlopen(req).read().decode("utf-8"))
 code = base64.b64decode(payload["content"]).decode("utf-8")
 required = [
     "sha_resolved_nested_fetch_v3",
-    "traced_sft_competence_preserving_pipeline",
-    "STAGE5_COMPETENCE_PRESERVING_PIPELINE_CELL_VERSION",
+    "traced_sft_surface_alignment_repair",
+    "STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL_VERSION",
     "stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment",
-    "colab/run_stage5_competence_preserving_pipeline.py",
+    "colab/run_stage5_surface_alignment_repair.py",
+    "training/prepare_mcq_surface_alignment_jsonl.py",
 ]
 missing = [marker for marker in required if marker not in code]
 assert not missing, f"Fetched bootstrap is stale or incomplete: {missing}"
@@ -250,7 +273,7 @@ latest `main`; it can run a stale bootstrap if Colab keeps an old
 
 ```python
 import os
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_competence_preserving_pipeline"
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_surface_alignment_repair"
 exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py", encoding="utf-8").read())
 ```
 
