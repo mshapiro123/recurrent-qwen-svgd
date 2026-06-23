@@ -47,7 +47,7 @@ ARC-Challenge cyclic:  recurrent 69/128 vs base 68/128, delta +1
 The corrected assessment is:
 
 ```text
-outputs/stage5/stage5_traced_sft_assessment_20260623_195134_reassessed/summary.json
+outputs/stage5/stage5_local_hf_traced_sft_scale64_assessment_20260623_202446/summary.json
 status = needs_direct_preservation_repair
 ```
 

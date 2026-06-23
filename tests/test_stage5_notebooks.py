@@ -867,7 +867,8 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert "lr2e6_distill2:lr=2e-6,steps=100,distill=2.0" in bootstrap
     assert "STAGE5_DIRECT_PRESERVE_PRECHECK_ONLY" in bootstrap
     assert "stage5_traced_sft_direct_preservation_precheck_20260623_scale64" in bootstrap
-    assert "stage5_traced_sft_assessment_20260623_195134_reassessed" in bootstrap
+    assert "stage5_local_hf_traced_sft_scale64_assessment_20260623_202446" in bootstrap
+    assert "stage5_traced_sft_assessment_20260623_195134_reassessed" not in bootstrap
     assert "traced_sft_direct_preservation_probe" in bootstrap_md
     assert "traced_sft_direct_preservation_precheck" in bootstrap_md
     assert "traced_sft_direct_preservation_recover_only" in bootstrap_md

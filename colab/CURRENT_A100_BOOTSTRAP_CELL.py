@@ -560,7 +560,7 @@ TARGETS = {
         ],
         "env": {
             "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY": (
-                "outputs/stage5/stage5_traced_sft_assessment_20260623_195134_reassessed/summary.json"
+                "outputs/stage5/stage5_local_hf_traced_sft_scale64_assessment_20260623_202446/summary.json"
             ),
             "STAGE5_DIRECT_PRESERVE_RUN_ID": "stage5_traced_sft_direct_preservation_20260623_scale64",
             "STAGE5_DIRECT_PRESERVE_ARC_TRAIN_LIMIT": "512",
@@ -602,7 +602,7 @@ TARGETS = {
         ],
         "env": {
             "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY": (
-                "outputs/stage5/stage5_traced_sft_assessment_20260623_195134_reassessed/summary.json"
+                "outputs/stage5/stage5_local_hf_traced_sft_scale64_assessment_20260623_202446/summary.json"
             ),
             "STAGE5_DIRECT_PRESERVE_RUN_ID": "stage5_traced_sft_direct_preservation_precheck_20260623_scale64",
             "STAGE5_DIRECT_PRESERVE_ARC_TRAIN_LIMIT": "512",
@@ -634,7 +634,7 @@ TARGETS = {
         ],
         "env": {
             "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY": (
-                "outputs/stage5/stage5_traced_sft_assessment_20260623_195134_reassessed/summary.json"
+                "outputs/stage5/stage5_local_hf_traced_sft_scale64_assessment_20260623_202446/summary.json"
             ),
             "STAGE5_DIRECT_PRESERVE_RUN_ID": "stage5_traced_sft_direct_preservation_20260623_scale64",
             "STAGE5_DIRECT_PRESERVE_SWEEP": (
