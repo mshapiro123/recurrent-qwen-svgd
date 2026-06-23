@@ -70,6 +70,22 @@ For ARC-Challenge on the initial 256-example slice:
 This does not prove deployed performance. It proves that deeper loops contain
 useful answers and harmful answers. The problem is selection.
 
+A follow-up selector split analysis reinforces the same conclusion. Choosing a
+simple score selector on one half of the original depth-sweep examples and
+testing it on the other half produces a small but repeatable ARC-Challenge lift
+and an easy-task cost:
+
+- ARC-Challenge, five deterministic 50/50 splits: mean selected delta versus
+  loop 1 `+1.4/128`, with `4` positive splits, `1` tied split, and `0`
+  negative splits.
+- ARC-Easy, the same splits: mean selected delta versus loop 1 `-1.8/128`,
+  with `0` positive splits, `1` tied split, and `4` negative splits.
+
+Interpretation: the deeper-loop signal is not random, but a single global
+selector is not sufficient. The next selector needs task difficulty or
+confidence conditioning so hard examples can route deeper while easy examples
+stay on the preserved direct path.
+
 ### Held-Out Depth Sweep Observation
 
 A later held-out sweep was observed in Colab but has not yet landed as a GitHub

@@ -28,11 +28,13 @@
           "base_or_any_depth_correct": 106
         },
         "best_selector": {
+          "family": "score_selector",
           "subset": [
             1,
             2
           ],
           "method": "max",
+          "weight": null,
           "total": 128,
           "correct": 100,
           "delta_vs_loop1": 1,
@@ -45,8 +47,6 @@
             "A": 29,
             "C": 34
           },
-          "family": "score_selector",
-          "weight": null,
           "display_method": "max"
         }
       },
@@ -66,34 +66,35 @@
           "base_or_any_depth_correct": 106
         },
         "selected_selector": {
+          "family": "score_selector",
           "subset": [
             1,
             2
           ],
           "method": "max",
+          "weight": null,
           "total": 128,
-          "correct": 100,
-          "delta_vs_loop1": 1,
-          "wins_vs_loop1": 1,
-          "losses_vs_loop1": 0,
+          "correct": 91,
+          "delta_vs_loop1": -1,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 1,
           "sign_test_p": 1.0,
           "prediction_counts": {
-            "B": 35,
-            "D": 30,
-            "A": 29,
-            "C": 34
+            "A": 31,
+            "B": 48,
+            "C": 25,
+            "D": 24
           },
-          "family": "score_selector",
-          "weight": null,
           "display_method": "max"
         },
         "prediction_bias": {
           "top_prediction": "B",
-          "top_prediction_fraction": 0.2734375
+          "top_prediction_fraction": 0.375
         }
       },
       "all_train_candidates_top10": [
         {
+          "family": "threshold_router",
           "source": "base",
           "threshold": 0.25,
           "fallback_loop": 2,
@@ -103,15 +104,16 @@
           "routed_deep": 3,
           "wins_vs_loop1": 1,
           "losses_vs_loop1": 0,
-          "sign_test_p": 1.0,
-          "family": "threshold_router"
+          "sign_test_p": 1.0
         },
         {
+          "family": "score_selector",
           "subset": [
             1,
             2
           ],
           "method": "max",
+          "weight": null,
           "total": 128,
           "correct": 100,
           "delta_vs_loop1": 1,
@@ -124,17 +126,17 @@
             "A": 29,
             "C": 34
           },
-          "family": "score_selector",
-          "weight": null,
           "display_method": "max"
         },
         {
+          "family": "score_selector",
           "subset": [
             1,
             2,
             3
           ],
           "method": "max",
+          "weight": null,
           "total": 128,
           "correct": 100,
           "delta_vs_loop1": 1,
@@ -147,11 +149,10 @@
             "A": 29,
             "C": 34
           },
-          "family": "score_selector",
-          "weight": null,
           "display_method": "max"
         },
         {
+          "family": "score_selector",
           "subset": [
             1,
             2,
@@ -159,6 +160,7 @@
             4
           ],
           "method": "max",
+          "weight": null,
           "total": 128,
           "correct": 100,
           "delta_vs_loop1": 1,
@@ -171,11 +173,10 @@
             "A": 29,
             "C": 34
           },
-          "family": "score_selector",
-          "weight": null,
           "display_method": "max"
         },
         {
+          "family": "threshold_router",
           "source": "base",
           "threshold": 0.0,
           "fallback_loop": 2,
@@ -185,10 +186,10 @@
           "routed_deep": 0,
           "wins_vs_loop1": 0,
           "losses_vs_loop1": 0,
-          "sign_test_p": null,
-          "family": "threshold_router"
+          "sign_test_p": null
         },
         {
+          "family": "threshold_router",
           "source": "base",
           "threshold": 0.0,
           "fallback_loop": 3,
@@ -198,10 +199,10 @@
           "routed_deep": 0,
           "wins_vs_loop1": 0,
           "losses_vs_loop1": 0,
-          "sign_test_p": null,
-          "family": "threshold_router"
+          "sign_test_p": null
         },
         {
+          "family": "threshold_router",
           "source": "base",
           "threshold": 0.0,
           "fallback_loop": 4,
@@ -211,10 +212,10 @@
           "routed_deep": 0,
           "wins_vs_loop1": 0,
           "losses_vs_loop1": 0,
-          "sign_test_p": null,
-          "family": "threshold_router"
+          "sign_test_p": null
         },
         {
+          "family": "threshold_router",
           "source": "loop1",
           "threshold": 0.0,
           "fallback_loop": 2,
@@ -224,10 +225,10 @@
           "routed_deep": 0,
           "wins_vs_loop1": 0,
           "losses_vs_loop1": 0,
-          "sign_test_p": null,
-          "family": "threshold_router"
+          "sign_test_p": null
         },
         {
+          "family": "threshold_router",
           "source": "loop1",
           "threshold": 0.0,
           "fallback_loop": 3,
@@ -237,10 +238,10 @@
           "routed_deep": 0,
           "wins_vs_loop1": 0,
           "losses_vs_loop1": 0,
-          "sign_test_p": null,
-          "family": "threshold_router"
+          "sign_test_p": null
         },
         {
+          "family": "threshold_router",
           "source": "loop1",
           "threshold": 0.0,
           "fallback_loop": 4,
@@ -250,8 +251,7 @@
           "routed_deep": 0,
           "wins_vs_loop1": 0,
           "losses_vs_loop1": 0,
-          "sign_test_p": null,
-          "family": "threshold_router"
+          "sign_test_p": null
         }
       ]
     },
@@ -272,12 +272,14 @@
           "base_or_any_depth_correct": 103
         },
         "best_selector": {
+          "family": "score_selector",
           "subset": [
             1,
             2,
             3
           ],
           "method": "loop1_plus_weighted_deeper",
+          "weight": 0.5,
           "total": 128,
           "correct": 81,
           "delta_vs_loop1": 4,
@@ -290,8 +292,6 @@
             "B": 29,
             "D": 26
           },
-          "family": "score_selector",
-          "weight": 0.5,
           "display_method": "loop1_plus_weighted_deeper:0.5"
         }
       },
@@ -311,41 +311,43 @@
           "base_or_any_depth_correct": 89
         },
         "selected_selector": {
+          "family": "score_selector",
           "subset": [
             1,
             2,
             3
           ],
           "method": "loop1_plus_weighted_deeper",
-          "total": 128,
-          "correct": 81,
-          "delta_vs_loop1": 4,
-          "wins_vs_loop1": 5,
-          "losses_vs_loop1": 1,
-          "sign_test_p": 0.21875,
-          "prediction_counts": {
-            "C": 47,
-            "A": 26,
-            "B": 29,
-            "D": 26
-          },
-          "family": "score_selector",
           "weight": 0.5,
+          "total": 128,
+          "correct": 74,
+          "delta_vs_loop1": 1,
+          "wins_vs_loop1": 1,
+          "losses_vs_loop1": 0,
+          "sign_test_p": 1.0,
+          "prediction_counts": {
+            "B": 38,
+            "D": 36,
+            "C": 32,
+            "A": 22
+          },
           "display_method": "loop1_plus_weighted_deeper:0.5"
         },
         "prediction_bias": {
-          "top_prediction": "C",
-          "top_prediction_fraction": 0.3671875
+          "top_prediction": "B",
+          "top_prediction_fraction": 0.296875
         }
       },
       "all_train_candidates_top10": [
         {
+          "family": "score_selector",
           "subset": [
             1,
             2,
             3
           ],
           "method": "loop1_plus_weighted_deeper",
+          "weight": 0.5,
           "total": 128,
           "correct": 81,
           "delta_vs_loop1": 4,
@@ -358,16 +360,16 @@
             "B": 29,
             "D": 26
           },
-          "family": "score_selector",
-          "weight": 0.5,
           "display_method": "loop1_plus_weighted_deeper:0.5"
         },
         {
+          "family": "score_selector",
           "subset": [
             1,
             2
           ],
           "method": "loop1_plus_weighted_deeper",
+          "weight": 0.5,
           "total": 128,
           "correct": 80,
           "delta_vs_loop1": 3,
@@ -380,16 +382,16 @@
             "B": 29,
             "D": 26
           },
-          "family": "score_selector",
-          "weight": 0.5,
           "display_method": "loop1_plus_weighted_deeper:0.5"
         },
         {
+          "family": "score_selector",
           "subset": [
             1,
             2
           ],
           "method": "loop1_plus_weighted_deeper",
+          "weight": 0.75,
           "total": 128,
           "correct": 80,
           "delta_vs_loop1": 3,
@@ -402,17 +404,17 @@
             "B": 27,
             "D": 26
           },
-          "family": "score_selector",
-          "weight": 0.75,
           "display_method": "loop1_plus_weighted_deeper:0.75"
         },
         {
+          "family": "score_selector",
           "subset": [
             1,
             2,
             3
           ],
           "method": "loop1_plus_weighted_deeper",
+          "weight": 0.1,
           "total": 128,
           "correct": 80,
           "delta_vs_loop1": 3,
@@ -425,17 +427,17 @@
             "B": 31,
             "D": 23
           },
-          "family": "score_selector",
-          "weight": 0.1,
           "display_method": "loop1_plus_weighted_deeper:0.1"
         },
         {
+          "family": "score_selector",
           "subset": [
             1,
             2,
             3
           ],
           "method": "loop1_plus_weighted_deeper",
+          "weight": 0.25,
           "total": 128,
           "correct": 80,
           "delta_vs_loop1": 3,
@@ -448,11 +450,10 @@
             "B": 30,
             "D": 24
           },
-          "family": "score_selector",
-          "weight": 0.25,
           "display_method": "loop1_plus_weighted_deeper:0.25"
         },
         {
+          "family": "threshold_router",
           "source": "base",
           "threshold": 0.75,
           "fallback_loop": 2,
@@ -462,10 +463,10 @@
           "routed_deep": 43,
           "wins_vs_loop1": 9,
           "losses_vs_loop1": 7,
-          "sign_test_p": 0.803619384765625,
-          "family": "threshold_router"
+          "sign_test_p": 0.803619384765625
         },
         {
+          "family": "threshold_router",
           "source": "base",
           "threshold": 1.0,
           "fallback_loop": 2,
@@ -475,10 +476,10 @@
           "routed_deep": 55,
           "wins_vs_loop1": 10,
           "losses_vs_loop1": 8,
-          "sign_test_p": 0.8145294189453125,
-          "family": "threshold_router"
+          "sign_test_p": 0.8145294189453125
         },
         {
+          "family": "threshold_router",
           "source": "loop1",
           "threshold": 0.25,
           "fallback_loop": 2,
@@ -488,10 +489,10 @@
           "routed_deep": 14,
           "wins_vs_loop1": 6,
           "losses_vs_loop1": 4,
-          "sign_test_p": 0.75390625,
-          "family": "threshold_router"
+          "sign_test_p": 0.75390625
         },
         {
+          "family": "threshold_router",
           "source": "loop1",
           "threshold": 1.0,
           "fallback_loop": 2,
@@ -501,15 +502,16 @@
           "routed_deep": 50,
           "wins_vs_loop1": 10,
           "losses_vs_loop1": 8,
-          "sign_test_p": 0.8145294189453125,
-          "family": "threshold_router"
+          "sign_test_p": 0.8145294189453125
         },
         {
+          "family": "score_selector",
           "subset": [
             1,
             2
           ],
           "method": "mean",
+          "weight": null,
           "total": 128,
           "correct": 79,
           "delta_vs_loop1": 2,
@@ -522,8 +524,6 @@
             "B": 26,
             "D": 26
           },
-          "family": "score_selector",
-          "weight": null,
           "display_method": "mean"
         }
       ]
