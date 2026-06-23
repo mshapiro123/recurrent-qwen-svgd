@@ -1,0 +1,15 @@
+
+Loading weights:   0%|          | 0/434 [00:00<?, ?it/s]
+Loading weights:   0%|          | 1/434 [00:00<00:50,  8.64it/s]
+Loading weights:  20%|██        | 87/434 [00:00<00:00, 474.15it/s]
+Loading weights:  34%|███▍      | 147/434 [00:00<00:00, 486.98it/s]
+Loading weights:  46%|████▌     | 198/434 [00:00<00:00, 485.49it/s]
+Loading weights:  59%|█████▉    | 255/434 [00:00<00:00, 503.08it/s]
+Loading weights:  71%|███████   | 306/434 [00:00<00:00, 491.53it/s]
+Loading weights:  84%|████████▎ | 363/434 [00:00<00:00, 495.74it/s]
+Loading weights:  95%|█████████▌| 413/434 [00:00<00:00, 495.27it/s]
+Loading weights: 100%|██████████| 434/434 [00:00<00:00, 483.53it/s]
+max_abs_diff=0.00000000
+mean_abs_diff=0.00000000
+threshold=0.00100000
+PASS: identity wrapper drift is within threshold
