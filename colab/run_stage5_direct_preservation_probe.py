@@ -122,26 +122,135 @@ def source_payload_and_checkpoint() -> tuple[Path, dict[str, Any], Path]:
 def restore_checkpoint_if_needed(checkpoint: Path) -> None:
     if checkpoint.exists():
         return
-    drive_roots = [
-        Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts"),
-        Path("/content/drive/MyDrive/recurrent-qwen-svgd"),
-        Path("/content/drive/MyDrive/gram-recurrent-qwen-outputs"),
-    ]
-    rel = path_for_cli(checkpoint)
-    candidates: list[Path] = []
-    for root in drive_roots:
-        if not root.exists():
-            continue
-        direct = root / rel
-        if direct.exists():
-            candidates.append(direct)
-        candidates.extend(root.rglob(checkpoint.name))
-    if not candidates:
-        raise FileNotFoundError(f"Missing checkpoint and no Drive backup candidate found: {path_for_cli(checkpoint)}")
-    source = sorted(candidates, key=lambda path: len(str(path)))[0]
+    run_id = infer_stage5_run_id(checkpoint)
+    candidates = candidate_drive_checkpoints(run_id, path_for_cli(checkpoint), checkpoint.name)
+    existing = [path for path in candidates if path.exists()]
+    if not existing:
+        searched = "\n".join(str(path) for path in candidates[:16])
+        raise FileNotFoundError(
+            f"Missing checkpoint and no Drive backup candidate found: {path_for_cli(checkpoint)}\n"
+            f"Searched run_id={run_id!r} across project Drive roots.\n"
+            f"Candidate paths:\n{searched}"
+        )
+    source = existing[0]
     checkpoint.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source, checkpoint)
     print(f"restored_checkpoint={source} -> {checkpoint}", flush=True)
+
+
+def split_drive_roots(value: str) -> list[Path]:
+    return [Path(item.strip()) for item in value.split(os.pathsep) if item.strip()]
+
+
+def drive_roots() -> list[Path]:
+    roots: list[Path] = []
+    if os.environ.get("DRIVE_BACKUP_DIRS"):
+        roots.extend(split_drive_roots(os.environ["DRIVE_BACKUP_DIRS"]))
+    if os.environ.get("DRIVE_BACKUP_DIR"):
+        roots.append(Path(os.environ["DRIVE_BACKUP_DIR"]))
+    else:
+        roots.extend(
+            [
+                Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts"),
+                Path("/content/drive/MyDrive/recurrent-qwen-svgd"),
+                Path("/content/drive/MyDrive/recurrent-qwen-svgd-fresh"),
+                Path("/content/drive/MyDrive/gram-recurrent-qwen-outputs"),
+            ]
+        )
+    if os.environ.get("STAGE5_DRIVE_BACKUP_DIR"):
+        roots.append(Path(os.environ["STAGE5_DRIVE_BACKUP_DIR"]))
+
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for root in roots:
+        key = str(root)
+        if key not in seen:
+            seen.add(key)
+            unique.append(root)
+    return unique
+
+
+def infer_stage5_run_id(checkpoint: Path) -> str:
+    parts = list(checkpoint.parts)
+    for marker in ("stage5", "outputs"):
+        if marker in parts:
+            index = parts.index(marker)
+            if marker == "outputs" and index + 2 < len(parts) and parts[index + 1] == "stage5":
+                return parts[index + 2]
+            if marker == "stage5" and index + 1 < len(parts):
+                return parts[index + 1]
+    return checkpoint.parent.parent.name or checkpoint.stem
+
+
+def append_unique(paths: list[Path], seen: set[str], candidate: Path) -> None:
+    key = str(candidate)
+    if key not in seen:
+        seen.add(key)
+        paths.append(candidate)
+
+
+def candidate_drive_checkpoints(run_id: str, checkpoint_rel: str, filename: str) -> list[Path]:
+    candidates: list[Path] = []
+    seen: set[str] = set()
+    rel_path = Path(checkpoint_rel)
+    rel_parts = list(rel_path.parts)
+    phase_suffix = Path("phase1") / filename
+    if "phase1" in rel_parts:
+        phase_suffix = Path(*rel_parts[rel_parts.index("phase1") :])
+
+    for root in drive_roots():
+        for candidate in [
+            root / checkpoint_rel,
+            root / "outputs" / "stage5" / run_id / phase_suffix,
+            root / "stage5" / run_id / phase_suffix,
+            root / run_id / phase_suffix,
+            root / run_id / "run_dir" / phase_suffix,
+            root / "outputs" / "stage5" / run_id / "run_dir" / phase_suffix,
+            root / "stage5" / run_id / "run_dir" / phase_suffix,
+        ]:
+            append_unique(candidates, seen, candidate)
+        if not root.exists():
+            continue
+        for pattern in [
+            f"outputs/stage5/{run_id}*/{phase_suffix.as_posix()}",
+            f"outputs/stage5/{run_id}*/run_dir/{phase_suffix.as_posix()}",
+            f"stage5/{run_id}*/{phase_suffix.as_posix()}",
+            f"stage5/{run_id}*/run_dir/{phase_suffix.as_posix()}",
+            f"{run_id}*/{phase_suffix.as_posix()}",
+            f"{run_id}*/run_dir/{phase_suffix.as_posix()}",
+        ]:
+            for candidate in sorted(root.glob(pattern)):
+                append_unique(candidates, seen, candidate)
+
+    exact_existing = [path for path in candidates if path.exists()]
+    if exact_existing:
+        return exact_existing
+
+    broad: list[Path] = []
+    broad_seen: set[str] = set()
+    for root in drive_roots():
+        if not root.exists():
+            continue
+        for candidate in sorted(root.rglob(filename)):
+            if run_id in candidate.as_posix():
+                append_unique(broad, broad_seen, candidate)
+    if broad:
+        return broad
+
+    ambiguous: list[Path] = []
+    ambiguous_seen: set[str] = set()
+    for root in drive_roots():
+        if not root.exists():
+            continue
+        for candidate in sorted(root.rglob(filename)):
+            append_unique(ambiguous, ambiguous_seen, candidate)
+            if len(ambiguous) > 1:
+                raise FileNotFoundError(
+                    "Multiple same-name checkpoint backups exist, but none matched "
+                    f"expected run_id={run_id!r}. Refusing ambiguous restore for {filename}.\n"
+                    + "\n".join(str(path) for path in ambiguous[:8])
+                )
+    return ambiguous or candidates
 
 
 def prepare_arc_mcq(config: str, split: str, output: Path, *, limit: str | int) -> None:
