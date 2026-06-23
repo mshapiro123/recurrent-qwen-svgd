@@ -21,6 +21,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from colab.colab_auth import ensure_hf_token_from_colab  # noqa: E402
+
 DEFAULT_SOURCE_SUMMARY = (
     "outputs/stage5/"
     "stage5_arc_mix_recovery_once_20260622_003331/"
@@ -197,6 +199,7 @@ def run_assessment() -> int:
 
 
 def main() -> int:
+    ensure_hf_token_from_colab()
     try:
         return run_assessment()
     finally:

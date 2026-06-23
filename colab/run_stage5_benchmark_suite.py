@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from colab.colab_auth import ensure_hf_token_from_colab
 from colab.run_stage5_publish_hf_adapter import checkpoint_value_from_payload
 from colab.run_stage5_recovered_phase1_arc_gate import (
     candidate_drive_checkpoints,
@@ -802,6 +803,7 @@ def commit_results() -> None:
 
 
 def main() -> int:
+    ensure_hf_token_from_colab()
     if RECURRENT_MODE == "phase1" and RECURRENT_NUM_TRAJECTORIES != 1:
         raise SystemExit("phase1 recurrent benchmark requires STAGE5_BENCHMARK_NUM_TRAJECTORIES=1")
     started = time.time()

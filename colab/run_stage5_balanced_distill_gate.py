@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from colab.colab_auth import ensure_hf_token_from_colab  # noqa: E402
 from colab.run_stage5_recovered_phase1_arc_gate import (  # noqa: E402
     path_for_cli,
     restore_checkpoint_if_needed,
@@ -336,6 +337,7 @@ def commit_results(child_run_ids: list[str]) -> None:
 
 
 def main() -> int:
+    ensure_hf_token_from_colab()
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     source_payload = read_json(SOURCE_SUMMARY)
     resume_checkpoint = selected_checkpoint(source_payload)

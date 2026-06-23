@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from colab.colab_auth import ensure_hf_token_from_colab  # noqa: E402
 from colab.run_stage5_recovered_phase1_arc_gate import path_for_cli  # noqa: E402
 
 
@@ -244,6 +245,7 @@ def build_summary(
 
 
 def main() -> int:
+    ensure_hf_token_from_colab()
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     if not SOURCE_SUMMARY.exists():
         raise FileNotFoundError(f"Missing source summary: {SOURCE_SUMMARY}")

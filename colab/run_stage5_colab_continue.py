@@ -20,6 +20,11 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from colab.colab_auth import ensure_hf_token_from_colab  # noqa: E402
+
 RUN_ID = os.environ.get("STAGE5_ARC_AGI_COLAB_CONTINUE_RUN_ID") or time.strftime(
     "stage5_arc_agi_colab_continue_%Y%m%d_%H%M%S"
 )
@@ -279,6 +284,7 @@ def commit_stage5_outputs() -> None:
 
 
 def main() -> int:
+    ensure_hf_token_from_colab()
     os.environ.update({key: value for key, value in default_env().items() if key not in os.environ})
     mount_drive_if_available()
     ensure_git_identity()
