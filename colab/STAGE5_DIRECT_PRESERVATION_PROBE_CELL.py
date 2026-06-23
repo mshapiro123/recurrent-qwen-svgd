@@ -56,6 +56,8 @@ DRIVE_BACKUP = env_bool("STAGE5_DIRECT_PRESERVE_DRIVE_BACKUP", False)
 DISCONNECT_WHEN_DONE = env_bool("STAGE5_DIRECT_PRESERVE_DISCONNECT", False)
 CHAIN_CONFIRM_WHEN_PASSED = env_bool("STAGE5_DIRECT_PRESERVE_CHAIN_CONFIRM", False)
 CHAIN_DEPTH_ROUTER_WHEN_CONFIRMED = env_bool("STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER", False)
+RESUME_EXISTING = env_bool("STAGE5_DIRECT_PRESERVE_RESUME_EXISTING", True)
+RESUME_ONLY = env_bool("STAGE5_DIRECT_PRESERVE_RESUME_ONLY", False)
 SWEEP_SPEC = os.environ.get("STAGE5_DIRECT_PRESERVE_SWEEP", "").strip()
 RUN_ID = os.environ.get("STAGE5_DIRECT_PRESERVE_RUN_ID") or time.strftime(
     "stage5_direct_preservation_loop1_%Y%m%d_%H%M%S"
@@ -495,15 +497,30 @@ try:
             flush=True,
         )
         attempt_run_dir = ROOT / "outputs" / "stage5" / attempt_run_id
-        try:
-            run([sys.executable, "colab/run_stage5_direct_preservation_probe.py"], cwd=ROOT, env=attempt_env)
-            if not (attempt_run_dir / "summary.json").exists():
-                raise RuntimeError(f"Direct-preservation attempt returned without summary: {attempt_run_dir}")
-        except Exception as exc:
-            set_stage(f"direct_preservation_attempt_failed_{index}_{attempt['name']}")
+        if RESUME_EXISTING and (attempt_run_dir / "summary.json").exists():
+            print(
+                f"direct_preservation_resume_existing={attempt_run_dir.relative_to(ROOT).as_posix()}",
+                flush=True,
+            )
+        elif RESUME_ONLY:
+            exc = RuntimeError(
+                "STAGE5_DIRECT_PRESERVE_RESUME_ONLY=1 but no existing attempt summary was found: "
+                f"{attempt_run_dir.relative_to(ROOT).as_posix()}/summary.json"
+            )
+            set_stage(f"direct_preservation_resume_missing_{index}_{attempt['name']}")
             write_attempt_failure_summary(attempt_run_dir, attempt, exc)
             safe_stage_and_push(attempt_run_dir)
-            raise
+            raise exc
+        else:
+            try:
+                run([sys.executable, "colab/run_stage5_direct_preservation_probe.py"], cwd=ROOT, env=attempt_env)
+                if not (attempt_run_dir / "summary.json").exists():
+                    raise RuntimeError(f"Direct-preservation attempt returned without summary: {attempt_run_dir}")
+            except Exception as exc:
+                set_stage(f"direct_preservation_attempt_failed_{index}_{attempt['name']}")
+                write_attempt_failure_summary(attempt_run_dir, attempt, exc)
+                safe_stage_and_push(attempt_run_dir)
+                raise
 
         assert attempt_run_dir.exists(), f"Expected run_dir was not created: {attempt_run_dir}"
         set_stage(f"backup_and_publish_{index}_{attempt['name']}")

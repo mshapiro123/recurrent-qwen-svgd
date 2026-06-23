@@ -801,6 +801,10 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert "stage5_direct_preservation_probe_failure" in direct_cell
     assert "direct_route_attempt_failed" in direct_cell
     assert "attempt_failure_summary" in direct_cell
+    assert "STAGE5_DIRECT_PRESERVE_RESUME_EXISTING" in direct_cell
+    assert "STAGE5_DIRECT_PRESERVE_RESUME_ONLY" in direct_cell
+    assert "direct_preservation_resume_existing" in direct_cell
+    assert "direct_preservation_resume_missing" in direct_cell
     assert "Record Stage 5 direct preservation probe {run_dir.name}" in direct_cell
     assert "STAGE5_DIRECT_PRESERVE_CHAIN_CONFIRM" in direct_cell
     assert "STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER" in direct_cell
