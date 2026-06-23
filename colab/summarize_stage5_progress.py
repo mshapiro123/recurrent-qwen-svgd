@@ -1014,6 +1014,44 @@ def balanced_assessment_rows(summary_files: list[Path]) -> list[dict[str, Any]]:
     return sorted(rows, key=lambda item: str(item["path"]))
 
 
+def direct_preservation_statuses(summary_files: list[Path]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for path in summary_files:
+        payload = safe_read_json(path)
+        if not payload or payload.get("kind") != "stage5_direct_preservation_probe":
+            continue
+        best = payload.get("best_checkpoint") if isinstance(payload.get("best_checkpoint"), dict) else {}
+        direct_sft = ((payload.get("data") or {}).get("direct_sft") or {})
+        loop1_eval = best.get("loop1_eval") if isinstance(best.get("loop1_eval"), dict) else {}
+        loop4_eval = best.get("loop4_eval") if isinstance(best.get("loop4_eval"), dict) else {}
+        comparison = best.get("comparison_to_base") if isinstance(best.get("comparison_to_base"), dict) else {}
+        rows.append(
+            {
+                "path": path_for_cli(path),
+                "run_id": str(payload.get("run_id") or path.parent.name),
+                "status": payload.get("status"),
+                "passed": bool(payload.get("passed", False)),
+                "source_summary": payload.get("source_summary"),
+                "resume_checkpoint": payload.get("resume_checkpoint"),
+                "checkpoint": best.get("checkpoint"),
+                "trained": best.get("trained"),
+                "selected_rows": int(direct_sft.get("selected_rows", 0) or 0),
+                "base_correct": (payload.get("base_eval") or {}).get("correct"),
+                "start_loop1_correct": (payload.get("start_loop1_eval") or {}).get("correct"),
+                "best_loop1_correct": loop1_eval.get("correct"),
+                "best_loop4_correct": loop4_eval.get("correct"),
+                "total": loop1_eval.get("total") or (payload.get("base_eval") or {}).get("total"),
+                "helped": comparison.get("helped"),
+                "hurt": comparison.get("hurt"),
+                "mean_margin_delta": comparison.get("mean_margin_delta"),
+                "max_abs_prediction_count_delta": comparison.get("max_abs_prediction_count_delta"),
+                "calibration_ok": comparison.get("calibration_ok"),
+                "next_step": payload.get("next_step"),
+            }
+        )
+    return sorted(rows, key=lambda item: str(item["path"]))
+
+
 def iter_summary_files(scan_root: Path) -> list[Path]:
     if not scan_root.exists():
         return []
@@ -1171,6 +1209,7 @@ def scan_progress(scan_root: Path, *, run_id: str | None = None) -> dict[str, An
         "benchmark_suite_assessments": benchmark_suite_assessments(summary_files),
         "broader_benchmark_gate_assessments": broader_benchmark_gate_assessments(summary_files),
         "balanced_full_assessments": balanced_assessment_rows(summary_files),
+        "direct_preservation_statuses": direct_preservation_statuses(summary_files),
         "claim_readiness_packets": claim_readiness_packets(summary_files),
         "arc_agi_baseline_registries": arc_agi_baseline_registries(summary_files),
         "arc_agi_sota_comparisons": arc_agi_sota_comparisons(summary_files),
@@ -1333,6 +1372,32 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
             )
     else:
         lines.append("- No full balanced ARC assessment summaries found.")
+    lines.extend(["", "## Direct Preservation Repairs", ""])
+    if payload["direct_preservation_statuses"]:
+        lines.extend(
+            [
+                "| Run | Status | Passed | Trained | Rows | Base | Start L1 | Best L1 | Best L4 | H/H | Shift | Margin | Checkpoint | Next |",
+                "|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|",
+            ]
+        )
+        for row in payload["direct_preservation_statuses"][-12:]:
+            total = row.get("total") or "?"
+            margin = "n/a" if row.get("mean_margin_delta") is None else f"{float(row['mean_margin_delta']):.3f}"
+            shift = "n/a" if row.get("max_abs_prediction_count_delta") is None else str(row["max_abs_prediction_count_delta"])
+            helped_hurt = (
+                "n/a"
+                if row.get("helped") is None or row.get("hurt") is None
+                else f"{row.get('helped')}/{row.get('hurt')}"
+            )
+            lines.append(
+                f"| `{row['run_id']}` | `{row['status']}` | `{row['passed']}` | `{row.get('trained')}` | "
+                f"{row['selected_rows']} | {row.get('base_correct')}/{total} | "
+                f"{row.get('start_loop1_correct')}/{total} | {row.get('best_loop1_correct')}/{total} | "
+                f"{row.get('best_loop4_correct')}/{total} | {helped_hurt} | {shift} | {margin} | "
+                f"`{row.get('checkpoint') or ''}` | {row.get('next_step') or ''} |"
+            )
+    else:
+        lines.append("- No direct-preservation repair summaries found.")
     lines.extend(["", "## Claim Readiness Packets", ""])
     if payload["claim_readiness_packets"]:
         for packet in payload["claim_readiness_packets"][-10:]:

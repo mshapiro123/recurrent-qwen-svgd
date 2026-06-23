@@ -1131,6 +1131,75 @@ def test_progress_ledger_writes_generated_curriculum_markdown(tmp_path) -> None:
     assert "`outputs/stage5/sft/phase1/phase1_step_150.pt`" in report
 
 
+def test_progress_ledger_reports_direct_preservation_repairs(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "direct_preserve" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "direct_preserve",
+            "kind": "stage5_direct_preservation_probe",
+            "status": "direct_route_matches_base",
+            "passed": True,
+            "source_summary": "outputs/stage5/source/summary.json",
+            "resume_checkpoint": "outputs/stage5/source/phase1/phase1_step_200.pt",
+            "data": {"direct_sft": {"selected_rows": 128}},
+            "base_eval": {"correct": 80, "total": 128},
+            "start_loop1_eval": {"correct": 72, "total": 128},
+            "best_checkpoint": {
+                "checkpoint": "outputs/stage5/direct_preserve/phase1_direct_preserve/phase1_step_100.pt",
+                "trained": True,
+                "loop1_eval": {"correct": 81, "total": 128},
+                "loop4_eval": {"correct": 79, "total": 128},
+                "comparison_to_base": {
+                    "helped": 3,
+                    "hurt": 2,
+                    "mean_margin_delta": 0.125,
+                    "max_abs_prediction_count_delta": 4,
+                    "calibration_ok": True,
+                },
+            },
+            "next_step": "Confirm the direct-route preservation checkpoint on a larger ARC-Easy/Challenge slice.",
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+    output_dir = tmp_path / "ledger"
+    write_report(payload, output_dir)
+
+    assert payload["direct_preservation_statuses"] == [
+        {
+            "path": str(source),
+            "run_id": "direct_preserve",
+            "status": "direct_route_matches_base",
+            "passed": True,
+            "source_summary": "outputs/stage5/source/summary.json",
+            "resume_checkpoint": "outputs/stage5/source/phase1/phase1_step_200.pt",
+            "checkpoint": "outputs/stage5/direct_preserve/phase1_direct_preserve/phase1_step_100.pt",
+            "trained": True,
+            "selected_rows": 128,
+            "base_correct": 80,
+            "start_loop1_correct": 72,
+            "best_loop1_correct": 81,
+            "best_loop4_correct": 79,
+            "total": 128,
+            "helped": 3,
+            "hurt": 2,
+            "mean_margin_delta": 0.125,
+            "max_abs_prediction_count_delta": 4,
+            "calibration_ok": True,
+            "next_step": "Confirm the direct-route preservation checkpoint on a larger ARC-Easy/Challenge slice.",
+        }
+    ]
+    report = (output_dir / "summary.md").read_text(encoding="utf-8")
+    assert "## Direct Preservation Repairs" in report
+    assert "`direct_route_matches_base`" in report
+    assert "80/128" in report
+    assert "72/128" in report
+    assert "81/128" in report
+    assert "3/2" in report
+
+
 def test_progress_ledger_does_not_recommend_failed_curriculum_sft(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     trace_collection = scan_root / "trace_collection" / "summary.json"
