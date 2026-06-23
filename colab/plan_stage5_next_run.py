@@ -1952,6 +1952,19 @@ def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary:
     status = str(payload.get("status", "unknown"))
     surface_status = str(payload.get("surface_repair_assessment_status") or "")
     benchmark_summary = str(payload.get("benchmark_summary") or "").strip()
+    surface_assessment = payload.get("surface_repair_assessment") or {}
+    order_repair = (
+        surface_assessment.get("order_sensitivity_repair")
+        if isinstance(surface_assessment, dict)
+        else None
+    )
+    order_repair_improved = bool(
+        isinstance(order_repair, dict)
+        and (
+            order_repair.get("improved") is True
+            or order_repair.get("status") == "order_sensitivity_reduced"
+        )
+    )
     order_recommendation = str(
         payload.get("order_sensitivity_recommendation")
         or (payload.get("order_sensitivity_summary") or {}).get("recommendation")
@@ -1967,7 +1980,27 @@ def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary:
                 ),
             )
         ]
+    if surface_status == "surface_repair_tradeoff":
+        return [
+            make_action(
+                "Inspect surface-repair hard-tail tradeoff",
+                "The surface repair helped the easy content or invariance surface but regressed at least one ARC-Challenge surface. Do not run dense control yet; inspect the before/after deltas and tighten the repair objective.",
+                f"cat {shlex.quote(path_for_cli(source_summary.with_name('surface_repair_assessment.md')))}",
+                10,
+            )
+        ]
     if order_recommendation == "prioritize_conditional_invariance_repair":
+        if order_repair_improved and benchmark_summary:
+            return [
+                dense_mcq_trace_sft_control_action(
+                    recurrent_benchmark_summary=benchmark_summary,
+                    run_suffix="dense_mcq_after_conditional_invariance_repair",
+                    reason=(
+                        "The adaptive repair targeted conditional invariance and the before/after order-sensitivity assessment improved without a hard-tail tradeoff; run the dense same-curriculum MCQ control to separate architecture lift from recipe/data lift."
+                    ),
+                    priority=9,
+                )
+            ]
         order_md = payload.get("order_sensitivity_diagnosis")
         if isinstance(order_md, str) and order_md.endswith(".json"):
             order_md = order_md[:-5] + ".md"
@@ -1988,15 +2021,6 @@ def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary:
                     "The surface repair improved ARC-Easy content and preserved hard surfaces, but did not fully restore base parity; run the dense control as an interpretability check before deciding whether another repair pass is worthwhile."
                 ),
                 priority=9,
-            )
-        ]
-    if surface_status == "surface_repair_tradeoff":
-        return [
-            make_action(
-                "Inspect surface-repair hard-tail tradeoff",
-                "The surface repair helped the easy content surface but regressed at least one ARC-Challenge surface. Do not run dense control yet; inspect the before/after deltas and tighten the repair objective.",
-                f"cat {shlex.quote(path_for_cli(source_summary.with_name('surface_repair_assessment.md')))}",
-                10,
             )
         ]
     if surface_status == "surface_repair_no_easy_content_lift":

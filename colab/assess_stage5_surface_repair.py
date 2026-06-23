@@ -167,6 +167,64 @@ def evidence_fragment(row: dict[str, Any]) -> str:
     )
 
 
+def order_metric(summary: dict[str, Any], key: str) -> float:
+    value = summary.get(key, 0)
+    if isinstance(value, bool):
+        return float(int(value))
+    if isinstance(value, (int, float)):
+        return float(value)
+    return 0.0
+
+
+def assess_order_sensitivity_repair(
+    *,
+    source_order_diagnosis: Path,
+    repaired_order_diagnosis: Path,
+) -> dict[str, Any]:
+    source_payload = read_json(source_order_diagnosis)
+    repaired_payload = read_json(repaired_order_diagnosis)
+    source_summary = source_payload.get("summary") or {}
+    repaired_summary = repaired_payload.get("summary") or {}
+    if not isinstance(source_summary, dict) or not isinstance(repaired_summary, dict):
+        raise ValueError("Order-sensitivity diagnoses must contain summary objects.")
+
+    keys = [
+        "candidate_order_sensitive_rows",
+        "candidate_order_sensitive_fraction",
+        "content_losses",
+        "content_losses_order_sensitive",
+        "content_losses_order_sensitive_fraction",
+        "content_losses_rescued_by_cyclic",
+        "order_sensitivity_loss_rate_lift",
+    ]
+    deltas = {
+        key: order_metric(repaired_summary, key) - order_metric(source_summary, key)
+        for key in keys
+    }
+    reduced_order_sensitive_losses = deltas["content_losses_order_sensitive"] < 0
+    reduced_order_sensitive_rows = deltas["candidate_order_sensitive_rows"] < 0
+    did_not_increase_total_content_losses = deltas["content_losses"] <= 0
+    improved = bool(
+        (reduced_order_sensitive_losses or reduced_order_sensitive_rows)
+        and did_not_increase_total_content_losses
+    )
+    status = "order_sensitivity_reduced" if improved else "order_sensitivity_not_reduced"
+    return {
+        "status": status,
+        "improved": improved,
+        "source_order_diagnosis": path_for_cli(source_order_diagnosis),
+        "repaired_order_diagnosis": path_for_cli(repaired_order_diagnosis),
+        "source_summary": source_summary,
+        "repaired_summary": repaired_summary,
+        "deltas_repaired_minus_source": deltas,
+        "decision": {
+            "reduced_order_sensitive_losses": reduced_order_sensitive_losses,
+            "reduced_order_sensitive_rows": reduced_order_sensitive_rows,
+            "did_not_increase_total_content_losses": did_not_increase_total_content_losses,
+        },
+    }
+
+
 def decide(comparisons: dict[str, dict[str, Any]], *, allowed_challenge_regression: int) -> tuple[str, bool, str, str]:
     easy_content = comparisons["arc_easy_content"]
     easy_cyclic = comparisons["arc_easy_cyclic"]
@@ -213,6 +271,8 @@ def assess_surface_repair(
     *,
     source_benchmark_summary: Path,
     repaired_benchmark_summary: Path,
+    source_order_diagnosis: Path | None = None,
+    repaired_order_diagnosis: Path | None = None,
     allowed_challenge_regression: int = 0,
 ) -> dict[str, Any]:
     source_payload = read_json(source_benchmark_summary)
@@ -256,6 +316,12 @@ def assess_surface_repair(
         comparisons,
         allowed_challenge_regression=allowed_challenge_regression,
     )
+    order_sensitivity_repair = None
+    if source_order_diagnosis and repaired_order_diagnosis:
+        order_sensitivity_repair = assess_order_sensitivity_repair(
+            source_order_diagnosis=source_order_diagnosis,
+            repaired_order_diagnosis=repaired_order_diagnosis,
+        )
     return {
         "run_id": RUN_ID,
         "kind": "stage5_surface_repair_assessment",
@@ -267,6 +333,7 @@ def assess_surface_repair(
         "repaired_benchmark_summary": path_for_cli(repaired_benchmark_summary),
         "allowed_challenge_regression": allowed_challenge_regression,
         "comparisons": comparisons,
+        "order_sensitivity_repair": order_sensitivity_repair,
         "decision_evidence": {key: evidence_fragment(value) for key, value in comparisons.items()},
     }
 
@@ -289,6 +356,21 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
     ]
     for key, evidence in payload["decision_evidence"].items():
         lines.append(f"- `{key}`: {evidence}")
+    order_repair = payload.get("order_sensitivity_repair")
+    if isinstance(order_repair, dict):
+        deltas = order_repair.get("deltas_repaired_minus_source") or {}
+        lines.extend(
+            [
+                "",
+                "## Order-Sensitivity Repair",
+                "",
+                f"- Status: `{order_repair.get('status')}`",
+                f"- Improved: `{order_repair.get('improved')}`",
+                f"- Candidate order-sensitive row delta: `{deltas.get('candidate_order_sensitive_rows')}`",
+                f"- Order-sensitive content-loss delta: `{deltas.get('content_losses_order_sensitive')}`",
+                f"- Total content-loss delta: `{deltas.get('content_losses')}`",
+            ]
+        )
     output_md.parent.mkdir(parents=True, exist_ok=True)
     output_md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(output_md.read_text(encoding="utf-8"), flush=True)
@@ -298,6 +380,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source_benchmark_summary", required=True)
     parser.add_argument("--repaired_benchmark_summary", required=True)
+    parser.add_argument("--source_order_diagnosis")
+    parser.add_argument("--repaired_order_diagnosis")
     parser.add_argument("--output_json")
     parser.add_argument("--output_md")
     parser.add_argument("--allowed_challenge_regression", type=int, default=0)
@@ -309,6 +393,8 @@ def main() -> int:
     payload = assess_surface_repair(
         source_benchmark_summary=resolve_path(args.source_benchmark_summary),
         repaired_benchmark_summary=resolve_path(args.repaired_benchmark_summary),
+        source_order_diagnosis=resolve_path(args.source_order_diagnosis) if args.source_order_diagnosis else None,
+        repaired_order_diagnosis=resolve_path(args.repaired_order_diagnosis) if args.repaired_order_diagnosis else None,
         allowed_challenge_regression=args.allowed_challenge_regression,
     )
     write_report(payload, output_json=output_json, output_md=output_md)

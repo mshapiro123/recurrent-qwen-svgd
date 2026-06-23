@@ -152,3 +152,64 @@ def test_surface_repair_assessment_writes_report(monkeypatch, tmp_path) -> None:
 
     assert json.loads(output_json.read_text(encoding="utf-8"))["kind"] == "stage5_surface_repair_assessment"
     assert "arc_easy_content" in output_md.read_text(encoding="utf-8")
+
+
+def test_order_sensitivity_repair_assessment_detects_reduction(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    source = tmp_path / "source_order.json"
+    repaired = tmp_path / "repaired_order.json"
+    write_json(
+        source,
+        {
+            "summary": {
+                "candidate_order_sensitive_rows": 10,
+                "candidate_order_sensitive_fraction": 0.5,
+                "content_losses": 6,
+                "content_losses_order_sensitive": 4,
+                "content_losses_order_sensitive_fraction": 0.67,
+                "content_losses_rescued_by_cyclic": 3,
+                "order_sensitivity_loss_rate_lift": 0.3,
+            }
+        },
+    )
+    write_json(
+        repaired,
+        {
+            "summary": {
+                "candidate_order_sensitive_rows": 6,
+                "candidate_order_sensitive_fraction": 0.3,
+                "content_losses": 5,
+                "content_losses_order_sensitive": 2,
+                "content_losses_order_sensitive_fraction": 0.4,
+                "content_losses_rescued_by_cyclic": 2,
+                "order_sensitivity_loss_rate_lift": 0.1,
+            }
+        },
+    )
+
+    payload = module.assess_order_sensitivity_repair(
+        source_order_diagnosis=source,
+        repaired_order_diagnosis=repaired,
+    )
+
+    assert payload["status"] == "order_sensitivity_reduced"
+    assert payload["improved"] is True
+    assert payload["deltas_repaired_minus_source"]["content_losses_order_sensitive"] == -2
+
+
+def test_surface_repair_assessment_can_embed_order_sensitivity_repair(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    source_benchmark, repaired_benchmark = make_benchmark_pair(tmp_path)
+    source_order = tmp_path / "source_order.json"
+    repaired_order = tmp_path / "repaired_order.json"
+    write_json(source_order, {"summary": {"candidate_order_sensitive_rows": 3, "content_losses": 2, "content_losses_order_sensitive": 2}})
+    write_json(repaired_order, {"summary": {"candidate_order_sensitive_rows": 1, "content_losses": 2, "content_losses_order_sensitive": 1}})
+
+    payload = module.assess_surface_repair(
+        source_benchmark_summary=source_benchmark,
+        repaired_benchmark_summary=repaired_benchmark,
+        source_order_diagnosis=source_order,
+        repaired_order_diagnosis=repaired_order,
+    )
+
+    assert payload["order_sensitivity_repair"]["status"] == "order_sensitivity_reduced"

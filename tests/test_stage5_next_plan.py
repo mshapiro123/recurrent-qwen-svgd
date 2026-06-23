@@ -3572,6 +3572,31 @@ def test_surface_alignment_order_sensitivity_blocks_dense_control(tmp_path) -> N
     assert "arc_easy_order_sensitivity_diagnosis.md" in actions[0]["command"]
 
 
+def test_surface_alignment_order_sensitivity_reduced_routes_to_dense_control(tmp_path) -> None:
+    source = tmp_path / "surface" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_surface_alignment_repair",
+        "status": "surface_alignment_not_passed",
+        "passed": False,
+        "benchmark_summary": "outputs/stage5/repaired_benchmark/summary.json",
+        "surface_repair_assessment_status": "surface_repair_no_easy_content_lift",
+        "order_sensitivity_recommendation": "prioritize_conditional_invariance_repair",
+        "surface_repair_assessment": {
+            "order_sensitivity_repair": {
+                "status": "order_sensitivity_reduced",
+                "improved": True,
+            }
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run dense MCQ same-curriculum control"
+    assert actions[0]["priority"] == 9
+    assert "dense_mcq_after_conditional_invariance_repair" in actions[0]["command"]
+
+
 def test_surface_alignment_tradeoff_blocks_dense_control(tmp_path) -> None:
     source = tmp_path / "surface" / "summary.json"
     source.parent.mkdir()

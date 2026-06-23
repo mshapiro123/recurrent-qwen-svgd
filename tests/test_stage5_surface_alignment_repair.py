@@ -73,6 +73,8 @@ def test_assess_surface_repair_invokes_before_after_assessor(tmp_path, monkeypat
     result = module.assess_surface_repair(
         tmp_path / "outputs" / "stage5" / "source" / "summary.json",
         tmp_path / "outputs" / "stage5" / "repaired" / "summary.json",
+        source_order_diagnosis=tmp_path / "outputs" / "stage5" / "source" / "arc_easy_order_sensitivity_diagnosis.json",
+        repaired_order_diagnosis=tmp_path / "outputs" / "stage5" / "repaired" / "arc_easy_order_sensitivity_diagnosis.json",
     )
 
     assert result["status"] == "surface_repair_passed"
@@ -81,6 +83,8 @@ def test_assess_surface_repair_invokes_before_after_assessor(tmp_path, monkeypat
     ] == "colab/assess_stage5_surface_repair.py"
     assert "--source_benchmark_summary" in commands[0]
     assert "--repaired_benchmark_summary" in commands[0]
+    assert "--source_order_diagnosis" in commands[0]
+    assert "--repaired_order_diagnosis" in commands[0]
 
 
 def test_ensure_order_sensitivity_diagnosis_invokes_analyzer(tmp_path, monkeypatch) -> None:

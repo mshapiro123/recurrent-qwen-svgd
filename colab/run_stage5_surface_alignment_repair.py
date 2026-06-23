@@ -314,26 +314,39 @@ def benchmark_and_assess(checkpoint: Path) -> tuple[Path, Path]:
     return bench_summary, assess_summary
 
 
-def assess_surface_repair(source_benchmark: Path, repaired_benchmark: Path) -> dict[str, Any]:
+def assess_surface_repair(
+    source_benchmark: Path,
+    repaired_benchmark: Path,
+    *,
+    source_order_diagnosis: Path | None = None,
+    repaired_order_diagnosis: Path | None = None,
+) -> dict[str, Any]:
     output_json = RUN_DIR / "surface_repair_assessment.json"
     output_md = RUN_DIR / "surface_repair_assessment.md"
-    run(
-        [
-            sys.executable,
-            "colab/assess_stage5_surface_repair.py",
-            "--source_benchmark_summary",
-            path_for_cli(source_benchmark),
-            "--repaired_benchmark_summary",
-            path_for_cli(repaired_benchmark),
-            "--output_json",
-            path_for_cli(output_json),
-            "--output_md",
-            path_for_cli(output_md),
-            "--allowed_challenge_regression",
-            os.environ.get("STAGE5_SURFACE_ALIGN_ALLOWED_CHALLENGE_REGRESSION", "0"),
-        ],
-        log_name="surface_repair_assessment.log",
-    )
+    cmd = [
+        sys.executable,
+        "colab/assess_stage5_surface_repair.py",
+        "--source_benchmark_summary",
+        path_for_cli(source_benchmark),
+        "--repaired_benchmark_summary",
+        path_for_cli(repaired_benchmark),
+        "--output_json",
+        path_for_cli(output_json),
+        "--output_md",
+        path_for_cli(output_md),
+        "--allowed_challenge_regression",
+        os.environ.get("STAGE5_SURFACE_ALIGN_ALLOWED_CHALLENGE_REGRESSION", "0"),
+    ]
+    if source_order_diagnosis and repaired_order_diagnosis:
+        cmd.extend(
+            [
+                "--source_order_diagnosis",
+                path_for_cli(source_order_diagnosis),
+                "--repaired_order_diagnosis",
+                path_for_cli(repaired_order_diagnosis),
+            ]
+        )
+    run(cmd, log_name="surface_repair_assessment.log")
     return read_json(output_json)
 
 
@@ -499,8 +512,15 @@ def main() -> int:
     if not checkpoint_path.exists():
         raise FileNotFoundError(checkpoint_path)
     bench_summary, assessment_summary = benchmark_and_assess(checkpoint_path)
+    repaired_order_diagnosis = ensure_order_sensitivity_diagnosis(bench_summary)
+    repaired_surface_diagnosis = ensure_surface_diagnosis(bench_summary)
     assessment_payload = read_json(assessment_summary)
-    surface_repair_payload = assess_surface_repair(benchmark_summary, bench_summary)
+    surface_repair_payload = assess_surface_repair(
+        benchmark_summary,
+        bench_summary,
+        source_order_diagnosis=order_diagnosis,
+        repaired_order_diagnosis=repaired_order_diagnosis,
+    )
     passed = bool(assessment_payload.get("passed"))
     surface_repair_passed = bool(surface_repair_payload.get("passed"))
     payload = {
@@ -525,6 +545,8 @@ def main() -> int:
         "order_sensitivity_summary": order_payload.get("summary"),
         "surface_diagnosis": path_for_cli(diagnosis),
         "surface_diagnosis_summary": surface_payload.get("summary"),
+        "repaired_order_sensitivity_diagnosis": path_for_cli(repaired_order_diagnosis),
+        "repaired_surface_diagnosis": path_for_cli(repaired_surface_diagnosis),
         "repair_objective": objective,
         "surface_alignment_train_jsonl": path_for_cli(train_jsonl),
         "surface_alignment_train_summary": surface_data_summary,
@@ -558,7 +580,18 @@ def main() -> int:
         ),
     }
     write_summary(payload)
-    commit_results([order_diagnosis, order_diagnosis.with_suffix(".md"), diagnosis, diagnosis.with_suffix(".md")])
+    commit_results(
+        [
+            order_diagnosis,
+            order_diagnosis.with_suffix(".md"),
+            diagnosis,
+            diagnosis.with_suffix(".md"),
+            repaired_order_diagnosis,
+            repaired_order_diagnosis.with_suffix(".md"),
+            repaired_surface_diagnosis,
+            repaired_surface_diagnosis.with_suffix(".md"),
+        ]
+    )
     return 0
 
 
