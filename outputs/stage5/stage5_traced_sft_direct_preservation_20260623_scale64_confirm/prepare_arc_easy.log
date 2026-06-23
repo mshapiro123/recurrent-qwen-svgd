@@ -1,0 +1,6 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=validation
+offset=0
+rows=256
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_traced_sft_direct_preservation_20260623_scale64_confirm/arc_easy_validation_256.jsonl
