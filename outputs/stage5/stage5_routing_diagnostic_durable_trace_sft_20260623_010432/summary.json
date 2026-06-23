@@ -1,0 +1,97 @@
+{
+  "run_id": "stage5_routing_diagnostic_durable_trace_sft_20260623_010432",
+  "kind": "stage5_routing_diagnostic_assessment",
+  "benchmark_summary": "outputs/stage5/stage5_benchmark_durable_trace_sft_20260623_045126/summary.json",
+  "status": "needs_direct_halting_repair",
+  "next_action": "Train Phase 1 direct-mode recovery with base-logit distillation and shallow halt supervision.",
+  "rollup": {
+    "arc_challenge": {
+      "paired_examples": 64,
+      "delta": -5,
+      "direct": {
+        "n": 8,
+        "delta": -2,
+        "wins": 0,
+        "losses": 2,
+        "base_correct": 8,
+        "candidate_correct": 6,
+        "mean_margin_delta": -0.7207058668136597,
+        "mean_candidate_expected_loops": 3.104396052658558,
+        "mean_candidate_answer_expected_loops": 3.1045757830142975
+      },
+      "deep_numeric": {
+        "n": 11,
+        "delta": -1,
+        "wins": 1,
+        "losses": 2,
+        "base_correct": 7,
+        "candidate_correct": 6,
+        "mean_margin_delta": -0.097278892993927,
+        "mean_candidate_expected_loops": 3.110860555460959,
+        "mean_candidate_answer_expected_loops": 3.1107330972498115
+      },
+      "conceptual": {
+        "n": 20,
+        "delta": -2,
+        "wins": 2,
+        "losses": 4,
+        "base_correct": 7,
+        "candidate_correct": 5,
+        "mean_margin_delta": -0.09527989625930786,
+        "mean_candidate_expected_loops": 3.1144159018993376,
+        "mean_candidate_answer_expected_loops": 3.114428532123566
+      },
+      "direct_delta": -2.0,
+      "direct_mean_loops": 3.104396052658558,
+      "direct_mean_margin_delta": -0.7207058668136597,
+      "deep_delta": -1.0,
+      "deep_mean_loops": 3.110860555460959,
+      "conceptual_delta": -2.0
+    },
+    "arc_easy": {
+      "paired_examples": 64,
+      "delta": -7,
+      "direct": {
+        "n": 23,
+        "delta": -1,
+        "wins": 0,
+        "losses": 1,
+        "base_correct": 23,
+        "candidate_correct": 22,
+        "mean_margin_delta": -1.0605169586513354,
+        "mean_candidate_expected_loops": 3.100679999849071,
+        "mean_candidate_answer_expected_loops": 3.1013541947240415
+      },
+      "deep_numeric": {
+        "n": 10,
+        "delta": -1,
+        "wins": 1,
+        "losses": 2,
+        "base_correct": 6,
+        "candidate_correct": 5,
+        "mean_margin_delta": -0.6140902400016784,
+        "mean_candidate_expected_loops": 3.114169031381607,
+        "mean_candidate_answer_expected_loops": 3.1138506650924684
+      },
+      "conceptual": {
+        "n": 10,
+        "delta": 0,
+        "wins": 1,
+        "losses": 1,
+        "base_correct": 5,
+        "candidate_correct": 5,
+        "mean_margin_delta": -0.3625349164009094,
+        "mean_candidate_expected_loops": 3.1110164165496825,
+        "mean_candidate_answer_expected_loops": 3.111017918586731
+      },
+      "direct_delta": -1.0,
+      "direct_mean_loops": 3.100679999849071,
+      "direct_mean_margin_delta": -1.0605169586513354,
+      "deep_delta": -1.0,
+      "deep_mean_loops": 3.114169031381607,
+      "conceptual_delta": 0.0
+    }
+  },
+  "source_benchmark_run_id": "stage5_benchmark_durable_trace_sft_20260623_045126",
+  "source_checkpoint": "outputs/stage5/stage5_traced_capability_ladder_sft_durable_20260623_044343/phase1/phase1_step_75.pt"
+}
