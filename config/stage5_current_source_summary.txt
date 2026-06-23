@@ -1,1 +1,1 @@
-outputs/stage5/stage5_halt_repair_arc128_check_20260623_100230/summary.json
+outputs/stage5/stage5_halt_repair_arc256_check_20260623_102430/summary.json
