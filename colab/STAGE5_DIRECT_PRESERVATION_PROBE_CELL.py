@@ -240,7 +240,7 @@ def safe_stage_and_push(run_dir):
         print("No git changes to commit.", flush=True)
         return
     try:
-        run(["git", "commit", "-m", f"Record Stage 5 direct preservation probe {RUN_ID} [skip ci]"], cwd=ROOT)
+        run(["git", "commit", "-m", f"Record Stage 5 direct preservation probe {run_dir.name} [skip ci]"], cwd=ROOT)
         run(["git", "fetch", "origin", "main"], cwd=ROOT)
         run(["git", "rebase", "origin/main"], cwd=ROOT)
         run(["git", "push", "origin", "main"], cwd=ROOT)
@@ -390,6 +390,46 @@ def write_failure_summary(exc_type, exc, tb):
         print(f"failure_summary_hook_failed: {hook_exc}", flush=True)
 
 
+def write_attempt_failure_summary(run_dir, attempt, exc):
+    run_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "kind": "stage5_direct_preservation_probe",
+        "status": "direct_route_attempt_failed",
+        "passed": False,
+        "run_id": attempt["run_id"],
+        "attempt": {
+            "name": attempt["name"],
+            "run_id": attempt["run_id"],
+            "overrides": attempt["overrides"],
+        },
+        "stage": CURRENT_STAGE,
+        "source_summary": SOURCE_SUMMARY,
+        "exception_type": type(exc).__name__,
+        "exception": redact(exc),
+        "best_checkpoint": {},
+        "next_step": (
+            "Inspect the child process output for this attempt before spending more GPU. "
+            "The sweep stopped because the attempt failed before a normal summary was available."
+        ),
+    }
+    summary = run_dir / "summary.json"
+    summary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    lines = [
+        "# Stage 5 Direct Preservation Attempt Failure",
+        "",
+        f"- Run ID: `{payload['run_id']}`",
+        f"- Attempt: `{attempt['name']}`",
+        f"- Status: `{payload['status']}`",
+        f"- Stage: `{payload['stage']}`",
+        f"- Source summary: `{payload['source_summary']}`",
+        f"- Exception: `{payload['exception_type']}: {payload['exception']}`",
+        "",
+        payload["next_step"],
+    ]
+    (run_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print("attempt_failure_summary:", summary.relative_to(ROOT).as_posix(), flush=True)
+
+
 def failure_excepthook(exc_type, exc, tb):
     write_failure_summary(exc_type, exc, tb)
     sys.__excepthook__(exc_type, exc, tb)
@@ -455,7 +495,15 @@ try:
             flush=True,
         )
         attempt_run_dir = ROOT / "outputs" / "stage5" / attempt_run_id
-        run([sys.executable, "colab/run_stage5_direct_preservation_probe.py"], cwd=ROOT, env=attempt_env)
+        try:
+            run([sys.executable, "colab/run_stage5_direct_preservation_probe.py"], cwd=ROOT, env=attempt_env)
+            if not (attempt_run_dir / "summary.json").exists():
+                raise RuntimeError(f"Direct-preservation attempt returned without summary: {attempt_run_dir}")
+        except Exception as exc:
+            set_stage(f"direct_preservation_attempt_failed_{index}_{attempt['name']}")
+            write_attempt_failure_summary(attempt_run_dir, attempt, exc)
+            safe_stage_and_push(attempt_run_dir)
+            raise
 
         assert attempt_run_dir.exists(), f"Expected run_dir was not created: {attempt_run_dir}"
         set_stage(f"backup_and_publish_{index}_{attempt['name']}")
