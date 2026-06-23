@@ -12,6 +12,8 @@ Default behavior:
 - resolves the latest gate-ready traced capability-ladder collection;
 - derives `STAGE5_CURRICULUM_WORK_DIR`, `STAGE5_CURRICULUM_SUMMARY_JSON`,
   row gates, mode gates, max loops, and bounded training steps from the summary;
+- enables answer-line verification for trace-derived rows while preserving
+  `answer_match.matched=true` checks on positive traces;
 - runs `colab/run_stage5_curriculum_sft.py`;
 - pushes the SFT summary and disconnects by default.
 
