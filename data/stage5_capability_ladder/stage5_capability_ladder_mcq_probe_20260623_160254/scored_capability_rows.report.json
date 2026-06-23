@@ -1,0 +1,27 @@
+{
+  "task_rows": 96,
+  "output_rows": 96,
+  "result_files": {
+    "qwen_0_5b": "outputs\\stage5\\stage5_capability_ladder_mcq_probe_20260623_160254\\qwen_0_5b_content_question_only.jsonl",
+    "qwen_1_5b": "outputs\\stage5\\stage5_capability_ladder_mcq_probe_20260623_160254\\qwen_1_5b_content_question_only.jsonl",
+    "qwen_3b": "outputs\\stage5\\stage5_capability_ladder_mcq_probe_20260623_160254\\qwen_3b_content_question_only.jsonl"
+  },
+  "correctness": {
+    "qwen_0_5b": {
+      "incorrect": 62,
+      "correct": 34
+    },
+    "qwen_1_5b": {
+      "incorrect": 52,
+      "correct": 44
+    },
+    "qwen_3b": {
+      "incorrect": 39,
+      "correct": 57
+    }
+  },
+  "missing": {},
+  "verified_by": "benchmark_ground_truth",
+  "decontaminated_default": true,
+  "prediction_as_solution": true
+}

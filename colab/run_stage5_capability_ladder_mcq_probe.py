@@ -431,11 +431,19 @@ def backup_to_drive(paths: list[Path]) -> dict[str, Any]:
     return {"enabled": True, "available": True, "dest_root": str(dest_root), "copied": copied}
 
 
+def commit_paths(summary_path: Path) -> list[str]:
+    pointer = update_current_source_summary(summary_path)
+    roots = [RUN_DIR, PRIVATE_DATA_DIR, WORK_DIR, pointer]
+    return [path_for_cli(path) for path in roots if path.exists()]
+
+
 def safe_commit(summary_path: Path) -> None:
     if not PUSH_RESULTS:
         return
-    pointer = update_current_source_summary(summary_path)
-    run(["git", "add", "-f", path_for_cli(RUN_DIR), path_for_cli(pointer)], check=False, log_name="git_add.log")
+    paths = commit_paths(summary_path)
+    if not paths:
+        return
+    run(["git", "add", "-f", *paths], check=False, log_name="git_add.log")
     diff = run(["git", "diff", "--cached", "--quiet"], check=False)
     if diff.returncode == 0:
         print("No safe result changes to commit.")

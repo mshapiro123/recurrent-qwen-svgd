@@ -4,7 +4,8 @@ This is a GPU-session efficiency wrapper. It first runs the independent
 offset-256 ARC-Easy/ARC-Challenge confirmation for the current recovered
 ARC-mix checkpoint. It launches the bounded learned-loop-control ARC-mix
 depth-routing probe only when content competence replicates and the cyclic
-debiased surface is no worse than flat within a small exploratory tolerance.
+debiased surface is non-negative by default. Content recovery is a leading
+indicator; cyclic-debiased scoring is the steering gate.
 """
 
 from __future__ import annotations
@@ -59,7 +60,7 @@ CONTENT_ALLOWED_NEGATIVE_DELTA = int(
     os.environ.get("STAGE5_ARC_MIX_CHAIN_CONTENT_ALLOWED_NEGATIVE_DELTA", str(ALLOWED_NEGATIVE_DELTA))
 )
 DEBIASED_ALLOWED_NEGATIVE_DELTA = int(
-    os.environ.get("STAGE5_ARC_MIX_CHAIN_DEBIASED_ALLOWED_NEGATIVE_DELTA", "2")
+    os.environ.get("STAGE5_ARC_MIX_CHAIN_DEBIASED_ALLOWED_NEGATIVE_DELTA", "0")
 )
 POST_DEPTH_MIN_EXAMPLES = int(os.environ.get("STAGE5_ARC_MIX_CHAIN_POST_DEPTH_MIN_EXAMPLES", "128"))
 POST_DEPTH_DEBIASED_ALLOWED_NEGATIVE_DELTA = int(
@@ -231,12 +232,25 @@ def assess_offset_confirmation(
     evidence_passed = all(row["passed"] for row in evidence)
     passed = completed and evidence_passed
     if passed:
-        flat_debiased = any(
-            row["score_target"] == "cyclic_label_aggregated"
-            and (row["correct_delta_recurrent_vs_base"] or 0) < 0
+        content_deltas = [
+            int(row["correct_delta_recurrent_vs_base"] or 0)
             for row in evidence
-        )
-        status = "offset_confirmed_flat_debiased" if flat_debiased else "offset_confirmed"
+            if row["score_target"] == "content_question_only"
+        ]
+        cyclic_deltas = [
+            int(row["correct_delta_recurrent_vs_base"] or 0)
+            for row in evidence
+            if row["score_target"] == "cyclic_label_aggregated"
+        ]
+        debiased_positive = any(delta > 0 for delta in cyclic_deltas)
+        debiased_flat = cyclic_deltas and all(delta == 0 for delta in cyclic_deltas)
+        content_replicated = any(delta > 0 for delta in content_deltas)
+        if debiased_positive:
+            status = "offset_confirmed_debiased_positive"
+        elif debiased_flat:
+            status = "offset_confirmed_debiased_flat"
+        else:
+            status = "offset_confirmed_debiased_tolerated_negative"
         next_step = (
             "Launch the bounded learned-loop ARC-mix depth-routing probe; "
             "treat cyclic-debiased scoring as the post-depth survival gate."
@@ -257,6 +271,16 @@ def assess_offset_confirmation(
         "min_examples_by_benchmark": min_by_benchmark,
         "failures": failures,
         "evidence": evidence,
+        "content_replicated": any(
+            row["score_target"] == "content_question_only"
+            and int(row["correct_delta_recurrent_vs_base"] or 0) > 0
+            for row in evidence
+        ),
+        "debiased_positive": any(
+            row["score_target"] == "cyclic_label_aggregated"
+            and int(row["correct_delta_recurrent_vs_base"] or 0) > 0
+            for row in evidence
+        ),
     }
 
 

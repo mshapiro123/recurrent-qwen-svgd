@@ -112,3 +112,29 @@ def test_write_probe_summary_records_depth_probe_caveat(tmp_path, monkeypatch) -
     assert payload["status"] == "capability_ladder_probe_gate_ready"
     assert "answer-only MCQ predictions" in payload["caveat"]
     assert payload["score_summaries"]["qwen_0_5b"]["correct"] == 1
+
+
+def test_commit_paths_include_private_scored_rows_and_curriculum(tmp_path, monkeypatch) -> None:
+    run_dir = tmp_path / "outputs" / "stage5" / "probe"
+    private_data_dir = tmp_path / "data" / "stage5_capability_ladder" / "probe"
+    work_dir = tmp_path / "data" / "curriculum" / "probe"
+    config_dir = tmp_path / "config"
+    summary = run_dir / "summary.json"
+    for path in (run_dir, private_data_dir, work_dir, config_dir):
+        path.mkdir(parents=True)
+    summary.write_text("{}", encoding="utf-8")
+    (private_data_dir / "scored_capability_rows.jsonl").write_text("{}", encoding="utf-8")
+    (work_dir / "positive_sft.jsonl").write_text("{}", encoding="utf-8")
+
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+    monkeypatch.setattr(module, "PRIVATE_DATA_DIR", private_data_dir)
+    monkeypatch.setattr(module, "WORK_DIR", work_dir)
+    monkeypatch.setattr(module, "current_source_summary_file", lambda: config_dir / "stage5_current_source_summary.txt")
+    monkeypatch.setattr(module, "path_for_cli", lambda path: str(path).replace("\\", "/"))
+
+    paths = module.commit_paths(summary)
+
+    assert str(run_dir).replace("\\", "/") in paths
+    assert str(private_data_dir).replace("\\", "/") in paths
+    assert str(work_dir).replace("\\", "/") in paths
+    assert str(config_dir / "stage5_current_source_summary.txt").replace("\\", "/") in paths
