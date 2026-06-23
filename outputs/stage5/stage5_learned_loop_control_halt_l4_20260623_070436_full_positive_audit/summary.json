@@ -1,0 +1,70 @@
+{
+  "run_id": "stage5_learned_loop_control_halt_l4_20260623_070436_full_positive_audit",
+  "kind": "stage5_halt_routing_audit",
+  "source_summary": "outputs/stage5/stage5_learned_loop_control_halt_l4_20260623_070436/summary.json",
+  "checkpoint": "outputs/stage5/stage5_learned_loop_control_halt_l4_20260623_070436/phase1/phase1_step_400.pt",
+  "positive_sft": "data/curriculum/stage5_learned_loop_control_halt_l4_20260623_070436_mcq_ladder/positive_sft.jsonl",
+  "use_target_loop_control": false,
+  "use_learned_loop_control": true,
+  "loop_control_ce_weight": 2.0,
+  "metrics": {
+    "lora_recurrent_modules": 84.0,
+    "examples": 73.0,
+    "expected_ce": 0.22815,
+    "halting_kl": 0.562879,
+    "loop_control_ce": 1.573596,
+    "loss": 3.442887,
+    "mean_expected_loops": 1.774264,
+    "mean_halt_entropy": 0.676396,
+    "target_loop_abs_error": 0.743511,
+    "target_mean_loops": 1.90411,
+    "group/curriculum_mode/deep_narrow/examples": 40.0,
+    "group/curriculum_mode/deep_narrow/expected_ce": 0.239396,
+    "group/curriculum_mode/deep_narrow/halting_kl": 0.67636,
+    "group/curriculum_mode/deep_narrow/loop_control_ce": 1.789525,
+    "group/curriculum_mode/deep_narrow/loss": 3.899609,
+    "group/curriculum_mode/deep_narrow/mean_expected_loops": 1.853063,
+    "group/curriculum_mode/deep_narrow/mean_halt_entropy": 0.670951,
+    "group/curriculum_mode/deep_narrow/target_loop_abs_error": 0.796937,
+    "group/curriculum_mode/deep_narrow/target_mean_loops": 2.65,
+    "group/curriculum_mode/direct/examples": 33.0,
+    "group/curriculum_mode/direct/expected_ce": 0.214518,
+    "group/curriculum_mode/direct/halting_kl": 0.425327,
+    "group/curriculum_mode/direct/loop_control_ce": 1.311863,
+    "group/curriculum_mode/direct/loss": 2.889284,
+    "group/curriculum_mode/direct/mean_expected_loops": 1.678751,
+    "group/curriculum_mode/direct/mean_halt_entropy": 0.682996,
+    "group/curriculum_mode/direct/target_loop_abs_error": 0.678751,
+    "group/curriculum_mode/direct/target_mean_loops": 1.0
+  },
+  "by_mode": {
+    "deep_narrow": {
+      "examples": 40.0,
+      "expected_ce": 0.239396,
+      "halting_kl": 0.67636,
+      "loop_control_ce": 1.789525,
+      "loss": 3.899609,
+      "mean_expected_loops": 1.853063,
+      "mean_halt_entropy": 0.670951,
+      "target_loop_abs_error": 0.796937,
+      "target_mean_loops": 2.65
+    },
+    "direct": {
+      "examples": 33.0,
+      "expected_ce": 0.214518,
+      "halting_kl": 0.425327,
+      "loop_control_ce": 1.311863,
+      "loss": 2.889284,
+      "mean_expected_loops": 1.678751,
+      "mean_halt_entropy": 0.682996,
+      "target_loop_abs_error": 0.678751,
+      "target_mean_loops": 1.0
+    }
+  },
+  "depth_gradient": {
+    "direct_mean_expected_loops": 1.678751,
+    "deep_narrow_mean_expected_loops": 1.853063,
+    "margin": 0.1743119999999998,
+    "observed": false
+  }
+}
