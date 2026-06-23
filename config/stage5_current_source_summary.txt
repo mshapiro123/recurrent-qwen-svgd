@@ -1,1 +1,1 @@
-outputs/stage5/stage5_arc_mix_offset_then_depth_chain_offset256_confirm/summary.json
+outputs/stage5/stage5_arc_mix_offset_then_depth_chain/summary.json
