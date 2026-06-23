@@ -230,6 +230,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "capability_ladder_local_hf_trace_collect" - GPU local-HF responses then immediate collection.
 #   "capability_ladder_local_hf_trace_sft" - GPU local-HF traces, collection, then bounded recurrent SFT.
 #   "traced_sft_scale64_benchmark" - benchmark the completed scale64 traced SFT checkpoint.
+#   "traced_sft_direct_preservation_precheck" - quick loop1/base preservation check, no training.
 #   "traced_sft_direct_preservation_probe" - content-route direct preservation from the scale64 checkpoint.
 #   "traced_sft_direct_preservation_recover_only" - publish surviving direct-preservation output without rerunning training.
 #   "traced_sft_direct_preservation_confirm" - larger loop-1 ARC confirmation after direct preservation passes.
@@ -774,6 +775,36 @@ TARGETS = {
             "STAGE5_DIRECT_CONFIRM_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
             "STAGE5_DIRECT_CONFIRM_ASSESS_SCORE_TARGET": "content_question_only",
             "STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER": "1",
+            "STAGE5_DIRECT_PRESERVE_DISCONNECT": "1",
+        },
+    },
+    "traced_sft_direct_preservation_precheck": {
+        "path": "colab/STAGE5_DIRECT_PRESERVATION_PROBE_CELL.py",
+        "markers": [
+            "STAGE5_DIRECT_PRESERVATION_PROBE_CELL_VERSION",
+            "direct_preservation_probe",
+            "STAGE5_DIRECT_PRESERVE_PRECHECK_ONLY",
+            "direct_route_precheck_needs_training",
+            "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY",
+            "STAGE5_DIRECT_PRESERVE_PROMPT_STYLE",
+            "STAGE5_DIRECT_PRESERVE_SCORE_TARGET",
+            "colab/run_stage5_direct_preservation_probe.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY": (
+                "outputs/stage5/stage5_traced_sft_assessment_20260623_195134_reassessed/summary.json"
+            ),
+            "STAGE5_DIRECT_PRESERVE_RUN_ID": "stage5_traced_sft_direct_preservation_precheck_20260623_scale64",
+            "STAGE5_DIRECT_PRESERVE_ARC_TRAIN_LIMIT": "512",
+            "STAGE5_DIRECT_PRESERVE_ARC_EVAL_LIMIT": "128",
+            "STAGE5_DIRECT_PRESERVE_MIN_BASE_MARGIN": "1.0",
+            "STAGE5_DIRECT_PRESERVE_PROMPT_STYLE": "question_only",
+            "STAGE5_DIRECT_PRESERVE_SCORE_TARGET": "option_text",
+            "STAGE5_DIRECT_PRESERVE_PRECHECK_ONLY": "1",
+            "STAGE5_DIRECT_PRESERVE_RESUME_EXISTING": "1",
+            "STAGE5_DIRECT_PRESERVE_CHAIN_CONFIRM": "0",
+            "STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER": "0",
             "STAGE5_DIRECT_PRESERVE_DISCONNECT": "1",
         },
     },

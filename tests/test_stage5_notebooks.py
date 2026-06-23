@@ -776,8 +776,10 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
     current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
     direct_cell = (ROOT / "colab/STAGE5_DIRECT_PRESERVATION_PROBE_CELL.py").read_text(encoding="utf-8")
+    direct_runner = (ROOT / "colab/run_stage5_direct_preservation_probe.py").read_text(encoding="utf-8")
 
     assert "traced_sft_direct_preservation_probe" in bootstrap
+    assert "traced_sft_direct_preservation_precheck" in bootstrap
     assert "traced_sft_direct_preservation_recover_only" in bootstrap
     assert "STAGE5_DIRECT_PRESERVE_PROMPT_STYLE" in bootstrap
     assert '"question_only"' in bootstrap
@@ -786,8 +788,11 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert "STAGE5_DIRECT_PRESERVE_SWEEP" in bootstrap
     assert "baseline:lr=5e-7,steps=75,distill=1.0" in bootstrap
     assert "lr2e6_distill2:lr=2e-6,steps=100,distill=2.0" in bootstrap
+    assert "STAGE5_DIRECT_PRESERVE_PRECHECK_ONLY" in bootstrap
+    assert "stage5_traced_sft_direct_preservation_precheck_20260623_scale64" in bootstrap
     assert "stage5_traced_sft_assessment_20260623_195134_reassessed" in bootstrap
     assert "traced_sft_direct_preservation_probe" in bootstrap_md
+    assert "traced_sft_direct_preservation_precheck" in bootstrap_md
     assert "traced_sft_direct_preservation_recover_only" in bootstrap_md
     assert "content-route direct-preservation probe" in current_action
     assert "bounded stop-on-first-pass" in current_action
@@ -826,6 +831,9 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert "STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER" in bootstrap
     assert '"STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER": "1"' in bootstrap
     assert "content_question_only,cyclic_label_aggregated" in bootstrap
+    assert "direct_route_precheck_needs_training" in direct_runner
+    assert "STAGE5_DIRECT_PRESERVE_PRECHECK_ONLY" in direct_runner
+    assert '"precheck_only": PRECHECK_ONLY' in direct_runner
 
 
 def test_traced_sft_direct_preservation_confirm_target_is_bootstrapped() -> None:

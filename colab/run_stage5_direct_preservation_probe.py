@@ -57,6 +57,7 @@ SKIP_TRAIN_IF_LOOP1_MATCHES_BASE = os.environ.get(
     "STAGE5_DIRECT_PRESERVE_SKIP_TRAIN_IF_LOOP1_MATCHES_BASE",
     "1",
 ) not in {"0", "false", "False"}
+PRECHECK_ONLY = os.environ.get("STAGE5_DIRECT_PRESERVE_PRECHECK_ONLY", "0") in {"1", "true", "True"}
 
 
 def path_for_cli(path: Path) -> str:
@@ -412,14 +413,29 @@ def main() -> int:
     start_loop1_to_base = compare(start_loop1_path, base_eval_path)
 
     checkpoint_rows: list[dict[str, Any]] = []
-    if (
+    loop1_matches_base = (
         SKIP_TRAIN_IF_LOOP1_MATCHES_BASE
         and start_loop1_eval["correct"] >= base_eval["correct"]
         and start_loop1_to_base["calibration_ok"]
-    ):
+    )
+    if loop1_matches_base:
         status = "direct_route_loop1_matches_base_without_training"
         passed = True
         next_step = "Use max_loops=1 routing for base-confident direct examples; confirm on larger ARC slices."
+        best_checkpoint = {
+            "checkpoint": path_for_cli(resume_checkpoint),
+            "loop1_eval": start_loop1_eval,
+            "loop4_eval": start_loop4_eval,
+            "comparison_to_base": start_loop1_to_base,
+            "trained": False,
+        }
+    elif PRECHECK_ONLY:
+        status = "direct_route_precheck_needs_training"
+        passed = False
+        next_step = (
+            "Loop-1 direct route does not match base on the proxy. "
+            "Run the full bounded direct-preservation sweep if GPU budget permits."
+        )
         best_checkpoint = {
             "checkpoint": path_for_cli(resume_checkpoint),
             "loop1_eval": start_loop1_eval,
@@ -476,6 +492,7 @@ def main() -> int:
             "max_steps": MAX_STEPS,
             "learning_rate": LEARNING_RATE,
             "distill_weight": DISTILL_WEIGHT,
+            "precheck_only": PRECHECK_ONLY,
             "max_loops": 1,
         },
         "data": {
