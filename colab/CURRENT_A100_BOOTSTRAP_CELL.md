@@ -199,6 +199,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "capability_ladder_local_hf_trace_sft" - GPU local-HF traces, collection, then bounded recurrent SFT.
 #   "traced_sft_scale64_benchmark" - benchmark the completed scale64 traced SFT checkpoint.
 #   "traced_sft_direct_preservation_probe" - content-route direct preservation from the scale64 checkpoint.
+#   "traced_sft_direct_preservation_confirm" - larger loop-1 ARC confirmation after direct preservation passes.
 #   "traced_capability_ladder_sft" - GPU Phase 1 SFT from the latest gate-ready traced capability ladder.
 #   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
 #   "depth_sweep_heldout" - L4/T4 held-out ARC tail loop-depth sweep for routing validation.
@@ -724,6 +725,26 @@ TARGETS = {
             "STAGE5_DIRECT_PRESERVE_DISTILL_WEIGHT": "1.0",
             "STAGE5_DIRECT_PRESERVE_DISTILL_TEMPERATURE": "2.0",
             "STAGE5_DIRECT_PRESERVE_DISCONNECT": "1",
+        },
+    },
+    "traced_sft_direct_preservation_confirm": {
+        "path": "colab/STAGE5_DIRECT_PRESERVATION_CONFIRM_CELL.py",
+        "markers": [
+            "STAGE5_DIRECT_PRESERVATION_CONFIRM_CELL_VERSION",
+            "direct_preservation_confirm_v2",
+            "stage5_latest_direct_preservation_summary.txt",
+            "STAGE5_DIRECT_CONFIRM_SOURCE_SUMMARY",
+            "STAGE5_BENCHMARK_PUSH",
+            "content_question_only,cyclic_label_aggregated",
+            "colab/run_stage5_benchmark_suite.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_DIRECT_CONFIRM_RUN_ID": "stage5_traced_sft_direct_preservation_confirm_20260623_scale64",
+            "STAGE5_DIRECT_CONFIRM_ARC_EASY_LIMIT": "256",
+            "STAGE5_DIRECT_CONFIRM_ARC_CHALLENGE_LIMIT": "256",
+            "STAGE5_DIRECT_CONFIRM_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
+            "STAGE5_DIRECT_CONFIRM_DISCONNECT": "1",
         },
     },
     "depth_sweep_heldout": {

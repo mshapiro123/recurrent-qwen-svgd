@@ -122,6 +122,25 @@ def test_checkpoint_candidates_include_balanced_arc_mix_best_arm(tmp_path) -> No
     assert checkpoint in candidates
 
 
+def test_checkpoint_candidates_include_direct_preservation_best_checkpoint(tmp_path) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    source = tmp_path / "outputs" / "stage5" / "direct_preserve" / "summary.json"
+    checkpoint = tmp_path / "outputs" / "stage5" / "direct_preserve" / "phase1" / "phase1_step_75.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    payload = {
+        "kind": "stage5_direct_preservation_probe",
+        "best_checkpoint": {
+            "checkpoint": str(checkpoint),
+        },
+    }
+
+    candidates = module.checkpoint_candidates_from_payload(source, payload)
+
+    assert checkpoint in candidates
+
+
 def test_resolve_checkpoint_prefers_existing_export_adapter(tmp_path, monkeypatch) -> None:
     import colab.run_stage5_benchmark_suite as module
 

@@ -776,6 +776,24 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert 'replace(HF_TOKEN or "", "****")' not in direct_cell
 
 
+def test_traced_sft_direct_preservation_confirm_target_is_bootstrapped() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    confirm_cell = (ROOT / "colab/STAGE5_DIRECT_PRESERVATION_CONFIRM_CELL.py").read_text(encoding="utf-8")
+
+    assert "traced_sft_direct_preservation_confirm" in bootstrap
+    assert "traced_sft_direct_preservation_confirm" in bootstrap_md
+    assert "STAGE5_DIRECT_PRESERVATION_CONFIRM_CELL_VERSION" in confirm_cell
+    assert "direct_preservation_confirm_v2" in confirm_cell
+    assert "stage5_latest_direct_preservation_summary.txt" in confirm_cell
+    assert "STAGE5_DIRECT_CONFIRM_SOURCE_SUMMARY" in confirm_cell
+    assert "STAGE5_BENCHMARK_CHECKPOINT" in confirm_cell
+    assert "content_question_only,cyclic_label_aggregated" in confirm_cell
+    assert "STAGE5_BENCHMARK_PUSH" in confirm_cell
+    assert "colab/run_stage5_benchmark_suite.py" in confirm_cell
+    assert '"STAGE5_CURRENT_A100_TARGET", "preflight"' in bootstrap
+
+
 def test_traced_capability_ladder_sft_cell_derives_training_env_from_collection() -> None:
     plain = (ROOT / "colab/STAGE5_TRACED_CAPABILITY_LADDER_SFT_CELL.py").read_text(encoding="utf-8")
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")

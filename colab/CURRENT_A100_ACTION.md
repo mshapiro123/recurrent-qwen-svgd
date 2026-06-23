@@ -62,6 +62,17 @@ This runs max-loop-1 direct preservation from the scale64 checkpoint using
 `question_only` / `option_text` scoring and base-logit distillation on
 base-correct ARC-Easy rows.
 
+If that probe publishes a `stage5_direct_preservation_probe` summary with
+`passed=true`, the next cheap validation target is:
+
+```text
+STAGE5_CURRENT_A100_TARGET=traced_sft_direct_preservation_confirm
+```
+
+That target does no training. It confirms loop-1 direct-route preservation on
+larger ARC-Easy and ARC-Challenge slices using
+`content_question_only,cyclic_label_aggregated` scoring.
+
 Short fresh-runtime launcher:
 
 ```python
