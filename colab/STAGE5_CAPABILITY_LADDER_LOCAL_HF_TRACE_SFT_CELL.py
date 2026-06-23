@@ -129,6 +129,33 @@ def require_enough_vram_for_local_hf():
         )
 
 
+def count_completed_trace_responses_for_resume(run_id):
+    path = ROOT / "outputs" / "stage5" / str(run_id) / "trace_responses.jsonl"
+    if not path.exists():
+        return {"path": path_for_cli(path), "exists": False, "completed": 0}
+    completed = 0
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        status = str(row.get("status") or "").strip().lower()
+        text = (
+            row.get("response_text")
+            or row.get("response")
+            or row.get("output_text")
+            or row.get("output")
+            or row.get("text")
+            or row.get("content")
+            or ""
+        )
+        if status in {"", "ok", "success"} and isinstance(text, str) and text.strip():
+            completed += 1
+    return {"path": path_for_cli(path), "exists": True, "completed": completed}
+
+
 def read_json(path):
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -461,6 +488,12 @@ trace_env.update(
         "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COMMIT_RESPONSES": "1",
     }
 )
+trace_run_id = trace_env.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_ID", "")
+if trace_run_id:
+    resume_report = count_completed_trace_responses_for_resume(trace_run_id)
+    resume_report["target_limit"] = trace_env.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_LIMIT", "")
+    resume_report["run_id"] = trace_run_id
+    print({"local_hf_trace_resume_preflight": resume_report}, flush=True)
 
 print("=== Local-HF trace responses ===", flush=True)
 run([sys.executable, "colab/run_stage5_capability_ladder_trace_responses.py"], cwd=ROOT, env=trace_env)

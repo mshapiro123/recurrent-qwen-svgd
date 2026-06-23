@@ -682,6 +682,7 @@ def test_capability_ladder_local_hf_trace_sft_target_is_bootstrapped() -> None:
     assert "colab/run_stage5_benchmark_suite.py" in plain
     assert "colab/assess_stage5_traced_sft.py" in plain
     assert "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_RUN_ASSESSMENT" in plain
+    assert "local_hf_trace_resume_preflight" in plain
     assert "STAGE5_CURRICULUM_USE_LEARNED_LOOP_CONTROL" in plain
     assert "STAGE5_CURRICULUM_LOOP_CONTROL_CE_WEIGHT" in plain
     assert "STAGE5_CURRICULUM_HALT_TARGET_NLL_WEIGHT" in plain
