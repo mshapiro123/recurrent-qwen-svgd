@@ -1,0 +1,15 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 18781.53it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_191843/phase1/phase1_step_150.pt loaded_keys=179
+optimizer_parameter_tensors=8
+step=0 mean_expected_loops=1.1081 mean_halt_entropy=0.3432 expected_ce=2.0683 halting_kl=0.3379 target_mean_loops=1.0000 target_loop_abs_error=0.1081 loop_control_ce=0.3429 halting_target_nll=0.1142 loss=5.9941
+step=25 mean_expected_loops=2.0050 mean_halt_entropy=0.6080 expected_ce=1.4931 halting_kl=0.2448 target_mean_loops=2.0000 target_loop_abs_error=0.0050 loop_control_ce=0.3701 halting_target_nll=0.2051 loss=6.5347
+step=50 mean_expected_loops=1.6266 mean_halt_entropy=0.7011 expected_ce=2.6374 halting_kl=0.2900 target_mean_loops=1.0000 target_loop_abs_error=0.6266 loop_control_ce=1.0002 halting_target_nll=0.9674 loss=20.3475
+step=75 mean_expected_loops=1.3830 mean_halt_entropy=0.6743 expected_ce=1.4044 halting_kl=0.1712 target_mean_loops=1.0000 target_loop_abs_error=0.3830 loop_control_ce=0.5782 halting_target_nll=0.4806 loss=10.8565
+step=100 mean_expected_loops=1.9296 mean_halt_entropy=0.4772 expected_ce=1.3669 halting_kl=0.3470 target_mean_loops=2.0000 target_loop_abs_error=0.0704 loop_control_ce=0.2851 halting_target_nll=0.1481 loss=5.1704
+step=125 mean_expected_loops=1.9940 mean_halt_entropy=0.4105 expected_ce=1.4872 halting_kl=0.3947 target_mean_loops=2.0000 target_loop_abs_error=0.0060 loop_control_ce=0.2184 halting_target_nll=0.1117 loss=4.3984
+step=150 mean_expected_loops=1.9194 mean_halt_entropy=0.4113 expected_ce=1.2829 halting_kl=0.4006 target_mean_loops=2.0000 target_loop_abs_error=0.0806 loop_control_ce=0.1843 halting_target_nll=0.1244 loss=4.0488
+step=175 mean_expected_loops=1.0377 mean_halt_entropy=0.1605 expected_ce=1.5911 halting_kl=0.4786 target_mean_loops=1.0000 target_loop_abs_error=0.0377 loop_control_ce=0.1473 halting_target_nll=0.0384 loss=3.2106
+saved_checkpoint=outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_194543/phase1/phase1_step_200.pt
