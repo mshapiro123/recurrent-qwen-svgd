@@ -1,1 +1,1 @@
-outputs/stage5/stage5_capability_ladder_mcq_probe_20260623_160254/summary.json
+outputs/stage5/stage5_arc_mix_offset_then_depth_chain_offset256_confirm/summary.json

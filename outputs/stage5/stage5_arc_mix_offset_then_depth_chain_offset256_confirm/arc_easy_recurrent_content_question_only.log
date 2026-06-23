@@ -1,0 +1,6 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5401.02it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_content_arcmix_qonly_optiontext_20260623_121707/arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt loaded_keys=179
+aggregate=mean accuracy=0.6250 correct=160 total=256
