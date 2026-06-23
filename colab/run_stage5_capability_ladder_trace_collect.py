@@ -622,6 +622,7 @@ def gate_curriculum(curriculum_summary: Path, *, model_ladder: str = "") -> Path
         MIN_POSITIVE_ROWS,
         "--max_loop_target",
         str(max_loop_for_ladder(model_ladder)),
+        "--allow_answer_line_verification",
     ]
     if MIN_MODE_ROWS:
         cmd.extend(["--min_mode_rows", MIN_MODE_ROWS])

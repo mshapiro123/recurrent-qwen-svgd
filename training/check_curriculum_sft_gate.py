@@ -272,6 +272,7 @@ def check_report_payloads(
     reports: dict[str, dict[str, Any]],
     min_positive_rows: int,
     require_programmatic_answer_check: bool,
+    allow_answer_line_verification: bool,
     issues: list[dict[str, Any]],
 ) -> dict[str, Any]:
     positive_report = reports["positive_sft_report"]
@@ -351,7 +352,11 @@ def check_report_payloads(
 
     if int(verified_report.get("verified") or 0) <= 0:
         add_issue(issues, "no_verified_candidates", "verified_candidates_report has no verified candidates.")
-    if require_programmatic_answer_check and verified_report.get("require_programmatic_answer_check") is not True:
+    if (
+        require_programmatic_answer_check
+        and verified_report.get("require_programmatic_answer_check") is not True
+        and not allow_answer_line_verification
+    ):
         add_issue(
             issues,
             "programmatic_check_not_required",
@@ -381,6 +386,8 @@ def check_report_payloads(
         "distinctness_required": typed_report.get("distinctness_required"),
         "depth_measurements": depth_report.get("measurements"),
         "difficulty_measured": difficulty_report.get("measured"),
+        "programmatic_answer_check_required": verified_report.get("require_programmatic_answer_check"),
+        "answer_line_verification_allowed": allow_answer_line_verification,
     }
 
 
@@ -438,6 +445,7 @@ def build_gate_payload(args: argparse.Namespace) -> dict[str, Any]:
             reports=reports,
             min_positive_rows=args.min_positive_rows,
             require_programmatic_answer_check=args.require_programmatic_answer_check,
+            allow_answer_line_verification=args.allow_answer_line_verification,
             issues=issues,
         )
 
@@ -540,6 +548,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_false",
         dest="require_programmatic_answer_check",
         help="Allow generated shards whose verified answers were only cross-model agreed, without a cheap deterministic check.",
+    )
+    parser.add_argument(
+        "--allow_answer_line_verification",
+        action="store_true",
+        help=(
+            "Allow trace-derived shards whose final ANSWER line was verified against known labels. "
+            "Positive rows are still required to carry answer_match.matched=true proofs."
+        ),
     )
     parser.add_argument("--fail_on_no_go", action="store_true")
     args = parser.parse_args(argv)

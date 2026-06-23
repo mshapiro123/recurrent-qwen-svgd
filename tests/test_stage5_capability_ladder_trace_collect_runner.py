@@ -332,6 +332,38 @@ def test_write_summary_records_gate_and_artifacts(tmp_path, monkeypatch) -> None
     assert payload["artifacts"]["traced_scored_rows"] == "outputs/stage5/collect/scored_rows_with_traces.jsonl"
 
 
+def test_gate_curriculum_allows_answer_line_verified_trace_shards(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "repo"
+    run_dir = root / "outputs" / "stage5" / "collect"
+    work_dir = root / "data" / "curriculum" / "collect"
+    summary = work_dir / "summary.json"
+    summary.parent.mkdir(parents=True, exist_ok=True)
+    summary.write_text("{}", encoding="utf-8")
+    captured: list[list[str]] = []
+
+    monkeypatch.setattr(runner, "ROOT", root)
+    monkeypatch.setattr(runner, "RUN_DIR", run_dir)
+    monkeypatch.setattr(runner, "WORK_DIR", work_dir)
+    monkeypatch.setattr(runner, "MIN_POSITIVE_ROWS", "16")
+    monkeypatch.setattr(runner, "MIN_MODE_ROWS", "")
+
+    def fake_run(cmd, *, check=True, log_name=None):
+        captured.append(cmd)
+        run_dir.mkdir(parents=True, exist_ok=True)
+        (run_dir / "curriculum_sft_gate.json").write_text('{"go": true}', encoding="utf-8")
+
+    monkeypatch.setattr(runner, "run", fake_run)
+
+    assert runner.gate_curriculum(summary, model_ladder="qwen_0_5b:1,qwen_1_5b:2") == (
+        run_dir / "curriculum_sft_gate.json"
+    )
+
+    cmd = captured[0]
+    assert "--allow_answer_line_verification" in cmd
+    assert "--min_positive_rows" in cmd
+    assert cmd[cmd.index("--min_positive_rows") + 1] == "16"
+
+
 def test_model_ladder_from_collection_source_prefers_trace_job_report(tmp_path, monkeypatch) -> None:
     root = tmp_path / "repo"
     trace_jobs_dir = root / "outputs" / "stage5" / "trace_jobs"

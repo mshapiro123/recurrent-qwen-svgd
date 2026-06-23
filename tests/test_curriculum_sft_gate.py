@@ -211,6 +211,16 @@ def test_curriculum_sft_gate_blocks_cross_model_only_generated_answers(tmp_path)
     assert any(issue["code"] == "programmatic_check_not_required" for issue in result["issues"])
 
 
+def test_curriculum_sft_gate_allows_answer_line_verified_trace_rows(tmp_path) -> None:
+    summary = write_complete_work_dir(tmp_path / "run", strict=False)
+
+    result = build_gate_payload(parse_args(["--summary_json", str(summary), "--allow_answer_line_verification"]))
+
+    assert result["go"] is True
+    assert result["issues"] == []
+    assert result["checks"]["reports"]["answer_line_verification_allowed"] is True
+
+
 def test_curriculum_sft_gate_blocks_positive_trace_without_answer_match(tmp_path) -> None:
     summary = write_complete_work_dir(tmp_path / "run")
     typed_path = tmp_path / "run" / "typed_records.jsonl"
