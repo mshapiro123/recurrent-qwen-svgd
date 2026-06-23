@@ -4,6 +4,9 @@ This CPU-only target follows the latest trace-job summary or the latest
 trace-response summary produced by the provider runner, verifies final answers,
 builds traced capability-ladder curriculum rows, runs the SFT gate, backs up to
 Drive, and disconnects. It does not call model APIs itself.
+
+Safety marker for bootstrap fetch checks:
+``training/collect_capability_ladder_trace_outputs.py``.
 """
 
 import os
