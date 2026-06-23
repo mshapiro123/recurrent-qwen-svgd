@@ -60,8 +60,12 @@ STAGE5_CURRENT_A100_TARGET=traced_sft_direct_preservation_probe
 
 This runs max-loop-1 direct preservation from the scale64 checkpoint using
 `question_only` / `option_text` scoring and base-logit distillation on
-base-correct ARC-Easy rows. For this traced-SFT target, the probe now chains
-the next cheap steps automatically:
+base-correct ARC-Easy rows. The target is now a bounded stop-on-first-pass
+direct-preservation sweep: it starts with the previous conservative
+`lr=5e-7, steps=75, distill=1.0` arm, then only if that does not pass tries
+`lr=1e-6, steps=100, distill=1.0`, then
+`lr=2e-6, steps=100, distill=2.0`. For this traced-SFT target, the probe now
+chains the next cheap steps automatically:
 
 ```text
 direct-preservation repair -> loop-1 ARC confirmation -> learned-depth router continuation

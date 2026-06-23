@@ -1,4 +1,4 @@
-﻿# Current A100 Bootstrap Cell
+# Current A100 Bootstrap Cell
 
 Use this from a blank or Drive-backed Colab notebook when you want the shortest
 GitHub-backed path. It fetches the maintained plain cell from the private repo,
@@ -740,6 +740,7 @@ TARGETS = {
             "direct_preservation_probe",
             "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY",
             "STAGE5_DIRECT_PRESERVE_MAX_STEPS",
+            "STAGE5_DIRECT_PRESERVE_SWEEP",
             "STAGE5_DIRECT_PRESERVE_CHAIN_CONFIRM",
             "STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER",
             "colab/assess_stage5_benchmark_suite.py",
@@ -761,6 +762,11 @@ TARGETS = {
             "STAGE5_DIRECT_PRESERVE_LR": "5e-7",
             "STAGE5_DIRECT_PRESERVE_DISTILL_WEIGHT": "1.0",
             "STAGE5_DIRECT_PRESERVE_DISTILL_TEMPERATURE": "2.0",
+            "STAGE5_DIRECT_PRESERVE_SWEEP": (
+                "baseline:lr=5e-7,steps=75,distill=1.0;"
+                "lr1e6:lr=1e-6,steps=100,distill=1.0;"
+                "lr2e6_distill2:lr=2e-6,steps=100,distill=2.0"
+            ),
             "STAGE5_DIRECT_PRESERVE_CHAIN_CONFIRM": "1",
             "STAGE5_DIRECT_CONFIRM_ARC_EASY_LIMIT": "256",
             "STAGE5_DIRECT_CONFIRM_ARC_CHALLENGE_LIMIT": "256",

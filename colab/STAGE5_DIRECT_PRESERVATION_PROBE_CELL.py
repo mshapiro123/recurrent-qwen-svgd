@@ -56,6 +56,7 @@ DRIVE_BACKUP = env_bool("STAGE5_DIRECT_PRESERVE_DRIVE_BACKUP", False)
 DISCONNECT_WHEN_DONE = env_bool("STAGE5_DIRECT_PRESERVE_DISCONNECT", False)
 CHAIN_CONFIRM_WHEN_PASSED = env_bool("STAGE5_DIRECT_PRESERVE_CHAIN_CONFIRM", False)
 CHAIN_DEPTH_ROUTER_WHEN_CONFIRMED = env_bool("STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER", False)
+SWEEP_SPEC = os.environ.get("STAGE5_DIRECT_PRESERVE_SWEEP", "").strip()
 RUN_ID = os.environ.get("STAGE5_DIRECT_PRESERVE_RUN_ID") or time.strftime(
     "stage5_direct_preservation_loop1_%Y%m%d_%H%M%S"
 )
@@ -88,6 +89,92 @@ def run(cmd, *, cwd=None, env=None, check=True):
     if check and proc.returncode:
         raise subprocess.CalledProcessError(proc.returncode, cmd)
     return proc
+
+
+def sanitize_run_id_part(value):
+    text = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in str(value).strip())
+    return text.strip("_") or "attempt"
+
+
+SWEEP_ENV_KEYS = {
+    "lr": "STAGE5_DIRECT_PRESERVE_LR",
+    "learning_rate": "STAGE5_DIRECT_PRESERVE_LR",
+    "steps": "STAGE5_DIRECT_PRESERVE_MAX_STEPS",
+    "max_steps": "STAGE5_DIRECT_PRESERVE_MAX_STEPS",
+    "distill": "STAGE5_DIRECT_PRESERVE_DISTILL_WEIGHT",
+    "distill_weight": "STAGE5_DIRECT_PRESERVE_DISTILL_WEIGHT",
+    "temperature": "STAGE5_DIRECT_PRESERVE_DISTILL_TEMPERATURE",
+    "distill_temperature": "STAGE5_DIRECT_PRESERVE_DISTILL_TEMPERATURE",
+    "beta": "STAGE5_DIRECT_PRESERVE_BETA",
+    "min_margin": "STAGE5_DIRECT_PRESERVE_MIN_BASE_MARGIN",
+    "min_base_margin": "STAGE5_DIRECT_PRESERVE_MIN_BASE_MARGIN",
+    "save_every": "STAGE5_DIRECT_PRESERVE_SAVE_EVERY",
+    "seed": "STAGE5_DIRECT_PRESERVE_SEED",
+}
+
+
+def parse_sweep_spec():
+    if not SWEEP_SPEC:
+        return [{"name": "main", "run_id": RUN_ID, "overrides": {}}]
+    attempts = []
+    for raw_attempt in SWEEP_SPEC.split(";"):
+        raw_attempt = raw_attempt.strip()
+        if not raw_attempt:
+            continue
+        name, _, raw_params = raw_attempt.partition(":")
+        name = sanitize_run_id_part(name)
+        overrides = {}
+        if raw_params.strip():
+            for raw_pair in raw_params.split(","):
+                raw_pair = raw_pair.strip()
+                if not raw_pair:
+                    continue
+                key, sep, value = raw_pair.partition("=")
+                if not sep:
+                    raise ValueError(f"Bad STAGE5_DIRECT_PRESERVE_SWEEP item {raw_pair!r}; expected key=value.")
+                env_key = SWEEP_ENV_KEYS.get(key.strip().lower())
+                if not env_key:
+                    raise ValueError(f"Unknown STAGE5_DIRECT_PRESERVE_SWEEP key {key!r}.")
+                overrides[env_key] = value.strip()
+        attempts.append({"name": name, "run_id": f"{RUN_ID}_{name}", "overrides": overrides})
+    if not attempts:
+        raise ValueError("STAGE5_DIRECT_PRESERVE_SWEEP was set but contained no attempts.")
+    return attempts
+
+
+def direct_preservation_env(attempt):
+    env = os.environ.copy()
+    env.update(
+        {
+            "STAGE5_DIRECT_PRESERVE_RUN_ID": attempt["run_id"],
+            "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY": SOURCE_SUMMARY,
+            "STAGE5_DIRECT_PRESERVE_ARC_TRAIN_LIMIT": os.environ.get(
+                "STAGE5_DIRECT_PRESERVE_ARC_TRAIN_LIMIT", "512"
+            ),
+            "STAGE5_DIRECT_PRESERVE_ARC_EVAL_LIMIT": os.environ.get(
+                "STAGE5_DIRECT_PRESERVE_ARC_EVAL_LIMIT", "128"
+            ),
+            "STAGE5_DIRECT_PRESERVE_MAX_STEPS": os.environ.get(
+                "STAGE5_DIRECT_PRESERVE_MAX_STEPS", "75"
+            ),
+            "STAGE5_DIRECT_PRESERVE_SAVE_EVERY": os.environ.get(
+                "STAGE5_DIRECT_PRESERVE_SAVE_EVERY", "25"
+            ),
+            "STAGE5_DIRECT_PRESERVE_MIN_BASE_MARGIN": os.environ.get(
+                "STAGE5_DIRECT_PRESERVE_MIN_BASE_MARGIN", "1.0"
+            ),
+            "STAGE5_DIRECT_PRESERVE_LR": os.environ.get("STAGE5_DIRECT_PRESERVE_LR", "5e-7"),
+            "STAGE5_DIRECT_PRESERVE_BETA": os.environ.get("STAGE5_DIRECT_PRESERVE_BETA", "0.02"),
+            "STAGE5_DIRECT_PRESERVE_DISTILL_WEIGHT": os.environ.get(
+                "STAGE5_DIRECT_PRESERVE_DISTILL_WEIGHT", "1.0"
+            ),
+            "STAGE5_DIRECT_PRESERVE_DISTILL_TEMPERATURE": os.environ.get(
+                "STAGE5_DIRECT_PRESERVE_DISTILL_TEMPERATURE", "2.0"
+            ),
+        }
+    )
+    env.update(attempt["overrides"])
+    return env
 
 
 def sync_repo():
@@ -329,56 +416,88 @@ try:
     set_stage("install_dependencies")
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"], cwd=ROOT)
 
-    env = os.environ.copy()
-    env.update(
-        {
-            "STAGE5_DIRECT_PRESERVE_RUN_ID": RUN_ID,
-            "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY": SOURCE_SUMMARY,
-            "STAGE5_DIRECT_PRESERVE_ARC_TRAIN_LIMIT": os.environ.get(
-                "STAGE5_DIRECT_PRESERVE_ARC_TRAIN_LIMIT", "512"
-            ),
-            "STAGE5_DIRECT_PRESERVE_ARC_EVAL_LIMIT": os.environ.get(
-                "STAGE5_DIRECT_PRESERVE_ARC_EVAL_LIMIT", "128"
-            ),
-            "STAGE5_DIRECT_PRESERVE_MAX_STEPS": os.environ.get(
-                "STAGE5_DIRECT_PRESERVE_MAX_STEPS", "75"
-            ),
-            "STAGE5_DIRECT_PRESERVE_SAVE_EVERY": os.environ.get(
-                "STAGE5_DIRECT_PRESERVE_SAVE_EVERY", "25"
-            ),
-            "STAGE5_DIRECT_PRESERVE_MIN_BASE_MARGIN": os.environ.get(
-                "STAGE5_DIRECT_PRESERVE_MIN_BASE_MARGIN", "1.0"
-            ),
-            "STAGE5_DIRECT_PRESERVE_LR": os.environ.get("STAGE5_DIRECT_PRESERVE_LR", "5e-7"),
-            "STAGE5_DIRECT_PRESERVE_BETA": os.environ.get("STAGE5_DIRECT_PRESERVE_BETA", "0.02"),
-            "STAGE5_DIRECT_PRESERVE_DISTILL_WEIGHT": os.environ.get(
-                "STAGE5_DIRECT_PRESERVE_DISTILL_WEIGHT", "1.0"
-            ),
-            "STAGE5_DIRECT_PRESERVE_DISTILL_TEMPERATURE": os.environ.get(
-                "STAGE5_DIRECT_PRESERVE_DISTILL_TEMPERATURE", "2.0"
-            ),
-        }
-    )
+    attempts = parse_sweep_spec()
     print("direct_preservation_probe_run_id:", RUN_ID, flush=True)
     print("direct_preservation_source_summary:", SOURCE_SUMMARY, flush=True)
-    set_stage("direct_preservation_probe")
-    run([sys.executable, "colab/run_stage5_direct_preservation_probe.py"], cwd=ROOT, env=env)
+    print(
+        "direct_preservation_attempts:",
+        json.dumps(
+            [
+                {
+                    "name": attempt["name"],
+                    "run_id": attempt["run_id"],
+                    "overrides": attempt["overrides"],
+                }
+                for attempt in attempts
+            ],
+            sort_keys=True,
+        ),
+        flush=True,
+    )
 
-    run_dir = ROOT / "outputs" / "stage5" / RUN_ID
-    assert run_dir.exists(), f"Expected run_dir was not created: {run_dir}"
-    set_stage("backup_and_publish")
-    if DRIVE_BACKUP:
-        drive_dst = DRIVE_ARTIFACT_ROOT / "stage5" / RUN_ID
-        drive_dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(run_dir, drive_dst, dirs_exist_ok=True)
-        print(f"backed_up_run_dir={run_dir} -> {drive_dst}", flush=True)
+    selected_run_dir = None
+    attempt_results = []
+    for index, attempt in enumerate(attempts, start=1):
+        attempt_run_id = attempt["run_id"]
+        attempt_env = direct_preservation_env(attempt)
+        set_stage(f"direct_preservation_probe_{index}_{attempt['name']}")
+        print(
+            "direct_preservation_attempt:",
+            json.dumps(
+                {
+                    "index": index,
+                    "name": attempt["name"],
+                    "run_id": attempt_run_id,
+                    "overrides": attempt["overrides"],
+                },
+                sort_keys=True,
+            ),
+            flush=True,
+        )
+        attempt_run_dir = ROOT / "outputs" / "stage5" / attempt_run_id
+        run([sys.executable, "colab/run_stage5_direct_preservation_probe.py"], cwd=ROOT, env=attempt_env)
+
+        assert attempt_run_dir.exists(), f"Expected run_dir was not created: {attempt_run_dir}"
+        set_stage(f"backup_and_publish_{index}_{attempt['name']}")
+        if DRIVE_BACKUP:
+            drive_dst = DRIVE_ARTIFACT_ROOT / "stage5" / attempt_run_id
+            drive_dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(attempt_run_dir, drive_dst, dirs_exist_ok=True)
+            print(f"backed_up_run_dir={attempt_run_dir} -> {drive_dst}", flush=True)
+        else:
+            print(f"drive_backup_skipped={attempt_run_id}", flush=True)
+
+        safe_stage_and_push(attempt_run_dir)
+        attempt_payload = read_json(attempt_run_dir / "summary.json")
+        attempt_results.append(
+            {
+                "name": attempt["name"],
+                "run_id": attempt_run_id,
+                "status": attempt_payload.get("status"),
+                "passed": attempt_payload.get("passed"),
+                "summary": (attempt_run_dir / "summary.json").relative_to(ROOT).as_posix(),
+            }
+        )
+        if attempt_payload.get("passed") is True:
+            selected_run_dir = attempt_run_dir
+            print(f"direct_preservation_selected_attempt={attempt_run_id}", flush=True)
+            break
+        print(
+            f"direct_preservation_attempt_not_passed={attempt_run_id} status={attempt_payload.get('status')}",
+            flush=True,
+        )
+
+    if selected_run_dir is None:
+        print(
+            "direct_preservation_no_attempt_passed:",
+            json.dumps(attempt_results, sort_keys=True),
+            flush=True,
+        )
+        disconnect("direct preservation attempts finished without a pass")
     else:
-        print(f"drive_backup_skipped={RUN_ID}", flush=True)
-
-    safe_stage_and_push(run_dir)
-    confirmation_passed = maybe_chain_confirmation(run_dir)
-    maybe_chain_depth_router(run_dir, confirmation_passed=confirmation_passed)
-    disconnect("direct preservation probe finished")
+        confirmation_passed = maybe_chain_confirmation(selected_run_dir)
+        maybe_chain_depth_router(selected_run_dir, confirmation_passed=confirmation_passed)
+        disconnect("direct preservation probe finished")
 except Exception:
     disconnect("direct preservation probe errored")
     raise

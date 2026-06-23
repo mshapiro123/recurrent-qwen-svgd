@@ -782,9 +782,13 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert '"question_only"' in bootstrap
     assert "STAGE5_DIRECT_PRESERVE_SCORE_TARGET" in bootstrap
     assert '"option_text"' in bootstrap
+    assert "STAGE5_DIRECT_PRESERVE_SWEEP" in bootstrap
+    assert "baseline:lr=5e-7,steps=75,distill=1.0" in bootstrap
+    assert "lr2e6_distill2:lr=2e-6,steps=100,distill=2.0" in bootstrap
     assert "stage5_traced_sft_assessment_20260623_195134_reassessed" in bootstrap
     assert "traced_sft_direct_preservation_probe" in bootstrap_md
     assert "content-route direct-preservation probe" in current_action
+    assert "bounded stop-on-first-pass" in current_action
     assert "learned-depth router continuation" in current_action
     assert "traced_sft_depth_router_after_direct_preserve" in current_action
     assert "before commit `d7682ec`" in current_action
@@ -797,6 +801,8 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert "stage5_direct_preservation_probe_failure" in direct_cell
     assert "STAGE5_DIRECT_PRESERVE_CHAIN_CONFIRM" in direct_cell
     assert "STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER" in direct_cell
+    assert "parse_sweep_spec" in direct_cell
+    assert "direct_preservation_attempts" in direct_cell
     assert "staged_selected_checkpoint" in direct_cell
     assert "maybe_chain_depth_router" in direct_cell
     assert "colab/STAGE5_DEPTH_ROUTER_AFTER_DIRECT_PRESERVE_CELL.py" in direct_cell
