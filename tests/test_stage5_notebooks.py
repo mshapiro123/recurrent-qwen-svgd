@@ -712,6 +712,7 @@ def test_capability_ladder_local_hf_trace_sft_scale64_target_is_bootstrapped() -
     assert '"STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_ID": (' in bootstrap
     assert "stage5_capability_ladder_trace_responses_20260623_191545" in bootstrap
     assert '"STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_LIMIT": "64"' in bootstrap
+    assert '"STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RESUME": "1"' in bootstrap
     assert '"STAGE5_TRACED_CAPABILITY_SFT_MIN_TRACE_ROWS": "48"' in bootstrap
     assert "stage5_local_hf_traced_capability_sft_20260623_191843/phase1/phase1_step_150.pt" in bootstrap
     assert '"STAGE5_TRACED_CAPABILITY_SFT_PHASE1_STEPS": "200"' in bootstrap
@@ -720,6 +721,8 @@ def test_capability_ladder_local_hf_trace_sft_scale64_target_is_bootstrapped() -
     assert '"STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_ARC_CHALLENGE_LIMIT": "128"' in bootstrap
     assert "colab/assess_stage5_traced_sft.py" in bootstrap
     assert "capability_ladder_local_hf_trace_sft_scale64" in bootstrap_md
+    assert "Short fresh-runtime launcher" in current_action
+    assert 'git", "clone", repo_url' in current_action
     assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_local_hf_trace_sft_scale64"' in current_action
 
 

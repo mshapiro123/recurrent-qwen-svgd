@@ -58,6 +58,35 @@ This target:
 Use a high-memory G4/A100/H100 runtime. The maintained launcher now checks VRAM
 before downloading Qwen 7B and refuses runtimes below 20GB by default.
 
+Short fresh-runtime launcher:
+
+```python
+import os, subprocess
+from pathlib import Path
+from google.colab import userdata
+
+ROOT = Path("/content/recurrent-qwen-svgd")
+gh = userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
+assert gh, "Add GH_TOKEN or GITHUB_TOKEN to Colab secrets."
+hf = userdata.get("HF_TOKEN")
+if hf:
+    os.environ["HF_TOKEN"] = hf
+    os.environ["HUGGINGFACE_HUB_TOKEN"] = hf
+
+repo_url = f"https://x-access-token:{gh}@github.com/mshapiro123/recurrent-qwen-svgd.git"
+if ROOT.exists():
+    subprocess.run(["git", "-C", str(ROOT), "remote", "set-url", "origin", repo_url], check=True)
+    subprocess.run(["git", "-C", str(ROOT), "fetch", "origin", "main"], check=True)
+    subprocess.run(["git", "-C", str(ROOT), "checkout", "main"], check=True)
+    subprocess.run(["git", "-C", str(ROOT), "reset", "--hard", "origin/main"], check=True)
+else:
+    subprocess.run(["git", "clone", repo_url, str(ROOT)], check=True)
+
+os.chdir(ROOT)
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_local_hf_trace_sft_scale64"
+exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py", encoding="utf-8").read())
+```
+
 Paste-anywhere launcher:
 
 ```python
