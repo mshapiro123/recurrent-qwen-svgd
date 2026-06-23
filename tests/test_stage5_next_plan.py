@@ -1794,6 +1794,7 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"kind": "stage5_capability_ladder_trace_responses"}) == "capability_ladder_trace_responses"
     assert source_kind({"kind": "stage5_capability_ladder_trace_collection"}) == "capability_ladder_trace_collection"
     assert source_kind({"gate": "stage5_broader_benchmark_suite"}) == "benchmark_suite_assessment"
+    assert source_kind({"kind": "stage5_competence_preserving_pipeline"}) == "competence_preserving_pipeline"
     assert source_kind({"kind": "stage5_balanced_arc_mix_gate"}) == "balanced_arc_mix_gate"
     assert source_kind({"kind": "stage5_routing_diagnostic_assessment"}) == "routing_diagnostic"
     assert source_kind({"gate": "stage5_claim_readiness"}) == "claim_readiness"
@@ -2782,6 +2783,92 @@ def test_benchmark_suite_assessment_credit_saver_keeps_source_summary_boundary(t
 
     assert "python colab/run_stage5_balanced_arc_mix_gate.py" in actions[0]["command"]
     assert "STAGE5_ARC_MIX_SOURCE_SUMMARY=outputs/stage5/assessment/summary.json" in actions[0]["command"]
+
+
+def test_competence_pipeline_missing_full_assessment_resumes_same_run_ids(tmp_path) -> None:
+    source = tmp_path / "competence" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_competence_preserving_pipeline",
+        "run_id": "competence_run",
+        "source_summary": "outputs/stage5/source/summary.json",
+        "status": "full_assessment_missing",
+        "arc_mix_run_id": "competence_run_arc_mix",
+        "full_assessment_run_id": "competence_run_full_assessment",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Resume competence-preserving recurrent recovery pipeline"
+    assert "python colab/run_stage5_competence_preserving_pipeline.py" in actions[0]["command"]
+    assert "STAGE5_COMPETENCE_PIPELINE_RUN_ID=competence_run" in actions[0]["command"]
+    assert "STAGE5_COMPETENCE_SOURCE_SUMMARY=outputs/stage5/source/summary.json" in actions[0]["command"]
+    assert "STAGE5_COMPETENCE_ARC_MIX_RUN_ID=competence_run_arc_mix" in actions[0]["command"]
+    assert "STAGE5_COMPETENCE_FULL_ASSESS_RUN_ID=competence_run_full_assessment" in actions[0]["command"]
+
+
+def test_competence_pipeline_passed_full_assessment_delegates_to_broader_benchmark(tmp_path) -> None:
+    source = tmp_path / "competence" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_competence_preserving_pipeline",
+        "status": "full_assessment_balanced_nonnegative",
+        "full_assessment_summary": "outputs/stage5/full/summary.json",
+        "full_assessment": {
+            "kind": "stage5_recovery_full_assessment",
+            "status": "balanced_nonnegative",
+            "balanced_assessment": {
+                "status": "balanced_nonnegative",
+                "best_checkpoint": {"checkpoint": "outputs/stage5/full/phase1_step_100.pt"},
+            },
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run broader benchmark suite for balanced checkpoint"
+    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_SOURCE_SUMMARY=outputs/stage5/full/summary.json" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_CHECKPOINT=outputs/stage5/full/phase1_step_100.pt" in actions[0]["command"]
+
+
+def test_competence_pipeline_failed_inspects_wrapper_summary(tmp_path) -> None:
+    source = tmp_path / "competence" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_competence_preserving_pipeline",
+        "status": "pipeline_failed",
+        "failed_stage": "arc_mix",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect failed competence-preserving pipeline `arc_mix`"
+    assert actions[0]["command"].startswith("cat ")
+    assert "run_stage5_competence_preserving_pipeline.py" not in actions[0]["command"]
+
+
+def test_competence_pipeline_failed_arc_mix_delegates_to_routing_diagnostic(tmp_path) -> None:
+    source = tmp_path / "competence" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_competence_preserving_pipeline",
+        "status": "arc_mix_not_passed",
+        "arc_mix_summary": "outputs/stage5/competence_arc_mix/summary.json",
+        "arc_mix": {
+            "kind": "stage5_balanced_arc_mix_gate",
+            "status": "no_proxy_lift",
+            "best_arm": {
+                "best_checkpoint": {"checkpoint": "outputs/stage5/competence_arc_mix/phase1_step_50.pt"}
+            },
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run bounded depth/width routing diagnostic"
+    assert "python colab/run_stage5_routing_diagnostic.py" in actions[0]["command"]
+    assert "STAGE5_RECOVERED_SOURCE_SUMMARY=outputs/stage5/competence_arc_mix/summary.json" in actions[0]["command"]
 
 
 def test_balanced_arc_mix_passed_runs_full_assessment(tmp_path) -> None:

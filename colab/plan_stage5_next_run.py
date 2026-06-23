@@ -141,6 +141,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or release_gate_payload(payload) is not None
         or benchmark_suite_payload(payload) is not None
         or benchmark_suite_assessment_payload(payload) is not None
+        or competence_preserving_pipeline_payload(payload) is not None
         or recovery_full_assessment_payload(payload) is not None
         or balanced_mcq_assessment_payload(payload) is not None
         or balanced_arc_mix_payload(payload) is not None
@@ -353,6 +354,10 @@ def benchmark_suite_assessment_payload(payload: dict[str, Any]) -> dict[str, Any
 
 def recovery_full_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "stage5_recovery_full_assessment" else None
+
+
+def competence_preserving_pipeline_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_competence_preserving_pipeline" else None
 
 
 def balanced_mcq_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -2222,6 +2227,79 @@ def benchmark_assessment_shows_recurrent_regression(payload: dict[str, Any]) -> 
     return False
 
 
+def competence_pipeline_child_summary(payload: dict[str, Any], key: str) -> Path:
+    raw = str(payload.get(key) or "").strip()
+    if raw:
+        return resolve_path(raw)
+    return ROOT / "missing_competence_pipeline_child_summary.json"
+
+
+def competence_pipeline_resume_action(payload: dict[str, Any], *, source_summary: Path, reason: str) -> dict[str, Any]:
+    original_source = str(payload.get("source_summary") or path_for_cli(source_summary)).replace("\\", "/")
+    assignments = {
+        "STAGE5_COMPETENCE_PIPELINE_RUN_ID": str(payload.get("run_id") or f"{RUN_ID}_competence_recovery_resume"),
+        "STAGE5_COMPETENCE_SOURCE_SUMMARY": original_source,
+    }
+    if payload.get("arc_mix_run_id"):
+        assignments["STAGE5_COMPETENCE_ARC_MIX_RUN_ID"] = str(payload["arc_mix_run_id"])
+    if payload.get("full_assessment_run_id"):
+        assignments["STAGE5_COMPETENCE_FULL_ASSESS_RUN_ID"] = str(payload["full_assessment_run_id"])
+    return make_action(
+        "Resume competence-preserving recurrent recovery pipeline",
+        reason,
+        command_env(assignments, "python colab/run_stage5_competence_preserving_pipeline.py"),
+        10,
+    )
+
+
+def competence_preserving_pipeline_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    if status in {"arc_mix_missing", "full_assessment_missing"}:
+        missing_stage = "ARC-mix proxy" if status == "arc_mix_missing" else "full balanced assessment"
+        return [
+            competence_pipeline_resume_action(
+                payload,
+                source_summary=source_summary,
+                reason=(
+                    f"The competence-preserving wrapper did not produce its {missing_stage} child summary. "
+                    "Resume with the same run ids so completed child stages are reused instead of restarted."
+                ),
+            )
+        ]
+    if status == "pipeline_failed":
+        failed_stage = payload.get("failed_stage") or "unknown"
+        return [
+            make_action(
+                f"Inspect failed competence-preserving pipeline `{failed_stage}`",
+                "The wrapper caught a child failure and wrote durable logs. Inspect the wrapper summary and child logs before launching another GPU action.",
+                f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                10,
+            )
+        ]
+    if status == "arc_mix_not_passed":
+        arc_payload = payload.get("arc_mix")
+        if isinstance(arc_payload, dict):
+            return balanced_arc_mix_actions(
+                arc_payload,
+                source_summary=competence_pipeline_child_summary(payload, "arc_mix_summary"),
+            )
+    if status.startswith("full_assessment_"):
+        full_payload = payload.get("full_assessment")
+        if isinstance(full_payload, dict):
+            return balanced_full_assessment_actions(
+                full_payload,
+                source_summary=competence_pipeline_child_summary(payload, "full_assessment_summary"),
+            )
+    return [
+        make_action(
+            f"Inspect competence-preserving pipeline `{status}`",
+            "The competence-preserving pipeline summary is current but its status is not mapped to a safe next GPU action.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
+        )
+    ]
+
+
 def balanced_assessment_payload(payload: dict[str, Any]) -> dict[str, Any]:
     nested = payload.get("balanced_assessment")
     return nested if isinstance(nested, dict) else payload
@@ -3861,6 +3939,9 @@ def plan_next_actions(
     benchmark_suite_assessment = benchmark_suite_assessment_payload(payload)
     if benchmark_suite_assessment:
         return benchmark_suite_assessment_actions(benchmark_suite_assessment, source_summary=source_summary)
+    competence_pipeline = competence_preserving_pipeline_payload(payload)
+    if competence_pipeline:
+        return competence_preserving_pipeline_actions(competence_pipeline, source_summary=source_summary)
     recovery_full_assessment = recovery_full_assessment_payload(payload)
     if recovery_full_assessment:
         return balanced_full_assessment_actions(recovery_full_assessment, source_summary=source_summary)
@@ -4286,6 +4367,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "release_gate"
     if benchmark_suite_assessment_payload(payload):
         return "benchmark_suite_assessment"
+    if competence_preserving_pipeline_payload(payload):
+        return "competence_preserving_pipeline"
     if recovery_full_assessment_payload(payload):
         return "recovery_full_assessment"
     if balanced_mcq_assessment_payload(payload):
