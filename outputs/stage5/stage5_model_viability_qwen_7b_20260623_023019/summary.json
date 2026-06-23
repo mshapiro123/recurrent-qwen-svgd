@@ -1,0 +1,189 @@
+{
+  "kind": "stage5_model_viability_probe",
+  "run_id": "stage5_model_viability_qwen_7b_20260623_023019",
+  "model_name": "Qwen/Qwen2.5-7B-Instruct",
+  "model_label": "qwen_7b",
+  "layer_split": "auto",
+  "identity": {
+    "returncode": 0,
+    "passed": true,
+    "max_abs_diff": 0.0,
+    "mean_abs_diff": 0.0,
+    "dtype": "float32",
+    "attn_implementation": "eager"
+  },
+  "benchmarks": [
+    "arc_easy",
+    "arc_challenge"
+  ],
+  "score_targets": [
+    "label",
+    "content_question_only"
+  ],
+  "aggregates": [
+    "mean"
+  ],
+  "loops": [
+    1,
+    2
+  ],
+  "limits": {
+    "arc_easy": "24",
+    "arc_challenge": "24",
+    "arc_easy_offset": 0,
+    "arc_challenge_offset": 0
+  },
+  "outputs": {
+    "base": {
+      "arc_easy": {
+        "label": "outputs/stage5/stage5_model_viability_qwen_7b_20260623_023019/arc_easy_base_label.jsonl",
+        "content_question_only": "outputs/stage5/stage5_model_viability_qwen_7b_20260623_023019/arc_easy_base_content_question_only.jsonl"
+      },
+      "arc_challenge": {
+        "label": "outputs/stage5/stage5_model_viability_qwen_7b_20260623_023019/arc_challenge_base_label.jsonl",
+        "content_question_only": "outputs/stage5/stage5_model_viability_qwen_7b_20260623_023019/arc_challenge_base_content_question_only.jsonl"
+      }
+    },
+    "recurrent": {
+      "arc_easy": {
+        "label": {
+          "1": "outputs/stage5/stage5_model_viability_qwen_7b_20260623_023019/arc_easy_recurrent_loop1_label.jsonl",
+          "2": "outputs/stage5/stage5_model_viability_qwen_7b_20260623_023019/arc_easy_recurrent_loop2_label.jsonl"
+        },
+        "content_question_only": {
+          "1": "outputs/stage5/stage5_model_viability_qwen_7b_20260623_023019/arc_easy_recurrent_loop1_content_question_only.jsonl",
+          "2": "outputs/stage5/stage5_model_viability_qwen_7b_20260623_023019/arc_easy_recurrent_loop2_content_question_only.jsonl"
+        }
+      },
+      "arc_challenge": {
+        "label": {
+          "1": "outputs/stage5/stage5_model_viability_qwen_7b_20260623_023019/arc_challenge_recurrent_loop1_label.jsonl",
+          "2": "outputs/stage5/stage5_model_viability_qwen_7b_20260623_023019/arc_challenge_recurrent_loop2_label.jsonl"
+        },
+        "content_question_only": {
+          "1": "outputs/stage5/stage5_model_viability_qwen_7b_20260623_023019/arc_challenge_recurrent_loop1_content_question_only.jsonl",
+          "2": "outputs/stage5/stage5_model_viability_qwen_7b_20260623_023019/arc_challenge_recurrent_loop2_content_question_only.jsonl"
+        }
+      }
+    }
+  },
+  "comparisons": {
+    "arc_easy": {
+      "label": {
+        "1": {
+          "mean": {
+            "paired_examples": 24,
+            "base_correct": 23,
+            "recurrent_correct": 23,
+            "delta": 0,
+            "wins": 0,
+            "losses": 0,
+            "ties": 24,
+            "sign_test_p": null,
+            "mean_expected_loops": 1.0
+          }
+        },
+        "2": {
+          "mean": {
+            "paired_examples": 24,
+            "base_correct": 23,
+            "recurrent_correct": 23,
+            "delta": 0,
+            "wins": 0,
+            "losses": 0,
+            "ties": 24,
+            "sign_test_p": null,
+            "mean_expected_loops": 1.750552773475647
+          }
+        }
+      },
+      "content_question_only": {
+        "1": {
+          "mean": {
+            "paired_examples": 24,
+            "base_correct": 21,
+            "recurrent_correct": 21,
+            "delta": 0,
+            "wins": 0,
+            "losses": 0,
+            "ties": 24,
+            "sign_test_p": null,
+            "mean_expected_loops": 1.0
+          }
+        },
+        "2": {
+          "mean": {
+            "paired_examples": 24,
+            "base_correct": 21,
+            "recurrent_correct": 20,
+            "delta": -1,
+            "wins": 0,
+            "losses": 1,
+            "ties": 23,
+            "sign_test_p": 1.0,
+            "mean_expected_loops": 1.750552773475647
+          }
+        }
+      }
+    },
+    "arc_challenge": {
+      "label": {
+        "1": {
+          "mean": {
+            "paired_examples": 24,
+            "base_correct": 24,
+            "recurrent_correct": 24,
+            "delta": 0,
+            "wins": 0,
+            "losses": 0,
+            "ties": 24,
+            "sign_test_p": null,
+            "mean_expected_loops": 1.0
+          }
+        },
+        "2": {
+          "mean": {
+            "paired_examples": 24,
+            "base_correct": 24,
+            "recurrent_correct": 22,
+            "delta": -2,
+            "wins": 0,
+            "losses": 2,
+            "ties": 22,
+            "sign_test_p": 0.5,
+            "mean_expected_loops": 1.750552773475647
+          }
+        }
+      },
+      "content_question_only": {
+        "1": {
+          "mean": {
+            "paired_examples": 24,
+            "base_correct": 13,
+            "recurrent_correct": 13,
+            "delta": 0,
+            "wins": 0,
+            "losses": 0,
+            "ties": 24,
+            "sign_test_p": null,
+            "mean_expected_loops": 1.0
+          }
+        },
+        "2": {
+          "mean": {
+            "paired_examples": 24,
+            "base_correct": 13,
+            "recurrent_correct": 14,
+            "delta": 1,
+            "wins": 1,
+            "losses": 0,
+            "ties": 23,
+            "sign_test_p": 1.0,
+            "mean_expected_loops": 1.750552773475647
+          }
+        }
+      }
+    }
+  },
+  "elapsed_seconds": 180.78831362724304
+}

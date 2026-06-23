@@ -1,1 +1,1 @@
-outputs/stage5/stage5_capability_ladder_mcq_probe_20260623_022145/summary.json
+outputs/stage5/stage5_model_viability_qwen_7b_20260623_023019/summary.json
