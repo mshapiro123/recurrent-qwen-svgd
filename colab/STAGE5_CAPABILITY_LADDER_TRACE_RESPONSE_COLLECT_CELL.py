@@ -72,10 +72,19 @@ if BACKEND == "hf_local":
             "Local HF trace generation requires "
             "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_LOCAL_HF=1."
         )
-    if not os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME", "").strip():
+    hf_model_name = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME", "").strip()
+    if not hf_model_name:
         raise RuntimeError(
             "Local HF trace generation requires "
             "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME."
+        )
+    if (
+        any(marker in hf_model_name.lower() for marker in ("qwen", "qwq", "qvq", "jackrong"))
+        and os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_ALLOW_STUDENT_LINEAGE", "0") != "1"
+    ):
+        raise RuntimeError(
+            "Local Qwen-lineage trace generation requires explicit "
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_ALLOW_STUDENT_LINEAGE=1."
         )
 elif os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER", "0") != "1":
     raise RuntimeError(

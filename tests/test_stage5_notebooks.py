@@ -601,6 +601,7 @@ def test_capability_ladder_local_hf_trace_collect_target_is_bootstrapped() -> No
     assert "hf_local" in plain
     assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_LOCAL_HF" in plain
     assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME" in plain
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_ALLOW_STUDENT_LINEAGE" in plain
     assert "capability_ladder_local_hf_trace_collect" in bootstrap
     assert "Qwen/Qwen2.5-7B-Instruct" in bootstrap
     assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_ALLOW_STUDENT_LINEAGE" in bootstrap
