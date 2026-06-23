@@ -2452,6 +2452,25 @@ def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summar
             )
         ]
     if status == "needs_recurrent_recovery":
+        if benchmark_assessment_has_arc_easy_content_regression(payload):
+            return [
+                make_action(
+                    "Diagnose ARC-Easy regression before recurrent recovery",
+                    (
+                        "The broader benchmark gate says recurrent still trails base and ARC-Easy content is negative. "
+                        "First decide whether the easy loss is order sensitivity, content/cyclic surface mismatch, "
+                        "or true direct-route erosion before launching another recovery training job."
+                    ),
+                    command_env(
+                        {
+                            "STAGE5_ARC_EASY_REGRESSION_DIAG_RUN_ID": f"{RUN_ID}_arc_easy_regression_diagnostic",
+                            "STAGE5_ARC_EASY_REGRESSION_DIAG_SOURCE_SUMMARY": path_for_cli(source_summary),
+                        },
+                        "python colab/run_stage5_arc_easy_regression_diagnostic.py",
+                    ),
+                    10,
+                )
+            ]
         if credit_saver_budget():
             return [
                 make_action(
@@ -2524,6 +2543,22 @@ def benchmark_assessment_shows_recurrent_regression(payload: dict[str, Any]) -> 
         delta = int(row.get("correct_delta_recurrent_vs_base", 0) or 0)
         if paired >= max(required, 1) and delta < 0:
             return True
+    return False
+
+
+def benchmark_assessment_has_arc_easy_content_regression(payload: dict[str, Any]) -> bool:
+    rows = payload.get("benchmarks") or []
+    if not isinstance(rows, list):
+        return False
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if row.get("benchmark") != "arc_easy":
+            continue
+        if not row.get("present"):
+            return False
+        delta = row.get("correct_delta_recurrent_vs_base")
+        return isinstance(delta, (int, float)) and float(delta) < 0
     return False
 
 

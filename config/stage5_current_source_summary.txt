@@ -1,1 +1,1 @@
-outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment/summary.json
+outputs/stage5/stage5_arc_easy_regression_diagnostic_20260623_current/summary.json

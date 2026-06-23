@@ -1,0 +1,21 @@
+{
+  "kind": "stage5_arc_easy_regression_diagnostic",
+  "run_id": "stage5_arc_easy_regression_diagnostic_20260623_current",
+  "status": "surface_mismatch_likely",
+  "repair_action": "content_cyclic_surface_alignment",
+  "source_summary": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment/summary.json",
+  "source_kind": null,
+  "benchmark_source_summary": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm/summary.json",
+  "order_sensitivity_diagnosis": "outputs/stage5/stage5_arc_easy_regression_diagnostic_20260623_current/arc_easy_order_sensitivity_diagnosis.json",
+  "surface_diagnosis": "outputs/stage5/stage5_arc_easy_regression_diagnostic_20260623_current/arc_easy_surface_mismatch_diagnosis.json",
+  "order_sensitivity_recommendation": "diagnose_content_route_scoring_or_prompt_alignment_before_more_distillation",
+  "surface_recommendation": "prioritize_content_cyclic_surface_alignment",
+  "content_delta": -8,
+  "content_losses": 16,
+  "content_losses_order_sensitive": 6,
+  "content_losses_order_sensitive_fraction": 0.375,
+  "content_losses_rescued_by_cyclic": 14,
+  "content_losses_stably_rescued_by_cyclic": 8,
+  "order_sensitivity_loss_rate_lift": 0.040209790209790194,
+  "next_step": "Run content-vs-cyclic surface-alignment repair before direct distillation."
+}

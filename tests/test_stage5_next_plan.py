@@ -2711,7 +2711,7 @@ def test_benchmark_suite_summary_with_cyclic_scores_assesses_cyclic_aggregate(tm
     assert "STAGE5_BENCHMARK_ASSESS_AGGREGATE=permutation_mean" in actions[0]["command"]
 
 
-def test_benchmark_suite_assessment_negative_runs_competence_pipeline(monkeypatch, tmp_path) -> None:
+def test_benchmark_suite_assessment_negative_arc_easy_runs_regression_diagnostic(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(planner, "A100_BUDGET_PROFILE", "gate")
     source = tmp_path / "benchmark_assessment" / "summary.json"
     source.parent.mkdir()
@@ -2719,6 +2719,46 @@ def test_benchmark_suite_assessment_negative_runs_competence_pipeline(monkeypatc
         "gate": "stage5_broader_benchmark_suite",
         "status": "needs_recurrent_recovery",
         "checkpoint": "outputs/stage5/balanced/phase1_step_150.pt",
+        "benchmarks": [
+            {
+                "benchmark": "arc_easy",
+                "present": True,
+                "paired_examples": 256,
+                "correct_delta_recurrent_vs_base": -8,
+            }
+        ],
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Diagnose ARC-Easy regression before recurrent recovery"
+    assert "python colab/run_stage5_arc_easy_regression_diagnostic.py" in actions[0]["command"]
+    assert "STAGE5_ARC_EASY_REGRESSION_DIAG_SOURCE_SUMMARY=" in actions[0]["command"]
+    assert "run_stage5_competence_preserving_pipeline.py" not in actions[0]["command"]
+
+
+def test_benchmark_suite_assessment_negative_non_easy_runs_competence_pipeline(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(planner, "A100_BUDGET_PROFILE", "gate")
+    source = tmp_path / "benchmark_assessment" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_broader_benchmark_suite",
+        "status": "needs_recurrent_recovery",
+        "checkpoint": "outputs/stage5/balanced/phase1_step_150.pt",
+        "benchmarks": [
+            {
+                "benchmark": "arc_easy",
+                "present": True,
+                "paired_examples": 256,
+                "correct_delta_recurrent_vs_base": 0,
+            },
+            {
+                "benchmark": "arc_challenge",
+                "present": True,
+                "paired_examples": 256,
+                "correct_delta_recurrent_vs_base": -4,
+            },
+        ],
     }
 
     actions = plan_next_actions(payload, source_summary=source)
