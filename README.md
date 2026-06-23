@@ -82,6 +82,11 @@ path produces a sane checkpoint and a paired routing/benchmark diagnostic.
 Auth, Drive, GitHub, notebook-state, source-pointer, and dataset-prep failures
 are CPU/local repair tasks, not GPU tasks.
 
+The detailed hypothesis-driven experiment queue is maintained in
+[docs/SEQUENCED_EXPERIMENT_PLAN.md](docs/SEQUENCED_EXPERIMENT_PLAN.md). Use it
+as the handoff for strategy/deep-research review and as the default ordering
+for deciding whether the next Colab job should be CPU, L4/T4, A100, or deferred.
+
 ## Manuscript Claim Status
 
 The repository is now written as the skeleton of a model-surgery paper. The
