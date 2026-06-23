@@ -1,0 +1,6 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Challenge
+split=validation
+offset=0
+rows=64
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_learned_loop_control_ce8_benchmark_l4_20260623_072057/arc_challenge_validation_64.jsonl
