@@ -23,6 +23,9 @@ RUN_ID = os.environ.get("STAGE5_BENCHMARK_ASSESS_RUN_ID") or time.strftime(
 
 MIN_ARC_EXAMPLES = int(os.environ.get("STAGE5_BENCHMARK_ASSESS_MIN_ARC_EXAMPLES", "128"))
 MIN_GPQA_EXAMPLES = int(os.environ.get("STAGE5_BENCHMARK_ASSESS_MIN_GPQA_EXAMPLES", "16"))
+ARC_CHALLENGE_VALIDATION_EXAMPLES = int(
+    os.environ.get("STAGE5_BENCHMARK_ASSESS_ARC_CHALLENGE_VALIDATION_EXAMPLES", "299")
+)
 REQUIRED_SCORE_TARGET = os.environ.get("STAGE5_BENCHMARK_ASSESS_SCORE_TARGET", "label")
 REQUIRED_AGGREGATE = os.environ.get("STAGE5_BENCHMARK_ASSESS_AGGREGATE", "mean")
 ALLOWED_NEGATIVE_DELTA = int(os.environ.get("STAGE5_BENCHMARK_ASSESS_ALLOWED_NEGATIVE_DELTA", "0"))
@@ -99,7 +102,7 @@ def latest_benchmark_suite() -> Path | None:
 
 def benchmark_min_examples(benchmark: str) -> int:
     if benchmark == "arc_challenge":
-        return MIN_ARC_EXAMPLES
+        return min(MIN_ARC_EXAMPLES, ARC_CHALLENGE_VALIDATION_EXAMPLES)
     if benchmark == "gpqa_lite":
         return MIN_GPQA_EXAMPLES
     return 1

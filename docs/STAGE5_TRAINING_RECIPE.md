@@ -82,6 +82,10 @@ Gate to proceed:
   remains within a small gap while improving exact reasoning and loop telemetry.
 - Any bounded surpass-base result replicates on an independent offset or larger
   split before it is treated as a robust benchmark claim.
+- For MCQ benchmark selection, cyclic-debiased scoring is the primary survival
+  gate. Content-question gains are useful leading indicators of answer-surface
+  recovery, but they do not by themselves justify selecting or extending a
+  checkpoint if cyclic-debiased scoring is materially negative.
 - Mean loop depth remains non-collapsed.
 - Loop-depth telemetry is sensible by task type: direct/easy rows are shallower
   than deep deterministic rows.

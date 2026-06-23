@@ -158,9 +158,39 @@ On the 256-example confirmation slice:
   delta `+10`.
 
 This is the first bounded non-toy recurrent-vs-base win after model surgery.
-It is not yet a robust benchmark claim because the p-values are still
-non-decisive and the slice begins at offset 0. The immediate action is
-independent offset confirmation with the same checkpoint and scoring surfaces.
+It is not yet a robust benchmark claim. The per-slice paired sign tests are
+structurally underpowered because most rows are ties, so these small recovery
+slices should be read by sign, magnitude, and replication rather than by a
+confirmatory `p < 0.05` rule. The discipline that replaces the p-value gate is
+independent offset confirmation and debiased scoring. Content-question gains are
+the leading indicator that the answer surface recovered; cyclic-debiased scores
+are the survival gate that says the gain is not just another option-order or
+label-prior artifact.
+
+The independent offset check has since been reclassified as
+`offset_confirmed_flat_debiased`: content-surface gains replicated on
+ARC-Easy, and cyclic-debiased scoring stayed effectively flat rather than
+materially negative. That is enough to justify a bounded depth-routing probe,
+but not enough to make a robust performance claim. The post-depth benchmark
+must therefore be read first on the cyclic-debiased surface, with content gains
+kept as secondary evidence.
+
+The learned-loop 512/validation follow-up completed on the step-50
+depth-routing checkpoint:
+
+- ARC-Easy content-question-only: recurrent `316/512`, base `298/512`, delta
+  `+18`, W/L/T `43/25/444`, sign-test p `0.0385`;
+- ARC-Easy cyclic-debiased: recurrent `406/512`, base `406/512`, delta `0`,
+  W/L/T `4/4/504`;
+- ARC-Challenge content-question-only: recurrent `108/299`, base `98/299`,
+  delta `+10`, W/L/T `28/18/253`;
+- ARC-Challenge cyclic-debiased: recurrent `177/299`, base `177/299`, delta
+  `0`, W/L/T `6/6/287`.
+
+After fixing the assessment coverage rule to recognize that ARC-Challenge
+validation contains 299 paired rows, this passes the current cyclic-debiased
+survival gate. The honest claim is recovery plus preservation under debiased
+scoring, not a debiased surpass-base win.
 
 ### Particle / SVGD Status
 
@@ -791,34 +821,45 @@ Stop or avoid GPU when:
 
 ## Current Next-Best Order
 
-The ARC-mix content-surface confirmation has replaced the older "recover
-held-out depth-sweep artifact" action. The current order is:
+The ARC-mix offset confirmation and learned-loop benchmark moved the project
+from recovery lead to bounded depth-routing evidence. The current order is:
 
-1. Replicate the positive ARC-mix checkpoint on an independent offset-256
-   ARC-Easy/ARC-Challenge slice with content-question-only and cyclic scoring.
-2. If the offset confirmation is non-negative on both benchmarks, run a larger
-   ARC confirmation or release-gate assessment before claiming robust recovery.
-3. If the offset confirmation fails, diagnose per-bucket regressions and return
-   to ARC-mixed content calibration before more training.
-4. Promote the CE8 depth curve into the fixed readout for later runs:
+1. Treat the step-50 depth-routing checkpoint as having passed the current
+   cyclic-debiased survival gate: content-question scoring improved, while
+   cyclic-debiased scoring remained exactly flat versus base on ARC-Easy and
+   ARC-Challenge validation.
+2. Do not overclaim this as a debiased surpass-base result. The claim is
+   "surgery plus small-parameter recovery preserved base under debiased scoring
+   and improved the content-answer surface."
+3. Pre-commit failure routing for the next runs remains:
+   - ARC-Easy content fails while cyclic is flat: train more content recovery
+     and depth-1 preservation.
+   - Easy is preserved but hard cyclic/content stay flat or negative: depth
+     routing is not yet buying hard-tail capability; test scale or improve the
+     depth-label curriculum.
+   - Hard improves while easy regresses: depth-1 preservation is failing and
+     routing is stealing from the direct path.
+4. Run the next capability-building experiment against this gate: either a
+   depth-label curriculum improvement on 0.5B or a no-training 1.5B viability
+   probe if larger-GPU time is available cheaply.
+5. Run a larger or broader confirmation before any public or HF-facing
+   benchmark claim.
+6. Promote the CE8 depth curve into the fixed readout for later runs:
    [STAGE5_CE8_DEPTH_CURVE_2026_06_23.md](STAGE5_CE8_DEPTH_CURVE_2026_06_23.md).
-5. Build a selector or training objective that can preserve depth 1 on
+7. Build a selector or training objective that can preserve depth 1 on
    easy/direct rows while using depth 2-3 on hard/ambiguous rows.
-6. Keep debiased/cyclic MCQ scoring as the default benchmark harness, but keep
+8. Keep debiased/cyclic MCQ scoring as the default benchmark harness, but keep
    content-question-only scoring as a guardrail because ARC-Easy content
    calibration has been the main failure surface.
-7. Audit and type trace data before more SFT consumes it.
-8. Add and run a no-training 1.5B recurrent viability probe only after the 0.5B
-   depth-routing gate is clearer, unless GPU availability makes the probe very
-   cheap.
-9. Run depth-conditional preservation SFT:
+9. Audit and type trace data before more SFT consumes it.
+10. Run depth-conditional preservation SFT:
    depth 1 for base-correct/direct/easy rows, depth 2-3 for verified hard rows.
-10. Evaluate fixed depths, learned router, and selector on the same balanced
+11. Evaluate fixed depths, learned router, and selector on the same balanced
    ARC slices.
-11. Compare against a same-recipe dense LoRA control.
-12. Re-test particles/SVGD only after deterministic selected depth is useful.
-13. Run broader GPQA/ARC-AGI-style benchmark gates.
-14. Package HF artifacts and paper claims only after held-out surpass-base or
+12. Compare against a same-recipe dense LoRA control.
+13. Re-test particles/SVGD only after deterministic selected depth is useful.
+14. Run broader GPQA/ARC-AGI-style benchmark gates.
+15. Package HF artifacts and paper claims only after held-out surpass-base or
     same-recipe architecture evidence exists.
 
 The immediate strategic question for the deep-research agent is not whether

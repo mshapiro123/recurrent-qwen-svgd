@@ -92,6 +92,21 @@ def test_benchmark_assessment_requires_paired_coverage(tmp_path) -> None:
     assert assessed["criteria"][1]["passed"] is False
 
 
+def test_benchmark_assessment_caps_arc_challenge_at_validation_size(tmp_path, monkeypatch) -> None:
+    import colab.assess_stage5_benchmark_suite as module
+
+    source = tmp_path / "suite" / "summary.json"
+    payload = _suite(arc_delta=0, gpqa_delta=0, arc_n=299)
+    monkeypatch.setattr(module, "MIN_ARC_EXAMPLES", 512)
+    monkeypatch.setattr(module, "ARC_CHALLENGE_VALIDATION_EXAMPLES", 299)
+
+    assessed = assess_benchmark_suite(summary_json=source, payload=payload)
+
+    assert assessed["status"] == "passed"
+    assert assessed["criteria"][1]["passed"] is True
+    assert assessed["benchmarks"][0]["required_examples"] == 299
+
+
 def test_benchmark_assessment_cli_writes_outputs(tmp_path, monkeypatch) -> None:
     source = tmp_path / "suite" / "summary.json"
     output_json = tmp_path / "assessment.json"
