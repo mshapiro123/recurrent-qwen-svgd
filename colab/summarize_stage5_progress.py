@@ -147,6 +147,8 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         return True
     if payload.get("kind") == "stage5_benchmark_suite":
         return True
+    if payload.get("kind") == "stage5_traced_sft_assessment":
+        return True
     if payload.get("kind") == "stage5_direct_preservation_probe":
         return True
     if payload.get("gate") == "stage5_broader_benchmark_suite":
@@ -1087,6 +1089,12 @@ def best_records(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
 
 
 def latest_planner_source(summary_files: list[Path]) -> str | None:
+    current = current_pointer_summary(summary_files)
+    if current is not None:
+        payload = safe_read_json(current)
+        if payload and looks_like_planner_source(payload):
+            return path_for_cli(current)
+
     candidates: list[tuple[int, float, str, Path]] = []
     for path in summary_files:
         if path.name != "summary.json":
@@ -1097,6 +1105,27 @@ def latest_planner_source(summary_files: list[Path]) -> str | None:
     if not candidates:
         return None
     return path_for_cli(sorted(candidates, reverse=True)[0][3])
+
+
+def current_pointer_summary(summary_files: list[Path]) -> Path | None:
+    pointer = ROOT / "config" / "stage5_current_source_summary.txt"
+    if not pointer.exists():
+        return None
+    raw = ""
+    for line in pointer.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#"):
+            raw = stripped
+            break
+    if not raw:
+        return None
+    candidate = resolve_path(raw)
+    try:
+        candidate_resolved = candidate.resolve()
+        scanned = {path.resolve() for path in summary_files}
+    except OSError:
+        return None
+    return candidate if candidate_resolved in scanned else None
 
 
 def planner_source_priority(payload: dict[str, Any]) -> int:
@@ -1129,6 +1158,8 @@ def planner_source_priority(payload: dict[str, Any]) -> int:
         return 90
     if payload.get("kind") == "stage5_direct_preservation_probe":
         return 104 if payload.get("passed") else 94
+    if payload.get("kind") == "stage5_traced_sft_assessment":
+        return 103 if payload.get("status") == "needs_direct_preservation_repair" else 93
     if payload.get("kind") == "stage5_recovery_full_assessment":
         return 110
     if payload.get("kind") == "stage5_balanced_mcq_checkpoint_assessment":

@@ -1238,6 +1238,40 @@ def test_progress_ledger_recommends_direct_preservation_probe_over_traced_assess
     assert payload["recommended_next_plan_source"] == str(direct)
 
 
+def test_progress_ledger_prefers_current_pointer_over_older_high_priority_source(tmp_path, monkeypatch) -> None:
+    import colab.summarize_stage5_progress as progress
+
+    monkeypatch.setattr(progress, "ROOT", tmp_path)
+    scan_root = tmp_path / "outputs" / "stage5"
+    old_full = scan_root / "old_full" / "summary.json"
+    current = scan_root / "current_traced" / "summary.json"
+    _write(
+        old_full,
+        {
+            "run_id": "old_full",
+            "kind": "stage5_recovery_full_assessment",
+            "status": "needs_competence_recovery",
+        },
+    )
+    _write(
+        current,
+        {
+            "run_id": "current_traced",
+            "kind": "stage5_traced_sft_assessment",
+            "status": "needs_direct_preservation_repair",
+        },
+    )
+    pointer = tmp_path / "config" / "stage5_current_source_summary.txt"
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text("outputs/stage5/current_traced/summary.json\n", encoding="utf-8")
+    os.utime(old_full, (3000, 3000))
+    os.utime(current, (1000, 1000))
+
+    payload = progress.scan_progress(scan_root, run_id="ledger")
+
+    assert payload["recommended_next_plan_source"] == progress.path_for_cli(current)
+
+
 def test_progress_ledger_does_not_recommend_failed_curriculum_sft(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     trace_collection = scan_root / "trace_collection" / "summary.json"
