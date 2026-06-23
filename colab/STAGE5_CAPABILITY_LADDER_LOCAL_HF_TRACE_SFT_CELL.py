@@ -428,6 +428,51 @@ if run_sft:
     trace_collection = resolve_trace_collection_summary()
     sft_env = derive_sft_env(trace_collection)
     run([sys.executable, "colab/run_stage5_curriculum_sft.py"], cwd=ROOT, env=sft_env)
+
+    run_benchmark = env_flag("STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_RUN_BENCHMARK", "1")
+    if run_benchmark:
+        print("=== Bounded post-SFT recurrent-vs-base benchmark ===", flush=True)
+        summary_pointer = ROOT / "config" / "stage5_current_source_summary.txt"
+        source_summary = summary_pointer.read_text(encoding="utf-8").strip()
+        benchmark_env = os.environ.copy()
+        benchmark_env.update(
+            {
+                "STAGE5_BENCHMARK_SOURCE_SUMMARY": source_summary,
+                "STAGE5_BENCHMARK_SUITE_RUN_ID": os.environ.get("STAGE5_BENCHMARK_SUITE_RUN_ID")
+                or time.strftime("stage5_local_hf_traced_sft_benchmark_%Y%m%d_%H%M%S"),
+                "STAGE5_BENCHMARKS": os.environ.get(
+                    "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_BENCHMARKS",
+                    "arc_challenge",
+                ),
+                "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": os.environ.get(
+                    "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_ARC_CHALLENGE_LIMIT",
+                    "96",
+                ),
+                "STAGE5_BENCHMARK_ARC_EASY_LIMIT": os.environ.get(
+                    "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_ARC_EASY_LIMIT",
+                    "96",
+                ),
+                "STAGE5_BENCHMARK_SCORE_TARGETS": os.environ.get(
+                    "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_SCORE_TARGETS",
+                    "content_question_only,cyclic_label_aggregated",
+                ),
+                "STAGE5_BENCHMARK_AGGREGATES": os.environ.get(
+                    "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_AGGREGATES",
+                    "mean",
+                ),
+                "STAGE5_BENCHMARK_USE_LEARNED_LOOP_CONTROL": os.environ.get(
+                    "STAGE5_BENCHMARK_USE_LEARNED_LOOP_CONTROL",
+                    "1",
+                ),
+                "STAGE5_BENCHMARK_PUSH": "1",
+                "DTYPE": os.environ.get("DTYPE", "bfloat16"),
+                "ADAPTER_DTYPE": os.environ.get("ADAPTER_DTYPE", "float32"),
+                "DEVICE": os.environ.get("DEVICE", "cuda"),
+            }
+        )
+        run([sys.executable, "colab/run_stage5_benchmark_suite.py"], cwd=ROOT, env=benchmark_env)
+    else:
+        print("Post-SFT benchmark skipped by STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_RUN_BENCHMARK=0.", flush=True)
 else:
     print("SFT skipped by STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_RUN_SFT=0.", flush=True)
 

@@ -474,11 +474,12 @@ exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
 
 ## Next Paste-Anywhere Local-HF Trace-to-SFT Chain Cell
 
-Use this on a high-memory GPU runtime when you want the trace pilot and the
-first recurrent SFT pass to run unattended in one session. It runs local
-`Qwen/Qwen2.5-7B-Instruct` on the current trace jobs, collects answer-verified
-traces, and starts bounded learned-depth Phase 1 SFT only if the trace gate is
-green. Default trace limit is 32 jobs.
+Use this on a high-memory GPU runtime when you want the trace pilot, first
+recurrent SFT pass, and a small post-SFT recurrent-vs-base benchmark to run
+unattended in one session. It runs local `Qwen/Qwen2.5-7B-Instruct` on the
+current trace jobs, collects answer-verified traces, starts bounded
+learned-depth Phase 1 SFT only if the trace gate is green, then benchmarks the
+new checkpoint on a bounded ARC-Challenge slice. Default trace limit is 32 jobs.
 
 ```python
 import base64, json, os, time, urllib.request
@@ -489,6 +490,7 @@ os.environ["STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_local_hf_trace_sft
 # Optional knobs for a longer run after the 32-job pilot is healthy.
 # os.environ["STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_LIMIT"] = "64"
 # os.environ["STAGE5_TRACED_CAPABILITY_SFT_PHASE1_STEPS"] = "250"
+# os.environ["STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_RUN_BENCHMARK"] = "0"
 
 def colab_secret(*names):
     for name in names:
