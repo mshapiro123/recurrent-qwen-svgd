@@ -771,6 +771,8 @@ def apply_checkpoint_guard(
         checkpoint = default_recovered_checkpoint_availability()
     elif decision.get("spend_class") == "bounded_routing_repair":
         checkpoint = routing_repair_checkpoint_availability(source_payload)
+    elif decision.get("spend_class") == "bounded_halt_target_repair":
+        checkpoint = routing_repair_checkpoint_availability(source_payload)
     elif decision.get("spend_class") == "bounded_programmatic_depth_repair":
         checkpoint = programmatic_depth_checkpoint_availability(source_payload)
     elif decision.get("spend_class") == "bounded_stage4_opus_finetune":
@@ -818,6 +820,7 @@ def apply_checkpoint_guard(
         "bounded_routing_diagnostic",
         "bounded_routing_repair",
         "bounded_programmatic_depth_repair",
+        "bounded_halt_target_repair",
     }:
         guarded = {
             "go": False,
@@ -954,6 +957,24 @@ def classify_action(
                 "status direct_answer_prior_not_preserved, or source kind mcq_debias_diagnostic with "
                 "status content_degradation_persists."
             ),
+        }
+
+    if script == "colab/run_stage5_halt_target_repair.py":
+        if source_kind_label == "depth_curve_summary":
+            return {
+                "go": True,
+                "status": "go_halt_target_repair",
+                "spend_class": "bounded_halt_target_repair",
+                "reason": (
+                    "The CE8 fixed-depth curve shows hard-slice benefit from deeper loops and easy/content "
+                    "regression; one bounded explicit halt-target repair is allowed."
+                ),
+            }
+        return {
+            "go": False,
+            "status": "halt_target_repair_blocked",
+            "spend_class": "none",
+            "reason": f"Halt-target repair requires source kind depth_curve_summary, got {source_kind_label!r}.",
         }
 
     if script == "colab/run_stage5_mcq_debias_diagnostic.py":

@@ -12,33 +12,29 @@ The bootstrap defaults to `preflight`. To intentionally execute the guarded
 paid action after preflight is green, set
 `STAGE5_CURRENT_A100_TARGET=safe_continue_execute` before running it on an
 A100/H100 runtime.
-The current preferred path is **trace collection before more training**. The
-next action is CPU-only unless the trace-collection gate has already passed.
-Use `STAGE5_CURRENT_A100_TARGET=capability_ladder_trace_collect_cpu` on a CPU
-runtime after provider responses have been written. This verifies final answers,
-collects traced scored rows, builds the traced capability-ladder curriculum,
-runs the SFT gate, pushes safe summaries, and disconnects. If the response
-target updated
-`config/stage5_current_source_summary.txt` to a
-`stage5_capability_ladder_trace_responses` summary, the collector follows that
-summary back to the trace-job metadata and uses its recorded response JSONL
-directly.
-If the committed pointer is stale or still references an unrelated Stage 5
-summary, the collector searches local outputs and Drive for the newest usable
-trace-response/job summary before failing. An explicit
-`STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_SOURCE_SUMMARY` override remains strict
-and must point to a trace-response or trace-job summary.
-When that trace-collection summary reports `trace_curriculum_gate_ready`, the
-use `STAGE5_CURRENT_A100_TARGET=traced_capability_ladder_sft` on the attached
-GPU runtime. That target follows the latest gate-ready traced collection,
-derives `STAGE5_CURRICULUM_WORK_DIR`, `STAGE5_CURRICULUM_SUMMARY_JSON`, row
-gates, mode gates, max loops, Drive backup root, and bounded Phase 1 steps from
-the summary, then runs `colab/run_stage5_curriculum_sft.py`. The older
-`safe_continue_execute` target can still route through the planner, but the
-direct traced-SFT target is the cleaner current path. The default floor is 16
-answer-verified traced rows before it will spend GPU on this SFT path; smaller
-collections remain CPU-side inspection/collect-more tasks unless explicitly
-overridden for a tiny smoke run.
+The current preferred path is **depth-conditional deterministic recovery**. The
+CE8 balanced ARC depth curve showed a useful hard-slice depth signal but a
+serious easy/content calibration gap:
+
+```text
+ARC-Easy cyclic best:       depth 1, recurrent 206/256 vs base 202/256, delta +4
+ARC-Easy content best:      depth 1, recurrent 131/256 vs base 146/256, delta -15
+ARC-Challenge cyclic best:  depth 2-4, recurrent 153/256 vs base 154/256, delta -1
+ARC-Challenge content best: depth 3-4, recurrent 92/256 vs base 87/256, delta +5
+```
+
+The next guarded GPU action should therefore preserve depth 1 on
+easy/direct/base-correct rows while routing hard rows toward depth 2-3. Keep
+particles/SVGD off. Treat ARC-Easy content-only regression as a stop condition.
+The reference artifact is:
+
+```text
+outputs/stage5/stage5_ce8_balanced_arc256_depth_curve_summary_20260623/summary.json
+```
+
+The trace-collection and traced-SFT targets below remain available, but they
+are not the front-of-queue action unless the current source pointer is
+deliberately moved back to a trace-curriculum gate-ready summary.
 The older MCQ debias, debiased benchmark, capability-ladder probe, trace-job,
 and trace-response targets are retained below as historical/fallback cells, but
 they are no longer the current front-of-queue action unless the source pointer

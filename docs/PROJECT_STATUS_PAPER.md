@@ -290,12 +290,29 @@ degradation remains.
 
 See [MCQ_DEBIAS_STATUS.md](MCQ_DEBIAS_STATUS.md).
 
-If the ARC-Challenge cyclic diagnostic still leaves a material recurrent gap,
-the newer strategic interpretation remains that recurrence may be over-spending
-depth on direct/easy items where the base model should answer with little or no
-latent computation. Depth and width are separate control surfaces. In that
-case, the next recovery recipe should train deterministic depth and direct-mode
-halting before reintroducing particle width. See
+The follow-up CE8 balanced ARC depth curve gives a cleaner conditional result.
+Across fixed depths 1-4 on 256-example balanced slices:
+
+| Depth | Benchmark | Scoring | Base | Recurrent | Delta |
+|---:|---|---|---:|---:|---:|
+| 1 | ARC-Easy | cyclic | `202/256` | `206/256` | `+4` |
+| 1 | ARC-Easy | content | `146/256` | `131/256` | `-15` |
+| 2 | ARC-Challenge | content | `87/256` | `90/256` | `+3` |
+| 3 | ARC-Challenge | content | `87/256` | `92/256` | `+5` |
+| 4 | ARC-Challenge | content | `87/256` | `92/256` | `+5` |
+
+The full result is documented in
+[STAGE5_CE8_DEPTH_CURVE_2026_06_23.md](STAGE5_CE8_DEPTH_CURVE_2026_06_23.md)
+and summarized at
+`outputs/stage5/stage5_ce8_balanced_arc256_depth_curve_summary_20260623/summary.json`.
+
+This changes the current interpretation. The recurrent model is not simply
+weaker or stronger than base. It has a conditional profile: shallow recurrence
+is best for ARC-Easy cyclic scoring, while depth 3-4 is best for
+ARC-Challenge content scoring. The remaining regression is concentrated in
+ARC-Easy content calibration, including at depth 1. The next recovery recipe
+should therefore train deterministic depth allocation and direct-mode answer
+calibration before reintroducing particle width. See
 [DEPTH_WIDTH_ROUTING_RECIPE.md](DEPTH_WIDTH_ROUTING_RECIPE.md).
 
 ## 6. What Has Not Been Shown Yet
@@ -316,21 +333,16 @@ research program before the competence-recovery and selector gates have passed.
 
 ## 7. Training Required To Surpass Base
 
-After the ARC-Challenge debias confirmation, the next training recipe should
-prioritize deterministic recurrent recovery before further particle training if
-and only if a real gap persists under debiased MCQ scoring:
+After the CE8 depth curve, the next training recipe should prioritize
+deterministic conditional-depth recovery before further particle training:
 
-1. **Competence-preserving recurrent SFT.** Continue Phase 1 from the best
-   balanced checkpoint using a mix of Opus traces, TraceInversion traces, and
-   benchmark-style MCQ rows. Keep the base-logit or answer-preservation signal
-   strong enough to avoid ARC-Easy regression while preserving the
-   ARC-Challenge gain.
-2. **Easy/hard curriculum.** Infer difficulty from base loss, recurrent loss,
-   answer correctness, trace length, prompt length, and benchmark family. Do not
-   use trace length alone as the difficulty label.
-3. **Loop-depth regularization.** Maintain non-collapsed expected loop depth
-   while preventing the halting prior from forcing computation that hurts easy
-   examples.
+1. **Depth-1 preservation.** Keep easy/direct/base-correct rows at depth 1 with
+   strong answer-preservation or base-distillation pressure.
+2. **Hard-row depth routing.** Route ambiguous and harder rows toward depth 2-3
+   using verified difficulty buckets rather than trace length alone.
+3. **Dual MCQ scoring.** Optimize and report cyclic option-permutation scoring
+   alongside content-question-only scoring. Treat ARC-Easy content loss as a
+   hard guardrail.
 4. **Selector-first particle gate.** Before training Phase 2 heavily, test
    low-noise K-particle settings against the recovered Phase 1 checkpoint with a
    selector metric. Require helped examples to exceed hurt examples.
@@ -342,8 +354,8 @@ and only if a real gap persists under debiased MCQ scoring:
    same recipe. Architecture claims require recurrent-vs-dense evidence under
    matched data, steps, base model, and selector.
 
-Only after those gates pass should the project spend heavily on 1.5B/3B models
-or GPQA Diamond.
+Only after those gates pass should the project spend heavily on Phase 2/SVGD,
+1.5B/3B models, or GPQA Diamond.
 
 ## 8. Immediate Credit-Saving Gate
 
@@ -353,11 +365,11 @@ action would be exploratory, ambiguous, or repair-oriented. Dataset audits,
 notebook editing, GitHub/Drive fixes, documentation, and CPU-sized tests should
 not run on A100.
 
-The active paid-GPU gate is now measurement rather than training: run
-`STAGE5_CURRENT_A100_TARGET=arc_challenge_mcq_debias_confirm` to confirm
-whether the ARC-Easy `selection_bias_likely` result also holds on
-ARC-Challenge. This run is bounded, no-training, quiet/resumable, summary-only,
-and auto-disconnects.
+The active paid-GPU gate has moved from MCQ debias confirmation to
+depth-conditional deterministic recovery. The bounded CE8 depth curve already
+shows where recurrence helps and where it hurts. The next spend should either
+train a shallow-preserving/deep-routing checkpoint or build the selector needed
+to deploy that split.
 
 The prior full balanced ARC assessment reported `needs_competence_recovery`:
 the recurrent checkpoint slightly exceeded base on ARC-Challenge but trailed on
@@ -480,9 +492,10 @@ automation fails, disconnect the runtime and repair the launch path locally.
 The project has achieved the hard first step: a pretrained Qwen model can be
 converted into a recurrent-depth model with exact identity preservation in the
 single-pass gate, stable learned halting, and recoverable benchmark competence
-under small-parameter fine-tuning. The latest proxy-selected recurrent
-checkpoint remains behind base Qwen on both ARC-Easy and ARC-Challenge in the
-full balanced assessment. SVGD-style particles have shown useful
+under small-parameter fine-tuning. The latest CE8 depth curve is mixed rather
+than uniformly negative: it is positive on ARC-Easy cyclic scoring at depth 1
+and positive on ARC-Challenge content scoring at depth 3-4, but still negative
+on ARC-Easy content scoring. SVGD-style particles have shown useful
 candidate-density signals on controlled exact tasks, but not yet reliable lift
 over the strongest recovered deterministic recurrent model.
 
@@ -495,6 +508,7 @@ claim is narrower and scientifically useful:
 > instrumented with particle trajectories that produce measurable, selectable
 > candidate diversity.
 
-The decisive next result is whether calibration-preserving recurrent recovery
-can cross the base-Qwen line on held-out reasoning benchmarks. Only after that
-should selector-converted particles be treated as the main benchmark-lift path.
+The decisive next result is whether calibration-preserving selected-depth
+recurrent recovery can cross the base-Qwen line on held-out reasoning
+benchmarks. Only after that should selector-converted particles be treated as
+the main benchmark-lift path.

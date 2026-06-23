@@ -169,6 +169,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or curriculum_sft_payload(payload) is not None
         or reasoning_dataset_audit_payload(payload) is not None
         or stage4_opus_finetune_payload(payload) is not None
+        or depth_curve_summary_payload(payload) is not None
     )
 
 
@@ -1937,6 +1938,65 @@ def release_gate_actions(payload: dict[str, Any], *, source_summary: Path) -> li
     ]
 
 
+def depth_curve_summary_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    return payload if str(payload.get("kind") or "") == "stage5_depth_curve_summary" else {}
+
+
+def depth_curve_summary_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    best = payload.get("best_recurrent_by_slice") or {}
+    hard = best.get("arc_challenge/content_question_only") if isinstance(best, dict) else None
+    easy = best.get("arc_easy/content_question_only") if isinstance(best, dict) else None
+    hard_fragment = (
+        f"ARC-Challenge content best depth={hard.get('depth')} delta={hard.get('delta')}. "
+        if isinstance(hard, dict)
+        else ""
+    )
+    easy_fragment = (
+        f"ARC-Easy content best depth={easy.get('depth')} delta={easy.get('delta')}. "
+        if isinstance(easy, dict)
+        else ""
+    )
+    return [
+        make_action(
+            "Run bounded depth-conditional halt-target repair",
+            (
+                "The CE8 fixed-depth curve shows useful hard-slice lift at deeper loops but easy/content "
+                "calibration remains behind base. Run a bounded explicit halt-target repair from the CE8 "
+                "checkpoint using capability-ladder rows, with particles/SVGD off. "
+                f"{hard_fragment}{easy_fragment}"
+            ),
+            command_env(
+                {
+                    "STAGE5_HALT_TARGET_REPAIR_RUN_ID": f"{RUN_ID}_depth_conditional_halt_repair",
+                    "STAGE5_HALT_TARGET_REPAIR_SOURCE_SUMMARY": path_for_cli(source_summary),
+                    "STAGE5_HALT_TARGET_REPAIR_STEPS": os.environ.get(
+                        "STAGE5_ARC_AGI_NEXT_PLAN_HALT_TARGET_REPAIR_STEPS",
+                        "100",
+                    ),
+                    "STAGE5_HALT_TARGET_REPAIR_LR": os.environ.get(
+                        "STAGE5_ARC_AGI_NEXT_PLAN_HALT_TARGET_REPAIR_LR",
+                        "2e-6",
+                    ),
+                    "STAGE5_HALT_TARGET_REPAIR_BETA": os.environ.get(
+                        "STAGE5_ARC_AGI_NEXT_PLAN_HALT_TARGET_REPAIR_BETA",
+                        "0.12",
+                    ),
+                    "STAGE5_HALT_TARGET_REPAIR_NLL_WEIGHT": os.environ.get(
+                        "STAGE5_ARC_AGI_NEXT_PLAN_HALT_TARGET_REPAIR_NLL_WEIGHT",
+                        "0.5",
+                    ),
+                    "STAGE5_HALT_TARGET_REPAIR_OPTIMIZER_MODULES": os.environ.get(
+                        "STAGE5_ARC_AGI_NEXT_PLAN_HALT_TARGET_REPAIR_OPTIMIZER_MODULES",
+                        "all",
+                    ),
+                },
+                "python colab/run_stage5_halt_target_repair.py",
+            ),
+            10,
+        )
+    ]
+
+
 def stage4_opus_finetune_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     run_id = str(payload.get("run_id") or source_summary.parent.name or RUN_ID)
     checkpoint = str(payload.get("checkpoint") or payload.get("phase1_checkpoint") or "")
@@ -3649,6 +3709,9 @@ def plan_next_actions(
     require_gate2_assessment: bool = True,
 ) -> list[dict[str, Any]]:
     actions: list[dict[str, Any]] = []
+    depth_curve = depth_curve_summary_payload(payload)
+    if depth_curve:
+        return depth_curve_summary_actions(depth_curve, source_summary=source_summary)
     gate1 = gate1_assessment_payload(payload)
     if gate1:
         return gate1_assessment_actions(gate1, source_summary=source_summary)
@@ -4076,6 +4139,8 @@ def write_report(payload: dict[str, Any]) -> None:
 
 
 def source_kind(payload: dict[str, Any]) -> str:
+    if depth_curve_summary_payload(payload):
+        return "depth_curve_summary"
     if gate1_assessment_payload(payload):
         return "gate1_assessment"
     if gate2_assessment_payload(payload):

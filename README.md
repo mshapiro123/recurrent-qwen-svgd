@@ -151,20 +151,26 @@ model can be converted into a recurrent-depth architecture with exact one-pass
 identity preservation, stable learned halting, and recoverable benchmark
 competence under small-parameter adapter/controller training.
 
-Latest bare-label balanced ARC assessment for the selected recurrent
-checkpoint:
+The latest CE8 balanced ARC depth curve is now the best current readout. It
+uses balanced 256-example ARC-Easy and ARC-Challenge slices and compares fixed
+recurrent depths 1-4 under both cyclic option-permutation scoring and
+content-question-only scoring. The key result is conditional:
 
-| Benchmark | Base Qwen | Recurrent Phase 1 | Delta |
-|---|---:|---:|---:|
-| ARC-Easy | `421/570` | `415/570` | `-6` |
-| ARC-Challenge | `167/299` | `164/299` | `-3` |
-| Combined | `588/869` | `579/869` | `-9` |
+| Slice | Best fixed depth | Base Qwen | Recurrent | Delta |
+|---|---:|---:|---:|---:|
+| ARC-Easy, cyclic | `1` | `202/256` | `206/256` | `+4` |
+| ARC-Easy, content-only | `1` | `146/256` | `131/256` | `-15` |
+| ARC-Challenge, cyclic | `2-4` | `154/256` | `153/256` | `-1` |
+| ARC-Challenge, content-only | `3-4` | `87/256` | `92/256` | `+5` |
 
-The proxy-selected checkpoint failed the older bare-label confirmation gate.
-However, the newer ARC-Easy debias diagnostic shows that this style of MCQ
-measurement is confounded by option-label/position bias. Phase 2/SVGD work
-resumes only after the ARC-Challenge cyclic-scoring confirmation determines
-whether a real recurrent gap remains.
+This is not a clean benchmark win, but it is the sharpest mechanism result so
+far. Shallow recurrence preserves easy/cyclic behavior best, while deeper
+recurrence improves the harder ARC-Challenge content readout. At the same time,
+ARC-Easy content-only scoring remains badly behind base at every fixed depth,
+so answer calibration and direct-route preservation are now the main blockers.
+
+Detailed artifact:
+[docs/STAGE5_CE8_DEPTH_CURVE_2026_06_23.md](docs/STAGE5_CE8_DEPTH_CURVE_2026_06_23.md).
 
 ## Credit-Saving Research Rule
 
@@ -178,13 +184,12 @@ Treat A100 time as the scarce experimental reagent. The default answer to
 5. it is not a dataset audit, unit test, notebook repair, README edit, or
    exploratory script-debugging task.
 
-Right now there is exactly one plausible GPU job, and it is **bounded
-ARC-Challenge MCQ debias confirmation**, not training:
-`STAGE5_CURRENT_A100_TARGET=arc_challenge_mcq_debias_confirm`. The latest
-ARC-Easy diagnostic showed that the apparent recurrent regression largely
-disappears after cyclic option-permutation aggregation. Direct-route
-preservation training should wait until ARC-Challenge is measured the same way.
-GPQA, Phase 2/SVGD, wide-particle training, and scale-up remain premature.
+Right now the plausible GPU job is **depth-conditional preservation/routing
+training**, not Phase 2/SVGD or GPQA. The depth curve shows that harder
+ARC-Challenge content can benefit from depth 3-4, but easy/content behavior
+needs a stronger depth-1 preservation objective. GPQA, Phase 2/SVGD,
+wide-particle training, and scale-up remain premature until this deterministic
+depth spine is cleaner.
 Dataset inspection, Hugging Face trace triage, planner repairs, documentation,
 and diagnosis should stay local or on a free CPU runtime.
 The maintained next-action wrapper refuses long CPU/data-only dataset actions
@@ -229,10 +234,10 @@ pulls latest GitHub, runs go/no-go, and defaults to dry-run unless
   adapter/controller stabilization, with expected loop depth around 2.9 on the
   current recurrent checkpoints.
 - **Recoverable competence.** The recurrent model has recovered to near-base
-  performance on balanced ARC. An earlier checkpoint slightly exceeded base on
-  ARC-Challenge while trailing on ARC-Easy; the latest proxy-selected full
-  confirmation trails base on both slices, exposing answer-calibration drift as
-  the current blocker.
+  performance on balanced ARC. The latest CE8 depth curve shows a positive
+  hard-slice content signal at depth 3-4 (`+5/256` on ARC-Challenge
+  content-only) while exposing a serious ARC-Easy content regression. The
+  blocker is now conditional depth allocation plus direct-route calibration.
 - **Particle mechanism signal.** SVGD and within-group particle geometry improve
   candidate density on controlled exact-task suites, but have not yet beaten the
   strongest deterministic recurrent checkpoint on non-toy benchmarks.
@@ -245,14 +250,13 @@ pulls latest GitHub, runs go/no-go, and defaults to dry-run unless
 The next scientific result must come from deterministic recurrent recovery, not
 more particle geometry. The active recipe is:
 
-1. Continue Phase 1 from the best balanced checkpoint.
-2. Mix Opus/TraceInversion reasoning traces with benchmark-style ARC rows.
-3. Weight ARC-Easy more heavily to close the easy-regression gap while keeping
-   ARC-Challenge non-negative.
-4. Preserve answer competence with a small response-level base-distillation
-   signal.
-5. Re-run the full balanced ARC assessment only after a bounded proxy gate is
-   non-negative.
+1. Preserve depth-1 behavior on easy/direct/base-correct rows.
+2. Train or select depth 2-3 behavior for ambiguous and harder rows.
+3. Keep cyclic option-permutation scoring and content-only scoring side by
+   side.
+4. Treat ARC-Easy content regression as a hard guardrail.
+5. Re-run particles/SVGD only after selected deterministic depth beats the best
+   fixed-depth recurrent baseline.
 
 Only after the recurrent model is base-competitive should Phase 2/SVGD, GPQA
 Diamond, 1.5B/3B scaling, or Hugging Face release work consume serious A100
@@ -260,88 +264,35 @@ time.
 
 ## Active Next A100 Action
 
-Credits are tight, so A100 work is deliberately gate-based. The previous full
-balanced assessment remained negative overall:
+Credits are tight, so GPU work remains gate-based. The previous recovery and
+debias runs have now been superseded by the CE8 fixed-depth curve:
 
 ```text
-run_id = stage5_recovery_full_assessment_current
-status = needs_competence_recovery
-ARC-Easy:      base 421/570, recurrent 412/570, delta -9
-ARC-Challenge: base 167/299, recurrent 169/299, delta +2
-Combined:      base 588/869, recurrent 581/869, delta -7
+run_id = stage5_ce8_balanced_arc256_depth_curve_summary_20260623
+checkpoint = outputs/stage5/stage5_learned_loop_control_ce8_continue_l4_20260623_071135/phase1/phase1_step_400.pt
+ARC-Easy cyclic best:      depth 1, recurrent 206/256 vs base 202/256, delta +4
+ARC-Easy content best:     depth 1, recurrent 131/256 vs base 146/256, delta -15
+ARC-Challenge cyclic best: depth 2-4, recurrent 153/256 vs base 154/256, delta -1
+ARC-Challenge content best: depth 3-4, recurrent 92/256 vs base 87/256, delta +5
 ```
 
-The follow-up low-credit ARC-mix recovery proxy first improved the recurrent
-start and matched base:
+The next GPU job should therefore be a **bounded depth-conditional
+preservation/routing run**, not Phase 2/SVGD, GPQA, or scale-up. The run should
+test whether the model can keep easy/direct/base-correct rows shallow while
+preserving the depth-3/4 lift on ARC-Challenge content rows.
 
-```text
-run_id = stage5_arc_mix_recovery_once_20260622_003331
-status = proxy_lift
-base proxy = 68/128
-start proxy = 66/128
-best recurrent proxy = 68/128
-lift vs start = +2
-gap vs base = 0
-best checkpoint = outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/arc_mix_response_w005_lr2e6/phase1/phase1_step_50.pt
-```
+Minimum run contract:
 
-The full balanced confirmation assessment for that proxy checkpoint did not
-pass:
+- target depth `1` on base-correct/direct/easy rows;
+- target depth `2-3` on verified harder rows;
+- keep particles/SVGD off;
+- keep ARC-Easy content-only regression as a stop condition;
+- evaluate fixed depths, learned router, and a simple selected-depth baseline;
+- emit a `summary.json` that compares against
+  `stage5_ce8_balanced_arc256_depth_curve_summary_20260623`.
 
-```text
-run_id = stage5_full_assessment_once_20260622_005522
-status = needs_competence_recovery
-ARC-Easy:      base 421/570, recurrent 415/570, delta -6
-ARC-Challenge: base 167/299, recurrent 164/299, delta -3
-Combined:      base 588/869, recurrent 579/869, delta -9
-```
-
-The local diagnostic report is:
-
-```bash
-outputs/stage5/stage5_full_assessment_once_20260622_005522/mcq_regression_diagnosis.md
-```
-
-The subsequent stronger ARC-mix proxy did **not** pass:
-
-```text
-run_id = stage5_arc_mix_recovery_once_20260622_030628
-status = no_proxy_lift
-decision = stop_and_revise_objective
-base proxy = 68/128
-start proxy = 68/128
-best recurrent proxy = 66/128
-mean margin delta vs base = -0.308232
-```
-
-The bounded routing diagnostic then landed:
-
-```text
-run_id = stage5_routing_diagnostic_20260622_041706
-status = needs_direct_halting_repair
-ARC-Easy direct delta = -2
-ARC-Easy mean direct loops = 2.58
-ARC-Challenge direct delta = -3
-ARC-Challenge mean direct loops = 2.62
-ARC-Challenge conceptual delta = +2
-```
-
-The next GPU job should therefore be a **bounded direct-mode halting repair**,
-not Phase 2/SVGD, GPQA, or scale-up. Use the safe-continue cell from
-[`colab/STAGE5_SAFE_CONTINUE_CELL.md`](colab/STAGE5_SAFE_CONTINUE_CELL.md);
-with `RUN_A100_ACTION = True`, the planner now selects
-`python colab/run_stage5_routing_repair.py`. The selected repair profile
-weights ARC-Easy/direct rows heavily, targets loop `1` on ARC-Easy rows, uses
-ARC-Challenge only as a light loop-`2` probe, and keeps particles/SVGD off.
-
-The concise run card with the preferred safe-continue path is
+The concise run card should be updated before launching the next notebook cell:
 [`colab/CURRENT_A100_ACTION.md`](colab/CURRENT_A100_ACTION.md).
-
-The repair runner consumes the diagnostic summary, delegates to the existing
-ARC-mix trainer with particles/SVGD off, and records the child run under a
-planner-readable summary. A `repair_proxy_lift` or `repair_proxy_matches_base`
-result can justify a full balanced ARC confirmation. Calibration warnings or
-`repair_no_proxy_lift` are stop signs for objective revision.
 
 The longer-term data plan is captured in
 [`docs/CURRICULUM_DATA_PIPELINE.md`](docs/CURRICULUM_DATA_PIPELINE.md): strong

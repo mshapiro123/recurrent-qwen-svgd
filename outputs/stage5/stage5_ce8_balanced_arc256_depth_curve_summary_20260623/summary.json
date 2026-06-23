@@ -1,0 +1,26 @@
+{
+  "run_id": "stage5_ce8_balanced_arc256_depth_curve_summary_20260623",
+  "kind": "stage5_depth_curve_summary",
+  "status": "completed",
+  "source_runs": {
+    "1": "stage5_ce8_balanced_arc256_maxloop1_20260623_075948",
+    "2": "stage5_ce8_balanced_arc256_maxloop2_20260623_085130",
+    "3": "stage5_ce8_balanced_arc256_maxloop3_20260623_085130",
+    "4": "stage5_ce8_balanced_arc256_maxloop4_20260623_075948"
+  },
+  "checkpoint": "outputs/stage5/stage5_learned_loop_control_ce8_continue_l4_20260623_071135/phase1/phase1_step_400.pt",
+  "examples_per_benchmark": 256,
+  "best_recurrent_by_slice": {
+    "arc_easy/cyclic_label_aggregated": {"depth": 1, "recurrent_correct": 206, "delta": 4},
+    "arc_easy/content_question_only": {"depth": 1, "recurrent_correct": 131, "delta": -15},
+    "arc_challenge/cyclic_label_aggregated": {"depth": 2, "recurrent_correct": 153, "delta": -1},
+    "arc_challenge/content_question_only": {"depth": 3, "recurrent_correct": 92, "delta": 5}
+  },
+  "interpretation": [
+    "Depth 1 is best for ARC-Easy cyclic scoring.",
+    "Depth 3 and depth 4 are best for ARC-Challenge content-question-only scoring.",
+    "ARC-Easy content-question-only remains materially behind base at every fixed depth.",
+    "The next experiment should train conditional depth routing and depth-1 content preservation rather than globally increasing loop depth."
+  ],
+  "next_gate": "depth_conditional_preservation_and_routing"
+}

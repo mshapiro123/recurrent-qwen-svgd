@@ -764,35 +764,31 @@ Stop or avoid GPU when:
 
 ## Current Next-Best Order
 
-Run the cheap foundation layer first, in parallel where practical:
+The CE8 balanced ARC depth curve has replaced the older "recover held-out
+depth-sweep artifact" action. The current order is:
 
-1. Recover or rerun the held-out depth-sweep artifact.
-2. Promote selector/oracle analysis into a fixed readout used by all later
-   runs.
-3. Keep debiased/cyclic MCQ scoring as the default benchmark harness.
+1. Promote the CE8 depth curve into the fixed readout for later runs:
+   [STAGE5_CE8_DEPTH_CURVE_2026_06_23.md](STAGE5_CE8_DEPTH_CURVE_2026_06_23.md).
+2. Build a selector or training objective that can preserve depth 1 on
+   easy/direct rows while using depth 2-3 on hard/ambiguous rows.
+3. Keep debiased/cyclic MCQ scoring as the default benchmark harness, but keep
+   content-question-only scoring as a guardrail because ARC-Easy content
+   calibration remains badly behind base.
 4. Audit and type trace data before more SFT consumes it.
-5. Add and run a no-training 1.5B recurrent viability probe: identity,
-   loop-1 preservation, and a tiny depth sweep. This is an information-value
-   probe only; 0.5B remains the cheap mechanism workbench unless 1.5B clearly
-   changes the signal.
-
-Then run the decisive deterministic spine:
-
-6. Run depth-1 preservation SFT on base-correct rows.
-7. Build the capability-ladder depth dataset from verified 0.5B/1.5B/3B or
-   strong-solver results.
-8. Run deterministic depth-supervised SFT and evaluate with the fixed selector
-   and debiased harness.
-9. Compare against a same-recipe dense LoRA control.
-
-Only then open the branch work:
-
-10. Re-test particles/SVGD after deterministic depth routing is useful.
-11. Run broader GPQA/ARC-AGI-style benchmark gates.
-12. Package HF artifacts and paper claims only after held-out surpass-base or
+5. Add and run a no-training 1.5B recurrent viability probe only after the 0.5B
+   depth-routing gate is clearer, unless GPU availability makes the probe very
+   cheap.
+6. Run depth-conditional preservation SFT:
+   depth 1 for base-correct/direct/easy rows, depth 2-3 for verified hard rows.
+7. Evaluate fixed depths, learned router, and selector on the same balanced
+   ARC slices.
+8. Compare against a same-recipe dense LoRA control.
+9. Re-test particles/SVGD only after deterministic selected depth is useful.
+10. Run broader GPQA/ARC-AGI-style benchmark gates.
+11. Package HF artifacts and paper claims only after held-out surpass-base or
     same-recipe architecture evidence exists.
 
 The immediate strategic question for the deep-research agent is not whether
-SVGD is the right kernel. It is whether the depth-ladder curriculum and selector
-can turn the already observed oracle-depth signal into selected-answer
+SVGD is the right kernel. It is whether the depth-ladder curriculum and
+selector can turn the observed fixed-depth split into selected-answer
 improvement without sacrificing base-preservation behavior.
