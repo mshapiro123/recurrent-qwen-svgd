@@ -1,0 +1,6 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 14739.50it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_194543/phase1/phase1_step_200.pt loaded_keys=179
+aggregate=mean accuracy=0.7076 correct=363 total=513

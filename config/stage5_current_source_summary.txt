@@ -1,1 +1,1 @@
-outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_194543/summary.json
+outputs/stage5/stage5_local_hf_traced_sft_benchmark_20260623_194626/summary.json
