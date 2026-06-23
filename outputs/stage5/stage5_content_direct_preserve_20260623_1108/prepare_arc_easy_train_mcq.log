@@ -1,0 +1,6 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=train
+offset=0
+rows=512
+output_jsonl=outputs/stage5/stage5_content_direct_preserve_20260623_1108/arc_easy_train_mcq.jsonl

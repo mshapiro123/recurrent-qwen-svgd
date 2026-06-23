@@ -1,0 +1,22 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5704.10it/s]
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6108.89it/s]
+distillation_teacher=Qwen/Qwen2.5-0.5B-Instruct
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_arc_agi_next_action_20260623_095933_plan_depth_conditional_halt_repair/phase1/phase1_step_100.pt loaded_keys=179
+optimizer_parameter_tensors=179
+step=0 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=1.1271 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 loss=1.2704 base_distill_kl=0.1433
+step=10 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=4.3867 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 loss=4.7109 base_distill_kl=0.3242
+step=20 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=9.0429 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 loss=9.5832 base_distill_kl=0.5403
+saved_checkpoint=outputs/stage5/stage5_content_direct_preserve_20260623_1108/phase1_direct_preserve/phase1_step_25.pt
+step=30 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=9.6040 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 loss=9.8462 base_distill_kl=0.2421
+step=40 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=1.8024 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 loss=1.8886 base_distill_kl=0.0862
+saved_checkpoint=outputs/stage5/stage5_content_direct_preserve_20260623_1108/phase1_direct_preserve/phase1_step_50.pt
+step=50 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=2.2573 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 loss=2.6526 base_distill_kl=0.3952
+step=60 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=1.8884 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 loss=2.1152 base_distill_kl=0.2268
+step=70 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=3.3452 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 loss=3.7386 base_distill_kl=0.3934
+saved_checkpoint=outputs/stage5/stage5_content_direct_preserve_20260623_1108/phase1_direct_preserve/phase1_step_75.pt
