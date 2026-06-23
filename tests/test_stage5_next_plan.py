@@ -3124,7 +3124,7 @@ def test_balanced_arc_mix_calibration_warning_does_not_run_full_assessment(tmp_p
     assert "python colab/run_stage5_routing_diagnostic.py" in actions[0]["command"]
 
 
-def test_benchmark_suite_assessment_passed_builds_claim_packet(tmp_path) -> None:
+def test_benchmark_suite_assessment_passed_prioritizes_capability_ladder(tmp_path) -> None:
     source = tmp_path / "benchmark_assessment" / "summary.json"
     source.parent.mkdir()
     payload = {
@@ -3135,8 +3135,15 @@ def test_benchmark_suite_assessment_passed_builds_claim_packet(tmp_path) -> None
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Build Stage 5 claim readiness packet"
-    assert "python colab/build_stage5_claim_packet.py" in actions[0]["command"]
+    assert actions[0]["name"] == "Run capability-ladder MCQ depth-label probe"
+    assert "python colab/run_stage5_capability_ladder_mcq_probe.py" in actions[0]["command"]
+    assert "STAGE5_CAPABILITY_LADDER_MODEL_LADDER=qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3" in actions[0][
+        "command"
+    ]
+    assert actions[1]["name"] == "Probe larger Qwen recurrent viability"
+    assert "STAGE5_CURRENT_A100_TARGET=model_viability_queue" in actions[1]["command"]
+    assert actions[2]["name"] == "Build Stage 5 claim readiness packet"
+    assert "python colab/build_stage5_claim_packet.py" in actions[2]["command"]
 
 
 def test_benchmark_suite_assessment_low_coverage_expands_suite(tmp_path) -> None:
