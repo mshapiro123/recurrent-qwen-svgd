@@ -58,6 +58,25 @@ def test_split_train_val_stratifies_direct_and_deep_modes() -> None:
     assert val_modes == {"direct", "deep_narrow"}
 
 
+def test_split_train_val_balances_imbalanced_modes_proportionally() -> None:
+    rows = [positive_row(index, mode="direct") for index in range(33)]
+    rows.extend(positive_row(index + 100, mode="deep_narrow") for index in range(40))
+
+    train, val = runner.split_train_val(rows, val_fraction=0.1, val_min_rows=1, seed=17)
+
+    train_counts = {
+        mode: sum(1 for row in train if row["curriculum_mode"] == mode)
+        for mode in {"direct", "deep_narrow"}
+    }
+    val_counts = {
+        mode: sum(1 for row in val if row["curriculum_mode"] == mode)
+        for mode in {"direct", "deep_narrow"}
+    }
+    assert len(val) == 7
+    assert val_counts == {"direct": 3, "deep_narrow": 4}
+    assert train_counts == {"direct": 30, "deep_narrow": 36}
+
+
 def test_split_train_val_keeps_singleton_mode_in_train() -> None:
     rows = [positive_row(1, mode="wide")]
     rows.extend(positive_row(index + 10, mode="deep_narrow") for index in range(5))

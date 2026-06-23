@@ -318,30 +318,46 @@ def split_train_val(
     for group_rows in grouped.values():
         rng.shuffle(group_rows)
 
-    train_by_group: dict[str, list[dict[str, Any]]] = {group: [] for group in grouped}
-    val: list[dict[str, Any]] = []
+    val_targets: dict[str, int] = {group: 0 for group in grouped}
     eligible_groups = sorted(
         (group for group, group_rows in grouped.items() if len(group_rows) > 1),
         key=lambda group: (-len(grouped[group]), group),
     )
-    validation_groups = set(eligible_groups[:val_count])
+    remaining = val_count
+    if remaining >= len(eligible_groups):
+        for group in eligible_groups:
+            val_targets[group] = 1
+        remaining -= len(eligible_groups)
+    else:
+        for group in eligible_groups[:remaining]:
+            val_targets[group] = 1
+        remaining = 0
 
-    for group in sorted(grouped):
-        group_rows = grouped[group]
-        if group in validation_groups:
-            val.append(group_rows[0])
-            train_by_group[group].extend(group_rows[1:])
-        else:
-            train_by_group[group].extend(group_rows)
-
-    while len(val) < val_count:
-        candidates = [group for group, group_rows in train_by_group.items() if len(group_rows) > 1]
+    # D'Hondt-style proportional allocation keeps validation mode coverage
+    # stable even when one mode slightly outnumbers another.
+    while remaining > 0:
+        candidates = [
+            group
+            for group in eligible_groups
+            if val_targets[group] < len(grouped[group]) - 1
+        ]
         if not candidates:
             break
-        group = sorted(candidates, key=lambda item: (-len(train_by_group[item]), item))[0]
-        val.append(train_by_group[group].pop(0))
+        group = sorted(
+            candidates,
+            key=lambda item: (-(len(grouped[item]) / (val_targets[item] + 1)), item),
+        )[0]
+        val_targets[group] += 1
+        remaining -= 1
 
-    train = [row for group in sorted(train_by_group) for row in train_by_group[group]]
+    train: list[dict[str, Any]] = []
+    val: list[dict[str, Any]] = []
+    for group in sorted(grouped):
+        target = val_targets[group]
+        group_rows = grouped[group]
+        val.extend(group_rows[:target])
+        train.extend(group_rows[target:])
+
     if not train or not val:
         shuffled = list(rows)
         rng.shuffle(shuffled)
@@ -364,6 +380,14 @@ def prepare_train_val(gate: dict[str, Any]) -> tuple[Path, Path, dict[str, Any]]
     val_jsonl = DATA_DIR / "curriculum_positive_val.jsonl"
     write_jsonl(train_jsonl, train_rows)
     write_jsonl(val_jsonl, val_rows)
+    train_mode_counts: dict[str, int] = {}
+    val_mode_counts: dict[str, int] = {}
+    for row in train_rows:
+        mode = str(row.get("curriculum_mode") or row.get("routing_type") or "ungrouped")
+        train_mode_counts[mode] = train_mode_counts.get(mode, 0) + 1
+    for row in val_rows:
+        mode = str(row.get("curriculum_mode") or row.get("routing_type") or "ungrouped")
+        val_mode_counts[mode] = val_mode_counts.get(mode, 0) + 1
     return train_jsonl, val_jsonl, {
         "source_positive_sft": path_for_cli(positive_sft),
         "rows": len(rows),
@@ -372,6 +396,8 @@ def prepare_train_val(gate: dict[str, Any]) -> tuple[Path, Path, dict[str, Any]]
         "val_fraction": VAL_FRACTION,
         "val_min_rows": VAL_MIN_ROWS,
         "split_seed": SPLIT_SEED,
+        "train_mode_counts": train_mode_counts,
+        "val_mode_counts": val_mode_counts,
     }
 
 
