@@ -778,6 +778,7 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     direct_cell = (ROOT / "colab/STAGE5_DIRECT_PRESERVATION_PROBE_CELL.py").read_text(encoding="utf-8")
 
     assert "traced_sft_direct_preservation_probe" in bootstrap
+    assert "traced_sft_direct_preservation_recover_only" in bootstrap
     assert "STAGE5_DIRECT_PRESERVE_PROMPT_STYLE" in bootstrap
     assert '"question_only"' in bootstrap
     assert "STAGE5_DIRECT_PRESERVE_SCORE_TARGET" in bootstrap
@@ -787,6 +788,7 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert "lr2e6_distill2:lr=2e-6,steps=100,distill=2.0" in bootstrap
     assert "stage5_traced_sft_assessment_20260623_195134_reassessed" in bootstrap
     assert "traced_sft_direct_preservation_probe" in bootstrap_md
+    assert "traced_sft_direct_preservation_recover_only" in bootstrap_md
     assert "content-route direct-preservation probe" in current_action
     assert "bounded stop-on-first-pass" in current_action
     assert "learned-depth router continuation" in current_action

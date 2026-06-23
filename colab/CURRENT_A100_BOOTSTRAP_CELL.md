@@ -231,6 +231,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "capability_ladder_local_hf_trace_sft" - GPU local-HF traces, collection, then bounded recurrent SFT.
 #   "traced_sft_scale64_benchmark" - benchmark the completed scale64 traced SFT checkpoint.
 #   "traced_sft_direct_preservation_probe" - content-route direct preservation from the scale64 checkpoint.
+#   "traced_sft_direct_preservation_recover_only" - publish surviving direct-preservation output without rerunning training.
 #   "traced_sft_direct_preservation_confirm" - larger loop-1 ARC confirmation after direct preservation passes.
 #   "traced_sft_depth_router_after_direct_preserve" - learned-depth continuation from a passed direct-preservation checkpoint.
 #   "traced_capability_ladder_sft" - GPU Phase 1 SFT from the latest gate-ready traced capability ladder.
@@ -774,6 +775,37 @@ TARGETS = {
             "STAGE5_DIRECT_CONFIRM_ASSESS_SCORE_TARGET": "content_question_only",
             "STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER": "1",
             "STAGE5_DIRECT_PRESERVE_DISCONNECT": "1",
+        },
+    },
+    "traced_sft_direct_preservation_recover_only": {
+        "path": "colab/STAGE5_DIRECT_PRESERVATION_PROBE_CELL.py",
+        "markers": [
+            "STAGE5_DIRECT_PRESERVATION_PROBE_CELL_VERSION",
+            "direct_preservation_probe",
+            "STAGE5_DIRECT_PRESERVE_RESUME_EXISTING",
+            "STAGE5_DIRECT_PRESERVE_RESUME_ONLY",
+            "direct_preservation_resume_existing",
+            "direct_preservation_resume_missing",
+            "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY",
+            "STAGE5_DIRECT_PRESERVE_SWEEP",
+            "colab/run_stage5_direct_preservation_probe.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY": (
+                "outputs/stage5/stage5_traced_sft_assessment_20260623_195134_reassessed/summary.json"
+            ),
+            "STAGE5_DIRECT_PRESERVE_RUN_ID": "stage5_traced_sft_direct_preservation_20260623_scale64",
+            "STAGE5_DIRECT_PRESERVE_SWEEP": (
+                "baseline:lr=5e-7,steps=75,distill=1.0;"
+                "lr1e6:lr=1e-6,steps=100,distill=1.0;"
+                "lr2e6_distill2:lr=2e-6,steps=100,distill=2.0"
+            ),
+            "STAGE5_DIRECT_PRESERVE_RESUME_EXISTING": "1",
+            "STAGE5_DIRECT_PRESERVE_RESUME_ONLY": "1",
+            "STAGE5_DIRECT_PRESERVE_CHAIN_CONFIRM": "0",
+            "STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER": "0",
+            "STAGE5_DIRECT_PRESERVE_DISCONNECT": "0",
         },
     },
     "traced_sft_direct_preservation_confirm": {
