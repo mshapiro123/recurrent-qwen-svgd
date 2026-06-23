@@ -1,0 +1,173 @@
+HF auth: token configured from environment.
+restored_benchmark_checkpoint=/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5_arc_mix_depth_reuse_offset_20260623_142158_depth_routing_probe/run_dir/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt -> /content/recurrent-qwen-svgd/outputs/stage5/stage5_arc_mix_depth_reuse_offset_20260623_142158_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt
+$ /usr/bin/python3 eval/prepare_arc_mcq.py --config ARC-Easy --split validation --seed 0 --offset 256 --limit 256 --output_jsonl /content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_validation_offset256_256.jsonl
+
+Generating train split:   0%|          | 0/2251 [00:00<?, ? examples/s]
+Generating train split: 100%|██████████| 2251/2251 [00:00<00:00, 67763.68 examples/s]
+
+Generating test split:   0%|          | 0/2376 [00:00<?, ? examples/s]
+Generating test split: 100%|██████████| 2376/2376 [00:00<00:00, 457854.74 examples/s]
+
+Generating validation split:   0%|          | 0/570 [00:00<?, ? examples/s]
+Generating validation split: 100%|██████████| 570/570 [00:00<00:00, 210936.41 examples/s]
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=validation
+offset=256
+rows=256
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_validation_offset256_256.jsonl
+$ /usr/bin/python3 eval/prepare_arc_mcq.py --config ARC-Challenge --split validation --seed 0 --offset 256 --limit 256 --output_jsonl /content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_validation_offset256_256.jsonl
+
+Generating train split:   0%|          | 0/1119 [00:00<?, ? examples/s]
+Generating train split: 100%|██████████| 1119/1119 [00:00<00:00, 178776.76 examples/s]
+
+Generating test split:   0%|          | 0/1172 [00:00<?, ? examples/s]
+Generating test split: 100%|██████████| 1172/1172 [00:00<00:00, 253793.40 examples/s]
+
+Generating validation split:   0%|          | 0/299 [00:00<?, ? examples/s]
+Generating validation split: 100%|██████████| 299/299 [00:00<00:00, 92471.38 examples/s]
+dataset_id=allenai/ai2_arc
+config=ARC-Challenge
+split=validation
+offset=256
+rows=43
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_validation_offset256_256.jsonl
+$ /usr/bin/python3 eval/eval_mcq.py --data_jsonl data/stage5_benchmark_suite/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_validation_offset256_256.jsonl --prompt_style question_only --score_target option_text --aggregates mean --dtype bfloat16 --adapter_dtype float32 --device cuda --seed 0 --mode base --quiet_rows --output_jsonl outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_base_content_question_only.jsonl
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5613.98it/s]
+aggregate=mean accuracy=0.5938 correct=152 total=256
+$ /usr/bin/python3 eval/eval_mcq.py --data_jsonl data/stage5_benchmark_suite/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_validation_offset256_256.jsonl --prompt_style question_only --score_target option_text --aggregates mean --dtype bfloat16 --adapter_dtype float32 --device cuda --seed 0 --mode phase1 --checkpoint outputs/stage5/stage5_arc_mix_depth_reuse_offset_20260623_142158_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt --max_loops 4 --num_trajectories 1 --use_learned_loop_control --include_loop_diagnostics --quiet_rows --output_jsonl outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_recurrent_content_question_only.jsonl
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5293.10it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_arc_mix_depth_reuse_offset_20260623_142158_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt loaded_keys=179
+aggregate=mean accuracy=0.6367 correct=163 total=256
+$ /usr/bin/python3 eval/eval_mcq.py --data_jsonl data/stage5_benchmark_suite/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_validation_offset256_256_cyclic_permuted.jsonl --prompt_style with_options --score_target label --aggregates mean --dtype bfloat16 --adapter_dtype float32 --device cuda --seed 0 --mode base --quiet_rows --output_jsonl outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_base_cyclic_label_raw.jsonl
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6329.34it/s]
+aggregate=mean accuracy=0.7568 correct=775 total=1024
+$ /usr/bin/python3 eval/eval_mcq.py --data_jsonl data/stage5_benchmark_suite/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_validation_offset256_256_cyclic_permuted.jsonl --prompt_style with_options --score_target label --aggregates mean --dtype bfloat16 --adapter_dtype float32 --device cuda --seed 0 --mode phase1 --checkpoint outputs/stage5/stage5_arc_mix_depth_reuse_offset_20260623_142158_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt --max_loops 4 --num_trajectories 1 --use_learned_loop_control --include_loop_diagnostics --quiet_rows --output_jsonl outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_recurrent_cyclic_label_raw.jsonl
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5010.58it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_arc_mix_depth_reuse_offset_20260623_142158_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt loaded_keys=179
+aggregate=mean accuracy=0.7568 correct=775 total=1024
+$ /usr/bin/python3 eval/eval_mcq.py --data_jsonl data/stage5_benchmark_suite/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_validation_offset256_256.jsonl --prompt_style question_only --score_target option_text --aggregates mean --dtype bfloat16 --adapter_dtype float32 --device cuda --seed 0 --mode base --quiet_rows --output_jsonl outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_base_content_question_only.jsonl
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5651.55it/s]
+aggregate=mean accuracy=0.2558 correct=11 total=43
+$ /usr/bin/python3 eval/eval_mcq.py --data_jsonl data/stage5_benchmark_suite/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_validation_offset256_256.jsonl --prompt_style question_only --score_target option_text --aggregates mean --dtype bfloat16 --adapter_dtype float32 --device cuda --seed 0 --mode phase1 --checkpoint outputs/stage5/stage5_arc_mix_depth_reuse_offset_20260623_142158_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt --max_loops 4 --num_trajectories 1 --use_learned_loop_control --include_loop_diagnostics --quiet_rows --output_jsonl outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_recurrent_content_question_only.jsonl
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6175.64it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_arc_mix_depth_reuse_offset_20260623_142158_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt loaded_keys=179
+aggregate=mean accuracy=0.1860 correct=8 total=43
+$ /usr/bin/python3 eval/eval_mcq.py --data_jsonl data/stage5_benchmark_suite/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_validation_offset256_256_cyclic_permuted.jsonl --prompt_style with_options --score_target label --aggregates mean --dtype bfloat16 --adapter_dtype float32 --device cuda --seed 0 --mode base --quiet_rows --output_jsonl outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_base_cyclic_label_raw.jsonl
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5455.09it/s]
+aggregate=mean accuracy=0.4767 correct=82 total=172
+$ /usr/bin/python3 eval/eval_mcq.py --data_jsonl data/stage5_benchmark_suite/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_validation_offset256_256_cyclic_permuted.jsonl --prompt_style with_options --score_target label --aggregates mean --dtype bfloat16 --adapter_dtype float32 --device cuda --seed 0 --mode phase1 --checkpoint outputs/stage5/stage5_arc_mix_depth_reuse_offset_20260623_142158_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt --max_loops 4 --num_trajectories 1 --use_learned_loop_control --include_loop_diagnostics --quiet_rows --output_jsonl outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_recurrent_cyclic_label_raw.jsonl
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6484.98it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_arc_mix_depth_reuse_offset_20260623_142158_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt loaded_keys=179
+aggregate=mean accuracy=0.5000 correct=86 total=172
+# Stage 5 Benchmark Suite - stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm
+
+- Status: `completed`
+- Source summary: `outputs/stage5/stage5_debiased_benchmark_suite_20260623_145438/summary.json`
+- Checkpoint: `outputs/stage5/stage5_arc_mix_depth_reuse_offset_20260623_142158_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt`
+- Benchmarks: `['arc_easy', 'arc_challenge']`
+- Recurrent mode: `phase1`
+- Recurrent trajectories: `1`
+- Learned loop control: `True`
+- Elapsed seconds: `1282.65`
+
+## Recurrent vs Base
+
+### arc_easy
+- score target `content_question_only`
+  - aggregate `mean`: correct delta `11`, accuracy delta `0.0430` (base `152/256`, recurrent `163/256`)
+  - paired evidence
+    - aggregate `mean`: recurrent `163` / `256`, base `152` / `256`, delta `11`, W/L/T `23/12/221`, p `0.0895310789346695`
+  - routing buckets
+    - `ambiguous_proxy`: n `105`, delta `11`, W/L `15/4`, mean margin delta `0.30515742216791425`, mean loops `1.805055424712953`
+    - `base_confident_direct_proxy`: n `77`, delta `0`, W/L `0/0`, mean margin delta `-0.5169869174140614`, mean loops `1.8104730835466676`
+    - `conceptual_reasoning_proxy`: n `46`, delta `3`, W/L `7/4`, mean margin delta `0.1999226212501526`, mean loops `1.952845234585845`
+    - `deep_numeric_proxy`: n `28`, delta `-3`, W/L `1/4`, mean margin delta `0.1621913260647229`, mean loops `1.8404698293123924`
+- score target `cyclic_label_aggregated`
+  - aggregate `permutation_mean`: correct delta `-2`, accuracy delta `-0.0078` (base `204/256`, recurrent `202/256`)
+  - paired evidence
+    - aggregate `permutation_mean`: recurrent `202` / `256`, base `204` / `256`, delta `-2`, W/L/T `1/3/252`, p `0.625`
+  - routing buckets
+    - `ambiguous_proxy`: n `50`, delta `-2`, W/L `0/2`, mean margin delta `0.1500643510837108`, mean loops `None`
+    - `base_confident_direct_proxy`: n `164`, delta `0`, W/L `0/0`, mean margin delta `-1.495690769049797`, mean loops `None`
+    - `conceptual_reasoning_proxy`: n `29`, delta `0`, W/L `1/1`, mean margin delta `0.38847061465012617`, mean loops `None`
+    - `deep_numeric_proxy`: n `13`, delta `0`, W/L `0/0`, mean margin delta `0.0032097626764040488`, mean loops `None`
+### arc_challenge
+- score target `content_question_only`
+  - aggregate `mean`: correct delta `-3`, accuracy delta `-0.0698` (base `11/43`, recurrent `8/43`)
+  - paired evidence
+    - aggregate `mean`: recurrent `8` / `43`, base `11` / `43`, delta `-3`, W/L/T `2/5/36`, p `0.453125`
+  - routing buckets
+    - `ambiguous_proxy`: n `28`, delta `-1`, W/L `2/3`, mean margin delta `0.032399271215711324`, mean loops `1.804346932896546`
+    - `conceptual_reasoning_proxy`: n `6`, delta `0`, W/L `0/0`, mean margin delta `0.04467610518137614`, mean loops `2.0319868475198746`
+    - `deep_numeric_proxy`: n `9`, delta `-2`, W/L `0/2`, mean margin delta `-0.043232738971710205`, mean loops `1.762629015578164`
+- score target `cyclic_label_aggregated`
+  - aggregate `permutation_mean`: correct delta `1`, accuracy delta `0.0233` (base `23/43`, recurrent `24/43`)
+  - paired evidence
+    - aggregate `permutation_mean`: recurrent `24` / `43`, base `23` / `43`, delta `1`, W/L/T `1/0/42`, p `1.0`
+  - routing buckets
+    - `ambiguous_proxy`: n `18`, delta `0`, W/L `0/0`, mean margin delta `0.21752738643489364`, mean loops `None`
+    - `base_confident_direct_proxy`: n `12`, delta `0`, W/L `0/0`, mean margin delta `-0.6546304856504624`, mean loops `None`
+    - `conceptual_reasoning_proxy`: n `6`, delta `0`, W/L `0/0`, mean margin delta `0.24828396877273917`, mean loops `None`
+    - `deep_numeric_proxy`: n `7`, delta `1`, W/L `1/0`, mean margin delta `0.3326092691027692`, mean loops `None`
+
+$ git status -sb
+## main...origin/main
+ M config/stage5_current_source_summary.txt
+$ git add -f outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm
+$ git add -f config/stage5_current_source_summary.txt
+$ git diff --cached --quiet
+$ git commit -m Record Stage 5 benchmark suite stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm [skip ci]
+[main 265070c] Record Stage 5 benchmark suite stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm [skip ci]
+ 25 files changed, 4769 insertions(+), 1 deletion(-)
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_base_content_question_only.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_base_content_question_only.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_base_cyclic_label_aggregated.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_base_cyclic_label_raw.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_base_cyclic_label_raw.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_recurrent_content_question_only.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_recurrent_content_question_only.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_recurrent_cyclic_label_aggregated.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_recurrent_cyclic_label_raw.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_challenge_recurrent_cyclic_label_raw.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_base_content_question_only.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_base_content_question_only.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_base_cyclic_label_aggregated.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_base_cyclic_label_raw.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_base_cyclic_label_raw.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_recurrent_content_question_only.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_recurrent_content_question_only.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_recurrent_cyclic_label_aggregated.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_recurrent_cyclic_label_raw.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/arc_easy_recurrent_cyclic_label_raw.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/prepare_arc_challenge.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/prepare_arc_easy.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/summary.json
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_offset_then_depth_chain_20260623_offset256_confirm/summary.md
+$ git pull --rebase origin main
+From https://github.com/mshapiro123/recurrent-qwen-svgd
+ * branch            main       -> FETCH_HEAD
+Current branch main is up to date.
+$ git push origin main
+To https://github.com/mshapiro123/recurrent-qwen-svgd.git
+   fb1bb31..265070c  main -> main
