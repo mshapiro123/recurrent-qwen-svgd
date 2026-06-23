@@ -336,6 +336,11 @@ def main() -> int:
         ),
     )
     parser.add_argument("--output_jsonl")
+    parser.add_argument(
+        "--quiet_rows",
+        action="store_true",
+        help="Do not print each scored row to stdout. Rows are still written when --output_jsonl is set.",
+    )
     parser.add_argument("--prompt_style", choices=("with_options", "question_only"), default="with_options")
     parser.add_argument("--score_target", choices=("label", "option_text", "label_and_text"), default="label")
     parser.add_argument("--aggregate", choices=("mean", "max", "vote"), default="mean")
@@ -436,7 +441,8 @@ def main() -> int:
                     answer=example.answer,
                     prediction=prediction,
                 )
-            print(json.dumps(row, ensure_ascii=False))
+            if not args.quiet_rows:
+                print(json.dumps(row, ensure_ascii=False))
             append_jsonl(args.output_jsonl, row)
 
     for aggregate_name in aggregates:

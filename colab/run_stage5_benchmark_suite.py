@@ -521,7 +521,15 @@ def eval_jobs(specs: list[BenchmarkSpec], *, checkpoint: Path) -> list[EvalJob]:
                         score_target=public_target,
                         output_jsonl=output,
                         cmd=common
-                        + ["--mode", mode, *extra, *loop_diagnostics, "--output_jsonl", path_for_cli(eval_output)],
+                        + [
+                            "--mode",
+                            mode,
+                            *extra,
+                            *loop_diagnostics,
+                            "--quiet_rows",
+                            "--output_jsonl",
+                            path_for_cli(eval_output),
+                        ],
                         eval_output_jsonl=eval_output,
                         permutation_jsonl=permutation_jsonl,
                     )
