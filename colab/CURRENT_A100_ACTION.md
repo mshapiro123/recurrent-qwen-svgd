@@ -258,8 +258,10 @@ required = [
     "traced_sft_surface_alignment_repair",
     "STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL_VERSION",
     "stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment",
+    "eval/analyze_mcq_order_sensitivity.py",
     "colab/run_stage5_surface_alignment_repair.py",
     "training/prepare_mcq_surface_alignment_jsonl.py",
+    "tests/test_analyze_mcq_order_sensitivity.py",
 ]
 missing = [marker for marker in required if marker not in code]
 assert not missing, f"Fetched bootstrap is stale or incomplete: {missing}"
