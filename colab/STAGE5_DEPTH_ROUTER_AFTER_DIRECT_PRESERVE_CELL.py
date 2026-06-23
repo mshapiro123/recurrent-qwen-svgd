@@ -177,7 +177,12 @@ def resolve_direct_preservation_summary():
     explicit = os.environ.get("STAGE5_DEPTH_ROUTER_DIRECT_SOURCE_SUMMARY", "").strip()
     candidates = []
     if explicit:
-        candidates.append(resolve_repo_path(explicit))
+        path = resolve_repo_path(explicit)
+        if not path.exists():
+            raise FileNotFoundError(f"Explicit direct-preservation summary is missing: {path}")
+        if not is_passed_direct_preservation(path):
+            raise RuntimeError(f"Explicit direct-preservation summary has not passed: {path}")
+        return path
     for pointer in (latest_direct_pointer_path(), current_pointer_path()):
         if pointer.exists():
             raw = pointer.read_text(encoding="utf-8").strip()

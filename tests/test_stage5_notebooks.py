@@ -199,6 +199,7 @@ def test_current_bootstrap_exposes_depth_router_after_direct_preserve_target() -
 
     assert '"traced_sft_depth_router_after_direct_preserve"' in text
     assert "colab/STAGE5_DEPTH_ROUTER_AFTER_DIRECT_PRESERVE_CELL.py" in text
+    assert "stage5_traced_sft_direct_preservation_20260623_scale64/summary.json" in text
     assert "stage5_latest_direct_preservation_summary.txt" in text
     assert "STAGE5_DEPTH_ROUTER_LOOP_CONTROL_CE_WEIGHT" in text
     assert "STAGE5_DEPTH_ROUTER_HALT_TARGET_NLL_WEIGHT" in text

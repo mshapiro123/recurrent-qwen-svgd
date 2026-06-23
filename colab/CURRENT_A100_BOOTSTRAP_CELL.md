@@ -777,6 +777,9 @@ TARGETS = {
             "STAGE5_DEPTH_ROUTER_TRACE_SOURCE_SUMMARY": (
                 "outputs/stage5/stage5_capability_ladder_trace_collection_20260623_194537/summary.json"
             ),
+            "STAGE5_DEPTH_ROUTER_DIRECT_SOURCE_SUMMARY": (
+                "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64/summary.json"
+            ),
             "STAGE5_DEPTH_ROUTER_RUN_ID": "stage5_depth_router_after_direct_preserve_scale64",
             "STAGE5_DEPTH_ROUTER_STEPS": "100",
             "STAGE5_DEPTH_ROUTER_LR": "5e-5",
