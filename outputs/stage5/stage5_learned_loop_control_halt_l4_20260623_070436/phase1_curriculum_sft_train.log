@@ -1,0 +1,23 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5794.18it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_halt_target_repair_strong_l4_20260623_061610/phase1/phase1_step_150.pt loaded_keys=173
+optimizer_parameter_tensors=8
+step=0 mean_expected_loops=3.0369 mean_halt_entropy=1.1924 expected_ce=0.3778 halting_kl=0.7279 target_mean_loops=1.0000 target_loop_abs_error=2.0369 loop_control_ce=2.7726 halting_target_nll=1.7465 loss=23.4748
+step=25 mean_expected_loops=2.0078 mean_halt_entropy=1.2825 expected_ce=0.2000 halting_kl=0.0226 target_mean_loops=1.0000 target_loop_abs_error=1.0078 loop_control_ce=1.9603 halting_target_nll=0.9384 loss=13.5069
+step=50 mean_expected_loops=1.4831 mean_halt_entropy=0.9009 expected_ce=0.2852 halting_kl=0.0904 target_mean_loops=1.0000 target_loop_abs_error=0.4831 loop_control_ce=0.8961 halting_target_nll=0.4959 loss=7.0477
+step=75 mean_expected_loops=1.6318 mean_halt_entropy=1.0069 expected_ce=0.0696 halting_kl=0.7065 target_mean_loops=3.0000 target_loop_abs_error=1.3682 loop_control_ce=2.6711 halting_target_nll=2.3313 loss=28.8091
+step=100 mean_expected_loops=1.7275 mean_halt_entropy=1.0017 expected_ce=0.0864 halting_kl=0.1357 target_mean_loops=1.0000 target_loop_abs_error=0.7275 loop_control_ce=1.4489 halting_target_nll=0.9209 loss=12.2093
+step=125 mean_expected_loops=1.8169 mean_halt_entropy=1.0254 expected_ce=0.2146 halting_kl=0.1433 target_mean_loops=2.0000 target_loop_abs_error=0.1831 loop_control_ce=0.6023 halting_target_nll=0.6400 loss=7.8360
+step=150 mean_expected_loops=1.3197 mean_halt_entropy=0.6749 expected_ce=0.4211 halting_kl=0.2187 target_mean_loops=1.0000 target_loop_abs_error=0.3197 loop_control_ce=0.8204 halting_target_nll=0.3635 loss=5.7236
+step=175 mean_expected_loops=1.6568 mean_halt_entropy=0.9306 expected_ce=0.2210 halting_kl=1.1729 target_mean_loops=4.0000 target_loop_abs_error=2.3432 loop_control_ce=4.1307 halting_target_nll=5.0665 loss=59.2882
+step=200 mean_expected_loops=1.6155 mean_halt_entropy=0.9115 expected_ce=0.4421 halting_kl=0.1590 target_mean_loops=1.0000 target_loop_abs_error=0.6155 loop_control_ce=0.8153 halting_target_nll=0.7830 loss=9.9215
+step=225 mean_expected_loops=1.7327 mean_halt_entropy=0.9529 expected_ce=0.2530 halting_kl=0.2057 target_mean_loops=2.0000 target_loop_abs_error=0.2673 loop_control_ce=0.6084 halting_target_nll=0.6200 loss=7.6945
+step=250 mean_expected_loops=1.7406 mean_halt_entropy=0.9205 expected_ce=0.5113 halting_kl=0.2191 target_mean_loops=2.0000 target_loop_abs_error=0.2594 loop_control_ce=0.4035 halting_target_nll=0.5646 loss=6.9906
+step=275 mean_expected_loops=1.9352 mean_halt_entropy=0.9454 expected_ce=0.2237 halting_kl=0.1563 target_mean_loops=2.0000 target_loop_abs_error=0.0648 loop_control_ce=0.4146 halting_target_nll=0.4415 loss=5.4864
+step=300 mean_expected_loops=1.5783 mean_halt_entropy=0.7751 expected_ce=0.5916 halting_kl=0.2731 target_mean_loops=1.0000 target_loop_abs_error=0.5783 loop_control_ce=1.1294 halting_target_nll=0.8159 loss=11.0420
+step=325 mean_expected_loops=1.8461 mean_halt_entropy=0.8230 expected_ce=0.3538 halting_kl=0.2465 target_mean_loops=2.0000 target_loop_abs_error=0.1539 loop_control_ce=0.4373 halting_target_nll=0.3782 loss=5.0402
+step=350 mean_expected_loops=1.6435 mean_halt_entropy=0.7810 expected_ce=0.1196 halting_kl=0.3063 target_mean_loops=1.0000 target_loop_abs_error=0.6435 loop_control_ce=0.9463 halting_target_nll=0.9561 loss=11.6098
+step=375 mean_expected_loops=1.8493 mean_halt_entropy=0.6671 expected_ce=0.3075 halting_kl=0.5432 target_mean_loops=1.0000 target_loop_abs_error=0.8493 loop_control_ce=1.5148 halting_target_nll=1.6346 loss=19.7477
+saved_checkpoint=outputs/stage5/stage5_learned_loop_control_halt_l4_20260623_070436/phase1/phase1_step_400.pt
