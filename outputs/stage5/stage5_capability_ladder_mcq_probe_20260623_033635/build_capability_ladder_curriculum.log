@@ -1,0 +1,8 @@
+status=complete
+input_rows=96
+typed_records=73
+positive_sft_rows=73
+tier_counts={'base_preservation': 33, 'qwen_0_5b_miss_qwen_1_5b_miss_qwen_3b_miss_qwen_7b_solve': 8, 'qwen_0_5b_miss_qwen_1_5b_miss_qwen_3b_solve': 10, 'qwen_0_5b_miss_qwen_1_5b_solve': 22}
+target_loop_counts={'1': 33, '2': 22, '3': 10, '4': 8}
+skipped={'unresolved_capability': 23}
+summary_json=data/curriculum/stage5_capability_ladder_mcq_probe_20260623_033635/summary.json

@@ -1,0 +1,234 @@
+{
+  "run_id": "stage5_capability_ladder_mcq_probe_20260623_033635",
+  "kind": "stage5_capability_ladder_mcq_probe",
+  "status": "capability_ladder_probe_gate_ready",
+  "score_mode": "content_question_only",
+  "arc": {
+    "config": "ARC-Challenge",
+    "split": "train",
+    "limit": 96,
+    "seed": 0,
+    "tasks_jsonl": "data/stage5_capability_ladder/stage5_capability_ladder_mcq_probe_20260623_033635/arc_mcq.jsonl"
+  },
+  "models": {
+    "qwen_0_5b": "Qwen/Qwen2.5-0.5B-Instruct",
+    "qwen_1_5b": "Qwen/Qwen2.5-1.5B-Instruct",
+    "qwen_3b": "Qwen/Qwen2.5-3B-Instruct",
+    "qwen_7b": "Qwen/Qwen2.5-7B-Instruct"
+  },
+  "ladder_keys": {
+    "base_key": "qwen_0_5b",
+    "mid_key": "qwen_1_5b",
+    "high_keys": [
+      "qwen_3b"
+    ],
+    "high_target_loop": 3,
+    "model_ladder": [
+      {
+        "key": "qwen_0_5b",
+        "target_loop_count": 1
+      },
+      {
+        "key": "qwen_1_5b",
+        "target_loop_count": 2
+      },
+      {
+        "key": "qwen_3b",
+        "target_loop_count": 3
+      },
+      {
+        "key": "qwen_7b",
+        "target_loop_count": 4
+      }
+    ]
+  },
+  "score_summaries": {
+    "qwen_0_5b": {
+      "path": "outputs/stage5/stage5_capability_ladder_mcq_probe_20260623_033635/qwen_0_5b_content_question_only.jsonl",
+      "rows": 96,
+      "correct": 33,
+      "accuracy": 0.34375,
+      "prediction_counts": {
+        "A": 23,
+        "B": 24,
+        "C": 24,
+        "D": 25
+      },
+      "answer_counts": {
+        "A": 30,
+        "B": 28,
+        "C": 15,
+        "D": 23
+      }
+    },
+    "qwen_1_5b": {
+      "path": "outputs/stage5/stage5_capability_ladder_mcq_probe_20260623_033635/qwen_1_5b_content_question_only.jsonl",
+      "rows": 96,
+      "correct": 46,
+      "accuracy": 0.4791666666666667,
+      "prediction_counts": {
+        "A": 25,
+        "B": 32,
+        "C": 17,
+        "D": 22
+      },
+      "answer_counts": {
+        "A": 30,
+        "B": 28,
+        "C": 15,
+        "D": 23
+      }
+    },
+    "qwen_3b": {
+      "path": "outputs/stage5/stage5_capability_ladder_mcq_probe_20260623_033635/qwen_3b_content_question_only.jsonl",
+      "rows": 96,
+      "correct": 55,
+      "accuracy": 0.5729166666666666,
+      "prediction_counts": {
+        "A": 25,
+        "B": 26,
+        "C": 20,
+        "D": 25
+      },
+      "answer_counts": {
+        "A": 30,
+        "B": 28,
+        "C": 15,
+        "D": 23
+      }
+    },
+    "qwen_7b": {
+      "path": "outputs/stage5/stage5_capability_ladder_mcq_probe_20260623_033635/qwen_7b_content_question_only.jsonl",
+      "rows": 96,
+      "correct": 60,
+      "accuracy": 0.625,
+      "prediction_counts": {
+        "A": 19,
+        "B": 29,
+        "C": 20,
+        "D": 28
+      },
+      "answer_counts": {
+        "A": 30,
+        "B": 28,
+        "C": 15,
+        "D": 23
+      }
+    }
+  },
+  "curriculum": {
+    "summary_json": "data/curriculum/stage5_capability_ladder_mcq_probe_20260623_033635/summary.json",
+    "work_dir": "data/curriculum/stage5_capability_ladder_mcq_probe_20260623_033635",
+    "counts": {
+      "typed_records": 73,
+      "positive_sft_rows": 73,
+      "mode_counts": {
+        "deep_narrow": 40,
+        "direct": 33
+      },
+      "target_loop_counts": {
+        "1": 33,
+        "2": 22,
+        "3": 10,
+        "4": 8
+      },
+      "tier_counts": {
+        "base_preservation": 33,
+        "qwen_0_5b_miss_qwen_1_5b_miss_qwen_3b_miss_qwen_7b_solve": 8,
+        "qwen_0_5b_miss_qwen_1_5b_miss_qwen_3b_solve": 10,
+        "qwen_0_5b_miss_qwen_1_5b_solve": 22
+      }
+    }
+  },
+  "gate": {
+    "run_id": "curriculum_sft_gate_20260623_033913",
+    "kind": "curriculum_sft_gate",
+    "summary_json": "/content/recurrent-qwen-svgd/data/curriculum/stage5_capability_ladder_mcq_probe_20260623_033635/summary.json",
+    "work_dir": "/content/recurrent-qwen-svgd/data/curriculum/stage5_capability_ladder_mcq_probe_20260623_033635",
+    "go": true,
+    "status": "go_train_recurrent_sft",
+    "issues": [],
+    "checks": {
+      "reports": {
+        "exported_examples": 73,
+        "typed_records": 73,
+        "verified": 73,
+        "decontaminated": 73,
+        "method_solutions": 73,
+        "naturalness_judgments": 73,
+        "min_natural_agree": 2,
+        "min_distinct_agree": 2,
+        "distinctness_required": false,
+        "depth_measurements": 73,
+        "difficulty_measured": 73
+      },
+      "typed_records": {
+        "rows": 73,
+        "invalid_rows": 0,
+        "positive_missing_answer_match": 0,
+        "mode_counts": {
+          "deep_narrow": 40,
+          "direct": 33
+        },
+        "role_counts": {
+          "positive_depth": 40,
+          "positive_direct": 33
+        }
+      },
+      "positive_sft": {
+        "rows": 73,
+        "bad_rows": 0,
+        "role_counts": {
+          "positive_depth": 40,
+          "positive_direct": 33
+        },
+        "mode_counts": {
+          "deep_narrow": 40,
+          "direct": 33
+        },
+        "source_model_counts": {
+          "qwen_0_5b": 33,
+          "qwen_1_5b": 22,
+          "qwen_3b": 10,
+          "qwen_7b": 8
+        },
+        "mode_requirements": {
+          "deep_narrow": {
+            "required": 1,
+            "observed": 40,
+            "passed": true
+          },
+          "direct": {
+            "required": 1,
+            "observed": 33,
+            "passed": true
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "decontam_report": "/content/recurrent-qwen-svgd/data/curriculum/stage5_capability_ladder_mcq_probe_20260623_033635/decontam_report.json",
+      "depth_report": "/content/recurrent-qwen-svgd/data/curriculum/stage5_capability_ladder_mcq_probe_20260623_033635/depth_report.json",
+      "difficulty_report": "/content/recurrent-qwen-svgd/data/curriculum/stage5_capability_ladder_mcq_probe_20260623_033635/difficulty_report.json",
+      "method_solutions_report": "/content/recurrent-qwen-svgd/data/curriculum/stage5_capability_ladder_mcq_probe_20260623_033635/method_solutions_report.json",
+      "naturalness_report": "/content/recurrent-qwen-svgd/data/curriculum/stage5_capability_ladder_mcq_probe_20260623_033635/naturalness_report.json",
+      "positive_sft": "/content/recurrent-qwen-svgd/data/curriculum/stage5_capability_ladder_mcq_probe_20260623_033635/positive_sft.jsonl",
+      "positive_sft_report": "/content/recurrent-qwen-svgd/data/curriculum/stage5_capability_ladder_mcq_probe_20260623_033635/positive_sft_report.json",
+      "summary": "/content/recurrent-qwen-svgd/data/curriculum/stage5_capability_ladder_mcq_probe_20260623_033635/summary.json",
+      "typed_records": "/content/recurrent-qwen-svgd/data/curriculum/stage5_capability_ladder_mcq_probe_20260623_033635/typed_records.jsonl",
+      "typed_records_report": "/content/recurrent-qwen-svgd/data/curriculum/stage5_capability_ladder_mcq_probe_20260623_033635/typed_records_report.json",
+      "verified_candidates_report": "/content/recurrent-qwen-svgd/data/curriculum/stage5_capability_ladder_mcq_probe_20260623_033635/verified_candidates_report.json"
+    }
+  },
+  "artifacts": {
+    "run_dir": "outputs/stage5/stage5_capability_ladder_mcq_probe_20260623_033635",
+    "scored_capability_rows": "data/stage5_capability_ladder/stage5_capability_ladder_mcq_probe_20260623_033635/scored_capability_rows.jsonl",
+    "curriculum_summary": "data/curriculum/stage5_capability_ladder_mcq_probe_20260623_033635/summary.json",
+    "curriculum_gate": "outputs/stage5/stage5_capability_ladder_mcq_probe_20260623_033635/curriculum_sft_gate.json"
+  },
+  "drive_backup": {
+    "enabled": false
+  },
+  "caveat": "This probe uses answer-only MCQ predictions as minimal traces. Use it to select/size a depth curriculum, then replace or enrich rows with verified reasoning traces before claiming reasoning SFT quality.",
+  "next_action": "If status is gate_ready or needs_review, inspect tier counts and use richer trace generation for the deep rows before recurrent SFT."
+}

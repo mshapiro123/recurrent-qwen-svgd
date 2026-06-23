@@ -1,0 +1,5 @@
+status=go_train_recurrent_sft
+go=True
+issues=0
+output_json=/content/recurrent-qwen-svgd/outputs/stage5/stage5_capability_ladder_mcq_probe_20260623_033635/curriculum_sft_gate.json
+output_md=/content/recurrent-qwen-svgd/outputs/stage5/stage5_capability_ladder_mcq_probe_20260623_033635/curriculum_sft_gate.md
