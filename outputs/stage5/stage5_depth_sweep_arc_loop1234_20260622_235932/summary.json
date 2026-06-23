@@ -1,0 +1,162 @@
+{
+  "kind": "stage5_depth_sweep_benchmark",
+  "run_id": "stage5_depth_sweep_arc_loop1234_20260622_235932",
+  "source_summary": "outputs/stage5/stage5_direct_preservation_loop1_20260622_232720/summary.json",
+  "checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft/phase1/phase1_step_150.pt",
+  "loop_run_ids": [
+    "stage5_depth_sweep_arc_loop1234_20260622_235932_loop1",
+    "stage5_depth_sweep_arc_loop1234_20260622_235932_loop2",
+    "stage5_depth_sweep_arc_loop1234_20260622_235932_loop3",
+    "stage5_depth_sweep_arc_loop1234_20260622_235932_loop4"
+  ],
+  "summaries": [
+    {
+      "run_id": "stage5_depth_sweep_arc_loop1234_20260622_235932_loop1",
+      "status": "completed",
+      "elapsed_seconds": 248.4252851009369,
+      "max_loops": null,
+      "rows": [
+        {
+          "benchmark": "arc_easy",
+          "score_target": "label",
+          "aggregate": "mean",
+          "base_correct": 186,
+          "base_total": 256,
+          "recurrent_correct": 191,
+          "recurrent_total": 256,
+          "delta": 5,
+          "paired_wins": 6,
+          "paired_losses": 1,
+          "paired_ties": 249,
+          "sign_test_p": 0.125
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "mean",
+          "base_correct": 148,
+          "base_total": 256,
+          "recurrent_correct": 150,
+          "recurrent_total": 256,
+          "delta": 2,
+          "paired_wins": 6,
+          "paired_losses": 4,
+          "paired_ties": 246,
+          "sign_test_p": 0.75390625
+        }
+      ],
+      "failures": []
+    },
+    {
+      "run_id": "stage5_depth_sweep_arc_loop1234_20260622_235932_loop2",
+      "status": "completed",
+      "elapsed_seconds": 298.45263600349426,
+      "max_loops": null,
+      "rows": [
+        {
+          "benchmark": "arc_easy",
+          "score_target": "label",
+          "aggregate": "mean",
+          "base_correct": 186,
+          "base_total": 256,
+          "recurrent_correct": 181,
+          "recurrent_total": 256,
+          "delta": -5,
+          "paired_wins": 15,
+          "paired_losses": 20,
+          "paired_ties": 221,
+          "sign_test_p": 0.49955983320251107
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "mean",
+          "base_correct": 148,
+          "base_total": 256,
+          "recurrent_correct": 141,
+          "recurrent_total": 256,
+          "delta": -7,
+          "paired_wins": 17,
+          "paired_losses": 24,
+          "paired_ties": 215,
+          "sign_test_p": 0.34888887944907765
+        }
+      ],
+      "failures": []
+    },
+    {
+      "run_id": "stage5_depth_sweep_arc_loop1234_20260622_235932_loop3",
+      "status": "completed",
+      "elapsed_seconds": 377.343777179718,
+      "max_loops": null,
+      "rows": [
+        {
+          "benchmark": "arc_easy",
+          "score_target": "label",
+          "aggregate": "mean",
+          "base_correct": 186,
+          "base_total": 256,
+          "recurrent_correct": 168,
+          "recurrent_total": 256,
+          "delta": -18,
+          "paired_wins": 14,
+          "paired_losses": 32,
+          "paired_ties": 210,
+          "sign_test_p": 0.011351591436778108
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "mean",
+          "base_correct": 148,
+          "base_total": 256,
+          "recurrent_correct": 133,
+          "recurrent_total": 256,
+          "delta": -15,
+          "paired_wins": 30,
+          "paired_losses": 45,
+          "paired_ties": 181,
+          "sign_test_p": 0.10534226887460488
+        }
+      ],
+      "failures": []
+    },
+    {
+      "run_id": "stage5_depth_sweep_arc_loop1234_20260622_235932_loop4",
+      "status": "completed",
+      "elapsed_seconds": 458.15425658226013,
+      "max_loops": null,
+      "rows": [
+        {
+          "benchmark": "arc_easy",
+          "score_target": "label",
+          "aggregate": "mean",
+          "base_correct": 186,
+          "base_total": 256,
+          "recurrent_correct": 159,
+          "recurrent_total": 256,
+          "delta": -27,
+          "paired_wins": 13,
+          "paired_losses": 40,
+          "paired_ties": 203,
+          "sign_test_p": 0.0002685401188191605
+        },
+        {
+          "benchmark": "arc_challenge",
+          "score_target": "label",
+          "aggregate": "mean",
+          "base_correct": 148,
+          "base_total": 256,
+          "recurrent_correct": 129,
+          "recurrent_total": 256,
+          "delta": -19,
+          "paired_wins": 30,
+          "paired_losses": 49,
+          "paired_ties": 177,
+          "sign_test_p": 0.042165443994951105
+        }
+      ],
+      "failures": []
+    }
+  ]
+}

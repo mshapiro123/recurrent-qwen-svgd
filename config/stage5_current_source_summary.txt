@@ -1,1 +1,1 @@
-outputs/stage5/stage5_direct_preservation_confirm_loop1_20260622_235024/summary.json
+outputs/stage5/stage5_depth_sweep_arc_loop1234_20260622_235932_loop4/summary.json

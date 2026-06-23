@@ -1,0 +1,5 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=validation
+rows=256
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_depth_sweep_arc_loop1234_20260622_235932_loop4/arc_easy_validation_256.jsonl
