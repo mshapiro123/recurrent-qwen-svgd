@@ -1,0 +1,5 @@
+task_rows=96
+output_rows=96
+missing={}
+output_jsonl=C:/Users/mshap/Documents/Codex/2026-06-15/below-is-a-codex-ready-handoff/data/stage5_capability_ladder/stage5_capability_ladder_mcq_probe_20260623_185608/scored_capability_rows.jsonl
+report_json=C:/Users/mshap/Documents/Codex/2026-06-15/below-is-a-codex-ready-handoff/data/stage5_capability_ladder/stage5_capability_ladder_mcq_probe_20260623_185608/scored_capability_rows.report.json

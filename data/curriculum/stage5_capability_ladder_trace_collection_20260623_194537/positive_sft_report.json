@@ -1,0 +1,23 @@
+{
+  "records": 63,
+  "exported_examples": 63,
+  "invalid_records": 0,
+  "skipped_invalid_records": 0,
+  "export_invalid_records": false,
+  "issues": [],
+  "role_counts": {
+    "positive_depth": 37,
+    "positive_direct": 26
+  },
+  "mode_counts": {
+    "deep_narrow": 37,
+    "direct": 26
+  },
+  "exported_role_counts": {
+    "positive_depth": 37,
+    "positive_direct": 26
+  },
+  "exported_source_model_counts": {
+    "Qwen/Qwen2.5-7B-Instruct": 63
+  }
+}

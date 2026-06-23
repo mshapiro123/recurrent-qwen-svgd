@@ -1,0 +1,4 @@
+status=ready
+accepted_rows=63
+status_counts={'accepted': 63, 'missing_response': 68, 'wrong_or_missing_answer': 1}
+target_loop_counts={'1': 26, '2': 28, '3': 9}

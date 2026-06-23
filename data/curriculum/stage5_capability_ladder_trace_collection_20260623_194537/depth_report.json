@@ -1,0 +1,9 @@
+{
+  "measurements": 63,
+  "target_loop_counts": {
+    "1": 26,
+    "2": 28,
+    "3": 9
+  },
+  "source": "capability_ladder"
+}

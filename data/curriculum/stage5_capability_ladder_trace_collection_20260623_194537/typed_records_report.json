@@ -1,0 +1,19 @@
+{
+  "records": 63,
+  "mode_counts": {
+    "deep_narrow": 37,
+    "direct": 26
+  },
+  "role_counts": {
+    "positive_depth": 37,
+    "positive_direct": 26
+  },
+  "validation_issues": [],
+  "positive_traces": 63,
+  "unsafe_auxiliary_traces": 0,
+  "distinctness_required": false,
+  "min_natural_agree": 2,
+  "min_distinct_agree": 2,
+  "distinctness_judgments": 0,
+  "source": "capability_ladder"
+}

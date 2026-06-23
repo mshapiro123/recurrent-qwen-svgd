@@ -1,0 +1,15 @@
+
+Generating train split:   0%|          | 0/1119 [00:00<?, ? examples/s]
+Generating train split: 100%|██████████| 1119/1119 [00:00<00:00, 43291.70 examples/s]
+
+Generating test split:   0%|          | 0/1172 [00:00<?, ? examples/s]
+Generating test split: 100%|██████████| 1172/1172 [00:00<00:00, 585693.35 examples/s]
+
+Generating validation split:   0%|          | 0/299 [00:00<?, ? examples/s]
+Generating validation split: 100%|██████████| 299/299 [00:00<00:00, 240663.38 examples/s]
+dataset_id=allenai/ai2_arc
+config=ARC-Challenge
+split=train
+offset=0
+rows=96
+output_jsonl=C:/Users/mshap/Documents/Codex/2026-06-15/below-is-a-codex-ready-handoff/data/stage5_capability_ladder/stage5_capability_ladder_mcq_probe_20260623_185608/arc_mcq_reconstructed.jsonl

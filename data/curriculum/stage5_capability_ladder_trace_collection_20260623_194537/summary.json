@@ -1,0 +1,76 @@
+{
+  "run_id": "capability_ladder_curriculum_20260623_194541",
+  "kind": "capability_ladder_curriculum_pipeline",
+  "status": "complete",
+  "next_action": "Run training/check_curriculum_sft_gate.py before any GPU fine-tuning.",
+  "artifacts": {
+    "capability_ladder_report": {
+      "path": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537/capability_ladder_report.json",
+      "exists": true
+    },
+    "decontam_report": {
+      "path": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537/decontam_report.json",
+      "exists": true
+    },
+    "depth_report": {
+      "path": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537/depth_report.json",
+      "exists": true
+    },
+    "difficulty_report": {
+      "path": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537/difficulty_report.json",
+      "exists": true
+    },
+    "method_solutions_report": {
+      "path": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537/method_solutions_report.json",
+      "exists": true
+    },
+    "naturalness_report": {
+      "path": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537/naturalness_report.json",
+      "exists": true
+    },
+    "positive_sft": {
+      "path": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537/positive_sft.jsonl",
+      "exists": true,
+      "lines": 63
+    },
+    "positive_sft_report": {
+      "path": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537/positive_sft_report.json",
+      "exists": true
+    },
+    "summary": {
+      "path": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537/summary.json",
+      "exists": true
+    },
+    "typed_records": {
+      "path": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537/typed_records.jsonl",
+      "exists": true,
+      "lines": 63
+    },
+    "typed_records_report": {
+      "path": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537/typed_records_report.json",
+      "exists": true
+    },
+    "verified_candidates_report": {
+      "path": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537/verified_candidates_report.json",
+      "exists": true
+    }
+  },
+  "counts": {
+    "typed_records": 63,
+    "positive_sft_rows": 63,
+    "mode_counts": {
+      "deep_narrow": 37,
+      "direct": 26
+    },
+    "target_loop_counts": {
+      "1": 26,
+      "2": 28,
+      "3": 9
+    },
+    "tier_counts": {
+      "base_preservation": 26,
+      "qwen_0_5b_miss_qwen_1_5b_miss_qwen_3b_solve": 9,
+      "qwen_0_5b_miss_qwen_1_5b_solve": 28
+    }
+  }
+}

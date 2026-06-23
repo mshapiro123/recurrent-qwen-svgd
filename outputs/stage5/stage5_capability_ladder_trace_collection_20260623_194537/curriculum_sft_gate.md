@@ -1,0 +1,60 @@
+# Curriculum SFT Gate - curriculum_sft_gate_20260623_194541
+
+- Summary: `/content/recurrent-qwen-svgd/data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537/summary.json`
+- Go: `True`
+- Status: `go_train_recurrent_sft`
+
+## Report Checks
+
+```json
+{
+  "reports": {
+    "exported_examples": 63,
+    "typed_records": 63,
+    "verified": 63,
+    "decontaminated": 63,
+    "method_solutions": 63,
+    "naturalness_judgments": 63,
+    "min_natural_agree": 2,
+    "min_distinct_agree": 2,
+    "distinctness_required": false,
+    "depth_measurements": 63,
+    "difficulty_measured": 63,
+    "programmatic_answer_check_required": false,
+    "answer_line_verification_allowed": true
+  },
+  "typed_records": {
+    "rows": 63,
+    "invalid_rows": 0,
+    "positive_missing_answer_match": 0,
+    "mode_counts": {
+      "deep_narrow": 37,
+      "direct": 26
+    },
+    "role_counts": {
+      "positive_depth": 37,
+      "positive_direct": 26
+    }
+  },
+  "positive_sft": {
+    "rows": 63,
+    "bad_rows": 0,
+    "role_counts": {
+      "positive_depth": 37,
+      "positive_direct": 26
+    },
+    "mode_counts": {
+      "deep_narrow": 37,
+      "direct": 26
+    },
+    "source_model_counts": {
+      "Qwen/Qwen2.5-7B-Instruct": 63
+    },
+    "mode_requirements": {}
+  }
+}
+```
+
+## Issues
+
+- None.
