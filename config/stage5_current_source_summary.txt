@@ -1,1 +1,1 @@
-outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm/summary.json
+outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment/summary.json

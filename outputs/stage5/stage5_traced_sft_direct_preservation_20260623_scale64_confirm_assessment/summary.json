@@ -1,0 +1,117 @@
+{
+  "run_id": "stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment",
+  "gate": "stage5_broader_benchmark_suite",
+  "source_summary": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm/summary.json",
+  "checkpoint": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/phase1_direct_preserve/phase1_step_75.pt",
+  "status": "needs_recurrent_recovery",
+  "passed": false,
+  "next_step": "Return to deterministic recurrent recovery before GPQA Diamond or release claims.",
+  "required_score_target": "content_question_only",
+  "required_aggregate": "mean",
+  "allowed_negative_delta": 0,
+  "benchmarks": [
+    {
+      "benchmark": "arc_easy",
+      "present": true,
+      "required_examples": 1,
+      "paired_examples": 256,
+      "base_correct": 148,
+      "recurrent_correct": 140,
+      "correct_delta_recurrent_vs_base": -8,
+      "wins": 8,
+      "losses": 16,
+      "ties": 232,
+      "sign_test_p_value": 0.15158963203430176
+    },
+    {
+      "benchmark": "arc_challenge",
+      "present": true,
+      "required_examples": 128,
+      "paired_examples": 256,
+      "base_correct": 87,
+      "recurrent_correct": 86,
+      "correct_delta_recurrent_vs_base": -1,
+      "wins": 7,
+      "losses": 8,
+      "ties": 241,
+      "sign_test_p_value": 1.0
+    }
+  ],
+  "criteria": [
+    {
+      "name": "suite_completed",
+      "passed": true,
+      "reason": "Benchmark suite completed without failures.",
+      "evidence": {
+        "status": "completed",
+        "failures": []
+      }
+    },
+    {
+      "name": "paired_coverage",
+      "passed": true,
+      "reason": "All benchmark slices have enough paired base-vs-recurrent examples.",
+      "evidence": [
+        {
+          "benchmark": "arc_easy",
+          "present": true,
+          "required_examples": 1,
+          "paired_examples": 256,
+          "base_correct": 148,
+          "recurrent_correct": 140,
+          "correct_delta_recurrent_vs_base": -8,
+          "wins": 8,
+          "losses": 16,
+          "ties": 232,
+          "sign_test_p_value": 0.15158963203430176
+        },
+        {
+          "benchmark": "arc_challenge",
+          "present": true,
+          "required_examples": 128,
+          "paired_examples": 256,
+          "base_correct": 87,
+          "recurrent_correct": 86,
+          "correct_delta_recurrent_vs_base": -1,
+          "wins": 7,
+          "losses": 8,
+          "ties": 241,
+          "sign_test_p_value": 1.0
+        }
+      ]
+    },
+    {
+      "name": "recurrent_nonnegative_vs_base",
+      "passed": false,
+      "reason": "Recurrent trails base on at least one paired benchmark slice.",
+      "evidence": [
+        {
+          "benchmark": "arc_easy",
+          "present": true,
+          "required_examples": 1,
+          "paired_examples": 256,
+          "base_correct": 148,
+          "recurrent_correct": 140,
+          "correct_delta_recurrent_vs_base": -8,
+          "wins": 8,
+          "losses": 16,
+          "ties": 232,
+          "sign_test_p_value": 0.15158963203430176
+        },
+        {
+          "benchmark": "arc_challenge",
+          "present": true,
+          "required_examples": 128,
+          "paired_examples": 256,
+          "base_correct": 87,
+          "recurrent_correct": 86,
+          "correct_delta_recurrent_vs_base": -1,
+          "wins": 7,
+          "losses": 8,
+          "ties": 241,
+          "sign_test_p_value": 1.0
+        }
+      ]
+    }
+  ]
+}
