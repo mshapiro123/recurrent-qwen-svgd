@@ -109,6 +109,34 @@ rescues most losses. Treat the confirmation run as a test of whether the
 direct-preservation checkpoint fixed the content route without erasing the
 ARC-Challenge hard-tail lift.
 
+Follow-up surface diagnostic:
+
+```text
+outputs/stage5/stage5_local_hf_traced_sft_scale64_benchmark_20260623_201923/arc_easy_surface_mismatch_diagnosis.json
+```
+
+Result:
+
+```text
+ARC-Easy content delta: -7
+content losses: 10
+stable cyclic rescues: 8/10
+unrescued losses: 2/10
+order-sensitive losses: 0/10
+content/cyclic disagreement on losses: 9/10
+content-loss answer rank under content scoring: rank 2 on 9/10, rank 3 on 1/10
+recommendation: prioritize_content_cyclic_surface_alignment
+```
+
+Interpretation: the recurrent checkpoint usually still ranks the correct
+answer just below the chosen wrong answer on the content-only surface, while
+the cyclic surface recovers the correct answer stably. This is stronger
+evidence for a content-vs-cyclic scoring-surface mismatch than for broad
+knowledge erosion. The current competence-preserving pipeline can still run as
+the bounded recovery step, but the next training variant should explicitly
+target content/cyclic surface alignment rather than only increasing
+base-imitation strength.
+
 The older precheck notebook remains available for provenance:
 [`10_stage5_direct_preservation_precheck.ipynb`](10_stage5_direct_preservation_precheck.ipynb)
 but it is no longer the front-of-queue action for the current evidence state.
