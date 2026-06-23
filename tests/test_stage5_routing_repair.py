@@ -213,6 +213,15 @@ def test_commit_results_stages_current_source_pointer(monkeypatch, tmp_path) -> 
     assert "config/stage5_current_source_summary.txt" in staged
 
 
+def test_safe_output_artifacts_include_bounded_adapter_checkpoints(tmp_path) -> None:
+    import colab.run_stage5_routing_repair as module
+
+    checkpoint = tmp_path / "phase1_step_75.pt"
+    checkpoint.write_bytes(b"adapter checkpoint")
+
+    assert module.is_safe_output_artifact(checkpoint) is True
+
+
 def test_resolve_source_summary_finds_latest_routing_summary(monkeypatch, tmp_path) -> None:
     import colab.run_stage5_routing_repair as module
 

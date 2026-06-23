@@ -44,7 +44,7 @@ PUSH_RESULTS = os.environ.get("STAGE5_ROUTING_REPAIR_PUSH", "1").strip().lower()
     "y",
 }
 
-SAFE_OUTPUT_SUFFIXES = {".csv", ".html", ".json", ".jsonl", ".log", ".md", ".txt", ".yaml", ".yml"}
+SAFE_OUTPUT_SUFFIXES = {".csv", ".html", ".json", ".jsonl", ".log", ".md", ".pt", ".txt", ".yaml", ".yml"}
 MAX_COMMIT_ARTIFACT_BYTES = int(os.environ.get("STAGE5_ROUTING_REPAIR_COMMIT_MAX_ARTIFACT_BYTES", "25000000"))
 CHILD_STDOUT_TAIL_CHARS = int(os.environ.get("STAGE5_ROUTING_REPAIR_CHILD_STDOUT_TAIL_CHARS", "12000"))
 
