@@ -354,6 +354,10 @@ run(
 )
 
 trace_env = os.environ.copy()
+min_trace_rows_for_sft = os.environ.get(
+    "STAGE5_TRACED_CAPABILITY_SFT_MIN_TRACE_ROWS",
+    str(MIN_TRACE_ROWS_DEFAULT),
+)
 trace_env.update(
     {
         "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BACKEND": "hf_local",
@@ -406,6 +410,10 @@ trace_env.update(
         "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_BACKUP_DRIVE": os.environ.get(
             "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_BACKUP_DRIVE",
             "0",
+        ),
+        "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_MIN_POSITIVE_ROWS": os.environ.get(
+            "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_MIN_POSITIVE_ROWS",
+            min_trace_rows_for_sft,
         ),
         "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_PUSH": "1",
         "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_PUSH": "1",

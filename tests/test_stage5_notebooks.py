@@ -684,6 +684,8 @@ def test_capability_ladder_local_hf_trace_sft_target_is_bootstrapped() -> None:
     assert "STAGE5_CURRICULUM_LOOP_CONTROL_CE_WEIGHT" in plain
     assert "STAGE5_CURRICULUM_HALT_TARGET_NLL_WEIGHT" in plain
     assert "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_RUN_BENCHMARK" in plain
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_MIN_POSITIVE_ROWS" in plain
+    assert "STAGE5_TRACED_CAPABILITY_SFT_MIN_TRACE_ROWS" in plain
     assert "cyclic_label_aggregated" in plain
     assert "runtime.unassign()" in plain
     assert "capability_ladder_local_hf_trace_sft" in bootstrap
