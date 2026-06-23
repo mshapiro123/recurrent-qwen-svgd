@@ -1,0 +1,4 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5228.34it/s]
+aggregate=mean accuracy=0.4767 correct=82 total=172
