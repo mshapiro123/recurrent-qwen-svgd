@@ -84,6 +84,10 @@ RECURRENT_SVGD_KERNEL_PROJECTION_DIM = os.environ.get("STAGE5_BENCHMARK_SVGD_KER
 RECURRENT_SVGD_KERNEL_PROJECTION_PATH = os.environ.get("STAGE5_BENCHMARK_SVGD_KERNEL_PROJECTION_PATH", "")
 RECURRENT_SVGD_KERNEL_GEOMETRY = os.environ.get("STAGE5_BENCHMARK_SVGD_KERNEL_GEOMETRY", "euclidean")
 RECURRENT_SVGD_PROJECTION_SEED = os.environ.get("STAGE5_BENCHMARK_SVGD_PROJECTION_SEED", "0")
+RECURRENT_USE_LEARNED_LOOP_CONTROL = os.environ.get(
+    "STAGE5_BENCHMARK_USE_LEARNED_LOOP_CONTROL",
+    "0",
+).strip().lower() in {"1", "true", "yes", "y"}
 INCLUDE_LOOP_DIAGNOSTICS = os.environ.get("STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS", "1").strip().lower() in {
     "1",
     "true",
@@ -436,6 +440,8 @@ def eval_jobs(specs: list[BenchmarkSpec], *, checkpoint: Path) -> list[EvalJob]:
         "--num_trajectories",
         str(RECURRENT_NUM_TRAJECTORIES),
     ]
+    if RECURRENT_USE_LEARNED_LOOP_CONTROL:
+        recurrent_extra.append("--use_learned_loop_control")
     if RECURRENT_MODE == "phase2":
         if RECURRENT_SAMPLE_LATENTS:
             recurrent_extra.append("--sample_latents")
@@ -698,6 +704,7 @@ def build_summary(
         "aggregates": parse_csv(AGGREGATES),
         "recurrent_mode": RECURRENT_MODE,
         "recurrent_num_trajectories": RECURRENT_NUM_TRAJECTORIES,
+        "recurrent_use_learned_loop_control": RECURRENT_USE_LEARNED_LOOP_CONTROL,
         "elapsed_seconds": elapsed_seconds,
         "failures": failures,
         "results": result_rows,
@@ -721,6 +728,7 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Benchmarks: `{payload['benchmarks']}`",
         f"- Recurrent mode: `{payload['recurrent_mode']}`",
         f"- Recurrent trajectories: `{payload['recurrent_num_trajectories']}`",
+        f"- Learned loop control: `{payload.get('recurrent_use_learned_loop_control')}`",
         f"- Elapsed seconds: `{payload['elapsed_seconds']:.2f}`",
         "",
         "## Recurrent vs Base",

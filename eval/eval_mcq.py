@@ -211,6 +211,7 @@ def score_completion(
                 svgd_kernel_projection_path=args.svgd_kernel_projection_path,
                 svgd_kernel_geometry=args.svgd_kernel_geometry,
                 svgd_projection_seed=args.svgd_projection_seed,
+                use_learned_loop_control=args.use_learned_loop_control,
                 use_cache=False,
                 return_dict=True,
             )
@@ -371,6 +372,7 @@ def main() -> int:
     parser.add_argument("--svgd_kernel_projection_path")
     parser.add_argument("--svgd_kernel_geometry", default="euclidean", choices=("euclidean", "spherical"))
     parser.add_argument("--svgd_projection_seed", type=int, default=0)
+    parser.add_argument("--use_learned_loop_control", action="store_true")
     args = parser.parse_args()
 
     if args.mode != "base" and not args.checkpoint and not args.allow_untrained_recurrent:
