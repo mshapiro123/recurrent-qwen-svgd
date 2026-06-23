@@ -43,6 +43,10 @@ The older MCQ debias, debiased benchmark, capability-ladder probe, trace-job,
 and trace-response targets are retained below as historical/fallback cells, but
 they are no longer the current front-of-queue action unless the source pointer
 is deliberately moved back to one of those stages.
+For a high-memory overnight run before provider trace generation, prefer
+`STAGE5_CURRENT_A100_TARGET=capability_ladder_7b_trace_chain`: it runs the
+0.5B/1.5B/3B/7B capability-ladder probe and immediately builds trace jobs from
+the local scored rows before disconnecting.
 The bootstrap now auto-resumes from
 [`config/stage5_current_source_summary.txt`](../config/stage5_current_source_summary.txt)
 when that pointer exists and targets an available summary. To force a specific

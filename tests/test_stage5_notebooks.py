@@ -383,6 +383,10 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     assert "capability_ladder_trace_collect_cpu" in text
     assert "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_CELL.py" in plain
     assert "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_CELL_VERSION" in plain
+    assert "capability_ladder_7b_trace_chain" in text
+    assert '"capability_ladder_7b_trace_chain"' in plain
+    assert "STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_CELL.py" in plain
+    assert "STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_CELL_VERSION" in plain
     assert "traced_capability_ladder_sft" in text
     assert '"traced_capability_ladder_sft"' in plain
     assert "STAGE5_TRACED_CAPABILITY_LADDER_SFT_CELL.py" in plain
@@ -502,6 +506,28 @@ def test_capability_ladder_trace_jobs_cell_is_cpu_only_and_depth_ladder_focused(
     assert "STAGE5_CAPABILITY_LADDER_TRACE_JOBS_CELL.py" in bootstrap
     assert "Next Paste-Anywhere Capability-Ladder Trace Jobs Cell" in current_action
     assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_trace_jobs_cpu"' in current_action
+
+
+def test_capability_ladder_7b_trace_chain_cell_runs_probe_then_trace_jobs() -> None:
+    plain = (ROOT / "colab/STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_CELL.py").read_text(encoding="utf-8")
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
+
+    assert "STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_CELL_VERSION" in plain
+    assert "capability_ladder_7b_trace_chain" in plain
+    assert "Qwen/Qwen2.5-7B-Instruct" in plain
+    assert "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3,qwen_7b:4" in plain
+    assert "STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_ARC_LIMIT" in plain
+    assert "colab/run_stage5_capability_ladder_mcq_probe.py" in plain
+    assert "colab/run_stage5_capability_ladder_trace_jobs.py" in plain
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_ALLOW_GPU" in plain
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_REFUSE_GPU" in plain
+    assert '"pull"' in plain
+    assert '"--rebase"' in plain
+    assert "runtime.unassign()" in plain
+    assert "capability_ladder_7b_trace_chain" in bootstrap
+    assert "STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_CELL.py" in bootstrap
+    assert "STAGE5_CURRENT_A100_TARGET=capability_ladder_7b_trace_chain" in current_action
 
 
 def test_capability_ladder_trace_collect_cell_is_cpu_only_and_response_driven() -> None:

@@ -52,6 +52,15 @@ target scores ARC-Challenge train examples with Qwen 0.5B/1.5B/3B/7B and
 builds a depth-1/2/3/4 capability-ladder shard. Use it only on a runtime with
 enough VRAM for Qwen 7B.
 
+To run the high-memory 7B capability-ladder probe and immediately build trace
+jobs in the same runtime:
+
+Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
+"capability_ladder_7b_trace_chain"` before running the bootstrap cell. This is
+the preferred overnight target on a high-memory GPU when the next objective is
+to produce provider-neutral strong-trace jobs, because it keeps the raw scored
+rows alive between the probe and trace-job build.
+
 To build capability-ladder trace-generation jobs without GPU:
 
 Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
@@ -141,6 +150,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "debiased_benchmark_suite" - bounded ARC-Challenge/GPQA-lite benchmark with debiased MCQ scoring.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
 #   "capability_ladder_7b_mcq_probe" - high-memory Qwen 0.5B/1.5B/3B/7B ARC MCQ scoring for depth-4 data.
+#   "capability_ladder_7b_trace_chain" - high-memory 7B ladder probe followed by trace-job build.
 #   "capability_ladder_trace_jobs_cpu" - CPU-only trace-job build from latest capability ladder probe.
 #   "capability_ladder_trace_responses_cpu" - CPU/network provider responses for trace jobs.
 #   "capability_ladder_trace_collect_cpu" - CPU-only trace-response collection into gated SFT data.
@@ -305,6 +315,21 @@ TARGETS = {
             "STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE": "0",
             "STAGE5_CAPABILITY_LADDER_DISCONNECT": "1",
         },
+    },
+    "capability_ladder_7b_trace_chain": {
+        "path": "colab/STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_CELL.py",
+        "markers": [
+            "STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_CELL_VERSION",
+            "capability_ladder_7b_trace_chain",
+            "Qwen/Qwen2.5-7B-Instruct",
+            "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3,qwen_7b:4",
+            "STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_ARC_LIMIT",
+            "colab/run_stage5_capability_ladder_mcq_probe.py",
+            "colab/run_stage5_capability_ladder_trace_jobs.py",
+            "tests/test_capability_ladder_trace_jobs.py",
+            "runtime.unassign",
+        ],
+        "env": {},
     },
     "capability_ladder_trace_jobs_cpu": {
         "path": "colab/STAGE5_CAPABILITY_LADDER_TRACE_JOBS_CELL.py",
