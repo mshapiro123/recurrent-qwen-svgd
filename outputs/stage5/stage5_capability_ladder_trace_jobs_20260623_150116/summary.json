@@ -1,0 +1,42 @@
+{
+  "run_id": "stage5_capability_ladder_trace_jobs_20260623_150116",
+  "kind": "stage5_capability_ladder_trace_jobs",
+  "status": "ready",
+  "source_summary": "outputs/stage5/stage5_capability_ladder_mcq_probe_20260623_185608/summary.json",
+  "models": [
+    "opus-strong",
+    "glm-strong"
+  ],
+  "restore": {
+    "restored": false,
+    "path": "data/stage5_capability_ladder/stage5_capability_ladder_mcq_probe_20260623_185608/scored_capability_rows.jsonl",
+    "source": "local"
+  },
+  "trace_jobs": {
+    "jobs": 132,
+    "selected_rows": 66,
+    "tier_counts": {
+      "base_preservation": 34,
+      "qwen_0_5b_miss_qwen_1_5b_miss_qwen_3b_solve": 12,
+      "qwen_0_5b_miss_qwen_1_5b_solve": 20
+    },
+    "by_target_loop": {
+      "1": 68,
+      "2": 40,
+      "3": 24
+    },
+    "by_model": {
+      "glm-strong": 66,
+      "opus-strong": 66
+    }
+  },
+  "artifacts": {
+    "jobs_jsonl": "outputs/stage5/stage5_capability_ladder_trace_jobs_20260623_150116/capability_ladder_trace_jobs.jsonl",
+    "report_json": "outputs/stage5/stage5_capability_ladder_trace_jobs_20260623_150116/capability_ladder_trace_jobs_report.json",
+    "run_dir": "outputs/stage5/stage5_capability_ladder_trace_jobs_20260623_150116"
+  },
+  "drive_backup": {
+    "enabled": false
+  },
+  "next_action": "Run training/run_curriculum_job_responses.py with a provider/model map to generate trace responses, then training/collect_capability_ladder_trace_outputs.py to build traced scored rows."
+}

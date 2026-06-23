@@ -1,1 +1,1 @@
-outputs/stage5/stage5_capability_ladder_mcq_probe_20260623_185608/summary.json
+outputs/stage5/stage5_capability_ladder_trace_jobs_20260623_150116/summary.json

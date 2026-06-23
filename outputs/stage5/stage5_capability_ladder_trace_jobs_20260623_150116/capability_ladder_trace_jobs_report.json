@@ -1,0 +1,58 @@
+{
+  "kind": "capability_ladder_trace_jobs",
+  "status": "ready",
+  "input_rows": 96,
+  "selected_rows": 66,
+  "tier_counts": {
+    "base_preservation": 34,
+    "qwen_0_5b_miss_qwen_1_5b_miss_qwen_3b_solve": 12,
+    "qwen_0_5b_miss_qwen_1_5b_solve": 20
+  },
+  "skipped": {
+    "unresolved_capability": 30
+  },
+  "base_key": "qwen_0_5b",
+  "mid_key": "qwen_1_5b",
+  "high_keys": [
+    "qwen_3b",
+    "strong_solver"
+  ],
+  "high_target_loop": 3,
+  "model_correct_counts": {
+    "qwen_0_5b": 34,
+    "qwen_1_5b": 44,
+    "qwen_3b": 57
+  },
+  "model_ladder": [
+    {
+      "key": "qwen_0_5b",
+      "target_loop_count": 1
+    },
+    {
+      "key": "qwen_1_5b",
+      "target_loop_count": 2
+    },
+    {
+      "key": "qwen_3b",
+      "target_loop_count": 3
+    }
+  ],
+  "jobs": 132,
+  "by_model": {
+    "glm-strong": 66,
+    "opus-strong": 66
+  },
+  "by_target_loop": {
+    "1": 68,
+    "2": 40,
+    "3": 24
+  },
+  "source": {
+    "scored_jsonl": "C:/Users/mshap/Documents/Codex/2026-06-15/below-is-a-codex-ready-handoff/data/stage5_capability_ladder/stage5_capability_ladder_mcq_probe_20260623_185608/scored_capability_rows.jsonl",
+    "summary_json": "outputs/stage5/stage5_capability_ladder_mcq_probe_20260623_185608/summary.json"
+  },
+  "artifacts": {
+    "jobs_jsonl": "outputs/stage5/stage5_capability_ladder_trace_jobs_20260623_150116/capability_ladder_trace_jobs.jsonl",
+    "report_json": "outputs/stage5/stage5_capability_ladder_trace_jobs_20260623_150116/capability_ladder_trace_jobs_report.json"
+  }
+}
