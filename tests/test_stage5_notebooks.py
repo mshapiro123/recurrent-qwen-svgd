@@ -183,6 +183,16 @@ def test_current_a100_action_points_to_safe_continue_routing_repair() -> None:
     assert "do **not** run GPQA" in text
 
 
+def test_current_bootstrap_exposes_model_viability_queue_target() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+
+    assert '"model_viability_queue"' in text
+    assert "colab/STAGE5_MODEL_VIABILITY_QUEUE_CELL.py" in text
+    assert "Qwen/Qwen2.5-3B-Instruct" in text
+    assert "Qwen/Qwen2.5-7B-Instruct" in text
+    assert "colab/run_stage5_model_viability_queue.py" in text
+
+
 def test_runbooks_prefer_guarded_current_action_over_legacy_autopilot() -> None:
     arc_plan = (ROOT / "docs/ARC_AGI_PROGRESS_PLAN.md").read_text(encoding="utf-8")
     staged = (ROOT / "colab/STAGED_NOTEBOOKS.md").read_text(encoding="utf-8")

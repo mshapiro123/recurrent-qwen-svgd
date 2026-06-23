@@ -19,6 +19,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
 #   "depth_sweep_heldout" - L4/T4 held-out ARC tail loop-depth sweep for routing validation.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
+#   "model_viability_queue" - queued no-training Qwen 3B/7B probes with VRAM-aware skipping.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 
@@ -226,6 +227,22 @@ TARGETS = {
             "STAGE5_MODEL_PROBE_LOOPS",
             "STAGE5_MODEL_PROBE_SCORE_TARGETS",
             "colab/run_stage5_model_viability_probe.py",
+            "tests/test_model_viability_probe.py",
+            "tests/test_stage5_notebooks.py",
+            "runtime.unassign",
+        ],
+        "env": {},
+    },
+    "model_viability_queue": {
+        "path": "colab/STAGE5_MODEL_VIABILITY_QUEUE_CELL.py",
+        "markers": [
+            "STAGE5_MODEL_VIABILITY_QUEUE_CELL_VERSION",
+            "model_viability_queue_v1",
+            "STAGE5_MODEL_QUEUE_MODELS",
+            "Qwen/Qwen2.5-3B-Instruct",
+            "Qwen/Qwen2.5-7B-Instruct",
+            "STAGE5_MODEL_QUEUE_CHILD_PUSH",
+            "colab/run_stage5_model_viability_queue.py",
             "tests/test_model_viability_probe.py",
             "tests/test_stage5_notebooks.py",
             "runtime.unassign",
