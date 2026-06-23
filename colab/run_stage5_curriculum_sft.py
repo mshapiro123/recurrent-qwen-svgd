@@ -717,7 +717,7 @@ def git_commit_results() -> None:
     if run(["git", "diff", "--cached", "--quiet"], check=False).returncode == 0:
         print("No Stage 5 curriculum SFT summary outputs changed.", flush=True)
         return
-    run(["git", "commit", "-m", f"Record Stage 5 curriculum SFT {RUN_ID}"])
+    run(["git", "commit", "-m", f"Record Stage 5 curriculum SFT {RUN_ID} [skip ci]"])
     run(["git", "push", "origin", "main"], check=False)
 
 

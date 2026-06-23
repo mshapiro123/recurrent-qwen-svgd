@@ -417,7 +417,7 @@ def safe_commit(summary_path: Path, *, update_pointer: bool, include_responses: 
     if diff.returncode == 0:
         print("No safe trace-response result changes to commit.", flush=True)
         return
-    run(["git", "commit", "-m", "Record capability-ladder trace responses"], check=True)
+    run(["git", "commit", "-m", "Record capability-ladder trace responses [skip ci]"], check=True)
     push = run(["git", "push", "origin", "main"], check=False)
     if push.returncode == 0:
         return

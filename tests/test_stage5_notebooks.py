@@ -633,6 +633,18 @@ def test_capability_ladder_trace_response_collect_cell_runs_both_steps() -> None
     assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_trace_response_collect_cpu"' in current_action
 
 
+def test_stage5_chain_commit_messages_skip_ci() -> None:
+    trace_responses = (ROOT / "colab/run_stage5_capability_ladder_trace_responses.py").read_text(encoding="utf-8")
+    trace_collect = (ROOT / "colab/run_stage5_capability_ladder_trace_collect.py").read_text(encoding="utf-8")
+    curriculum_sft = (ROOT / "colab/run_stage5_curriculum_sft.py").read_text(encoding="utf-8")
+    benchmark = (ROOT / "colab/run_stage5_benchmark_suite.py").read_text(encoding="utf-8")
+
+    assert "Record capability-ladder trace responses [skip ci]" in trace_responses
+    assert "Record capability-ladder trace collection [skip ci]" in trace_collect
+    assert "Record Stage 5 curriculum SFT {RUN_ID} [skip ci]" in curriculum_sft
+    assert "Record Stage 5 benchmark suite {RUN_ID} [skip ci]" in benchmark
+
+
 def test_capability_ladder_local_hf_trace_collect_target_is_bootstrapped() -> None:
     plain = (ROOT / "colab/STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COLLECT_CELL.py").read_text(encoding="utf-8")
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")

@@ -672,7 +672,7 @@ def safe_commit(summary_path: Path) -> None:
     if diff.returncode == 0:
         print("No safe trace-collection result changes to commit.", flush=True)
         return
-    run(["git", "commit", "-m", "Record capability-ladder trace collection"], check=True, log_name="git_commit.log")
+    run(["git", "commit", "-m", "Record capability-ladder trace collection [skip ci]"], check=True, log_name="git_commit.log")
     push = run(["git", "push", "origin", "main"], check=False, log_name="git_push.log")
     if push.returncode == 0:
         return
