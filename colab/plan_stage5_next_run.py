@@ -1952,6 +1952,11 @@ def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary:
     status = str(payload.get("status", "unknown"))
     surface_status = str(payload.get("surface_repair_assessment_status") or "")
     benchmark_summary = str(payload.get("benchmark_summary") or "").strip()
+    order_recommendation = str(
+        payload.get("order_sensitivity_recommendation")
+        or (payload.get("order_sensitivity_summary") or {}).get("recommendation")
+        or ""
+    )
     if status == "surface_alignment_passed" and benchmark_summary:
         return [
             dense_mcq_trace_sft_control_action(
@@ -1960,6 +1965,18 @@ def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary:
                 reason=(
                     "The surface-alignment repair passed both the generic benchmark gate and the before/after surface-repair gate; run the standard-Qwen same-curriculum dense control against the repaired recurrent benchmark."
                 ),
+            )
+        ]
+    if order_recommendation == "prioritize_conditional_invariance_repair":
+        order_md = payload.get("order_sensitivity_diagnosis")
+        if isinstance(order_md, str) and order_md.endswith(".json"):
+            order_md = order_md[:-5] + ".md"
+        return [
+            make_action(
+                "Inspect conditional-invariance repair target",
+                "The explicit order-sensitivity diagnosis says the easy-content loss is concentrated in permutation-sensitive rows. Do not run dense control from this checkpoint yet; inspect the order diagnosis and switch the next repair to a conditional-invariance objective.",
+                f"cat {shlex.quote(order_md or path_for_cli(source_summary.with_suffix('.md')))}",
+                10,
             )
         ]
     if surface_status == "surface_repair_partial" and benchmark_summary:

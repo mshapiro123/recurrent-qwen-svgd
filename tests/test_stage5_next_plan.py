@@ -3552,6 +3552,26 @@ def test_surface_alignment_partial_still_routes_to_dense_control_at_lower_priori
     assert "partial_surface_repair" in actions[0]["command"]
 
 
+def test_surface_alignment_order_sensitivity_blocks_dense_control(tmp_path) -> None:
+    source = tmp_path / "surface" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_surface_alignment_repair",
+        "status": "surface_alignment_partial",
+        "passed": False,
+        "benchmark_summary": "outputs/stage5/repaired_benchmark/summary.json",
+        "surface_repair_assessment_status": "surface_repair_partial",
+        "order_sensitivity_recommendation": "prioritize_conditional_invariance_repair",
+        "order_sensitivity_diagnosis": "outputs/stage5/surface/arc_easy_order_sensitivity_diagnosis.json",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect conditional-invariance repair target"
+    assert "dense_mcq_trace_sft_control" not in actions[0]["command"]
+    assert "arc_easy_order_sensitivity_diagnosis.md" in actions[0]["command"]
+
+
 def test_surface_alignment_tradeoff_blocks_dense_control(tmp_path) -> None:
     source = tmp_path / "surface" / "summary.json"
     source.parent.mkdir()

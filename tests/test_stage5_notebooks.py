@@ -959,6 +959,8 @@ def test_traced_sft_surface_alignment_repair_target_is_bootstrapped() -> None:
     assert "traced_sft_surface_alignment_repair" in bootstrap
     assert "traced_sft_surface_alignment_repair" in bootstrap_md
     assert "colab/STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL.py" in bootstrap
+    assert "eval/analyze_mcq_order_sensitivity.py" in bootstrap
+    assert "eval/analyze_mcq_order_sensitivity.py" in bootstrap_md
     assert "STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL_VERSION" in cell
     assert "surface_alignment_repair_v1" in cell
     assert "STAGE5_SURFACE_ALIGN_SOURCE_SUMMARY" in cell
