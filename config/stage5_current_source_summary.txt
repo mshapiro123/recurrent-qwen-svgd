@@ -1,1 +1,1 @@
-outputs/stage5/stage5_ce8_arc128_loopctrl_on_20260623_073517/summary.json
+outputs/stage5/stage5_ce8_arc128_loopctrl_off_20260623_073517/summary.json
