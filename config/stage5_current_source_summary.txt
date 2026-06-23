@@ -1,1 +1,1 @@
-outputs/stage5/stage5_curriculum_sft_20260623_043113/summary.json
+outputs/stage5/stage5_traced_capability_ladder_sft_durable_20260623_044343/summary.json
