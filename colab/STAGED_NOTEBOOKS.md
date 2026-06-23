@@ -11,6 +11,12 @@ For the shortest current instruction, use
 [`CURRENT_A100_ACTION.md`](CURRENT_A100_ACTION.md). It includes the direct
 GitHub-Colab URL and the post-run stop/continue decisions.
 
+For a fresh runtime after Colab disconnects, the current one-cell notebook is
+[`10_stage5_direct_preservation_precheck.ipynb`](10_stage5_direct_preservation_precheck.ipynb).
+It fetches the latest GitHub bootstrap and runs only
+`STAGE5_CURRENT_A100_TARGET=traced_sft_direct_preservation_precheck`; it does
+not rerun the long scale64 trace-SFT job.
+
 The active next action is **not** more training. The latest ARC-mix recovery
 proxy landed as `stage5_arc_mix_recovery_once_20260622_030628` and reported
 `no_proxy_lift` with `decision = stop_and_revise_objective`:

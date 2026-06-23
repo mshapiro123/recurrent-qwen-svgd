@@ -60,6 +60,12 @@ direct route. Use:
 STAGE5_CURRENT_A100_TARGET=traced_sft_direct_preservation_precheck
 ```
 
+Fresh-runtime shortcut: open
+[`10_stage5_direct_preservation_precheck.ipynb`](10_stage5_direct_preservation_precheck.ipynb)
+and run its single cell. That notebook fetches the current GitHub bootstrap
+and avoids the stale local `exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py"))`
+path that fails after a runtime reset.
+
 This evaluates base, recurrent loop-1, and recurrent loop-4 on the
 scale64 checkpoint using `question_only` / `option_text` scoring, writes a
 Stage 5 direct-preservation summary, publishes it to GitHub, and stops before
