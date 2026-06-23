@@ -373,6 +373,12 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     assert "capability_ladder_trace_collect_cpu" in text
     assert "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_CELL.py" in plain
     assert "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_CELL_VERSION" in plain
+    assert "model_viability_probe" in text
+    assert '"model_viability_probe"' in plain
+    assert "STAGE5_MODEL_VIABILITY_PROBE_CELL.py" in plain
+    assert "STAGE5_MODEL_VIABILITY_PROBE_CELL_VERSION" in plain
+    assert "colab/run_stage5_model_viability_probe.py" in plain
+    assert "STAGE5_MODEL_PROBE_MODEL_NAME" in plain
 
 
 def test_current_a100_bootstrap_plain_cell_matches_markdown_code() -> None:
@@ -380,6 +386,25 @@ def test_current_a100_bootstrap_plain_cell_matches_markdown_code() -> None:
     plain_cell = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
 
     assert plain_cell == markdown_cell
+
+
+def test_model_viability_probe_cell_is_generic_and_matches_markdown_code() -> None:
+    text = (ROOT / "colab/STAGE5_MODEL_VIABILITY_PROBE_CELL.md").read_text(encoding="utf-8")
+    plain = (ROOT / "colab/STAGE5_MODEL_VIABILITY_PROBE_CELL.py").read_text(encoding="utf-8")
+    markdown_cell = fenced_python_block("colab/STAGE5_MODEL_VIABILITY_PROBE_CELL.md")
+
+    assert plain == markdown_cell
+    assert "STAGE5_MODEL_VIABILITY_PROBE_CELL_VERSION" in plain
+    assert "STAGE5_MODEL_PROBE_MODEL_NAME" in plain
+    assert "Qwen/Qwen2.5-1.5B-Instruct" in plain
+    assert "STAGE5_MODEL_PROBE_LAYER_SPLIT" in plain
+    assert "STAGE5_MODEL_PROBE_LOOPS" in plain
+    assert "STAGE5_MODEL_PROBE_SCORE_TARGETS" in plain
+    assert "colab/run_stage5_model_viability_probe.py" in plain
+    assert "tests/test_model_viability_probe.py" in plain
+    assert "runtime.unassign()" in plain
+    assert "Qwen 3B" in text
+    assert "larger compatible Qwen checkpoint" in text
 
 
 def test_arc_challenge_mcq_debias_cell_is_bounded_and_pushes_summary() -> None:

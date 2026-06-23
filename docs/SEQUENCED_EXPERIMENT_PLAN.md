@@ -591,10 +591,10 @@ Repeat only the minimal gates:
 - no particle training;
 - no long SFT until these pass.
 
-Implementation note: the repo already has capability-ladder MCQ scoring for
-Qwen 0.5B/1.5B/3B and configs for 1.5B Phase 1/2. It does not yet have a clean
-one-cell no-training recurrent 1.5B viability launcher. Add that launcher
-before spending A100 time on this probe.
+Implementation note: the generic no-training model viability launcher is
+`colab/STAGE5_MODEL_VIABILITY_PROBE_CELL.py`, exposed through bootstrap target
+`model_viability_probe`. It defaults to Qwen 1.5B and can probe 3B or larger
+Qwen checkpoints by overriding `STAGE5_MODEL_PROBE_MODEL_NAME`.
 
 ### Runtime
 

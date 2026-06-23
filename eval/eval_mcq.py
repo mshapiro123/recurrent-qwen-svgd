@@ -326,6 +326,14 @@ def main() -> int:
     parser.add_argument("--data_jsonl", required=True)
     parser.add_argument("--mode", choices=("base", "phase1", "phase2"), default="base")
     parser.add_argument("--checkpoint", help="Trainable recurrent checkpoint for phase1/phase2 modes.")
+    parser.add_argument(
+        "--allow_untrained_recurrent",
+        action="store_true",
+        help=(
+            "Permit phase1/phase2 scoring without a checkpoint. This is intended only for "
+            "no-training surgery viability probes; normal trained evaluations should pass --checkpoint."
+        ),
+    )
     parser.add_argument("--output_jsonl")
     parser.add_argument("--prompt_style", choices=("with_options", "question_only"), default="with_options")
     parser.add_argument("--score_target", choices=("label", "option_text", "label_and_text"), default="label")
@@ -365,7 +373,7 @@ def main() -> int:
     parser.add_argument("--svgd_projection_seed", type=int, default=0)
     args = parser.parse_args()
 
-    if args.mode != "base" and not args.checkpoint:
+    if args.mode != "base" and not args.checkpoint and not args.allow_untrained_recurrent:
         raise SystemExit("--checkpoint is required for phase1/phase2 modes")
     if args.mode == "phase1" and args.num_trajectories != 1:
         raise SystemExit("phase1 mode expects --num_trajectories 1")
