@@ -40,6 +40,23 @@ def test_checkpoint_value_from_payload_reads_stage4_phase1_checkpoint() -> None:
     assert checkpoint_value_from_payload(payload) == "outputs/stage4/run/phase1.pt"
 
 
+def test_checkpoint_value_from_payload_accepts_legacy_selected_checkpoint_string() -> None:
+    payload = {"selected_checkpoint": "outputs/stage5/run/phase1/phase1_step_75.pt"}
+
+    assert checkpoint_value_from_payload(payload) == "outputs/stage5/run/phase1/phase1_step_75.pt"
+
+
+def test_checkpoint_value_from_payload_accepts_stage_selected_checkpoint_string() -> None:
+    payload = {
+        "stages": [
+            {"selected_checkpoint": {"checkpoint": "old.pt"}},
+            {"selected_checkpoint": "outputs/stage5/final/phase1_step_150.pt"},
+        ]
+    }
+
+    assert checkpoint_value_from_payload(payload) == "outputs/stage5/final/phase1_step_150.pt"
+
+
 def test_build_export_metadata_captures_checkpoint_hash_and_config(tmp_path) -> None:
     checkpoint = tmp_path / "phase1_step_10.pt"
     torch.save(

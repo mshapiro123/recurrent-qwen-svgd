@@ -84,6 +84,15 @@ def latest_source_summary() -> Path | None:
 
 
 def checkpoint_value_from_payload(payload: dict[str, Any]) -> str | None:
+    def checkpoint_from_value(value: Any) -> str | None:
+        if isinstance(value, str):
+            return value
+        if isinstance(value, dict):
+            checkpoint = value.get("checkpoint")
+            if checkpoint:
+                return str(checkpoint)
+        return None
+
     candidates = [
         payload.get("metadata", {}).get("recovered_checkpoint"),
         payload.get("metadata", {}).get("checkpoint"),
@@ -93,17 +102,17 @@ def checkpoint_value_from_payload(payload: dict[str, Any]) -> str | None:
         payload.get("tuned_checkpoint"),
         payload.get("checkpoint"),
         payload.get("phase1_checkpoint"),
-        payload.get("selected_checkpoint", {}).get("checkpoint"),
+        checkpoint_from_value(payload.get("selected_checkpoint")),
     ]
     stages = payload.get("stages") or []
     if stages:
-        candidates.append(stages[-1].get("selected_checkpoint", {}).get("checkpoint"))
+        candidates.append(checkpoint_from_value(stages[-1].get("selected_checkpoint")))
     curriculum = payload.get("curriculum") or {}
     if curriculum:
         candidates.append(curriculum.get("final_checkpoint"))
         curriculum_stages = curriculum.get("stages") or []
         if curriculum_stages:
-            candidates.append(curriculum_stages[-1].get("selected_checkpoint", {}).get("checkpoint"))
+            candidates.append(checkpoint_from_value(curriculum_stages[-1].get("selected_checkpoint")))
     for candidate in candidates:
         if candidate:
             return str(candidate)
