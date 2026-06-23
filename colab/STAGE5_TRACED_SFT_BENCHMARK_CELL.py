@@ -11,6 +11,7 @@ import os
 import subprocess
 import sys
 import time
+import traceback
 from pathlib import Path
 
 from google.colab import runtime, userdata
@@ -22,6 +23,13 @@ ROOT = Path("/content/recurrent-qwen-svgd")
 DEFAULT_SOURCE_SUMMARY = (
     "outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_194543/summary.json"
 )
+CURRENT_STAGE = "startup"
+
+
+def set_stage(name: str) -> None:
+    global CURRENT_STAGE
+    CURRENT_STAGE = str(name)
+    print(f"stage={CURRENT_STAGE}", flush=True)
 
 
 def secret(*names: str) -> str | None:
@@ -78,6 +86,61 @@ def run(cmd: list[str], *, cwd: Path | None = None, env: dict[str, str] | None =
         raise subprocess.CalledProcessError(returncode, cmd, output="".join(chunks))
 
 
+def write_failure_summary(exc_type, exc, tb) -> None:
+    try:
+        run_id = time.strftime("stage5_traced_sft_benchmark_failure_%Y%m%d_%H%M%S")
+        run_dir = ROOT / "outputs" / "stage5" / run_id
+        run_dir.mkdir(parents=True, exist_ok=True)
+        pointer = ROOT / "config" / "stage5_current_source_summary.txt"
+        try:
+            git_head = subprocess.check_output(
+                ["git", "rev-parse", "--short", "HEAD"],
+                cwd=str(ROOT),
+                text=True,
+                stderr=subprocess.DEVNULL,
+            ).strip()
+        except Exception:
+            git_head = ""
+        traceback_lines = traceback.format_exception(exc_type, exc, tb)
+        payload = {
+            "kind": "stage5_traced_sft_benchmark_failure",
+            "status": "failed",
+            "run_id": run_id,
+            "stage": CURRENT_STAGE,
+            "exception_type": getattr(exc_type, "__name__", str(exc_type)),
+            "exception": redact(str(exc)),
+            "traceback_tail": [redact(line.rstrip()) for line in "".join(traceback_lines).splitlines()[-120:]],
+            "current_source_summary": pointer.read_text(encoding="utf-8").strip() if pointer.exists() else "",
+            "git_head": git_head,
+            "target": os.environ.get("STAGE5_CURRENT_A100_TARGET", ""),
+            "benchmark_source_summary": os.environ.get("STAGE5_TRACED_SFT_BENCHMARK_SOURCE_SUMMARY", ""),
+        }
+        summary = run_dir / "summary.json"
+        summary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        print("failure_summary:", path_for_cli(summary), flush=True)
+        if (ROOT / ".git").exists():
+            subprocess.run(["git", "add", "-f", path_for_cli(summary)], cwd=str(ROOT), check=False)
+            subprocess.run(
+                ["git", "commit", "-m", f"Record traced SFT benchmark failure {run_id} [skip ci]"],
+                cwd=str(ROOT),
+                check=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+            subprocess.run(["git", "push", "origin", "main"], cwd=str(ROOT), check=False)
+    except Exception as hook_exc:
+        print("failure_summary_hook_failed:", redact(str(hook_exc)), flush=True)
+
+
+def failure_excepthook(exc_type, exc, tb) -> None:
+    write_failure_summary(exc_type, exc, tb)
+    sys.__excepthook__(exc_type, exc, tb)
+
+
+sys.excepthook = failure_excepthook
+
+
 def path_for_cli(path: Path) -> str:
     try:
         return path.relative_to(ROOT).as_posix()
@@ -107,8 +170,10 @@ print(
     flush=True,
 )
 try:
+    set_stage("gpu_preflight")
     run(["nvidia-smi"], cwd=Path("/content"))
 
+    set_stage("repo_sync")
     clone_url = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
     if ROOT.exists():
         run(["git", "remote", "set-url", "origin", clone_url], cwd=ROOT)
@@ -121,8 +186,10 @@ try:
     run(["git", "config", "user.email", "colab-runner@local"], cwd=ROOT)
     run(["git", "config", "user.name", "Colab Runner"], cwd=ROOT)
     run(["git", "log", "--oneline", "-5"], cwd=ROOT)
+    set_stage("install_dependencies")
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"], cwd=ROOT)
 
+    set_stage("hf_auth")
     if HF_TOKEN:
         from huggingface_hub import HfApi, login
 
@@ -132,6 +199,7 @@ try:
     else:
         print("HF auth skipped; downloads will use anonymous Hub access.", flush=True)
 
+    set_stage("preflight_tests")
     run(
         [
             sys.executable,
@@ -148,6 +216,7 @@ try:
     print("traced_sft_benchmark_source_summary:", selected_source, flush=True)
     assert resolve_path(selected_source).exists(), f"Missing source summary: {selected_source}"
 
+    set_stage("benchmark_suite")
     benchmark_env = os.environ.copy()
     benchmark_env.update(
         {
@@ -189,6 +258,7 @@ try:
     ).strip()
     print("benchmark_summary:", benchmark_summary, flush=True)
 
+    set_stage("traced_sft_assessment")
     assessment_env = os.environ.copy()
     assessment_env.update(
         {

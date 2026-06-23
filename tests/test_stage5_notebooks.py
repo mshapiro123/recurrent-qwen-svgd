@@ -740,6 +740,9 @@ def test_traced_sft_scale64_benchmark_target_is_bootstrapped() -> None:
     assert "stage5_local_hf_traced_capability_sft_20260623_194543" in plain
     assert "STAGE5_BENCHMARK_SOURCE_SUMMARY" in plain
     assert "STAGE5_BENCHMARK_USE_LEARNED_LOOP_CONTROL" in plain
+    assert "stage5_traced_sft_benchmark_failure" in plain
+    assert "set_stage(\"benchmark_suite\")" in plain
+    assert "failure_summary:" in plain
     assert "colab/run_stage5_benchmark_suite.py" in plain
     assert "colab/assess_stage5_traced_sft.py" in plain
     assert "traced_sft_scale64_benchmark" in bootstrap
