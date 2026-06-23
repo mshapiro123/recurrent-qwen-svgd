@@ -1,0 +1,167 @@
+{
+  "run_id": "stage5_curriculum_sft_20260623_043113",
+  "kind": "stage5_curriculum_sft",
+  "status": "validation_sane",
+  "config": {
+    "run_id": "stage5_curriculum_sft_20260623_043113",
+    "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+    "work_dir": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_043104",
+    "summary_json": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_043104/summary.json",
+    "curriculum_input_backup_dir": "/content/drive/MyDrive/recurrent-qwen-svgd/curriculum_runs",
+    "input_restore": {
+      "restored": false,
+      "work_dir": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_043104",
+      "summary_json": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_043104/summary.json"
+    },
+    "min_positive_rows": 32,
+    "min_mode_rows": "deep_narrow=24,direct=8",
+    "max_length": 512,
+    "max_loops": 4,
+    "max_steps": 75,
+    "learning_rate": 1e-05,
+    "beta": 0.08,
+    "dtype": "bfloat16",
+    "adapter_dtype": "float32"
+  },
+  "sft_gate": {
+    "status": "go_train_recurrent_sft",
+    "go": true,
+    "issues": [],
+    "checks": {
+      "reports": {
+        "exported_examples": 32,
+        "typed_records": 32,
+        "verified": 32,
+        "decontaminated": 32,
+        "method_solutions": 32,
+        "naturalness_judgments": 32,
+        "min_natural_agree": 2,
+        "min_distinct_agree": 2,
+        "distinctness_required": false,
+        "depth_measurements": 32,
+        "difficulty_measured": 32,
+        "programmatic_answer_check_required": false,
+        "answer_line_verification_allowed": true
+      },
+      "typed_records": {
+        "rows": 32,
+        "invalid_rows": 0,
+        "positive_missing_answer_match": 0,
+        "mode_counts": {
+          "deep_narrow": 24,
+          "direct": 8
+        },
+        "role_counts": {
+          "positive_depth": 24,
+          "positive_direct": 8
+        }
+      },
+      "positive_sft": {
+        "rows": 32,
+        "bad_rows": 0,
+        "role_counts": {
+          "positive_depth": 24,
+          "positive_direct": 8
+        },
+        "mode_counts": {
+          "deep_narrow": 24,
+          "direct": 8
+        },
+        "source_model_counts": {
+          "Qwen/Qwen2.5-7B-Instruct": 32
+        },
+        "mode_requirements": {
+          "deep_narrow": {
+            "required": 24,
+            "observed": 24,
+            "passed": true
+          },
+          "direct": {
+            "required": 8,
+            "observed": 8,
+            "passed": true
+          }
+        }
+      }
+    }
+  },
+  "input_restore": {
+    "restored": false,
+    "work_dir": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_043104",
+    "summary_json": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_043104/summary.json"
+  },
+  "dataset": {
+    "source_positive_sft": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_043104/positive_sft.jsonl",
+    "rows": 32,
+    "train_rows": 29,
+    "val_rows": 3,
+    "val_fraction": 0.1,
+    "val_min_rows": 1,
+    "split_seed": 17
+  },
+  "drive_preflight": {
+    "drive_root": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts",
+    "available": false,
+    "allow_no_backup": true
+  },
+  "backup": {
+    "backed_up": false,
+    "drive_root": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts"
+  },
+  "resume_from": null,
+  "phase1_checkpoint": "outputs/stage5/stage5_curriculum_sft_20260623_043113/phase1/phase1_step_75.pt",
+  "phase1_val": {
+    "lora_recurrent_modules": 84.0,
+    "examples": 3.0,
+    "expected_ce": 2.217475,
+    "halting_kl": 0.58921,
+    "loss": 2.264612,
+    "mean_expected_loops": 3.11161,
+    "mean_halt_entropy": 1.144016,
+    "group/curriculum_mode/deep_narrow/examples": 2.0,
+    "group/curriculum_mode/deep_narrow/expected_ce": 1.963861,
+    "group/curriculum_mode/deep_narrow/halting_kl": 0.468388,
+    "group/curriculum_mode/deep_narrow/loss": 2.001331,
+    "group/curriculum_mode/deep_narrow/mean_expected_loops": 3.107881,
+    "group/curriculum_mode/deep_narrow/mean_halt_entropy": 1.146753,
+    "group/curriculum_mode/direct/examples": 1.0,
+    "group/curriculum_mode/direct/expected_ce": 2.724705,
+    "group/curriculum_mode/direct/halting_kl": 0.830856,
+    "group/curriculum_mode/direct/loss": 2.791174,
+    "group/curriculum_mode/direct/mean_expected_loops": 3.119069,
+    "group/curriculum_mode/direct/mean_halt_entropy": 1.138543
+  },
+  "phase1_val_by_mode": {
+    "deep_narrow": {
+      "examples": 2.0,
+      "expected_ce": 1.963861,
+      "halting_kl": 0.468388,
+      "loss": 2.001331,
+      "mean_expected_loops": 3.107881,
+      "mean_halt_entropy": 1.146753
+    },
+    "direct": {
+      "examples": 1.0,
+      "expected_ce": 2.724705,
+      "halting_kl": 0.830856,
+      "loss": 2.791174,
+      "mean_expected_loops": 3.119069,
+      "mean_halt_entropy": 1.138543
+    }
+  },
+  "validation_checks": {
+    "status": "validation_sane",
+    "issues": [],
+    "nonfinite_metrics": [],
+    "min_mean_expected_loops": 1.05,
+    "mean_expected_loops": 3.11161,
+    "require_depth_gradient": false,
+    "depth_gradient": {
+      "available": true,
+      "direct_mean_expected_loops": 3.119069,
+      "deep_narrow_mean_expected_loops": 3.107881,
+      "required_margin": 0.25,
+      "observed": false
+    }
+  }
+}
