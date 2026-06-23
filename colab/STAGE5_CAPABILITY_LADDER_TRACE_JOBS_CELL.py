@@ -4,6 +4,9 @@ This target follows the latest capability-ladder MCQ probe summary, restores
 private scored rows from Drive if a fresh runtime lost them, and builds
 provider-neutral strong-model trace jobs. It refuses visible GPU runtimes by
 default because no model inference is needed here.
+
+Bootstrap marker: training/build_capability_ladder_trace_jobs.py is the
+underlying curriculum builder invoked by colab/run_stage5_capability_ladder_trace_jobs.py.
 """
 
 import os

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import json
 from pathlib import Path
 
@@ -16,6 +17,29 @@ def fenced_python_block(path: str) -> str:
     start = text.index("```python\n") + len("```python\n")
     end = text.index("\n```", start)
     return text[start:end].strip() + "\n"
+
+
+def test_current_bootstrap_target_markers_exist_in_launcher_files() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    tree = ast.parse(text)
+    targets = None
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "TARGETS":
+                    targets = ast.literal_eval(node.value)
+                    break
+    assert isinstance(targets, dict)
+
+    failures = []
+    for name, config in targets.items():
+        launcher = ROOT / config["path"]
+        body = launcher.read_text(encoding="utf-8")
+        missing = [marker for marker in config.get("markers", []) if marker not in body]
+        if missing:
+            failures.append((name, config["path"], missing))
+
+    assert failures == []
 
 
 def test_single_a100_runbook_uses_colab_continue_wrapper() -> None:
@@ -814,6 +838,10 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert "stage5_direct_preservation_probe_failure" in direct_cell
     assert "direct_route_attempt_failed" in direct_cell
     assert "attempt_failure_summary" in direct_cell
+    assert "direct_route_precheck_needs_training" in direct_cell
+    assert "STAGE5_DIRECT_PRESERVE_PRECHECK_ONLY" in direct_cell
+    assert "STAGE5_DIRECT_PRESERVE_PROMPT_STYLE" in direct_cell
+    assert "STAGE5_DIRECT_PRESERVE_SCORE_TARGET" in direct_cell
     assert "STAGE5_DIRECT_PRESERVE_RESUME_EXISTING" in direct_cell
     assert "STAGE5_DIRECT_PRESERVE_RESUME_ONLY" in direct_cell
     assert "direct_preservation_resume_existing" in direct_cell

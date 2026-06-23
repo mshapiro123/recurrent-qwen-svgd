@@ -10,6 +10,10 @@ from pathlib import Path
 from google.colab import drive, runtime, userdata
 
 STAGE5_DIRECT_PRESERVATION_PROBE_CELL_VERSION = "direct_preservation_probe_v1"
+# Bootstrap marker/checkpoint for the no-training path:
+# STAGE5_DIRECT_PRESERVE_PRECHECK_ONLY -> child status direct_route_precheck_needs_training.
+# The wrapper explicitly forwards STAGE5_DIRECT_PRESERVE_PROMPT_STYLE and
+# STAGE5_DIRECT_PRESERVE_SCORE_TARGET into each child attempt.
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
@@ -161,6 +165,15 @@ def direct_preservation_env(attempt):
             ),
             "STAGE5_DIRECT_PRESERVE_SAVE_EVERY": os.environ.get(
                 "STAGE5_DIRECT_PRESERVE_SAVE_EVERY", "25"
+            ),
+            "STAGE5_DIRECT_PRESERVE_PROMPT_STYLE": os.environ.get(
+                "STAGE5_DIRECT_PRESERVE_PROMPT_STYLE", "with_options"
+            ),
+            "STAGE5_DIRECT_PRESERVE_SCORE_TARGET": os.environ.get(
+                "STAGE5_DIRECT_PRESERVE_SCORE_TARGET", "label"
+            ),
+            "STAGE5_DIRECT_PRESERVE_PRECHECK_ONLY": os.environ.get(
+                "STAGE5_DIRECT_PRESERVE_PRECHECK_ONLY", "0"
             ),
             "STAGE5_DIRECT_PRESERVE_MIN_BASE_MARGIN": os.environ.get(
                 "STAGE5_DIRECT_PRESERVE_MIN_BASE_MARGIN", "1.0"
