@@ -729,6 +729,26 @@ def test_capability_ladder_local_hf_trace_sft_scale64_target_is_bootstrapped() -
     assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_local_hf_trace_sft_scale64"' in current_action
 
 
+def test_traced_sft_scale64_benchmark_target_is_bootstrapped() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
+    plain = (ROOT / "colab/STAGE5_TRACED_SFT_BENCHMARK_CELL.py").read_text(encoding="utf-8")
+
+    assert "STAGE5_TRACED_SFT_BENCHMARK_CELL_VERSION" in plain
+    assert "traced_sft_benchmark_v1" in plain
+    assert "stage5_local_hf_traced_capability_sft_20260623_194543" in plain
+    assert "STAGE5_BENCHMARK_SOURCE_SUMMARY" in plain
+    assert "STAGE5_BENCHMARK_USE_LEARNED_LOOP_CONTROL" in plain
+    assert "colab/run_stage5_benchmark_suite.py" in plain
+    assert "colab/assess_stage5_traced_sft.py" in plain
+    assert "traced_sft_scale64_benchmark" in bootstrap
+    assert "STAGE5_TRACED_SFT_BENCHMARK_CELL.py" in bootstrap
+    assert "traced_sft_scale64_benchmark" in bootstrap_md
+    assert "Do not regenerate traces or rerun SFT" in current_action
+    assert '"STAGE5_CURRENT_A100_TARGET"] = "traced_sft_scale64_benchmark"' in current_action
+
+
 def test_traced_capability_ladder_sft_cell_derives_training_env_from_collection() -> None:
     plain = (ROOT / "colab/STAGE5_TRACED_CAPABILITY_LADDER_SFT_CELL.py").read_text(encoding="utf-8")
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")

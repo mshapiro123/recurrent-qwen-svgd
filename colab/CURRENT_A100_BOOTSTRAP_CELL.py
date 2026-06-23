@@ -25,6 +25,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "capability_ladder_trace_response_collect_cpu" - CPU/network provider responses then immediate collection.
 #   "capability_ladder_local_hf_trace_collect" - GPU local-HF responses then immediate collection.
 #   "capability_ladder_local_hf_trace_sft" - GPU local-HF traces, collection, then bounded recurrent SFT.
+#   "traced_sft_scale64_benchmark" - benchmark the completed scale64 traced SFT checkpoint.
 #   "traced_capability_ladder_sft" - GPU Phase 1 SFT from the latest gate-ready traced capability ladder.
 #   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
 #   "depth_sweep_heldout" - L4/T4 held-out ARC tail loop-depth sweep for routing validation.
@@ -467,6 +468,32 @@ TARGETS = {
             ),
             "STAGE5_TRACED_CAPABILITY_SFT_ALLOW_NO_DRIVE_BACKUP": "1",
             "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_DISCONNECT": "1",
+        },
+    },
+    "traced_sft_scale64_benchmark": {
+        "path": "colab/STAGE5_TRACED_SFT_BENCHMARK_CELL.py",
+        "markers": [
+            "STAGE5_TRACED_SFT_BENCHMARK_CELL_VERSION",
+            "traced_sft_benchmark_v1",
+            "stage5_local_hf_traced_capability_sft_20260623_194543",
+            "STAGE5_BENCHMARK_SOURCE_SUMMARY",
+            "STAGE5_BENCHMARK_USE_LEARNED_LOOP_CONTROL",
+            "content_question_only,cyclic_label_aggregated",
+            "colab/run_stage5_benchmark_suite.py",
+            "colab/assess_stage5_traced_sft.py",
+            "tests/test_stage5_benchmark_suite.py",
+            "tests/test_stage5_traced_sft_assessment.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_TRACED_SFT_BENCHMARK_SOURCE_SUMMARY": (
+                "outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_194543/summary.json"
+            ),
+            "STAGE5_TRACED_SFT_BENCHMARKS": "arc_easy,arc_challenge",
+            "STAGE5_TRACED_SFT_BENCHMARK_ARC_EASY_LIMIT": "128",
+            "STAGE5_TRACED_SFT_BENCHMARK_ARC_CHALLENGE_LIMIT": "128",
+            "STAGE5_TRACED_SFT_BENCHMARK_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
+            "STAGE5_TRACED_SFT_BENCHMARK_DISCONNECT": "1",
         },
     },
     "traced_capability_ladder_sft": {

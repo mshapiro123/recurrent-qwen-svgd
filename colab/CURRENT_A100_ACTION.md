@@ -17,6 +17,66 @@ below is preferred for the current evidence state.
 
 ## Current Front-of-Queue Action
 
+The latest high-memory G4 run completed the scaled local-HF traced capability
+SFT step:
+
+```text
+outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_194543/summary.json
+```
+
+It trained from 63 verified Qwen-7B traces:
+
+```text
+direct rows:       26
+deep-narrow rows:  37
+target loops:      1:26, 2:28, 3:9
+validation:        validation_sane
+direct loops:      ~= 1.35
+deep loops:        ~= 1.99
+```
+
+The next action is **benchmark-only**. Do not regenerate traces or rerun SFT.
+Use:
+
+```text
+STAGE5_CURRENT_A100_TARGET=traced_sft_scale64_benchmark
+```
+
+This target benchmarks the new `phase1_step_200.pt` checkpoint on ARC-Easy and
+ARC-Challenge with `content_question_only` and `cyclic_label_aggregated`
+scoring, then runs the traced-SFT assessment gate.
+
+Short fresh-runtime launcher:
+
+```python
+import os, subprocess
+from pathlib import Path
+from google.colab import userdata
+
+ROOT = Path("/content/recurrent-qwen-svgd")
+gh = userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
+assert gh, "Add GH_TOKEN or GITHUB_TOKEN to Colab secrets."
+hf = userdata.get("HF_TOKEN")
+if hf:
+    os.environ["HF_TOKEN"] = hf
+    os.environ["HUGGINGFACE_HUB_TOKEN"] = hf
+
+repo_url = f"https://x-access-token:{gh}@github.com/mshapiro123/recurrent-qwen-svgd.git"
+if ROOT.exists():
+    subprocess.run(["git", "-C", str(ROOT), "remote", "set-url", "origin", repo_url], check=True)
+    subprocess.run(["git", "-C", str(ROOT), "fetch", "origin", "main"], check=True)
+    subprocess.run(["git", "-C", str(ROOT), "checkout", "main"], check=True)
+    subprocess.run(["git", "-C", str(ROOT), "reset", "--hard", "origin/main"], check=True)
+else:
+    subprocess.run(["git", "clone", repo_url, str(ROOT)], check=True)
+
+os.chdir(ROOT)
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_scale64_benchmark"
+exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py", encoding="utf-8").read())
+```
+
+## Previous Front-of-Queue Action
+
 The current preferred path is **scale the local-HF traced capability-ladder
 curriculum**. The first G4 run generated 32 verified Qwen-7B traces, trained
 the recurrent model for 150 steps, and benchmarked approximately at parity with
