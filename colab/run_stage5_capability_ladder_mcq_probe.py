@@ -435,13 +435,17 @@ def safe_commit(summary_path: Path) -> None:
     if not PUSH_RESULTS:
         return
     pointer = update_current_source_summary(summary_path)
-    run(["git", "add", path_for_cli(RUN_DIR), path_for_cli(pointer)], check=False, log_name="git_add.log")
+    run(["git", "add", "-f", path_for_cli(RUN_DIR), path_for_cli(pointer)], check=False, log_name="git_add.log")
     diff = run(["git", "diff", "--cached", "--quiet"], check=False)
     if diff.returncode == 0:
         print("No safe result changes to commit.")
         return
     run(["git", "commit", "-m", "Record capability-ladder MCQ probe"], check=True, log_name="git_commit.log")
-    run(["git", "push", "origin", "main"], check=True, log_name="git_push.log")
+    push = run(["git", "push", "origin", "main"], check=False, log_name="git_push.log")
+    if push.returncode == 0:
+        return
+    run(["git", "pull", "--rebase", "origin", "main"], check=True, log_name="git_pull_rebase.log")
+    run(["git", "push", "origin", "main"], check=True, log_name="git_push_retry.log")
 
 
 def write_probe_summary(
