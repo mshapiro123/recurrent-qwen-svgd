@@ -3036,6 +3036,35 @@ def direct_preservation_probe_actions(payload: dict[str, Any], *, source_summary
                 9,
             )
         ]
+    if status == "direct_route_precheck_needs_training":
+        config = payload.get("config") if isinstance(payload.get("config"), dict) else {}
+        return [
+            make_action(
+                "Run full bounded direct-preservation repair",
+                (
+                    "The no-training precheck found that loop-1 direct routing still trails base behavior. "
+                    "Run the bounded repair from the same checkpoint and scoring setup before any more "
+                    "depth or particle work."
+                ),
+                command_env(
+                    {
+                        "STAGE5_DIRECT_PRESERVE_RUN_ID": f"{RUN_ID}_direct_preservation_full",
+                        "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY": path_for_cli(source_summary),
+                        "STAGE5_DIRECT_PRESERVE_ARC_TRAIN_LIMIT": str(config.get("arc_train_limit") or "512"),
+                        "STAGE5_DIRECT_PRESERVE_ARC_EVAL_LIMIT": str(config.get("arc_eval_limit") or "128"),
+                        "STAGE5_DIRECT_PRESERVE_MAX_STEPS": str(config.get("max_steps") or "75"),
+                        "STAGE5_DIRECT_PRESERVE_MIN_BASE_MARGIN": str(config.get("min_base_margin") or "1.0"),
+                        "STAGE5_DIRECT_PRESERVE_PROMPT_STYLE": str(config.get("prompt_style") or "question_only"),
+                        "STAGE5_DIRECT_PRESERVE_SCORE_TARGET": str(config.get("score_target") or "option_text"),
+                        "STAGE5_DIRECT_PRESERVE_LR": str(config.get("learning_rate") or "5e-7"),
+                        "STAGE5_DIRECT_PRESERVE_DISTILL_WEIGHT": str(config.get("distill_weight") or "1.0"),
+                        "STAGE5_DIRECT_PRESERVE_DISTILL_TEMPERATURE": "2.0",
+                    },
+                    "python colab/run_stage5_direct_preservation_probe.py",
+                ),
+                10,
+            )
+        ]
     return [
         make_action(
             f"Inspect direct-preservation probe `{status}`",

@@ -3133,6 +3133,36 @@ def test_direct_preservation_probe_pass_confirms_larger_arc(tmp_path) -> None:
     assert "STAGE5_BENCHMARK_SCORE_TARGETS=content_question_only,cyclic_label_aggregated" in actions[0]["command"]
 
 
+def test_direct_preservation_precheck_needs_training_runs_full_repair(tmp_path) -> None:
+    source = tmp_path / "direct_precheck" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_direct_preservation_probe",
+        "status": "direct_route_precheck_needs_training",
+        "passed": False,
+        "config": {
+            "arc_train_limit": "512",
+            "arc_eval_limit": 128,
+            "max_steps": 75,
+            "min_base_margin": 1.0,
+            "prompt_style": "question_only",
+            "score_target": "option_text",
+            "learning_rate": 5e-7,
+            "distill_weight": 1.0,
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run full bounded direct-preservation repair"
+    assert "python colab/run_stage5_direct_preservation_probe.py" in actions[0]["command"]
+    assert "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY=" in actions[0]["command"]
+    assert "STAGE5_DIRECT_PRESERVE_PROMPT_STYLE=question_only" in actions[0]["command"]
+    assert "STAGE5_DIRECT_PRESERVE_SCORE_TARGET=option_text" in actions[0]["command"]
+    assert "STAGE5_DIRECT_PRESERVE_LR=5e-07" in actions[0]["command"]
+    assert "STAGE5_DIRECT_PRESERVE_DISTILL_WEIGHT=1.0" in actions[0]["command"]
+
+
 def test_balanced_arc_mix_calibration_warning_does_not_run_full_assessment(tmp_path) -> None:
     source = tmp_path / "arc_mix" / "summary.json"
     source.parent.mkdir()
