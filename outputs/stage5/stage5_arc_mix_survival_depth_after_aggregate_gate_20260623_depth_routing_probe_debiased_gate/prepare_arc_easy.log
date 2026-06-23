@@ -1,0 +1,6 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=validation
+offset=256
+rows=128
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_validation_offset256_128.jsonl
