@@ -60,10 +60,25 @@ STAGE5_CURRENT_A100_TARGET=traced_sft_direct_preservation_probe
 
 This runs max-loop-1 direct preservation from the scale64 checkpoint using
 `question_only` / `option_text` scoring and base-logit distillation on
-base-correct ARC-Easy rows. For this traced-SFT target, the probe now chains the
-cheap confirmation automatically: if the probe publishes `passed=true`, the
-same runtime immediately runs loop-1 ARC-Easy/ARC-Challenge confirmation and
-the benchmark assessment gate.
+base-correct ARC-Easy rows. For this traced-SFT target, the probe now chains
+the next cheap steps automatically:
+
+```text
+direct-preservation repair -> loop-1 ARC confirmation -> learned-depth router continuation
+```
+
+The wrapper stages the selected repaired `.pt` checkpoint before pushing, so
+the continuation can resume from the repaired adapter instead of relying on
+ephemeral Colab state. If the probe publishes `passed=true`, the same runtime
+immediately runs loop-1 ARC-Easy/ARC-Challenge confirmation and the benchmark
+assessment gate. If that confirmation passes too, the same runtime launches
+`STAGE5_CURRENT_A100_TARGET=traced_sft_depth_router_after_direct_preserve`,
+which trains only the lightweight learned-depth/router path on the existing
+Qwen-7B trace curriculum and then runs a bounded ARC check.
+
+If a Colab cell was launched before commit `d7682ec`, rerun this target from
+latest `main`; older launches may not publish the repaired `.pt` checkpoint
+needed by the depth-router continuation.
 
 If you need to run the confirmation manually after a separate probe session,
 use:

@@ -785,6 +785,9 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert "stage5_traced_sft_assessment_20260623_195134_reassessed" in bootstrap
     assert "traced_sft_direct_preservation_probe" in bootstrap_md
     assert "content-route direct-preservation probe" in current_action
+    assert "learned-depth router continuation" in current_action
+    assert "traced_sft_depth_router_after_direct_preserve" in current_action
+    assert "before commit `d7682ec`" in current_action
     assert '"STAGE5_CURRENT_A100_TARGET"] = "traced_sft_direct_preservation_probe"' in current_action
     assert "stage5_latest_direct_preservation_summary.txt" in direct_cell
     assert "stage5_current_source_summary.txt" in direct_cell
