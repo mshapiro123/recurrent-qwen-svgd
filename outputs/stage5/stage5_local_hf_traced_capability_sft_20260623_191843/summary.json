@@ -1,0 +1,198 @@
+{
+  "run_id": "stage5_local_hf_traced_capability_sft_20260623_191843",
+  "kind": "stage5_curriculum_sft",
+  "status": "validation_sane",
+  "config": {
+    "run_id": "stage5_local_hf_traced_capability_sft_20260623_191843",
+    "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+    "work_dir": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_191836",
+    "summary_json": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_191836/summary.json",
+    "curriculum_input_backup_dir": "/content/drive/MyDrive/recurrent-qwen-svgd/curriculum_runs",
+    "input_restore": {
+      "restored": false,
+      "work_dir": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_191836",
+      "summary_json": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_191836/summary.json"
+    },
+    "min_positive_rows": 32,
+    "min_mode_rows": "deep_narrow=18,direct=14",
+    "max_length": 512,
+    "max_loops": 3,
+    "max_steps": 150,
+    "learning_rate": 0.0002,
+    "beta": 0.12,
+    "halt_target_nll_weight": 10.0,
+    "optimizer_modules": "halt",
+    "use_target_loop_control": false,
+    "use_learned_loop_control": true,
+    "loop_control_ce_weight": 8.0,
+    "depth_hint_style": "natural",
+    "dtype": "bfloat16",
+    "adapter_dtype": "float32",
+    "commit_checkpoints": true
+  },
+  "sft_gate": {
+    "status": "go_train_recurrent_sft",
+    "go": true,
+    "issues": [],
+    "checks": {
+      "reports": {
+        "exported_examples": 32,
+        "typed_records": 32,
+        "verified": 32,
+        "decontaminated": 32,
+        "method_solutions": 32,
+        "naturalness_judgments": 32,
+        "min_natural_agree": 2,
+        "min_distinct_agree": 2,
+        "distinctness_required": false,
+        "depth_measurements": 32,
+        "difficulty_measured": 32,
+        "programmatic_answer_check_required": false,
+        "answer_line_verification_allowed": true
+      },
+      "typed_records": {
+        "rows": 32,
+        "invalid_rows": 0,
+        "positive_missing_answer_match": 0,
+        "mode_counts": {
+          "deep_narrow": 18,
+          "direct": 14
+        },
+        "role_counts": {
+          "positive_depth": 18,
+          "positive_direct": 14
+        }
+      },
+      "positive_sft": {
+        "rows": 32,
+        "bad_rows": 0,
+        "role_counts": {
+          "positive_depth": 18,
+          "positive_direct": 14
+        },
+        "mode_counts": {
+          "deep_narrow": 18,
+          "direct": 14
+        },
+        "source_model_counts": {
+          "Qwen/Qwen2.5-7B-Instruct": 32
+        },
+        "mode_requirements": {
+          "deep_narrow": {
+            "required": 18,
+            "observed": 18,
+            "passed": true
+          },
+          "direct": {
+            "required": 14,
+            "observed": 14,
+            "passed": true
+          }
+        }
+      }
+    }
+  },
+  "input_restore": {
+    "restored": false,
+    "work_dir": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_191836",
+    "summary_json": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_191836/summary.json"
+  },
+  "dataset": {
+    "source_positive_sft": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_191836/positive_sft.jsonl",
+    "rows": 32,
+    "train_rows": 29,
+    "val_rows": 3,
+    "val_fraction": 0.1,
+    "val_min_rows": 1,
+    "split_seed": 17,
+    "depth_hint_style": "natural",
+    "train_mode_counts": {
+      "deep_narrow": 16,
+      "direct": 13
+    },
+    "val_mode_counts": {
+      "deep_narrow": 2,
+      "direct": 1
+    }
+  },
+  "drive_preflight": {
+    "drive_root": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts",
+    "available": false,
+    "allow_no_backup": true
+  },
+  "backup": {
+    "backed_up": false,
+    "drive_root": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts"
+  },
+  "resume_from": "outputs/stage5/stage5_learned_loop_control_ce8_continue_l4_20260623_071135/phase1/phase1_step_400.pt",
+  "phase1_checkpoint": "outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_191843/phase1/phase1_step_150.pt",
+  "phase1_val": {
+    "lora_recurrent_modules": 84.0,
+    "examples": 3.0,
+    "expected_ce": 1.40305,
+    "halting_kl": 0.292337,
+    "loop_control_ce": 0.320229,
+    "loss": 3.999966,
+    "mean_expected_loops": 1.660203,
+    "mean_halt_entropy": 0.49934,
+    "target_loop_abs_error": 0.062921,
+    "target_mean_loops": 1.666667,
+    "group/curriculum_mode/deep_narrow/examples": 2.0,
+    "group/curriculum_mode/deep_narrow/expected_ce": 1.205509,
+    "group/curriculum_mode/deep_narrow/halting_kl": 0.25012,
+    "group/curriculum_mode/deep_narrow/loop_control_ce": 0.351701,
+    "group/curriculum_mode/deep_narrow/loss": 4.049131,
+    "group/curriculum_mode/deep_narrow/mean_expected_loops": 1.947961,
+    "group/curriculum_mode/deep_narrow/mean_halt_entropy": 0.603814,
+    "group/curriculum_mode/deep_narrow/target_loop_abs_error": 0.052039,
+    "group/curriculum_mode/deep_narrow/target_mean_loops": 2.0,
+    "group/curriculum_mode/direct/examples": 1.0,
+    "group/curriculum_mode/direct/expected_ce": 1.798134,
+    "group/curriculum_mode/direct/halting_kl": 0.376771,
+    "group/curriculum_mode/direct/loop_control_ce": 0.257286,
+    "group/curriculum_mode/direct/loss": 3.901636,
+    "group/curriculum_mode/direct/mean_expected_loops": 1.084686,
+    "group/curriculum_mode/direct/mean_halt_entropy": 0.290394,
+    "group/curriculum_mode/direct/target_loop_abs_error": 0.084686,
+    "group/curriculum_mode/direct/target_mean_loops": 1.0
+  },
+  "phase1_val_by_mode": {
+    "deep_narrow": {
+      "examples": 2.0,
+      "expected_ce": 1.205509,
+      "halting_kl": 0.25012,
+      "loop_control_ce": 0.351701,
+      "loss": 4.049131,
+      "mean_expected_loops": 1.947961,
+      "mean_halt_entropy": 0.603814,
+      "target_loop_abs_error": 0.052039,
+      "target_mean_loops": 2.0
+    },
+    "direct": {
+      "examples": 1.0,
+      "expected_ce": 1.798134,
+      "halting_kl": 0.376771,
+      "loop_control_ce": 0.257286,
+      "loss": 3.901636,
+      "mean_expected_loops": 1.084686,
+      "mean_halt_entropy": 0.290394,
+      "target_loop_abs_error": 0.084686,
+      "target_mean_loops": 1.0
+    }
+  },
+  "validation_checks": {
+    "status": "validation_sane",
+    "issues": [],
+    "nonfinite_metrics": [],
+    "min_mean_expected_loops": 1.05,
+    "mean_expected_loops": 1.660203,
+    "require_depth_gradient": true,
+    "depth_gradient": {
+      "available": true,
+      "direct_mean_expected_loops": 1.084686,
+      "deep_narrow_mean_expected_loops": 1.947961,
+      "required_margin": 0.25,
+      "observed": true
+    }
+  }
+}

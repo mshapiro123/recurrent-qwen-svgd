@@ -1,0 +1,14 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 19044.72it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_learned_loop_control_ce8_continue_l4_20260623_071135/phase1/phase1_step_400.pt loaded_keys=179
+optimizer_parameter_tensors=8
+step=0 mean_expected_loops=1.7930 mean_halt_entropy=0.7671 expected_ce=2.7182 halting_kl=0.3235 target_mean_loops=1.0000 target_loop_abs_error=0.7930 loop_control_ce=1.0902 halting_target_nll=1.3436 loss=24.9142
+step=25 mean_expected_loops=1.5348 mean_halt_entropy=0.7401 expected_ce=2.0132 halting_kl=0.1961 target_mean_loops=1.0000 target_loop_abs_error=0.5348 loop_control_ce=0.6408 halting_target_nll=0.7446 loss=14.6091
+step=50 mean_expected_loops=2.0781 mean_halt_entropy=0.7511 expected_ce=1.1077 halting_kl=0.1496 target_mean_loops=2.0000 target_loop_abs_error=0.0781 loop_control_ce=0.5629 halting_target_nll=0.3086 loss=8.7149
+step=75 mean_expected_loops=1.8606 mean_halt_entropy=0.7042 expected_ce=1.0848 halting_kl=0.1902 target_mean_loops=2.0000 target_loop_abs_error=0.1394 loop_control_ce=0.4907 halting_target_nll=0.2943 loss=7.9769
+step=100 mean_expected_loops=2.0768 mean_halt_entropy=0.7473 expected_ce=1.1176 halting_kl=0.4212 target_mean_loops=3.0000 target_loop_abs_error=0.9232 loop_control_ce=1.4977 halting_target_nll=1.7721 loss=30.8713
+step=125 mean_expected_loops=2.1109 mean_halt_entropy=0.7074 expected_ce=1.1254 halting_kl=0.1831 target_mean_loops=2.0000 target_loop_abs_error=0.1109 loop_control_ce=0.3621 halting_target_nll=0.2858 loss=6.9018
+saved_checkpoint=outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_191843/phase1/phase1_step_150.pt

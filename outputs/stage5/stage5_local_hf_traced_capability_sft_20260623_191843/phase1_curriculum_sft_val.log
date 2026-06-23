@@ -1,0 +1,33 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 15386.10it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_191843/phase1/phase1_step_150.pt loaded_keys=179
+examples=3
+expected_ce=1.403050
+halting_kl=0.292337
+loop_control_ce=0.320229
+loss=3.999966
+mean_expected_loops=1.660203
+mean_halt_entropy=0.499340
+target_loop_abs_error=0.062921
+target_mean_loops=1.666667
+group/curriculum_mode/deep_narrow/examples=2
+group/curriculum_mode/deep_narrow/expected_ce=1.205509
+group/curriculum_mode/deep_narrow/halting_kl=0.250120
+group/curriculum_mode/deep_narrow/loop_control_ce=0.351701
+group/curriculum_mode/deep_narrow/loss=4.049131
+group/curriculum_mode/deep_narrow/mean_expected_loops=1.947961
+group/curriculum_mode/deep_narrow/mean_halt_entropy=0.603814
+group/curriculum_mode/deep_narrow/target_loop_abs_error=0.052039
+group/curriculum_mode/deep_narrow/target_mean_loops=2.000000
+group/curriculum_mode/direct/examples=1
+group/curriculum_mode/direct/expected_ce=1.798134
+group/curriculum_mode/direct/halting_kl=0.376771
+group/curriculum_mode/direct/loop_control_ce=0.257286
+group/curriculum_mode/direct/loss=3.901636
+group/curriculum_mode/direct/mean_expected_loops=1.084686
+group/curriculum_mode/direct/mean_halt_entropy=0.290394
+group/curriculum_mode/direct/target_loop_abs_error=0.084686
+group/curriculum_mode/direct/target_mean_loops=1.000000
