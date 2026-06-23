@@ -170,6 +170,8 @@ def test_benchmark_assessment_commit_stages_current_source_pointer(tmp_path, mon
 
     def fake_run(cmd, *, check=True):
         commands.append([str(item) for item in cmd])
+        if [str(item) for item in cmd] == ["git", "diff", "--cached", "--quiet"]:
+            return subprocess.CompletedProcess(cmd, 1, "", None)
         return subprocess.CompletedProcess(cmd, 0, "", None)
 
     monkeypatch.setattr(module, "ROOT", tmp_path)
@@ -184,3 +186,4 @@ def test_benchmark_assessment_commit_stages_current_source_pointer(tmp_path, mon
     staged = {item for cmd in add_commands for item in cmd[3:]}
     assert "outputs/stage5/assessment" in staged
     assert "config/stage5_current_source_summary.txt" in staged
+    assert ["git", "commit", "-m", "Record Stage 5 benchmark assessment assessment [skip ci]"] in commands

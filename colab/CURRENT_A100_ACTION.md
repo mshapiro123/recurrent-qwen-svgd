@@ -8,25 +8,67 @@ Shortest path from any trusted Colab notebook:
 or
 [`colab/CURRENT_A100_BOOTSTRAP_CELL.py`](CURRENT_A100_BOOTSTRAP_CELL.py).
 
-The bootstrap defaults to `preflight`. To intentionally execute the guarded
-paid action after preflight is green, set
-`STAGE5_CURRENT_A100_TARGET=safe_continue_execute` before running it on an
-A100/H100 runtime.
-The current preferred path is **ARC-mix offset confirmation before
-depth-routing training**. The latest targeted ARC-mix checkpoint beat base on
-the first 256-example ARC-Easy/ARC-Challenge content slice and stayed
-non-negative under cyclic option-permutation scoring. The next measurement
-action is:
+The bootstrap defaults to `preflight`. To intentionally execute a maintained
+target, set `STAGE5_CURRENT_A100_TARGET=<target>` before running it on the
+appropriate runtime.
+The generic guarded planner path remains available as
+`STAGE5_CURRENT_A100_TARGET=safe_continue_execute`, but the explicit target
+below is preferred for the current evidence state.
+
+## Current Front-of-Queue Action
+
+The current preferred path is **capability-ladder depth-label probing**. The
+latest learned-depth recurrent checkpoint passed the broader balanced ARC
+assessment:
 
 ```text
-STAGE5_CURRENT_A100_TARGET=arc_mix_offset_then_depth_chain
+ARC-Easy content:       recurrent 319/512 vs base 298/512, delta +21
+ARC-Easy cyclic:        recurrent 406/512 vs base 406/512, delta 0
+ARC-Challenge content:  recurrent 108/299 vs base 98/299, delta +10
+ARC-Challenge cyclic:   recurrent 177/299 vs base 177/299, delta 0
 ```
 
-This runs the same checkpoint on ARC-Easy and ARC-Challenge with
-`limit=256`, `offset=256`, and score targets
-`content_question_only,cyclic_label_aggregated`. If and only if all four
-offset readouts are non-negative against base, the same runtime continues into
-the bounded learned-depth ARC-mix SFT probe.
+That is enough to stop re-running the ARC-mix recovery loop and test whether
+Qwen model-scale gaps can provide useful depth labels before spending on more
+recurrent SFT. The next GPU action is:
+
+```text
+STAGE5_CURRENT_A100_TARGET=capability_ladder_mcq_probe
+```
+
+This scores a bounded ARC-Train slice with Qwen 0.5B, 1.5B, and 3B, then builds
+answer-only capability-ladder rows:
+
+```text
+0.5B correct                         -> target loop 1 / direct preservation
+0.5B miss, 1.5B correct              -> target loop 2 / medium depth
+0.5B + 1.5B miss, 3B correct         -> target loop 3 / deep narrow
+```
+
+The maintained bootstrap target now uses:
+
+```text
+STAGE5_CAPABILITY_LADDER_ARC_LIMIT=96
+STAGE5_CAPABILITY_LADDER_SCORE_MODE=content_question_only
+STAGE5_CAPABILITY_LADDER_MODEL_LADDER=qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3
+STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE=0
+```
+
+Success is not final training quality. Success is enough direct and deep rows
+to justify trace enrichment and a bounded recurrent SFT run. If the ladder is
+sparse, use the high-memory 7B target or increase the ARC slice before training.
+
+For a high-memory G4/A100/H100 runtime, the stronger optional target is:
+
+```text
+STAGE5_CURRENT_A100_TARGET=capability_ladder_7b_trace_chain
+```
+
+That adds Qwen 7B as target loop 4 and immediately builds provider-neutral
+trace-generation jobs from the scored rows, without provider/API spend by
+default.
+
+## Historical ARC-Mix Recovery Result
 
 The earlier CE8 balanced ARC depth curve showed a useful hard-slice depth
 signal but a serious easy/content calibration gap:
@@ -47,13 +89,10 @@ The reference artifact is:
 outputs/stage5/stage5_ce8_balanced_arc256_depth_curve_summary_20260623/summary.json
 ```
 
-The trace-collection and traced-SFT targets below remain available, but they
-are not the front-of-queue action unless the current source pointer is
-deliberately moved back to a trace-curriculum gate-ready summary.
-The older MCQ debias, debiased benchmark, capability-ladder probe, trace-job,
-and trace-response targets are retained below as historical/fallback cells, but
-they are no longer the current front-of-queue action unless the source pointer
-is deliberately moved back to one of those stages.
+After the capability-ladder probe lands, the trace-job and traced-SFT targets
+below become the next expected sequence if the ladder has enough direct and
+deep rows. The older MCQ debias and debiased benchmark targets are retained as
+historical/fallback cells.
 For a high-memory overnight run before provider trace generation, prefer
 `STAGE5_CURRENT_A100_TARGET=capability_ladder_7b_trace_chain`: it runs the
 0.5B/1.5B/3B/7B capability-ladder probe and immediately builds trace jobs from
@@ -72,7 +111,7 @@ summary for both preflight and safe-continue, set the single bootstrap override
 No-argument planner/go/no-go runs also read the same pointer, so they follow
 this run card instead of the newest file mtime in `outputs/`.
 
-## Current Paste-Anywhere ARC-Mix Offset Confirmation Cell
+## Previous Paste-Anywhere ARC-Mix Offset Confirmation Cell
 
 Use this from a live Colab notebook after pulling the latest `main`.
 
@@ -258,18 +297,19 @@ assert "STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py" in code, "Fetched stale bootstr
 exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
 ```
 
-## Next Paste-Anywhere Capability-Ladder Probe Cell
+## Current Paste-Anywhere Capability-Ladder Probe Cell
 
-Use this after the debiased benchmark suite has landed and we want to test
-whether Qwen model scale gives a useful depth-label ladder before training.
+Use this now to test whether Qwen model scale gives a useful depth-label
+ladder before training.
 
 ```python
 import base64, json, os, time, urllib.request
 from google.colab import userdata
 
 os.environ["STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_mcq_probe"
-os.environ.setdefault("STAGE5_CAPABILITY_LADDER_ARC_LIMIT", "48")
+os.environ.setdefault("STAGE5_CAPABILITY_LADDER_ARC_LIMIT", "96")
 os.environ.setdefault("STAGE5_CAPABILITY_LADDER_SCORE_MODE", "content_question_only")
+os.environ.setdefault("STAGE5_CAPABILITY_LADDER_MODEL_LADDER", "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3")
 
 def colab_secret(*names):
     for name in names:

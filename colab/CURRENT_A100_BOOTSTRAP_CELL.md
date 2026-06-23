@@ -43,6 +43,8 @@ scores a small ARC-Train slice with Qwen 0.5B/1.5B/3B, builds depth-labeled
 capability-ladder rows, backs them up to Drive, pushes safe summaries, and
 disconnects. It does not produce final reasoning traces; after it lands, use
 the planner's CPU trace-job action before recurrent SFT.
+The maintained target defaults to 96 ARC-Train examples with
+`qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3`.
 
 To run a high-memory capability-ladder probe including Qwen 7B as depth 4:
 
@@ -391,7 +393,10 @@ TARGETS = {
         ],
         "env": {
             "STAGE5_CAPABILITY_LADDER_MODEL_LADDER": "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3",
+            "STAGE5_CAPABILITY_LADDER_ARC_LIMIT": "96",
+            "STAGE5_CAPABILITY_LADDER_SCORE_MODE": "content_question_only",
             "STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE": "0",
+            "STAGE5_CAPABILITY_LADDER_DISCONNECT": "1",
         },
     },
     "capability_ladder_7b_mcq_probe": {
@@ -710,5 +715,4 @@ print(
 )
 print(f"Fetched {launcher_path} from {REPO}@{REF} ({RESOLVED_REF[:12]}) sha={payload.get('sha')} target={TARGET}", flush=True)
 exec(compile(code, launcher_path, "exec"))
-
 ```

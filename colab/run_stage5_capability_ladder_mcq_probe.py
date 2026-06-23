@@ -448,7 +448,7 @@ def safe_commit(summary_path: Path) -> None:
     if diff.returncode == 0:
         print("No safe result changes to commit.")
         return
-    run(["git", "commit", "-m", "Record capability-ladder MCQ probe"], check=True, log_name="git_commit.log")
+    run(["git", "commit", "-m", "Record capability-ladder MCQ probe [skip ci]"], check=True, log_name="git_commit.log")
     push = run(["git", "push", "origin", "main"], check=False, log_name="git_push.log")
     if push.returncode == 0:
         return

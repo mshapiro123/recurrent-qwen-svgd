@@ -244,7 +244,10 @@ TARGETS = {
         ],
         "env": {
             "STAGE5_CAPABILITY_LADDER_MODEL_LADDER": "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3",
+            "STAGE5_CAPABILITY_LADDER_ARC_LIMIT": "96",
+            "STAGE5_CAPABILITY_LADDER_SCORE_MODE": "content_question_only",
             "STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE": "0",
+            "STAGE5_CAPABILITY_LADDER_DISCONNECT": "1",
         },
     },
     "capability_ladder_7b_mcq_probe": {

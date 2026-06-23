@@ -138,3 +138,33 @@ def test_commit_paths_include_private_scored_rows_and_curriculum(tmp_path, monke
     assert str(private_data_dir).replace("\\", "/") in paths
     assert str(work_dir).replace("\\", "/") in paths
     assert str(config_dir / "stage5_current_source_summary.txt").replace("\\", "/") in paths
+
+
+def test_safe_commit_uses_skip_ci(tmp_path, monkeypatch) -> None:
+    run_dir = tmp_path / "outputs" / "stage5" / "probe"
+    private_data_dir = tmp_path / "data" / "stage5_capability_ladder" / "probe"
+    work_dir = tmp_path / "data" / "curriculum" / "probe"
+    config_dir = tmp_path / "config"
+    summary = run_dir / "summary.json"
+    for path in (run_dir, private_data_dir, work_dir, config_dir):
+        path.mkdir(parents=True)
+    summary.write_text("{}", encoding="utf-8")
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, *, check=True, log_name=None):
+        commands.append([str(item) for item in cmd])
+        if [str(item) for item in cmd] == ["git", "diff", "--cached", "--quiet"]:
+            return module.subprocess.CompletedProcess(cmd, 1, "", None)
+        return module.subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+    monkeypatch.setattr(module, "PRIVATE_DATA_DIR", private_data_dir)
+    monkeypatch.setattr(module, "WORK_DIR", work_dir)
+    monkeypatch.setattr(module, "PUSH_RESULTS", True)
+    monkeypatch.setattr(module, "run", fake_run)
+    monkeypatch.setattr(module, "current_source_summary_file", lambda: config_dir / "stage5_current_source_summary.txt")
+    monkeypatch.setattr(module, "path_for_cli", lambda path: str(path).replace("\\", "/"))
+
+    module.safe_commit(summary)
+
+    assert ["git", "commit", "-m", "Record capability-ladder MCQ probe [skip ci]"] in commands

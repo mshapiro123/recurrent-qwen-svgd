@@ -267,7 +267,7 @@ def commit_results(run_dir: Path) -> None:
     if status.returncode == 0:
         print("No benchmark assessment outputs changed.")
         return
-    run(["git", "commit", "-m", f"Record Stage 5 benchmark assessment {RUN_ID}"])
+    run(["git", "commit", "-m", f"Record Stage 5 benchmark assessment {RUN_ID} [skip ci]"])
     run(["git", "push", "origin", "main"], check=False)
 
 
