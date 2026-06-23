@@ -257,7 +257,7 @@ required = [
     "sha_resolved_nested_fetch_v3",
     "traced_sft_surface_alignment_repair",
     "STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL_VERSION",
-    "stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment",
+    "stage5_traced_sft_direct_preservation_20260623_scale64_confirm",
     "eval/analyze_mcq_order_sensitivity.py",
     "colab/run_stage5_surface_alignment_repair.py",
     "training/prepare_mcq_conditional_invariance_jsonl.py",

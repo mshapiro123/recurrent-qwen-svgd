@@ -34,7 +34,7 @@ PRIVATE_DATA_DIR = ROOT / "data" / "stage5_surface_alignment" / RUN_ID
 SOURCE_SUMMARY = Path(
     os.environ.get(
         "STAGE5_SURFACE_ALIGN_SOURCE_SUMMARY",
-        "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment/summary.json",
+        "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm/summary.json",
     )
 )
 if not SOURCE_SUMMARY.is_absolute():

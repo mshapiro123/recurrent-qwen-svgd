@@ -974,7 +974,7 @@ def test_traced_sft_surface_alignment_repair_target_is_bootstrapped() -> None:
     assert "STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL_VERSION" in cell
     assert "surface_alignment_repair_v1" in cell
     assert "STAGE5_SURFACE_ALIGN_SOURCE_SUMMARY" in cell
-    assert "stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment" in cell
+    assert "stage5_traced_sft_direct_preservation_20260623_scale64_confirm" in cell
     assert "eval/analyze_mcq_order_sensitivity.py" in cell
     assert "eval/analyze_mcq_surface_mismatch.py" in cell
     assert "training/prepare_mcq_conditional_invariance_jsonl.py" in cell

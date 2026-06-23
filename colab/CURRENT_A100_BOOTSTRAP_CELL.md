@@ -702,7 +702,7 @@ TARGETS = {
             "surface_alignment_repair_v1",
             "traced_sft_surface_alignment_repair",
             "STAGE5_SURFACE_ALIGN_SOURCE_SUMMARY",
-            "stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment",
+            "stage5_traced_sft_direct_preservation_20260623_scale64_confirm",
             "eval/analyze_mcq_order_sensitivity.py",
             "eval/analyze_mcq_surface_mismatch.py",
             "training/prepare_mcq_conditional_invariance_jsonl.py",
@@ -719,10 +719,7 @@ TARGETS = {
         ],
         "env": {
             "STAGE5_SURFACE_ALIGN_SOURCE_SUMMARY": (
-                "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment/summary.json"
-            ),
-            "STAGE5_SURFACE_ALIGN_RUN_ID": (
-                "stage5_surface_alignment_repair_from_direct_confirm_20260623"
+                "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm/summary.json"
             ),
             "STAGE5_SURFACE_ALIGN_MAX_STEPS": "50",
             "STAGE5_SURFACE_ALIGN_LR": "5e-7",
@@ -927,6 +924,7 @@ if SOURCE_SUMMARY_OVERRIDE:
     os.environ["STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
     os.environ["STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
     os.environ["STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
+    os.environ["STAGE5_SURFACE_ALIGN_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
     os.environ["STAGE5_ARC_MIX_CHAIN_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
     os.environ["STAGE5_ARC_MIX_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
 else:
@@ -935,6 +933,7 @@ else:
     os.environ.pop("STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY", None)
     os.environ.pop("STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY", None)
     os.environ.pop("STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY", None)
+    os.environ.pop("STAGE5_SURFACE_ALIGN_SOURCE_SUMMARY", None)
     os.environ.pop("STAGE5_ARC_MIX_CHAIN_SOURCE_SUMMARY", None)
     os.environ.pop("STAGE5_ARC_MIX_SOURCE_SUMMARY", None)
 for key, value in selected["env"].items():

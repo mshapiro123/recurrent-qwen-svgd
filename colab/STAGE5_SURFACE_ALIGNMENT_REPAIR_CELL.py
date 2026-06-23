@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from google.colab import runtime, userdata
@@ -30,7 +31,7 @@ REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 DEFAULT_SOURCE_SUMMARY = (
     "outputs/stage5/"
-    "stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment/"
+    "stage5_traced_sft_direct_preservation_20260623_scale64_confirm/"
     "summary.json"
 )
 
@@ -140,10 +141,10 @@ try:
 
     env = os.environ.copy()
     env.setdefault("STAGE5_SURFACE_ALIGN_SOURCE_SUMMARY", DEFAULT_SOURCE_SUMMARY)
-    env.setdefault(
-        "STAGE5_SURFACE_ALIGN_RUN_ID",
-        "stage5_surface_alignment_repair_from_direct_confirm_20260623",
-    )
+    if not env.get("STAGE5_SURFACE_ALIGN_RUN_ID"):
+        env["STAGE5_SURFACE_ALIGN_RUN_ID"] = time.strftime(
+            "stage5_surface_alignment_repair_content_cyclic_%Y%m%d_%H%M%S"
+        )
     env.setdefault("STAGE5_SURFACE_ALIGN_MAX_STEPS", "50")
     env.setdefault("STAGE5_SURFACE_ALIGN_LR", "5e-7")
     env.setdefault("STAGE5_SURFACE_ALIGN_DISTILL_WEIGHT", "0.05")
