@@ -1,4 +1,4 @@
-﻿# Current A100 Bootstrap Cell
+# Current A100 Bootstrap Cell
 
 Use this from a blank or Drive-backed Colab notebook when you want the shortest
 GitHub-backed path. It fetches the maintained plain cell from the private repo,
@@ -78,6 +78,17 @@ trace-job summary plus an explicit `STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_JSO
 verifies final answers, builds traced curriculum rows, runs the SFT gate, pushes
 safe summaries, and disconnects.
 
+To run provider/API trace responses and collect accepted traces in one CPU
+runtime:
+
+Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
+"capability_ladder_trace_response_collect_cpu"` before running the bootstrap
+cell. This target follows the current trace-job summary, requires explicit
+`STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER=1` before provider spend,
+writes and persists `trace_responses.jsonl`, immediately verifies the responses
+into traced curriculum rows, runs the SFT gate, pushes summaries, and
+disconnects.
+
 To run the no-training Qwen model viability probe:
 
 Set `os.environ["STAGE5_CURRENT_A100_TARGET"] = "model_viability_probe"` before
@@ -123,6 +134,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "capability_ladder_trace_jobs_cpu" - CPU-only trace-job build from latest capability ladder probe.
 #   "capability_ladder_trace_responses_cpu" - CPU/network provider responses for trace jobs.
 #   "capability_ladder_trace_collect_cpu" - CPU-only trace-response collection into gated SFT data.
+#   "capability_ladder_trace_response_collect_cpu" - CPU/network provider responses then immediate collection.
 #   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
 #   "depth_sweep_heldout" - L4/T4 held-out ARC tail loop-depth sweep for routing validation.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
@@ -323,6 +335,21 @@ TARGETS = {
         ],
         "env": {},
     },
+    "capability_ladder_trace_response_collect_cpu": {
+        "path": "colab/STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COLLECT_CELL.py",
+        "markers": [
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COLLECT_CELL_VERSION",
+            "capability_ladder_trace_response_collect_cpu",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COLLECT_ALLOW_GPU",
+            "colab/run_stage5_capability_ladder_trace_responses.py",
+            "colab/run_stage5_capability_ladder_trace_collect.py",
+            "tests/test_stage5_capability_ladder_trace_responses_runner.py",
+            "tests/test_stage5_capability_ladder_trace_collect_runner.py",
+            "runtime.unassign",
+        ],
+        "env": {},
+    },
     "direct_preservation_probe": {
         "path": "colab/STAGE5_DIRECT_PRESERVATION_PROBE_CELL.py",
         "markers": [
@@ -476,6 +503,5 @@ print(
 )
 print(f"Fetched {launcher_path} from {REPO}@{REF} ({RESOLVED_REF[:12]}) sha={payload.get('sha')} target={TARGET}", flush=True)
 exec(compile(code, launcher_path, "exec"))
-
 ```
 

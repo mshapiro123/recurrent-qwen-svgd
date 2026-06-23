@@ -535,6 +535,26 @@ def test_capability_ladder_trace_responses_cell_is_cpu_only_and_provider_opt_in(
     assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_trace_responses_cpu"' in current_action
 
 
+def test_capability_ladder_trace_response_collect_cell_runs_both_steps() -> None:
+    plain = (ROOT / "colab/STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COLLECT_CELL.py").read_text(encoding="utf-8")
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
+
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COLLECT_CELL_VERSION" in plain
+    assert "capability_ladder_trace_response_collect_cpu" in plain
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER" in plain
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COLLECT_ALLOW_GPU" in plain
+    assert "colab/run_stage5_capability_ladder_trace_responses.py" in plain
+    assert "colab/run_stage5_capability_ladder_trace_collect.py" in plain
+    assert "tests/test_stage5_capability_ladder_trace_responses_runner.py" in plain
+    assert "tests/test_stage5_capability_ladder_trace_collect_runner.py" in plain
+    assert "runtime.unassign()" in plain
+    assert "capability_ladder_trace_response_collect_cpu" in bootstrap
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COLLECT_CELL.py" in bootstrap
+    assert "Next Paste-Anywhere Capability-Ladder Trace Response+Collection Cell" in current_action
+    assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_trace_response_collect_cpu"' in current_action
+
+
 def test_drive_checkpoint_preflight_cell_is_cpu_only_and_single_purpose() -> None:
     text = (ROOT / "colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.md").read_text(encoding="utf-8")
     code = fenced_python_block("colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.md")
