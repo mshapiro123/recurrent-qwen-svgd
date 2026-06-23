@@ -134,12 +134,15 @@ try:
     env.setdefault("STAGE5_ARC_MIX_CHAIN_EXECUTE_DEPTH", "1")
     env.setdefault("STAGE5_ARC_MIX_CHAIN_ALLOWED_NEGATIVE_DELTA", "0")
     env.setdefault("STAGE5_ARC_MIX_CHAIN_MIN_EXAMPLES", "256")
+    env.setdefault("STAGE5_ARC_MIX_CHAIN_RUN_POST_DEPTH_DEBIASED_GATE", "1")
+    env.setdefault("STAGE5_ARC_MIX_CHAIN_POST_DEPTH_MIN_EXAMPLES", "128")
     env.setdefault("STAGE5_ARC_MIX_CHAIN_PUSH", "1")
 
     print("RUN_ID", env["STAGE5_ARC_MIX_CHAIN_RUN_ID"], flush=True)
     print("STAGE5_ARC_MIX_CHAIN_EXECUTE_DEPTH", env["STAGE5_ARC_MIX_CHAIN_EXECUTE_DEPTH"], flush=True)
     print("Offset gate: ARC-Easy and ARC-Challenge, offset=256, content + cyclic MCQ.", flush=True)
     print("Depth gate: target_loop_count ARC-Easy=1 ARC-Challenge=3 if offset passes.", flush=True)
+    print("Post-depth gate: debiased cyclic scoring is primary; content is a leading indicator.", flush=True)
     run([sys.executable, "colab/run_stage5_arc_mix_offset_then_depth.py"], cwd=ROOT, env=env)
 except Exception:
     disconnect_runtime("ARC-mix offset-depth chain failed")

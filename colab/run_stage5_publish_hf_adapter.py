@@ -103,6 +103,7 @@ def checkpoint_value_from_payload(payload: dict[str, Any]) -> str | None:
         payload.get("checkpoint"),
         payload.get("phase1_checkpoint"),
         checkpoint_from_value(payload.get("selected_checkpoint")),
+        checkpoint_from_value((payload.get("best_arm") or {}).get("best_checkpoint")),
     ]
     stages = payload.get("stages") or []
     if stages:

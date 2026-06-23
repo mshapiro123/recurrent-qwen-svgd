@@ -101,6 +101,27 @@ def test_checkpoint_candidates_include_hf_export_checkpoint(tmp_path) -> None:
     assert source.parent / "recurrent_adapter_checkpoint.pt" in candidates
 
 
+def test_checkpoint_candidates_include_balanced_arc_mix_best_arm(tmp_path) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    source = tmp_path / "outputs" / "stage5" / "depth" / "summary.json"
+    checkpoint = tmp_path / "outputs" / "stage5" / "depth" / "arm" / "phase1" / "phase1_step_150.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    payload = {
+        "best_arm": {
+            "best_checkpoint": {
+                "checkpoint": str(checkpoint),
+            }
+        }
+    }
+
+    monkeypatch = None
+    candidates = module.checkpoint_candidates_from_payload(source, payload)
+
+    assert checkpoint in candidates
+
+
 def test_resolve_checkpoint_prefers_existing_export_adapter(tmp_path, monkeypatch) -> None:
     import colab.run_stage5_benchmark_suite as module
 

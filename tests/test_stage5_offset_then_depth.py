@@ -68,6 +68,13 @@ def test_offset_assessment_requires_coverage() -> None:
     assert all(row["paired_examples"] == 128 for row in assessed["evidence"])
 
 
+def test_offset_assessment_accepts_custom_post_depth_min_examples() -> None:
+    assessed = module().assess_offset_confirmation(_payload(delta=0, paired=128), min_examples=128)
+
+    assert assessed["status"] == "offset_confirmed"
+    assert assessed["passed"] is True
+
+
 def test_offset_assessment_blocks_completed_with_failures() -> None:
     payload = _payload(delta=1)
     payload["status"] = "completed_with_failures"

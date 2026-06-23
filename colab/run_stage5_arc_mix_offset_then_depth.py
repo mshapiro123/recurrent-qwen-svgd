@@ -47,8 +47,14 @@ EXECUTE_DEPTH = os.environ.get("STAGE5_ARC_MIX_CHAIN_EXECUTE_DEPTH", "1").strip(
     "yes",
     "y",
 }
+RUN_POST_DEPTH_DEBIASED_GATE = os.environ.get(
+    "STAGE5_ARC_MIX_CHAIN_RUN_POST_DEPTH_DEBIASED_GATE", "1"
+).strip().lower() in {"1", "true", "yes", "y"}
 ALLOWED_NEGATIVE_DELTA = int(os.environ.get("STAGE5_ARC_MIX_CHAIN_ALLOWED_NEGATIVE_DELTA", "0"))
 MIN_EXAMPLES = int(os.environ.get("STAGE5_ARC_MIX_CHAIN_MIN_EXAMPLES", "256"))
+POST_DEPTH_MIN_EXAMPLES = int(os.environ.get("STAGE5_ARC_MIX_CHAIN_POST_DEPTH_MIN_EXAMPLES", "128"))
+POST_DEPTH_LIMIT = os.environ.get("STAGE5_ARC_MIX_CHAIN_POST_DEPTH_LIMIT", "128")
+POST_DEPTH_OFFSET = os.environ.get("STAGE5_ARC_MIX_CHAIN_POST_DEPTH_OFFSET", "256")
 PUSH_RESULTS = os.environ.get("STAGE5_ARC_MIX_CHAIN_PUSH", "1").strip().lower() in {
     "1",
     "true",
@@ -127,7 +133,15 @@ def paired_row(payload: dict[str, Any], benchmark: str, score_target: str, aggre
     return row if isinstance(row, dict) else None
 
 
-def evidence_row(payload: dict[str, Any], benchmark: str, score_target: str, aggregate: str) -> dict[str, Any]:
+def evidence_row(
+    payload: dict[str, Any],
+    benchmark: str,
+    score_target: str,
+    aggregate: str,
+    *,
+    min_examples: int = MIN_EXAMPLES,
+    allowed_negative_delta: int = ALLOWED_NEGATIVE_DELTA,
+) -> dict[str, Any]:
     row = paired_row(payload, benchmark, score_target, aggregate)
     if not row:
         return {
@@ -154,14 +168,27 @@ def evidence_row(payload: dict[str, Any], benchmark: str, score_target: str, agg
         "losses": int(row.get("losses", 0) or 0),
         "ties": int(row.get("ties", 0) or 0),
         "sign_test_p_value": row.get("sign_test_p_value"),
-        "passed": paired >= MIN_EXAMPLES and delta >= -ALLOWED_NEGATIVE_DELTA,
+        "passed": paired >= min_examples and delta >= -allowed_negative_delta,
     }
 
 
-def assess_offset_confirmation(payload: dict[str, Any]) -> dict[str, Any]:
+def assess_offset_confirmation(
+    payload: dict[str, Any],
+    *,
+    min_examples: int = MIN_EXAMPLES,
+    allowed_negative_delta: int = ALLOWED_NEGATIVE_DELTA,
+) -> dict[str, Any]:
     failures = payload.get("failures") or []
     completed = payload.get("status") == "completed" and not failures
-    evidence = [evidence_row(payload, *readout) for readout in REQUIRED_READOUTS]
+    evidence = [
+        evidence_row(
+            payload,
+            *readout,
+            min_examples=min_examples,
+            allowed_negative_delta=allowed_negative_delta,
+        )
+        for readout in REQUIRED_READOUTS
+    ]
     evidence_passed = all(row["passed"] for row in evidence)
     passed = completed and evidence_passed
     if passed:
@@ -177,8 +204,8 @@ def assess_offset_confirmation(payload: dict[str, Any]) -> dict[str, Any]:
         "status": status,
         "passed": passed,
         "next_step": next_step,
-        "allowed_negative_delta": ALLOWED_NEGATIVE_DELTA,
-        "min_examples": MIN_EXAMPLES,
+        "allowed_negative_delta": allowed_negative_delta,
+        "min_examples": min_examples,
         "failures": failures,
         "evidence": evidence,
     }
@@ -235,6 +262,27 @@ def run_depth_routing(source_summary: Path) -> tuple[int, Path | None]:
     )
     summary = ROOT / "outputs" / "stage5" / DEPTH_RUN_ID / "summary.json"
     return proc.returncode, summary if summary.exists() else None
+
+
+def run_post_depth_debiased_gate(depth_summary: Path, checkpoint: str | None) -> Path:
+    env = os.environ.copy()
+    env["STAGE5_BENCHMARK_SUITE_RUN_ID"] = f"{DEPTH_RUN_ID}_debiased_gate"
+    env["STAGE5_BENCHMARK_SOURCE_SUMMARY"] = path_for_cli(depth_summary)
+    if checkpoint:
+        env["STAGE5_BENCHMARK_CHECKPOINT"] = checkpoint
+    env["STAGE5_BENCHMARKS"] = "arc_easy,arc_challenge"
+    env["STAGE5_BENCHMARK_ARC_EASY_LIMIT"] = POST_DEPTH_LIMIT
+    env["STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT"] = POST_DEPTH_LIMIT
+    env["STAGE5_BENCHMARK_ARC_EASY_OFFSET"] = POST_DEPTH_OFFSET
+    env["STAGE5_BENCHMARK_ARC_CHALLENGE_OFFSET"] = POST_DEPTH_OFFSET
+    env["STAGE5_BENCHMARK_SCORE_TARGETS"] = "content_question_only,cyclic_label_aggregated"
+    env["STAGE5_BENCHMARK_AGGREGATES"] = "mean"
+    env["STAGE5_BENCHMARK_PUSH"] = "1"
+    run([sys.executable, "colab/run_stage5_benchmark_suite.py"], env=env, log_name="post_depth_debiased_gate.log")
+    summary = ROOT / "outputs" / "stage5" / f"{DEPTH_RUN_ID}_debiased_gate" / "summary.json"
+    if not summary.exists():
+        raise FileNotFoundError(f"Post-depth debiased gate did not write summary: {summary}")
+    return summary
 
 
 def selected_checkpoint_from_payload(payload: dict[str, Any]) -> str | None:
@@ -324,6 +372,8 @@ def main() -> int:
     depth_returncode = None
     depth_summary = None
     depth_payload: dict[str, Any] | None = None
+    post_depth_debiased_summary = None
+    post_depth_debiased_assessment = None
     if offset_assessment["passed"] and EXECUTE_DEPTH:
         depth_launched = True
         depth_returncode, depth_summary_path = run_depth_routing(offset_summary)
@@ -332,12 +382,30 @@ def main() -> int:
             depth_payload = read_json(depth_summary_path)
 
     checkpoint = selected_checkpoint_from_payload(depth_payload or offset_payload)
+    if (
+        depth_launched
+        and depth_returncode == 0
+        and depth_summary
+        and RUN_POST_DEPTH_DEBIASED_GATE
+    ):
+        post_depth_summary_path = run_post_depth_debiased_gate(resolve_path(depth_summary), checkpoint)
+        post_depth_debiased_summary = path_for_cli(post_depth_summary_path)
+        post_depth_debiased_assessment = assess_offset_confirmation(
+            read_json(post_depth_summary_path),
+            min_examples=POST_DEPTH_MIN_EXAMPLES,
+        )
     if depth_launched and depth_returncode not in {0, None}:
         status = "depth_failed"
         next_step = "Inspect depth-routing logs before proceeding."
+    elif post_depth_debiased_assessment and not post_depth_debiased_assessment["passed"]:
+        status = "depth_completed_debiased_warning"
+        next_step = (
+            "Depth training completed, but the post-depth debiased gate did not clear; "
+            "treat content gains as provisional and inspect cyclic scoring."
+        )
     elif offset_assessment["passed"] and depth_launched:
         status = "depth_completed"
-        next_step = "Review depth-routing proxy result, then run bounded ARC confirmation if it passed."
+        next_step = "Review post-depth content and cyclic-debiased gate before extending training."
     elif offset_assessment["passed"]:
         status = "offset_confirmed_depth_skipped"
         next_step = "Launch depth-routing probe manually or set STAGE5_ARC_MIX_CHAIN_EXECUTE_DEPTH=1."
@@ -354,6 +422,8 @@ def main() -> int:
         "depth_launched": depth_launched,
         "depth_returncode": depth_returncode,
         "depth_summary": depth_summary,
+        "post_depth_debiased_summary": post_depth_debiased_summary,
+        "post_depth_debiased_assessment": post_depth_debiased_assessment,
         "checkpoint": checkpoint,
         "next_step": next_step,
     }
