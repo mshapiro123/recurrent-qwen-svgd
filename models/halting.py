@@ -57,24 +57,35 @@ class SequenceHaltingPredictor(nn.Module):
         self.loop_bias = nn.Parameter(torch.zeros(max_loop_embeddings))
         self.target_loop_embedding = nn.Embedding(max_loop_embeddings, hidden_size)
         self.target_loop_bias = nn.Parameter(torch.zeros(max_loop_embeddings, max_loop_embeddings))
+        self.target_loop_router = nn.Linear(hidden_size, max_loop_embeddings)
         with torch.no_grad():
             nn.init.zeros_(self.proj.weight)
             self.proj.bias.fill_(math.log(initial_halt_prob / (1.0 - initial_halt_prob)))
             nn.init.zeros_(self.loop_embedding.weight)
             nn.init.zeros_(self.target_loop_embedding.weight)
+            nn.init.zeros_(self.target_loop_router.weight)
+            nn.init.zeros_(self.target_loop_router.bias)
+
+    def target_loop_logits(self, pooled_hidden: torch.Tensor) -> torch.Tensor:
+        pooled = pooled_hidden.to(dtype=self.target_loop_router.weight.dtype)
+        return self.target_loop_router(pooled)
 
     def forward(
         self,
         pooled_hidden: torch.Tensor,
         loop_idx: int | None = None,
         target_loop_counts: torch.Tensor | None = None,
+        target_loop_probs: torch.Tensor | None = None,
     ) -> torch.Tensor:
         pooled = pooled_hidden.to(dtype=self.proj.weight.dtype)
         target_indices = None
+        target_probs = None
         if loop_idx is not None:
             index = min(max(int(loop_idx), 0), self.loop_embedding.num_embeddings - 1)
             loop_embedding = self.loop_embedding.weight[index].to(device=pooled.device, dtype=pooled.dtype)
             pooled = pooled + loop_embedding.unsqueeze(0)
+        if target_loop_counts is not None and target_loop_probs is not None:
+            raise ValueError("Specify either target_loop_counts or target_loop_probs, not both")
         if target_loop_counts is not None:
             target_indices = (
                 target_loop_counts.to(device=pooled.device, dtype=torch.long)
@@ -86,8 +97,20 @@ class SequenceHaltingPredictor(nn.Module):
                 raise ValueError(
                     "target_loop_counts must have one value per pooled sequence. "
                     f"Got {target_indices.numel()} targets for batch {pooled.shape[0]}."
-                )
+            )
             target_embedding = self.target_loop_embedding(target_indices).to(dtype=pooled.dtype)
+            pooled = pooled + target_embedding
+        elif target_loop_probs is not None:
+            target_probs = target_loop_probs.to(device=pooled.device, dtype=pooled.dtype)
+            if target_probs.dim() != 2 or target_probs.shape != (
+                pooled.shape[0],
+                self.target_loop_embedding.num_embeddings,
+            ):
+                raise ValueError(
+                    "target_loop_probs must be shaped [batch, max_loop_embeddings]. "
+                    f"Got {tuple(target_probs.shape)} for batch {pooled.shape[0]}."
+                )
+            target_embedding = target_probs @ self.target_loop_embedding.weight.to(device=pooled.device, dtype=pooled.dtype)
             pooled = pooled + target_embedding
 
         logit = self.proj(pooled).squeeze(-1)
@@ -97,6 +120,12 @@ class SequenceHaltingPredictor(nn.Module):
             logit = logit + loop_bias
             if target_indices is not None:
                 target_bias = self.target_loop_bias[target_indices, loop_index].to(dtype=pooled.dtype)
+                logit = logit + target_bias
+            elif target_probs is not None:
+                target_bias = target_probs @ self.target_loop_bias[:, loop_index].to(
+                    device=pooled.device,
+                    dtype=pooled.dtype,
+                )
                 logit = logit + target_bias
         return torch.sigmoid(logit).unsqueeze(-1)
 

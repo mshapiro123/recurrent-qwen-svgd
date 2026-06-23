@@ -57,6 +57,12 @@ def main() -> int:
         help="Pass each row's target_loop_count into the structural halt-control channel.",
     )
     parser.add_argument(
+        "--use_learned_loop_control",
+        action="store_true",
+        help="Use the learned target-loop router to condition sequence halting.",
+    )
+    parser.add_argument("--loop_control_ce_weight", type=float, default=0.0)
+    parser.add_argument(
         "--group_by_field",
         help=(
             "Optional JSONL row field for grouped metrics. Requires batch_size=1 "
@@ -133,6 +139,8 @@ def main() -> int:
                 svgd_bandwidth=args.svgd_bandwidth,
                 svgd_bandwidth_floor=args.svgd_bandwidth_floor,
                 svgd_repulsion_max_norm=args.svgd_repulsion_max_norm,
+                use_learned_loop_control=args.use_learned_loop_control,
+                loop_control_ce_weight=args.loop_control_ce_weight,
                 use_cache=False,
                 return_dict=True,
             )

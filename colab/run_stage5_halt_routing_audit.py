@@ -35,6 +35,13 @@ USE_TARGET_LOOP_CONTROL = os.environ.get(
     "STAGE5_HALT_ROUTING_AUDIT_USE_TARGET_LOOP_CONTROL",
     "0",
 ).strip().lower() in {"1", "true", "yes", "y"}
+USE_LEARNED_LOOP_CONTROL = os.environ.get(
+    "STAGE5_HALT_ROUTING_AUDIT_USE_LEARNED_LOOP_CONTROL",
+    "0",
+).strip().lower() in {"1", "true", "yes", "y"}
+LOOP_CONTROL_CE_WEIGHT = float(os.environ.get("STAGE5_HALT_ROUTING_AUDIT_LOOP_CONTROL_CE_WEIGHT", "0.0"))
+if USE_TARGET_LOOP_CONTROL and USE_LEARNED_LOOP_CONTROL:
+    raise ValueError("Use either target-loop oracle control or learned loop control, not both.")
 PUSH_RESULTS = os.environ.get("STAGE5_HALT_ROUTING_AUDIT_PUSH", "1").strip().lower() in {
     "1",
     "true",
@@ -198,6 +205,9 @@ def main() -> int:
     ]
     if USE_TARGET_LOOP_CONTROL:
         command.append("--use_target_loop_control")
+    if USE_LEARNED_LOOP_CONTROL:
+        command.append("--use_learned_loop_control")
+        command.extend(["--loop_control_ce_weight", str(LOOP_CONTROL_CE_WEIGHT)])
     proc = run(command, log_name="full_positive_sft_eval.log")
     metrics = metric_lines(proc.stdout)
     by_mode = grouped(metrics)
@@ -211,6 +221,8 @@ def main() -> int:
         "checkpoint": path_for_cli(checkpoint),
         "positive_sft": path_for_cli(positive_sft),
         "use_target_loop_control": USE_TARGET_LOOP_CONTROL,
+        "use_learned_loop_control": USE_LEARNED_LOOP_CONTROL,
+        "loop_control_ce_weight": LOOP_CONTROL_CE_WEIGHT,
         "metrics": metrics,
         "by_mode": by_mode,
         "depth_gradient": {
@@ -229,6 +241,7 @@ def main() -> int:
         f"- Checkpoint: `{summary['checkpoint']}`",
         f"- Positive SFT: `{summary['positive_sft']}`",
         f"- Target loop control: `{summary['use_target_loop_control']}`",
+        f"- Learned loop control: `{summary['use_learned_loop_control']}`",
         f"- Mean loops: `{metrics.get('mean_expected_loops')}`",
         f"- Direct loops: `{direct}`",
         f"- Deep-narrow loops: `{deep}`",

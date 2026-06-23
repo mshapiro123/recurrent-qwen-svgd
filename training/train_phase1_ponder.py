@@ -163,6 +163,8 @@ def main() -> int:
                 max_loops=cfg.get("max_loops", 4),
                 beta=cfg.get("beta", 0.02),
                 halt_target_nll_weight=cfg.get("halt_target_nll_weight", 0.0),
+                use_learned_loop_control=cfg.get("use_learned_loop_control", False),
+                loop_control_ce_weight=cfg.get("loop_control_ce_weight", 0.0),
                 use_cache=False,
                 return_dict=True,
             )

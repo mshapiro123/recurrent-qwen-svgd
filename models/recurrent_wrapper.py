@@ -234,6 +234,8 @@ class RecurrentQwenForCausalLM(nn.Module):
         svgd_projection_seed: int = 0,
         target_loop_counts: Optional[torch.Tensor] = None,
         halt_control_loop_counts: Optional[torch.Tensor] = None,
+        use_learned_loop_control: bool = False,
+        loop_control_ce_weight: float = 0.0,
         target_loop_prior: Optional[torch.Tensor] = None,
         return_loop_logits: bool = False,
         force_base_model: bool = False,
@@ -367,6 +369,8 @@ class RecurrentQwenForCausalLM(nn.Module):
         flat_position_embeddings = position_embeddings
         labels_flat = labels
         halt_control_flat = halt_control_loop_counts
+        learned_loop_control_logits = None
+        learned_loop_control_probs = None
 
         if num_trajectories > 1 and not inputs_are_trajectories:
             hidden_states = repeat_for_trajectories(hidden_states, num_trajectories)
@@ -386,6 +390,13 @@ class RecurrentQwenForCausalLM(nn.Module):
             flat_position_embeddings = self._rotary_embeddings(hidden_states, flat_position_ids)
         elif inputs_are_trajectories and particle_update_mode == "svgd" and particle_init_noise:
             hidden_states = hidden_states + float(particle_init_noise) * torch.randn_like(hidden_states)
+
+        if use_learned_loop_control:
+            control_pooled = masked_mean(hidden_states, flat_attention_mask)
+            learned_loop_control_logits = self.halt_predictor.target_loop_logits(control_pooled)
+            learned_loop_control_probs = torch.softmax(learned_loop_control_logits.float(), dim=-1).to(
+                dtype=hidden_states.dtype
+            )
 
         loop_logits: list[torch.Tensor] = []
         per_loop_ce: list[torch.Tensor] = []
@@ -454,6 +465,7 @@ class RecurrentQwenForCausalLM(nn.Module):
                     pooled,
                     loop_idx=loop_idx,
                     target_loop_counts=halt_control_flat,
+                    target_loop_probs=learned_loop_control_probs,
                 ).squeeze(-1)
             )
 
@@ -556,6 +568,15 @@ class RecurrentQwenForCausalLM(nn.Module):
                 target_values = target_indices.to(dtype=expected_flat.dtype) + 1.0
                 metrics["target_mean_loops"] = target_values.mean().detach()
                 metrics["target_loop_abs_error"] = (expected_flat - target_values).abs().mean().detach()
+                if learned_loop_control_logits is not None:
+                    loop_control_ce = F.cross_entropy(
+                        learned_loop_control_logits.float(),
+                        target_indices,
+                        reduction="mean",
+                    )
+                    metrics["loop_control_ce"] = loop_control_ce.detach()
+                    if loop_control_ce_weight:
+                        loss = loss + float(loop_control_ce_weight) * loop_control_ce
                 if halt_target_nll_weight:
                     halt_target_nll = F.nll_loss(
                         halting_weights.float().clamp_min(1e-8).log(),

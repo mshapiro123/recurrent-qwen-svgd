@@ -76,3 +76,35 @@ def test_target_loop_control_bias_can_shift_specific_target_and_loop():
 
     assert torch.allclose(shifted[:1], baseline.squeeze(-1)[:1])
     assert torch.all(shifted[1:] > baseline.squeeze(-1)[1:])
+
+
+def test_soft_target_loop_control_bias_matches_weighted_bias():
+    predictor = SequenceHaltingPredictor(hidden_size=4, initial_halt_prob=0.25)
+    pooled = torch.randn(2, 4)
+    probs = torch.tensor(
+        [
+            [1.0] + [0.0] * 15,
+            [0.0, 0.25, 0.75] + [0.0] * 13,
+        ]
+    )
+
+    with torch.no_grad():
+        predictor.target_loop_bias[0, 1] = 1.0
+        predictor.target_loop_bias[1, 1] = 2.0
+        predictor.target_loop_bias[2, 1] = 4.0
+
+    shifted = predictor(pooled, loop_idx=1, target_loop_probs=probs).squeeze(-1)
+    baseline_logit = torch.logit(predictor(pooled, loop_idx=1).squeeze(-1))
+    shifted_logit = torch.logit(shifted)
+
+    expected_bias = torch.tensor([1.0, 3.5])
+    assert torch.allclose(shifted_logit - baseline_logit, expected_bias, atol=1e-5)
+
+
+def test_target_loop_router_logits_shape():
+    predictor = SequenceHaltingPredictor(hidden_size=4, initial_halt_prob=0.25)
+    pooled = torch.randn(3, 4)
+
+    logits = predictor.target_loop_logits(pooled)
+
+    assert logits.shape == (3, 16)
