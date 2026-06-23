@@ -74,6 +74,13 @@ BACKUP_TO_DRIVE = os.environ.get("STAGE5_DENSE_MCQ_BACKUP_DRIVE", "1").strip().l
     "yes",
     "y",
 }
+DEFAULT_RECURRENT_BENCHMARK_SUMMARY = (
+    "outputs/stage5/stage5_local_hf_traced_sft_scale64_benchmark_20260623_201923/summary.json"
+)
+RECURRENT_BENCHMARK_SUMMARY = os.environ.get(
+    "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY",
+    DEFAULT_RECURRENT_BENCHMARK_SUMMARY,
+).strip()
 
 
 def resolve_path(value: str | Path) -> Path:
@@ -522,7 +529,7 @@ def update_current_source_summary(summary_path: Path) -> None:
     pointer.write_text(path_for_cli(summary_path) + "\n", encoding="utf-8")
 
 
-def write_summary(payload: dict[str, Any]) -> None:
+def write_summary(payload: dict[str, Any]) -> Path:
     summary_json = RUN_DIR / "summary.json"
     write_json(summary_json, payload)
     update_current_source_summary(summary_json)
@@ -551,8 +558,58 @@ def write_summary(payload: dict[str, Any]) -> None:
                     f"delta `{stats['correct_delta_dense_vs_base']}`, W/L/T "
                     f"`{stats['wins']}/{stats['losses']}/{stats['ties']}`, p `{stats['sign_test_p_value']}`"
                 )
+    assessment = payload.get("recipe_control_assessment")
+    if isinstance(assessment, dict):
+        lines.extend(
+            [
+                "",
+                "## Dense vs Recurrent Same-Recipe Assessment",
+                "",
+                f"- Ran: `{assessment.get('ran')}`",
+                f"- Status: `{assessment.get('status')}`",
+                f"- Passed: `{assessment.get('passed')}`",
+                f"- Reason: {assessment.get('reason')}",
+                f"- Next step: {assessment.get('next_step')}",
+            ]
+        )
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"), flush=True)
+    return summary_json
+
+
+def run_recipe_control_assessment(summary_json: Path) -> dict[str, Any]:
+    if not RECURRENT_BENCHMARK_SUMMARY:
+        return {"ran": False, "reason": "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY is empty"}
+    recurrent_summary = resolve_path(RECURRENT_BENCHMARK_SUMMARY)
+    if not recurrent_summary.exists():
+        return {"ran": False, "reason": f"missing recurrent benchmark summary: {path_for_cli(recurrent_summary)}"}
+    output_json = RUN_DIR / "mcq_recipe_control_assessment.json"
+    output_md = RUN_DIR / "mcq_recipe_control_assessment.md"
+    run(
+        [
+            sys.executable,
+            "colab/assess_stage5_mcq_recipe_control.py",
+            "--dense_summary_json",
+            path_for_cli(summary_json),
+            "--recurrent_summary_json",
+            path_for_cli(recurrent_summary),
+            "--output_json",
+            path_for_cli(output_json),
+            "--output_md",
+            path_for_cli(output_md),
+        ],
+        log_name="mcq_recipe_control_assessment.log",
+    )
+    assessment = read_json(output_json)
+    return {
+        "ran": True,
+        "summary_json": path_for_cli(output_json),
+        "summary_md": path_for_cli(output_md),
+        "status": assessment.get("status"),
+        "passed": assessment.get("passed"),
+        "reason": assessment.get("reason"),
+        "next_step": assessment.get("next_step"),
+    }
 
 
 def commit_results(dense_checkpoint: Path) -> None:
@@ -605,6 +662,8 @@ def main() -> int:
         "backup": backup,
         **benchmark_payload,
     }
+    summary_json = write_summary(payload)
+    payload["recipe_control_assessment"] = run_recipe_control_assessment(summary_json)
     write_summary(payload)
     commit_results(dense_checkpoint)
     return 0
