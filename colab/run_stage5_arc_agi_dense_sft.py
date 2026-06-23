@@ -411,7 +411,7 @@ def git_commit_results() -> None:
     if run(["git", "diff", "--cached", "--quiet"], check=False).returncode == 0:
         print("No dense SFT outputs changed.")
         return
-    run(["git", "commit", "-m", "Record Stage 5 dense ARC-AGI SFT control"])
+    run(["git", "commit", "-m", "Record Stage 5 dense ARC-AGI SFT control [skip ci]"])
     run(["git", "push", "origin", "main"], check=False)
 
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 
 import colab.run_stage5_arc_agi_dense_sft as module
 from colab.run_stage5_arc_agi_dense_sft import paired_comparisons, paired_selected_line
@@ -64,3 +65,26 @@ def test_paired_selected_line_reports_sign_test_shape() -> None:
     assert paired_selected_line("dense_tuned_vs_base", comparison) == (
         "- dense_tuned_vs_base: selected delta `2` (2/0/8 W/L/T, p `0.5`)"
     )
+
+
+def test_dense_sft_commit_uses_skip_ci(monkeypatch, tmp_path) -> None:
+    run_dir = tmp_path / "outputs" / "stage5" / "dense"
+    run_dir.mkdir(parents=True)
+    (run_dir / "summary.json").write_text("{}", encoding="utf-8")
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, *, check=True, log_name=None):
+        commands.append([str(item) for item in cmd])
+        if [str(item) for item in cmd] == ["git", "diff", "--cached", "--quiet"]:
+            return subprocess.CompletedProcess(cmd, 1, "", None)
+        return subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    module.git_commit_results()
+
+    commit_commands = [cmd for cmd in commands if cmd[:2] == ["git", "commit"]]
+    assert commit_commands
+    assert "[skip ci]" in " ".join(commit_commands[0])
