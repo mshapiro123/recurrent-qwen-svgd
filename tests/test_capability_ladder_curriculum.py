@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from training.build_capability_ladder_curriculum import build_records, main
+from training.build_capability_ladder_curriculum import build_records, main, parse_model_ladder
 from training.prepare_curriculum_jsonl import convert_curriculum_records, validate_curriculum_record
 
 
@@ -142,3 +142,73 @@ def test_capability_ladder_cli_writes_gate_ready_artifacts(tmp_path) -> None:
     assert len(typed_rows) == 3
     assert len(sft_rows) == 3
     assert report["tier_counts"]["base_preservation"] == 1
+
+
+def test_model_ladder_assigns_arbitrary_scale_depths() -> None:
+    rows = [
+        scored_row("base-known", base_correct=True, mid_correct=True, high_correct=True),
+        scored_row("mid-only", base_correct=False, mid_correct=True, high_correct=True),
+        scored_row("seven-only", base_correct=False, mid_correct=False, high_correct=False),
+    ]
+    rows[-1]["model_results"]["qwen_7b"] = {
+        "correct": True,
+        "model": "Qwen/Qwen2.5-7B-Instruct",
+        "solution": "Use a longer derivation. ANSWER: 42",
+        "steps": 9,
+    }
+    records, report = build_records(
+        rows,
+        base_key="qwen_0_5b",
+        mid_key="qwen_1_5b",
+        high_keys=["qwen_3b"],
+        high_target_loop=3,
+        model_ladder=parse_model_ladder("qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3,qwen_7b:4"),
+        allow_answer_only=False,
+        assume_decontaminated=False,
+    )
+
+    by_id = {record["id"]: record for record in records}
+    assert report["exported_records"] == 3
+    assert report["model_ladder"][-1] == {"key": "qwen_7b", "target_loop_count": 4}
+    assert by_id["base-known"]["target_loop_count"] == 1
+    assert by_id["mid-only"]["target_loop_count"] == 2
+    assert by_id["seven-only"]["target_loop_count"] == 4
+    assert by_id["seven-only"]["capability_tier"] == "qwen_0_5b_miss_qwen_1_5b_miss_qwen_3b_miss_qwen_7b_solve"
+    assert by_id["seven-only"]["capability_ladder"]["first_correct_key"] == "qwen_7b"
+    assert by_id["seven-only"]["capability_ladder"]["missed_before_first_correct"] == [
+        "qwen_0_5b",
+        "qwen_1_5b",
+        "qwen_3b",
+    ]
+    assert by_id["seven-only"]["capability_ladder"]["qwen_7b_correct"] is True
+
+
+def test_model_ladder_cli_supersedes_base_mid_high_args(tmp_path) -> None:
+    input_jsonl = tmp_path / "scored.jsonl"
+    work_dir = tmp_path / "capability_ladder"
+    rows = [
+        scored_row("base-known", base_correct=True, mid_correct=False, high_correct=False),
+        scored_row("high-only", base_correct=False, mid_correct=False, high_correct=True),
+    ]
+    input_jsonl.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
+
+    assert main(
+        [
+            "--input_jsonl",
+            str(input_jsonl),
+            "--work_dir",
+            str(work_dir),
+            "--model_ladder",
+            "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:4",
+        ]
+    ) == 0
+
+    summary = json.loads((work_dir / "summary.json").read_text(encoding="utf-8"))
+    report = json.loads((work_dir / "capability_ladder_report.json").read_text(encoding="utf-8"))
+
+    assert summary["counts"]["target_loop_counts"] == {"1": 1, "4": 1}
+    assert report["model_ladder"] == [
+        {"key": "qwen_0_5b", "target_loop_count": 1},
+        {"key": "qwen_1_5b", "target_loop_count": 2},
+        {"key": "qwen_3b", "target_loop_count": 4},
+    ]

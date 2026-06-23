@@ -224,6 +224,32 @@ def tier_for_row(
     return None
 
 
+def tier_for_model_ladder(row: dict[str, Any], model_ladder: list[dict[str, Any]]) -> dict[str, Any] | None:
+    missed_keys: list[str] = []
+    for entry in model_ladder:
+        key = str(entry["key"])
+        target_loop = int(entry["target_loop_count"])
+        result = model_result(row, key)
+        if result and model_correct(row, key):
+            direct = target_loop == 1 and not missed_keys
+            if direct:
+                tier_name = "base_preservation"
+            else:
+                missed = "_".join(f"{missed_key}_miss" for missed_key in missed_keys)
+                tier_name = f"{missed}_{key}_solve" if missed else f"{key}_solve"
+            return {
+                "tier": tier_name,
+                "mode": "direct" if direct else "deep_narrow",
+                "role": "positive_direct" if direct else "positive_depth",
+                "target_loop_count": target_loop,
+                "solver_key": key,
+                "solver_result": result,
+                "missed_keys": list(missed_keys),
+            }
+        missed_keys.append(key)
+    return None
+
+
 def build_record(
     row: dict[str, Any],
     *,
@@ -231,6 +257,8 @@ def build_record(
     base_key: str,
     mid_key: str,
     high_keys: list[str],
+    model_keys: list[str] | None = None,
+    model_ladder: list[dict[str, Any]] | None = None,
     fallback_id: str,
     allow_answer_only: bool,
     assume_decontaminated: bool,
@@ -257,13 +285,29 @@ def build_record(
     if not source_model:
         return None
 
-    capability_ladder = {
-        f"{base_key}_correct": model_correct(row, base_key),
-        f"{mid_key}_correct": model_correct(row, mid_key),
-        "stronger_correct": any(model_correct(row, key) for key in high_keys),
-        "stronger_keys": [key for key in high_keys if model_correct(row, key)],
-        "verified_answer_source": ",".join(str(item) for item in (answer_payload(row) or {}).get("verified_by", [])),
-    }
+    verified_answer_source = ",".join(str(item) for item in (answer_payload(row) or {}).get("verified_by", []))
+    if model_keys:
+        capability_ladder = {
+            f"{key}_correct": model_correct(row, key)
+            for key in model_keys
+        }
+        capability_ladder.update(
+            {
+                "model_ladder": model_ladder or [{"key": key} for key in model_keys],
+                "first_correct_key": tier.get("solver_key"),
+                "first_correct_target_loop": target_loop,
+                "missed_before_first_correct": tier.get("missed_keys", []),
+                "verified_answer_source": verified_answer_source,
+            }
+        )
+    else:
+        capability_ladder = {
+            f"{base_key}_correct": model_correct(row, base_key),
+            f"{mid_key}_correct": model_correct(row, mid_key),
+            "stronger_correct": any(model_correct(row, key) for key in high_keys),
+            "stronger_keys": [key for key in high_keys if model_correct(row, key)],
+            "verified_answer_source": verified_answer_source,
+        }
 
     difficulty = row.get("difficulty") if isinstance(row.get("difficulty"), dict) else {}
     if not difficulty:
@@ -311,20 +355,25 @@ def build_records(
     mid_key: str,
     high_keys: list[str],
     high_target_loop: int,
+    model_ladder: list[dict[str, Any]] | None = None,
     allow_answer_only: bool,
     assume_decontaminated: bool,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     records: list[dict[str, Any]] = []
     skipped: Counter[str] = Counter()
     tier_counts: Counter[str] = Counter()
+    model_keys = [str(entry["key"]) for entry in model_ladder] if model_ladder else None
     for row_index, row in enumerate(rows):
-        tier = tier_for_row(
-            row,
-            base_key=base_key,
-            mid_key=mid_key,
-            high_keys=high_keys,
-            high_target_loop=high_target_loop,
-        )
+        if model_ladder:
+            tier = tier_for_model_ladder(row, model_ladder)
+        else:
+            tier = tier_for_row(
+                row,
+                base_key=base_key,
+                mid_key=mid_key,
+                high_keys=high_keys,
+                high_target_loop=high_target_loop,
+            )
         if tier is None:
             skipped["unresolved_capability"] += 1
             continue
@@ -334,6 +383,8 @@ def build_records(
             base_key=base_key,
             mid_key=mid_key,
             high_keys=high_keys,
+            model_keys=model_keys,
+            model_ladder=model_ladder,
             fallback_id=f"capability_ladder_{row_index:06d}",
             allow_answer_only=allow_answer_only,
             assume_decontaminated=assume_decontaminated,
@@ -356,6 +407,8 @@ def build_records(
         "mid_key": mid_key,
         "high_keys": high_keys,
     }
+    if model_ladder:
+        report["model_ladder"] = model_ladder
     return records, report
 
 
@@ -414,6 +467,38 @@ def parse_csv(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
+def parse_model_ladder(value: str) -> list[dict[str, Any]]:
+    """Parse KEY:LOOP entries for arbitrary Qwen scale ladders."""
+
+    entries: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    last_loop = 0
+    for raw_item in parse_csv(value):
+        separator = ":" if ":" in raw_item else "=" if "=" in raw_item else None
+        if separator is None:
+            raise argparse.ArgumentTypeError(f"model ladder entry must be KEY:LOOP or KEY=LOOP: {raw_item!r}")
+        key, raw_loop = raw_item.split(separator, 1)
+        key = key.strip()
+        if not key:
+            raise argparse.ArgumentTypeError("model ladder key cannot be empty")
+        if key in seen:
+            raise argparse.ArgumentTypeError(f"duplicate model ladder key: {key}")
+        try:
+            target_loop = int(raw_loop)
+        except ValueError as exc:
+            raise argparse.ArgumentTypeError(f"invalid loop target for {key}: {raw_loop!r}") from exc
+        if target_loop <= 0:
+            raise argparse.ArgumentTypeError(f"loop target must be positive for {key}: {target_loop}")
+        if target_loop < last_loop:
+            raise argparse.ArgumentTypeError("model ladder loop targets must be non-decreasing")
+        entries.append({"key": key, "target_loop_count": target_loop})
+        seen.add(key)
+        last_loop = target_loop
+    if not entries:
+        raise argparse.ArgumentTypeError("model ladder cannot be empty")
+    return entries
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input_jsonl", required=True)
@@ -422,6 +507,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--mid_key", default="qwen_1_5b")
     parser.add_argument("--high_keys", default="qwen_3b,strong_solver")
     parser.add_argument("--high_target_loop", type=int, default=3)
+    parser.add_argument(
+        "--model_ladder",
+        type=parse_model_ladder,
+        help=(
+            "Ordered model-to-depth ladder as KEY:LOOP entries, for example "
+            "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3,qwen_7b:4. "
+            "When provided, this supersedes --base_key/--mid_key/--high_keys."
+        ),
+    )
     parser.add_argument("--allow_answer_only", action="store_true")
     parser.add_argument("--assume_decontaminated", action="store_true")
     args = parser.parse_args(argv)
@@ -433,6 +527,7 @@ def main(argv: list[str] | None = None) -> int:
         mid_key=args.mid_key,
         high_keys=parse_csv(args.high_keys),
         high_target_loop=args.high_target_loop,
+        model_ladder=args.model_ladder,
         allow_answer_only=args.allow_answer_only,
         assume_decontaminated=args.assume_decontaminated,
     )
