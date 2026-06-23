@@ -3522,6 +3522,7 @@ def test_surface_alignment_passed_routes_to_dense_mcq_control(tmp_path) -> None:
         "passed": True,
         "benchmark_summary": "outputs/stage5/repaired_benchmark/summary.json",
         "surface_repair_assessment_status": "surface_repair_passed",
+        "surface_alignment_train_jsonl": "data/stage5_surface_alignment/run/surface_alignment_train.jsonl",
     }
 
     actions = plan_next_actions(payload, source_summary=source)
@@ -3530,6 +3531,10 @@ def test_surface_alignment_passed_routes_to_dense_mcq_control(tmp_path) -> None:
     assert "STAGE5_CURRENT_A100_TARGET=dense_mcq_trace_sft_control" in actions[0]["command"]
     assert (
         "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY=outputs/stage5/repaired_benchmark/summary.json"
+        in actions[0]["command"]
+    )
+    assert (
+        "STAGE5_DENSE_MCQ_EXTRA_TRAIN_JSONL=data/stage5_surface_alignment/run/surface_alignment_train.jsonl"
         in actions[0]["command"]
     )
 

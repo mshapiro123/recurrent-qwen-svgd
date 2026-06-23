@@ -165,6 +165,43 @@ def test_mcq_recipe_control_flags_metadata_mismatch(monkeypatch, tmp_path) -> No
     }
 
 
+def test_mcq_recipe_control_does_not_compare_wrapper_source_paths(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    dense_summary, recurrent_summary = make_dense_and_recurrent(tmp_path)
+    payload = json.loads(recurrent_summary.read_text(encoding="utf-8"))
+    payload["source_summary"] = "outputs/stage5/repaired_checkpoint_source/summary.json"
+    recurrent_summary.write_text(json.dumps(payload), encoding="utf-8")
+
+    assessment = module.assess_mcq_recipe_control(
+        dense_summary_path=dense_summary,
+        recurrent_summary_path=recurrent_summary,
+        min_primary_examples=4,
+    )
+
+    assert assessment["status"] == "hard_tail_lift_vs_dense"
+    assert "source_summary" not in assessment["metadata_differences"]
+
+
+def test_mcq_recipe_control_flags_wrong_recurrent_benchmark_target(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    dense_summary, recurrent_summary = make_dense_and_recurrent(tmp_path)
+    payload = json.loads(dense_summary.read_text(encoding="utf-8"))
+    payload["recurrent_benchmark_summary"] = "outputs/stage5/other_recurrent/summary.json"
+    dense_summary.write_text(json.dumps(payload), encoding="utf-8")
+
+    assessment = module.assess_mcq_recipe_control(
+        dense_summary_path=dense_summary,
+        recurrent_summary_path=recurrent_summary,
+        min_primary_examples=4,
+    )
+
+    assert assessment["status"] == "needs_review"
+    assert assessment["metadata_differences"]["recurrent_benchmark_summary"] == {
+        "dense": "outputs/stage5/other_recurrent/summary.json",
+        "recurrent": "outputs/stage5/recurrent_benchmark/summary.json",
+    }
+
+
 def test_mcq_recipe_control_writes_report(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(module, "ROOT", tmp_path)
     dense_summary, recurrent_summary = make_dense_and_recurrent(tmp_path)

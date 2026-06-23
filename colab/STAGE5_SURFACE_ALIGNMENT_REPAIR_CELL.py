@@ -23,6 +23,7 @@ STAGE5_SURFACE_ALIGNMENT_REPAIR_TARGET = "traced_sft_surface_alignment_repair"
 # - eval/analyze_mcq_surface_mismatch.py
 # - training/prepare_mcq_conditional_invariance_jsonl.py
 # - training/prepare_mcq_surface_alignment_jsonl.py
+# - surface_alignment_train_jsonl
 # - colab/assess_stage5_surface_repair.py
 
 REPO = "mshapiro123/recurrent-qwen-svgd"

@@ -52,6 +52,7 @@ DENSE_LORA_LAYER_RANGE = os.environ.get("STAGE5_DENSE_MCQ_LORA_LAYER_RANGE", "6,
 TRAIN_STEPS_ENV = os.environ.get("STAGE5_DENSE_MCQ_STEPS", "").strip()
 SAVE_EVERY_ENV = os.environ.get("STAGE5_DENSE_MCQ_SAVE_EVERY", "").strip()
 LEARNING_RATE_ENV = os.environ.get("STAGE5_DENSE_MCQ_LR", "").strip()
+EXTRA_TRAIN_JSONL_ENV = os.environ.get("STAGE5_DENSE_MCQ_EXTRA_TRAIN_JSONL", "").strip()
 VAL_FRACTION = float(os.environ.get("STAGE5_DENSE_MCQ_VAL_FRACTION", "0.10"))
 VAL_MIN_ROWS = int(os.environ.get("STAGE5_DENSE_MCQ_VAL_MIN_ROWS", "1"))
 SPLIT_SEED = int(os.environ.get("STAGE5_DENSE_MCQ_SPLIT_SEED", "17"))
@@ -227,11 +228,30 @@ def mode_counts(rows: list[dict[str, Any]]) -> dict[str, int]:
     return counts
 
 
+def extra_train_jsonl_paths() -> list[Path]:
+    return [resolve_path(item) for item in parse_csv(EXTRA_TRAIN_JSONL_ENV)]
+
+
+def read_extra_train_rows() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    rows: list[dict[str, Any]] = []
+    metadata: list[dict[str, Any]] = []
+    for path in extra_train_jsonl_paths():
+        if not path.exists():
+            raise FileNotFoundError(path)
+        path_rows = read_jsonl_rows(path)
+        rows.extend(path_rows)
+        metadata.append({"path": path_for_cli(path), "rows": len(path_rows)})
+    return rows, metadata
+
+
 def prepare_train_val(source_payload: dict[str, Any]) -> tuple[Path, Path, dict[str, Any]]:
     positive_sft = source_positive_sft_path(source_payload)
     restore = restore_positive_sft_if_needed(positive_sft, source_payload)
-    rows, depth_hint_style = maybe_apply_depth_hints(read_jsonl_rows(positive_sft), source_payload)
-    train_rows, val_rows = split_train_val(rows, val_fraction=VAL_FRACTION, val_min_rows=VAL_MIN_ROWS, seed=SPLIT_SEED)
+    source_rows, depth_hint_style = maybe_apply_depth_hints(read_jsonl_rows(positive_sft), source_payload)
+    train_rows, val_rows = split_train_val(source_rows, val_fraction=VAL_FRACTION, val_min_rows=VAL_MIN_ROWS, seed=SPLIT_SEED)
+    extra_rows, extra_metadata = read_extra_train_rows()
+    if extra_rows:
+        train_rows = [*train_rows, *extra_rows]
     train_jsonl = PRIVATE_DATA_DIR / "dense_trace_train.jsonl"
     val_jsonl = PRIVATE_DATA_DIR / "dense_trace_val.jsonl"
     write_jsonl_rows(train_jsonl, train_rows)
@@ -239,7 +259,10 @@ def prepare_train_val(source_payload: dict[str, Any]) -> tuple[Path, Path, dict[
     return train_jsonl, val_jsonl, {
         "restore": restore,
         "source_positive_sft": path_for_cli(positive_sft),
-        "rows": len(rows),
+        "source_rows": len(source_rows),
+        "rows": len(source_rows) + len(extra_rows),
+        "extra_train_jsonls": extra_metadata,
+        "extra_train_rows": len(extra_rows),
         "train_rows": len(train_rows),
         "val_rows": len(val_rows),
         "depth_hint_style": depth_hint_style,
@@ -663,8 +686,12 @@ def main() -> int:
             "benchmarks": parse_csv(BENCHMARKS),
             "score_targets": parse_csv(SCORE_TARGETS),
             "aggregates": parse_csv(AGGREGATES),
+            "extra_train_jsonl": parse_csv(EXTRA_TRAIN_JSONL_ENV),
             "commit_checkpoint": COMMIT_CHECKPOINT,
         },
+        "recurrent_benchmark_summary": path_for_cli(resolve_path(RECURRENT_BENCHMARK_SUMMARY))
+        if RECURRENT_BENCHMARK_SUMMARY
+        else None,
         "train_jsonl": path_for_cli(train_jsonl),
         "val_jsonl": path_for_cli(val_jsonl),
         "dense_checkpoint": path_for_cli(dense_checkpoint),

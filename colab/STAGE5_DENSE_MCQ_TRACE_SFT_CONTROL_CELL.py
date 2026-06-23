@@ -20,6 +20,7 @@ STAGE5_DENSE_MCQ_TRACE_SFT_CONTROL_TARGET = "dense_mcq_trace_sft_control"
 # Marker breadcrumbs for bootstrap stale-fetch checks. The runner invokes:
 # - training/train_dense_lora.py
 # - eval/eval_mcq.py --mode base --checkpoint
+# - STAGE5_DENSE_MCQ_EXTRA_TRAIN_JSONL
 # - colab/run_stage5_mcq_dense_sft_control.py
 # - colab/assess_stage5_mcq_recipe_control.py
 

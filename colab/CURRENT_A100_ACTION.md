@@ -262,6 +262,8 @@ required = [
     "colab/run_stage5_surface_alignment_repair.py",
     "training/prepare_mcq_conditional_invariance_jsonl.py",
     "training/prepare_mcq_surface_alignment_jsonl.py",
+    "surface_alignment_train_jsonl",
+    "STAGE5_DENSE_MCQ_EXTRA_TRAIN_JSONL",
     "tests/test_prepare_mcq_conditional_invariance_jsonl.py",
     "tests/test_analyze_mcq_order_sensitivity.py",
 ]

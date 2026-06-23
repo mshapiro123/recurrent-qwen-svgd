@@ -1932,18 +1932,19 @@ def dense_mcq_trace_sft_control_action(
     run_suffix: str,
     reason: str,
     priority: int = 10,
+    extra_train_jsonl: str | None = None,
 ) -> dict[str, Any]:
+    env = {
+        "STAGE5_CURRENT_A100_TARGET": "dense_mcq_trace_sft_control",
+        "STAGE5_DENSE_MCQ_RUN_ID": f"{RUN_ID}_{run_suffix}",
+        "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY": recurrent_benchmark_summary,
+    }
+    if extra_train_jsonl:
+        env["STAGE5_DENSE_MCQ_EXTRA_TRAIN_JSONL"] = extra_train_jsonl
     return make_action(
         "Run dense MCQ same-curriculum control",
         reason,
-        command_env(
-            {
-                "STAGE5_CURRENT_A100_TARGET": "dense_mcq_trace_sft_control",
-                "STAGE5_DENSE_MCQ_RUN_ID": f"{RUN_ID}_{run_suffix}",
-                "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY": recurrent_benchmark_summary,
-            },
-            "python colab/CURRENT_A100_BOOTSTRAP_CELL.py",
-        ),
+        command_env(env, "python colab/CURRENT_A100_BOOTSTRAP_CELL.py"),
         priority,
     )
 
@@ -1952,6 +1953,7 @@ def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary:
     status = str(payload.get("status", "unknown"))
     surface_status = str(payload.get("surface_repair_assessment_status") or "")
     benchmark_summary = str(payload.get("benchmark_summary") or "").strip()
+    repair_train_jsonl = str(payload.get("surface_alignment_train_jsonl") or "").strip() or None
     surface_assessment = payload.get("surface_repair_assessment") or {}
     order_repair = (
         surface_assessment.get("order_sensitivity_repair")
@@ -1976,8 +1978,9 @@ def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary:
                 recurrent_benchmark_summary=benchmark_summary,
                 run_suffix="dense_mcq_after_surface_repair",
                 reason=(
-                    "The surface-alignment repair passed both the generic benchmark gate and the before/after surface-repair gate; run the standard-Qwen same-curriculum dense control against the repaired recurrent benchmark."
+                    "The surface-alignment repair passed both the generic benchmark gate and the before/after surface-repair gate; run the standard-Qwen same-curriculum dense control against the repaired recurrent benchmark, including the same repair shard as train-only data."
                 ),
+                extra_train_jsonl=repair_train_jsonl,
             )
         ]
     if surface_status == "surface_repair_tradeoff":
@@ -1996,9 +1999,10 @@ def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary:
                     recurrent_benchmark_summary=benchmark_summary,
                     run_suffix="dense_mcq_after_conditional_invariance_repair",
                     reason=(
-                        "The adaptive repair targeted conditional invariance and the before/after order-sensitivity assessment improved without a hard-tail tradeoff; run the dense same-curriculum MCQ control to separate architecture lift from recipe/data lift."
+                        "The adaptive repair targeted conditional invariance and the before/after order-sensitivity assessment improved without a hard-tail tradeoff; run the dense same-curriculum MCQ control, including the same repair shard, to separate architecture lift from recipe/data lift."
                     ),
                     priority=9,
+                    extra_train_jsonl=repair_train_jsonl,
                 )
             ]
         order_md = payload.get("order_sensitivity_diagnosis")
@@ -2018,9 +2022,10 @@ def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary:
                 recurrent_benchmark_summary=benchmark_summary,
                 run_suffix="dense_mcq_after_partial_surface_repair",
                 reason=(
-                    "The surface repair improved ARC-Easy content and preserved hard surfaces, but did not fully restore base parity; run the dense control as an interpretability check before deciding whether another repair pass is worthwhile."
+                    "The surface repair improved ARC-Easy content and preserved hard surfaces, but did not fully restore base parity; run the dense control with the same repair shard as an interpretability check before deciding whether another repair pass is worthwhile."
                 ),
                 priority=9,
+                extra_train_jsonl=repair_train_jsonl,
             )
         ]
     if surface_status == "surface_repair_no_easy_content_lift":

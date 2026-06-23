@@ -226,16 +226,28 @@ def recurrent_vs_base_surface_notes(recurrent_summary: dict[str, Any]) -> dict[s
     return notes
 
 
-def metadata_differences(dense_summary: dict[str, Any], recurrent_summary: dict[str, Any]) -> dict[str, Any]:
+def metadata_differences(
+    dense_summary: dict[str, Any],
+    recurrent_summary: dict[str, Any],
+    *,
+    recurrent_summary_path: Path | None = None,
+) -> dict[str, Any]:
     dense_config = dense_summary.get("config") if isinstance(dense_summary.get("config"), dict) else {}
     differences: dict[str, Any] = {}
     comparisons = {
-        "source_summary": (dense_summary.get("source_summary"), recurrent_summary.get("source_summary")),
         "model_name": (dense_config.get("model_name"), recurrent_summary.get("model_name")),
         "benchmarks": (dense_config.get("benchmarks"), recurrent_summary.get("benchmarks")),
         "score_targets": (dense_config.get("score_targets"), recurrent_summary.get("score_targets")),
         "aggregates": (dense_config.get("aggregates"), recurrent_summary.get("aggregates")),
     }
+    dense_recurrent_target = str(dense_summary.get("recurrent_benchmark_summary") or "").strip()
+    if recurrent_summary_path is not None and dense_recurrent_target:
+        expected = path_for_cli(recurrent_summary_path)
+        if dense_recurrent_target != expected:
+            differences["recurrent_benchmark_summary"] = {
+                "dense": dense_recurrent_target,
+                "recurrent": expected,
+            }
     for key, (dense_value, recurrent_value) in comparisons.items():
         if dense_value is not None and recurrent_value is not None and dense_value != recurrent_value:
             differences[key] = {"dense": dense_value, "recurrent": recurrent_value}
@@ -372,7 +384,11 @@ def assess_mcq_recipe_control(
         primary_aggregate=primary_aggregate,
         min_primary_examples=min_primary_examples,
     )
-    metadata_diff = metadata_differences(dense_summary, recurrent_summary)
+    metadata_diff = metadata_differences(
+        dense_summary,
+        recurrent_summary,
+        recurrent_summary_path=recurrent_summary_path,
+    )
     if metadata_diff:
         status = "needs_review"
         passed = False

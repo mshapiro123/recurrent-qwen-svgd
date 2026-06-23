@@ -582,6 +582,8 @@ def main() -> int:
     write_summary(payload)
     commit_results(
         [
+            train_jsonl,
+            surface_summary_json,
             order_diagnosis,
             order_diagnosis.with_suffix(".md"),
             diagnosis,

@@ -72,6 +72,39 @@ def test_paired_dense_vs_base_reports_wins_losses_and_ties(tmp_path) -> None:
     assert paired["ties"] == 2
 
 
+def test_prepare_train_val_appends_extra_repair_rows_to_train_only(monkeypatch, tmp_path) -> None:
+    source = tmp_path / "data" / "trace" / "positive_sft.jsonl"
+    extra = tmp_path / "data" / "repair" / "surface_alignment_train.jsonl"
+    write_jsonl(
+        source,
+        [
+            {"id": "source_0", "prompt": "p0", "completion": "c0", "curriculum_mode": "direct"},
+            {"id": "source_1", "prompt": "p1", "completion": "c1", "curriculum_mode": "deep_narrow"},
+            {"id": "source_2", "prompt": "p2", "completion": "c2", "curriculum_mode": "direct"},
+            {"id": "source_3", "prompt": "p3", "completion": "c3", "curriculum_mode": "deep_narrow"},
+        ],
+    )
+    write_jsonl(extra, [{"id": "repair_0", "prompt": "rp", "completion": "rc", "curriculum_mode": "surface_alignment"}])
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "PRIVATE_DATA_DIR", tmp_path / "private")
+    monkeypatch.setattr(module, "EXTRA_TRAIN_JSONL_ENV", str(extra))
+    monkeypatch.setattr(module, "VAL_FRACTION", 0.25)
+    monkeypatch.setattr(module, "VAL_MIN_ROWS", 1)
+
+    train_jsonl, val_jsonl, dataset = module.prepare_train_val(
+        {"dataset": {"source_positive_sft": str(source)}}
+    )
+
+    train_rows = [json.loads(line) for line in train_jsonl.read_text(encoding="utf-8").splitlines()]
+    val_rows = [json.loads(line) for line in val_jsonl.read_text(encoding="utf-8").splitlines()]
+    assert dataset["source_rows"] == 4
+    assert dataset["extra_train_rows"] == 1
+    assert dataset["rows"] == 5
+    assert dataset["extra_train_jsonls"] == [{"path": "data/repair/surface_alignment_train.jsonl", "rows": 1}]
+    assert any(row["id"] == "repair_0" for row in train_rows)
+    assert all(row["id"] != "repair_0" for row in val_rows)
+
+
 def test_write_summary_updates_current_pointer(monkeypatch, tmp_path) -> None:
     run_dir = tmp_path / "outputs" / "stage5" / "dense"
     monkeypatch.setattr(module, "ROOT", tmp_path)
