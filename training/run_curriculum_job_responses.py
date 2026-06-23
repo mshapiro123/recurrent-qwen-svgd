@@ -150,6 +150,136 @@ def command_response(
         }
 
 
+class HfLocalGenerator:
+    """Load one local Hugging Face causal LM and generate job responses."""
+
+    def __init__(
+        self,
+        *,
+        model_name: str,
+        dtype: str = "bfloat16",
+        device: str = "cuda",
+        attn_implementation: str | None = None,
+        trust_remote_code: bool = False,
+        system_prompt: str | None = None,
+    ) -> None:
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+
+        dtype_map = {
+            "auto": "auto",
+            "float32": torch.float32,
+            "float16": torch.float16,
+            "bfloat16": torch.bfloat16,
+        }
+        if dtype not in dtype_map:
+            raise ValueError(f"Unsupported HF dtype {dtype!r}; expected one of {sorted(dtype_map)}")
+        self.model_name = model_name
+        self.device = device
+        self.system_prompt = system_prompt
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=trust_remote_code)
+        if self.tokenizer.pad_token_id is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+        kwargs: dict[str, Any] = {
+            "torch_dtype": dtype_map[dtype],
+            "trust_remote_code": trust_remote_code,
+        }
+        if attn_implementation:
+            kwargs["attn_implementation"] = attn_implementation
+        self.model = AutoModelForCausalLM.from_pretrained(model_name, **kwargs)
+        self.model.to(device)
+        self.model.eval()
+
+    def prompt_text(self, job: dict[str, Any]) -> str:
+        prompt = str(job.get("prompt") or "")
+        messages: list[dict[str, str]] = []
+        if self.system_prompt:
+            messages.append({"role": "system", "content": self.system_prompt})
+        messages.append({"role": "user", "content": prompt})
+        if getattr(self.tokenizer, "chat_template", None):
+            return self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        if self.system_prompt:
+            return f"System:\n{self.system_prompt}\n\nUser:\n{prompt}\n\nAssistant:\n"
+        return f"{prompt}\n\n"
+
+    def response(
+        self,
+        job: dict[str, Any],
+        *,
+        max_tokens: int,
+        temperature: float,
+        top_p: float,
+        timeout_sec: float,
+        stderr_limit: int,
+    ) -> dict[str, Any]:
+        import torch
+
+        prompt = self.prompt_text(job)
+        started = time.monotonic()
+        try:
+            encoded = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+            input_tokens = int(encoded["input_ids"].shape[-1])
+            do_sample = temperature > 0
+            generate_kwargs: dict[str, Any] = {
+                **encoded,
+                "max_new_tokens": max_tokens,
+                "do_sample": do_sample,
+                "pad_token_id": self.tokenizer.pad_token_id,
+                "eos_token_id": self.tokenizer.eos_token_id,
+            }
+            if do_sample:
+                generate_kwargs["temperature"] = temperature
+                generate_kwargs["top_p"] = top_p
+            with torch.no_grad():
+                output = self.model.generate(**generate_kwargs)
+            new_tokens = output[0, input_tokens:]
+            text = self.tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
+            elapsed = time.monotonic() - started
+            if elapsed > timeout_sec:
+                return {
+                    "job_id": job.get("job_id"),
+                    "response_id": response_id(job, prefix="hf-local"),
+                    "model": job.get("model"),
+                    "resolved_model": self.model_name,
+                    "stage": job.get("stage"),
+                    "backend": "hf_local",
+                    "status": "timeout",
+                    "response_text": text,
+                    "stderr": f"generation exceeded timeout_sec={timeout_sec}",
+                    "elapsed_sec": round(elapsed, 6),
+                    "prompt_tokens": input_tokens,
+                    "new_tokens": int(new_tokens.shape[-1]),
+                }
+            return {
+                "job_id": job.get("job_id"),
+                "response_id": response_id(job, prefix="hf-local"),
+                "model": job.get("model"),
+                "resolved_model": self.model_name,
+                "stage": job.get("stage"),
+                "backend": "hf_local",
+                "status": "ok" if text else "error",
+                "response_text": text,
+                "stderr": "" if text else "empty generated text",
+                "elapsed_sec": round(elapsed, 6),
+                "prompt_tokens": input_tokens,
+                "new_tokens": int(new_tokens.shape[-1]),
+            }
+        except Exception as exc:  # pragma: no cover - exercised by integration runs.
+            elapsed = time.monotonic() - started
+            return {
+                "job_id": job.get("job_id"),
+                "response_id": response_id(job, prefix="hf-local"),
+                "model": job.get("model"),
+                "resolved_model": self.model_name,
+                "stage": job.get("stage"),
+                "backend": "hf_local",
+                "status": "error",
+                "response_text": "",
+                "stderr": truncate_text(str(exc), limit=stderr_limit),
+                "elapsed_sec": round(elapsed, 6),
+            }
+
+
 def load_model_map(path: str | Path | None) -> dict[str, str]:
     if not path:
         return {}
@@ -429,6 +559,12 @@ def run_jobs(
     sleep_sec: float = 0.0,
     include_prompt_in_dry_run: bool = False,
     stderr_limit: int = 4000,
+    hf_model_name: str | None = None,
+    hf_dtype: str = "bfloat16",
+    hf_device: str = "cuda",
+    hf_attn_implementation: str | None = None,
+    hf_trust_remote_code: bool = False,
+    hf_top_p: float = 0.95,
 ) -> dict[str, Any]:
     completed = existing_job_ids(output_jsonl) if resume else set()
     selected = jobs[:limit] if limit is not None else jobs
@@ -436,6 +572,23 @@ def run_jobs(
     resolved_model_map = model_map or {}
     logical_model_counts: Counter[str] = Counter()
     resolved_model_counts: Counter[str] = Counter()
+    hf_generator: HfLocalGenerator | None = None
+    if backend == "hf_local":
+        if not hf_model_name:
+            raise ValueError("--hf_model_name is required for --backend hf_local")
+        validate_resolved_model_for_job(
+            {"stage": "capability_ladder_trace_solve"},
+            hf_model_name,
+            allow_student_lineage=allow_student_lineage,
+        )
+        hf_generator = HfLocalGenerator(
+            model_name=hf_model_name,
+            dtype=hf_dtype,
+            device=hf_device,
+            attn_implementation=hf_attn_implementation,
+            trust_remote_code=hf_trust_remote_code,
+            system_prompt=system_prompt,
+        )
 
     for job in selected:
         job_id = str(job.get("job_id") or "")
@@ -461,6 +614,26 @@ def run_jobs(
             row = command_response(
                 command_job,
                 command=command,
+                timeout_sec=timeout_sec,
+                stderr_limit=stderr_limit,
+            )
+        elif backend == "hf_local":
+            assert hf_generator is not None
+            resolved_model = concrete_model_for(
+                job,
+                model_override=model_override or hf_model_name,
+                model_map=resolved_model_map,
+            )
+            if resolved_model != hf_model_name:
+                raise ValueError(
+                    "hf_local loads exactly one model per run; resolved job model "
+                    f"{resolved_model!r} does not match --hf_model_name {hf_model_name!r}."
+                )
+            row = hf_generator.response(
+                {**job, "resolved_model": resolved_model},
+                max_tokens=max_tokens,
+                temperature=temperature,
+                top_p=hf_top_p,
                 timeout_sec=timeout_sec,
                 stderr_limit=stderr_limit,
             )
@@ -531,7 +704,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--jobs_jsonl", required=True)
     parser.add_argument("--output_jsonl", required=True)
     parser.add_argument("--report_json")
-    parser.add_argument("--backend", choices=("dry_run", "command", "openai_compatible"), default="dry_run")
+    parser.add_argument("--backend", choices=("dry_run", "command", "openai_compatible", "hf_local"), default="dry_run")
     parser.add_argument("--command", help="External command for backend=command. Job JSON is passed on stdin.")
     parser.add_argument("--api_key", help="API key for backend=openai_compatible. Prefer env vars/secrets over this flag.")
     parser.add_argument("--api_key_env", default="OPENAI_API_KEY")
@@ -563,6 +736,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--sleep_sec", type=float, default=0.0)
     parser.add_argument("--include_prompt_in_dry_run", action="store_true")
     parser.add_argument("--stderr_limit", type=int, default=4000)
+    parser.add_argument("--hf_model_name", help="Local Hugging Face causal LM for backend=hf_local.")
+    parser.add_argument("--hf_dtype", default="bfloat16", choices=("auto", "float32", "float16", "bfloat16"))
+    parser.add_argument("--hf_device", default="cuda")
+    parser.add_argument("--hf_attn_implementation")
+    parser.add_argument("--hf_trust_remote_code", action="store_true")
+    parser.add_argument("--hf_top_p", type=float, default=0.95)
     args = parser.parse_args(argv)
 
     jobs = read_jsonl(args.jobs_jsonl)
@@ -596,6 +775,12 @@ def main(argv: list[str] | None = None) -> int:
         sleep_sec=args.sleep_sec,
         include_prompt_in_dry_run=args.include_prompt_in_dry_run,
         stderr_limit=args.stderr_limit,
+        hf_model_name=args.hf_model_name,
+        hf_dtype=args.hf_dtype,
+        hf_device=args.hf_device,
+        hf_attn_implementation=args.hf_attn_implementation,
+        hf_trust_remote_code=args.hf_trust_remote_code,
+        hf_top_p=args.hf_top_p,
     )
     write_report(args.report_json, report)
     print(f"backend={report['backend']}")

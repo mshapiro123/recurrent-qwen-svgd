@@ -41,6 +41,14 @@ def secret(*names):
 GH_TOKEN = secret("GH_TOKEN", "GITHUB_TOKEN")
 assert GH_TOKEN, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
 
+RUN_PROVIDER = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER", "0") == "1"
+RUN_LOCAL_HF = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_LOCAL_HF", "0") == "1"
+BACKEND = os.environ.get(
+    "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BACKEND",
+    "openai_compatible" if RUN_PROVIDER else ("hf_local" if RUN_LOCAL_HF else "dry_run"),
+).strip()
+os.environ["STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BACKEND"] = BACKEND
+
 API_KEY_ENV = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_API_KEY_ENV", "").strip()
 if not API_KEY_ENV:
     if secret("OPENAI_API_KEY"):
@@ -58,11 +66,23 @@ if (
 provider_token = secret(API_KEY_ENV)
 if provider_token:
     os.environ[API_KEY_ENV] = provider_token
-if os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER", "0") != "1":
+if BACKEND == "hf_local":
+    if not RUN_LOCAL_HF:
+        raise RuntimeError(
+            "Local HF trace generation requires "
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_LOCAL_HF=1."
+        )
+    if not os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME", "").strip():
+        raise RuntimeError(
+            "Local HF trace generation requires "
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME."
+        )
+elif os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER", "0") != "1":
     raise RuntimeError(
         "Combined trace response+collection requires real provider responses. "
         "Set STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER=1 and choose "
-        "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_OVERRIDE or MODEL_MAP_JSON."
+        "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_OVERRIDE or MODEL_MAP_JSON; "
+        "or use backend=hf_local with STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_LOCAL_HF=1."
     )
 
 
@@ -126,7 +146,10 @@ print(
         "has_provider_token": bool(provider_token),
         "base_url": os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BASE_URL", "https://api.openai.com/v1"),
         "model_override": os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_OVERRIDE", ""),
+        "backend": BACKEND,
         "run_provider": os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER", "0"),
+        "run_local_hf": os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_LOCAL_HF", "0"),
+        "hf_model_name": os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME", ""),
     },
     flush=True,
 )
@@ -144,7 +167,14 @@ run(["git", "config", "user.email", "colab-runner@local"], cwd=ROOT)
 run(["git", "config", "user.name", "Colab Runner"], cwd=ROOT)
 run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"], cwd=ROOT)
 
-if not Path("/content/drive/MyDrive").exists():
+needs_drive = any(
+    os.environ.get(name, "1").strip().lower() in {"1", "true", "yes", "y"}
+    for name in (
+        "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BACKUP_DRIVE",
+        "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_BACKUP_DRIVE",
+    )
+)
+if needs_drive and not Path("/content/drive/MyDrive").exists():
     drive.mount("/content/drive", force_remount=True)
 
 run(

@@ -313,6 +313,65 @@ exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
 Prefer the combined response+collection cell below when you want one unattended
 CPU/network run from trace jobs to gated traced curriculum.
 
+## Next Paste-Anywhere Local-HF Trace Response+Collection Cell
+
+Use this on a high-memory GPU runtime when trace jobs are ready and you want a
+no-provider-spend baseline. It runs `Qwen/Qwen2.5-7B-Instruct` locally against
+the current trace jobs, accepts only answer-verified traces, pushes summaries to
+GitHub, and disconnects. Default limit is 32 jobs.
+
+```python
+import base64, json, os, time, urllib.request
+from google.colab import userdata
+
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_local_hf_trace_collect"
+
+# Optional: increase after the first pilot is healthy.
+# os.environ["STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_LIMIT"] = "64"
+# os.environ["STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME"] = "Qwen/Qwen2.5-7B-Instruct"
+
+def colab_secret(*names):
+    for name in names:
+        value = os.environ.get(name)
+        if value:
+            return value
+        try:
+            value = userdata.get(name)
+        except Exception:
+            value = None
+        if value:
+            return value
+    return None
+
+token = colab_secret("GH_TOKEN", "GITHUB_TOKEN")
+assert token, "Add GH_TOKEN or GITHUB_TOKEN to Colab secrets."
+
+headers = {
+    "Authorization": f"Bearer {token}",
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "Cache-Control": "no-cache",
+}
+
+def gh_json(url):
+    req = urllib.request.Request(url, headers=headers)
+    return json.loads(urllib.request.urlopen(req).read().decode("utf-8"))
+
+ref_payload = gh_json(
+    f"https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/git/ref/heads/main?cache_bust={time.time_ns()}"
+)
+resolved_ref = ref_payload["object"]["sha"]
+payload = gh_json(
+    "https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/"
+    f"contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py?ref={resolved_ref}&cache_bust={time.time_ns()}"
+)
+code = base64.b64decode(payload["content"]).decode("utf-8")
+print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12])
+assert "capability_ladder_local_hf_trace_collect" in code, "Fetched stale bootstrap without local-HF target."
+assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME" in code, "Fetched stale local-HF env."
+exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
+```
+
 ## Next Paste-Anywhere Capability-Ladder Trace Response+Collection Cell
 
 Use this after trace jobs are ready. Prefer CPU. It will not call a provider

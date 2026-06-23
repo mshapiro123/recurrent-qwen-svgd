@@ -19,6 +19,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "capability_ladder_trace_responses_cpu" - CPU/network provider responses for trace jobs.
 #   "capability_ladder_trace_collect_cpu" - CPU-only trace-response collection into gated SFT data.
 #   "capability_ladder_trace_response_collect_cpu" - CPU/network provider responses then immediate collection.
+#   "capability_ladder_local_hf_trace_collect" - GPU local-HF responses then immediate collection.
 #   "traced_capability_ladder_sft" - GPU Phase 1 SFT from the latest gate-ready traced capability ladder.
 #   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
 #   "depth_sweep_heldout" - L4/T4 held-out ARC tail loop-depth sweep for routing validation.
@@ -254,6 +255,42 @@ TARGETS = {
             "runtime.unassign",
         ],
         "env": {},
+    },
+    "capability_ladder_local_hf_trace_collect": {
+        "path": "colab/STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COLLECT_CELL.py",
+        "markers": [
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COLLECT_CELL_VERSION",
+            "capability_ladder_trace_response_collect_cpu",
+            "hf_local",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_LOCAL_HF",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_ALLOW_STUDENT_LINEAGE",
+            "colab/run_stage5_capability_ladder_trace_responses.py",
+            "colab/run_stage5_capability_ladder_trace_collect.py",
+            "tests/test_stage5_capability_ladder_trace_responses_runner.py",
+            "tests/test_stage5_capability_ladder_trace_collect_runner.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BACKEND": "hf_local",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_LOCAL_HF": "1",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME": "Qwen/Qwen2.5-7B-Instruct",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_DTYPE": "bfloat16",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_DEVICE": "cuda",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_TOP_P": "0.95",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_ALLOW_STUDENT_LINEAGE": "1",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_LIMIT": "32",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MAX_TOKENS": "1536",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_TEMPERATURE": "0.2",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_TIMEOUT_SEC": "300",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_FAIL_FAST": "0",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_ALLOW_GPU": "1",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COLLECT_ALLOW_GPU": "1",
+            "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_ALLOW_GPU": "1",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BACKUP_DRIVE": "0",
+            "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_BACKUP_DRIVE": "0",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COLLECT_DISCONNECT": "1",
+        },
     },
     "traced_capability_ladder_sft": {
         "path": "colab/STAGE5_TRACED_CAPABILITY_LADDER_SFT_CELL.py",

@@ -35,9 +35,15 @@ RUN_PROVIDER = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVI
     "yes",
     "y",
 }
+RUN_LOCAL_HF = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_LOCAL_HF", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 BACKEND = os.environ.get(
     "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BACKEND",
-    "openai_compatible" if RUN_PROVIDER else "dry_run",
+    "openai_compatible" if RUN_PROVIDER else ("hf_local" if RUN_LOCAL_HF else "dry_run"),
 )
 API_KEY_ENV = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_API_KEY_ENV", "OPENAI_API_KEY")
 BASE_URL = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BASE_URL", "https://api.openai.com/v1")
@@ -56,6 +62,22 @@ SLEEP_SEC = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_SLEEP_SEC", 
 MAX_RETRIES = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MAX_RETRIES", "2")
 RETRY_SLEEP_SEC = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RETRY_SLEEP_SEC", "3")
 RETRY_BACKOFF = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RETRY_BACKOFF", "2")
+HF_MODEL_NAME = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME", "").strip()
+HF_DTYPE = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_DTYPE", "bfloat16").strip()
+HF_DEVICE = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_DEVICE", "cuda").strip()
+HF_ATTN_IMPLEMENTATION = os.environ.get(
+    "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_ATTN_IMPLEMENTATION",
+    "",
+).strip()
+HF_TOP_P = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_TOP_P", "0.95").strip()
+HF_TRUST_REMOTE_CODE = os.environ.get(
+    "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_TRUST_REMOTE_CODE",
+    "0",
+).strip().lower() in {"1", "true", "yes", "y"}
+ALLOW_STUDENT_LINEAGE = os.environ.get(
+    "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_ALLOW_STUDENT_LINEAGE",
+    "0",
+).strip().lower() in {"1", "true", "yes", "y"}
 FAIL_FAST = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_FAIL_FAST", "1").strip().lower() in {
     "1",
     "true",
@@ -233,6 +255,12 @@ def restore_if_missing(path: Path, *, filename: str, run_id_hint: str) -> dict[s
 def provider_config_ready() -> tuple[bool, str]:
     if BACKEND == "dry_run":
         return True, "dry_run"
+    if BACKEND == "hf_local":
+        if not RUN_LOCAL_HF:
+            return False, "Set STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_LOCAL_HF=1 before local HF generation."
+        if not HF_MODEL_NAME:
+            return False, "Set STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME for backend=hf_local."
+        return True, "ready"
     if not RUN_PROVIDER:
         return False, "Set STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER=1 before provider/API spend."
     if BACKEND == "openai_compatible" and not (MODEL_OVERRIDE or MODEL_MAP_JSON or MODEL_MAP_JSON_INLINE):
@@ -313,6 +341,25 @@ def run_responses(jobs_jsonl: Path) -> tuple[Path, Path, dict[str, Any]]:
             cmd.extend(["--model_override", MODEL_OVERRIDE])
         if model_map_path is not None:
             cmd.extend(["--model_map_json", path_for_cli(model_map_path)])
+    elif BACKEND == "hf_local":
+        cmd.extend(
+            [
+                "--hf_model_name",
+                HF_MODEL_NAME,
+                "--hf_dtype",
+                HF_DTYPE,
+                "--hf_device",
+                HF_DEVICE,
+                "--hf_top_p",
+                HF_TOP_P,
+            ]
+        )
+        if HF_ATTN_IMPLEMENTATION:
+            cmd.extend(["--hf_attn_implementation", HF_ATTN_IMPLEMENTATION])
+        if HF_TRUST_REMOTE_CODE:
+            cmd.append("--hf_trust_remote_code")
+        if ALLOW_STUDENT_LINEAGE:
+            cmd.append("--allow_student_lineage")
     run(cmd, check=False, log_name="run_curriculum_job_responses.log")
     return responses_jsonl, report_json, read_json(report_json)
 
@@ -407,6 +454,8 @@ def write_summary(
         "source_summary": path_for_cli(source_summary),
         "backend": BACKEND,
         "run_provider": RUN_PROVIDER,
+        "run_local_hf": RUN_LOCAL_HF,
+        "hf_model_name": HF_MODEL_NAME if BACKEND == "hf_local" else "",
         "restore": restore_report,
         "response_report": response_report,
         "artifacts": {
@@ -437,6 +486,7 @@ def markdown_summary(payload: dict[str, Any]) -> str:
             "",
             f"- Status: `{payload['status']}`",
             f"- Backend: `{payload['backend']}`",
+            f"- HF model: `{payload.get('hf_model_name') or ''}`",
             f"- Selected jobs: `{report.get('selected')}`",
             f"- Written: `{report.get('written')}`",
             f"- Skipped: `{report.get('skipped')}`",

@@ -387,6 +387,107 @@ def test_openai_compatible_allows_student_lineage_for_reference_attempt(tmp_path
     assert rows[0]["resolved_model"] == "Qwen/Qwen2.5-0.5B-Instruct"
 
 
+def test_hf_local_backend_requires_model_name(tmp_path) -> None:
+    output = tmp_path / "responses.jsonl"
+
+    with pytest.raises(ValueError, match="hf_model_name"):
+        run_jobs([job("job-hf")], output_jsonl=output, backend="hf_local")
+
+
+def test_hf_local_backend_blocks_student_lineage_without_opt_in(tmp_path) -> None:
+    output = tmp_path / "responses.jsonl"
+
+    with pytest.raises(ValueError, match="Student-lineage models are blocked"):
+        run_jobs(
+            [job("job-hf")],
+            output_jsonl=output,
+            backend="hf_local",
+            hf_model_name="Qwen/Qwen2.5-7B-Instruct",
+        )
+
+
+def test_hf_local_backend_loads_once_and_writes_standard_rows(tmp_path, monkeypatch) -> None:
+    output = tmp_path / "responses.jsonl"
+    init_kwargs = {}
+    calls: list[dict] = []
+
+    class FakeHfLocalGenerator:
+        def __init__(self, **kwargs):
+            init_kwargs.update(kwargs)
+
+        def response(self, job_payload, **kwargs):
+            calls.append({"job": job_payload, "kwargs": kwargs})
+            return {
+                "job_id": job_payload["job_id"],
+                "response_id": "hf-local-" + job_payload["job_id"],
+                "model": job_payload["model"],
+                "resolved_model": init_kwargs["model_name"],
+                "stage": job_payload["stage"],
+                "backend": "hf_local",
+                "status": "ok",
+                "response_text": "ANSWER: B",
+                "elapsed_sec": 0.01,
+                "prompt_tokens": 10,
+                "new_tokens": 3,
+            }
+
+    monkeypatch.setattr(runner, "HfLocalGenerator", FakeHfLocalGenerator)
+
+    report = run_jobs(
+        [job("job-hf-1"), job("job-hf-2")],
+        output_jsonl=output,
+        backend="hf_local",
+        hf_model_name="teacher-model",
+        hf_dtype="float16",
+        hf_device="cuda",
+        hf_attn_implementation="eager",
+        hf_top_p=0.8,
+        max_tokens=64,
+        temperature=0.7,
+        timeout_sec=12,
+    )
+
+    rows = read_jsonl(output)
+    assert report["written"] == 2
+    assert report["resolved_model_counts"] == {"teacher-model": 2}
+    assert rows[0]["backend"] == "hf_local"
+    assert rows[0]["response_text"] == "ANSWER: B"
+    assert init_kwargs == {
+        "model_name": "teacher-model",
+        "dtype": "float16",
+        "device": "cuda",
+        "attn_implementation": "eager",
+        "trust_remote_code": False,
+        "system_prompt": None,
+    }
+    assert len(calls) == 2
+    assert calls[0]["job"]["resolved_model"] == "teacher-model"
+    assert calls[0]["kwargs"]["max_tokens"] == 64
+    assert calls[0]["kwargs"]["temperature"] == 0.7
+    assert calls[0]["kwargs"]["top_p"] == 0.8
+    assert calls[0]["kwargs"]["timeout_sec"] == 12
+    assert calls[0]["kwargs"]["stderr_limit"] == 4000
+
+
+def test_hf_local_backend_rejects_mismatched_model_map(tmp_path, monkeypatch) -> None:
+    output = tmp_path / "responses.jsonl"
+
+    class FakeHfLocalGenerator:
+        def __init__(self, **_kwargs):
+            pass
+
+    monkeypatch.setattr(runner, "HfLocalGenerator", FakeHfLocalGenerator)
+
+    with pytest.raises(ValueError, match="loads exactly one model"):
+        run_jobs(
+            [{**job("job-hf-map"), "model": "logical-opus"}],
+            output_jsonl=output,
+            backend="hf_local",
+            hf_model_name="teacher-model",
+            model_override="other-model",
+        )
+
+
 def test_cli_runs_dry_run_with_report(tmp_path) -> None:
     jobs = tmp_path / "jobs.jsonl"
     output = tmp_path / "responses.jsonl"

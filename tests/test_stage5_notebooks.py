@@ -592,6 +592,24 @@ def test_capability_ladder_trace_response_collect_cell_runs_both_steps() -> None
     assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_trace_response_collect_cpu"' in current_action
 
 
+def test_capability_ladder_local_hf_trace_collect_target_is_bootstrapped() -> None:
+    plain = (ROOT / "colab/STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COLLECT_CELL.py").read_text(encoding="utf-8")
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
+
+    assert "hf_local" in plain
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_LOCAL_HF" in plain
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME" in plain
+    assert "capability_ladder_local_hf_trace_collect" in bootstrap
+    assert "Qwen/Qwen2.5-7B-Instruct" in bootstrap
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_ALLOW_STUDENT_LINEAGE" in bootstrap
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_LIMIT" in bootstrap
+    assert "capability_ladder_local_hf_trace_collect" in bootstrap_md
+    assert "Next Paste-Anywhere Local-HF Trace Response+Collection Cell" in current_action
+    assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_local_hf_trace_collect"' in current_action
+
+
 def test_traced_capability_ladder_sft_cell_derives_training_env_from_collection() -> None:
     plain = (ROOT / "colab/STAGE5_TRACED_CAPABILITY_LADDER_SFT_CELL.py").read_text(encoding="utf-8")
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
