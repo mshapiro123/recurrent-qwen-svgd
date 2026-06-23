@@ -767,7 +767,8 @@ def test_traced_sft_scale64_benchmark_target_is_bootstrapped() -> None:
     assert "traced_sft_scale64_benchmark" in bootstrap
     assert "STAGE5_TRACED_SFT_BENCHMARK_CELL.py" in bootstrap
     assert "traced_sft_scale64_benchmark" in bootstrap_md
-    assert "content-route direct-preservation probe" in current_action
+    assert "content-route direct-preservation precheck" in current_action
+    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_direct_preservation_precheck" in current_action
     assert "STAGE5_CURRENT_A100_TARGET=traced_sft_scale64_benchmark" in current_action
 
 
@@ -794,15 +795,20 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert "traced_sft_direct_preservation_probe" in bootstrap_md
     assert "traced_sft_direct_preservation_precheck" in bootstrap_md
     assert "traced_sft_direct_preservation_recover_only" in bootstrap_md
-    assert "content-route direct-preservation probe" in current_action
-    assert "bounded stop-on-first-pass" in current_action
+    assert "content-route direct-preservation precheck" in current_action
+    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_direct_preservation_precheck" in current_action
+    assert "stops before\ntraining" in current_action
+    assert "direct_route_loop1_matches_base_without_training" in current_action
+    assert "direct_route_precheck_needs_training" in current_action
+    assert "Only after the precheck says training is needed" in current_action
+    assert "bounded\nstop-on-first-pass sweep" in current_action
     assert "learned-depth router continuation" in current_action
     assert "traced_sft_depth_router_after_direct_preserve" in current_action
     assert "before commit `d7682ec`" in current_action
     assert "Stale-safe fresh-runtime launcher" in current_action
     assert "api.github.com/repos/mshapiro123/recurrent-qwen-svgd" in current_action
-    assert "STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER" in current_action
-    assert '"STAGE5_CURRENT_A100_TARGET"] = "traced_sft_direct_preservation_probe"' in current_action
+    assert "STAGE5_DIRECT_PRESERVE_PRECHECK_ONLY" in current_action
+    assert '"STAGE5_CURRENT_A100_TARGET"] = "traced_sft_direct_preservation_precheck"' in current_action
     assert "stage5_latest_direct_preservation_summary.txt" in direct_cell
     assert "stage5_current_source_summary.txt" in direct_cell
     assert "stage5_direct_preservation_probe_failure" in direct_cell

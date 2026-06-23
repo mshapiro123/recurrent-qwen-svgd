@@ -51,20 +51,40 @@ outputs/stage5/stage5_traced_sft_assessment_20260623_195134_reassessed/summary.j
 status = needs_direct_preservation_repair
 ```
 
-The next action is a bounded **content-route direct-preservation probe**. Do
-not scale traces or add particles yet. Use:
+The next action is a cheap **content-route direct-preservation precheck**. Do
+not scale traces or add particles yet. First determine whether the scale64
+checkpoint already preserves base behavior when forced through the loop-1
+direct route. Use:
+
+```text
+STAGE5_CURRENT_A100_TARGET=traced_sft_direct_preservation_precheck
+```
+
+This evaluates base, recurrent loop-1, and recurrent loop-4 on the
+scale64 checkpoint using `question_only` / `option_text` scoring, writes a
+Stage 5 direct-preservation summary, publishes it to GitHub, and stops before
+training.
+
+Outcomes:
+
+```text
+direct_route_loop1_matches_base_without_training -> run confirmation, then depth-router continuation if confirmed
+direct_route_precheck_needs_training             -> run the full bounded repair sweep
+```
+
+Only after the precheck says training is needed should you run:
 
 ```text
 STAGE5_CURRENT_A100_TARGET=traced_sft_direct_preservation_probe
 ```
 
-This runs max-loop-1 direct preservation from the scale64 checkpoint using
-`question_only` / `option_text` scoring and base-logit distillation on
-base-correct ARC-Easy rows. The target is now a bounded stop-on-first-pass
-direct-preservation sweep: it starts with the previous conservative
+That full repair target runs max-loop-1 direct preservation from the scale64
+checkpoint using `question_only` / `option_text` scoring and base-logit
+distillation on base-correct ARC-Easy rows. It is a bounded
+stop-on-first-pass sweep: it starts with the previous conservative
 `lr=5e-7, steps=75, distill=1.0` arm, then only if that does not pass tries
 `lr=1e-6, steps=100, distill=1.0`, then
-`lr=2e-6, steps=100, distill=2.0`. For this traced-SFT target, the probe now
+`lr=2e-6, steps=100, distill=2.0`. For this traced-SFT target, a passed repair
 chains the next cheap steps automatically:
 
 ```text
@@ -108,7 +128,7 @@ if hf:
     os.environ["HF_TOKEN"] = hf
     os.environ["HUGGINGFACE_HUB_TOKEN"] = hf
 
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_direct_preservation_probe"
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_direct_preservation_precheck"
 
 url = (
     "https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/"
@@ -125,8 +145,9 @@ payload = json.loads(urllib.request.urlopen(req).read().decode("utf-8"))
 code = base64.b64decode(payload["content"]).decode("utf-8")
 required = [
     "sha_resolved_nested_fetch_v3",
-    "traced_sft_direct_preservation_probe",
-    "STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER",
+    "traced_sft_direct_preservation_precheck",
+    "STAGE5_DIRECT_PRESERVE_PRECHECK_ONLY",
+    "direct_route_precheck_needs_training",
 ]
 missing = [marker for marker in required if marker not in code]
 assert not missing, f"Fetched bootstrap is stale or incomplete: {missing}"
@@ -140,7 +161,7 @@ latest `main`; it can run a stale bootstrap if Colab keeps an old
 
 ```python
 import os
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_direct_preservation_probe"
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_direct_preservation_precheck"
 exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py", encoding="utf-8").read())
 ```
 
