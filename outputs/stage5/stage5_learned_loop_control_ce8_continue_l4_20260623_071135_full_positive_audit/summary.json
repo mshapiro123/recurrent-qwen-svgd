@@ -1,0 +1,70 @@
+{
+  "run_id": "stage5_learned_loop_control_ce8_continue_l4_20260623_071135_full_positive_audit",
+  "kind": "stage5_halt_routing_audit",
+  "source_summary": "outputs/stage5/stage5_learned_loop_control_ce8_continue_l4_20260623_071135/summary.json",
+  "checkpoint": "outputs/stage5/stage5_learned_loop_control_ce8_continue_l4_20260623_071135/phase1/phase1_step_400.pt",
+  "positive_sft": "data/curriculum/stage5_learned_loop_control_ce8_continue_l4_20260623_071135_mcq_ladder/positive_sft.jsonl",
+  "use_target_loop_control": false,
+  "use_learned_loop_control": true,
+  "loop_control_ce_weight": 8.0,
+  "metrics": {
+    "lora_recurrent_modules": 84.0,
+    "examples": 73.0,
+    "expected_ce": 0.226093,
+    "halting_kl": 0.44691,
+    "loop_control_ce": 1.248264,
+    "loss": 10.265834,
+    "mean_expected_loops": 1.729571,
+    "mean_halt_entropy": 0.771577,
+    "target_loop_abs_error": 0.682721,
+    "target_mean_loops": 1.90411,
+    "group/curriculum_mode/deep_narrow/examples": 40.0,
+    "group/curriculum_mode/deep_narrow/expected_ce": 0.240439,
+    "group/curriculum_mode/deep_narrow/halting_kl": 0.552976,
+    "group/curriculum_mode/deep_narrow/loop_control_ce": 1.601174,
+    "group/curriculum_mode/deep_narrow/loss": 13.116189,
+    "group/curriculum_mode/deep_narrow/mean_expected_loops": 1.870926,
+    "group/curriculum_mode/deep_narrow/mean_halt_entropy": 0.815838,
+    "group/curriculum_mode/deep_narrow/target_loop_abs_error": 0.785423,
+    "group/curriculum_mode/deep_narrow/target_mean_loops": 2.65,
+    "group/curriculum_mode/direct/examples": 33.0,
+    "group/curriculum_mode/direct/expected_ce": 0.208704,
+    "group/curriculum_mode/direct/halting_kl": 0.318345,
+    "group/curriculum_mode/direct/loop_control_ce": 0.820494,
+    "group/curriculum_mode/direct/loss": 6.810857,
+    "group/curriculum_mode/direct/mean_expected_loops": 1.558232,
+    "group/curriculum_mode/direct/mean_halt_entropy": 0.717927,
+    "group/curriculum_mode/direct/target_loop_abs_error": 0.558232,
+    "group/curriculum_mode/direct/target_mean_loops": 1.0
+  },
+  "by_mode": {
+    "deep_narrow": {
+      "examples": 40.0,
+      "expected_ce": 0.240439,
+      "halting_kl": 0.552976,
+      "loop_control_ce": 1.601174,
+      "loss": 13.116189,
+      "mean_expected_loops": 1.870926,
+      "mean_halt_entropy": 0.815838,
+      "target_loop_abs_error": 0.785423,
+      "target_mean_loops": 2.65
+    },
+    "direct": {
+      "examples": 33.0,
+      "expected_ce": 0.208704,
+      "halting_kl": 0.318345,
+      "loop_control_ce": 0.820494,
+      "loss": 6.810857,
+      "mean_expected_loops": 1.558232,
+      "mean_halt_entropy": 0.717927,
+      "target_loop_abs_error": 0.558232,
+      "target_mean_loops": 1.0
+    }
+  },
+  "depth_gradient": {
+    "direct_mean_expected_loops": 1.558232,
+    "deep_narrow_mean_expected_loops": 1.870926,
+    "margin": 0.312694,
+    "observed": true
+  }
+}
