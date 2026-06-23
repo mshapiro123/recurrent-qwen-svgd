@@ -520,6 +520,32 @@ if run_sft:
             }
         )
         run([sys.executable, "colab/run_stage5_benchmark_suite.py"], cwd=ROOT, env=benchmark_env)
+        run_assessment = env_flag("STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_RUN_ASSESSMENT", "1")
+        if run_assessment:
+            print("=== Traced-SFT benchmark assessment ===", flush=True)
+            assessment_source = summary_pointer.read_text(encoding="utf-8").strip()
+            assessment_env = os.environ.copy()
+            assessment_env.update(
+                {
+                    "STAGE5_TRACED_SFT_ASSESS_PUSH": "1",
+                }
+            )
+            run(
+                [
+                    sys.executable,
+                    "colab/assess_stage5_traced_sft.py",
+                    "--summary_json",
+                    assessment_source,
+                ],
+                cwd=ROOT,
+                env=assessment_env,
+            )
+        else:
+            print(
+                "Traced-SFT assessment skipped by "
+                "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_RUN_ASSESSMENT=0.",
+                flush=True,
+            )
     else:
         print("Post-SFT benchmark skipped by STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_RUN_BENCHMARK=0.", flush=True)
 else:

@@ -680,6 +680,8 @@ def test_capability_ladder_local_hf_trace_sft_target_is_bootstrapped() -> None:
     assert "stage5_capability_ladder_trace_collection" in plain
     assert "colab/run_stage5_curriculum_sft.py" in plain
     assert "colab/run_stage5_benchmark_suite.py" in plain
+    assert "colab/assess_stage5_traced_sft.py" in plain
+    assert "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_RUN_ASSESSMENT" in plain
     assert "STAGE5_CURRICULUM_USE_LEARNED_LOOP_CONTROL" in plain
     assert "STAGE5_CURRICULUM_LOOP_CONTROL_CE_WEIGHT" in plain
     assert "STAGE5_CURRICULUM_HALT_TARGET_NLL_WEIGHT" in plain
@@ -693,6 +695,7 @@ def test_capability_ladder_local_hf_trace_sft_target_is_bootstrapped() -> None:
     assert "runtime.unassign()" in plain
     assert "capability_ladder_local_hf_trace_sft" in bootstrap
     assert "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_CELL.py" in bootstrap
+    assert "colab/assess_stage5_traced_sft.py" in bootstrap
     assert "capability_ladder_local_hf_trace_sft" in bootstrap_md
     assert "Next Paste-Anywhere Local-HF Trace-to-SFT Chain Cell" in current_action
     assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_local_hf_trace_sft"' in current_action
@@ -714,6 +717,7 @@ def test_capability_ladder_local_hf_trace_sft_scale64_target_is_bootstrapped() -
     assert '"STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_BENCHMARKS": "arc_easy,arc_challenge"' in bootstrap
     assert '"STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_ARC_EASY_LIMIT": "128"' in bootstrap
     assert '"STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_ARC_CHALLENGE_LIMIT": "128"' in bootstrap
+    assert "colab/assess_stage5_traced_sft.py" in bootstrap
     assert "capability_ladder_local_hf_trace_sft_scale64" in bootstrap_md
     assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_local_hf_trace_sft_scale64"' in current_action
 
