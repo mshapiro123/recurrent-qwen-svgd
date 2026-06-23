@@ -129,6 +129,7 @@ def main() -> int:
                 num_trajectories=cfg.get("num_trajectories", 2),
                 sample_latents=cfg.get("sample_latents", True),
                 beta=cfg.get("beta", 0.02),
+                halt_target_nll_weight=cfg.get("halt_target_nll_weight", 0.0),
                 eta=cfg.get("eta", 1e-4),
                 rho=cfg.get("rho", 1e-3),
                 latent_injection_mode=cfg.get("latent_injection_mode", "pre"),

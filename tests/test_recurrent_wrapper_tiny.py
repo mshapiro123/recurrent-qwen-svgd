@@ -168,6 +168,46 @@ def test_logits_to_keep_preserves_trajectory_last_token_logits_on_tiny_model():
     assert torch.allclose(full.trajectory_logits[:, :, -1:, :], last_only.trajectory_logits)
 
 
+def test_halting_target_nll_weight_adds_supervised_loop_loss_on_tiny_model():
+    torch.manual_seed(0)
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+    labels = input_ids.clone()
+    target_loop_counts = torch.tensor([3])
+
+    with torch.no_grad():
+        baseline = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            labels=labels,
+            target_loop_counts=target_loop_counts,
+            max_loops=4,
+            beta=0.0,
+            halt_target_nll_weight=0.0,
+            use_cache=False,
+            return_dict=True,
+        )
+        supervised = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            labels=labels,
+            target_loop_counts=target_loop_counts,
+            max_loops=4,
+            beta=0.0,
+            halt_target_nll_weight=0.5,
+            use_cache=False,
+            return_dict=True,
+        )
+
+    assert "target_mean_loops" in supervised.metrics
+    assert "target_loop_abs_error" in supervised.metrics
+    assert "halting_target_nll" in supervised.metrics
+    assert torch.isfinite(supervised.metrics["halting_target_nll"])
+    assert supervised.loss > baseline.loss
+
+
 def test_invalid_latent_injection_mode_raises():
     model = TinyCausalLM().eval()
     wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()

@@ -126,6 +126,7 @@ def main() -> int:
                 **batch,
                 max_loops=cfg.get("max_loops", 4),
                 beta=cfg.get("beta", 0.02),
+                halt_target_nll_weight=cfg.get("halt_target_nll_weight", 0.0),
                 use_cache=False,
                 return_dict=True,
             )

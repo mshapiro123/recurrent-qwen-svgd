@@ -217,6 +217,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         num_trajectories: int = 1,
         sample_latents: bool = False,
         beta: float = 0.0,
+        halt_target_nll_weight: float = 0.0,
         eta: float = 0.0,
         rho: float = 0.0,
         latent_injection_mode: str = "pre",
@@ -533,6 +534,27 @@ class RecurrentQwenForCausalLM(nn.Module):
                 halt_kl = categorical_kl(halting_weights, prior).mean()
                 loss = loss + float(beta) * halt_kl
                 metrics["halting_kl"] = halt_kl.detach()
+
+            target_indices = self._resolve_target_loop_indices(
+                target_loop_counts=target_loop_counts,
+                batch_size=batch_size,
+                num_trajectories=num_trajectories,
+                max_loops=max_loops,
+                device=halting_weights.device,
+            )
+            if target_indices is not None:
+                expected_flat = expected_loop_count(halting_weights)
+                target_values = target_indices.to(dtype=expected_flat.dtype) + 1.0
+                metrics["target_mean_loops"] = target_values.mean().detach()
+                metrics["target_loop_abs_error"] = (expected_flat - target_values).abs().mean().detach()
+                if halt_target_nll_weight:
+                    halt_target_nll = F.nll_loss(
+                        halting_weights.float().clamp_min(1e-8).log(),
+                        target_indices,
+                        reduction="mean",
+                    )
+                    loss = loss + float(halt_target_nll_weight) * halt_target_nll
+                    metrics["halting_target_nll"] = halt_target_nll.detach()
 
             if latent_kls and eta:
                 latent_kl = torch.stack(latent_kls, dim=-1).mean()
@@ -851,6 +873,23 @@ class RecurrentQwenForCausalLM(nn.Module):
         if counts.shape[0] == batch_size and num_trajectories > 1:
             counts = counts.repeat_interleave(num_trajectories, dim=0)
         return centered_geometric_prior(counts, max_loops)
+
+    @staticmethod
+    def _resolve_target_loop_indices(
+        target_loop_counts: Optional[torch.Tensor],
+        batch_size: int,
+        num_trajectories: int,
+        max_loops: int,
+        device: torch.device,
+    ) -> Optional[torch.Tensor]:
+        if target_loop_counts is None:
+            return None
+        counts = target_loop_counts.to(device=device)
+        if counts.dim() == 0:
+            counts = counts.expand(batch_size)
+        if counts.shape[0] == batch_size and num_trajectories > 1:
+            counts = counts.repeat_interleave(num_trajectories, dim=0)
+        return counts.clamp(1, max_loops).long() - 1
 
     @staticmethod
     def _entropy(probs: torch.Tensor, eps: float = 1e-8) -> torch.Tensor:
