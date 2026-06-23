@@ -198,6 +198,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "capability_ladder_local_hf_trace_collect" - GPU local-HF responses then immediate collection.
 #   "capability_ladder_local_hf_trace_sft" - GPU local-HF traces, collection, then bounded recurrent SFT.
 #   "traced_sft_scale64_benchmark" - benchmark the completed scale64 traced SFT checkpoint.
+#   "traced_sft_direct_preservation_probe" - content-route direct preservation from the scale64 checkpoint.
 #   "traced_capability_ladder_sft" - GPU Phase 1 SFT from the latest gate-ready traced capability ladder.
 #   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
 #   "depth_sweep_heldout" - L4/T4 held-out ARC tail loop-depth sweep for routing validation.
@@ -697,6 +698,33 @@ TARGETS = {
             "runtime.unassign",
         ],
         "env": {},
+    },
+    "traced_sft_direct_preservation_probe": {
+        "path": "colab/STAGE5_DIRECT_PRESERVATION_PROBE_CELL.py",
+        "markers": [
+            "STAGE5_DIRECT_PRESERVATION_PROBE_CELL_VERSION",
+            "direct_preservation_probe",
+            "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY",
+            "STAGE5_DIRECT_PRESERVE_MAX_STEPS",
+            "colab/run_stage5_direct_preservation_probe.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY": (
+                "outputs/stage5/stage5_traced_sft_assessment_20260623_195134_reassessed/summary.json"
+            ),
+            "STAGE5_DIRECT_PRESERVE_RUN_ID": "stage5_traced_sft_direct_preservation_20260623_scale64",
+            "STAGE5_DIRECT_PRESERVE_ARC_TRAIN_LIMIT": "512",
+            "STAGE5_DIRECT_PRESERVE_ARC_EVAL_LIMIT": "128",
+            "STAGE5_DIRECT_PRESERVE_MAX_STEPS": "75",
+            "STAGE5_DIRECT_PRESERVE_MIN_BASE_MARGIN": "1.0",
+            "STAGE5_DIRECT_PRESERVE_PROMPT_STYLE": "question_only",
+            "STAGE5_DIRECT_PRESERVE_SCORE_TARGET": "option_text",
+            "STAGE5_DIRECT_PRESERVE_LR": "5e-7",
+            "STAGE5_DIRECT_PRESERVE_DISTILL_WEIGHT": "1.0",
+            "STAGE5_DIRECT_PRESERVE_DISTILL_TEMPERATURE": "2.0",
+            "STAGE5_DIRECT_PRESERVE_DISCONNECT": "1",
+        },
     },
     "depth_sweep_heldout": {
         "path": "colab/STAGE5_DEPTH_SWEEP_BENCHMARK_CELL.py",

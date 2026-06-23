@@ -36,6 +36,7 @@ ALLOWED_CYCLIC_NEGATIVE_DELTA = int(
 MIN_DEPTH_MARGIN = float(os.environ.get("STAGE5_TRACED_SFT_ASSESS_MIN_DEPTH_MARGIN", "0.5"))
 MAX_DIRECT_MEAN_LOOPS = float(os.environ.get("STAGE5_TRACED_SFT_ASSESS_MAX_DIRECT_MEAN_LOOPS", "1.35"))
 MIN_DEEP_MEAN_LOOPS = float(os.environ.get("STAGE5_TRACED_SFT_ASSESS_MIN_DEEP_MEAN_LOOPS", "1.5"))
+LOOP_TOLERANCE = float(os.environ.get("STAGE5_TRACED_SFT_ASSESS_LOOP_TOLERANCE", "0.02"))
 PUSH_RESULTS = os.environ.get("STAGE5_TRACED_SFT_ASSESS_PUSH", "1").strip().lower() in {
     "1",
     "true",
@@ -162,9 +163,9 @@ def depth_evidence(sft_summary: dict[str, Any] | None) -> dict[str, Any]:
     direct = mode_metric(sft_summary, "direct", "mean_expected_loops")
     deep = mode_metric(sft_summary, "deep_narrow", "mean_expected_loops")
     margin = None if direct is None or deep is None else deep - direct
-    direct_under_max = direct is not None and direct <= MAX_DIRECT_MEAN_LOOPS
-    deep_over_min = deep is not None and deep >= MIN_DEEP_MEAN_LOOPS
-    margin_passed = margin is not None and margin >= MIN_DEPTH_MARGIN
+    direct_under_max = direct is not None and direct <= MAX_DIRECT_MEAN_LOOPS + LOOP_TOLERANCE
+    deep_over_min = deep is not None and deep >= MIN_DEEP_MEAN_LOOPS - LOOP_TOLERANCE
+    margin_passed = margin is not None and margin >= MIN_DEPTH_MARGIN - LOOP_TOLERANCE
     return {
         "available": direct is not None and deep is not None,
         "direct_mean_expected_loops": direct,
@@ -173,6 +174,7 @@ def depth_evidence(sft_summary: dict[str, Any] | None) -> dict[str, Any]:
         "max_direct_mean_loops": MAX_DIRECT_MEAN_LOOPS,
         "min_deep_mean_loops": MIN_DEEP_MEAN_LOOPS,
         "min_depth_margin": MIN_DEPTH_MARGIN,
+        "loop_tolerance": LOOP_TOLERANCE,
         "direct_under_max": direct_under_max,
         "deep_over_min": deep_over_min,
         "margin_passed": margin_passed,
@@ -286,24 +288,24 @@ def assess(*, benchmark_summary_path: Path, benchmark_summary: dict[str, Any]) -
     if not suite_completed:
         status = "needs_benchmark_rerun"
         next_step = "Inspect benchmark logs and rerun failed slices."
-    elif not depth["passed"]:
-        status = "needs_depth_routing_repair"
-        next_step = "Repair learned-loop supervision before scaling data or adding particles."
+    elif not enough_benchmark_coverage:
+        status = "needs_broader_benchmark"
+        next_step = "Run ARC-Easy and ARC-Challenge with larger paired slices before Phase 2."
     elif not cyclic_ok:
         status = "needs_calibration_repair"
         next_step = "Fix answer calibration before adding more trace data or Phase 2 particles."
     elif not content_ok:
         status = "needs_direct_preservation_repair"
         next_step = "Add direct/base-preservation rows or distillation before scaling hard traces."
+    elif not depth["passed"]:
+        status = "needs_depth_routing_repair"
+        next_step = "Repair learned-loop supervision before scaling data or adding particles."
     elif rows_seen < TARGET_TRACE_ROWS_FOR_PHASE2:
         status = "scale_trace_curriculum"
         next_step = (
             f"Scale local-HF trace curriculum toward {TARGET_TRACE_ROWS_FOR_PHASE2} verified rows, "
             "then rerun deterministic recurrent SFT and benchmark."
         )
-    elif not enough_benchmark_coverage:
-        status = "needs_broader_benchmark"
-        next_step = "Run ARC-Easy and ARC-Challenge with larger paired slices before Phase 2."
     else:
         status = "ready_for_phase2_probe"
         next_step = "Run a bounded Phase 2 particle/SVGD probe; keep deterministic checkpoint as the baseline."

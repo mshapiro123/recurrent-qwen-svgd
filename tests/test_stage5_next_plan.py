@@ -3093,6 +3093,26 @@ def test_mcq_scoring_policy_without_stale_artifacts_still_runs_policy_compliant_
     assert "STAGE5_BENCHMARK_SCORE_TARGETS=label,content_question_only,cyclic_label_aggregated" in actions[0]["command"]
 
 
+def test_traced_sft_assessment_content_regression_runs_content_direct_preservation(tmp_path) -> None:
+    source = tmp_path / "traced_sft_assessment" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_traced_sft_assessment",
+        "status": "needs_direct_preservation_repair",
+        "passed": False,
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert source_kind(payload) == "traced_sft_assessment"
+    assert actions[0]["name"] == "Run content-route direct-preservation probe"
+    assert "python colab/run_stage5_direct_preservation_probe.py" in actions[0]["command"]
+    assert "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY=" in actions[0]["command"]
+    assert "STAGE5_DIRECT_PRESERVE_PROMPT_STYLE=question_only" in actions[0]["command"]
+    assert "STAGE5_DIRECT_PRESERVE_SCORE_TARGET=option_text" in actions[0]["command"]
+    assert "STAGE5_DIRECT_PRESERVE_DISTILL_WEIGHT=1.0" in actions[0]["command"]
+
+
 def test_direct_preservation_probe_pass_confirms_larger_arc(tmp_path) -> None:
     source = tmp_path / "direct_preserve" / "summary.json"
     source.parent.mkdir()

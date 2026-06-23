@@ -167,6 +167,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or capability_ladder_curriculum_payload(payload) is not None
         or curriculum_sft_gate_payload(payload) is not None
         or curriculum_sft_payload(payload) is not None
+        or traced_sft_assessment_payload(payload) is not None
         or reasoning_dataset_audit_payload(payload) is not None
         or stage4_opus_finetune_payload(payload) is not None
         or depth_curve_summary_payload(payload) is not None
@@ -400,6 +401,10 @@ def mcq_scoring_policy_payload(payload: dict[str, Any]) -> dict[str, Any] | None
 
 def direct_preservation_probe_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "stage5_direct_preservation_probe" else None
+
+
+def traced_sft_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_traced_sft_assessment" else None
 
 
 def claim_readiness_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -2945,6 +2950,64 @@ def mcq_scoring_policy_actions(payload: dict[str, Any], *, source_summary: Path)
     ]
 
 
+def traced_sft_assessment_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    if status == "needs_direct_preservation_repair":
+        return [
+            make_action(
+                "Run content-route direct-preservation probe",
+                (
+                    "The scaled trace SFT improved/held hard ARC and cyclic scores but regressed ARC-Easy "
+                    "content-only scoring. Run one bounded max_loops=1 preservation probe with question-only "
+                    "option-text scoring and base-logit distillation before scaling traces or adding particles."
+                ),
+                command_env(
+                    {
+                        "STAGE5_DIRECT_PRESERVE_RUN_ID": f"{RUN_ID}_traced_sft_direct_preservation",
+                        "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY": path_for_cli(source_summary),
+                        "STAGE5_DIRECT_PRESERVE_ARC_TRAIN_LIMIT": "512",
+                        "STAGE5_DIRECT_PRESERVE_ARC_EVAL_LIMIT": "128",
+                        "STAGE5_DIRECT_PRESERVE_MAX_STEPS": "75",
+                        "STAGE5_DIRECT_PRESERVE_MIN_BASE_MARGIN": "1.0",
+                        "STAGE5_DIRECT_PRESERVE_PROMPT_STYLE": "question_only",
+                        "STAGE5_DIRECT_PRESERVE_SCORE_TARGET": "option_text",
+                        "STAGE5_DIRECT_PRESERVE_LR": "5e-7",
+                        "STAGE5_DIRECT_PRESERVE_DISTILL_WEIGHT": "1.0",
+                        "STAGE5_DIRECT_PRESERVE_DISTILL_TEMPERATURE": "2.0",
+                    },
+                    "python colab/run_stage5_direct_preservation_probe.py",
+                ),
+                10,
+            )
+        ]
+    if status == "scale_trace_curriculum":
+        return [
+            make_action(
+                "Scale verified trace curriculum",
+                "The traced SFT remains near base and depth routing is acceptable; collect more verified traces before Phase 2.",
+                "cat colab/CURRENT_A100_ACTION.md",
+                8,
+            )
+        ]
+    if status == "ready_for_phase2_probe":
+        return [
+            make_action(
+                "Run bounded Phase 2 particle probe",
+                "The deterministic traced SFT cleared the assessment gate; run a small Phase 2 particle/SVGD probe against this checkpoint.",
+                "cat colab/CURRENT_A100_ACTION.md",
+                8,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect traced-SFT assessment `{status}`",
+            "The traced-SFT assessment did not map to an automated next run; inspect before spending GPU.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            8,
+        )
+    ]
+
+
 def direct_preservation_probe_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
     if status in {"direct_route_matches_base", "direct_route_loop1_matches_base_without_training", "direct_route_lift"}:
@@ -3799,6 +3862,9 @@ def plan_next_actions(
     mcq_policy = mcq_scoring_policy_payload(payload)
     if mcq_policy:
         return mcq_scoring_policy_actions(mcq_policy, source_summary=source_summary)
+    traced_sft_assessment = traced_sft_assessment_payload(payload)
+    if traced_sft_assessment:
+        return traced_sft_assessment_actions(traced_sft_assessment, source_summary=source_summary)
     direct_preservation_probe = direct_preservation_probe_payload(payload)
     if direct_preservation_probe:
         return direct_preservation_probe_actions(direct_preservation_probe, source_summary=source_summary)
@@ -4214,6 +4280,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "mcq_scoring_policy"
     if direct_preservation_probe_payload(payload):
         return "direct_preservation_probe"
+    if traced_sft_assessment_payload(payload):
+        return "traced_sft_assessment"
     if claim_readiness_payload(payload):
         return "claim_readiness"
     if arc_agi_baseline_registry_payload(payload):

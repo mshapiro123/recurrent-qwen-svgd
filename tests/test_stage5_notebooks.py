@@ -748,8 +748,24 @@ def test_traced_sft_scale64_benchmark_target_is_bootstrapped() -> None:
     assert "traced_sft_scale64_benchmark" in bootstrap
     assert "STAGE5_TRACED_SFT_BENCHMARK_CELL.py" in bootstrap
     assert "traced_sft_scale64_benchmark" in bootstrap_md
-    assert "Do not regenerate traces or rerun SFT" in current_action
-    assert '"STAGE5_CURRENT_A100_TARGET"] = "traced_sft_scale64_benchmark"' in current_action
+    assert "content-route direct-preservation probe" in current_action
+    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_scale64_benchmark" in current_action
+
+
+def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
+
+    assert "traced_sft_direct_preservation_probe" in bootstrap
+    assert "STAGE5_DIRECT_PRESERVE_PROMPT_STYLE" in bootstrap
+    assert '"question_only"' in bootstrap
+    assert "STAGE5_DIRECT_PRESERVE_SCORE_TARGET" in bootstrap
+    assert '"option_text"' in bootstrap
+    assert "stage5_traced_sft_assessment_20260623_195134_reassessed" in bootstrap
+    assert "traced_sft_direct_preservation_probe" in bootstrap_md
+    assert "content-route direct-preservation probe" in current_action
+    assert '"STAGE5_CURRENT_A100_TARGET"] = "traced_sft_direct_preservation_probe"' in current_action
 
 
 def test_traced_capability_ladder_sft_cell_derives_training_env_from_collection() -> None:

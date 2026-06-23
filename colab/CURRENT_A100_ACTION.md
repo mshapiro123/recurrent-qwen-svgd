@@ -35,16 +35,32 @@ direct loops:      ~= 1.35
 deep loops:        ~= 1.99
 ```
 
-The next action is **benchmark-only**. Do not regenerate traces or rerun SFT.
-Use:
+The benchmark-only target has completed. Result:
 
 ```text
-STAGE5_CURRENT_A100_TARGET=traced_sft_scale64_benchmark
+ARC-Easy content:      recurrent 68/128 vs base 75/128, delta -7
+ARC-Easy cyclic:       recurrent 100/128 vs base 95/128, delta +5
+ARC-Challenge content: recurrent 46/128 vs base 43/128, delta +3
+ARC-Challenge cyclic:  recurrent 69/128 vs base 68/128, delta +1
 ```
 
-This target benchmarks the new `phase1_step_200.pt` checkpoint on ARC-Easy and
-ARC-Challenge with `content_question_only` and `cyclic_label_aggregated`
-scoring, then runs the traced-SFT assessment gate.
+The corrected assessment is:
+
+```text
+outputs/stage5/stage5_traced_sft_assessment_20260623_195134_reassessed/summary.json
+status = needs_direct_preservation_repair
+```
+
+The next action is a bounded **content-route direct-preservation probe**. Do
+not scale traces or add particles yet. Use:
+
+```text
+STAGE5_CURRENT_A100_TARGET=traced_sft_direct_preservation_probe
+```
+
+This runs max-loop-1 direct preservation from the scale64 checkpoint using
+`question_only` / `option_text` scoring and base-logit distillation on
+base-correct ARC-Easy rows.
 
 Short fresh-runtime launcher:
 
@@ -71,11 +87,23 @@ else:
     subprocess.run(["git", "clone", repo_url, str(ROOT)], check=True)
 
 os.chdir(ROOT)
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_scale64_benchmark"
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_direct_preservation_probe"
 exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py", encoding="utf-8").read())
 ```
 
 ## Previous Front-of-Queue Action
+
+The previous action was **benchmark-only**:
+
+```text
+STAGE5_CURRENT_A100_TARGET=traced_sft_scale64_benchmark
+```
+
+It benchmarked the new `phase1_step_200.pt` checkpoint on ARC-Easy and
+ARC-Challenge with `content_question_only` and `cyclic_label_aggregated`
+scoring, then ran the traced-SFT assessment gate.
+
+## Previous Scale Action
 
 The current preferred path is **scale the local-HF traced capability-ladder
 curriculum**. The first G4 run generated 32 verified Qwen-7B traces, trained

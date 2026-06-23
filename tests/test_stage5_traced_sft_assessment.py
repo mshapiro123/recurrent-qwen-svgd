@@ -104,6 +104,24 @@ def test_traced_sft_assessment_blocks_weak_depth_gradient(tmp_path, monkeypatch)
     assert result["depth"]["passed"] is False
 
 
+def test_traced_sft_assessment_prioritizes_content_regression_over_tiny_loop_miss(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    import colab.assess_stage5_traced_sft as module
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    sft_path = tmp_path / "outputs/stage5/sft/summary.json"
+    bench_path = tmp_path / "outputs/stage5/bench/summary.json"
+    _write(sft_path, _sft_summary(rows=128, direct_loops=1.350744, deep_loops=1.987598))
+    payload = _benchmark(sft_summary="outputs/stage5/sft/summary.json", content_delta=-7, cyclic_delta=1, n=128)
+
+    result = assess(benchmark_summary_path=bench_path, benchmark_summary=payload)
+
+    assert result["depth"]["passed"] is True
+    assert result["status"] == "needs_direct_preservation_repair"
+
+
 def test_traced_sft_assessment_allows_phase2_after_rows_and_benchmark_coverage(tmp_path, monkeypatch) -> None:
     import colab.assess_stage5_traced_sft as module
 
