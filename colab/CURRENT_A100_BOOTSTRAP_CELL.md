@@ -160,6 +160,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "arc_challenge_mcq_debias_confirm" - bounded no-training cyclic MCQ confirmation on ARC-Challenge.
 #   "debiased_benchmark_suite" - bounded ARC-Challenge/GPQA-lite benchmark with debiased MCQ scoring.
 #   "arc_mix_offset_confirm" - bounded ARC-Easy/Challenge offset-256 confirmation for the latest ARC-mix checkpoint.
+#   "arc_mix_offset_then_depth_chain" - offset confirmation, then learned-depth ARC-mix SFT only if confirmed.
 #   "arc_mix_depth_routing_probe" - bounded learned-depth ARC-mix SFT probe from the latest recovered checkpoint.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
 #   "capability_ladder_7b_mcq_probe" - high-memory Qwen 0.5B/1.5B/3B/7B ARC MCQ scoring for depth-4 data.
@@ -319,6 +320,25 @@ TARGETS = {
             "runtime.unassign",
         ],
         "env": {},
+    },
+    "arc_mix_offset_then_depth_chain": {
+        "path": "colab/STAGE5_ARC_MIX_OFFSET_THEN_DEPTH_CELL.py",
+        "markers": [
+            "STAGE5_ARC_MIX_OFFSET_THEN_DEPTH_CELL_VERSION",
+            "STAGE5_ARC_MIX_CHAIN_EXECUTE_DEPTH",
+            "STAGE5_ARC_MIX_CHAIN_ALLOWED_NEGATIVE_DELTA",
+            "STAGE5_ARC_MIX_CHAIN_MIN_EXAMPLES",
+            "Offset gate: ARC-Easy and ARC-Challenge, offset=256",
+            "target_loop_count ARC-Easy=1 ARC-Challenge=3",
+            "colab/run_stage5_arc_mix_offset_then_depth.py",
+            "tests/test_stage5_offset_then_depth.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_ARC_MIX_CHAIN_EXECUTE_DEPTH": "1",
+            "STAGE5_ARC_MIX_CHAIN_ALLOWED_NEGATIVE_DELTA": "0",
+            "STAGE5_ARC_MIX_CHAIN_MIN_EXAMPLES": "256",
+        },
     },
     "capability_ladder_mcq_probe": {
         "path": "colab/STAGE5_CAPABILITY_LADDER_MCQ_PROBE_CELL.py",
@@ -613,12 +633,16 @@ if SOURCE_SUMMARY_OVERRIDE:
     os.environ["STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
     os.environ["STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
     os.environ["STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
+    os.environ["STAGE5_ARC_MIX_CHAIN_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
+    os.environ["STAGE5_ARC_MIX_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
 else:
     # Avoid accidentally pinning a new session to an old target-specific source
     # summary. The safe-continue launcher will follow config/stage5_current_source_summary.txt.
     os.environ.pop("STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY", None)
     os.environ.pop("STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY", None)
     os.environ.pop("STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY", None)
+    os.environ.pop("STAGE5_ARC_MIX_CHAIN_SOURCE_SUMMARY", None)
+    os.environ.pop("STAGE5_ARC_MIX_SOURCE_SUMMARY", None)
 for key, value in selected["env"].items():
     os.environ[key] = value
 if TARGET == "depth_sweep_heldout":
@@ -652,4 +676,5 @@ print(
 )
 print(f"Fetched {launcher_path} from {REPO}@{REF} ({RESOLVED_REF[:12]}) sha={payload.get('sha')} target={TARGET}", flush=True)
 exec(compile(code, launcher_path, "exec"))
+
 ```

@@ -19,13 +19,14 @@ non-negative under cyclic option-permutation scoring. The next measurement
 action is:
 
 ```text
-STAGE5_CURRENT_A100_TARGET=arc_mix_offset_confirm
+STAGE5_CURRENT_A100_TARGET=arc_mix_offset_then_depth_chain
 ```
 
 This runs the same checkpoint on ARC-Easy and ARC-Challenge with
 `limit=256`, `offset=256`, and score targets
-`content_question_only,cyclic_label_aggregated`. If this confirmation holds,
-the next training action is depth-conditional deterministic recovery.
+`content_question_only,cyclic_label_aggregated`. If and only if all four
+offset readouts are non-negative against base, the same runtime continues into
+the bounded learned-depth ARC-mix SFT probe.
 
 The earlier CE8 balanced ARC depth curve showed a useful hard-slice depth
 signal but a serious easy/content calibration gap:
@@ -77,12 +78,13 @@ Use this from a live Colab notebook after pulling the latest `main`.
 
 ```python
 import os
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "arc_mix_offset_confirm"
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "arc_mix_offset_then_depth_chain"
 exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
 ```
 
 If the repo is not already cloned, use the preferred bootstrap loader above;
-set the same target before executing the fetched bootstrap.
+set the same target before executing the fetched bootstrap. To force
+measurement-only behavior, set `STAGE5_ARC_MIX_CHAIN_EXECUTE_DEPTH=0`.
 
 ## Next Paste-Anywhere ARC-Mix Depth-Routing Probe Cell
 
