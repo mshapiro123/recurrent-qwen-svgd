@@ -1,0 +1,29 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6144.82it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_loopaware_halt_only_depth_hint_l4_20260623_064747/phase1/phase1_step_200.pt loaded_keys=175
+examples=7
+expected_ce=0.452989
+halting_kl=0.362700
+loss=0.496513
+mean_expected_loops=1.762566
+mean_halt_entropy=1.105130
+target_loop_abs_error=1.124184
+target_mean_loops=2.285714
+group/curriculum_mode/deep_narrow/examples=4
+group/curriculum_mode/deep_narrow/expected_ce=0.352102
+group/curriculum_mode/deep_narrow/halting_kl=0.590789
+group/curriculum_mode/deep_narrow/loss=0.422997
+group/curriculum_mode/deep_narrow/mean_expected_loops=1.808585
+group/curriculum_mode/deep_narrow/mean_halt_entropy=1.136602
+group/curriculum_mode/deep_narrow/target_loop_abs_error=1.441415
+group/curriculum_mode/deep_narrow/target_mean_loops=3.250000
+group/curriculum_mode/direct/examples=3
+group/curriculum_mode/direct/expected_ce=0.587505
+group/curriculum_mode/direct/halting_kl=0.058581
+group/curriculum_mode/direct/loss=0.594534
+group/curriculum_mode/direct/mean_expected_loops=1.701208
+group/curriculum_mode/direct/mean_halt_entropy=1.063167
+group/curriculum_mode/direct/target_loop_abs_error=0.701208
+group/curriculum_mode/direct/target_mean_loops=1.000000
