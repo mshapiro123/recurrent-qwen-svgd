@@ -86,6 +86,10 @@ ALLOW_ANSWER_LINE_VERIFICATION = os.environ.get(
     "STAGE5_CURRICULUM_ALLOW_ANSWER_LINE_VERIFICATION",
     "0",
 ).strip().lower() in {"1", "true", "yes", "y"}
+ALLOW_CROSS_MODEL_ONLY_ANSWERS = os.environ.get(
+    "STAGE5_CURRICULUM_ALLOW_CROSS_MODEL_ONLY_ANSWERS",
+    "0",
+).strip().lower() in {"1", "true", "yes", "y"}
 RESUME_FROM = os.environ.get("STAGE5_CURRICULUM_RESUME_FROM", "").strip()
 PUSH_RESULTS = os.environ.get("STAGE5_CURRICULUM_SFT_PUSH", "1").strip().lower() in {
     "1",
@@ -272,6 +276,8 @@ def run_sft_gate() -> dict[str, Any]:
         args.extend(["--min_mode_rows", MIN_MODE_ROWS])
     if ALLOW_ANSWER_LINE_VERIFICATION:
         args.append("--allow_answer_line_verification")
+    if ALLOW_CROSS_MODEL_ONLY_ANSWERS:
+        args.append("--allow_cross_model_only_answers")
     gate_args = parse_gate_args(args)
     payload = build_gate_payload(gate_args)
     write_gate_outputs(payload, output_json=path_for_cli(output_json), output_md=path_for_cli(output_md))

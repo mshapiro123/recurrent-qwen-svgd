@@ -182,6 +182,27 @@ def test_run_sft_gate_can_allow_answer_line_verified_trace_shards(monkeypatch, t
     assert captured["allow_answer_line_verification"] is True
 
 
+def test_run_sft_gate_can_allow_cross_model_only_answer_shards(monkeypatch, tmp_path) -> None:
+    captured = {}
+    monkeypatch.setattr(runner, "RUN_DIR", tmp_path / "run")
+    monkeypatch.setattr(runner, "WORK_DIR", tmp_path / "work")
+    monkeypatch.setattr(runner, "SUMMARY_JSON", str(tmp_path / "work" / "summary.json"))
+    monkeypatch.setattr(runner, "MIN_POSITIVE_ROWS", 16)
+    monkeypatch.setattr(runner, "MAX_LOOPS", 4)
+    monkeypatch.setattr(runner, "MIN_MODE_ROWS", "")
+    monkeypatch.setattr(runner, "ALLOW_CROSS_MODEL_ONLY_ANSWERS", True)
+    monkeypatch.setattr(runner, "write_gate_outputs", lambda payload, *, output_json, output_md: None)
+
+    def fake_build_gate_payload(args):
+        captured["require_programmatic_answer_check"] = args.require_programmatic_answer_check
+        return {"go": True, "artifacts": {"positive_sft": str(tmp_path / "positive_sft.jsonl")}}
+
+    monkeypatch.setattr(runner, "build_gate_payload", fake_build_gate_payload)
+
+    assert runner.run_sft_gate()["go"] is True
+    assert captured["require_programmatic_answer_check"] is False
+
+
 def test_grouped_eval_metrics_extracts_curriculum_mode_metrics() -> None:
     metrics = {
         "loss": 2.0,
