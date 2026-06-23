@@ -37,6 +37,7 @@ BASE_KEY = os.environ.get("STAGE5_CAPABILITY_LADDER_BASE_KEY", "qwen_0_5b")
 MID_KEY = os.environ.get("STAGE5_CAPABILITY_LADDER_MID_KEY", "qwen_1_5b")
 HIGH_KEYS = os.environ.get("STAGE5_CAPABILITY_LADDER_HIGH_KEYS", "qwen_3b")
 HIGH_TARGET_LOOP = os.environ.get("STAGE5_CAPABILITY_LADDER_HIGH_TARGET_LOOP", "3")
+MODEL_LADDER = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_MODEL_LADDER", "").strip()
 MIN_POSITIVE_ROWS = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_MIN_POSITIVE_ROWS", "1")
 MIN_MODE_ROWS = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_MIN_MODE_ROWS", "")
 PUSH_RESULTS = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_PUSH", "1").strip().lower() in {
@@ -325,6 +326,146 @@ def report_scored_path(source_summary: Path) -> Path:
     return resolve_path(raw)
 
 
+def format_model_ladder(ladder: Any) -> str:
+    if not isinstance(ladder, list):
+        return ""
+    parts: list[str] = []
+    for entry in ladder:
+        if not isinstance(entry, dict):
+            continue
+        key = str(entry.get("key") or "").strip()
+        loop = entry.get("target_loop_count")
+        if key and isinstance(loop, int):
+            parts.append(f"{key}:{loop}")
+    return ",".join(parts)
+
+
+def model_ladder_from_collection_source(source_summary: Path) -> str:
+    if MODEL_LADDER:
+        return MODEL_LADDER
+    payload = read_json(source_summary)
+    report_path: Path | None = None
+    try:
+        report_path = artifact_path(payload, "report_json")
+    except ValueError:
+        report_path = None
+    if report_path is not None and report_path.exists():
+        report_ladder = format_model_ladder(read_json(report_path).get("model_ladder"))
+        if report_ladder:
+            return report_ladder
+    summary_ladder = format_model_ladder(payload.get("model_ladder"))
+    if summary_ladder:
+        return summary_ladder
+    trace_jobs = payload.get("trace_jobs") if isinstance(payload.get("trace_jobs"), dict) else {}
+    nested_ladder = format_model_ladder(trace_jobs.get("model_ladder"))
+    if nested_ladder:
+        return nested_ladder
+    raw_probe = str(payload.get("source_summary") or "").strip()
+    if raw_probe:
+        probe = resolve_path(raw_probe)
+        if probe.exists():
+            probe_payload = read_json(probe)
+            ladder_keys = probe_payload.get("ladder_keys") if isinstance(probe_payload.get("ladder_keys"), dict) else {}
+            probe_ladder = format_model_ladder(ladder_keys.get("model_ladder"))
+            if probe_ladder:
+                return probe_ladder
+    return ""
+
+
+def max_loop_for_ladder(model_ladder: str) -> int:
+    loops = [int(HIGH_TARGET_LOOP), 3]
+    for raw_item in model_ladder.split(","):
+        raw_item = raw_item.strip()
+        if not raw_item:
+            continue
+        separator = ":" if ":" in raw_item else "=" if "=" in raw_item else None
+        if separator is None:
+            continue
+        _key, raw_loop = raw_item.split(separator, 1)
+        try:
+            loops.append(int(raw_loop.strip()))
+        except ValueError:
+            continue
+    return max(loops)
+
+
+def reconstruct_scored_rows_if_possible(source_summary: Path, expected: Path) -> dict[str, Any] | None:
+    trace_payload = read_json(source_summary)
+    raw_probe = str(trace_payload.get("source_summary") or "").strip()
+    if not raw_probe:
+        return None
+    probe_summary = resolve_path(raw_probe)
+    if not probe_summary.exists():
+        return None
+    probe_payload = read_json(probe_summary)
+    arc = probe_payload.get("arc") if isinstance(probe_payload.get("arc"), dict) else {}
+    score_summaries = (
+        probe_payload.get("score_summaries")
+        if isinstance(probe_payload.get("score_summaries"), dict)
+        else {}
+    )
+    required_arc = ["config", "split", "limit", "seed"]
+    if not arc or not score_summaries or any(key not in arc for key in required_arc):
+        return None
+
+    result_specs: list[tuple[str, Path]] = []
+    for key, summary in sorted(score_summaries.items()):
+        if not isinstance(summary, dict):
+            continue
+        raw_path = str(summary.get("path") or "").strip()
+        if not raw_path:
+            continue
+        path = resolve_path(raw_path)
+        if not path.exists():
+            return None
+        result_specs.append((str(key), path))
+    if not result_specs:
+        return None
+
+    expected.parent.mkdir(parents=True, exist_ok=True)
+    tasks_jsonl = expected.parent / "arc_mcq_reconstructed.jsonl"
+    run(
+        [
+            sys.executable,
+            "eval/prepare_arc_mcq.py",
+            "--config",
+            str(arc["config"]),
+            "--split",
+            str(arc["split"]),
+            "--limit",
+            str(int(arc["limit"])),
+            "--seed",
+            str(int(arc["seed"])),
+            "--output_jsonl",
+            path_for_cli(tasks_jsonl),
+        ],
+        log_name="reconstruct_prepare_arc_mcq.log",
+    )
+    cmd = [
+        sys.executable,
+        "training/merge_capability_score_rows.py",
+        "--tasks_jsonl",
+        path_for_cli(tasks_jsonl),
+        "--output_jsonl",
+        path_for_cli(expected),
+        "--verified_by",
+        "benchmark_ground_truth",
+        "--assume_decontaminated",
+        "--prediction_as_solution",
+    ]
+    for key, path in result_specs:
+        cmd.extend(["--result", f"{key}={path_for_cli(path)}"])
+    run(cmd, log_name="reconstruct_merge_capability_score_rows.log")
+    return {
+        "restored": True,
+        "path": path_for_cli(expected),
+        "source": "reconstructed_from_trace_job_source_summary",
+        "probe_summary": path_for_cli(probe_summary),
+        "tasks_jsonl": path_for_cli(tasks_jsonl),
+        "result_keys": [key for key, _path in result_specs],
+    }
+
+
 def drive_search_roots() -> list[Path]:
     drive = Path("/content/drive/MyDrive")
     if not drive.exists():
@@ -434,30 +575,36 @@ def collect_traces(scored_jsonl: Path, jobs_jsonl: Path, responses_jsonl: Path) 
     return output_jsonl, report_json, read_json(report_json)
 
 
-def build_curriculum(traced_jsonl: Path) -> Path:
-    run(
-        [
-            sys.executable,
-            "training/build_capability_ladder_curriculum.py",
-            "--input_jsonl",
-            path_for_cli(traced_jsonl),
-            "--work_dir",
-            path_for_cli(WORK_DIR),
-            "--base_key",
-            BASE_KEY,
-            "--mid_key",
-            MID_KEY,
-            "--high_keys",
-            HIGH_KEYS,
-            "--high_target_loop",
-            HIGH_TARGET_LOOP,
-        ],
-        log_name="build_capability_ladder_curriculum.log",
-    )
-    return WORK_DIR / "summary.json"
+def build_curriculum(traced_jsonl: Path, collection_source_summary: Path) -> tuple[Path, str]:
+    model_ladder = model_ladder_from_collection_source(collection_source_summary)
+    cmd = [
+        sys.executable,
+        "training/build_capability_ladder_curriculum.py",
+        "--input_jsonl",
+        path_for_cli(traced_jsonl),
+        "--work_dir",
+        path_for_cli(WORK_DIR),
+    ]
+    if model_ladder:
+        cmd.extend(["--model_ladder", model_ladder])
+    else:
+        cmd.extend(
+            [
+                "--base_key",
+                BASE_KEY,
+                "--mid_key",
+                MID_KEY,
+                "--high_keys",
+                HIGH_KEYS,
+                "--high_target_loop",
+                HIGH_TARGET_LOOP,
+            ]
+        )
+    run(cmd, log_name="build_capability_ladder_curriculum.log")
+    return WORK_DIR / "summary.json", model_ladder
 
 
-def gate_curriculum(curriculum_summary: Path) -> Path:
+def gate_curriculum(curriculum_summary: Path, *, model_ladder: str = "") -> Path:
     output = RUN_DIR / "curriculum_sft_gate.json"
     output_md = RUN_DIR / "curriculum_sft_gate.md"
     cmd = [
@@ -474,7 +621,7 @@ def gate_curriculum(curriculum_summary: Path) -> Path:
         "--min_positive_rows",
         MIN_POSITIVE_ROWS,
         "--max_loop_target",
-        str(max(int(HIGH_TARGET_LOOP), 3)),
+        str(max_loop_for_ladder(model_ladder)),
     ]
     if MIN_MODE_ROWS:
         cmd.extend(["--min_mode_rows", MIN_MODE_ROWS])
@@ -519,13 +666,17 @@ def safe_commit(summary_path: Path) -> None:
     if not PUSH_RESULTS:
         return
     pointer = update_current_source_summary(summary_path)
-    run(["git", "add", path_for_cli(RUN_DIR), path_for_cli(pointer)], check=False, log_name="git_add.log")
+    run(["git", "add", "-f", path_for_cli(RUN_DIR), path_for_cli(WORK_DIR), path_for_cli(pointer)], check=False, log_name="git_add.log")
     diff = run(["git", "diff", "--cached", "--quiet"], check=False)
     if diff.returncode == 0:
         print("No safe trace-collection result changes to commit.", flush=True)
         return
     run(["git", "commit", "-m", "Record capability-ladder trace collection"], check=True, log_name="git_commit.log")
-    run(["git", "push", "origin", "main"], check=True, log_name="git_push.log")
+    push = run(["git", "push", "origin", "main"], check=False, log_name="git_push.log")
+    if push.returncode == 0:
+        return
+    run(["git", "pull", "--rebase", "origin", "main"], check=True, log_name="git_pull_rebase.log")
+    run(["git", "push", "origin", "main"], check=True, log_name="git_push_retry.log")
 
 
 def write_summary(
@@ -540,6 +691,7 @@ def write_summary(
     collection_payload: dict[str, Any],
     curriculum_summary: Path,
     gate_json: Path,
+    model_ladder: str,
     restore_report: dict[str, Any],
     drive_backup: dict[str, Any],
 ) -> Path:
@@ -562,6 +714,7 @@ def write_summary(
             "summary_json": path_for_cli(curriculum_summary),
             "work_dir": path_for_cli(WORK_DIR),
             "counts": curriculum_payload.get("counts", {}),
+            "model_ladder": model_ladder,
         },
         "gate": gate_payload,
         "artifacts": {
@@ -626,15 +779,22 @@ def main() -> int:
         "report": restore_if_missing(report_json, filename=report_json.name, run_id_hint=run_id_hint),
     }
     scored_jsonl = report_scored_path(collection_source_summary)
-    restore_report["scored"] = restore_if_missing(scored_jsonl, filename=scored_jsonl.name, run_id_hint=run_id_hint)
+    if scored_jsonl.exists():
+        restore_report["scored"] = {"restored": False, "path": path_for_cli(scored_jsonl), "source": "local"}
+    else:
+        reconstructed = reconstruct_scored_rows_if_possible(collection_source_summary, scored_jsonl)
+        if reconstructed is not None and scored_jsonl.exists():
+            restore_report["scored"] = reconstructed
+        else:
+            restore_report["scored"] = restore_if_missing(scored_jsonl, filename=scored_jsonl.name, run_id_hint=run_id_hint)
     responses_jsonl = (
         resolve_responses(collection_source_summary)
         if RESPONSES_JSONL or response_summary is None
         else resolve_response_summary_responses(response_summary)
     )
     traced_jsonl, collection_report, collection_payload = collect_traces(scored_jsonl, jobs_jsonl, responses_jsonl)
-    curriculum_summary = build_curriculum(traced_jsonl)
-    gate_json = gate_curriculum(curriculum_summary)
+    curriculum_summary, model_ladder = build_curriculum(traced_jsonl, collection_source_summary)
+    gate_json = gate_curriculum(curriculum_summary, model_ladder=model_ladder)
     drive_backup = backup_to_drive([RUN_DIR, WORK_DIR, traced_jsonl, collection_report, curriculum_summary, gate_json])
     summary = write_summary(
         source_summary=collection_source_summary,
@@ -647,6 +807,7 @@ def main() -> int:
         collection_payload=collection_payload,
         curriculum_summary=curriculum_summary,
         gate_json=gate_json,
+        model_ladder=model_ladder,
         restore_report=restore_report,
         drive_backup=drive_backup,
     )

@@ -238,18 +238,20 @@ def test_main_collects_directly_from_response_summary(tmp_path, monkeypatch) -> 
             "tier_counts": {"base_preservation": 1, "deep_narrow": 1},
         }
 
-    def fake_build(traced):
+    def fake_build(traced, collection_source_summary):
         assert traced == run_dir / "scored_rows_with_traces.jsonl"
+        assert collection_source_summary == trace_jobs_summary
         work_dir.mkdir(parents=True, exist_ok=True)
         summary = work_dir / "summary.json"
         summary.write_text(
             json.dumps({"counts": {"positive_sft_rows": 2, "mode_counts": {"direct": 1, "deep_narrow": 1}}}),
             encoding="utf-8",
         )
-        return summary
+        return summary, "qwen_0_5b:1,qwen_1_5b:2"
 
-    def fake_gate(curriculum_summary):
+    def fake_gate(curriculum_summary, *, model_ladder=""):
         assert curriculum_summary == work_dir / "summary.json"
+        assert model_ladder == "qwen_0_5b:1,qwen_1_5b:2"
         gate = run_dir / "curriculum_sft_gate.json"
         gate.write_text(json.dumps({"kind": "curriculum_sft_gate", "go": True}), encoding="utf-8")
         return gate
@@ -315,6 +317,7 @@ def test_write_summary_records_gate_and_artifacts(tmp_path, monkeypatch) -> None
         },
         curriculum_summary=curriculum,
         gate_json=gate,
+        model_ladder="qwen_0_5b:1,qwen_1_5b:2",
         restore_report={"jobs": {"restored": False}},
         drive_backup={"enabled": False},
     )
@@ -324,5 +327,43 @@ def test_write_summary_records_gate_and_artifacts(tmp_path, monkeypatch) -> None
     assert payload["status"] == "trace_curriculum_gate_ready"
     assert payload["collection"]["accepted_rows"] == 3
     assert payload["curriculum"]["counts"]["positive_sft_rows"] == 3
+    assert payload["curriculum"]["model_ladder"] == "qwen_0_5b:1,qwen_1_5b:2"
     assert payload["gate"]["go"] is True
     assert payload["artifacts"]["traced_scored_rows"] == "outputs/stage5/collect/scored_rows_with_traces.jsonl"
+
+
+def test_model_ladder_from_collection_source_prefers_trace_job_report(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "repo"
+    trace_jobs_dir = root / "outputs" / "stage5" / "trace_jobs"
+    trace_jobs_dir.mkdir(parents=True)
+    summary = trace_jobs_dir / "summary.json"
+    report = trace_jobs_dir / "report.json"
+    summary.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_capability_ladder_trace_jobs",
+                "artifacts": {"report_json": "outputs/stage5/trace_jobs/report.json"},
+            }
+        ),
+        encoding="utf-8",
+    )
+    report.write_text(
+        json.dumps(
+            {
+                "model_ladder": [
+                    {"key": "qwen_0_5b", "target_loop_count": 1},
+                    {"key": "qwen_1_5b", "target_loop_count": 2},
+                    {"key": "qwen_3b", "target_loop_count": 3},
+                    {"key": "qwen_7b", "target_loop_count": 4},
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(runner, "ROOT", root)
+    monkeypatch.setattr(runner, "MODEL_LADDER", "")
+
+    assert runner.model_ladder_from_collection_source(summary) == (
+        "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3,qwen_7b:4"
+    )
+    assert runner.max_loop_for_ladder("qwen_0_5b:1,qwen_7b:4") == 4

@@ -62,3 +62,34 @@ def test_write_summary_records_safe_response_artifacts(tmp_path, monkeypatch) ->
     assert payload["response_report"]["written"] == 3
     assert payload["artifacts"]["responses_jsonl"] == "outputs/stage5/trace_responses/trace_responses.jsonl"
     assert "trace_collect_cpu" in payload["next_action"]
+
+
+def test_safe_commit_can_include_response_jsonl(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "repo"
+    run_dir = root / "outputs" / "stage5" / "trace_responses"
+    run_dir.mkdir(parents=True)
+    summary = run_dir / "summary.json"
+    summary_md = run_dir / "summary.md"
+    report = run_dir / "trace_response_report.json"
+    responses = run_dir / "trace_responses.jsonl"
+    for path in (summary, summary_md, report, responses):
+        path.write_text("{}", encoding="utf-8")
+    recorded: list[list[str]] = []
+
+    def fake_run(cmd, *, check=True, log_name=None):
+        recorded.append(cmd)
+        class Proc:
+            returncode = 0
+            stdout = ""
+        return Proc()
+
+    monkeypatch.setattr(runner, "ROOT", root)
+    monkeypatch.setattr(runner, "RUN_DIR", run_dir)
+    monkeypatch.setattr(runner, "PUSH_RESULTS", True)
+    monkeypatch.setattr(runner, "COMMIT_RESPONSES", True)
+    monkeypatch.setattr(runner, "run", fake_run)
+
+    runner.safe_commit(summary, update_pointer=True, include_responses=True)
+
+    add_commands = [cmd for cmd in recorded if cmd[:3] == ["git", "add", "-f"]]
+    assert any(cmd[-1] == "outputs/stage5/trace_responses/trace_responses.jsonl" for cmd in add_commands)

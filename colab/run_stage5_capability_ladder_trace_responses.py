@@ -3,8 +3,8 @@
 This CPU/network runner follows a ``stage5_capability_ladder_trace_jobs``
 summary, restores job artifacts from Drive if needed, runs
 ``training/run_curriculum_job_responses.py`` with explicit provider opt-in,
-backs raw responses up to Drive, and commits only safe metadata. It refuses
-visible GPU runtimes by default.
+backs raw responses up to Drive, and can commit raw responses for recovery in
+the private project repo. It refuses visible GPU runtimes by default.
 """
 
 from __future__ import annotations
@@ -70,6 +70,10 @@ PUSH_RESULTS = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_PUSH", "1
     "yes",
     "y",
 }
+COMMIT_RESPONSES = os.environ.get(
+    "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COMMIT_RESPONSES",
+    "1",
+).strip().lower() in {"1", "true", "yes", "y"}
 BACKUP_DRIVE = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BACKUP_DRIVE", "1").strip().lower() in {
     "1",
     "true",
@@ -325,19 +329,25 @@ def update_current_source_summary(summary_path: Path) -> Path:
     return pointer
 
 
-def safe_commit(summary_path: Path, *, update_pointer: bool) -> None:
+def safe_commit(summary_path: Path, *, update_pointer: bool, include_responses: bool) -> None:
     if not PUSH_RESULTS:
         return
     pointer = update_current_source_summary(summary_path) if update_pointer else None
     safe_paths = [summary_path, RUN_DIR / "summary.md", RUN_DIR / "trace_response_report.json", pointer]
+    if include_responses and COMMIT_RESPONSES:
+        safe_paths.append(RUN_DIR / "trace_responses.jsonl")
     for path in safe_paths:
         if path is not None and path.exists():
-            run(["git", "add", path_for_cli(path)], check=False)
+            run(["git", "add", "-f", path_for_cli(path)], check=False)
     diff = run(["git", "diff", "--cached", "--quiet"], check=False)
     if diff.returncode == 0:
         print("No safe trace-response result changes to commit.", flush=True)
         return
     run(["git", "commit", "-m", "Record capability-ladder trace responses"], check=True)
+    push = run(["git", "push", "origin", "main"], check=False)
+    if push.returncode == 0:
+        return
+    run(["git", "pull", "--rebase", "origin", "main"], check=True)
     run(["git", "push", "origin", "main"], check=True)
 
 
@@ -445,7 +455,7 @@ def main() -> int:
     print(f"summary_json={path_for_cli(summary)}", flush=True)
     status = str(read_json(summary)["status"])
     print(f"status={status}", flush=True)
-    safe_commit(summary, update_pointer=status != "dry_run")
+    safe_commit(summary, update_pointer=status != "dry_run", include_responses=status == "responses_ready")
     return 0
 
 
