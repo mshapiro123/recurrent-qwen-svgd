@@ -13,6 +13,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "arc_challenge_mcq_debias_confirm" - bounded no-training cyclic MCQ confirmation on ARC-Challenge.
 #   "debiased_benchmark_suite" - bounded ARC-Challenge/GPQA-lite benchmark with debiased MCQ scoring.
 #   "arc_mix_offset_confirm" - bounded ARC-Easy/Challenge offset-256 confirmation for the latest ARC-mix checkpoint.
+#   "arc_mix_depth_routing_probe" - bounded learned-depth ARC-mix SFT probe from the latest recovered checkpoint.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
 #   "capability_ladder_7b_mcq_probe" - high-memory Qwen 0.5B/1.5B/3B/7B ARC MCQ scoring for depth-4 data.
 #   "capability_ladder_7b_trace_chain" - high-memory 7B ladder probe followed by trace-job build.
@@ -154,6 +155,23 @@ TARGETS = {
             "STAGE5_DEBIASED_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
             "STAGE5_BENCHMARK_SUITE_RUN_ID": "stage5_content_arcmix_qonly_optiontext_arc256_offset256_confirm",
         },
+    },
+    "arc_mix_depth_routing_probe": {
+        "path": "colab/STAGE5_ARC_MIX_DEPTH_ROUTING_CELL.py",
+        "markers": [
+            "STAGE5_ARC_MIX_DEPTH_ROUTING_CELL_VERSION",
+            "target_loop_count ARC-Easy=1 ARC-Challenge=3",
+            "STAGE5_ARC_MIX_USE_LEARNED_LOOP_CONTROL",
+            "STAGE5_ARC_MIX_LOOP_CONTROL_CE_WEIGHT",
+            "STAGE5_ARC_MIX_HALT_TARGET_NLL_WEIGHT",
+            "STAGE5_ARC_MIX_PROMPT_STYLE",
+            "question_only",
+            "option_text",
+            "colab/run_stage5_balanced_arc_mix_gate.py",
+            "tests/test_stage5_balanced_arc_mix_gate.py",
+            "runtime.unassign",
+        ],
+        "env": {},
     },
     "capability_ladder_mcq_probe": {
         "path": "colab/STAGE5_CAPABILITY_LADDER_MCQ_PROBE_CELL.py",

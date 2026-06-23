@@ -60,6 +60,29 @@ ARC_CHALLENGE_TARGET_LOOP = os.environ.get("STAGE5_ARC_MIX_ARC_CHALLENGE_TARGET_
 ARC_EASY_TARGET_LOOP = os.environ.get("STAGE5_ARC_MIX_ARC_EASY_TARGET_LOOP", "")
 ARC_CHALLENGE_ROUTING_TYPE = os.environ.get("STAGE5_ARC_MIX_ARC_CHALLENGE_ROUTING_TYPE", "")
 ARC_EASY_ROUTING_TYPE = os.environ.get("STAGE5_ARC_MIX_ARC_EASY_ROUTING_TYPE", "")
+USE_TARGET_LOOP_CONTROL = os.environ.get("STAGE5_ARC_MIX_USE_TARGET_LOOP_CONTROL", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
+USE_LEARNED_LOOP_CONTROL = os.environ.get("STAGE5_ARC_MIX_USE_LEARNED_LOOP_CONTROL", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
+if USE_TARGET_LOOP_CONTROL and USE_LEARNED_LOOP_CONTROL:
+    raise ValueError(
+        "Use either STAGE5_ARC_MIX_USE_TARGET_LOOP_CONTROL or STAGE5_ARC_MIX_USE_LEARNED_LOOP_CONTROL, not both."
+    )
+EVAL_USE_LEARNED_LOOP_CONTROL = os.environ.get(
+    "STAGE5_ARC_MIX_EVAL_USE_LEARNED_LOOP_CONTROL",
+    "1" if USE_LEARNED_LOOP_CONTROL else "0",
+).strip().lower() in {"1", "true", "yes", "y"}
+LOOP_CONTROL_CE_WEIGHT = float(os.environ.get("STAGE5_ARC_MIX_LOOP_CONTROL_CE_WEIGHT", "0.0"))
+HALT_TARGET_NLL_WEIGHT = float(os.environ.get("STAGE5_ARC_MIX_HALT_TARGET_NLL_WEIGHT", "0.0"))
+OPTIMIZER_MODULES = os.environ.get("STAGE5_ARC_MIX_OPTIMIZER_MODULES", "all").strip() or "all"
 ARC_PROMPT_STYLE = os.environ.get("STAGE5_ARC_MIX_PROMPT_STYLE", "with_options")
 ARC_SCORE_TARGET = os.environ.get("STAGE5_ARC_MIX_SCORE_TARGET", "label")
 MIX_SEED = int(os.environ.get("STAGE5_ARC_MIX_SEED", "17"))
@@ -538,6 +561,8 @@ def eval_arc(label: str, mode: str, data_jsonl: Path, checkpoint: Path | None = 
             "--num_trajectories",
             "1",
         ]
+        if EVAL_USE_LEARNED_LOOP_CONTROL:
+            cmd.append("--use_learned_loop_control")
         if INCLUDE_LOOP_DIAGNOSTICS:
             cmd.append("--include_loop_diagnostics")
     run(cmd + ["--output_jsonl", path_for_cli(output)], log_name=f"{data_jsonl.stem}_{label}.log")
@@ -580,6 +605,14 @@ def build_mixed_train() -> dict[str, Any]:
         "arc_easy_target_loop": ARC_EASY_TARGET_LOOP or None,
         "arc_challenge_routing_type": ARC_CHALLENGE_ROUTING_TYPE or None,
         "arc_easy_routing_type": ARC_EASY_ROUTING_TYPE or None,
+        "loop_control": {
+            "use_target_loop_control": USE_TARGET_LOOP_CONTROL,
+            "use_learned_loop_control": USE_LEARNED_LOOP_CONTROL,
+            "eval_use_learned_loop_control": EVAL_USE_LEARNED_LOOP_CONTROL,
+            "loop_control_ce_weight": LOOP_CONTROL_CE_WEIGHT,
+            "halt_target_nll_weight": HALT_TARGET_NLL_WEIGHT,
+            "optimizer_modules": OPTIMIZER_MODULES,
+        },
         "mixed_rows": len(mixed),
         "mixed_train_jsonl": path_for_cli(MIXED_TRAIN_JSONL),
         "opus_val_jsonl": path_for_cli(OPUS_VAL_JSONL),
@@ -605,6 +638,11 @@ def train_arm(config: ArmConfig, *, resume_checkpoint: Path) -> list[Path]:
         "max_loops": 4,
         "initial_halt_prob": 0.15,
         "beta": float(config.beta),
+        "halt_target_nll_weight": HALT_TARGET_NLL_WEIGHT,
+        "optimizer_modules": OPTIMIZER_MODULES,
+        "use_target_loop_control": USE_TARGET_LOOP_CONTROL,
+        "use_learned_loop_control": USE_LEARNED_LOOP_CONTROL,
+        "loop_control_ce_weight": LOOP_CONTROL_CE_WEIGHT,
         "batch_size": 1,
         "learning_rate": float(config.learning_rate),
         "weight_decay": 0.0,
@@ -816,6 +854,11 @@ def build_summary(
                 "ARC MCQ SFT rows use short answer-surface completions, so response-only distillation is "
                 "concentrated on the evaluated choice surface rather than the prompt text."
             ),
+            "depth_routing_reason": (
+                "When target_loop_count metadata is present, optional learned loop-control CE and halting "
+                "target NLL let the same ARC-mix runner test whether direct/easy rows can stay shallow while "
+                "harder rows receive more recurrent computation."
+            ),
         },
         "source_summary": path_for_cli(source_summary),
         "source_status": source_payload.get("status"),
@@ -824,6 +867,7 @@ def build_summary(
         "data": data_summary,
         "arc_eval_limit": ARC_EVAL_LIMIT,
         "arc_eval_config": ARC_EVAL_CONFIG,
+        "loop_control": data_summary.get("loop_control", {}),
         "proxy_calibration_thresholds": {
             "min_mean_margin_delta": MIN_PROXY_MARGIN_DELTA,
             "max_abs_prediction_count_delta": MAX_PROXY_PREDICTION_SHIFT,
@@ -854,6 +898,7 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Resume checkpoint: `{payload['resume_checkpoint']}`",
         f"- Mixed rows: `{payload['data']['mixed_rows']}`",
         f"- Proxy eval config: `{payload['arc_eval_config']}`",
+        f"- Loop control: `{payload.get('loop_control', {})}`",
         f"- Calibration thresholds: mean margin delta >= `{payload['proxy_calibration_thresholds']['min_mean_margin_delta']}`, "
         f"max prediction-count shift <= `{payload['proxy_calibration_thresholds']['max_abs_prediction_count_delta']}`",
         f"- Next step: {payload['next_step']}",
@@ -863,6 +908,7 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Failure mode: {payload['objective_rationale']['failure_mode']}",
         f"- Proxy hypothesis: {payload['objective_rationale']['proxy_hypothesis']}",
         f"- Response distillation reason: {payload['objective_rationale']['response_distillation_reason']}",
+        f"- Depth routing reason: {payload['objective_rationale']['depth_routing_reason']}",
         "",
         "## Arms",
         "",

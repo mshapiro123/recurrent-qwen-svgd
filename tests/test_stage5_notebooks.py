@@ -371,6 +371,11 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     assert "programmatic_curriculum_cpu" in text
     assert "safe_continue_execute" in text
     assert "arc_challenge_mcq_debias_confirm" in text
+    assert "arc_mix_depth_routing_probe" in text
+    assert '"arc_mix_depth_routing_probe"' in plain
+    assert "STAGE5_ARC_MIX_DEPTH_ROUTING_CELL.py" in plain
+    assert "STAGE5_ARC_MIX_DEPTH_ROUTING_CELL_VERSION" in plain
+    assert "STAGE5_ARC_MIX_USE_LEARNED_LOOP_CONTROL" in plain
     assert "capability_ladder_mcq_probe" in text
     assert "capability_ladder_trace_jobs_cpu" in text
     assert "cyclic-permutation MCQ diagnostic" in text
@@ -423,6 +428,25 @@ def test_model_viability_probe_cell_is_generic_and_matches_markdown_code() -> No
     assert "runtime.unassign()" in plain
     assert "Qwen 3B" in text
     assert "larger compatible Qwen checkpoint" in text
+
+
+def test_arc_mix_depth_routing_cell_is_single_purpose() -> None:
+    plain = (ROOT / "colab/STAGE5_ARC_MIX_DEPTH_ROUTING_CELL.py").read_text(encoding="utf-8")
+
+    assert "STAGE5_ARC_MIX_DEPTH_ROUTING_CELL_VERSION" in plain
+    assert "colab/run_stage5_balanced_arc_mix_gate.py" in plain
+    assert "stage5_content_arcmix_qonly_optiontext_arc256_check_20260623_123424/summary.json" in plain
+    assert "STAGE5_ARC_MIX_USE_LEARNED_LOOP_CONTROL" in plain
+    assert "STAGE5_ARC_MIX_EVAL_USE_LEARNED_LOOP_CONTROL" in plain
+    assert "STAGE5_ARC_MIX_LOOP_CONTROL_CE_WEIGHT" in plain
+    assert "STAGE5_ARC_MIX_HALT_TARGET_NLL_WEIGHT" in plain
+    assert "target_loop_count ARC-Easy=1 ARC-Challenge=3" in plain
+    assert "question_only" in plain
+    assert "option_text" in plain
+    assert "tests/test_stage5_balanced_arc_mix_gate.py" in plain
+    assert "runtime.unassign" in plain
+    assert "run_stage5_benchmark_suite.py" not in plain
+    assert "sample_latents" not in plain
 
 
 def test_arc_challenge_mcq_debias_cell_is_bounded_and_pushes_summary() -> None:

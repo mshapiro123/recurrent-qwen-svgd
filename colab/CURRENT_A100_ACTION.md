@@ -84,6 +84,38 @@ exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
 If the repo is not already cloned, use the preferred bootstrap loader above;
 set the same target before executing the fetched bootstrap.
 
+## Next Paste-Anywhere ARC-Mix Depth-Routing Probe Cell
+
+Use this only after the offset-256 confirmation is non-negative or after you
+deliberately choose to proceed with depth-routing training. It starts from the
+current recovered ARC-mix checkpoint, keeps particles/SVGD off, uses ARC-Easy
+train rows as direct target-loop-1 rows, uses ARC-Challenge train rows as
+deep-narrow target-loop-3 rows, and enables learned loop-control supervision.
+
+```python
+import os
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "arc_mix_depth_routing_probe"
+exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
+```
+
+The depth probe uses:
+
+```text
+STAGE5_ARC_MIX_OPUS_LIMIT=0
+STAGE5_ARC_MIX_PROMPT_STYLE=question_only
+STAGE5_ARC_MIX_SCORE_TARGET=option_text
+STAGE5_ARC_MIX_ARC_EASY_TARGET_LOOP=1
+STAGE5_ARC_MIX_ARC_CHALLENGE_TARGET_LOOP=3
+STAGE5_ARC_MIX_USE_LEARNED_LOOP_CONTROL=1
+STAGE5_ARC_MIX_EVAL_USE_LEARNED_LOOP_CONTROL=1
+STAGE5_ARC_MIX_LOOP_CONTROL_CE_WEIGHT=0.05
+STAGE5_ARC_MIX_HALT_TARGET_NLL_WEIGHT=0.03
+```
+
+Success is not "more loop depth everywhere." Success is preserving ARC-Easy
+content calibration while retaining or improving the ARC-Challenge content lift
+seen in the recovered checkpoint.
+
 Use the safe-continue cell from a normal Drive-backed or blank Colab notebook:
 
 [`colab/STAGE5_SAFE_CONTINUE_CELL.md`](STAGE5_SAFE_CONTINUE_CELL.md)

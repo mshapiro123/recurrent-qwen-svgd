@@ -275,7 +275,10 @@ def test_build_summary_passes_when_arc_mix_lifts_proxy(tmp_path) -> None:
         source_summary=tmp_path / "balanced.json",
         source_payload={"status": "needs_competence_recovery"},
         resume_checkpoint=Path("outputs/stage5/source/phase1/phase1_step_150.pt"),
-        data_summary={"mixed_rows": 10},
+        data_summary={
+            "mixed_rows": 10,
+            "loop_control": {"use_learned_loop_control": True, "loop_control_ce_weight": 0.05},
+        },
         arms=[_arm("arc_mix", start=71, base=72, best=73)],
     )
 
@@ -288,6 +291,8 @@ def test_build_summary_passes_when_arc_mix_lifts_proxy(tmp_path) -> None:
     assert "answer-calibration drift" in payload["objective_rationale"]["failure_mode"]
     assert "response-only" in payload["objective_rationale"]["proxy_hypothesis"]
     assert "answer-surface completions" in payload["objective_rationale"]["response_distillation_reason"]
+    assert "direct/easy rows can stay shallow" in payload["objective_rationale"]["depth_routing_reason"]
+    assert payload["loop_control"]["use_learned_loop_control"] is True
 
 
 def test_build_summary_fails_without_proxy_lift(tmp_path) -> None:
@@ -398,12 +403,62 @@ def test_eval_arc_includes_loop_diagnostics_for_phase1(tmp_path, monkeypatch) ->
     checkpoint.write_bytes(b"checkpoint")
     monkeypatch.setattr(module, "RUN_DIR", tmp_path / "run")
     monkeypatch.setattr(module, "INCLUDE_LOOP_DIAGNOSTICS", True)
+    monkeypatch.setattr(module, "EVAL_USE_LEARNED_LOOP_CONTROL", True)
     monkeypatch.setattr(module, "run", lambda cmd, **_kwargs: calls.append(cmd))
 
     module.eval_arc("candidate", "phase1", data, checkpoint)
 
     assert calls
     assert "--include_loop_diagnostics" in calls[0]
+    assert "--use_learned_loop_control" in calls[0]
+
+
+def test_train_arm_writes_depth_control_config(tmp_path, monkeypatch) -> None:
+    import yaml
+    import colab.run_stage5_balanced_arc_mix_gate as module
+
+    mixed = tmp_path / "mixed.jsonl"
+    mixed.write_text("{}", encoding="utf-8")
+    checkpoint = tmp_path / "source" / "phase1_step_150.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+
+    def fake_run(cmd, **kwargs):
+        out_dir = tmp_path / "run" / "arm" / "phase1"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "phase1_step_25.pt").write_bytes(b"checkpoint")
+        return subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_DIR", tmp_path / "run")
+    monkeypatch.setattr(module, "MIXED_TRAIN_JSONL", mixed)
+    monkeypatch.setattr(module, "USE_TARGET_LOOP_CONTROL", False)
+    monkeypatch.setattr(module, "USE_LEARNED_LOOP_CONTROL", True)
+    monkeypatch.setattr(module, "LOOP_CONTROL_CE_WEIGHT", 0.05)
+    monkeypatch.setattr(module, "HALT_TARGET_NLL_WEIGHT", 0.03)
+    monkeypatch.setattr(module, "OPTIMIZER_MODULES", "halting,bridge,lora")
+    monkeypatch.setattr(module, "run", fake_run)
+
+    config = module.ArmConfig(
+        name="arm",
+        learning_rate="1e-6",
+        beta="0.08",
+        steps="25",
+        save_every="0",
+        distill_enabled="1",
+        distill_weight="0.2",
+        distill_temperature="2.0",
+        distill_on="response",
+    )
+    checkpoints = module.train_arm(config, resume_checkpoint=checkpoint)
+
+    assert checkpoints == [tmp_path / "run" / "arm" / "phase1" / "phase1_step_25.pt"]
+    cfg = yaml.safe_load((tmp_path / "run" / "arm" / "phase1_continue.yaml").read_text(encoding="utf-8"))
+    assert cfg["use_target_loop_control"] is False
+    assert cfg["use_learned_loop_control"] is True
+    assert cfg["loop_control_ce_weight"] == 0.05
+    assert cfg["halt_target_nll_weight"] == 0.03
+    assert cfg["optimizer_modules"] == "halting,bridge,lora"
 
 
 def test_arc_mix_commit_artifacts_exclude_checkpoints(tmp_path, monkeypatch) -> None:
