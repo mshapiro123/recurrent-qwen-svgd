@@ -169,6 +169,35 @@ def ensure_surface_diagnosis(benchmark_summary: Path) -> Path:
     return diagnosis
 
 
+def ensure_order_sensitivity_diagnosis(benchmark_summary: Path) -> Path:
+    benchmark_dir = benchmark_summary.parent
+    diagnosis = benchmark_dir / "arc_easy_order_sensitivity_diagnosis.json"
+    if diagnosis.exists():
+        return diagnosis
+    run(
+        [
+            sys.executable,
+            "eval/analyze_mcq_order_sensitivity.py",
+            "--benchmark",
+            f"arc_easy_{benchmark_dir.name}",
+            "--base_content",
+            path_for_cli(arc_easy_eval_file(benchmark_dir, "arc_easy_base_content_question_only.jsonl")),
+            "--candidate_content",
+            path_for_cli(arc_easy_eval_file(benchmark_dir, "arc_easy_recurrent_content_question_only.jsonl")),
+            "--candidate_cyclic",
+            path_for_cli(arc_easy_eval_file(benchmark_dir, "arc_easy_recurrent_cyclic_label_aggregated.jsonl")),
+            "--base_cyclic",
+            path_for_cli(arc_easy_eval_file(benchmark_dir, "arc_easy_base_cyclic_label_aggregated.jsonl")),
+            "--output_json",
+            path_for_cli(diagnosis),
+            "--output_md",
+            path_for_cli(benchmark_dir / "arc_easy_order_sensitivity_diagnosis.md"),
+        ],
+        log_name="order_sensitivity_diagnosis.log",
+    )
+    return diagnosis
+
+
 def train_config(*, checkpoint: Path, train_jsonl: Path) -> dict[str, Any]:
     return {
         "model_name": os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct"),
@@ -294,6 +323,7 @@ def write_summary(payload: dict[str, Any]) -> None:
         f"- Status: `{payload['status']}`",
         f"- Source summary: `{payload['source_summary']}`",
         f"- Benchmark source: `{payload['benchmark_source_summary']}`",
+        f"- Order-sensitivity diagnosis: `{payload.get('order_sensitivity_diagnosis') or 'not_run'}`",
         f"- Diagnosis: `{payload['surface_diagnosis']}`",
         f"- Train rows: `{payload['surface_alignment_rows']}`",
         f"- Checkpoint: `{payload.get('checkpoint') or 'not_trained'}`",
@@ -330,7 +360,9 @@ def main() -> int:
     benchmark_summary = source_benchmark_summary(source_payload, SOURCE_SUMMARY)
     benchmark_payload = read_json(benchmark_summary)
     checkpoint = resolve_checkpoint(benchmark_summary, benchmark_payload)
+    order_diagnosis = ensure_order_sensitivity_diagnosis(benchmark_summary)
     diagnosis = ensure_surface_diagnosis(benchmark_summary)
+    order_payload = read_json(order_diagnosis)
 
     mcq_jsonl = PRIVATE_DATA_DIR / f"arc_easy_validation_{ARC_EASY_LIMIT}.jsonl"
     run(
@@ -385,12 +417,14 @@ def main() -> int:
             "passed": False,
             "source_summary": path_for_cli(SOURCE_SUMMARY),
             "benchmark_source_summary": path_for_cli(benchmark_summary),
+            "order_sensitivity_diagnosis": path_for_cli(order_diagnosis),
+            "order_sensitivity_recommendation": (order_payload.get("summary") or {}).get("recommendation"),
             "surface_diagnosis": path_for_cli(diagnosis),
             "surface_alignment_rows": 0,
             "next_step": "Inspect the surface diagnosis; no trainable surface-alignment rows were selected.",
         }
         write_summary(payload)
-        commit_results([diagnosis, diagnosis.with_suffix(".md")])
+        commit_results([order_diagnosis, order_diagnosis.with_suffix(".md"), diagnosis, diagnosis.with_suffix(".md")])
         return 0
 
     config_path = RUN_DIR / "surface_alignment_phase1.yaml"
@@ -433,6 +467,9 @@ def main() -> int:
         "source_status": source_payload.get("status"),
         "benchmark_source_summary": path_for_cli(benchmark_summary),
         "resume_checkpoint": path_for_cli(checkpoint),
+        "order_sensitivity_diagnosis": path_for_cli(order_diagnosis),
+        "order_sensitivity_recommendation": (order_payload.get("summary") or {}).get("recommendation"),
+        "order_sensitivity_summary": order_payload.get("summary"),
         "surface_diagnosis": path_for_cli(diagnosis),
         "surface_alignment_train_jsonl": path_for_cli(train_jsonl),
         "surface_alignment_train_summary": surface_data_summary,
@@ -462,7 +499,7 @@ def main() -> int:
         ),
     }
     write_summary(payload)
-    commit_results([diagnosis, diagnosis.with_suffix(".md")])
+    commit_results([order_diagnosis, order_diagnosis.with_suffix(".md"), diagnosis, diagnosis.with_suffix(".md")])
     return 0
 
 

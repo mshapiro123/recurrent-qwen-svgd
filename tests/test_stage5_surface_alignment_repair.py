@@ -81,3 +81,35 @@ def test_assess_surface_repair_invokes_before_after_assessor(tmp_path, monkeypat
     ] == "colab/assess_stage5_surface_repair.py"
     assert "--source_benchmark_summary" in commands[0]
     assert "--repaired_benchmark_summary" in commands[0]
+
+
+def test_ensure_order_sensitivity_diagnosis_invokes_analyzer(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_surface_alignment_repair as module
+
+    benchmark = tmp_path / "outputs" / "stage5" / "bench" / "summary.json"
+    benchmark.parent.mkdir(parents=True)
+    for name in [
+        "arc_easy_base_content_question_only.jsonl",
+        "arc_easy_recurrent_content_question_only.jsonl",
+        "arc_easy_recurrent_cyclic_label_aggregated.jsonl",
+        "arc_easy_base_cyclic_label_aggregated.jsonl",
+    ]:
+        (benchmark.parent / name).write_text("{}\n", encoding="utf-8")
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, *, env=None, check=True, log_name=None):
+        commands.append([str(item) for item in cmd])
+        (benchmark.parent / "arc_easy_order_sensitivity_diagnosis.json").write_text(
+            '{"summary":{"recommendation":"prioritize_conditional_invariance_repair"}}',
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    diagnosis = module.ensure_order_sensitivity_diagnosis(benchmark)
+
+    assert diagnosis == benchmark.parent / "arc_easy_order_sensitivity_diagnosis.json"
+    assert commands[0][1] == "eval/analyze_mcq_order_sensitivity.py"
+    assert "--candidate_cyclic" in commands[0]
