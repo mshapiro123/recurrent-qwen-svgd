@@ -408,11 +408,16 @@ def source_is_clean_full_confirmation_proxy(payload: dict[str, Any]) -> bool:
 
 
 def promoted_stage4_opus_sources(source_payload: dict[str, Any]) -> list[dict[str, Any]]:
+    promoted_statuses = {
+        "promote_to_small_train_mix",
+        "promote_to_direct_recovery_mix",
+        "promote_to_deep_narrow_mix",
+    }
     promoted: list[dict[str, Any]] = []
     for item in source_payload.get("recommendations", []):
         if not isinstance(item, dict):
             continue
-        if item.get("status") != "promote_to_small_train_mix":
+        if item.get("status") not in promoted_statuses:
             continue
         if str(item.get("key") or "") not in STAGE4_OPUS_APPROVED_SOURCE_KEYS:
             continue
@@ -455,8 +460,10 @@ def checkpoint_from_payload(payload: dict[str, Any]) -> str | None:
         if current:
             return str(current)
 
-    source_summary = payload.get("source_summary")
-    if source_summary:
+    for summary_key in ("source_summary", "benchmark_source_summary"):
+        source_summary = payload.get(summary_key)
+        if not source_summary:
+            continue
         source_path = Path(str(source_summary))
         source_path = source_path if source_path.is_absolute() else ROOT / source_path
         if source_path.exists():
@@ -929,14 +936,24 @@ def classify_action(
         ) or (
             source_kind_label == "mcq_debias_diagnostic"
             and source_payload.get("status") == "content_degradation_persists"
+        ) or (
+            source_kind_label == "arc_easy_regression_diagnostic"
+            and source_payload.get("status") == "content_erosion_likely"
         )
         if direct_preservation_source:
-            source_summary = str(source_payload.get("nested_source_summary") or source_payload.get("source_summary") or "").strip()
+            source_summary = str(
+                source_payload.get("nested_source_summary")
+                or source_payload.get("source_summary")
+                or source_payload.get("benchmark_source_summary")
+                or ""
+            ).strip()
             checkpoint = None
             if source_summary:
                 try:
                     nested = read_json(resolve_path(source_summary))
-                    checkpoint = str(nested.get("resume_checkpoint") or "").replace("\\", "/")
+                    checkpoint = str(
+                        nested.get("resume_checkpoint") or nested.get("checkpoint") or nested.get("phase1_checkpoint") or ""
+                    ).replace("\\", "/")
                 except Exception:
                     checkpoint = None
             return go_paid_gpu_action(
@@ -955,7 +972,33 @@ def classify_action(
             "reason": (
                 "Direct preservation probe requires either source kind arc_mix_answer_prior_diagnosis with "
                 "status direct_answer_prior_not_preserved, or source kind mcq_debias_diagnostic with "
-                "status content_degradation_persists."
+                "status content_degradation_persists, or source kind arc_easy_regression_diagnostic with "
+                "status content_erosion_likely."
+            ),
+        }
+
+    if script == "colab/run_stage5_surface_alignment_repair.py":
+        if source_kind_label == "arc_easy_regression_diagnostic" and source_payload.get("status") in {
+            "order_sensitivity_likely",
+            "surface_mismatch_likely",
+        }:
+            return go_paid_gpu_action(
+                status="go_surface_alignment_repair",
+                spend_class="bounded_surface_alignment_repair",
+                checkpoint=checkpoint_from_summary_reference(source_payload.get("benchmark_source_summary"))
+                or checkpoint_from_payload(source_payload),
+                reason=(
+                    "ARC-Easy regression diagnostic selected order/surface repair rather than direct "
+                    "base-distillation; one bounded surface/invariance repair is allowed."
+                ),
+            )
+        return {
+            "go": False,
+            "status": "surface_alignment_repair_blocked",
+            "spend_class": "none",
+            "reason": (
+                "Surface-alignment repair requires source kind arc_easy_regression_diagnostic with "
+                "status order_sensitivity_likely or surface_mismatch_likely."
             ),
         }
 

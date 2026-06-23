@@ -521,6 +521,29 @@ def test_parse_action_command_allows_mcq_debias_diagnostic_runner() -> None:
     assert parsed.argv == [sys.executable, "colab/run_stage5_mcq_debias_diagnostic.py"]
 
 
+def test_parse_action_command_allows_arc_easy_regression_diagnostic_runner() -> None:
+    parsed = parse_action_command(
+        "STAGE5_ARC_EASY_REGRESSION_DIAG_RUN_ID=diag "
+        "python colab/run_stage5_arc_easy_regression_diagnostic.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_ARC_EASY_REGRESSION_DIAG_RUN_ID": "diag"}
+    assert parsed.argv == [sys.executable, "colab/run_stage5_arc_easy_regression_diagnostic.py"]
+
+
+def test_parse_action_command_allows_surface_alignment_repair_runner() -> None:
+    parsed = parse_action_command(
+        "STAGE5_SURFACE_ALIGN_RUN_ID=surface "
+        "STAGE5_SURFACE_ALIGN_MAX_STEPS=50 "
+        "python colab/run_stage5_surface_alignment_repair.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {"STAGE5_SURFACE_ALIGN_RUN_ID": "surface", "STAGE5_SURFACE_ALIGN_MAX_STEPS": "50"}
+    assert parsed.argv == [sys.executable, "colab/run_stage5_surface_alignment_repair.py"]
+
+
 def test_parse_action_command_allows_mcq_scoring_policy_runner() -> None:
     parsed = parse_action_command(
         "STAGE5_MCQ_SCORING_POLICY_RUN_ID=policy "
@@ -549,6 +572,7 @@ def test_paid_gpu_arc_runners_are_a100_guarded() -> None:
         "colab/run_stage5_phase1_recovery_ladder.py",
         "colab/run_stage5_direct_preservation_probe.py",
         "colab/run_stage5_mcq_debias_diagnostic.py",
+        "colab/run_stage5_surface_alignment_repair.py",
         "colab/run_stage5_recovered_phase1_arc_gate.py",
         "colab/run_stage5_recovered_phase1_particle_arc_gate.py",
         "colab/run_stage5_recovered_phase2_smoke.py",

@@ -140,6 +140,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or recipe_control_assessment_payload(payload) is not None
         or mcq_recipe_control_assessment_payload(payload) is not None
         or surface_alignment_repair_payload(payload) is not None
+        or arc_easy_regression_diagnostic_payload(payload) is not None
         or surface_repair_assessment_payload(payload) is not None
         or release_gate_payload(payload) is not None
         or benchmark_suite_payload(payload) is not None
@@ -353,6 +354,10 @@ def mcq_recipe_control_assessment_payload(payload: dict[str, Any]) -> dict[str, 
 
 def surface_alignment_repair_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "stage5_surface_alignment_repair" else None
+
+
+def arc_easy_regression_diagnostic_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_arc_easy_regression_diagnostic" else None
 
 
 def surface_repair_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -3328,27 +3333,18 @@ def traced_sft_assessment_actions(payload: dict[str, Any], *, source_summary: Pa
     if status == "needs_direct_preservation_repair":
         return [
             make_action(
-                "Run content-route direct-preservation probe",
+                "Diagnose ARC-Easy regression before repair",
                 (
                     "The scaled trace SFT improved/held hard ARC and cyclic scores but regressed ARC-Easy "
-                    "content-only scoring. Run one bounded max_loops=1 preservation probe with question-only "
-                    "option-text scoring and base-logit distillation before scaling traces or adding particles."
+                    "content-only scoring. First check whether those content losses are order-sensitive or "
+                    "cyclic-surface mismatches before spending GPU on base-distillation repair."
                 ),
                 command_env(
                     {
-                        "STAGE5_DIRECT_PRESERVE_RUN_ID": f"{RUN_ID}_traced_sft_direct_preservation",
-                        "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY": path_for_cli(source_summary),
-                        "STAGE5_DIRECT_PRESERVE_ARC_TRAIN_LIMIT": "512",
-                        "STAGE5_DIRECT_PRESERVE_ARC_EVAL_LIMIT": "128",
-                        "STAGE5_DIRECT_PRESERVE_MAX_STEPS": "75",
-                        "STAGE5_DIRECT_PRESERVE_MIN_BASE_MARGIN": "1.0",
-                        "STAGE5_DIRECT_PRESERVE_PROMPT_STYLE": "question_only",
-                        "STAGE5_DIRECT_PRESERVE_SCORE_TARGET": "option_text",
-                        "STAGE5_DIRECT_PRESERVE_LR": "5e-7",
-                        "STAGE5_DIRECT_PRESERVE_DISTILL_WEIGHT": "1.0",
-                        "STAGE5_DIRECT_PRESERVE_DISTILL_TEMPERATURE": "2.0",
+                        "STAGE5_ARC_EASY_REGRESSION_DIAG_RUN_ID": f"{RUN_ID}_arc_easy_regression_diagnostic",
+                        "STAGE5_ARC_EASY_REGRESSION_DIAG_SOURCE_SUMMARY": path_for_cli(source_summary),
                     },
-                    "python colab/run_stage5_direct_preservation_probe.py",
+                    "python colab/run_stage5_arc_easy_regression_diagnostic.py",
                 ),
                 10,
             )
@@ -3377,6 +3373,70 @@ def traced_sft_assessment_actions(payload: dict[str, Any], *, source_summary: Pa
             "The traced-SFT assessment did not map to an automated next run; inspect before spending GPU.",
             f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
             8,
+        )
+    ]
+
+
+def arc_easy_regression_diagnostic_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    status = str(payload.get("status", "unknown"))
+    benchmark_source = str(payload.get("benchmark_source_summary") or payload.get("source_summary") or "").strip()
+    original_source = str(payload.get("source_summary") or "").strip()
+    if status in {"order_sensitivity_likely", "surface_mismatch_likely"}:
+        objective = str(payload.get("repair_action") or "content_cyclic_surface_alignment")
+        return [
+            make_action(
+                "Run targeted ARC-Easy surface/invariance repair",
+                (
+                    f"ARC-Easy regression diagnostic reported `{status}`. Run the bounded surface repair, "
+                    "which will choose conditional-invariance rows when order sensitivity is the dominant pattern."
+                ),
+                command_env(
+                    {
+                        "STAGE5_SURFACE_ALIGN_RUN_ID": f"{RUN_ID}_{objective}",
+                        "STAGE5_SURFACE_ALIGN_SOURCE_SUMMARY": benchmark_source or path_for_cli(source_summary),
+                        "STAGE5_SURFACE_ALIGN_ARC_EASY_LIMIT": "256",
+                        "STAGE5_SURFACE_ALIGN_MAX_STEPS": "50",
+                        "STAGE5_SURFACE_ALIGN_LR": "5e-7",
+                        "STAGE5_SURFACE_ALIGN_DISTILL_WEIGHT": "0.05",
+                    },
+                    "python colab/run_stage5_surface_alignment_repair.py",
+                ),
+                10,
+            )
+        ]
+    if status == "content_erosion_likely":
+        return [
+            make_action(
+                "Run content-route direct-preservation probe",
+                (
+                    "ARC-Easy regression diagnostic did not find an order/surface explanation; run one bounded "
+                    "max_loops=1 preservation probe with question-only option-text scoring and base-logit distillation."
+                ),
+                command_env(
+                    {
+                        "STAGE5_DIRECT_PRESERVE_RUN_ID": f"{RUN_ID}_traced_sft_direct_preservation",
+                        "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY": original_source or benchmark_source or path_for_cli(source_summary),
+                        "STAGE5_DIRECT_PRESERVE_ARC_TRAIN_LIMIT": "512",
+                        "STAGE5_DIRECT_PRESERVE_ARC_EVAL_LIMIT": "128",
+                        "STAGE5_DIRECT_PRESERVE_MAX_STEPS": "75",
+                        "STAGE5_DIRECT_PRESERVE_MIN_BASE_MARGIN": "1.0",
+                        "STAGE5_DIRECT_PRESERVE_PROMPT_STYLE": "question_only",
+                        "STAGE5_DIRECT_PRESERVE_SCORE_TARGET": "option_text",
+                        "STAGE5_DIRECT_PRESERVE_LR": "5e-7",
+                        "STAGE5_DIRECT_PRESERVE_DISTILL_WEIGHT": "1.0",
+                        "STAGE5_DIRECT_PRESERVE_DISTILL_TEMPERATURE": "2.0",
+                    },
+                    "python colab/run_stage5_direct_preservation_probe.py",
+                ),
+                10,
+            )
+        ]
+    return [
+        make_action(
+            f"Inspect ARC-Easy regression diagnostic `{status}`",
+            "The diagnostic did not map cleanly to a repair objective; inspect the order and surface reports before spending GPU.",
+            f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+            10,
         )
     ]
 
@@ -4234,6 +4294,9 @@ def plan_next_actions(
     surface_alignment = surface_alignment_repair_payload(payload)
     if surface_alignment:
         return surface_alignment_repair_actions(surface_alignment, source_summary=source_summary)
+    arc_easy_regression = arc_easy_regression_diagnostic_payload(payload)
+    if arc_easy_regression:
+        return arc_easy_regression_diagnostic_actions(arc_easy_regression, source_summary=source_summary)
     surface_repair = surface_repair_assessment_payload(payload)
     if surface_repair:
         return surface_repair_assessment_actions(surface_repair, source_summary=source_summary)
@@ -4671,6 +4734,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "mcq_recipe_control_assessment"
     if surface_alignment_repair_payload(payload):
         return "surface_alignment_repair"
+    if arc_easy_regression_diagnostic_payload(payload):
+        return "arc_easy_regression_diagnostic"
     if surface_repair_assessment_payload(payload):
         return "surface_repair_assessment"
     if release_gate_payload(payload):

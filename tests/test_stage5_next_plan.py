@@ -3207,7 +3207,7 @@ def test_mcq_scoring_policy_without_stale_artifacts_still_runs_policy_compliant_
     assert "STAGE5_BENCHMARK_SCORE_TARGETS=label,content_question_only,cyclic_label_aggregated" in actions[0]["command"]
 
 
-def test_traced_sft_assessment_content_regression_runs_content_direct_preservation(tmp_path) -> None:
+def test_traced_sft_assessment_content_regression_runs_arc_easy_regression_diagnostic(tmp_path) -> None:
     source = tmp_path / "traced_sft_assessment" / "summary.json"
     source.parent.mkdir()
     payload = {
@@ -3219,11 +3219,46 @@ def test_traced_sft_assessment_content_regression_runs_content_direct_preservati
     actions = plan_next_actions(payload, source_summary=source)
 
     assert source_kind(payload) == "traced_sft_assessment"
+    assert actions[0]["name"] == "Diagnose ARC-Easy regression before repair"
+    assert "python colab/run_stage5_arc_easy_regression_diagnostic.py" in actions[0]["command"]
+    assert "STAGE5_ARC_EASY_REGRESSION_DIAG_SOURCE_SUMMARY=" in actions[0]["command"]
+    assert "run_stage5_direct_preservation_probe.py" not in actions[0]["command"]
+
+
+def test_arc_easy_regression_diagnostic_order_sensitivity_runs_surface_repair(tmp_path) -> None:
+    source = tmp_path / "arc_easy_regression" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_arc_easy_regression_diagnostic",
+        "status": "order_sensitivity_likely",
+        "repair_action": "conditional_invariance_repair",
+        "benchmark_source_summary": "outputs/stage5/bench/summary.json",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert source_kind(payload) == "arc_easy_regression_diagnostic"
+    assert actions[0]["name"] == "Run targeted ARC-Easy surface/invariance repair"
+    assert "python colab/run_stage5_surface_alignment_repair.py" in actions[0]["command"]
+    assert "STAGE5_SURFACE_ALIGN_SOURCE_SUMMARY=outputs/stage5/bench/summary.json" in actions[0]["command"]
+    assert "conditional_invariance_repair" in actions[0]["command"]
+
+
+def test_arc_easy_regression_diagnostic_content_erosion_runs_direct_preservation(tmp_path) -> None:
+    source = tmp_path / "arc_easy_regression" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_arc_easy_regression_diagnostic",
+        "status": "content_erosion_likely",
+        "source_summary": "outputs/stage5/traced_assess/summary.json",
+        "benchmark_source_summary": "outputs/stage5/bench/summary.json",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
     assert actions[0]["name"] == "Run content-route direct-preservation probe"
     assert "python colab/run_stage5_direct_preservation_probe.py" in actions[0]["command"]
-    assert "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY=" in actions[0]["command"]
-    assert "STAGE5_DIRECT_PRESERVE_PROMPT_STYLE=question_only" in actions[0]["command"]
-    assert "STAGE5_DIRECT_PRESERVE_SCORE_TARGET=option_text" in actions[0]["command"]
+    assert "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY=outputs/stage5/traced_assess/summary.json" in actions[0]["command"]
     assert "STAGE5_DIRECT_PRESERVE_DISTILL_WEIGHT=1.0" in actions[0]["command"]
 
 

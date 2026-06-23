@@ -81,6 +81,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/run_stage5_arc_agi_dense_sft.py",
     "colab/run_stage5_arc_agi_trace_sft_gate.py",
     "colab/run_stage5_arc_agi_tta_sweep.py",
+    "colab/run_stage5_arc_easy_regression_diagnostic.py",
     "colab/run_stage5_benchmark_suite.py",
     "colab/run_stage5_capability_ladder_mcq_probe.py",
     "colab/run_stage5_capability_ladder_trace_collect.py",
@@ -105,6 +106,7 @@ ALLOWED_PYTHON_SCRIPTS = {
     "colab/run_stage5_recovery_full_assessment.py",
     "colab/run_stage5_routing_diagnostic.py",
     "colab/run_stage5_routing_repair.py",
+    "colab/run_stage5_surface_alignment_repair.py",
     "colab/run_stage4_opus_finetune.py",
     "training/build_capability_ladder_curriculum.py",
     "training/build_capability_ladder_trace_jobs.py",
@@ -125,6 +127,7 @@ GUARDED_A100_SCRIPTS = {
     "colab/run_stage5_arc_agi_sft.py",
     "colab/run_stage5_arc_agi_trace_sft_gate.py",
     "colab/run_stage5_arc_agi_tta_sweep.py",
+    "colab/run_stage5_arc_easy_regression_diagnostic.py",
     "colab/run_stage5_balanced_arc_mix_gate.py",
     "colab/run_stage5_recovery_full_assessment.py",
     "colab/run_stage5_benchmark_suite.py",
@@ -141,6 +144,7 @@ GUARDED_A100_SCRIPTS = {
     "colab/run_stage5_curriculum_sft.py",
     "colab/run_stage5_routing_diagnostic.py",
     "colab/run_stage5_routing_repair.py",
+    "colab/run_stage5_surface_alignment_repair.py",
     "colab/run_stage4_opus_finetune.py",
 }
 LOCAL_ONLY_LONG_SCRIPTS = {

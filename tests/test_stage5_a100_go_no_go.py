@@ -493,6 +493,61 @@ def test_direct_preservation_probe_allowed_after_mcq_debias_content_gap(tmp_path
     assert guarded["status"] == "go_direct_preservation_probe"
 
 
+def test_direct_preservation_probe_allowed_after_arc_easy_content_erosion(tmp_path) -> None:
+    checkpoint = tmp_path / "outputs" / "stage5" / "phase1" / "phase1_step_150.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    benchmark = tmp_path / "benchmark" / "summary.json"
+    benchmark.parent.mkdir()
+    benchmark.write_text(json.dumps({"kind": "stage5_benchmark_suite", "checkpoint": str(checkpoint)}), encoding="utf-8")
+    source_payload = {
+        "kind": "stage5_arc_easy_regression_diagnostic",
+        "status": "content_erosion_likely",
+        "benchmark_source_summary": str(benchmark),
+    }
+
+    decision = classify_action(
+        {
+            "name": "Run bounded max_loops=1 direct-preservation probe",
+            "command": "python colab/run_stage5_direct_preservation_probe.py",
+        },
+        source_payload=source_payload,
+    )
+    guarded, checkpoint_status = apply_checkpoint_guard(decision, source_payload=source_payload)
+
+    assert checkpoint_status["available"] is True
+    assert guarded["go"] is True
+    assert guarded["status"] == "go_direct_preservation_probe"
+
+
+def test_surface_alignment_repair_allowed_after_arc_easy_order_diagnostic(tmp_path) -> None:
+    checkpoint = tmp_path / "outputs" / "stage5" / "phase1" / "phase1_step_150.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    benchmark = tmp_path / "benchmark" / "summary.json"
+    benchmark.parent.mkdir()
+    benchmark.write_text(json.dumps({"kind": "stage5_benchmark_suite", "checkpoint": str(checkpoint)}), encoding="utf-8")
+    source_payload = {
+        "kind": "stage5_arc_easy_regression_diagnostic",
+        "status": "order_sensitivity_likely",
+        "benchmark_source_summary": str(benchmark),
+    }
+
+    decision = classify_action(
+        {
+            "name": "Run targeted ARC-Easy surface/invariance repair",
+            "command": "python colab/run_stage5_surface_alignment_repair.py",
+        },
+        source_payload=source_payload,
+    )
+    guarded, checkpoint_status = apply_checkpoint_guard(decision, source_payload=source_payload)
+
+    assert checkpoint_status["available"] is True
+    assert guarded["go"] is True
+    assert guarded["status"] == "go_surface_alignment_repair"
+    assert guarded["spend_class"] == "bounded_surface_alignment_repair"
+
+
 def test_mcq_debias_diagnostic_allowed_from_answer_prior_diagnosis(tmp_path) -> None:
     checkpoint = tmp_path / "outputs" / "stage5" / "phase1" / "phase1_step_150.pt"
     checkpoint.parent.mkdir(parents=True)
@@ -575,7 +630,7 @@ def test_stage4_opus_finetune_allowed_only_after_dataset_promotion() -> None:
             "kind": "stage5_reasoning_dataset_audit",
             "recommendations": [
                 {
-                    "status": "promote_to_small_train_mix",
+                    "status": "promote_to_direct_recovery_mix",
                     "key": "opus47_sft",
                     "converted_rows": 900,
                     "conversion_rate": 0.9,
