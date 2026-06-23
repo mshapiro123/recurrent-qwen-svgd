@@ -4,6 +4,38 @@ Use this from a blank or Drive-backed Colab notebook when you want the shortest
 GitHub-backed path. It fetches the maintained plain cell from the private repo,
 checks safety markers, and executes it.
 
+For a restarted runtime, prefer fetching this bootstrap from GitHub rather than
+opening a local copy from `/content`; Colab can keep stale files around between
+runtime changes.
+
+```text
+import base64, json, os, urllib.request
+from google.colab import userdata
+
+gh = userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
+assert gh, "Add GH_TOKEN or GITHUB_TOKEN to Colab secrets."
+hf = userdata.get("HF_TOKEN")
+if hf:
+    os.environ["HF_TOKEN"] = hf
+    os.environ["HUGGINGFACE_HUB_TOKEN"] = hf
+
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_direct_preservation_probe"
+url = (
+    "https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/"
+    "contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py?ref=main"
+)
+req = urllib.request.Request(
+    url,
+    headers={"Authorization": f"Bearer {gh}", "Accept": "application/vnd.github+json"},
+)
+payload = json.loads(urllib.request.urlopen(req).read().decode("utf-8"))
+code = base64.b64decode(payload["content"]).decode("utf-8")
+assert "sha_resolved_nested_fetch_v3" in code
+assert "traced_sft_direct_preservation_probe" in code
+print("Fetched bootstrap sha:", payload.get("sha"))
+exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
+```
+
 Default target is `preflight`, which mounts Drive, checks checkpoint visibility,
 runs the A100 go/no-go guard, and disconnects. This is the cheap runtime path.
 

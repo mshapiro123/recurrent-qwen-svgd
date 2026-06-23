@@ -788,6 +788,9 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert "learned-depth router continuation" in current_action
     assert "traced_sft_depth_router_after_direct_preserve" in current_action
     assert "before commit `d7682ec`" in current_action
+    assert "Stale-safe fresh-runtime launcher" in current_action
+    assert "api.github.com/repos/mshapiro123/recurrent-qwen-svgd" in current_action
+    assert "STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER" in current_action
     assert '"STAGE5_CURRENT_A100_TARGET"] = "traced_sft_direct_preservation_probe"' in current_action
     assert "stage5_latest_direct_preservation_summary.txt" in direct_cell
     assert "stage5_current_source_summary.txt" in direct_cell

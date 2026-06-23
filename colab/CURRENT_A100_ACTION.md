@@ -91,14 +91,12 @@ That target does no training. It confirms loop-1 direct-route preservation on
 larger ARC-Easy and ARC-Challenge slices using
 `content_question_only,cyclic_label_aggregated` scoring.
 
-Short fresh-runtime launcher:
+Stale-safe fresh-runtime launcher:
 
 ```python
-import os, subprocess
-from pathlib import Path
+import base64, json, os, urllib.request
 from google.colab import userdata
 
-ROOT = Path("/content/recurrent-qwen-svgd")
 gh = userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
 assert gh, "Add GH_TOKEN or GITHUB_TOKEN to Colab secrets."
 hf = userdata.get("HF_TOKEN")
@@ -106,16 +104,38 @@ if hf:
     os.environ["HF_TOKEN"] = hf
     os.environ["HUGGINGFACE_HUB_TOKEN"] = hf
 
-repo_url = f"https://x-access-token:{gh}@github.com/mshapiro123/recurrent-qwen-svgd.git"
-if ROOT.exists():
-    subprocess.run(["git", "-C", str(ROOT), "remote", "set-url", "origin", repo_url], check=True)
-    subprocess.run(["git", "-C", str(ROOT), "fetch", "origin", "main"], check=True)
-    subprocess.run(["git", "-C", str(ROOT), "checkout", "main"], check=True)
-    subprocess.run(["git", "-C", str(ROOT), "reset", "--hard", "origin/main"], check=True)
-else:
-    subprocess.run(["git", "clone", repo_url, str(ROOT)], check=True)
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_direct_preservation_probe"
 
-os.chdir(ROOT)
+url = (
+    "https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/"
+    "contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py?ref=main"
+)
+req = urllib.request.Request(
+    url,
+    headers={
+        "Authorization": f"Bearer {gh}",
+        "Accept": "application/vnd.github+json",
+    },
+)
+payload = json.loads(urllib.request.urlopen(req).read().decode("utf-8"))
+code = base64.b64decode(payload["content"]).decode("utf-8")
+required = [
+    "sha_resolved_nested_fetch_v3",
+    "traced_sft_direct_preservation_probe",
+    "STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER",
+]
+missing = [marker for marker in required if marker not in code]
+assert not missing, f"Fetched bootstrap is stale or incomplete: {missing}"
+print("Fetched bootstrap sha:", payload.get("sha"))
+exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
+```
+
+Avoid the shorter local form below unless the runtime has already been reset to
+latest `main`; it can run a stale bootstrap if Colab keeps an old
+`/content/recurrent-qwen-svgd` directory alive:
+
+```python
+import os
 os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_direct_preservation_probe"
 exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py", encoding="utf-8").read())
 ```
