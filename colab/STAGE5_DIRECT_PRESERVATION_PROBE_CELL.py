@@ -55,6 +55,7 @@ def env_bool(name, default):
 DRIVE_BACKUP = env_bool("STAGE5_DIRECT_PRESERVE_DRIVE_BACKUP", False)
 DISCONNECT_WHEN_DONE = env_bool("STAGE5_DIRECT_PRESERVE_DISCONNECT", False)
 CHAIN_CONFIRM_WHEN_PASSED = env_bool("STAGE5_DIRECT_PRESERVE_CHAIN_CONFIRM", False)
+CHAIN_DEPTH_ROUTER_WHEN_CONFIRMED = env_bool("STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER", False)
 RUN_ID = os.environ.get("STAGE5_DIRECT_PRESERVE_RUN_ID") or time.strftime(
     "stage5_direct_preservation_loop1_%Y%m%d_%H%M%S"
 )
@@ -125,8 +126,23 @@ def safe_stage_and_push(run_dir):
     current_pointer.write_text(f"{summary_rel}\n", encoding="utf-8")
     suffixes = {".json", ".jsonl", ".md", ".txt", ".yaml", ".yml", ".log", ".csv"}
     files = [path for path in run_dir.rglob("*") if path.is_file() and path.suffix.lower() in suffixes]
+    summary = run_dir / "summary.json"
+    if summary.exists():
+        try:
+            checkpoint = checkpoint_from_probe(read_json(summary))
+        except Exception as exc:
+            checkpoint = ""
+            print(f"checkpoint_publish_probe_failed={exc}", flush=True)
+        if checkpoint:
+            checkpoint_path = ROOT / checkpoint if not Path(checkpoint).is_absolute() else Path(checkpoint)
+            if checkpoint_path.exists() and ROOT in checkpoint_path.resolve().parents:
+                files.append(checkpoint_path)
+                print(f"staged_selected_checkpoint={checkpoint_path.relative_to(ROOT).as_posix()}", flush=True)
+            else:
+                print(f"selected_checkpoint_not_visible_for_publish={checkpoint}", flush=True)
     files.append(pointer)
     files.append(current_pointer)
+    files = sorted(set(files), key=lambda path: path.as_posix())
     if not files:
         print("No lightweight output files to commit.", flush=True)
         return
@@ -148,7 +164,7 @@ def safe_stage_and_push(run_dir):
 def maybe_chain_confirmation(run_dir):
     if not CHAIN_CONFIRM_WHEN_PASSED:
         print("direct_preservation_chain_confirm=disabled", flush=True)
-        return
+        return False
     summary = run_dir / "summary.json"
     payload = read_json(summary)
     if payload.get("passed") is not True:
@@ -156,7 +172,7 @@ def maybe_chain_confirmation(run_dir):
             f"direct_preservation_chain_confirm=skipped status={payload.get('status')} passed={payload.get('passed')}",
             flush=True,
         )
-        return
+        return False
     checkpoint = checkpoint_from_probe(payload)
     assert checkpoint, f"Direct-preservation probe passed but exposed no checkpoint: {summary}"
     confirm_run_id = os.environ.get("STAGE5_DIRECT_CONFIRM_RUN_ID") or f"{RUN_ID}_confirm"
@@ -215,7 +231,39 @@ def maybe_chain_confirmation(run_dir):
         cwd=ROOT,
         env=assess_env,
     )
-    print("direct_preservation_confirmation_assessment:", pointer.read_text(encoding="utf-8").strip(), flush=True)
+    assessment_summary = pointer.read_text(encoding="utf-8").strip()
+    print("direct_preservation_confirmation_assessment:", assessment_summary, flush=True)
+    try:
+        assessment_payload = read_json(ROOT / assessment_summary)
+    except Exception as exc:
+        print(f"direct_preservation_confirmation_assessment_read_failed={exc}", flush=True)
+        return False
+    return assessment_payload.get("passed") is True
+
+
+def maybe_chain_depth_router(run_dir, *, confirmation_passed):
+    if not CHAIN_DEPTH_ROUTER_WHEN_CONFIRMED:
+        print("direct_preservation_chain_depth_router=disabled", flush=True)
+        return
+    if not confirmation_passed:
+        print("direct_preservation_chain_depth_router=skipped confirmation_passed=False", flush=True)
+        return
+    summary = run_dir / "summary.json"
+    depth_env = os.environ.copy()
+    depth_env.update(
+        {
+            "STAGE5_DEPTH_ROUTER_DIRECT_SOURCE_SUMMARY": summary.relative_to(ROOT).as_posix(),
+            "STAGE5_DEPTH_ROUTER_TRACE_SOURCE_SUMMARY": os.environ.get(
+                "STAGE5_DIRECT_DEPTH_ROUTER_TRACE_SOURCE_SUMMARY",
+                "outputs/stage5/stage5_capability_ladder_trace_collection_20260623_194537/summary.json",
+            ),
+            "STAGE5_DEPTH_ROUTER_RUN_ID": os.environ.get("STAGE5_DIRECT_DEPTH_ROUTER_RUN_ID")
+            or f"{RUN_ID}_depth_router",
+            "STAGE5_DEPTH_ROUTER_DISCONNECT": "0",
+        }
+    )
+    set_stage("direct_preservation_depth_router")
+    run([sys.executable, "colab/STAGE5_DEPTH_ROUTER_AFTER_DIRECT_PRESERVE_CELL.py"], cwd=ROOT, env=depth_env)
 
 
 def disconnect(reason):
@@ -328,7 +376,8 @@ try:
         print(f"drive_backup_skipped={RUN_ID}", flush=True)
 
     safe_stage_and_push(run_dir)
-    maybe_chain_confirmation(run_dir)
+    confirmation_passed = maybe_chain_confirmation(run_dir)
+    maybe_chain_depth_router(run_dir, confirmation_passed=confirmation_passed)
     disconnect("direct preservation probe finished")
 except Exception:
     disconnect("direct preservation probe errored")

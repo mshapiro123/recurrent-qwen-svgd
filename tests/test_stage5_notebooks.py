@@ -790,6 +790,10 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert "stage5_current_source_summary.txt" in direct_cell
     assert "stage5_direct_preservation_probe_failure" in direct_cell
     assert "STAGE5_DIRECT_PRESERVE_CHAIN_CONFIRM" in direct_cell
+    assert "STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER" in direct_cell
+    assert "staged_selected_checkpoint" in direct_cell
+    assert "maybe_chain_depth_router" in direct_cell
+    assert "colab/STAGE5_DEPTH_ROUTER_AFTER_DIRECT_PRESERVE_CELL.py" in direct_cell
     assert "direct_preservation_confirmation_assessment" in direct_cell
     assert "colab/assess_stage5_benchmark_suite.py" in direct_cell
     assert "Record Stage 5 direct preservation probe" in direct_cell
@@ -798,6 +802,8 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert 'replace(HF_TOKEN or "", "****")' not in direct_cell
     assert "STAGE5_DIRECT_PRESERVE_CHAIN_CONFIRM" in bootstrap
     assert '"STAGE5_DIRECT_PRESERVE_CHAIN_CONFIRM": "1"' in bootstrap
+    assert "STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER" in bootstrap
+    assert '"STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER": "1"' in bootstrap
     assert "content_question_only,cyclic_label_aggregated" in bootstrap
 
 

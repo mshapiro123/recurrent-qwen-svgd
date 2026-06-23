@@ -537,8 +537,10 @@ TARGETS = {
             "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY",
             "STAGE5_DIRECT_PRESERVE_MAX_STEPS",
             "STAGE5_DIRECT_PRESERVE_CHAIN_CONFIRM",
+            "STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER",
             "colab/assess_stage5_benchmark_suite.py",
             "colab/run_stage5_direct_preservation_probe.py",
+            "colab/STAGE5_DEPTH_ROUTER_AFTER_DIRECT_PRESERVE_CELL.py",
             "runtime.unassign",
         ],
         "env": {
@@ -560,6 +562,7 @@ TARGETS = {
             "STAGE5_DIRECT_CONFIRM_ARC_CHALLENGE_LIMIT": "256",
             "STAGE5_DIRECT_CONFIRM_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
             "STAGE5_DIRECT_CONFIRM_ASSESS_SCORE_TARGET": "content_question_only",
+            "STAGE5_DIRECT_PRESERVE_CHAIN_DEPTH_ROUTER": "1",
             "STAGE5_DIRECT_PRESERVE_DISCONNECT": "1",
         },
     },
