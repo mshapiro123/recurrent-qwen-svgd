@@ -1,4 +1,4 @@
-# Current A100 Bootstrap Cell
+﻿# Current A100 Bootstrap Cell
 
 Use this from a blank or Drive-backed Colab notebook when you want the shortest
 GitHub-backed path. It fetches the maintained plain cell from the private repo,
@@ -106,6 +106,8 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "capability_ladder_trace_jobs_cpu" - CPU-only trace-job build from latest capability ladder probe.
 #   "capability_ladder_trace_responses_cpu" - CPU/network provider responses for trace jobs.
 #   "capability_ladder_trace_collect_cpu" - CPU-only trace-response collection into gated SFT data.
+#   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
+#   "depth_sweep_heldout" - L4/T4 held-out ARC tail loop-depth sweep for routing validation.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 
@@ -267,6 +269,41 @@ TARGETS = {
         ],
         "env": {},
     },
+    "direct_preservation_probe": {
+        "path": "colab/STAGE5_DIRECT_PRESERVATION_PROBE_CELL.py",
+        "markers": [
+            "STAGE5_DIRECT_PRESERVATION_PROBE_CELL_VERSION",
+            "direct_preservation_probe",
+            "STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY",
+            "STAGE5_DIRECT_PRESERVE_MAX_STEPS",
+            "colab/run_stage5_direct_preservation_probe.py",
+            "stage5_arc_agi_next_action_20260622_181850_plan_conservative_direct_preservation",
+            "runtime.unassign",
+        ],
+        "env": {},
+    },
+    "depth_sweep_heldout": {
+        "path": "colab/STAGE5_DEPTH_SWEEP_BENCHMARK_CELL.py",
+        "markers": [
+            "STAGE5_DEPTH_SWEEP_BENCHMARK_CELL_VERSION",
+            "STAGE5_DEPTH_SWEEP_DRIVE_BACKUP",
+            "STAGE5_DEPTH_SWEEP_LOOPS",
+            "STAGE5_BENCHMARK_ARC_EASY_OFFSET",
+            "STAGE5_BENCHMARK_ARC_CHALLENGE_OFFSET",
+            "eval/analyze_depth_sweep.py",
+            "stage5_depth_sweep_arc_loop1234",
+            "Drive backup disabled; using GitHub as primary artifact store.",
+        ],
+        "env": {
+            "STAGE5_DEPTH_SWEEP_LOOPS": "1,2,3",
+            "STAGE5_DEPTH_SWEEP_ARC_EASY_OFFSET": "256",
+            "STAGE5_DEPTH_SWEEP_ARC_EASY_LIMIT": "full",
+            "STAGE5_DEPTH_SWEEP_ARC_CHALLENGE_OFFSET": "256",
+            "STAGE5_DEPTH_SWEEP_ARC_CHALLENGE_LIMIT": "full",
+            "STAGE5_DEPTH_SWEEP_DISCONNECT": "0",
+            "STAGE5_DEPTH_SWEEP_DRIVE_BACKUP": "0",
+        },
+    },
 }
 
 def secret(*names):
@@ -312,13 +349,30 @@ selected = TARGETS[TARGET]
 if SOURCE_SUMMARY_OVERRIDE:
     os.environ["STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
     os.environ["STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
+    os.environ["STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
 else:
     # Avoid accidentally pinning a new session to an old target-specific source
     # summary. The safe-continue launcher will follow config/stage5_current_source_summary.txt.
     os.environ.pop("STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY", None)
     os.environ.pop("STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY", None)
+    os.environ.pop("STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY", None)
 for key, value in selected["env"].items():
     os.environ[key] = value
+if TARGET == "depth_sweep_heldout":
+    if os.environ.get("STAGE5_DEPTH_SWEEP_RUN_ID_LOCKED", "0").strip().lower() not in {
+        "1",
+        "true",
+        "yes",
+        "y",
+    }:
+        os.environ["STAGE5_DEPTH_SWEEP_RUN_ID"] = time.strftime(
+            "stage5_depth_sweep_arc_heldout_tail_loop123_%Y%m%d_%H%M%S"
+        )
+    else:
+        os.environ.setdefault(
+            "STAGE5_DEPTH_SWEEP_RUN_ID",
+            time.strftime("stage5_depth_sweep_arc_heldout_tail_loop123_%Y%m%d_%H%M%S"),
+        )
 os.environ.setdefault("STAGE5_SAFE_CONTINUE_DISCONNECT", "1")
 
 launcher_path = selected["path"]

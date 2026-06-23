@@ -25,6 +25,36 @@ The current evidence says the architecture is promising but not yet proven:
 - MCQ label/position bias is a real confound, so ARC/GPQA-style results must
   use debiased scoring.
 
+## Strategy Review Update: Foundation First, Spine Second
+
+The numbered experiments below are components, not a strict serial chain. A
+strategy review identified the main weakness in the first version of this plan:
+it over-serialized cheap diagnostics that do not need to wait for each other.
+The corrected program shape is two-layered:
+
+1. **Foundation instruments, run in parallel where possible.** Build the
+   selector, debiased benchmark harness, trace/data audit, and no-training
+   1.5B viability probe up front. These are cheap relative to training and
+   decide whether later GPU work is interpretable.
+2. **Decisive spine.** Run depth-1 preservation, capability-ladder depth
+   supervision, and the benchmark gate as one connected test of whether
+   recurrence can substitute for scale.
+
+This reordering keeps the validity gates but removes unnecessary waiting. The
+selector and debiased harness are instruments. The data audit is an input
+quality gate. The 1.5B probe is an information-value check on whether 0.5B is
+too small to show the payoff. None of those requires completing the others.
+
+The decisive test should be named directly:
+
+> On examples that base Qwen 0.5B misses but Qwen 1.5B solves, can the
+> recurrent 0.5B model trained with depth-ladder supervision improve at depth 2
+> while preserving depth-1 behavior on examples base Qwen 0.5B already solves?
+
+That is the central "recurrence substitutes for scale" experiment. The
+particles/SVGD branch opens only after this deterministic depth spine produces
+selector-convertible signal.
+
 ## Current Evidence Anchor
 
 ### Identity And Surgery
@@ -156,6 +186,11 @@ If oracle gain survives, prioritize selector training. If it does not, return
 to depth-1 preservation before any deeper-depth SFT.
 
 ## Experiment 2: Selector From Existing Loop Outputs
+
+**Foundation instrument.** This is not just another experiment; it is the
+readout used by depth sweeps, depth-ladder training, and later particle runs.
+Once built, the selector/oracle read should be reused rather than reconstructed
+inside every downstream run.
 
 ### Hypothesis
 
@@ -306,6 +341,12 @@ bad proxy or whether the model lacks capacity at 0.5B.
 
 ## Experiment 5: Conditional Invariance And MCQ Debias Training
 
+**Foundation instrument plus later auxiliary.** Debiased/cyclic scoring belongs
+at the front as measurement infrastructure. Conditional invariance as a training
+loss belongs later and should be restricted to the reasoning path after
+depth-1 recovery is stable. It should not become a broad depth-1 recovery
+regularizer.
+
 ### Hypothesis
 
 Some benchmark losses are caused by nuisance sensitivity to option order,
@@ -436,6 +477,10 @@ and continue deterministic recurrence and selector work.
 
 ## Experiment 8: Trace Dataset Audit And Conversion
 
+**Foundation instrument.** This must happen before capability-ladder SFT, not
+after several training stages have already consumed noisy data. Bad traces and
+bad measurement have already been recurring sources of confusion.
+
 ### Hypothesis
 
 Opus, Fable, and other reasoning traces are useful only after filtering into
@@ -525,6 +570,11 @@ architecture.
 
 ## Experiment 10: Scale Probe At 1.5B
 
+**Front-loaded information-value probe.** This should move earlier than its
+number suggests. It is a no-training viability probe, not a commitment to move
+development to 1.5B. Its purpose is to tell us whether the tiny 0.5B model is
+too capacity-limited for the recurrent-depth payoff to be visible.
+
 ### Hypothesis
 
 Qwen 0.5B may be below the capacity floor where recurrent depth can visibly
@@ -540,6 +590,11 @@ Repeat only the minimal gates:
 - small depth sweep on ARC-style slices;
 - no particle training;
 - no long SFT until these pass.
+
+Implementation note: the repo already has capability-ladder MCQ scoring for
+Qwen 0.5B/1.5B/3B and configs for 1.5B Phase 1/2. It does not yet have a clean
+one-cell no-training recurrent 1.5B viability launcher. Add that launcher
+before spending A100 time on this probe.
 
 ### Runtime
 
@@ -687,14 +742,33 @@ Stop or avoid GPU when:
 
 ## Current Next-Best Order
 
+Run the cheap foundation layer first, in parallel where practical:
+
 1. Recover or rerun the held-out depth-sweep artifact.
-2. Train/evaluate selectors from existing loop outputs.
-3. Run depth-1 preservation SFT.
-4. Build the capability-ladder depth dataset.
-5. Run deterministic depth-supervised SFT.
-6. Re-test particles only after deterministic depth routing is useful.
-7. Add dense same-recipe control.
-8. Probe 1.5B only if 0.5B has a selector-converted depth signal.
+2. Promote selector/oracle analysis into a fixed readout used by all later
+   runs.
+3. Keep debiased/cyclic MCQ scoring as the default benchmark harness.
+4. Audit and type trace data before more SFT consumes it.
+5. Add and run a no-training 1.5B recurrent viability probe: identity,
+   loop-1 preservation, and a tiny depth sweep. This is an information-value
+   probe only; 0.5B remains the cheap mechanism workbench unless 1.5B clearly
+   changes the signal.
+
+Then run the decisive deterministic spine:
+
+6. Run depth-1 preservation SFT on base-correct rows.
+7. Build the capability-ladder depth dataset from verified 0.5B/1.5B/3B or
+   strong-solver results.
+8. Run deterministic depth-supervised SFT and evaluate with the fixed selector
+   and debiased harness.
+9. Compare against a same-recipe dense LoRA control.
+
+Only then open the branch work:
+
+10. Re-test particles/SVGD after deterministic depth routing is useful.
+11. Run broader GPQA/ARC-AGI-style benchmark gates.
+12. Package HF artifacts and paper claims only after held-out surpass-base or
+    same-recipe architecture evidence exists.
 
 The immediate strategic question for the deep-research agent is not whether
 SVGD is the right kernel. It is whether the depth-ladder curriculum and selector
