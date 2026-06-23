@@ -1,0 +1,20 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]
+Fetching 2 files:  50%|█████     | 1/2 [00:16<00:16, 16.44s/it]
+Fetching 2 files: 100%|██████████| 2/2 [00:16<00:00,  8.22s/it]
+
+Loading weights:   0%|          | 0/434 [00:00<?, ?it/s]
+Loading weights:   0%|          | 1/434 [00:00<00:47,  9.09it/s]
+Loading weights:  20%|██        | 87/434 [00:00<00:00, 488.27it/s]
+Loading weights:  32%|███▏      | 138/434 [00:00<00:00, 472.79it/s]
+Loading weights:  45%|████▍     | 195/434 [00:00<00:00, 503.16it/s]
+Loading weights:  57%|█████▋    | 247/434 [00:00<00:00, 477.84it/s]
+Loading weights:  70%|██████▉   | 303/434 [00:00<00:00, 488.80it/s]
+Loading weights:  81%|████████▏ | 353/434 [00:00<00:00, 487.21it/s]
+Loading weights:  94%|█████████▍| 407/434 [00:00<00:00, 498.81it/s]
+Loading weights: 100%|██████████| 434/434 [00:00<00:00, 477.62it/s]
+max_abs_diff=0.00000000
+mean_abs_diff=0.00000000
+threshold=0.00100000
+PASS: identity wrapper drift is within threshold
