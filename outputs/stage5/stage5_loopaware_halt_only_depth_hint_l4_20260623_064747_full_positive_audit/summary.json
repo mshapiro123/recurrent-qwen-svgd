@@ -1,0 +1,62 @@
+{
+  "run_id": "stage5_loopaware_halt_only_depth_hint_l4_20260623_064747_full_positive_audit",
+  "kind": "stage5_halt_routing_audit",
+  "source_summary": "outputs/stage5/stage5_loopaware_halt_only_depth_hint_l4_20260623_064747/summary.json",
+  "checkpoint": "outputs/stage5/stage5_loopaware_halt_only_depth_hint_l4_20260623_064747/phase1/phase1_step_200.pt",
+  "positive_sft": "data/curriculum/stage5_loopaware_halt_only_depth_hint_l4_20260623_064747_mcq_ladder/positive_sft.jsonl",
+  "metrics": {
+    "lora_recurrent_modules": 84.0,
+    "examples": 73.0,
+    "expected_ce": 0.229323,
+    "halting_kl": 0.246088,
+    "loss": 0.258853,
+    "mean_expected_loops": 1.741925,
+    "mean_halt_entropy": 1.091393,
+    "target_loop_abs_error": 0.810901,
+    "target_mean_loops": 1.90411,
+    "group/curriculum_mode/deep_narrow/examples": 40.0,
+    "group/curriculum_mode/deep_narrow/expected_ce": 0.240485,
+    "group/curriculum_mode/deep_narrow/halting_kl": 0.401996,
+    "group/curriculum_mode/deep_narrow/loss": 0.288724,
+    "group/curriculum_mode/deep_narrow/mean_expected_loops": 1.762059,
+    "group/curriculum_mode/deep_narrow/mean_halt_entropy": 1.105419,
+    "group/curriculum_mode/deep_narrow/target_loop_abs_error": 0.887941,
+    "group/curriculum_mode/deep_narrow/target_mean_loops": 2.65,
+    "group/curriculum_mode/direct/examples": 33.0,
+    "group/curriculum_mode/direct/expected_ce": 0.215793,
+    "group/curriculum_mode/direct/halting_kl": 0.057108,
+    "group/curriculum_mode/direct/loss": 0.222646,
+    "group/curriculum_mode/direct/mean_expected_loops": 1.717519,
+    "group/curriculum_mode/direct/mean_halt_entropy": 1.074392,
+    "group/curriculum_mode/direct/target_loop_abs_error": 0.717519,
+    "group/curriculum_mode/direct/target_mean_loops": 1.0
+  },
+  "by_mode": {
+    "deep_narrow": {
+      "examples": 40.0,
+      "expected_ce": 0.240485,
+      "halting_kl": 0.401996,
+      "loss": 0.288724,
+      "mean_expected_loops": 1.762059,
+      "mean_halt_entropy": 1.105419,
+      "target_loop_abs_error": 0.887941,
+      "target_mean_loops": 2.65
+    },
+    "direct": {
+      "examples": 33.0,
+      "expected_ce": 0.215793,
+      "halting_kl": 0.057108,
+      "loss": 0.222646,
+      "mean_expected_loops": 1.717519,
+      "mean_halt_entropy": 1.074392,
+      "target_loop_abs_error": 0.717519,
+      "target_mean_loops": 1.0
+    }
+  },
+  "depth_gradient": {
+    "direct_mean_expected_loops": 1.717519,
+    "deep_narrow_mean_expected_loops": 1.762059,
+    "margin": 0.044540000000000024,
+    "observed": false
+  }
+}
