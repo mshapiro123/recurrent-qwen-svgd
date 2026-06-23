@@ -796,7 +796,7 @@ def commit_results() -> None:
     if status.returncode == 0:
         print("No benchmark suite outputs changed.")
         return
-    run(["git", "commit", "-m", f"Record Stage 5 benchmark suite {RUN_ID}"])
+    run(["git", "commit", "-m", f"Record Stage 5 benchmark suite {RUN_ID} [skip ci]"])
     run(["git", "pull", "--rebase", "origin", "main"], check=False)
     run(["git", "push", "origin", "main"], check=False)
 

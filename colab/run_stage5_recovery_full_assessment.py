@@ -297,7 +297,7 @@ def commit_results(paths: list[Path]) -> None:
     if run(["git", "diff", "--cached", "--quiet"], check=False).returncode == 0:
         print("No recovery full assessment outputs changed.")
         return
-    run(["git", "commit", "-m", f"Record Stage 5 recovery full assessment {RUN_ID}"])
+    run(["git", "commit", "-m", f"Record Stage 5 recovery full assessment {RUN_ID} [skip ci]"])
     run(["git", "push", "origin", "main"], check=False)
 
 

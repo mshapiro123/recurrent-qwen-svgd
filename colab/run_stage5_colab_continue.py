@@ -274,7 +274,7 @@ def commit_stage5_outputs() -> None:
     if status.returncode == 0:
         print("No Stage 5 outputs to commit.")
         return
-    run(["git", "commit", "-m", f"Record Stage 5 continuation {RUN_ID}"])
+    run(["git", "commit", "-m", f"Record Stage 5 continuation {RUN_ID} [skip ci]"])
     run(["git", "push", "origin", "main"], check=False)
 
 

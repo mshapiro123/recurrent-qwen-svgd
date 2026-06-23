@@ -331,7 +331,7 @@ def commit_results(child_run_ids: list[str]) -> None:
     if run(["git", "diff", "--cached", "--quiet"], check=False).returncode == 0:
         print("No balanced distillation gate outputs changed.")
         return
-    run(["git", "commit", "-m", f"Record balanced Stage 5 distillation gate {RUN_ID}"])
+    run(["git", "commit", "-m", f"Record balanced Stage 5 distillation gate {RUN_ID} [skip ci]"])
     run(["git", "push", "origin", "main"], check=False)
 
 
