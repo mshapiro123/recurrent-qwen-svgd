@@ -243,6 +243,18 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 
+if TARGET == "traced_sft_scale64_benchmark" and os.environ.get(
+    "STAGE5_ALLOW_STALE_SCALE64_BENCHMARK", "0"
+).strip().lower() not in {"1", "true", "yes", "y"}:
+    print(
+        "traced_sft_scale64_benchmark is complete; rerouting to "
+        "traced_sft_direct_preservation_probe. Set "
+        "STAGE5_ALLOW_STALE_SCALE64_BENCHMARK=1 to intentionally rerun "
+        "the benchmark-only target.",
+        flush=True,
+    )
+    TARGET = "traced_sft_direct_preservation_probe"
+
 TARGETS = {
     "preflight": {
         "path": "colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.py",

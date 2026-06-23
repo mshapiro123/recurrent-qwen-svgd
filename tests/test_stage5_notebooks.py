@@ -836,7 +836,13 @@ def test_traced_sft_scale64_benchmark_target_is_bootstrapped() -> None:
     assert "colab/assess_stage5_traced_sft.py" in plain
     assert "traced_sft_scale64_benchmark" in bootstrap
     assert "STAGE5_TRACED_SFT_BENCHMARK_CELL.py" in bootstrap
+    assert "STAGE5_ALLOW_STALE_SCALE64_BENCHMARK" in bootstrap
+    assert '"traced_sft_scale64_benchmark is complete; rerouting to "' in bootstrap
+    assert '"traced_sft_direct_preservation_probe. Set "' in bootstrap
     assert "traced_sft_scale64_benchmark" in bootstrap_md
+    assert "STAGE5_ALLOW_STALE_SCALE64_BENCHMARK" in bootstrap_md
+    assert '"traced_sft_scale64_benchmark is complete; rerouting to "' in bootstrap_md
+    assert '"traced_sft_direct_preservation_probe. Set "' in bootstrap_md
     assert "content-route direct-preservation precheck" in current_action
     assert "STAGE5_CURRENT_A100_TARGET=traced_sft_direct_preservation_precheck" in current_action
     assert "STAGE5_CURRENT_A100_TARGET=traced_sft_scale64_benchmark" in current_action
