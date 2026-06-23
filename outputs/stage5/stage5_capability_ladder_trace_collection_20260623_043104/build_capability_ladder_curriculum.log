@@ -1,0 +1,8 @@
+status=complete
+input_rows=32
+typed_records=32
+positive_sft_rows=32
+tier_counts={'base_preservation': 8, 'qwen_0_5b_miss_qwen_1_5b_miss_qwen_3b_miss_qwen_7b_solve': 10, 'qwen_0_5b_miss_qwen_1_5b_miss_qwen_3b_solve': 4, 'qwen_0_5b_miss_qwen_1_5b_solve': 10}
+target_loop_counts={'1': 8, '2': 10, '3': 4, '4': 10}
+skipped={}
+summary_json=data/curriculum/stage5_capability_ladder_trace_collection_20260623_043104/summary.json
