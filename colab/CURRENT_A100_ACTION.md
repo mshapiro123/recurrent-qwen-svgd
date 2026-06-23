@@ -260,7 +260,9 @@ required = [
     "stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment",
     "eval/analyze_mcq_order_sensitivity.py",
     "colab/run_stage5_surface_alignment_repair.py",
+    "training/prepare_mcq_conditional_invariance_jsonl.py",
     "training/prepare_mcq_surface_alignment_jsonl.py",
+    "tests/test_prepare_mcq_conditional_invariance_jsonl.py",
     "tests/test_analyze_mcq_order_sensitivity.py",
 ]
 missing = [marker for marker in required if marker not in code]

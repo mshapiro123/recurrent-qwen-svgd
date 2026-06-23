@@ -21,6 +21,7 @@ STAGE5_SURFACE_ALIGNMENT_REPAIR_TARGET = "traced_sft_surface_alignment_repair"
 # Marker breadcrumbs for bootstrap stale-fetch checks. The runner invokes:
 # - eval/analyze_mcq_order_sensitivity.py
 # - eval/analyze_mcq_surface_mismatch.py
+# - training/prepare_mcq_conditional_invariance_jsonl.py
 # - training/prepare_mcq_surface_alignment_jsonl.py
 # - colab/assess_stage5_surface_repair.py
 
@@ -127,6 +128,7 @@ try:
             "pytest",
             "-q",
             "tests/test_prepare_mcq_surface_alignment_jsonl.py",
+            "tests/test_prepare_mcq_conditional_invariance_jsonl.py",
             "tests/test_analyze_mcq_order_sensitivity.py",
             "tests/test_analyze_mcq_surface_mismatch.py",
             "tests/test_stage5_surface_alignment_repair.py",

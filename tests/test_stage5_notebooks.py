@@ -961,16 +961,20 @@ def test_traced_sft_surface_alignment_repair_target_is_bootstrapped() -> None:
     assert "colab/STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL.py" in bootstrap
     assert "eval/analyze_mcq_order_sensitivity.py" in bootstrap
     assert "eval/analyze_mcq_order_sensitivity.py" in bootstrap_md
+    assert "training/prepare_mcq_conditional_invariance_jsonl.py" in bootstrap
+    assert "training/prepare_mcq_conditional_invariance_jsonl.py" in bootstrap_md
     assert "STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL_VERSION" in cell
     assert "surface_alignment_repair_v1" in cell
     assert "STAGE5_SURFACE_ALIGN_SOURCE_SUMMARY" in cell
     assert "stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment" in cell
     assert "eval/analyze_mcq_order_sensitivity.py" in cell
     assert "eval/analyze_mcq_surface_mismatch.py" in cell
+    assert "training/prepare_mcq_conditional_invariance_jsonl.py" in cell
     assert "training/prepare_mcq_surface_alignment_jsonl.py" in cell
     assert "colab/assess_stage5_surface_repair.py" in cell
     assert "colab/run_stage5_surface_alignment_repair.py" in cell
     assert "tests/test_prepare_mcq_surface_alignment_jsonl.py" in cell
+    assert "tests/test_prepare_mcq_conditional_invariance_jsonl.py" in cell
     assert "tests/test_analyze_mcq_order_sensitivity.py" in cell
     assert "tests/test_stage5_surface_alignment_repair.py" in cell
     assert "tests/test_stage5_surface_repair_assessment.py" in cell

@@ -113,3 +113,25 @@ def test_ensure_order_sensitivity_diagnosis_invokes_analyzer(tmp_path, monkeypat
     assert diagnosis == benchmark.parent / "arc_easy_order_sensitivity_diagnosis.json"
     assert commands[0][1] == "eval/analyze_mcq_order_sensitivity.py"
     assert "--candidate_cyclic" in commands[0]
+
+
+def test_repair_objective_uses_conditional_invariance_when_order_diagnostic_requests_it() -> None:
+    import colab.run_stage5_surface_alignment_repair as module
+
+    objective = module.repair_objective(
+        {"summary": {"recommendation": "prioritize_conditional_invariance_repair"}},
+        {"summary": {"recommendation": "prioritize_content_cyclic_surface_alignment"}},
+    )
+
+    assert objective == "conditional_invariance"
+
+
+def test_repair_objective_defaults_to_surface_alignment() -> None:
+    import colab.run_stage5_surface_alignment_repair as module
+
+    objective = module.repair_objective(
+        {"summary": {"recommendation": "diagnose_content_route_scoring_or_prompt_alignment_before_more_distillation"}},
+        {"summary": {"recommendation": "prioritize_content_cyclic_surface_alignment"}},
+    )
+
+    assert objective == "content_cyclic_surface_alignment"

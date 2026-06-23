@@ -49,6 +49,20 @@ CONTENT_REPEAT = int(os.environ.get("STAGE5_SURFACE_ALIGN_CONTENT_REPEAT", "2"))
 CYCLIC_REPEAT = int(os.environ.get("STAGE5_SURFACE_ALIGN_CYCLIC_REPEAT", "1"))
 CYCLIC_ROWS_PER_ITEM_RAW = os.environ.get("STAGE5_SURFACE_ALIGN_CYCLIC_ROWS_PER_ITEM", "4").strip()
 CYCLIC_ROWS_PER_ITEM = None if CYCLIC_ROWS_PER_ITEM_RAW.lower() in {"", "none", "all"} else int(CYCLIC_ROWS_PER_ITEM_RAW)
+INVARIANCE_ROWS_PER_ITEM_RAW = os.environ.get("STAGE5_CONDITIONAL_INVARIANCE_ROWS_PER_ITEM", "all").strip()
+INVARIANCE_ROWS_PER_ITEM = (
+    None
+    if INVARIANCE_ROWS_PER_ITEM_RAW.lower() in {"", "none", "all"}
+    else int(INVARIANCE_ROWS_PER_ITEM_RAW)
+)
+INVARIANCE_SEMANTIC_REPEAT = int(os.environ.get("STAGE5_CONDITIONAL_INVARIANCE_SEMANTIC_REPEAT", "2"))
+INVARIANCE_LABEL_REPEAT = int(os.environ.get("STAGE5_CONDITIONAL_INVARIANCE_LABEL_REPEAT", "1"))
+INVARIANCE_INCLUDE_WINS = os.environ.get("STAGE5_CONDITIONAL_INVARIANCE_INCLUDE_WINS", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 INCLUDE_UNRESCUED = os.environ.get("STAGE5_SURFACE_ALIGN_INCLUDE_UNRESCUED", "0").strip().lower() in {
     "1",
     "true",
@@ -198,6 +212,17 @@ def ensure_order_sensitivity_diagnosis(benchmark_summary: Path) -> Path:
     return diagnosis
 
 
+def repair_objective(order_payload: dict[str, Any], surface_payload: dict[str, Any]) -> str:
+    order_recommendation = str((order_payload.get("summary") or {}).get("recommendation") or "")
+    surface_recommendation = str((surface_payload.get("summary") or {}).get("recommendation") or "")
+    if "conditional_invariance" in {order_recommendation, surface_recommendation} or (
+        order_recommendation == "prioritize_conditional_invariance_repair"
+        or surface_recommendation == "prioritize_conditional_invariance_repair"
+    ):
+        return "conditional_invariance"
+    return "content_cyclic_surface_alignment"
+
+
 def train_config(*, checkpoint: Path, train_jsonl: Path) -> dict[str, Any]:
     return {
         "model_name": os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct"),
@@ -325,6 +350,7 @@ def write_summary(payload: dict[str, Any]) -> None:
         f"- Benchmark source: `{payload['benchmark_source_summary']}`",
         f"- Order-sensitivity diagnosis: `{payload.get('order_sensitivity_diagnosis') or 'not_run'}`",
         f"- Diagnosis: `{payload['surface_diagnosis']}`",
+        f"- Repair objective: `{payload.get('repair_objective') or 'unknown'}`",
         f"- Train rows: `{payload['surface_alignment_rows']}`",
         f"- Checkpoint: `{payload.get('checkpoint') or 'not_trained'}`",
         f"- Assessment: `{payload.get('assessment_summary') or 'not_run'}`",
@@ -363,6 +389,8 @@ def main() -> int:
     order_diagnosis = ensure_order_sensitivity_diagnosis(benchmark_summary)
     diagnosis = ensure_surface_diagnosis(benchmark_summary)
     order_payload = read_json(order_diagnosis)
+    surface_payload = read_json(diagnosis)
+    objective = repair_objective(order_payload, surface_payload)
 
     mcq_jsonl = PRIVATE_DATA_DIR / f"arc_easy_validation_{ARC_EASY_LIMIT}.jsonl"
     run(
@@ -384,28 +412,52 @@ def main() -> int:
     )
     train_jsonl = PRIVATE_DATA_DIR / "surface_alignment_train.jsonl"
     surface_summary_json = PRIVATE_DATA_DIR / "surface_alignment_train_summary.json"
-    prepare_cmd = [
-        sys.executable,
-        "training/prepare_mcq_surface_alignment_jsonl.py",
-        "--mcq_jsonl",
-        path_for_cli(mcq_jsonl),
-        "--diagnosis_json",
-        path_for_cli(diagnosis),
-        "--output_jsonl",
-        path_for_cli(train_jsonl),
-        "--summary_json",
-        path_for_cli(surface_summary_json),
-        "--target_loop_count",
-        "1",
-        "--content_repeat",
-        str(CONTENT_REPEAT),
-        "--cyclic_repeat",
-        str(CYCLIC_REPEAT),
-    ]
-    if CYCLIC_ROWS_PER_ITEM is not None:
-        prepare_cmd.extend(["--cyclic_rows_per_item", str(CYCLIC_ROWS_PER_ITEM)])
-    if INCLUDE_UNRESCUED:
-        prepare_cmd.append("--include_unrescued")
+    if objective == "conditional_invariance":
+        prepare_cmd = [
+            sys.executable,
+            "training/prepare_mcq_conditional_invariance_jsonl.py",
+            "--mcq_jsonl",
+            path_for_cli(mcq_jsonl),
+            "--diagnosis_json",
+            path_for_cli(order_diagnosis),
+            "--output_jsonl",
+            path_for_cli(train_jsonl),
+            "--summary_json",
+            path_for_cli(surface_summary_json),
+            "--target_loop_count",
+            "1",
+            "--semantic_repeat",
+            str(INVARIANCE_SEMANTIC_REPEAT),
+            "--label_repeat",
+            str(INVARIANCE_LABEL_REPEAT),
+        ]
+        if INVARIANCE_ROWS_PER_ITEM is not None:
+            prepare_cmd.extend(["--rows_per_item", str(INVARIANCE_ROWS_PER_ITEM)])
+        if INVARIANCE_INCLUDE_WINS:
+            prepare_cmd.append("--include_wins")
+    else:
+        prepare_cmd = [
+            sys.executable,
+            "training/prepare_mcq_surface_alignment_jsonl.py",
+            "--mcq_jsonl",
+            path_for_cli(mcq_jsonl),
+            "--diagnosis_json",
+            path_for_cli(diagnosis),
+            "--output_jsonl",
+            path_for_cli(train_jsonl),
+            "--summary_json",
+            path_for_cli(surface_summary_json),
+            "--target_loop_count",
+            "1",
+            "--content_repeat",
+            str(CONTENT_REPEAT),
+            "--cyclic_repeat",
+            str(CYCLIC_REPEAT),
+        ]
+        if CYCLIC_ROWS_PER_ITEM is not None:
+            prepare_cmd.extend(["--cyclic_rows_per_item", str(CYCLIC_ROWS_PER_ITEM)])
+        if INCLUDE_UNRESCUED:
+            prepare_cmd.append("--include_unrescued")
     run(prepare_cmd, log_name="prepare_surface_alignment.log")
     surface_data_summary = read_json(surface_summary_json)
 
@@ -420,8 +472,9 @@ def main() -> int:
             "order_sensitivity_diagnosis": path_for_cli(order_diagnosis),
             "order_sensitivity_recommendation": (order_payload.get("summary") or {}).get("recommendation"),
             "surface_diagnosis": path_for_cli(diagnosis),
+            "repair_objective": objective,
             "surface_alignment_rows": 0,
-            "next_step": "Inspect the surface diagnosis; no trainable surface-alignment rows were selected.",
+            "next_step": "Inspect the diagnoses; no trainable MCQ repair rows were selected.",
         }
         write_summary(payload)
         commit_results([order_diagnosis, order_diagnosis.with_suffix(".md"), diagnosis, diagnosis.with_suffix(".md")])
@@ -471,6 +524,8 @@ def main() -> int:
         "order_sensitivity_recommendation": (order_payload.get("summary") or {}).get("recommendation"),
         "order_sensitivity_summary": order_payload.get("summary"),
         "surface_diagnosis": path_for_cli(diagnosis),
+        "surface_diagnosis_summary": surface_payload.get("summary"),
+        "repair_objective": objective,
         "surface_alignment_train_jsonl": path_for_cli(train_jsonl),
         "surface_alignment_train_summary": surface_data_summary,
         "surface_alignment_rows": surface_data_summary.get("output_rows"),
@@ -483,6 +538,10 @@ def main() -> int:
             "cyclic_repeat": CYCLIC_REPEAT,
             "cyclic_rows_per_item": CYCLIC_ROWS_PER_ITEM,
             "include_unrescued": INCLUDE_UNRESCUED,
+            "conditional_invariance_rows_per_item": INVARIANCE_ROWS_PER_ITEM,
+            "conditional_invariance_semantic_repeat": INVARIANCE_SEMANTIC_REPEAT,
+            "conditional_invariance_label_repeat": INVARIANCE_LABEL_REPEAT,
+            "conditional_invariance_include_wins": INVARIANCE_INCLUDE_WINS,
         },
         "checkpoint": path_for_cli(checkpoint_path),
         "benchmark_summary": path_for_cli(bench_summary),
