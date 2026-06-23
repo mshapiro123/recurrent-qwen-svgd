@@ -698,6 +698,24 @@ def test_capability_ladder_local_hf_trace_sft_target_is_bootstrapped() -> None:
     assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_local_hf_trace_sft"' in current_action
 
 
+def test_capability_ladder_local_hf_trace_sft_scale64_target_is_bootstrapped() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
+
+    assert "capability_ladder_local_hf_trace_sft_scale64" in bootstrap
+    assert "outputs/stage5/stage5_capability_ladder_trace_jobs_20260623_150116/summary.json" in bootstrap
+    assert '"STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_LIMIT": "64"' in bootstrap
+    assert '"STAGE5_TRACED_CAPABILITY_SFT_MIN_TRACE_ROWS": "48"' in bootstrap
+    assert "stage5_local_hf_traced_capability_sft_20260623_191843/phase1/phase1_step_150.pt" in bootstrap
+    assert '"STAGE5_TRACED_CAPABILITY_SFT_PHASE1_STEPS": "200"' in bootstrap
+    assert '"STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_BENCHMARKS": "arc_easy,arc_challenge"' in bootstrap
+    assert '"STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_ARC_EASY_LIMIT": "128"' in bootstrap
+    assert '"STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_ARC_CHALLENGE_LIMIT": "128"' in bootstrap
+    assert "capability_ladder_local_hf_trace_sft_scale64" in bootstrap_md
+    assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_local_hf_trace_sft_scale64"' in current_action
+
+
 def test_traced_capability_ladder_sft_cell_derives_training_env_from_collection() -> None:
     plain = (ROOT / "colab/STAGE5_TRACED_CAPABILITY_LADDER_SFT_CELL.py").read_text(encoding="utf-8")
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")

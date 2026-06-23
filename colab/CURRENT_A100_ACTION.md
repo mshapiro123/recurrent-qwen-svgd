@@ -17,20 +17,94 @@ below is preferred for the current evidence state.
 
 ## Current Front-of-Queue Action
 
-The current preferred path is **capability-ladder depth-label probing**. The
-latest learned-depth recurrent checkpoint passed the broader balanced ARC
-assessment:
+The current preferred path is **scale the local-HF traced capability-ladder
+curriculum**. The first G4 run generated 32 verified Qwen-7B traces, trained
+the recurrent model for 150 steps, and benchmarked approximately at parity with
+base Qwen 0.5B on ARC-Challenge:
 
 ```text
-ARC-Easy content:       recurrent 319/512 vs base 298/512, delta +21
-ARC-Easy cyclic:        recurrent 406/512 vs base 406/512, delta 0
-ARC-Challenge content:  recurrent 108/299 vs base 98/299, delta +10
-ARC-Challenge cyclic:   recurrent 177/299 vs base 177/299, delta 0
+ARC-Challenge content:  recurrent 33/96 vs base 34/96, delta -1
+ARC-Challenge cyclic:   recurrent 52/96 vs base 51/96, delta +1
 ```
 
-That is enough to stop re-running the ARC-mix recovery loop and test whether
-Qwen model-scale gaps can provide useful depth labels before spending on more
-recurrent SFT. The next GPU action is:
+The same run showed the intended learned-depth gradient:
+
+```text
+direct rows:       mean_expected_loops ~= 1.08
+deep-narrow rows:  mean_expected_loops ~= 1.95
+```
+
+That is enough to scale data before adding particles/SVGD. The next GPU action
+is:
+
+```text
+STAGE5_CURRENT_A100_TARGET=capability_ladder_local_hf_trace_sft_scale64
+```
+
+This target:
+
+```text
+1. Starts from the existing 132 capability-ladder trace jobs.
+2. Generates 64 local-HF Qwen-7B traces.
+3. Requires at least 48 verified positive SFT rows.
+4. Continues SFT from:
+   outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_191843/phase1/phase1_step_150.pt
+5. Runs a bounded post-SFT benchmark on ARC-Easy and ARC-Challenge.
+6. Pushes artifacts with [skip ci] and disconnects the runtime.
+```
+
+Use a high-memory G4/A100/H100 runtime. The maintained launcher now checks VRAM
+before downloading Qwen 7B and refuses runtimes below 20GB by default.
+
+Paste-anywhere launcher:
+
+```python
+import base64, json, os, time, urllib.request
+from google.colab import userdata
+
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_local_hf_trace_sft_scale64"
+
+def colab_secret(*names):
+    for name in names:
+        value = os.environ.get(name)
+        if value:
+            return value
+        try:
+            value = userdata.get(name)
+        except Exception:
+            value = None
+        if value:
+            return value
+    return None
+
+token = colab_secret("GH_TOKEN", "GITHUB_TOKEN")
+assert token, "Add GH_TOKEN or GITHUB_TOKEN to Colab secrets."
+
+headers = {
+    "Authorization": f"Bearer {token}",
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "Cache-Control": "no-cache",
+}
+ref_req = urllib.request.Request(
+    f"https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/git/ref/heads/main?cache_bust={int(time.time())}",
+    headers=headers,
+)
+with urllib.request.urlopen(ref_req) as response:
+    ref_payload = json.loads(response.read().decode("utf-8"))
+resolved_ref = ref_payload["object"]["sha"]
+file_req = urllib.request.Request(
+    f"https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py?ref={resolved_ref}&cache_bust={int(time.time())}",
+    headers=headers,
+)
+with urllib.request.urlopen(file_req) as response:
+    payload = json.loads(response.read().decode("utf-8"))
+code = base64.b64decode(payload["content"]).decode("utf-8")
+print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12])
+exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
+```
+
+The previous completed step was capability-ladder depth-label probing:
 
 ```text
 STAGE5_CURRENT_A100_TARGET=capability_ladder_mcq_probe

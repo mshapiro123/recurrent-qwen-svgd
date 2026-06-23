@@ -122,6 +122,17 @@ answer-verified traces, and starts Phase 1 recurrent SFT only if the traced
 curriculum gate passes. It avoids provider/API spend and disables Drive backup
 by default to reduce Colab reauthorization stalls.
 
+To scale the completed local-HF traced run to 64 trace jobs, continue SFT from
+the latest traced checkpoint, and benchmark ARC-Easy plus ARC-Challenge:
+
+Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
+"capability_ladder_local_hf_trace_sft_scale64"` before running the bootstrap
+cell. This target explicitly follows the original capability-ladder trace-job
+summary, uses `Qwen/Qwen2.5-7B-Instruct` locally, requires at least 48 accepted
+trace rows, resumes from
+`outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_191843/phase1/phase1_step_150.pt`,
+and disconnects after pushing the post-SFT benchmark.
+
 To train deterministic recurrent Phase 1 from the latest gate-ready traced
 capability-ladder curriculum:
 
@@ -583,6 +594,46 @@ TARGETS = {
             "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_DISCONNECT": "1",
         },
     },
+    "capability_ladder_local_hf_trace_sft_scale64": {
+        "path": "colab/STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_CELL.py",
+        "markers": [
+            "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_CELL_VERSION",
+            "capability_ladder_local_hf_trace_sft",
+            "local_hf_trace_vram_preflight",
+            "hf_local",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_LOCAL_HF",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME",
+            "colab/run_stage5_capability_ladder_trace_responses.py",
+            "colab/run_stage5_capability_ladder_trace_collect.py",
+            "colab/run_stage5_curriculum_sft.py",
+            "colab/run_stage5_benchmark_suite.py",
+            "STAGE5_CURRICULUM_USE_LEARNED_LOOP_CONTROL",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_SOURCE_SUMMARY": (
+                "outputs/stage5/stage5_capability_ladder_trace_jobs_20260623_150116/summary.json"
+            ),
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_LIMIT": "64",
+            "STAGE5_TRACED_CAPABILITY_SFT_MIN_TRACE_ROWS": "48",
+            "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_MIN_POSITIVE_ROWS": "48",
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_HF_MODEL_NAME": "Qwen/Qwen2.5-7B-Instruct",
+            "STAGE5_TRACED_CAPABILITY_SFT_RESUME_FROM": (
+                "outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_191843/phase1/phase1_step_150.pt"
+            ),
+            "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_RUN_SFT": "1",
+            "STAGE5_TRACED_CAPABILITY_SFT_PHASE1_STEPS": "200",
+            "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_RUN_BENCHMARK": "1",
+            "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_BENCHMARKS": "arc_easy,arc_challenge",
+            "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_ARC_EASY_LIMIT": "128",
+            "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_ARC_CHALLENGE_LIMIT": "128",
+            "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_SCORE_TARGETS": (
+                "content_question_only,cyclic_label_aggregated"
+            ),
+            "STAGE5_TRACED_CAPABILITY_SFT_ALLOW_NO_DRIVE_BACKUP": "1",
+            "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_DISCONNECT": "1",
+        },
+    },
     "traced_capability_ladder_sft": {
         "path": "colab/STAGE5_TRACED_CAPABILITY_LADDER_SFT_CELL.py",
         "markers": [
@@ -757,4 +808,5 @@ print(
 )
 print(f"Fetched {launcher_path} from {REPO}@{REF} ({RESOLVED_REF[:12]}) sha={payload.get('sha')} target={TARGET}", flush=True)
 exec(compile(code, launcher_path, "exec"))
+
 ```
