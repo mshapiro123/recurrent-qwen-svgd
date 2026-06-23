@@ -20,6 +20,10 @@ from google.colab import drive, runtime, userdata
 STAGE5_CAPABILITY_LADDER_MCQ_PROBE_CELL_VERSION = "capability_ladder_mcq_probe_v1"
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
+DISCONNECT_ON_FINISH = os.environ.get(
+    "STAGE5_CAPABILITY_LADDER_DISCONNECT",
+    "1",
+).strip().lower() in {"1", "true", "yes", "y"}
 
 
 def secret(*names: str) -> str | None:
@@ -43,22 +47,28 @@ def mask(text: str, token: str | None) -> str:
 def run(cmd: list[str], *, cwd: Path | None = None, env: dict[str, str] | None = None) -> None:
     shown = mask(" ".join(map(str, cmd)), GH_TOKEN)
     print("$", shown, flush=True)
-    proc = subprocess.run(
+    proc = subprocess.Popen(
         cmd,
         cwd=str(cwd or ROOT),
         env=env,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
+        bufsize=1,
     )
-    output = mask(proc.stdout or "", GH_TOKEN)
-    if output:
-        print(output, flush=True)
-    if proc.returncode:
+    chunks: list[str] = []
+    assert proc.stdout is not None
+    for line in proc.stdout:
+        safe_line = mask(line, GH_TOKEN)
+        print(safe_line, end="", flush=True)
+        chunks.append(safe_line)
+    output = "".join(chunks)
+    returncode = proc.wait()
+    if returncode:
         print("FAILED_COMMAND_TAIL_START", flush=True)
         print("\n".join(output.splitlines()[-160:]), flush=True)
         print("FAILED_COMMAND_TAIL_END", flush=True)
-        raise subprocess.CalledProcessError(proc.returncode, cmd, output=proc.stdout)
+        raise subprocess.CalledProcessError(returncode, cmd, output=output)
 
 
 GH_TOKEN = secret("GH_TOKEN", "GITHUB_TOKEN")
@@ -155,8 +165,11 @@ try:
         print(summary_md.read_text(encoding="utf-8"), flush=True)
 
 finally:
-    print("Disconnecting Colab runtime to conserve credits.", flush=True)
-    try:
-        runtime.unassign()
-    except Exception as exc:
-        print("runtime.unassign failed:", repr(exc), flush=True)
+    if DISCONNECT_ON_FINISH:
+        print("Disconnecting Colab runtime to conserve credits.", flush=True)
+        try:
+            runtime.unassign()
+        except Exception as exc:
+            print("runtime.unassign failed:", repr(exc), flush=True)
+    else:
+        print("Leaving Colab runtime connected for follow-up inspection.", flush=True)
