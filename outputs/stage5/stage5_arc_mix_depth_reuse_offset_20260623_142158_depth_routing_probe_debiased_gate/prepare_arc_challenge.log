@@ -1,0 +1,6 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Challenge
+split=validation
+offset=256
+rows=43
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_arc_mix_depth_reuse_offset_20260623_142158_depth_routing_probe_debiased_gate/arc_challenge_validation_offset256_128.jsonl
