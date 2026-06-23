@@ -1,0 +1,154 @@
+HF auth: token configured from environment.
+$ /usr/bin/python3 eval/prepare_arc_mcq.py --config ARC-Easy --split validation --seed 0 --offset 256 --limit 128 --output_jsonl /content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_validation_offset256_128.jsonl
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=validation
+offset=256
+rows=128
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_validation_offset256_128.jsonl
+$ /usr/bin/python3 eval/prepare_arc_mcq.py --config ARC-Challenge --split validation --seed 0 --offset 256 --limit 128 --output_jsonl /content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_validation_offset256_128.jsonl
+dataset_id=allenai/ai2_arc
+config=ARC-Challenge
+split=validation
+offset=256
+rows=43
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_validation_offset256_128.jsonl
+$ /usr/bin/python3 eval/eval_mcq.py --data_jsonl data/stage5_benchmark_suite/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_validation_offset256_128.jsonl --prompt_style question_only --score_target option_text --aggregates mean --dtype bfloat16 --adapter_dtype float32 --device cuda --seed 0 --mode base --quiet_rows --output_jsonl outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_base_content_question_only.jsonl
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6185.57it/s]
+aggregate=mean accuracy=0.5547 correct=71 total=128
+$ /usr/bin/python3 eval/eval_mcq.py --data_jsonl data/stage5_benchmark_suite/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_validation_offset256_128.jsonl --prompt_style question_only --score_target option_text --aggregates mean --dtype bfloat16 --adapter_dtype float32 --device cuda --seed 0 --mode phase1 --checkpoint outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt --max_loops 4 --num_trajectories 1 --include_loop_diagnostics --quiet_rows --output_jsonl outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_recurrent_content_question_only.jsonl
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5138.15it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt loaded_keys=179
+aggregate=mean accuracy=0.6172 correct=79 total=128
+$ /usr/bin/python3 eval/eval_mcq.py --data_jsonl data/stage5_benchmark_suite/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_validation_offset256_128_cyclic_permuted.jsonl --prompt_style with_options --score_target label --aggregates mean --dtype bfloat16 --adapter_dtype float32 --device cuda --seed 0 --mode base --quiet_rows --output_jsonl outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_base_cyclic_label_raw.jsonl
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6447.78it/s]
+aggregate=mean accuracy=0.7867 correct=402 total=511
+$ /usr/bin/python3 eval/eval_mcq.py --data_jsonl data/stage5_benchmark_suite/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_validation_offset256_128_cyclic_permuted.jsonl --prompt_style with_options --score_target label --aggregates mean --dtype bfloat16 --adapter_dtype float32 --device cuda --seed 0 --mode phase1 --checkpoint outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt --max_loops 4 --num_trajectories 1 --include_loop_diagnostics --quiet_rows --output_jsonl outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_recurrent_cyclic_label_raw.jsonl
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5172.56it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt loaded_keys=179
+aggregate=mean accuracy=0.7789 correct=398 total=511
+$ /usr/bin/python3 eval/eval_mcq.py --data_jsonl data/stage5_benchmark_suite/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_validation_offset256_128.jsonl --prompt_style question_only --score_target option_text --aggregates mean --dtype bfloat16 --adapter_dtype float32 --device cuda --seed 0 --mode base --quiet_rows --output_jsonl outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_base_content_question_only.jsonl
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6113.38it/s]
+aggregate=mean accuracy=0.2558 correct=11 total=43
+$ /usr/bin/python3 eval/eval_mcq.py --data_jsonl data/stage5_benchmark_suite/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_validation_offset256_128.jsonl --prompt_style question_only --score_target option_text --aggregates mean --dtype bfloat16 --adapter_dtype float32 --device cuda --seed 0 --mode phase1 --checkpoint outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt --max_loops 4 --num_trajectories 1 --include_loop_diagnostics --quiet_rows --output_jsonl outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_recurrent_content_question_only.jsonl
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5259.52it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt loaded_keys=179
+aggregate=mean accuracy=0.2558 correct=11 total=43
+$ /usr/bin/python3 eval/eval_mcq.py --data_jsonl data/stage5_benchmark_suite/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_validation_offset256_128_cyclic_permuted.jsonl --prompt_style with_options --score_target label --aggregates mean --dtype bfloat16 --adapter_dtype float32 --device cuda --seed 0 --mode base --quiet_rows --output_jsonl outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_base_cyclic_label_raw.jsonl
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5345.65it/s]
+aggregate=mean accuracy=0.4767 correct=82 total=172
+$ /usr/bin/python3 eval/eval_mcq.py --data_jsonl data/stage5_benchmark_suite/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_validation_offset256_128_cyclic_permuted.jsonl --prompt_style with_options --score_target label --aggregates mean --dtype bfloat16 --adapter_dtype float32 --device cuda --seed 0 --mode phase1 --checkpoint outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt --max_loops 4 --num_trajectories 1 --include_loop_diagnostics --quiet_rows --output_jsonl outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_recurrent_cyclic_label_raw.jsonl
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5038.85it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt loaded_keys=179
+aggregate=mean accuracy=0.5058 correct=87 total=172
+# Stage 5 Benchmark Suite - stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate
+
+- Status: `completed`
+- Source summary: `outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe/summary.json`
+- Checkpoint: `outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt`
+- Benchmarks: `['arc_easy', 'arc_challenge']`
+- Recurrent mode: `phase1`
+- Recurrent trajectories: `1`
+- Learned loop control: `False`
+- Elapsed seconds: `774.26`
+
+## Recurrent vs Base
+
+### arc_easy
+- score target `content_question_only`
+  - aggregate `mean`: correct delta `8`, accuracy delta `0.0625` (base `71/128`, recurrent `79/128`)
+  - paired evidence
+    - aggregate `mean`: recurrent `79` / `128`, base `71` / `128`, delta `8`, W/L/T `12/4/112`, p `0.076812744140625`
+  - routing buckets
+    - `ambiguous_proxy`: n `50`, delta `7`, W/L `7/0`, mean margin delta `0.3987627363204956`, mean loops `1.6522232455015182`
+    - `base_confident_direct_proxy`: n `42`, delta `0`, W/L `0/0`, mean margin delta `-0.48621255478688646`, mean loops `1.6699769040421832`
+    - `conceptual_reasoning_proxy`: n `24`, delta `2`, W/L `4/2`, mean margin delta `0.16819619139035544`, mean loops `1.7536898888647556`
+    - `deep_numeric_proxy`: n `12`, delta `-1`, W/L `1/2`, mean margin delta `0.192806214094162`, mean loops `1.724744737148285`
+- score target `cyclic_label_aggregated`
+  - aggregate `permutation_mean`: correct delta `0`, accuracy delta `0.0000` (base `103/128`, recurrent `103/128`)
+  - paired evidence
+    - aggregate `permutation_mean`: recurrent `103` / `128`, base `103` / `128`, delta `0`, W/L/T `1/1/126`, p `1.0`
+  - routing buckets
+    - `ambiguous_proxy`: n `25`, delta `-1`, W/L `0/1`, mean margin delta `0.08281958315521479`, mean loops `None`
+    - `base_confident_direct_proxy`: n `86`, delta `0`, W/L `0/0`, mean margin delta `-1.3908813295828615`, mean loops `None`
+    - `conceptual_reasoning_proxy`: n `13`, delta `1`, W/L `1/0`, mean margin delta `0.24895574610966903`, mean loops `None`
+    - `deep_numeric_proxy`: n `4`, delta `0`, W/L `0/0`, mean margin delta `0.03038859274238348`, mean loops `None`
+### arc_challenge
+- score target `content_question_only`
+  - aggregate `mean`: correct delta `0`, accuracy delta `0.0000` (base `11/43`, recurrent `11/43`)
+  - paired evidence
+    - aggregate `mean`: recurrent `11` / `43`, base `11` / `43`, delta `0`, W/L/T `2/2/39`, p `1.0`
+  - routing buckets
+    - `ambiguous_proxy`: n `28`, delta `1`, W/L `2/1`, mean margin delta `0.05597481983048575`, mean loops `1.6655871186937605`
+    - `conceptual_reasoning_proxy`: n `6`, delta `0`, W/L `0/0`, mean margin delta `0.01833273967107137`, mean loops `1.8600846727689107`
+    - `deep_numeric_proxy`: n `9`, delta `-1`, W/L `0/1`, mean margin delta `-0.0426942507425944`, mean loops `1.6389904585149553`
+- score target `cyclic_label_aggregated`
+  - aggregate `permutation_mean`: correct delta `-2`, accuracy delta `-0.0465` (base `23/43`, recurrent `21/43`)
+  - paired evidence
+    - aggregate `permutation_mean`: recurrent `21` / `43`, base `23` / `43`, delta `-2`, W/L/T `1/3/39`, p `0.625`
+  - routing buckets
+    - `ambiguous_proxy`: n `18`, delta `-1`, W/L `0/1`, mean margin delta `0.15780457803824297`, mean loops `None`
+    - `base_confident_direct_proxy`: n `12`, delta `0`, W/L `0/0`, mean margin delta `-0.6173742778288821`, mean loops `None`
+    - `conceptual_reasoning_proxy`: n `6`, delta `-1`, W/L `0/1`, mean margin delta `0.1566665261052549`, mean loops `None`
+    - `deep_numeric_proxy`: n `7`, delta `0`, W/L `1/1`, mean margin delta `0.30107217960591826`, mean loops `None`
+
+$ git status -sb
+## main...origin/main
+ M config/stage5_current_source_summary.txt
+$ git add -f outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate
+$ git add -f config/stage5_current_source_summary.txt
+$ git diff --cached --quiet
+$ git commit -m Record Stage 5 benchmark suite stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate [skip ci]
+[main c257760] Record Stage 5 benchmark suite stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate [skip ci]
+ 25 files changed, 3213 insertions(+), 1 deletion(-)
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_base_content_question_only.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_base_content_question_only.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_base_cyclic_label_aggregated.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_base_cyclic_label_raw.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_base_cyclic_label_raw.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_recurrent_content_question_only.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_recurrent_content_question_only.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_recurrent_cyclic_label_aggregated.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_recurrent_cyclic_label_raw.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_challenge_recurrent_cyclic_label_raw.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_base_content_question_only.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_base_content_question_only.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_base_cyclic_label_aggregated.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_base_cyclic_label_raw.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_base_cyclic_label_raw.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_recurrent_content_question_only.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_recurrent_content_question_only.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_recurrent_cyclic_label_aggregated.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_recurrent_cyclic_label_raw.jsonl
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/arc_easy_recurrent_cyclic_label_raw.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/prepare_arc_challenge.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/prepare_arc_easy.log
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/summary.json
+ create mode 100644 outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe_debiased_gate/summary.md
+$ git pull --rebase origin main
+From https://github.com/mshapiro123/recurrent-qwen-svgd
+ * branch            main       -> FETCH_HEAD
+Current branch main is up to date.
+$ git push origin main
+To https://github.com/mshapiro123/recurrent-qwen-svgd.git
+   7142e13..c257760  main -> main
