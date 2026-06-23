@@ -159,6 +159,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "safe_continue_execute" - fetch safe-continue and opt in to the guarded paid action.
 #   "arc_challenge_mcq_debias_confirm" - bounded no-training cyclic MCQ confirmation on ARC-Challenge.
 #   "debiased_benchmark_suite" - bounded ARC-Challenge/GPQA-lite benchmark with debiased MCQ scoring.
+#   "depth_balanced_benchmark" - balanced ARC content/cyclic benchmark for learned-depth checkpoints.
 #   "arc_mix_offset_confirm" - bounded ARC-Easy/Challenge offset-256 confirmation for the latest ARC-mix checkpoint.
 #   "arc_mix_offset_then_depth_chain" - offset confirmation, then learned-depth ARC-mix SFT only if confirmed.
 #   "arc_mix_depth_routing_probe" - bounded learned-depth ARC-mix SFT probe from the latest recovered checkpoint.
@@ -266,6 +267,8 @@ TARGETS = {
         "path": "colab/STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py",
         "markers": [
             "STAGE5_DEBIASED_BENCHMARK_SUITE_CELL_VERSION",
+            "STAGE5_DEBIASED_MOUNT_DRIVE_FIRST",
+            "STAGE5_DEBIASED_USE_LEARNED_LOOP_CONTROL",
             "STAGE5_BENCHMARK_SCORE_TARGETS",
             "label,content_question_only,cyclic_label_aggregated",
             "cyclic_label_aggregated",
@@ -279,6 +282,31 @@ TARGETS = {
             "runtime.unassign",
         ],
         "env": {},
+    },
+    "depth_balanced_benchmark": {
+        "path": "colab/STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py",
+        "markers": [
+            "STAGE5_DEBIASED_BENCHMARK_SUITE_CELL_VERSION",
+            "STAGE5_DEBIASED_MOUNT_DRIVE_FIRST",
+            "STAGE5_DEBIASED_USE_LEARNED_LOOP_CONTROL",
+            "Skipping upfront Drive mount",
+            "STAGE5_BENCHMARK_USE_LEARNED_LOOP_CONTROL",
+            "content_question_only",
+            "cyclic_label_aggregated",
+            "permutation_mean",
+            "colab/run_stage5_benchmark_suite.py",
+            "colab/assess_stage5_benchmark_suite.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_DEBIASED_MOUNT_DRIVE_FIRST": "0",
+            "STAGE5_DEBIASED_BENCHMARKS": "arc_easy,arc_challenge",
+            "STAGE5_DEBIASED_ARC_EASY_LIMIT": "512",
+            "STAGE5_DEBIASED_ARC_CHALLENGE_LIMIT": "512",
+            "STAGE5_DEBIASED_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
+            "STAGE5_DEBIASED_USE_LEARNED_LOOP_CONTROL": "1",
+            "STAGE5_BENCHMARK_ASSESS_ALLOWED_NEGATIVE_DELTA": "0",
+        },
     },
     "arc_mix_offset_confirm": {
         "path": "colab/STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py",

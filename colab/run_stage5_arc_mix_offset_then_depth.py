@@ -277,6 +277,7 @@ def run_offset_confirmation() -> Path:
     env["STAGE5_BENCHMARK_ARC_CHALLENGE_OFFSET"] = "256"
     env["STAGE5_BENCHMARK_SCORE_TARGETS"] = "content_question_only,cyclic_label_aggregated"
     env["STAGE5_BENCHMARK_AGGREGATES"] = "mean"
+    env["STAGE5_BENCHMARK_USE_LEARNED_LOOP_CONTROL"] = "1"
     env["STAGE5_BENCHMARK_PUSH"] = "1"
     run([sys.executable, "colab/run_stage5_benchmark_suite.py"], env=env, log_name="offset_confirmation.log")
     summary = ROOT / "outputs" / "stage5" / OFFSET_RUN_ID / "summary.json"

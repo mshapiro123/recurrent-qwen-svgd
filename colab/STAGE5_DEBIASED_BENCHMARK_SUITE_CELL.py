@@ -16,7 +16,7 @@ from pathlib import Path
 from google.colab import drive, runtime, userdata
 
 
-STAGE5_DEBIASED_BENCHMARK_SUITE_CELL_VERSION = "debiased_benchmark_suite_v1"
+STAGE5_DEBIASED_BENCHMARK_SUITE_CELL_VERSION = "debiased_benchmark_suite_v2"
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 
@@ -153,7 +153,16 @@ try:
     assert gpu_check, "Attach an A100/H100/L4/T4 GPU runtime before running this benchmark action."
     run(["nvidia-smi"], cwd=Path("/content"))
 
-    drive.mount("/content/drive", force_remount=False)
+    mount_drive_first = os.environ.get("STAGE5_DEBIASED_MOUNT_DRIVE_FIRST", "1").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+    }
+    if mount_drive_first:
+        drive.mount("/content/drive", force_remount=False)
+    else:
+        print("Skipping upfront Drive mount; benchmark runner will request Drive only if checkpoint restore is needed.", flush=True)
     authed = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
     if ROOT.exists():
         run(["git", "remote", "set-url", "origin", authed])
@@ -208,6 +217,10 @@ try:
         "label,content_question_only,cyclic_label_aggregated",
     )
     env["STAGE5_BENCHMARK_AGGREGATES"] = "mean"
+    env["STAGE5_BENCHMARK_USE_LEARNED_LOOP_CONTROL"] = os.environ.get(
+        "STAGE5_DEBIASED_USE_LEARNED_LOOP_CONTROL",
+        "0",
+    )
     env["STAGE5_BENCHMARK_PUSH"] = "1"
     env["MODEL_NAME"] = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")
     env["DTYPE"] = os.environ.get("DTYPE", "bfloat16")
