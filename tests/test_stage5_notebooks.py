@@ -42,6 +42,14 @@ def test_current_bootstrap_target_markers_exist_in_launcher_files() -> None:
     assert failures == []
 
 
+def test_current_bootstrap_preserves_planner_supplied_target_env() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+
+    assert 'os.environ.setdefault(key, value)' in text
+    assert 'os.environ[key] = value' not in text
+    assert "Planner/user-supplied env must win" in text
+
+
 def test_single_a100_runbook_uses_colab_continue_wrapper() -> None:
     payload = notebook_payload("colab/00_single_a100_runbook.ipynb")
     text = "\n".join(str(cell.get("source", "")) for cell in payload.get("cells", []))

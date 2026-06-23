@@ -936,7 +936,9 @@ else:
     os.environ.pop("STAGE5_ARC_MIX_CHAIN_SOURCE_SUMMARY", None)
     os.environ.pop("STAGE5_ARC_MIX_SOURCE_SUMMARY", None)
 for key, value in selected["env"].items():
-    os.environ[key] = value
+    # Target configs are defaults. Planner/user-supplied env must win so chained
+    # actions can pass repaired checkpoints, benchmark summaries, and run IDs.
+    os.environ.setdefault(key, value)
 if TARGET == "depth_sweep_heldout":
     if os.environ.get("STAGE5_DEPTH_SWEEP_RUN_ID_LOCKED", "0").strip().lower() not in {
         "1",
