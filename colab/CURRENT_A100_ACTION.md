@@ -60,10 +60,13 @@ STAGE5_CURRENT_A100_TARGET=traced_sft_direct_preservation_probe
 
 This runs max-loop-1 direct preservation from the scale64 checkpoint using
 `question_only` / `option_text` scoring and base-logit distillation on
-base-correct ARC-Easy rows.
+base-correct ARC-Easy rows. For this traced-SFT target, the probe now chains the
+cheap confirmation automatically: if the probe publishes `passed=true`, the
+same runtime immediately runs loop-1 ARC-Easy/ARC-Challenge confirmation and
+the benchmark assessment gate.
 
-If that probe publishes a `stage5_direct_preservation_probe` summary with
-`passed=true`, the next cheap validation target is:
+If you need to run the confirmation manually after a separate probe session,
+use:
 
 ```text
 STAGE5_CURRENT_A100_TARGET=traced_sft_direct_preservation_confirm

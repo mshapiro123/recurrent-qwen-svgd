@@ -54,6 +54,7 @@ def env_bool(name, default):
 
 DRIVE_BACKUP = env_bool("STAGE5_DIRECT_PRESERVE_DRIVE_BACKUP", False)
 DISCONNECT_WHEN_DONE = env_bool("STAGE5_DIRECT_PRESERVE_DISCONNECT", False)
+CHAIN_CONFIRM_WHEN_PASSED = env_bool("STAGE5_DIRECT_PRESERVE_CHAIN_CONFIRM", False)
 RUN_ID = os.environ.get("STAGE5_DIRECT_PRESERVE_RUN_ID") or time.strftime(
     "stage5_direct_preservation_loop1_%Y%m%d_%H%M%S"
 )
@@ -101,6 +102,20 @@ def sync_repo():
     run(["git", "config", "user.name", "Colab Runner"], cwd=ROOT)
 
 
+def read_json(path):
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def checkpoint_from_probe(payload):
+    best = payload.get("best_checkpoint")
+    if isinstance(best, dict) and best.get("checkpoint"):
+        return str(best["checkpoint"])
+    for key in ("checkpoint", "phase1_checkpoint", "resume_checkpoint"):
+        if payload.get(key):
+            return str(payload[key])
+    return None
+
+
 def safe_stage_and_push(run_dir):
     pointer = ROOT / "config" / "stage5_latest_direct_preservation_summary.txt"
     current_pointer = ROOT / "config" / "stage5_current_source_summary.txt"
@@ -128,6 +143,79 @@ def safe_stage_and_push(run_dir):
         run(["git", "push", "origin", "main"], cwd=ROOT)
     except Exception as exc:
         print(f"WARNING: GitHub publish failed; local result files remain in the Colab runtime: {exc}", flush=True)
+
+
+def maybe_chain_confirmation(run_dir):
+    if not CHAIN_CONFIRM_WHEN_PASSED:
+        print("direct_preservation_chain_confirm=disabled", flush=True)
+        return
+    summary = run_dir / "summary.json"
+    payload = read_json(summary)
+    if payload.get("passed") is not True:
+        print(
+            f"direct_preservation_chain_confirm=skipped status={payload.get('status')} passed={payload.get('passed')}",
+            flush=True,
+        )
+        return
+    checkpoint = checkpoint_from_probe(payload)
+    assert checkpoint, f"Direct-preservation probe passed but exposed no checkpoint: {summary}"
+    confirm_run_id = os.environ.get("STAGE5_DIRECT_CONFIRM_RUN_ID") or f"{RUN_ID}_confirm"
+    benchmark_env = os.environ.copy()
+    benchmark_env.update(
+        {
+            "STAGE5_BENCHMARK_SUITE_RUN_ID": confirm_run_id,
+            "STAGE5_BENCHMARK_SOURCE_SUMMARY": summary.relative_to(ROOT).as_posix(),
+            "STAGE5_BENCHMARK_CHECKPOINT": checkpoint,
+            "STAGE5_BENCHMARKS": "arc_easy,arc_challenge",
+            "STAGE5_BENCHMARK_ARC_EASY_LIMIT": os.environ.get("STAGE5_DIRECT_CONFIRM_ARC_EASY_LIMIT", "256"),
+            "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": os.environ.get(
+                "STAGE5_DIRECT_CONFIRM_ARC_CHALLENGE_LIMIT", "256"
+            ),
+            "STAGE5_BENCHMARK_MAX_LOOPS": "1",
+            "STAGE5_BENCHMARK_NUM_TRAJECTORIES": "1",
+            "STAGE5_BENCHMARK_SCORE_TARGETS": os.environ.get(
+                "STAGE5_DIRECT_CONFIRM_SCORE_TARGETS",
+                "content_question_only,cyclic_label_aggregated",
+            ),
+            "STAGE5_BENCHMARK_AGGREGATES": "mean",
+            "STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS": "1",
+            "STAGE5_BENCHMARK_PUSH": "1",
+            "DTYPE": os.environ.get("DTYPE", "bfloat16"),
+            "ADAPTER_DTYPE": os.environ.get("ADAPTER_DTYPE", "float32"),
+            "DEVICE": os.environ.get("DEVICE", "cuda"),
+        }
+    )
+    set_stage("direct_preservation_confirmation")
+    print("direct_preservation_confirmation_run_id:", confirm_run_id, flush=True)
+    print("direct_preservation_confirmation_source:", summary.relative_to(ROOT).as_posix(), flush=True)
+    print("direct_preservation_confirmation_checkpoint:", checkpoint, flush=True)
+    run([sys.executable, "colab/run_stage5_benchmark_suite.py"], cwd=ROOT, env=benchmark_env)
+
+    pointer = ROOT / "config" / "stage5_current_source_summary.txt"
+    benchmark_summary = pointer.read_text(encoding="utf-8").strip()
+    assess_env = os.environ.copy()
+    assess_env.update(
+        {
+            "STAGE5_BENCHMARK_ASSESS_RUN_ID": os.environ.get("STAGE5_DIRECT_CONFIRM_ASSESS_RUN_ID")
+            or f"{confirm_run_id}_assessment",
+            "STAGE5_BENCHMARK_ASSESS_SCORE_TARGET": os.environ.get(
+                "STAGE5_DIRECT_CONFIRM_ASSESS_SCORE_TARGET",
+                "content_question_only",
+            ),
+            "STAGE5_BENCHMARK_ASSESS_MIN_ARC_EXAMPLES": os.environ.get(
+                "STAGE5_DIRECT_CONFIRM_ASSESS_MIN_ARC_EXAMPLES",
+                "128",
+            ),
+            "STAGE5_BENCHMARK_ASSESS_PUSH": "1",
+        }
+    )
+    set_stage("direct_preservation_confirmation_assessment")
+    run(
+        [sys.executable, "colab/assess_stage5_benchmark_suite.py", "--summary_json", benchmark_summary],
+        cwd=ROOT,
+        env=assess_env,
+    )
+    print("direct_preservation_confirmation_assessment:", pointer.read_text(encoding="utf-8").strip(), flush=True)
 
 
 def disconnect(reason):
@@ -240,6 +328,7 @@ try:
         print(f"drive_backup_skipped={RUN_ID}", flush=True)
 
     safe_stage_and_push(run_dir)
+    maybe_chain_confirmation(run_dir)
     disconnect("direct preservation probe finished")
 except Exception:
     disconnect("direct preservation probe errored")
