@@ -30,6 +30,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from eval.mcq_debias import aggregate_permutation_scores, cyclic_permutation_rows, read_jsonl, write_jsonl  # noqa: E402
+from training.build_capability_ladder_curriculum import parse_model_ladder  # noqa: E402
 
 
 RUN_ID = os.environ.get("STAGE5_CAPABILITY_LADDER_RUN_ID") or time.strftime(
@@ -58,6 +59,7 @@ BASE_KEY = os.environ.get("STAGE5_CAPABILITY_LADDER_BASE_KEY", "qwen_0_5b")
 MID_KEY = os.environ.get("STAGE5_CAPABILITY_LADDER_MID_KEY", "qwen_1_5b")
 HIGH_KEYS = os.environ.get("STAGE5_CAPABILITY_LADDER_HIGH_KEYS", "qwen_3b")
 HIGH_TARGET_LOOP = int(os.environ.get("STAGE5_CAPABILITY_LADDER_HIGH_TARGET_LOOP", "3"))
+MODEL_LADDER = os.environ.get("STAGE5_CAPABILITY_LADDER_MODEL_LADDER", "").strip()
 MIN_POSITIVE_ROWS = int(os.environ.get("STAGE5_CAPABILITY_LADDER_MIN_POSITIVE_ROWS", "1"))
 MIN_DIRECT_ROWS = int(os.environ.get("STAGE5_CAPABILITY_LADDER_MIN_DIRECT_ROWS", "1"))
 MIN_DEEP_ROWS = int(os.environ.get("STAGE5_CAPABILITY_LADDER_MIN_DEEP_ROWS", "1"))
@@ -128,6 +130,26 @@ def parse_model_specs(value: str) -> list[ModelSpec]:
     if len(keys) != len(set(keys)):
         raise ValueError(f"Duplicate model keys in STAGE5_CAPABILITY_LADDER_MODELS: {keys}")
     return specs
+
+
+def active_model_ladder() -> list[dict[str, Any]] | None:
+    if not MODEL_LADDER:
+        return None
+    return parse_model_ladder(MODEL_LADDER)
+
+
+def required_model_keys() -> list[str]:
+    ladder = active_model_ladder()
+    if ladder:
+        return [str(entry["key"]) for entry in ladder]
+    return sorted({BASE_KEY, MID_KEY, *parse_csv(HIGH_KEYS)})
+
+
+def max_target_loop() -> int:
+    ladder = active_model_ladder()
+    if ladder:
+        return max(int(entry["target_loop_count"]) for entry in ladder)
+    return max(HIGH_TARGET_LOOP, 3)
 
 
 def score_config(mode: str) -> ScoreConfig:
@@ -312,27 +334,32 @@ def merge_score_rows(tasks_jsonl: Path, result_paths: dict[str, Path]) -> Path:
 
 
 def build_capability_ladder(scored_jsonl: Path) -> Path:
-    run(
-        [
-            sys.executable,
-            "training/build_capability_ladder_curriculum.py",
-            "--input_jsonl",
-            path_for_cli(scored_jsonl),
-            "--work_dir",
-            path_for_cli(WORK_DIR),
-            "--base_key",
-            BASE_KEY,
-            "--mid_key",
-            MID_KEY,
-            "--high_keys",
-            HIGH_KEYS,
-            "--high_target_loop",
-            str(HIGH_TARGET_LOOP),
-            "--allow_answer_only",
-            "--assume_decontaminated",
-        ],
-        log_name="build_capability_ladder_curriculum.log",
-    )
+    cmd = [
+        sys.executable,
+        "training/build_capability_ladder_curriculum.py",
+        "--input_jsonl",
+        path_for_cli(scored_jsonl),
+        "--work_dir",
+        path_for_cli(WORK_DIR),
+        "--allow_answer_only",
+        "--assume_decontaminated",
+    ]
+    if MODEL_LADDER:
+        cmd.extend(["--model_ladder", MODEL_LADDER])
+    else:
+        cmd.extend(
+            [
+                "--base_key",
+                BASE_KEY,
+                "--mid_key",
+                MID_KEY,
+                "--high_keys",
+                HIGH_KEYS,
+                "--high_target_loop",
+                str(HIGH_TARGET_LOOP),
+            ]
+        )
+    run(cmd, log_name="build_capability_ladder_curriculum.log")
     return WORK_DIR / "summary.json"
 
 
@@ -354,7 +381,7 @@ def gate_capability_ladder(summary_json: Path) -> Path:
             "--min_mode_rows",
             f"direct={MIN_DIRECT_ROWS},deep_narrow={MIN_DEEP_ROWS}",
             "--max_loop_target",
-            str(max(HIGH_TARGET_LOOP, 3)),
+            str(max_target_loop()),
             "--allow_cross_model_only_answers",
         ],
         check=False,
@@ -447,6 +474,7 @@ def write_probe_summary(
             "mid_key": MID_KEY,
             "high_keys": parse_csv(HIGH_KEYS),
             "high_target_loop": HIGH_TARGET_LOOP,
+            "model_ladder": active_model_ladder(),
         },
         "score_summaries": score_summaries,
         "curriculum": {
@@ -507,8 +535,8 @@ def main() -> int:
     PRIVATE_DATA_DIR.mkdir(parents=True, exist_ok=True)
     config = score_config(SCORE_MODE)
     specs = parse_model_specs(MODEL_SPECS)
-    required_keys = {BASE_KEY, MID_KEY, *parse_csv(HIGH_KEYS)}
     available_keys = {spec.key for spec in specs}
+    required_keys = set(required_model_keys())
     missing = sorted(required_keys - available_keys)
     if missing:
         raise SystemExit(f"Missing model specs for ladder keys: {missing}")

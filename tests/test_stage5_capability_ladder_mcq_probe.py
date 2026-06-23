@@ -51,6 +51,17 @@ def test_probe_status_distinguishes_gate_ready_and_sparse() -> None:
     assert sparse == "capability_ladder_probe_sparse"
 
 
+def test_generic_model_ladder_controls_required_keys_and_max_loop(monkeypatch) -> None:
+    monkeypatch.setattr(
+        module,
+        "MODEL_LADDER",
+        "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3,qwen_7b:4",
+    )
+
+    assert module.required_model_keys() == ["qwen_0_5b", "qwen_1_5b", "qwen_3b", "qwen_7b"]
+    assert module.max_target_loop() == 4
+
+
 def test_write_probe_summary_records_depth_probe_caveat(tmp_path, monkeypatch) -> None:
     run_dir = tmp_path / "outputs" / "stage5" / "probe"
     work_dir = tmp_path / "data" / "curriculum" / "probe"

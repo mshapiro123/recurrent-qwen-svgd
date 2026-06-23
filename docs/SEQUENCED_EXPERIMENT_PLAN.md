@@ -321,6 +321,13 @@ Qwen-style checkpoints. The first correct rung supplies the positive trace and
 the target loop count; unresolved rows are skipped rather than used for
 positive SFT.
 
+For the bounded Colab scoring probe, set the matching environment variables:
+
+```bash
+STAGE5_CAPABILITY_LADDER_MODELS='qwen_0_5b=Qwen/Qwen2.5-0.5B-Instruct,qwen_1_5b=Qwen/Qwen2.5-1.5B-Instruct,qwen_3b=Qwen/Qwen2.5-3B-Instruct,qwen_7b=Qwen/Qwen2.5-7B-Instruct'
+STAGE5_CAPABILITY_LADDER_MODEL_LADDER='qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3,qwen_7b:4'
+```
+
 Train deterministic Phase 1 only:
 
 - answer CE on verified rows;
