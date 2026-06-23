@@ -133,13 +133,17 @@ TARGETS = {
             "Qwen/Qwen2.5-0.5B-Instruct",
             "Qwen/Qwen2.5-1.5B-Instruct",
             "Qwen/Qwen2.5-3B-Instruct",
+            "STAGE5_CAPABILITY_LADDER_MODEL_LADDER",
             "STAGE5_CAPABILITY_LADDER_ARC_LIMIT",
             "content_question_only",
             "colab/run_stage5_capability_ladder_mcq_probe.py",
             "tests/test_stage5_capability_ladder_mcq_probe.py",
             "runtime.unassign",
         ],
-        "env": {},
+        "env": {
+            "STAGE5_CAPABILITY_LADDER_MODEL_LADDER": "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3",
+            "STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE": "0",
+        },
     },
     "capability_ladder_trace_jobs_cpu": {
         "path": "colab/STAGE5_CAPABILITY_LADDER_TRACE_JOBS_CELL.py",

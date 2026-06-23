@@ -472,12 +472,15 @@ def test_capability_ladder_mcq_probe_cell_is_bounded_and_depth_ladder_focused() 
     assert "Qwen/Qwen2.5-3B-Instruct" in plain
     assert '"STAGE5_CAPABILITY_LADDER_ARC_LIMIT",\n        "48"' in plain
     assert '"STAGE5_CAPABILITY_LADDER_SCORE_MODE",\n        "content_question_only"' in plain
-    assert '"STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE"] = "1"' in plain
+    assert '"STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE", "0"' in plain
+    assert "Drive backup disabled for capability-ladder probe" in plain
+    assert "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3" in plain
     assert "colab/run_stage5_capability_ladder_mcq_probe.py" in plain
     assert "tests/test_stage5_capability_ladder_mcq_probe.py" in plain
     assert "runtime.unassign()" in plain
     assert "capability_ladder_mcq_probe" in bootstrap
     assert "STAGE5_CAPABILITY_LADDER_MCQ_PROBE_CELL.py" in bootstrap
+    assert "STAGE5_CAPABILITY_LADDER_MODEL_LADDER" in bootstrap
 
 
 def test_capability_ladder_trace_jobs_cell_is_cpu_only_and_depth_ladder_focused() -> None:

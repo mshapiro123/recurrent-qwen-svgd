@@ -74,7 +74,16 @@ try:
     assert gpu_check, "Attach an A100/H100/L4/T4 GPU runtime before running this scoring probe."
     run(["nvidia-smi"], cwd=Path("/content"))
 
-    drive.mount("/content/drive", force_remount=False)
+    backup_drive = os.environ.get("STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE", "0").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+    }
+    if backup_drive:
+        drive.mount("/content/drive", force_remount=False)
+    else:
+        print("Drive backup disabled for capability-ladder probe; using GitHub artifacts.", flush=True)
     authed = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
     if ROOT.exists():
         run(["git", "remote", "set-url", "origin", authed])
@@ -129,8 +138,12 @@ try:
             ]
         ),
     )
+    env["STAGE5_CAPABILITY_LADDER_MODEL_LADDER"] = os.environ.get(
+        "STAGE5_CAPABILITY_LADDER_MODEL_LADDER",
+        "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3",
+    )
     env["STAGE5_CAPABILITY_LADDER_PUSH"] = "1"
-    env["STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE"] = "1"
+    env["STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE"] = "1" if backup_drive else "0"
     env["DTYPE"] = os.environ.get("DTYPE", "bfloat16")
     env["DEVICE"] = os.environ.get("DEVICE", "cuda")
     run([sys.executable, "colab/run_stage5_capability_ladder_mcq_probe.py"], env=env)
