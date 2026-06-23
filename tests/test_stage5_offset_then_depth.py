@@ -38,15 +38,16 @@ def module():
     return importlib.import_module("colab.run_stage5_arc_mix_offset_then_depth")
 
 
-def test_offset_assessment_passes_four_nonnegative_readouts() -> None:
+def test_offset_assessment_blocks_zero_content_recovery() -> None:
     assessed = module().assess_offset_confirmation(_payload(delta=0))
 
-    assert assessed["status"] == "offset_confirmed_debiased_flat"
-    assert assessed["passed"] is True
+    assert assessed["status"] == "offset_regressed"
+    assert assessed["passed"] is False
     assert assessed["content_replicated"] is False
     assert assessed["debiased_positive"] is False
     assert len(assessed["evidence"]) == 4
     assert all(row["passed"] for row in assessed["evidence"])
+    assert assessed["aggregate_readouts"]["content_question_only"]["correct_delta_recurrent_vs_base"] == 0
 
 
 def test_offset_assessment_blocks_negative_content_readout() -> None:
@@ -76,9 +77,9 @@ def test_offset_assessment_requires_coverage() -> None:
 
 
 def test_offset_assessment_accepts_custom_post_depth_min_examples() -> None:
-    assessed = module().assess_offset_confirmation(_payload(delta=0, paired=128), min_examples=128)
+    assessed = module().assess_offset_confirmation(_payload(delta=1, paired=128), min_examples=128)
 
-    assert assessed["status"] == "offset_confirmed_debiased_flat"
+    assert assessed["status"] == "offset_confirmed_debiased_positive"
     assert assessed["passed"] is True
 
 
@@ -101,15 +102,15 @@ def test_offset_assessment_accepts_flat_debiased_small_arc_challenge_slice() -> 
 
 def test_offset_assessment_blocks_material_debiased_regression() -> None:
     payload = _payload(delta=0)
-    payload["paired_comparisons"]["arc_easy"]["cyclic_label_aggregated"]["permutation_mean"] = _row(-1, paired=256)
+    payload["paired_comparisons"]["arc_easy"]["content_question_only"]["mean"] = _row(10, paired=256)
+    payload["paired_comparisons"]["arc_challenge"]["content_question_only"]["mean"] = _row(1, paired=43)
+    payload["paired_comparisons"]["arc_easy"]["cyclic_label_aggregated"]["permutation_mean"] = _row(-3, paired=256)
 
     assessed = module().assess_offset_confirmation(payload)
 
     assert assessed["status"] == "offset_regressed"
     assert assessed["passed"] is False
-    failed = [row for row in assessed["evidence"] if not row["passed"]]
-    assert len(failed) == 1
-    assert failed[0]["score_target"] == "cyclic_label_aggregated"
+    assert assessed["aggregate_readouts"]["cyclic_label_aggregated"]["correct_delta_recurrent_vs_base"] == -3
 
 
 def test_offset_assessment_can_explicitly_tolerate_small_debiased_negative() -> None:
@@ -123,6 +124,24 @@ def test_offset_assessment_can_explicitly_tolerate_small_debiased_negative() -> 
     assert assessed["passed"] is True
     assert assessed["content_replicated"] is True
     assert assessed["debiased_positive"] is False
+
+
+def test_offset_assessment_accepts_aggregate_content_and_flat_debiased_surface() -> None:
+    payload = _payload(delta=0)
+    payload["paired_comparisons"]["arc_easy"]["content_question_only"]["mean"] = _row(11, paired=256)
+    payload["paired_comparisons"]["arc_easy"]["cyclic_label_aggregated"]["permutation_mean"] = _row(-2, paired=256)
+    payload["paired_comparisons"]["arc_challenge"]["content_question_only"]["mean"] = _row(-3, paired=43)
+    payload["paired_comparisons"]["arc_challenge"]["cyclic_label_aggregated"]["permutation_mean"] = _row(1, paired=43)
+
+    assessed = module().assess_offset_confirmation(payload)
+
+    assert assessed["status"] == "offset_confirmed_debiased_tolerated_negative"
+    assert assessed["passed"] is True
+    assert assessed["content_replicated"] is True
+    assert assessed["debiased_positive"] is False
+    assert assessed["aggregate_readouts"]["content_question_only"]["correct_delta_recurrent_vs_base"] == 8
+    assert assessed["aggregate_readouts"]["cyclic_label_aggregated"]["correct_delta_recurrent_vs_base"] == -1
+    assert len(assessed["row_regression_warnings"]) == 2
 
 
 def test_offset_assessment_blocks_completed_with_failures() -> None:

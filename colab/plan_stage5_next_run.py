@@ -362,6 +362,10 @@ def balanced_arc_mix_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "stage5_balanced_arc_mix_gate" else None
 
 
+def arc_mix_offset_depth_chain_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_arc_mix_offset_then_depth_chain" else None
+
+
 def routing_diagnostic_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "stage5_routing_diagnostic_assessment" else None
 
@@ -4190,6 +4194,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "balanced_mcq_assessment"
     if balanced_arc_mix_payload(payload):
         return "balanced_arc_mix_gate"
+    if arc_mix_offset_depth_chain_payload(payload):
+        return "arc_mix_offset_depth_chain"
     if routing_diagnostic_payload(payload):
         return "routing_diagnostic"
     if routing_repair_payload(payload):

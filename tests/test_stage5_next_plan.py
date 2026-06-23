@@ -1787,6 +1787,7 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"gate": "stage5_same_recipe_architecture"}) == "recipe_control_assessment"
     assert source_kind({"gate": "stage5_release_benchmark_readiness"}) == "release_gate"
     assert source_kind({"kind": "stage5_benchmark_suite"}) == "benchmark_suite"
+    assert source_kind({"kind": "stage5_arc_mix_offset_then_depth_chain"}) == "arc_mix_offset_depth_chain"
     assert source_kind({"kind": "stage5_capability_ladder_mcq_probe"}) == "capability_ladder_mcq_probe"
     assert source_kind({"kind": "stage5_capability_ladder_trace_jobs"}) == "capability_ladder_trace_jobs"
     assert source_kind({"kind": "stage5_capability_ladder_trace_responses"}) == "capability_ladder_trace_responses"

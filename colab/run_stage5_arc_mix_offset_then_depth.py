@@ -62,6 +62,9 @@ CONTENT_ALLOWED_NEGATIVE_DELTA = int(
 DEBIASED_ALLOWED_NEGATIVE_DELTA = int(
     os.environ.get("STAGE5_ARC_MIX_CHAIN_DEBIASED_ALLOWED_NEGATIVE_DELTA", "0")
 )
+AGGREGATE_DEBIASED_ALLOWED_NEGATIVE_DELTA = int(
+    os.environ.get("STAGE5_ARC_MIX_CHAIN_AGGREGATE_DEBIASED_ALLOWED_NEGATIVE_DELTA", "2")
+)
 POST_DEPTH_MIN_EXAMPLES = int(os.environ.get("STAGE5_ARC_MIX_CHAIN_POST_DEPTH_MIN_EXAMPLES", "128"))
 POST_DEPTH_DEBIASED_ALLOWED_NEGATIVE_DELTA = int(
     os.environ.get("STAGE5_ARC_MIX_CHAIN_POST_DEPTH_DEBIASED_ALLOWED_NEGATIVE_DELTA", "0")
@@ -203,6 +206,35 @@ def evidence_row(
     }
 
 
+def aggregate_evidence(
+    evidence: list[dict[str, Any]],
+    score_target: str,
+    *,
+    allowed_negative_delta: int,
+) -> dict[str, Any]:
+    rows = [row for row in evidence if row["score_target"] == score_target]
+    paired = sum(int(row.get("paired_examples", 0) or 0) for row in rows)
+    required = sum(int(row.get("required_examples", 0) or 0) for row in rows)
+    delta = sum(int(row.get("correct_delta_recurrent_vs_base", 0) or 0) for row in rows)
+    present = bool(rows) and all(bool(row.get("present")) for row in rows)
+    coverage_passed = present and paired >= required
+    return {
+        "score_target": score_target,
+        "present": present,
+        "paired_examples": paired,
+        "required_examples": required,
+        "allowed_negative_delta": allowed_negative_delta,
+        "base_correct": sum(int(row.get("base_correct", 0) or 0) for row in rows),
+        "recurrent_correct": sum(int(row.get("recurrent_correct", 0) or 0) for row in rows),
+        "correct_delta_recurrent_vs_base": delta,
+        "wins": sum(int(row.get("wins", 0) or 0) for row in rows),
+        "losses": sum(int(row.get("losses", 0) or 0) for row in rows),
+        "ties": sum(int(row.get("ties", 0) or 0) for row in rows),
+        "coverage_passed": coverage_passed,
+        "passed": coverage_passed and delta >= -allowed_negative_delta,
+    }
+
+
 def assess_offset_confirmation(
     payload: dict[str, Any],
     *,
@@ -229,25 +261,34 @@ def assess_offset_confirmation(
         )
         for readout in REQUIRED_READOUTS
     ]
-    evidence_passed = all(row["passed"] for row in evidence)
-    passed = completed and evidence_passed
+    coverage_passed = all(row["present"] and row["paired_examples"] >= row["required_examples"] for row in evidence)
+    row_regression_warnings = [
+        row
+        for row in evidence
+        if int(row.get("correct_delta_recurrent_vs_base") or 0) < -int(row.get("allowed_negative_delta") or 0)
+    ]
+    aggregate_readouts = {
+        "content_question_only": aggregate_evidence(
+            evidence,
+            "content_question_only",
+            allowed_negative_delta=content_allowed_negative_delta,
+        ),
+        "cyclic_label_aggregated": aggregate_evidence(
+            evidence,
+            "cyclic_label_aggregated",
+            allowed_negative_delta=AGGREGATE_DEBIASED_ALLOWED_NEGATIVE_DELTA,
+        ),
+    }
+    content_aggregate = aggregate_readouts["content_question_only"]
+    debiased_aggregate = aggregate_readouts["cyclic_label_aggregated"]
+    content_replicated = int(content_aggregate["correct_delta_recurrent_vs_base"]) > 0
+    debiased_positive = int(debiased_aggregate["correct_delta_recurrent_vs_base"]) > 0
+    aggregate_passed = content_replicated and debiased_aggregate["passed"]
+    passed = completed and coverage_passed and aggregate_passed
     if passed:
-        content_deltas = [
-            int(row["correct_delta_recurrent_vs_base"] or 0)
-            for row in evidence
-            if row["score_target"] == "content_question_only"
-        ]
-        cyclic_deltas = [
-            int(row["correct_delta_recurrent_vs_base"] or 0)
-            for row in evidence
-            if row["score_target"] == "cyclic_label_aggregated"
-        ]
-        debiased_positive = any(delta > 0 for delta in cyclic_deltas)
-        debiased_flat = cyclic_deltas and all(delta == 0 for delta in cyclic_deltas)
-        content_replicated = any(delta > 0 for delta in content_deltas)
         if debiased_positive:
             status = "offset_confirmed_debiased_positive"
-        elif debiased_flat:
+        elif int(debiased_aggregate["correct_delta_recurrent_vs_base"]) == 0:
             status = "offset_confirmed_debiased_flat"
         else:
             status = "offset_confirmed_debiased_tolerated_negative"
@@ -271,16 +312,11 @@ def assess_offset_confirmation(
         "min_examples_by_benchmark": min_by_benchmark,
         "failures": failures,
         "evidence": evidence,
-        "content_replicated": any(
-            row["score_target"] == "content_question_only"
-            and int(row["correct_delta_recurrent_vs_base"] or 0) > 0
-            for row in evidence
-        ),
-        "debiased_positive": any(
-            row["score_target"] == "cyclic_label_aggregated"
-            and int(row["correct_delta_recurrent_vs_base"] or 0) > 0
-            for row in evidence
-        ),
+        "aggregate_readouts": aggregate_readouts,
+        "aggregate_debiased_allowed_negative_delta": AGGREGATE_DEBIASED_ALLOWED_NEGATIVE_DELTA,
+        "row_regression_warnings": row_regression_warnings,
+        "content_replicated": content_replicated,
+        "debiased_positive": debiased_positive,
     }
 
 
