@@ -42,6 +42,8 @@ ARC_TRAIN_LIMIT = os.environ.get("STAGE5_DIRECT_PRESERVE_ARC_TRAIN_LIMIT", "512"
 ARC_EVAL_LIMIT = int(os.environ.get("STAGE5_DIRECT_PRESERVE_ARC_EVAL_LIMIT", "128"))
 MIN_BASE_MARGIN = float(os.environ.get("STAGE5_DIRECT_PRESERVE_MIN_BASE_MARGIN", "1.0"))
 MAX_ROWS_PER_LABEL = os.environ.get("STAGE5_DIRECT_PRESERVE_MAX_ROWS_PER_LABEL", "")
+PROMPT_STYLE = os.environ.get("STAGE5_DIRECT_PRESERVE_PROMPT_STYLE", "with_options").strip()
+SCORE_TARGET = os.environ.get("STAGE5_DIRECT_PRESERVE_SCORE_TARGET", "label").strip()
 MAX_STEPS = int(os.environ.get("STAGE5_DIRECT_PRESERVE_MAX_STEPS", "75"))
 SAVE_EVERY = int(os.environ.get("STAGE5_DIRECT_PRESERVE_SAVE_EVERY", "25"))
 LEARNING_RATE = float(os.environ.get("STAGE5_DIRECT_PRESERVE_LR", "5e-7"))
@@ -106,6 +108,8 @@ def source_payload_and_checkpoint() -> tuple[Path, dict[str, Any], Path]:
             source_summary = resolve_path(nested)
             source_payload = read_json(source_summary)
     checkpoint = str(source_payload.get("resume_checkpoint") or "")
+    if not checkpoint:
+        checkpoint = str(source_payload.get("checkpoint") or "")
     if not checkpoint:
         best = source_payload.get("best_arm", {}).get("phase1_start", {})
         checkpoint = str(best.get("checkpoint") or "")
@@ -174,9 +178,9 @@ def eval_mcq(
         "--data_jsonl",
         path_for_cli(data_jsonl),
         "--prompt_style",
-        "with_options",
+        PROMPT_STYLE,
         "--score_target",
-        "label",
+        SCORE_TARGET,
         "--mode",
         mode,
         "--dtype",
@@ -189,6 +193,7 @@ def eval_mcq(
         str(MIX_SEED),
         "--aggregate",
         "mean",
+        "--quiet_rows",
         "--output_jsonl",
         path_for_cli(output),
     ]
@@ -282,6 +287,10 @@ def filter_direct_sft(train_mcq: Path, base_train_eval: Path) -> tuple[Path, dic
         "1",
         "--routing_type",
         "direct_base_preserve",
+        "--prompt_style",
+        PROMPT_STYLE,
+        "--score_target",
+        SCORE_TARGET,
         "--min_base_margin",
         str(MIN_BASE_MARGIN),
         "--seed",
@@ -462,6 +471,8 @@ def main() -> int:
             "arc_train_limit": ARC_TRAIN_LIMIT,
             "arc_eval_limit": ARC_EVAL_LIMIT,
             "min_base_margin": MIN_BASE_MARGIN,
+            "prompt_style": PROMPT_STYLE,
+            "score_target": SCORE_TARGET,
             "max_steps": MAX_STEPS,
             "learning_rate": LEARNING_RATE,
             "distill_weight": DISTILL_WEIGHT,
