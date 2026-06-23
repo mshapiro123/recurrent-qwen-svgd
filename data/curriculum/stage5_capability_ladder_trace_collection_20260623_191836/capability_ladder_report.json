@@ -1,0 +1,30 @@
+{
+  "input_rows": 32,
+  "exported_records": 32,
+  "tier_counts": {
+    "base_preservation": 14,
+    "qwen_0_5b_miss_qwen_1_5b_miss_qwen_3b_solve": 6,
+    "qwen_0_5b_miss_qwen_1_5b_solve": 12
+  },
+  "skipped": {},
+  "base_key": "qwen_0_5b",
+  "mid_key": "qwen_1_5b",
+  "high_keys": [
+    "qwen_3b",
+    "strong_solver"
+  ],
+  "model_ladder": [
+    {
+      "key": "qwen_0_5b",
+      "target_loop_count": 1
+    },
+    {
+      "key": "qwen_1_5b",
+      "target_loop_count": 2
+    },
+    {
+      "key": "qwen_3b",
+      "target_loop_count": 3
+    }
+  ]
+}
