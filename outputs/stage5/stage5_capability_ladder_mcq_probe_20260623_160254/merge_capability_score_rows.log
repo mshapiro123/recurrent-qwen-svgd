@@ -1,0 +1,5 @@
+task_rows=96
+output_rows=96
+missing={}
+output_jsonl=data/stage5_capability_ladder/stage5_capability_ladder_mcq_probe_20260623_160254/scored_capability_rows.jsonl
+report_json=data/stage5_capability_ladder/stage5_capability_ladder_mcq_probe_20260623_160254/scored_capability_rows.report.json
