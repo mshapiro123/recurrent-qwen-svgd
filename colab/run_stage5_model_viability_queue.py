@@ -151,16 +151,23 @@ def should_skip_for_vram(
 def run(cmd: list[str], *, log_name: str, env: dict[str, str] | None = None, check: bool = True):
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     print("$", " ".join(map(str, cmd)), flush=True)
-    proc = subprocess.run(
+    process = subprocess.Popen(
         cmd,
         cwd=ROOT,
         env=env,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
+        bufsize=1,
     )
-    print(proc.stdout, flush=True)
-    (RUN_DIR / log_name).write_text(proc.stdout, encoding="utf-8")
+    chunks: list[str] = []
+    assert process.stdout is not None
+    for line in process.stdout:
+        print(line, end="", flush=True)
+        chunks.append(line)
+    stdout = "".join(chunks)
+    proc = subprocess.CompletedProcess(cmd, process.wait(), stdout=stdout, stderr=None)
+    (RUN_DIR / log_name).write_text(stdout, encoding="utf-8")
     if check and proc.returncode:
         raise subprocess.CalledProcessError(proc.returncode, cmd, output=proc.stdout)
     return proc
