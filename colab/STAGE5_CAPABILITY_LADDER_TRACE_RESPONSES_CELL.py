@@ -37,8 +37,21 @@ def secret(*names):
 
 GH_TOKEN = secret("GH_TOKEN", "GITHUB_TOKEN")
 assert GH_TOKEN, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
-API_KEY_ENV = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_API_KEY_ENV", "OPENAI_API_KEY")
-provider_token = secret(API_KEY_ENV, "OPENAI_API_KEY", "OPENROUTER_API_KEY")
+API_KEY_ENV = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_API_KEY_ENV", "").strip()
+if not API_KEY_ENV:
+    if secret("OPENAI_API_KEY"):
+        API_KEY_ENV = "OPENAI_API_KEY"
+    elif secret("OPENROUTER_API_KEY"):
+        API_KEY_ENV = "OPENROUTER_API_KEY"
+    else:
+        API_KEY_ENV = "OPENAI_API_KEY"
+os.environ["STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_API_KEY_ENV"] = API_KEY_ENV
+if (
+    API_KEY_ENV == "OPENROUTER_API_KEY"
+    and "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BASE_URL" not in os.environ
+):
+    os.environ["STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BASE_URL"] = "https://openrouter.ai/api/v1"
+provider_token = secret(API_KEY_ENV)
 if provider_token:
     os.environ[API_KEY_ENV] = provider_token
 
@@ -90,6 +103,16 @@ if gpus and os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_ALLOW_GPU", 
         + ". Switch to CPU runtime or set STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_ALLOW_GPU=1 deliberately."
     )
 print(f"STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_CELL_VERSION={STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_CELL_VERSION}", flush=True)
+print(
+    {
+        "api_key_env": API_KEY_ENV,
+        "has_provider_token": bool(provider_token),
+        "base_url": os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BASE_URL", "https://api.openai.com/v1"),
+        "model_override": os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_OVERRIDE", ""),
+        "run_provider": os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER", "0"),
+    },
+    flush=True,
+)
 
 clone_url = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
 if ROOT.exists():
