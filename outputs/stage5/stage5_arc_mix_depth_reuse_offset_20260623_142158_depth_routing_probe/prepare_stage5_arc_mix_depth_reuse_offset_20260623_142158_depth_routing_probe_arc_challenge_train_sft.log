@@ -1,0 +1,15 @@
+
+Generating train split:   0%|          | 0/1119 [00:00<?, ? examples/s]
+Generating train split: 100%|██████████| 1119/1119 [00:00<00:00, 37386.20 examples/s]
+
+Generating test split:   0%|          | 0/1172 [00:00<?, ? examples/s]
+Generating test split: 100%|██████████| 1172/1172 [00:00<00:00, 270406.75 examples/s]
+
+Generating validation split:   0%|          | 0/299 [00:00<?, ? examples/s]
+Generating validation split: 100%|██████████| 299/299 [00:00<00:00, 116077.09 examples/s]
+dataset_id=allenai/ai2_arc
+config=ARC-Challenge
+split=train
+rows=1119
+skipped_rows=0
+output_jsonl=data/stage5_arc_mix_depth_reuse_offset_20260623_142158_depth_routing_probe_arc_challenge_train_sft.jsonl
