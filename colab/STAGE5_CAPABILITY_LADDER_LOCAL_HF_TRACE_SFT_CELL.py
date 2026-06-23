@@ -89,6 +89,46 @@ def env_flag(name, default):
     return os.environ.get(name, default).strip().lower() in {"1", "true", "yes", "y"}
 
 
+def attached_gpu_memory_mb():
+    proc = run(
+        ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader,nounits"],
+        cwd=Path("/content"),
+        check=False,
+    )
+    gpus = []
+    if proc.returncode:
+        return gpus
+    for line in proc.stdout.splitlines():
+        if not line.strip() or "," not in line:
+            continue
+        name, raw_memory = line.rsplit(",", 1)
+        try:
+            memory_mb = int(raw_memory.strip())
+        except ValueError:
+            continue
+        gpus.append({"name": name.strip(), "memory_mb": memory_mb})
+    return gpus
+
+
+def require_enough_vram_for_local_hf():
+    if env_flag("STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_SKIP_VRAM_CHECK", "0"):
+        print("VRAM preflight skipped by override.", flush=True)
+        return
+    min_vram_mb = int(os.environ.get("STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_MIN_VRAM_MB", "20000"))
+    gpus = attached_gpu_memory_mb()
+    if not gpus:
+        raise RuntimeError("No visible NVIDIA GPU for local-HF trace generation.")
+    best = max(gpus, key=lambda item: int(item["memory_mb"]))
+    print({"local_hf_trace_vram_preflight": {"gpus": gpus, "min_vram_mb": min_vram_mb}}, flush=True)
+    if int(best["memory_mb"]) < min_vram_mb:
+        raise RuntimeError(
+            f"Local Qwen 7B trace generation requires at least {min_vram_mb} MB VRAM by default; "
+            f"best visible GPU is {best['name']} with {best['memory_mb']} MB. "
+            "Use an L4/A100/H100/high-memory runtime, reduce the model, or set "
+            "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_SKIP_VRAM_CHECK=1 deliberately."
+        )
+
+
 def read_json(path):
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -314,6 +354,7 @@ print(
 )
 
 run(["nvidia-smi"], cwd=Path("/content"), check=False)
+require_enough_vram_for_local_hf()
 
 clone_url = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
 if ROOT.exists():
