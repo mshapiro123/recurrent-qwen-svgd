@@ -21,6 +21,7 @@ STAGE5_DENSE_MCQ_TRACE_SFT_CONTROL_TARGET = "dense_mcq_trace_sft_control"
 # - training/train_dense_lora.py
 # - eval/eval_mcq.py --mode base --checkpoint
 # - colab/run_stage5_mcq_dense_sft_control.py
+# - colab/assess_stage5_mcq_recipe_control.py
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
@@ -126,6 +127,7 @@ try:
             "-q",
             "tests/test_eval_mcq_dense_lora.py",
             "tests/test_stage5_mcq_dense_sft_control.py",
+            "tests/test_stage5_mcq_recipe_control_assessment.py",
         ],
         cwd=ROOT,
     )
@@ -138,6 +140,10 @@ try:
     env.setdefault("STAGE5_DENSE_MCQ_ARC_CHALLENGE_LIMIT", "256")
     env.setdefault("STAGE5_DENSE_MCQ_SCORE_TARGETS", "content_question_only,cyclic_label_aggregated")
     env.setdefault("STAGE5_DENSE_MCQ_AGGREGATES", "mean")
+    env.setdefault(
+        "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY",
+        "outputs/stage5/stage5_local_hf_traced_sft_scale64_benchmark_20260623_201923/summary.json",
+    )
     env.setdefault("STAGE5_DENSE_MCQ_COMMIT_CHECKPOINT", "0")
     env.setdefault("STAGE5_DENSE_MCQ_PUSH", "1")
     print("dense_mcq_source:", env["STAGE5_DENSE_MCQ_SOURCE_SUMMARY"], flush=True)

@@ -988,8 +988,12 @@ def test_dense_mcq_trace_sft_control_target_is_bootstrapped() -> None:
     assert "training/train_dense_lora.py" in cell
     assert "eval/eval_mcq.py --mode base --checkpoint" in cell
     assert "colab/run_stage5_mcq_dense_sft_control.py" in cell
+    assert "colab/assess_stage5_mcq_recipe_control.py" in cell
     assert "tests/test_eval_mcq_dense_lora.py" in cell
     assert "tests/test_stage5_mcq_dense_sft_control.py" in cell
+    assert "tests/test_stage5_mcq_recipe_control_assessment.py" in cell
+    assert "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY" in cell
+    assert "stage5_local_hf_traced_sft_scale64_benchmark_20260623_201923" in cell
     assert "runtime.unassign" in cell
 
 

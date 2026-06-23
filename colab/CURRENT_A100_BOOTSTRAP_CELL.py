@@ -714,8 +714,10 @@ TARGETS = {
             "training/train_dense_lora.py",
             "eval/eval_mcq.py --mode base --checkpoint",
             "colab/run_stage5_mcq_dense_sft_control.py",
+            "colab/assess_stage5_mcq_recipe_control.py",
             "tests/test_eval_mcq_dense_lora.py",
             "tests/test_stage5_mcq_dense_sft_control.py",
+            "tests/test_stage5_mcq_recipe_control_assessment.py",
             "runtime.unassign",
         ],
         "env": {
@@ -728,6 +730,9 @@ TARGETS = {
             "STAGE5_DENSE_MCQ_ARC_CHALLENGE_LIMIT": "256",
             "STAGE5_DENSE_MCQ_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
             "STAGE5_DENSE_MCQ_AGGREGATES": "mean",
+            "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY": (
+                "outputs/stage5/stage5_local_hf_traced_sft_scale64_benchmark_20260623_201923/summary.json"
+            ),
             "STAGE5_DENSE_MCQ_COMMIT_CHECKPOINT": "0",
             "STAGE5_DENSE_MCQ_PUSH": "1",
             "STAGE5_DENSE_MCQ_DISCONNECT": "1",
