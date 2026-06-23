@@ -1,0 +1,7 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=train
+offset=0
+rows=1024
+output_jsonl=outputs/stage5/stage5_content_direct_preserve_m05_20260623_1122/arc_easy_train_mcq.jsonl

@@ -1,0 +1,503 @@
+{
+  "kind": "stage5_direct_preservation_probe",
+  "run_id": "stage5_content_direct_preserve_m05_20260623_1122",
+  "status": "direct_route_lift",
+  "passed": true,
+  "source_summary": "outputs/stage5/stage5_halt_repair_arc256_check_20260623_102430/summary.json",
+  "source_status": "completed",
+  "resume_checkpoint": "outputs/stage5/stage5_arc_agi_next_action_20260623_095933_plan_depth_conditional_halt_repair/phase1/phase1_step_100.pt",
+  "config": {
+    "arc_train_limit": "1024",
+    "arc_eval_limit": 128,
+    "min_base_margin": 0.5,
+    "prompt_style": "question_only",
+    "score_target": "option_text",
+    "max_steps": 150,
+    "learning_rate": 7.5e-07,
+    "distill_weight": 1.5,
+    "max_loops": 1
+  },
+  "data": {
+    "train_mcq": "outputs/stage5/stage5_content_direct_preserve_m05_20260623_1122/arc_easy_train_mcq.jsonl",
+    "eval_mcq": "outputs/stage5/stage5_content_direct_preserve_m05_20260623_1122/arc_easy_eval_mcq.jsonl",
+    "direct_sft": {
+      "input_mcq_rows": 1024,
+      "input_eval_rows": 1024,
+      "selected_rows": 384,
+      "skipped": {
+        "base_wrong": 402,
+        "low_margin": 183
+      },
+      "pre_balance_answer_counts": {
+        "A": 111,
+        "B": 120,
+        "C": 104,
+        "D": 104
+      },
+      "answer_counts": {
+        "A": 96,
+        "B": 96,
+        "C": 96,
+        "D": 96
+      },
+      "min_base_margin": 0.5,
+      "balance_labels": true,
+      "max_rows_per_label": 96,
+      "target_loop_count": 1,
+      "routing_type": "direct_base_preserve"
+    }
+  },
+  "base_eval": {
+    "correct": 74,
+    "total": 128,
+    "accuracy": 0.578125,
+    "prediction_counts": {
+      "C": 29,
+      "B": 30,
+      "D": 34,
+      "A": 35
+    },
+    "answer_counts": {
+      "C": 26,
+      "B": 40,
+      "D": 30,
+      "A": 32
+    }
+  },
+  "start_loop1_eval": {
+    "correct": 69,
+    "total": 128,
+    "accuracy": 0.5390625,
+    "prediction_counts": {
+      "C": 28,
+      "B": 29,
+      "A": 36,
+      "D": 35
+    },
+    "answer_counts": {
+      "C": 26,
+      "B": 40,
+      "D": 30,
+      "A": 32
+    }
+  },
+  "start_loop4_eval": {
+    "correct": 67,
+    "total": 128,
+    "accuracy": 0.5234375,
+    "prediction_counts": {
+      "C": 31,
+      "B": 28,
+      "A": 35,
+      "D": 34
+    },
+    "answer_counts": {
+      "C": 26,
+      "B": 40,
+      "D": 30,
+      "A": 32
+    }
+  },
+  "start_loop1_comparison_to_base": {
+    "helped": 4,
+    "hurt": 9,
+    "tied": 115,
+    "prediction_changes": 18,
+    "mean_margin_delta": -0.0945047055138275,
+    "reference_prediction_counts": {
+      "A": 35,
+      "C": 29,
+      "B": 30,
+      "D": 34
+    },
+    "candidate_prediction_counts": {
+      "A": 36,
+      "C": 28,
+      "B": 29,
+      "D": 35
+    },
+    "prediction_count_delta": {
+      "A": 1,
+      "B": -1,
+      "C": -1,
+      "D": 1
+    },
+    "max_abs_prediction_count_delta": 1,
+    "calibration_ok": false
+  },
+  "checkpoints": [
+    {
+      "checkpoint": "outputs/stage5/stage5_content_direct_preserve_m05_20260623_1122/phase1_direct_preserve/phase1_step_50.pt",
+      "loop1_path": "outputs/stage5/stage5_content_direct_preserve_m05_20260623_1122/arc_easy_eval_mcq_phase1_step_50_loop1_label.jsonl",
+      "loop4_path": "outputs/stage5/stage5_content_direct_preserve_m05_20260623_1122/arc_easy_eval_mcq_phase1_step_50_loop4_label.jsonl",
+      "loop1_eval": {
+        "correct": 69,
+        "total": 128,
+        "accuracy": 0.5390625,
+        "prediction_counts": {
+          "C": 26,
+          "B": 30,
+          "A": 37,
+          "D": 35
+        },
+        "answer_counts": {
+          "C": 26,
+          "B": 40,
+          "D": 30,
+          "A": 32
+        }
+      },
+      "loop4_eval": {
+        "correct": 69,
+        "total": 128,
+        "accuracy": 0.5390625,
+        "prediction_counts": {
+          "C": 27,
+          "B": 28,
+          "A": 39,
+          "D": 34
+        },
+        "answer_counts": {
+          "C": 26,
+          "B": 40,
+          "D": 30,
+          "A": 32
+        }
+      },
+      "comparison_to_base": {
+        "helped": 3,
+        "hurt": 8,
+        "tied": 117,
+        "prediction_changes": 16,
+        "mean_margin_delta": -0.03102071420289576,
+        "reference_prediction_counts": {
+          "A": 35,
+          "C": 29,
+          "B": 30,
+          "D": 34
+        },
+        "candidate_prediction_counts": {
+          "B": 30,
+          "A": 37,
+          "C": 26,
+          "D": 35
+        },
+        "prediction_count_delta": {
+          "A": 2,
+          "B": 0,
+          "C": -3,
+          "D": 1
+        },
+        "max_abs_prediction_count_delta": 3,
+        "calibration_ok": false
+      },
+      "comparison_to_start_loop1": {
+        "helped": 2,
+        "hurt": 2,
+        "tied": 124,
+        "prediction_changes": 4,
+        "mean_margin_delta": 0.06348399131093174,
+        "reference_prediction_counts": {
+          "A": 36,
+          "C": 28,
+          "B": 29,
+          "D": 35
+        },
+        "candidate_prediction_counts": {
+          "B": 30,
+          "A": 37,
+          "C": 26,
+          "D": 35
+        },
+        "prediction_count_delta": {
+          "A": 1,
+          "B": 1,
+          "C": -2,
+          "D": 0
+        },
+        "max_abs_prediction_count_delta": 2,
+        "calibration_ok": true
+      }
+    },
+    {
+      "checkpoint": "outputs/stage5/stage5_content_direct_preserve_m05_20260623_1122/phase1_direct_preserve/phase1_step_100.pt",
+      "loop1_path": "outputs/stage5/stage5_content_direct_preserve_m05_20260623_1122/arc_easy_eval_mcq_phase1_step_100_loop1_label.jsonl",
+      "loop4_path": "outputs/stage5/stage5_content_direct_preserve_m05_20260623_1122/arc_easy_eval_mcq_phase1_step_100_loop4_label.jsonl",
+      "loop1_eval": {
+        "correct": 70,
+        "total": 128,
+        "accuracy": 0.546875,
+        "prediction_counts": {
+          "C": 26,
+          "B": 31,
+          "A": 36,
+          "D": 35
+        },
+        "answer_counts": {
+          "C": 26,
+          "B": 40,
+          "D": 30,
+          "A": 32
+        }
+      },
+      "loop4_eval": {
+        "correct": 68,
+        "total": 128,
+        "accuracy": 0.53125,
+        "prediction_counts": {
+          "C": 27,
+          "B": 29,
+          "A": 39,
+          "D": 33
+        },
+        "answer_counts": {
+          "C": 26,
+          "B": 40,
+          "D": 30,
+          "A": 32
+        }
+      },
+      "comparison_to_base": {
+        "helped": 2,
+        "hurt": 6,
+        "tied": 120,
+        "prediction_changes": 12,
+        "mean_margin_delta": 0.014957858016714454,
+        "reference_prediction_counts": {
+          "A": 35,
+          "C": 29,
+          "B": 30,
+          "D": 34
+        },
+        "candidate_prediction_counts": {
+          "B": 31,
+          "A": 36,
+          "C": 26,
+          "D": 35
+        },
+        "prediction_count_delta": {
+          "A": 1,
+          "B": 1,
+          "C": -3,
+          "D": 1
+        },
+        "max_abs_prediction_count_delta": 3,
+        "calibration_ok": true
+      },
+      "comparison_to_start_loop1": {
+        "helped": 4,
+        "hurt": 3,
+        "tied": 121,
+        "prediction_changes": 8,
+        "mean_margin_delta": 0.10946256353054196,
+        "reference_prediction_counts": {
+          "A": 36,
+          "C": 28,
+          "B": 29,
+          "D": 35
+        },
+        "candidate_prediction_counts": {
+          "B": 31,
+          "A": 36,
+          "C": 26,
+          "D": 35
+        },
+        "prediction_count_delta": {
+          "A": 0,
+          "B": 2,
+          "C": -2,
+          "D": 0
+        },
+        "max_abs_prediction_count_delta": 2,
+        "calibration_ok": true
+      }
+    },
+    {
+      "checkpoint": "outputs/stage5/stage5_content_direct_preserve_m05_20260623_1122/phase1_direct_preserve/phase1_step_150.pt",
+      "loop1_path": "outputs/stage5/stage5_content_direct_preserve_m05_20260623_1122/arc_easy_eval_mcq_phase1_step_150_loop1_label.jsonl",
+      "loop4_path": "outputs/stage5/stage5_content_direct_preserve_m05_20260623_1122/arc_easy_eval_mcq_phase1_step_150_loop4_label.jsonl",
+      "loop1_eval": {
+        "correct": 70,
+        "total": 128,
+        "accuracy": 0.546875,
+        "prediction_counts": {
+          "C": 27,
+          "B": 31,
+          "A": 35,
+          "D": 35
+        },
+        "answer_counts": {
+          "C": 26,
+          "B": 40,
+          "D": 30,
+          "A": 32
+        }
+      },
+      "loop4_eval": {
+        "correct": 70,
+        "total": 128,
+        "accuracy": 0.546875,
+        "prediction_counts": {
+          "C": 29,
+          "B": 29,
+          "A": 39,
+          "D": 31
+        },
+        "answer_counts": {
+          "C": 26,
+          "B": 40,
+          "D": 30,
+          "A": 32
+        }
+      },
+      "comparison_to_base": {
+        "helped": 2,
+        "hurt": 6,
+        "tied": 120,
+        "prediction_changes": 13,
+        "mean_margin_delta": 0.06339720415417105,
+        "reference_prediction_counts": {
+          "A": 35,
+          "C": 29,
+          "B": 30,
+          "D": 34
+        },
+        "candidate_prediction_counts": {
+          "B": 31,
+          "A": 35,
+          "C": 27,
+          "D": 35
+        },
+        "prediction_count_delta": {
+          "A": 0,
+          "B": 1,
+          "C": -2,
+          "D": 1
+        },
+        "max_abs_prediction_count_delta": 2,
+        "calibration_ok": true
+      },
+      "comparison_to_start_loop1": {
+        "helped": 5,
+        "hurt": 4,
+        "tied": 119,
+        "prediction_changes": 11,
+        "mean_margin_delta": 0.15790190966799855,
+        "reference_prediction_counts": {
+          "A": 36,
+          "C": 28,
+          "B": 29,
+          "D": 35
+        },
+        "candidate_prediction_counts": {
+          "B": 31,
+          "A": 35,
+          "C": 27,
+          "D": 35
+        },
+        "prediction_count_delta": {
+          "A": -1,
+          "B": 2,
+          "C": -1,
+          "D": 0
+        },
+        "max_abs_prediction_count_delta": 2,
+        "calibration_ok": true
+      }
+    }
+  ],
+  "best_checkpoint": {
+    "checkpoint": "outputs/stage5/stage5_content_direct_preserve_m05_20260623_1122/phase1_direct_preserve/phase1_step_150.pt",
+    "loop1_path": "outputs/stage5/stage5_content_direct_preserve_m05_20260623_1122/arc_easy_eval_mcq_phase1_step_150_loop1_label.jsonl",
+    "loop4_path": "outputs/stage5/stage5_content_direct_preserve_m05_20260623_1122/arc_easy_eval_mcq_phase1_step_150_loop4_label.jsonl",
+    "loop1_eval": {
+      "correct": 70,
+      "total": 128,
+      "accuracy": 0.546875,
+      "prediction_counts": {
+        "C": 27,
+        "B": 31,
+        "A": 35,
+        "D": 35
+      },
+      "answer_counts": {
+        "C": 26,
+        "B": 40,
+        "D": 30,
+        "A": 32
+      }
+    },
+    "loop4_eval": {
+      "correct": 70,
+      "total": 128,
+      "accuracy": 0.546875,
+      "prediction_counts": {
+        "C": 29,
+        "B": 29,
+        "A": 39,
+        "D": 31
+      },
+      "answer_counts": {
+        "C": 26,
+        "B": 40,
+        "D": 30,
+        "A": 32
+      }
+    },
+    "comparison_to_base": {
+      "helped": 2,
+      "hurt": 6,
+      "tied": 120,
+      "prediction_changes": 13,
+      "mean_margin_delta": 0.06339720415417105,
+      "reference_prediction_counts": {
+        "A": 35,
+        "C": 29,
+        "B": 30,
+        "D": 34
+      },
+      "candidate_prediction_counts": {
+        "B": 31,
+        "A": 35,
+        "C": 27,
+        "D": 35
+      },
+      "prediction_count_delta": {
+        "A": 0,
+        "B": 1,
+        "C": -2,
+        "D": 1
+      },
+      "max_abs_prediction_count_delta": 2,
+      "calibration_ok": true
+    },
+    "comparison_to_start_loop1": {
+      "helped": 5,
+      "hurt": 4,
+      "tied": 119,
+      "prediction_changes": 11,
+      "mean_margin_delta": 0.15790190966799855,
+      "reference_prediction_counts": {
+        "A": 36,
+        "C": 28,
+        "B": 29,
+        "D": 35
+      },
+      "candidate_prediction_counts": {
+        "B": 31,
+        "A": 35,
+        "C": 27,
+        "D": 35
+      },
+      "prediction_count_delta": {
+        "A": -1,
+        "B": 2,
+        "C": -1,
+        "D": 0
+      },
+      "max_abs_prediction_count_delta": 2,
+      "calibration_ok": true
+    }
+  },
+  "next_step": "Confirm the direct-route preservation checkpoint on a larger ARC-Easy/Challenge slice."
+}

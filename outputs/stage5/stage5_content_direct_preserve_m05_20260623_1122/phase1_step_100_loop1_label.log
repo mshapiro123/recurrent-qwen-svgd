@@ -1,0 +1,7 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6180.29it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_content_direct_preserve_m05_20260623_1122/phase1_direct_preserve/phase1_step_100.pt loaded_keys=179
+aggregate=mean accuracy=0.5469 correct=70 total=128
