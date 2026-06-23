@@ -4,7 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from google.colab import drive, runtime, userdata
+from google.colab import runtime, userdata
 
 
 STAGE5_ARC_MIX_OFFSET_THEN_DEPTH_CELL_VERSION = "arc_mix_offset_then_depth_v1"
@@ -12,6 +12,9 @@ REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 DISCONNECT_WHEN_DONE = os.environ.get(
     "STAGE5_ARC_MIX_CHAIN_DISCONNECT", "1"
+).strip().lower() in {"1", "true", "yes", "y"}
+MOUNT_DRIVE_FIRST = os.environ.get(
+    "STAGE5_ARC_MIX_CHAIN_MOUNT_DRIVE_FIRST", "0"
 ).strip().lower() in {"1", "true", "yes", "y"}
 
 
@@ -98,7 +101,15 @@ try:
     gpu_check = shutil.which("nvidia-smi")
     assert gpu_check, "Attach an A100/H100/L4/T4 GPU runtime before running this chain."
     run(["nvidia-smi"], cwd=Path("/content"), check=False)
-    drive.mount("/content/drive", force_remount=False)
+    if MOUNT_DRIVE_FIRST:
+        from google.colab import drive
+
+        drive.mount("/content/drive", force_remount=False)
+    else:
+        print(
+            "Skipping upfront Drive mount; checkpoint restore/backup will request Drive only if needed.",
+            flush=True,
+        )
     sync_repo()
     run(["git", "config", "user.email", "colab-runner@local"], cwd=ROOT)
     run(["git", "config", "user.name", "Colab Runner"], cwd=ROOT)

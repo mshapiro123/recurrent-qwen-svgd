@@ -85,6 +85,9 @@ exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
 If the repo is not already cloned, use the preferred bootstrap loader above;
 set the same target before executing the fetched bootstrap. To force
 measurement-only behavior, set `STAGE5_ARC_MIX_CHAIN_EXECUTE_DEPTH=0`.
+The chain skips upfront Drive mounting by default; if the checkpoint is not
+already local, the restore path will request Drive only at the point it is
+actually needed.
 
 ## Next Paste-Anywhere ARC-Mix Depth-Routing Probe Cell
 
