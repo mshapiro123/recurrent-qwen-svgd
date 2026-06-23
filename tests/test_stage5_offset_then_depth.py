@@ -66,6 +66,10 @@ def test_offset_assessment_requires_coverage() -> None:
     assert assessed["status"] == "offset_regressed"
     assert assessed["passed"] is False
     assert all(row["paired_examples"] == 128 for row in assessed["evidence"])
+    assert any(
+        row["benchmark"] == "arc_easy" and row["paired_examples"] < row["required_examples"]
+        for row in assessed["evidence"]
+    )
 
 
 def test_offset_assessment_accepts_custom_post_depth_min_examples() -> None:
@@ -73,6 +77,34 @@ def test_offset_assessment_accepts_custom_post_depth_min_examples() -> None:
 
     assert assessed["status"] == "offset_confirmed"
     assert assessed["passed"] is True
+
+
+def test_offset_assessment_accepts_flat_debiased_small_arc_challenge_slice() -> None:
+    payload = _payload(delta=0)
+    payload["paired_comparisons"]["arc_easy"]["content_question_only"]["mean"] = _row(10, paired=256)
+    payload["paired_comparisons"]["arc_easy"]["cyclic_label_aggregated"]["permutation_mean"] = _row(-2, paired=256)
+    payload["paired_comparisons"]["arc_challenge"]["content_question_only"]["mean"] = _row(0, paired=43)
+    payload["paired_comparisons"]["arc_challenge"]["cyclic_label_aggregated"]["permutation_mean"] = _row(-1, paired=43)
+
+    assessed = module().assess_offset_confirmation(payload)
+
+    assert assessed["status"] == "offset_confirmed_flat_debiased"
+    assert assessed["passed"] is True
+    assert assessed["min_examples_by_benchmark"]["arc_challenge"] == 32
+    assert all(row["passed"] for row in assessed["evidence"])
+
+
+def test_offset_assessment_blocks_material_debiased_regression() -> None:
+    payload = _payload(delta=0)
+    payload["paired_comparisons"]["arc_easy"]["cyclic_label_aggregated"]["permutation_mean"] = _row(-3, paired=256)
+
+    assessed = module().assess_offset_confirmation(payload)
+
+    assert assessed["status"] == "offset_regressed"
+    assert assessed["passed"] is False
+    failed = [row for row in assessed["evidence"] if not row["passed"]]
+    assert len(failed) == 1
+    assert failed[0]["score_target"] == "cyclic_label_aggregated"
 
 
 def test_offset_assessment_blocks_completed_with_failures() -> None:

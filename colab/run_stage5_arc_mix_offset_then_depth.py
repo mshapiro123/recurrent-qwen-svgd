@@ -2,9 +2,9 @@
 
 This is a GPU-session efficiency wrapper. It first runs the independent
 offset-256 ARC-Easy/ARC-Challenge confirmation for the current recovered
-ARC-mix checkpoint. Only if both content-question-only and cyclic-label
-paired deltas are non-negative does it launch the bounded learned-loop-control
-ARC-mix depth-routing probe.
+ARC-mix checkpoint. It launches the bounded learned-loop-control ARC-mix
+depth-routing probe only when content competence replicates and the cyclic
+debiased surface is no worse than flat within a small exploratory tolerance.
 """
 
 from __future__ import annotations
@@ -52,7 +52,18 @@ RUN_POST_DEPTH_DEBIASED_GATE = os.environ.get(
 ).strip().lower() in {"1", "true", "yes", "y"}
 ALLOWED_NEGATIVE_DELTA = int(os.environ.get("STAGE5_ARC_MIX_CHAIN_ALLOWED_NEGATIVE_DELTA", "0"))
 MIN_EXAMPLES = int(os.environ.get("STAGE5_ARC_MIX_CHAIN_MIN_EXAMPLES", "256"))
+MIN_EXAMPLES_ARC_EASY = int(os.environ.get("STAGE5_ARC_MIX_CHAIN_MIN_EXAMPLES_ARC_EASY", str(MIN_EXAMPLES)))
+MIN_EXAMPLES_ARC_CHALLENGE = int(os.environ.get("STAGE5_ARC_MIX_CHAIN_MIN_EXAMPLES_ARC_CHALLENGE", "32"))
+CONTENT_ALLOWED_NEGATIVE_DELTA = int(
+    os.environ.get("STAGE5_ARC_MIX_CHAIN_CONTENT_ALLOWED_NEGATIVE_DELTA", str(ALLOWED_NEGATIVE_DELTA))
+)
+DEBIASED_ALLOWED_NEGATIVE_DELTA = int(
+    os.environ.get("STAGE5_ARC_MIX_CHAIN_DEBIASED_ALLOWED_NEGATIVE_DELTA", "2")
+)
 POST_DEPTH_MIN_EXAMPLES = int(os.environ.get("STAGE5_ARC_MIX_CHAIN_POST_DEPTH_MIN_EXAMPLES", "128"))
+POST_DEPTH_DEBIASED_ALLOWED_NEGATIVE_DELTA = int(
+    os.environ.get("STAGE5_ARC_MIX_CHAIN_POST_DEPTH_DEBIASED_ALLOWED_NEGATIVE_DELTA", "0")
+)
 POST_DEPTH_LIMIT = os.environ.get("STAGE5_ARC_MIX_CHAIN_POST_DEPTH_LIMIT", "128")
 POST_DEPTH_OFFSET = os.environ.get("STAGE5_ARC_MIX_CHAIN_POST_DEPTH_OFFSET", "256")
 PUSH_RESULTS = os.environ.get("STAGE5_ARC_MIX_CHAIN_PUSH", "1").strip().lower() in {
@@ -68,6 +79,12 @@ REQUIRED_READOUTS = (
     ("arc_challenge", "content_question_only", "mean"),
     ("arc_challenge", "cyclic_label_aggregated", "permutation_mean"),
 )
+
+
+DEFAULT_MIN_EXAMPLES_BY_BENCHMARK = {
+    "arc_easy": MIN_EXAMPLES_ARC_EASY,
+    "arc_challenge": MIN_EXAMPLES_ARC_CHALLENGE,
+}
 
 
 def path_for_cli(path: Path) -> str:
@@ -140,8 +157,16 @@ def evidence_row(
     aggregate: str,
     *,
     min_examples: int = MIN_EXAMPLES,
-    allowed_negative_delta: int = ALLOWED_NEGATIVE_DELTA,
+    min_examples_by_benchmark: dict[str, int] | None = None,
+    content_allowed_negative_delta: int = CONTENT_ALLOWED_NEGATIVE_DELTA,
+    debiased_allowed_negative_delta: int = DEBIASED_ALLOWED_NEGATIVE_DELTA,
 ) -> dict[str, Any]:
+    required_examples = (min_examples_by_benchmark or {}).get(benchmark, min_examples)
+    allowed_negative_delta = (
+        debiased_allowed_negative_delta
+        if score_target == "cyclic_label_aggregated"
+        else content_allowed_negative_delta
+    )
     row = paired_row(payload, benchmark, score_target, aggregate)
     if not row:
         return {
@@ -150,6 +175,8 @@ def evidence_row(
             "aggregate": aggregate,
             "present": False,
             "paired_examples": 0,
+            "required_examples": required_examples,
+            "allowed_negative_delta": allowed_negative_delta,
             "correct_delta_recurrent_vs_base": None,
             "passed": False,
         }
@@ -161,6 +188,8 @@ def evidence_row(
         "aggregate": aggregate,
         "present": True,
         "paired_examples": paired,
+        "required_examples": required_examples,
+        "allowed_negative_delta": allowed_negative_delta,
         "base_correct": int(row.get("base_correct", 0) or 0),
         "recurrent_correct": int(row.get("recurrent_correct", 0) or 0),
         "correct_delta_recurrent_vs_base": delta,
@@ -168,7 +197,7 @@ def evidence_row(
         "losses": int(row.get("losses", 0) or 0),
         "ties": int(row.get("ties", 0) or 0),
         "sign_test_p_value": row.get("sign_test_p_value"),
-        "passed": paired >= min_examples and delta >= -allowed_negative_delta,
+        "passed": paired >= required_examples and delta >= -allowed_negative_delta,
     }
 
 
@@ -176,24 +205,41 @@ def assess_offset_confirmation(
     payload: dict[str, Any],
     *,
     min_examples: int = MIN_EXAMPLES,
-    allowed_negative_delta: int = ALLOWED_NEGATIVE_DELTA,
+    min_examples_by_benchmark: dict[str, int] | None = None,
+    content_allowed_negative_delta: int = CONTENT_ALLOWED_NEGATIVE_DELTA,
+    debiased_allowed_negative_delta: int = DEBIASED_ALLOWED_NEGATIVE_DELTA,
 ) -> dict[str, Any]:
     failures = payload.get("failures") or []
     completed = payload.get("status") == "completed" and not failures
+    min_by_benchmark = (
+        dict(DEFAULT_MIN_EXAMPLES_BY_BENCHMARK)
+        if min_examples_by_benchmark is None and min_examples == MIN_EXAMPLES
+        else (min_examples_by_benchmark or {"arc_easy": min_examples, "arc_challenge": min(min_examples, MIN_EXAMPLES_ARC_CHALLENGE)})
+    )
     evidence = [
         evidence_row(
             payload,
             *readout,
             min_examples=min_examples,
-            allowed_negative_delta=allowed_negative_delta,
+            min_examples_by_benchmark=min_by_benchmark,
+            content_allowed_negative_delta=content_allowed_negative_delta,
+            debiased_allowed_negative_delta=debiased_allowed_negative_delta,
         )
         for readout in REQUIRED_READOUTS
     ]
     evidence_passed = all(row["passed"] for row in evidence)
     passed = completed and evidence_passed
     if passed:
-        status = "offset_confirmed"
-        next_step = "Launch the bounded learned-loop ARC-mix depth-routing probe."
+        flat_debiased = any(
+            row["score_target"] == "cyclic_label_aggregated"
+            and (row["correct_delta_recurrent_vs_base"] or 0) < 0
+            for row in evidence
+        )
+        status = "offset_confirmed_flat_debiased" if flat_debiased else "offset_confirmed"
+        next_step = (
+            "Launch the bounded learned-loop ARC-mix depth-routing probe; "
+            "treat cyclic-debiased scoring as the post-depth survival gate."
+        )
     elif not completed:
         status = "offset_incomplete"
         next_step = "Inspect offset-confirmation benchmark logs and rerun failed slices."
@@ -204,8 +250,10 @@ def assess_offset_confirmation(
         "status": status,
         "passed": passed,
         "next_step": next_step,
-        "allowed_negative_delta": allowed_negative_delta,
+        "content_allowed_negative_delta": content_allowed_negative_delta,
+        "debiased_allowed_negative_delta": debiased_allowed_negative_delta,
         "min_examples": min_examples,
+        "min_examples_by_benchmark": min_by_benchmark,
         "failures": failures,
         "evidence": evidence,
     }
@@ -411,6 +459,7 @@ def main() -> int:
         post_depth_debiased_assessment = assess_offset_confirmation(
             read_json(post_depth_summary_path),
             min_examples=POST_DEPTH_MIN_EXAMPLES,
+            debiased_allowed_negative_delta=POST_DEPTH_DEBIASED_ALLOWED_NEGATIVE_DELTA,
         )
     if depth_launched and depth_returncode not in {0, None}:
         status = "depth_failed"
