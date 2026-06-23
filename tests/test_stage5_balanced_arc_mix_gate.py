@@ -123,6 +123,8 @@ def test_build_mixed_train_uses_separate_arc_repeats(tmp_path, monkeypatch) -> N
     monkeypatch.setattr(module, "ARC_EASY_TARGET_LOOP", "1")
     monkeypatch.setattr(module, "ARC_CHALLENGE_ROUTING_TYPE", "deep_narrow")
     monkeypatch.setattr(module, "ARC_EASY_ROUTING_TYPE", "direct")
+    monkeypatch.setattr(module, "ARC_PROMPT_STYLE", "question_only")
+    monkeypatch.setattr(module, "ARC_SCORE_TARGET", "option_text")
 
     summary = module.build_mixed_train()
     rows = module.read_jsonl(mixed)
@@ -135,8 +137,8 @@ def test_build_mixed_train_uses_separate_arc_repeats(tmp_path, monkeypatch) -> N
     assert summary["arc_challenge_routing_type"] == "deep_narrow"
     assert summary["arc_easy_routing_type"] == "direct"
     assert summary["mixed_rows"] == 5
-    assert summary["arc_prompt_style"] == "with_options"
-    assert summary["arc_score_target"] == "label"
+    assert summary["arc_prompt_style"] == "question_only"
+    assert summary["arc_score_target"] == "option_text"
     assert sum(1 for row in rows if row["id"] == "challenge") == 1
     assert sum(1 for row in rows if row["id"] == "easy") == 3
     assert prepare_calls == [
@@ -162,6 +164,8 @@ def test_prepare_arc_sft_passes_routing_loop_metadata(tmp_path, monkeypatch) -> 
     output = tmp_path / "arc_easy.jsonl"
     monkeypatch.setattr(module, "MIX_SEED", 11)
     monkeypatch.setattr(module, "ARC_TRAIN_LIMIT", "17")
+    monkeypatch.setattr(module, "ARC_PROMPT_STYLE", "question_only")
+    monkeypatch.setattr(module, "ARC_SCORE_TARGET", "option_text")
     monkeypatch.setattr(module, "run", lambda cmd, **kwargs: calls.append((cmd, kwargs)))
 
     module.prepare_arc_sft(
@@ -180,6 +184,46 @@ def test_prepare_arc_sft_passes_routing_loop_metadata(tmp_path, monkeypatch) -> 
     assert cmd[cmd.index("--routing_type") + 1] == "direct"
     assert "--limit" in cmd
     assert cmd[cmd.index("--limit") + 1] == "17"
+    assert cmd[cmd.index("--prompt_style") + 1] == "question_only"
+    assert cmd[cmd.index("--score_target") + 1] == "option_text"
+
+
+def test_prepare_opus_can_be_disabled(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_balanced_arc_mix_gate as module
+
+    train = tmp_path / "opus_train.jsonl"
+    val = tmp_path / "opus_val.jsonl"
+    monkeypatch.setattr(module, "OPUS_LIMIT", "0")
+    monkeypatch.setattr(module, "OPUS_TRAIN_JSONL", train)
+    monkeypatch.setattr(module, "OPUS_VAL_JSONL", val)
+    monkeypatch.setattr(
+        module,
+        "run",
+        lambda *args, **kwargs: pytest.fail("prepare_opus should not call the HF preparation command"),
+    )
+
+    module.prepare_opus()
+
+    assert module.read_jsonl(train) == []
+    assert module.read_jsonl(val) == []
+
+
+def test_eval_jsonl_with_val_skips_when_opus_disabled(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_balanced_arc_mix_gate as module
+
+    val = tmp_path / "opus_val.jsonl"
+    module.write_jsonl(val, [])
+    monkeypatch.setattr(module, "OPUS_LIMIT", "0")
+    monkeypatch.setattr(module, "OPUS_VAL_JSONL", val)
+    monkeypatch.setattr(
+        module,
+        "run",
+        lambda *args, **kwargs: pytest.fail("disabled Opus validation should not run eval_jsonl"),
+    )
+
+    assert module.eval_jsonl_with_val("disabled", tmp_path / "checkpoint.pt", beta="0.08") == {
+        "skipped": True
+    }
 
 
 def test_prepare_arc_eval_uses_configured_proxy_split(tmp_path, monkeypatch) -> None:
@@ -243,7 +287,7 @@ def test_build_summary_passes_when_arc_mix_lifts_proxy(tmp_path) -> None:
     assert payload["arc_eval_config"] == "ARC-Challenge"
     assert "answer-calibration drift" in payload["objective_rationale"]["failure_mode"]
     assert "response-only" in payload["objective_rationale"]["proxy_hypothesis"]
-    assert "label-only completions" in payload["objective_rationale"]["response_distillation_reason"]
+    assert "answer-surface completions" in payload["objective_rationale"]["response_distillation_reason"]
 
 
 def test_build_summary_fails_without_proxy_lift(tmp_path) -> None:

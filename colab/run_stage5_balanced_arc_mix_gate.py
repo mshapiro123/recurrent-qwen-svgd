@@ -59,6 +59,8 @@ ARC_CHALLENGE_TARGET_LOOP = os.environ.get("STAGE5_ARC_MIX_ARC_CHALLENGE_TARGET_
 ARC_EASY_TARGET_LOOP = os.environ.get("STAGE5_ARC_MIX_ARC_EASY_TARGET_LOOP", "")
 ARC_CHALLENGE_ROUTING_TYPE = os.environ.get("STAGE5_ARC_MIX_ARC_CHALLENGE_ROUTING_TYPE", "")
 ARC_EASY_ROUTING_TYPE = os.environ.get("STAGE5_ARC_MIX_ARC_EASY_ROUTING_TYPE", "")
+ARC_PROMPT_STYLE = os.environ.get("STAGE5_ARC_MIX_PROMPT_STYLE", "with_options")
+ARC_SCORE_TARGET = os.environ.get("STAGE5_ARC_MIX_SCORE_TARGET", "label")
 MIX_SEED = int(os.environ.get("STAGE5_ARC_MIX_SEED", "17"))
 ARC_EVAL_LIMIT = int(os.environ.get("STAGE5_ARC_MIX_ARC_EVAL_LIMIT", "128"))
 ARC_EVAL_CONFIG = os.environ.get("STAGE5_ARC_MIX_EVAL_CONFIG", "ARC-Challenge")
@@ -408,7 +410,16 @@ def run(
     return proc
 
 
+def opus_disabled() -> bool:
+    return OPUS_LIMIT.strip().lower() in {"", "0", "none", "off", "false"}
+
+
 def prepare_opus() -> None:
+    if opus_disabled():
+        write_jsonl(OPUS_TRAIN_JSONL, [])
+        write_jsonl(OPUS_VAL_JSONL, [])
+        print("opus_disabled=true", flush=True)
+        return
     if OPUS_TRAIN_JSONL.exists() and OPUS_VAL_JSONL.exists():
         return
     run(
@@ -457,9 +468,9 @@ def prepare_arc_sft(
         "--seed",
         str(MIX_SEED),
         "--prompt_style",
-        "with_options",
+        ARC_PROMPT_STYLE,
         "--score_target",
-        "label",
+        ARC_SCORE_TARGET,
         "--max_total_tokens",
         "512",
     ]
@@ -500,9 +511,9 @@ def eval_arc(label: str, mode: str, data_jsonl: Path, checkpoint: Path | None = 
         "--data_jsonl",
         path_for_cli(data_jsonl),
         "--prompt_style",
-        "with_options",
+        ARC_PROMPT_STYLE,
         "--score_target",
-        "label",
+        ARC_SCORE_TARGET,
         "--mode",
         mode,
         "--dtype",
@@ -571,8 +582,8 @@ def build_mixed_train() -> dict[str, Any]:
         "mixed_rows": len(mixed),
         "mixed_train_jsonl": path_for_cli(MIXED_TRAIN_JSONL),
         "opus_val_jsonl": path_for_cli(OPUS_VAL_JSONL),
-        "arc_prompt_style": "with_options",
-        "arc_score_target": "label",
+        "arc_prompt_style": ARC_PROMPT_STYLE,
+        "arc_score_target": ARC_SCORE_TARGET,
         "arc_eval_config": ARC_EVAL_CONFIG,
     }
 
@@ -635,6 +646,8 @@ def train_arm(config: ArmConfig, *, resume_checkpoint: Path) -> list[Path]:
 
 
 def eval_jsonl_with_val(label: str, checkpoint: Path, *, beta: str) -> dict[str, float]:
+    if opus_disabled() or not read_jsonl(OPUS_VAL_JSONL):
+        return {"skipped": True}
     proc = run(
         [
             sys.executable,
@@ -799,8 +812,8 @@ def build_summary(
                 "frozen-base KL distillation to preserve the base model's answer-token distribution."
             ),
             "response_distillation_reason": (
-                "ARC MCQ SFT rows use label-only completions, so response-only distillation is concentrated "
-                "on the option label decision rather than the prompt text."
+                "ARC MCQ SFT rows use short answer-surface completions, so response-only distillation is "
+                "concentrated on the evaluated choice surface rather than the prompt text."
             ),
         },
         "source_summary": path_for_cli(source_summary),
