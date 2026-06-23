@@ -154,6 +154,8 @@ def test_audit_rows_marks_fable_as_later_agent_trace_source() -> None:
     assert report["adapter_success_counts"]["fable_flat"] == 1
     assert report["training_role"]["priority"] == "later"
     assert report["training_role"]["primary_role"] == "agent_tool_trace_or_coding_diversity"
+    assert report["curriculum_signal"]["recommendation"] == "hold_for_wide_or_agentic_filter"
+    assert report["curriculum_signal"]["estimated_target_mix"]["wide"] == 1
 
 
 def test_audit_rows_marks_qwen_text_opus_as_immediate_candidate() -> None:
@@ -177,6 +179,8 @@ def test_audit_rows_marks_qwen_text_opus_as_immediate_candidate() -> None:
     assert report["converted_rows"] == 1
     assert report["adapter_success_counts"]["qwen_text"] == 1
     assert report["training_role"]["priority"] == "immediate_candidate"
+    assert report["curriculum_signal"]["recommendation"] == "direct_recovery_candidate"
+    assert report["curriculum_signal"]["direct_candidate_rows"] == 1
 
 
 def test_audit_rows_marks_trace_inversion_as_immediate_candidate() -> None:
@@ -198,3 +202,25 @@ def test_audit_rows_marks_trace_inversion_as_immediate_candidate() -> None:
     assert report["converted_rows"] == 1
     assert report["adapter_success_counts"]["trace_inversion"] == 1
     assert report["training_role"]["priority"] == "immediate_candidate"
+
+
+def test_audit_rows_marks_long_trace_inversion_as_deep_narrow_candidate() -> None:
+    long_reasoning = " ".join(f"step{i}" for i in range(140))
+    rows = [
+        {
+            "input": "Solve a multi-step puzzle.",
+            "inverted_reasoning": long_reasoning,
+            "output": "final answer",
+        }
+    ]
+
+    report = audit_rows(
+        rows,
+        DummyTokenizer(),
+        dataset_id="Jackrong/Claude-opus-4.7-TraceInversion-5000x",
+        adapter="auto",
+    )
+
+    assert report["curriculum_signal"]["recommendation"] == "deep_narrow_candidate"
+    assert report["curriculum_signal"]["deep_narrow_candidate_rows"] == 1
+    assert report["curriculum_signal"]["fit_rates_total_tokens"]["512"] == 1.0

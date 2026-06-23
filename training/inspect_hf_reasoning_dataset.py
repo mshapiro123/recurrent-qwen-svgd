@@ -68,6 +68,75 @@ def adapter_success_counts(rows: list[dict[str, Any]], tokenizer: Any) -> dict[s
     return counts
 
 
+def fit_rates(values: list[int], budgets: tuple[int, ...] = (512, 1024, 2048)) -> dict[str, float]:
+    if not values:
+        return {str(budget): 0.0 for budget in budgets}
+    return {
+        str(budget): sum(1 for value in values if value <= budget) / len(values)
+        for budget in budgets
+    }
+
+
+def curriculum_signal(
+    *,
+    dataset_id: str,
+    converted: list[dict[str, Any]],
+    prompt_tokens: list[int],
+    completion_tokens: list[int],
+    total_tokens: list[int],
+    role: dict[str, Any],
+) -> dict[str, Any]:
+    cot_tokens = [int(example.get("cot_tokens") or 0) for example in converted]
+    direct_rows = sum(1 for cot, total in zip(cot_tokens, total_tokens) if cot <= 96 and total <= 512)
+    deep_rows = sum(1 for cot, total in zip(cot_tokens, total_tokens) if cot >= 128 and total <= 2048)
+    long_rows = sum(1 for total in total_tokens if total > 2048)
+    wide_or_agentic = role.get("primary_role") == "agent_tool_trace_or_coding_diversity"
+    converted_count = len(converted)
+    direct_fraction = direct_rows / max(converted_count, 1)
+    deep_fraction = deep_rows / max(converted_count, 1)
+    long_fraction = long_rows / max(converted_count, 1)
+
+    if wide_or_agentic:
+        recommendation = "hold_for_wide_or_agentic_filter"
+        reason = "Agent/tool traces should be filtered into wide or tool-trajectory experiments before SFT."
+        target_mix = {"direct": 0, "deep_narrow": 0, "wide": converted_count}
+    elif converted_count == 0:
+        recommendation = "do_not_train"
+        reason = "No rows converted with the selected adapter."
+        target_mix = {"direct": 0, "deep_narrow": 0, "wide": 0}
+    elif direct_fraction >= 0.6 and deep_fraction < 0.25:
+        recommendation = "direct_recovery_candidate"
+        reason = "Most converted traces are short enough for direct competence recovery."
+        target_mix = {"direct": direct_rows, "deep_narrow": deep_rows, "wide": 0}
+    elif deep_fraction >= 0.25:
+        recommendation = "deep_narrow_candidate"
+        reason = "A meaningful share of converted traces has longer reasoning suitable for depth supervision."
+        target_mix = {"direct": direct_rows, "deep_narrow": deep_rows, "wide": 0}
+    else:
+        recommendation = "audit_filter_before_training"
+        reason = "Rows convert, but the length mix is not clearly direct, deep, or wide."
+        target_mix = {"direct": direct_rows, "deep_narrow": deep_rows, "wide": 0}
+
+    if long_fraction > 0.25 and recommendation in {"direct_recovery_candidate", "deep_narrow_candidate"}:
+        recommendation = f"{recommendation}_with_length_filter"
+        reason += " Apply a max-total-token filter before GPU training."
+
+    return {
+        "dataset_id": dataset_id,
+        "recommendation": recommendation,
+        "reason": reason,
+        "fit_rates_total_tokens": fit_rates(total_tokens),
+        "fit_rates_completion_tokens": fit_rates(completion_tokens),
+        "estimated_target_mix": target_mix,
+        "direct_candidate_rows": direct_rows,
+        "deep_narrow_candidate_rows": deep_rows,
+        "long_context_rows": long_rows,
+        "direct_candidate_fraction": direct_fraction,
+        "deep_narrow_candidate_fraction": deep_fraction,
+        "long_context_fraction": long_fraction,
+    }
+
+
 def infer_training_role(
     dataset_id: str,
     rows: list[dict[str, Any]],
@@ -125,6 +194,7 @@ def audit_rows(
     ]
     total_tokens = [prompt + completion for prompt, completion in zip(prompt_tokens, completion_tokens)]
 
+    role = infer_training_role(dataset_id, rows, adapter_counts)
     return {
         "dataset_id": dataset_id,
         "sample_rows": len(rows),
@@ -165,7 +235,15 @@ def audit_rows(
             "total_tokens": length_stats(total_tokens),
             "cot_tokens": length_stats(int(example["cot_tokens"]) for example in converted),
         },
-        "training_role": infer_training_role(dataset_id, rows, adapter_counts),
+        "training_role": role,
+        "curriculum_signal": curriculum_signal(
+            dataset_id=dataset_id,
+            converted=converted,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=total_tokens,
+            role=role,
+        ),
     }
 
 

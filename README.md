@@ -431,6 +431,19 @@ python training/inspect_hf_reasoning_dataset.py \
   --output_json outputs/dataset_audits/fable5_flat.json
 ```
 
+The audit now writes a `curriculum_signal` block. Treat it as a routing
+recommendation, not permission to train blindly:
+
+- `direct_recovery_candidate`: short reasoning traces likely useful for
+  restoring depth-1 competence.
+- `deep_narrow_candidate`: longer reasoning traces that can supervise learned
+  recurrence/depth.
+- `hold_for_wide_or_agentic_filter`: Fable/tool/agent traces that may help
+  trajectory diversity later, but should not be mixed into ARC/GPQA recovery
+  without a domain filter.
+- `fit_rates_total_tokens`: quick context-budget sanity check for 512/1024/2048
+  token runs.
+
 Known candidate trace sources and their intended roles are tracked in
 `config/reasoning_dataset_registry.yaml`. Opus-style reasoning traces are the
 current fine-tuning source. Jackrong Opus TraceInversion is an immediate audit
