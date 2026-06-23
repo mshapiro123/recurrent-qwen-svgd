@@ -23,6 +23,17 @@ SOURCE_SUMMARY = "outputs/stage5/stage5_direct_preservation_loop1_20260622_23272
 CHECKPOINT = "outputs/stage5/stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft/phase1/phase1_step_150.pt"
 
 
+def env_bool(name, default):
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+DRIVE_BACKUP = env_bool("STAGE5_DIRECT_CONFIRM_DRIVE_BACKUP", False)
+DISCONNECT_WHEN_DONE = env_bool("STAGE5_DIRECT_CONFIRM_DISCONNECT", False)
+
+
 def secret(*names):
     for name in names:
         value = os.environ.get(name)
@@ -68,6 +79,8 @@ def sync_repo():
 
 
 def disconnect(reason):
+    if not DISCONNECT_WHEN_DONE:
+        return
     try:
         print(f"Disconnecting Colab runtime to conserve credits: {reason}", flush=True)
         runtime.unassign()
@@ -76,7 +89,10 @@ def disconnect(reason):
 
 
 try:
-    drive.mount("/content/drive", force_remount=False)
+    if DRIVE_BACKUP:
+        drive.mount("/content/drive", force_remount=False)
+    else:
+        print("Drive backup disabled; using GitHub as primary artifact store.", flush=True)
     sync_repo()
     os.chdir(ROOT)
     run(["git", "log", "--oneline", "-5"], cwd=ROOT, check=False)
@@ -111,11 +127,13 @@ try:
     run([sys.executable, "colab/run_stage5_benchmark_suite.py"], cwd=ROOT, env=env)
 
     run_dir = ROOT / "outputs" / "stage5" / run_id
-    if run_dir.exists():
+    if run_dir.exists() and DRIVE_BACKUP:
         drive_dst = DRIVE_ARTIFACT_ROOT / "stage5" / run_id
         drive_dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(run_dir, drive_dst, dirs_exist_ok=True)
         print(f"backed_up_run_dir={run_dir} -> {drive_dst}", flush=True)
+    elif run_dir.exists():
+        print(f"drive_backup_skipped={run_id}", flush=True)
     disconnect("direct preservation confirmation finished")
 except Exception:
     disconnect("direct preservation confirmation errored")

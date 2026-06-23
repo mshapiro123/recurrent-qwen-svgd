@@ -50,7 +50,8 @@ def env_bool(name, default):
     return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
-DISCONNECT_WHEN_DONE = env_bool("STAGE5_DIRECT_PRESERVE_DISCONNECT", True)
+DRIVE_BACKUP = env_bool("STAGE5_DIRECT_PRESERVE_DRIVE_BACKUP", False)
+DISCONNECT_WHEN_DONE = env_bool("STAGE5_DIRECT_PRESERVE_DISCONNECT", False)
 RUN_ID = os.environ.get("STAGE5_DIRECT_PRESERVE_RUN_ID") or time.strftime(
     "stage5_direct_preservation_loop1_%Y%m%d_%H%M%S"
 )
@@ -104,7 +105,7 @@ def safe_stage_and_push(run_dir):
         run(["git", "rebase", "origin/main"], cwd=ROOT)
         run(["git", "push", "origin", "main"], cwd=ROOT)
     except Exception as exc:
-        print(f"WARNING: result files are backed up to Drive, but GitHub publish failed: {exc}", flush=True)
+        print(f"WARNING: GitHub publish failed; local result files remain in the Colab runtime: {exc}", flush=True)
 
 
 def disconnect(reason):
@@ -121,7 +122,10 @@ try:
     assert shutil.which("nvidia-smi"), "This cell is intended for a GPU runtime; nvidia-smi was not found."
     run(["nvidia-smi"], check=False)
 
-    drive.mount("/content/drive", force_remount=False)
+    if DRIVE_BACKUP:
+        drive.mount("/content/drive", force_remount=False)
+    else:
+        print("Drive backup disabled; using GitHub as primary artifact store.", flush=True)
     sync_repo()
     os.chdir(ROOT)
     run(["git", "log", "--oneline", "-5"], cwd=ROOT, check=False)
@@ -164,10 +168,13 @@ try:
 
     run_dir = ROOT / "outputs" / "stage5" / RUN_ID
     assert run_dir.exists(), f"Expected run_dir was not created: {run_dir}"
-    drive_dst = DRIVE_ARTIFACT_ROOT / "stage5" / RUN_ID
-    drive_dst.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(run_dir, drive_dst, dirs_exist_ok=True)
-    print(f"backed_up_run_dir={run_dir} -> {drive_dst}", flush=True)
+    if DRIVE_BACKUP:
+        drive_dst = DRIVE_ARTIFACT_ROOT / "stage5" / RUN_ID
+        drive_dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(run_dir, drive_dst, dirs_exist_ok=True)
+        print(f"backed_up_run_dir={run_dir} -> {drive_dst}", flush=True)
+    else:
+        print(f"drive_backup_skipped={RUN_ID}", flush=True)
 
     safe_stage_and_push(run_dir)
     disconnect("direct preservation probe finished")

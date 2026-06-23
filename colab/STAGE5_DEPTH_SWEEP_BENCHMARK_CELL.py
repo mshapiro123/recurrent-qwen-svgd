@@ -23,6 +23,12 @@ ROOT = Path("/content/recurrent-qwen-svgd")
 DRIVE_ARTIFACT_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts")
 SOURCE_SUMMARY = "outputs/stage5/stage5_direct_preservation_loop1_20260622_232720/summary.json"
 CHECKPOINT = "outputs/stage5/stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft/phase1/phase1_step_150.pt"
+DRIVE_BACKUP = os.environ.get("STAGE5_DEPTH_SWEEP_DRIVE_BACKUP", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 DISCONNECT_ON_FINISH = os.environ.get("STAGE5_DEPTH_SWEEP_DISCONNECT", "0").strip().lower() in {
     "1",
     "true",
@@ -80,6 +86,9 @@ def parse_csv_ints(value):
 
 
 def copy_run_to_drive(run_id):
+    if not DRIVE_BACKUP:
+        print(f"drive_backup_skipped={run_id}", flush=True)
+        return None
     run_dir = ROOT / "outputs" / "stage5" / run_id
     if not run_dir.exists():
         return None
@@ -211,7 +220,10 @@ def disconnect(reason):
 
 
 try:
-    drive.mount("/content/drive", force_remount=False)
+    if DRIVE_BACKUP:
+        drive.mount("/content/drive", force_remount=False)
+    else:
+        print("Drive backup disabled; using GitHub as primary artifact store.", flush=True)
     sync_repo()
     os.chdir(ROOT)
     run(["git", "log", "--oneline", "-5"], cwd=ROOT, check=False)
