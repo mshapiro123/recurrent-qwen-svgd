@@ -147,6 +147,8 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         return True
     if payload.get("kind") == "stage5_benchmark_suite":
         return True
+    if payload.get("kind") == "stage5_direct_preservation_probe":
+        return True
     if payload.get("gate") == "stage5_broader_benchmark_suite":
         return True
     if payload.get("kind") == "stage5_recovery_full_assessment":
@@ -1125,6 +1127,8 @@ def planner_source_priority(payload: dict[str, Any]) -> int:
         if payload.get("status") in {"proxy_lift", "proxy_matches_base"}:
             return 100
         return 90
+    if payload.get("kind") == "stage5_direct_preservation_probe":
+        return 104 if payload.get("passed") else 94
     if payload.get("kind") == "stage5_recovery_full_assessment":
         return 110
     if payload.get("kind") == "stage5_balanced_mcq_checkpoint_assessment":

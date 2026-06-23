@@ -1200,6 +1200,44 @@ def test_progress_ledger_reports_direct_preservation_repairs(tmp_path) -> None:
     assert "3/2" in report
 
 
+def test_progress_ledger_recommends_direct_preservation_probe_over_traced_assessment(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    traced = scan_root / "traced_assessment" / "summary.json"
+    direct = scan_root / "direct_preserve" / "summary.json"
+    _write(
+        traced,
+        {
+            "run_id": "traced_assessment",
+            "kind": "stage5_traced_sft_assessment",
+            "status": "needs_direct_preservation_repair",
+            "passed": False,
+        },
+    )
+    _write(
+        direct,
+        {
+            "run_id": "direct_preserve",
+            "kind": "stage5_direct_preservation_probe",
+            "status": "direct_route_matches_base",
+            "passed": True,
+            "data": {"direct_sft": {"selected_rows": 64}},
+            "base_eval": {"correct": 42, "total": 64},
+            "start_loop1_eval": {"correct": 39, "total": 64},
+            "best_checkpoint": {
+                "checkpoint": "outputs/stage5/direct_preserve/phase1/phase1_step_100.pt",
+                "loop1_eval": {"correct": 43, "total": 64},
+                "comparison_to_base": {"calibration_ok": True},
+            },
+        },
+    )
+    os.utime(traced, (2000, 2000))
+    os.utime(direct, (1000, 1000))
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["recommended_next_plan_source"] == str(direct)
+
+
 def test_progress_ledger_does_not_recommend_failed_curriculum_sft(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     trace_collection = scan_root / "trace_collection" / "summary.json"
