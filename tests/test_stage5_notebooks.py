@@ -756,6 +756,7 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
     current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
+    direct_cell = (ROOT / "colab/STAGE5_DIRECT_PRESERVATION_PROBE_CELL.py").read_text(encoding="utf-8")
 
     assert "traced_sft_direct_preservation_probe" in bootstrap
     assert "STAGE5_DIRECT_PRESERVE_PROMPT_STYLE" in bootstrap
@@ -766,6 +767,13 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert "traced_sft_direct_preservation_probe" in bootstrap_md
     assert "content-route direct-preservation probe" in current_action
     assert '"STAGE5_CURRENT_A100_TARGET"] = "traced_sft_direct_preservation_probe"' in current_action
+    assert "stage5_latest_direct_preservation_summary.txt" in direct_cell
+    assert "stage5_current_source_summary.txt" in direct_cell
+    assert "stage5_direct_preservation_probe_failure" in direct_cell
+    assert "Record Stage 5 direct preservation probe" in direct_cell
+    assert "[skip ci]" in direct_cell
+    assert "def redact" in direct_cell
+    assert 'replace(HF_TOKEN or "", "****")' not in direct_cell
 
 
 def test_traced_capability_ladder_sft_cell_derives_training_env_from_collection() -> None:

@@ -1,8 +1,10 @@
 import os
+import json
 import shutil
 import subprocess
 import sys
 import time
+import traceback
 from pathlib import Path
 
 from google.colab import drive, runtime, userdata
@@ -56,10 +58,26 @@ RUN_ID = os.environ.get("STAGE5_DIRECT_PRESERVE_RUN_ID") or time.strftime(
     "stage5_direct_preservation_loop1_%Y%m%d_%H%M%S"
 )
 SOURCE_SUMMARY = os.environ.get("STAGE5_DIRECT_PRESERVE_SOURCE_SUMMARY") or DEFAULT_SOURCE_SUMMARY
+CURRENT_STAGE = "startup"
+
+
+def set_stage(name):
+    global CURRENT_STAGE
+    CURRENT_STAGE = str(name)
+    print(f"stage={CURRENT_STAGE}", flush=True)
 
 
 def printable_cmd(cmd):
-    return " ".join(map(str, cmd)).replace(GH_TOKEN, "****")
+    text = redact(" ".join(map(str, cmd)))
+    return text
+
+
+def redact(value):
+    text = str(value)
+    for token in (GH_TOKEN, HF_TOKEN):
+        if token:
+            text = text.replace(token, "****")
+    return text
 
 
 def run(cmd, *, cwd=None, env=None, check=True):
@@ -85,11 +103,15 @@ def sync_repo():
 
 def safe_stage_and_push(run_dir):
     pointer = ROOT / "config" / "stage5_latest_direct_preservation_summary.txt"
+    current_pointer = ROOT / "config" / "stage5_current_source_summary.txt"
     pointer.parent.mkdir(parents=True, exist_ok=True)
-    pointer.write_text(f"{run_dir.relative_to(ROOT).as_posix()}/summary.json\n", encoding="utf-8")
+    summary_rel = f"{run_dir.relative_to(ROOT).as_posix()}/summary.json"
+    pointer.write_text(f"{summary_rel}\n", encoding="utf-8")
+    current_pointer.write_text(f"{summary_rel}\n", encoding="utf-8")
     suffixes = {".json", ".jsonl", ".md", ".txt", ".yaml", ".yml", ".log", ".csv"}
     files = [path for path in run_dir.rglob("*") if path.is_file() and path.suffix.lower() in suffixes]
     files.append(pointer)
+    files.append(current_pointer)
     if not files:
         print("No lightweight output files to commit.", flush=True)
         return
@@ -100,7 +122,7 @@ def safe_stage_and_push(run_dir):
         print("No git changes to commit.", flush=True)
         return
     try:
-        run(["git", "commit", "-m", f"Record Stage 5 direct preservation probe {RUN_ID}"], cwd=ROOT)
+        run(["git", "commit", "-m", f"Record Stage 5 direct preservation probe {RUN_ID} [skip ci]"], cwd=ROOT)
         run(["git", "fetch", "origin", "main"], cwd=ROOT)
         run(["git", "rebase", "origin/main"], cwd=ROOT)
         run(["git", "push", "origin", "main"], cwd=ROOT)
@@ -118,18 +140,57 @@ def disconnect(reason):
         print(f"Runtime disconnect skipped: {exc}", flush=True)
 
 
+def write_failure_summary(exc_type, exc, tb):
+    try:
+        run_dir = ROOT / "outputs" / "stage5" / f"{RUN_ID}_failure"
+        run_dir.mkdir(parents=True, exist_ok=True)
+        traceback_lines = traceback.format_exception(exc_type, exc, tb)
+        payload = {
+            "kind": "stage5_direct_preservation_probe_failure",
+            "status": "failed",
+            "run_id": f"{RUN_ID}_failure",
+            "stage": CURRENT_STAGE,
+            "source_summary": SOURCE_SUMMARY,
+            "exception_type": getattr(exc_type, "__name__", str(exc_type)),
+            "exception": redact(exc),
+            "traceback_tail": [
+                redact(line.rstrip())
+                for line in "".join(traceback_lines).splitlines()[-120:]
+            ],
+            "target": os.environ.get("STAGE5_CURRENT_A100_TARGET", ""),
+        }
+        summary = run_dir / "summary.json"
+        summary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        print("failure_summary:", summary.relative_to(ROOT).as_posix(), flush=True)
+        safe_stage_and_push(run_dir)
+    except Exception as hook_exc:
+        print(f"failure_summary_hook_failed: {hook_exc}", flush=True)
+
+
+def failure_excepthook(exc_type, exc, tb):
+    write_failure_summary(exc_type, exc, tb)
+    sys.__excepthook__(exc_type, exc, tb)
+
+
+sys.excepthook = failure_excepthook
+
+
 try:
+    set_stage("gpu_preflight")
     assert shutil.which("nvidia-smi"), "This cell is intended for a GPU runtime; nvidia-smi was not found."
     run(["nvidia-smi"], check=False)
 
+    set_stage("drive_optional")
     if DRIVE_BACKUP:
         drive.mount("/content/drive", force_remount=False)
     else:
         print("Drive backup disabled; using GitHub as primary artifact store.", flush=True)
+    set_stage("repo_sync")
     sync_repo()
     os.chdir(ROOT)
     run(["git", "log", "--oneline", "-5"], cwd=ROOT, check=False)
 
+    set_stage("install_dependencies")
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"], cwd=ROOT)
 
     env = os.environ.copy()
@@ -164,10 +225,12 @@ try:
     )
     print("direct_preservation_probe_run_id:", RUN_ID, flush=True)
     print("direct_preservation_source_summary:", SOURCE_SUMMARY, flush=True)
+    set_stage("direct_preservation_probe")
     run([sys.executable, "colab/run_stage5_direct_preservation_probe.py"], cwd=ROOT, env=env)
 
     run_dir = ROOT / "outputs" / "stage5" / RUN_ID
     assert run_dir.exists(), f"Expected run_dir was not created: {run_dir}"
+    set_stage("backup_and_publish")
     if DRIVE_BACKUP:
         drive_dst = DRIVE_ARTIFACT_ROOT / "stage5" / RUN_ID
         drive_dst.parent.mkdir(parents=True, exist_ok=True)
