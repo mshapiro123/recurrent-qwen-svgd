@@ -1,0 +1,5 @@
+status=ready
+selected_rows=73
+jobs=146
+tier_counts={'base_preservation': 33, 'qwen_0_5b_miss_qwen_1_5b_miss_qwen_3b_miss_qwen_7b_solve': 8, 'qwen_0_5b_miss_qwen_1_5b_miss_qwen_3b_solve': 10, 'qwen_0_5b_miss_qwen_1_5b_solve': 22}
+by_target_loop={'1': 66, '2': 44, '3': 20, '4': 16}
