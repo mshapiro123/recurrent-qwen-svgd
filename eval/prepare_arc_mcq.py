@@ -56,11 +56,16 @@ def main() -> int:
     parser.add_argument("--split", default="validation")
     parser.add_argument("--output_jsonl", required=True)
     parser.add_argument("--limit", type=int)
+    parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--no_shuffle_choices", action="store_true")
     args = parser.parse_args()
 
     dataset = load_dataset(args.dataset_id, args.config, split=args.split)
+    if args.offset < 0:
+        raise ValueError("--offset must be non-negative")
+    if args.offset:
+        dataset = dataset.select(range(min(args.offset, len(dataset)), len(dataset)))
     if args.limit is not None:
         dataset = dataset.select(range(min(args.limit, len(dataset))))
 
@@ -79,6 +84,7 @@ def main() -> int:
     print(f"dataset_id={args.dataset_id}")
     print(f"config={args.config}")
     print(f"split={args.split}")
+    print(f"offset={args.offset}")
     print(f"rows={len(dataset)}")
     print(f"output_jsonl={output_path}")
     return 0

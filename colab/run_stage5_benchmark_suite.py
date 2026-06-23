@@ -50,6 +50,8 @@ EXPLICIT_CHECKPOINT = os.environ.get("STAGE5_BENCHMARK_CHECKPOINT", "")
 BENCHMARKS = os.environ.get("STAGE5_BENCHMARKS", "arc_challenge,gpqa_lite")
 ARC_CHALLENGE_LIMIT_RAW = os.environ.get("STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT", "128")
 ARC_EASY_LIMIT_RAW = os.environ.get("STAGE5_BENCHMARK_ARC_EASY_LIMIT", "128")
+ARC_CHALLENGE_OFFSET = int(os.environ.get("STAGE5_BENCHMARK_ARC_CHALLENGE_OFFSET", "0"))
+ARC_EASY_OFFSET = int(os.environ.get("STAGE5_BENCHMARK_ARC_EASY_OFFSET", "0"))
 GPQA_LIMIT = int(os.environ.get("STAGE5_BENCHMARK_GPQA_LIMIT", "16"))
 GPQA_CONFIG = os.environ.get("STAGE5_BENCHMARK_GPQA_CONFIG", "gpqa_diamond")
 SCORE_TARGETS = os.environ.get("STAGE5_BENCHMARK_SCORE_TARGETS", "label")
@@ -369,7 +371,9 @@ def benchmark_specs(names: list[str]) -> list[BenchmarkSpec]:
         if name in {"arc_challenge", "arc_easy"}:
             config = "ARC-Challenge" if name == "arc_challenge" else "ARC-Easy"
             limit = ARC_CHALLENGE_LIMIT if name == "arc_challenge" else ARC_EASY_LIMIT
+            offset = ARC_CHALLENGE_OFFSET if name == "arc_challenge" else ARC_EASY_OFFSET
             limit_label = "full" if limit is None else str(limit)
+            slice_label = f"offset{offset}_{limit_label}" if offset else limit_label
             prepare_cmd = [
                 sys.executable,
                 "eval/prepare_arc_mcq.py",
@@ -380,11 +384,13 @@ def benchmark_specs(names: list[str]) -> list[BenchmarkSpec]:
                 "--seed",
                 "0",
             ]
+            if offset:
+                prepare_cmd.extend(["--offset", str(offset)])
             if limit is not None:
                 prepare_cmd.extend(["--limit", str(limit)])
-            output = PRIVATE_DATA_DIR / f"arc_challenge_validation_{limit_label}.jsonl"
+            output = PRIVATE_DATA_DIR / f"arc_challenge_validation_{slice_label}.jsonl"
             if name == "arc_easy":
-                output = PRIVATE_DATA_DIR / f"arc_easy_validation_{limit_label}.jsonl"
+                output = PRIVATE_DATA_DIR / f"arc_easy_validation_{slice_label}.jsonl"
             prepare_cmd.extend(["--output_jsonl", str(output)])
             specs.append(
                 BenchmarkSpec(

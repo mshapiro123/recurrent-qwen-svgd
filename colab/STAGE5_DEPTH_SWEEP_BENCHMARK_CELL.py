@@ -23,6 +23,12 @@ ROOT = Path("/content/recurrent-qwen-svgd")
 DRIVE_ARTIFACT_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts")
 SOURCE_SUMMARY = "outputs/stage5/stage5_direct_preservation_loop1_20260622_232720/summary.json"
 CHECKPOINT = "outputs/stage5/stage5_arc_agi_next_action_20260622_170927_plan_curriculum_sft/phase1/phase1_step_150.pt"
+DISCONNECT_ON_FINISH = os.environ.get("STAGE5_DEPTH_SWEEP_DISCONNECT", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 
 
 def secret(*names):
@@ -160,6 +166,23 @@ def write_sweep_summary(sweep_id, run_ids):
     return out_dir
 
 
+def run_depth_analysis(sweep_dir):
+    output_dir = sweep_dir / "depth_analysis"
+    run(
+        [
+            sys.executable,
+            "eval/analyze_depth_sweep.py",
+            "--sweep_summary",
+            (sweep_dir / "summary.json").relative_to(ROOT).as_posix(),
+            "--output_dir",
+            output_dir.relative_to(ROOT).as_posix(),
+        ],
+        cwd=ROOT,
+    )
+    copy_run_to_drive(sweep_dir.name)
+    return output_dir
+
+
 def publish_results(paths):
     run(["git", "pull", "--rebase", "origin", "main"], cwd=ROOT, check=False)
     for path in paths:
@@ -177,6 +200,9 @@ def publish_results(paths):
 
 
 def disconnect(reason):
+    if not DISCONNECT_ON_FINISH:
+        print(f"Leaving Colab runtime connected: {reason}", flush=True)
+        return
     try:
         print(f"Disconnecting Colab runtime to conserve credits: {reason}", flush=True)
         runtime.unassign()
@@ -214,6 +240,10 @@ try:
                 "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": os.environ.get(
                     "STAGE5_DEPTH_SWEEP_ARC_CHALLENGE_LIMIT", "256"
                 ),
+                "STAGE5_BENCHMARK_ARC_EASY_OFFSET": os.environ.get("STAGE5_DEPTH_SWEEP_ARC_EASY_OFFSET", "0"),
+                "STAGE5_BENCHMARK_ARC_CHALLENGE_OFFSET": os.environ.get(
+                    "STAGE5_DEPTH_SWEEP_ARC_CHALLENGE_OFFSET", "0"
+                ),
                 "STAGE5_BENCHMARK_MAX_LOOPS": str(max_loops),
                 "STAGE5_BENCHMARK_NUM_TRAJECTORIES": "1",
                 "STAGE5_BENCHMARK_SCORE_TARGETS": os.environ.get("STAGE5_DEPTH_SWEEP_SCORE_TARGETS", "label"),
@@ -231,7 +261,9 @@ try:
         result_paths.append(ROOT / "outputs" / "stage5" / run_id)
 
     sweep_dir = write_sweep_summary(sweep_id, run_ids)
+    analysis_dir = run_depth_analysis(sweep_dir)
     result_paths.append(sweep_dir)
+    result_paths.append(analysis_dir)
     publish_results(result_paths)
     disconnect("depth sweep finished")
 except Exception:
