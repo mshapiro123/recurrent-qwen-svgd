@@ -13,6 +13,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "arc_challenge_mcq_debias_confirm" - bounded no-training cyclic MCQ confirmation on ARC-Challenge.
 #   "debiased_benchmark_suite" - bounded ARC-Challenge/GPQA-lite benchmark with debiased MCQ scoring.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
+#   "capability_ladder_7b_mcq_probe" - high-memory Qwen 0.5B/1.5B/3B/7B ARC MCQ scoring for depth-4 data.
 #   "capability_ladder_trace_jobs_cpu" - CPU-only trace-job build from latest capability ladder probe.
 #   "capability_ladder_trace_responses_cpu" - CPU/network provider responses for trace jobs.
 #   "capability_ladder_trace_collect_cpu" - CPU-only trace-response collection into gated SFT data.
@@ -143,6 +144,37 @@ TARGETS = {
         "env": {
             "STAGE5_CAPABILITY_LADDER_MODEL_LADDER": "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3",
             "STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE": "0",
+        },
+    },
+    "capability_ladder_7b_mcq_probe": {
+        "path": "colab/STAGE5_CAPABILITY_LADDER_MCQ_PROBE_CELL.py",
+        "markers": [
+            "STAGE5_CAPABILITY_LADDER_MCQ_PROBE_CELL_VERSION",
+            "capability_ladder_mcq_probe",
+            "Qwen/Qwen2.5-0.5B-Instruct",
+            "Qwen/Qwen2.5-1.5B-Instruct",
+            "Qwen/Qwen2.5-3B-Instruct",
+            "STAGE5_CAPABILITY_LADDER_MODEL_LADDER",
+            "STAGE5_CAPABILITY_LADDER_ARC_LIMIT",
+            "content_question_only",
+            "colab/run_stage5_capability_ladder_mcq_probe.py",
+            "tests/test_stage5_capability_ladder_mcq_probe.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_CAPABILITY_LADDER_MODELS": (
+                "qwen_0_5b=Qwen/Qwen2.5-0.5B-Instruct,"
+                "qwen_1_5b=Qwen/Qwen2.5-1.5B-Instruct,"
+                "qwen_3b=Qwen/Qwen2.5-3B-Instruct,"
+                "qwen_7b=Qwen/Qwen2.5-7B-Instruct"
+            ),
+            "STAGE5_CAPABILITY_LADDER_MODEL_LADDER": (
+                "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3,qwen_7b:4"
+            ),
+            "STAGE5_CAPABILITY_LADDER_ARC_LIMIT": "96",
+            "STAGE5_CAPABILITY_LADDER_SCORE_MODE": "content_question_only",
+            "STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE": "0",
+            "STAGE5_CAPABILITY_LADDER_DISCONNECT": "1",
         },
     },
     "capability_ladder_trace_jobs_cpu": {
