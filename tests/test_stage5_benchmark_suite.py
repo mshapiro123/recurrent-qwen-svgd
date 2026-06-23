@@ -141,6 +141,24 @@ def test_checkpoint_candidates_include_direct_preservation_best_checkpoint(tmp_p
     assert checkpoint in candidates
 
 
+def test_checkpoint_candidates_include_benchmark_suite_checkpoint(tmp_path) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    source = tmp_path / "outputs" / "stage5" / "bench" / "summary.json"
+    checkpoint = tmp_path / "outputs" / "stage5" / "surface" / "phase1_surface_align" / "phase1_step_50.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    payload = {
+        "kind": "stage5_benchmark_suite",
+        "checkpoint": str(checkpoint),
+    }
+
+    candidates = module.checkpoint_candidates_from_payload(source, payload)
+
+    assert checkpoint in candidates
+    assert module.checkpoint_bearing_source_summary(source, payload) == source
+
+
 def test_resolve_checkpoint_prefers_existing_export_adapter(tmp_path, monkeypatch) -> None:
     import colab.run_stage5_benchmark_suite as module
 
