@@ -130,6 +130,24 @@ def test_validate_drive_backup_creates_default_root_when_drive_mounted(monkeypat
     assert backup_root.exists()
 
 
+def test_backup_to_drive_skips_mount_when_no_backup_allowed(monkeypatch, tmp_path) -> None:
+    calls = {"mount": 0}
+    missing_root = tmp_path / "missing-drive-root"
+
+    monkeypatch.setattr(runner, "ALLOW_NO_DRIVE_BACKUP", True)
+    monkeypatch.setattr(runner, "drive_backup_root", lambda: missing_root)
+    monkeypatch.setattr(runner, "mount_drive_if_possible", lambda: calls.__setitem__("mount", calls["mount"] + 1))
+
+    payload = runner.backup_to_drive(tmp_path / "train.jsonl", tmp_path / "val.jsonl")
+
+    assert payload == {
+        "backed_up": False,
+        "drive_root": str(missing_root),
+        "reason": "allow_no_drive_backup",
+    }
+    assert calls["mount"] == 0
+
+
 def test_restore_work_dir_from_drive_backup(monkeypatch, tmp_path) -> None:
     local = tmp_path / "workspace" / "data" / "curriculum" / "run_001"
     backup_root = tmp_path / "drive" / "curriculum_runs"

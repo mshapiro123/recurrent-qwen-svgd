@@ -193,6 +193,24 @@ def test_current_bootstrap_exposes_model_viability_queue_target() -> None:
     assert "colab/run_stage5_model_viability_queue.py" in text
 
 
+def test_current_bootstrap_exposes_depth_router_after_direct_preserve_target() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_DEPTH_ROUTER_AFTER_DIRECT_PRESERVE_CELL.py").read_text(encoding="utf-8")
+
+    assert '"traced_sft_depth_router_after_direct_preserve"' in text
+    assert "colab/STAGE5_DEPTH_ROUTER_AFTER_DIRECT_PRESERVE_CELL.py" in text
+    assert "stage5_latest_direct_preservation_summary.txt" in text
+    assert "STAGE5_DEPTH_ROUTER_LOOP_CONTROL_CE_WEIGHT" in text
+    assert "STAGE5_DEPTH_ROUTER_HALT_TARGET_NLL_WEIGHT" in text
+    assert "colab/run_stage5_curriculum_sft.py" in text
+    assert "colab/run_stage5_benchmark_suite.py" in text
+    assert "colab/assess_stage5_traced_sft.py" in text
+    assert "STAGE5_DEPTH_ROUTER_AFTER_DIRECT_PRESERVE_CELL_VERSION" in cell
+    assert "No passed direct-preservation summary found" in cell
+    assert "STAGE5_CURRICULUM_ALLOW_NO_DRIVE_BACKUP" in cell
+    assert "STAGE5_BENCHMARK_USE_LEARNED_LOOP_CONTROL" in cell
+
+
 def test_runbooks_prefer_guarded_current_action_over_legacy_autopilot() -> None:
     arc_plan = (ROOT / "docs/ARC_AGI_PROGRESS_PLAN.md").read_text(encoding="utf-8")
     staged = (ROOT / "colab/STAGED_NOTEBOOKS.md").read_text(encoding="utf-8")

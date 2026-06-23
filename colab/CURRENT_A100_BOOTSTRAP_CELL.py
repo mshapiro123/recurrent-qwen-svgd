@@ -28,6 +28,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "traced_sft_scale64_benchmark" - benchmark the completed scale64 traced SFT checkpoint.
 #   "traced_sft_direct_preservation_probe" - content-route direct preservation from the scale64 checkpoint.
 #   "traced_sft_direct_preservation_confirm" - larger loop-1 ARC confirmation after direct preservation passes.
+#   "traced_sft_depth_router_after_direct_preserve" - learned-depth continuation from a passed direct-preservation checkpoint.
 #   "traced_capability_ladder_sft" - GPU Phase 1 SFT from the latest gate-ready traced capability ladder.
 #   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
 #   "depth_sweep_heldout" - L4/T4 held-out ARC tail loop-depth sweep for routing validation.
@@ -582,6 +583,38 @@ TARGETS = {
             "STAGE5_DIRECT_CONFIRM_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
             "STAGE5_DIRECT_CONFIRM_ASSESS_SCORE_TARGET": "content_question_only",
             "STAGE5_DIRECT_CONFIRM_DISCONNECT": "1",
+        },
+    },
+    "traced_sft_depth_router_after_direct_preserve": {
+        "path": "colab/STAGE5_DEPTH_ROUTER_AFTER_DIRECT_PRESERVE_CELL.py",
+        "markers": [
+            "STAGE5_DEPTH_ROUTER_AFTER_DIRECT_PRESERVE_CELL_VERSION",
+            "traced_sft_depth_router_after_direct_preserve",
+            "STAGE5_DEPTH_ROUTER_TRACE_SOURCE_SUMMARY",
+            "STAGE5_DEPTH_ROUTER_DIRECT_SOURCE_SUMMARY",
+            "stage5_latest_direct_preservation_summary.txt",
+            "STAGE5_CURRICULUM_USE_LEARNED_LOOP_CONTROL",
+            "STAGE5_DEPTH_ROUTER_LOOP_CONTROL_CE_WEIGHT",
+            "STAGE5_DEPTH_ROUTER_HALT_TARGET_NLL_WEIGHT",
+            "colab/run_stage5_curriculum_sft.py",
+            "colab/run_stage5_benchmark_suite.py",
+            "colab/assess_stage5_traced_sft.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_DEPTH_ROUTER_TRACE_SOURCE_SUMMARY": (
+                "outputs/stage5/stage5_capability_ladder_trace_collection_20260623_194537/summary.json"
+            ),
+            "STAGE5_DEPTH_ROUTER_RUN_ID": "stage5_depth_router_after_direct_preserve_scale64",
+            "STAGE5_DEPTH_ROUTER_STEPS": "100",
+            "STAGE5_DEPTH_ROUTER_LR": "5e-5",
+            "STAGE5_DEPTH_ROUTER_LOOP_CONTROL_CE_WEIGHT": "4.0",
+            "STAGE5_DEPTH_ROUTER_HALT_TARGET_NLL_WEIGHT": "5.0",
+            "STAGE5_DEPTH_ROUTER_OPTIMIZER_MODULES": "halt",
+            "STAGE5_DEPTH_ROUTER_ARC_EASY_LIMIT": "128",
+            "STAGE5_DEPTH_ROUTER_ARC_CHALLENGE_LIMIT": "128",
+            "STAGE5_DEPTH_ROUTER_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
+            "STAGE5_DEPTH_ROUTER_DISCONNECT": "1",
         },
     },
     "depth_sweep_heldout": {

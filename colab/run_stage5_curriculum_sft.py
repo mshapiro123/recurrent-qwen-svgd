@@ -669,8 +669,10 @@ def eval_jsonl(label: str, data_jsonl: Path, checkpoint: Path) -> dict[str, floa
 
 
 def backup_to_drive(train_jsonl: Path, val_jsonl: Path) -> dict[str, Any]:
-    mount_drive_if_possible()
     root = drive_backup_root()
+    if ALLOW_NO_DRIVE_BACKUP and not root.exists():
+        return {"backed_up": False, "drive_root": str(root), "reason": "allow_no_drive_backup"}
+    mount_drive_if_possible()
     if not root.exists():
         return {"backed_up": False, "drive_root": str(root)}
     backup = root / RUN_ID
@@ -805,7 +807,8 @@ def main() -> int:
 
     gate = run_sft_gate()
     train_jsonl, val_jsonl, dataset_summary = prepare_train_val(gate)
-    mount_drive_if_possible()
+    if not ALLOW_NO_DRIVE_BACKUP:
+        mount_drive_if_possible()
     drive_preflight = validate_drive_backup()
     resume_from = resolve_resume_from()
     checkpoint = train_phase1(train_jsonl, resume_from=resume_from)
