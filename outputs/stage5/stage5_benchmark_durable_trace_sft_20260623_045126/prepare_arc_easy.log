@@ -1,0 +1,15 @@
+
+Generating train split:   0%|          | 0/2251 [00:00<?, ? examples/s]
+Generating train split: 100%|██████████| 2251/2251 [00:00<00:00, 310653.41 examples/s]
+
+Generating test split:   0%|          | 0/2376 [00:00<?, ? examples/s]
+Generating test split: 100%|██████████| 2376/2376 [00:00<00:00, 450283.13 examples/s]
+
+Generating validation split:   0%|          | 0/570 [00:00<?, ? examples/s]
+Generating validation split: 100%|██████████| 570/570 [00:00<00:00, 204757.90 examples/s]
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=validation
+offset=0
+rows=64
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_benchmark_durable_trace_sft_20260623_045126/arc_easy_validation_64.jsonl
