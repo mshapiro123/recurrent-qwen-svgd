@@ -1,0 +1,48 @@
+{
+  "kind": "stage5_model_viability_queue",
+  "run_id": "stage5_model_viability_queue_20260623_020107",
+  "queue_specs": "qwen_3b=Qwen/Qwen2.5-3B-Instruct|auto|1,2|22|32|32|float32;qwen_7b=Qwen/Qwen2.5-7B-Instruct|auto|1,2|39|24|24|float32",
+  "available_vram_gb": 22.494140625,
+  "allow_insufficient_vram": false,
+  "continue_on_failure": true,
+  "results": [
+    {
+      "spec": {
+        "label": "qwen_3b",
+        "model_name": "Qwen/Qwen2.5-3B-Instruct",
+        "layer_split": "auto",
+        "loops": "1,2",
+        "min_vram_gb": 22.0,
+        "arc_easy_limit": "32",
+        "arc_challenge_limit": "32",
+        "identity_dtype": "float32"
+      },
+      "status": "completed",
+      "returncode": 0,
+      "summary_path": "outputs/stage5/stage5_model_viability_qwen_3b_20260623_020107/summary.json",
+      "assessment": {
+        "status": "viable_for_training_probe",
+        "returncode": 0,
+        "identity_passed": true,
+        "loop1_min_delta": -1,
+        "loop2_min_delta": -7,
+        "promote_to_training_probe": true
+      }
+    },
+    {
+      "spec": {
+        "label": "qwen_7b",
+        "model_name": "Qwen/Qwen2.5-7B-Instruct",
+        "layer_split": "auto",
+        "loops": "1,2",
+        "min_vram_gb": 39.0,
+        "arc_easy_limit": "24",
+        "arc_challenge_limit": "24",
+        "identity_dtype": "float32"
+      },
+      "status": "skipped",
+      "skip_reason": "available VRAM 22.5 GB is below required 39 GB"
+    }
+  ],
+  "elapsed_seconds": 350.2782850265503
+}
