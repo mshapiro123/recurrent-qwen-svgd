@@ -1,0 +1,28 @@
+{
+  "run_id": "stage5_learned_loop_control_ce8_continue_l4_20260623_071135",
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "work_dir": "data/curriculum/stage5_learned_loop_control_ce8_continue_l4_20260623_071135_mcq_ladder",
+  "summary_json": "data/curriculum/stage5_learned_loop_control_ce8_continue_l4_20260623_071135_mcq_ladder/summary.json",
+  "curriculum_input_backup_dir": "/content/drive/MyDrive/recurrent-qwen-svgd/curriculum_runs",
+  "input_restore": {
+    "restored": false,
+    "work_dir": "data/curriculum/stage5_learned_loop_control_ce8_continue_l4_20260623_071135_mcq_ladder",
+    "summary_json": "data/curriculum/stage5_learned_loop_control_ce8_continue_l4_20260623_071135_mcq_ladder/summary.json"
+  },
+  "min_positive_rows": 50,
+  "min_mode_rows": "direct=20,deep_narrow=20",
+  "max_length": 512,
+  "max_loops": 4,
+  "max_steps": 400,
+  "learning_rate": 0.0002,
+  "beta": 0.12,
+  "halt_target_nll_weight": 10.0,
+  "optimizer_modules": "halt",
+  "use_target_loop_control": false,
+  "use_learned_loop_control": true,
+  "loop_control_ce_weight": 8.0,
+  "depth_hint_style": "natural",
+  "dtype": "bfloat16",
+  "adapter_dtype": "float32",
+  "commit_checkpoints": true
+}
