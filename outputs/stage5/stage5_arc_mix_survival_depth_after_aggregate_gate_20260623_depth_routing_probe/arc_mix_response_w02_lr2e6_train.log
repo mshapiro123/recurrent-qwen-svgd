@@ -1,0 +1,19 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5800.56it/s]
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 4963.27it/s]
+distillation_teacher=Qwen/Qwen2.5-0.5B-Instruct
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_arc_mix_depth_reuse_offset_20260623_142158_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt loaded_keys=179
+optimizer_parameter_tensors=179
+step=0 mean_expected_loops=1.8569 mean_halt_entropy=0.8292 expected_ce=3.1546 halting_kl=0.3856 target_mean_loops=1.0000 target_loop_abs_error=0.8569 loop_control_ce=1.6151 halting_target_nll=1.4543 loss=3.3972 base_distill_kl=0.3599
+step=25 mean_expected_loops=1.6041 mean_halt_entropy=0.7801 expected_ce=4.3175 halting_kl=0.2836 target_mean_loops=1.0000 target_loop_abs_error=0.6041 loop_control_ce=1.9788 halting_target_nll=0.8684 loss=4.5823 base_distill_kl=0.5291
+saved_checkpoint=outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt
+step=50 mean_expected_loops=1.3680 mean_halt_entropy=0.6826 expected_ce=4.4519 halting_kl=0.2399 target_mean_loops=1.0000 target_loop_abs_error=0.3680 loop_control_ce=1.0159 halting_target_nll=0.4505 loss=4.6178 base_distill_kl=0.3640
+step=75 mean_expected_loops=2.3476 mean_halt_entropy=1.0394 expected_ce=3.4571 halting_kl=0.4688 target_mean_loops=1.0000 target_loop_abs_error=1.3476 loop_control_ce=1.6752 halting_target_nll=2.5633 loss=3.7983 base_distill_kl=0.6214
+saved_checkpoint=outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_100.pt
+step=100 mean_expected_loops=1.8510 mean_halt_entropy=0.8010 expected_ce=7.9558 halting_kl=0.4103 target_mean_loops=1.0000 target_loop_abs_error=0.8510 loop_control_ce=1.3852 halting_target_nll=1.4744 loss=8.3206 base_distill_kl=1.0101
+step=125 mean_expected_loops=1.6769 mean_halt_entropy=0.8007 expected_ce=3.6368 halting_kl=0.8712 target_mean_loops=3.0000 target_loop_abs_error=1.3231 loop_control_ce=4.4578 halting_target_nll=3.4732 loss=4.1488 base_distill_kl=0.4017
+saved_checkpoint=outputs/stage5/stage5_arc_mix_survival_depth_after_aggregate_gate_20260623_depth_routing_probe/arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt
