@@ -520,6 +520,13 @@ def test_capability_ladder_7b_trace_chain_cell_runs_probe_then_trace_jobs() -> N
     assert "STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_ARC_LIMIT" in plain
     assert "colab/run_stage5_capability_ladder_mcq_probe.py" in plain
     assert "colab/run_stage5_capability_ladder_trace_jobs.py" in plain
+    assert "STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_RUN_PROVIDER" in plain
+    assert "STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_RUN_SFT" in plain
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER" in plain
+    assert "colab/run_stage5_capability_ladder_trace_responses.py" in plain
+    assert "colab/run_stage5_capability_ladder_trace_collect.py" in plain
+    assert "stage5_capability_ladder_trace_collection" in plain
+    assert "colab/run_stage5_curriculum_sft.py" in plain
     assert "STAGE5_CAPABILITY_LADDER_TRACE_ALLOW_GPU" in plain
     assert "STAGE5_CAPABILITY_LADDER_TRACE_REFUSE_GPU" in plain
     assert '"pull"' in plain

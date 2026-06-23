@@ -46,7 +46,13 @@ is deliberately moved back to one of those stages.
 For a high-memory overnight run before provider trace generation, prefer
 `STAGE5_CURRENT_A100_TARGET=capability_ladder_7b_trace_chain`: it runs the
 0.5B/1.5B/3B/7B capability-ladder probe and immediately builds trace jobs from
-the local scored rows before disconnecting.
+the local scored rows before disconnecting. By default it does not spend on a
+teacher/provider API. To deliberately keep the same high-memory runtime moving
+through teacher trace generation, trace collection, and bounded Phase 1 SFT,
+set `STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_RUN_PROVIDER=1`, provide
+`STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_OVERRIDE` or
+`STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_MAP_JSON_INLINE`, and leave
+`STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_RUN_SFT=1` enabled.
 The bootstrap now auto-resumes from
 [`config/stage5_current_source_summary.txt`](../config/stage5_current_source_summary.txt)
 when that pointer exists and targets an available summary. To force a specific

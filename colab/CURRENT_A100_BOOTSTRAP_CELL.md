@@ -326,6 +326,11 @@ TARGETS = {
             "STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_ARC_LIMIT",
             "colab/run_stage5_capability_ladder_mcq_probe.py",
             "colab/run_stage5_capability_ladder_trace_jobs.py",
+            "STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_RUN_PROVIDER",
+            "STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_RUN_SFT",
+            "colab/run_stage5_capability_ladder_trace_responses.py",
+            "colab/run_stage5_capability_ladder_trace_collect.py",
+            "colab/run_stage5_curriculum_sft.py",
             "tests/test_capability_ladder_trace_jobs.py",
             "runtime.unassign",
         ],
@@ -556,6 +561,4 @@ print(
 )
 print(f"Fetched {launcher_path} from {REPO}@{REF} ({RESOLVED_REF[:12]}) sha={payload.get('sha')} target={TARGET}", flush=True)
 exec(compile(code, launcher_path, "exec"))
-
 ```
-
