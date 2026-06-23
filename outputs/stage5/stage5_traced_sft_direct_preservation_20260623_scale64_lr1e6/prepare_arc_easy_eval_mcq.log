@@ -1,0 +1,6 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=validation
+offset=0
+rows=128
+output_jsonl=outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/arc_easy_eval_mcq.jsonl

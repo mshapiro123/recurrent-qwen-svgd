@@ -1,0 +1,24 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 16963.23it/s]
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 14977.44it/s]
+distillation_teacher=Qwen/Qwen2.5-0.5B-Instruct
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_194543/phase1/phase1_step_200.pt loaded_keys=179
+optimizer_parameter_tensors=179
+step=0 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=8.5427 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 loss=9.9028 base_distill_kl=1.3601
+step=10 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=1.7182 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 loss=1.8245 base_distill_kl=0.1063
+step=20 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=2.1982 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 loss=2.5462 base_distill_kl=0.3480
+saved_checkpoint=outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/phase1_direct_preserve/phase1_step_25.pt
+step=30 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=2.4590 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 loss=2.6271 base_distill_kl=0.1681
+step=40 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=3.7756 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 loss=4.2973 base_distill_kl=0.5217
+saved_checkpoint=outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/phase1_direct_preserve/phase1_step_50.pt
+step=50 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=1.6512 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 loss=1.8245 base_distill_kl=0.1733
+step=60 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=3.3472 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 loss=3.7182 base_distill_kl=0.3710
+step=70 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=1.1989 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 loss=1.3617 base_distill_kl=0.1629
+saved_checkpoint=outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/phase1_direct_preserve/phase1_step_75.pt
+step=80 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=4.2332 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 loss=4.3550 base_distill_kl=0.1217
+step=90 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=2.7120 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 loss=3.1803 base_distill_kl=0.4683
+saved_checkpoint=outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/phase1_direct_preserve/phase1_step_100.pt

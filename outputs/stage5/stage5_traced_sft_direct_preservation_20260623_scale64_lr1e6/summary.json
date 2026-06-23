@@ -1,0 +1,597 @@
+{
+  "kind": "stage5_direct_preservation_probe",
+  "run_id": "stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6",
+  "status": "direct_route_lift",
+  "passed": true,
+  "source_summary": "outputs/stage5/stage5_traced_sft_assessment_20260623_195134_reassessed/summary.json",
+  "source_status": "needs_direct_preservation_repair",
+  "resume_checkpoint": "outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_194543/phase1/phase1_step_200.pt",
+  "config": {
+    "arc_train_limit": "512",
+    "arc_eval_limit": 128,
+    "min_base_margin": 1.0,
+    "prompt_style": "question_only",
+    "score_target": "option_text",
+    "max_steps": 100,
+    "learning_rate": 1e-06,
+    "distill_weight": 1.0,
+    "precheck_only": false,
+    "max_loops": 1
+  },
+  "data": {
+    "train_mcq": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/arc_easy_train_mcq.jsonl",
+    "eval_mcq": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/arc_easy_eval_mcq.jsonl",
+    "direct_sft": {
+      "input_mcq_rows": 512,
+      "input_eval_rows": 512,
+      "selected_rows": 124,
+      "skipped": {
+        "base_wrong": 211,
+        "low_margin": 157
+      },
+      "pre_balance_answer_counts": {
+        "A": 40,
+        "B": 37,
+        "C": 36,
+        "D": 31
+      },
+      "answer_counts": {
+        "A": 31,
+        "B": 31,
+        "C": 31,
+        "D": 31
+      },
+      "min_base_margin": 1.0,
+      "balance_labels": true,
+      "max_rows_per_label": null,
+      "target_loop_count": 1,
+      "routing_type": "direct_base_preserve"
+    }
+  },
+  "base_eval": {
+    "correct": 75,
+    "total": 128,
+    "accuracy": 0.5859375,
+    "prediction_counts": {
+      "C": 30,
+      "B": 30,
+      "D": 34,
+      "A": 34
+    },
+    "answer_counts": {
+      "C": 26,
+      "B": 40,
+      "D": 30,
+      "A": 32
+    }
+  },
+  "start_loop1_eval": {
+    "correct": 67,
+    "total": 128,
+    "accuracy": 0.5234375,
+    "prediction_counts": {
+      "C": 26,
+      "B": 29,
+      "A": 37,
+      "D": 36
+    },
+    "answer_counts": {
+      "C": 26,
+      "B": 40,
+      "D": 30,
+      "A": 32
+    }
+  },
+  "start_loop4_eval": {
+    "correct": 65,
+    "total": 128,
+    "accuracy": 0.5078125,
+    "prediction_counts": {
+      "C": 27,
+      "B": 27,
+      "A": 36,
+      "D": 38
+    },
+    "answer_counts": {
+      "C": 26,
+      "B": 40,
+      "D": 30,
+      "A": 32
+    }
+  },
+  "start_loop1_comparison_to_base": {
+    "helped": 2,
+    "hurt": 10,
+    "tied": 116,
+    "prediction_changes": 16,
+    "mean_margin_delta": -0.10435751685872674,
+    "reference_prediction_counts": {
+      "A": 34,
+      "C": 30,
+      "B": 30,
+      "D": 34
+    },
+    "candidate_prediction_counts": {
+      "A": 37,
+      "C": 26,
+      "B": 29,
+      "D": 36
+    },
+    "prediction_count_delta": {
+      "A": 3,
+      "B": -1,
+      "C": -4,
+      "D": 2
+    },
+    "max_abs_prediction_count_delta": 4,
+    "calibration_ok": false
+  },
+  "checkpoints": [
+    {
+      "checkpoint": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/phase1_direct_preserve/phase1_step_25.pt",
+      "loop1_path": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/arc_easy_eval_mcq_phase1_step_25_loop1_label.jsonl",
+      "loop4_path": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/arc_easy_eval_mcq_phase1_step_25_loop4_label.jsonl",
+      "loop1_eval": {
+        "correct": 69,
+        "total": 128,
+        "accuracy": 0.5390625,
+        "prediction_counts": {
+          "C": 26,
+          "B": 30,
+          "A": 37,
+          "D": 35
+        },
+        "answer_counts": {
+          "C": 26,
+          "B": 40,
+          "D": 30,
+          "A": 32
+        }
+      },
+      "loop4_eval": {
+        "correct": 68,
+        "total": 128,
+        "accuracy": 0.53125,
+        "prediction_counts": {
+          "C": 27,
+          "B": 29,
+          "A": 35,
+          "D": 37
+        },
+        "answer_counts": {
+          "C": 26,
+          "B": 40,
+          "D": 30,
+          "A": 32
+        }
+      },
+      "comparison_to_base": {
+        "helped": 3,
+        "hurt": 9,
+        "tied": 116,
+        "prediction_changes": 16,
+        "mean_margin_delta": -0.05966509081190452,
+        "reference_prediction_counts": {
+          "A": 34,
+          "C": 30,
+          "B": 30,
+          "D": 34
+        },
+        "candidate_prediction_counts": {
+          "A": 37,
+          "C": 26,
+          "B": 30,
+          "D": 35
+        },
+        "prediction_count_delta": {
+          "A": 3,
+          "B": 0,
+          "C": -4,
+          "D": 1
+        },
+        "max_abs_prediction_count_delta": 4,
+        "calibration_ok": false
+      },
+      "comparison_to_start_loop1": {
+        "helped": 2,
+        "hurt": 0,
+        "tied": 126,
+        "prediction_changes": 2,
+        "mean_margin_delta": 0.04469242604682222,
+        "reference_prediction_counts": {
+          "A": 37,
+          "C": 26,
+          "B": 29,
+          "D": 36
+        },
+        "candidate_prediction_counts": {
+          "A": 37,
+          "C": 26,
+          "B": 30,
+          "D": 35
+        },
+        "prediction_count_delta": {
+          "A": 0,
+          "B": 1,
+          "C": 0,
+          "D": -1
+        },
+        "max_abs_prediction_count_delta": 1,
+        "calibration_ok": true
+      }
+    },
+    {
+      "checkpoint": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/phase1_direct_preserve/phase1_step_50.pt",
+      "loop1_path": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/arc_easy_eval_mcq_phase1_step_50_loop1_label.jsonl",
+      "loop4_path": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/arc_easy_eval_mcq_phase1_step_50_loop4_label.jsonl",
+      "loop1_eval": {
+        "correct": 71,
+        "total": 128,
+        "accuracy": 0.5546875,
+        "prediction_counts": {
+          "C": 27,
+          "B": 30,
+          "A": 36,
+          "D": 35
+        },
+        "answer_counts": {
+          "C": 26,
+          "B": 40,
+          "D": 30,
+          "A": 32
+        }
+      },
+      "loop4_eval": {
+        "correct": 70,
+        "total": 128,
+        "accuracy": 0.546875,
+        "prediction_counts": {
+          "C": 28,
+          "B": 30,
+          "A": 35,
+          "D": 35
+        },
+        "answer_counts": {
+          "C": 26,
+          "B": 40,
+          "D": 30,
+          "A": 32
+        }
+      },
+      "comparison_to_base": {
+        "helped": 3,
+        "hurt": 7,
+        "tied": 118,
+        "prediction_changes": 13,
+        "mean_margin_delta": -0.009847743902355433,
+        "reference_prediction_counts": {
+          "A": 34,
+          "C": 30,
+          "B": 30,
+          "D": 34
+        },
+        "candidate_prediction_counts": {
+          "B": 30,
+          "A": 36,
+          "C": 27,
+          "D": 35
+        },
+        "prediction_count_delta": {
+          "A": 2,
+          "B": 0,
+          "C": -3,
+          "D": 1
+        },
+        "max_abs_prediction_count_delta": 3,
+        "calibration_ok": false
+      },
+      "comparison_to_start_loop1": {
+        "helped": 4,
+        "hurt": 0,
+        "tied": 124,
+        "prediction_changes": 5,
+        "mean_margin_delta": 0.09450977295637131,
+        "reference_prediction_counts": {
+          "A": 37,
+          "C": 26,
+          "B": 29,
+          "D": 36
+        },
+        "candidate_prediction_counts": {
+          "B": 30,
+          "A": 36,
+          "C": 27,
+          "D": 35
+        },
+        "prediction_count_delta": {
+          "A": -1,
+          "B": 1,
+          "C": 1,
+          "D": -1
+        },
+        "max_abs_prediction_count_delta": 1,
+        "calibration_ok": true
+      }
+    },
+    {
+      "checkpoint": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/phase1_direct_preserve/phase1_step_75.pt",
+      "loop1_path": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/arc_easy_eval_mcq_phase1_step_75_loop1_label.jsonl",
+      "loop4_path": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/arc_easy_eval_mcq_phase1_step_75_loop4_label.jsonl",
+      "loop1_eval": {
+        "correct": 72,
+        "total": 128,
+        "accuracy": 0.5625,
+        "prediction_counts": {
+          "C": 24,
+          "B": 33,
+          "D": 36,
+          "A": 35
+        },
+        "answer_counts": {
+          "C": 26,
+          "B": 40,
+          "D": 30,
+          "A": 32
+        }
+      },
+      "loop4_eval": {
+        "correct": 70,
+        "total": 128,
+        "accuracy": 0.546875,
+        "prediction_counts": {
+          "C": 27,
+          "B": 31,
+          "D": 35,
+          "A": 35
+        },
+        "answer_counts": {
+          "C": 26,
+          "B": 40,
+          "D": 30,
+          "A": 32
+        }
+      },
+      "comparison_to_base": {
+        "helped": 4,
+        "hurt": 7,
+        "tied": 117,
+        "prediction_changes": 13,
+        "mean_margin_delta": 0.016079828492365777,
+        "reference_prediction_counts": {
+          "A": 34,
+          "C": 30,
+          "B": 30,
+          "D": 34
+        },
+        "candidate_prediction_counts": {
+          "B": 33,
+          "A": 35,
+          "C": 24,
+          "D": 36
+        },
+        "prediction_count_delta": {
+          "A": 1,
+          "B": 3,
+          "C": -6,
+          "D": 2
+        },
+        "max_abs_prediction_count_delta": 6,
+        "calibration_ok": true
+      },
+      "comparison_to_start_loop1": {
+        "helped": 6,
+        "hurt": 1,
+        "tied": 121,
+        "prediction_changes": 9,
+        "mean_margin_delta": 0.12043734535109252,
+        "reference_prediction_counts": {
+          "A": 37,
+          "C": 26,
+          "B": 29,
+          "D": 36
+        },
+        "candidate_prediction_counts": {
+          "B": 33,
+          "A": 35,
+          "C": 24,
+          "D": 36
+        },
+        "prediction_count_delta": {
+          "A": -2,
+          "B": 4,
+          "C": -2,
+          "D": 0
+        },
+        "max_abs_prediction_count_delta": 4,
+        "calibration_ok": true
+      }
+    },
+    {
+      "checkpoint": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/phase1_direct_preserve/phase1_step_100.pt",
+      "loop1_path": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/arc_easy_eval_mcq_phase1_step_100_loop1_label.jsonl",
+      "loop4_path": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/arc_easy_eval_mcq_phase1_step_100_loop4_label.jsonl",
+      "loop1_eval": {
+        "correct": 70,
+        "total": 128,
+        "accuracy": 0.546875,
+        "prediction_counts": {
+          "C": 25,
+          "B": 32,
+          "A": 35,
+          "D": 36
+        },
+        "answer_counts": {
+          "C": 26,
+          "B": 40,
+          "D": 30,
+          "A": 32
+        }
+      },
+      "loop4_eval": {
+        "correct": 70,
+        "total": 128,
+        "accuracy": 0.546875,
+        "prediction_counts": {
+          "C": 26,
+          "B": 30,
+          "A": 36,
+          "D": 36
+        },
+        "answer_counts": {
+          "C": 26,
+          "B": 40,
+          "D": 30,
+          "A": 32
+        }
+      },
+      "comparison_to_base": {
+        "helped": 2,
+        "hurt": 7,
+        "tied": 119,
+        "prediction_changes": 11,
+        "mean_margin_delta": 0.04756368068046868,
+        "reference_prediction_counts": {
+          "A": 34,
+          "C": 30,
+          "B": 30,
+          "D": 34
+        },
+        "candidate_prediction_counts": {
+          "B": 32,
+          "A": 35,
+          "C": 25,
+          "D": 36
+        },
+        "prediction_count_delta": {
+          "A": 1,
+          "B": 2,
+          "C": -5,
+          "D": 2
+        },
+        "max_abs_prediction_count_delta": 5,
+        "calibration_ok": true
+      },
+      "comparison_to_start_loop1": {
+        "helped": 5,
+        "hurt": 2,
+        "tied": 121,
+        "prediction_changes": 9,
+        "mean_margin_delta": 0.15192119753919542,
+        "reference_prediction_counts": {
+          "A": 37,
+          "C": 26,
+          "B": 29,
+          "D": 36
+        },
+        "candidate_prediction_counts": {
+          "B": 32,
+          "A": 35,
+          "C": 25,
+          "D": 36
+        },
+        "prediction_count_delta": {
+          "A": -2,
+          "B": 3,
+          "C": -1,
+          "D": 0
+        },
+        "max_abs_prediction_count_delta": 3,
+        "calibration_ok": true
+      }
+    }
+  ],
+  "best_checkpoint": {
+    "checkpoint": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/phase1_direct_preserve/phase1_step_75.pt",
+    "loop1_path": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/arc_easy_eval_mcq_phase1_step_75_loop1_label.jsonl",
+    "loop4_path": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/arc_easy_eval_mcq_phase1_step_75_loop4_label.jsonl",
+    "loop1_eval": {
+      "correct": 72,
+      "total": 128,
+      "accuracy": 0.5625,
+      "prediction_counts": {
+        "C": 24,
+        "B": 33,
+        "D": 36,
+        "A": 35
+      },
+      "answer_counts": {
+        "C": 26,
+        "B": 40,
+        "D": 30,
+        "A": 32
+      }
+    },
+    "loop4_eval": {
+      "correct": 70,
+      "total": 128,
+      "accuracy": 0.546875,
+      "prediction_counts": {
+        "C": 27,
+        "B": 31,
+        "D": 35,
+        "A": 35
+      },
+      "answer_counts": {
+        "C": 26,
+        "B": 40,
+        "D": 30,
+        "A": 32
+      }
+    },
+    "comparison_to_base": {
+      "helped": 4,
+      "hurt": 7,
+      "tied": 117,
+      "prediction_changes": 13,
+      "mean_margin_delta": 0.016079828492365777,
+      "reference_prediction_counts": {
+        "A": 34,
+        "C": 30,
+        "B": 30,
+        "D": 34
+      },
+      "candidate_prediction_counts": {
+        "B": 33,
+        "A": 35,
+        "C": 24,
+        "D": 36
+      },
+      "prediction_count_delta": {
+        "A": 1,
+        "B": 3,
+        "C": -6,
+        "D": 2
+      },
+      "max_abs_prediction_count_delta": 6,
+      "calibration_ok": true
+    },
+    "comparison_to_start_loop1": {
+      "helped": 6,
+      "hurt": 1,
+      "tied": 121,
+      "prediction_changes": 9,
+      "mean_margin_delta": 0.12043734535109252,
+      "reference_prediction_counts": {
+        "A": 37,
+        "C": 26,
+        "B": 29,
+        "D": 36
+      },
+      "candidate_prediction_counts": {
+        "B": 33,
+        "A": 35,
+        "C": 24,
+        "D": 36
+      },
+      "prediction_count_delta": {
+        "A": -2,
+        "B": 4,
+        "C": -2,
+        "D": 0
+      },
+      "max_abs_prediction_count_delta": 4,
+      "calibration_ok": true
+    }
+  },
+  "next_step": "Confirm the direct-route preservation checkpoint on a larger ARC-Easy/Challenge slice."
+}
