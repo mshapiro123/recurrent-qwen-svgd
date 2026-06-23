@@ -1,0 +1,6 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Challenge
+split=validation
+offset=0
+rows=256
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_ce8_balanced_arc256_maxloop3_20260623_085130/arc_challenge_validation_256.jsonl
