@@ -132,6 +132,8 @@ def recommendation_for(key: str, spec: dict[str, Any], report: dict[str, Any] | 
         }
 
     role = report.get("training_role", {})
+    curriculum = report.get("curriculum_signal") if isinstance(report.get("curriculum_signal"), dict) else {}
+    curriculum_recommendation = str(curriculum.get("recommendation") or "")
     conversion_rate = float(report.get("conversion_rate", 0.0) or 0.0)
     registry_priority = str(spec.get("priority", "unknown"))
     role_priority = str(role.get("priority", registry_priority))
@@ -139,7 +141,16 @@ def recommendation_for(key: str, spec: dict[str, Any], report: dict[str, Any] | 
     token_stats = report.get("token_stats", {}).get("total_tokens", {})
     p90_tokens = token_stats.get("p90")
 
-    if role_priority in {"immediate", "immediate_candidate"} and conversion_rate >= 0.5:
+    if curriculum_recommendation.startswith("direct_recovery_candidate"):
+        status = "promote_to_direct_recovery_mix"
+        recommendation = "Use a filtered short-trace subset for depth-1/direct competence recovery."
+    elif curriculum_recommendation.startswith("deep_narrow_candidate"):
+        status = "promote_to_deep_narrow_mix"
+        recommendation = "Use a filtered long-reasoning subset for learned recurrence/depth supervision."
+    elif curriculum_recommendation == "hold_for_wide_or_agentic_filter":
+        status = "hold_for_agent_tool_filter"
+        recommendation = "Keep for coding/tool/trajectory diversity; do not mix into ARC/GPQA recovery yet."
+    elif role_priority in {"immediate", "immediate_candidate"} and conversion_rate >= 0.5:
         status = "promote_to_small_train_mix"
         recommendation = "Use a filtered subset in the next modified-Opus/recurrent SFT experiment."
     elif "fable" in key and converted_rows:
@@ -166,6 +177,11 @@ def recommendation_for(key: str, spec: dict[str, Any], report: dict[str, Any] | 
         "primary_role": role.get("primary_role"),
         "total_tokens_p90": p90_tokens,
         "cot_tokens_p90": report.get("token_stats", {}).get("cot_tokens", {}).get("p90"),
+        "curriculum_recommendation": curriculum_recommendation or None,
+        "direct_candidate_rows": curriculum.get("direct_candidate_rows"),
+        "deep_narrow_candidate_rows": curriculum.get("deep_narrow_candidate_rows"),
+        "estimated_target_mix": curriculum.get("estimated_target_mix"),
+        "fit_rates_total_tokens": curriculum.get("fit_rates_total_tokens"),
         "license": spec.get("license"),
         "avoid_for_now": spec.get("avoid_for_now") or role.get("avoid_for_now", []),
     }
@@ -193,7 +209,15 @@ def write_summary(
             for key in SELECTED_KEYS
         ]
     )
-    promote = [item for item in recommendations if item["status"] == "promote_to_small_train_mix"]
+    promote = [
+        item
+        for item in recommendations
+        if item["status"] in {
+            "promote_to_small_train_mix",
+            "promote_to_direct_recovery_mix",
+            "promote_to_deep_narrow_mix",
+        }
+    ]
     hold = [item for item in recommendations if item["status"] == "hold_for_agent_tool_filter"]
     payload = {
         "run_id": RUN_ID,
@@ -238,10 +262,12 @@ def summary_markdown(payload: dict[str, Any]) -> str:
         f"- Limit per dataset: `{payload['limit']}`",
         f"- Next step: {payload['next_step']}",
         "",
-        "| Dataset | Status | Converted | P90 total tokens | Role | Recommendation |",
-        "|---|---:|---:|---:|---|---|",
+        "| Dataset | Status | Converted | Direct/Deep/Wide | P90 total tokens | Role | Recommendation |",
+        "|---|---:|---:|---:|---:|---|---|",
     ]
     for item in payload["recommendations"]:
+        mix = item.get("estimated_target_mix") or {}
+        mix_text = f"{mix.get('direct', 0)}/{mix.get('deep_narrow', 0)}/{mix.get('wide', 0)}"
         lines.append(
             "| "
             + " | ".join(
@@ -249,6 +275,7 @@ def summary_markdown(payload: dict[str, Any]) -> str:
                     f"`{item['key']}`",
                     f"`{item['status']}`",
                     f"{item['converted_rows']} ({item['conversion_rate']:.1%})",
+                    mix_text,
                     str(item.get("total_tokens_p90")),
                     str(item.get("primary_role")),
                     str(item.get("recommendation")),

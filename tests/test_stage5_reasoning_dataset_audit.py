@@ -58,13 +58,50 @@ def test_recommendation_promotes_compatible_opus_trace_source() -> None:
         "conversion_rate": 0.9,
         "adapter_success_counts": {"qwen_text": 900},
         "training_role": {"priority": "immediate_candidate", "primary_role": "reasoning_trace_sft"},
+        "curriculum_signal": {
+            "recommendation": "direct_recovery_candidate",
+            "direct_candidate_rows": 800,
+            "deep_narrow_candidate_rows": 50,
+            "estimated_target_mix": {"direct": 800, "deep_narrow": 50, "wide": 0},
+            "fit_rates_total_tokens": {"512": 0.9, "1024": 1.0, "2048": 1.0},
+        },
         "token_stats": {"total_tokens": {"p90": 1024}, "cot_tokens": {"p90": 512}},
     }
 
     item = recommendation_for("opus47_sft", spec, report)
 
-    assert item["status"] == "promote_to_small_train_mix"
-    assert "filtered subset" in item["recommendation"]
+    assert item["status"] == "promote_to_direct_recovery_mix"
+    assert "depth-1/direct" in item["recommendation"]
+    assert item["direct_candidate_rows"] == 800
+    assert item["estimated_target_mix"] == {"direct": 800, "deep_narrow": 50, "wide": 0}
+
+
+def test_recommendation_promotes_long_trace_source_for_deep_narrow() -> None:
+    spec = {
+        "dataset_id": "Jackrong/Claude-opus-4.7-TraceInversion-5000x",
+        "priority": "immediate_audit_candidate",
+        "license": "inspect_before_use",
+    }
+    report = {
+        "converted_rows": 400,
+        "conversion_rate": 0.8,
+        "adapter_success_counts": {"trace_inversion": 400},
+        "training_role": {"priority": "immediate_candidate", "primary_role": "reasoning_trace_sft"},
+        "curriculum_signal": {
+            "recommendation": "deep_narrow_candidate",
+            "direct_candidate_rows": 50,
+            "deep_narrow_candidate_rows": 300,
+            "estimated_target_mix": {"direct": 50, "deep_narrow": 300, "wide": 0},
+            "fit_rates_total_tokens": {"512": 0.2, "1024": 0.8, "2048": 1.0},
+        },
+        "token_stats": {"total_tokens": {"p90": 1500}, "cot_tokens": {"p90": 900}},
+    }
+
+    item = recommendation_for("jackrong_opus47_trace_inversion", spec, report)
+
+    assert item["status"] == "promote_to_deep_narrow_mix"
+    assert "learned recurrence/depth" in item["recommendation"]
+    assert item["deep_narrow_candidate_rows"] == 300
 
 
 def test_recommendation_holds_fable_even_when_convertible() -> None:
@@ -78,6 +115,10 @@ def test_recommendation_holds_fable_even_when_convertible() -> None:
         "conversion_rate": 0.7,
         "adapter_success_counts": {"fable_flat": 700},
         "training_role": {"priority": "later", "primary_role": "agent_tool_trace_or_coding_diversity"},
+        "curriculum_signal": {
+            "recommendation": "hold_for_wide_or_agentic_filter",
+            "estimated_target_mix": {"direct": 0, "deep_narrow": 0, "wide": 700},
+        },
         "token_stats": {"total_tokens": {"p90": 1800}, "cot_tokens": {"p90": 900}},
     }
 
@@ -107,9 +148,10 @@ def test_summary_markdown_renders_table() -> None:
         "recommendations": [
             {
                 "key": "opus47_sft",
-                "status": "promote_to_small_train_mix",
+                "status": "promote_to_direct_recovery_mix",
                 "converted_rows": 9,
                 "conversion_rate": 0.9,
+                "estimated_target_mix": {"direct": 8, "deep_narrow": 1, "wide": 0},
                 "total_tokens_p90": 100,
                 "primary_role": "reasoning_trace_sft",
                 "recommendation": "Use it.",
@@ -122,6 +164,7 @@ def test_summary_markdown_renders_table() -> None:
     assert "# Stage 5 Reasoning Dataset Audit - run" in markdown
     assert "| `opus47_sft` |" in markdown
     assert "90.0%" in markdown
+    assert "8/1/0" in markdown
 
 
 def test_registry_tracks_core_and_extended_trace_sources() -> None:

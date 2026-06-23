@@ -1493,7 +1493,16 @@ def stage4_opus_recovery_sources(recommendations: list[dict[str, Any]]) -> list[
 
 
 def reasoning_dataset_audit_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
-    promoted = dataset_audit_recommendations(payload, status="promote_to_small_train_mix")
+    promoted_statuses = {
+        "promote_to_small_train_mix",
+        "promote_to_direct_recovery_mix",
+        "promote_to_deep_narrow_mix",
+    }
+    promoted = [
+        row
+        for row in dataset_audit_recommendations(payload)
+        if row.get("status") in promoted_statuses
+    ]
     fable_hold = dataset_audit_recommendations(payload, status="hold_for_agent_tool_filter")
     errors = payload.get("errors") or {}
     audit_run_id = str(payload.get("run_id") or source_summary.parent.name or RUN_ID)
@@ -1516,12 +1525,37 @@ def reasoning_dataset_audit_actions(payload: dict[str, Any], *, source_summary: 
     opus_like = stage4_opus_recovery_sources(promoted)
     if opus_like:
         source = opus_like[0]
+        source_status = str(source.get("status") or "")
+        if source_status == "promote_to_deep_narrow_mix":
+            run_suffix = "audited_deep_narrow_finetune"
+            action_name = "Run audited deep-narrow recurrent fine-tune"
+            max_total_tokens = "2048"
+            rationale = (
+                "Dataset audit promoted an Opus-style long-reasoning trace source for learned recurrence/depth supervision; "
+                "run the guarded Stage 4 recurrent fine-tune while keeping ARC competence checks active."
+            )
+        elif source_status == "promote_to_direct_recovery_mix":
+            run_suffix = "audited_direct_recovery_finetune"
+            action_name = "Run audited direct-recovery recurrent fine-tune"
+            max_total_tokens = "1024"
+            rationale = (
+                "Dataset audit promoted an Opus-style short-trace source for depth-1/direct competence recovery; "
+                "run the guarded Stage 4 recurrent fine-tune while keeping ARC competence checks active."
+            )
+        else:
+            run_suffix = "audited_opus_finetune"
+            action_name = "Run audited modified-Opus recurrent fine-tune"
+            max_total_tokens = "1024"
+            rationale = (
+                "Dataset audit promoted an Opus-style reasoning trace source; run the guarded Stage 4 recurrent fine-tune "
+                "while keeping ARC competence checks active."
+            )
         assignments = {
-            "STAGE4_RUN_ID": f"{audit_run_id}_audited_opus_finetune",
+            "STAGE4_RUN_ID": f"{audit_run_id}_{run_suffix}",
             "OPUS_DATASET_ID": str(source.get("dataset_id") or "lordx64/reasoning-distill-opus-4-7-max-sft"),
             "OPUS_DATASET_ADAPTER": "qwen_text" if source.get("key") == "opus47_sft" else "auto",
             "OPUS_LIMIT": "3000",
-            "OPUS_MAX_TOTAL_TOKENS": "1024",
+            "OPUS_MAX_TOTAL_TOKENS": max_total_tokens,
             "STAGE4_PHASE1_STEPS": "500",
             "STAGE4_PHASE2_STEPS": "100",
             "STAGE4_RUN_EXACT": "0",
@@ -1530,8 +1564,9 @@ def reasoning_dataset_audit_actions(payload: dict[str, Any], *, source_summary: 
             assignments["OPUS_DATASET_NAME"] = str(source["name"])
         return [
             make_action(
-                "Run audited modified-Opus recurrent fine-tune",
-                "Dataset audit promoted an Opus-style reasoning trace source; run the guarded Stage 4 recurrent fine-tune while keeping ARC competence checks active. "
+                action_name,
+                rationale
+                + " "
                 f"Source `{source.get('key')}` converted {source.get('converted_rows')} rows "
                 f"({float(source.get('conversion_rate') or 0.0):.1%}).",
                 command_env(assignments, "python colab/run_stage4_opus_finetune.py"),

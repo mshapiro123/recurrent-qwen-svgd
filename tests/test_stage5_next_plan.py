@@ -1818,7 +1818,7 @@ def test_reasoning_dataset_audit_promotes_opus_finetune(tmp_path) -> None:
             {
                 "key": "opus47_sft",
                 "dataset_id": "lordx64/reasoning-distill-opus-4-7-max-sft",
-                "status": "promote_to_small_train_mix",
+                "status": "promote_to_direct_recovery_mix",
                 "converted_rows": 900,
                 "conversion_rate": 0.9,
             },
@@ -1835,10 +1835,11 @@ def test_reasoning_dataset_audit_promotes_opus_finetune(tmp_path) -> None:
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Run audited modified-Opus recurrent fine-tune"
-    assert "STAGE4_RUN_ID=audit_run_audited_opus_finetune" in actions[0]["command"]
+    assert actions[0]["name"] == "Run audited direct-recovery recurrent fine-tune"
+    assert "STAGE4_RUN_ID=audit_run_audited_direct_recovery_finetune" in actions[0]["command"]
     assert "OPUS_DATASET_ID=lordx64/reasoning-distill-opus-4-7-max-sft" in actions[0]["command"]
     assert "OPUS_DATASET_ADAPTER=qwen_text" in actions[0]["command"]
+    assert "OPUS_MAX_TOTAL_TOKENS=1024" in actions[0]["command"]
     assert "python colab/run_stage4_opus_finetune.py" in actions[0]["command"]
 
 
@@ -1851,7 +1852,7 @@ def test_reasoning_dataset_audit_inspects_unapproved_promoted_opus_source(tmp_pa
             {
                 "key": "jackrong_opus47_trace_inversion",
                 "dataset_id": "Jackrong/Claude-opus-4.7-TraceInversion-5000x",
-                "status": "promote_to_small_train_mix",
+                "status": "promote_to_deep_narrow_mix",
                 "converted_rows": 900,
                 "conversion_rate": 0.9,
             },
@@ -1864,6 +1865,31 @@ def test_reasoning_dataset_audit_inspects_unapproved_promoted_opus_source(tmp_pa
     assert actions[0]["name"] == "Inspect promoted non-Opus trace source"
     assert actions[0]["command"].startswith("cat ")
     assert "run_stage4_opus_finetune.py" not in actions[0]["command"]
+
+
+def test_reasoning_dataset_audit_promotes_approved_deep_narrow_opus_source(tmp_path) -> None:
+    source = tmp_path / "summary.json"
+    payload = {
+        "run_id": "audit_run",
+        "kind": "stage5_reasoning_dataset_audit",
+        "recommendations": [
+            {
+                "key": "opus47_raw",
+                "dataset_id": "lordx64/reasoning-distill-opus-4-7-max-sft",
+                "status": "promote_to_deep_narrow_mix",
+                "converted_rows": 600,
+                "conversion_rate": 0.6,
+            },
+        ],
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run audited deep-narrow recurrent fine-tune"
+    assert "STAGE4_RUN_ID=audit_run_audited_deep_narrow_finetune" in actions[0]["command"]
+    assert "OPUS_MAX_TOTAL_TOKENS=2048" in actions[0]["command"]
+    assert "python colab/run_stage4_opus_finetune.py" in actions[0]["command"]
 
 
 def test_reasoning_dataset_audit_holds_fable_without_training(tmp_path) -> None:
