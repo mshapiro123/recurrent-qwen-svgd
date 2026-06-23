@@ -1,1 +1,1 @@
-outputs/stage5/stage5_routing_diagnostic_durable_trace_sft_20260623_010432/summary.json
+outputs/stage5/stage5_mcq_ladder_sft_nodrive_20260623_052428/summary.json

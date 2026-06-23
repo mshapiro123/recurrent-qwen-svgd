@@ -1,0 +1,22 @@
+{
+  "run_id": "stage5_mcq_ladder_sft_nodrive_20260623_052428",
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "work_dir": "data/curriculum/stage5_capability_ladder_mcq_probe_20260623_023702",
+  "summary_json": "data/curriculum/stage5_capability_ladder_mcq_probe_20260623_023702/summary.json",
+  "curriculum_input_backup_dir": "/content/drive/MyDrive/recurrent-qwen-svgd/curriculum_runs",
+  "input_restore": {
+    "restored": false,
+    "work_dir": "data/curriculum/stage5_capability_ladder_mcq_probe_20260623_023702",
+    "summary_json": "data/curriculum/stage5_capability_ladder_mcq_probe_20260623_023702/summary.json"
+  },
+  "min_positive_rows": 50,
+  "min_mode_rows": "direct=20,deep_narrow=20",
+  "max_length": 512,
+  "max_loops": 4,
+  "max_steps": 150,
+  "learning_rate": 5e-06,
+  "beta": 0.12,
+  "dtype": "bfloat16",
+  "adapter_dtype": "float32",
+  "commit_checkpoints": true
+}
