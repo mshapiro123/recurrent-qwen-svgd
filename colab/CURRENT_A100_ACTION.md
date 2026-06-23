@@ -51,25 +51,71 @@ outputs/stage5/stage5_local_hf_traced_sft_scale64_assessment_20260623_202446/sum
 status = needs_direct_preservation_repair
 ```
 
-The next action is a cheap **content-route direct-preservation precheck**. Do
-not scale traces or add particles yet. First determine whether the scale64
-checkpoint already preserves base behavior when forced through the loop-1
-direct route. Use:
+The latest confirmation run completed:
 
 ```text
-STAGE5_CURRENT_A100_TARGET=traced_sft_direct_preservation_precheck
+outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment/summary.json
+status = needs_recurrent_recovery
+ARC-Easy content:      recurrent 140/256 vs base 148/256, delta -8
+ARC-Easy cyclic:       recurrent 203/256 vs base 201/256, delta +2
+ARC-Challenge content: recurrent 86/256 vs base 87/256, delta -1
+ARC-Challenge cyclic:  recurrent 151/256 vs base 156/256, delta -5
 ```
 
-Fresh-runtime shortcut: open
-[`10_stage5_direct_preservation_precheck.ipynb`](10_stage5_direct_preservation_precheck.ipynb)
-and run its single cell. That notebook fetches the current GitHub bootstrap
-and avoids the stale local `exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py"))`
-path that fails after a runtime reset.
+The direct-preservation repair recovered part of the direct-route loss, but it
+did **not** pass the broader nonnegative gate. The next action is the
+competence-preserving recurrent recovery pipeline:
 
-If you have a fresh G4/L4/A100 runtime and want the bounded continuation
-without babysitting a second cell, open
+```text
+STAGE5_CURRENT_A100_TARGET=traced_sft_competence_preserving_pipeline
+```
+
+This target runs the existing mixed ARC competence-recovery objective from the
+confirmed assessment and stops/publishes its result. A G4/L4 is appropriate;
+use A100/H100 only if availability/queueing makes it cheaper in practice.
+
+The repair checkpoint being recovered from is still:
+
+```text
+outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/summary.json
+best checkpoint: phase1_step_75.pt
+loop-1 ARC-Easy: 72/128 vs base 75/128
+status: direct_route_lift
+```
+
+Do not scale traces or add particles yet. The immediate job is still
+deterministic recurrent competence recovery.
+
+Cheap CPU diagnostic before the confirmation:
+
+```text
+outputs/stage5/stage5_local_hf_traced_sft_scale64_benchmark_20260623_201923/arc_easy_order_sensitivity_diagnosis.json
+```
+
+This diagnostic tested the strategy-agent hypothesis that the ARC-Easy content
+drop was caused by option-order sensitivity. Result:
+
+```text
+ARC-Easy content delta: -7
+content losses: 10
+losses on permutation-disagreeing rows: 0/10
+losses rescued by cyclic aggregation: 8/10
+recommendation: diagnose_content_route_scoring_or_prompt_alignment_before_more_distillation
+```
+
+Interpretation: this does **not** look like classic option-order sensitivity.
+It also does not look like simple knowledge erosion, because cyclic scoring
+rescues most losses. Treat the confirmation run as a test of whether the
+direct-preservation checkpoint fixed the content route without erasing the
+ARC-Challenge hard-tail lift.
+
+The older precheck notebook remains available for provenance:
+[`10_stage5_direct_preservation_precheck.ipynb`](10_stage5_direct_preservation_precheck.ipynb)
+but it is no longer the front-of-queue action for the current evidence state.
+
+The bounded auto-repair notebook also remains available:
 [`11_stage5_direct_preservation_g4_auto.ipynb`](11_stage5_direct_preservation_g4_auto.ipynb)
-instead. It targets `traced_sft_direct_preservation_probe`, which performs the
+It targets `traced_sft_direct_preservation_probe`, which performs the
 same loop-1 precheck internally, skips training if loop-1 already matches base,
 and otherwise runs only the bounded direct-preservation repair sweep. It does
 not rerun the long scale64 trace-SFT job.
@@ -142,7 +188,7 @@ if hf:
     os.environ["HF_TOKEN"] = hf
     os.environ["HUGGINGFACE_HUB_TOKEN"] = hf
 
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_direct_preservation_precheck"
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_competence_preserving_pipeline"
 
 url = (
     "https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/"
@@ -159,9 +205,10 @@ payload = json.loads(urllib.request.urlopen(req).read().decode("utf-8"))
 code = base64.b64decode(payload["content"]).decode("utf-8")
 required = [
     "sha_resolved_nested_fetch_v3",
-    "traced_sft_direct_preservation_precheck",
-    "STAGE5_DIRECT_PRESERVE_PRECHECK_ONLY",
-    "direct_route_precheck_needs_training",
+    "traced_sft_competence_preserving_pipeline",
+    "STAGE5_COMPETENCE_PRESERVING_PIPELINE_CELL_VERSION",
+    "stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment",
+    "colab/run_stage5_competence_preserving_pipeline.py",
 ]
 missing = [marker for marker in required if marker not in code]
 assert not missing, f"Fetched bootstrap is stale or incomplete: {missing}"
@@ -175,7 +222,7 @@ latest `main`; it can run a stale bootstrap if Colab keeps an old
 
 ```python
 import os
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_direct_preservation_precheck"
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_competence_preserving_pipeline"
 exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py", encoding="utf-8").read())
 ```
 

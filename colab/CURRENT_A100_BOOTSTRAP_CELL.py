@@ -30,6 +30,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "traced_sft_direct_preservation_probe" - content-route direct preservation from the scale64 checkpoint.
 #   "traced_sft_direct_preservation_recover_only" - publish surviving direct-preservation output without rerunning training.
 #   "traced_sft_direct_preservation_confirm" - larger loop-1 ARC confirmation after direct preservation passes.
+#   "traced_sft_competence_preserving_pipeline" - mixed recovery after confirmation still trails base.
 #   "traced_sft_depth_router_after_direct_preserve" - learned-depth continuation from a passed direct-preservation checkpoint.
 #   "traced_capability_ladder_sft" - GPU Phase 1 SFT from the latest gate-ready traced capability ladder.
 #   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
@@ -671,6 +672,30 @@ TARGETS = {
             "STAGE5_DIRECT_CONFIRM_DISCONNECT": "1",
         },
     },
+    "traced_sft_competence_preserving_pipeline": {
+        "path": "colab/STAGE5_COMPETENCE_PRESERVING_PIPELINE_CELL.py",
+        "markers": [
+            "STAGE5_COMPETENCE_PRESERVING_PIPELINE_CELL_VERSION",
+            "competence_preserving_pipeline_v1",
+            "traced_sft_competence_preserving_pipeline",
+            "STAGE5_COMPETENCE_SOURCE_SUMMARY",
+            "stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment",
+            "colab/run_stage5_competence_preserving_pipeline.py",
+            "tests/test_stage5_competence_preserving_pipeline.py",
+            "tests/test_stage5_balanced_arc_mix_gate.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_COMPETENCE_SOURCE_SUMMARY": (
+                "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment/summary.json"
+            ),
+            "STAGE5_COMPETENCE_PIPELINE_RUN_ID": (
+                "stage5_competence_preserving_from_direct_confirm_20260623"
+            ),
+            "STAGE5_COMPETENCE_PIPELINE_PUSH": "1",
+            "STAGE5_COMPETENCE_PIPELINE_DISCONNECT": "1",
+        },
+    },
     "traced_sft_depth_router_after_direct_preserve": {
         "path": "colab/STAGE5_DEPTH_ROUTER_AFTER_DIRECT_PRESERVE_CELL.py",
         "markers": [
@@ -692,7 +717,7 @@ TARGETS = {
                 "outputs/stage5/stage5_capability_ladder_trace_collection_20260623_194537/summary.json"
             ),
             "STAGE5_DEPTH_ROUTER_DIRECT_SOURCE_SUMMARY": (
-                "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64/summary.json"
+                "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/summary.json"
             ),
             "STAGE5_DEPTH_ROUTER_RUN_ID": "stage5_depth_router_after_direct_preserve_scale64",
             "STAGE5_DEPTH_ROUTER_STEPS": "100",
