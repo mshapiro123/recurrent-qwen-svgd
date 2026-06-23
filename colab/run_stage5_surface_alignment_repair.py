@@ -260,6 +260,29 @@ def benchmark_and_assess(checkpoint: Path) -> tuple[Path, Path]:
     return bench_summary, assess_summary
 
 
+def assess_surface_repair(source_benchmark: Path, repaired_benchmark: Path) -> dict[str, Any]:
+    output_json = RUN_DIR / "surface_repair_assessment.json"
+    output_md = RUN_DIR / "surface_repair_assessment.md"
+    run(
+        [
+            sys.executable,
+            "colab/assess_stage5_surface_repair.py",
+            "--source_benchmark_summary",
+            path_for_cli(source_benchmark),
+            "--repaired_benchmark_summary",
+            path_for_cli(repaired_benchmark),
+            "--output_json",
+            path_for_cli(output_json),
+            "--output_md",
+            path_for_cli(output_md),
+            "--allowed_challenge_regression",
+            os.environ.get("STAGE5_SURFACE_ALIGN_ALLOWED_CHALLENGE_REGRESSION", "0"),
+        ],
+        log_name="surface_repair_assessment.log",
+    )
+    return read_json(output_json)
+
+
 def write_summary(payload: dict[str, Any]) -> None:
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     summary = RUN_DIR / "summary.json"
@@ -275,6 +298,7 @@ def write_summary(payload: dict[str, Any]) -> None:
         f"- Train rows: `{payload['surface_alignment_rows']}`",
         f"- Checkpoint: `{payload.get('checkpoint') or 'not_trained'}`",
         f"- Assessment: `{payload.get('assessment_summary') or 'not_run'}`",
+        f"- Surface repair assessment: `{payload.get('surface_repair_assessment_summary') or 'not_run'}`",
         f"- Next step: {payload['next_step']}",
     ]
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -389,12 +413,22 @@ def main() -> int:
         raise FileNotFoundError(checkpoint_path)
     bench_summary, assessment_summary = benchmark_and_assess(checkpoint_path)
     assessment_payload = read_json(assessment_summary)
+    surface_repair_payload = assess_surface_repair(benchmark_summary, bench_summary)
     passed = bool(assessment_payload.get("passed"))
+    surface_repair_passed = bool(surface_repair_payload.get("passed"))
     payload = {
         "kind": "stage5_surface_alignment_repair",
         "run_id": RUN_ID,
-        "status": "surface_alignment_passed" if passed else "surface_alignment_not_passed",
-        "passed": passed,
+        "status": (
+            "surface_alignment_passed"
+            if passed and surface_repair_passed
+            else "surface_alignment_partial"
+            if surface_repair_payload.get("status") == "surface_repair_partial"
+            else "surface_alignment_tradeoff"
+            if surface_repair_payload.get("status") == "surface_repair_tradeoff"
+            else "surface_alignment_not_passed"
+        ),
+        "passed": passed and surface_repair_passed,
         "source_summary": path_for_cli(SOURCE_SUMMARY),
         "source_status": source_payload.get("status"),
         "benchmark_source_summary": path_for_cli(benchmark_summary),
@@ -416,11 +450,14 @@ def main() -> int:
         "checkpoint": path_for_cli(checkpoint_path),
         "benchmark_summary": path_for_cli(bench_summary),
         "assessment_summary": path_for_cli(assessment_summary),
+        "surface_repair_assessment_summary": path_for_cli(RUN_DIR / "surface_repair_assessment.json"),
+        "surface_repair_assessment_status": surface_repair_payload.get("status"),
+        "surface_repair_assessment": surface_repair_payload,
         "assessment_status": assessment_payload.get("status"),
         "assessment": assessment_payload,
         "next_step": (
             "Run same-recipe dense control or larger held-out confirmation."
-            if passed
+            if passed and surface_repair_passed
             else "Inspect content/cyclic deltas; if cyclic remains strong but content lags, add explicit score-level alignment."
         ),
     }

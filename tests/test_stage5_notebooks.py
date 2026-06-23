@@ -965,9 +965,11 @@ def test_traced_sft_surface_alignment_repair_target_is_bootstrapped() -> None:
     assert "stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment" in cell
     assert "eval/analyze_mcq_surface_mismatch.py" in cell
     assert "training/prepare_mcq_surface_alignment_jsonl.py" in cell
+    assert "colab/assess_stage5_surface_repair.py" in cell
     assert "colab/run_stage5_surface_alignment_repair.py" in cell
     assert "tests/test_prepare_mcq_surface_alignment_jsonl.py" in cell
     assert "tests/test_stage5_surface_alignment_repair.py" in cell
+    assert "tests/test_stage5_surface_repair_assessment.py" in cell
     assert "runtime.unassign" in cell
     assert "STAGE5_CURRENT_A100_TARGET=traced_sft_surface_alignment_repair" in current_action
     assert "prioritize_content_cyclic_surface_alignment" in current_action
