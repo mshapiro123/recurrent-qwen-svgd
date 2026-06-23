@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+from pathlib import Path
 
 
 def _row(delta: int, paired: int = 256) -> dict:
@@ -116,3 +117,15 @@ def test_offset_assessment_blocks_completed_with_failures() -> None:
 
     assert assessed["status"] == "offset_incomplete"
     assert assessed["passed"] is False
+
+
+def test_offset_summary_override_reuses_existing_summary(monkeypatch, tmp_path: Path) -> None:
+    summary = tmp_path / "summary.json"
+    summary.write_text("{}", encoding="utf-8")
+    monkeypatch.setenv("STAGE5_ARC_MIX_CHAIN_OFFSET_SUMMARY", str(summary))
+
+    imported = importlib.reload(module())
+
+    assert imported.run_offset_confirmation() == summary
+    monkeypatch.delenv("STAGE5_ARC_MIX_CHAIN_OFFSET_SUMMARY", raising=False)
+    importlib.reload(imported)

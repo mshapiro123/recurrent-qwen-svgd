@@ -37,6 +37,7 @@ OFFSET_RUN_ID = os.environ.get(
     "STAGE5_ARC_MIX_CHAIN_OFFSET_RUN_ID",
     f"{RUN_ID}_offset256_confirm",
 )
+OFFSET_SUMMARY_OVERRIDE = os.environ.get("STAGE5_ARC_MIX_CHAIN_OFFSET_SUMMARY", "").strip()
 DEPTH_RUN_ID = os.environ.get(
     "STAGE5_ARC_MIX_CHAIN_DEPTH_RUN_ID",
     f"{RUN_ID}_depth_routing_probe",
@@ -260,6 +261,12 @@ def assess_offset_confirmation(
 
 
 def run_offset_confirmation() -> Path:
+    if OFFSET_SUMMARY_OVERRIDE:
+        summary = resolve_path(OFFSET_SUMMARY_OVERRIDE)
+        if not summary.exists():
+            raise FileNotFoundError(f"Requested offset summary does not exist: {summary}")
+        print(f"Reusing offset summary: {path_for_cli(summary)}", flush=True)
+        return summary
     env = os.environ.copy()
     env["STAGE5_BENCHMARK_SUITE_RUN_ID"] = OFFSET_RUN_ID
     env["STAGE5_BENCHMARK_SOURCE_SUMMARY"] = SOURCE_SUMMARY
