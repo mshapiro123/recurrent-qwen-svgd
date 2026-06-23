@@ -46,6 +46,7 @@ HALT_TARGET_NLL_WEIGHT = os.environ.get("STAGE5_HALT_TARGET_REPAIR_NLL_WEIGHT", 
 PHASE1_STEPS = os.environ.get("STAGE5_HALT_TARGET_REPAIR_STEPS", "100")
 PHASE1_LR = os.environ.get("STAGE5_HALT_TARGET_REPAIR_LR", "2e-6")
 PHASE1_BETA = os.environ.get("STAGE5_HALT_TARGET_REPAIR_BETA", "0.12")
+OPTIMIZER_MODULES = os.environ.get("STAGE5_HALT_TARGET_REPAIR_OPTIMIZER_MODULES", "all")
 
 
 def path_for_cli(path: str | Path) -> str:
@@ -123,6 +124,7 @@ def main() -> int:
                 "phase1_steps": PHASE1_STEPS,
                 "phase1_lr": PHASE1_LR,
                 "phase1_beta": PHASE1_BETA,
+                "optimizer_modules": OPTIMIZER_MODULES,
             },
             indent=2,
         ),
@@ -159,6 +161,7 @@ def main() -> int:
             "STAGE5_CURRICULUM_PHASE1_LR": PHASE1_LR,
             "STAGE5_CURRICULUM_PHASE1_BETA": PHASE1_BETA,
             "STAGE5_CURRICULUM_HALT_TARGET_NLL_WEIGHT": HALT_TARGET_NLL_WEIGHT,
+            "STAGE5_CURRICULUM_OPTIMIZER_MODULES": OPTIMIZER_MODULES,
             "STAGE5_CURRICULUM_ALLOW_NO_DRIVE_BACKUP": "1",
             "STAGE5_CURRICULUM_ALLOW_CROSS_MODEL_ONLY_ANSWERS": "1",
             "STAGE5_CURRICULUM_SFT_DEPTH_GRADIENT_MARGIN": "0.25",

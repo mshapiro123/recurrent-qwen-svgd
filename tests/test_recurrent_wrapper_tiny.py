@@ -2,6 +2,7 @@ import torch
 from torch import nn
 
 from models.recurrent_wrapper import LayerSplit, RecurrentQwenForCausalLM
+from training.train_phase1_ponder import optimizer_parameters
 
 
 class TinyDecoderLayer(nn.Module):
@@ -206,6 +207,18 @@ def test_halting_target_nll_weight_adds_supervised_loop_loss_on_tiny_model():
     assert "halting_target_nll" in supervised.metrics
     assert torch.isfinite(supervised.metrics["halting_target_nll"])
     assert supervised.loss > baseline.loss
+
+
+def test_phase1_optimizer_parameters_can_select_halt_only_on_tiny_model():
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    wrapper.freeze_base_model()
+    all_params = optimizer_parameters(wrapper, {"optimizer_modules": "all"})
+    halt_params = optimizer_parameters(wrapper, {"optimizer_modules": "halt"})
+
+    expected_halt = [param for param in wrapper.halt_predictor.parameters() if param.requires_grad]
+    assert [id(param) for param in halt_params] == [id(param) for param in expected_halt]
+    assert len(halt_params) < len(all_params)
 
 
 def test_invalid_latent_injection_mode_raises():

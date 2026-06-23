@@ -41,6 +41,37 @@ def distillation_mask(batch: dict[str, torch.Tensor], mode: str) -> torch.Tensor
     raise ValueError("distillation.on must be one of: response, all")
 
 
+def optimizer_parameters(wrapper: RecurrentQwenForCausalLM, cfg: dict) -> list[torch.nn.Parameter]:
+    """Select which trainable components the optimizer updates.
+
+    ``requires_grad`` remains true for all lightweight adapter parameters so
+    checkpoints still include the complete adapter state. This selector only
+    controls which parameters receive optimizer steps.
+    """
+
+    modules = str(cfg.get("optimizer_modules", "all")).strip().lower()
+    if modules in {"", "all"}:
+        return wrapper.trainable_component_parameters()
+
+    selected: list[torch.nn.Parameter] = []
+    requested = {item.strip() for item in modules.split(",") if item.strip()}
+    valid = {"lora", "bridge", "halt", "latent"}
+    unknown = requested - valid
+    if unknown:
+        raise ValueError(f"Unknown optimizer_modules entries: {sorted(unknown)}")
+    if "lora" in requested:
+        selected.extend(param for param in wrapper.base_model.parameters() if param.requires_grad)
+    if "bridge" in requested:
+        selected.extend(param for param in wrapper.bridge.parameters() if param.requires_grad)
+    if "halt" in requested:
+        selected.extend(param for param in wrapper.halt_predictor.parameters() if param.requires_grad)
+    if "latent" in requested:
+        selected.extend(param for param in wrapper.latent_trajectory.parameters() if param.requires_grad)
+    if not selected:
+        raise ValueError(f"optimizer_modules={modules!r} selected no trainable parameters")
+    return selected
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="config/qwen_0_5b_phase1.yaml")
@@ -110,11 +141,14 @@ def main() -> int:
         shuffle=True,
         collate_fn=partial(collate_causal_batch, pad_token_id=tokenizer.pad_token_id),
     )
+    optimizer_params = optimizer_parameters(wrapper, cfg)
+    print(f"optimizer_parameter_tensors={len(optimizer_params)}")
     optimizer = torch.optim.AdamW(
-        wrapper.trainable_component_parameters(),
+        optimizer_params,
         lr=cfg.get("learning_rate", 1e-4),
         weight_decay=cfg.get("weight_decay", 0.0),
     )
+    wrapper.zero_grad(set_to_none=True)
 
     max_steps = int(cfg.get("max_steps", 100))
     save_every = int(cfg.get("save_every", 0) or 0)
@@ -151,12 +185,12 @@ def main() -> int:
             output.loss.backward()
             assert_finite_trainable_gradients(wrapper, step)
             torch.nn.utils.clip_grad_norm_(
-                wrapper.trainable_component_parameters(),
+                optimizer_params,
                 cfg.get("max_grad_norm", 1.0),
                 error_if_nonfinite=True,
             )
             optimizer.step()
-            optimizer.zero_grad(set_to_none=True)
+            wrapper.zero_grad(set_to_none=True)
             assert_finite_trainable_parameters(wrapper, step + 1)
 
             if step % cfg.get("log_every", 10) == 0:
