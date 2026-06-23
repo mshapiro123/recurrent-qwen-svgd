@@ -43,6 +43,10 @@ API_KEY_ENV = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_API_KEY_EN
 BASE_URL = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BASE_URL", "https://api.openai.com/v1")
 MODEL_OVERRIDE = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_OVERRIDE", "").strip()
 MODEL_MAP_JSON = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_MAP_JSON", "").strip()
+MODEL_MAP_JSON_INLINE = os.environ.get(
+    "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_MAP_JSON_INLINE",
+    "",
+).strip()
 COMMAND = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COMMAND", "").strip()
 LIMIT = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_LIMIT", "").strip()
 MAX_TOKENS = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MAX_TOKENS", "2048")
@@ -231,16 +235,33 @@ def provider_config_ready() -> tuple[bool, str]:
         return True, "dry_run"
     if not RUN_PROVIDER:
         return False, "Set STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER=1 before provider/API spend."
-    if BACKEND == "openai_compatible" and not (MODEL_OVERRIDE or MODEL_MAP_JSON):
+    if BACKEND == "openai_compatible" and not (MODEL_OVERRIDE or MODEL_MAP_JSON or MODEL_MAP_JSON_INLINE):
         return False, "Set STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_OVERRIDE or MODEL_MAP_JSON."
     if BACKEND == "command" and not COMMAND:
         return False, "Set STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COMMAND for backend=command."
     return True, "ready"
 
 
+def inline_model_map_path() -> Path | None:
+    if not MODEL_MAP_JSON_INLINE:
+        return None
+    try:
+        payload = json.loads(MODEL_MAP_JSON_INLINE)
+    except json.JSONDecodeError as exc:
+        raise ValueError("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_MAP_JSON_INLINE is invalid JSON.") from exc
+    if not isinstance(payload, dict) or not payload:
+        raise ValueError("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_MAP_JSON_INLINE must be a non-empty JSON object.")
+    if any(not isinstance(key, str) or not isinstance(value, str) for key, value in payload.items()):
+        raise ValueError("Inline model map must map string logical model names to string provider model ids.")
+    path = RUN_DIR / "model_map.json"
+    write_json(path, payload)
+    return path
+
+
 def run_responses(jobs_jsonl: Path) -> tuple[Path, Path, dict[str, Any]]:
     responses_jsonl = RUN_DIR / "trace_responses.jsonl"
     report_json = RUN_DIR / "trace_response_report.json"
+    model_map_path = resolve_path(MODEL_MAP_JSON) if MODEL_MAP_JSON else inline_model_map_path()
     cmd = [
         sys.executable,
         "training/run_curriculum_job_responses.py",
@@ -284,14 +305,14 @@ def run_responses(jobs_jsonl: Path) -> tuple[Path, Path, dict[str, Any]]:
         )
         if MODEL_OVERRIDE:
             cmd.extend(["--model_override", MODEL_OVERRIDE])
-        if MODEL_MAP_JSON:
-            cmd.extend(["--model_map_json", MODEL_MAP_JSON])
+        if model_map_path is not None:
+            cmd.extend(["--model_map_json", path_for_cli(model_map_path)])
     elif BACKEND == "command":
         cmd.extend(["--command", COMMAND])
         if MODEL_OVERRIDE:
             cmd.extend(["--model_override", MODEL_OVERRIDE])
-        if MODEL_MAP_JSON:
-            cmd.extend(["--model_map_json", MODEL_MAP_JSON])
+        if model_map_path is not None:
+            cmd.extend(["--model_map_json", path_for_cli(model_map_path)])
     run(cmd, check=False, log_name="run_curriculum_job_responses.log")
     return responses_jsonl, report_json, read_json(report_json)
 
@@ -333,7 +354,13 @@ def safe_commit(summary_path: Path, *, update_pointer: bool, include_responses: 
     if not PUSH_RESULTS:
         return
     pointer = update_current_source_summary(summary_path) if update_pointer else None
-    safe_paths = [summary_path, RUN_DIR / "summary.md", RUN_DIR / "trace_response_report.json", pointer]
+    safe_paths = [
+        summary_path,
+        RUN_DIR / "summary.md",
+        RUN_DIR / "trace_response_report.json",
+        RUN_DIR / "model_map.json",
+        pointer,
+    ]
     if include_responses and COMMIT_RESPONSES:
         safe_paths.append(RUN_DIR / "trace_responses.jsonl")
     for path in safe_paths:

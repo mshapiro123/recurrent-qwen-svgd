@@ -15,6 +15,26 @@ def test_provider_config_requires_explicit_provider_opt_in(monkeypatch) -> None:
     assert "RUN_PROVIDER=1" in reason
 
 
+def test_inline_model_map_is_written_to_run_dir(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "repo"
+    run_dir = root / "outputs" / "stage5" / "trace_responses"
+    monkeypatch.setattr(runner, "ROOT", root)
+    monkeypatch.setattr(runner, "RUN_DIR", run_dir)
+    monkeypatch.setattr(
+        runner,
+        "MODEL_MAP_JSON_INLINE",
+        '{"opus-strong":"provider/model-a","glm-strong":"provider/model-b"}',
+    )
+
+    path = runner.inline_model_map_path()
+
+    assert path == run_dir / "model_map.json"
+    assert json.loads(path.read_text(encoding="utf-8")) == {
+        "opus-strong": "provider/model-a",
+        "glm-strong": "provider/model-b",
+    }
+
+
 def test_write_summary_records_safe_response_artifacts(tmp_path, monkeypatch) -> None:
     root = tmp_path / "repo"
     run_dir = root / "outputs" / "stage5" / "trace_responses"

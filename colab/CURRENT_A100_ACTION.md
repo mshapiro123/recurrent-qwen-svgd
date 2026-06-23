@@ -323,6 +323,10 @@ os.environ["STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_trace_response_col
 # os.environ["STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BACKEND"] = "openai_compatible"
 # os.environ["STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_API_KEY_ENV"] = "OPENROUTER_API_KEY"
 # os.environ["STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_OVERRIDE"] = "anthropic/claude-3.5-sonnet"
+# Or map the two logical teacher jobs separately:
+# os.environ["STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_MAP_JSON_INLINE"] = (
+#     '{"opus-strong":"anthropic/claude-3.5-sonnet","glm-strong":"google/gemini-2.5-pro"}'
+# )
 
 # Optional bounded pilot:
 # os.environ["STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_LIMIT"] = "16"
@@ -389,6 +393,7 @@ os.environ["STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_trace_responses_cp
 # os.environ["STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BACKEND"] = "openai_compatible"
 # os.environ["STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_API_KEY_ENV"] = "OPENAI_API_KEY"
 # os.environ["STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_OVERRIDE"] = "gpt-5-mini"
+# Or set STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_MAP_JSON_INLINE to a JSON object.
 
 # Optional bounded pilot:
 # os.environ["STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_LIMIT"] = "16"
