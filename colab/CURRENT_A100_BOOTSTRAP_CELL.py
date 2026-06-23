@@ -269,10 +269,20 @@ else:
 for key, value in selected["env"].items():
     os.environ[key] = value
 if TARGET == "depth_sweep_heldout":
-    os.environ.setdefault(
-        "STAGE5_DEPTH_SWEEP_RUN_ID",
-        time.strftime("stage5_depth_sweep_arc_heldout_tail_loop123_%Y%m%d_%H%M%S"),
-    )
+    if os.environ.get("STAGE5_DEPTH_SWEEP_RUN_ID_LOCKED", "0").strip().lower() not in {
+        "1",
+        "true",
+        "yes",
+        "y",
+    }:
+        os.environ["STAGE5_DEPTH_SWEEP_RUN_ID"] = time.strftime(
+            "stage5_depth_sweep_arc_heldout_tail_loop123_%Y%m%d_%H%M%S"
+        )
+    else:
+        os.environ.setdefault(
+            "STAGE5_DEPTH_SWEEP_RUN_ID",
+            time.strftime("stage5_depth_sweep_arc_heldout_tail_loop123_%Y%m%d_%H%M%S"),
+        )
 os.environ.setdefault("STAGE5_SAFE_CONTINUE_DISCONNECT", "1")
 
 launcher_path = selected["path"]

@@ -205,7 +205,12 @@ def publish_results(paths):
         print("No depth sweep outputs changed.", flush=True)
         return
     run(["git", "commit", "-m", f"Record Stage 5 loop depth sweep {paths[-1].name}"], cwd=ROOT)
-    run(["git", "push", "origin", "main"], cwd=ROOT, check=False)
+    push = run(["git", "push", "origin", "main"], cwd=ROOT, check=False)
+    if push.returncode == 0:
+        return
+    print("Initial push failed; rebasing once and retrying.", flush=True)
+    run(["git", "pull", "--rebase", "origin", "main"], cwd=ROOT)
+    run(["git", "push", "origin", "main"], cwd=ROOT)
 
 
 def disconnect(reason):
