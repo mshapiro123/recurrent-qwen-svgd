@@ -128,8 +128,9 @@ the latest traced checkpoint, and benchmark ARC-Easy plus ARC-Challenge:
 Set `os.environ["STAGE5_CURRENT_A100_TARGET"] =
 "capability_ladder_local_hf_trace_sft_scale64"` before running the bootstrap
 cell. This target explicitly follows the original capability-ladder trace-job
-summary, uses `Qwen/Qwen2.5-7B-Instruct` locally, requires at least 48 accepted
-trace rows, resumes from
+summary, reuses the committed 32-response local-HF run and resumes it to 64
+responses, uses `Qwen/Qwen2.5-7B-Instruct` locally, requires at least 48
+accepted trace rows, resumes SFT from
 `outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_191843/phase1/phase1_step_150.pt`,
 and disconnects after pushing the post-SFT benchmark.
 
@@ -613,6 +614,9 @@ TARGETS = {
         "env": {
             "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_SOURCE_SUMMARY": (
                 "outputs/stage5/stage5_capability_ladder_trace_jobs_20260623_150116/summary.json"
+            ),
+            "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_ID": (
+                "stage5_capability_ladder_trace_responses_20260623_191545"
             ),
             "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_LIMIT": "64",
             "STAGE5_TRACED_CAPABILITY_SFT_MIN_TRACE_ROWS": "48",

@@ -45,7 +45,9 @@ This target:
 
 ```text
 1. Starts from the existing 132 capability-ladder trace jobs.
-2. Generates 64 local-HF Qwen-7B traces.
+2. Reuses the committed 32-response local-HF run and resumes it to 64
+   local-HF Qwen-7B traces, so a restarted runtime should only generate the
+   missing jobs.
 3. Requires at least 48 verified positive SFT rows.
 4. Continues SFT from:
    outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_191843/phase1/phase1_step_150.pt
