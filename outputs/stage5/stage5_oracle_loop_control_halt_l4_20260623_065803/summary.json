@@ -1,0 +1,194 @@
+{
+  "run_id": "stage5_oracle_loop_control_halt_l4_20260623_065803",
+  "kind": "stage5_curriculum_sft",
+  "status": "validation_sane",
+  "config": {
+    "run_id": "stage5_oracle_loop_control_halt_l4_20260623_065803",
+    "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+    "work_dir": "data/curriculum/stage5_oracle_loop_control_halt_l4_20260623_065803_mcq_ladder",
+    "summary_json": "data/curriculum/stage5_oracle_loop_control_halt_l4_20260623_065803_mcq_ladder/summary.json",
+    "curriculum_input_backup_dir": "/content/drive/MyDrive/recurrent-qwen-svgd/curriculum_runs",
+    "input_restore": {
+      "restored": false,
+      "work_dir": "data/curriculum/stage5_oracle_loop_control_halt_l4_20260623_065803_mcq_ladder",
+      "summary_json": "data/curriculum/stage5_oracle_loop_control_halt_l4_20260623_065803_mcq_ladder/summary.json"
+    },
+    "min_positive_rows": 50,
+    "min_mode_rows": "direct=20,deep_narrow=20",
+    "max_length": 512,
+    "max_loops": 4,
+    "max_steps": 200,
+    "learning_rate": 0.0005,
+    "beta": 0.12,
+    "halt_target_nll_weight": 10.0,
+    "optimizer_modules": "halt",
+    "use_target_loop_control": true,
+    "depth_hint_style": "natural",
+    "dtype": "bfloat16",
+    "adapter_dtype": "float32",
+    "commit_checkpoints": true
+  },
+  "sft_gate": {
+    "status": "go_train_recurrent_sft",
+    "go": true,
+    "issues": [],
+    "checks": {
+      "reports": {
+        "exported_examples": 73,
+        "typed_records": 73,
+        "verified": 73,
+        "decontaminated": 73,
+        "method_solutions": 73,
+        "naturalness_judgments": 73,
+        "min_natural_agree": 2,
+        "min_distinct_agree": 2,
+        "distinctness_required": false,
+        "depth_measurements": 73,
+        "difficulty_measured": 73,
+        "programmatic_answer_check_required": false,
+        "answer_line_verification_allowed": false
+      },
+      "typed_records": {
+        "rows": 73,
+        "invalid_rows": 0,
+        "positive_missing_answer_match": 0,
+        "mode_counts": {
+          "deep_narrow": 40,
+          "direct": 33
+        },
+        "role_counts": {
+          "positive_depth": 40,
+          "positive_direct": 33
+        }
+      },
+      "positive_sft": {
+        "rows": 73,
+        "bad_rows": 0,
+        "role_counts": {
+          "positive_depth": 40,
+          "positive_direct": 33
+        },
+        "mode_counts": {
+          "deep_narrow": 40,
+          "direct": 33
+        },
+        "source_model_counts": {
+          "qwen_0_5b": 33,
+          "qwen_1_5b": 22,
+          "qwen_3b": 10,
+          "qwen_7b": 8
+        },
+        "mode_requirements": {
+          "deep_narrow": {
+            "required": 20,
+            "observed": 40,
+            "passed": true
+          },
+          "direct": {
+            "required": 20,
+            "observed": 33,
+            "passed": true
+          }
+        }
+      }
+    }
+  },
+  "input_restore": {
+    "restored": false,
+    "work_dir": "data/curriculum/stage5_oracle_loop_control_halt_l4_20260623_065803_mcq_ladder",
+    "summary_json": "data/curriculum/stage5_oracle_loop_control_halt_l4_20260623_065803_mcq_ladder/summary.json"
+  },
+  "dataset": {
+    "source_positive_sft": "data/curriculum/stage5_oracle_loop_control_halt_l4_20260623_065803_mcq_ladder/positive_sft.jsonl",
+    "rows": 73,
+    "train_rows": 66,
+    "val_rows": 7,
+    "val_fraction": 0.1,
+    "val_min_rows": 1,
+    "split_seed": 17,
+    "depth_hint_style": "natural",
+    "train_mode_counts": {
+      "deep_narrow": 36,
+      "direct": 30
+    },
+    "val_mode_counts": {
+      "deep_narrow": 4,
+      "direct": 3
+    }
+  },
+  "drive_preflight": {
+    "drive_root": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts",
+    "available": true,
+    "allow_no_backup": true
+  },
+  "backup": {
+    "backed_up": true,
+    "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5_oracle_loop_control_halt_l4_20260623_065803"
+  },
+  "resume_from": "outputs/stage5/stage5_halt_target_repair_strong_l4_20260623_061610/phase1/phase1_step_150.pt",
+  "phase1_checkpoint": "outputs/stage5/stage5_oracle_loop_control_halt_l4_20260623_065803/phase1/phase1_step_200.pt",
+  "phase1_val": {
+    "lora_recurrent_modules": 84.0,
+    "examples": 7.0,
+    "expected_ce": 0.538774,
+    "halting_kl": 0.703523,
+    "loss": 0.623197,
+    "mean_expected_loops": 1.549337,
+    "mean_halt_entropy": 0.548582,
+    "target_loop_abs_error": 0.801766,
+    "target_mean_loops": 2.285714,
+    "group/curriculum_mode/deep_narrow/examples": 4.0,
+    "group/curriculum_mode/deep_narrow/expected_ce": 0.348948,
+    "group/curriculum_mode/deep_narrow/halting_kl": 0.869333,
+    "group/curriculum_mode/deep_narrow/loss": 0.453268,
+    "group/curriculum_mode/deep_narrow/mean_expected_loops": 1.904125,
+    "group/curriculum_mode/deep_narrow/mean_halt_entropy": 0.76074,
+    "group/curriculum_mode/deep_narrow/target_loop_abs_error": 1.345875,
+    "group/curriculum_mode/deep_narrow/target_mean_loops": 3.25,
+    "group/curriculum_mode/direct/examples": 3.0,
+    "group/curriculum_mode/direct/expected_ce": 0.791876,
+    "group/curriculum_mode/direct/halting_kl": 0.482443,
+    "group/curriculum_mode/direct/loss": 0.849769,
+    "group/curriculum_mode/direct/mean_expected_loops": 1.076288,
+    "group/curriculum_mode/direct/mean_halt_entropy": 0.265705,
+    "group/curriculum_mode/direct/target_loop_abs_error": 0.076288,
+    "group/curriculum_mode/direct/target_mean_loops": 1.0
+  },
+  "phase1_val_by_mode": {
+    "deep_narrow": {
+      "examples": 4.0,
+      "expected_ce": 0.348948,
+      "halting_kl": 0.869333,
+      "loss": 0.453268,
+      "mean_expected_loops": 1.904125,
+      "mean_halt_entropy": 0.76074,
+      "target_loop_abs_error": 1.345875,
+      "target_mean_loops": 3.25
+    },
+    "direct": {
+      "examples": 3.0,
+      "expected_ce": 0.791876,
+      "halting_kl": 0.482443,
+      "loss": 0.849769,
+      "mean_expected_loops": 1.076288,
+      "mean_halt_entropy": 0.265705,
+      "target_loop_abs_error": 0.076288,
+      "target_mean_loops": 1.0
+    }
+  },
+  "validation_checks": {
+    "status": "validation_sane",
+    "issues": [],
+    "nonfinite_metrics": [],
+    "min_mean_expected_loops": 1.05,
+    "mean_expected_loops": 1.549337,
+    "require_depth_gradient": true,
+    "depth_gradient": {
+      "available": true,
+      "direct_mean_expected_loops": 1.076288,
+      "deep_narrow_mean_expected_loops": 1.904125,
+      "required_margin": 0.25,
+      "observed": true
+    }
+  }
+}

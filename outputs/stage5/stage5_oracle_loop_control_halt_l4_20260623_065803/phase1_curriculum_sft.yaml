@@ -1,0 +1,26 @@
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+dtype: bfloat16
+adapter_dtype: float32
+layer_split: 6,18
+max_length: 512
+max_loops: 4
+initial_halt_prob: 0.15
+beta: 0.12
+halt_target_nll_weight: 10.0
+optimizer_modules: halt
+use_target_loop_control: true
+batch_size: 1
+learning_rate: 0.0005
+weight_decay: 0.0
+max_grad_norm: 0.3
+max_steps: 200
+save_every: 0
+log_every: 25
+train_on_prompt: false
+output_dir: outputs/stage5/stage5_oracle_loop_control_halt_l4_20260623_065803/phase1
+lora:
+  enabled: true
+  rank: 8
+  alpha: 16
+  dropout: 0.0
+resume_from: outputs/stage5/stage5_halt_target_repair_strong_l4_20260623_061610/phase1/phase1_step_150.pt
