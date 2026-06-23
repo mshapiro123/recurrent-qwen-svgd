@@ -52,6 +52,11 @@ def main() -> int:
     parser.add_argument("--lora_alpha", type=int, default=16)
     parser.add_argument("--adapter_dtype", default="float32")
     parser.add_argument(
+        "--use_target_loop_control",
+        action="store_true",
+        help="Pass each row's target_loop_count into the structural halt-control channel.",
+    )
+    parser.add_argument(
         "--group_by_field",
         help=(
             "Optional JSONL row field for grouped metrics. Requires batch_size=1 "
@@ -110,6 +115,8 @@ def main() -> int:
     with torch.no_grad():
         for batch in loader:
             batch = {key: value.to(args.device) for key, value in batch.items()}
+            if args.use_target_loop_control:
+                batch["halt_control_loop_counts"] = batch["target_loop_counts"]
             output = wrapper(
                 **batch,
                 max_loops=args.max_loops,

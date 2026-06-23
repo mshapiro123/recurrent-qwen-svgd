@@ -76,6 +76,10 @@ BETA = float(os.environ.get("STAGE5_CURRICULUM_PHASE1_BETA", "0.08"))
 HALT_TARGET_NLL_WEIGHT = float(os.environ.get("STAGE5_CURRICULUM_HALT_TARGET_NLL_WEIGHT", "0.0"))
 OPTIMIZER_MODULES = os.environ.get("STAGE5_CURRICULUM_OPTIMIZER_MODULES", "all").strip() or "all"
 DEPTH_HINT_STYLE = os.environ.get("STAGE5_CURRICULUM_DEPTH_HINT_STYLE", "none").strip().lower()
+USE_TARGET_LOOP_CONTROL = os.environ.get(
+    "STAGE5_CURRICULUM_USE_TARGET_LOOP_CONTROL",
+    "0",
+).strip().lower() in {"1", "true", "yes", "y"}
 MAX_GRAD_NORM = float(os.environ.get("STAGE5_CURRICULUM_PHASE1_MAX_GRAD_NORM", "0.3"))
 MIN_MEAN_EXPECTED_LOOPS = float(os.environ.get("STAGE5_CURRICULUM_SFT_MIN_MEAN_EXPECTED_LOOPS", "1.05"))
 DEPTH_GRADIENT_MARGIN = float(os.environ.get("STAGE5_CURRICULUM_SFT_DEPTH_GRADIENT_MARGIN", "0.25"))
@@ -499,6 +503,7 @@ def phase1_config(train_output_dir: Path, resume_from: Path | None) -> dict[str,
         "beta": BETA,
         "halt_target_nll_weight": HALT_TARGET_NLL_WEIGHT,
         "optimizer_modules": OPTIMIZER_MODULES,
+        "use_target_loop_control": USE_TARGET_LOOP_CONTROL,
         "batch_size": 1,
         "learning_rate": LEARNING_RATE,
         "weight_decay": 0.0,
@@ -616,33 +621,36 @@ def validation_checks(
 
 
 def eval_jsonl(label: str, data_jsonl: Path, checkpoint: Path) -> dict[str, float]:
+    command = [
+        sys.executable,
+        "eval/eval_jsonl.py",
+        "--model_name",
+        MODEL_NAME,
+        "--data_jsonl",
+        path_for_cli(data_jsonl),
+        "--checkpoint",
+        path_for_cli(checkpoint),
+        "--split",
+        "6,18",
+        "--max_loops",
+        str(MAX_LOOPS),
+        "--max_length",
+        str(MAX_LENGTH),
+        "--beta",
+        str(BETA),
+        "--dtype",
+        DTYPE,
+        "--adapter_dtype",
+        ADAPTER_DTYPE,
+        "--device",
+        DEVICE,
+        "--group_by_field",
+        "curriculum_mode",
+    ]
+    if USE_TARGET_LOOP_CONTROL:
+        command.append("--use_target_loop_control")
     proc = run(
-        [
-            sys.executable,
-            "eval/eval_jsonl.py",
-            "--model_name",
-            MODEL_NAME,
-            "--data_jsonl",
-            path_for_cli(data_jsonl),
-            "--checkpoint",
-            path_for_cli(checkpoint),
-            "--split",
-            "6,18",
-            "--max_loops",
-            str(MAX_LOOPS),
-            "--max_length",
-            str(MAX_LENGTH),
-            "--beta",
-            str(BETA),
-            "--dtype",
-            DTYPE,
-            "--adapter_dtype",
-            ADAPTER_DTYPE,
-            "--device",
-            DEVICE,
-            "--group_by_field",
-            "curriculum_mode",
-        ],
+        command,
         log_name=f"{label}_val.log",
     )
     return summarize_jsonl_eval(proc.stdout)
@@ -720,6 +728,7 @@ def write_summary(payload: dict[str, Any]) -> None:
         f"- Train mode counts: `{payload['dataset'].get('train_mode_counts')}`",
         f"- Validation mode counts: `{payload['dataset'].get('val_mode_counts')}`",
         f"- Depth hint style: `{payload['dataset'].get('depth_hint_style')}`",
+        f"- Target loop control: `{payload['config'].get('use_target_loop_control')}`",
         f"- Drive preflight: `{payload['drive_preflight']}`",
         f"- Validation status: `{payload.get('validation_checks', {}).get('status')}`",
         f"- Validation issues: `{payload.get('validation_checks', {}).get('issues', [])}`",
@@ -770,6 +779,7 @@ def main() -> int:
         "beta": BETA,
         "halt_target_nll_weight": HALT_TARGET_NLL_WEIGHT,
         "optimizer_modules": OPTIMIZER_MODULES,
+        "use_target_loop_control": USE_TARGET_LOOP_CONTROL,
         "depth_hint_style": DEPTH_HINT_STYLE,
         "dtype": DTYPE,
         "adapter_dtype": ADAPTER_DTYPE,

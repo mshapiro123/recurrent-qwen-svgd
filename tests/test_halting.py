@@ -50,3 +50,29 @@ def test_loop_conditioned_halting_can_shift_specific_loop():
     shifted = predictor(pooled, loop_idx=2)
 
     assert torch.all(shifted > baseline)
+
+
+def test_target_loop_control_is_identity_at_initialization():
+    predictor = SequenceHaltingPredictor(hidden_size=4, initial_halt_prob=0.25)
+    pooled = torch.randn(3, 4)
+    target_loops = torch.tensor([1, 2, 4])
+
+    unconditioned = predictor(pooled, loop_idx=1)
+    controlled = predictor(pooled, loop_idx=1, target_loop_counts=target_loops)
+
+    assert torch.allclose(unconditioned, controlled)
+
+
+def test_target_loop_control_bias_can_shift_specific_target_and_loop():
+    predictor = SequenceHaltingPredictor(hidden_size=4, initial_halt_prob=0.25)
+    pooled = torch.randn(3, 4)
+    target_loops = torch.tensor([1, 3, 3])
+
+    with torch.no_grad():
+        predictor.target_loop_bias[2, 1] = 1.0
+
+    baseline = predictor(pooled, loop_idx=1)
+    shifted = predictor(pooled, loop_idx=1, target_loop_counts=target_loops).squeeze(-1)
+
+    assert torch.allclose(shifted[:1], baseline.squeeze(-1)[:1])
+    assert torch.all(shifted[1:] > baseline.squeeze(-1)[1:])

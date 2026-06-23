@@ -156,6 +156,8 @@ def main() -> int:
     while step < max_steps:
         for batch in loader:
             batch = {key: value.to(args.device) for key, value in batch.items()}
+            if cfg.get("use_target_loop_control", False):
+                batch["halt_control_loop_counts"] = batch["target_loop_counts"]
             output = wrapper(
                 **batch,
                 max_loops=cfg.get("max_loops", 4),

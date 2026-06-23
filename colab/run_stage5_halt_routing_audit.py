@@ -31,6 +31,10 @@ MODEL_NAME = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
 DEVICE = os.environ.get("DEVICE", "cuda")
+USE_TARGET_LOOP_CONTROL = os.environ.get(
+    "STAGE5_HALT_ROUTING_AUDIT_USE_TARGET_LOOP_CONTROL",
+    "0",
+).strip().lower() in {"1", "true", "yes", "y"}
 PUSH_RESULTS = os.environ.get("STAGE5_HALT_ROUTING_AUDIT_PUSH", "1").strip().lower() in {
     "1",
     "true",
@@ -166,35 +170,35 @@ def main() -> int:
     if not positive_sft.exists():
         raise FileNotFoundError(positive_sft)
 
-    proc = run(
-        [
-            sys.executable,
-            "eval/eval_jsonl.py",
-            "--model_name",
-            MODEL_NAME,
-            "--data_jsonl",
-            path_for_cli(positive_sft),
-            "--checkpoint",
-            path_for_cli(checkpoint),
-            "--split",
-            "6,18",
-            "--max_loops",
-            str((payload.get("config") or {}).get("max_loops", 4)),
-            "--max_length",
-            str((payload.get("config") or {}).get("max_length", 512)),
-            "--beta",
-            str((payload.get("config") or {}).get("beta", 0.08)),
-            "--dtype",
-            DTYPE,
-            "--adapter_dtype",
-            ADAPTER_DTYPE,
-            "--device",
-            DEVICE,
-            "--group_by_field",
-            "curriculum_mode",
-        ],
-        log_name="full_positive_sft_eval.log",
-    )
+    command = [
+        sys.executable,
+        "eval/eval_jsonl.py",
+        "--model_name",
+        MODEL_NAME,
+        "--data_jsonl",
+        path_for_cli(positive_sft),
+        "--checkpoint",
+        path_for_cli(checkpoint),
+        "--split",
+        "6,18",
+        "--max_loops",
+        str((payload.get("config") or {}).get("max_loops", 4)),
+        "--max_length",
+        str((payload.get("config") or {}).get("max_length", 512)),
+        "--beta",
+        str((payload.get("config") or {}).get("beta", 0.08)),
+        "--dtype",
+        DTYPE,
+        "--adapter_dtype",
+        ADAPTER_DTYPE,
+        "--device",
+        DEVICE,
+        "--group_by_field",
+        "curriculum_mode",
+    ]
+    if USE_TARGET_LOOP_CONTROL:
+        command.append("--use_target_loop_control")
+    proc = run(command, log_name="full_positive_sft_eval.log")
     metrics = metric_lines(proc.stdout)
     by_mode = grouped(metrics)
     direct = by_mode.get("direct", {}).get("mean_expected_loops")
@@ -206,6 +210,7 @@ def main() -> int:
         "source_summary": path_for_cli(source_summary),
         "checkpoint": path_for_cli(checkpoint),
         "positive_sft": path_for_cli(positive_sft),
+        "use_target_loop_control": USE_TARGET_LOOP_CONTROL,
         "metrics": metrics,
         "by_mode": by_mode,
         "depth_gradient": {
@@ -223,6 +228,7 @@ def main() -> int:
         f"- Source summary: `{summary['source_summary']}`",
         f"- Checkpoint: `{summary['checkpoint']}`",
         f"- Positive SFT: `{summary['positive_sft']}`",
+        f"- Target loop control: `{summary['use_target_loop_control']}`",
         f"- Mean loops: `{metrics.get('mean_expected_loops')}`",
         f"- Direct loops: `{direct}`",
         f"- Deep-narrow loops: `{deep}`",

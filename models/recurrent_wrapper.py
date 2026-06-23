@@ -233,6 +233,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         svgd_kernel_geometry: str = "euclidean",
         svgd_projection_seed: int = 0,
         target_loop_counts: Optional[torch.Tensor] = None,
+        halt_control_loop_counts: Optional[torch.Tensor] = None,
         target_loop_prior: Optional[torch.Tensor] = None,
         return_loop_logits: bool = False,
         force_base_model: bool = False,
@@ -365,6 +366,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         flat_causal_mask = causal_mask
         flat_position_embeddings = position_embeddings
         labels_flat = labels
+        halt_control_flat = halt_control_loop_counts
 
         if num_trajectories > 1 and not inputs_are_trajectories:
             hidden_states = repeat_for_trajectories(hidden_states, num_trajectories)
@@ -373,6 +375,7 @@ class RecurrentQwenForCausalLM(nn.Module):
             flat_attention_mask = repeat_for_trajectories(attention_mask, num_trajectories)
             flat_position_ids = repeat_for_trajectories(position_ids, num_trajectories)
             labels_flat = repeat_for_trajectories(labels, num_trajectories)
+            halt_control_flat = repeat_for_trajectories(halt_control_flat, num_trajectories)
             flat_causal_mask = self._update_causal_mask(
                 flat_attention_mask,
                 hidden_states,
@@ -446,7 +449,13 @@ class RecurrentQwenForCausalLM(nn.Module):
                 latent_kls.append(latent_stats.kl)
 
             pooled = masked_mean(recurrent_state, flat_attention_mask)
-            halt_probs.append(self.halt_predictor(pooled, loop_idx=loop_idx).squeeze(-1))
+            halt_probs.append(
+                self.halt_predictor(
+                    pooled,
+                    loop_idx=loop_idx,
+                    target_loop_counts=halt_control_flat,
+                ).squeeze(-1)
+            )
 
             coda_hidden, attentions = self._run_layer_range(
                 start=self.layer_split.recurrent_end,

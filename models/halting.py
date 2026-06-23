@@ -55,19 +55,49 @@ class SequenceHaltingPredictor(nn.Module):
         self.proj = nn.Linear(hidden_size, 1)
         self.loop_embedding = nn.Embedding(max_loop_embeddings, hidden_size)
         self.loop_bias = nn.Parameter(torch.zeros(max_loop_embeddings))
+        self.target_loop_embedding = nn.Embedding(max_loop_embeddings, hidden_size)
+        self.target_loop_bias = nn.Parameter(torch.zeros(max_loop_embeddings, max_loop_embeddings))
         with torch.no_grad():
             nn.init.zeros_(self.proj.weight)
             self.proj.bias.fill_(math.log(initial_halt_prob / (1.0 - initial_halt_prob)))
             nn.init.zeros_(self.loop_embedding.weight)
+            nn.init.zeros_(self.target_loop_embedding.weight)
 
-    def forward(self, pooled_hidden: torch.Tensor, loop_idx: int | None = None) -> torch.Tensor:
+    def forward(
+        self,
+        pooled_hidden: torch.Tensor,
+        loop_idx: int | None = None,
+        target_loop_counts: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         pooled = pooled_hidden.to(dtype=self.proj.weight.dtype)
-        logit = self.proj(pooled).squeeze(-1)
+        target_indices = None
         if loop_idx is not None:
             index = min(max(int(loop_idx), 0), self.loop_embedding.num_embeddings - 1)
             loop_embedding = self.loop_embedding.weight[index].to(device=pooled.device, dtype=pooled.dtype)
-            loop_bias = self.loop_bias[index].to(device=pooled.device, dtype=pooled.dtype)
-            logit = self.proj(pooled + loop_embedding.unsqueeze(0)).squeeze(-1) + loop_bias
+            pooled = pooled + loop_embedding.unsqueeze(0)
+        if target_loop_counts is not None:
+            target_indices = (
+                target_loop_counts.to(device=pooled.device, dtype=torch.long)
+                .view(-1)
+                .clamp(1, self.target_loop_embedding.num_embeddings)
+                - 1
+            )
+            if target_indices.numel() != pooled.shape[0]:
+                raise ValueError(
+                    "target_loop_counts must have one value per pooled sequence. "
+                    f"Got {target_indices.numel()} targets for batch {pooled.shape[0]}."
+                )
+            target_embedding = self.target_loop_embedding(target_indices).to(dtype=pooled.dtype)
+            pooled = pooled + target_embedding
+
+        logit = self.proj(pooled).squeeze(-1)
+        if loop_idx is not None:
+            loop_index = min(max(int(loop_idx), 0), self.loop_embedding.num_embeddings - 1)
+            loop_bias = self.loop_bias[loop_index].to(device=pooled.device, dtype=pooled.dtype)
+            logit = logit + loop_bias
+            if target_indices is not None:
+                target_bias = self.target_loop_bias[target_indices, loop_index].to(dtype=pooled.dtype)
+                logit = logit + target_bias
         return torch.sigmoid(logit).unsqueeze(-1)
 
 
