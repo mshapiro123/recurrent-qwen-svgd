@@ -1,0 +1,7 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=validation
+offset=0
+rows=32
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_model_viability/stage5_model_viability_qwen_3b_20260623_020135/arc_easy_validation.jsonl
