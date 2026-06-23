@@ -1,0 +1,82 @@
+{
+  "run_id": "curriculum_sft_gate_20260623_061219",
+  "kind": "curriculum_sft_gate",
+  "summary_json": "/content/recurrent-qwen-svgd/data/curriculum/stage5_halt_target_repair_l4_20260623_061215_mcq_ladder/summary.json",
+  "work_dir": "/content/recurrent-qwen-svgd/data/curriculum/stage5_halt_target_repair_l4_20260623_061215_mcq_ladder",
+  "go": true,
+  "status": "go_train_recurrent_sft",
+  "issues": [],
+  "checks": {
+    "reports": {
+      "exported_examples": 73,
+      "typed_records": 73,
+      "verified": 73,
+      "decontaminated": 73,
+      "method_solutions": 73,
+      "naturalness_judgments": 73,
+      "min_natural_agree": 2,
+      "min_distinct_agree": 2,
+      "distinctness_required": false,
+      "depth_measurements": 73,
+      "difficulty_measured": 73,
+      "programmatic_answer_check_required": false,
+      "answer_line_verification_allowed": false
+    },
+    "typed_records": {
+      "rows": 73,
+      "invalid_rows": 0,
+      "positive_missing_answer_match": 0,
+      "mode_counts": {
+        "deep_narrow": 40,
+        "direct": 33
+      },
+      "role_counts": {
+        "positive_depth": 40,
+        "positive_direct": 33
+      }
+    },
+    "positive_sft": {
+      "rows": 73,
+      "bad_rows": 0,
+      "role_counts": {
+        "positive_depth": 40,
+        "positive_direct": 33
+      },
+      "mode_counts": {
+        "deep_narrow": 40,
+        "direct": 33
+      },
+      "source_model_counts": {
+        "qwen_0_5b": 33,
+        "qwen_1_5b": 22,
+        "qwen_3b": 10,
+        "qwen_7b": 8
+      },
+      "mode_requirements": {
+        "deep_narrow": {
+          "required": 20,
+          "observed": 40,
+          "passed": true
+        },
+        "direct": {
+          "required": 20,
+          "observed": 33,
+          "passed": true
+        }
+      }
+    }
+  },
+  "artifacts": {
+    "decontam_report": "/content/recurrent-qwen-svgd/data/curriculum/stage5_halt_target_repair_l4_20260623_061215_mcq_ladder/decontam_report.json",
+    "depth_report": "/content/recurrent-qwen-svgd/data/curriculum/stage5_halt_target_repair_l4_20260623_061215_mcq_ladder/depth_report.json",
+    "difficulty_report": "/content/recurrent-qwen-svgd/data/curriculum/stage5_halt_target_repair_l4_20260623_061215_mcq_ladder/difficulty_report.json",
+    "method_solutions_report": "/content/recurrent-qwen-svgd/data/curriculum/stage5_halt_target_repair_l4_20260623_061215_mcq_ladder/method_solutions_report.json",
+    "naturalness_report": "/content/recurrent-qwen-svgd/data/curriculum/stage5_halt_target_repair_l4_20260623_061215_mcq_ladder/naturalness_report.json",
+    "positive_sft": "/content/recurrent-qwen-svgd/data/curriculum/stage5_halt_target_repair_l4_20260623_061215_mcq_ladder/positive_sft.jsonl",
+    "positive_sft_report": "/content/recurrent-qwen-svgd/data/curriculum/stage5_halt_target_repair_l4_20260623_061215_mcq_ladder/positive_sft_report.json",
+    "summary": "/content/recurrent-qwen-svgd/data/curriculum/stage5_halt_target_repair_l4_20260623_061215_mcq_ladder/summary.json",
+    "typed_records": "/content/recurrent-qwen-svgd/data/curriculum/stage5_halt_target_repair_l4_20260623_061215_mcq_ladder/typed_records.jsonl",
+    "typed_records_report": "/content/recurrent-qwen-svgd/data/curriculum/stage5_halt_target_repair_l4_20260623_061215_mcq_ladder/typed_records_report.json",
+    "verified_candidates_report": "/content/recurrent-qwen-svgd/data/curriculum/stage5_halt_target_repair_l4_20260623_061215_mcq_ladder/verified_candidates_report.json"
+  }
+}
