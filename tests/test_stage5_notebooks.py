@@ -692,6 +692,9 @@ def test_capability_ladder_local_hf_trace_sft_target_is_bootstrapped() -> None:
     assert "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_MIN_VRAM_MB" in plain
     assert "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_SKIP_VRAM_CHECK" in plain
     assert "local_hf_trace_vram_preflight" in plain
+    assert "stage5_local_hf_trace_sft_failure" in plain
+    assert "failure_summary:" in plain
+    assert "set_stage(\"local_hf_trace_responses\")" in plain
     assert "cyclic_label_aggregated" in plain
     assert "runtime.unassign()" in plain
     assert "capability_ladder_local_hf_trace_sft" in bootstrap

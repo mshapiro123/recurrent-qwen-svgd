@@ -13,6 +13,7 @@ import os
 import subprocess
 import sys
 import time
+import traceback
 from pathlib import Path
 
 from google.colab import runtime, userdata
@@ -25,6 +26,13 @@ ROOT = Path("/content/recurrent-qwen-svgd")
 DEFAULT_TRACE_MODEL = "Qwen/Qwen2.5-7B-Instruct"
 DEFAULT_STUDENT_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
 MIN_TRACE_ROWS_DEFAULT = 16
+CURRENT_STAGE = "startup"
+
+
+def set_stage(name):
+    global CURRENT_STAGE
+    CURRENT_STAGE = str(name)
+    print(f"stage={CURRENT_STAGE}", flush=True)
 
 
 def secret(*names):
@@ -83,6 +91,63 @@ def run(cmd, cwd=None, env=None, check=True):
         print("FAILED_COMMAND_TAIL_END", flush=True)
         raise subprocess.CalledProcessError(returncode, cmd, output=stdout)
     return subprocess.CompletedProcess(cmd, returncode, stdout, None)
+
+
+def write_failure_summary(exc_type, exc, tb):
+    """Persist a redacted crash summary so failed GPU runs leave evidence."""
+    try:
+        run_id = time.strftime("stage5_local_hf_trace_sft_failure_%Y%m%d_%H%M%S")
+        run_dir = ROOT / "outputs" / "stage5" / run_id
+        run_dir.mkdir(parents=True, exist_ok=True)
+        pointer = ROOT / "config" / "stage5_current_source_summary.txt"
+        try:
+            git_head = subprocess.check_output(
+                ["git", "rev-parse", "--short", "HEAD"],
+                cwd=str(ROOT),
+                text=True,
+                stderr=subprocess.DEVNULL,
+            ).strip()
+        except Exception:
+            git_head = ""
+        traceback_lines = traceback.format_exception(exc_type, exc, tb)
+        payload = {
+            "kind": "stage5_local_hf_trace_sft_failure",
+            "status": "failed",
+            "run_id": run_id,
+            "stage": CURRENT_STAGE,
+            "exception_type": getattr(exc_type, "__name__", str(exc_type)),
+            "exception": redact(str(exc)),
+            "traceback_tail": [redact(line.rstrip()) for line in "".join(traceback_lines).splitlines()[-120:]],
+            "current_source_summary": pointer.read_text(encoding="utf-8").strip() if pointer.exists() else "",
+            "git_head": git_head,
+            "target": os.environ.get("STAGE5_CURRENT_A100_TARGET", ""),
+            "response_run_id": os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_ID", ""),
+            "response_limit": os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_LIMIT", ""),
+        }
+        summary = run_dir / "summary.json"
+        summary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        print("failure_summary:", path_for_cli(summary), flush=True)
+        if (ROOT / ".git").exists():
+            subprocess.run(["git", "add", "-f", path_for_cli(summary)], cwd=str(ROOT), check=False)
+            subprocess.run(
+                ["git", "commit", "-m", f"Record local HF trace SFT failure {run_id} [skip ci]"],
+                cwd=str(ROOT),
+                check=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+            subprocess.run(["git", "push", "origin", "main"], cwd=str(ROOT), check=False)
+    except Exception as hook_exc:
+        print("failure_summary_hook_failed:", redact(str(hook_exc)), flush=True)
+
+
+def failure_excepthook(exc_type, exc, tb):
+    write_failure_summary(exc_type, exc, tb)
+    sys.__excepthook__(exc_type, exc, tb)
+
+
+sys.excepthook = failure_excepthook
 
 
 def env_flag(name, default):
@@ -380,10 +445,12 @@ print(
     flush=True,
 )
 
+set_stage("gpu_vram_preflight")
 run(["nvidia-smi"], cwd=Path("/content"), check=False)
 require_enough_vram_for_local_hf()
 
 clone_url = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
+set_stage("repo_sync")
 if ROOT.exists():
     run(["git", "remote", "set-url", "origin", clone_url], cwd=ROOT)
     run(["git", "fetch", "origin", "main"], cwd=ROOT)
@@ -395,8 +462,10 @@ else:
 run(["git", "config", "user.email", "colab-runner@local"], cwd=ROOT)
 run(["git", "config", "user.name", "Colab Runner"], cwd=ROOT)
 run(["git", "log", "--oneline", "-5"], cwd=ROOT)
+set_stage("install_dependencies")
 run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"], cwd=ROOT)
 
+set_stage("hf_auth")
 if HF_TOKEN:
     from huggingface_hub import HfApi, login
 
@@ -406,6 +475,7 @@ if HF_TOKEN:
 else:
     print("HF auth skipped; local 7B download may be rate limited.", flush=True)
 
+set_stage("preflight_tests")
 run(
     [
         sys.executable,
@@ -495,17 +565,21 @@ if trace_run_id:
     resume_report["run_id"] = trace_run_id
     print({"local_hf_trace_resume_preflight": resume_report}, flush=True)
 
+set_stage("local_hf_trace_responses")
 print("=== Local-HF trace responses ===", flush=True)
 run([sys.executable, "colab/run_stage5_capability_ladder_trace_responses.py"], cwd=ROOT, env=trace_env)
 
+set_stage("sync_after_trace_responses")
 print("=== Sync after trace response commit ===", flush=True)
 run(["git", "pull", "--rebase", "origin", "main"], cwd=ROOT)
 
+set_stage("trace_collection")
 print("=== Trace collection/gate ===", flush=True)
 run([sys.executable, "colab/run_stage5_capability_ladder_trace_collect.py"], cwd=ROOT, env=trace_env)
 
 run_sft = env_flag("STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_RUN_SFT", "1")
 if run_sft:
+    set_stage("traced_capability_sft")
     print("=== Bounded traced capability-ladder recurrent SFT ===", flush=True)
     trace_collection = resolve_trace_collection_summary()
     sft_env = derive_sft_env(trace_collection)
@@ -513,6 +587,7 @@ if run_sft:
 
     run_benchmark = env_flag("STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_RUN_BENCHMARK", "1")
     if run_benchmark:
+        set_stage("post_sft_benchmark")
         print("=== Bounded post-SFT recurrent-vs-base benchmark ===", flush=True)
         summary_pointer = ROOT / "config" / "stage5_current_source_summary.txt"
         source_summary = summary_pointer.read_text(encoding="utf-8").strip()
@@ -555,6 +630,7 @@ if run_sft:
         run([sys.executable, "colab/run_stage5_benchmark_suite.py"], cwd=ROOT, env=benchmark_env)
         run_assessment = env_flag("STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_RUN_ASSESSMENT", "1")
         if run_assessment:
+            set_stage("traced_sft_assessment")
             print("=== Traced-SFT benchmark assessment ===", flush=True)
             assessment_source = summary_pointer.read_text(encoding="utf-8").strip()
             assessment_env = os.environ.copy()
