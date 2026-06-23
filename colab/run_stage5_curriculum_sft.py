@@ -73,6 +73,7 @@ MAX_STEPS = int(os.environ.get("STAGE5_CURRICULUM_PHASE1_STEPS", "150"))
 SAVE_EVERY = int(os.environ.get("STAGE5_CURRICULUM_PHASE1_SAVE_EVERY", "0"))
 LEARNING_RATE = float(os.environ.get("STAGE5_CURRICULUM_PHASE1_LR", "1e-5"))
 BETA = float(os.environ.get("STAGE5_CURRICULUM_PHASE1_BETA", "0.08"))
+HALT_TARGET_NLL_WEIGHT = float(os.environ.get("STAGE5_CURRICULUM_HALT_TARGET_NLL_WEIGHT", "0.0"))
 MAX_GRAD_NORM = float(os.environ.get("STAGE5_CURRICULUM_PHASE1_MAX_GRAD_NORM", "0.3"))
 MIN_MEAN_EXPECTED_LOOPS = float(os.environ.get("STAGE5_CURRICULUM_SFT_MIN_MEAN_EXPECTED_LOOPS", "1.05"))
 DEPTH_GRADIENT_MARGIN = float(os.environ.get("STAGE5_CURRICULUM_SFT_DEPTH_GRADIENT_MARGIN", "0.25"))
@@ -436,6 +437,7 @@ def phase1_config(train_output_dir: Path, resume_from: Path | None) -> dict[str,
         "max_loops": MAX_LOOPS,
         "initial_halt_prob": 0.15,
         "beta": BETA,
+        "halt_target_nll_weight": HALT_TARGET_NLL_WEIGHT,
         "batch_size": 1,
         "learning_rate": LEARNING_RATE,
         "weight_decay": 0.0,
@@ -702,6 +704,7 @@ def main() -> int:
         "max_steps": MAX_STEPS,
         "learning_rate": LEARNING_RATE,
         "beta": BETA,
+        "halt_target_nll_weight": HALT_TARGET_NLL_WEIGHT,
         "dtype": DTYPE,
         "adapter_dtype": ADAPTER_DTYPE,
         "commit_checkpoints": COMMIT_CHECKPOINTS,
