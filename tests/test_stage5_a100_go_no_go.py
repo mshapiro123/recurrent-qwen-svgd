@@ -12,6 +12,7 @@ from colab.check_stage5_a100_go_no_go import (
     curriculum_sft_checkpoint_availability,
     curriculum_sft_input_availability,
     normalize_min_mode_rows,
+    normalize_min_target_loop_rows,
     promoted_stage4_opus_sources,
     routing_repair_profile_preflight,
     routing_repair_checkpoint_availability,
@@ -796,12 +797,59 @@ def test_curriculum_sft_requires_gate_specific_mode_rows() -> None:
     assert allowed["status"] == "go_curriculum_sft"
 
 
+def test_curriculum_sft_requires_gate_specific_target_loop_rows() -> None:
+    source_payload = {
+        "kind": "curriculum_sft_gate",
+        "go": True,
+        "checks": {
+            "positive_sft": {
+                "mode_requirements": {
+                    "wide": {"required": 64, "observed": 80, "passed": True},
+                },
+                "target_loop_requirements": {
+                    "1": {"required": 32, "observed": 40, "passed": True},
+                    "3": {"required": 16, "observed": 20, "passed": True},
+                },
+            }
+        },
+    }
+    wrong = {
+        "name": "Run generated curriculum SFT",
+        "command": (
+            "STAGE5_CURRICULUM_MIN_MODE_ROWS=wide=64 "
+            "STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS=1=32 "
+            "python colab/run_stage5_curriculum_sft.py"
+        ),
+    }
+    right = {
+        "name": "Run generated curriculum SFT",
+        "command": (
+            "STAGE5_CURRICULUM_MIN_MODE_ROWS=wide=64 "
+            "STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS=1=32,3=16 "
+            "python colab/run_stage5_curriculum_sft.py"
+        ),
+    }
+
+    blocked = classify_action(wrong, source_payload=source_payload)
+    allowed = classify_action(right, source_payload=source_payload)
+
+    assert blocked["go"] is False
+    assert blocked["status"] == "curriculum_sft_target_loop_gate_mismatch"
+    assert "STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS" in blocked["reason"]
+    assert allowed["go"] is True
+    assert allowed["status"] == "go_curriculum_sft"
+
+
 def test_curriculum_sft_allows_gate_ready_trace_collection() -> None:
     source_payload = {
         "kind": "stage5_capability_ladder_trace_collection",
         "status": "trace_curriculum_gate_ready",
         "curriculum": {
-            "counts": {"positive_sft_rows": 24, "mode_counts": {"direct": 12, "deep_narrow": 12}},
+            "counts": {
+                "positive_sft_rows": 24,
+                "mode_counts": {"direct": 12, "deep_narrow": 12},
+                "target_loop_counts": {"1": 16, "2": 8},
+            },
         },
         "gate": {"go": True},
     }
@@ -809,21 +857,37 @@ def test_curriculum_sft_allows_gate_ready_trace_collection() -> None:
         "name": "Run traced capability-ladder recurrent SFT",
         "command": (
             "STAGE5_CURRICULUM_MIN_MODE_ROWS=deep_narrow=12,direct=12 "
+            "STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS=1=16,2=8 "
             "python colab/run_stage5_curriculum_sft.py"
         ),
     }
     wrong = {
         "name": "Run traced capability-ladder recurrent SFT",
-        "command": "STAGE5_CURRICULUM_MIN_MODE_ROWS=direct=12 python colab/run_stage5_curriculum_sft.py",
+        "command": (
+            "STAGE5_CURRICULUM_MIN_MODE_ROWS=direct=12 "
+            "STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS=1=16,2=8 "
+            "python colab/run_stage5_curriculum_sft.py"
+        ),
+    }
+    wrong_loop = {
+        "name": "Run traced capability-ladder recurrent SFT",
+        "command": (
+            "STAGE5_CURRICULUM_MIN_MODE_ROWS=deep_narrow=12,direct=12 "
+            "STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS=1=16 "
+            "python colab/run_stage5_curriculum_sft.py"
+        ),
     }
 
     allowed = classify_action(action, source_payload=source_payload)
     blocked = classify_action(wrong, source_payload=source_payload)
+    loop_blocked = classify_action(wrong_loop, source_payload=source_payload)
 
     assert allowed["go"] is True
     assert allowed["status"] == "go_curriculum_sft"
     assert blocked["go"] is False
     assert blocked["status"] == "curriculum_sft_mode_gate_mismatch"
+    assert loop_blocked["go"] is False
+    assert loop_blocked["status"] == "curriculum_sft_target_loop_gate_mismatch"
 
 
 def test_curriculum_sft_blocks_tiny_trace_collection() -> None:
@@ -858,6 +922,7 @@ def test_curriculum_mode_row_helpers_normalize_command_env() -> None:
 
     assert command_env_assignments(command)["STAGE5_CURRICULUM_MIN_MODE_ROWS"] == "deep_narrow=8,direct=16"
     assert normalize_min_mode_rows("direct=16,deep_narrow=8") == "deep_narrow=8,direct=16"
+    assert normalize_min_target_loop_rows("3=8,1=16") == "1=16,3=8"
 
 
 def test_candidate_gate_allowed_only_for_bootstrap_source() -> None:

@@ -289,6 +289,7 @@ def test_complete_capability_ladder_curriculum_recommends_observed_count_sft_gat
             "typed_records": 30,
             "positive_sft_rows": 30,
             "mode_counts": {"direct": 12, "deep_narrow": 18},
+            "target_loop_counts": {"1": 12, "2": 10, "3": 8},
         },
     }
     source.write_text(json.dumps(payload), encoding="utf-8")
@@ -302,6 +303,7 @@ def test_complete_capability_ladder_curriculum_recommends_observed_count_sft_gat
     assert "capability_ladder/curriculum_sft_gate.json" in actions[0]["command"].replace("\\", "/")
     assert "--min_positive_rows 30" in actions[0]["command"]
     assert "--min_mode_rows deep_narrow=18,direct=12" in actions[0]["command"]
+    assert "--min_target_loop_rows 1=12,2=10,3=8" in actions[0]["command"]
     assert "run_stage5_curriculum_sft.py" not in actions[0]["command"]
 
 
@@ -319,6 +321,7 @@ def test_capability_ladder_mcq_probe_with_rows_recommends_trace_jobs_before_sft_
                 "typed_records": 9,
                 "positive_sft_rows": 9,
                 "mode_counts": {"direct": 5, "deep_narrow": 4},
+                "target_loop_counts": {"1": 5, "2": 4},
             },
         },
     }
@@ -338,6 +341,7 @@ def test_capability_ladder_mcq_probe_with_rows_recommends_trace_jobs_before_sft_
     assert "--work_dir data/curriculum/probe" in actions[1]["command"]
     assert "--min_positive_rows 9" in actions[1]["command"]
     assert "--min_mode_rows direct=5,deep_narrow=4" in actions[1]["command"]
+    assert "--min_target_loop_rows 1=5,2=4" in actions[1]["command"]
     assert "--allow_cross_model_only_answers" in actions[1]["command"]
     assert "run_stage5_curriculum_sft.py" not in actions[1]["command"]
 
@@ -447,7 +451,11 @@ def test_capability_ladder_trace_collection_gate_ready_recommends_sft_gate(tmp_p
         "curriculum": {
             "summary_json": "data/curriculum/traced/summary.json",
             "work_dir": "data/curriculum/traced",
-            "counts": {"positive_sft_rows": 24, "mode_counts": {"direct": 12, "deep_narrow": 12}},
+            "counts": {
+                "positive_sft_rows": 24,
+                "mode_counts": {"direct": 12, "deep_narrow": 12},
+                "target_loop_counts": {"1": 16, "2": 8},
+            },
         },
         "gate": {"go": True},
         "drive_backup": {"dest_root": "/content/drive/MyDrive/recurrent-qwen-svgd/stage5_capability_ladder_trace_collection/run"},
@@ -463,6 +471,7 @@ def test_capability_ladder_trace_collection_gate_ready_recommends_sft_gate(tmp_p
     assert "STAGE5_CURRICULUM_SUMMARY_JSON=data/curriculum/traced/summary.json" in actions[0]["command"]
     assert "STAGE5_CURRICULUM_MIN_POSITIVE_ROWS=24" in actions[0]["command"]
     assert "STAGE5_CURRICULUM_MIN_MODE_ROWS=deep_narrow=12,direct=12" in actions[0]["command"]
+    assert "STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS=1=16,2=8" in actions[0]["command"]
     assert "STAGE5_CURRICULUM_PHASE1_STEPS=96" in actions[0]["command"]
     assert "STAGE5_CURRICULUM_INPUT_BACKUP_DIR=/content/drive/MyDrive/recurrent-qwen-svgd/stage5_capability_ladder_trace_collection/run" in actions[0]["command"]
 

@@ -296,6 +296,28 @@ def normalize_min_mode_rows(value: str) -> str:
     return ",".join(f"{mode}={count}" for mode, count in sorted(items))
 
 
+def normalize_min_target_loop_rows(value: str) -> str:
+    items: list[tuple[int, int]] = []
+    for raw in str(value or "").split(","):
+        item = raw.strip()
+        if not item:
+            continue
+        if "=" in item:
+            loop, count = item.split("=", 1)
+        elif ":" in item:
+            loop, count = item.split(":", 1)
+        else:
+            return ""
+        try:
+            parsed_loop = int(loop.strip())
+            parsed_count = int(count.strip())
+        except ValueError:
+            return ""
+        if parsed_loop > 0 and parsed_count > 0:
+            items.append((parsed_loop, parsed_count))
+    return ",".join(f"{loop}={count}" for loop, count in sorted(items))
+
+
 def source_curriculum_min_mode_rows(source_payload: dict[str, Any]) -> str:
     if source_payload.get("kind") == "stage5_capability_ladder_trace_collection":
         curriculum = source_payload.get("curriculum") if isinstance(source_payload.get("curriculum"), dict) else {}
@@ -319,6 +341,31 @@ def source_curriculum_min_mode_rows(source_payload: dict[str, Any]) -> str:
         if parsed:
             return parsed
     return normalize_min_mode_rows(os.environ.get("STAGE5_CURRICULUM_GATE_MIN_MODE_ROWS", DEFAULT_CURRICULUM_MIN_MODE_ROWS))
+
+
+def source_curriculum_min_target_loop_rows(source_payload: dict[str, Any]) -> str:
+    if source_payload.get("kind") == "stage5_capability_ladder_trace_collection":
+        curriculum = source_payload.get("curriculum") if isinstance(source_payload.get("curriculum"), dict) else {}
+        counts = curriculum.get("counts") if isinstance(curriculum.get("counts"), dict) else {}
+        loop_counts = counts.get("target_loop_counts") if isinstance(counts.get("target_loop_counts"), dict) else {}
+        parsed = normalize_min_target_loop_rows(
+            ",".join(f"{loop}={int(count or 0)}" for loop, count in loop_counts.items())
+        )
+        if parsed:
+            return parsed
+    loop_requirements = ((source_payload.get("checks") or {}).get("positive_sft") or {}).get("target_loop_requirements")
+    if isinstance(loop_requirements, dict):
+        items = []
+        for loop, payload in loop_requirements.items():
+            if not isinstance(payload, dict):
+                continue
+            count = int(payload.get("required") or 0)
+            if count > 0:
+                items.append(f"{loop}={count}")
+        parsed = normalize_min_target_loop_rows(",".join(items))
+        if parsed:
+            return parsed
+    return normalize_min_target_loop_rows(os.environ.get("STAGE5_CURRICULUM_GATE_MIN_TARGET_LOOP_ROWS", ""))
 
 
 def source_trace_curriculum_positive_rows(source_payload: dict[str, Any]) -> int:
@@ -1128,6 +1175,22 @@ def classify_action(
                         "Generated curriculum SFT requires an explicit mode-coverage gate in "
                         "STAGE5_CURRICULUM_MIN_MODE_ROWS before paid GPU training. "
                         f"Expected {expected_min_mode_rows!r}, got {env.get('STAGE5_CURRICULUM_MIN_MODE_ROWS')!r}."
+                    ),
+                }
+            expected_min_target_loop_rows = source_curriculum_min_target_loop_rows(source_payload)
+            actual_min_target_loop_rows = normalize_min_target_loop_rows(
+                env.get("STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS", "")
+            )
+            if expected_min_target_loop_rows and actual_min_target_loop_rows != expected_min_target_loop_rows:
+                return {
+                    "go": False,
+                    "status": "curriculum_sft_target_loop_gate_mismatch",
+                    "spend_class": "none",
+                    "reason": (
+                        "Generated curriculum SFT requires an explicit target-loop coverage gate in "
+                        "STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS before paid GPU training. "
+                        f"Expected {expected_min_target_loop_rows!r}, got "
+                        f"{env.get('STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS')!r}."
                     ),
                 }
             return {

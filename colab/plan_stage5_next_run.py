@@ -1025,6 +1025,21 @@ def mode_rows_from_counts(payload: dict[str, Any]) -> str:
     return ",".join(rows)
 
 
+def target_loop_rows_from_counts(payload: dict[str, Any]) -> str:
+    counts = payload.get("counts") if isinstance(payload.get("counts"), dict) else {}
+    loop_counts = counts.get("target_loop_counts") if isinstance(counts.get("target_loop_counts"), dict) else {}
+    rows = []
+    for target_loop, count in sorted(loop_counts.items(), key=lambda item: int(item[0]) if str(item[0]).isdigit() else 999):
+        try:
+            loop_value = int(target_loop)
+            count_value = int(count)
+        except (TypeError, ValueError):
+            continue
+        if loop_value > 0 and count_value > 0:
+            rows.append(f"{loop_value}={count_value}")
+    return ",".join(rows)
+
+
 def curriculum_pipeline_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status") or "unknown")
     work_dir = str(payload.get("work_dir") or source_summary.parent).replace("\\", "/")
@@ -1095,8 +1110,12 @@ def capability_ladder_curriculum_actions(payload: dict[str, Any], *, source_summ
         counts = payload.get("counts") if isinstance(payload.get("counts"), dict) else {}
         min_positive = int(counts.get("positive_sft_rows") or counts.get("typed_records") or 0)
         min_mode_rows = mode_rows_from_counts(payload)
+        min_target_loop_rows = target_loop_rows_from_counts(payload)
         min_positive_clause = f"--min_positive_rows {min_positive} " if min_positive > 0 else ""
         min_mode_clause = f"--min_mode_rows {shlex.quote(min_mode_rows)} " if min_mode_rows else ""
+        min_target_loop_clause = (
+            f"--min_target_loop_rows {shlex.quote(min_target_loop_rows)} " if min_target_loop_rows else ""
+        )
         return [
             make_action(
                 "Run capability-ladder SFT safety gate",
@@ -1112,6 +1131,7 @@ def capability_ladder_curriculum_actions(payload: dict[str, Any], *, source_summ
                     f"--output_md {shlex.quote(command_path(gate_md))} "
                     f"{min_positive_clause}"
                     f"{min_mode_clause}"
+                    f"{min_target_loop_clause}"
                     "--fail_on_no_go"
                 ),
                 10,
@@ -1137,6 +1157,7 @@ def capability_ladder_probe_actions(payload: dict[str, Any], *, source_summary: 
     counts = curriculum.get("counts") if isinstance(curriculum.get("counts"), dict) else {}
     positive_rows = int(counts.get("positive_sft_rows") or counts.get("typed_records") or 0)
     mode_counts = counts.get("mode_counts") if isinstance(counts.get("mode_counts"), dict) else {}
+    loop_counts = counts.get("target_loop_counts") if isinstance(counts.get("target_loop_counts"), dict) else {}
     direct = int(mode_counts.get("direct") or 0)
     deep = int(mode_counts.get("deep_narrow") or 0)
 
@@ -1155,6 +1176,14 @@ def capability_ladder_probe_actions(payload: dict[str, Any], *, source_summary: 
             if item
         )
         min_mode_clause = f"--min_mode_rows {shlex.quote(min_mode_rows)} " if min_mode_rows else ""
+        min_target_loop_rows = ",".join(
+            f"{loop}={int(count)}"
+            for loop, count in sorted(loop_counts.items(), key=lambda item: int(item[0]) if str(item[0]).isdigit() else 999)
+            if int(count or 0) > 0
+        )
+        min_target_loop_clause = (
+            f"--min_target_loop_rows {shlex.quote(min_target_loop_rows)} " if min_target_loop_rows else ""
+        )
         work_dir_clause = f"--work_dir {shlex.quote(work_dir)} " if work_dir else ""
         actions = []
         if scored_jsonl:
@@ -1192,6 +1221,7 @@ def capability_ladder_probe_actions(payload: dict[str, Any], *, source_summary: 
                     f"--output_md {shlex.quote(command_path(gate_md))} "
                     f"--min_positive_rows {min_positive} "
                     f"{min_mode_clause}"
+                    f"{min_target_loop_clause}"
                     "--allow_cross_model_only_answers"
                 ),
                 10,
@@ -1328,9 +1358,15 @@ def capability_ladder_trace_collection_actions(payload: dict[str, Any], *, sourc
     counts = curriculum.get("counts") if isinstance(curriculum.get("counts"), dict) else {}
     positive_rows = int(counts.get("positive_sft_rows") or 0)
     mode_counts = counts.get("mode_counts") if isinstance(counts.get("mode_counts"), dict) else {}
+    loop_counts = counts.get("target_loop_counts") if isinstance(counts.get("target_loop_counts"), dict) else {}
     min_mode_rows = ",".join(
         f"{mode}={int(count)}"
         for mode, count in sorted(mode_counts.items())
+        if int(count or 0) > 0
+    )
+    min_target_loop_rows = ",".join(
+        f"{loop}={int(count)}"
+        for loop, count in sorted(loop_counts.items(), key=lambda item: int(item[0]) if str(item[0]).isdigit() else 999)
         if int(count or 0) > 0
     )
     gate = payload.get("gate") if isinstance(payload.get("gate"), dict) else {}
@@ -1358,6 +1394,8 @@ def capability_ladder_trace_collection_actions(payload: dict[str, Any], *, sourc
         }
         if min_mode_rows:
             assignments["STAGE5_CURRICULUM_MIN_MODE_ROWS"] = min_mode_rows
+        if min_target_loop_rows:
+            assignments["STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS"] = min_target_loop_rows
         drive_backup = payload.get("drive_backup") if isinstance(payload.get("drive_backup"), dict) else {}
         drive_root = str(drive_backup.get("dest_root") or "").strip()
         if drive_root:

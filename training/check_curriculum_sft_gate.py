@@ -126,6 +126,45 @@ def parse_min_mode_rows(values: list[str] | None) -> dict[str, int]:
     return requirements
 
 
+def parse_min_target_loop_rows(values: list[str] | None) -> dict[int, int]:
+    requirements: dict[int, int] = {}
+    for value in values or []:
+        for item in str(value).split(","):
+            item = item.strip()
+            if not item:
+                continue
+            if "=" in item:
+                loop, count = item.split("=", 1)
+            elif ":" in item:
+                loop, count = item.split(":", 1)
+            else:
+                raise argparse.ArgumentTypeError(
+                    f"Invalid --min_target_loop_rows item {item!r}; expected loop=count."
+                )
+            try:
+                parsed_loop = int(loop.strip())
+            except ValueError as exc:
+                raise argparse.ArgumentTypeError(
+                    f"Invalid loop target in --min_target_loop_rows item {item!r}; expected integer."
+                ) from exc
+            if parsed_loop <= 0:
+                raise argparse.ArgumentTypeError(
+                    f"Invalid loop target in --min_target_loop_rows item {item!r}; expected positive integer."
+                )
+            try:
+                parsed_count = int(count.strip())
+            except ValueError as exc:
+                raise argparse.ArgumentTypeError(
+                    f"Invalid row count in --min_target_loop_rows item {item!r}; expected integer."
+                ) from exc
+            if parsed_count < 0:
+                raise argparse.ArgumentTypeError(
+                    f"Invalid row count in --min_target_loop_rows item {item!r}; expected non-negative integer."
+                )
+            requirements[parsed_loop] = parsed_count
+    return requirements
+
+
 def check_required_artifacts(
     summary: dict[str, Any],
     required: list[str],
@@ -152,6 +191,7 @@ def check_positive_sft_rows(
     role_counts: Counter[str] = Counter()
     mode_counts: Counter[str] = Counter()
     source_model_counts: Counter[str] = Counter()
+    target_loop_counts: Counter[str] = Counter()
     bad_rows = 0
     for index, row in enumerate(rows):
         role = str(row.get("trace_role") or "")
@@ -193,12 +233,15 @@ def check_positive_sft_rows(
                     "invalid_target_loop_count",
                     f"positive_sft row {index} has invalid target_loop_count={target!r}.",
                 )
+            else:
+                target_loop_counts[str(target)] += 1
     return {
         "rows": len(rows),
         "bad_rows": bad_rows,
         "role_counts": dict(sorted(role_counts.items())),
         "mode_counts": dict(sorted(mode_counts.items())),
         "source_model_counts": dict(sorted(source_model_counts.items())),
+        "target_loop_counts": dict(sorted(target_loop_counts.items(), key=lambda item: int(item[0]))),
     }
 
 
@@ -217,6 +260,26 @@ def check_mode_row_requirements(
                 issues,
                 "too_few_mode_rows",
                 f"positive_sft has {observed} {mode!r} rows < required {required}.",
+            )
+    return results
+
+
+def check_target_loop_row_requirements(
+    target_loop_counts: dict[str, int],
+    min_target_loop_rows: dict[int, int],
+    issues: list[dict[str, Any]],
+) -> dict[str, Any]:
+    results: dict[str, Any] = {}
+    for target_loop, required in sorted(min_target_loop_rows.items()):
+        key = str(target_loop)
+        observed = int(target_loop_counts.get(key, 0))
+        passed = observed >= required
+        results[key] = {"required": required, "observed": observed, "passed": passed}
+        if not passed:
+            add_issue(
+                issues,
+                "too_few_target_loop_rows",
+                f"positive_sft has {observed} target_loop_count={target_loop} rows < required {required}.",
             )
     return results
 
@@ -470,6 +533,11 @@ def build_gate_payload(args: argparse.Namespace) -> dict[str, Any]:
             args.min_mode_rows,
             issues,
         )
+        sft_summary["target_loop_requirements"] = check_target_loop_row_requirements(
+            sft_summary.get("target_loop_counts", {}),
+            args.min_target_loop_rows,
+            issues,
+        )
 
     go = not any(issue.get("severity") == "blocker" for issue in issues)
     work_dir = work_dir_from_args(args, summary_path=summary_path)
@@ -541,6 +609,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "Use mode=count, e.g. direct=64,deep_narrow=64. May be repeated."
         ),
     )
+    parser.add_argument(
+        "--min_target_loop_rows",
+        action="append",
+        default=[],
+        help=(
+            "Optional target-loop coverage requirements over positive_sft rows. "
+            "Use loop=count, e.g. 1=64,2=64,3=32. May be repeated."
+        ),
+    )
     parser.add_argument("--max_loop_target", type=int, default=8)
     parser.add_argument("--require_programmatic_answer_check", action="store_true", default=True)
     parser.add_argument(
@@ -561,6 +638,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     args = parser.parse_args(argv)
     try:
         args.min_mode_rows = parse_min_mode_rows(args.min_mode_rows)
+        args.min_target_loop_rows = parse_min_target_loop_rows(args.min_target_loop_rows)
     except argparse.ArgumentTypeError as exc:
         parser.error(str(exc))
     return args

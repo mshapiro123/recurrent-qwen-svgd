@@ -60,6 +60,7 @@ MIN_MODE_ROWS = os.environ.get(
     "STAGE5_CURRICULUM_MIN_MODE_ROWS",
     "direct=1000,deep_narrow=1000",
 ).strip()
+MIN_TARGET_LOOP_ROWS = os.environ.get("STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS", "").strip()
 VAL_FRACTION = float(os.environ.get("STAGE5_CURRICULUM_VAL_FRACTION", "0.10"))
 VAL_MIN_ROWS = int(os.environ.get("STAGE5_CURRICULUM_VAL_MIN_ROWS", "1"))
 SPLIT_SEED = int(os.environ.get("STAGE5_CURRICULUM_SPLIT_SEED", "17"))
@@ -288,6 +289,8 @@ def run_sft_gate() -> dict[str, Any]:
     ]
     if MIN_MODE_ROWS:
         args.extend(["--min_mode_rows", MIN_MODE_ROWS])
+    if MIN_TARGET_LOOP_ROWS:
+        args.extend(["--min_target_loop_rows", MIN_TARGET_LOOP_ROWS])
     if ALLOW_ANSWER_LINE_VERIFICATION:
         args.append("--allow_answer_line_verification")
     if ALLOW_CROSS_MODEL_ONLY_ANSWERS:
@@ -787,6 +790,7 @@ def main() -> int:
         "input_restore": input_restore,
         "min_positive_rows": MIN_POSITIVE_ROWS,
         "min_mode_rows": MIN_MODE_ROWS,
+        "min_target_loop_rows": MIN_TARGET_LOOP_ROWS,
         "max_length": MAX_LENGTH,
         "max_loops": MAX_LOOPS,
         "max_steps": MAX_STEPS,
