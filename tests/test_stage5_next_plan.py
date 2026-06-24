@@ -3760,6 +3760,26 @@ def test_surface_alignment_no_easy_content_lift_routes_to_score_repair_before_de
     assert "dense_mcq_trace_sft_control" not in actions[0]["command"]
 
 
+def test_score_surface_alignment_no_easy_content_lift_stops_repeat_score_repair(tmp_path) -> None:
+    source = tmp_path / "score_surface" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_surface_alignment_repair",
+        "status": "surface_alignment_not_passed",
+        "passed": False,
+        "trainer": "score_ce",
+        "benchmark_summary": "outputs/stage5/repaired_benchmark/summary.json",
+        "surface_repair_assessment_status": "surface_repair_no_easy_content_lift",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect score-level surface repair failure"
+    assert "run_stage5_surface_alignment_repair.py" not in actions[0]["command"]
+    assert "STAGE5_SURFACE_ALIGN_TRAINER=score_ce" not in actions[0]["command"]
+    assert "dense_mcq_trace_sft_control" not in actions[0]["command"]
+
+
 def test_surface_alignment_tradeoff_blocks_dense_control(tmp_path) -> None:
     source = tmp_path / "surface" / "summary.json"
     source.parent.mkdir()

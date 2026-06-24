@@ -2202,6 +2202,16 @@ def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary:
             )
         ]
     if surface_status == "surface_repair_no_easy_content_lift":
+        trainer = str(payload.get("trainer") or "").strip().lower()
+        if trainer == "score_ce":
+            return [
+                make_action(
+                    "Inspect score-level surface repair failure",
+                    "The direct MCQ option-score repair did not lift ARC-Easy content scoring. Do not rerun the same score-CE recipe yet; inspect option-score margins, train logs, and before/after content deltas, then decide whether to change margin/KL/row selection or fall back to a mixed recovery objective.",
+                    f"cat {shlex.quote(path_for_cli(source_summary.with_suffix('.md')))}",
+                    10,
+                )
+            ]
         return [
             score_alignment_repair_action(
                 source_benchmark_summary=source_benchmark_for_surface_retry(payload, source_summary),
