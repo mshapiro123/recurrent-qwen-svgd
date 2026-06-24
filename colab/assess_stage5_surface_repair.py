@@ -17,6 +17,7 @@ import math
 import os
 import time
 from pathlib import Path
+from collections import Counter
 from typing import Any
 
 
@@ -65,6 +66,37 @@ def rows_by_id(path: Path, aggregate: str) -> dict[str, dict[str, Any]]:
     }
 
 
+def mean(values: list[float]) -> float | None:
+    finite = [value for value in values if math.isfinite(value)]
+    if not finite:
+        return None
+    return sum(finite) / len(finite)
+
+
+def score_margin(row: dict[str, Any]) -> float | None:
+    scores = row.get("scores") or {}
+    answer = row.get("answer")
+    if answer not in scores:
+        return None
+    other_scores = [float(score) for label, score in scores.items() if label != answer]
+    if not other_scores:
+        return None
+    return float(scores[answer]) - max(other_scores)
+
+
+def correct_score(row: dict[str, Any]) -> float | None:
+    scores = row.get("scores") or {}
+    answer = row.get("answer")
+    if answer not in scores:
+        return None
+    return float(scores[answer])
+
+
+def count_delta(candidate: Counter[str], reference: Counter[str]) -> dict[str, int]:
+    labels = sorted(set(candidate) | set(reference))
+    return {label: int(candidate.get(label, 0) - reference.get(label, 0)) for label in labels}
+
+
 def compare_hit_rows(reference_path: Path, candidate_path: Path, *, aggregate: str) -> dict[str, Any]:
     reference = rows_by_id(reference_path, aggregate)
     candidate = rows_by_id(candidate_path, aggregate)
@@ -74,9 +106,16 @@ def compare_hit_rows(reference_path: Path, candidate_path: Path, *, aggregate: s
     ties = 0
     reference_correct = 0
     candidate_correct = 0
+    margin_deltas: list[float] = []
+    correct_score_deltas: list[float] = []
+    prediction_changes = 0
+    reference_predictions: Counter[str] = Counter()
+    candidate_predictions: Counter[str] = Counter()
     for row_id in common:
-        reference_hit = bool(reference[row_id].get("hit"))
-        candidate_hit = bool(candidate[row_id].get("hit"))
+        reference_row = reference[row_id]
+        candidate_row = candidate[row_id]
+        reference_hit = bool(reference_row.get("hit"))
+        candidate_hit = bool(candidate_row.get("hit"))
         reference_correct += int(reference_hit)
         candidate_correct += int(candidate_hit)
         if candidate_hit and not reference_hit:
@@ -85,8 +124,20 @@ def compare_hit_rows(reference_path: Path, candidate_path: Path, *, aggregate: s
             losses.append(row_id)
         else:
             ties += 1
+        reference_predictions[str(reference_row.get("prediction"))] += 1
+        candidate_predictions[str(candidate_row.get("prediction"))] += 1
+        prediction_changes += int(reference_row.get("prediction") != candidate_row.get("prediction"))
+        ref_margin = score_margin(reference_row)
+        cand_margin = score_margin(candidate_row)
+        if ref_margin is not None and cand_margin is not None:
+            margin_deltas.append(cand_margin - ref_margin)
+        ref_correct_score = correct_score(reference_row)
+        cand_correct_score = correct_score(candidate_row)
+        if ref_correct_score is not None and cand_correct_score is not None:
+            correct_score_deltas.append(cand_correct_score - ref_correct_score)
     total = len(common)
     delta = candidate_correct - reference_correct
+    prediction_count_delta = count_delta(candidate_predictions, reference_predictions)
     return {
         "aggregate": aggregate,
         "paired_examples": total,
@@ -102,6 +153,13 @@ def compare_hit_rows(reference_path: Path, candidate_path: Path, *, aggregate: s
         "sign_test_p_value": two_sided_sign_p_value(len(wins), len(losses)),
         "win_ids": wins,
         "loss_ids": losses,
+        "mean_margin_delta": mean(margin_deltas),
+        "mean_correct_score_delta": mean(correct_score_deltas),
+        "prediction_changes": prediction_changes,
+        "reference_prediction_counts": dict(reference_predictions),
+        "candidate_prediction_counts": dict(candidate_predictions),
+        "prediction_count_delta_candidate_minus_reference": prediction_count_delta,
+        "max_abs_prediction_count_delta": max([abs(value) for value in prediction_count_delta.values()] or [0]),
     }
 
 
@@ -163,6 +221,9 @@ def evidence_fragment(row: dict[str, Any]) -> str:
         f"repair_delta {before_after.get('correct_delta_candidate_vs_reference', 0)} "
         f"({before_after.get('wins', 0)}/{before_after.get('losses', 0)}/{before_after.get('ties', 0)} W/L/T, "
         f"n={before_after.get('paired_examples', 0)}, p={before_after.get('sign_test_p_value')}), "
+        f"margin_delta {before_after.get('mean_margin_delta')}, "
+        f"correct_score_delta {before_after.get('mean_correct_score_delta')}, "
+        f"prediction_changes {before_after.get('prediction_changes', 0)}, "
         f"repaired_vs_base_delta {repaired_base.get('correct_delta_recurrent_vs_base', 0)}"
     )
 

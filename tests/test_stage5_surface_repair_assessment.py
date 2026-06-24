@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from colab import assess_stage5_surface_repair as module
 
 
@@ -139,6 +141,62 @@ def test_surface_repair_assessment_flags_no_easy_content_lift(monkeypatch, tmp_p
 
     assert payload["status"] == "surface_repair_no_easy_content_lift"
     assert payload["passed"] is False
+
+
+def test_surface_repair_comparison_reports_score_margin_and_prediction_drift(tmp_path) -> None:
+    reference = tmp_path / "reference.jsonl"
+    candidate = tmp_path / "candidate.jsonl"
+    write_jsonl(
+        reference,
+        [
+            {
+                "id": "a",
+                "aggregate": "mean",
+                "answer": "A",
+                "prediction": "B",
+                "hit": False,
+                "scores": {"A": -0.4, "B": -0.1},
+            },
+            {
+                "id": "b",
+                "aggregate": "mean",
+                "answer": "A",
+                "prediction": "A",
+                "hit": True,
+                "scores": {"A": -0.2, "B": -0.5},
+            },
+        ],
+    )
+    write_jsonl(
+        candidate,
+        [
+            {
+                "id": "a",
+                "aggregate": "mean",
+                "answer": "A",
+                "prediction": "A",
+                "hit": True,
+                "scores": {"A": -0.1, "B": -0.3},
+            },
+            {
+                "id": "b",
+                "aggregate": "mean",
+                "answer": "A",
+                "prediction": "B",
+                "hit": False,
+                "scores": {"A": -0.3, "B": -0.2},
+            },
+        ],
+    )
+
+    comparison = module.compare_hit_rows(reference, candidate, aggregate="mean")
+
+    assert comparison["wins"] == 1
+    assert comparison["losses"] == 1
+    assert comparison["prediction_changes"] == 2
+    assert comparison["prediction_count_delta_candidate_minus_reference"] == {"A": 0, "B": 0}
+    assert comparison["mean_margin_delta"] == pytest.approx(0.05)
+    assert comparison["mean_correct_score_delta"] == pytest.approx(0.1)
 
 
 def test_surface_repair_assessment_writes_report(monkeypatch, tmp_path) -> None:
