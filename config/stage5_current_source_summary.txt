@@ -1,1 +1,1 @@
-outputs/stage5/stage5_surface_alignment_repair_content_cyclic_20260624_005040_benchmark/summary.json
+outputs/stage5/stage5_surface_alignment_repair_content_cyclic_20260624_005040_assessment/summary.json
