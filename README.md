@@ -264,35 +264,34 @@ time.
 
 ## Active Next A100 Action
 
-Credits are tight, so GPU work remains gate-based. The previous recovery and
-debias runs have now been superseded by the CE8 fixed-depth curve:
+Credits are tight, so GPU work remains gate-based. The current front-of-queue
+job is the bounded ARC-mix offset-then-depth chain:
 
 ```text
-run_id = stage5_ce8_balanced_arc256_depth_curve_summary_20260623
-checkpoint = outputs/stage5/stage5_learned_loop_control_ce8_continue_l4_20260623_071135/phase1/phase1_step_400.pt
-ARC-Easy cyclic best:      depth 1, recurrent 206/256 vs base 202/256, delta +4
-ARC-Easy content best:     depth 1, recurrent 131/256 vs base 146/256, delta -15
-ARC-Challenge cyclic best: depth 2-4, recurrent 153/256 vs base 154/256, delta -1
-ARC-Challenge content best: depth 3-4, recurrent 92/256 vs base 87/256, delta +5
+STAGE5_CURRENT_A100_TARGET=arc_mix_offset_then_depth_chain
+STAGE5_CURRENT_A100_SOURCE_SUMMARY=outputs/stage5/stage5_content_arcmix_qonly_optiontext_arc256_check_20260623_123424/summary.json
 ```
 
-The next GPU job should therefore be a **bounded depth-conditional
-preservation/routing run**, not Phase 2/SVGD, GPQA, or scale-up. The run should
-test whether the model can keep easy/direct/base-correct rows shallow while
-preserving the depth-3/4 lift on ARC-Challenge content rows.
+This starts from the strongest bounded ARC-mix recovered checkpoint, confirms
+it on offset-256 ARC-Easy/ARC-Challenge examples, then launches learned-depth
+ARC-mix SFT only if that offset gate passes. Use L4/T4 for this 0.5B chain
+unless a larger runtime is cheaper or the restore/eval path memory-fails.
 
 Minimum run contract:
 
-- target depth `1` on base-correct/direct/easy rows;
-- target depth `2-3` on verified harder rows;
+- confirm ARC-Easy and ARC-Challenge content/cyclic surfaces on offset-256 rows;
+- target depth `1` on easy/direct rows;
+- target depth `3` on ARC-Challenge/deep-narrow rows;
 - keep particles/SVGD off;
-- keep ARC-Easy content-only regression as a stop condition;
-- evaluate fixed depths, learned router, and a simple selected-depth baseline;
-- emit a `summary.json` that compares against
-  `stage5_ce8_balanced_arc256_depth_curve_summary_20260623`.
+- keep content-only and cyclic-debiased regression as stop conditions;
+- emit an offset/depth/post-depth `summary.json` before any dense-control or
+  particle/SVGD follow-up.
 
-The concise run card should be updated before launching the next notebook cell:
+The concise run card is maintained here:
 [`colab/CURRENT_A100_ACTION.md`](colab/CURRENT_A100_ACTION.md).
+After the run lands, use the CPU-only reviewer
+`colab/review_stage5_offset_depth_chain.py` to decide whether the next paid
+action should be dense MCQ control, a post-depth gate, or diagnosis.
 
 The longer-term data plan is captured in
 [`docs/CURRICULUM_DATA_PIPELINE.md`](docs/CURRICULUM_DATA_PIPELINE.md): strong

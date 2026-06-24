@@ -107,6 +107,18 @@ relative to Phase1, even with within-group projection. Therefore, do not start a
 large Phase2 run until a lower-noise or trained-selector setting is at least
 non-negative against Phase1.
 
+Before another SVGD/kernel sweep, run the effective-pathway diagnostic:
+`eval/eval_effective_pathways.py`. It initializes many particles for the same
+prompt, disables latent sampling and SVGD, runs the deterministic recurrent map,
+and computes similarity-sensitive effective pathway counts over q in
+`{0,1,2,inf}`. This separates two failure modes:
+
+- near-1 effective pathways plus contracting spread means single-attractor
+  recurrent dynamics; fix the map/regime or add method-anchored pathway
+  supervision before tuning kernels;
+- multiple effective pathways means breadth exists in the dynamics; then the
+  bottleneck is kernel/selector conversion rather than the recurrence itself.
+
 Screen:
 
 - Zero-noise K=4 control: should match Phase1. If not, debug trajectory scoring.

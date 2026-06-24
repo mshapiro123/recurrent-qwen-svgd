@@ -17,6 +17,87 @@ below is preferred for the current evidence state.
 
 ## Current Front-of-Queue Action
 
+The score-level surface repair has completed and should **not** be repeated
+unchanged. The current action is to return to the stronger ARC-mix recovered
+checkpoint, confirm it on held-out offset-256 ARC examples, and only then run
+the bounded learned-depth continuation:
+
+```text
+STAGE5_CURRENT_A100_TARGET=arc_mix_offset_then_depth_chain
+STAGE5_CURRENT_A100_SOURCE_SUMMARY=outputs/stage5/stage5_content_arcmix_qonly_optiontext_arc256_check_20260623_123424/summary.json
+```
+
+This chain:
+
+1. runs ARC-Easy and ARC-Challenge offset-256 confirmation with
+   `content_question_only` and `cyclic_label_aggregated`;
+2. launches learned-depth ARC-mix SFT only if the offset gate passes;
+3. runs the post-depth debiased gate;
+4. disconnects to conserve credits.
+
+Use L4/T4 for this bounded 0.5B chain unless Colab availability makes a larger
+runtime cheaper in practice. Keep particles/SVGD off; this is a deterministic
+depth-routing recovery test.
+
+Fresh stale-safe Colab restart cell:
+
+```python
+import os, base64, json, urllib.request
+from google.colab import userdata
+
+REPO = "mshapiro123/recurrent-qwen-svgd"
+REF = "main"
+BOOTSTRAP = "colab/CURRENT_A100_BOOTSTRAP_CELL.py"
+
+TARGET = "arc_mix_offset_then_depth_chain"
+SOURCE_SUMMARY = (
+    "outputs/stage5/"
+    "stage5_content_arcmix_qonly_optiontext_arc256_check_20260623_123424/"
+    "summary.json"
+)
+
+gh = userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
+assert gh, "Missing GH_TOKEN in Colab secrets."
+
+hf = userdata.get("HF_TOKEN") or userdata.get("HUGGINGFACE_HUB_TOKEN")
+if hf:
+    os.environ["HF_TOKEN"] = hf
+    os.environ["HUGGINGFACE_HUB_TOKEN"] = hf
+
+os.environ["STAGE5_CURRENT_A100_TARGET"] = TARGET
+os.environ["STAGE5_CURRENT_A100_SOURCE_SUMMARY"] = SOURCE_SUMMARY
+os.environ["STAGE5_ARC_MIX_CHAIN_SOURCE_SUMMARY"] = SOURCE_SUMMARY
+os.environ["STAGE5_ARC_MIX_CHAIN_EXECUTE_DEPTH"] = "1"
+os.environ["STAGE5_ARC_MIX_CHAIN_RUN_POST_DEPTH_DEBIASED_GATE"] = "1"
+os.environ["STAGE5_ARC_MIX_CHAIN_DISCONNECT"] = "1"
+
+url = f"https://api.github.com/repos/{REPO}/contents/{BOOTSTRAP}?ref={REF}"
+req = urllib.request.Request(
+    url,
+    headers={
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {gh}",
+    },
+)
+
+with urllib.request.urlopen(req, timeout=30) as response:
+    payload = json.load(response)
+
+code = base64.b64decode(payload["content"]).decode("utf-8")
+assert TARGET in code, f"Fetched bootstrap missing target: {TARGET}"
+
+print("Fetched bootstrap sha:", payload.get("sha"))
+print("Target:", TARGET)
+exec(compile(code, BOOTSTRAP, "exec"))
+```
+
+After it lands, run or inspect `colab/review_stage5_offset_depth_chain.py`
+before launching the next paid action. The reviewer will only recommend dense
+MCQ control if both the ARC-mix extra rows and a compatible upstream
+`positive_sft` source are visible.
+
+## Previous Front-of-Queue Action (Completed Score Repair Context)
+
 The latest high-memory G4 run completed the scaled local-HF traced capability
 SFT step:
 

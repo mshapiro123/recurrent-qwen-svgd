@@ -259,8 +259,27 @@ kernel-geometry work taught two useful lessons:
 - within-group projection is more principled, but kernel geometry is not the
   current blocker.
 
+The next particle question is now a dynamical-systems question, not another
+repulsion-scale sweep: does the deterministic recurrent map preserve more than
+one latent pathway for a fixed prompt when particles are initialized apart and
+SVGD/latent sampling are turned off? The new diagnostic is
+`eval/eval_effective_pathways.py`, which computes Leinster-Cobbold
+similarity-sensitive effective pathway counts over q in `{0,1,2,inf}`, using a
+nearest-neighbor local bandwidth and per-prompt particle states.
+
+Readout:
+
+- effective pathway count near 1 plus shrinking final-vs-initial spread means
+  the map is in a single-attractor/contractive regime; pause kernel tuning and
+  work on the recurrent regime or pathway supervision;
+- effective pathway count meaningfully above 1 means the dynamics can support
+  multiple pathways; resume kernel/selector work and ask whether the selector
+  converts that breadth into accuracy.
+
 Particles should return only after deterministic depth routing and selector
-metrics are working.
+metrics are working, and particle-kernel tuning should return only after this
+effective-pathway gate says the recurrent dynamics are not immediately
+collapsing the pathways.
 
 ## Experiment 1: Complete Held-Out Depth Sweep Artifact Recovery
 
@@ -580,7 +599,17 @@ are premature while the direct/deep route is still unstable.
 
 ### Design
 
-Compare:
+First run the effective-pathway diagnostic with SVGD off and latent sampling
+off:
+
+- K in {16, 32} particles initialized by embedded-input noise;
+- max loops in {4, 8} to check whether depth increases contraction;
+- q in `{0,1,2,inf}` for similarity-sensitive effective pathway counts;
+- final/initial particle spread and Lyapunov-proxy readout;
+- optional within-group projection versus raw hidden state if the raw state is
+  dominated by nuisance scale.
+
+Only if the diagnostic shows non-collapsed pathways, compare:
 
 - deterministic loop selector;
 - K=2 particles;
@@ -600,6 +629,9 @@ jobs until a small particle setting is non-negative.
 
 ### Success
 
+- Effective pathway count is meaningfully greater than 1 on at least the
+  prompts where particle breadth is expected to help, without uncontrolled
+  next-token chaos.
 - Candidate-hit rate rises versus deterministic recurrence.
 - Unique correct candidates appear that deterministic loops miss.
 - Selector converts candidates into selected-answer accuracy.
@@ -607,14 +639,19 @@ jobs until a small particle setting is non-negative.
 
 ### Failure
 
+- Effective pathway count is near 1 across prompts and spread contracts with
+  loop depth; this points to single-attractor dynamics, not a kernel issue.
 - Diversity rises but correct-candidate coverage does not.
 - Results are seed-fragile.
 - Particles help only toy prompts or formatting tasks.
 
 ### Decision
 
-If successful, train particles with set/coverage objectives. If not, pause SVGD
-and continue deterministic recurrence and selector work.
+If the effective-pathway gate fails, pause SVGD and test regime-change or
+method-anchored pathway supervision before further kernel geometry. If the gate
+passes and selected-answer metrics improve, train particles with set/coverage
+objectives. If the gate passes but selected metrics do not, focus on selector
+and candidate-scoring rather than recurrent dynamics.
 
 ## Experiment 8: Trace Dataset Audit And Conversion
 

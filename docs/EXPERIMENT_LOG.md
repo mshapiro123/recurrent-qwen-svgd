@@ -330,3 +330,25 @@ Colab/Drive backups for selected runs.
   unless/until pushed. The repo is intentionally ahead of `origin/main`; push in
   a batch with `[skip ci]` only when Colab needs the new reviewer or when a run
   artifact needs to be synchronized.
+
+## 2026-06-24: Effective-Pathway Dynamics Gate
+
+- Strategy update: before spending more GPU time on SVGD/kernel geometry, measure
+  whether the deterministic recurrent map itself preserves multiple latent
+  pathways for a fixed prompt. The concern is that particle collapse may be a
+  single-attractor dynamical regime, not a bad repulsion scale.
+- Added `eval/pathway_diversity.py`, a Leinster-Cobbold
+  similarity-sensitive diversity implementation over q in `{0,1,2,inf}` with a
+  nearest-neighbor local bandwidth. This is the standing "effective number of
+  distinct pathways" diagnostic for breadth.
+- Added `eval/eval_effective_pathways.py`, which initializes many particles by
+  embedded-input noise, disables latent sampling and SVGD, runs the deterministic
+  recurrent wrapper, and reports effective pathway counts, final/initial
+  particle spread, a Lyapunov-style spread proxy, and next-token trajectory
+  uniqueness.
+- Updated the sequenced experiment plan and Stage 5 training recipe so particle
+  tuning re-enters only after this gate distinguishes non-collapsed dynamics
+  from single-attractor contraction.
+- Local verification:
+  `.venv\Scripts\python.exe -m pytest -q tests\test_pathway_diversity.py tests\test_eval_effective_pathways.py`
+  -> `10 passed`.
