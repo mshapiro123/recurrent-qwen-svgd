@@ -78,6 +78,50 @@ continuation, benchmarks ARC-Easy/ARC-Challenge, assesses the result, pushes
 artifacts with `[skip ci]`, and disconnects. A G4/L4 is appropriate; use
 A100/H100 only if availability/queueing makes it cheaper in practice.
 
+Fresh Colab restart cell:
+
+```python
+import os, subprocess, sys, shutil
+from pathlib import Path
+from google.colab import userdata, drive
+
+REPO = "mshapiro123/recurrent-qwen-svgd"
+ROOT = Path("/content/recurrent-qwen-svgd")
+
+gh = userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
+assert gh, "Missing GH_TOKEN in Colab secrets."
+
+hf = userdata.get("HF_TOKEN") or userdata.get("HUGGINGFACE_HUB_TOKEN")
+if hf:
+    os.environ["HF_TOKEN"] = hf
+    os.environ["HUGGINGFACE_HUB_TOKEN"] = hf
+    print("HF token loaded from Colab secrets.")
+else:
+    print("WARNING: HF_TOKEN not found; downloads may be slower/rate-limited.")
+
+if shutil.which("nvidia-smi"):
+    subprocess.run(["nvidia-smi"], check=False)
+else:
+    print("No nvidia-smi found. Runtime may be CPU-only.")
+
+drive.mount("/content/drive", force_remount=False)
+
+remote = f"https://x-access-token:{gh}@github.com/{REPO}.git"
+if ROOT.exists():
+    subprocess.run(["git", "-C", str(ROOT), "remote", "set-url", "origin", remote], check=True)
+    subprocess.run(["git", "-C", str(ROOT), "fetch", "origin", "main"], check=True)
+    subprocess.run(["git", "-C", str(ROOT), "checkout", "main"], check=True)
+    subprocess.run(["git", "-C", str(ROOT), "reset", "--hard", "origin/main"], check=True)
+else:
+    subprocess.run(["git", "clone", remote, str(ROOT)], check=True)
+
+os.chdir(ROOT)
+subprocess.run(["git", "log", "--oneline", "-5"], check=True)
+
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_surface_alignment_repair"
+exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py", encoding="utf-8").read())
+```
+
 The repair checkpoint being recovered from is still:
 
 ```text
