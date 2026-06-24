@@ -1,0 +1,1352 @@
+{
+  "run_id": "stage5_surface_repair_assessment_20260624_015813",
+  "kind": "stage5_surface_repair_assessment",
+  "status": "surface_repair_no_easy_content_lift",
+  "passed": false,
+  "reason": "Repair did not improve ARC-Easy content versus the source recurrent checkpoint.",
+  "next_step": "Inspect training rows and consider score-level alignment rather than more SFT on the same shard.",
+  "source_benchmark_summary": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm/summary.json",
+  "repaired_benchmark_summary": "outputs/stage5/stage5_score_alignment_repair_content_route_20260624_benchmark/summary.json",
+  "allowed_challenge_regression": 0,
+  "comparisons": {
+    "arc_easy_content": {
+      "benchmark": "arc_easy",
+      "score_target": "content_question_only",
+      "aggregate": "mean",
+      "source_recurrent_vs_repaired_recurrent": {
+        "aggregate": "mean",
+        "paired_examples": 256,
+        "reference_correct": 140,
+        "candidate_correct": 139,
+        "correct_delta_candidate_vs_reference": -1,
+        "reference_accuracy": 0.546875,
+        "candidate_accuracy": 0.54296875,
+        "accuracy_delta_candidate_vs_reference": -0.00390625,
+        "wins": 2,
+        "losses": 3,
+        "ties": 251,
+        "sign_test_p_value": 1.0,
+        "win_ids": [
+          "Mercury_7017080",
+          "NYSEDREGENTS_2014_8_2"
+        ],
+        "loss_ids": [
+          "Mercury_7024378",
+          "Mercury_7122448",
+          "Mercury_7271583"
+        ],
+        "mean_margin_delta": 0.003138751955702901,
+        "mean_correct_score_delta": 0.024039290845394135,
+        "prediction_changes": 7,
+        "reference_prediction_counts": {
+          "B": 60,
+          "A": 80,
+          "C": 52,
+          "D": 64
+        },
+        "candidate_prediction_counts": {
+          "B": 57,
+          "A": 82,
+          "C": 55,
+          "D": 62
+        },
+        "prediction_count_delta_candidate_minus_reference": {
+          "A": 2,
+          "B": -3,
+          "C": 3,
+          "D": -2
+        },
+        "max_abs_prediction_count_delta": 3
+      },
+      "source_recurrent_vs_base": {
+        "paired_examples": 256,
+        "base_correct": 148,
+        "recurrent_correct": 140,
+        "correct_delta_recurrent_vs_base": -8,
+        "base_accuracy": 0.578125,
+        "recurrent_accuracy": 0.546875,
+        "accuracy_delta_recurrent_vs_base": -0.03125,
+        "wins": 8,
+        "losses": 16,
+        "ties": 232,
+        "sign_test_p_value": 0.15158963203430176
+      },
+      "repaired_recurrent_vs_base": {
+        "paired_examples": 256,
+        "base_correct": 146,
+        "recurrent_correct": 139,
+        "correct_delta_recurrent_vs_base": -7,
+        "base_accuracy": 0.5703125,
+        "recurrent_accuracy": 0.54296875,
+        "accuracy_delta_recurrent_vs_base": -0.02734375,
+        "wins": 6,
+        "losses": 13,
+        "ties": 237,
+        "sign_test_p_value": 0.1670684814453125
+      }
+    },
+    "arc_easy_cyclic": {
+      "benchmark": "arc_easy",
+      "score_target": "cyclic_label_aggregated",
+      "aggregate": "permutation_mean",
+      "source_recurrent_vs_repaired_recurrent": {
+        "aggregate": "permutation_mean",
+        "paired_examples": 256,
+        "reference_correct": 203,
+        "candidate_correct": 204,
+        "correct_delta_candidate_vs_reference": 1,
+        "reference_accuracy": 0.79296875,
+        "candidate_accuracy": 0.796875,
+        "accuracy_delta_candidate_vs_reference": 0.00390625,
+        "wins": 2,
+        "losses": 1,
+        "ties": 253,
+        "sign_test_p_value": 1.0,
+        "win_ids": [
+          "Mercury_7168648",
+          "Mercury_SC_401652"
+        ],
+        "loss_ids": [
+          "MCAS_2000_4_6"
+        ],
+        "mean_margin_delta": -0.4824177116812166,
+        "mean_correct_score_delta": 0.03254484344043931,
+        "prediction_changes": 3,
+        "reference_prediction_counts": {
+          "B": 74,
+          "D": 65,
+          "A": 69,
+          "C": 48
+        },
+        "candidate_prediction_counts": {
+          "B": 76,
+          "D": 64,
+          "A": 68,
+          "C": 48
+        },
+        "prediction_count_delta_candidate_minus_reference": {
+          "A": -1,
+          "B": 2,
+          "C": 0,
+          "D": -1
+        },
+        "max_abs_prediction_count_delta": 2
+      },
+      "source_recurrent_vs_base": {
+        "paired_examples": 256,
+        "base_correct": 201,
+        "recurrent_correct": 203,
+        "correct_delta_recurrent_vs_base": 2,
+        "base_accuracy": 0.78515625,
+        "recurrent_accuracy": 0.79296875,
+        "accuracy_delta_recurrent_vs_base": 0.0078125,
+        "wins": 4,
+        "losses": 2,
+        "ties": 250,
+        "sign_test_p_value": 0.6875
+      },
+      "repaired_recurrent_vs_base": {
+        "paired_examples": 256,
+        "base_correct": 202,
+        "recurrent_correct": 204,
+        "correct_delta_recurrent_vs_base": 2,
+        "base_accuracy": 0.7890625,
+        "recurrent_accuracy": 0.796875,
+        "accuracy_delta_recurrent_vs_base": 0.0078125,
+        "wins": 3,
+        "losses": 1,
+        "ties": 252,
+        "sign_test_p_value": 0.625
+      }
+    },
+    "arc_challenge_content": {
+      "benchmark": "arc_challenge",
+      "score_target": "content_question_only",
+      "aggregate": "mean",
+      "source_recurrent_vs_repaired_recurrent": {
+        "aggregate": "mean",
+        "paired_examples": 256,
+        "reference_correct": 86,
+        "candidate_correct": 91,
+        "correct_delta_candidate_vs_reference": 5,
+        "reference_accuracy": 0.3359375,
+        "candidate_accuracy": 0.35546875,
+        "accuracy_delta_candidate_vs_reference": 0.01953125,
+        "wins": 6,
+        "losses": 1,
+        "ties": 249,
+        "sign_test_p_value": 0.125,
+        "win_ids": [
+          "Mercury_7004410",
+          "Mercury_7086013",
+          "Mercury_7164850",
+          "Mercury_7198380",
+          "Mercury_7207410",
+          "Mercury_7284043"
+        ],
+        "loss_ids": [
+          "Mercury_7187058"
+        ],
+        "mean_margin_delta": 0.013771537225693464,
+        "mean_correct_score_delta": 0.03983033308759332,
+        "prediction_changes": 16,
+        "reference_prediction_counts": {
+          "B": 52,
+          "D": 64,
+          "C": 79,
+          "A": 61
+        },
+        "candidate_prediction_counts": {
+          "B": 54,
+          "D": 62,
+          "C": 78,
+          "A": 62
+        },
+        "prediction_count_delta_candidate_minus_reference": {
+          "A": 1,
+          "B": 2,
+          "C": -1,
+          "D": -2
+        },
+        "max_abs_prediction_count_delta": 2
+      },
+      "source_recurrent_vs_base": {
+        "paired_examples": 256,
+        "base_correct": 87,
+        "recurrent_correct": 86,
+        "correct_delta_recurrent_vs_base": -1,
+        "base_accuracy": 0.33984375,
+        "recurrent_accuracy": 0.3359375,
+        "accuracy_delta_recurrent_vs_base": -0.00390625,
+        "wins": 7,
+        "losses": 8,
+        "ties": 241,
+        "sign_test_p_value": 1.0
+      },
+      "repaired_recurrent_vs_base": {
+        "paired_examples": 256,
+        "base_correct": 87,
+        "recurrent_correct": 91,
+        "correct_delta_recurrent_vs_base": 4,
+        "base_accuracy": 0.33984375,
+        "recurrent_accuracy": 0.35546875,
+        "accuracy_delta_recurrent_vs_base": 0.015625,
+        "wins": 9,
+        "losses": 5,
+        "ties": 242,
+        "sign_test_p_value": 0.4239501953125
+      }
+    },
+    "arc_challenge_cyclic": {
+      "benchmark": "arc_challenge",
+      "score_target": "cyclic_label_aggregated",
+      "aggregate": "permutation_mean",
+      "source_recurrent_vs_repaired_recurrent": {
+        "aggregate": "permutation_mean",
+        "paired_examples": 256,
+        "reference_correct": 151,
+        "candidate_correct": 153,
+        "correct_delta_candidate_vs_reference": 2,
+        "reference_accuracy": 0.58984375,
+        "candidate_accuracy": 0.59765625,
+        "accuracy_delta_candidate_vs_reference": 0.0078125,
+        "wins": 3,
+        "losses": 1,
+        "ties": 252,
+        "sign_test_p_value": 0.625,
+        "win_ids": [
+          "MCAS_2015_8_7",
+          "MDSA_2009_5_16",
+          "Mercury_412683"
+        ],
+        "loss_ids": [
+          "Mercury_7282608"
+        ],
+        "mean_margin_delta": -0.213306941730995,
+        "mean_correct_score_delta": 0.11089534235312991,
+        "prediction_changes": 5,
+        "reference_prediction_counts": {
+          "C": 75,
+          "A": 57,
+          "B": 54,
+          "D": 70
+        },
+        "candidate_prediction_counts": {
+          "C": 76,
+          "A": 54,
+          "B": 56,
+          "D": 70
+        },
+        "prediction_count_delta_candidate_minus_reference": {
+          "A": -3,
+          "B": 2,
+          "C": 1,
+          "D": 0
+        },
+        "max_abs_prediction_count_delta": 3
+      },
+      "source_recurrent_vs_base": {
+        "paired_examples": 256,
+        "base_correct": 156,
+        "recurrent_correct": 151,
+        "correct_delta_recurrent_vs_base": -5,
+        "base_accuracy": 0.609375,
+        "recurrent_accuracy": 0.58984375,
+        "accuracy_delta_recurrent_vs_base": -0.01953125,
+        "wins": 3,
+        "losses": 8,
+        "ties": 245,
+        "sign_test_p_value": 0.2265625
+      },
+      "repaired_recurrent_vs_base": {
+        "paired_examples": 256,
+        "base_correct": 154,
+        "recurrent_correct": 153,
+        "correct_delta_recurrent_vs_base": -1,
+        "base_accuracy": 0.6015625,
+        "recurrent_accuracy": 0.59765625,
+        "accuracy_delta_recurrent_vs_base": -0.00390625,
+        "wins": 6,
+        "losses": 7,
+        "ties": 243,
+        "sign_test_p_value": 1.0
+      }
+    }
+  },
+  "order_sensitivity_repair": {
+    "status": "order_sensitivity_reduced",
+    "improved": true,
+    "source_order_diagnosis": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm/arc_easy_order_sensitivity_diagnosis.json",
+    "repaired_order_diagnosis": "outputs/stage5/stage5_score_alignment_repair_content_route_20260624_benchmark/arc_easy_order_sensitivity_diagnosis.json",
+    "source_summary": {
+      "benchmark": "arc_easy_stage5_traced_sft_direct_preservation_20260623_scale64_confirm",
+      "paired_examples": 256,
+      "base_content_correct": 148,
+      "candidate_content_correct": 140,
+      "content_delta": -8,
+      "changes": {
+        "win": 8,
+        "tie_wrong": 100,
+        "tie_correct": 132,
+        "loss": 16
+      },
+      "candidate_order_sensitive_rows": 89,
+      "candidate_order_stable_rows": 167,
+      "candidate_order_sensitive_fraction": 0.34765625,
+      "content_losses": 16,
+      "content_losses_order_sensitive": 6,
+      "content_losses_order_sensitive_fraction": 0.375,
+      "content_losses_rescued_by_cyclic": 14,
+      "content_losses_rescued_by_cyclic_fraction": 0.875,
+      "content_wins": 8,
+      "content_wins_order_sensitive": 2,
+      "content_wins_order_sensitive_fraction": 0.25,
+      "base_correct_order_sensitive_rows": 44,
+      "base_correct_order_stable_rows": 104,
+      "loss_rate_on_base_correct_order_sensitive": 0.13636363636363635,
+      "loss_rate_on_base_correct_order_stable": 0.09615384615384616,
+      "order_sensitivity_loss_rate_lift": 0.040209790209790194,
+      "likely_order_sensitivity_issue": false,
+      "likely_content_route_specific_issue": true,
+      "recommendation": "diagnose_content_route_scoring_or_prompt_alignment_before_more_distillation",
+      "loss_examples": [
+        {
+          "id": "ACTAAP_2014_7_6",
+          "change": "loss",
+          "answer": "D",
+          "base_content_prediction": "D",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "D": 4
+          },
+          "base_permutation_prediction_counts": {
+            "D": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "LEAP_2011_8_10436",
+          "change": "loss",
+          "answer": "B",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "B": 3,
+            "C": 1
+          },
+          "base_permutation_prediction_counts": {
+            "B": 3,
+            "C": 1
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "MCAS_2003_5_35",
+          "change": "loss",
+          "answer": "D",
+          "base_content_prediction": "D",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "B": 2,
+            "D": 2
+          },
+          "base_permutation_prediction_counts": {
+            "B": 2,
+            "D": 2
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "MCAS_2013_5_17",
+          "change": "loss",
+          "answer": "C",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": false,
+          "base_cyclic_hit": false,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "D": 4
+          },
+          "base_permutation_prediction_counts": {
+            "D": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "MDSA_2011_4_8",
+          "change": "loss",
+          "answer": "A",
+          "base_content_prediction": "A",
+          "candidate_content_prediction": "C",
+          "candidate_cyclic_prediction": "A",
+          "base_cyclic_prediction": "A",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "A": 4
+          },
+          "base_permutation_prediction_counts": {
+            "A": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_183190",
+          "change": "loss",
+          "answer": "C",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "C",
+          "base_cyclic_prediction": "C",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "C": 4
+          },
+          "base_permutation_prediction_counts": {
+            "C": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_400540",
+          "change": "loss",
+          "answer": "A",
+          "base_content_prediction": "A",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": false,
+          "base_cyclic_hit": false,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "D": 4
+          },
+          "base_permutation_prediction_counts": {
+            "D": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7010815",
+          "change": "loss",
+          "answer": "B",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_7013090",
+          "change": "loss",
+          "answer": "B",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "C",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "B": 3,
+            "D": 1
+          },
+          "base_permutation_prediction_counts": {
+            "B": 2,
+            "D": 1,
+            "C": 1
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_7017080",
+          "change": "loss",
+          "answer": "A",
+          "base_content_prediction": "A",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "A",
+          "base_cyclic_prediction": "A",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "A": 4
+          },
+          "base_permutation_prediction_counts": {
+            "A": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_7114940",
+          "change": "loss",
+          "answer": "C",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "C",
+          "base_cyclic_prediction": "C",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "C": 3,
+            "A": 1
+          },
+          "base_permutation_prediction_counts": {
+            "C": 3,
+            "A": 1
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_7194425",
+          "change": "loss",
+          "answer": "B",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        }
+      ],
+      "win_examples": [
+        {
+          "id": "ACTAAP_2007_7_19",
+          "change": "win",
+          "answer": "B",
+          "base_content_prediction": "A",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7024378",
+          "change": "win",
+          "answer": "D",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "A",
+          "base_cyclic_prediction": "A",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": false,
+          "base_cyclic_hit": false,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "C": 2,
+            "A": 1,
+            "D": 1
+          },
+          "base_permutation_prediction_counts": {
+            "A": 3,
+            "C": 1
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7122448",
+          "change": "win",
+          "answer": "B",
+          "base_content_prediction": "A",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7135433",
+          "change": "win",
+          "answer": "B",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7168315",
+          "change": "win",
+          "answer": "C",
+          "base_content_prediction": "D",
+          "candidate_content_prediction": "C",
+          "candidate_cyclic_prediction": "C",
+          "base_cyclic_prediction": "C",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "C": 4
+          },
+          "base_permutation_prediction_counts": {
+            "C": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7227973",
+          "change": "win",
+          "answer": "A",
+          "base_content_prediction": "D",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "A",
+          "base_cyclic_prediction": "A",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "A": 4
+          },
+          "base_permutation_prediction_counts": {
+            "A": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7271583",
+          "change": "win",
+          "answer": "A",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "A",
+          "base_cyclic_prediction": "A",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "A": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 1,
+            "A": 3
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_SC_400370",
+          "change": "win",
+          "answer": "D",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "D": 3,
+            "A": 1
+          },
+          "base_permutation_prediction_counts": {
+            "D": 3,
+            "A": 1
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        }
+      ]
+    },
+    "repaired_summary": {
+      "benchmark": "arc_easy_stage5_score_alignment_repair_content_route_20260624_benchmark",
+      "paired_examples": 256,
+      "base_content_correct": 146,
+      "candidate_content_correct": 139,
+      "content_delta": -7,
+      "changes": {
+        "win": 6,
+        "tie_wrong": 104,
+        "tie_correct": 133,
+        "loss": 13
+      },
+      "candidate_order_sensitive_rows": 87,
+      "candidate_order_stable_rows": 169,
+      "candidate_order_sensitive_fraction": 0.33984375,
+      "content_losses": 13,
+      "content_losses_order_sensitive": 5,
+      "content_losses_order_sensitive_fraction": 0.38461538461538464,
+      "content_losses_rescued_by_cyclic": 11,
+      "content_losses_rescued_by_cyclic_fraction": 0.8461538461538461,
+      "content_wins": 6,
+      "content_wins_order_sensitive": 1,
+      "content_wins_order_sensitive_fraction": 0.16666666666666666,
+      "base_correct_order_sensitive_rows": 42,
+      "base_correct_order_stable_rows": 104,
+      "loss_rate_on_base_correct_order_sensitive": 0.11904761904761904,
+      "loss_rate_on_base_correct_order_stable": 0.07692307692307693,
+      "order_sensitivity_loss_rate_lift": 0.042124542124542114,
+      "likely_order_sensitivity_issue": false,
+      "likely_content_route_specific_issue": true,
+      "recommendation": "diagnose_content_route_scoring_or_prompt_alignment_before_more_distillation",
+      "loss_examples": [
+        {
+          "id": "ACTAAP_2014_7_6",
+          "change": "loss",
+          "answer": "D",
+          "base_content_prediction": "D",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "D": 4
+          },
+          "base_permutation_prediction_counts": {
+            "D": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "LEAP_2011_8_10436",
+          "change": "loss",
+          "answer": "B",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "B": 3,
+            "C": 1
+          },
+          "base_permutation_prediction_counts": {
+            "B": 2,
+            "C": 2
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "MCAS_2003_5_35",
+          "change": "loss",
+          "answer": "D",
+          "base_content_prediction": "D",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "B": 2,
+            "D": 2
+          },
+          "base_permutation_prediction_counts": {
+            "B": 2,
+            "D": 2
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "MCAS_2013_5_17",
+          "change": "loss",
+          "answer": "C",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": false,
+          "base_cyclic_hit": false,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "D": 4
+          },
+          "base_permutation_prediction_counts": {
+            "D": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "MDSA_2011_4_8",
+          "change": "loss",
+          "answer": "A",
+          "base_content_prediction": "A",
+          "candidate_content_prediction": "C",
+          "candidate_cyclic_prediction": "A",
+          "base_cyclic_prediction": "A",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "A": 4
+          },
+          "base_permutation_prediction_counts": {
+            "A": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_400540",
+          "change": "loss",
+          "answer": "A",
+          "base_content_prediction": "A",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": false,
+          "base_cyclic_hit": false,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "D": 4
+          },
+          "base_permutation_prediction_counts": {
+            "D": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7010815",
+          "change": "loss",
+          "answer": "B",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_7013090",
+          "change": "loss",
+          "answer": "B",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "C",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "B": 3,
+            "D": 1
+          },
+          "base_permutation_prediction_counts": {
+            "B": 2,
+            "D": 1,
+            "C": 1
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_7114940",
+          "change": "loss",
+          "answer": "C",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "C",
+          "base_cyclic_prediction": "C",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "C": 3,
+            "A": 1
+          },
+          "base_permutation_prediction_counts": {
+            "C": 3,
+            "A": 1
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_7194425",
+          "change": "loss",
+          "answer": "B",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_7212520",
+          "change": "loss",
+          "answer": "B",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "NCEOGA_2013_5_28",
+          "change": "loss",
+          "answer": "C",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "C",
+          "base_cyclic_prediction": "C",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "C": 4
+          },
+          "base_permutation_prediction_counts": {
+            "C": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        }
+      ],
+      "win_examples": [
+        {
+          "id": "ACTAAP_2007_7_19",
+          "change": "win",
+          "answer": "B",
+          "base_content_prediction": "A",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7135433",
+          "change": "win",
+          "answer": "B",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7161053",
+          "change": "win",
+          "answer": "A",
+          "base_content_prediction": "D",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "A",
+          "base_cyclic_prediction": "A",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "A": 4
+          },
+          "base_permutation_prediction_counts": {
+            "A": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7168315",
+          "change": "win",
+          "answer": "C",
+          "base_content_prediction": "D",
+          "candidate_content_prediction": "C",
+          "candidate_cyclic_prediction": "C",
+          "base_cyclic_prediction": "C",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "C": 4
+          },
+          "base_permutation_prediction_counts": {
+            "C": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7227973",
+          "change": "win",
+          "answer": "A",
+          "base_content_prediction": "D",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "A",
+          "base_cyclic_prediction": "A",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "A": 4
+          },
+          "base_permutation_prediction_counts": {
+            "A": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_SC_400370",
+          "change": "win",
+          "answer": "D",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "D": 3,
+            "A": 1
+          },
+          "base_permutation_prediction_counts": {
+            "D": 3,
+            "A": 1
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        }
+      ]
+    },
+    "deltas_repaired_minus_source": {
+      "candidate_order_sensitive_rows": -2.0,
+      "candidate_order_sensitive_fraction": -0.0078125,
+      "content_losses": -3.0,
+      "content_losses_order_sensitive": -1.0,
+      "content_losses_order_sensitive_fraction": 0.009615384615384637,
+      "content_losses_rescued_by_cyclic": -3.0,
+      "order_sensitivity_loss_rate_lift": 0.0019147519147519193
+    },
+    "decision": {
+      "reduced_order_sensitive_losses": true,
+      "reduced_order_sensitive_rows": true,
+      "did_not_increase_total_content_losses": true
+    }
+  },
+  "decision_evidence": {
+    "arc_easy_content": "repair_delta -1 (2/3/251 W/L/T, n=256, p=1.0), margin_delta 0.003138751955702901, correct_score_delta 0.024039290845394135, prediction_changes 7, repaired_vs_base_delta -7",
+    "arc_easy_cyclic": "repair_delta 1 (2/1/253 W/L/T, n=256, p=1.0), margin_delta -0.4824177116812166, correct_score_delta 0.03254484344043931, prediction_changes 3, repaired_vs_base_delta 2",
+    "arc_challenge_content": "repair_delta 5 (6/1/249 W/L/T, n=256, p=0.125), margin_delta 0.013771537225693464, correct_score_delta 0.03983033308759332, prediction_changes 16, repaired_vs_base_delta 4",
+    "arc_challenge_cyclic": "repair_delta 2 (3/1/252 W/L/T, n=256, p=0.625), margin_delta -0.213306941730995, correct_score_delta 0.11089534235312991, prediction_changes 5, repaired_vs_base_delta -1"
+  }
+}

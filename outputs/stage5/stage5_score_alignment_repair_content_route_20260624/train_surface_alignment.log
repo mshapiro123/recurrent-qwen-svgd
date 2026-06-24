@@ -1,0 +1,28 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5198.25it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/phase1_direct_preserve/phase1_step_75.pt loaded_keys=179
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5363.94it/s]
+score_distillation_teacher=Qwen/Qwen2.5-0.5B-Instruct
+optimizer_parameter_tensors=179
+step=0 routing_type=score_content_align score_ce=1.3011 score_margin_loss=0.2618 base_score_kl=0.0253 halting_target_nll=0.2693 correct_score=-1.6821 best_wrong_score=-1.4703 loss=1.3420
+step=5 routing_type=score_cyclic_preserve score_ce=0.1290 score_margin_loss=0.0000 base_score_kl=0.1066 halting_target_nll=0.2749 correct_score=-0.1293 best_wrong_score=-2.2058 loss=0.1481
+step=10 routing_type=score_cyclic_preserve score_ce=0.1451 score_margin_loss=0.0000 base_score_kl=0.0242 halting_target_nll=0.4351 correct_score=-0.1592 best_wrong_score=-2.2473 loss=0.1681
+step=15 routing_type=score_cyclic_preserve score_ce=0.2199 score_margin_loss=0.0000 base_score_kl=0.0815 halting_target_nll=0.3198 correct_score=-0.2285 best_wrong_score=-1.6597 loss=0.2400
+step=20 routing_type=score_cyclic_preserve score_ce=0.0730 score_margin_loss=0.0000 base_score_kl=0.0389 halting_target_nll=0.4109 correct_score=-0.0855 best_wrong_score=-2.9067 loss=0.0955
+saved_checkpoint=outputs/stage5/stage5_score_alignment_repair_content_route_20260624/phase1_surface_align/phase1_step_25.pt
+step=25 routing_type=score_cyclic_preserve score_ce=0.0015 score_margin_loss=0.0000 base_score_kl=0.0511 halting_target_nll=0.0387 correct_score=-0.0088 best_wrong_score=-7.1565 loss=0.0060
+step=30 routing_type=score_cyclic_preserve score_ce=0.0015 score_margin_loss=0.0000 base_score_kl=0.0173 halting_target_nll=0.1959 correct_score=-0.0031 best_wrong_score=-7.4207 loss=0.0122
+step=35 routing_type=score_content_align score_ce=1.2778 score_margin_loss=0.5748 base_score_kl=0.0463 halting_target_nll=0.5417 correct_score=-1.4669 best_wrong_score=-0.9422 loss=1.3647
+step=40 routing_type=score_content_align score_ce=0.9696 score_margin_loss=0.0821 base_score_kl=0.0084 halting_target_nll=0.0642 correct_score=-2.8756 best_wrong_score=-2.8435 loss=0.9814
+step=45 routing_type=score_cyclic_preserve score_ce=0.0057 score_margin_loss=0.0000 base_score_kl=0.0397 halting_target_nll=0.4659 correct_score=-0.0114 best_wrong_score=-5.6938 loss=0.0310
+saved_checkpoint=outputs/stage5/stage5_score_alignment_repair_content_route_20260624/phase1_surface_align/phase1_step_50.pt
+step=50 routing_type=score_content_align score_ce=0.9527 score_margin_loss=0.1781 base_score_kl=0.0367 halting_target_nll=0.1701 correct_score=-0.9634 best_wrong_score=-0.8352 loss=0.9809
+step=55 routing_type=score_content_align score_ce=1.6270 score_margin_loss=0.5832 base_score_kl=0.0466 halting_target_nll=0.0221 correct_score=-7.6018 best_wrong_score=-7.0686 loss=1.6887
+step=60 routing_type=score_cyclic_preserve score_ce=0.0553 score_margin_loss=0.0000 base_score_kl=0.0483 halting_target_nll=0.4376 correct_score=-0.0586 best_wrong_score=-3.6587 loss=0.0795
+step=65 routing_type=score_cyclic_preserve score_ce=0.0009 score_margin_loss=0.0000 base_score_kl=0.0169 halting_target_nll=0.0372 correct_score=-0.0096 best_wrong_score=-7.8104 loss=0.0036
+step=70 routing_type=score_cyclic_preserve score_ce=0.2432 score_margin_loss=0.0000 base_score_kl=0.0539 halting_target_nll=0.3010 correct_score=-0.2483 best_wrong_score=-1.5672 loss=0.2609
+saved_checkpoint=outputs/stage5/stage5_score_alignment_repair_content_route_20260624/phase1_surface_align/phase1_step_75.pt

@@ -1,0 +1,24 @@
+# Stage 5 Surface Repair Assessment - stage5_surface_repair_assessment_20260624_015813
+
+- Status: `surface_repair_no_easy_content_lift`
+- Passed: `False`
+- Source benchmark: `outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm/summary.json`
+- Repaired benchmark: `outputs/stage5/stage5_score_alignment_repair_content_route_20260624_benchmark/summary.json`
+- Reason: Repair did not improve ARC-Easy content versus the source recurrent checkpoint.
+- Next step: Inspect training rows and consider score-level alignment rather than more SFT on the same shard.
+
+## Decision Evidence
+
+- `arc_easy_content`: repair_delta -1 (2/3/251 W/L/T, n=256, p=1.0), margin_delta 0.003138751955702901, correct_score_delta 0.024039290845394135, prediction_changes 7, repaired_vs_base_delta -7
+- `arc_easy_cyclic`: repair_delta 1 (2/1/253 W/L/T, n=256, p=1.0), margin_delta -0.4824177116812166, correct_score_delta 0.03254484344043931, prediction_changes 3, repaired_vs_base_delta 2
+- `arc_challenge_content`: repair_delta 5 (6/1/249 W/L/T, n=256, p=0.125), margin_delta 0.013771537225693464, correct_score_delta 0.03983033308759332, prediction_changes 16, repaired_vs_base_delta 4
+- `arc_challenge_cyclic`: repair_delta 2 (3/1/252 W/L/T, n=256, p=0.625), margin_delta -0.213306941730995, correct_score_delta 0.11089534235312991, prediction_changes 5, repaired_vs_base_delta -1
+
+## Order-Sensitivity Repair
+
+- Status: `order_sensitivity_reduced`
+- Improved: `True`
+- Candidate order-sensitive row delta: `-2.0`
+- Order-sensitive content-loss delta: `-1.0`
+- Total content-loss delta: `-3.0`
+
