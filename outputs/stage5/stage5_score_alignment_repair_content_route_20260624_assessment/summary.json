@@ -1,0 +1,117 @@
+{
+  "run_id": "stage5_score_alignment_repair_content_route_20260624_assessment",
+  "gate": "stage5_broader_benchmark_suite",
+  "source_summary": "outputs/stage5/stage5_score_alignment_repair_content_route_20260624_benchmark/summary.json",
+  "checkpoint": "outputs/stage5/stage5_score_alignment_repair_content_route_20260624/phase1_surface_align/phase1_step_75.pt",
+  "status": "needs_recurrent_recovery",
+  "passed": false,
+  "next_step": "Return to deterministic recurrent recovery before GPQA Diamond or release claims.",
+  "required_score_target": "content_question_only",
+  "required_aggregate": "mean",
+  "allowed_negative_delta": 0,
+  "benchmarks": [
+    {
+      "benchmark": "arc_easy",
+      "present": true,
+      "required_examples": 1,
+      "paired_examples": 256,
+      "base_correct": 146,
+      "recurrent_correct": 139,
+      "correct_delta_recurrent_vs_base": -7,
+      "wins": 6,
+      "losses": 13,
+      "ties": 237,
+      "sign_test_p_value": 0.1670684814453125
+    },
+    {
+      "benchmark": "arc_challenge",
+      "present": true,
+      "required_examples": 128,
+      "paired_examples": 256,
+      "base_correct": 87,
+      "recurrent_correct": 91,
+      "correct_delta_recurrent_vs_base": 4,
+      "wins": 9,
+      "losses": 5,
+      "ties": 242,
+      "sign_test_p_value": 0.4239501953125
+    }
+  ],
+  "criteria": [
+    {
+      "name": "suite_completed",
+      "passed": true,
+      "reason": "Benchmark suite completed without failures.",
+      "evidence": {
+        "status": "completed",
+        "failures": []
+      }
+    },
+    {
+      "name": "paired_coverage",
+      "passed": true,
+      "reason": "All benchmark slices have enough paired base-vs-recurrent examples.",
+      "evidence": [
+        {
+          "benchmark": "arc_easy",
+          "present": true,
+          "required_examples": 1,
+          "paired_examples": 256,
+          "base_correct": 146,
+          "recurrent_correct": 139,
+          "correct_delta_recurrent_vs_base": -7,
+          "wins": 6,
+          "losses": 13,
+          "ties": 237,
+          "sign_test_p_value": 0.1670684814453125
+        },
+        {
+          "benchmark": "arc_challenge",
+          "present": true,
+          "required_examples": 128,
+          "paired_examples": 256,
+          "base_correct": 87,
+          "recurrent_correct": 91,
+          "correct_delta_recurrent_vs_base": 4,
+          "wins": 9,
+          "losses": 5,
+          "ties": 242,
+          "sign_test_p_value": 0.4239501953125
+        }
+      ]
+    },
+    {
+      "name": "recurrent_nonnegative_vs_base",
+      "passed": false,
+      "reason": "Recurrent trails base on at least one paired benchmark slice.",
+      "evidence": [
+        {
+          "benchmark": "arc_easy",
+          "present": true,
+          "required_examples": 1,
+          "paired_examples": 256,
+          "base_correct": 146,
+          "recurrent_correct": 139,
+          "correct_delta_recurrent_vs_base": -7,
+          "wins": 6,
+          "losses": 13,
+          "ties": 237,
+          "sign_test_p_value": 0.1670684814453125
+        },
+        {
+          "benchmark": "arc_challenge",
+          "present": true,
+          "required_examples": 128,
+          "paired_examples": 256,
+          "base_correct": 87,
+          "recurrent_correct": 91,
+          "correct_delta_recurrent_vs_base": 4,
+          "wins": 9,
+          "losses": 5,
+          "ties": 242,
+          "sign_test_p_value": 0.4239501953125
+        }
+      ]
+    }
+  ]
+}
