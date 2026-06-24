@@ -16,6 +16,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "arc_mix_offset_confirm" - bounded ARC-Easy/Challenge offset-256 confirmation for the latest ARC-mix checkpoint.
 #   "arc_mix_offset_then_depth_chain" - offset confirmation, then learned-depth ARC-mix SFT only if confirmed.
 #   "arc_mix_depth_routing_probe" - bounded learned-depth ARC-mix SFT probe from the latest recovered checkpoint.
+#   "effective_pathways_diagnostic" - bounded deterministic recurrent pathway-collapse diagnostic.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
 #   "capability_ladder_7b_mcq_probe" - high-memory Qwen 0.5B/1.5B/3B/7B ARC MCQ scoring for depth-4 data.
 #   "capability_ladder_7b_trace_chain" - high-memory 7B ladder probe followed by trace-job build.
@@ -248,6 +249,26 @@ TARGETS = {
             "STAGE5_ARC_MIX_CHAIN_MOUNT_DRIVE_FIRST": "0",
             "STAGE5_ARC_MIX_CHAIN_RUN_POST_DEPTH_DEBIASED_GATE": "1",
             "STAGE5_ARC_MIX_CHAIN_POST_DEPTH_MIN_EXAMPLES": "128",
+        },
+    },
+    "effective_pathways_diagnostic": {
+        "path": "colab/STAGE5_EFFECTIVE_PATHWAYS_CELL.py",
+        "markers": [
+            "STAGE5_EFFECTIVE_PATHWAYS_CELL_VERSION",
+            "stage5_effective_pathways_v1",
+            "STAGE5_EFFECTIVE_PATHWAYS_CHECKPOINT",
+            "eval/eval_effective_pathways.py",
+            "tests/test_pathway_diversity.py",
+            "outputs/stage5",
+            "particle_init_noise",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_EFFECTIVE_PATHWAYS_LOOP_SWEEP": "4,8",
+            "STAGE5_EFFECTIVE_PATHWAYS_NUM_PARTICLES": "16",
+            "STAGE5_EFFECTIVE_PATHWAYS_NOISE": "0.05",
+            "STAGE5_EFFECTIVE_PATHWAYS_LIMIT": "8",
+            "STAGE5_EFFECTIVE_PATHWAYS_DISCONNECT": "1",
         },
     },
     "capability_ladder_mcq_probe": {
