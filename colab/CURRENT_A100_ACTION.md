@@ -63,8 +63,9 @@ ARC-Challenge cyclic:  recurrent 151/256 vs base 156/256, delta -5
 ```
 
 The direct-preservation repair recovered part of the direct-route loss, but it
-did **not** pass the broader nonnegative gate. The first content/cyclic
-surface-alignment SFT repair ran:
+did **not** pass the broader nonnegative gate. Two content/cyclic
+surface-alignment SFT repairs have now run, and both failed to lift ARC-Easy
+content enough to justify dense control:
 
 ```text
 outputs/stage5/stage5_surface_alignment_repair_content_cyclic_20260624_005040/summary.json
@@ -76,8 +77,18 @@ ARC-Challenge content repair delta: +4
 ARC-Challenge cyclic repair delta: +2
 ```
 
-Interpretation: the SFT repair moved some hard-slice behavior in the right
-direction and reduced order sensitivity, but it did not lift the ARC-Easy
+```text
+outputs/stage5/stage5_surface_alignment_repair_content_cyclic_20260624_010142/summary.json
+status = surface_alignment_not_passed
+surface repair status = surface_repair_no_easy_content_lift
+ARC-Easy content repair delta: 0
+ARC-Easy cyclic repair delta: +3
+ARC-Challenge content repair delta: +4
+ARC-Challenge cyclic repair delta: 0
+```
+
+Interpretation: the SFT repair moved some cyclic or hard-slice behavior in the
+right direction and reduced order sensitivity, but it did not lift the ARC-Easy
 content route. Do **not** run dense control yet. The next action is a direct
 MCQ score-level repair that optimizes the correct option against distractors on
 the exact `question_only + option_text` scoring surface:

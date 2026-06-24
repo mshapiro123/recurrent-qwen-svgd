@@ -880,7 +880,7 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert "traced_sft_direct_preservation_probe" in bootstrap_md
     assert "traced_sft_direct_preservation_precheck" in bootstrap_md
     assert "traced_sft_direct_preservation_recover_only" in bootstrap_md
-    assert "surface-alignment SFT repair ran" in current_action
+    assert "surface-alignment SFT repairs have now run" in current_action
     assert "STAGE5_CURRENT_A100_TARGET=traced_sft_score_alignment_repair" in current_action
     assert "ARC-Easy content:      recurrent 140/256 vs base 148/256, delta -8" in current_action
     assert "ARC-Challenge content: recurrent 86/256 vs base 87/256, delta -1" in current_action
