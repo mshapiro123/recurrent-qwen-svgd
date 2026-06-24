@@ -1,0 +1,1039 @@
+{
+  "kind": "stage5_candidate_conversion_summary",
+  "rows": 1680,
+  "task_groups": 420,
+  "settings": [
+    {
+      "particle_init_noise": 0.0,
+      "max_loops": 4,
+      "task_groups": 42,
+      "best_hits": 21,
+      "candidate_hits": 84,
+      "total_candidates": 168,
+      "best_rate": 0.5,
+      "candidate_hit_rate": 0.5,
+      "mean_unique": 1,
+      "mean_generation_steps": 74.92857142857143,
+      "mean_all_q2": 1.0,
+      "mean_correct_q2": 1.0,
+      "mean_wrong_q2": 1.0,
+      "task_breakdown": {
+        "arithmetic add": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "arithmetic multiply": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "average simple": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "cookies division": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "discount price": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "letter count": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "n queens small": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "pharmacy tubs": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "rates word": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "recipe scaling": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "rectangle area": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "sudoku strategy": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "train speed": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "unit conversion": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        }
+      }
+    },
+    {
+      "particle_init_noise": 0.0,
+      "max_loops": 8,
+      "task_groups": 42,
+      "best_hits": 21,
+      "candidate_hits": 84,
+      "total_candidates": 168,
+      "best_rate": 0.5,
+      "candidate_hit_rate": 0.5,
+      "mean_unique": 1,
+      "mean_generation_steps": 74.92857142857143,
+      "mean_all_q2": 1.0,
+      "mean_correct_q2": 1.0,
+      "mean_wrong_q2": 1.0,
+      "task_breakdown": {
+        "arithmetic add": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "arithmetic multiply": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "average simple": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "cookies division": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "discount price": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "letter count": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "n queens small": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "pharmacy tubs": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "rates word": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "recipe scaling": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "rectangle area": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "sudoku strategy": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "train speed": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "unit conversion": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        }
+      }
+    },
+    {
+      "particle_init_noise": 0.005,
+      "max_loops": 4,
+      "task_groups": 42,
+      "best_hits": 21,
+      "candidate_hits": 84,
+      "total_candidates": 168,
+      "best_rate": 0.5,
+      "candidate_hit_rate": 0.5,
+      "mean_unique": 1.0476190476190477,
+      "mean_generation_steps": 74.92857142857143,
+      "mean_all_q2": 1.0285714297067552,
+      "mean_correct_q2": 1.0,
+      "mean_wrong_q2": 1.0571428594135104,
+      "task_breakdown": {
+        "arithmetic add": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "arithmetic multiply": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "average simple": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "cookies division": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "discount price": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "letter count": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "n queens small": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "pharmacy tubs": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "rates word": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "recipe scaling": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "rectangle area": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "sudoku strategy": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "train speed": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "unit conversion": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        }
+      }
+    },
+    {
+      "particle_init_noise": 0.005,
+      "max_loops": 8,
+      "task_groups": 42,
+      "best_hits": 21,
+      "candidate_hits": 84,
+      "total_candidates": 168,
+      "best_rate": 0.5,
+      "candidate_hit_rate": 0.5,
+      "mean_unique": 1.0476190476190477,
+      "mean_generation_steps": 74.92857142857143,
+      "mean_all_q2": 1.0285714297067552,
+      "mean_correct_q2": 1.0,
+      "mean_wrong_q2": 1.0571428594135104,
+      "task_breakdown": {
+        "arithmetic add": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "arithmetic multiply": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "average simple": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "cookies division": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "discount price": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "letter count": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "n queens small": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "pharmacy tubs": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "rates word": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "recipe scaling": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "rectangle area": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "sudoku strategy": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "train speed": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "unit conversion": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        }
+      }
+    },
+    {
+      "particle_init_noise": 0.01,
+      "max_loops": 4,
+      "task_groups": 42,
+      "best_hits": 21,
+      "candidate_hits": 84,
+      "total_candidates": 168,
+      "best_rate": 0.5,
+      "candidate_hit_rate": 0.5,
+      "mean_unique": 1.0238095238095237,
+      "mean_generation_steps": 74.92857142857143,
+      "mean_all_q2": 1.0142857148533775,
+      "mean_correct_q2": 1.0,
+      "mean_wrong_q2": 1.0285714297067552,
+      "task_breakdown": {
+        "arithmetic add": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "arithmetic multiply": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "average simple": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "cookies division": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "discount price": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "letter count": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "n queens small": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "pharmacy tubs": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "rates word": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "recipe scaling": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "rectangle area": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "sudoku strategy": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "train speed": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "unit conversion": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        }
+      }
+    },
+    {
+      "particle_init_noise": 0.01,
+      "max_loops": 8,
+      "task_groups": 42,
+      "best_hits": 21,
+      "candidate_hits": 84,
+      "total_candidates": 168,
+      "best_rate": 0.5,
+      "candidate_hit_rate": 0.5,
+      "mean_unique": 1.0238095238095237,
+      "mean_generation_steps": 74.92857142857143,
+      "mean_all_q2": 1.0142857148533775,
+      "mean_correct_q2": 1.0,
+      "mean_wrong_q2": 1.0285714297067552,
+      "task_breakdown": {
+        "arithmetic add": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "arithmetic multiply": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "average simple": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "cookies division": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "discount price": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "letter count": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "n queens small": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "pharmacy tubs": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "rates word": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "recipe scaling": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "rectangle area": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "sudoku strategy": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "train speed": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "unit conversion": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        }
+      }
+    },
+    {
+      "particle_init_noise": 0.02,
+      "max_loops": 4,
+      "task_groups": 42,
+      "best_hits": 21,
+      "candidate_hits": 84,
+      "total_candidates": 168,
+      "best_rate": 0.5,
+      "candidate_hit_rate": 0.5,
+      "mean_unique": 1.0714285714285714,
+      "mean_generation_steps": 74.92857142857143,
+      "mean_all_q2": 1.0428571445601327,
+      "mean_correct_q2": 1.0,
+      "mean_wrong_q2": 1.0857142891202654,
+      "task_breakdown": {
+        "arithmetic add": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "arithmetic multiply": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "average simple": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "cookies division": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "discount price": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "letter count": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "n queens small": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "pharmacy tubs": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "rates word": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "recipe scaling": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "rectangle area": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "sudoku strategy": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "train speed": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "unit conversion": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        }
+      }
+    },
+    {
+      "particle_init_noise": 0.02,
+      "max_loops": 8,
+      "task_groups": 42,
+      "best_hits": 21,
+      "candidate_hits": 84,
+      "total_candidates": 168,
+      "best_rate": 0.5,
+      "candidate_hit_rate": 0.5,
+      "mean_unique": 1.0714285714285714,
+      "mean_generation_steps": 74.92857142857143,
+      "mean_all_q2": 1.0428571445601327,
+      "mean_correct_q2": 1.0,
+      "mean_wrong_q2": 1.0857142891202654,
+      "task_breakdown": {
+        "arithmetic add": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "arithmetic multiply": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "average simple": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "cookies division": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "discount price": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "letter count": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "n queens small": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "pharmacy tubs": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "rates word": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "recipe scaling": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "rectangle area": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "sudoku strategy": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "train speed": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "unit conversion": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        }
+      }
+    },
+    {
+      "particle_init_noise": 0.05,
+      "max_loops": 4,
+      "task_groups": 42,
+      "best_hits": 21,
+      "candidate_hits": 83,
+      "total_candidates": 168,
+      "best_rate": 0.5,
+      "candidate_hit_rate": 0.49404761904761907,
+      "mean_unique": 1.0952380952380953,
+      "mean_generation_steps": 76.92857142857143,
+      "mean_all_q2": 1.0571428594135104,
+      "mean_correct_q2": 1.0,
+      "mean_wrong_q2": 1.0818181850693442,
+      "task_breakdown": {
+        "arithmetic add": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "arithmetic multiply": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "average simple": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "cookies division": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "discount price": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "letter count": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "n queens small": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "pharmacy tubs": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "rates word": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "recipe scaling": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "rectangle area": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "sudoku strategy": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 11,
+          "total_candidates": 12
+        },
+        "train speed": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "unit conversion": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        }
+      }
+    },
+    {
+      "particle_init_noise": 0.05,
+      "max_loops": 8,
+      "task_groups": 42,
+      "best_hits": 21,
+      "candidate_hits": 83,
+      "total_candidates": 168,
+      "best_rate": 0.5,
+      "candidate_hit_rate": 0.49404761904761907,
+      "mean_unique": 1.0952380952380953,
+      "mean_generation_steps": 76.92857142857143,
+      "mean_all_q2": 1.0571428594135104,
+      "mean_correct_q2": 1.0,
+      "mean_wrong_q2": 1.0818181850693442,
+      "task_breakdown": {
+        "arithmetic add": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "arithmetic multiply": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "average simple": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "cookies division": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "discount price": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "letter count": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "n queens small": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "pharmacy tubs": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "rates word": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "recipe scaling": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "rectangle area": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        },
+        "sudoku strategy": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 11,
+          "total_candidates": 12
+        },
+        "train speed": {
+          "task_groups": 3,
+          "best_hits": 0,
+          "candidate_hits": 0,
+          "total_candidates": 12
+        },
+        "unit conversion": {
+          "task_groups": 3,
+          "best_hits": 3,
+          "candidate_hits": 12,
+          "total_candidates": 12
+        }
+      }
+    }
+  ],
+  "run_id": "stage5_candidate_conversion_20260624_140738",
+  "cell_version": "stage5_candidate_conversion_v3_chunk_merge",
+  "checkpoint": "outputs/stage5/stage5_content_arcmix_qonly_optiontext_20260623_121707/arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt",
+  "tasks_jsonl": "eval/smoke_exact_tasks_v2.jsonl",
+  "seeds": [
+    "0",
+    "1",
+    "2"
+  ],
+  "noise_sweep": [
+    "0",
+    "0.005",
+    "0.01",
+    "0.02",
+    "0.05"
+  ],
+  "max_loops_sweep": [
+    "4",
+    "8"
+  ],
+  "num_trajectories": 4,
+  "output_jsonl": "outputs/stage5/stage5_candidate_conversion_20260624_140738/candidate_conversion/candidate_conversion.jsonl"
+}
