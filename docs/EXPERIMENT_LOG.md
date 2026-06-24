@@ -352,3 +352,23 @@ Colab/Drive backups for selected runs.
 - Local verification:
   `.venv\Scripts\python.exe -m pytest -q tests\test_pathway_diversity.py tests\test_eval_effective_pathways.py`
   -> `10 passed`.
+- First Colab L4 diagnostic run:
+  `stage5_effective_pathways_20260624_024236`, checkpoint
+  `stage5_content_arcmix_qonly_optiontext_20260623_121707/arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt`.
+  The GPU/eval work completed and artifacts were backed up to Drive, but the
+  launcher failed after backup because `outputs/` is gitignored and it attempted
+  a plain `git add`. The launcher has been patched to use `git add -f` for
+  selected Stage 5 evidence artifacts.
+- Loops=4 aggregate over 8 smoke prompts, K=16, noise=0.05:
+  initial spread `0.4747`, final spread `45.8323`, spread ratio `97.31`,
+  Lyapunov proxy per loop `1.1417`, mean unique next-token argmax `8.0`,
+  effective pathways q0/q1/q2/qinf = `2.403/2.011/1.818/1.473`.
+- Loops=8 aggregate: final spread `83.4485`, spread ratio `179.75`,
+  Lyapunov proxy per loop `0.6462`, mean unique next-token argmax `7.875`,
+  effective pathways q0/q1/q2/qinf = `2.428/1.942/1.728/1.421`.
+- Interpretation: the recurrent map is not immediately single-attractor
+  contractive; it preserves/amplifies perturbation-dependent pathway variation.
+  However, the huge spread expansion plus many next-token argmaxes suggests an
+  expansive or chaotic regime rather than clean multistable attractor basins.
+  The next diagnostic should sweep lower particle-init noise and include a
+  zero-noise control before further SVGD tuning.

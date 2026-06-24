@@ -275,6 +275,11 @@ Readout:
 - effective pathway count meaningfully above 1 means the dynamics can support
   multiple pathways; resume kernel/selector work and ask whether the selector
   converts that breadth into accuracy.
+- effective pathway count above 1 plus very large final/initial spread and many
+  next-token argmaxes means the map is not collapsed, but the variation may be
+  expansive/chaotic rather than clean multistable breadth; run a lower-noise
+  sensitivity sweep before treating the pathway count as useful reasoning
+  diversity.
 
 Particles should return only after deterministic depth routing and selector
 metrics are working, and particle-kernel tuning should return only after this
@@ -641,6 +646,9 @@ jobs until a small particle setting is non-negative.
 
 - Effective pathway count is near 1 across prompts and spread contracts with
   loop depth; this points to single-attractor dynamics, not a kernel issue.
+- Effective pathway count is above 1 only at large perturbation scale while
+  final/initial spread explodes and next-token argmaxes fragment; this points to
+  unstable sensitivity, not yet useful breadth.
 - Diversity rises but correct-candidate coverage does not.
 - Results are seed-fragile.
 - Particles help only toy prompts or formatting tasks.

@@ -221,7 +221,9 @@ def main() -> None:
         print(f"drive_backup={backup_dir}", flush=True)
 
     run(["git", "status", "-sb"])
-    run(["git", "add", str(out_dir.relative_to(ROOT))])
+    # `outputs/` is ignored by default, but selected Stage 5 summaries are
+    # intentionally versioned as evidence artifacts.
+    run(["git", "add", "-f", str(out_dir.relative_to(ROOT))])
     diff = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=str(ROOT))
     if diff.returncode != 0:
         run(["git", "commit", "-m", f"Record Stage 5 effective pathways {run_id} [skip ci]"])
@@ -236,4 +238,3 @@ def main() -> None:
 
 
 main()
-
