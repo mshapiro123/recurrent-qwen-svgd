@@ -78,13 +78,24 @@ def test_prepare_train_val_appends_extra_repair_rows_to_train_only(monkeypatch, 
     write_jsonl(
         source,
         [
-            {"id": "source_0", "prompt": "p0", "completion": "c0", "curriculum_mode": "direct"},
-            {"id": "source_1", "prompt": "p1", "completion": "c1", "curriculum_mode": "deep_narrow"},
-            {"id": "source_2", "prompt": "p2", "completion": "c2", "curriculum_mode": "direct"},
-            {"id": "source_3", "prompt": "p3", "completion": "c3", "curriculum_mode": "deep_narrow"},
+            {"id": "source_0", "prompt": "p0", "completion": "c0", "curriculum_mode": "direct", "target_loop_count": 1},
+            {"id": "source_1", "prompt": "p1", "completion": "c1", "curriculum_mode": "deep_narrow", "target_loop_count": 3},
+            {"id": "source_2", "prompt": "p2", "completion": "c2", "curriculum_mode": "direct", "target_loop_count": 1},
+            {"id": "source_3", "prompt": "p3", "completion": "c3", "curriculum_mode": "deep_narrow", "target_loop_count": 3},
         ],
     )
-    write_jsonl(extra, [{"id": "repair_0", "prompt": "rp", "completion": "rc", "curriculum_mode": "surface_alignment"}])
+    write_jsonl(
+        extra,
+        [
+            {
+                "id": "repair_0",
+                "prompt": "rp",
+                "completion": "rc",
+                "curriculum_mode": "surface_alignment",
+                "target_loop_count": 1,
+            }
+        ],
+    )
     monkeypatch.setattr(module, "ROOT", tmp_path)
     monkeypatch.setattr(module, "PRIVATE_DATA_DIR", tmp_path / "private")
     monkeypatch.setattr(module, "EXTRA_TRAIN_JSONL_ENV", str(extra))
@@ -100,7 +111,20 @@ def test_prepare_train_val_appends_extra_repair_rows_to_train_only(monkeypatch, 
     assert dataset["source_rows"] == 4
     assert dataset["extra_train_rows"] == 1
     assert dataset["rows"] == 5
-    assert dataset["extra_train_jsonls"] == [{"path": "data/repair/surface_alignment_train.jsonl", "rows": 1}]
+    assert dataset["extra_train_jsonls"] == [
+        {
+            "path": "data/repair/surface_alignment_train.jsonl",
+            "rows": 1,
+            "mode_counts": {"surface_alignment": 1},
+            "target_loop_counts": {"1": 1},
+        }
+    ]
+    assert dataset["source_mode_counts"] == {"direct": 2, "deep_narrow": 2}
+    assert dataset["source_target_loop_counts"] == {"1": 2, "3": 2}
+    assert dataset["extra_train_mode_counts"] == {"surface_alignment": 1}
+    assert dataset["extra_train_target_loop_counts"] == {"1": 1}
+    assert dataset["train_target_loop_counts"] == {"1": 3, "3": 1}
+    assert dataset["val_target_loop_counts"] == {"3": 1}
     assert any(row["id"] == "repair_0" for row in train_rows)
     assert all(row["id"] != "repair_0" for row in val_rows)
 

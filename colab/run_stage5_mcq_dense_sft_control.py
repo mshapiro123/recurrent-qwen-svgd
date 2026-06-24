@@ -228,6 +228,22 @@ def mode_counts(rows: list[dict[str, Any]]) -> dict[str, int]:
     return counts
 
 
+def target_loop_counts(rows: list[dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for row in rows:
+        target_loop = row.get("target_loop_count")
+        if isinstance(target_loop, bool):
+            continue
+        if isinstance(target_loop, int):
+            key = str(target_loop)
+        elif isinstance(target_loop, str) and target_loop.strip().isdigit():
+            key = str(int(target_loop.strip()))
+        else:
+            continue
+        counts[key] = counts.get(key, 0) + 1
+    return dict(sorted(counts.items(), key=lambda item: int(item[0])))
+
+
 def extra_train_jsonl_paths() -> list[Path]:
     return [resolve_path(item) for item in parse_csv(EXTRA_TRAIN_JSONL_ENV)]
 
@@ -240,7 +256,14 @@ def read_extra_train_rows() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]
             raise FileNotFoundError(path)
         path_rows = read_jsonl_rows(path)
         rows.extend(path_rows)
-        metadata.append({"path": path_for_cli(path), "rows": len(path_rows)})
+        metadata.append(
+            {
+                "path": path_for_cli(path),
+                "rows": len(path_rows),
+                "mode_counts": mode_counts(path_rows),
+                "target_loop_counts": target_loop_counts(path_rows),
+            }
+        )
     return rows, metadata
 
 
@@ -265,9 +288,18 @@ def prepare_train_val(source_payload: dict[str, Any]) -> tuple[Path, Path, dict[
         "extra_train_rows": len(extra_rows),
         "train_rows": len(train_rows),
         "val_rows": len(val_rows),
+        "val_fraction": VAL_FRACTION,
+        "val_min_rows": VAL_MIN_ROWS,
+        "split_seed": SPLIT_SEED,
         "depth_hint_style": depth_hint_style,
+        "source_mode_counts": mode_counts(source_rows),
+        "source_target_loop_counts": target_loop_counts(source_rows),
+        "extra_train_mode_counts": mode_counts(extra_rows),
+        "extra_train_target_loop_counts": target_loop_counts(extra_rows),
         "train_mode_counts": mode_counts(train_rows),
         "val_mode_counts": mode_counts(val_rows),
+        "train_target_loop_counts": target_loop_counts(train_rows),
+        "val_target_loop_counts": target_loop_counts(val_rows),
     }
 
 
@@ -572,7 +604,15 @@ def write_summary(payload: dict[str, Any]) -> Path:
         "Does standard dense Qwen get the same ARC MCQ lift from the traced curriculum as recurrent Qwen?",
         "",
         f"- Source summary: `{payload['source_summary']}`",
-        f"- Positive SFT rows: `{payload['dataset']['rows']}`",
+        f"- Total SFT rows: `{payload['dataset']['rows']}`",
+        f"- Source rows: `{payload['dataset'].get('source_rows')}`",
+        f"- Extra train rows: `{payload['dataset'].get('extra_train_rows')}`",
+        f"- Train rows: `{payload['dataset'].get('train_rows')}`",
+        f"- Validation rows: `{payload['dataset'].get('val_rows')}`",
+        f"- Train mode counts: `{payload['dataset'].get('train_mode_counts')}`",
+        f"- Validation mode counts: `{payload['dataset'].get('val_mode_counts')}`",
+        f"- Train target-loop counts: `{payload['dataset'].get('train_target_loop_counts')}`",
+        f"- Validation target-loop counts: `{payload['dataset'].get('val_target_loop_counts')}`",
         f"- Dense checkpoint: `{payload['dense_checkpoint']}`",
         f"- Dense LoRA layer range: `{payload['config']['dense_lora_layer_range']}`",
         "",
