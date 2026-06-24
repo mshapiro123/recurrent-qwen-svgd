@@ -841,13 +841,13 @@ def apply_checkpoint_guard(
         checkpoint = curriculum_sft_preflight(source_payload)
     elif decision.get("checkpoint"):
         checkpoint = checkpoint_availability_for_path(str(decision["checkpoint"]))
-    elif decision.get("spend_class") in {"bounded_dense_arc_sft"}:
+    elif decision.get("spend_class") in {"bounded_dense_arc_sft", "bounded_dense_mcq_trace_sft_control"}:
         checkpoint = {
             "checkpoint": None,
             "available": True,
             "exists": False,
             "drive_candidate_exists": False,
-            "reason": "Dense ARC SFT is the standard-model control and starts from the base model.",
+            "reason": "Dense SFT control is the standard-model control and starts from the base model.",
         }
     elif decision.get("spend_class") == "bounded_capability_ladder_mcq_probe":
         checkpoint = {
@@ -1278,6 +1278,38 @@ def classify_action(
             "status": "dense_arc_sft_blocked",
             "spend_class": "none",
             "reason": f"Dense ARC SFT control requires gate/control evidence, got {source_kind_label!r}.",
+        }
+
+    if script == "colab/run_stage5_mcq_dense_sft_control.py":
+        confirmation_passed = (
+            source_payload.get("gate") == "stage5_broader_benchmark_suite"
+            and source_payload.get("status") == "passed"
+            and isinstance(source_payload.get("after_confirmation_dense_control"), dict)
+        )
+        mcq_recipe_followup = (
+            source_payload.get("gate") == "stage5_same_recipe_mcq_architecture"
+            and source_payload.get("status") == "hard_tail_lift_vs_dense"
+        ) or (
+            source_kind_label == "mcq_recipe_control_assessment"
+            and source_payload.get("status") == "hard_tail_lift_vs_dense"
+        )
+        if confirmation_passed or mcq_recipe_followup:
+            return go_paid_gpu_action(
+                status="go_dense_mcq_trace_sft_control",
+                spend_class="bounded_dense_mcq_trace_sft_control",
+                reason=(
+                    "A repaired recurrent MCQ confirmation or same-recipe MCQ architecture gate cleared; "
+                    "one bounded dense same-curriculum MCQ control is allowed."
+                ),
+            )
+        return {
+            "go": False,
+            "status": "dense_mcq_trace_sft_control_blocked",
+            "spend_class": "none",
+            "reason": (
+                "Dense MCQ trace-SFT control requires a passed broader benchmark assessment carrying "
+                "after_confirmation_dense_control, or a same-recipe MCQ architecture assessment."
+            ),
         }
 
     if script == "colab/run_stage5_arc_agi_sft.py":

@@ -966,6 +966,64 @@ def test_arc_gate_chain_classifies_by_source_kind() -> None:
     assert recurrent["status"] == "go_matched_recurrent_arc_sft"
 
 
+def test_dense_mcq_control_allowed_after_passed_recurrent_confirmation() -> None:
+    action = {
+        "name": "Run dense MCQ same-curriculum control",
+        "command": (
+            "STAGE5_DENSE_MCQ_RUN_ID=dense_after_confirm "
+            "STAGE5_DENSE_MCQ_SOURCE_SUMMARY=outputs/stage5/repaired_confirm/summary.json "
+            "python colab/run_stage5_mcq_dense_sft_control.py"
+        ),
+    }
+    source_payload = {
+        "gate": "stage5_broader_benchmark_suite",
+        "status": "passed",
+        "passed": True,
+        "after_confirmation_dense_control": {"run_suffix": "dense_after_confirm"},
+    }
+
+    decision = classify_action(action, source_payload=source_payload)
+    guarded, checkpoint = apply_checkpoint_guard(decision, source_payload=source_payload)
+
+    assert decision["go"] is True
+    assert decision["status"] == "go_dense_mcq_trace_sft_control"
+    assert decision["spend_class"] == "bounded_dense_mcq_trace_sft_control"
+    assert checkpoint["available"] is True
+    assert checkpoint["checkpoint"] is None
+    assert guarded["go"] is True
+
+
+def test_dense_mcq_control_blocked_without_confirmation_gate() -> None:
+    action = {
+        "name": "Run dense MCQ same-curriculum control",
+        "command": "python colab/run_stage5_mcq_dense_sft_control.py",
+    }
+
+    decision = classify_action(action, source_payload={"kind": "stage5_benchmark_suite", "status": "completed"})
+
+    assert decision["go"] is False
+    assert decision["status"] == "dense_mcq_trace_sft_control_blocked"
+
+
+def test_dense_mcq_control_blocked_for_mixed_mcq_recipe_assessment() -> None:
+    action = {
+        "name": "Run dense MCQ same-curriculum control",
+        "command": "python colab/run_stage5_mcq_dense_sft_control.py",
+    }
+
+    decision = classify_action(
+        action,
+        source_payload={
+            "kind": "stage5_mcq_recipe_control_assessment",
+            "gate": "stage5_same_recipe_mcq_architecture",
+            "status": "mixed_hard_tail_signal_vs_dense",
+        },
+    )
+
+    assert decision["go"] is False
+    assert decision["status"] == "dense_mcq_trace_sft_control_blocked"
+
+
 def test_arc_gate_chain_blocks_wrong_source_kind() -> None:
     action = {"name": "Run matched recurrent", "command": "python colab/run_stage5_arc_agi_sft.py"}
 
