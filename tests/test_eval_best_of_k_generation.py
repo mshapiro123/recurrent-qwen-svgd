@@ -1,6 +1,6 @@
 import torch
 
-from eval.eval_best_of_k_jsonl import generate_candidates
+from eval.eval_best_of_k_jsonl import generate_candidates, pathway_split_diagnostics
 
 
 class Encoded(dict):
@@ -66,3 +66,22 @@ def test_generate_candidates_requests_last_token_logits_only():
 
     assert result.generation_steps == 1
     assert wrapper.calls[0]["logits_to_keep"] == 1
+
+
+def test_pathway_split_diagnostics_separates_correct_and_wrong_candidates():
+    states = torch.tensor(
+        [
+            [0.0, 0.0],
+            [0.05, 0.0],
+            [5.0, 0.0],
+            [10.0, 0.0],
+        ]
+    )
+    hits = [True, True, False, False]
+
+    out = pathway_split_diagnostics(states, hits)
+
+    assert out["all"]["count"] == 4
+    assert out["correct"]["count"] == 2
+    assert out["wrong"]["count"] == 2
+    assert out["all"]["effective_pathways"]["2"] >= out["correct"]["effective_pathways"]["2"]

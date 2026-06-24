@@ -403,3 +403,10 @@ Colab/Drive backups for selected runs.
   if diversity lives in wrong candidates, stop inference-time noise/SVGD tuning
   and move to spectral/Jacobian regime shaping plus method-anchored pathway
   supervision.
+- Implemented the next GPU gate as `candidate_conversion_diagnostic`. The
+  evaluator now supports particle-init-noise sweeps with SVGD disabled, max-loop
+  sweeps in the same one-load run, and per-task correctness-split pathway
+  diagnostics (`all`, `correct`, `wrong`). The Colab launcher runs the bounded
+  L4/T4-friendly sweep over `noise={0,0.005,0.01,0.02,0.05}` and
+  `loops={4,8}` with `K=4`, then writes a summary table that compares candidate
+  conversion against pathway expansion.

@@ -18,6 +18,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from eval.eval_identity import model_load_kwargs, parse_split, resolve_dtype
+from eval.pathway_diversity import effective_pathways
+from models.halting import masked_mean
 from models.lora import apply_lora_to_recurrent_block
 from models.recurrent_wrapper import RecurrentQwenForCausalLM
 from training.checkpointing import load_trainable_checkpoint
@@ -35,6 +37,7 @@ class GenerationResult:
     candidates: list[str]
     diagnostics: dict[str, float]
     generation_steps: int
+    final_pathway_states: torch.Tensor | None = None
 
 
 def read_tasks(path: str | Path) -> list[ExactTask]:
@@ -162,11 +165,65 @@ def _mean_metric_history(history: dict[str, list[float]]) -> dict[str, float]:
     }
 
 
+def _trajectory_attention_mask(attention_mask: torch.Tensor | None, hidden: torch.Tensor, num_trajectories: int) -> torch.Tensor:
+    if attention_mask is None:
+        return torch.ones(hidden.shape[:-1], dtype=torch.long, device=hidden.device)
+    if attention_mask.dim() == 3:
+        return attention_mask[0]
+    if attention_mask.dim() == 2 and attention_mask.shape[0] == 1 and num_trajectories > 1:
+        return attention_mask.expand(num_trajectories, -1)
+    if attention_mask.dim() == 2:
+        return attention_mask
+    raise ValueError(f"Unsupported attention_mask shape for pathway states: {tuple(attention_mask.shape)}")
+
+
+def _final_pathway_states(output: object, attention_mask: torch.Tensor | None, num_trajectories: int) -> torch.Tensor | None:
+    hidden = getattr(output, "final_recurrent_hidden", None)
+    if hidden is None:
+        return None
+    if hidden.dim() == 4:
+        hidden = hidden[0]
+    elif hidden.dim() == 3 and num_trajectories == 1 and hidden.shape[0] == 1:
+        pass
+    elif hidden.dim() != 3:
+        raise ValueError(f"Unsupported final_recurrent_hidden shape: {tuple(hidden.shape)}")
+    mask = _trajectory_attention_mask(attention_mask, hidden, num_trajectories)
+    pooled = masked_mean(hidden, mask)
+    return pooled.detach().float().cpu()
+
+
+def pathway_split_diagnostics(states: torch.Tensor | None, hits: list[bool]) -> dict[str, object]:
+    if states is None:
+        return {}
+    if states.shape[0] != len(hits):
+        raise ValueError(f"states/hits mismatch: states={states.shape[0]} hits={len(hits)}")
+
+    def compute(indices: list[int]) -> dict[str, object]:
+        if not indices:
+            return {"count": 0, "effective_pathways": None, "pathway_diagnostics": None}
+        selected = states[indices]
+        diversity, diagnostics = effective_pathways(selected)
+        return {
+            "count": len(indices),
+            "effective_pathways": diversity,
+            "pathway_diagnostics": diagnostics,
+        }
+
+    correct = [idx for idx, hit in enumerate(hits) if hit]
+    wrong = [idx for idx, hit in enumerate(hits) if not hit]
+    return {
+        "all": compute(list(range(len(hits)))),
+        "correct": compute(correct),
+        "wrong": compute(wrong),
+    }
+
+
 def phase2_run_descriptor(args: argparse.Namespace, *, seed: int | None = None, steps: int | None = None) -> str:
     parts = [
         f"mode={args.phase2_particle_update_mode}",
         f"temp={_format_float(args.temperature)}",
         f"noise={_format_float(args.particle_init_noise)}",
+        f"loops={args.max_loops}",
     ]
     if args.particle_noise_every_step or args.particle_noise_steps_sweep:
         parts.append(f"noise_steps={steps if steps is not None else args.particle_noise_steps}")
@@ -244,6 +301,7 @@ def generate_candidates(
     particle_noise = particle_init_noise
     metrics_history: dict[str, list[float]] = {}
     generation_steps = 0
+    last_pathway_states: torch.Tensor | None = None
 
     with torch.no_grad():
         for step_idx in range(max_new_tokens):
@@ -271,6 +329,7 @@ def generate_candidates(
                 return_dict=True,
             )
             _record_metric_history(metrics_history, output.metrics)
+            last_pathway_states = _final_pathway_states(output, attention_mask, num_trajectories)
             next_token = _next_token(output, num_trajectories, temperature)
             if num_trajectories == 1:
                 input_ids = torch.cat([input_ids, next_token], dim=-1)
@@ -316,6 +375,7 @@ def generate_candidates(
         candidates=[trim_completion(text) for text in tokenizer.batch_decode(completions, skip_special_tokens=True)],
         diagnostics=_mean_metric_history(metrics_history),
         generation_steps=generation_steps,
+        final_pathway_states=last_pathway_states,
     )
 
 
@@ -375,6 +435,7 @@ def run_suite(
         )
         outputs = result.candidates
         hits = [matches_any(text, task.patterns) for text in outputs]
+        split_pathways = pathway_split_diagnostics(result.final_pathway_states, hits)
         unique_count = len({text.strip() for text in outputs})
         best_hit = any(hits)
         best_hits += int(best_hit)
@@ -387,6 +448,7 @@ def run_suite(
                 "candidate_hits": sum(hits),
                 "candidates": len(outputs),
                 "unique": unique_count,
+                "pathway_split_diagnostics": split_pathways,
             }
         )
         print(f"\n{task.name} best_of_{len(outputs)}={best_hit} hits={sum(hits)}/{len(outputs)} unique={unique_count}")
@@ -411,12 +473,14 @@ def run_suite(
                         "task_candidate_hits": sum(hits),
                         "task_candidate_count": len(outputs),
                         "unique_count": unique_count,
+                        "pathway_split_diagnostics": split_pathways,
                         "generation_steps": result.generation_steps,
                         "mode": particle_update_mode,
                         "num_trajectories": num_trajectories,
                         "sample_latents": sample_latents,
                         "latent_injection_mode": latent_injection_mode,
                         "temperature": args.temperature,
+                        "max_loops": args.max_loops,
                         "particle_init_noise": particle_init_noise,
                         "particle_noise_every_step": args.particle_noise_every_step,
                         "particle_noise_steps": args.particle_noise_steps,
@@ -476,6 +540,14 @@ def main() -> int:
     parser.add_argument("--phase2_latent_injection_mode", default="post", choices=("pre", "post", "both"))
     parser.add_argument("--phase2_particle_update_mode", default="none", choices=("none", "svgd"))
     parser.add_argument("--particle_init_noise", type=float, default=0.0)
+    parser.add_argument(
+        "--particle_init_noise_sweep",
+        help="Comma-separated particle_init_noise values for a one-load Phase 2 sweep.",
+    )
+    parser.add_argument(
+        "--max_loops_sweep",
+        help="Comma-separated max_loops values for a one-load Phase 2 sweep.",
+    )
     parser.add_argument("--svgd_eps", type=float, default=1.0)
     parser.add_argument("--svgd_repulsion_scale", type=float, default=0.5)
     parser.add_argument("--svgd_bandwidth", default="median")
@@ -537,6 +609,8 @@ def main() -> int:
     tasks = read_tasks(args.tasks_jsonl)
     sweep_seeds = parse_seeds(args.seeds)
     sweep_steps = parse_seeds(args.particle_noise_steps_sweep) or [args.particle_noise_steps]
+    sweep_noises = parse_floats(args.particle_init_noise_sweep) or [args.particle_init_noise]
+    sweep_max_loops = parse_seeds(args.max_loops_sweep) or [args.max_loops]
     sweep_repulsions = parse_floats(args.svgd_repulsion_scale_sweep) or [args.svgd_repulsion_scale]
     sweep_projection_dims = (
         parse_seeds(args.svgd_kernel_projection_dim_sweep)
@@ -547,6 +621,8 @@ def main() -> int:
     if (
         sweep_seeds
         or args.particle_noise_steps_sweep
+        or args.particle_init_noise_sweep
+        or args.max_loops_sweep
         or args.svgd_repulsion_scale_sweep
         or args.svgd_kernel_projection_dim_sweep
     ):
@@ -559,6 +635,8 @@ def main() -> int:
         sweep_rows = []
         original_seed = args.seed
         original_steps = args.particle_noise_steps
+        original_noise = args.particle_init_noise
+        original_max_loops = args.max_loops
         original_repulsion = args.svgd_repulsion_scale
         original_projection_dim = args.svgd_kernel_projection_dim
         for projection_dim in sweep_projection_dims:
@@ -567,43 +645,53 @@ def main() -> int:
                 args.svgd_repulsion_scale = repulsion
                 for steps in sweep_steps:
                     args.particle_noise_steps = steps
-                    for seed in sweep_seeds:
-                        args.seed = seed
-                        set_seed(seed)
-                        descriptor = phase2_run_descriptor(args, seed=seed, steps=steps)
-                        print(f"\n\n### {descriptor} ###")
-                        phase2_hits, phase2_candidate_hits, task_summaries = run_suite(
-                            f"Phase 2 K={args.phase2_num_trajectories} {descriptor}",
-                            phase2,
-                            tokenizer,
-                            tasks,
-                            args,
-                            num_trajectories=args.phase2_num_trajectories,
-                            sample_latents=args.phase2_sample_latents,
-                            latent_injection_mode=args.phase2_latent_injection_mode,
-                            particle_update_mode=args.phase2_particle_update_mode,
-                            particle_init_noise=args.particle_init_noise,
-                        )
-                        sweep_rows.append(
-                            (
-                                projection_dim,
-                                repulsion,
-                                steps,
-                                seed,
-                                phase2_hits,
-                                phase2_candidate_hits,
-                                task_summaries,
-                            )
-                        )
+                    for max_loops in sweep_max_loops:
+                        args.max_loops = max_loops
+                        for noise in sweep_noises:
+                            args.particle_init_noise = noise
+                            for seed in sweep_seeds:
+                                args.seed = seed
+                                set_seed(seed)
+                                descriptor = phase2_run_descriptor(args, seed=seed, steps=steps)
+                                print(f"\n\n### {descriptor} ###")
+                                phase2_hits, phase2_candidate_hits, task_summaries = run_suite(
+                                    f"Phase 2 K={args.phase2_num_trajectories} {descriptor}",
+                                    phase2,
+                                    tokenizer,
+                                    tasks,
+                                    args,
+                                    num_trajectories=args.phase2_num_trajectories,
+                                    sample_latents=args.phase2_sample_latents,
+                                    latent_injection_mode=args.phase2_latent_injection_mode,
+                                    particle_update_mode=args.phase2_particle_update_mode,
+                                    particle_init_noise=args.particle_init_noise,
+                                )
+                                sweep_rows.append(
+                                    (
+                                        projection_dim,
+                                        repulsion,
+                                        steps,
+                                        max_loops,
+                                        noise,
+                                        seed,
+                                        phase2_hits,
+                                        phase2_candidate_hits,
+                                        task_summaries,
+                                    )
+                                )
         args.seed = original_seed
         args.particle_noise_steps = original_steps
+        args.particle_init_noise = original_noise
+        args.max_loops = original_max_loops
         args.svgd_repulsion_scale = original_repulsion
         args.svgd_kernel_projection_dim = original_projection_dim
 
         print("\n=== SWEEP SUMMARY ===")
-        for projection_dim, repulsion, steps, seed, best_hits, candidate_hits, _ in sweep_rows:
+        for projection_dim, repulsion, steps, max_loops, noise, seed, best_hits, candidate_hits, _ in sweep_rows:
             args.svgd_kernel_projection_dim = projection_dim or None
             args.svgd_repulsion_scale = repulsion
+            args.max_loops = max_loops
+            args.particle_init_noise = noise
             descriptor = phase2_run_descriptor(args, seed=seed, steps=steps)
             print(
                 f"{descriptor} best_hits={best_hits}/{len(tasks)} "
@@ -611,25 +699,34 @@ def main() -> int:
             )
         args.svgd_repulsion_scale = original_repulsion
         args.svgd_kernel_projection_dim = original_projection_dim
+        args.max_loops = original_max_loops
+        args.particle_init_noise = original_noise
 
-        print("\n=== PROJECTION/REPULSION/STEPS SUMMARY ===")
+        print("\n=== PROJECTION/REPULSION/STEPS/LOOPS/NOISE SUMMARY ===")
         for projection_dim in sweep_projection_dims:
             for repulsion in sweep_repulsions:
                 for steps in sweep_steps:
-                    rows = [
-                        row
-                        for row in sweep_rows
-                        if row[0] == projection_dim and row[1] == repulsion and row[2] == steps
-                    ]
-                    mean_best_for_rows = sum(row[4] for row in rows) / max(len(rows), 1)
-                    mean_candidates_for_rows = sum(row[5] for row in rows) / max(len(rows), 1)
-                    print(
-                        f"proj_dim={projection_dim or 0} repulsion={_format_float(repulsion)} steps={steps} "
-                        f"mean_best_hits={mean_best_for_rows:.3f}/{len(tasks)} "
-                        f"mean_candidate_hits={mean_candidates_for_rows:.3f}/{len(tasks) * args.phase2_num_trajectories}"
-                    )
-        mean_best = sum(row[4] for row in sweep_rows) / max(len(sweep_rows), 1)
-        mean_candidates = sum(row[5] for row in sweep_rows) / max(len(sweep_rows), 1)
+                    for max_loops in sweep_max_loops:
+                        for noise in sweep_noises:
+                            rows = [
+                                row
+                                for row in sweep_rows
+                                if row[0] == projection_dim
+                                and row[1] == repulsion
+                                and row[2] == steps
+                                and row[3] == max_loops
+                                and row[4] == noise
+                            ]
+                            mean_best_for_rows = sum(row[6] for row in rows) / max(len(rows), 1)
+                            mean_candidates_for_rows = sum(row[7] for row in rows) / max(len(rows), 1)
+                            print(
+                                f"proj_dim={projection_dim or 0} repulsion={_format_float(repulsion)} "
+                                f"steps={steps} loops={max_loops} noise={_format_float(noise)} "
+                                f"mean_best_hits={mean_best_for_rows:.3f}/{len(tasks)} "
+                                f"mean_candidate_hits={mean_candidates_for_rows:.3f}/{len(tasks) * args.phase2_num_trajectories}"
+                            )
+        mean_best = sum(row[6] for row in sweep_rows) / max(len(sweep_rows), 1)
+        mean_candidates = sum(row[7] for row in sweep_rows) / max(len(sweep_rows), 1)
         print(f"mean_best_hits={mean_best:.3f}/{len(tasks)}")
         print(f"mean_candidate_hits={mean_candidates:.3f}/{len(tasks) * args.phase2_num_trajectories}")
         return 0

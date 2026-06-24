@@ -418,3 +418,40 @@ def test_svgd_grouped_trajectory_noise_breaks_identical_inputs_on_tiny_model():
     with_noise_delta = (with_noise.final_recurrent_hidden[0, 0] - with_noise.final_recurrent_hidden[0, 1]).abs().max()
     assert no_noise_delta == 0
     assert with_noise_delta > 0
+
+
+def test_particle_init_noise_works_without_svgd_on_tiny_model():
+    torch.manual_seed(0)
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+
+    with torch.no_grad():
+        no_noise = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=2,
+            num_trajectories=2,
+            sample_latents=False,
+            particle_update_mode="none",
+            particle_init_noise=0.0,
+            use_cache=False,
+            return_dict=True,
+        )
+        with_noise = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=2,
+            num_trajectories=2,
+            sample_latents=False,
+            particle_update_mode="none",
+            particle_init_noise=0.05,
+            use_cache=False,
+            return_dict=True,
+        )
+
+    no_noise_delta = (no_noise.final_recurrent_hidden[0, 0] - no_noise.final_recurrent_hidden[0, 1]).abs().max()
+    with_noise_delta = (with_noise.final_recurrent_hidden[0, 0] - with_noise.final_recurrent_hidden[0, 1]).abs().max()
+    assert no_noise_delta == 0
+    assert with_noise_delta > 0

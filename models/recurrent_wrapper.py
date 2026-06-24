@@ -374,7 +374,7 @@ class RecurrentQwenForCausalLM(nn.Module):
 
         if num_trajectories > 1 and not inputs_are_trajectories:
             hidden_states = repeat_for_trajectories(hidden_states, num_trajectories)
-            if particle_update_mode == "svgd" and particle_init_noise:
+            if particle_init_noise:
                 hidden_states = hidden_states + float(particle_init_noise) * torch.randn_like(hidden_states)
             flat_attention_mask = repeat_for_trajectories(attention_mask, num_trajectories)
             flat_position_ids = repeat_for_trajectories(position_ids, num_trajectories)
@@ -388,7 +388,7 @@ class RecurrentQwenForCausalLM(nn.Module):
                 output_attentions,
             )
             flat_position_embeddings = self._rotary_embeddings(hidden_states, flat_position_ids)
-        elif inputs_are_trajectories and particle_update_mode == "svgd" and particle_init_noise:
+        elif inputs_are_trajectories and particle_init_noise:
             hidden_states = hidden_states + float(particle_init_noise) * torch.randn_like(hidden_states)
 
         if use_learned_loop_control:
