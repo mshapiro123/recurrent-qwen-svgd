@@ -1,0 +1,18 @@
+{
+  "kind": "stage5_effective_pathways_run",
+  "run_id": "stage5_effective_pathways_20260624_024236",
+  "cell_version": "stage5_effective_pathways_v1",
+  "checkpoint": "outputs/stage5/stage5_content_arcmix_qonly_optiontext_20260623_121707/arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt",
+  "prompts": "eval/smoke_exact_tasks_v2.jsonl",
+  "loop_sweep": [
+    4,
+    8
+  ],
+  "num_particles": 16,
+  "particle_init_noise": 0.05,
+  "limit": 8,
+  "result_paths": [
+    "outputs/stage5/stage5_effective_pathways_20260624_024236/effective_pathways/effective_pathways_loops4.json",
+    "outputs/stage5/stage5_effective_pathways_20260624_024236/effective_pathways/effective_pathways_loops8.json"
+  ]
+}
