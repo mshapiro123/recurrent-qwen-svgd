@@ -1,6 +1,12 @@
 import torch
+import torch.nn.functional as F
 
-from training.train_phase1_mcq_score_align import encode_options, halting_target_nll, option_scores_from_logits
+from training.train_phase1_mcq_score_align import (
+    encode_options,
+    halting_target_nll,
+    option_distribution_kl,
+    option_scores_from_logits,
+)
 
 
 class FakeTokenizer:
@@ -75,3 +81,23 @@ def test_halting_target_nll_clamps_target_to_loop_range() -> None:
 
     assert loss is not None
     assert torch.isfinite(loss)
+
+
+def test_option_distribution_kl_treats_options_as_one_distribution() -> None:
+    student = torch.tensor([0.0, 1.0, 2.0, 3.0])
+    teacher = torch.tensor([3.0, 2.0, 1.0, 0.0])
+
+    actual = option_distribution_kl(student, teacher, temperature=2.0)
+    expected = F.kl_div(
+        F.log_softmax((student / 2.0).unsqueeze(0), dim=-1),
+        F.softmax((teacher / 2.0).unsqueeze(0), dim=-1),
+        reduction="batchmean",
+    ) * 4.0
+    wrong_options_as_batch = F.kl_div(
+        F.log_softmax(student / 2.0, dim=-1),
+        F.softmax(teacher / 2.0, dim=-1),
+        reduction="batchmean",
+    ) * 4.0
+
+    assert torch.allclose(actual, expected)
+    assert actual > wrong_options_as_batch

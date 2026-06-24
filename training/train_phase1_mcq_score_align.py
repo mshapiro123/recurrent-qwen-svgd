@@ -147,6 +147,21 @@ def halting_target_nll(output: Any, target_loop_count: int, *, max_loops: int) -
     return F.nll_loss(flat.log(), target)
 
 
+def option_distribution_kl(
+    student_scores: torch.Tensor,
+    teacher_scores: torch.Tensor,
+    *,
+    temperature: float,
+) -> torch.Tensor:
+    """KL over one MCQ option distribution, not over options-as-batch."""
+
+    return F.kl_div(
+        F.log_softmax((student_scores.float() / float(temperature)).unsqueeze(0), dim=-1),
+        F.softmax((teacher_scores.float() / float(temperature)).unsqueeze(0), dim=-1),
+        reduction="batchmean",
+    ) * (float(temperature) ** 2)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True)
@@ -278,11 +293,11 @@ def main() -> int:
                         labels,
                         normalize=normalize_option_score,
                     )
-                score_kl = F.kl_div(
-                    F.log_softmax(scores / distill_temperature, dim=-1),
-                    F.softmax(teacher_scores / distill_temperature, dim=-1),
-                    reduction="batchmean",
-                ) * (distill_temperature**2)
+                score_kl = option_distribution_kl(
+                    scores,
+                    teacher_scores,
+                    temperature=distill_temperature,
+                )
                 loss = loss + distill_weight * score_kl
                 metrics["base_score_kl"] = score_kl.detach()
 
