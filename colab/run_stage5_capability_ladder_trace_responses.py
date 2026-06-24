@@ -23,6 +23,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from colab.colab_auth import ensure_env_secret_from_colab  # noqa: E402
+
 
 RUN_ID = os.environ.get("STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_ID") or time.strftime(
     "stage5_capability_ladder_trace_responses_%Y%m%d_%H%M%S"
@@ -270,6 +272,12 @@ def provider_config_ready() -> tuple[bool, str]:
     return True, "ready"
 
 
+def configure_provider_secret() -> bool:
+    if BACKEND != "openai_compatible" or not RUN_PROVIDER:
+        return False
+    return ensure_env_secret_from_colab(API_KEY_ENV, verbose=True)
+
+
 def inline_model_map_path() -> Path | None:
     if not MODEL_MAP_JSON_INLINE:
         return None
@@ -514,6 +522,7 @@ def main() -> int:
         "jobs": restore_if_missing(jobs_jsonl, filename=jobs_jsonl.name, run_id_hint=run_id_hint),
         "report": restore_if_missing(jobs_report, filename=jobs_report.name, run_id_hint=run_id_hint),
     }
+    configure_provider_secret()
     ready, reason = provider_config_ready()
     if not ready:
         raise RuntimeError(reason)

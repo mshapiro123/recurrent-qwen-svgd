@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 
 import colab.run_stage5_capability_ladder_trace_responses as runner
 
@@ -13,6 +14,23 @@ def test_provider_config_requires_explicit_provider_opt_in(monkeypatch) -> None:
 
     assert ready is False
     assert "RUN_PROVIDER=1" in reason
+
+
+def test_configure_provider_secret_uses_selected_api_key_env(monkeypatch) -> None:
+    monkeypatch.delenv("TEST_PROVIDER_KEY", raising=False)
+    monkeypatch.setattr(runner, "BACKEND", "openai_compatible")
+    monkeypatch.setattr(runner, "RUN_PROVIDER", True)
+    monkeypatch.setattr(runner, "API_KEY_ENV", "TEST_PROVIDER_KEY")
+
+    def fake_secret(name, *, verbose=True):
+        assert name == "TEST_PROVIDER_KEY"
+        os.environ[name] = "secret-value"
+        return True
+
+    monkeypatch.setattr(runner, "ensure_env_secret_from_colab", fake_secret)
+
+    assert runner.configure_provider_secret() is True
+    assert os.environ["TEST_PROVIDER_KEY"] == "secret-value"
 
 
 def test_provider_config_accepts_local_hf_without_provider_spend(monkeypatch) -> None:

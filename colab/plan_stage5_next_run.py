@@ -612,6 +612,10 @@ def env_bool(value: Any, *, default: bool = False) -> str:
     return "1" if bool(value) else "0"
 
 
+def env_truthy(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
 def env_csv(value: Any) -> str:
     if value is None:
         return ""
@@ -1215,6 +1219,54 @@ def capability_ladder_trace_jobs_actions(payload: dict[str, Any], *, source_summ
     jobs = int(trace_jobs.get("jobs") or 0)
     if status == "ready" and jobs > 0:
         summary_md = source_summary.with_suffix(".md")
+        provider_model_configured = any(
+            os.environ.get(key, "").strip()
+            for key in (
+                "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_OVERRIDE",
+                "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_MAP_JSON",
+                "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_MAP_JSON_INLINE",
+            )
+        )
+        if env_truthy("STAGE5_ARC_AGI_ALLOW_PROVIDER_TRACE_RESPONSES") and provider_model_configured:
+            assignments = {
+                "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_SOURCE_SUMMARY": command_path(source_summary),
+                "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER": "1",
+                "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BACKEND": os.environ.get(
+                    "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BACKEND",
+                    "openai_compatible",
+                ),
+            }
+            for key in (
+                "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_API_KEY_ENV",
+                "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_BASE_URL",
+                "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_OVERRIDE",
+                "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_MAP_JSON",
+                "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_MAP_JSON_INLINE",
+                "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_LIMIT",
+                "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MAX_TOKENS",
+                "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_TEMPERATURE",
+            ):
+                value = os.environ.get(key, "").strip()
+                if value:
+                    assignments[key] = value
+            return [
+                make_action(
+                    "Run capability-ladder provider trace responses",
+                    (
+                        "Trace-generation jobs are ready and provider-response execution was explicitly enabled. "
+                        "Run the CPU/network response collector through the safe runner; it will still require "
+                        "the configured provider secret to be present in env or Colab Secrets."
+                    ),
+                    command_env(assignments, "python colab/run_stage5_capability_ladder_trace_responses.py"),
+                    10,
+                ),
+                make_action(
+                    "Inspect capability-ladder trace jobs before provider spend",
+                    "Keep the provider-neutral trace-job report attached as the audit trail for the response run.",
+                    f"cat {shlex.quote(command_path(summary_md))}",
+                    4,
+                ),
+            ]
         return [
             make_action(
                 "Inspect capability-ladder trace jobs before provider spend",

@@ -386,6 +386,35 @@ def test_capability_ladder_trace_jobs_recommends_inspection_before_provider_spen
     assert "run_curriculum_job_responses.py" not in actions[0]["command"]
 
 
+def test_capability_ladder_trace_jobs_can_run_provider_responses_with_explicit_opt_in(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source = tmp_path / "trace_jobs" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_capability_ladder_trace_jobs",
+        "status": "ready",
+        "trace_jobs": {"jobs": 18, "selected_rows": 9, "by_target_loop": {"1": 5, "2": 4}},
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+    source.with_suffix(".md").write_text("# Trace jobs", encoding="utf-8")
+    monkeypatch.setenv("STAGE5_ARC_AGI_ALLOW_PROVIDER_TRACE_RESPONSES", "1")
+    monkeypatch.setenv(
+        "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_MAP_JSON_INLINE",
+        '{"opus-strong":"provider/model-a"}',
+    )
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run capability-ladder provider trace responses"
+    assert "python colab/run_stage5_capability_ladder_trace_responses.py" in actions[0]["command"]
+    assert f"STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_SOURCE_SUMMARY={source.as_posix()}" in actions[0]["command"]
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_PROVIDER=1" in actions[0]["command"]
+    assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_MODEL_MAP_JSON_INLINE=" in actions[0]["command"]
+    assert actions[1]["name"] == "Inspect capability-ladder trace jobs before provider spend"
+
+
 def test_capability_ladder_trace_responses_ready_recommends_collection(tmp_path) -> None:
     source = tmp_path / "trace_responses" / "summary.json"
     source.parent.mkdir()

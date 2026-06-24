@@ -58,3 +58,29 @@ def ensure_gh_token_from_colab(*, verbose: bool = True) -> bool:
     if verbose:
         print("GitHub auth: token configured.", flush=True)
     return True
+
+
+def ensure_env_secret_from_colab(name: str, *aliases: str, verbose: bool = True) -> bool:
+    """Populate an arbitrary environment secret from Colab Secrets.
+
+    Provider-response runners intentionally run through nested subprocesses.
+    Pulling the selected provider key into ``os.environ`` at the runner entry
+    point keeps those subprocesses self-contained without putting the secret in
+    planner command text.
+    """
+
+    names = (name, *aliases)
+    token = next((os.environ.get(item) for item in names if os.environ.get(item)), None)
+    source = "environment"
+    if not token:
+        token = next((_colab_secret(item) for item in names if _colab_secret(item)), None)
+        source = "Colab Secrets"
+    if not token:
+        if verbose:
+            print(f"Secret auth: no {name} found.", flush=True)
+        return False
+
+    os.environ[name] = token
+    if verbose:
+        print(f"Secret auth: {name} configured from {source}.", flush=True)
+    return True
