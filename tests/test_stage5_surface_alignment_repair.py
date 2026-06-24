@@ -1,5 +1,6 @@
 from pathlib import Path
 import subprocess
+import json
 
 
 def test_source_benchmark_summary_follows_assessment_source(tmp_path, monkeypatch) -> None:
@@ -139,3 +140,44 @@ def test_repair_objective_defaults_to_surface_alignment() -> None:
     )
 
     assert objective == "content_cyclic_surface_alignment"
+
+
+def test_surface_alignment_drive_backup_skips_when_drive_not_mounted(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_surface_alignment_repair as module
+
+    monkeypatch.setattr(module, "DRIVE_BACKUP_ENABLED", True)
+    monkeypatch.setattr(module, "DRIVE_MYDRIVE", tmp_path / "missing_drive")
+
+    info = module.backup_to_drive()
+
+    assert info["status"] == "skipped_drive_not_mounted"
+
+
+def test_surface_alignment_drive_backup_copies_run_and_private_data(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_surface_alignment_repair as module
+
+    run_dir = tmp_path / "outputs" / "stage5" / "run"
+    private_dir = tmp_path / "data" / "stage5_surface_alignment" / "run"
+    run_dir.mkdir(parents=True)
+    private_dir.mkdir(parents=True)
+    (run_dir / "summary.json").write_text('{"ok": true}', encoding="utf-8")
+    (private_dir / "score_alignment_train.jsonl").write_text("{}\n", encoding="utf-8")
+    drive = tmp_path / "drive" / "MyDrive"
+    drive.mkdir(parents=True)
+
+    monkeypatch.setattr(module, "DRIVE_BACKUP_ENABLED", True)
+    monkeypatch.setattr(module, "DRIVE_MYDRIVE", drive)
+    monkeypatch.setattr(module, "DRIVE_BACKUP_ROOT", drive / "recurrent-qwen-svgd-artifacts")
+    monkeypatch.setattr(module, "RUN_ID", "run")
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+    monkeypatch.setattr(module, "PRIVATE_DATA_DIR", private_dir)
+    monkeypatch.setattr(module, "SOURCE_SUMMARY", Path("outputs/stage5/source/summary.json"))
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+
+    info = module.backup_to_drive()
+
+    dest = Path(info["dest_root"])
+    assert info["status"] == "backed_up"
+    assert (dest / "run_dir" / "summary.json").exists()
+    assert (dest / "private_data" / "score_alignment_train.jsonl").exists()
+    assert json.loads((dest / "backup_manifest.json").read_text(encoding="utf-8"))["run_id"] == "run"

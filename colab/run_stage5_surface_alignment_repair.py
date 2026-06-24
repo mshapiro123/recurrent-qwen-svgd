@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -80,6 +81,19 @@ PUSH_RESULTS = os.environ.get("STAGE5_SURFACE_ALIGN_PUSH", "1").strip().lower() 
     "yes",
     "y",
 }
+DRIVE_BACKUP_ENABLED = os.environ.get("STAGE5_SURFACE_ALIGN_BACKUP_DRIVE", "1").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
+DRIVE_MYDRIVE = Path(os.environ.get("STAGE5_SURFACE_ALIGN_DRIVE_MYDRIVE", "/content/drive/MyDrive"))
+DRIVE_BACKUP_ROOT = Path(
+    os.environ.get(
+        "STAGE5_SURFACE_ALIGN_DRIVE_BACKUP_ROOT",
+        str(DRIVE_MYDRIVE / "recurrent-qwen-svgd-artifacts"),
+    )
+)
 
 
 def path_for_cli(path: Path) -> str:
@@ -398,6 +412,37 @@ def write_summary(payload: dict[str, Any]) -> None:
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))
 
 
+def backup_to_drive() -> dict[str, Any]:
+    if not DRIVE_BACKUP_ENABLED:
+        info = {"status": "disabled"}
+        print(f"drive_backup={info}")
+        return info
+    if not DRIVE_MYDRIVE.exists():
+        info = {
+            "status": "skipped_drive_not_mounted",
+            "drive_mydrive": str(DRIVE_MYDRIVE),
+        }
+        print(f"drive_backup={info}")
+        return info
+    dest_root = DRIVE_BACKUP_ROOT / "stage5" / RUN_ID
+    dest_root.mkdir(parents=True, exist_ok=True)
+    if RUN_DIR.exists():
+        shutil.copytree(RUN_DIR, dest_root / "run_dir", dirs_exist_ok=True)
+    if PRIVATE_DATA_DIR.exists():
+        shutil.copytree(PRIVATE_DATA_DIR, dest_root / "private_data", dirs_exist_ok=True)
+    manifest = {
+        "status": "backed_up",
+        "run_id": RUN_ID,
+        "dest_root": str(dest_root),
+        "run_dir": str(RUN_DIR),
+        "private_data_dir": str(PRIVATE_DATA_DIR),
+        "source_summary": path_for_cli(SOURCE_SUMMARY),
+    }
+    (dest_root / "backup_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    print(f"drive_backup={manifest}")
+    return manifest
+
+
 def commit_results(extra_paths: list[Path]) -> None:
     if not PUSH_RESULTS:
         return
@@ -544,6 +589,7 @@ def main() -> int:
             "next_step": "Inspect the diagnoses; no trainable MCQ repair rows were selected.",
         }
         write_summary(payload)
+        backup_to_drive()
         commit_results([order_diagnosis, order_diagnosis.with_suffix(".md"), diagnosis, diagnosis.with_suffix(".md")])
         return 0
 
@@ -641,6 +687,7 @@ def main() -> int:
         ),
     }
     write_summary(payload)
+    backup_to_drive()
     commit_results(
         [
             train_jsonl,
