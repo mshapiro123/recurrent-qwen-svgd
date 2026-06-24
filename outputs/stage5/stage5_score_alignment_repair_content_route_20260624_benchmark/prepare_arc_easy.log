@@ -1,0 +1,6 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=validation
+offset=0
+rows=256
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_score_alignment_repair_content_route_20260624_benchmark/arc_easy_validation_256.jsonl
