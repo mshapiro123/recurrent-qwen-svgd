@@ -176,6 +176,10 @@ def test_green_curriculum_sft_gate_recommends_guarded_sft_runner(tmp_path) -> No
                     "direct": {"required": 16, "observed": 18, "passed": True},
                     "deep_narrow": {"required": 8, "observed": 9, "passed": True},
                 },
+                "target_loop_requirements": {
+                    "1": {"required": 16, "observed": 18, "passed": True},
+                    "2": {"required": 8, "observed": 9, "passed": True},
+                },
             }
         },
     }
@@ -189,6 +193,7 @@ def test_green_curriculum_sft_gate_recommends_guarded_sft_runner(tmp_path) -> No
     assert "STAGE5_CURRICULUM_WORK_DIR=data/curriculum/run_001" in actions[0]["command"]
     assert "STAGE5_CURRICULUM_MIN_POSITIVE_ROWS=24" in actions[0]["command"]
     assert "STAGE5_CURRICULUM_MIN_MODE_ROWS=deep_narrow=8,direct=16" in actions[0]["command"]
+    assert "STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS=1=16,2=8" in actions[0]["command"]
 
 
 def test_red_curriculum_sft_gate_recommends_inspection(tmp_path) -> None:

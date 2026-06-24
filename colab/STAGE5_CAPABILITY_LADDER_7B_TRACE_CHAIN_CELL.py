@@ -185,6 +185,21 @@ def mode_rows_from_counts(mode_counts):
     return ",".join(parts)
 
 
+def target_loop_rows_from_counts(loop_counts):
+    if not isinstance(loop_counts, dict):
+        return ""
+    parts = []
+    for loop, count in sorted(loop_counts.items(), key=lambda item: int(item[0]) if str(item[0]).isdigit() else 999):
+        try:
+            loop_target = int(loop)
+            n = int(count)
+        except (TypeError, ValueError):
+            continue
+        if loop_target > 0 and n > 0:
+            parts.append(f"{loop_target}={n}")
+    return ",".join(parts)
+
+
 def derive_sft_env(summary_path):
     payload = read_json(summary_path)
     curriculum = payload.get("curriculum") if isinstance(payload.get("curriculum"), dict) else {}
@@ -216,6 +231,10 @@ def derive_sft_env(summary_path):
         "STAGE5_TRACED_CAPABILITY_SFT_MIN_MODE_ROWS",
         mode_rows_from_counts(counts.get("mode_counts")),
     ).strip()
+    min_target_loop_rows = os.environ.get(
+        "STAGE5_TRACED_CAPABILITY_SFT_MIN_TARGET_LOOP_ROWS",
+        target_loop_rows_from_counts(target_loop_counts),
+    ).strip()
 
     env = os.environ.copy()
     env.update(
@@ -239,6 +258,8 @@ def derive_sft_env(summary_path):
     )
     if min_mode_rows:
         env["STAGE5_CURRICULUM_MIN_MODE_ROWS"] = min_mode_rows
+    if min_target_loop_rows:
+        env["STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS"] = min_target_loop_rows
     drive_root = str(drive_backup.get("dest_root") or "").strip()
     if drive_root:
         env["STAGE5_CURRICULUM_INPUT_BACKUP_DIR"] = drive_root
@@ -251,6 +272,7 @@ def derive_sft_env(summary_path):
                 "sft_source_summary": path_for_cli(summary_path),
                 "positive_rows": positive_rows,
                 "min_mode_rows": min_mode_rows,
+                "min_target_loop_rows": min_target_loop_rows,
                 "max_loops": max_loops,
                 "phase1_steps": phase1_steps,
                 "model_name": env["MODEL_NAME"],
@@ -358,6 +380,10 @@ probe_env.update(
         ),
         "STAGE5_CAPABILITY_LADDER_MODEL_LADDER": (
             "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3,qwen_7b:4"
+        ),
+        "STAGE5_CAPABILITY_LADDER_MIN_TARGET_LOOP_ROWS": os.environ.get(
+            "STAGE5_CAPABILITY_LADDER_MIN_TARGET_LOOP_ROWS",
+            "1=1,2=1,3=1,4=1",
         ),
         "STAGE5_CAPABILITY_LADDER_ARC_LIMIT": chain_arc_limit,
         "STAGE5_CAPABILITY_LADDER_SCORE_MODE": chain_score_mode,

@@ -193,3 +193,91 @@ Interpretation:
 - The next GPU-worthy action is an offset-256 confirmation with the same
   checkpoint and scoring surfaces before further training or Phase 2/SVGD
   scaling.
+
+## 2026-06-24: Stage 5 Control Ledger
+
+This section is the human-readable actions, decisions, and issues ledger for
+the current Stage 5 work. The repo also keeps machine-readable summaries under
+`outputs/stage5/**/summary.json`, current-pointer files under `config/`, and
+Colab/Drive backups for selected runs.
+
+### Current GPU Action
+
+- Target: `traced_sft_score_alignment_repair`.
+- Runtime class: L4 is expected to be sufficient; A100/G4 is not required for
+  this bounded 0.5B score-level repair unless the run OOMs.
+- Bootstrap source: `colab/CURRENT_A100_BOOTSTRAP_CELL.py` from GitHub `main`.
+- Launcher: `colab/STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL.py`.
+- Runner: `colab/run_stage5_surface_alignment_repair.py`.
+- Source summary:
+  `outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm/summary.json`.
+- Objective: repair ARC-Easy content-route MCQ score behavior using direct
+  option-score cross entropy, without repeating the failed SFT surface repair.
+- Key training settings:
+  - `STAGE5_SURFACE_ALIGN_TRAINER=score_ce`
+  - `STAGE5_SURFACE_ALIGN_MAX_STEPS=75`
+  - `STAGE5_SURFACE_ALIGN_LR=5e-7`
+  - `STAGE5_SURFACE_ALIGN_DISTILL_WEIGHT=0.0`
+  - `STAGE5_SURFACE_ALIGN_SCORE_DISTILL_WEIGHT=0.05`
+  - `STAGE5_SURFACE_ALIGN_SCORE_MARGIN=0.05`
+  - `STAGE5_SURFACE_ALIGN_SCORE_MARGIN_WEIGHT=0.1`
+- Expected artifact if successful:
+  `outputs/stage5/stage5_score_alignment_repair_content_route_20260624/summary.json`.
+
+### Decisions
+
+- Do not repeat the previous failed SFT-style content/cyclic surface repair. The
+  planner now stops if a score-level repair also produces no easy content lift.
+- Treat base preservation and route repair as necessary gates before scaling
+  SVGD, depth routing, or larger model variants.
+- Use L4/T4 for bounded 0.5B repair and diagnostic runs. Reserve A100/G4/H100
+  for 3B/7B capability-ladder probes, longer SFT, or memory-heavy particle
+  experiments.
+- Continue developing the capability-ladder curriculum in parallel with GPU
+  runs so the next depth-training pass is not blocked on bookkeeping.
+
+### Current Issues
+
+- The recurrent 0.5B checkpoint can beat base on some bounded ARC content
+  surfaces, but it remains fragile across scoring routes.
+- Surface mismatch is still the immediate blocker for honest broader benchmark
+  claims.
+- Capability-ladder data generation supports arbitrary model scales, but the
+  quality gate needs explicit per-depth row requirements before we should launch
+  paid depth-router SFT.
+- Existing run summaries are authoritative but scattered; this log should be
+  updated when decisions change, when a run lands, or when a target is retired.
+
+### Next Checks
+
+- Inspect the score-repair run summary when it lands.
+- If score repair improves content accuracy without cyclic collapse, update the
+  current source summary pointer and proceed to a held-out confirmation.
+- If score repair fails, use the score-margin diagnostics to determine whether
+  the repair changed option scores in the right direction but failed to flip
+  enough predictions, or whether it drifted into another label/content prior.
+- Before depth-router SFT, require enough positive SFT rows at each intended
+  `target_loop_count`, especially for `1`, `2`, `3`, and `4` when using a
+  0.5B/1.5B/3B/7B ladder.
+
+### Local Verification Notes
+
+- 2026-06-24: checked GitHub/local outputs for
+  `outputs/stage5/stage5_score_alignment_repair_content_route_20260624/summary.json`;
+  no score-repair result had landed yet.
+- 2026-06-24: locally verified the maintained score-repair path compiles:
+  `colab/STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL.py`,
+  `colab/run_stage5_surface_alignment_repair.py`,
+  `training/prepare_mcq_score_alignment_jsonl.py`,
+  `training/train_phase1_mcq_score_align.py`, and
+  `colab/assess_stage5_surface_repair.py`.
+- 2026-06-24: locally reran focused score-repair tests:
+  `tests/test_prepare_mcq_score_alignment_jsonl.py`,
+  `tests/test_train_phase1_mcq_score_align.py`,
+  `tests/test_stage5_surface_alignment_repair.py`,
+  `tests/test_stage5_surface_repair_assessment.py`, and
+  `tests/test_stage5_notebooks.py`.
+- Score-repair runner behavior confirmed from source: on success it writes the
+  run summary, backs up artifacts to Drive when mounted, commits/pushes with
+  `[skip ci]`, and disconnects; on error the outer Colab cell leaves the runtime
+  connected for inspection.

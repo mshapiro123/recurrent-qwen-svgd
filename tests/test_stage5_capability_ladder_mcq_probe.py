@@ -62,6 +62,33 @@ def test_generic_model_ladder_controls_required_keys_and_max_loop(monkeypatch) -
     assert module.max_target_loop() == 4
 
 
+def test_gate_capability_ladder_passes_target_loop_requirements(tmp_path, monkeypatch) -> None:
+    run_dir = tmp_path / "outputs" / "stage5" / "probe"
+    run_dir.mkdir(parents=True)
+    summary = tmp_path / "data" / "curriculum" / "probe" / "summary.json"
+    summary.parent.mkdir(parents=True)
+    summary.write_text("{}", encoding="utf-8")
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, *, check=True, log_name=None):
+        commands.append([str(item) for item in cmd])
+        return module.subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+    monkeypatch.setattr(module, "MIN_TARGET_LOOP_ROWS", "1=4,2=3,3=2,4=1")
+    monkeypatch.setattr(module, "run", fake_run)
+    monkeypatch.setattr(module, "path_for_cli", lambda path: str(path).replace("\\", "/"))
+    monkeypatch.setattr(module, "max_target_loop", lambda: 4)
+
+    output = module.gate_capability_ladder(summary)
+
+    assert output == run_dir / "curriculum_sft_gate.json"
+    cmd = commands[0]
+    assert "--min_target_loop_rows" in cmd
+    assert cmd[cmd.index("--min_target_loop_rows") + 1] == "1=4,2=3,3=2,4=1"
+    assert cmd[cmd.index("--max_loop_target") + 1] == "4"
+
+
 def test_write_probe_summary_records_depth_probe_caveat(tmp_path, monkeypatch) -> None:
     run_dir = tmp_path / "outputs" / "stage5" / "probe"
     work_dir = tmp_path / "data" / "curriculum" / "probe"

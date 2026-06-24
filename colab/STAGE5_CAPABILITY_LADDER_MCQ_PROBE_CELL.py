@@ -152,6 +152,10 @@ try:
         "STAGE5_CAPABILITY_LADDER_MODEL_LADDER",
         "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3",
     )
+    env["STAGE5_CAPABILITY_LADDER_MIN_TARGET_LOOP_ROWS"] = os.environ.get(
+        "STAGE5_CAPABILITY_LADDER_MIN_TARGET_LOOP_ROWS",
+        "1=1,2=1,3=1",
+    )
     env["STAGE5_CAPABILITY_LADDER_PUSH"] = "1"
     env["STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE"] = "1" if backup_drive else "0"
     env["DTYPE"] = os.environ.get("DTYPE", "bfloat16")

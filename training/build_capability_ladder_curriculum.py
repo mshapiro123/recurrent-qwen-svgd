@@ -362,6 +362,9 @@ def build_records(
     records: list[dict[str, Any]] = []
     skipped: Counter[str] = Counter()
     tier_counts: Counter[str] = Counter()
+    mode_counts: Counter[str] = Counter()
+    target_loop_counts: Counter[str] = Counter()
+    source_model_counts: Counter[str] = Counter()
     model_keys = [str(entry["key"]) for entry in model_ladder] if model_ladder else None
     for row_index, row in enumerate(rows):
         if model_ladder:
@@ -398,10 +401,18 @@ def build_records(
             continue
         records.append(record)
         tier_counts[str(record["capability_tier"])] += 1
+        mode_counts[str(record["mode"])] += 1
+        target_loop_counts[str(record["target_loop_count"])] += 1
+        for trace in record.get("traces", []):
+            if isinstance(trace, dict) and str(trace.get("source_model") or "").strip():
+                source_model_counts[str(trace["source_model"])] += 1
     report = {
         "input_rows": len(rows),
         "exported_records": len(records),
         "tier_counts": dict(sorted(tier_counts.items())),
+        "mode_counts": dict(sorted(mode_counts.items())),
+        "target_loop_counts": dict(sorted(target_loop_counts.items(), key=lambda item: int(item[0]))),
+        "source_model_counts": dict(sorted(source_model_counts.items())),
         "skipped": dict(sorted(skipped.items())),
         "base_key": base_key,
         "mid_key": mid_key,

@@ -63,6 +63,7 @@ MODEL_LADDER = os.environ.get("STAGE5_CAPABILITY_LADDER_MODEL_LADDER", "").strip
 MIN_POSITIVE_ROWS = int(os.environ.get("STAGE5_CAPABILITY_LADDER_MIN_POSITIVE_ROWS", "1"))
 MIN_DIRECT_ROWS = int(os.environ.get("STAGE5_CAPABILITY_LADDER_MIN_DIRECT_ROWS", "1"))
 MIN_DEEP_ROWS = int(os.environ.get("STAGE5_CAPABILITY_LADDER_MIN_DEEP_ROWS", "1"))
+MIN_TARGET_LOOP_ROWS = os.environ.get("STAGE5_CAPABILITY_LADDER_MIN_TARGET_LOOP_ROWS", "").strip()
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 DEVICE = os.environ.get("DEVICE", "cuda")
 PUSH_RESULTS = os.environ.get("STAGE5_CAPABILITY_LADDER_PUSH", "1").strip().lower() in {
@@ -366,24 +367,27 @@ def build_capability_ladder(scored_jsonl: Path) -> Path:
 def gate_capability_ladder(summary_json: Path) -> Path:
     output = RUN_DIR / "curriculum_sft_gate.json"
     output_md = RUN_DIR / "curriculum_sft_gate.md"
+    cmd = [
+        sys.executable,
+        "training/check_curriculum_sft_gate.py",
+        "--summary_json",
+        path_for_cli(summary_json),
+        "--output_json",
+        path_for_cli(output),
+        "--output_md",
+        path_for_cli(output_md),
+        "--min_positive_rows",
+        str(MIN_POSITIVE_ROWS),
+        "--min_mode_rows",
+        f"direct={MIN_DIRECT_ROWS},deep_narrow={MIN_DEEP_ROWS}",
+        "--max_loop_target",
+        str(max_target_loop()),
+        "--allow_cross_model_only_answers",
+    ]
+    if MIN_TARGET_LOOP_ROWS:
+        cmd.extend(["--min_target_loop_rows", MIN_TARGET_LOOP_ROWS])
     run(
-        [
-            sys.executable,
-            "training/check_curriculum_sft_gate.py",
-            "--summary_json",
-            path_for_cli(summary_json),
-            "--output_json",
-            path_for_cli(output),
-            "--output_md",
-            path_for_cli(output_md),
-            "--min_positive_rows",
-            str(MIN_POSITIVE_ROWS),
-            "--min_mode_rows",
-            f"direct={MIN_DIRECT_ROWS},deep_narrow={MIN_DEEP_ROWS}",
-            "--max_loop_target",
-            str(max_target_loop()),
-            "--allow_cross_model_only_answers",
-        ],
+        cmd,
         check=False,
         log_name="check_curriculum_sft_gate.log",
     )

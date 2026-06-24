@@ -1428,6 +1428,9 @@ def curriculum_sft_gate_actions(payload: dict[str, Any], *, source_summary: Path
     gate_md = source_summary.with_suffix(".md")
     positive_rows = int(((payload.get("checks") or {}).get("positive_sft") or {}).get("rows") or 0)
     mode_requirements = ((payload.get("checks") or {}).get("positive_sft") or {}).get("mode_requirements")
+    target_loop_requirements = ((payload.get("checks") or {}).get("positive_sft") or {}).get(
+        "target_loop_requirements"
+    )
     min_mode_rows = ""
     if isinstance(mode_requirements, dict):
         required = []
@@ -1440,6 +1443,19 @@ def curriculum_sft_gate_actions(payload: dict[str, Any], *, source_summary: Path
         min_mode_rows = ",".join(required)
     if not min_mode_rows:
         min_mode_rows = curriculum_gate_min_mode_rows()
+    min_target_loop_rows = ""
+    if isinstance(target_loop_requirements, dict):
+        required_loops = []
+        for target_loop, item in sorted(
+            target_loop_requirements.items(),
+            key=lambda value: int(value[0]) if str(value[0]).isdigit() else 999,
+        ):
+            if not isinstance(item, dict):
+                continue
+            count = int(item.get("required") or 0)
+            if count > 0:
+                required_loops.append(f"{target_loop}={count}")
+        min_target_loop_rows = ",".join(required_loops)
     min_rows = max(positive_rows, 16)
     if payload.get("go") is True:
         assignments = {
@@ -1452,6 +1468,8 @@ def curriculum_sft_gate_actions(payload: dict[str, Any], *, source_summary: Path
             assignments["STAGE5_CURRICULUM_SUMMARY_JSON"] = summary_json
         if min_mode_rows:
             assignments["STAGE5_CURRICULUM_MIN_MODE_ROWS"] = min_mode_rows
+        if min_target_loop_rows:
+            assignments["STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS"] = min_target_loop_rows
         return [
             make_action(
                 "Run generated curriculum recurrent SFT",

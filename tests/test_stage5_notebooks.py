@@ -621,12 +621,15 @@ def test_capability_ladder_mcq_probe_cell_is_bounded_and_depth_ladder_focused() 
     assert '"STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE", "0"' in plain
     assert "Drive backup disabled for capability-ladder probe" in plain
     assert "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3" in plain
+    assert "STAGE5_CAPABILITY_LADDER_MIN_TARGET_LOOP_ROWS" in plain
+    assert "1=1,2=1,3=1" in plain
     assert "colab/run_stage5_capability_ladder_mcq_probe.py" in plain
     assert "tests/test_stage5_capability_ladder_mcq_probe.py" in plain
     assert "runtime.unassign()" in plain
     assert "capability_ladder_mcq_probe" in bootstrap
     assert "STAGE5_CAPABILITY_LADDER_MCQ_PROBE_CELL.py" in bootstrap
     assert "STAGE5_CAPABILITY_LADDER_MODEL_LADDER" in bootstrap
+    assert "STAGE5_CAPABILITY_LADDER_MIN_TARGET_LOOP_ROWS" in bootstrap
 
 
 def test_capability_ladder_trace_jobs_cell_is_cpu_only_and_depth_ladder_focused() -> None:
@@ -655,6 +658,8 @@ def test_capability_ladder_7b_trace_chain_cell_runs_probe_then_trace_jobs() -> N
     assert "capability_ladder_7b_trace_chain" in plain
     assert "Qwen/Qwen2.5-7B-Instruct" in plain
     assert "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3,qwen_7b:4" in plain
+    assert "STAGE5_CAPABILITY_LADDER_MIN_TARGET_LOOP_ROWS" in plain
+    assert "1=1,2=1,3=1,4=1" in plain
     assert "STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_ARC_LIMIT" in plain
     assert "colab/run_stage5_capability_ladder_mcq_probe.py" in plain
     assert "colab/run_stage5_capability_ladder_trace_jobs.py" in plain
@@ -665,6 +670,8 @@ def test_capability_ladder_7b_trace_chain_cell_runs_probe_then_trace_jobs() -> N
     assert "colab/run_stage5_capability_ladder_trace_collect.py" in plain
     assert "stage5_capability_ladder_trace_collection" in plain
     assert "colab/run_stage5_curriculum_sft.py" in plain
+    assert "STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS" in plain
+    assert "min_target_loop_rows" in plain
     assert "STAGE5_CAPABILITY_LADDER_TRACE_ALLOW_GPU" in plain
     assert "STAGE5_CAPABILITY_LADDER_TRACE_REFUSE_GPU" in plain
     assert '"pull"' in plain
@@ -672,6 +679,7 @@ def test_capability_ladder_7b_trace_chain_cell_runs_probe_then_trace_jobs() -> N
     assert "runtime.unassign()" in plain
     assert "capability_ladder_7b_trace_chain" in bootstrap
     assert "STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_CELL.py" in bootstrap
+    assert "STAGE5_CAPABILITY_LADDER_MIN_TARGET_LOOP_ROWS" in bootstrap
     assert "STAGE5_CURRENT_A100_TARGET=capability_ladder_7b_trace_chain" in current_action
 
 

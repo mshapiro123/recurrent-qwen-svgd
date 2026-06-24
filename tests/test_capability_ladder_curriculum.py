@@ -142,6 +142,13 @@ def test_capability_ladder_cli_writes_gate_ready_artifacts(tmp_path) -> None:
     assert len(typed_rows) == 3
     assert len(sft_rows) == 3
     assert report["tier_counts"]["base_preservation"] == 1
+    assert report["mode_counts"] == {"deep_narrow": 2, "direct": 1}
+    assert report["target_loop_counts"] == {"1": 1, "2": 1, "3": 1}
+    assert report["source_model_counts"] == {
+        "Qwen/Qwen2.5-0.5B-Instruct": 1,
+        "Qwen/Qwen2.5-1.5B-Instruct": 1,
+        "Qwen/Qwen2.5-3B-Instruct": 1,
+    }
 
 
 def test_model_ladder_assigns_arbitrary_scale_depths() -> None:

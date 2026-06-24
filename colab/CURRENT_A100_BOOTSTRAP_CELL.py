@@ -259,6 +259,7 @@ TARGETS = {
             "Qwen/Qwen2.5-1.5B-Instruct",
             "Qwen/Qwen2.5-3B-Instruct",
             "STAGE5_CAPABILITY_LADDER_MODEL_LADDER",
+            "STAGE5_CAPABILITY_LADDER_MIN_TARGET_LOOP_ROWS",
             "STAGE5_CAPABILITY_LADDER_ARC_LIMIT",
             "content_question_only",
             "colab/run_stage5_capability_ladder_mcq_probe.py",
@@ -267,6 +268,7 @@ TARGETS = {
         ],
         "env": {
             "STAGE5_CAPABILITY_LADDER_MODEL_LADDER": "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3",
+            "STAGE5_CAPABILITY_LADDER_MIN_TARGET_LOOP_ROWS": "1=1,2=1,3=1",
             "STAGE5_CAPABILITY_LADDER_ARC_LIMIT": "96",
             "STAGE5_CAPABILITY_LADDER_SCORE_MODE": "content_question_only",
             "STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE": "0",
@@ -282,6 +284,7 @@ TARGETS = {
             "Qwen/Qwen2.5-1.5B-Instruct",
             "Qwen/Qwen2.5-3B-Instruct",
             "STAGE5_CAPABILITY_LADDER_MODEL_LADDER",
+            "STAGE5_CAPABILITY_LADDER_MIN_TARGET_LOOP_ROWS",
             "STAGE5_CAPABILITY_LADDER_ARC_LIMIT",
             "content_question_only",
             "colab/run_stage5_capability_ladder_mcq_probe.py",
@@ -298,6 +301,7 @@ TARGETS = {
             "STAGE5_CAPABILITY_LADDER_MODEL_LADDER": (
                 "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3,qwen_7b:4"
             ),
+            "STAGE5_CAPABILITY_LADDER_MIN_TARGET_LOOP_ROWS": "1=1,2=1,3=1,4=1",
             "STAGE5_CAPABILITY_LADDER_ARC_LIMIT": "96",
             "STAGE5_CAPABILITY_LADDER_SCORE_MODE": "content_question_only",
             "STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE": "0",
@@ -311,6 +315,7 @@ TARGETS = {
             "capability_ladder_7b_trace_chain",
             "Qwen/Qwen2.5-7B-Instruct",
             "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3,qwen_7b:4",
+            "STAGE5_CAPABILITY_LADDER_MIN_TARGET_LOOP_ROWS",
             "STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_ARC_LIMIT",
             "colab/run_stage5_capability_ladder_mcq_probe.py",
             "colab/run_stage5_capability_ladder_trace_jobs.py",
@@ -322,7 +327,9 @@ TARGETS = {
             "tests/test_capability_ladder_trace_jobs.py",
             "runtime.unassign",
         ],
-        "env": {},
+        "env": {
+            "STAGE5_CAPABILITY_LADDER_MIN_TARGET_LOOP_ROWS": "1=1,2=1,3=1,4=1",
+        },
     },
     "capability_ladder_trace_jobs_cpu": {
         "path": "colab/STAGE5_CAPABILITY_LADDER_TRACE_JOBS_CELL.py",
