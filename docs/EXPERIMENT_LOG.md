@@ -285,6 +285,11 @@ Colab/Drive backups for selected runs.
   the repair objective/data mix or move to a held-out capability-ladder/depth
   curriculum experiment if the surface route is considered good enough for the
   harder-slice hypothesis.
+- Follow-on decision: use the stronger ARC-mix recovered checkpoint for the
+  next depth experiment rather than the weaker score-repair checkpoint. The
+  next GPU target is `STAGE5_CURRENT_A100_TARGET=arc_mix_offset_then_depth_chain`;
+  it confirms the ARC-mix checkpoint on offset-256 examples, then launches
+  learned-depth ARC-mix SFT only if the offset gate passes.
 - 2026-06-24: locally verified the maintained score-repair path compiles:
   `colab/STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL.py`,
   `colab/run_stage5_surface_alignment_repair.py`,

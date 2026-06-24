@@ -883,46 +883,54 @@ Stop or avoid GPU when:
 
 ## Current Next-Best Order
 
-The ARC-mix offset confirmation, learned-loop benchmark, and scale64
-local-HF traced-SFT run moved the project from "can surgery recover?" to "can
-depth-labeled curriculum improve without stealing from the direct route?" The
-current order is:
+The ARC-mix offset confirmation, learned-loop benchmark, scale64 local-HF
+traced-SFT run, and score-level surface repair moved the project from "can
+surgery recover?" to "can depth-labeled curriculum improve without stealing
+from the direct route?" The current order is:
 
-1. Run the bounded content/cyclic surface-alignment repair:
-   `STAGE5_CURRENT_A100_TARGET=traced_sft_surface_alignment_repair`.
-   This is the active front-of-queue GPU job because the latest confirmation
-   still loses ARC-Easy content while cyclic scoring often rescues the same
+1. Treat the score-level surface repair as a diagnostic, not the next source.
+   It improved ARC-Challenge content from `86/256` to `91/256`, now `+4` over
+   base, but did not recover ARC-Easy content (`140/256` to `139/256`, still
+   `-7` versus base). Do not rerun the same 75-step score repair unchanged.
+2. Return to the stronger bounded ARC-mix recovered checkpoint as the next
+   competence-preserving source. Its 256-example confirmation remains the best
+   non-toy recurrent-vs-base result so far: ARC-Easy content `+9`,
+   ARC-Challenge content `+10`, ARC-Easy cyclic `+2`, ARC-Challenge cyclic `0`.
+3. Run `STAGE5_CURRENT_A100_TARGET=arc_mix_offset_then_depth_chain`. This first
+   re-confirms the ARC-mix checkpoint on the offset-256 slice, then launches the
+   learned-depth ARC-mix continuation only if the offset gate passes. This is
+   the next GPU target because it directly tests the current mechanism
+   hypothesis: depth 1 for easy/direct rows, depth 3 for harder ARC-Challenge
    rows.
-2. Assess the repaired checkpoint on the same ARC-Easy/ARC-Challenge content
-   and cyclic surfaces. Success means ARC-Easy content closes materially while
-   ARC-Challenge content/cyclic do not regress.
-3. If the surface repair passes or is partially positive, run a larger
-   recurrent confirmation benchmark and then the matched dense same-curriculum
-   MCQ control. This answers whether recurrence contributes beyond the trace
-   data itself.
-4. If dense control matches or beats recurrent, do not chase more surface
+4. Assess the post-depth checkpoint on the same ARC-Easy/ARC-Challenge content
+   and cyclic surfaces. Success means ARC-Easy content/cyclic remain
+   non-negative while ARC-Challenge keeps or improves the hard-content gain.
+5. If post-depth improves selected/hard-tail behavior without damaging the
+   easy route, run the matched dense same-curriculum MCQ control. This answers
+   whether recurrence contributes beyond the trace data itself.
+6. If dense control matches or beats recurrent, do not chase more surface
    repairs. Improve the depth-label curriculum and rerun the recurrent-vs-dense
    comparison.
-5. If recurrent beats dense on hard-tail surfaces, package that as the first
+7. If recurrent beats dense on hard-tail surfaces, package that as the first
    architecture contribution: small-parameter recurrent surgery plus
    depth-labeled traces produces useful behavior that the same dense LoRA
    recipe does not.
-6. Keep the CE8 depth curve as the fixed mechanism readout for later runs:
+8. Keep the CE8 depth curve as the fixed mechanism readout for later runs:
    [STAGE5_CE8_DEPTH_CURVE_2026_06_23.md](STAGE5_CE8_DEPTH_CURVE_2026_06_23.md).
-7. Build or improve a selector/training objective that can preserve depth 1 on
+9. Build or improve a selector/training objective that can preserve depth 1 on
    easy/direct rows while using depth 2-3 on hard/ambiguous rows.
-8. Keep debiased/cyclic MCQ scoring as the default benchmark harness, but keep
+10. Keep debiased/cyclic MCQ scoring as the default benchmark harness, but keep
    content-question-only scoring as a guardrail because ARC-Easy content
    calibration has been the main failure surface.
-9. Audit and type trace data before more SFT consumes it.
-10. Run depth-conditional preservation SFT:
+11. Audit and type trace data before more SFT consumes it.
+12. Run depth-conditional preservation SFT:
    depth 1 for base-correct/direct/easy rows, depth 2-3 for verified hard rows.
-11. Evaluate fixed depths, learned router, and selector on the same balanced
+13. Evaluate fixed depths, learned router, and selector on the same balanced
    ARC slices.
-12. Compare against a same-recipe dense LoRA control.
-13. Re-test particles/SVGD only after deterministic selected depth is useful.
-14. Run broader GPQA/ARC-AGI-style benchmark gates.
-15. Package HF artifacts and paper claims only after held-out surpass-base or
+14. Compare against a same-recipe dense LoRA control.
+15. Re-test particles/SVGD only after deterministic selected depth is useful.
+16. Run broader GPQA/ARC-AGI-style benchmark gates.
+17. Package HF artifacts and paper claims only after held-out surpass-base or
     same-recipe architecture evidence exists.
 
 The immediate strategic question for the deep-research agent is not whether
