@@ -39,6 +39,26 @@ def test_source_positive_sft_path_falls_back_to_gate_artifact(monkeypatch, tmp_p
     assert module.source_positive_sft_path(payload) == tmp_path / "data" / "curriculum" / "trace" / "positive_sft.jsonl"
 
 
+def test_source_positive_sft_path_follows_benchmark_source_chain(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    train_summary = tmp_path / "outputs" / "stage5" / "train" / "summary.json"
+    benchmark_summary = tmp_path / "outputs" / "stage5" / "bench" / "summary.json"
+    train_summary.parent.mkdir(parents=True)
+    benchmark_summary.parent.mkdir(parents=True)
+    train_summary.write_text(
+        json.dumps({"dataset": {"source_positive_sft": "data/curriculum/train/positive_sft.jsonl"}}),
+        encoding="utf-8",
+    )
+    benchmark_summary.write_text(
+        json.dumps({"kind": "stage5_benchmark_suite", "source_summary": module.path_for_cli(train_summary)}),
+        encoding="utf-8",
+    )
+
+    assert module.source_positive_sft_path(json.loads(benchmark_summary.read_text(encoding="utf-8"))) == (
+        tmp_path / "data" / "curriculum" / "train" / "positive_sft.jsonl"
+    )
+
+
 def test_paired_dense_vs_base_reports_wins_losses_and_ties(tmp_path) -> None:
     base = tmp_path / "base.jsonl"
     dense = tmp_path / "dense.jsonl"

@@ -544,6 +544,21 @@ def test_parse_action_command_allows_surface_alignment_repair_runner() -> None:
     assert parsed.argv == [sys.executable, "colab/run_stage5_surface_alignment_repair.py"]
 
 
+def test_parse_action_command_allows_dense_mcq_control_runner() -> None:
+    parsed = parse_action_command(
+        "STAGE5_DENSE_MCQ_RUN_ID=dense "
+        "STAGE5_DENSE_MCQ_SOURCE_SUMMARY=outputs/stage5/repaired_benchmark/summary.json "
+        "python colab/run_stage5_mcq_dense_sft_control.py"
+    )
+
+    assert parsed.kind == "python"
+    assert parsed.env == {
+        "STAGE5_DENSE_MCQ_RUN_ID": "dense",
+        "STAGE5_DENSE_MCQ_SOURCE_SUMMARY": "outputs/stage5/repaired_benchmark/summary.json",
+    }
+    assert parsed.argv == [sys.executable, "colab/run_stage5_mcq_dense_sft_control.py"]
+
+
 def test_parse_action_command_allows_mcq_scoring_policy_runner() -> None:
     parsed = parse_action_command(
         "STAGE5_MCQ_SCORING_POLICY_RUN_ID=policy "
@@ -572,6 +587,7 @@ def test_paid_gpu_arc_runners_are_a100_guarded() -> None:
         "colab/run_stage5_phase1_recovery_ladder.py",
         "colab/run_stage5_direct_preservation_probe.py",
         "colab/run_stage5_mcq_debias_diagnostic.py",
+        "colab/run_stage5_mcq_dense_sft_control.py",
         "colab/run_stage5_surface_alignment_repair.py",
         "colab/run_stage5_recovered_phase1_arc_gate.py",
         "colab/run_stage5_recovered_phase1_particle_arc_gate.py",

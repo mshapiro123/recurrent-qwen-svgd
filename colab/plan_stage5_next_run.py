@@ -2065,7 +2065,7 @@ def dense_mcq_trace_sft_control_action(
     extra_train_jsonl: str | None = None,
 ) -> dict[str, Any]:
     env = {
-        "STAGE5_CURRENT_A100_TARGET": "dense_mcq_trace_sft_control",
+        "STAGE5_DENSE_MCQ_SOURCE_SUMMARY": recurrent_benchmark_summary,
         "STAGE5_DENSE_MCQ_RUN_ID": f"{RUN_ID}_{run_suffix}",
         "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY": recurrent_benchmark_summary,
     }
@@ -2074,7 +2074,7 @@ def dense_mcq_trace_sft_control_action(
     return make_action(
         "Run dense MCQ same-curriculum control",
         reason,
-        command_env(env, "python colab/CURRENT_A100_BOOTSTRAP_CELL.py"),
+        command_env(env, "python colab/run_stage5_mcq_dense_sft_control.py"),
         priority,
     )
 

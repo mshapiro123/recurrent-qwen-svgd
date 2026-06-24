@@ -144,7 +144,7 @@ def source_summary_path() -> Path:
     return path
 
 
-def source_positive_sft_path(payload: dict[str, Any]) -> Path:
+def source_positive_sft_path(payload: dict[str, Any], *, _seen: set[Path] | None = None) -> Path:
     dataset = payload.get("dataset") if isinstance(payload.get("dataset"), dict) else {}
     if dataset.get("source_positive_sft"):
         return resolve_path(str(dataset["source_positive_sft"]))
@@ -158,6 +158,19 @@ def source_positive_sft_path(payload: dict[str, Any]) -> Path:
     config = payload.get("config") if isinstance(payload.get("config"), dict) else {}
     if config.get("work_dir"):
         return resolve_path(str(config["work_dir"])) / "positive_sft.jsonl"
+    seen = _seen if _seen is not None else set()
+    for key in ("source_summary", "nested_source_summary", "benchmark_source_summary"):
+        value = payload.get(key)
+        if not isinstance(value, str) or not value.strip():
+            continue
+        candidate = resolve_path(value)
+        if candidate in seen or not candidate.exists():
+            continue
+        seen.add(candidate)
+        try:
+            return source_positive_sft_path(read_json(candidate), _seen=seen)
+        except KeyError:
+            continue
     raise KeyError("Source summary does not expose a positive_sft path or curriculum work_dir")
 
 

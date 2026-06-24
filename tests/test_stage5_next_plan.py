@@ -3672,7 +3672,8 @@ def test_surface_alignment_passed_confirms_recurrent_before_dense_control(tmp_pa
     assert actions[1]["name"] == "Run dense MCQ same-curriculum control"
     assert actions[1]["priority"] == 8
     assert "dense_mcq_after_surface_repair" in actions[1]["command"]
-    assert "STAGE5_CURRENT_A100_TARGET=dense_mcq_trace_sft_control" in actions[1]["command"]
+    assert "python colab/run_stage5_mcq_dense_sft_control.py" in actions[1]["command"]
+    assert "STAGE5_DENSE_MCQ_SOURCE_SUMMARY=outputs/stage5/repaired_benchmark/summary.json" in actions[1]["command"]
     assert (
         "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY=outputs/stage5/repaired_benchmark/summary.json"
         in actions[1]["command"]
@@ -3704,6 +3705,7 @@ def test_surface_alignment_partial_still_routes_to_dense_control_at_lower_priori
     assert actions[1]["name"] == "Run dense MCQ same-curriculum control"
     assert actions[1]["priority"] == 8
     assert "partial_surface_repair" in actions[1]["command"]
+    assert "python colab/run_stage5_mcq_dense_sft_control.py" in actions[1]["command"]
 
 
 def test_surface_alignment_order_sensitivity_blocks_dense_control(tmp_path) -> None:
