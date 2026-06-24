@@ -1,0 +1,22 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 15053.07it/s]
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 16266.56it/s]
+distillation_teacher=Qwen/Qwen2.5-0.5B-Instruct
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/phase1_direct_preserve/phase1_step_75.pt loaded_keys=179
+optimizer_parameter_tensors=179
+step=0 mean_expected_loops=1.0041 mean_halt_entropy=0.0267 expected_ce=0.0519 halting_kl=0.6783 target_mean_loops=1.0000 target_loop_abs_error=0.0041 halting_target_nll=0.0041 loss=0.1259 base_distill_kl=0.3893
+step=5 mean_expected_loops=1.0197 mean_halt_entropy=0.0970 expected_ce=0.0129 halting_kl=0.6173 target_mean_loops=1.0000 target_loop_abs_error=0.0197 halting_target_nll=0.0199 loss=0.1117 base_distill_kl=0.9683
+step=10 mean_expected_loops=1.0037 mean_halt_entropy=0.0243 expected_ce=0.0130 halting_kl=0.6804 target_mean_loops=1.0000 target_loop_abs_error=0.0037 halting_target_nll=0.0037 loss=0.0982 base_distill_kl=0.6114
+step=15 mean_expected_loops=1.0193 mean_halt_entropy=0.0954 expected_ce=4.0081 halting_kl=0.6187 target_mean_loops=1.0000 target_loop_abs_error=0.0193 halting_target_nll=0.0195 loss=4.0868 base_distill_kl=0.5653
+step=20 mean_expected_loops=1.0273 mean_halt_entropy=0.1253 expected_ce=0.0206 halting_kl=0.5936 target_mean_loops=1.0000 target_loop_abs_error=0.0273 halting_target_nll=0.0277 loss=0.1402 base_distill_kl=1.4131
+saved_checkpoint=outputs/stage5/stage5_surface_alignment_repair_content_cyclic_20260624_010142/phase1_surface_align/phase1_step_25.pt
+step=25 mean_expected_loops=1.0300 mean_halt_entropy=0.1347 expected_ce=0.0346 halting_kl=0.5857 target_mean_loops=1.0000 target_loop_abs_error=0.0300 halting_target_nll=0.0305 loss=0.1326 base_distill_kl=0.9932
+step=30 mean_expected_loops=1.0395 mean_halt_entropy=0.1664 expected_ce=0.1424 halting_kl=0.5598 target_mean_loops=1.0000 target_loop_abs_error=0.0395 halting_target_nll=0.0403 loss=0.2236 base_distill_kl=0.6863
+step=35 mean_expected_loops=1.0327 mean_halt_entropy=0.1442 expected_ce=0.2927 halting_kl=0.5779 target_mean_loops=1.0000 target_loop_abs_error=0.0327 halting_target_nll=0.0333 loss=0.3754 base_distill_kl=0.6972
+step=40 mean_expected_loops=1.0038 mean_halt_entropy=0.0250 expected_ce=0.0103 halting_kl=0.6798 target_mean_loops=1.0000 target_loop_abs_error=0.0038 halting_target_nll=0.0038 loss=0.0871 base_distill_kl=0.4456
+step=45 mean_expected_loops=1.0288 mean_halt_entropy=0.1304 expected_ce=0.1336 halting_kl=0.5893 target_mean_loops=1.0000 target_loop_abs_error=0.0288 halting_target_nll=0.0292 loss=0.2235 base_distill_kl=0.8263
+saved_checkpoint=outputs/stage5/stage5_surface_alignment_repair_content_cyclic_20260624_010142/phase1_surface_align/phase1_step_50.pt

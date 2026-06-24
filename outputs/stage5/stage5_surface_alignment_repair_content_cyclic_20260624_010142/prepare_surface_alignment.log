@@ -1,0 +1,22 @@
+{
+  "input_mcq_rows": 256,
+  "diagnosis_benchmark": "arc_easy_direct_preserve_confirm_256",
+  "selected_ids": 8,
+  "output_rows": 48,
+  "include_unrescued": false,
+  "cyclic_rows_per_item": 4,
+  "content_repeat": 2,
+  "cyclic_repeat": 1,
+  "target_loop_count": 1,
+  "routing_type_counts": {
+    "surface_content_align": 16,
+    "surface_cyclic_preserve": 32
+  },
+  "answer_counts": {
+    "D": 10,
+    "C": 12,
+    "B": 14,
+    "A": 12
+  },
+  "skipped": {}
+}
