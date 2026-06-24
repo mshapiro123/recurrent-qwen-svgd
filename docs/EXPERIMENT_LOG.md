@@ -372,3 +372,23 @@ Colab/Drive backups for selected runs.
   expansive or chaotic regime rather than clean multistable attractor basins.
   The next diagnostic should sweep lower particle-init noise and include a
   zero-noise control before further SVGD tuning.
+- Follow-up noise sweep landed as
+  `outputs/stage5/stage5_effective_pathways_noise_sweep_20260624/`.
+  Zero-noise control is clean: final spread `0`, unique next-token argmax `1`,
+  and effective pathway count `1` for loops 4 and 8.
+- Nonzero perturbations are strongly amplified even at very low scale:
+  - noise `0.005`: spread ratio `91.7` at 4 loops and `153.1` at 8 loops;
+    q2 effective pathways `1.318` and `1.281`; unique argmax `1.38`.
+  - noise `0.01`: spread ratio `95.1` and `151.4`; q2 `1.373` and `1.282`;
+    unique argmax `2.88`.
+  - noise `0.02`: spread ratio `116.9` and `191.6`; q2 `1.348` and `1.251`;
+    unique argmax `4.88`.
+  - noise `0.05`: spread ratio `97.3` and `179.8`; q2 `1.818` and `1.728`;
+    unique argmax `8.0` and `7.875`.
+- Updated interpretation: the current recurrent map is not collapsed, but the
+  breadth mostly appears as local expansive sensitivity. The q2 effective count
+  stays low and generally decreases with more loops, while output argmaxes
+  fragment as noise rises. This is not yet evidence of useful multistable
+  reasoning basins. The next paid diagnostic should ask whether any of this
+  expansion converts into correct candidate coverage; if not, move to
+  regime/pathway supervision rather than more SVGD kernel geometry.
