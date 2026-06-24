@@ -192,6 +192,62 @@ validation contains 299 paired rows, this passes the current cyclic-debiased
 survival gate. The honest claim is recovery plus preservation under debiased
 scoring, not a debiased surpass-base win.
 
+### Local-HF Capability-Ladder Trace SFT
+
+The next curriculum experiment used locally generated Qwen-7B traces from a
+small verified capability-ladder shard:
+
+```text
+summary = outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_194543/summary.json
+direct rows:       26
+deep-narrow rows:  37
+target loops:      1:26, 2:28, 3:9
+validation:        validation_sane
+direct loops:      ~= 1.35
+deep loops:        ~= 1.99
+```
+
+This is not enough data for a broad claim, but it is the first concrete test
+of the "model-scale gap as depth label" idea. The immediate benchmark readout
+was mixed:
+
+```text
+ARC-Easy content:      recurrent 68/128 vs base 75/128, delta -7
+ARC-Easy cyclic:       recurrent 100/128 vs base 95/128, delta +5
+ARC-Challenge content: recurrent 46/128 vs base 43/128, delta +3
+ARC-Challenge cyclic:  recurrent 69/128 vs base 68/128, delta +1
+```
+
+The larger confirmation after direct-preservation repair still did not clear
+the broader non-negative gate:
+
+```text
+assessment = outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment/summary.json
+status = needs_recurrent_recovery
+ARC-Easy content:      recurrent 140/256 vs base 148/256, delta -8
+ARC-Easy cyclic:       recurrent 203/256 vs base 201/256, delta +2
+ARC-Challenge content: recurrent 86/256 vs base 87/256, delta -1
+ARC-Challenge cyclic:  recurrent 151/256 vs base 156/256, delta -5
+```
+
+The follow-up surface diagnostics changed the interpretation. Most ARC-Easy
+content losses are not knowledge losses; they are near-miss content/cyclic
+surface mismatches:
+
+```text
+content losses: 16
+cyclic rescues: 14/16
+stable cyclic rescues: 8/16
+unrescued losses: 2/16
+content-loss answer rank under content scoring: rank 2 on 14/16, rank 3 on 2/16
+recommendation: prioritize_content_cyclic_surface_alignment
+```
+
+Therefore the current front-of-queue GPU action is not a new capability-ladder
+run and not SVGD. It is a bounded content/cyclic surface-alignment repair from
+the latest traced-SFT direct-preservation checkpoint. The purpose is to recover
+ARC-Easy content calibration without erasing the hard-slice signal.
+
 ### Particle / SVGD Status
 
 SVGD and latent particles generate measurable diversity, but the current
@@ -827,32 +883,33 @@ Stop or avoid GPU when:
 
 ## Current Next-Best Order
 
-The ARC-mix offset confirmation and learned-loop benchmark moved the project
-from recovery lead to bounded depth-routing evidence. The current order is:
+The ARC-mix offset confirmation, learned-loop benchmark, and scale64
+local-HF traced-SFT run moved the project from "can surgery recover?" to "can
+depth-labeled curriculum improve without stealing from the direct route?" The
+current order is:
 
-1. Treat the step-50 depth-routing checkpoint as having passed the current
-   cyclic-debiased survival gate: content-question scoring improved, while
-   cyclic-debiased scoring remained exactly flat versus base on ARC-Easy and
-   ARC-Challenge validation.
-2. Do not overclaim this as a debiased surpass-base result. The claim is
-   "surgery plus small-parameter recovery preserved base under debiased scoring
-   and improved the content-answer surface."
-3. Pre-commit failure routing for the next runs remains:
-   - ARC-Easy content fails while cyclic is flat: train more content recovery
-     and depth-1 preservation.
-   - Easy is preserved but hard cyclic/content stay flat or negative: depth
-     routing is not yet buying hard-tail capability; test scale or improve the
-     depth-label curriculum.
-   - Hard improves while easy regresses: depth-1 preservation is failing and
-     routing is stealing from the direct path.
-4. Run the next capability-building experiment against this gate: either a
-   depth-label curriculum improvement on 0.5B or a no-training 1.5B viability
-   probe if larger-GPU time is available cheaply.
-5. Run a larger or broader confirmation before any public or HF-facing
-   benchmark claim.
-6. Promote the CE8 depth curve into the fixed readout for later runs:
+1. Run the bounded content/cyclic surface-alignment repair:
+   `STAGE5_CURRENT_A100_TARGET=traced_sft_surface_alignment_repair`.
+   This is the active front-of-queue GPU job because the latest confirmation
+   still loses ARC-Easy content while cyclic scoring often rescues the same
+   rows.
+2. Assess the repaired checkpoint on the same ARC-Easy/ARC-Challenge content
+   and cyclic surfaces. Success means ARC-Easy content closes materially while
+   ARC-Challenge content/cyclic do not regress.
+3. If the surface repair passes or is partially positive, run a larger
+   recurrent confirmation benchmark and then the matched dense same-curriculum
+   MCQ control. This answers whether recurrence contributes beyond the trace
+   data itself.
+4. If dense control matches or beats recurrent, do not chase more surface
+   repairs. Improve the depth-label curriculum and rerun the recurrent-vs-dense
+   comparison.
+5. If recurrent beats dense on hard-tail surfaces, package that as the first
+   architecture contribution: small-parameter recurrent surgery plus
+   depth-labeled traces produces useful behavior that the same dense LoRA
+   recipe does not.
+6. Keep the CE8 depth curve as the fixed mechanism readout for later runs:
    [STAGE5_CE8_DEPTH_CURVE_2026_06_23.md](STAGE5_CE8_DEPTH_CURVE_2026_06_23.md).
-7. Build a selector or training objective that can preserve depth 1 on
+7. Build or improve a selector/training objective that can preserve depth 1 on
    easy/direct rows while using depth 2-3 on hard/ambiguous rows.
 8. Keep debiased/cyclic MCQ scoring as the default benchmark harness, but keep
    content-question-only scoring as a guardrail because ARC-Easy content
