@@ -276,7 +276,7 @@ TARGETS = {
         "path": "colab/STAGE5_CANDIDATE_CONVERSION_CELL.py",
         "markers": [
             "STAGE5_CANDIDATE_CONVERSION_CELL_VERSION",
-            "stage5_candidate_conversion_v2_resumable",
+            "stage5_candidate_conversion_v3_chunk_merge",
             "candidate_conversion",
             "STAGE5_CANDIDATE_CONVERSION_NOISE_SWEEP",
             "max_loops_sweep",

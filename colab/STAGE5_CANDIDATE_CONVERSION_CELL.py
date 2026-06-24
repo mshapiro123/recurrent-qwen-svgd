@@ -19,7 +19,7 @@ from statistics import mean
 
 from google.colab import drive, runtime, userdata
 
-STAGE5_CANDIDATE_CONVERSION_CELL_VERSION = "stage5_candidate_conversion_v2_resumable"
+STAGE5_CANDIDATE_CONVERSION_CELL_VERSION = "stage5_candidate_conversion_v3_chunk_merge"
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 DRIVE_ARTIFACT_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts")
@@ -163,6 +163,10 @@ def float_key(value: object) -> str:
     return f"{float(value):.12g}"
 
 
+def float_label(value: float) -> str:
+    return f"{value:g}".replace("-", "m").replace(".", "p")
+
+
 def row_setting(row: dict[str, object]) -> tuple[int, str, int]:
     return (
         int(row.get("seed", 0)),
@@ -228,6 +232,20 @@ def prune_setting(path: Path, setting: tuple[int, str, int]) -> int:
     if removed:
         write_jsonl(path, kept)
     return removed
+
+
+def merge_setting_rows(master_path: Path, chunk_path: Path, setting: tuple[int, str, int]) -> int:
+    chunk_rows = read_jsonl(chunk_path)
+    if not chunk_rows:
+        raise RuntimeError(f"Chunk produced no rows: {chunk_path}")
+    mismatched = [row_setting(row) for row in chunk_rows if row_setting(row) != setting]
+    if mismatched:
+        raise RuntimeError(
+            f"Chunk setting mismatch for {chunk_path}: expected={setting} first_bad={mismatched[0]}"
+        )
+    master_rows = [row for row in read_jsonl(master_path) if row_setting(row) != setting]
+    write_jsonl(master_path, master_rows + chunk_rows)
+    return len(chunk_rows)
 
 
 def pathway_q2(split: dict[str, object], bucket: str) -> float | None:
@@ -400,7 +418,9 @@ def main() -> None:
 
     out_dir = ROOT / "outputs" / "stage5" / run_id
     diag_dir = out_dir / "candidate_conversion"
+    chunk_dir = diag_dir / "chunks"
     diag_dir.mkdir(parents=True, exist_ok=True)
+    chunk_dir.mkdir(parents=True, exist_ok=True)
     output_jsonl = diag_dir / "candidate_conversion.jsonl"
 
     names = task_names(ROOT / tasks_jsonl)
@@ -441,6 +461,9 @@ def main() -> None:
                     print(f"pruned_incomplete seed={seed} noise={noise:g} loops={loops} rows={removed}", flush=True)
 
                 print(f"run_setting seed={seed} noise={noise:g} loops={loops}", flush=True)
+                chunk_jsonl = chunk_dir / f"seed{seed}_noise{float_label(noise)}_loops{loops}.jsonl"
+                if chunk_jsonl.exists():
+                    chunk_jsonl.unlink()
                 run_stream(
                     [
                         sys.executable,
@@ -474,8 +497,13 @@ def main() -> None:
                         "--device",
                         os.environ.get("STAGE5_CANDIDATE_CONVERSION_DEVICE", "cuda"),
                         "--output_jsonl",
-                        str(output_jsonl.relative_to(ROOT)),
+                        str(chunk_jsonl.relative_to(ROOT)),
                     ]
+                )
+                merged_rows = merge_setting_rows(output_jsonl, chunk_jsonl, setting)
+                print(
+                    f"merged_setting seed={seed} noise={noise:g} loops={loops} rows={merged_rows}",
+                    flush=True,
                 )
                 rows = read_jsonl(output_jsonl)
                 complete, _ = completed_and_incomplete_settings(rows, tasks=names, num_trajectories=int(num_trajectories))
