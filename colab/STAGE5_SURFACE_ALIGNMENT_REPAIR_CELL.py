@@ -136,6 +136,8 @@ try:
             "tests/test_prepare_mcq_conditional_invariance_jsonl.py",
             "tests/test_analyze_mcq_order_sensitivity.py",
             "tests/test_analyze_mcq_surface_mismatch.py",
+            "tests/test_prepare_mcq_score_alignment_jsonl.py",
+            "tests/test_train_phase1_mcq_score_align.py",
             "tests/test_stage5_surface_alignment_repair.py",
             "tests/test_stage5_surface_repair_assessment.py",
         ],
@@ -154,6 +156,7 @@ try:
     env.setdefault("STAGE5_SURFACE_ALIGN_PUSH", "1")
     print("surface_alignment_source:", env["STAGE5_SURFACE_ALIGN_SOURCE_SUMMARY"], flush=True)
     print("surface_alignment_run_id:", env["STAGE5_SURFACE_ALIGN_RUN_ID"], flush=True)
+    print("surface_alignment_trainer:", env.get("STAGE5_SURFACE_ALIGN_TRAINER", "sft"), flush=True)
     run([sys.executable, "colab/run_stage5_surface_alignment_repair.py"], cwd=ROOT, env=env)
     disconnect("surface-alignment repair finished")
 except Exception:
