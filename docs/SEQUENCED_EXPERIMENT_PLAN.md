@@ -378,6 +378,12 @@ Qwen-style checkpoints. The first correct rung supplies the positive trace and
 the target loop count; unresolved rows are skipped rather than used for
 positive SFT.
 
+Before training, run the SFT gate with both mode-row and target-loop-row
+requirements. The target-loop check is the important anti-collapse guard for
+the depth curriculum: it verifies that the shard really contains the explicit
+`target_loop_count` rungs implied by the ladder instead of only a coarse
+`direct` / `deep_narrow` mode mix.
+
 For the bounded Colab scoring probe, set the matching environment variables:
 
 ```bash

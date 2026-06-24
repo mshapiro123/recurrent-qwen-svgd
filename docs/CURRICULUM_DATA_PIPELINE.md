@@ -518,6 +518,7 @@ python training/check_curriculum_sft_gate.py \
   --output_json data/curriculum/capability_ladder_001/curriculum_sft_gate.json \
   --output_md data/curriculum/capability_ladder_001/curriculum_sft_gate.md \
   --min_mode_rows direct=1,deep_narrow=1 \
+  --min_target_loop_rows 1=1,2=1 \
   --fail_on_no_go
 ```
 
@@ -533,6 +534,13 @@ Qwen 1.5B, or Qwen 3B itself. It maps:
 Rows without trusted answer verification, decontamination, a usable positive
 trace, or a trace/answer match are skipped. This keeps the capability ladder a
 safe SFT-export step rather than a correctness judge.
+
+For recurrent depth-routing experiments, the SFT gate should require both mode
+coverage and explicit loop-target coverage. Mode balance alone is not enough:
+a shard can contain both `direct` and `deep_narrow` rows while still missing the
+actual `target_loop_count` values needed to train the halting gradient. Use
+`--min_target_loop_rows` with the observed or intended ladder counts before
+launching paid GPU training.
 
 ## Prompt Library
 
