@@ -111,31 +111,45 @@ Before another SVGD/kernel sweep, run the effective-pathway diagnostic:
 `eval/eval_effective_pathways.py`. It initializes many particles for the same
 prompt, disables latent sampling and SVGD, runs the deterministic recurrent map,
 and computes similarity-sensitive effective pathway counts over q in
-`{0,1,2,inf}`. This separates two failure modes:
+`{0,1,2,inf}`. This separates three regimes:
 
 - near-1 effective pathways plus contracting spread means single-attractor
   recurrent dynamics; fix the map/regime or add method-anchored pathway
   supervision before tuning kernels;
-- multiple effective pathways means breadth exists in the dynamics; then the
-  bottleneck is kernel/selector conversion rather than the recurrence itself.
+- multiple effective pathways with bounded spread means breadth exists in the
+  dynamics; then the bottleneck is kernel/selector conversion rather than the
+  recurrence itself;
+- very large spread expansion with low, noise-flat effective pathway count
+  means mono-unstable fragmentation, not useful multistability. This requires a
+  candidate-conversion test before any SVGD/kernel work.
 
 Screen:
 
-- Zero-noise K=4 control: should match Phase1. If not, debug trajectory scoring.
-- K in {2, 4}.
-- Noise in {0.005, 0.01, 0.02}.
-- Repulsion in {0, 0.5, 2}.
-- Aggregation in {mean, max, vote}.
-- Selector in {self_consistency, reliability_vote}; do not spend more A100 time
-  on kernel geometry until selector-rescored selected-answer metrics are
-  reported.
-- Report helped/hurt/tied against Phase1, not only aggregate accuracy.
+- Zero-noise control: should match deterministic recurrence. If not, debug
+  trajectory scoring.
+- Noise in `{0.005, 0.01, 0.02, 0.05}` with SVGD off first.
+- K in `{2,4}` initially; use K=8 only after a correct-candidate signal appears.
+- Report candidate hits, best-of-K, helped/hurt/tied against Phase1, not only
+  aggregate accuracy.
+- Compute effective pathway counts over all candidates, correct candidates, and
+  wrong candidates separately. Correctness-split pathway diversity is the
+  current decision metric.
+- Selector in `{self_consistency, reliability_vote}` only after candidate hits
+  rise; do not spend more A100 time on kernel geometry until correct-bearing
+  breadth is visible.
 
 Gate to train particles:
 
 - A particle setting matches or beats Phase1 on ARC-128.
 - Helped examples >= hurt examples.
+- Correct candidates are not merely isolated accidents: either best-of-K rises
+  or correct-candidate effective pathway count is nontrivial.
 - Exact-task diversity improves without MCQ collapse.
+
+If the candidate-conversion test fails, the next training objective is not
+SVGD. Move to regime shaping: reduce the leading positive Lyapunov/Jacobian
+growth toward zero from above, and use method-anchored pathway supervision to
+create stable basins before adding repulsion.
 
 ## Stage 5C: Spectrum Distillation For Particles
 

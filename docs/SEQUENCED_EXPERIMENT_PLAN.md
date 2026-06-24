@@ -280,6 +280,12 @@ Readout:
   expansive/chaotic rather than clean multistable breadth; run a lower-noise
   sensitivity sweep before treating the pathway count as useful reasoning
   diversity.
+- large expansion with low, noise-flat effective pathway count means the
+  dynamics are likely mono-unstable rather than multistable: particles separate
+  along one or a few unstable directions and fragment at the answer surface
+  instead of landing in coherent alternative basins. In that case, kernel
+  geometry remains off the table until candidate correctness proves the
+  expansion is useful.
 
 Particles should return only after deterministic depth routing and selector
 metrics are working, and particle-kernel tuning should return only after this
@@ -614,18 +620,37 @@ off:
 - optional within-group projection versus raw hidden state if the raw state is
   dominated by nuisance scale.
 
-Only if the diagnostic shows non-collapsed pathways, compare:
+The first run closed the single-attractor-collapse branch but opened a sharper
+warning: even noise `0.005` expanded by roughly two orders of magnitude, while
+q2 effective pathways stayed near `1.3` and next-token fragmentation increased
+with noise. That is closer to mono-unstable expansion than useful multistable
+breadth.
+
+Therefore the next particle experiment is a candidate-conversion sweep, not a
+kernel sweep. Compare:
 
 - deterministic loop selector;
 - K=2 particles;
 - K=4 particles;
 - zero-noise particle control;
 - low-noise particle settings;
-- SVGD on/off;
+- SVGD off first, with SVGD held for a later control only if noise-only breadth
+  produces correct candidates;
 - selector over candidate claims.
 
 Evaluate separately on wide tasks, deep tasks, and deep-plus-wide hard-tail
 tasks.
+
+For every generated candidate, bucket the final pathway state by correctness:
+
+- all candidates;
+- correct candidates only;
+- wrong candidates only.
+
+Compute effective pathway counts separately for those buckets. This is the
+decisive cross: if effective breadth lives among correct candidates, the
+expansion is usable; if breadth lives only among wrong candidates while correct
+candidates collapse to one pathway, the particle variation is fragmentation.
 
 ### Runtime
 
@@ -637,6 +662,9 @@ jobs until a small particle setting is non-negative.
 - Effective pathway count is meaningfully greater than 1 on at least the
   prompts where particle breadth is expected to help, without uncontrolled
   next-token chaos.
+- Correct-candidate effective pathway count is meaningfully greater than 1, or
+  at minimum correct candidates appear in multiple stable buckets while wrong
+  candidates do not dominate the diversity.
 - Candidate-hit rate rises versus deterministic recurrence.
 - Unique correct candidates appear that deterministic loops miss.
 - Selector converts candidates into selected-answer accuracy.
@@ -649,17 +677,21 @@ jobs until a small particle setting is non-negative.
 - Effective pathway count is above 1 only at large perturbation scale while
   final/initial spread explodes and next-token argmaxes fragment; this points to
   unstable sensitivity, not yet useful breadth.
+- Correctness-split effective counts show diversity concentrated in wrong
+  candidates, while correct candidates are absent or collapse to one mode.
 - Diversity rises but correct-candidate coverage does not.
 - Results are seed-fragile.
 - Particles help only toy prompts or formatting tasks.
 
 ### Decision
 
-If the effective-pathway gate fails, pause SVGD and test regime-change or
-method-anchored pathway supervision before further kernel geometry. If the gate
-passes and selected-answer metrics improve, train particles with set/coverage
-objectives. If the gate passes but selected metrics do not, focus on selector
-and candidate-scoring rather than recurrent dynamics.
+If the candidate-conversion sweep shows correct-bearing breadth, proceed with
+selector conversion and only then reintroduce SVGD as a controlled regularizer.
+If it shows wrong-only fragmentation, stop inference-side noise/SVGD tuning and
+move to regime shaping: bound the leading Lyapunov/Jacobian spectrum toward the
+edge from above, then add method-anchored pathway supervision to install
+stable basins. If it is ambiguous, run the same correctness-split diagnostic on
+a larger model before treating 0.5B as decisive.
 
 ## Experiment 8: Trace Dataset Audit And Conversion
 

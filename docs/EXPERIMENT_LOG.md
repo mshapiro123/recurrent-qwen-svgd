@@ -392,3 +392,14 @@ Colab/Drive backups for selected runs.
   reasoning basins. The next paid diagnostic should ask whether any of this
   expansion converts into correct candidate coverage; if not, move to
   regime/pathway supervision rather than more SVGD kernel geometry.
+- Strategy-agent interpretation accepted: the diagnostic closed the
+  single-attractor-collapse branch but did not open the clean-multistability
+  branch. Large spread expansion with low/noise-flat effective pathway count is
+  best read as mono-unstable expansion: one or a few unstable directions amplify
+  small perturbations and fragment the answer surface without creating stable
+  basins. The next gate is therefore a correctness-split candidate-conversion
+  sweep. Compute effective pathway counts separately for correct and wrong
+  candidates. If diversity is correct-bearing, proceed to selector conversion;
+  if diversity lives in wrong candidates, stop inference-time noise/SVGD tuning
+  and move to spectral/Jacobian regime shaping plus method-anchored pathway
+  supervision.
