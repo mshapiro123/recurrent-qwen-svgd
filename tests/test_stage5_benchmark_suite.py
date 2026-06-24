@@ -328,6 +328,37 @@ def test_build_summary_compares_base_and_recurrent_rows(tmp_path) -> None:
     assert routing["routing_buckets"]["deep_numeric_proxy"]["mean_candidate_expected_loops"] == 3.5
 
 
+def test_build_summary_records_after_confirmation_dense_control(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    base_jsonl = tmp_path / "arc_base_label.jsonl"
+    recurrent_jsonl = tmp_path / "arc_recurrent_label.jsonl"
+    data_jsonl = tmp_path / "arc.jsonl"
+    _write_jsonl(data_jsonl, [{"id": "a", "question": "Q", "choices": {"A": "x"}, "answer": "A"}])
+    _write_jsonl(base_jsonl, [{"id": "a", "aggregate": "mean", "answer": "A", "prediction": "A", "hit": True}])
+    _write_jsonl(recurrent_jsonl, [{"id": "a", "aggregate": "mean", "answer": "A", "prediction": "A", "hit": True}])
+    monkeypatch.setattr(module, "AFTER_CONFIRM_DENSE_RUN_SUFFIX", "dense_after_confirm")
+    monkeypatch.setattr(module, "AFTER_CONFIRM_DENSE_EXTRA_TRAIN_JSONL", "data/repair/train.jsonl")
+
+    payload = module.build_summary(
+        source_summary=None,
+        checkpoint=tmp_path / "checkpoint.pt",
+        specs=[module.BenchmarkSpec("arc_challenge", data_jsonl, [])],
+        jobs=[
+            module.EvalJob("arc_challenge", "base", "label", base_jsonl, []),
+            module.EvalJob("arc_challenge", "recurrent", "label", recurrent_jsonl, []),
+        ],
+        failures=[],
+        elapsed_seconds=1.0,
+    )
+
+    assert payload["after_confirmation_dense_control"] == {
+        "run_suffix": "dense_after_confirm",
+        "extra_train_jsonl": "data/repair/train.jsonl",
+        "reason": "run dense same-curriculum control after this recurrent confirmation passes",
+    }
+
+
 def test_eval_jobs_passes_phase2_svgd_flags(tmp_path, monkeypatch) -> None:
     import colab.run_stage5_benchmark_suite as module
 

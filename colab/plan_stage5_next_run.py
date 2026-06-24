@@ -2085,23 +2085,27 @@ def repaired_recurrent_confirmation_action(
     run_suffix: str,
     reason: str,
     priority: int = 10,
+    dense_control_run_suffix: str | None = None,
+    dense_control_extra_train_jsonl: str | None = None,
 ) -> dict[str, Any]:
+    assignments = {
+        "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{RUN_ID}_{run_suffix}",
+        "STAGE5_BENCHMARK_SOURCE_SUMMARY": recurrent_benchmark_summary,
+        "STAGE5_BENCHMARKS": "arc_easy,arc_challenge",
+        "STAGE5_BENCHMARK_ARC_EASY_LIMIT": "512",
+        "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "299",
+        "STAGE5_BENCHMARK_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
+        "STAGE5_BENCHMARK_AGGREGATES": "mean",
+        "STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS": "1",
+    }
+    if dense_control_run_suffix:
+        assignments["STAGE5_BENCHMARK_AFTER_CONFIRM_DENSE_RUN_SUFFIX"] = dense_control_run_suffix
+    if dense_control_extra_train_jsonl:
+        assignments["STAGE5_BENCHMARK_AFTER_CONFIRM_DENSE_EXTRA_TRAIN_JSONL"] = dense_control_extra_train_jsonl
     return make_action(
         "Run larger repaired-recurrent MCQ confirmation",
         reason,
-        command_env(
-            {
-                "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{RUN_ID}_{run_suffix}",
-                "STAGE5_BENCHMARK_SOURCE_SUMMARY": recurrent_benchmark_summary,
-                "STAGE5_BENCHMARKS": "arc_easy,arc_challenge",
-                "STAGE5_BENCHMARK_ARC_EASY_LIMIT": "512",
-                "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "299",
-                "STAGE5_BENCHMARK_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
-                "STAGE5_BENCHMARK_AGGREGATES": "mean",
-                "STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS": "1",
-            },
-            "python colab/run_stage5_benchmark_suite.py",
-        ),
+        command_env(assignments, "python colab/run_stage5_benchmark_suite.py"),
         priority,
     )
 
@@ -2134,6 +2138,8 @@ def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary:
             repaired_recurrent_confirmation_action(
                 recurrent_benchmark_summary=benchmark_summary,
                 run_suffix="surface_repair_passed_recurrent_confirm",
+                dense_control_run_suffix="dense_mcq_after_surface_repair_confirm",
+                dense_control_extra_train_jsonl=repair_train_jsonl,
                 reason=(
                     "The surface-alignment repair passed on its bounded slice. Confirm the repaired recurrent "
                     "checkpoint on a larger debiased ARC slice before spending on the same-curriculum dense control."
@@ -2166,6 +2172,8 @@ def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary:
                 repaired_recurrent_confirmation_action(
                     recurrent_benchmark_summary=benchmark_summary,
                     run_suffix="conditional_invariance_repair_recurrent_confirm",
+                    dense_control_run_suffix="dense_mcq_after_conditional_invariance_repair_confirm",
+                    dense_control_extra_train_jsonl=repair_train_jsonl,
                     reason=(
                         "The adaptive repair targeted conditional invariance and improved order sensitivity without "
                         "a hard-tail tradeoff. Confirm the repaired recurrent checkpoint on a larger debiased ARC "
@@ -2199,6 +2207,8 @@ def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary:
             repaired_recurrent_confirmation_action(
                 recurrent_benchmark_summary=benchmark_summary,
                 run_suffix="surface_repair_partial_recurrent_confirm",
+                dense_control_run_suffix="dense_mcq_after_partial_surface_repair_confirm",
+                dense_control_extra_train_jsonl=repair_train_jsonl,
                 reason=(
                     "The surface repair improved ARC-Easy content and preserved hard surfaces, but did not fully restore base parity. "
                     "Confirm the repaired recurrent checkpoint on a larger debiased ARC slice before spending on the dense same-curriculum control."
@@ -2241,6 +2251,7 @@ def surface_repair_assessment_actions(payload: dict[str, Any], *, source_summary
             repaired_recurrent_confirmation_action(
                 recurrent_benchmark_summary=repaired_benchmark,
                 run_suffix="surface_repair_passed_assessment_recurrent_confirm",
+                dense_control_run_suffix="dense_mcq_after_surface_repair_assessment_confirm",
                 reason=(
                     "The before/after surface-repair assessment passed. Confirm the repaired recurrent checkpoint "
                     "on a larger debiased ARC slice before spending on dense control."
@@ -2261,6 +2272,7 @@ def surface_repair_assessment_actions(payload: dict[str, Any], *, source_summary
             repaired_recurrent_confirmation_action(
                 recurrent_benchmark_summary=repaired_benchmark,
                 run_suffix="surface_repair_partial_assessment_recurrent_confirm",
+                dense_control_run_suffix="dense_mcq_after_partial_surface_repair_assessment_confirm",
                 reason=(
                     "The before/after surface assessment shows easy-content improvement with hard-tail preservation, but base parity is not fully restored. "
                     "Run a larger repaired-recurrent confirmation before spending on the dense same-curriculum control."
@@ -2585,6 +2597,20 @@ def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summar
     status = str(payload.get("status", "unknown"))
     if status == "needs_review" and benchmark_assessment_shows_recurrent_regression(payload):
         status = "needs_recurrent_recovery"
+    after_dense = payload.get("after_confirmation_dense_control")
+    if status == "passed" and isinstance(after_dense, dict) and after_dense.get("run_suffix"):
+        return [
+            dense_mcq_trace_sft_control_action(
+                recurrent_benchmark_summary=str(payload.get("source_summary") or path_for_cli(source_summary)),
+                run_suffix=str(after_dense["run_suffix"]),
+                reason=(
+                    "The larger repaired-recurrent confirmation passed its base-vs-recurrent gate. "
+                    "Run the standard-Qwen same-curriculum dense control against this confirmed recurrent benchmark "
+                    "to separate architecture lift from recipe/data lift."
+                ),
+                extra_train_jsonl=str(after_dense.get("extra_train_jsonl") or "") or None,
+            )
+        ]
     if status == "passed":
         return [
             make_action(

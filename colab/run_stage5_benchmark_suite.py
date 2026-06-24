@@ -99,6 +99,11 @@ DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
 DEVICE = os.environ.get("DEVICE", "cuda")
 PUSH_RESULTS = os.environ.get("STAGE5_BENCHMARK_PUSH", "1").strip().lower() in {"1", "true", "yes", "y"}
+AFTER_CONFIRM_DENSE_RUN_SUFFIX = os.environ.get("STAGE5_BENCHMARK_AFTER_CONFIRM_DENSE_RUN_SUFFIX", "").strip()
+AFTER_CONFIRM_DENSE_EXTRA_TRAIN_JSONL = os.environ.get(
+    "STAGE5_BENCHMARK_AFTER_CONFIRM_DENSE_EXTRA_TRAIN_JSONL",
+    "",
+).strip()
 
 
 @dataclass(frozen=True)
@@ -702,7 +707,7 @@ def build_summary(
                 raw_arms.get("recurrent") or [],
             )
     routing = routing_diagnostics(specs=specs, raw_rows=raw_rows)
-    return {
+    payload = {
         "run_id": RUN_ID,
         "kind": "stage5_benchmark_suite",
         "status": "completed_with_failures" if failures else "completed",
@@ -721,6 +726,13 @@ def build_summary(
         "paired_comparisons": paired_comparisons,
         "routing_diagnostics": routing,
     }
+    if AFTER_CONFIRM_DENSE_RUN_SUFFIX:
+        payload["after_confirmation_dense_control"] = {
+            "run_suffix": AFTER_CONFIRM_DENSE_RUN_SUFFIX,
+            "extra_train_jsonl": AFTER_CONFIRM_DENSE_EXTRA_TRAIN_JSONL or None,
+            "reason": "run dense same-curriculum control after this recurrent confirmation passes",
+        }
+    return payload
 
 
 def write_report(payload: dict[str, Any]) -> None:

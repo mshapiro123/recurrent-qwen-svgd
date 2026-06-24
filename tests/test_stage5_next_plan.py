@@ -3669,6 +3669,11 @@ def test_surface_alignment_passed_confirms_recurrent_before_dense_control(tmp_pa
     assert actions[0]["name"] == "Run larger repaired-recurrent MCQ confirmation"
     assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
     assert "STAGE5_BENCHMARK_SOURCE_SUMMARY=outputs/stage5/repaired_benchmark/summary.json" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_AFTER_CONFIRM_DENSE_RUN_SUFFIX=dense_mcq_after_surface_repair_confirm" in actions[0]["command"]
+    assert (
+        "STAGE5_BENCHMARK_AFTER_CONFIRM_DENSE_EXTRA_TRAIN_JSONL=data/stage5_surface_alignment/run/surface_alignment_train.jsonl"
+        in actions[0]["command"]
+    )
     assert actions[1]["name"] == "Run dense MCQ same-curriculum control"
     assert actions[1]["priority"] == 8
     assert "dense_mcq_after_surface_repair" in actions[1]["command"]
@@ -3829,6 +3834,36 @@ def test_mcq_recipe_control_hard_tail_lift_routes_to_confirmation(tmp_path) -> N
     assert actions[1]["name"] == "Run dense MCQ same-curriculum control"
     assert "mcq_recurrent_confirm/summary.json" in actions[1]["command"]
     assert actions[2]["name"] == "Build claim-readiness packet with MCQ architecture evidence"
+
+
+def test_passed_repaired_recurrent_confirmation_routes_to_dense_control(tmp_path) -> None:
+    source = tmp_path / "confirm_assessment" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "gate": "stage5_broader_benchmark_suite",
+        "status": "passed",
+        "passed": True,
+        "source_summary": "outputs/stage5/repaired_confirm/summary.json",
+        "after_confirmation_dense_control": {
+            "run_suffix": "dense_mcq_after_surface_repair_confirm",
+            "extra_train_jsonl": "data/stage5_surface_alignment/run/surface_alignment_train.jsonl",
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run dense MCQ same-curriculum control"
+    assert "python colab/run_stage5_mcq_dense_sft_control.py" in actions[0]["command"]
+    assert "STAGE5_DENSE_MCQ_SOURCE_SUMMARY=outputs/stage5/repaired_confirm/summary.json" in actions[0]["command"]
+    assert (
+        "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY=outputs/stage5/repaired_confirm/summary.json"
+        in actions[0]["command"]
+    )
+    assert "dense_mcq_after_surface_repair_confirm" in actions[0]["command"]
+    assert (
+        "STAGE5_DENSE_MCQ_EXTRA_TRAIN_JSONL=data/stage5_surface_alignment/run/surface_alignment_train.jsonl"
+        in actions[0]["command"]
+    )
 
 
 def test_mcq_recipe_control_no_lift_routes_to_inspection(tmp_path) -> None:

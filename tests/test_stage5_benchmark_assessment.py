@@ -71,6 +71,23 @@ def test_benchmark_assessment_passes_nonnegative_paired_evidence(tmp_path) -> No
     assert [row["passed"] for row in assessed["criteria"]] == [True, True, True]
 
 
+def test_benchmark_assessment_preserves_after_confirmation_dense_control(tmp_path) -> None:
+    source = tmp_path / "suite" / "summary.json"
+    payload = _suite(arc_delta=1, gpqa_delta=0)
+    payload["after_confirmation_dense_control"] = {
+        "run_suffix": "dense_after_confirm",
+        "extra_train_jsonl": "data/repair/surface_alignment_train.jsonl",
+    }
+
+    assessed = assess_benchmark_suite(summary_json=source, payload=payload)
+
+    assert assessed["status"] == "passed"
+    assert assessed["after_confirmation_dense_control"] == {
+        "run_suffix": "dense_after_confirm",
+        "extra_train_jsonl": "data/repair/surface_alignment_train.jsonl",
+    }
+
+
 def test_benchmark_assessment_routes_negative_delta_to_recovery(tmp_path) -> None:
     source = tmp_path / "suite" / "summary.json"
     payload = _suite(arc_delta=-2, gpqa_delta=0)

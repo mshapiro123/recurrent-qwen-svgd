@@ -211,7 +211,7 @@ def assess_benchmark_suite(*, summary_json: Path, payload: dict[str, Any]) -> di
         gate_status = "passed"
         next_step = "Proceed to release writeup or larger held-out benchmark confirmation."
 
-    return {
+    result = {
         "run_id": RUN_ID,
         "gate": "stage5_broader_benchmark_suite",
         "source_summary": path_for_cli(summary_json),
@@ -225,6 +225,10 @@ def assess_benchmark_suite(*, summary_json: Path, payload: dict[str, Any]) -> di
         "benchmarks": benchmark_rows,
         "criteria": criteria,
     }
+    after_dense = payload.get("after_confirmation_dense_control")
+    if isinstance(after_dense, dict):
+        result["after_confirmation_dense_control"] = after_dense
+    return result
 
 
 def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path) -> None:
