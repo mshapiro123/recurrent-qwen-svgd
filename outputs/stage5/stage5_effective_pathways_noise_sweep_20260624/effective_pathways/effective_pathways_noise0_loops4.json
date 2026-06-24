@@ -1,0 +1,404 @@
+{
+  "kind": "effective_pathway_diagnostic",
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "checkpoint": "outputs/stage5/stage5_content_arcmix_qonly_optiontext_20260623_121707/arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt",
+  "split": "6,18",
+  "max_loops": 4,
+  "num_particles": 16,
+  "particle_init_noise": 0.0,
+  "kernel_geometry": "euclidean",
+  "kernel_projection_path": "",
+  "kernel_projection_dim": 0,
+  "aggregate": {
+    "prompts": 8,
+    "mean_initial_pairwise_distance": 0.0,
+    "mean_final_pairwise_distance": 0.0,
+    "mean_spread_ratio_final_over_initial": 0.0,
+    "mean_lyapunov_proxy_per_loop": -3.4538776394910684,
+    "mean_unique_next_token_argmax": 1.0,
+    "mean_effective_pathways": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 1.0,
+      "inf": 1.0
+    }
+  },
+  "records": [
+    {
+      "prompt_index": 0,
+      "prompt": "Solve exactly. If a train travels 120 miles in 3 hours, what is its average speed?",
+      "num_particles": 16,
+      "max_loops": 4,
+      "particle_init_noise": 0.0,
+      "effective_pathways": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 1.0,
+        "inf": 1.0
+      },
+      "pathway_diagnostics": {
+        "sigma": 9.999999974752427e-07,
+        "mean_similarity": 1.0,
+        "median_nearest_neighbor": 4.999999987376214e-07,
+        "mean_pairwise_distance": 0.0
+      },
+      "initial_pairwise_distance": 0.0,
+      "final_pairwise_distance": 0.0,
+      "spread_ratio_final_over_initial": 0.0,
+      "lyapunov_proxy_per_loop": -3.4538776394910684,
+      "unique_next_token_argmax": 1,
+      "next_token_argmax": [
+        17399,
+        17399,
+        17399,
+        17399,
+        17399,
+        17399,
+        17399,
+        17399,
+        17399,
+        17399,
+        17399,
+        17399,
+        17399,
+        17399,
+        17399,
+        17399
+      ],
+      "metrics": {
+        "mean_expected_loops": 1.6813067197799683,
+        "mean_halt_entropy": 0.8196367025375366,
+        "trajectory_diversity": 5.960464477539063e-08
+      }
+    },
+    {
+      "prompt_index": 1,
+      "prompt": "Solve exactly. The pharmacy has 20 tubs in storage and needs 100 total tubs for the week. It buys one quarter of the remaining needed tubs from a new vendor. How many tubs must it buy from the usual vendor?",
+      "num_particles": 16,
+      "max_loops": 4,
+      "particle_init_noise": 0.0,
+      "effective_pathways": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 1.0,
+        "inf": 1.0
+      },
+      "pathway_diagnostics": {
+        "sigma": 9.999999974752427e-07,
+        "mean_similarity": 1.0,
+        "median_nearest_neighbor": 4.999999987376214e-07,
+        "mean_pairwise_distance": 0.0
+      },
+      "initial_pairwise_distance": 0.0,
+      "final_pairwise_distance": 0.0,
+      "spread_ratio_final_over_initial": 0.0,
+      "lyapunov_proxy_per_loop": -3.4538776394910684,
+      "unique_next_token_argmax": 1,
+      "next_token_argmax": [
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014
+      ],
+      "metrics": {
+        "mean_expected_loops": 2.0618526935577393,
+        "mean_halt_entropy": 1.0011281967163086,
+        "trajectory_diversity": 0.0
+      }
+    },
+    {
+      "prompt_index": 2,
+      "prompt": "Solve exactly. What is 17 + 28?",
+      "num_particles": 16,
+      "max_loops": 4,
+      "particle_init_noise": 0.0,
+      "effective_pathways": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 1.0,
+        "inf": 1.0
+      },
+      "pathway_diagnostics": {
+        "sigma": 9.999999974752427e-07,
+        "mean_similarity": 1.0,
+        "median_nearest_neighbor": 4.999999987376214e-07,
+        "mean_pairwise_distance": 0.0
+      },
+      "initial_pairwise_distance": 0.0,
+      "final_pairwise_distance": 0.0,
+      "spread_ratio_final_over_initial": 0.0,
+      "lyapunov_proxy_per_loop": -3.4538776394910684,
+      "unique_next_token_argmax": 1,
+      "next_token_argmax": [
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014
+      ],
+      "metrics": {
+        "mean_expected_loops": 1.53446364402771,
+        "mean_halt_entropy": 0.7707010507583618,
+        "trajectory_diversity": -1.1920928955078125e-07
+      }
+    },
+    {
+      "prompt_index": 3,
+      "prompt": "Solve exactly. What is 7 times 8?",
+      "num_particles": 16,
+      "max_loops": 4,
+      "particle_init_noise": 0.0,
+      "effective_pathways": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 1.0,
+        "inf": 1.0
+      },
+      "pathway_diagnostics": {
+        "sigma": 9.999999974752427e-07,
+        "mean_similarity": 1.0,
+        "median_nearest_neighbor": 4.999999987376214e-07,
+        "mean_pairwise_distance": 0.0
+      },
+      "initial_pairwise_distance": 0.0,
+      "final_pairwise_distance": 0.0,
+      "spread_ratio_final_over_initial": 0.0,
+      "lyapunov_proxy_per_loop": -3.4538776394910684,
+      "unique_next_token_argmax": 1,
+      "next_token_argmax": [
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014
+      ],
+      "metrics": {
+        "mean_expected_loops": 1.596683382987976,
+        "mean_halt_entropy": 0.7898678779602051,
+        "trajectory_diversity": 5.960464477539063e-08
+      }
+    },
+    {
+      "prompt_index": 4,
+      "prompt": "Solve exactly. If 36 cookies are shared equally by 6 children, how many cookies does each child get?",
+      "num_particles": 16,
+      "max_loops": 4,
+      "particle_init_noise": 0.0,
+      "effective_pathways": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 1.0,
+        "inf": 1.0
+      },
+      "pathway_diagnostics": {
+        "sigma": 9.999999974752427e-07,
+        "mean_similarity": 1.0,
+        "median_nearest_neighbor": 4.999999987376214e-07,
+        "mean_pairwise_distance": 0.0
+      },
+      "initial_pairwise_distance": 0.0,
+      "final_pairwise_distance": 0.0,
+      "spread_ratio_final_over_initial": 0.0,
+      "lyapunov_proxy_per_loop": -3.4538776394910684,
+      "unique_next_token_argmax": 1,
+      "next_token_argmax": [
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014
+      ],
+      "metrics": {
+        "mean_expected_loops": 1.8442786931991577,
+        "mean_halt_entropy": 0.9222211837768555,
+        "trajectory_diversity": 0.0
+      }
+    },
+    {
+      "prompt_index": 5,
+      "prompt": "Solve exactly. How many minutes are in 2 hours?",
+      "num_particles": 16,
+      "max_loops": 4,
+      "particle_init_noise": 0.0,
+      "effective_pathways": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 1.0,
+        "inf": 1.0
+      },
+      "pathway_diagnostics": {
+        "sigma": 9.999999974752427e-07,
+        "mean_similarity": 1.0,
+        "median_nearest_neighbor": 4.999999987376214e-07,
+        "mean_pairwise_distance": 0.0
+      },
+      "initial_pairwise_distance": 0.0,
+      "final_pairwise_distance": 0.0,
+      "spread_ratio_final_over_initial": 0.0,
+      "lyapunov_proxy_per_loop": -3.4538776394910684,
+      "unique_next_token_argmax": 1,
+      "next_token_argmax": [
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014
+      ],
+      "metrics": {
+        "mean_expected_loops": 1.620876669883728,
+        "mean_halt_entropy": 0.7978230714797974,
+        "trajectory_diversity": -1.1920928955078125e-07
+      }
+    },
+    {
+      "prompt_index": 6,
+      "prompt": "Solve exactly. A rectangle is 9 cm long and 6 cm wide. What is its area?",
+      "num_particles": 16,
+      "max_loops": 4,
+      "particle_init_noise": 0.0,
+      "effective_pathways": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 1.0,
+        "inf": 1.0
+      },
+      "pathway_diagnostics": {
+        "sigma": 9.999999974752427e-07,
+        "mean_similarity": 1.0,
+        "median_nearest_neighbor": 4.999999987376214e-07,
+        "mean_pairwise_distance": 0.0
+      },
+      "initial_pairwise_distance": 0.0,
+      "final_pairwise_distance": 0.0,
+      "spread_ratio_final_over_initial": 0.0,
+      "lyapunov_proxy_per_loop": -3.4538776394910684,
+      "unique_next_token_argmax": 1,
+      "next_token_argmax": [
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014
+      ],
+      "metrics": {
+        "mean_expected_loops": 1.5537055730819702,
+        "mean_halt_entropy": 0.7886501550674438,
+        "trajectory_diversity": 5.960464477539063e-08
+      }
+    },
+    {
+      "prompt_index": 7,
+      "prompt": "Solve exactly. A $50 item is discounted by 20 percent. What is the sale price?",
+      "num_particles": 16,
+      "max_loops": 4,
+      "particle_init_noise": 0.0,
+      "effective_pathways": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 1.0,
+        "inf": 1.0
+      },
+      "pathway_diagnostics": {
+        "sigma": 9.999999974752427e-07,
+        "mean_similarity": 1.0,
+        "median_nearest_neighbor": 4.999999987376214e-07,
+        "mean_pairwise_distance": 0.0
+      },
+      "initial_pairwise_distance": 0.0,
+      "final_pairwise_distance": 0.0,
+      "spread_ratio_final_over_initial": 0.0,
+      "lyapunov_proxy_per_loop": -3.4538776394910684,
+      "unique_next_token_argmax": 1,
+      "next_token_argmax": [
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014,
+        2014
+      ],
+      "metrics": {
+        "mean_expected_loops": 1.6325263977050781,
+        "mean_halt_entropy": 0.8597851395606995,
+        "trajectory_diversity": -2.384185791015625e-07
+      }
+    }
+  ]
+}

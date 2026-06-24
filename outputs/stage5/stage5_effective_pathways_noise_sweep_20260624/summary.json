@@ -1,0 +1,32 @@
+{
+  "kind": "stage5_effective_pathways_run",
+  "run_id": "stage5_effective_pathways_noise_sweep_20260624",
+  "cell_version": "stage5_effective_pathways_v1",
+  "checkpoint": "outputs/stage5/stage5_content_arcmix_qonly_optiontext_20260623_121707/arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt",
+  "prompts": "eval/smoke_exact_tasks_v2.jsonl",
+  "loop_sweep": [
+    4,
+    8
+  ],
+  "num_particles": 16,
+  "noise_sweep": [
+    0.0,
+    0.005,
+    0.01,
+    0.02,
+    0.05
+  ],
+  "limit": 8,
+  "result_paths": [
+    "outputs/stage5/stage5_effective_pathways_noise_sweep_20260624/effective_pathways/effective_pathways_noise0_loops4.json",
+    "outputs/stage5/stage5_effective_pathways_noise_sweep_20260624/effective_pathways/effective_pathways_noise0_loops8.json",
+    "outputs/stage5/stage5_effective_pathways_noise_sweep_20260624/effective_pathways/effective_pathways_noise0p005_loops4.json",
+    "outputs/stage5/stage5_effective_pathways_noise_sweep_20260624/effective_pathways/effective_pathways_noise0p005_loops8.json",
+    "outputs/stage5/stage5_effective_pathways_noise_sweep_20260624/effective_pathways/effective_pathways_noise0p01_loops4.json",
+    "outputs/stage5/stage5_effective_pathways_noise_sweep_20260624/effective_pathways/effective_pathways_noise0p01_loops8.json",
+    "outputs/stage5/stage5_effective_pathways_noise_sweep_20260624/effective_pathways/effective_pathways_noise0p02_loops4.json",
+    "outputs/stage5/stage5_effective_pathways_noise_sweep_20260624/effective_pathways/effective_pathways_noise0p02_loops8.json",
+    "outputs/stage5/stage5_effective_pathways_noise_sweep_20260624/effective_pathways/effective_pathways_noise0p05_loops4.json",
+    "outputs/stage5/stage5_effective_pathways_noise_sweep_20260624/effective_pathways/effective_pathways_noise0p05_loops8.json"
+  ]
+}
