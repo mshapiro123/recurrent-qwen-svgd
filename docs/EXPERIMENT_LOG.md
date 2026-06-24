@@ -262,9 +262,29 @@ Colab/Drive backups for selected runs.
 
 ### Local Verification Notes
 
-- 2026-06-24: checked GitHub/local outputs for
-  `outputs/stage5/stage5_score_alignment_repair_content_route_20260624/summary.json`;
-  no score-repair result had landed yet.
+- 2026-06-24: `traced_sft_score_alignment_repair` completed and pushed
+  `outputs/stage5/stage5_score_alignment_repair_content_route_20260624/summary.json`.
+  Status: `surface_alignment_not_passed`; assessment status:
+  `needs_recurrent_recovery`.
+- Score-level repair outcome:
+  - ARC-Easy content: source recurrent `140/256`, repaired recurrent `139/256`,
+    base `146/256`; repair delta versus source `-1`.
+  - ARC-Easy cyclic: source recurrent `203/256`, repaired recurrent `204/256`,
+    base `202/256`; repair delta versus source `+1`.
+  - ARC-Challenge content: source recurrent `86/256`, repaired recurrent
+    `91/256`, base `87/256`; repair delta versus source `+5`, repaired
+    recurrent delta versus base `+4`.
+  - ARC-Challenge cyclic: source recurrent `151/256`, repaired recurrent
+    `153/256`, base `154/256`; repair delta versus source `+2`.
+- Interpretation: score-level repair is not a dead end; it moved the harder
+  ARC-Challenge content slice in the desired direction and did not collapse
+  cyclic scoring. It did not fix the ARC-Easy content regression, so it fails
+  the current all-slice preservation gate.
+- Decision: do not repeat this same 75-step score repair unchanged. Next action
+  should inspect score-margin/prediction-change diagnostics and either revise
+  the repair objective/data mix or move to a held-out capability-ladder/depth
+  curriculum experiment if the surface route is considered good enough for the
+  harder-slice hypothesis.
 - 2026-06-24: locally verified the maintained score-repair path compiles:
   `colab/STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL.py`,
   `colab/run_stage5_surface_alignment_repair.py`,
