@@ -115,6 +115,14 @@ def parse_ints(value: str) -> list[int]:
     return [int(item.strip()) for item in value.split(",") if item.strip()]
 
 
+def parse_floats(value: str) -> list[float]:
+    return [float(item.strip()) for item in value.split(",") if item.strip()]
+
+
+def float_label(value: float) -> str:
+    return f"{value:g}".replace("-", "m").replace(".", "p")
+
+
 def main() -> None:
     print(f"cell_version={STAGE5_EFFECTIVE_PATHWAYS_CELL_VERSION}", flush=True)
     run_id = os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_RUN_ID") or time.strftime("stage5_effective_pathways_%Y%m%d_%H%M%S")
@@ -122,7 +130,13 @@ def main() -> None:
     prompts = os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_PROMPTS", "eval/smoke_exact_tasks_v2.jsonl")
     loop_sweep = parse_ints(os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_LOOP_SWEEP", "4,8"))
     num_particles = os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_NUM_PARTICLES", "16")
-    particle_noise = os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_NOISE", "0.05")
+    noise_sweep = parse_floats(
+        os.environ.get(
+            "STAGE5_EFFECTIVE_PATHWAYS_NOISE_SWEEP",
+            os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_NOISE", "0.05"),
+        )
+    )
+    print(f"noise_sweep={noise_sweep}", flush=True)
     limit = os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_LIMIT", "8")
     dtype = os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_DTYPE", "bfloat16")
     disconnect = os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_DISCONNECT", "1").strip().lower() in {
@@ -143,40 +157,42 @@ def main() -> None:
     diag_dir.mkdir(parents=True, exist_ok=True)
 
     result_paths: list[str] = []
-    for loops in loop_sweep:
-        out_json = diag_dir / f"effective_pathways_loops{loops}.json"
-        out_jsonl = diag_dir / f"effective_pathways_loops{loops}.jsonl"
-        run(
-            [
-                sys.executable,
-                "eval/eval_effective_pathways.py",
-                "--checkpoint",
-                checkpoint,
-                "--prompts_jsonl",
-                prompts,
-                "--limit",
-                limit,
-                "--max_loops",
-                str(loops),
-                "--num_particles",
-                num_particles,
-                "--particle_init_noise",
-                particle_noise,
-                "--max_length",
-                os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_MAX_LENGTH", "256"),
-                "--dtype",
-                dtype,
-                "--adapter_dtype",
-                os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_ADAPTER_DTYPE", "float32"),
-                "--device",
-                os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_DEVICE", "cuda"),
-                "--output_json",
-                str(out_json.relative_to(ROOT)),
-                "--output_jsonl",
-                str(out_jsonl.relative_to(ROOT)),
-            ]
-        )
-        result_paths.append(str(out_json.relative_to(ROOT)))
+    for particle_noise in noise_sweep:
+        noise_tag = float_label(particle_noise)
+        for loops in loop_sweep:
+            out_json = diag_dir / f"effective_pathways_noise{noise_tag}_loops{loops}.json"
+            out_jsonl = diag_dir / f"effective_pathways_noise{noise_tag}_loops{loops}.jsonl"
+            run(
+                [
+                    sys.executable,
+                    "eval/eval_effective_pathways.py",
+                    "--checkpoint",
+                    checkpoint,
+                    "--prompts_jsonl",
+                    prompts,
+                    "--limit",
+                    limit,
+                    "--max_loops",
+                    str(loops),
+                    "--num_particles",
+                    num_particles,
+                    "--particle_init_noise",
+                    str(particle_noise),
+                    "--max_length",
+                    os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_MAX_LENGTH", "256"),
+                    "--dtype",
+                    dtype,
+                    "--adapter_dtype",
+                    os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_ADAPTER_DTYPE", "float32"),
+                    "--device",
+                    os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_DEVICE", "cuda"),
+                    "--output_json",
+                    str(out_json.relative_to(ROOT)),
+                    "--output_jsonl",
+                    str(out_jsonl.relative_to(ROOT)),
+                ]
+            )
+            result_paths.append(str(out_json.relative_to(ROOT)))
 
     summary = {
         "kind": "stage5_effective_pathways_run",
@@ -186,7 +202,7 @@ def main() -> None:
         "prompts": prompts,
         "loop_sweep": loop_sweep,
         "num_particles": int(num_particles),
-        "particle_init_noise": float(particle_noise),
+        "noise_sweep": noise_sweep,
         "limit": int(limit),
         "result_paths": result_paths,
     }
@@ -201,7 +217,7 @@ def main() -> None:
                 f"- Prompts: `{prompts}`",
                 f"- Loop sweep: `{loop_sweep}`",
                 f"- Num particles: `{num_particles}`",
-                f"- Particle noise: `{particle_noise}`",
+                f"- Noise sweep: `{noise_sweep}`",
                 "",
                 "## Result Files",
                 *[f"- `{path}`" for path in result_paths],
