@@ -2131,12 +2131,23 @@ def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary:
     )
     if status == "surface_alignment_passed" and benchmark_summary:
         return [
+            repaired_recurrent_confirmation_action(
+                recurrent_benchmark_summary=benchmark_summary,
+                run_suffix="surface_repair_passed_recurrent_confirm",
+                reason=(
+                    "The surface-alignment repair passed on its bounded slice. Confirm the repaired recurrent "
+                    "checkpoint on a larger debiased ARC slice before spending on the same-curriculum dense control."
+                ),
+            ),
             dense_mcq_trace_sft_control_action(
                 recurrent_benchmark_summary=benchmark_summary,
                 run_suffix="dense_mcq_after_surface_repair",
                 reason=(
-                    "The surface-alignment repair passed both the generic benchmark gate and the before/after surface-repair gate; run the standard-Qwen same-curriculum dense control against the repaired recurrent benchmark, including the same repair shard as train-only data."
+                    "After the larger repaired-recurrent confirmation lands, run the standard-Qwen same-curriculum "
+                    "dense control against the repaired recurrent benchmark, including the same repair shard as "
+                    "train-only data."
                 ),
+                priority=8,
                 extra_train_jsonl=repair_train_jsonl,
             )
         ]
@@ -2152,13 +2163,23 @@ def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary:
     if order_recommendation == "prioritize_conditional_invariance_repair":
         if order_repair_improved and benchmark_summary:
             return [
+                repaired_recurrent_confirmation_action(
+                    recurrent_benchmark_summary=benchmark_summary,
+                    run_suffix="conditional_invariance_repair_recurrent_confirm",
+                    reason=(
+                        "The adaptive repair targeted conditional invariance and improved order sensitivity without "
+                        "a hard-tail tradeoff. Confirm the repaired recurrent checkpoint on a larger debiased ARC "
+                        "slice before spending on dense control."
+                    ),
+                ),
                 dense_mcq_trace_sft_control_action(
                     recurrent_benchmark_summary=benchmark_summary,
                     run_suffix="dense_mcq_after_conditional_invariance_repair",
                     reason=(
-                        "The adaptive repair targeted conditional invariance and the before/after order-sensitivity assessment improved without a hard-tail tradeoff; run the dense same-curriculum MCQ control, including the same repair shard, to separate architecture lift from recipe/data lift."
+                        "After the larger repaired-recurrent confirmation lands, run the dense same-curriculum MCQ "
+                        "control, including the same repair shard, to separate architecture lift from recipe/data lift."
                     ),
-                    priority=9,
+                    priority=8,
                     extra_train_jsonl=repair_train_jsonl,
                 )
             ]
@@ -2217,12 +2238,22 @@ def surface_repair_assessment_actions(payload: dict[str, Any], *, source_summary
     repaired_benchmark = str(payload.get("repaired_benchmark_summary") or "").strip()
     if status == "surface_repair_passed" and repaired_benchmark:
         return [
+            repaired_recurrent_confirmation_action(
+                recurrent_benchmark_summary=repaired_benchmark,
+                run_suffix="surface_repair_passed_assessment_recurrent_confirm",
+                reason=(
+                    "The before/after surface-repair assessment passed. Confirm the repaired recurrent checkpoint "
+                    "on a larger debiased ARC slice before spending on dense control."
+                ),
+            ),
             dense_mcq_trace_sft_control_action(
                 recurrent_benchmark_summary=repaired_benchmark,
                 run_suffix="dense_mcq_after_surface_repair_assessment",
                 reason=(
-                    "The before/after surface-repair assessment passed; run the dense same-curriculum MCQ control against the repaired recurrent benchmark."
+                    "After the larger repaired-recurrent confirmation lands, run the dense same-curriculum MCQ "
+                    "control against the repaired recurrent benchmark."
                 ),
+                priority=8,
             )
         ]
     if status == "surface_repair_partial" and repaired_benchmark:

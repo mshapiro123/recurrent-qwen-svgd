@@ -3652,7 +3652,7 @@ def test_arc_agi_sota_comparison_missing_registry_builds_reproduced_registry_whe
     assert "--validation_json outputs/stage5/" in actions[0]["command"]
 
 
-def test_surface_alignment_passed_routes_to_dense_mcq_control(tmp_path) -> None:
+def test_surface_alignment_passed_confirms_recurrent_before_dense_control(tmp_path) -> None:
     source = tmp_path / "surface" / "summary.json"
     source.parent.mkdir()
     payload = {
@@ -3666,15 +3666,20 @@ def test_surface_alignment_passed_routes_to_dense_mcq_control(tmp_path) -> None:
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Run dense MCQ same-curriculum control"
-    assert "STAGE5_CURRENT_A100_TARGET=dense_mcq_trace_sft_control" in actions[0]["command"]
+    assert actions[0]["name"] == "Run larger repaired-recurrent MCQ confirmation"
+    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_SOURCE_SUMMARY=outputs/stage5/repaired_benchmark/summary.json" in actions[0]["command"]
+    assert actions[1]["name"] == "Run dense MCQ same-curriculum control"
+    assert actions[1]["priority"] == 8
+    assert "dense_mcq_after_surface_repair" in actions[1]["command"]
+    assert "STAGE5_CURRENT_A100_TARGET=dense_mcq_trace_sft_control" in actions[1]["command"]
     assert (
         "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY=outputs/stage5/repaired_benchmark/summary.json"
-        in actions[0]["command"]
+        in actions[1]["command"]
     )
     assert (
         "STAGE5_DENSE_MCQ_EXTRA_TRAIN_JSONL=data/stage5_surface_alignment/run/surface_alignment_train.jsonl"
-        in actions[0]["command"]
+        in actions[1]["command"]
     )
 
 
@@ -3741,9 +3746,12 @@ def test_surface_alignment_order_sensitivity_reduced_routes_to_dense_control(tmp
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Run dense MCQ same-curriculum control"
-    assert actions[0]["priority"] == 9
-    assert "dense_mcq_after_conditional_invariance_repair" in actions[0]["command"]
+    assert actions[0]["name"] == "Run larger repaired-recurrent MCQ confirmation"
+    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
+    assert "conditional_invariance_repair_recurrent_confirm" in actions[0]["command"]
+    assert actions[1]["name"] == "Run dense MCQ same-curriculum control"
+    assert actions[1]["priority"] == 8
+    assert "dense_mcq_after_conditional_invariance_repair" in actions[1]["command"]
 
 
 def test_surface_alignment_tradeoff_blocks_dense_control(tmp_path) -> None:
@@ -3778,8 +3786,26 @@ def test_surface_repair_assessment_partial_confirms_recurrent_before_dense_contr
     assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
     assert "STAGE5_BENCHMARK_SOURCE_SUMMARY=outputs/stage5/repaired_benchmark/summary.json" in actions[0]["command"]
     assert actions[1]["name"] == "Run dense MCQ same-curriculum control"
+
+
+def test_surface_repair_assessment_passed_confirms_recurrent_before_dense_control(tmp_path) -> None:
+    source = tmp_path / "surface_assessment" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_surface_repair_assessment",
+        "status": "surface_repair_passed",
+        "passed": True,
+        "repaired_benchmark_summary": "outputs/stage5/repaired_benchmark/summary.json",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run larger repaired-recurrent MCQ confirmation"
+    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_SOURCE_SUMMARY=outputs/stage5/repaired_benchmark/summary.json" in actions[0]["command"]
+    assert actions[1]["name"] == "Run dense MCQ same-curriculum control"
     assert actions[1]["priority"] == 8
-    assert "partial_surface_repair_assessment" in actions[1]["command"]
+    assert "surface_repair_assessment" in actions[1]["command"]
 
 
 def test_mcq_recipe_control_hard_tail_lift_routes_to_confirmation(tmp_path) -> None:
