@@ -409,8 +409,8 @@ def commit_results(extra_paths: list[Path]) -> None:
         print("No surface-alignment outputs changed.")
         return
     run(["git", "commit", "-m", f"Record Stage 5 surface-alignment repair {RUN_ID} [skip ci]"])
-    run(["git", "pull", "--rebase", "origin", "main"], check=False)
-    run(["git", "push", "origin", "main"], check=False)
+    run(["git", "pull", "--rebase", "origin", "main"])
+    run(["git", "push", "origin", "main"])
 
 
 def main() -> int:

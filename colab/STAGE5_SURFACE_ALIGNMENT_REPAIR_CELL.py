@@ -157,5 +157,9 @@ try:
     run([sys.executable, "colab/run_stage5_surface_alignment_repair.py"], cwd=ROOT, env=env)
     disconnect("surface-alignment repair finished")
 except Exception:
-    disconnect("surface-alignment repair errored")
+    print(
+        "Surface-alignment repair errored. Keeping the runtime connected so "
+        "partial outputs can be inspected or recovered.",
+        flush=True,
+    )
     raise
