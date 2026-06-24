@@ -19,7 +19,7 @@ from statistics import mean
 
 from google.colab import drive, runtime, userdata
 
-STAGE5_CANDIDATE_CONVERSION_CELL_VERSION = "stage5_candidate_conversion_v1"
+STAGE5_CANDIDATE_CONVERSION_CELL_VERSION = "stage5_candidate_conversion_v2_resumable"
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 DRIVE_ARTIFACT_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts")
@@ -76,6 +76,35 @@ def run(
     return proc
 
 
+def run_stream(
+    cmd: list[str | os.PathLike[str]],
+    *,
+    cwd: Path = ROOT,
+    env: dict[str, str] | None = None,
+) -> None:
+    printable = " ".join(map(str, cmd)).replace(GH_TOKEN, "****")
+    print(f"$ {printable}", flush=True)
+    proc_env = dict(os.environ)
+    if env:
+        proc_env.update(env)
+    proc_env["PYTHONUNBUFFERED"] = "1"
+    with subprocess.Popen(
+        list(map(str, cmd)),
+        cwd=str(cwd),
+        env=proc_env,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
+    ) as proc:
+        assert proc.stdout is not None
+        for line in proc.stdout:
+            print(line, end="", flush=True)
+        returncode = proc.wait()
+    if returncode != 0:
+        raise subprocess.CalledProcessError(returncode, list(map(str, cmd)))
+
+
 def ensure_repo() -> None:
     clone_url = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
     if ROOT.exists():
@@ -122,12 +151,83 @@ def split_csv(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
+def parse_ints(value: str) -> list[int]:
+    return [int(item) for item in split_csv(value)]
+
+
+def parse_floats(value: str) -> list[float]:
+    return [float(item) for item in split_csv(value)]
+
+
+def float_key(value: object) -> str:
+    return f"{float(value):.12g}"
+
+
+def row_setting(row: dict[str, object]) -> tuple[int, str, int]:
+    return (
+        int(row.get("seed", 0)),
+        float_key(row.get("particle_init_noise", 0.0)),
+        int(row.get("max_loops", 0)),
+    )
+
+
 def setting_key(row: dict[str, object]) -> tuple[float, int, int]:
     return (
         float(row.get("particle_init_noise", 0.0)),
         int(row.get("max_loops", 0)),
         int(row.get("seed", 0)),
     )
+
+
+def read_jsonl(path: Path) -> list[dict[str, object]]:
+    if not path.exists():
+        return []
+    rows: list[dict[str, object]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            rows.append(json.loads(line))
+    return rows
+
+
+def write_jsonl(path: Path, rows: list[dict[str, object]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
+def task_names(tasks_jsonl: Path) -> list[str]:
+    return [json.loads(line)["name"] for line in tasks_jsonl.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def completed_and_incomplete_settings(
+    rows: list[dict[str, object]],
+    *,
+    tasks: list[str],
+    num_trajectories: int,
+) -> tuple[set[tuple[int, str, int]], set[tuple[int, str, int]]]:
+    by_setting: dict[tuple[int, str, int], dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    for row in rows:
+        by_setting[row_setting(row)][str(row["task"])] += 1
+    complete: set[tuple[int, str, int]] = set()
+    incomplete: set[tuple[int, str, int]] = set()
+    expected_total = len(tasks) * num_trajectories
+    for setting, counts in by_setting.items():
+        total = sum(counts.values())
+        if total == expected_total and all(counts.get(task, 0) == num_trajectories for task in tasks):
+            complete.add(setting)
+        else:
+            incomplete.add(setting)
+    return complete, incomplete
+
+
+def prune_setting(path: Path, setting: tuple[int, str, int]) -> int:
+    rows = read_jsonl(path)
+    kept = [row for row in rows if row_setting(row) != setting]
+    removed = len(rows) - len(kept)
+    if removed:
+        write_jsonl(path, kept)
+    return removed
 
 
 def pathway_q2(split: dict[str, object], bucket: str) -> float | None:
@@ -142,7 +242,7 @@ def pathway_q2(split: dict[str, object], bucket: str) -> float | None:
 
 
 def summarize_candidate_conversion(jsonl_path: Path) -> dict[str, object]:
-    rows = [json.loads(line) for line in jsonl_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    rows = read_jsonl(jsonl_path)
     by_task: dict[tuple[float, int, int, str], list[dict[str, object]]] = defaultdict(list)
     for row in rows:
         noise, loops, seed = setting_key(row)
@@ -303,42 +403,83 @@ def main() -> None:
     diag_dir.mkdir(parents=True, exist_ok=True)
     output_jsonl = diag_dir / "candidate_conversion.jsonl"
 
-    run(
-        [
-            sys.executable,
-            "eval/eval_best_of_k_jsonl.py",
-            "--tasks_jsonl",
-            tasks_jsonl,
-            "--skip_phase1",
-            "--compact",
-            "--seeds",
-            seeds,
-            "--phase1_checkpoint",
-            checkpoint,
-            "--phase2_checkpoint",
-            checkpoint,
-            "--phase2_num_trajectories",
-            num_trajectories,
-            "--phase2_particle_update_mode",
-            "none",
-            "--particle_init_noise_sweep",
-            noise_sweep,
-            "--max_loops_sweep",
-            loops_sweep,
-            "--max_new_tokens",
-            max_new_tokens,
-            "--temperature",
-            os.environ.get("STAGE5_CANDIDATE_CONVERSION_TEMPERATURE", "0.0"),
-            "--dtype",
-            dtype,
-            "--adapter_dtype",
-            os.environ.get("STAGE5_CANDIDATE_CONVERSION_ADAPTER_DTYPE", "float32"),
-            "--device",
-            os.environ.get("STAGE5_CANDIDATE_CONVERSION_DEVICE", "cuda"),
-            "--output_jsonl",
-            str(output_jsonl.relative_to(ROOT)),
-        ]
+    names = task_names(ROOT / tasks_jsonl)
+    seed_values = parse_ints(seeds)
+    noise_values = parse_floats(noise_sweep)
+    loop_values = parse_ints(loops_sweep)
+    expected_setting_count = len(seed_values) * len(noise_values) * len(loop_values)
+    print(
+        "resume_plan="
+        + json.dumps(
+            {
+                "run_id": run_id,
+                "settings": expected_setting_count,
+                "tasks": len(names),
+                "num_trajectories": int(num_trajectories),
+                "rows_per_setting": len(names) * int(num_trajectories),
+                "output_jsonl": str(output_jsonl.relative_to(ROOT)),
+            }
+        ),
+        flush=True,
     )
+
+    for loops in loop_values:
+        for noise in noise_values:
+            for seed in seed_values:
+                setting = (seed, float_key(noise), loops)
+                rows = read_jsonl(output_jsonl)
+                complete, incomplete = completed_and_incomplete_settings(
+                    rows,
+                    tasks=names,
+                    num_trajectories=int(num_trajectories),
+                )
+                if setting in complete:
+                    print(f"skip_completed seed={seed} noise={noise:g} loops={loops}", flush=True)
+                    continue
+                if setting in incomplete:
+                    removed = prune_setting(output_jsonl, setting)
+                    print(f"pruned_incomplete seed={seed} noise={noise:g} loops={loops} rows={removed}", flush=True)
+
+                print(f"run_setting seed={seed} noise={noise:g} loops={loops}", flush=True)
+                run_stream(
+                    [
+                        sys.executable,
+                        "eval/eval_best_of_k_jsonl.py",
+                        "--tasks_jsonl",
+                        tasks_jsonl,
+                        "--skip_phase1",
+                        "--compact",
+                        "--seed",
+                        str(seed),
+                        "--phase1_checkpoint",
+                        checkpoint,
+                        "--phase2_checkpoint",
+                        checkpoint,
+                        "--max_loops",
+                        str(loops),
+                        "--phase2_num_trajectories",
+                        num_trajectories,
+                        "--phase2_particle_update_mode",
+                        "none",
+                        "--particle_init_noise",
+                        str(noise),
+                        "--max_new_tokens",
+                        max_new_tokens,
+                        "--temperature",
+                        os.environ.get("STAGE5_CANDIDATE_CONVERSION_TEMPERATURE", "0.0"),
+                        "--dtype",
+                        dtype,
+                        "--adapter_dtype",
+                        os.environ.get("STAGE5_CANDIDATE_CONVERSION_ADAPTER_DTYPE", "float32"),
+                        "--device",
+                        os.environ.get("STAGE5_CANDIDATE_CONVERSION_DEVICE", "cuda"),
+                        "--output_jsonl",
+                        str(output_jsonl.relative_to(ROOT)),
+                    ]
+                )
+                rows = read_jsonl(output_jsonl)
+                complete, _ = completed_and_incomplete_settings(rows, tasks=names, num_trajectories=int(num_trajectories))
+                print(f"progress_completed_settings={len(complete)}/{expected_setting_count}", flush=True)
 
     summary = summarize_candidate_conversion(output_jsonl)
     summary.update(
@@ -376,6 +517,8 @@ def main() -> None:
     if diff.returncode != 0:
         run(["git", "commit", "-m", f"Record Stage 5 candidate conversion {run_id} [skip ci]"])
         if os.environ.get("STAGE5_CANDIDATE_CONVERSION_PUSH", "1").strip().lower() in {"1", "true", "yes", "y"}:
+            run(["git", "fetch", "origin", "main"])
+            run(["git", "rebase", "origin/main"])
             run(["git", "push", "origin", "main"])
     else:
         print("No staged changes to commit.", flush=True)

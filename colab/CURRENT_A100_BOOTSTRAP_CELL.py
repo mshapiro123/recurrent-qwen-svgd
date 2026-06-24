@@ -276,9 +276,9 @@ TARGETS = {
         "path": "colab/STAGE5_CANDIDATE_CONVERSION_CELL.py",
         "markers": [
             "STAGE5_CANDIDATE_CONVERSION_CELL_VERSION",
-            "stage5_candidate_conversion_v1",
+            "stage5_candidate_conversion_v2_resumable",
             "candidate_conversion",
-            "particle_init_noise_sweep",
+            "STAGE5_CANDIDATE_CONVERSION_NOISE_SWEEP",
             "max_loops_sweep",
             "pathway_split_diagnostics",
             "eval/eval_best_of_k_jsonl.py",
