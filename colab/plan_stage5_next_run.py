@@ -2110,6 +2110,41 @@ def repaired_recurrent_confirmation_action(
     )
 
 
+def source_benchmark_for_surface_retry(payload: dict[str, Any], fallback: Path) -> str:
+    for key in ("benchmark_source_summary", "source_benchmark_summary", "source_summary"):
+        value = str(payload.get(key) or "").strip()
+        if value:
+            return value.replace("\\", "/")
+    return path_for_cli(fallback)
+
+
+def score_alignment_repair_action(
+    *,
+    source_benchmark_summary: str,
+    reason: str,
+    priority: int = 10,
+) -> dict[str, Any]:
+    return make_action(
+        "Run MCQ score-level content-route repair",
+        reason,
+        command_env(
+            {
+                "STAGE5_SURFACE_ALIGN_SOURCE_SUMMARY": source_benchmark_summary,
+                "STAGE5_SURFACE_ALIGN_TRAINER": "score_ce",
+                "STAGE5_SURFACE_ALIGN_MAX_STEPS": "75",
+                "STAGE5_SURFACE_ALIGN_LR": "5e-7",
+                "STAGE5_SURFACE_ALIGN_DISTILL_WEIGHT": "0.0",
+                "STAGE5_SURFACE_ALIGN_SCORE_DISTILL_WEIGHT": "0.05",
+                "STAGE5_SURFACE_ALIGN_SCORE_MARGIN": "0.05",
+                "STAGE5_SURFACE_ALIGN_SCORE_MARGIN_WEIGHT": "0.1",
+                "STAGE5_SURFACE_ALIGN_PUSH": "1",
+            },
+            "python colab/run_stage5_surface_alignment_repair.py",
+        ),
+        priority,
+    )
+
+
 def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
     surface_status = str(payload.get("surface_repair_assessment_status") or "")
@@ -2164,6 +2199,17 @@ def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary:
                 "The surface repair helped the easy content or invariance surface but regressed at least one ARC-Challenge surface. Do not run dense control yet; inspect the before/after deltas and tighten the repair objective.",
                 f"cat {shlex.quote(path_for_cli(source_summary.with_name('surface_repair_assessment.md')))}",
                 10,
+            )
+        ]
+    if surface_status == "surface_repair_no_easy_content_lift":
+        return [
+            score_alignment_repair_action(
+                source_benchmark_summary=source_benchmark_for_surface_retry(payload, source_summary),
+                reason=(
+                    "The SFT surface repair reduced some nuisance/order sensitivity but did not improve ARC-Easy "
+                    "content scoring. Run a direct MCQ option-score CE repair on the original benchmark source "
+                    "before dense control or broader recovery."
+                ),
             )
         ]
     if order_recommendation == "prioritize_conditional_invariance_repair":
@@ -2224,15 +2270,6 @@ def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary:
                 extra_train_jsonl=repair_train_jsonl,
             )
         ]
-    if surface_status == "surface_repair_no_easy_content_lift":
-        return [
-            make_action(
-                "Revise surface-alignment objective",
-                "The surface-alignment repair did not improve ARC-Easy content versus the source recurrent checkpoint; inspect training rows and consider explicit score-level/content-vs-cyclic alignment rather than rerunning the same SFT shard.",
-                f"cat {shlex.quote(path_for_cli(source_summary.with_name('surface_repair_assessment.md')))}",
-                10,
-            )
-        ]
     return [
         make_action(
             f"Inspect surface-alignment repair `{status}`",
@@ -2285,6 +2322,17 @@ def surface_repair_assessment_actions(payload: dict[str, Any], *, source_summary
                     "After the larger repaired-recurrent confirmation lands, run dense control to determine whether recurrence still contributes beyond trace data."
                 ),
                 priority=8,
+            )
+        ]
+    if status == "surface_repair_no_easy_content_lift":
+        source_benchmark = str(payload.get("source_benchmark_summary") or "").strip() or path_for_cli(source_summary)
+        return [
+            score_alignment_repair_action(
+                source_benchmark_summary=source_benchmark,
+                reason=(
+                    "The before/after assessment shows no ARC-Easy content lift. Move from indirect SFT rows "
+                    "to direct MCQ option-score CE on the original content route."
+                ),
             )
         ]
     return [

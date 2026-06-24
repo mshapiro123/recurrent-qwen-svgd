@@ -3733,7 +3733,7 @@ def test_surface_alignment_order_sensitivity_blocks_dense_control(tmp_path) -> N
     assert "arc_easy_order_sensitivity_diagnosis.md" in actions[0]["command"]
 
 
-def test_surface_alignment_order_sensitivity_reduced_routes_to_dense_control(tmp_path) -> None:
+def test_surface_alignment_no_easy_content_lift_routes_to_score_repair_before_dense_control(tmp_path) -> None:
     source = tmp_path / "surface" / "summary.json"
     source.parent.mkdir()
     payload = {
@@ -3753,12 +3753,11 @@ def test_surface_alignment_order_sensitivity_reduced_routes_to_dense_control(tmp
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Run larger repaired-recurrent MCQ confirmation"
-    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
-    assert "conditional_invariance_repair_recurrent_confirm" in actions[0]["command"]
-    assert actions[1]["name"] == "Run dense MCQ same-curriculum control"
-    assert actions[1]["priority"] == 8
-    assert "dense_mcq_after_conditional_invariance_repair" in actions[1]["command"]
+    assert actions[0]["name"] == "Run MCQ score-level content-route repair"
+    assert "python colab/run_stage5_surface_alignment_repair.py" in actions[0]["command"]
+    assert "STAGE5_SURFACE_ALIGN_TRAINER=score_ce" in actions[0]["command"]
+    assert "STAGE5_SURFACE_ALIGN_SCORE_DISTILL_WEIGHT=0.05" in actions[0]["command"]
+    assert "dense_mcq_trace_sft_control" not in actions[0]["command"]
 
 
 def test_surface_alignment_tradeoff_blocks_dense_control(tmp_path) -> None:

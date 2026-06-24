@@ -63,20 +63,34 @@ ARC-Challenge cyclic:  recurrent 151/256 vs base 156/256, delta -5
 ```
 
 The direct-preservation repair recovered part of the direct-route loss, but it
-did **not** pass the broader nonnegative gate. The latest surface diagnosis
-shows that most ARC-Easy content losses are still recovered by cyclic scoring,
-so the next action is the narrower content/cyclic surface-alignment repair, not
-another broad competence-recovery pass:
+did **not** pass the broader nonnegative gate. The first content/cyclic
+surface-alignment SFT repair ran:
 
 ```text
-STAGE5_CURRENT_A100_TARGET=traced_sft_surface_alignment_repair
+outputs/stage5/stage5_surface_alignment_repair_content_cyclic_20260624_005040/summary.json
+status = surface_alignment_not_passed
+surface repair status = surface_repair_no_easy_content_lift
+ARC-Easy content repair delta: -2
+ARC-Easy cyclic repair delta: +2
+ARC-Challenge content repair delta: +4
+ARC-Challenge cyclic repair delta: +2
 ```
 
-This target diagnoses the confirmed ARC-Easy content/cyclic mismatch, builds a
-small SFT shard from stable cyclic-rescue rows, trains a bounded Phase 1
-continuation, benchmarks ARC-Easy/ARC-Challenge, assesses the result, pushes
-artifacts with `[skip ci]`, and disconnects. A G4/L4 is appropriate; use
-A100/H100 only if availability/queueing makes it cheaper in practice.
+Interpretation: the SFT repair moved some hard-slice behavior in the right
+direction and reduced order sensitivity, but it did not lift the ARC-Easy
+content route. Do **not** run dense control yet. The next action is a direct
+MCQ score-level repair that optimizes the correct option against distractors on
+the exact `question_only + option_text` scoring surface:
+
+```text
+STAGE5_CURRENT_A100_TARGET=traced_sft_score_alignment_repair
+```
+
+This target rebuilds the same stable cyclic-rescue repair set as MCQ rows,
+trains with direct option-score CE plus base score-distribution KL, benchmarks
+ARC-Easy/ARC-Challenge, assesses the result, pushes artifacts with `[skip ci]`,
+and disconnects. A G4/L4 is appropriate; use A100/H100 only if
+availability/queueing makes it cheaper in practice.
 
 Fresh Colab restart cell:
 
@@ -118,7 +132,7 @@ else:
 os.chdir(ROOT)
 subprocess.run(["git", "log", "--oneline", "-5"], check=True)
 
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_surface_alignment_repair"
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_score_alignment_repair"
 exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py", encoding="utf-8").read())
 ```
 
@@ -282,7 +296,7 @@ if hf:
     os.environ["HF_TOKEN"] = hf
     os.environ["HUGGINGFACE_HUB_TOKEN"] = hf
 
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_surface_alignment_repair"
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_score_alignment_repair"
 
 url = (
     "https://api.github.com/repos/mshapiro123/recurrent-qwen-svgd/"
@@ -299,16 +313,16 @@ payload = json.loads(urllib.request.urlopen(req).read().decode("utf-8"))
 code = base64.b64decode(payload["content"]).decode("utf-8")
 required = [
     "sha_resolved_nested_fetch_v3",
-    "traced_sft_surface_alignment_repair",
+    "traced_sft_score_alignment_repair",
     "STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL_VERSION",
     "stage5_traced_sft_direct_preservation_20260623_scale64_confirm",
     "eval/analyze_mcq_order_sensitivity.py",
     "colab/run_stage5_surface_alignment_repair.py",
-    "training/prepare_mcq_conditional_invariance_jsonl.py",
-    "training/prepare_mcq_surface_alignment_jsonl.py",
-    "surface_alignment_train_jsonl",
-    "STAGE5_DENSE_MCQ_EXTRA_TRAIN_JSONL",
-    "tests/test_prepare_mcq_conditional_invariance_jsonl.py",
+    "training/prepare_mcq_score_alignment_jsonl.py",
+    "training/train_phase1_mcq_score_align.py",
+    "STAGE5_SURFACE_ALIGN_TRAINER",
+    "score_ce",
+    "tests/test_prepare_mcq_score_alignment_jsonl.py",
     "tests/test_analyze_mcq_order_sensitivity.py",
 ]
 missing = [marker for marker in required if marker not in code]
@@ -323,7 +337,7 @@ latest `main`; it can run a stale bootstrap if Colab keeps an old
 
 ```python
 import os
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_surface_alignment_repair"
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "traced_sft_score_alignment_repair"
 exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py", encoding="utf-8").read())
 ```
 

@@ -851,8 +851,8 @@ def test_traced_sft_scale64_benchmark_target_is_bootstrapped() -> None:
     assert "STAGE5_ALLOW_STALE_SCALE64_BENCHMARK" in bootstrap_md
     assert '"traced_sft_scale64_benchmark is complete; rerouting to "' in bootstrap_md
     assert '"traced_sft_direct_preservation_probe. Set "' in bootstrap_md
-    assert "content/cyclic surface-alignment repair" in current_action
-    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_surface_alignment_repair" in current_action
+    assert "MCQ score-level repair" in current_action
+    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_score_alignment_repair" in current_action
     assert "STAGE5_CURRENT_A100_TARGET=traced_sft_scale64_benchmark" in current_action
 
 
@@ -880,8 +880,8 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert "traced_sft_direct_preservation_probe" in bootstrap_md
     assert "traced_sft_direct_preservation_precheck" in bootstrap_md
     assert "traced_sft_direct_preservation_recover_only" in bootstrap_md
-    assert "content/cyclic surface-alignment repair" in current_action
-    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_surface_alignment_repair" in current_action
+    assert "surface-alignment SFT repair ran" in current_action
+    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_score_alignment_repair" in current_action
     assert "ARC-Easy content:      recurrent 140/256 vs base 148/256, delta -8" in current_action
     assert "ARC-Challenge content: recurrent 86/256 vs base 87/256, delta -1" in current_action
     assert "ARC-Easy content delta: -7" in current_action
@@ -898,7 +898,7 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert "Stale-safe fresh-runtime launcher" in current_action
     assert "api.github.com/repos/mshapiro123/recurrent-qwen-svgd" in current_action
     assert "STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL_VERSION" in current_action
-    assert '"STAGE5_CURRENT_A100_TARGET"] = "traced_sft_surface_alignment_repair"' in current_action
+    assert '"STAGE5_CURRENT_A100_TARGET"] = "traced_sft_score_alignment_repair"' in current_action
     assert "stage5_latest_direct_preservation_summary.txt" in direct_cell
     assert "stage5_current_source_summary.txt" in direct_cell
     assert "stage5_direct_preservation_probe_failure" in direct_cell
@@ -979,6 +979,9 @@ def test_traced_sft_surface_alignment_repair_target_is_bootstrapped() -> None:
     assert "eval/analyze_mcq_surface_mismatch.py" in cell
     assert "training/prepare_mcq_conditional_invariance_jsonl.py" in cell
     assert "training/prepare_mcq_surface_alignment_jsonl.py" in cell
+    assert "training/prepare_mcq_score_alignment_jsonl.py" in cell
+    assert "training/train_phase1_mcq_score_align.py" in cell
+    assert "STAGE5_SURFACE_ALIGN_TRAINER=score_ce" in cell
     assert "colab/assess_stage5_surface_repair.py" in cell
     assert "colab/run_stage5_surface_alignment_repair.py" in cell
     assert "tests/test_prepare_mcq_surface_alignment_jsonl.py" in cell
@@ -987,8 +990,25 @@ def test_traced_sft_surface_alignment_repair_target_is_bootstrapped() -> None:
     assert "tests/test_stage5_surface_alignment_repair.py" in cell
     assert "tests/test_stage5_surface_repair_assessment.py" in cell
     assert "runtime.unassign" in cell
-    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_surface_alignment_repair" in current_action
+    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_score_alignment_repair" in current_action
     assert "prioritize_content_cyclic_surface_alignment" in current_action
+
+
+def test_traced_sft_score_alignment_repair_target_is_bootstrapped() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
+
+    assert "traced_sft_score_alignment_repair" in bootstrap
+    assert "traced_sft_score_alignment_repair" in bootstrap_md
+    assert '"STAGE5_SURFACE_ALIGN_TRAINER": "score_ce"' in bootstrap
+    assert "training/prepare_mcq_score_alignment_jsonl.py" in bootstrap
+    assert "training/train_phase1_mcq_score_align.py" in bootstrap
+    assert "stage5_score_alignment_repair_content_route_20260624" in bootstrap
+    assert "STAGE5_SURFACE_ALIGN_SCORE_DISTILL_WEIGHT" in bootstrap
+    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_score_alignment_repair" in current_action
+    assert "ARC-Easy content repair delta: -2" in current_action
+    assert "direct option-score CE" in current_action
 
 
 def test_dense_mcq_trace_sft_control_target_is_bootstrapped() -> None:

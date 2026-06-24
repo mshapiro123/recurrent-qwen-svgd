@@ -14,7 +14,8 @@ runs the A100 go/no-go guard, and disconnects. This is the cheap runtime path.
 To run a maintained target, set `os.environ["STAGE5_CURRENT_A100_TARGET"]` before
 executing the bootstrap cell. The target registry in the cell includes the full
 current list, including the bounded cyclic-permutation MCQ diagnostic,
-`traced_sft_surface_alignment_repair`, and `dense_mcq_trace_sft_control`.
+`traced_sft_surface_alignment_repair`, `traced_sft_score_alignment_repair`,
+and `dense_mcq_trace_sft_control`.
 
 Then run the bootstrap cell:
 
@@ -52,6 +53,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "traced_sft_direct_preservation_recover_only" - publish surviving direct-preservation output without rerunning training.
 #   "traced_sft_direct_preservation_confirm" - larger loop-1 ARC confirmation after direct preservation passes.
 #   "traced_sft_surface_alignment_repair" - repair ARC-Easy content/cyclic surface mismatch.
+#   "traced_sft_score_alignment_repair" - repair ARC-Easy content route with direct MCQ score CE.
 #   "dense_mcq_trace_sft_control" - train/evaluate standard Qwen LoRA on the same traced MCQ curriculum.
 #   "traced_sft_competence_preserving_pipeline" - mixed recovery after confirmation still trails base.
 #   "traced_sft_depth_router_after_direct_preserve" - learned-depth continuation from a passed direct-preservation checkpoint.
@@ -724,6 +726,33 @@ TARGETS = {
             "STAGE5_SURFACE_ALIGN_MAX_STEPS": "50",
             "STAGE5_SURFACE_ALIGN_LR": "5e-7",
             "STAGE5_SURFACE_ALIGN_DISTILL_WEIGHT": "0.05",
+            "STAGE5_SURFACE_ALIGN_PUSH": "1",
+            "STAGE5_SURFACE_ALIGN_DISCONNECT": "1",
+        },
+    },
+    "traced_sft_score_alignment_repair": {
+        "path": "colab/STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL.py",
+        "markers": [
+            "STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL_VERSION",
+            "surface_alignment_repair_v1",
+            "training/prepare_mcq_score_alignment_jsonl.py",
+            "training/train_phase1_mcq_score_align.py",
+            "STAGE5_SURFACE_ALIGN_TRAINER",
+            "score_ce",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_SURFACE_ALIGN_SOURCE_SUMMARY": (
+                "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm/summary.json"
+            ),
+            "STAGE5_SURFACE_ALIGN_RUN_ID": "stage5_score_alignment_repair_content_route_20260624",
+            "STAGE5_SURFACE_ALIGN_TRAINER": "score_ce",
+            "STAGE5_SURFACE_ALIGN_MAX_STEPS": "75",
+            "STAGE5_SURFACE_ALIGN_LR": "5e-7",
+            "STAGE5_SURFACE_ALIGN_DISTILL_WEIGHT": "0.0",
+            "STAGE5_SURFACE_ALIGN_SCORE_DISTILL_WEIGHT": "0.05",
+            "STAGE5_SURFACE_ALIGN_SCORE_MARGIN": "0.05",
+            "STAGE5_SURFACE_ALIGN_SCORE_MARGIN_WEIGHT": "0.1",
             "STAGE5_SURFACE_ALIGN_PUSH": "1",
             "STAGE5_SURFACE_ALIGN_DISCONNECT": "1",
         },

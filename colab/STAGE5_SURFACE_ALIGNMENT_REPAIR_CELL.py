@@ -24,6 +24,9 @@ STAGE5_SURFACE_ALIGNMENT_REPAIR_TARGET = "traced_sft_surface_alignment_repair"
 # - eval/analyze_mcq_surface_mismatch.py
 # - training/prepare_mcq_conditional_invariance_jsonl.py
 # - training/prepare_mcq_surface_alignment_jsonl.py
+# - training/prepare_mcq_score_alignment_jsonl.py
+# - training/train_phase1_mcq_score_align.py
+# - STAGE5_SURFACE_ALIGN_TRAINER=score_ce
 # - surface_alignment_train_jsonl
 # - colab/assess_stage5_surface_repair.py
 

@@ -69,6 +69,11 @@ INCLUDE_UNRESCUED = os.environ.get("STAGE5_SURFACE_ALIGN_INCLUDE_UNRESCUED", "0"
     "yes",
     "y",
 }
+TRAINER = os.environ.get("STAGE5_SURFACE_ALIGN_TRAINER", "sft").strip().lower()
+SCORE_DISTILL_WEIGHT = float(os.environ.get("STAGE5_SURFACE_ALIGN_SCORE_DISTILL_WEIGHT", DISTILL_WEIGHT))
+SCORE_MARGIN = float(os.environ.get("STAGE5_SURFACE_ALIGN_SCORE_MARGIN", "0.05"))
+SCORE_MARGIN_WEIGHT = float(os.environ.get("STAGE5_SURFACE_ALIGN_SCORE_MARGIN_WEIGHT", "0.1"))
+SCORE_CE_WEIGHT = float(os.environ.get("STAGE5_SURFACE_ALIGN_SCORE_CE_WEIGHT", "1.0"))
 PUSH_RESULTS = os.environ.get("STAGE5_SURFACE_ALIGN_PUSH", "1").strip().lower() in {
     "1",
     "true",
@@ -224,7 +229,7 @@ def repair_objective(order_payload: dict[str, Any], surface_payload: dict[str, A
 
 
 def train_config(*, checkpoint: Path, train_jsonl: Path) -> dict[str, Any]:
-    return {
+    cfg = {
         "model_name": os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct"),
         "dtype": os.environ.get("TRAIN_DTYPE", "bfloat16"),
         "adapter_dtype": os.environ.get("ADAPTER_DTYPE", "float32"),
@@ -260,6 +265,25 @@ def train_config(*, checkpoint: Path, train_jsonl: Path) -> dict[str, Any]:
             "on": "response",
         },
     }
+    if TRAINER == "score_ce":
+        cfg.update(
+            {
+                "score_ce_weight": SCORE_CE_WEIGHT,
+                "score_margin": SCORE_MARGIN,
+                "score_margin_weight": SCORE_MARGIN_WEIGHT,
+                "normalize_option_score": True,
+                "prompt_style": "question_only",
+                "score_target": "option_text",
+                "score_distillation": {
+                    "enabled": SCORE_DISTILL_WEIGHT > 0.0,
+                    "teacher_model_name": os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct"),
+                    "dtype": os.environ.get("TRAIN_DTYPE", "bfloat16"),
+                    "weight": SCORE_DISTILL_WEIGHT,
+                    "temperature": 2.0,
+                },
+            }
+        )
+    return cfg
 
 
 def final_checkpoint() -> Path:
@@ -423,9 +447,39 @@ def main() -> int:
         ],
         log_name="prepare_arc_easy.log",
     )
-    train_jsonl = PRIVATE_DATA_DIR / "surface_alignment_train.jsonl"
+    train_jsonl = PRIVATE_DATA_DIR / (
+        "score_alignment_train.jsonl" if TRAINER == "score_ce" else "surface_alignment_train.jsonl"
+    )
     surface_summary_json = PRIVATE_DATA_DIR / "surface_alignment_train_summary.json"
-    if objective == "conditional_invariance":
+    if TRAINER == "score_ce" and objective == "conditional_invariance":
+        raise RuntimeError(
+            "STAGE5_SURFACE_ALIGN_TRAINER=score_ce currently supports content/cyclic "
+            "surface alignment only; run the conditional-invariance SFT repair instead."
+        )
+    if TRAINER == "score_ce":
+        prepare_cmd = [
+            sys.executable,
+            "training/prepare_mcq_score_alignment_jsonl.py",
+            "--mcq_jsonl",
+            path_for_cli(mcq_jsonl),
+            "--diagnosis_json",
+            path_for_cli(diagnosis),
+            "--output_jsonl",
+            path_for_cli(train_jsonl),
+            "--summary_json",
+            path_for_cli(surface_summary_json),
+            "--target_loop_count",
+            "1",
+            "--content_repeat",
+            str(CONTENT_REPEAT),
+            "--cyclic_repeat",
+            str(CYCLIC_REPEAT),
+        ]
+        if CYCLIC_ROWS_PER_ITEM is not None:
+            prepare_cmd.extend(["--cyclic_rows_per_item", str(CYCLIC_ROWS_PER_ITEM)])
+        if INCLUDE_UNRESCUED:
+            prepare_cmd.append("--include_unrescued")
+    elif objective == "conditional_invariance":
         prepare_cmd = [
             sys.executable,
             "training/prepare_mcq_conditional_invariance_jsonl.py",
@@ -495,10 +549,11 @@ def main() -> int:
 
     config_path = RUN_DIR / "surface_alignment_phase1.yaml"
     config_path.write_text(yaml.safe_dump(train_config(checkpoint=checkpoint, train_jsonl=train_jsonl), sort_keys=False), encoding="utf-8")
+    train_script = "training/train_phase1_mcq_score_align.py" if TRAINER == "score_ce" else "training/train_phase1_ponder.py"
     run(
         [
             sys.executable,
-            "training/train_phase1_ponder.py",
+            train_script,
             "--config",
             path_for_cli(config_path),
             "--train_jsonl",
@@ -548,6 +603,7 @@ def main() -> int:
         "repaired_order_sensitivity_diagnosis": path_for_cli(repaired_order_diagnosis),
         "repaired_surface_diagnosis": path_for_cli(repaired_surface_diagnosis),
         "repair_objective": objective,
+        "trainer": TRAINER,
         "surface_alignment_train_jsonl": path_for_cli(train_jsonl),
         "surface_alignment_train_summary": surface_data_summary,
         "surface_alignment_rows": surface_data_summary.get("output_rows"),
@@ -560,6 +616,11 @@ def main() -> int:
             "cyclic_repeat": CYCLIC_REPEAT,
             "cyclic_rows_per_item": CYCLIC_ROWS_PER_ITEM,
             "include_unrescued": INCLUDE_UNRESCUED,
+            "trainer": TRAINER,
+            "score_ce_weight": SCORE_CE_WEIGHT,
+            "score_margin": SCORE_MARGIN,
+            "score_margin_weight": SCORE_MARGIN_WEIGHT,
+            "score_distill_weight": SCORE_DISTILL_WEIGHT,
             "conditional_invariance_rows_per_item": INVARIANCE_ROWS_PER_ITEM,
             "conditional_invariance_semantic_repeat": INVARIANCE_SEMANTIC_REPEAT,
             "conditional_invariance_label_repeat": INVARIANCE_LABEL_REPEAT,
