@@ -306,3 +306,27 @@ Colab/Drive backups for selected runs.
   run summary, backs up artifacts to Drive when mounted, commits/pushes with
   `[skip ci]`, and disconnects; on error the outer Colab cell leaves the runtime
   connected for inspection.
+- 2026-06-24: Chrome inspection found the visible Colab notebook disconnected,
+  showing stale `run_stage5_surface_alignment_repair.py` output rather than an
+  active `arc_mix_offset_then_depth_chain` run. No GPU appeared to be burning at
+  inspection time. The next Colab action remains the maintained
+  `arc_mix_offset_then_depth_chain` bootstrap cell against
+  `stage5_content_arcmix_qonly_optiontext_arc256_check_20260623_123424`.
+- 2026-06-24: added a CPU-only offset/depth-chain reviewer:
+  `colab/review_stage5_offset_depth_chain.py`. It classifies a completed chain
+  summary into one of the next operational actions: stop on failed offset,
+  inspect failed depth, run missing post-depth debiased gate, inspect post-depth
+  warning, or run dense MCQ control when both mixed ARC rows and an upstream
+  `positive_sft` source are visible.
+- The reviewer deliberately separates two requirements for dense control:
+  `data.mixed_train_jsonl` from the ARC-mix depth run and a compatible upstream
+  `positive_sft` source summary. If mixed rows exist but no `positive_sft`
+  source is discoverable, it blocks dense control rather than launching an
+  expensive run that will fail inside `run_stage5_mcq_dense_sft_control.py`.
+- Local verification for the reviewer:
+  `.venv\Scripts\python.exe -m pytest -q tests\test_review_stage5_offset_depth_chain.py tests\test_stage5_offset_then_depth.py tests\test_stage5_balanced_arc_mix_gate.py tests\test_stage5_mcq_dense_sft_control.py tests\test_stage5_notebooks.py`
+  -> `94 passed`.
+- GitHub Actions budget note: reviewer and latest log changes are local-only
+  unless/until pushed. The repo is intentionally ahead of `origin/main`; push in
+  a batch with `[skip ci]` only when Colab needs the new reviewer or when a run
+  artifact needs to be synchronized.
