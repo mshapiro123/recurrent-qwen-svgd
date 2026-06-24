@@ -55,6 +55,18 @@ standard-vs-recurrent same-recipe comparison. Dense-control summaries include
 paired comparison artifacts, so aggregate deltas are not used as the only
 evidence.
 
+The active same-recipe comparison has since moved to the ARC MCQ trace-SFT
+surface, because that is where the current recurrent recovery and
+depth-labeled curriculum evidence lives. The relevant dense control is
+`colab/run_stage5_mcq_dense_sft_control.py`: it trains a standard Qwen LoRA on
+the same traced MCQ curriculum and optional surface-alignment repair shard,
+then compares against the recurrent benchmark summary using
+`colab/assess_stage5_mcq_recipe_control.py`. The primary architecture readout
+is ARC-Challenge cyclic/debiased recurrent-vs-dense lift with both
+ARC-Challenge content and cyclic surfaces nonnegative. ARC-Easy content remains
+a guardrail for direct-route calibration, not the thesis-bearing hard-tail
+metric by itself.
+
 Stage 5 also includes `colab/assess_stage5_recipe_control.py`, the explicit
 same-recipe architecture gate. It reads the dense-control summary and matched
 recurrent SFT summary, verifies that both arms use the same base model,
@@ -69,6 +81,15 @@ coverage without selected-answer conversion, the next move is selector/verifier
 work on those candidates, not declaring the architecture dead. Selector
 conversion itself must also convert into hard-bucket selected-answer lift; a
 selector that only improves the aggregate is diagnostic evidence, not a pass.
+
+For the current MCQ trace-SFT path, the front-of-queue job is narrower still:
+`STAGE5_CURRENT_A100_TARGET=traced_sft_surface_alignment_repair`. It repairs
+the ARC-Easy content/cyclic mismatch before the dense control is interpreted.
+If the repair passes or is partially positive, the planner first runs a larger
+repaired-recurrent MCQ confirmation, then the dense same-curriculum MCQ
+control. If dense matches or beats recurrent under the same trace and repair
+data, the next move is better depth-label curriculum, not more surface repair
+or SVGD.
 
 ## Decisive Experiment
 
