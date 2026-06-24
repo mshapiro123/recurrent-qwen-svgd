@@ -143,6 +143,15 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         return True
     if payload.get("gate") == "stage5_same_recipe_architecture":
         return True
+    if payload.get("gate") == "stage5_same_recipe_mcq_architecture":
+        return True
+    if payload.get("kind") in {
+        "stage5_surface_alignment_repair",
+        "stage5_surface_repair_assessment",
+        "stage5_dense_mcq_trace_sft_control",
+        "stage5_mcq_recipe_control_assessment",
+    }:
+        return True
     if payload.get("gate") == "stage5_release_benchmark_readiness":
         return True
     if payload.get("kind") == "stage5_benchmark_suite":
@@ -467,17 +476,27 @@ def recipe_control_assessments(summary_files: list[Path]) -> list[dict[str, Any]
     assessments: list[dict[str, Any]] = []
     for path in summary_files:
         payload = safe_read_json(path)
-        if not payload or payload.get("gate") != "stage5_same_recipe_architecture":
+        gate = payload.get("gate") if payload else None
+        if not payload or not isinstance(gate, str) or gate not in {
+            "stage5_same_recipe_architecture",
+            "stage5_same_recipe_mcq_architecture",
+        }:
             continue
         decision = payload.get("decision_evidence") or {}
         aggregate = decision.get("aggregate") or {}
         hard = decision.get("hard") or {}
         aggregate_best = decision.get("aggregate_best_of_k") or {}
         hard_best = decision.get("hard_best_of_k") or {}
+        primary = decision.get("primary") or {}
+        challenge_content = decision.get("arc_challenge_content") or {}
+        challenge_cyclic = decision.get("arc_challenge_cyclic") or {}
+        easy_content = decision.get("arc_easy_content") or {}
+        easy_cyclic = decision.get("arc_easy_cyclic") or {}
         assessments.append(
             {
                 "path": path_for_cli(path),
                 "run_id": str(payload.get("run_id") or path.parent.name),
+                "gate": gate,
                 "status": payload.get("status"),
                 "passed": bool(payload.get("passed", False)),
                 "dense_summary": payload.get("dense_summary"),
@@ -488,9 +507,77 @@ def recipe_control_assessments(summary_files: list[Path]) -> list[dict[str, Any]
                 "hard_selected_delta": int(hard.get("delta_exact", 0) or 0),
                 "aggregate_best_of_k_delta": int(aggregate_best.get("delta_exact", 0) or 0),
                 "hard_best_of_k_delta": int(hard_best.get("delta_exact", 0) or 0),
+                "primary_delta_recurrent_vs_dense": int(
+                    primary.get("correct_delta_recurrent_vs_dense", 0) or 0
+                ),
+                "arc_challenge_content_delta_recurrent_vs_dense": int(
+                    challenge_content.get("correct_delta_recurrent_vs_dense", 0) or 0
+                ),
+                "arc_challenge_cyclic_delta_recurrent_vs_dense": int(
+                    challenge_cyclic.get("correct_delta_recurrent_vs_dense", 0) or 0
+                ),
+                "arc_easy_content_delta_recurrent_vs_dense": int(
+                    easy_content.get("correct_delta_recurrent_vs_dense", 0) or 0
+                ),
+                "arc_easy_cyclic_delta_recurrent_vs_dense": int(
+                    easy_cyclic.get("correct_delta_recurrent_vs_dense", 0) or 0
+                ),
             }
         )
     return sorted(assessments, key=lambda item: str(item["path"]))
+
+
+def surface_alignment_statuses(summary_files: list[Path]) -> list[dict[str, Any]]:
+    statuses: list[dict[str, Any]] = []
+    for path in summary_files:
+        payload = safe_read_json(path)
+        if not payload or payload.get("kind") != "stage5_surface_alignment_repair":
+            continue
+        statuses.append(
+            {
+                "path": path_for_cli(path),
+                "run_id": str(payload.get("run_id") or path.parent.name),
+                "status": payload.get("status"),
+                "passed": bool(payload.get("passed", False)),
+                "source_summary": payload.get("source_summary"),
+                "benchmark_summary": payload.get("benchmark_summary"),
+                "checkpoint": payload.get("checkpoint"),
+                "surface_alignment_rows": int(payload.get("surface_alignment_rows", 0) or 0),
+                "surface_repair_assessment_status": payload.get("surface_repair_assessment_status"),
+                "assessment_status": payload.get("assessment_status"),
+                "next_step": payload.get("next_step"),
+            }
+        )
+    return sorted(statuses, key=lambda item: str(item["path"]))
+
+
+def dense_mcq_control_statuses(summary_files: list[Path]) -> list[dict[str, Any]]:
+    statuses: list[dict[str, Any]] = []
+    for path in summary_files:
+        payload = safe_read_json(path)
+        if not payload or payload.get("kind") != "stage5_dense_mcq_trace_sft_control":
+            continue
+        dataset = payload.get("dataset") if isinstance(payload.get("dataset"), dict) else {}
+        assessment = payload.get("recipe_control_assessment")
+        if not isinstance(assessment, dict):
+            assessment = {}
+        statuses.append(
+            {
+                "path": path_for_cli(path),
+                "run_id": str(payload.get("run_id") or path.parent.name),
+                "source_summary": payload.get("source_summary"),
+                "recurrent_benchmark_summary": payload.get("recurrent_benchmark_summary"),
+                "train_rows": int(dataset.get("train_rows", 0) or 0),
+                "extra_train_rows": int(dataset.get("extra_train_rows", 0) or 0),
+                "dense_checkpoint": payload.get("dense_checkpoint"),
+                "assessment_ran": bool(assessment.get("ran", False)),
+                "assessment_status": assessment.get("status"),
+                "assessment_passed": bool(assessment.get("passed", False)),
+                "assessment_summary": assessment.get("summary_json"),
+                "next_step": assessment.get("next_step"),
+            }
+        )
+    return sorted(statuses, key=lambda item: str(item["path"]))
 
 
 def release_gate_assessments(summary_files: list[Path]) -> list[dict[str, Any]]:
@@ -1158,6 +1245,25 @@ def planner_source_priority(payload: dict[str, Any]) -> int:
         return 90
     if payload.get("kind") == "stage5_direct_preservation_probe":
         return 104 if payload.get("passed") else 94
+    if payload.get("kind") == "stage5_surface_alignment_repair":
+        if payload.get("status") in {"surface_alignment_passed", "surface_alignment_partial"}:
+            return 108
+        if payload.get("status") == "surface_alignment_tradeoff":
+            return 70
+        return 96
+    if payload.get("kind") == "stage5_surface_repair_assessment":
+        if payload.get("status") in {"surface_repair_passed", "surface_repair_partial"}:
+            return 108
+        if payload.get("status") == "surface_repair_tradeoff":
+            return 70
+        return 96
+    if payload.get("kind") == "stage5_dense_mcq_trace_sft_control":
+        assessment = payload.get("recipe_control_assessment")
+        if isinstance(assessment, dict) and assessment.get("ran"):
+            return 112
+        return 100
+    if payload.get("gate") == "stage5_same_recipe_mcq_architecture" or payload.get("kind") == "stage5_mcq_recipe_control_assessment":
+        return 114
     if payload.get("kind") == "stage5_traced_sft_assessment":
         return 103 if payload.get("status") == "needs_direct_preservation_repair" else 93
     if payload.get("kind") == "stage5_recovery_full_assessment":
@@ -1240,6 +1346,8 @@ def scan_progress(scan_root: Path, *, run_id: str | None = None) -> dict[str, An
         "selector_replications": selector_replications(summary_files),
         "recipe_selector_conversions": recipe_selector_conversions(summary_files),
         "recipe_control_assessments": recipe_control_assessments(summary_files),
+        "surface_alignment_statuses": surface_alignment_statuses(summary_files),
+        "dense_mcq_control_statuses": dense_mcq_control_statuses(summary_files),
         "release_gate_assessments": release_gate_assessments(summary_files),
         "benchmark_suite_assessments": benchmark_suite_assessments(summary_files),
         "broader_benchmark_gate_assessments": broader_benchmark_gate_assessments(summary_files),
@@ -1336,16 +1444,50 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
     lines.extend(["", "## Same-Recipe Architecture Assessments", ""])
     if payload["recipe_control_assessments"]:
         for assessment in payload["recipe_control_assessments"][-10:]:
+            mcq_fragment = ""
+            if assessment.get("gate") == "stage5_same_recipe_mcq_architecture":
+                mcq_fragment = (
+                    f" MCQ primary `{assessment['primary_delta_recurrent_vs_dense']}`, "
+                    f"challenge content/cyclic "
+                    f"`{assessment['arc_challenge_content_delta_recurrent_vs_dense']}/"
+                    f"{assessment['arc_challenge_cyclic_delta_recurrent_vs_dense']}`, "
+                    f"easy content/cyclic "
+                    f"`{assessment['arc_easy_content_delta_recurrent_vs_dense']}/"
+                    f"{assessment['arc_easy_cyclic_delta_recurrent_vs_dense']}`"
+                )
             lines.append(
                 f"- `{assessment['run_id']}` status `{assessment['status']}` passed "
                 f"`{assessment['passed']}` aggregate selected delta "
                 f"`{assessment['aggregate_selected_delta']}`, hard selected delta "
                 f"`{assessment['hard_selected_delta']}`, aggregate best-of-K delta "
                 f"`{assessment['aggregate_best_of_k_delta']}`, hard best-of-K delta "
-                f"`{assessment['hard_best_of_k_delta']}`: {assessment['reason']}"
+                f"`{assessment['hard_best_of_k_delta']}`{mcq_fragment}: {assessment['reason']}"
             )
     else:
         lines.append("- No same-recipe architecture assessment summaries found.")
+    lines.extend(["", "## Surface Alignment Repairs", ""])
+    if payload["surface_alignment_statuses"]:
+        for row in payload["surface_alignment_statuses"][-10:]:
+            lines.append(
+                f"- `{row['run_id']}` status `{row['status']}` passed `{row['passed']}` "
+                f"rows `{row['surface_alignment_rows']}` surface assessment "
+                f"`{row['surface_repair_assessment_status']}` benchmark assessment "
+                f"`{row['assessment_status']}` checkpoint `{row.get('checkpoint') or ''}`: "
+                f"{row.get('next_step') or ''}"
+            )
+    else:
+        lines.append("- No surface-alignment repair summaries found.")
+    lines.extend(["", "## Dense MCQ Trace-SFT Controls", ""])
+    if payload["dense_mcq_control_statuses"]:
+        for row in payload["dense_mcq_control_statuses"][-10:]:
+            lines.append(
+                f"- `{row['run_id']}` train rows `{row['train_rows']}` extra "
+                f"`{row['extra_train_rows']}` assessment ran `{row['assessment_ran']}` "
+                f"status `{row['assessment_status']}` passed `{row['assessment_passed']}` "
+                f"checkpoint `{row.get('dense_checkpoint') or ''}`: {row.get('next_step') or ''}"
+            )
+    else:
+        lines.append("- No dense MCQ trace-SFT control summaries found.")
     lines.extend(["", "## Release / Benchmark Gates", ""])
     if payload["release_gate_assessments"]:
         for assessment in payload["release_gate_assessments"][-10:]:

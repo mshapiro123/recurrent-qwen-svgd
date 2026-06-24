@@ -371,6 +371,7 @@ def test_progress_ledger_reports_recipe_control_assessments(tmp_path) -> None:
         {
             "path": str(source),
             "run_id": "recipe",
+            "gate": "stage5_same_recipe_architecture",
             "status": "passed",
             "passed": True,
             "dense_summary": "outputs/stage5/dense/summary.json",
@@ -381,6 +382,146 @@ def test_progress_ledger_reports_recipe_control_assessments(tmp_path) -> None:
             "hard_selected_delta": 2,
             "aggregate_best_of_k_delta": 3,
             "hard_best_of_k_delta": 4,
+            "primary_delta_recurrent_vs_dense": 0,
+            "arc_challenge_content_delta_recurrent_vs_dense": 0,
+            "arc_challenge_cyclic_delta_recurrent_vs_dense": 0,
+            "arc_easy_content_delta_recurrent_vs_dense": 0,
+            "arc_easy_cyclic_delta_recurrent_vs_dense": 0,
+        }
+    ]
+    assert payload["recommended_next_plan_source"] == str(source)
+
+
+def test_progress_ledger_reports_mcq_recipe_control_assessments(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "mcq_recipe" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "mcq_recipe",
+            "kind": "stage5_mcq_recipe_control_assessment",
+            "gate": "stage5_same_recipe_mcq_architecture",
+            "status": "hard_tail_lift_vs_dense",
+            "passed": True,
+            "dense_summary": "outputs/stage5/dense/summary.json",
+            "recurrent_summary": "outputs/stage5/recurrent/summary.json",
+            "reason": "challenge cyclic lift",
+            "next_step": "replicate",
+            "decision_evidence": {
+                "primary": {"correct_delta_recurrent_vs_dense": 2},
+                "arc_challenge_content": {"correct_delta_recurrent_vs_dense": 1},
+                "arc_challenge_cyclic": {"correct_delta_recurrent_vs_dense": 2},
+                "arc_easy_content": {"correct_delta_recurrent_vs_dense": -1},
+                "arc_easy_cyclic": {"correct_delta_recurrent_vs_dense": 0},
+            },
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["recipe_control_assessments"] == [
+        {
+            "path": str(source),
+            "run_id": "mcq_recipe",
+            "gate": "stage5_same_recipe_mcq_architecture",
+            "status": "hard_tail_lift_vs_dense",
+            "passed": True,
+            "dense_summary": "outputs/stage5/dense/summary.json",
+            "recurrent_summary": "outputs/stage5/recurrent/summary.json",
+            "reason": "challenge cyclic lift",
+            "next_step": "replicate",
+            "aggregate_selected_delta": 0,
+            "hard_selected_delta": 0,
+            "aggregate_best_of_k_delta": 0,
+            "hard_best_of_k_delta": 0,
+            "primary_delta_recurrent_vs_dense": 2,
+            "arc_challenge_content_delta_recurrent_vs_dense": 1,
+            "arc_challenge_cyclic_delta_recurrent_vs_dense": 2,
+            "arc_easy_content_delta_recurrent_vs_dense": -1,
+            "arc_easy_cyclic_delta_recurrent_vs_dense": 0,
+        }
+    ]
+    assert payload["recommended_next_plan_source"] == str(source)
+
+
+def test_progress_ledger_reports_surface_alignment_repairs(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "surface" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "surface",
+            "kind": "stage5_surface_alignment_repair",
+            "status": "surface_alignment_partial",
+            "passed": False,
+            "source_summary": "outputs/stage5/source/summary.json",
+            "benchmark_summary": "outputs/stage5/surface_bench/summary.json",
+            "checkpoint": "outputs/stage5/surface/phase1.pt",
+            "surface_alignment_rows": 32,
+            "surface_repair_assessment_status": "surface_repair_partial",
+            "assessment_status": "failed",
+            "next_step": "confirm before dense",
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["surface_alignment_statuses"] == [
+        {
+            "path": str(source),
+            "run_id": "surface",
+            "status": "surface_alignment_partial",
+            "passed": False,
+            "source_summary": "outputs/stage5/source/summary.json",
+            "benchmark_summary": "outputs/stage5/surface_bench/summary.json",
+            "checkpoint": "outputs/stage5/surface/phase1.pt",
+            "surface_alignment_rows": 32,
+            "surface_repair_assessment_status": "surface_repair_partial",
+            "assessment_status": "failed",
+            "next_step": "confirm before dense",
+        }
+    ]
+    assert payload["recommended_next_plan_source"] == str(source)
+
+
+def test_progress_ledger_reports_dense_mcq_controls(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "dense_mcq" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "dense_mcq",
+            "kind": "stage5_dense_mcq_trace_sft_control",
+            "source_summary": "outputs/stage5/source/summary.json",
+            "recurrent_benchmark_summary": "outputs/stage5/recurrent/summary.json",
+            "dataset": {"train_rows": 64, "extra_train_rows": 12},
+            "dense_checkpoint": "outputs/stage5/dense_mcq/dense.pt",
+            "recipe_control_assessment": {
+                "ran": True,
+                "status": "mixed_hard_tail_signal_vs_dense",
+                "passed": False,
+                "summary_json": "outputs/stage5/dense_mcq/mcq_recipe_control_assessment.json",
+                "next_step": "inspect challenge content",
+            },
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["dense_mcq_control_statuses"] == [
+        {
+            "path": str(source),
+            "run_id": "dense_mcq",
+            "source_summary": "outputs/stage5/source/summary.json",
+            "recurrent_benchmark_summary": "outputs/stage5/recurrent/summary.json",
+            "train_rows": 64,
+            "extra_train_rows": 12,
+            "dense_checkpoint": "outputs/stage5/dense_mcq/dense.pt",
+            "assessment_ran": True,
+            "assessment_status": "mixed_hard_tail_signal_vs_dense",
+            "assessment_passed": False,
+            "assessment_summary": "outputs/stage5/dense_mcq/mcq_recipe_control_assessment.json",
+            "next_step": "inspect challenge content",
         }
     ]
     assert payload["recommended_next_plan_source"] == str(source)
