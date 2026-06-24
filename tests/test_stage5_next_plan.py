@@ -3682,9 +3682,14 @@ def test_surface_alignment_partial_still_routes_to_dense_control_at_lower_priori
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Run dense MCQ same-curriculum control"
-    assert actions[0]["priority"] == 9
-    assert "partial_surface_repair" in actions[0]["command"]
+    assert actions[0]["name"] == "Run larger repaired-recurrent MCQ confirmation"
+    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_SOURCE_SUMMARY=outputs/stage5/repaired_benchmark/summary.json" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_ARC_EASY_LIMIT=512" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT=299" in actions[0]["command"]
+    assert actions[1]["name"] == "Run dense MCQ same-curriculum control"
+    assert actions[1]["priority"] == 8
+    assert "partial_surface_repair" in actions[1]["command"]
 
 
 def test_surface_alignment_order_sensitivity_blocks_dense_control(tmp_path) -> None:
@@ -3746,6 +3751,26 @@ def test_surface_alignment_tradeoff_blocks_dense_control(tmp_path) -> None:
 
     assert actions[0]["name"] == "Inspect surface-repair hard-tail tradeoff"
     assert "dense_mcq_trace_sft_control" not in actions[0]["command"]
+
+
+def test_surface_repair_assessment_partial_confirms_recurrent_before_dense_control(tmp_path) -> None:
+    source = tmp_path / "surface_assessment" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_surface_repair_assessment",
+        "status": "surface_repair_partial",
+        "passed": False,
+        "repaired_benchmark_summary": "outputs/stage5/repaired_benchmark/summary.json",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run larger repaired-recurrent MCQ confirmation"
+    assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_SOURCE_SUMMARY=outputs/stage5/repaired_benchmark/summary.json" in actions[0]["command"]
+    assert actions[1]["name"] == "Run dense MCQ same-curriculum control"
+    assert actions[1]["priority"] == 8
+    assert "partial_surface_repair_assessment" in actions[1]["command"]
 
 
 def test_mcq_recipe_control_hard_tail_lift_routes_to_confirmation(tmp_path) -> None:

@@ -2041,6 +2041,33 @@ def dense_mcq_trace_sft_control_action(
     )
 
 
+def repaired_recurrent_confirmation_action(
+    *,
+    recurrent_benchmark_summary: str,
+    run_suffix: str,
+    reason: str,
+    priority: int = 10,
+) -> dict[str, Any]:
+    return make_action(
+        "Run larger repaired-recurrent MCQ confirmation",
+        reason,
+        command_env(
+            {
+                "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{RUN_ID}_{run_suffix}",
+                "STAGE5_BENCHMARK_SOURCE_SUMMARY": recurrent_benchmark_summary,
+                "STAGE5_BENCHMARKS": "arc_easy,arc_challenge",
+                "STAGE5_BENCHMARK_ARC_EASY_LIMIT": "512",
+                "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "299",
+                "STAGE5_BENCHMARK_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
+                "STAGE5_BENCHMARK_AGGREGATES": "mean",
+                "STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS": "1",
+            },
+            "python colab/run_stage5_benchmark_suite.py",
+        ),
+        priority,
+    )
+
+
 def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
     surface_status = str(payload.get("surface_repair_assessment_status") or "")
@@ -2110,13 +2137,21 @@ def surface_alignment_repair_actions(payload: dict[str, Any], *, source_summary:
         ]
     if surface_status == "surface_repair_partial" and benchmark_summary:
         return [
+            repaired_recurrent_confirmation_action(
+                recurrent_benchmark_summary=benchmark_summary,
+                run_suffix="surface_repair_partial_recurrent_confirm",
+                reason=(
+                    "The surface repair improved ARC-Easy content and preserved hard surfaces, but did not fully restore base parity. "
+                    "Confirm the repaired recurrent checkpoint on a larger debiased ARC slice before spending on the dense same-curriculum control."
+                ),
+            ),
             dense_mcq_trace_sft_control_action(
                 recurrent_benchmark_summary=benchmark_summary,
                 run_suffix="dense_mcq_after_partial_surface_repair",
                 reason=(
-                    "The surface repair improved ARC-Easy content and preserved hard surfaces, but did not fully restore base parity; run the dense control with the same repair shard as an interpretability check before deciding whether another repair pass is worthwhile."
+                    "After the larger repaired-recurrent confirmation lands, run the dense control with the same repair shard as an interpretability check before deciding whether another repair pass is worthwhile."
                 ),
-                priority=9,
+                priority=8,
                 extra_train_jsonl=repair_train_jsonl,
             )
         ]
@@ -2154,13 +2189,21 @@ def surface_repair_assessment_actions(payload: dict[str, Any], *, source_summary
         ]
     if status == "surface_repair_partial" and repaired_benchmark:
         return [
+            repaired_recurrent_confirmation_action(
+                recurrent_benchmark_summary=repaired_benchmark,
+                run_suffix="surface_repair_partial_assessment_recurrent_confirm",
+                reason=(
+                    "The before/after surface assessment shows easy-content improvement with hard-tail preservation, but base parity is not fully restored. "
+                    "Run a larger repaired-recurrent confirmation before spending on the dense same-curriculum control."
+                ),
+            ),
             dense_mcq_trace_sft_control_action(
                 recurrent_benchmark_summary=repaired_benchmark,
                 run_suffix="dense_mcq_after_partial_surface_repair_assessment",
                 reason=(
-                    "The before/after surface assessment shows easy-content improvement with hard-tail preservation, but base parity is not fully restored; run dense control to determine whether recurrence still contributes beyond trace data."
+                    "After the larger repaired-recurrent confirmation lands, run dense control to determine whether recurrence still contributes beyond trace data."
                 ),
-                priority=9,
+                priority=8,
             )
         ]
     return [
