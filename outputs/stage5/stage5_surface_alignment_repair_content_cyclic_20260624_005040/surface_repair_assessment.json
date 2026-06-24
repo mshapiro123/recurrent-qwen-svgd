@@ -1,0 +1,1241 @@
+{
+  "run_id": "stage5_surface_repair_assessment_20260624_010037",
+  "kind": "stage5_surface_repair_assessment",
+  "status": "surface_repair_no_easy_content_lift",
+  "passed": false,
+  "reason": "Repair did not improve ARC-Easy content versus the source recurrent checkpoint.",
+  "next_step": "Inspect training rows and consider score-level alignment rather than more SFT on the same shard.",
+  "source_benchmark_summary": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm/summary.json",
+  "repaired_benchmark_summary": "outputs/stage5/stage5_surface_alignment_repair_content_cyclic_20260624_005040_benchmark/summary.json",
+  "allowed_challenge_regression": 0,
+  "comparisons": {
+    "arc_easy_content": {
+      "benchmark": "arc_easy",
+      "score_target": "content_question_only",
+      "aggregate": "mean",
+      "source_recurrent_vs_repaired_recurrent": {
+        "aggregate": "mean",
+        "paired_examples": 256,
+        "reference_correct": 140,
+        "candidate_correct": 138,
+        "correct_delta_candidate_vs_reference": -2,
+        "reference_accuracy": 0.546875,
+        "candidate_accuracy": 0.5390625,
+        "accuracy_delta_candidate_vs_reference": -0.0078125,
+        "wins": 1,
+        "losses": 3,
+        "ties": 252,
+        "sign_test_p_value": 0.625,
+        "win_ids": [
+          "NYSEDREGENTS_2014_8_2"
+        ],
+        "loss_ids": [
+          "Mercury_7122448",
+          "Mercury_7168315",
+          "Mercury_7271583"
+        ]
+      },
+      "source_recurrent_vs_base": {
+        "paired_examples": 256,
+        "base_correct": 148,
+        "recurrent_correct": 140,
+        "correct_delta_recurrent_vs_base": -8,
+        "base_accuracy": 0.578125,
+        "recurrent_accuracy": 0.546875,
+        "accuracy_delta_recurrent_vs_base": -0.03125,
+        "wins": 8,
+        "losses": 16,
+        "ties": 232,
+        "sign_test_p_value": 0.15158963203430176
+      },
+      "repaired_recurrent_vs_base": {
+        "paired_examples": 256,
+        "base_correct": 148,
+        "recurrent_correct": 138,
+        "correct_delta_recurrent_vs_base": -10,
+        "base_accuracy": 0.578125,
+        "recurrent_accuracy": 0.5390625,
+        "accuracy_delta_recurrent_vs_base": -0.0390625,
+        "wins": 5,
+        "losses": 15,
+        "ties": 236,
+        "sign_test_p_value": 0.04138946533203125
+      }
+    },
+    "arc_easy_cyclic": {
+      "benchmark": "arc_easy",
+      "score_target": "cyclic_label_aggregated",
+      "aggregate": "permutation_mean",
+      "source_recurrent_vs_repaired_recurrent": {
+        "aggregate": "permutation_mean",
+        "paired_examples": 256,
+        "reference_correct": 203,
+        "candidate_correct": 205,
+        "correct_delta_candidate_vs_reference": 2,
+        "reference_accuracy": 0.79296875,
+        "candidate_accuracy": 0.80078125,
+        "accuracy_delta_candidate_vs_reference": 0.0078125,
+        "wins": 2,
+        "losses": 0,
+        "ties": 254,
+        "sign_test_p_value": 0.5,
+        "win_ids": [
+          "Mercury_7168648",
+          "Mercury_SC_401652"
+        ],
+        "loss_ids": []
+      },
+      "source_recurrent_vs_base": {
+        "paired_examples": 256,
+        "base_correct": 201,
+        "recurrent_correct": 203,
+        "correct_delta_recurrent_vs_base": 2,
+        "base_accuracy": 0.78515625,
+        "recurrent_accuracy": 0.79296875,
+        "accuracy_delta_recurrent_vs_base": 0.0078125,
+        "wins": 4,
+        "losses": 2,
+        "ties": 250,
+        "sign_test_p_value": 0.6875
+      },
+      "repaired_recurrent_vs_base": {
+        "paired_examples": 256,
+        "base_correct": 201,
+        "recurrent_correct": 205,
+        "correct_delta_recurrent_vs_base": 4,
+        "base_accuracy": 0.78515625,
+        "recurrent_accuracy": 0.80078125,
+        "accuracy_delta_recurrent_vs_base": 0.015625,
+        "wins": 5,
+        "losses": 1,
+        "ties": 250,
+        "sign_test_p_value": 0.21875
+      }
+    },
+    "arc_challenge_content": {
+      "benchmark": "arc_challenge",
+      "score_target": "content_question_only",
+      "aggregate": "mean",
+      "source_recurrent_vs_repaired_recurrent": {
+        "aggregate": "mean",
+        "paired_examples": 256,
+        "reference_correct": 86,
+        "candidate_correct": 90,
+        "correct_delta_candidate_vs_reference": 4,
+        "reference_accuracy": 0.3359375,
+        "candidate_accuracy": 0.3515625,
+        "accuracy_delta_candidate_vs_reference": 0.015625,
+        "wins": 6,
+        "losses": 2,
+        "ties": 248,
+        "sign_test_p_value": 0.2890625,
+        "win_ids": [
+          "Mercury_7004410",
+          "Mercury_7086013",
+          "Mercury_7164850",
+          "Mercury_7198380",
+          "Mercury_7207410",
+          "Mercury_7284043"
+        ],
+        "loss_ids": [
+          "Mercury_176015",
+          "Mercury_7187058"
+        ]
+      },
+      "source_recurrent_vs_base": {
+        "paired_examples": 256,
+        "base_correct": 87,
+        "recurrent_correct": 86,
+        "correct_delta_recurrent_vs_base": -1,
+        "base_accuracy": 0.33984375,
+        "recurrent_accuracy": 0.3359375,
+        "accuracy_delta_recurrent_vs_base": -0.00390625,
+        "wins": 7,
+        "losses": 8,
+        "ties": 241,
+        "sign_test_p_value": 1.0
+      },
+      "repaired_recurrent_vs_base": {
+        "paired_examples": 256,
+        "base_correct": 87,
+        "recurrent_correct": 90,
+        "correct_delta_recurrent_vs_base": 3,
+        "base_accuracy": 0.33984375,
+        "recurrent_accuracy": 0.3515625,
+        "accuracy_delta_recurrent_vs_base": 0.01171875,
+        "wins": 9,
+        "losses": 6,
+        "ties": 241,
+        "sign_test_p_value": 0.60723876953125
+      }
+    },
+    "arc_challenge_cyclic": {
+      "benchmark": "arc_challenge",
+      "score_target": "cyclic_label_aggregated",
+      "aggregate": "permutation_mean",
+      "source_recurrent_vs_repaired_recurrent": {
+        "aggregate": "permutation_mean",
+        "paired_examples": 256,
+        "reference_correct": 151,
+        "candidate_correct": 153,
+        "correct_delta_candidate_vs_reference": 2,
+        "reference_accuracy": 0.58984375,
+        "candidate_accuracy": 0.59765625,
+        "accuracy_delta_candidate_vs_reference": 0.0078125,
+        "wins": 3,
+        "losses": 1,
+        "ties": 252,
+        "sign_test_p_value": 0.625,
+        "win_ids": [
+          "Mercury_7133648",
+          "Mercury_7183733",
+          "Mercury_SC_415348"
+        ],
+        "loss_ids": [
+          "Mercury_7130883"
+        ]
+      },
+      "source_recurrent_vs_base": {
+        "paired_examples": 256,
+        "base_correct": 156,
+        "recurrent_correct": 151,
+        "correct_delta_recurrent_vs_base": -5,
+        "base_accuracy": 0.609375,
+        "recurrent_accuracy": 0.58984375,
+        "accuracy_delta_recurrent_vs_base": -0.01953125,
+        "wins": 3,
+        "losses": 8,
+        "ties": 245,
+        "sign_test_p_value": 0.2265625
+      },
+      "repaired_recurrent_vs_base": {
+        "paired_examples": 256,
+        "base_correct": 156,
+        "recurrent_correct": 153,
+        "correct_delta_recurrent_vs_base": -3,
+        "base_accuracy": 0.609375,
+        "recurrent_accuracy": 0.59765625,
+        "accuracy_delta_recurrent_vs_base": -0.01171875,
+        "wins": 4,
+        "losses": 7,
+        "ties": 245,
+        "sign_test_p_value": 0.548828125
+      }
+    }
+  },
+  "order_sensitivity_repair": {
+    "status": "order_sensitivity_reduced",
+    "improved": true,
+    "source_order_diagnosis": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm/arc_easy_order_sensitivity_diagnosis.json",
+    "repaired_order_diagnosis": "outputs/stage5/stage5_surface_alignment_repair_content_cyclic_20260624_005040_benchmark/arc_easy_order_sensitivity_diagnosis.json",
+    "source_summary": {
+      "benchmark": "arc_easy_stage5_traced_sft_direct_preservation_20260623_scale64_confirm",
+      "paired_examples": 256,
+      "base_content_correct": 148,
+      "candidate_content_correct": 140,
+      "content_delta": -8,
+      "changes": {
+        "win": 8,
+        "tie_wrong": 100,
+        "tie_correct": 132,
+        "loss": 16
+      },
+      "candidate_order_sensitive_rows": 89,
+      "candidate_order_stable_rows": 167,
+      "candidate_order_sensitive_fraction": 0.34765625,
+      "content_losses": 16,
+      "content_losses_order_sensitive": 6,
+      "content_losses_order_sensitive_fraction": 0.375,
+      "content_losses_rescued_by_cyclic": 14,
+      "content_losses_rescued_by_cyclic_fraction": 0.875,
+      "content_wins": 8,
+      "content_wins_order_sensitive": 2,
+      "content_wins_order_sensitive_fraction": 0.25,
+      "base_correct_order_sensitive_rows": 44,
+      "base_correct_order_stable_rows": 104,
+      "loss_rate_on_base_correct_order_sensitive": 0.13636363636363635,
+      "loss_rate_on_base_correct_order_stable": 0.09615384615384616,
+      "order_sensitivity_loss_rate_lift": 0.040209790209790194,
+      "likely_order_sensitivity_issue": false,
+      "likely_content_route_specific_issue": true,
+      "recommendation": "diagnose_content_route_scoring_or_prompt_alignment_before_more_distillation",
+      "loss_examples": [
+        {
+          "id": "ACTAAP_2014_7_6",
+          "change": "loss",
+          "answer": "D",
+          "base_content_prediction": "D",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "D": 4
+          },
+          "base_permutation_prediction_counts": {
+            "D": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "LEAP_2011_8_10436",
+          "change": "loss",
+          "answer": "B",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "B": 3,
+            "C": 1
+          },
+          "base_permutation_prediction_counts": {
+            "B": 3,
+            "C": 1
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "MCAS_2003_5_35",
+          "change": "loss",
+          "answer": "D",
+          "base_content_prediction": "D",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "B": 2,
+            "D": 2
+          },
+          "base_permutation_prediction_counts": {
+            "B": 2,
+            "D": 2
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "MCAS_2013_5_17",
+          "change": "loss",
+          "answer": "C",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": false,
+          "base_cyclic_hit": false,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "D": 4
+          },
+          "base_permutation_prediction_counts": {
+            "D": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "MDSA_2011_4_8",
+          "change": "loss",
+          "answer": "A",
+          "base_content_prediction": "A",
+          "candidate_content_prediction": "C",
+          "candidate_cyclic_prediction": "A",
+          "base_cyclic_prediction": "A",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "A": 4
+          },
+          "base_permutation_prediction_counts": {
+            "A": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_183190",
+          "change": "loss",
+          "answer": "C",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "C",
+          "base_cyclic_prediction": "C",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "C": 4
+          },
+          "base_permutation_prediction_counts": {
+            "C": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_400540",
+          "change": "loss",
+          "answer": "A",
+          "base_content_prediction": "A",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": false,
+          "base_cyclic_hit": false,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "D": 4
+          },
+          "base_permutation_prediction_counts": {
+            "D": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7010815",
+          "change": "loss",
+          "answer": "B",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_7013090",
+          "change": "loss",
+          "answer": "B",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "C",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "B": 3,
+            "D": 1
+          },
+          "base_permutation_prediction_counts": {
+            "B": 2,
+            "D": 1,
+            "C": 1
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_7017080",
+          "change": "loss",
+          "answer": "A",
+          "base_content_prediction": "A",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "A",
+          "base_cyclic_prediction": "A",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "A": 4
+          },
+          "base_permutation_prediction_counts": {
+            "A": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_7114940",
+          "change": "loss",
+          "answer": "C",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "C",
+          "base_cyclic_prediction": "C",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "C": 3,
+            "A": 1
+          },
+          "base_permutation_prediction_counts": {
+            "C": 3,
+            "A": 1
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_7194425",
+          "change": "loss",
+          "answer": "B",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        }
+      ],
+      "win_examples": [
+        {
+          "id": "ACTAAP_2007_7_19",
+          "change": "win",
+          "answer": "B",
+          "base_content_prediction": "A",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7024378",
+          "change": "win",
+          "answer": "D",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "A",
+          "base_cyclic_prediction": "A",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": false,
+          "base_cyclic_hit": false,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "C": 2,
+            "A": 1,
+            "D": 1
+          },
+          "base_permutation_prediction_counts": {
+            "A": 3,
+            "C": 1
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7122448",
+          "change": "win",
+          "answer": "B",
+          "base_content_prediction": "A",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7135433",
+          "change": "win",
+          "answer": "B",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7168315",
+          "change": "win",
+          "answer": "C",
+          "base_content_prediction": "D",
+          "candidate_content_prediction": "C",
+          "candidate_cyclic_prediction": "C",
+          "base_cyclic_prediction": "C",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "C": 4
+          },
+          "base_permutation_prediction_counts": {
+            "C": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7227973",
+          "change": "win",
+          "answer": "A",
+          "base_content_prediction": "D",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "A",
+          "base_cyclic_prediction": "A",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "A": 4
+          },
+          "base_permutation_prediction_counts": {
+            "A": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7271583",
+          "change": "win",
+          "answer": "A",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "A",
+          "base_cyclic_prediction": "A",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "A": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 1,
+            "A": 3
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_SC_400370",
+          "change": "win",
+          "answer": "D",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "D": 3,
+            "A": 1
+          },
+          "base_permutation_prediction_counts": {
+            "D": 3,
+            "A": 1
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        }
+      ]
+    },
+    "repaired_summary": {
+      "benchmark": "arc_easy_stage5_surface_alignment_repair_content_cyclic_20260624_005040_benchmark",
+      "paired_examples": 256,
+      "base_content_correct": 148,
+      "candidate_content_correct": 138,
+      "content_delta": -10,
+      "changes": {
+        "win": 5,
+        "tie_wrong": 103,
+        "tie_correct": 133,
+        "loss": 15
+      },
+      "candidate_order_sensitive_rows": 86,
+      "candidate_order_stable_rows": 170,
+      "candidate_order_sensitive_fraction": 0.3359375,
+      "content_losses": 15,
+      "content_losses_order_sensitive": 5,
+      "content_losses_order_sensitive_fraction": 0.3333333333333333,
+      "content_losses_rescued_by_cyclic": 13,
+      "content_losses_rescued_by_cyclic_fraction": 0.8666666666666667,
+      "content_wins": 5,
+      "content_wins_order_sensitive": 2,
+      "content_wins_order_sensitive_fraction": 0.4,
+      "base_correct_order_sensitive_rows": 42,
+      "base_correct_order_stable_rows": 106,
+      "loss_rate_on_base_correct_order_sensitive": 0.11904761904761904,
+      "loss_rate_on_base_correct_order_stable": 0.09433962264150944,
+      "order_sensitivity_loss_rate_lift": 0.0247079964061096,
+      "likely_order_sensitivity_issue": false,
+      "likely_content_route_specific_issue": true,
+      "recommendation": "diagnose_content_route_scoring_or_prompt_alignment_before_more_distillation",
+      "loss_examples": [
+        {
+          "id": "ACTAAP_2014_7_6",
+          "change": "loss",
+          "answer": "D",
+          "base_content_prediction": "D",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "D": 4
+          },
+          "base_permutation_prediction_counts": {
+            "D": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "LEAP_2011_8_10436",
+          "change": "loss",
+          "answer": "B",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "B": 3,
+            "C": 1
+          },
+          "base_permutation_prediction_counts": {
+            "B": 3,
+            "C": 1
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "MCAS_2003_5_35",
+          "change": "loss",
+          "answer": "D",
+          "base_content_prediction": "D",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "B": 2,
+            "D": 2
+          },
+          "base_permutation_prediction_counts": {
+            "B": 2,
+            "D": 2
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "MCAS_2013_5_17",
+          "change": "loss",
+          "answer": "C",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": false,
+          "base_cyclic_hit": false,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "D": 4
+          },
+          "base_permutation_prediction_counts": {
+            "D": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "MDSA_2011_4_8",
+          "change": "loss",
+          "answer": "A",
+          "base_content_prediction": "A",
+          "candidate_content_prediction": "C",
+          "candidate_cyclic_prediction": "A",
+          "base_cyclic_prediction": "A",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "A": 4
+          },
+          "base_permutation_prediction_counts": {
+            "A": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_183190",
+          "change": "loss",
+          "answer": "C",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "C",
+          "base_cyclic_prediction": "C",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "C": 4
+          },
+          "base_permutation_prediction_counts": {
+            "C": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_400540",
+          "change": "loss",
+          "answer": "A",
+          "base_content_prediction": "A",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": false,
+          "base_cyclic_hit": false,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "D": 4
+          },
+          "base_permutation_prediction_counts": {
+            "D": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7010815",
+          "change": "loss",
+          "answer": "B",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_7013090",
+          "change": "loss",
+          "answer": "B",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "C",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "B": 3,
+            "D": 1
+          },
+          "base_permutation_prediction_counts": {
+            "B": 2,
+            "D": 1,
+            "C": 1
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_7017080",
+          "change": "loss",
+          "answer": "A",
+          "base_content_prediction": "A",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "A",
+          "base_cyclic_prediction": "A",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "A": 4
+          },
+          "base_permutation_prediction_counts": {
+            "A": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_7114940",
+          "change": "loss",
+          "answer": "C",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "C",
+          "base_cyclic_prediction": "C",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "C": 3,
+            "A": 1
+          },
+          "base_permutation_prediction_counts": {
+            "C": 3,
+            "A": 1
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        },
+        {
+          "id": "Mercury_7194425",
+          "change": "loss",
+          "answer": "B",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": true,
+          "candidate_content_hit": false,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": true
+        }
+      ],
+      "win_examples": [
+        {
+          "id": "ACTAAP_2007_7_19",
+          "change": "win",
+          "answer": "B",
+          "base_content_prediction": "A",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7024378",
+          "change": "win",
+          "answer": "D",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "A",
+          "base_cyclic_prediction": "A",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": false,
+          "base_cyclic_hit": false,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "C": 2,
+            "B": 1,
+            "D": 1
+          },
+          "base_permutation_prediction_counts": {
+            "A": 3,
+            "C": 1
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7135433",
+          "change": "win",
+          "answer": "B",
+          "base_content_prediction": "C",
+          "candidate_content_prediction": "B",
+          "candidate_cyclic_prediction": "B",
+          "base_cyclic_prediction": "B",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "B": 4
+          },
+          "base_permutation_prediction_counts": {
+            "B": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_7227973",
+          "change": "win",
+          "answer": "A",
+          "base_content_prediction": "D",
+          "candidate_content_prediction": "A",
+          "candidate_cyclic_prediction": "A",
+          "base_cyclic_prediction": "A",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": false,
+          "base_order_sensitive": false,
+          "candidate_permutation_prediction_counts": {
+            "A": 4
+          },
+          "base_permutation_prediction_counts": {
+            "A": 4
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        },
+        {
+          "id": "Mercury_SC_400370",
+          "change": "win",
+          "answer": "D",
+          "base_content_prediction": "B",
+          "candidate_content_prediction": "D",
+          "candidate_cyclic_prediction": "D",
+          "base_cyclic_prediction": "D",
+          "base_content_hit": false,
+          "candidate_content_hit": true,
+          "candidate_cyclic_hit": true,
+          "base_cyclic_hit": true,
+          "candidate_order_sensitive": true,
+          "base_order_sensitive": true,
+          "candidate_permutation_prediction_counts": {
+            "D": 3,
+            "A": 1
+          },
+          "base_permutation_prediction_counts": {
+            "D": 3,
+            "A": 1
+          },
+          "candidate_num_permutations": 4,
+          "base_num_permutations": 4,
+          "cyclic_rescues_content_loss": false
+        }
+      ]
+    },
+    "deltas_repaired_minus_source": {
+      "candidate_order_sensitive_rows": -3.0,
+      "candidate_order_sensitive_fraction": -0.01171875,
+      "content_losses": -1.0,
+      "content_losses_order_sensitive": -1.0,
+      "content_losses_order_sensitive_fraction": -0.041666666666666685,
+      "content_losses_rescued_by_cyclic": -1.0,
+      "order_sensitivity_loss_rate_lift": -0.015501793803680594
+    },
+    "decision": {
+      "reduced_order_sensitive_losses": true,
+      "reduced_order_sensitive_rows": true,
+      "did_not_increase_total_content_losses": true
+    }
+  },
+  "decision_evidence": {
+    "arc_easy_content": "repair_delta -2 (1/3/252 W/L/T, n=256, p=0.625), repaired_vs_base_delta -10",
+    "arc_easy_cyclic": "repair_delta 2 (2/0/254 W/L/T, n=256, p=0.5), repaired_vs_base_delta 4",
+    "arc_challenge_content": "repair_delta 4 (6/2/248 W/L/T, n=256, p=0.2890625), repaired_vs_base_delta 3",
+    "arc_challenge_cyclic": "repair_delta 2 (3/1/252 W/L/T, n=256, p=0.625), repaired_vs_base_delta -3"
+  }
+}
