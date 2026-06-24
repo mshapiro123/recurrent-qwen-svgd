@@ -261,13 +261,22 @@ def test_grouped_eval_metrics_extracts_curriculum_mode_metrics() -> None:
         "group/curriculum_mode/direct/mean_expected_loops": 1.2,
         "group/curriculum_mode/deep_narrow/examples": 8.0,
         "group/curriculum_mode/deep_narrow/mean_expected_loops": 3.1,
+        "group/target_loop_count/1/examples": 12.0,
+        "group/target_loop_count/1/mean_expected_loops": 1.2,
+        "group/target_loop_count/3/examples": 8.0,
+        "group/target_loop_count/3/mean_expected_loops": 3.1,
     }
 
     grouped = runner.grouped_eval_metrics(metrics, group_field="curriculum_mode")
+    grouped_loops = runner.grouped_eval_metrics(metrics, group_field="target_loop_count")
 
     assert grouped == {
         "deep_narrow": {"examples": 8.0, "mean_expected_loops": 3.1},
         "direct": {"examples": 12.0, "mean_expected_loops": 1.2},
+    }
+    assert grouped_loops == {
+        "1": {"examples": 12.0, "mean_expected_loops": 1.2},
+        "3": {"examples": 8.0, "mean_expected_loops": 3.1},
     }
 
 
@@ -278,11 +287,16 @@ def test_validation_checks_report_sane_depth_gradient() -> None:
             "direct": {"mean_expected_loops": 1.1},
             "deep_narrow": {"mean_expected_loops": 2.8},
         },
+        {
+            "1": {"examples": 4.0, "mean_expected_loops": 1.1},
+            "3": {"examples": 4.0, "mean_expected_loops": 2.8},
+        },
     )
 
     assert checks["status"] == "validation_sane"
     assert checks["issues"] == []
     assert checks["depth_gradient"]["observed"] is True
+    assert checks["target_loop_gradient"]["observed"] is True
 
 
 def test_validation_checks_flag_nonfinite_and_loop_collapse() -> None:
@@ -326,6 +340,25 @@ def test_validation_checks_flag_missing_depth_gradient_metrics() -> None:
     assert checks["depth_gradient"]["available"] is False
 
 
+def test_validation_checks_can_require_target_loop_gradient(monkeypatch) -> None:
+    monkeypatch.setattr(runner, "REQUIRE_TARGET_LOOP_GRADIENT", True)
+    checks = runner.validation_checks(
+        {"loss": 2.0, "mean_expected_loops": 2.4},
+        {
+            "direct": {"mean_expected_loops": 1.1},
+            "deep_narrow": {"mean_expected_loops": 2.8},
+        },
+        {
+            "1": {"examples": 4.0, "mean_expected_loops": 1.8},
+            "3": {"examples": 4.0, "mean_expected_loops": 1.85},
+        },
+    )
+
+    assert checks["status"] == "validation_needs_review"
+    assert checks["target_loop_gradient"]["observed"] is False
+    assert "target_loop_gradient_not_observed" in checks["issues"]
+
+
 def test_eval_jsonl_requests_single_pass_curriculum_mode_groups(monkeypatch, tmp_path) -> None:
     calls: list[list[str]] = []
 
@@ -337,8 +370,12 @@ def test_eval_jsonl_requests_single_pass_curriculum_mode_groups(monkeypatch, tmp
     metrics = runner.eval_jsonl("val", tmp_path / "val.jsonl", tmp_path / "phase1.pt")
 
     assert metrics["group/curriculum_mode/direct/examples"] == 1.0
-    assert "--group_by_field" in calls[0]
-    assert calls[0][calls[0].index("--group_by_field") + 1] == "curriculum_mode"
+    group_fields = [
+        calls[0][index + 1]
+        for index, value in enumerate(calls[0])
+        if value == "--group_by_field"
+    ]
+    assert group_fields == ["curriculum_mode", "target_loop_count"]
 
 
 def test_curriculum_sft_updates_current_source_summary(monkeypatch, tmp_path) -> None:
@@ -358,12 +395,14 @@ def test_curriculum_sft_updates_current_source_summary(monkeypatch, tmp_path) ->
             "config": {"max_steps": 150, "max_loops": 4},
             "phase1_val": {"loss": 2.5},
             "phase1_val_by_mode": {"direct": {"loss": 2.0}, "deep_narrow": {"loss": 3.0}},
+            "phase1_val_by_target_loop": {"1": {"loss": 2.0}, "2": {"loss": 3.0}},
             "validation_checks": {"status": "validation_sane", "issues": []},
         }
     )
 
     assert (run_dir / "summary.json").exists()
     assert "Validation By Curriculum Mode" in (run_dir / "summary.md").read_text(encoding="utf-8")
+    assert "Validation By Target Loop" in (run_dir / "summary.md").read_text(encoding="utf-8")
     assert "Validation Checks" in (run_dir / "summary.md").read_text(encoding="utf-8")
     assert (tmp_path / "config" / "stage5_current_source_summary.txt").read_text(
         encoding="utf-8"

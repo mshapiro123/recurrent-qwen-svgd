@@ -91,12 +91,19 @@ if USE_TARGET_LOOP_CONTROL and USE_LEARNED_LOOP_CONTROL:
 MAX_GRAD_NORM = float(os.environ.get("STAGE5_CURRICULUM_PHASE1_MAX_GRAD_NORM", "0.3"))
 MIN_MEAN_EXPECTED_LOOPS = float(os.environ.get("STAGE5_CURRICULUM_SFT_MIN_MEAN_EXPECTED_LOOPS", "1.05"))
 DEPTH_GRADIENT_MARGIN = float(os.environ.get("STAGE5_CURRICULUM_SFT_DEPTH_GRADIENT_MARGIN", "0.25"))
+TARGET_LOOP_GRADIENT_MARGIN = float(
+    os.environ.get("STAGE5_CURRICULUM_SFT_TARGET_LOOP_GRADIENT_MARGIN", "0.10")
+)
 REQUIRE_DEPTH_GRADIENT = os.environ.get("STAGE5_CURRICULUM_SFT_REQUIRE_DEPTH_GRADIENT", "1").strip().lower() in {
     "1",
     "true",
     "yes",
     "y",
 }
+REQUIRE_TARGET_LOOP_GRADIENT = os.environ.get(
+    "STAGE5_CURRICULUM_SFT_REQUIRE_TARGET_LOOP_GRADIENT",
+    "0",
+).strip().lower() in {"1", "true", "yes", "y"}
 ALLOW_ANSWER_LINE_VERIFICATION = os.environ.get(
     "STAGE5_CURRICULUM_ALLOW_ANSWER_LINE_VERIFICATION",
     "0",
@@ -428,12 +435,22 @@ def prepare_train_val(gate: dict[str, Any]) -> tuple[Path, Path, dict[str, Any]]
     write_jsonl(val_jsonl, val_rows)
     train_mode_counts: dict[str, int] = {}
     val_mode_counts: dict[str, int] = {}
+    train_target_loop_counts: dict[str, int] = {}
+    val_target_loop_counts: dict[str, int] = {}
     for row in train_rows:
         mode = str(row.get("curriculum_mode") or row.get("routing_type") or "ungrouped")
         train_mode_counts[mode] = train_mode_counts.get(mode, 0) + 1
+        target_loop = row.get("target_loop_count")
+        if isinstance(target_loop, int):
+            key = str(target_loop)
+            train_target_loop_counts[key] = train_target_loop_counts.get(key, 0) + 1
     for row in val_rows:
         mode = str(row.get("curriculum_mode") or row.get("routing_type") or "ungrouped")
         val_mode_counts[mode] = val_mode_counts.get(mode, 0) + 1
+        target_loop = row.get("target_loop_count")
+        if isinstance(target_loop, int):
+            key = str(target_loop)
+            val_target_loop_counts[key] = val_target_loop_counts.get(key, 0) + 1
     return train_jsonl, val_jsonl, {
         "source_positive_sft": path_for_cli(positive_sft),
         "rows": len(rows),
@@ -445,6 +462,8 @@ def prepare_train_val(gate: dict[str, Any]) -> tuple[Path, Path, dict[str, Any]]
         "depth_hint_style": DEPTH_HINT_STYLE,
         "train_mode_counts": train_mode_counts,
         "val_mode_counts": val_mode_counts,
+        "train_target_loop_counts": dict(sorted(train_target_loop_counts.items(), key=lambda item: int(item[0]))),
+        "val_target_loop_counts": dict(sorted(val_target_loop_counts.items(), key=lambda item: int(item[0]))),
     }
 
 
@@ -585,6 +604,7 @@ def grouped_eval_metrics(metrics: dict[str, float], *, group_field: str) -> dict
 def validation_checks(
     phase1_val: dict[str, float],
     phase1_val_by_mode: dict[str, dict[str, float]],
+    phase1_val_by_target_loop: dict[str, dict[str, float]] | None = None,
 ) -> dict[str, Any]:
     nonfinite = sorted(
         key
@@ -608,6 +628,41 @@ def validation_checks(
     }
     if depth_gradient["available"]:
         depth_gradient["observed"] = float(deep_loops) >= float(direct_loops) + DEPTH_GRADIENT_MARGIN
+    target_loop_metrics = phase1_val_by_target_loop or {}
+    loop_points: list[dict[str, float]] = []
+    for target_loop, metrics in sorted(
+        target_loop_metrics.items(),
+        key=lambda item: int(item[0]) if str(item[0]).isdigit() else 999,
+    ):
+        try:
+            target_loop_value = int(target_loop)
+        except ValueError:
+            continue
+        expected_loops = metrics.get("mean_expected_loops")
+        examples = metrics.get("examples")
+        if isinstance(expected_loops, (int, float)) and math.isfinite(float(expected_loops)):
+            loop_points.append(
+                {
+                    "target_loop_count": float(target_loop_value),
+                    "mean_expected_loops": float(expected_loops),
+                    "examples": float(examples) if isinstance(examples, (int, float)) else 0.0,
+                }
+            )
+    adjacent_margins = [
+        loop_points[index + 1]["mean_expected_loops"] - loop_points[index]["mean_expected_loops"]
+        for index in range(len(loop_points) - 1)
+    ]
+    target_loop_gradient: dict[str, Any] = {
+        "available": len(loop_points) >= 2,
+        "points": loop_points,
+        "required_margin": TARGET_LOOP_GRADIENT_MARGIN,
+        "adjacent_margins": adjacent_margins,
+        "observed": None,
+    }
+    if target_loop_gradient["available"]:
+        target_loop_gradient["observed"] = all(
+            margin >= TARGET_LOOP_GRADIENT_MARGIN for margin in adjacent_margins
+        )
     issues: list[str] = []
     if nonfinite:
         issues.append("nonfinite_validation_metrics")
@@ -620,6 +675,11 @@ def validation_checks(
             issues.append("missing_depth_gradient_metrics")
         elif depth_gradient["observed"] is False:
             issues.append("depth_gradient_not_observed")
+    if REQUIRE_TARGET_LOOP_GRADIENT:
+        if not target_loop_gradient["available"]:
+            issues.append("missing_target_loop_gradient_metrics")
+        elif target_loop_gradient["observed"] is False:
+            issues.append("target_loop_gradient_not_observed")
     status = "validation_sane" if not issues else "validation_needs_review"
     return {
         "status": status,
@@ -629,6 +689,8 @@ def validation_checks(
         "mean_expected_loops": mean_loops,
         "require_depth_gradient": REQUIRE_DEPTH_GRADIENT,
         "depth_gradient": depth_gradient,
+        "require_target_loop_gradient": REQUIRE_TARGET_LOOP_GRADIENT,
+        "target_loop_gradient": target_loop_gradient,
     }
 
 
@@ -656,9 +718,9 @@ def eval_jsonl(label: str, data_jsonl: Path, checkpoint: Path) -> dict[str, floa
         ADAPTER_DTYPE,
         "--device",
         DEVICE,
-        "--group_by_field",
-        "curriculum_mode",
     ]
+    for group_field in ("curriculum_mode", "target_loop_count"):
+        command.extend(["--group_by_field", group_field])
     if USE_TARGET_LOOP_CONTROL:
         command.append("--use_target_loop_control")
     if USE_LEARNED_LOOP_CONTROL:
@@ -744,6 +806,8 @@ def write_summary(payload: dict[str, Any]) -> None:
         f"- Train / validation rows: `{payload['dataset']['train_rows']}` / `{payload['dataset']['val_rows']}`",
         f"- Train mode counts: `{payload['dataset'].get('train_mode_counts')}`",
         f"- Validation mode counts: `{payload['dataset'].get('val_mode_counts')}`",
+        f"- Train target-loop counts: `{payload['dataset'].get('train_target_loop_counts')}`",
+        f"- Validation target-loop counts: `{payload['dataset'].get('val_target_loop_counts')}`",
         f"- Depth hint style: `{payload['dataset'].get('depth_hint_style')}`",
         f"- Target loop control: `{payload['config'].get('use_target_loop_control')}`",
         f"- Learned loop control: `{payload['config'].get('use_learned_loop_control')}`",
@@ -765,6 +829,11 @@ def write_summary(payload: dict[str, Any]) -> None:
         "## Validation By Curriculum Mode",
         "```json",
         json.dumps(payload.get("phase1_val_by_mode", {}), indent=2),
+        "```",
+        "",
+        "## Validation By Target Loop",
+        "```json",
+        json.dumps(payload.get("phase1_val_by_target_loop", {}), indent=2),
         "```",
         "",
         "## Validation Checks",
@@ -801,6 +870,7 @@ def main() -> int:
         "use_target_loop_control": USE_TARGET_LOOP_CONTROL,
         "use_learned_loop_control": USE_LEARNED_LOOP_CONTROL,
         "loop_control_ce_weight": LOOP_CONTROL_CE_WEIGHT,
+        "require_target_loop_gradient": REQUIRE_TARGET_LOOP_GRADIENT,
         "depth_hint_style": DEPTH_HINT_STYLE,
         "dtype": DTYPE,
         "adapter_dtype": ADAPTER_DTYPE,
@@ -818,7 +888,8 @@ def main() -> int:
     checkpoint = train_phase1(train_jsonl, resume_from=resume_from)
     phase1_val = eval_jsonl("phase1_curriculum_sft", val_jsonl, checkpoint)
     phase1_val_by_mode = grouped_eval_metrics(phase1_val, group_field="curriculum_mode")
-    checks = validation_checks(phase1_val, phase1_val_by_mode)
+    phase1_val_by_target_loop = grouped_eval_metrics(phase1_val, group_field="target_loop_count")
+    checks = validation_checks(phase1_val, phase1_val_by_mode, phase1_val_by_target_loop)
     backup = backup_to_drive(train_jsonl, val_jsonl)
 
     summary = {
@@ -840,6 +911,7 @@ def main() -> int:
         "phase1_checkpoint": path_for_cli(checkpoint),
         "phase1_val": phase1_val,
         "phase1_val_by_mode": phase1_val_by_mode,
+        "phase1_val_by_target_loop": phase1_val_by_target_loop,
         "validation_checks": checks,
     }
     write_summary(summary)

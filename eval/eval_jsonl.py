@@ -23,6 +23,13 @@ from training.dataset import JsonlCausalDataset, collate_causal_batch
 from training.stability import assert_finite_metrics
 
 
+def parse_group_by_fields(values: list[str] | None) -> list[str]:
+    fields: list[str] = []
+    for value in values or []:
+        fields.extend(field.strip() for field in str(value).split(",") if field.strip())
+    return fields
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model_name", default="Qwen/Qwen2.5-0.5B-Instruct")
@@ -64,13 +71,16 @@ def main() -> int:
     parser.add_argument("--loop_control_ce_weight", type=float, default=0.0)
     parser.add_argument(
         "--group_by_field",
+        action="append",
+        default=[],
         help=(
-            "Optional JSONL row field for grouped metrics. Requires batch_size=1 "
+            "Optional JSONL row field for grouped metrics. May be repeated. Requires batch_size=1 "
             "so per-example metrics can be assigned without another model pass."
         ),
     )
     args = parser.parse_args()
-    if args.group_by_field and args.batch_size != 1:
+    group_by_fields = parse_group_by_fields(args.group_by_field)
+    if group_by_fields and args.batch_size != 1:
         raise SystemExit("--group_by_field currently requires --batch_size 1")
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
@@ -115,8 +125,8 @@ def main() -> int:
     )
 
     totals: dict[str, float] = {}
-    grouped_totals: dict[str, dict[str, float]] = {}
-    grouped_counts: dict[str, int] = {}
+    grouped_totals: dict[str, dict[str, dict[str, float]]] = {}
+    grouped_counts: dict[str, dict[str, int]] = {}
     count = 0
     with torch.no_grad():
         for batch in loader:
@@ -146,13 +156,15 @@ def main() -> int:
             )
             assert_finite_metrics(output.metrics, count)
             batch_size = batch["input_ids"].shape[0]
-            if args.group_by_field:
+            if group_by_fields:
                 row = dataset.rows[count]
-                group_value = str(row.get(args.group_by_field) or "missing")
-                grouped_counts[group_value] = grouped_counts.get(group_value, 0) + batch_size
-                group_totals = grouped_totals.setdefault(group_value, {})
-                for key, value in output.metrics.items():
-                    group_totals[key] = group_totals.get(key, 0.0) + float(value) * batch_size
+                for group_field in group_by_fields:
+                    group_value = str(row.get(group_field) or "missing")
+                    field_counts = grouped_counts.setdefault(group_field, {})
+                    field_counts[group_value] = field_counts.get(group_value, 0) + batch_size
+                    group_totals = grouped_totals.setdefault(group_field, {}).setdefault(group_value, {})
+                    for key, value in output.metrics.items():
+                        group_totals[key] = group_totals.get(key, 0.0) + float(value) * batch_size
             count += batch_size
             for key, value in output.metrics.items():
                 totals[key] = totals.get(key, 0.0) + float(value) * batch_size
@@ -160,11 +172,12 @@ def main() -> int:
     print(f"examples={count}")
     for key in sorted(totals):
         print(f"{key}={totals[key] / max(count, 1):.6f}")
-    for group in sorted(grouped_totals):
-        group_count = grouped_counts[group]
-        print(f"group/{args.group_by_field}/{group}/examples={group_count}")
-        for key in sorted(grouped_totals[group]):
-            print(f"group/{args.group_by_field}/{group}/{key}={grouped_totals[group][key] / max(group_count, 1):.6f}")
+    for group_field in sorted(grouped_totals):
+        for group in sorted(grouped_totals[group_field]):
+            group_count = grouped_counts[group_field][group]
+            print(f"group/{group_field}/{group}/examples={group_count}")
+            for key in sorted(grouped_totals[group_field][group]):
+                print(f"group/{group_field}/{group}/{key}={grouped_totals[group_field][group][key] / max(group_count, 1):.6f}")
     return 0
 
 
