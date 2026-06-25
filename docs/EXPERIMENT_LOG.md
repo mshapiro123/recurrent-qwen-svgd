@@ -578,3 +578,9 @@ Colab/Drive backups for selected runs.
   instead of falling through to older ARC/SVGD planner branches. This keeps
   generic safe-continue status checks aligned with the master sequence without
   allowing the generic planner to launch opaque bootstrap targets.
+- Checkpoint-publication hardening: the Stage 4 re-entry recovery launcher and
+  older depth/capability-ladder SFT launchers now leave
+  `STAGE5_CURRICULUM_SFT_COMMIT_CHECKPOINTS=0` by default, with explicit
+  per-launcher opt-in env vars for exceptional cases. Checkpoints should remain
+  Drive-backed/HF-packaged; GitHub commits should carry lightweight evidence
+  artifacts, current-summary pointers, configs, logs, and summaries.

@@ -385,7 +385,10 @@ def derive_sft_env(trace_summary: Path, repair: dict[str, Any]) -> dict[str, str
                 "STAGE5_REENTRY_RECOVERY_ALLOW_NO_DRIVE_BACKUP",
                 "1",
             ),
-            "STAGE5_CURRICULUM_SFT_COMMIT_CHECKPOINTS": "1",
+            "STAGE5_CURRICULUM_SFT_COMMIT_CHECKPOINTS": os.environ.get(
+                "STAGE5_REENTRY_RECOVERY_COMMIT_CHECKPOINTS",
+                "0",
+            ),
             "STAGE5_CURRICULUM_SFT_PUSH": "1",
             "DTYPE": os.environ.get("DTYPE", "bfloat16"),
             "ADAPTER_DTYPE": os.environ.get("ADAPTER_DTYPE", "float32"),

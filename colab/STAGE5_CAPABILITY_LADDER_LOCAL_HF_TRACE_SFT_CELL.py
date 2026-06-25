@@ -371,7 +371,7 @@ def derive_sft_env(summary_path):
             "STAGE5_CURRICULUM_ALLOW_ANSWER_LINE_VERIFICATION": "1",
             "STAGE5_CURRICULUM_SFT_COMMIT_CHECKPOINTS": os.environ.get(
                 "STAGE5_CURRICULUM_SFT_COMMIT_CHECKPOINTS",
-                "1",
+                "0",
             ),
             "STAGE5_CURRICULUM_SFT_PUSH": os.environ.get("STAGE5_CURRICULUM_SFT_PUSH", "1"),
         }

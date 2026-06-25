@@ -1309,6 +1309,8 @@ def test_reentry_recovery_training_target_is_bootstrapped() -> None:
     assert '"entry_rms"' in cell
     assert "STAGE5_CURRICULUM_USE_REENTRY_ADAPTER" in cell
     assert "colab.reentry_recovery_config" in cell
+    assert '"STAGE5_CURRICULUM_SFT_COMMIT_CHECKPOINTS": os.environ.get(' in cell
+    assert '"STAGE5_REENTRY_RECOVERY_COMMIT_CHECKPOINTS",' in cell
     assert "sys.path.insert(0, root_str)" in cell
     assert 'parts.append(f"{loop}=1")' not in cell
     assert "colab/run_stage5_curriculum_sft.py" in cell
@@ -1341,6 +1343,20 @@ def test_reentry_drift_and_norm_targets_run_self_assessment() -> None:
     assert "publishable_artifact_paths" in norm_cell
     assert 'git", "add", "-f", str(out_dir.relative_to(ROOT))' not in drift_cell
     assert 'git", "add", "-f", str(out_dir.relative_to(ROOT))' not in norm_cell
+
+
+def test_stage5_sft_launchers_do_not_force_checkpoint_commits() -> None:
+    launcher_paths = [
+        ROOT / "colab/STAGE5_REENTRY_RECOVERY_TRAINING_CELL.py",
+        ROOT / "colab/STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_CELL.py",
+        ROOT / "colab/STAGE5_DEPTH_ROUTER_AFTER_DIRECT_PRESERVE_CELL.py",
+        ROOT / "colab/STAGE5_TRACED_CAPABILITY_LADDER_SFT_CELL.py",
+        ROOT / "colab/run_stage5_halt_target_repair.py",
+    ]
+    for path in launcher_paths:
+        text = path.read_text(encoding="utf-8")
+        assert '"STAGE5_CURRICULUM_SFT_COMMIT_CHECKPOINTS": "1"' not in text
+        assert "STAGE5_CURRICULUM_SFT_COMMIT_CHECKPOINTS" in text
 
 
 def test_reentry_stage3_stage4_runbook_is_linked_from_current_action() -> None:
