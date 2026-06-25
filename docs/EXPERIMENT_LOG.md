@@ -410,3 +410,76 @@ Colab/Drive backups for selected runs.
   L4/T4-friendly sweep over `noise={0,0.005,0.01,0.02,0.05}` and
   `loops={4,8}` with `K=4`, then writes a summary table that compares candidate
   conversion against pathway expansion.
+
+## 2026-06-25: Re-entry Architecture Repair Gate
+
+- Strategy update: stop spending GPU on particle noise/SVGD geometry until the
+  deterministic recurrent loop-closure path is verified. The candidate
+  conversion runs showed that perturbations can create output diversity, but not
+  enough correct-bearing alternatives. That made the next blocker architectural:
+  is the recurrent block being re-entered through a trainable, live translation
+  path, or are we repeatedly feeding recurrent-block exits back as if they were
+  entries?
+- Added a staged re-entry reset:
+  1. `reentry_drift_diagnostic`: read-only entry/exit and loop-drift
+     measurement.
+  2. `reentry_norm_diagnostic`: eval-only loop re-entry RMS rescale comparison.
+  3. `reentry_repair_smoke`: tiny trainable bridge/re-entry repair smoke.
+  4. `reentry_recovery_training`: gated recovery SFT after the repair smoke
+     passes.
+- Stage 1 landed as
+  `outputs/stage5/stage5_reentry_drift_20260625_011444/`.
+  Key findings on the current recovered recurrent checkpoint:
+  - mean entry RMS `~11.867`, exit RMS `~11.892`, exit/entry RMS `~1.0024`;
+  - pooled entry/exit cosine `~0.9757`;
+  - entry/exit subspace overlap `~0.3703`, with only one principal dimension
+    above cosine `0.8`;
+  - loop-8 output/entry RMS `~1.0373`, so gross norm drift is bounded but
+    subspace mismatch is real;
+  - `bridge_gate=0.0`, bridge delta RMS `0.0`, and bridge projection/bias/gate
+    gradients `0.0`.
+- Interpretation: the bridge in this checkpoint is dead. Norm drift alone is
+  not catastrophic, but the bridge cannot learn a distribution translation
+  because the gate-zero identity path kills projection gradients. This means the
+  recurrent loop can appear numerically stable while still lacking a trainable
+  re-entry repair mechanism.
+- Implementation repair: `IdentityGatedBridge` now defaults to
+  `gate_init=1.0`, preserving identity output while making the identity
+  projection gradient-live. Existing dead checkpoints are not mutated by default;
+  repair is opt-in through `bridge_reset_identity: true` and
+  `bridge_gate_override: 1.0` in `training/reentry_repair.py`.
+- Stage 2 status: the current Colab `reentry_norm_diagnostic` run is expected
+  to compare `none` against `entry_rms` on drift, effective pathways, and
+  candidate conversion. The first observed output completed the `none` drift and
+  pathway sections and then entered the slower candidate-conversion sweep. The
+  repo has not yet received a Stage 2 artifact.
+- Operational guard: added `reentry_norm_recover_only`. If the Stage 2 run
+  completed and backed up to Drive but failed before Git publish, this target
+  copies the completed `stage5_reentry_norm_*` artifact from Drive, regenerates
+  `reentry_assessment` if needed, and pushes it without rerunning GPU eval.
+- Stage 3 guard: `reentry_repair_smoke` now refuses to run unless Stage 2
+  recommends `run_reentry_repair_smoke`, except under an explicit override. It
+  is resumable and incrementally backs up to Drive after pre-drift, training,
+  post-drift, and loop-1 preservation checks.
+- Stage 4 guard: `reentry_recovery_training` now exists but is locked behind a
+  passed Stage 3 assessment. When cleared, it resumes from the repaired Stage 3
+  checkpoint and uses the existing capability-ladder curriculum SFT path with
+  learned loop-control and target-loop validation enabled.
+- Current reviewer output remains Stage 1 only until Stage 2 lands:
+  `bridge_dead -> run_reentry_norm_then_repair_smoke -> next target
+  reentry_norm_diagnostic`.
+- Tests after this reset:
+  - `1294 passed` after adding the Stage 2 recover-only target.
+  - `1293 passed` after adding gated Stage 4 recovery training.
+  - `1292 passed` after hardening Stage 3 repair smoke.
+- Next allowed GPU actions:
+  1. Let the current Stage 2 run finish and publish.
+  2. If Stage 2 did finish but did not publish, run
+     `STAGE5_CURRENT_A100_TARGET=reentry_norm_recover_only`.
+  3. If Stage 2 assessment recommends repair, run
+     `STAGE5_CURRENT_A100_TARGET=reentry_repair_smoke`.
+  4. Only after Stage 3 passes, run
+     `STAGE5_CURRENT_A100_TARGET=reentry_recovery_training`.
+- Do not return to Phase 2/SVGD particle training until deterministic recurrence
+  has a gradient-live re-entry path and recovery SFT produces base-competitive
+  deterministic depth behavior.
