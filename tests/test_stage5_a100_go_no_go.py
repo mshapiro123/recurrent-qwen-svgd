@@ -979,7 +979,6 @@ def test_dense_mcq_control_allowed_after_passed_recurrent_confirmation() -> None
         "gate": "stage5_broader_benchmark_suite",
         "status": "passed",
         "passed": True,
-        "after_confirmation_dense_control": {"run_suffix": "dense_after_confirm"},
     }
 
     decision = classify_action(action, source_payload=source_payload)

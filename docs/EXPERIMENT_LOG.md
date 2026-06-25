@@ -684,3 +684,9 @@ Colab/Drive backups for selected runs.
   Phase 1 architecture question clean: first compare repaired recurrent Qwen
   against standard Qwen trained on the same curriculum, then decide whether
   depth-label/capability-ladder work is needed.
+- Dense-control guard alignment: the safe-continue/go-no-go classifier now
+  allows `dense_mcq_trace_sft_control` after any passed broader benchmark
+  assessment, matching the planner route above. The dense-control runner is
+  covered by a planner-style source-chain test that resolves the benchmark
+  assessment to both the recurrent benchmark suite and the underlying Stage 4
+  curriculum defaults.

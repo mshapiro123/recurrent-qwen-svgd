@@ -1284,7 +1284,6 @@ def classify_action(
         confirmation_passed = (
             source_payload.get("gate") == "stage5_broader_benchmark_suite"
             and source_payload.get("status") == "passed"
-            and isinstance(source_payload.get("after_confirmation_dense_control"), dict)
         )
         mcq_recipe_followup = (
             source_payload.get("gate") == "stage5_same_recipe_mcq_architecture"
@@ -1307,8 +1306,8 @@ def classify_action(
             "status": "dense_mcq_trace_sft_control_blocked",
             "spend_class": "none",
             "reason": (
-                "Dense MCQ trace-SFT control requires a passed broader benchmark assessment carrying "
-                "after_confirmation_dense_control, or a same-recipe MCQ architecture assessment."
+                "Dense MCQ trace-SFT control requires a passed broader benchmark assessment "
+                "or a same-recipe MCQ architecture assessment."
             ),
         }
 

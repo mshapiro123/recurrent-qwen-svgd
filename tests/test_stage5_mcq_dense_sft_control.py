@@ -160,6 +160,61 @@ def test_resolve_curriculum_source_follows_benchmark_to_training_defaults(monkey
     assert resolved_payload["config"]["learning_rate"] == 5e-5
 
 
+def test_dense_control_resolves_planner_style_passed_benchmark_assessment(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "SOURCE_SUMMARY", "outputs/stage5/assess/summary.json")
+    monkeypatch.setattr(module, "RECURRENT_BENCHMARK_SUMMARY", "")
+    train_summary = tmp_path / "outputs" / "stage5" / "train" / "summary.json"
+    benchmark_summary = tmp_path / "outputs" / "stage5" / "bench" / "summary.json"
+    assessment_summary = tmp_path / "outputs" / "stage5" / "assess" / "summary.json"
+    for path in (train_summary, benchmark_summary, assessment_summary):
+        path.parent.mkdir(parents=True, exist_ok=True)
+    train_summary.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_reentry_recovery_training",
+                "dataset": {"source_positive_sft": "data/curriculum/train/positive_sft.jsonl"},
+                "config": {"depth_hint_style": "natural", "max_steps": 37, "learning_rate": 5e-5},
+            }
+        ),
+        encoding="utf-8",
+    )
+    benchmark_summary.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_benchmark_suite",
+                "source_summary": module.path_for_cli(train_summary),
+                "checkpoint": "outputs/stage5/train/phase1/phase1_step_75.pt",
+            }
+        ),
+        encoding="utf-8",
+    )
+    assessment_summary.write_text(
+        json.dumps(
+            {
+                "gate": "stage5_broader_benchmark_suite",
+                "status": "passed",
+                "passed": True,
+                "source_summary": module.path_for_cli(benchmark_summary),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    source_path = module.source_summary_path()
+    source_payload = json.loads(source_path.read_text(encoding="utf-8"))
+    curriculum_source_path, curriculum_payload = module.resolve_curriculum_source(
+        source_payload,
+        source_path=source_path,
+    )
+
+    assert source_path == assessment_summary
+    assert module.recurrent_benchmark_summary_path() == benchmark_summary
+    assert curriculum_source_path == train_summary
+    assert curriculum_payload["kind"] == "stage5_reentry_recovery_training"
+    assert curriculum_payload["config"]["depth_hint_style"] == "natural"
+
+
 def test_resolve_curriculum_source_accepts_stage4_curriculum_sft_summary(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(module, "ROOT", tmp_path)
     train_summary = tmp_path / "outputs" / "stage5" / "stage4" / "summary.json"
