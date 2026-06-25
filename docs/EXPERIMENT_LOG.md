@@ -453,6 +453,17 @@ Colab/Drive backups for selected runs.
   candidate conversion. The first observed output completed the `none` drift and
   pathway sections and then entered the slower candidate-conversion sweep. The
   repo has not yet received a Stage 2 artifact.
+- Follow-up hardening: added a default-on bound for future Stage 2 candidate
+  conversion. The old `9b81ead` launcher runs all 14 smoke tasks across the
+  loop/noise/seed sweep; current `main` limits candidate conversion to the first
+  8 tasks by default via `STAGE5_REENTRY_NORM_CANDIDATE_TASK_LIMIT`, matching
+  the drift and effective-pathway readouts. This makes a restart cheaper if the
+  old Colab run stalls or disconnects.
+- Stage 3 hardening: added a tiny `ReentryAffineAdapter`, initialized to exact
+  identity but gradient-live. Stage 3 now trains `bridge,reentry,halt` with
+  `entry_rms` re-entry normalization and records adapter scale/bias movement
+  alongside bridge liveness and loop-1 preservation. Stage 4 recovery defaults
+  carry the same re-entry adapter forward only after Stage 3 passes.
 - Operational guard: added `reentry_norm_recover_only`. If the Stage 2 run
   completed and backed up to Drive but failed before Git publish, this target
   copies the completed `stage5_reentry_norm_*` artifact from Drive, regenerates

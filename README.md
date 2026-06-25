@@ -280,9 +280,12 @@ latest status: bridge_dead
 next target: reentry_norm_diagnostic
 ```
 
-If the current Stage 2 Colab run is still active, let it finish. If it finished
-but did not push artifacts to GitHub, recover the completed Drive artifact
-without rerunning GPU eval:
+If the current Stage 2 Colab run is still active from the older `9b81ead`
+launcher, it may be spending time on the full 14-task candidate-conversion
+sweep. That is no longer required for the gate. It is fine to let it finish, but
+if it is still dragging or disconnects, stop it and relaunch the current
+bounded Stage 2 target from `main`. If it finished but did not push artifacts to
+GitHub, recover the completed Drive artifact without rerunning GPU eval:
 
 ```python
 import os
@@ -297,6 +300,11 @@ import os
 os.environ["STAGE5_CURRENT_A100_TARGET"] = "reentry_norm_diagnostic"
 exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
 ```
+
+The current Stage 2 launcher bounds candidate conversion to the first 8 tasks
+by default, matching the drift and effective-pathway readouts. Use
+`STAGE5_REENTRY_NORM_CANDIDATE_TASK_LIMIT` only for an intentional broader
+readout.
 
 Only if Stage 2 assessment recommends `run_reentry_repair_smoke`, launch the
 tiny trainable repair:

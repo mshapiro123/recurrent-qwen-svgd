@@ -28,8 +28,10 @@ latest reviewer state: stage1_drift / bridge_dead
 next target: reentry_norm_diagnostic
 ```
 
-The current Stage 2 cell may still be running. If it completes and publishes,
-run the reviewer:
+The current Stage 2 cell may still be running from an older launcher
+(`9b81ead`). That older cell uses the full 14-task candidate-conversion suite,
+so it can run much longer than the bounded gate needs. If it completes and
+publishes, run the reviewer:
 
 ```bash
 python colab/review_stage5_reentry.py --no_write
@@ -80,11 +82,18 @@ print("Target:", TARGET)
 exec(compile(code, BOOTSTRAP, "exec"))
 ```
 
-If Stage 2 has not actually completed, use the same cell with:
+If Stage 2 has not actually completed, or if the old long candidate-conversion
+sweep is still running and you want the cheaper gate, stop it and use the same
+cell with:
 
 ```python
 TARGET = "reentry_norm_diagnostic"
 ```
+
+The current `main` version bounds Stage 2 candidate conversion to the same
+first-8 task subset used by the drift/effective-pathway diagnostics by default.
+Override with `STAGE5_REENTRY_NORM_CANDIDATE_TASK_LIMIT` only if a broader
+readout is intentional.
 
 If the reviewer then says `next_target=reentry_repair_smoke`, run the tiny
 trainable bridge repair:
