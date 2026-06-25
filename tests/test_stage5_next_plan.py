@@ -3466,6 +3466,80 @@ def test_reentry_recovery_training_routes_to_debiased_benchmark_bootstrap_target
     assert "dense control" in actions[0]["reason"]
 
 
+def test_master_sequence_phase0_phase1_spine_routes_in_order(tmp_path) -> None:
+    norm_summary = tmp_path / "stage5_reentry_norm" / "summary.json"
+    norm_assessment = norm_summary.with_name("reentry_assessment.json")
+    norm_summary.parent.mkdir(parents=True)
+    norm_summary.write_text(
+        json.dumps({"run_id": "stage5_reentry_norm", "kind": "stage5_reentry_norm_eval_only"}),
+        encoding="utf-8",
+    )
+    norm_assessment.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_reentry_assessment",
+                "status": "entry_rms_safe_for_smoke",
+                "recommendation": "run_reentry_repair_smoke",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    repair_summary = tmp_path / "stage5_reentry_repair_smoke" / "summary.json"
+    repair_assessment = repair_summary.with_name("reentry_assessment.json")
+    repair_summary.parent.mkdir(parents=True)
+    repair_summary.write_text(
+        json.dumps({"run_id": "stage5_reentry_repair_smoke", "kind": "stage5_reentry_repair_smoke"}),
+        encoding="utf-8",
+    )
+    repair_assessment.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_reentry_assessment",
+                "status": "bridge_repair_smoke_passed",
+                "recommendation": "run_bounded_recovery_training_with_reentry_repair",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    recovery_summary = tmp_path / "stage5_reentry_recovery_training" / "summary.json"
+    recovery_summary.parent.mkdir(parents=True)
+    recovery_payload = {
+        "run_id": "stage5_reentry_recovery_training",
+        "kind": "stage5_reentry_recovery_training",
+        "checkpoint": "outputs/stage5/reentry_recovery/phase1/phase1_step_75.pt",
+        "validation_checks": {"status": "validation_sane", "issues": []},
+    }
+
+    benchmark_summary = tmp_path / "stage5_debiased_benchmark_assessment" / "summary.json"
+    benchmark_summary.parent.mkdir(parents=True)
+    benchmark_payload = {
+        "gate": "stage5_broader_benchmark_suite",
+        "status": "passed",
+        "passed": True,
+        "source_summary": "outputs/stage5/stage5_debiased_benchmark_suite/summary.json",
+    }
+
+    norm_actions = plan_next_actions(json.loads(norm_summary.read_text(encoding="utf-8")), source_summary=norm_summary)
+    repair_actions = plan_next_actions(
+        json.loads(repair_summary.read_text(encoding="utf-8")),
+        source_summary=repair_summary,
+    )
+    recovery_actions = plan_next_actions(recovery_payload, source_summary=recovery_summary)
+    benchmark_actions = plan_next_actions(benchmark_payload, source_summary=benchmark_summary)
+
+    assert norm_actions[0]["name"] == "Run current bootstrap target `reentry_repair_smoke`"
+    assert "STAGE5_CURRENT_A100_TARGET=reentry_repair_smoke" in norm_actions[0]["command"]
+    assert repair_actions[0]["name"] == "Run current bootstrap target `reentry_recovery_training`"
+    assert "STAGE5_CURRENT_A100_TARGET=reentry_recovery_training" in repair_actions[0]["command"]
+    assert recovery_actions[0]["name"] == "Run current bootstrap target `debiased_benchmark_suite`"
+    assert "STAGE5_CURRENT_A100_TARGET=debiased_benchmark_suite" in recovery_actions[0]["command"]
+    assert benchmark_actions[0]["name"] == "Run dense MCQ same-curriculum control"
+    assert "python colab/run_stage5_mcq_dense_sft_control.py" in benchmark_actions[0]["command"]
+    assert "capability_ladder" not in benchmark_actions[0]["command"]
+
+
 def test_reentry_recovery_training_blocks_benchmark_without_checkpoint(tmp_path) -> None:
     source = tmp_path / "reentry_recovery" / "summary.json"
     source.parent.mkdir(parents=True)
