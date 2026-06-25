@@ -16,6 +16,11 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 REVIEW_KIND = "stage5_reentry_review"
+REENTRY_SUMMARY_KINDS = {
+    "reentry_drift_diagnostic",
+    "stage5_reentry_norm_eval_only",
+    "stage5_reentry_repair_smoke",
+}
 
 
 def resolve_path(value: str | Path) -> Path:
@@ -49,7 +54,90 @@ def assessment_paths(root: Path | None = None) -> list[Path]:
     return sorted(scan.rglob("reentry_assessment.json"))
 
 
-def latest_by_source_kind(paths: list[Path]) -> dict[str, tuple[Path, dict[str, Any]]]:
+def current_source_summary_file() -> Path:
+    return ROOT / "config" / "stage5_current_source_summary.txt"
+
+
+def current_pointer_assessment(pointer: Path | None = None) -> dict[str, Any]:
+    if pointer is None:
+        return {"expected": False}
+    pointer_path = pointer
+    if not pointer_path.exists():
+        return {"expected": False}
+    raw = pointer_path.read_text(encoding="utf-8").strip()
+    if not raw:
+        return {"expected": False}
+
+    pointed = resolve_path(raw)
+    if not pointed.exists():
+        return {
+            "expected": True,
+            "path": path_for_cli(pointed),
+            "error": "current_pointer_target_missing",
+        }
+
+    try:
+        payload = read_json(pointed)
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        return {
+            "expected": True,
+            "path": path_for_cli(pointed),
+            "error": f"current_pointer_unreadable:{type(exc).__name__}",
+        }
+
+    if pointed.name == "reentry_assessment.json":
+        if payload.get("kind") != "stage5_reentry_assessment":
+            return {"expected": False}
+        return {
+            "expected": True,
+            "assessment_path": pointed,
+            "source_kind": payload.get("source_kind"),
+            "payload": payload,
+            "error": "",
+        }
+
+    if pointed.name != "summary.json" or payload.get("kind") not in REENTRY_SUMMARY_KINDS:
+        return {"expected": False}
+
+    assessment_path = pointed.with_name("reentry_assessment.json")
+    if not assessment_path.exists():
+        return {
+            "expected": True,
+            "path": path_for_cli(assessment_path),
+            "source_kind": payload.get("kind"),
+            "error": "current_pointer_assessment_missing",
+        }
+
+    try:
+        assessment = read_json(assessment_path)
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        return {
+            "expected": True,
+            "path": path_for_cli(assessment_path),
+            "source_kind": payload.get("kind"),
+            "error": f"current_pointer_assessment_unreadable:{type(exc).__name__}",
+        }
+    if assessment.get("kind") != "stage5_reentry_assessment":
+        return {
+            "expected": True,
+            "path": path_for_cli(assessment_path),
+            "source_kind": payload.get("kind"),
+            "error": "current_pointer_assessment_wrong_kind",
+        }
+    return {
+        "expected": True,
+        "assessment_path": assessment_path,
+        "source_kind": assessment.get("source_kind"),
+        "payload": assessment,
+        "error": "",
+    }
+
+
+def latest_by_source_kind(
+    paths: list[Path],
+    *,
+    pointer: Path | None = None,
+) -> tuple[dict[str, tuple[Path, dict[str, Any]]], dict[str, Any]]:
     grouped: dict[str, list[tuple[float, Path, dict[str, Any]]]] = {}
     for path in paths:
         try:
@@ -62,11 +150,21 @@ def latest_by_source_kind(paths: list[Path]) -> dict[str, tuple[Path, dict[str, 
         if not source_kind:
             continue
         grouped.setdefault(source_kind, []).append((path.stat().st_mtime, path, payload))
-    return {
+    latest = {
         source_kind: (path, payload)
         for source_kind, values in grouped.items()
         for _mtime, path, payload in [max(values, key=lambda item: item[0])]
     }
+    pointer_info = current_pointer_assessment(pointer)
+    if pointer_info.get("payload") and pointer_info.get("assessment_path") and pointer_info.get("source_kind"):
+        latest[str(pointer_info["source_kind"])] = (
+            pointer_info["assessment_path"],
+            pointer_info["payload"],
+        )
+        pointer_info["preferred"] = True
+    else:
+        pointer_info["preferred"] = False
+    return latest, pointer_info
 
 
 def classify(grouped: dict[str, tuple[Path, dict[str, Any]]]) -> dict[str, Any]:
@@ -161,8 +259,32 @@ def classify(grouped: dict[str, tuple[Path, dict[str, Any]]]) -> dict[str, Any]:
     }
 
 
-def build_review(paths: list[Path]) -> dict[str, Any]:
-    grouped = latest_by_source_kind(paths)
+def pointer_error_review(pointer_info: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "kind": REVIEW_KIND,
+        "reviewed_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "assessments": {},
+        "current_pointer": {
+            "expected": pointer_info.get("expected"),
+            "path": pointer_info.get("path"),
+            "source_kind": pointer_info.get("source_kind"),
+            "error": pointer_info.get("error"),
+            "preferred": False,
+        },
+        "action": "fix_current_pointer_reentry_assessment",
+        "next_target": "",
+        "next_step": "Current source pointer names a re-entry artifact, but its assessment is missing or unreadable; recover or rerun that stage before spending GPU.",
+        "latest_stage": "current_pointer_error",
+        "latest_assessment": pointer_info.get("path"),
+        "latest_status": None,
+        "latest_recommendation": pointer_info.get("error"),
+    }
+
+
+def build_review(paths: list[Path], *, pointer: Path | None = None) -> dict[str, Any]:
+    grouped, pointer_info = latest_by_source_kind(paths, pointer=pointer)
+    if pointer_info.get("expected") and pointer_info.get("error"):
+        return pointer_error_review(pointer_info)
     decision = classify(grouped)
     assessments = {
         kind: {
@@ -177,6 +299,13 @@ def build_review(paths: list[Path]) -> dict[str, Any]:
         "kind": REVIEW_KIND,
         "reviewed_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         "assessments": assessments,
+        "current_pointer": {
+            "expected": pointer_info.get("expected"),
+            "path": path_for_cli(pointer_info["assessment_path"]) if pointer_info.get("assessment_path") else pointer_info.get("path"),
+            "source_kind": pointer_info.get("source_kind"),
+            "error": pointer_info.get("error"),
+            "preferred": pointer_info.get("preferred"),
+        },
         **decision,
     }
 
@@ -204,6 +333,19 @@ def report_lines(payload: dict[str, Any]) -> list[str]:
                 f"- `{kind}`: status=`{row.get('status')}`, "
                 f"recommendation=`{row.get('recommendation')}`, path=`{row.get('path')}`"
             )
+    pointer = payload.get("current_pointer") if isinstance(payload.get("current_pointer"), dict) else {}
+    if pointer:
+        lines.extend(
+            [
+                "",
+                "## Current Pointer",
+                f"- Expected re-entry pointer: `{pointer.get('expected')}`",
+                f"- Preferred pointer assessment: `{pointer.get('preferred')}`",
+                f"- Source kind: `{pointer.get('source_kind')}`",
+                f"- Path: `{pointer.get('path')}`",
+                f"- Error: `{pointer.get('error') or ''}`",
+            ]
+        )
     lines.append("")
     return lines
 
@@ -224,7 +366,7 @@ def main() -> int:
     parser.add_argument("--no_write", action="store_true")
     args = parser.parse_args()
 
-    payload = build_review(assessment_paths(resolve_path(args.scan_root)))
+    payload = build_review(assessment_paths(resolve_path(args.scan_root)), pointer=current_source_summary_file())
     print("\n".join(report_lines(payload)), flush=True)
     if not args.no_write:
         path = write_review(payload, run_id=args.output_run_id or None)

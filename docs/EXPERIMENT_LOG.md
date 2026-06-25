@@ -720,6 +720,12 @@ Colab/Drive backups for selected runs.
   `stage5_reentry_norm_eval_only` summary or assessment, Stage 3 uses that norm
   assessment before broad Drive glob fallback. This prevents a newer unrelated
   Stage 2 norm diagnostic from silently becoming the trainable repair source.
+- Re-entry reviewer current-pointer preference: `review_stage5_reentry.py` now
+  follows the current source pointer when it names a re-entry summary or
+  assessment. If the pointer names a re-entry summary but the sibling
+  `reentry_assessment.json` is missing or unreadable, the reviewer stops and
+  requests recovery/rerun instead of falling back to an older broad-scan
+  assessment.
 - Single-runtime master-sequence notebook: `00_single_a100_runbook.ipynb` now
   defines one GitHub-SHA-resolved bootstrap helper plus explicit cells for
   `master_sequence_status`, `reentry_repair_smoke`,

@@ -1,4 +1,5 @@
 import json
+import os
 
 from colab.review_stage5_reentry import build_review
 
@@ -17,6 +18,18 @@ def write_assessment(path, *, source_kind, status, recommendation):
         ),
         encoding="utf-8",
     )
+    return path
+
+
+def write_summary(path, *, kind):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"kind": kind, "run_id": path.parent.name}), encoding="utf-8")
+    return path
+
+
+def write_pointer(path, target):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(str(target), encoding="utf-8")
     return path
 
 
@@ -132,3 +145,53 @@ def test_review_recommends_adapter_smoke_extension_when_live_but_not_moved(tmp_p
 
     assert review["action"] == "extend_reentry_adapter_smoke"
     assert review["next_target"] == "reentry_repair_smoke"
+
+
+def test_review_prefers_current_pointer_assessment_over_newer_glob(tmp_path) -> None:
+    selected_summary = write_summary(
+        tmp_path / "stage5_reentry_norm_selected" / "summary.json",
+        kind="stage5_reentry_norm_eval_only",
+    )
+    selected = write_assessment(
+        selected_summary.with_name("reentry_assessment.json"),
+        source_kind="stage5_reentry_norm_eval_only",
+        status="entry_rms_safe_for_smoke",
+        recommendation="run_reentry_repair_smoke",
+    )
+    newer = write_assessment(
+        tmp_path / "stage5_reentry_norm_newer" / "reentry_assessment.json",
+        source_kind="stage5_reentry_norm_eval_only",
+        status="entry_rms_eval_regression",
+        recommendation="review_before_trainable_repair",
+    )
+    os.utime(newer, None)
+    pointer = write_pointer(tmp_path / "config" / "stage5_current_source_summary.txt", selected_summary)
+
+    review = build_review([selected, newer], pointer=pointer)
+
+    assert review["latest_stage"] == "stage2_norm"
+    assert review["action"] == "run_reentry_repair_smoke"
+    assert review["next_target"] == "reentry_repair_smoke"
+    assert review["current_pointer"]["preferred"] is True
+    assert review["latest_assessment"].endswith("stage5_reentry_norm_selected/reentry_assessment.json")
+
+
+def test_review_stops_when_current_pointer_assessment_is_missing(tmp_path) -> None:
+    selected_summary = write_summary(
+        tmp_path / "stage5_reentry_norm_selected" / "summary.json",
+        kind="stage5_reentry_norm_eval_only",
+    )
+    stale = write_assessment(
+        tmp_path / "stage5_reentry_norm_stale" / "reentry_assessment.json",
+        source_kind="stage5_reentry_norm_eval_only",
+        status="entry_rms_safe_for_smoke",
+        recommendation="run_reentry_repair_smoke",
+    )
+    pointer = write_pointer(tmp_path / "config" / "stage5_current_source_summary.txt", selected_summary)
+
+    review = build_review([stale], pointer=pointer)
+
+    assert review["latest_stage"] == "current_pointer_error"
+    assert review["action"] == "fix_current_pointer_reentry_assessment"
+    assert review["next_target"] == ""
+    assert review["current_pointer"]["error"] == "current_pointer_assessment_missing"
