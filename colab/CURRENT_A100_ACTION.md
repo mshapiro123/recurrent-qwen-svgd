@@ -92,8 +92,11 @@ TARGET = "reentry_norm_diagnostic"
 
 The current `main` version bounds Stage 2 candidate conversion to the same
 first-8 task subset used by the drift/effective-pathway diagnostics by default.
-Override with `STAGE5_REENTRY_NORM_CANDIDATE_TASK_LIMIT` only if a broader
-readout is intentional.
+It also defaults candidate conversion to seed `0` and `80` generated tokens.
+This is a quick safety gate, not a comprehensive benchmark. Override with
+`STAGE5_REENTRY_NORM_CANDIDATE_TASK_LIMIT`,
+`STAGE5_REENTRY_NORM_SEEDS`, or `STAGE5_REENTRY_NORM_MAX_NEW_TOKENS` only if a
+broader readout is intentional.
 
 If the reviewer then says `next_target=reentry_repair_smoke`, run the tiny
 trainable bridge repair:

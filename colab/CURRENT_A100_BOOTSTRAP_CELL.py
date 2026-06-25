@@ -318,8 +318,9 @@ TARGETS = {
         "env": {
             "STAGE5_REENTRY_NORM_LOOP_SWEEP": "4,8",
             "STAGE5_REENTRY_NORM_NOISE_SWEEP": "0,0.05",
-            "STAGE5_REENTRY_NORM_SEEDS": "0,1,2",
+            "STAGE5_REENTRY_NORM_SEEDS": "0",
             "STAGE5_REENTRY_NORM_K": "4",
+            "STAGE5_REENTRY_NORM_MAX_NEW_TOKENS": "80",
             "STAGE5_REENTRY_NORM_LIMIT": "8",
             "STAGE5_REENTRY_NORM_DISCONNECT": "1",
         },

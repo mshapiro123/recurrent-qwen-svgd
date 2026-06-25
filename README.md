@@ -302,9 +302,11 @@ exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
 ```
 
 The current Stage 2 launcher bounds candidate conversion to the first 8 tasks
-by default, matching the drift and effective-pathway readouts. Use
-`STAGE5_REENTRY_NORM_CANDIDATE_TASK_LIMIT` only for an intentional broader
-readout.
+by default, matching the drift and effective-pathway readouts, and uses seed
+`0` with `80` generated tokens. This is a quick safety gate, not a benchmark.
+Use `STAGE5_REENTRY_NORM_CANDIDATE_TASK_LIMIT`,
+`STAGE5_REENTRY_NORM_SEEDS`, or `STAGE5_REENTRY_NORM_MAX_NEW_TOKENS` only for
+an intentional broader readout.
 
 Only if Stage 2 assessment recommends `run_reentry_repair_smoke`, launch the
 tiny trainable repair:

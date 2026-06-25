@@ -457,8 +457,10 @@ Colab/Drive backups for selected runs.
   conversion. The old `9b81ead` launcher runs all 14 smoke tasks across the
   loop/noise/seed sweep; current `main` limits candidate conversion to the first
   8 tasks by default via `STAGE5_REENTRY_NORM_CANDIDATE_TASK_LIMIT`, matching
-  the drift and effective-pathway readouts. This makes a restart cheaper if the
-  old Colab run stalls or disconnects.
+  the drift and effective-pathway readouts. Current `main` also defaults this
+  candidate-conversion gate to seed `0` and `80` generated tokens. This makes a
+  restart cheaper if the old Colab run stalls or disconnects; expand seeds or
+  token budget only if the quick gate is borderline.
 - Stage 3 hardening: added a tiny `ReentryAffineAdapter`, initialized to exact
   identity but gradient-live. Stage 3 now trains `bridge,reentry,halt` with
   `entry_rms` re-entry normalization and records adapter scale/bias movement
