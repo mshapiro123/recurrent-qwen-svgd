@@ -22,7 +22,7 @@ STAGE5_COMPETENCE_PRESERVING_PIPELINE_TARGET = "traced_sft_competence_preserving
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 DEFAULT_SOURCE_SUMMARY = (
-    "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment/summary.json"
+    "outputs/stage5/stage5_debiased_benchmark_assessment_20260625_121302/summary.json"
 )
 
 
@@ -124,7 +124,7 @@ try:
     env.setdefault("STAGE5_COMPETENCE_SOURCE_SUMMARY", DEFAULT_SOURCE_SUMMARY)
     env.setdefault(
         "STAGE5_COMPETENCE_PIPELINE_RUN_ID",
-        "stage5_competence_preserving_from_direct_confirm_20260623",
+        "stage5_competence_recovery_20260625_from_reentry",
     )
     env.setdefault("STAGE5_COMPETENCE_PIPELINE_PUSH", "1")
     print("competence_pipeline_source:", env["STAGE5_COMPETENCE_SOURCE_SUMMARY"], flush=True)

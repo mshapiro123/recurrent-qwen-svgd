@@ -254,6 +254,20 @@ def test_selected_checkpoint_accepts_top_level_checkpoint(monkeypatch, tmp_path)
     )
 
 
+def test_selected_checkpoint_accepts_benchmark_assessment_source(monkeypatch, tmp_path) -> None:
+    import colab.run_stage5_balanced_arc_mix_gate as module
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+
+    assert selected_checkpoint(
+        {
+            "gate": "stage5_broader_benchmark_suite",
+            "status": "needs_review",
+            "checkpoint": "outputs/stage5/reentry_recovery/phase1/phase1_step_75.pt",
+        }
+    ) == tmp_path / "outputs" / "stage5" / "reentry_recovery" / "phase1" / "phase1_step_75.pt"
+
+
 def test_selected_checkpoint_reads_source_summary_with_windows_path(monkeypatch, tmp_path) -> None:
     import colab.run_stage5_balanced_arc_mix_gate as module
 

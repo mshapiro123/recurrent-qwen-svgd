@@ -1049,7 +1049,7 @@ TARGETS = {
             "competence_preserving_pipeline_v1",
             "traced_sft_competence_preserving_pipeline",
             "STAGE5_COMPETENCE_SOURCE_SUMMARY",
-            "stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment",
+            "stage5_debiased_benchmark_assessment_20260625_121302",
             "colab/run_stage5_competence_preserving_pipeline.py",
             "tests/test_stage5_competence_preserving_pipeline.py",
             "tests/test_stage5_balanced_arc_mix_gate.py",
@@ -1057,10 +1057,10 @@ TARGETS = {
         ],
         "env": {
             "STAGE5_COMPETENCE_SOURCE_SUMMARY": (
-                "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment/summary.json"
+                "outputs/stage5/stage5_debiased_benchmark_assessment_20260625_121302/summary.json"
             ),
             "STAGE5_COMPETENCE_PIPELINE_RUN_ID": (
-                "stage5_competence_preserving_from_direct_confirm_20260623"
+                "stage5_competence_recovery_20260625_from_reentry"
             ),
             "STAGE5_COMPETENCE_PIPELINE_PUSH": "1",
             "STAGE5_COMPETENCE_PIPELINE_DISCONNECT": "1",

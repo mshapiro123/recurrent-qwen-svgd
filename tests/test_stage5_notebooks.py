@@ -1117,7 +1117,8 @@ def test_traced_sft_competence_preserving_pipeline_target_is_bootstrapped() -> N
     assert "STAGE5_COMPETENCE_PRESERVING_PIPELINE_CELL_VERSION" in cell
     assert "competence_preserving_pipeline_v1" in cell
     assert "STAGE5_COMPETENCE_SOURCE_SUMMARY" in cell
-    assert "stage5_traced_sft_direct_preservation_20260623_scale64_confirm_assessment" in cell
+    assert "stage5_debiased_benchmark_assessment_20260625_121302" in cell
+    assert "stage5_debiased_benchmark_assessment_20260625_121302" in bootstrap
     assert "colab/run_stage5_competence_preserving_pipeline.py" in cell
     assert "tests/test_stage5_competence_preserving_pipeline.py" in cell
     assert "tests/test_stage5_balanced_arc_mix_gate.py" in cell
