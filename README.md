@@ -70,25 +70,26 @@ bare `A/B/C/D` scoring, but matched or slightly exceeded base after cyclic
 option-permutation aggregation. See
 [docs/MCQ_DEBIAS_STATUS.md](docs/MCQ_DEBIAS_STATUS.md).
 
-The current front-of-queue action is the Phase 0 re-entry repair chain. Stage 1
-found a dead bridge and Stage 2 found eval-only `entry_rms` re-entry
-normalization safe enough for a tiny trainable smoke. The intended immediate
-sequence is deliberately gated by `master_sequence_status`: Stage 3 repair,
-Stage 4 recovery, recurrent-vs-base benchmark, then dense same-curriculum
-control. The `Phase 1 Gate Review` section is the authority for the seam after
-Stage 4 and after each benchmark/control artifact.
+The re-entry repair chain has now passed its immediate gates. Stage 3 made the
+bridge and re-entry adapter trainable/live while preserving loop-1 behavior;
+Stage 4 recovery then published a checkpoint with sane post-recovery re-entry
+health. The current front-of-queue action is no longer re-entry repair. It is
+`traced_sft_competence_preserving_pipeline`: a bounded competence-preserving
+deterministic recovery run designed to recover ARC-Challenge without giving
+back the ARC-Easy gains.
 
 | Stage | Runtime | Purpose |
 |---|---|---|
-| `reentry_repair_smoke` | L4/T4 | Make the bridge and re-entry adapter gradient-live while preserving loop-1 behavior. |
-| `reentry_recovery_training` | L4/T4, G4 only if needed | Run bounded deterministic recovery SFT from the repaired checkpoint with learned loop control, target-loop supervision, and post-recovery re-entry health validation. |
-| `debiased_benchmark_suite` | L4/T4 | Compare base Qwen 0.5B versus the repaired recurrent checkpoint on ARC-Easy, ARC-Challenge, and GPQA-lite surfaces. |
-| `dense_mcq_trace_sft_control` | L4/T4 | Train/evaluate standard dense Qwen LoRA on the same curriculum so architecture lift is separated from data-recipe lift. |
+| `traced_sft_competence_preserving_pipeline` | L4/T4, A100 only if already attached | Run ARC-mixed deterministic recovery with stronger base-logit/response preservation from the repaired recurrent checkpoint. |
+| `review_stage5_competence_pipeline.py` | CPU | Summarize the competence pipeline status and planner-selected next action after the GPU job lands. |
+| `debiased_benchmark_suite` or recovery full assessment | L4/T4 | Confirm base-vs-recurrent ARC-Easy and ARC-Challenge behavior under content and cyclic scoring. |
+| `dense_mcq_trace_sft_control` | L4/T4 | Train/evaluate standard dense Qwen LoRA on the same curriculum only after recurrent recovery clears the base-comparison gate. |
 
 Do not spend A100 credits on GPQA Diamond, Phase 2/SVGD scaling, 1.5B/3B
 models, or more kernel geometry until the repaired deterministic recurrent path
-produces a sane Stage 4 checkpoint and a paired base/recurrent/dense-control
-benchmark diagnostic.
+clears the balanced recurrent-vs-base gate and the same-curriculum dense
+control seam is ready. The current blocker is deterministic competence
+preservation, not particle geometry.
 Auth, Drive, GitHub, notebook-state, source-pointer, and dataset-prep failures
 are CPU/local repair tasks, not GPU tasks.
 
@@ -112,20 +113,21 @@ The stronger claim is not yet established:
 > The recurrent or SVGD recurrent-particle model surpasses the unmodified base
 > Qwen 0.5B model on held-out reasoning benchmarks.
 
-That stronger claim requires additional training and assessment: first,
-bare-label MCQ results must be regenerated under cyclic/permutation scoring;
-then deterministic recurrent recovery must be at least base-competitive under
-that debiased metric; finally Phase 2/SVGD or selector-converted particles must
-beat the recovered deterministic recurrent baseline. Until that lands, the
-paper should present the surpass-base result as the next experimental gate, not
-as a conclusion.
+That stronger claim requires additional training and assessment: deterministic
+recurrent recovery must first become at least base-competitive under debiased
+content and cyclic/permutation MCQ scoring; then a same-curriculum dense-Qwen
+control must separate architecture lift from data-recipe lift; finally Phase
+2/SVGD or selector-converted particles must beat the recovered deterministic
+recurrent baseline. Until that lands, the paper should present the surpass-base
+result as the next experimental gate, not as a conclusion.
 
 In paper language, the current manuscript is a methods-and-recovery paper with
 a pending benchmark-superiority claim. The additional training required to make
-the stronger claim is still being measured: the latest ARC-mix proxy closed the
-128-example proxy gap to base, but the subsequent full balanced ARC assessment
-remained negative. The next hypothesis is that stronger answer-calibration
-preservation is required before recurrence can beat base.
+the stronger claim is still being measured: the re-entry repair/recovery path
+now has a healthy recurrent checkpoint, but the latest debiased benchmark was
+mixed rather than passed. The next hypothesis is that stronger competence and
+answer-calibration preservation is required before recurrence can beat base
+robustly.
 
 The implementation has three stages:
 
@@ -165,8 +167,18 @@ model can be converted into a recurrent-depth architecture with exact one-pass
 identity preservation, stable learned halting, and recoverable benchmark
 competence under small-parameter adapter/controller training.
 
-The latest CE8 balanced ARC depth curve is now the best current readout. It
-uses balanced 256-example ARC-Easy and ARC-Challenge slices and compares fixed
+The latest architecture-health result is positive: Stage 3 re-entry repair made
+the bridge/re-entry path gradient-live, and Stage 4 recovery kept the repaired
+loop closure healthy after SFT. The latest base-comparison result is mixed:
+`stage5_debiased_benchmark_assessment_20260625_121302` showed recurrent
+positive on ARC-Easy cyclic aggregate (`99/128` vs base `96/128`) and slightly
+negative on ARC-Challenge cyclic aggregate (`67/128` vs base `68/128`). GPQA
+did not run because the dataset is gated for the active HF account. The current
+front-of-queue run is therefore a competence-preserving deterministic recovery
+pipeline, not Phase 2/SVGD.
+
+The CE8 balanced ARC depth curve remains the best mechanism readout. It uses
+balanced 256-example ARC-Easy and ARC-Challenge slices and compares fixed
 recurrent depths 1-4 under both cyclic option-permutation scoring and
 content-question-only scoring. The key result is conditional:
 
@@ -279,130 +291,70 @@ time.
 ## Active Next A100 Action
 
 Credits are tight, so GPU work remains gate-based. The current front-of-queue
-job is the re-entry architecture repair gate, not more ARC-mix depth training
-or particle/SVGD geometry. Stage 1 showed the current recovered checkpoint has
-a dead bridge: `bridge_gate=0.0`, zero bridge delta, and zero bridge projection
-gradients. Until that loop-closure path is repaired, further particle diversity
-experiments are likely to amplify noise rather than produce useful reasoning
-paths.
+job is `traced_sft_competence_preserving_pipeline`, which resumes from the
+repaired Stage 4 recurrent checkpoint and tries to recover ARC-Challenge while
+preserving ARC-Easy. The previous competence attempt failed before training
+because Drive was not mounted in the top-level Colab process and the selected
+checkpoint could not be restored. Current `main` contains the Drive/checkpoint
+preflight fix and stale-failure resume routing.
 
-Current reviewer state:
-
-```text
-latest stage: stage2_norm
-latest status: entry_rms_safe_for_smoke
-current source summary: outputs/stage5/stage5_reentry_norm_20260625_013527/summary.json
-next target: reentry_repair_smoke
-```
-
-Stage 2 has already cleared the eval-only re-entry normalization gate. Prefer
-the GitHub-resolved launcher below from a restarted or blank runtime; the
-shorter local `exec(open(...))` form is only safe after the repo has already
-been freshly cloned or reset to `main`.
-
-Fresh-runtime Stage 3 launch:
+Use this single fresh-runtime cell. It fetches the tracked launcher from
+GitHub, clones or hard-resets the repo, mounts Drive, verifies the current
+bootstrap markers, and launches the current Stage 5 target:
 
 ```python
-import base64, json, os, time, urllib.request
+import base64, json, time, urllib.request
 from google.colab import userdata
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
-TARGET = "reentry_repair_smoke"
+PATH = "colab/CURRENT_STAGE5_FRESH_LAUNCHER_CELL.py"
 
-gh = userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
-assert gh, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
-hf = userdata.get("HF_TOKEN") or userdata.get("HUGGINGFACE_HUB_TOKEN")
-if hf:
-    os.environ["HF_TOKEN"] = hf
-    os.environ["HUGGINGFACE_HUB_TOKEN"] = hf
+GH_TOKEN = userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
+assert GH_TOKEN, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
 
-os.environ["STAGE5_CURRENT_A100_TARGET"] = TARGET
-
-headers = {
-    "Authorization": f"Bearer {gh}",
-    "Accept": "application/vnd.github+json",
-}
-ref_req = urllib.request.Request(
-    f"https://api.github.com/repos/{REPO}/git/refs/heads/main?cache_bust={time.time_ns()}",
-    headers=headers,
+req = urllib.request.Request(
+    f"https://api.github.com/repos/{REPO}/contents/{PATH}?ref=main&cache_bust={int(time.time())}",
+    headers={
+        "Authorization": f"Bearer {GH_TOKEN}",
+        "Accept": "application/vnd.github+json",
+        "Cache-Control": "no-cache",
+    },
 )
-with urllib.request.urlopen(ref_req, timeout=30) as response:
-    resolved_ref = json.load(response)["object"]["sha"]
 
-file_req = urllib.request.Request(
-    f"https://api.github.com/repos/{REPO}/contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py"
-    f"?ref={resolved_ref}&cache_bust={time.time_ns()}",
-    headers=headers,
-)
-with urllib.request.urlopen(file_req, timeout=30) as response:
+with urllib.request.urlopen(req) as response:
     payload = json.load(response)
 
 code = base64.b64decode(payload["content"]).decode("utf-8")
-required = [
-    "sha_resolved_nested_fetch_v3",
-    TARGET,
-    "STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION",
-    "stage5_reentry_repair_smoke_v1_trainable",
-    "stage2_norm_assessment",
-    "Loop-1 Preservation",
-    "colab/assess_stage5_reentry.py",
-]
-missing = [marker for marker in required if marker not in code]
-assert not missing, f"Fetched stale or incomplete bootstrap: {missing}"
-print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12], "target:", TARGET)
-exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
+print("Fetched", PATH, "sha=", payload.get("sha"))
+exec(compile(code, PATH, "exec"))
 ```
 
-After Stage 3 publishes, run the CPU-only reviewer. In a fresh runtime, change
-`TARGET` in the paste-anywhere launcher above to `master_sequence_status`;
-only use the shorter repo-local form if `/content/recurrent-qwen-svgd` has
-already been freshly cloned or reset to `main` in the current runtime.
-Continue only if the status output's re-entry reviewer recommends
-`run_bounded_recovery_training_with_reentry_repair`. The same status output now
-also includes the Stage 4 recovery reviewer and the Phase 1 Gate Review, which
-prevents stale benchmark artifacts from being mistaken for the current gate:
+Expected early output:
 
-```python
-import os
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "master_sequence_status"
-exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
+```text
+launcher_version: fresh_launcher_v1
+5d0c12d ... or newer
+checkpoint_restore_preflight=ok ...
 ```
 
-Only if Stage 3 assessment recommends
-`run_bounded_recovery_training_with_reentry_repair`, launch bounded recovery
-SFT. Again, in a fresh runtime prefer the paste-anywhere launcher above with
-`TARGET = "reentry_recovery_training"`; the snippet below is only for a
-runtime where the repo already exists locally:
+After the run lands, review it locally or in Colab:
 
-```python
-import os
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "reentry_recovery_training"
-exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
+```bash
+python colab/review_stage5_competence_pipeline.py \
+  --source-summary outputs/stage5/stage5_competence_recovery_from_reentry_benchmark/summary.json
 ```
 
-After Stage 4 recovery publishes, run `master_sequence_status` again. Its Stage
-4 Recovery Review should route to `debiased_benchmark_suite` only if validation
-is sane and `post_reentry_health_checks.status` is `reentry_health_sane`; after
-that benchmark publishes, run `master_sequence_status` again and follow the
-`Phase 1 Gate Review` section. Only run `dense_mcq_trace_sft_control` if that
-reviewer asks for it, and only move toward Phase 2 breadth if the dense control
-returns `hard_tail_lift_vs_dense`.
-
-Minimum run contract:
+Minimum current run contract:
 
 - keep Phase 2/SVGD and inference-time particle noise off;
-- do not mutate checkpoints during Stage 2;
-- require loop-1 preservation during Stage 3;
-- require finite validation and target-loop/depth-gradient metrics during Stage
-  4;
-- require post-recovery re-entry health during Stage 4 before any benchmark;
-- pause for review after Stage 2, Stage 3, Stage 4, and each Phase 1
-  benchmark/control artifact before spending additional GPU.
+- require the selected Stage 4 checkpoint to restore before training starts;
+- require finite ARC-mix training/eval summaries;
+- run the recovery full assessment only if the ARC-mix proxy passes;
+- do not run dense control, particles, GPQA, or larger Qwen scales until the
+  recurrent deterministic gate has a clean review artifact.
 
 The concise run card is maintained here:
 [`colab/CURRENT_A100_ACTION.md`](colab/CURRENT_A100_ACTION.md).
-Use the cheap `master_sequence_status` target after each run; it calls the
-re-entry, Stage 4 recovery, and Phase 1 benchmark/control reviewers together.
 
 The longer-term data plan is captured in
 [`docs/CURRICULUM_DATA_PIPELINE.md`](docs/CURRICULUM_DATA_PIPELINE.md): strong
