@@ -309,6 +309,7 @@ TARGETS = {
             "reentry_rescale_mode",
             "entry_rms",
             "Candidate Conversion",
+            "incremental_backup",
             "Readout Pause",
             "runtime.unassign",
         ],

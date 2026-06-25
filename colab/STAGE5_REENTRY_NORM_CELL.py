@@ -191,6 +191,25 @@ def read_jsonl(path: Path) -> list[dict[str, object]]:
     return rows
 
 
+def has_valid_json(path: Path) -> bool:
+    if not path.exists():
+        return False
+    try:
+        read_json(path)
+    except (OSError, json.JSONDecodeError):
+        return False
+    return True
+
+
+def has_valid_jsonl(path: Path) -> bool:
+    if not path.exists():
+        return False
+    try:
+        return bool(read_jsonl(path))
+    except (OSError, json.JSONDecodeError):
+        return False
+
+
 def summarize_candidate_jsonl(path: Path) -> dict[str, object]:
     rows = read_jsonl(path)
     grouped: dict[tuple[object, object, object, object], list[dict[str, object]]] = {}
@@ -229,6 +248,9 @@ def summarize_candidate_jsonl(path: Path) -> dict[str, object]:
 def run_drift(mode: str, checkpoint: str, prompts: str, out_dir: Path) -> Path:
     out_json = out_dir / f"reentry_drift_{mode}.json"
     out_jsonl = out_dir / f"reentry_drift_{mode}.jsonl"
+    if has_valid_json(out_json) and has_valid_jsonl(out_jsonl):
+        print(f"resume_skip=reentry_drift_{mode}", flush=True)
+        return out_json
     run(
         [
             sys.executable,
@@ -263,6 +285,9 @@ def run_drift(mode: str, checkpoint: str, prompts: str, out_dir: Path) -> Path:
 def run_effective_pathways(mode: str, checkpoint: str, prompts: str, out_dir: Path) -> Path:
     out_json = out_dir / f"effective_pathways_{mode}.json"
     out_jsonl = out_dir / f"effective_pathways_{mode}.jsonl"
+    if has_valid_json(out_json) and has_valid_jsonl(out_jsonl):
+        print(f"resume_skip=effective_pathways_{mode}", flush=True)
+        return out_json
     run(
         [
             sys.executable,
@@ -300,6 +325,9 @@ def run_effective_pathways(mode: str, checkpoint: str, prompts: str, out_dir: Pa
 
 def run_candidate_conversion(mode: str, checkpoint: str, tasks: str, out_dir: Path) -> Path:
     out_jsonl = out_dir / f"candidate_conversion_{mode}.jsonl"
+    if has_valid_jsonl(out_jsonl):
+        print(f"resume_skip=candidate_conversion_{mode}", flush=True)
+        return out_jsonl
     if out_jsonl.exists():
         out_jsonl.unlink()
     run(
@@ -341,6 +369,24 @@ def run_candidate_conversion(mode: str, checkpoint: str, tasks: str, out_dir: Pa
         ]
     )
     return out_jsonl
+
+
+def incremental_backup(out_dir: Path) -> None:
+    if os.environ.get("STAGE5_REENTRY_NORM_INCREMENTAL_BACKUP", "1").strip().lower() not in {
+        "1",
+        "true",
+        "yes",
+        "y",
+    }:
+        return
+    if not Path("/content/drive/MyDrive").exists():
+        return
+    backup_dir = DRIVE_ARTIFACT_ROOT / "outputs" / "stage5" / out_dir.name
+    backup_dir.parent.mkdir(parents=True, exist_ok=True)
+    if backup_dir.exists():
+        shutil.rmtree(backup_dir)
+    shutil.copytree(out_dir, backup_dir)
+    print(f"incremental_backup={backup_dir}", flush=True)
 
 
 def write_summary(
@@ -514,17 +560,12 @@ def main() -> None:
             "effective_pathways": effective.relative_to(ROOT).as_posix(),
             "candidate_conversion": candidates.relative_to(ROOT).as_posix(),
         }
+        incremental_backup(out_dir)
 
     write_summary(run_id, out_dir, checkpoint, prompts, paths)
     run_reentry_assessment(out_dir)
 
-    if Path("/content/drive/MyDrive").exists():
-        backup_dir = DRIVE_ARTIFACT_ROOT / "outputs" / "stage5" / run_id
-        backup_dir.parent.mkdir(parents=True, exist_ok=True)
-        if backup_dir.exists():
-            shutil.rmtree(backup_dir)
-        shutil.copytree(out_dir, backup_dir)
-        print(f"drive_backup={backup_dir}", flush=True)
+    incremental_backup(out_dir)
 
     publish_outputs(out_dir, run_id)
 
