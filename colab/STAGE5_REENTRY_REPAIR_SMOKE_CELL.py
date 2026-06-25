@@ -433,8 +433,8 @@ def write_smoke_data(path: Path) -> None:
     path.write_text("\n".join(json.dumps(row) for row in SMOKE_ROWS) + "\n", encoding="utf-8")
 
 
-def write_config(path: Path, *, checkpoint: str, out_dir: Path) -> dict[str, object]:
-    cfg = {
+def build_config(*, checkpoint: str, out_dir: Path) -> dict[str, object]:
+    return {
         "model_name": MODEL_NAME,
         "dtype": os.environ.get("STAGE5_REENTRY_REPAIR_DTYPE", "bfloat16"),
         "adapter_dtype": "float32",
@@ -460,9 +460,21 @@ def write_config(path: Path, *, checkpoint: str, out_dir: Path) -> dict[str, obj
         "output_dir": str(out_dir.relative_to(ROOT)),
         "lora": {"enabled": True, "rank": 8, "alpha": 16, "dropout": 0.0},
     }
+
+
+def write_config(path: Path, cfg: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
-    return cfg
+
+
+def read_optional_config(path: Path) -> dict[str, object] | None:
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
 
 
 def parse_train_log_metrics(log_path: Path) -> dict[str, object]:
@@ -507,10 +519,10 @@ def parse_train_log_metrics(log_path: Path) -> dict[str, object]:
     }
 
 
-def run_drift(label: str, checkpoint: str, out_dir: Path) -> Path:
+def run_drift(label: str, checkpoint: str, out_dir: Path, *, force: bool = False) -> Path:
     out_json = out_dir / f"reentry_drift_{label}.json"
     out_jsonl = out_dir / f"reentry_drift_{label}.jsonl"
-    if has_valid_json(out_json) and has_valid_jsonl(out_jsonl):
+    if not force and has_valid_json(out_json) and has_valid_jsonl(out_jsonl):
         print(f"resume_skip=reentry_drift_{label}", flush=True)
         return out_json
     run(
@@ -592,10 +604,16 @@ def summarize_loop1_preservation(jsonl_path: Path, *, tasks_jsonl: Path | None =
     }
 
 
-def run_loop1_preservation(source_checkpoint: str, trained_checkpoint: str, out_dir: Path) -> dict[str, object]:
+def run_loop1_preservation(
+    source_checkpoint: str,
+    trained_checkpoint: str,
+    out_dir: Path,
+    *,
+    force: bool = False,
+) -> dict[str, object]:
     tasks_jsonl = write_preservation_tasks(out_dir / "loop1_preservation_tasks.jsonl")
     out_jsonl = out_dir / "loop1_preservation.jsonl"
-    if has_valid_jsonl(out_jsonl):
+    if not force and has_valid_jsonl(out_jsonl):
         print("resume_skip=loop1_preservation", flush=True)
         return summarize_loop1_preservation(out_jsonl, tasks_jsonl=tasks_jsonl)
     run(
@@ -835,19 +853,25 @@ def main() -> None:
     restore_incremental_backup(out_dir)
     diag_dir = out_dir / "reentry_repair_smoke"
     diag_dir.mkdir(parents=True, exist_ok=True)
-
-    pre_drift_path = run_drift("pre", checkpoint, diag_dir)
-    incremental_backup(out_dir)
     train_jsonl = diag_dir / "reentry_repair_smoke_train.jsonl"
     config_path = diag_dir / "reentry_repair_smoke_config.yaml"
     train_out_dir = out_dir / "phase1_reentry_repair"
+    expected_config = build_config(checkpoint=checkpoint, out_dir=train_out_dir)
+    existing_config = read_optional_config(config_path)
+    cache_compatible = existing_config == expected_config
+    if not cache_compatible and existing_config is not None:
+        print("resume_cache_mismatch=reentry_repair_smoke_config_changed", flush=True)
+
+    pre_drift_path = run_drift("pre", checkpoint, diag_dir, force=not cache_compatible)
+    incremental_backup(out_dir)
     write_smoke_data(train_jsonl)
-    config = write_config(config_path, checkpoint=checkpoint, out_dir=train_out_dir)
+    config = expected_config
+    write_config(config_path, config)
 
     trained_checkpoint = train_out_dir / f"phase1_step_{config['max_steps']}.pt"
     train_log_path = diag_dir / "train_phase1_ponder.log"
     existing_train_log_metrics = parse_train_log_metrics(train_log_path)
-    if trained_checkpoint.exists() and existing_train_log_metrics.get("available") is True:
+    if trained_checkpoint.exists() and existing_train_log_metrics.get("available") is True and cache_compatible:
         print(
             "resume_skip=train_phase1_ponder "
             f"checkpoint={trained_checkpoint} train_log={train_log_path} "
@@ -858,7 +882,8 @@ def main() -> None:
         if trained_checkpoint.exists():
             print(
                 "resume_retrain=train_phase1_ponder "
-                f"checkpoint={trained_checkpoint} train_log_reason={existing_train_log_metrics.get('reason')}",
+                f"checkpoint={trained_checkpoint} train_log_reason={existing_train_log_metrics.get('reason')} "
+                f"cache_compatible={cache_compatible}",
                 flush=True,
             )
         train_proc = run(
@@ -878,8 +903,13 @@ def main() -> None:
     if not trained_checkpoint.exists():
         raise FileNotFoundError(f"Expected trained checkpoint missing: {trained_checkpoint}")
     trained_checkpoint_rel = trained_checkpoint.relative_to(ROOT).as_posix()
-    post_drift_path = run_drift("post", trained_checkpoint_rel, diag_dir)
-    loop1_preservation = run_loop1_preservation(checkpoint, trained_checkpoint_rel, diag_dir)
+    post_drift_path = run_drift("post", trained_checkpoint_rel, diag_dir, force=not cache_compatible)
+    loop1_preservation = run_loop1_preservation(
+        checkpoint,
+        trained_checkpoint_rel,
+        diag_dir,
+        force=not cache_compatible,
+    )
     train_log_metrics = parse_train_log_metrics(train_log_path)
     incremental_backup(out_dir)
 

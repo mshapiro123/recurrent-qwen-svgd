@@ -909,3 +909,10 @@ Colab/Drive backups for selected runs.
   Stage 4 recovery has passed its re-entry health gate. Explicit
   `STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY` still bypasses this check for
   intentional older-artifact comparisons.
+- Stage 3 repair-smoke resume safety: `reentry_repair_smoke` now compares the
+  existing training config with the freshly derived config before reusing
+  cached drift, loop-1 preservation, train logs, or checkpoints. A rerun with
+  the same `STAGE5_REENTRY_REPAIR_RUN_ID` but different checkpoint, LR,
+  optimizer modules, layer split, model, or loop settings now regenerates the
+  diagnostics/training instead of silently mixing stale cached artifacts into
+  the Stage 4 handoff.

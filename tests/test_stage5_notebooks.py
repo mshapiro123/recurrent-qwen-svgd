@@ -1362,6 +1362,9 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "existing_train_log_metrics" in cell
     assert "resume_retrain=train_phase1_ponder" in cell
     assert "resume_skip=train_phase1_ponder" in cell
+    assert "resume_cache_mismatch=reentry_repair_smoke_config_changed" in cell
+    assert "cache_compatible" in cell
+    assert "force=not cache_compatible" in cell
     assert "colab/assess_stage5_reentry.py" in cell
     assert "publishable_artifact_paths" in cell
     assert "update_current_source_summary" in cell
