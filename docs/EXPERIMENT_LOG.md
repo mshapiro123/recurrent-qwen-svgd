@@ -825,3 +825,9 @@ Colab/Drive backups for selected runs.
   or training setup. A CPU-only or disconnected Colab runtime now fails with a
   clear instruction to reconnect L4/T4/A100/H100, reducing late setup failures
   on the current front-of-queue GPU action.
+- Single-runtime CPU/GPU split: `00_single_a100_runbook.ipynb` now includes an
+  explicit `claim_curriculum_scaleup_cpu` cell next to the GPU target queue.
+  This makes the master-sequence parallelism concrete: claim-sized direct/deep
+  curriculum generation can run on CPU/API time while the paid GPU sequence
+  remains locked on `reentry_repair_smoke -> reentry_recovery_training ->
+  debiased_benchmark_suite -> dense_mcq_trace_sft_control`.

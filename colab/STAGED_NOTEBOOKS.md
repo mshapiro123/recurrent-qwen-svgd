@@ -12,6 +12,11 @@ sequence targets. Leave `KEEP_RUNTIME_OPEN = False` to conserve credits after
 each target, or set it to `True` when you intentionally want to run several
 bounded L4/T4 cells back-to-back in one attached runtime.
 
+The same notebook also exposes `claim_curriculum_scaleup_cpu` as a separate
+CPU/API data-prep cell. That cell prepares the later claim-sized direct/deep
+curriculum shard while the GPU queue remains on Phase 0/1; it is not a GPU gate
+and does not replace `reentry_repair_smoke` or `reentry_recovery_training`.
+
 For the shortest current instruction, use
 [`CURRENT_A100_ACTION.md`](CURRENT_A100_ACTION.md). For the full phase order,
 use [`../docs/PROGRAM_TRACK_MASTER_SEQUENCE.md`](../docs/PROGRAM_TRACK_MASTER_SEQUENCE.md).
@@ -42,8 +47,14 @@ for a tiny trainable repair smoke. The next targets are:
    - Purpose: train/evaluate standard dense Qwen LoRA on the same curriculum.
    - Gate: recurrent architecture earns a claim only if it beats this control
      on the relevant hard/depth-shaped rows without easy regression.
-5. Phase 2 breadth diagnostics only after the Phase 1 benchmark/control gate.
-6. Phase 3 particles/SVGD only after breadth is correct-bearing.
+5. `claim_curriculum_scaleup_cpu`
+   - Runtime: CPU or cheap non-GPU.
+   - Purpose: build/resume the claim-sized direct/deep curriculum shard in
+     parallel with Phase 0/1 GPU work.
+   - Gate: provider calls stay disabled until concrete model ids, API secrets,
+     and a tiny provider smoke are configured.
+6. Phase 2 breadth diagnostics only after the Phase 1 benchmark/control gate.
+7. Phase 3 particles/SVGD only after breadth is correct-bearing.
 
 ## Paste-Anywhere Launcher
 

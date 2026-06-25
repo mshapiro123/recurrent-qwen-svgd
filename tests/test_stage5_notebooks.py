@@ -80,6 +80,10 @@ def test_single_a100_runbook_uses_current_bootstrap_target_queue() -> None:
     assert "STAGE5_REENTRY_RECOVERY_DISCONNECT" in text
     assert "STAGE5_DEBIASED_BENCHMARK_DISCONNECT" in text
     assert "STAGE5_DENSE_MCQ_DISCONNECT" in text
+    assert "STAGE5_CURRICULUM_PIPELINE_DISCONNECT" in text
+    assert "claim_curriculum_scaleup_cpu" in text
+    assert "Parallel CPU/API Curriculum Scale-Up" in text
+    assert "should not be treated as a GPU gate" in text
     assert "sha_resolved_nested_fetch_v3" in text
     assert "api.github.com/repos/{REPO}/contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py" in text
     assert "exec(compile(code" in text
@@ -1471,10 +1475,14 @@ def test_reentry_stage3_stage4_runbook_is_linked_from_current_action() -> None:
     runbook = (ROOT / "docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md").read_text(encoding="utf-8")
     master = (ROOT / "docs/PROGRAM_TRACK_MASTER_SEQUENCE.md").read_text(encoding="utf-8")
     next_sequence = (ROOT / "colab/NEXT_COLAB_SEQUENCE.md").read_text(encoding="utf-8")
+    staged = (ROOT / "colab/STAGED_NOTEBOOKS.md").read_text(encoding="utf-8")
 
     assert "docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md" in current_action
     assert "docs/PROGRAM_TRACK_MASTER_SEQUENCE.md" in current_action
     assert "colab/NEXT_COLAB_SEQUENCE.md" in current_action
+    assert "claim_curriculum_scaleup_cpu" in staged
+    assert "CPU/API data-prep cell" in staged
+    assert "is not a GPU gate" in staged
     assert "PROGRAM_TRACK_MASTER_SEQUENCE.md" in runbook
     assert "reentry_norm_recover_only" in next_sequence
     assert "reentry_repair_smoke" in next_sequence
