@@ -1397,8 +1397,10 @@ def test_reentry_recovery_training_target_is_bootstrapped() -> None:
     assert "LEGACY_DRIVE_ROOT / \"outputs\" / \"stage5\"" in cell
     assert "candidates.append(resolve_repo_path(DEFAULT_TRACE_COLLECTION))" in cell
     assert "colab.reentry_recovery_config" in cell
-    assert 'shutil.which("nvidia-smi")' in cell
-    assert "Attach an L4/T4/A100/H100 GPU runtime" in cell
+    assert "attached_gpu_names" in cell
+    assert "require_gpu_runtime" in cell
+    assert "stage4_gpu_runtime=" in cell
+    assert "Attach an L4/T4/A100/H100 GPU runtime before running Stage 4 recovery training." in cell
     assert '"STAGE5_CURRICULUM_SFT_COMMIT_CHECKPOINTS": os.environ.get(' in cell
     assert '"STAGE5_REENTRY_RECOVERY_COMMIT_CHECKPOINTS",' in cell
     assert "sys.path.insert(0, root_str)" in cell

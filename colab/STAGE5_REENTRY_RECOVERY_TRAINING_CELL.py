@@ -127,6 +127,29 @@ def env_flag(name: str, default: str = "0") -> bool:
     return os.environ.get(name, default).strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
+def attached_gpu_names() -> list[str]:
+    try:
+        proc = subprocess.run(
+            ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+    except FileNotFoundError:
+        return []
+    if proc.returncode != 0:
+        return []
+    return [line.strip() for line in proc.stdout.splitlines() if line.strip()]
+
+
+def require_gpu_runtime() -> None:
+    names = attached_gpu_names()
+    if not names:
+        raise RuntimeError("Attach an L4/T4/A100/H100 GPU runtime before running Stage 4 recovery training.")
+    print("stage4_gpu_runtime=" + "; ".join(names), flush=True)
+
+
 def ensure_repo() -> None:
     clone_url = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
     if ROOT.exists():
@@ -577,9 +600,8 @@ def publish_reentry_recovery_wrapper(summary_path: Path) -> None:
 
 def main() -> None:
     print(f"cell_version={STAGE5_REENTRY_RECOVERY_CELL_VERSION}", flush=True)
+    require_gpu_runtime()
     ensure_repo()
-    if shutil.which("nvidia-smi") is None:
-        raise RuntimeError("Attach an L4/T4/A100/H100 GPU runtime before running Stage 4 recovery training.")
     run(["nvidia-smi"], cwd=Path("/content"))
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"])
     run(
