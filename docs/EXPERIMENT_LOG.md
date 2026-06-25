@@ -236,6 +236,9 @@ Colab/Drive backups for selected runs.
   depth can recover or improve hard rows without easy regression.
 - Compare repaired recurrent training against a standard dense Qwen LoRA trained
   on the same curriculum before making any architecture claim.
+- When Phase 2 opens, run breadth diagnostics only on the checkpoint resolved
+  from the passed Phase 1 source-summary chain. Manual checkpoint overrides are
+  for archaeology, not the normal program track.
 - Use L4/T4 for bounded 0.5B repair, recovery, and benchmark slices when
   practical. Reserve A100/G4/H100 for 1.5B/3B/7B probes, longer SFT, or
   memory-heavy particle experiments.

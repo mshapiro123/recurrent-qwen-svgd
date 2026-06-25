@@ -200,3 +200,6 @@ Stop and review if any of these happen:
 
 Do not return to particles/SVGD until deterministic recurrence is base
 competitive and the breadth diagnostic shows correct-bearing alternatives.
+When Phase 2 eventually opens, the breadth launchers resolve the checkpoint
+from the passed Phase 1 source-summary chain. Use explicit Phase 2 checkpoint
+overrides only for intentional archaeology runs.
