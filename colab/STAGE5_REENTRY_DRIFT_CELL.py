@@ -255,6 +255,22 @@ def publish_outputs(out_dir: Path, run_id: str) -> None:
             run(["git", "push", "origin", "main"])
 
 
+def run_reentry_assessment(out_dir: Path) -> None:
+    run(
+        [
+            sys.executable,
+            "colab/assess_stage5_reentry.py",
+            "--summary_json",
+            str((out_dir / "summary.json").relative_to(ROOT)),
+            "--output_json",
+            str((out_dir / "reentry_assessment.json").relative_to(ROOT)),
+            "--output_md",
+            str((out_dir / "reentry_assessment.md").relative_to(ROOT)),
+        ]
+    )
+    print((out_dir / "reentry_assessment.md").read_text(encoding="utf-8"), flush=True)
+
+
 def main() -> None:
     print(f"cell_version={STAGE5_REENTRY_DRIFT_CELL_VERSION}", flush=True)
     run_id = os.environ.get("STAGE5_REENTRY_DRIFT_RUN_ID") or time.strftime("stage5_reentry_drift_%Y%m%d_%H%M%S")
@@ -325,6 +341,7 @@ def main() -> None:
     summary_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     write_markdown(payload, out_dir / "summary.md")
     print((out_dir / "summary.md").read_text(encoding="utf-8"), flush=True)
+    run_reentry_assessment(out_dir)
 
     if Path("/content/drive/MyDrive").exists():
         backup_dir = DRIVE_ARTIFACT_ROOT / "outputs" / "stage5" / run_id

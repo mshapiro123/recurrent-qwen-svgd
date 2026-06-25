@@ -1233,5 +1233,24 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "reentry_rescale_mode" in cell
     assert "training/train_phase1_ponder.py" in cell
     assert "eval/eval_reentry_drift.py" in cell
+    assert "colab/assess_stage5_reentry.py" in cell
     assert "Readout Pause" in cell
     assert "runtime.unassign" in cell
+
+
+def test_reentry_drift_and_norm_targets_run_self_assessment() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    drift_cell = (ROOT / "colab/STAGE5_REENTRY_DRIFT_CELL.py").read_text(encoding="utf-8")
+    norm_cell = (ROOT / "colab/STAGE5_REENTRY_NORM_CELL.py").read_text(encoding="utf-8")
+
+    assert "reentry_drift_diagnostic" in bootstrap
+    assert "reentry_norm_diagnostic" in bootstrap
+    assert "colab/assess_stage5_reentry.py" in bootstrap
+    assert "colab/assess_stage5_reentry.py" in bootstrap_md
+    assert "run_reentry_assessment" in drift_cell
+    assert "run_reentry_assessment" in norm_cell
+    assert "reentry_assessment.json" in drift_cell
+    assert "reentry_assessment.md" in drift_cell
+    assert "reentry_assessment.json" in norm_cell
+    assert "reentry_assessment.md" in norm_cell

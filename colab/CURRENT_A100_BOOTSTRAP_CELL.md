@@ -303,6 +303,7 @@ TARGETS = {
             "STAGE5_REENTRY_DRIFT_CELL_VERSION",
             "stage5_reentry_drift_v1_readonly",
             "eval/eval_reentry_drift.py",
+            "colab/assess_stage5_reentry.py",
             "tests/test_eval_reentry_drift.py",
             "bridge_gradient_liveness",
             "entry_exit_subspace",
@@ -326,6 +327,7 @@ TARGETS = {
             "eval/eval_reentry_drift.py",
             "eval/eval_effective_pathways.py",
             "eval/eval_best_of_k_jsonl.py",
+            "colab/assess_stage5_reentry.py",
             "reentry_rescale_mode",
             "entry_rms",
             "Candidate Conversion",
@@ -351,6 +353,7 @@ TARGETS = {
             "reentry_rescale_mode",
             "training/train_phase1_ponder.py",
             "eval/eval_reentry_drift.py",
+            "colab/assess_stage5_reentry.py",
             "tests/test_bridge.py",
             "Readout Pause",
             "runtime.unassign",
@@ -1122,4 +1125,5 @@ print(f"Fetched {launcher_path} from {REPO}@{REF} ({RESOLVED_REF[:12]}) sha={pay
 exec(compile(code, launcher_path, "exec"))
 
 ```
+
 
