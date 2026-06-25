@@ -270,10 +270,15 @@ def trace_collection_candidates() -> list[Path]:
     ).strip()
     if explicit:
         candidates.append(resolve_repo_path(explicit))
+        return unique_paths(candidates)
+    for root in (
+        ROOT / "outputs" / "stage5",
+        DRIVE_ARTIFACT_ROOT / "outputs" / "stage5",
+        LEGACY_DRIVE_ROOT / "outputs" / "stage5",
+    ):
+        if root.exists():
+            candidates.extend(sorted(root.glob("**/summary.json"), key=lambda path: path.stat().st_mtime, reverse=True))
     candidates.append(resolve_repo_path(DEFAULT_TRACE_COLLECTION))
-    root = ROOT / "outputs" / "stage5"
-    if root.exists():
-        candidates.extend(sorted(root.glob("**/summary.json"), key=lambda path: path.stat().st_mtime, reverse=True))
     return unique_paths(candidates)
 
 
