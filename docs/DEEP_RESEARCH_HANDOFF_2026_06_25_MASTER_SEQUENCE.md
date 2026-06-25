@@ -152,6 +152,11 @@ Purpose:
 - read cyclic debiased scores and content scores together;
 - learned loop control should be enabled, because Stage 4 trains it.
 
+After this publishes, run `master_sequence_status`. Its `Phase 1 Gate Review`
+section decides whether the recurrent-vs-base benchmark is sufficient to spend
+on the dense same-curriculum control or whether deterministic recovery still
+needs repair.
+
 ### 4. Control: `dense_mcq_trace_sft_control`
 
 Purpose:
@@ -161,6 +166,12 @@ Purpose:
 
 The recurrent architecture earns the Phase 1 claim only if it beats this
 same-curriculum dense control on hard/depth-shaped rows without easy regression.
+
+After the dense control publishes, run `master_sequence_status` again. The
+`Phase 1 Gate Review` section is the handoff to strategy review: only
+`hard_tail_lift_vs_dense` is an architecture signal; matching or losing to the
+dense control means the data recipe helped but the recurrence claim is not yet
+proven.
 
 ## Strategic Questions For Deep Research
 
@@ -235,4 +246,3 @@ Phase 2 shows correct-bearing breadth:
 Phase 2 shows diversity without correctness:
   train pathway supervision or regime shaping; do not tune inference noise.
 ```
-

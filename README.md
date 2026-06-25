@@ -73,7 +73,10 @@ option-permutation aggregation. See
 The current front-of-queue action is the Phase 0 re-entry repair chain. Stage 1
 found a dead bridge and Stage 2 found eval-only `entry_rms` re-entry
 normalization safe enough for a tiny trainable smoke. The intended immediate
-sequence is:
+sequence is deliberately gated by `master_sequence_status`: Stage 3 repair,
+Stage 4 recovery, recurrent-vs-base benchmark, then dense same-curriculum
+control. The `Phase 1 Gate Review` section is the authority for the seam after
+Stage 4 and after each benchmark/control artifact.
 
 | Stage | Runtime | Purpose |
 |---|---|---|
@@ -354,8 +357,10 @@ After Stage 3 publishes, run the CPU-only reviewer. In a fresh runtime, change
 `TARGET` in the paste-anywhere launcher above to `master_sequence_status`;
 only use the shorter repo-local form if `/content/recurrent-qwen-svgd` has
 already been freshly cloned or reset to `main` in the current runtime.
-Continue only if the reviewer recommends
-`run_bounded_recovery_training_with_reentry_repair`:
+Continue only if the status output's re-entry reviewer recommends
+`run_bounded_recovery_training_with_reentry_repair`. The same status output now
+also includes the Stage 4 recovery reviewer and the Phase 1 Gate Review, which
+prevents stale benchmark artifacts from being mistaken for the current gate:
 
 ```python
 import os
@@ -375,6 +380,13 @@ os.environ["STAGE5_CURRENT_A100_TARGET"] = "reentry_recovery_training"
 exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
 ```
 
+After Stage 4 recovery publishes, run `master_sequence_status` again. Its Stage
+4 Recovery Review should route to `debiased_benchmark_suite`; after that
+benchmark publishes, run `master_sequence_status` again and follow the
+`Phase 1 Gate Review` section. Only run `dense_mcq_trace_sft_control` if that
+reviewer asks for it, and only move toward Phase 2 breadth if the dense control
+returns `hard_tail_lift_vs_dense`.
+
 Minimum run contract:
 
 - keep Phase 2/SVGD and inference-time particle noise off;
@@ -382,11 +394,13 @@ Minimum run contract:
 - require loop-1 preservation during Stage 3;
 - require finite validation and target-loop/depth-gradient metrics during Stage
   4;
-- pause for review after Stage 2 and Stage 3 before spending additional GPU.
+- pause for review after Stage 2, Stage 3, Stage 4, and each Phase 1
+  benchmark/control artifact before spending additional GPU.
 
 The concise run card is maintained here:
 [`colab/CURRENT_A100_ACTION.md`](colab/CURRENT_A100_ACTION.md).
-Use the CPU-only reviewer `colab/review_stage5_reentry.py` after each run.
+Use the cheap `master_sequence_status` target after each run; it calls the
+re-entry, Stage 4 recovery, and Phase 1 benchmark/control reviewers together.
 
 The longer-term data plan is captured in
 [`docs/CURRICULUM_DATA_PIPELINE.md`](docs/CURRICULUM_DATA_PIPELINE.md): strong
