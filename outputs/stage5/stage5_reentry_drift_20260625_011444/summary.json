@@ -1,0 +1,940 @@
+{
+  "kind": "reentry_drift_diagnostic",
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "checkpoint": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/phase1_direct_preserve/phase1_step_75.pt",
+  "split": "6,18",
+  "max_loops": 8,
+  "max_length": 256,
+  "subspace_rank": 8,
+  "reentry_rescale_mode": "none",
+  "aggregate": {
+    "prompts": 8,
+    "tokens": 187,
+    "mean_entry_rms": 11.867156028747559,
+    "mean_exit_rms": 11.892430305480957,
+    "mean_exit_over_entry_rms": 1.002428486943245,
+    "mean_pooled_entry_exit_cosine": 0.9757358208298683,
+    "entry_exit_subspace": {
+      "rank": 8,
+      "overlap": 0.3702599108219147,
+      "principal_cosines": [
+        0.9998539090156555,
+        0.685553252696991,
+        0.6429897546768188,
+        0.5786604285240173,
+        0.5223291516304016,
+        0.4742244780063629,
+        0.461498886346817,
+        0.18277545273303986
+      ],
+      "aligned_dims_cos_ge_0p8": 1,
+      "aligned_dims_cos_ge_0p9": 1
+    },
+    "loop_summary": {
+      "1": {
+        "raw_input_rms": 11.867156028747559,
+        "input_rms": 11.867156028747559,
+        "output_rms": 11.892430305480957,
+        "input_over_entry_rms": 1.0,
+        "output_over_entry_rms": 1.002428486943245,
+        "output_over_input_rms": 1.002428486943245,
+        "bridge_delta_rms": 0.0,
+        "pooled_input_output_cosine": 0.9757358208298683
+      },
+      "2": {
+        "raw_input_rms": 11.892430305480957,
+        "input_rms": 11.892430305480957,
+        "output_rms": 11.918108761310577,
+        "input_over_entry_rms": 1.002428486943245,
+        "output_over_entry_rms": 1.0049241036176682,
+        "output_over_input_rms": 1.0024871230125427,
+        "bridge_delta_rms": 0.0,
+        "pooled_input_output_cosine": 0.9914550185203552
+      },
+      "3": {
+        "raw_input_rms": 11.918108761310577,
+        "input_rms": 11.918108761310577,
+        "output_rms": 11.953117847442627,
+        "input_over_entry_rms": 1.0049241036176682,
+        "output_over_entry_rms": 1.0082857310771942,
+        "output_over_input_rms": 1.0033385753631592,
+        "bridge_delta_rms": 0.0,
+        "pooled_input_output_cosine": 0.9959690943360329
+      },
+      "4": {
+        "raw_input_rms": 11.953117847442627,
+        "input_rms": 11.953117847442627,
+        "output_rms": 11.997175633907318,
+        "input_over_entry_rms": 1.0082857310771942,
+        "output_over_entry_rms": 1.0124891549348831,
+        "output_over_input_rms": 1.0041560381650925,
+        "bridge_delta_rms": 0.0,
+        "pooled_input_output_cosine": 0.9971648827195168
+      },
+      "5": {
+        "raw_input_rms": 11.997175633907318,
+        "input_rms": 11.997175633907318,
+        "output_rms": 12.049774885177612,
+        "input_over_entry_rms": 1.0124891549348831,
+        "output_over_entry_rms": 1.0174884349107742,
+        "output_over_input_rms": 1.0049159824848175,
+        "bridge_delta_rms": 0.0,
+        "pooled_input_output_cosine": 0.9976935833692551
+      },
+      "6": {
+        "raw_input_rms": 12.049774885177612,
+        "input_rms": 12.049774885177612,
+        "output_rms": 12.111325323581696,
+        "input_over_entry_rms": 1.0174884349107742,
+        "output_over_entry_rms": 1.0233152955770493,
+        "output_over_input_rms": 1.00569386780262,
+        "bridge_delta_rms": 0.0,
+        "pooled_input_output_cosine": 0.9979888498783112
+      },
+      "7": {
+        "raw_input_rms": 12.111325323581696,
+        "input_rms": 12.111325323581696,
+        "output_rms": 12.181363224983215,
+        "input_over_entry_rms": 1.0233152955770493,
+        "output_over_entry_rms": 1.0299247801303864,
+        "output_over_input_rms": 1.006412461400032,
+        "bridge_delta_rms": 0.0,
+        "pooled_input_output_cosine": 0.9982864931225777
+      },
+      "8": {
+        "raw_input_rms": 12.181363224983215,
+        "input_rms": 12.181363224983215,
+        "output_rms": 12.260193347930908,
+        "input_over_entry_rms": 1.0299247801303864,
+        "output_over_entry_rms": 1.0373438447713852,
+        "output_over_input_rms": 1.0071412026882172,
+        "bridge_delta_rms": 0.0,
+        "pooled_input_output_cosine": 0.9984563440084457
+      }
+    }
+  },
+  "bridge": {
+    "bridge_gate": 0.0,
+    "proj_identity_max_abs_diff": 0.0,
+    "proj_bias_max_abs": 0.0,
+    "sample_bridge_delta_rms": 0.0,
+    "sample_state_rms": 13.238465309143066
+  },
+  "bridge_gradient_liveness": {
+    "loss": 175.25689697265625,
+    "gate_grad_abs": 0.0,
+    "weight_grad_rms": 0.0,
+    "bias_grad_rms": 0.0
+  },
+  "reference_bridge_gradient_liveness": {
+    "identity_gate0": {
+      "loss": 1.0146305561065674,
+      "gate_grad_abs": 0.0,
+      "weight_grad_rms": 0.0,
+      "bias_grad_rms": 0.0
+    },
+    "identity_gate1": {
+      "loss": 1.0146305561065674,
+      "gate_grad_abs": 0.0,
+      "weight_grad_rms": 0.0009282529936172068,
+      "bias_grad_rms": 0.0009041997254826128
+    }
+  },
+  "records": [
+    {
+      "prompt_index": 0,
+      "prompt": "Solve exactly. If a train travels 120 miles in 3 hours, what is its average speed?",
+      "tokens": 24,
+      "entry_rms": 10.796095848083496,
+      "exit_rms": 10.824530601501465,
+      "exit_over_entry_rms": 1.002633810043335,
+      "pooled_entry_exit_cosine": 0.9777451753616333,
+      "loop_records": [
+        {
+          "loop": 1,
+          "raw_input_rms": 10.796095848083496,
+          "input_rms": 10.796095848083496,
+          "output_rms": 10.824530601501465,
+          "input_over_entry_rms": 1.0,
+          "output_over_entry_rms": 1.002633810043335,
+          "output_over_input_rms": 1.002633810043335,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9777451753616333
+        },
+        {
+          "loop": 2,
+          "raw_input_rms": 10.824530601501465,
+          "input_rms": 10.824530601501465,
+          "output_rms": 10.852705955505371,
+          "input_over_entry_rms": 1.002633810043335,
+          "output_over_entry_rms": 1.0052435398101807,
+          "output_over_input_rms": 1.0026029348373413,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9918501973152161
+        },
+        {
+          "loop": 3,
+          "raw_input_rms": 10.852705955505371,
+          "input_rms": 10.852705955505371,
+          "output_rms": 10.891258239746094,
+          "input_over_entry_rms": 1.0052435398101807,
+          "output_over_entry_rms": 1.0088145732879639,
+          "output_over_input_rms": 1.0035523176193237,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9952202439308167
+        },
+        {
+          "loop": 4,
+          "raw_input_rms": 10.891258239746094,
+          "input_rms": 10.891258239746094,
+          "output_rms": 10.940275192260742,
+          "input_over_entry_rms": 1.0088145732879639,
+          "output_over_entry_rms": 1.013354778289795,
+          "output_over_input_rms": 1.0045006275177002,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9965388774871826
+        },
+        {
+          "loop": 5,
+          "raw_input_rms": 10.940275192260742,
+          "input_rms": 10.940275192260742,
+          "output_rms": 10.999125480651855,
+          "input_over_entry_rms": 1.013354778289795,
+          "output_over_entry_rms": 1.0188058614730835,
+          "output_over_input_rms": 1.0053791999816895,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9969120025634766
+        },
+        {
+          "loop": 6,
+          "raw_input_rms": 10.999125480651855,
+          "input_rms": 10.999125480651855,
+          "output_rms": 11.068320274353027,
+          "input_over_entry_rms": 1.0188058614730835,
+          "output_over_entry_rms": 1.0252150297164917,
+          "output_over_input_rms": 1.0062909126281738,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.997387170791626
+        },
+        {
+          "loop": 7,
+          "raw_input_rms": 11.068320274353027,
+          "input_rms": 11.068320274353027,
+          "output_rms": 11.146915435791016,
+          "input_over_entry_rms": 1.0252150297164917,
+          "output_over_entry_rms": 1.0324950218200684,
+          "output_over_input_rms": 1.0071009397506714,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9977544546127319
+        },
+        {
+          "loop": 8,
+          "raw_input_rms": 11.146915435791016,
+          "input_rms": 11.146915435791016,
+          "output_rms": 11.23547649383545,
+          "input_over_entry_rms": 1.0324950218200684,
+          "output_over_entry_rms": 1.0406980514526367,
+          "output_over_input_rms": 1.007944941520691,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9980480074882507
+        }
+      ]
+    },
+    {
+      "prompt_index": 1,
+      "prompt": "Solve exactly. The pharmacy has 20 tubs in storage and needs 100 total tubs for the week. It buys one quarter of the remaining needed tubs from a new vendor. How many tubs must it buy from the usual vendor?",
+      "tokens": 54,
+      "entry_rms": 7.20262336730957,
+      "exit_rms": 7.24516487121582,
+      "exit_over_entry_rms": 1.005906343460083,
+      "pooled_entry_exit_cosine": 0.9212493896484375,
+      "loop_records": [
+        {
+          "loop": 1,
+          "raw_input_rms": 7.20262336730957,
+          "input_rms": 7.20262336730957,
+          "output_rms": 7.24516487121582,
+          "input_over_entry_rms": 1.0,
+          "output_over_entry_rms": 1.005906343460083,
+          "output_over_input_rms": 1.005906343460083,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9212493896484375
+        },
+        {
+          "loop": 2,
+          "raw_input_rms": 7.24516487121582,
+          "input_rms": 7.24516487121582,
+          "output_rms": 7.292551517486572,
+          "input_over_entry_rms": 1.005906343460083,
+          "output_over_entry_rms": 1.0124855041503906,
+          "output_over_input_rms": 1.0065404176712036,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.972326397895813
+        },
+        {
+          "loop": 3,
+          "raw_input_rms": 7.292551517486572,
+          "input_rms": 7.292551517486572,
+          "output_rms": 7.353625297546387,
+          "input_over_entry_rms": 1.0124855041503906,
+          "output_over_entry_rms": 1.0209648609161377,
+          "output_over_input_rms": 1.008374810218811,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.990500271320343
+        },
+        {
+          "loop": 4,
+          "raw_input_rms": 7.353625297546387,
+          "input_rms": 7.353625297546387,
+          "output_rms": 7.4279303550720215,
+          "input_over_entry_rms": 1.0209648609161377,
+          "output_over_entry_rms": 1.0312812328338623,
+          "output_over_input_rms": 1.0101045370101929,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9944368600845337
+        },
+        {
+          "loop": 5,
+          "raw_input_rms": 7.4279303550720215,
+          "input_rms": 7.4279303550720215,
+          "output_rms": 7.514928817749023,
+          "input_over_entry_rms": 1.0312812328338623,
+          "output_over_entry_rms": 1.0433599948883057,
+          "output_over_input_rms": 1.0117123126983643,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9965306520462036
+        },
+        {
+          "loop": 6,
+          "raw_input_rms": 7.514928817749023,
+          "input_rms": 7.514928817749023,
+          "output_rms": 7.614434719085693,
+          "input_over_entry_rms": 1.0433599948883057,
+          "output_over_entry_rms": 1.0571751594543457,
+          "output_over_input_rms": 1.0132410526275635,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9973868131637573
+        },
+        {
+          "loop": 7,
+          "raw_input_rms": 7.614434719085693,
+          "input_rms": 7.614434719085693,
+          "output_rms": 7.725665092468262,
+          "input_over_entry_rms": 1.0571751594543457,
+          "output_over_entry_rms": 1.0726182460784912,
+          "output_over_input_rms": 1.0146077871322632,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9980574250221252
+        },
+        {
+          "loop": 8,
+          "raw_input_rms": 7.725665092468262,
+          "input_rms": 7.725665092468262,
+          "output_rms": 7.848234176635742,
+          "input_over_entry_rms": 1.0726182460784912,
+          "output_over_entry_rms": 1.0896354913711548,
+          "output_over_input_rms": 1.0158652067184448,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9984849095344543
+        }
+      ]
+    },
+    {
+      "prompt_index": 2,
+      "prompt": "Solve exactly. What is 17 + 28?",
+      "tokens": 14,
+      "entry_rms": 14.130906105041504,
+      "exit_rms": 14.14769172668457,
+      "exit_over_entry_rms": 1.0011879205703735,
+      "pooled_entry_exit_cosine": 0.9909106492996216,
+      "loop_records": [
+        {
+          "loop": 1,
+          "raw_input_rms": 14.130906105041504,
+          "input_rms": 14.130906105041504,
+          "output_rms": 14.14769172668457,
+          "input_over_entry_rms": 1.0,
+          "output_over_entry_rms": 1.0011879205703735,
+          "output_over_input_rms": 1.0011879205703735,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9909106492996216
+        },
+        {
+          "loop": 2,
+          "raw_input_rms": 14.14769172668457,
+          "input_rms": 14.14769172668457,
+          "output_rms": 14.163522720336914,
+          "input_over_entry_rms": 1.0011879205703735,
+          "output_over_entry_rms": 1.0023081302642822,
+          "output_over_input_rms": 1.0011190176010132,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9967871308326721
+        },
+        {
+          "loop": 3,
+          "raw_input_rms": 14.163522720336914,
+          "input_rms": 14.163522720336914,
+          "output_rms": 14.186640739440918,
+          "input_over_entry_rms": 1.0023081302642822,
+          "output_over_entry_rms": 1.0039441585540771,
+          "output_over_input_rms": 1.0016322135925293,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9981950521469116
+        },
+        {
+          "loop": 4,
+          "raw_input_rms": 14.186640739440918,
+          "input_rms": 14.186640739440918,
+          "output_rms": 14.216607093811035,
+          "input_over_entry_rms": 1.0039441585540771,
+          "output_over_entry_rms": 1.006064772605896,
+          "output_over_input_rms": 1.0021122694015503,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9985359907150269
+        },
+        {
+          "loop": 5,
+          "raw_input_rms": 14.216607093811035,
+          "input_rms": 14.216607093811035,
+          "output_rms": 14.253268241882324,
+          "input_over_entry_rms": 1.006064772605896,
+          "output_over_entry_rms": 1.0086592435836792,
+          "output_over_input_rms": 1.0025787353515625,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9986271858215332
+        },
+        {
+          "loop": 6,
+          "raw_input_rms": 14.253268241882324,
+          "input_rms": 14.253268241882324,
+          "output_rms": 14.297039985656738,
+          "input_over_entry_rms": 1.0086592435836792,
+          "output_over_entry_rms": 1.0117567777633667,
+          "output_over_input_rms": 1.0030709505081177,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.998711347579956
+        },
+        {
+          "loop": 7,
+          "raw_input_rms": 14.297039985656738,
+          "input_rms": 14.297039985656738,
+          "output_rms": 14.34786605834961,
+          "input_over_entry_rms": 1.0117567777633667,
+          "output_over_entry_rms": 1.0153535604476929,
+          "output_over_input_rms": 1.0035550594329834,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9988130927085876
+        },
+        {
+          "loop": 8,
+          "raw_input_rms": 14.34786605834961,
+          "input_rms": 14.34786605834961,
+          "output_rms": 14.405619621276855,
+          "input_over_entry_rms": 1.0153535604476929,
+          "output_over_entry_rms": 1.0194406509399414,
+          "output_over_input_rms": 1.0040252208709717,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.998811662197113
+        }
+      ]
+    },
+    {
+      "prompt_index": 3,
+      "prompt": "Solve exactly. What is 7 times 8?",
+      "tokens": 12,
+      "entry_rms": 15.262386322021484,
+      "exit_rms": 15.277326583862305,
+      "exit_over_entry_rms": 1.000978946685791,
+      "pooled_entry_exit_cosine": 0.9932259321212769,
+      "loop_records": [
+        {
+          "loop": 1,
+          "raw_input_rms": 15.262386322021484,
+          "input_rms": 15.262386322021484,
+          "output_rms": 15.277326583862305,
+          "input_over_entry_rms": 1.0,
+          "output_over_entry_rms": 1.000978946685791,
+          "output_over_input_rms": 1.000978946685791,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9932259321212769
+        },
+        {
+          "loop": 2,
+          "raw_input_rms": 15.277326583862305,
+          "input_rms": 15.277326583862305,
+          "output_rms": 15.291574478149414,
+          "input_over_entry_rms": 1.000978946685791,
+          "output_over_entry_rms": 1.0019124746322632,
+          "output_over_input_rms": 1.0009325742721558,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9975537657737732
+        },
+        {
+          "loop": 3,
+          "raw_input_rms": 15.291574478149414,
+          "input_rms": 15.291574478149414,
+          "output_rms": 15.313506126403809,
+          "input_over_entry_rms": 1.0019124746322632,
+          "output_over_entry_rms": 1.0033494234085083,
+          "output_over_input_rms": 1.0014342069625854,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9985265731811523
+        },
+        {
+          "loop": 4,
+          "raw_input_rms": 15.313506126403809,
+          "input_rms": 15.313506126403809,
+          "output_rms": 15.342601776123047,
+          "input_over_entry_rms": 1.0033494234085083,
+          "output_over_entry_rms": 1.0052558183670044,
+          "output_over_input_rms": 1.0018999576568604,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9988067746162415
+        },
+        {
+          "loop": 5,
+          "raw_input_rms": 15.342601776123047,
+          "input_rms": 15.342601776123047,
+          "output_rms": 15.37868881225586,
+          "input_over_entry_rms": 1.0052558183670044,
+          "output_over_entry_rms": 1.0076202154159546,
+          "output_over_input_rms": 1.0023521184921265,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9988583326339722
+        },
+        {
+          "loop": 6,
+          "raw_input_rms": 15.37868881225586,
+          "input_rms": 15.37868881225586,
+          "output_rms": 15.422401428222656,
+          "input_over_entry_rms": 1.0076202154159546,
+          "output_over_entry_rms": 1.0104843378067017,
+          "output_over_input_rms": 1.0028424263000488,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9988724589347839
+        },
+        {
+          "loop": 7,
+          "raw_input_rms": 15.422401428222656,
+          "input_rms": 15.422401428222656,
+          "output_rms": 15.473287582397461,
+          "input_over_entry_rms": 1.0104843378067017,
+          "output_over_entry_rms": 1.013818383216858,
+          "output_over_input_rms": 1.0032994747161865,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9988998174667358
+        },
+        {
+          "loop": 8,
+          "raw_input_rms": 15.473287582397461,
+          "input_rms": 15.473287582397461,
+          "output_rms": 15.531394958496094,
+          "input_over_entry_rms": 1.013818383216858,
+          "output_over_entry_rms": 1.0176255702972412,
+          "output_over_input_rms": 1.0037553310394287,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9989106059074402
+        }
+      ]
+    },
+    {
+      "prompt_index": 4,
+      "prompt": "Solve exactly. If 36 cookies are shared equally by 6 children, how many cookies does each child get?",
+      "tokens": 25,
+      "entry_rms": 10.57814884185791,
+      "exit_rms": 10.608075141906738,
+      "exit_over_entry_rms": 1.0028290748596191,
+      "pooled_entry_exit_cosine": 0.9733985066413879,
+      "loop_records": [
+        {
+          "loop": 1,
+          "raw_input_rms": 10.57814884185791,
+          "input_rms": 10.57814884185791,
+          "output_rms": 10.608075141906738,
+          "input_over_entry_rms": 1.0,
+          "output_over_entry_rms": 1.0028290748596191,
+          "output_over_input_rms": 1.0028290748596191,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9733985066413879
+        },
+        {
+          "loop": 2,
+          "raw_input_rms": 10.608075141906738,
+          "input_rms": 10.608075141906738,
+          "output_rms": 10.638274192810059,
+          "input_over_entry_rms": 1.0028290748596191,
+          "output_over_entry_rms": 1.0056838989257812,
+          "output_over_input_rms": 1.0028468370437622,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9903512001037598
+        },
+        {
+          "loop": 3,
+          "raw_input_rms": 10.638274192810059,
+          "input_rms": 10.638274192810059,
+          "output_rms": 10.676779747009277,
+          "input_over_entry_rms": 1.0056838989257812,
+          "output_over_entry_rms": 1.009324073791504,
+          "output_over_input_rms": 1.0036195516586304,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9951742887496948
+        },
+        {
+          "loop": 4,
+          "raw_input_rms": 10.676779747009277,
+          "input_rms": 10.676779747009277,
+          "output_rms": 10.723793983459473,
+          "input_over_entry_rms": 1.009324073791504,
+          "output_over_entry_rms": 1.0137684345245361,
+          "output_over_input_rms": 1.0044033527374268,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9968166351318359
+        },
+        {
+          "loop": 5,
+          "raw_input_rms": 10.723793983459473,
+          "input_rms": 10.723793983459473,
+          "output_rms": 10.778962135314941,
+          "input_over_entry_rms": 1.0137684345245361,
+          "output_over_entry_rms": 1.0189838409423828,
+          "output_over_input_rms": 1.005144476890564,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9972733855247498
+        },
+        {
+          "loop": 6,
+          "raw_input_rms": 10.778962135314941,
+          "input_rms": 10.778962135314941,
+          "output_rms": 10.842679023742676,
+          "input_over_entry_rms": 1.0189838409423828,
+          "output_over_entry_rms": 1.0250072479248047,
+          "output_over_input_rms": 1.0059112310409546,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9976819157600403
+        },
+        {
+          "loop": 7,
+          "raw_input_rms": 10.842679023742676,
+          "input_rms": 10.842679023742676,
+          "output_rms": 10.914678573608398,
+          "input_over_entry_rms": 1.0250072479248047,
+          "output_over_entry_rms": 1.031813621520996,
+          "output_over_input_rms": 1.0066404342651367,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9981696009635925
+        },
+        {
+          "loop": 8,
+          "raw_input_rms": 10.914678573608398,
+          "input_rms": 10.914678573608398,
+          "output_rms": 10.995173454284668,
+          "input_over_entry_rms": 1.031813621520996,
+          "output_over_entry_rms": 1.0394232273101807,
+          "output_over_input_rms": 1.007374882698059,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9983444213867188
+        }
+      ]
+    },
+    {
+      "prompt_index": 5,
+      "prompt": "Solve exactly. How many minutes are in 2 hours?",
+      "tokens": 13,
+      "entry_rms": 14.664482116699219,
+      "exit_rms": 14.680630683898926,
+      "exit_over_entry_rms": 1.0011012554168701,
+      "pooled_entry_exit_cosine": 0.9921969175338745,
+      "loop_records": [
+        {
+          "loop": 1,
+          "raw_input_rms": 14.664482116699219,
+          "input_rms": 14.664482116699219,
+          "output_rms": 14.680630683898926,
+          "input_over_entry_rms": 1.0,
+          "output_over_entry_rms": 1.0011012554168701,
+          "output_over_input_rms": 1.0011012554168701,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9921969175338745
+        },
+        {
+          "loop": 2,
+          "raw_input_rms": 14.680630683898926,
+          "input_rms": 14.680630683898926,
+          "output_rms": 14.698025703430176,
+          "input_over_entry_rms": 1.0011012554168701,
+          "output_over_entry_rms": 1.0022873878479004,
+          "output_over_input_rms": 1.0011849403381348,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9970638751983643
+        },
+        {
+          "loop": 3,
+          "raw_input_rms": 14.698025703430176,
+          "input_rms": 14.698025703430176,
+          "output_rms": 14.724103927612305,
+          "input_over_entry_rms": 1.0022873878479004,
+          "output_over_entry_rms": 1.004065752029419,
+          "output_over_input_rms": 1.0017743110656738,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9981546998023987
+        },
+        {
+          "loop": 4,
+          "raw_input_rms": 14.724103927612305,
+          "input_rms": 14.724103927612305,
+          "output_rms": 14.758405685424805,
+          "input_over_entry_rms": 1.004065752029419,
+          "output_over_entry_rms": 1.0064048767089844,
+          "output_over_input_rms": 1.0023295879364014,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9984099268913269
+        },
+        {
+          "loop": 5,
+          "raw_input_rms": 14.758405685424805,
+          "input_rms": 14.758405685424805,
+          "output_rms": 14.800069808959961,
+          "input_over_entry_rms": 1.0064048767089844,
+          "output_over_entry_rms": 1.0092459917068481,
+          "output_over_input_rms": 1.0028231143951416,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9986100196838379
+        },
+        {
+          "loop": 6,
+          "raw_input_rms": 14.800069808959961,
+          "input_rms": 14.800069808959961,
+          "output_rms": 14.849584579467773,
+          "input_over_entry_rms": 1.0092459917068481,
+          "output_over_entry_rms": 1.0126224756240845,
+          "output_over_input_rms": 1.0033456087112427,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9987438321113586
+        },
+        {
+          "loop": 7,
+          "raw_input_rms": 14.849584579467773,
+          "input_rms": 14.849584579467773,
+          "output_rms": 14.906835556030273,
+          "input_over_entry_rms": 1.0126224756240845,
+          "output_over_entry_rms": 1.0165265798568726,
+          "output_over_input_rms": 1.0038553476333618,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.998742938041687
+        },
+        {
+          "loop": 8,
+          "raw_input_rms": 14.906835556030273,
+          "input_rms": 14.906835556030273,
+          "output_rms": 14.971242904663086,
+          "input_over_entry_rms": 1.0165265798568726,
+          "output_over_entry_rms": 1.020918607711792,
+          "output_over_input_rms": 1.0043206214904785,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9988222122192383
+        }
+      ]
+    },
+    {
+      "prompt_index": 6,
+      "prompt": "Solve exactly. A rectangle is 9 cm long and 6 cm wide. What is its area?",
+      "tokens": 22,
+      "entry_rms": 11.27518367767334,
+      "exit_rms": 11.302056312561035,
+      "exit_over_entry_rms": 1.0023833513259888,
+      "pooled_entry_exit_cosine": 0.9792497158050537,
+      "loop_records": [
+        {
+          "loop": 1,
+          "raw_input_rms": 11.27518367767334,
+          "input_rms": 11.27518367767334,
+          "output_rms": 11.302056312561035,
+          "input_over_entry_rms": 1.0,
+          "output_over_entry_rms": 1.0023833513259888,
+          "output_over_input_rms": 1.0023833513259888,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9792497158050537
+        },
+        {
+          "loop": 2,
+          "raw_input_rms": 11.302056312561035,
+          "input_rms": 11.302056312561035,
+          "output_rms": 11.3279447555542,
+          "input_over_entry_rms": 1.0023833513259888,
+          "output_over_entry_rms": 1.0046794414520264,
+          "output_over_input_rms": 1.0022906064987183,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9926321506500244
+        },
+        {
+          "loop": 3,
+          "raw_input_rms": 11.3279447555542,
+          "input_rms": 11.3279447555542,
+          "output_rms": 11.36329174041748,
+          "input_over_entry_rms": 1.0046794414520264,
+          "output_over_entry_rms": 1.0078142881393433,
+          "output_over_input_rms": 1.0031203031539917,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9958244562149048
+        },
+        {
+          "loop": 4,
+          "raw_input_rms": 11.36329174041748,
+          "input_rms": 11.36329174041748,
+          "output_rms": 11.407876968383789,
+          "input_over_entry_rms": 1.0078142881393433,
+          "output_over_entry_rms": 1.0117685794830322,
+          "output_over_input_rms": 1.0039236545562744,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.996723473072052
+        },
+        {
+          "loop": 5,
+          "raw_input_rms": 11.407876968383789,
+          "input_rms": 11.407876968383789,
+          "output_rms": 11.461021423339844,
+          "input_over_entry_rms": 1.0117685794830322,
+          "output_over_entry_rms": 1.0164819955825806,
+          "output_over_input_rms": 1.004658579826355,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.997279167175293
+        },
+        {
+          "loop": 6,
+          "raw_input_rms": 11.461021423339844,
+          "input_rms": 11.461021423339844,
+          "output_rms": 11.523165702819824,
+          "input_over_entry_rms": 1.0164819955825806,
+          "output_over_entry_rms": 1.021993637084961,
+          "output_over_input_rms": 1.0054222345352173,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9973599314689636
+        },
+        {
+          "loop": 7,
+          "raw_input_rms": 11.523165702819824,
+          "input_rms": 11.523165702819824,
+          "output_rms": 11.593510627746582,
+          "input_over_entry_rms": 1.021993637084961,
+          "output_over_entry_rms": 1.0282325744628906,
+          "output_over_input_rms": 1.0061047077178955,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9978618025779724
+        },
+        {
+          "loop": 8,
+          "raw_input_rms": 11.593510627746582,
+          "input_rms": 11.593510627746582,
+          "output_rms": 11.673460006713867,
+          "input_over_entry_rms": 1.0282325744628906,
+          "output_over_entry_rms": 1.0353232622146606,
+          "output_over_input_rms": 1.0068960189819336,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9980789422988892
+        }
+      ]
+    },
+    {
+      "prompt_index": 7,
+      "prompt": "Solve exactly. A $50 item is discounted by 20 percent. What is the sale price?",
+      "tokens": 23,
+      "entry_rms": 11.027421951293945,
+      "exit_rms": 11.053966522216797,
+      "exit_over_entry_rms": 1.002407193183899,
+      "pooled_entry_exit_cosine": 0.9779102802276611,
+      "loop_records": [
+        {
+          "loop": 1,
+          "raw_input_rms": 11.027421951293945,
+          "input_rms": 11.027421951293945,
+          "output_rms": 11.053966522216797,
+          "input_over_entry_rms": 1.0,
+          "output_over_entry_rms": 1.002407193183899,
+          "output_over_input_rms": 1.002407193183899,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9779102802276611
+        },
+        {
+          "loop": 2,
+          "raw_input_rms": 11.053966522216797,
+          "input_rms": 11.053966522216797,
+          "output_rms": 11.080270767211914,
+          "input_over_entry_rms": 1.002407193183899,
+          "output_over_entry_rms": 1.0047924518585205,
+          "output_over_input_rms": 1.0023796558380127,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.993075430393219
+        },
+        {
+          "loop": 3,
+          "raw_input_rms": 11.080270767211914,
+          "input_rms": 11.080270767211914,
+          "output_rms": 11.115736961364746,
+          "input_over_entry_rms": 1.0047924518585205,
+          "output_over_entry_rms": 1.0080087184906006,
+          "output_over_input_rms": 1.003200888633728,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.996157169342041
+        },
+        {
+          "loop": 4,
+          "raw_input_rms": 11.115736961364746,
+          "input_rms": 11.115736961364746,
+          "output_rms": 11.159914016723633,
+          "input_over_entry_rms": 1.0080087184906006,
+          "output_over_entry_rms": 1.0120147466659546,
+          "output_over_input_rms": 1.0039743185043335,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9970505237579346
+        },
+        {
+          "loop": 5,
+          "raw_input_rms": 11.159914016723633,
+          "input_rms": 11.159914016723633,
+          "output_rms": 11.21213436126709,
+          "input_over_entry_rms": 1.0120147466659546,
+          "output_over_entry_rms": 1.0167503356933594,
+          "output_over_input_rms": 1.0046793222427368,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9974579215049744
+        },
+        {
+          "loop": 6,
+          "raw_input_rms": 11.21213436126709,
+          "input_rms": 11.21213436126709,
+          "output_rms": 11.272976875305176,
+          "input_over_entry_rms": 1.0167503356933594,
+          "output_over_entry_rms": 1.0222676992416382,
+          "output_over_input_rms": 1.0054265260696411,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9977673292160034
+        },
+        {
+          "loop": 7,
+          "raw_input_rms": 11.272976875305176,
+          "input_rms": 11.272976875305176,
+          "output_rms": 11.342146873474121,
+          "input_over_entry_rms": 1.0222676992416382,
+          "output_over_entry_rms": 1.0285402536392212,
+          "output_over_input_rms": 1.0061359405517578,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9979928135871887
+        },
+        {
+          "loop": 8,
+          "raw_input_rms": 11.342146873474121,
+          "input_rms": 11.342146873474121,
+          "output_rms": 11.420945167541504,
+          "input_over_entry_rms": 1.0285402536392212,
+          "output_over_entry_rms": 1.0356858968734741,
+          "output_over_input_rms": 1.00694739818573,
+          "bridge_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9981499910354614
+        }
+      ]
+    }
+  ],
+  "run_id": "stage5_reentry_drift_20260625_011444",
+  "cell_version": "stage5_reentry_drift_v1_readonly",
+  "prompts": "eval/smoke_exact_tasks_v2.jsonl"
+}
