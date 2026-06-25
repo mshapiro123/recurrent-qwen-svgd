@@ -23,9 +23,20 @@ ROOT = Path("/content/recurrent-qwen-svgd")
 DRIVE_ARTIFACT_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts")
 
 DEFAULT_CHECKPOINT = (
-    "outputs/stage5/stage5_content_arcmix_qonly_optiontext_20260623_121707/"
-    "arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt"
+    "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/"
+    "phase1_direct_preserve/phase1_step_75.pt"
 )
+FALLBACK_CHECKPOINTS = [
+    DEFAULT_CHECKPOINT,
+    (
+        "outputs/stage5/stage5_content_arcmix_qonly_optiontext_20260623_121707/"
+        "arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt"
+    ),
+    (
+        "outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/"
+        "arc_mix_response_w005_lr2e6/phase1/phase1_step_50.pt"
+    ),
+]
 
 
 def secret(*names: str) -> str | None:
@@ -88,7 +99,52 @@ def ensure_repo() -> None:
     run(["git", "log", "--oneline", "-5"])
 
 
-def restore_checkpoint(rel_path: str) -> Path:
+def normalize_rel_path(path: str) -> str:
+    return str(path).replace("\\", "/").lstrip("/")
+
+
+def unique_paths(paths: list[Path]) -> list[Path]:
+    seen: set[str] = set()
+    out: list[Path] = []
+    for path in paths:
+        key = path.as_posix()
+        if key not in seen:
+            seen.add(key)
+            out.append(path)
+    return out
+
+
+def checkpoint_candidates(requested: str, *, allow_fallback: bool) -> list[str]:
+    requested = normalize_rel_path(requested)
+    candidates = [requested]
+    if allow_fallback:
+        candidates.extend(path for path in FALLBACK_CHECKPOINTS if normalize_rel_path(path) not in candidates)
+    return candidates
+
+
+def drive_checkpoint_candidates(rel_path: str, target: Path) -> list[Path]:
+    rel_path = normalize_rel_path(rel_path)
+    rel = Path(rel_path)
+    roots = [DRIVE_ARTIFACT_ROOT, Path("/content/drive/MyDrive/recurrent-qwen-svgd")]
+    candidates: list[Path] = []
+    for root in roots:
+        candidates.append(root / rel_path)
+        if rel_path.startswith("outputs/stage5/") and len(rel.parts) > 3:
+            run_id = rel.parts[2]
+            after_run = Path(*rel.parts[3:])
+            candidates.append(root / run_id / after_run)
+            candidates.append(root / "outputs" / "stage5" / run_id / after_run)
+            if root.exists():
+                candidates.extend(
+                    p
+                    for p in root.rglob(target.name)
+                    if run_id in p.as_posix() and p.name == target.name
+                )
+    return unique_paths(candidates)
+
+
+def restore_one_checkpoint(rel_path: str) -> Path:
+    rel_path = normalize_rel_path(rel_path)
     target = ROOT / rel_path
     if target.exists():
         print(f"checkpoint already local: {target}", flush=True)
@@ -97,15 +153,7 @@ def restore_checkpoint(rel_path: str) -> Path:
     print("Mounting Drive to restore checkpoint.", flush=True)
     drive.mount("/content/drive", force_remount=False)
 
-    candidates = [
-        DRIVE_ARTIFACT_ROOT / rel_path,
-        Path("/content/drive/MyDrive/recurrent-qwen-svgd") / rel_path,
-    ]
-    rel = Path(rel_path)
-    run_id = rel.parts[2] if rel_path.startswith("outputs/stage5/") and len(rel.parts) > 2 else ""
-    for root in [DRIVE_ARTIFACT_ROOT, Path("/content/drive/MyDrive/recurrent-qwen-svgd")]:
-        if root.exists() and run_id:
-            candidates.extend(p for p in root.rglob(target.name) if run_id in str(p))
+    candidates = drive_checkpoint_candidates(rel_path, target)
 
     for candidate in candidates:
         if candidate.exists():
@@ -114,7 +162,21 @@ def restore_checkpoint(rel_path: str) -> Path:
             print(f"restored_checkpoint={candidate} -> {target}", flush=True)
             return target
 
-    raise FileNotFoundError(f"Could not restore checkpoint from Drive: {rel_path}")
+    preview = "\n".join(f"  - {path}" for path in candidates[:12])
+    raise FileNotFoundError(f"Could not restore checkpoint from Drive: {rel_path}\nTried:\n{preview}")
+
+
+def restore_checkpoint(rel_path: str, *, allow_fallback: bool) -> Path:
+    errors: list[str] = []
+    for candidate in checkpoint_candidates(rel_path, allow_fallback=allow_fallback):
+        try:
+            return restore_one_checkpoint(candidate)
+        except FileNotFoundError as exc:
+            errors.append(str(exc))
+            if not allow_fallback:
+                break
+            print(f"checkpoint candidate unavailable, trying fallback: {candidate}", flush=True)
+    raise FileNotFoundError("\n\n".join(errors))
 
 
 def read_json(path: Path) -> dict[str, object]:
@@ -394,7 +456,8 @@ def publish_outputs(out_dir: Path, run_id: str) -> None:
 def main() -> None:
     print(f"cell_version={STAGE5_REENTRY_NORM_CELL_VERSION}", flush=True)
     run_id = os.environ.get("STAGE5_REENTRY_NORM_RUN_ID") or time.strftime("stage5_reentry_norm_%Y%m%d_%H%M%S")
-    checkpoint = os.environ.get("STAGE5_REENTRY_NORM_CHECKPOINT", DEFAULT_CHECKPOINT)
+    checkpoint_override = os.environ.get("STAGE5_REENTRY_NORM_CHECKPOINT")
+    checkpoint = checkpoint_override or DEFAULT_CHECKPOINT
     prompts = os.environ.get("STAGE5_REENTRY_NORM_PROMPTS", "eval/smoke_exact_tasks_v2.jsonl")
     disconnect = os.environ.get("STAGE5_REENTRY_NORM_DISCONNECT", "1").strip().lower() in {
         "1",
@@ -418,7 +481,8 @@ def main() -> None:
             "tests/test_recurrent_wrapper_tiny.py",
         ]
     )
-    restore_checkpoint(checkpoint)
+    checkpoint_path = restore_checkpoint(checkpoint, allow_fallback=checkpoint_override is None)
+    checkpoint = checkpoint_path.relative_to(ROOT).as_posix()
 
     out_dir = ROOT / "outputs" / "stage5" / run_id
     diag_dir = out_dir / "reentry_norm"
