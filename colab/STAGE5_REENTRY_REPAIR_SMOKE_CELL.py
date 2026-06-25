@@ -207,6 +207,74 @@ def restore_checkpoint(rel_path: str, *, allow_fallback: bool) -> Path:
     raise FileNotFoundError("\n\n".join(errors))
 
 
+def read_json(path: Path) -> dict[str, object]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def latest_matching(paths: list[Path]) -> Path | None:
+    existing = [path for path in paths if path.exists()]
+    if not existing:
+        return None
+    return sorted(existing, key=lambda path: path.as_posix())[-1]
+
+
+def norm_assessment_candidates() -> list[Path]:
+    candidates: list[Path] = []
+    override = os.environ.get("STAGE5_REENTRY_REPAIR_NORM_ASSESSMENT", "").strip()
+    if override:
+        candidates.append(ROOT / normalize_rel_path(override))
+        candidates.append(DRIVE_ARTIFACT_ROOT / normalize_rel_path(override))
+        candidates.append(Path("/content/drive/MyDrive/recurrent-qwen-svgd") / normalize_rel_path(override))
+
+    for root in (ROOT / "outputs" / "stage5", DRIVE_ARTIFACT_ROOT / "outputs" / "stage5"):
+        if root.exists():
+            candidates.extend(sorted(root.glob("stage5_reentry_norm_*/reentry_assessment.json")))
+    return unique_paths(candidates)
+
+
+def load_required_norm_assessment() -> dict[str, object] | None:
+    required = os.environ.get("STAGE5_REENTRY_REPAIR_REQUIRE_NORM_PASS", "1").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+    }
+    if not required:
+        print("Stage 2 norm assessment gate disabled by STAGE5_REENTRY_REPAIR_REQUIRE_NORM_PASS=0.", flush=True)
+        return None
+
+    local_candidate = latest_matching(norm_assessment_candidates())
+    if local_candidate is None and not Path("/content/drive/MyDrive").exists():
+        print("Mounting Drive to find Stage 2 re-entry norm assessment.", flush=True)
+        drive.mount("/content/drive", force_remount=False)
+        local_candidate = latest_matching(norm_assessment_candidates())
+
+    if local_candidate is None:
+        raise FileNotFoundError(
+            "Stage 3 repair smoke requires a passing Stage 2 re-entry norm assessment. "
+            "Run STAGE5_CURRENT_A100_TARGET=reentry_norm_diagnostic first, or set "
+            "STAGE5_REENTRY_REPAIR_REQUIRE_NORM_PASS=0 for an intentional override."
+        )
+
+    assessment = read_json(local_candidate)
+    recommendation = str(assessment.get("recommendation", ""))
+    status = str(assessment.get("status", ""))
+    print(f"stage2_norm_assessment={local_candidate}", flush=True)
+    print(f"stage2_norm_status={status} recommendation={recommendation}", flush=True)
+    if recommendation != "run_reentry_repair_smoke":
+        raise RuntimeError(
+            "Stage 2 re-entry norm assessment did not recommend repair smoke. "
+            f"status={status!r} recommendation={recommendation!r}. Review before spending GPU."
+        )
+    return {
+        "path": local_candidate.relative_to(ROOT).as_posix() if local_candidate.is_relative_to(ROOT) else local_candidate.as_posix(),
+        "status": status,
+        "recommendation": recommendation,
+        "reason": assessment.get("reason"),
+        "metrics": assessment.get("metrics", {}),
+    }
+
+
 def write_smoke_data(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(json.dumps(row) for row in SMOKE_ROWS) + "\n", encoding="utf-8")
@@ -455,6 +523,7 @@ def main() -> None:
     }
 
     ensure_repo()
+    norm_assessment = load_required_norm_assessment()
     run(["nvidia-smi"], cwd=Path("/content"))
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"])
     run(
@@ -522,6 +591,7 @@ def main() -> None:
         "pre_bridge": bridge_summary(pre_payload),
         "post_bridge": bridge_summary(post_payload),
         "loop1_preservation": loop1_preservation,
+        "stage2_norm_assessment": norm_assessment,
     }
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     write_markdown(summary, out_dir / "summary.md")

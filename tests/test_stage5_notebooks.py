@@ -1235,6 +1235,8 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "eval/eval_reentry_drift.py" in cell
     assert "Loop-1 Preservation" in cell
     assert "loop1_preservation" in cell
+    assert "STAGE5_REENTRY_REPAIR_REQUIRE_NORM_PASS" in cell
+    assert "stage2_norm_assessment" in cell
     assert "colab/assess_stage5_reentry.py" in cell
     assert "Readout Pause" in cell
     assert "runtime.unassign" in cell

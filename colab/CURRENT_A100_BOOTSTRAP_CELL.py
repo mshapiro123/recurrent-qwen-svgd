@@ -334,6 +334,8 @@ TARGETS = {
             "eval/eval_reentry_drift.py",
             "Loop-1 Preservation",
             "loop1_preservation",
+            "STAGE5_REENTRY_REPAIR_REQUIRE_NORM_PASS",
+            "stage2_norm_assessment",
             "colab/assess_stage5_reentry.py",
             "tests/test_bridge.py",
             "Readout Pause",
