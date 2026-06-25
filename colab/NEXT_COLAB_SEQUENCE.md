@@ -92,6 +92,19 @@ The scale-up plan is parallel work. It should be run on CPU or a cheap
 non-GPU runtime while the GPU remains focused on Phase 0. It does **not**
 replace the `reentry_repair_smoke` gate.
 
+To launch the provider-backed claim-sized direct/deep shard from the same
+bootstrap interface, use:
+
+```python
+TARGET = "claim_curriculum_scaleup_cpu"
+```
+
+Default behavior builds/resumes the artifact pipeline without provider API
+calls. Set `STAGE5_CURRICULUM_RUN_PROVIDER_RESPONSES=1` only after `MODEL_MAP`
+and the provider secret are configured. Set
+`STAGE5_CURRICULUM_PROVIDER_LIMIT=2` for a tiny provider smoke; leave it unset
+for all pending rows.
+
 ### 1. Finish or recover Stage 2
 
 Target:

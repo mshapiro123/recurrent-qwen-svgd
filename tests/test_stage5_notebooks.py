@@ -1165,15 +1165,23 @@ def test_drive_checkpoint_preflight_plain_cell_matches_markdown_code() -> None:
 def test_curriculum_artifact_pipeline_cell_defaults_to_no_provider_spend() -> None:
     text = (ROOT / "colab/CURRICULUM_ARTIFACT_PIPELINE_CELL.md").read_text(encoding="utf-8")
     plain = (ROOT / "colab/CURRICULUM_ARTIFACT_PIPELINE_CELL.py").read_text(encoding="utf-8")
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
 
-    assert "RUN_PROVIDER_RESPONSES = False" in text
-    assert "RUN_PROVIDER_RESPONSES = False" in plain
-    assert "PROVIDER_LIMIT = 2" in text
-    assert "PROVIDER_LIMIT = 2" in plain
-    assert "MIN_POSITIVE_ROWS = 16" in text
-    assert "MIN_POSITIVE_ROWS = 16" in plain
-    assert 'MIN_MODE_ROWS = ""' in text
-    assert 'MIN_MODE_ROWS = ""' in plain
+    assert "claim_curriculum_scaleup_cpu" in bootstrap
+    assert "data/curriculum/claim_direct_deep_001" in text
+    assert "data/curriculum/claim_direct_deep_001" in plain
+    assert "STAGE5_CURRICULUM_RUN_PROVIDER_RESPONSES" in text
+    assert "STAGE5_CURRICULUM_RUN_PROVIDER_RESPONSES" in plain
+    assert "STAGE5_CURRICULUM_PROVIDER_LIMIT" in text
+    assert "STAGE5_CURRICULUM_PROVIDER_LIMIT" in plain
+    assert "PROVIDER_LIMIT_RAW" in plain
+    assert "MIN_POSITIVE_ROWS = 2000" in text
+    assert "MIN_POSITIVE_ROWS = 2000" in plain
+    assert 'MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"' in text
+    assert 'MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"' in plain
+    assert '"math,science"' in plain
+    assert '"1,2,5,9"' in plain
+    assert '"122"' in plain
     assert "--min_mode_rows" in plain
     assert "str(MIN_POSITIVE_ROWS)" in plain
     assert '"--min_natural_agree"' in plain

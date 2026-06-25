@@ -4,15 +4,21 @@ from google.colab import drive, runtime, userdata
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
-WORK_DIR = "data/curriculum/run_001"
+WORK_DIR = os.environ.get("STAGE5_CURRICULUM_ARTIFACT_WORK_DIR", "data/curriculum/claim_direct_deep_001")
 
 # CPU/network workflow. Leave this False until the model map and provider secret are set.
-RUN_PROVIDER_RESPONSES = False
+RUN_PROVIDER_RESPONSES = os.environ.get("STAGE5_CURRICULUM_RUN_PROVIDER_RESPONSES", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 PROVIDER_BACKEND = "openai_compatible"  # or "command"
 PROVIDER_COMMAND = "python scripts/my_provider_runner.py"
-PROVIDER_LIMIT = 2  # keep tiny for first smoke; set None for a full response batch.
-MIN_POSITIVE_ROWS = 16  # CPU/API smoke gate; raise before any real GPU SFT.
-MIN_MODE_ROWS = ""  # Optional, e.g. "direct=1000,deep_narrow=1000" or "wide=64".
+PROVIDER_LIMIT_RAW = os.environ.get("STAGE5_CURRICULUM_PROVIDER_LIMIT", "none").strip().lower()
+PROVIDER_LIMIT = None if PROVIDER_LIMIT_RAW in {"", "none", "all"} else int(PROVIDER_LIMIT_RAW)
+MIN_POSITIVE_ROWS = 2000
+MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"
 
 API_KEY_ENV = "OPENAI_API_KEY"
 BASE_URL = "https://api.openai.com/v1"
@@ -47,13 +53,13 @@ PIPELINE_ARGS = [
     "--judge_models",
     "opus-strong,glm-strong",
     "--domains",
-    "math",
+    "math,science",
     "--difficulties",
     "medium,hard",
     "--target_steps",
-    "4,8",
+    "1,2,5,9",
     "--count_per_combo",
-    "1",
+    "122",
     "--reference_model",
     "weak-reference",
     "--reference_samples",

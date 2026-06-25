@@ -60,7 +60,8 @@ def test_curriculum_scaleup_plan_keeps_gpu_on_reentry_and_reports_deficits(tmp_p
     assert plan["generation_assumptions"]["estimated_count_per_combo"] == 122
     assert plan["actions"][0]["name"] == "keep_gpu_on_phase0"
     assert plan["actions"][0]["command"] == "STAGE5_CURRENT_A100_TARGET=reentry_repair_smoke"
-    assert "training/run_curriculum_pipeline_from_artifacts.py" in plan["actions"][1]["command"]
-    assert "--min_positive_rows 2000" in plan["actions"][3]["command"]
-    assert "--min_mode_rows deep_narrow=1000,direct=1000" in plan["actions"][3]["command"]
+    assert plan["actions"][1]["command"] == "STAGE5_CURRENT_A100_TARGET=claim_curriculum_scaleup_cpu"
+    assert "training/run_curriculum_pipeline_from_artifacts.py" in plan["actions"][2]["command"]
+    assert "--min_positive_rows 2000" in plan["actions"][4]["command"]
+    assert "--min_mode_rows deep_narrow=1000,direct=1000" in plan["actions"][4]["command"]
     assert "does not unlock Stage 4" in plan["phase_order_warning"]

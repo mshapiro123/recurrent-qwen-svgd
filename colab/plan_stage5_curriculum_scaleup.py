@@ -200,8 +200,14 @@ def build_plan(
         {
             "name": "scale_cpu_api_curriculum",
             "runtime": "CPU or cheap non-GPU runtime",
+            "command": "STAGE5_CURRENT_A100_TARGET=claim_curriculum_scaleup_cpu",
+            "why": "Use the maintained bootstrap target for the claim-sized direct/deep artifact pipeline.",
+        },
+        {
+            "name": "scale_cpu_api_curriculum_raw",
+            "runtime": "CPU or cheap non-GPU runtime",
             "command": pipeline_cmd,
-            "why": "Build the next job manifest and advance any already-present response artifacts without consuming GPU.",
+            "why": "Underlying command run by the target when you need to debug locally.",
         },
         {
             "name": "fill_pending_provider_responses",

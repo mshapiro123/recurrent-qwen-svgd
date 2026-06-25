@@ -804,3 +804,11 @@ Colab/Drive backups for selected runs.
   on `reentry_repair_smoke`. This preserves the master-sequence dependency
   order: data can scale in parallel, but Stage 4 remains locked behind the
   Stage 3 re-entry repair gate.
+- Claim-sized curriculum CPU target: updated the resumable curriculum artifact
+  pipeline to default to the claim-sized direct/deep shard
+  (`data/curriculum/claim_direct_deep_001`, `2000` positives,
+  `direct=1000,deep_narrow=1000`, `math,science`, target steps `1,2,5,9`,
+  `count_per_combo=122`) while keeping provider calls disabled unless
+  `STAGE5_CURRICULUM_RUN_PROVIDER_RESPONSES=1` is explicitly set. The bootstrap
+  now exposes `claim_curriculum_scaleup_cpu`, so the same single Colab launcher
+  can run the CPU/API data path without copy/pasting raw commands.

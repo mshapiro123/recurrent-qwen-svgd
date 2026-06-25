@@ -4,11 +4,14 @@ Use this in a CPU or cheap Colab runtime, not an A100. It clones or updates the
 private repo, runs the resumable curriculum artifact pipeline, optionally runs
 one bounded provider-response batch, and backs up the work directory to Drive.
 
-Default behavior is safe: it does **not** call provider APIs. Fill `MODEL_MAP`,
-set the provider secret, and flip `RUN_PROVIDER_RESPONSES = True` only when you
-want to spend API credits. Keep `PROVIDER_LIMIT = 2` for the first smoke.
-Repeated runs resume partial `responses_*.jsonl` files until each pending
-response file has at least as many rows as its matching `jobs_*.jsonl`.
+Default behavior is safe: it does **not** call provider APIs. It now targets
+the claim-sized direct/deep curriculum shard from the master-sequence status
+readout. Fill `MODEL_MAP`, set the provider secret, and set
+`STAGE5_CURRICULUM_RUN_PROVIDER_RESPONSES=1` only when you want to spend API
+credits. Use `STAGE5_CURRICULUM_PROVIDER_LIMIT=2` for a first provider smoke;
+the default is `none`, meaning all pending rows once provider responses are
+enabled. Repeated runs resume partial `responses_*.jsonl` files until each
+pending response file has at least as many rows as its matching `jobs_*.jsonl`.
 The cell also refuses attached GPU runtimes by default; this is CPU/API work.
 
 ```python
@@ -18,15 +21,21 @@ from google.colab import drive, runtime, userdata
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
-WORK_DIR = "data/curriculum/run_001"
+WORK_DIR = os.environ.get("STAGE5_CURRICULUM_ARTIFACT_WORK_DIR", "data/curriculum/claim_direct_deep_001")
 
 # CPU/network workflow. Leave this False until the model map and provider secret are set.
-RUN_PROVIDER_RESPONSES = False
+RUN_PROVIDER_RESPONSES = os.environ.get("STAGE5_CURRICULUM_RUN_PROVIDER_RESPONSES", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 PROVIDER_BACKEND = "openai_compatible"  # or "command"
 PROVIDER_COMMAND = "python scripts/my_provider_runner.py"
-PROVIDER_LIMIT = 2  # keep tiny for first smoke; set None for a full response batch.
-MIN_POSITIVE_ROWS = 16  # CPU/API smoke gate; raise before any real GPU SFT.
-MIN_MODE_ROWS = ""  # Optional, e.g. "direct=1000,deep_narrow=1000" or "wide=64".
+PROVIDER_LIMIT_RAW = os.environ.get("STAGE5_CURRICULUM_PROVIDER_LIMIT", "none").strip().lower()
+PROVIDER_LIMIT = None if PROVIDER_LIMIT_RAW in {"", "none", "all"} else int(PROVIDER_LIMIT_RAW)
+MIN_POSITIVE_ROWS = 2000
+MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"
 
 API_KEY_ENV = "OPENAI_API_KEY"
 BASE_URL = "https://api.openai.com/v1"
@@ -61,13 +70,13 @@ PIPELINE_ARGS = [
     "--judge_models",
     "opus-strong,glm-strong",
     "--domains",
-    "math",
+    "math,science",
     "--difficulties",
     "medium,hard",
     "--target_steps",
-    "4,8",
+    "1,2,5,9",
     "--count_per_combo",
-    "1",
+    "122",
     "--reference_model",
     "weak-reference",
     "--reference_samples",

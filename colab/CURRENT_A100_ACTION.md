@@ -148,6 +148,16 @@ repair assessment recommending:
 run_bounded_recovery_training_with_reentry_repair
 ```
 
+CPU launch target:
+
+```python
+TARGET = "claim_curriculum_scaleup_cpu"
+```
+
+Leave provider calls disabled until `MODEL_MAP` and the provider API secret are
+configured. Use `STAGE5_CURRICULUM_PROVIDER_LIMIT=2` for the first paid
+provider smoke.
+
 ## Explicit Stops
 
 Stop and review if any of these happen:

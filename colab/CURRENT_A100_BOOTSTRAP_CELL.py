@@ -7,7 +7,8 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 
 # Safe default: verify Drive/checkpoint visibility on a CPU/cheap runtime.
 # Other options:
-#   "programmatic_curriculum_cpu" - generate/publish the direct/deep curriculum gate on CPU.
+#   "programmatic_curriculum_cpu" - generate/publish the synthetic direct/deep curriculum gate on CPU.
+#   "claim_curriculum_scaleup_cpu" - build/fill the provider-backed claim-sized direct/deep curriculum shard on CPU.
 #   "master_sequence_status" - cheap CPU readout of current phase, pointer, and next target.
 #   "safe_continue_dry_run" - fetch safe-continue but do not spend GPU.
 #   "safe_continue_execute" - fetch safe-continue and opt in to the guarded paid action.
@@ -127,6 +128,27 @@ TARGETS = {
             "FileNotFoundError",
             "OSError",
             "Refusing to run CPU-only programmatic curriculum generation",
+        ],
+        "env": {},
+    },
+    "claim_curriculum_scaleup_cpu": {
+        "path": "colab/CURRICULUM_ARTIFACT_PIPELINE_CELL.py",
+        "markers": [
+            "data/curriculum/claim_direct_deep_001",
+            "STAGE5_CURRICULUM_RUN_PROVIDER_RESPONSES",
+            "STAGE5_CURRICULUM_PROVIDER_LIMIT",
+            "MIN_POSITIVE_ROWS = 2000",
+            'MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"',
+            '"math,science"',
+            '"1,2,5,9"',
+            '"122"',
+            "RUN_PROVIDER_RESPONSES",
+            "training/run_curriculum_pipeline_from_artifacts.py",
+            "training/run_curriculum_job_responses.py",
+            "training/check_curriculum_sft_gate.py",
+            "REFUSE_GPU_RUNTIME",
+            "Refusing to run CPU/API curriculum pipeline",
+            "runtime.unassign",
         ],
         "env": {},
     },
