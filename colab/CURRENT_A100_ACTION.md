@@ -127,6 +127,27 @@ reentry_repair_smoke -> reentry_recovery_training
 The benchmark/control step is the Phase 1 architecture test: recurrent versus
 base, then recurrent versus a standard Qwen same-curriculum LoRA control.
 
+## Parallel CPU/API Data Work
+
+The current trace collection is enough for a bounded Stage 4 recovery smoke,
+but it is not claim-sized. The cheap status target now prints a
+claim-sized curriculum scale-up plan. Current default deficits are:
+
+```text
+positive rows: 1937
+direct rows:   974
+deep_narrow:   963
+```
+
+This work should run on CPU or a cheap non-GPU runtime while the GPU queue
+stays on Phase 0. It prepares data for later Phase 1 depth training; it does
+not unlock Stage 4 by itself. Stage 4 still requires Stage 3 to publish a
+repair assessment recommending:
+
+```text
+run_bounded_recovery_training_with_reentry_repair
+```
+
 ## Explicit Stops
 
 Stop and review if any of these happen:

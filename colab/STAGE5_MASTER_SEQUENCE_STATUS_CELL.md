@@ -2,7 +2,8 @@
 
 Cheap CPU readout for restarted Colab sessions. It fetches the latest repo,
 prints the current Stage 5 source pointer, asks the planner and re-entry
-reviewer for the next target, prints the queue excerpt, and disconnects by
+reviewer for the next target, prints the Stage 4 curriculum readiness and
+claim-sized scale-up plan, prints the queue excerpt, and disconnects by
 default. It does not mount Drive, download models, train, or evaluate.
 
 ```python
@@ -85,6 +86,8 @@ run([sys.executable, "colab/print_current_stage5_action.py"], cwd=ROOT, check=Fa
 run([sys.executable, "colab/review_stage5_reentry.py", "--no_write"], cwd=ROOT, check=False)
 print("\nStage 4 Recovery Curriculum Readiness:", flush=True)
 run([sys.executable, "colab/review_stage5_recovery_curriculum.py"], cwd=ROOT, check=False)
+print("\nClaim-Sized Curriculum Scale-Up Plan:", flush=True)
+run([sys.executable, "colab/plan_stage5_curriculum_scaleup.py"], cwd=ROOT, check=False)
 
 sequence = ROOT / "colab" / "NEXT_COLAB_SEQUENCE.md"
 if sequence.exists():

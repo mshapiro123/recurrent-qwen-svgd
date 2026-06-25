@@ -796,3 +796,11 @@ Colab/Drive backups for selected runs.
   claim-sized direct/deep threshold (`2000` positives, `direct=1000`,
   `deep_narrow=1000`) it reports a `1937` positive-row deficit, with `974`
   missing direct rows and `963` missing deep-narrow rows.
+- Stage 4 curriculum scale-up planner: added
+  `colab/plan_stage5_curriculum_scaleup.py` and wired it into the cheap
+  `master_sequence_status` target. The readout now prints the current bounded
+  Stage 4 readiness, claim-sized deficits, and concrete CPU/API commands for
+  building the next direct/deep curriculum shard while the GPU queue remains
+  on `reentry_repair_smoke`. This preserves the master-sequence dependency
+  order: data can scale in parallel, but Stage 4 remains locked behind the
+  Stage 3 re-entry repair gate.

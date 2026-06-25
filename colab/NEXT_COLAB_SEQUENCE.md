@@ -83,9 +83,14 @@ TARGET = "master_sequence_status"
 
 This does not mount Drive, download models, train, or evaluate. It fetches the
 latest repo, prints the current source-summary pointer, asks the planner and
-re-entry reviewer for the next target, prints the queue excerpt, and
-disconnects. Use it when a runtime was restarted or when the notebook state is
-unclear.
+re-entry reviewer for the next target, prints Stage 4 bounded/claim-sized
+curriculum readiness, prints the CPU/API curriculum scale-up plan, prints the
+queue excerpt, and disconnects. Use it when a runtime was restarted or when the
+notebook state is unclear.
+
+The scale-up plan is parallel work. It should be run on CPU or a cheap
+non-GPU runtime while the GPU remains focused on Phase 0. It does **not**
+replace the `reentry_repair_smoke` gate.
 
 ### 1. Finish or recover Stage 2
 
