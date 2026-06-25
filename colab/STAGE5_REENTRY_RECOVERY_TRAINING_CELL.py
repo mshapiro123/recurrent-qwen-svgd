@@ -393,8 +393,9 @@ def derive_sft_env(trace_summary: Path, repair: dict[str, Any]) -> dict[str, str
             ),
             "STAGE5_CURRICULUM_OPTIMIZER_MODULES": os.environ.get(
                 "STAGE5_REENTRY_RECOVERY_OPTIMIZER_MODULES",
-                "bridge,halt,lora",
+                "bridge,reentry,halt,lora",
             ),
+            "STAGE5_CURRICULUM_USE_REENTRY_ADAPTER": "1",
             "STAGE5_CURRICULUM_DEPTH_HINT_STYLE": os.environ.get(
                 "STAGE5_REENTRY_RECOVERY_DEPTH_HINT_STYLE",
                 "natural",

@@ -226,6 +226,8 @@ def phase2_run_descriptor(args: argparse.Namespace, *, seed: int | None = None, 
         f"loops={args.max_loops}",
         f"reentry={args.reentry_rescale_mode}",
     ]
+    if args.use_reentry_adapter:
+        parts.append("reentry_adapter=1")
     if args.particle_noise_every_step or args.particle_noise_steps_sweep:
         parts.append(f"noise_steps={steps if steps is not None else args.particle_noise_steps}")
     if args.phase2_particle_update_mode == "svgd":
@@ -289,6 +291,7 @@ def generate_candidates(
     svgd_kernel_geometry: str,
     svgd_projection_seed: int,
     reentry_rescale_mode: str,
+    use_reentry_adapter: bool = False,
     particle_noise_every_step: bool,
     particle_noise_steps: int,
     stop_on_final_answer: bool,
@@ -327,6 +330,7 @@ def generate_candidates(
                 svgd_kernel_geometry=svgd_kernel_geometry,
                 svgd_projection_seed=svgd_projection_seed,
                 reentry_rescale_mode=reentry_rescale_mode,
+                use_reentry_adapter=use_reentry_adapter,
                 use_cache=False,
                 logits_to_keep=1,
                 return_dict=True,
@@ -430,6 +434,7 @@ def run_suite(
             svgd_kernel_geometry=args.svgd_kernel_geometry,
             svgd_projection_seed=args.svgd_projection_seed,
             reentry_rescale_mode=args.reentry_rescale_mode,
+            use_reentry_adapter=args.use_reentry_adapter,
             particle_noise_every_step=args.particle_noise_every_step,
             particle_noise_steps=args.particle_noise_steps,
             stop_on_final_answer=args.stop_on_final_answer,
@@ -483,6 +488,7 @@ def run_suite(
                         "num_trajectories": num_trajectories,
                         "sample_latents": sample_latents,
                         "reentry_rescale_mode": args.reentry_rescale_mode,
+                        "use_reentry_adapter": args.use_reentry_adapter,
                         "latent_injection_mode": latent_injection_mode,
                         "temperature": args.temperature,
                         "max_loops": args.max_loops,
@@ -544,6 +550,7 @@ def main() -> int:
     parser.add_argument("--skip_phase1", action="store_true", help="Only run the Phase 2 suite to save GPU time.")
     parser.add_argument("--phase2_latent_injection_mode", default="post", choices=("pre", "post", "both"))
     parser.add_argument("--reentry_rescale_mode", default="none", choices=("none", "entry_rms"))
+    parser.add_argument("--use_reentry_adapter", action="store_true")
     parser.add_argument("--phase2_particle_update_mode", default="none", choices=("none", "svgd"))
     parser.add_argument("--particle_init_noise", type=float, default=0.0)
     parser.add_argument(

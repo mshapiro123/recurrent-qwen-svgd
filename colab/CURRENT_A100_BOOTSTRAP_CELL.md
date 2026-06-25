@@ -388,7 +388,7 @@ TARGETS = {
             "STAGE5_REENTRY_REPAIR_MAX_LOOPS": "4",
             "STAGE5_REENTRY_REPAIR_DRIFT_MAX_LOOPS": "8",
             "STAGE5_REENTRY_REPAIR_LIMIT": "8",
-            "STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES": "bridge,halt",
+            "STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES": "bridge,reentry,halt",
             "STAGE5_REENTRY_REPAIR_DISCONNECT": "1",
         },
     },
@@ -409,7 +409,7 @@ TARGETS = {
         "env": {
             "STAGE5_REENTRY_RECOVERY_STEPS": "75",
             "STAGE5_REENTRY_RECOVERY_LR": "5e-6",
-            "STAGE5_REENTRY_RECOVERY_OPTIMIZER_MODULES": "bridge,halt,lora",
+            "STAGE5_REENTRY_RECOVERY_OPTIMIZER_MODULES": "bridge,reentry,halt,lora",
             "STAGE5_REENTRY_RECOVERY_DISCONNECT": "1",
         },
     },

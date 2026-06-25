@@ -1231,6 +1231,8 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "bridge_gate_override" in cell
     assert "bridge_reset_identity" in cell
     assert "reentry_rescale_mode" in cell
+    assert "use_reentry_adapter" in cell
+    assert "bridge,reentry,halt" in cell
     assert "training/train_phase1_ponder.py" in cell
     assert "eval/eval_reentry_drift.py" in cell
     assert "Loop-1 Preservation" in cell
@@ -1276,6 +1278,7 @@ def test_reentry_recovery_training_target_is_bootstrapped() -> None:
     assert "STAGE5_CURRICULUM_RESUME_FROM" in cell
     assert "STAGE5_CURRICULUM_USE_LEARNED_LOOP_CONTROL" in cell
     assert "STAGE5_CURRICULUM_OPTIMIZER_MODULES" in cell
+    assert "STAGE5_CURRICULUM_USE_REENTRY_ADAPTER" in cell
     assert "colab/run_stage5_curriculum_sft.py" in cell
     assert "tests/test_stage5_curriculum_sft.py" in cell
     assert "runtime.unassign" in cell

@@ -2,6 +2,7 @@ import torch
 
 from eval.eval_reentry_drift import bridge_gradient_liveness
 from models.bridge import IdentityGatedBridge
+from models.reentry_adapter import ReentryAffineAdapter
 from training.reentry_repair import apply_reentry_repair_controls
 
 
@@ -51,3 +52,25 @@ def test_reentry_repair_controls_can_revive_dead_identity_bridge():
     assert info["bridge_identity_max_abs_diff_after"] == 0.0
     assert after["weight_grad_rms"] > 0.0
     assert after["bias_grad_rms"] > 0.0
+
+
+def test_reentry_affine_adapter_preserves_hidden_state_at_init():
+    adapter = ReentryAffineAdapter(hidden_size=8)
+    hidden = torch.randn(2, 5, 8)
+    out = adapter(hidden)
+
+    assert torch.equal(out, hidden)
+
+
+def test_reentry_affine_adapter_has_live_identity_gradients():
+    adapter = ReentryAffineAdapter(hidden_size=4)
+    hidden = torch.randn(2, 3, 4)
+
+    output = adapter(hidden)
+    loss = output.float().square().mean()
+    loss.backward()
+
+    assert adapter.scale.grad is not None
+    assert adapter.bias.grad is not None
+    assert adapter.scale.grad.float().square().mean().sqrt() > 0.0
+    assert adapter.bias.grad.float().square().mean().sqrt() > 0.0

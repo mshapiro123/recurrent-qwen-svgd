@@ -149,6 +149,7 @@ def main() -> int:
                 svgd_kernel_geometry=cfg.get("svgd_kernel_geometry", "euclidean"),
                 svgd_projection_seed=cfg.get("svgd_projection_seed", 0),
                 reentry_rescale_mode=cfg.get("reentry_rescale_mode", "none"),
+                use_reentry_adapter=cfg.get("use_reentry_adapter", False),
                 use_cache=False,
                 return_dict=True,
             )

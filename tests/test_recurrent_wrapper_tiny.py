@@ -263,6 +263,16 @@ def test_phase1_optimizer_parameters_can_select_halt_only_on_tiny_model():
     assert len(halt_params) < len(all_params)
 
 
+def test_phase1_optimizer_parameters_can_select_reentry_only_on_tiny_model():
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    wrapper.freeze_base_model()
+    reentry_params = optimizer_parameters(wrapper, {"optimizer_modules": "reentry"})
+
+    expected = [param for param in wrapper.reentry_adapter.parameters() if param.requires_grad]
+    assert [id(param) for param in reentry_params] == [id(param) for param in expected]
+
+
 def test_invalid_latent_injection_mode_raises():
     model = TinyCausalLM().eval()
     wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()

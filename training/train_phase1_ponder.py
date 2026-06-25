@@ -56,7 +56,7 @@ def optimizer_parameters(wrapper: RecurrentQwenForCausalLM, cfg: dict) -> list[t
 
     selected: list[torch.nn.Parameter] = []
     requested = {item.strip() for item in modules.split(",") if item.strip()}
-    valid = {"lora", "bridge", "halt", "latent"}
+    valid = {"lora", "bridge", "reentry", "halt", "latent"}
     unknown = requested - valid
     if unknown:
         raise ValueError(f"Unknown optimizer_modules entries: {sorted(unknown)}")
@@ -64,6 +64,8 @@ def optimizer_parameters(wrapper: RecurrentQwenForCausalLM, cfg: dict) -> list[t
         selected.extend(param for param in wrapper.base_model.parameters() if param.requires_grad)
     if "bridge" in requested:
         selected.extend(param for param in wrapper.bridge.parameters() if param.requires_grad)
+    if "reentry" in requested:
+        selected.extend(param for param in wrapper.reentry_adapter.parameters() if param.requires_grad)
     if "halt" in requested:
         selected.extend(param for param in wrapper.halt_predictor.parameters() if param.requires_grad)
     if "latent" in requested:
@@ -170,6 +172,7 @@ def main() -> int:
                 use_learned_loop_control=cfg.get("use_learned_loop_control", False),
                 loop_control_ce_weight=cfg.get("loop_control_ce_weight", 0.0),
                 reentry_rescale_mode=cfg.get("reentry_rescale_mode", "none"),
+                use_reentry_adapter=cfg.get("use_reentry_adapter", False),
                 use_cache=False,
                 return_dict=True,
             )

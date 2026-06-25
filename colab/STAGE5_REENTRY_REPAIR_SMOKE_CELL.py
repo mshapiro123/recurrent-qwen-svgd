@@ -342,11 +342,12 @@ def write_config(path: Path, *, checkpoint: str, out_dir: Path) -> dict[str, obj
         "max_steps": int(os.environ.get("STAGE5_REENTRY_REPAIR_MAX_STEPS", "25")),
         "log_every": 5,
         "train_on_prompt": False,
-        "optimizer_modules": os.environ.get("STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES", "bridge,halt"),
+        "optimizer_modules": os.environ.get("STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES", "bridge,reentry,halt"),
         "resume_from": checkpoint,
         "bridge_reset_identity": True,
         "bridge_gate_override": 1.0,
         "reentry_rescale_mode": "entry_rms",
+        "use_reentry_adapter": True,
         "output_dir": str(out_dir.relative_to(ROOT)),
         "lora": {"enabled": True, "rank": 8, "alpha": 16, "dropout": 0.0},
     }
@@ -377,6 +378,7 @@ def run_drift(label: str, checkpoint: str, out_dir: Path) -> Path:
             os.environ.get("STAGE5_REENTRY_REPAIR_MAX_LENGTH", "256"),
             "--reentry_rescale_mode",
             "entry_rms",
+            "--use_reentry_adapter",
             "--dtype",
             os.environ.get("STAGE5_REENTRY_REPAIR_DTYPE", "bfloat16"),
             "--adapter_dtype",
@@ -496,6 +498,7 @@ def write_markdown(summary: dict[str, object], path: Path) -> None:
         f"- Max steps: `{summary['config']['max_steps']}`",
         f"- Optimizer modules: `{summary['config']['optimizer_modules']}`",
         f"- Re-entry mode: `{summary['config']['reentry_rescale_mode']}`",
+        f"- Use re-entry adapter: `{summary['config'].get('use_reentry_adapter')}`",
         "",
         "## Bridge Liveness",
         "| stage | gate | bridge delta RMS | weight grad RMS | bias grad RMS | loop4 out/in RMS | loop8 out/in RMS |",
@@ -507,6 +510,21 @@ def write_markdown(summary: dict[str, object], path: Path) -> None:
             f"| {stage} | {row.get('bridge_gate')} | {row.get('bridge_delta_rms')} | "
             f"{row.get('weight_grad_rms')} | {row.get('bias_grad_rms')} | "
             f"{row.get('loop4_output_over_input_rms')} | {row.get('loop8_output_over_input_rms')} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Re-entry Adapter",
+            "| stage | scale identity max diff | bias max abs | adapter delta RMS | scale grad RMS | bias grad RMS |",
+            "|---|---:|---:|---:|---:|---:|",
+        ]
+    )
+    for stage in ("pre", "post"):
+        row = summary[f"{stage}_reentry_adapter"]
+        live = summary[f"{stage}_reentry_adapter_liveness"]
+        lines.append(
+            f"| {stage} | {row.get('scale_identity_max_abs_diff')} | {row.get('bias_max_abs')} | "
+            f"{row.get('sample_adapter_delta_rms')} | {live.get('scale_grad_rms')} | {live.get('bias_grad_rms')} |"
         )
     preservation = summary.get("loop1_preservation") if isinstance(summary.get("loop1_preservation"), dict) else {}
     source = preservation.get("source") if isinstance(preservation.get("source"), dict) else {}
@@ -646,6 +664,10 @@ def main() -> None:
         },
         "pre_bridge": bridge_summary(pre_payload),
         "post_bridge": bridge_summary(post_payload),
+        "pre_reentry_adapter": pre_payload.get("reentry_adapter", {}),
+        "post_reentry_adapter": post_payload.get("reentry_adapter", {}),
+        "pre_reentry_adapter_liveness": pre_payload.get("reentry_adapter_gradient_liveness", {}),
+        "post_reentry_adapter_liveness": post_payload.get("reentry_adapter_gradient_liveness", {}),
         "loop1_preservation": loop1_preservation,
         "stage2_norm_assessment": norm_assessment,
     }

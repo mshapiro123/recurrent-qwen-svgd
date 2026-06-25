@@ -23,6 +23,7 @@ from .halting import (
 )
 from .latent_policy import LatentTrajectoryModule
 from .lora import mark_only_lora_trainable, set_lora_adapter_dtype
+from .reentry_adapter import ReentryAffineAdapter
 from .svgd import svgd_particle_update
 from .trajectory_utils import (
     average_pairwise_cosine_distance,
@@ -119,6 +120,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         if hidden_size <= 0:
             raise ValueError("Could not infer hidden size from the base model")
         self.bridge = IdentityGatedBridge(hidden_size)
+        self.reentry_adapter = ReentryAffineAdapter(hidden_size)
         self.halt_predictor = SequenceHaltingPredictor(hidden_size, initial_halt_prob)
         self.latent_trajectory = LatentTrajectoryModule(
             hidden_size,
@@ -145,7 +147,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         """Match wrapper-only modules to the base model dtype/device."""
 
         base_param = next(self.base_model.parameters())
-        for module in (self.bridge, self.halt_predictor, self.latent_trajectory):
+        for module in (self.bridge, self.reentry_adapter, self.halt_predictor, self.latent_trajectory):
             module.to(device=base_param.device, dtype=base_param.dtype)
 
     def freeze_base_model(self) -> None:
@@ -154,7 +156,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         for param in self.base_model.parameters():
             param.requires_grad_(False)
         mark_only_lora_trainable(self.base_model)
-        for module in (self.bridge, self.halt_predictor, self.latent_trajectory):
+        for module in (self.bridge, self.reentry_adapter, self.halt_predictor, self.latent_trajectory):
             for param in module.parameters():
                 param.requires_grad_(True)
 
@@ -166,7 +168,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         """Keep trainable recurrent controls/adapters in a stable optimizer dtype."""
 
         device = next(self.base_model.parameters()).device
-        for module in (self.bridge, self.halt_predictor, self.latent_trajectory):
+        for module in (self.bridge, self.reentry_adapter, self.halt_predictor, self.latent_trajectory):
             module.to(device=device, dtype=dtype)
         set_lora_adapter_dtype(self.base_model, dtype)
 
@@ -178,7 +180,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         ]
         params.extend(
             param
-            for module in (self.bridge, self.halt_predictor, self.latent_trajectory)
+            for module in (self.bridge, self.reentry_adapter, self.halt_predictor, self.latent_trajectory)
             for param in module.parameters()
             if param.requires_grad
         )
@@ -236,6 +238,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         halt_control_loop_counts: Optional[torch.Tensor] = None,
         use_learned_loop_control: bool = False,
         loop_control_ce_weight: float = 0.0,
+        use_reentry_adapter: bool = False,
         target_loop_prior: Optional[torch.Tensor] = None,
         return_loop_logits: bool = False,
         force_base_model: bool = False,
@@ -421,6 +424,8 @@ class RecurrentQwenForCausalLM(nn.Module):
                         flat_attention_mask,
                         reentry_reference_rms,
                     )
+                if use_reentry_adapter:
+                    loop_input = self.reentry_adapter(loop_input)
             if sample_latents and latent_injection_mode in {"pre", "both"}:
                 loop_input, latent_stats = self.latent_trajectory(
                     loop_input,

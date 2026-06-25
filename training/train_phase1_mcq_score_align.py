@@ -268,6 +268,7 @@ def main() -> int:
                 labels=None,
                 max_loops=max_loops,
                 reentry_rescale_mode=cfg.get("reentry_rescale_mode", "none"),
+                use_reentry_adapter=cfg.get("use_reentry_adapter", False),
                 use_cache=False,
                 return_dict=True,
             )
