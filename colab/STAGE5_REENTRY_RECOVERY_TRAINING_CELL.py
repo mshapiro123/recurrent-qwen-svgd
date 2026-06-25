@@ -21,7 +21,7 @@ from typing import Any
 from google.colab import drive, runtime, userdata
 
 
-STAGE5_REENTRY_RECOVERY_CELL_VERSION = "reentry_recovery_training_v1"
+STAGE5_REENTRY_RECOVERY_CELL_VERSION = "reentry_recovery_training_v2_depth_count_gate"
 STAGE5_REENTRY_RECOVERY_TARGET = "reentry_recovery_training"
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
@@ -139,6 +139,9 @@ def ensure_repo() -> None:
     run(["git", "config", "user.email", "colab-runner@local"])
     run(["git", "config", "user.name", "Colab Runner"])
     run(["git", "log", "--oneline", "-5"])
+    root_str = str(ROOT)
+    if root_str not in sys.path:
+        sys.path.insert(0, root_str)
 
 
 def mount_drive_if_needed() -> None:
@@ -285,48 +288,21 @@ def resolve_trace_collection_summary() -> Path:
 
 
 def int_dict_max_key(payload: Any, default: int) -> int:
-    values: list[int] = []
-    if isinstance(payload, dict):
-        for key in payload:
-            try:
-                values.append(int(key))
-            except (TypeError, ValueError):
-                pass
-    return max(values) if values else default
+    from colab.reentry_recovery_config import int_dict_max_key as _int_dict_max_key
+
+    return _int_dict_max_key(payload, default)
 
 
 def mode_rows_from_counts(mode_counts: Any) -> str:
-    if not isinstance(mode_counts, dict):
-        return ""
-    parts: list[str] = []
-    for mode, count in sorted(mode_counts.items()):
-        try:
-            n = int(count)
-        except (TypeError, ValueError):
-            continue
-        if n > 0:
-            parts.append(f"{mode}={n}")
-    return ",".join(parts)
+    from colab.reentry_recovery_config import mode_rows_from_counts as _mode_rows_from_counts
+
+    return _mode_rows_from_counts(mode_counts)
 
 
 def target_loop_rows_from_counts(target_loop_counts: Any) -> str:
-    if not isinstance(target_loop_counts, dict):
-        return ""
-    parts: list[str] = []
-    sortable: list[tuple[int, Any]] = []
-    for loop, count in target_loop_counts.items():
-        try:
-            sortable.append((int(loop), count))
-        except (TypeError, ValueError):
-            continue
-    for loop, count in sorted(sortable):
-        try:
-            n = int(count)
-        except (TypeError, ValueError):
-            continue
-        if n > 0:
-            parts.append(f"{loop}=1")
-    return ",".join(parts)
+    from colab.reentry_recovery_config import target_loop_rows_from_counts as _target_loop_rows_from_counts
+
+    return _target_loop_rows_from_counts(target_loop_counts)
 
 
 def derive_sft_env(trace_summary: Path, repair: dict[str, Any]) -> dict[str, str]:

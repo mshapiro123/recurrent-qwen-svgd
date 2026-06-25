@@ -1274,13 +1274,16 @@ def test_reentry_recovery_training_target_is_bootstrapped() -> None:
     assert "reentry_recovery_training" in bootstrap_md
     assert "colab/STAGE5_REENTRY_RECOVERY_TRAINING_CELL.py" in bootstrap
     assert "STAGE5_REENTRY_RECOVERY_CELL_VERSION" in cell
-    assert "reentry_recovery_training_v1" in cell
+    assert "reentry_recovery_training_v2_depth_count_gate" in cell
     assert "STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT" in cell
     assert "run_bounded_recovery_training_with_reentry_repair" in cell
     assert "STAGE5_CURRICULUM_RESUME_FROM" in cell
     assert "STAGE5_CURRICULUM_USE_LEARNED_LOOP_CONTROL" in cell
     assert "STAGE5_CURRICULUM_OPTIMIZER_MODULES" in cell
     assert "STAGE5_CURRICULUM_USE_REENTRY_ADAPTER" in cell
+    assert "colab.reentry_recovery_config" in cell
+    assert "sys.path.insert(0, root_str)" in cell
+    assert 'parts.append(f"{loop}=1")' not in cell
     assert "colab/run_stage5_curriculum_sft.py" in cell
     assert "tests/test_stage5_curriculum_sft.py" in cell
     assert "runtime.unassign" in cell
