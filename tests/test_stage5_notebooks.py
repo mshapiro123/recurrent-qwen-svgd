@@ -1142,6 +1142,24 @@ def test_traced_sft_competence_preserving_pipeline_target_is_bootstrapped() -> N
     assert "runtime.unassign" in cell
 
 
+def test_current_stage5_fresh_launcher_cell_is_self_contained_for_blank_colab() -> None:
+    cell = (ROOT / "colab/CURRENT_STAGE5_FRESH_LAUNCHER_CELL.py").read_text(encoding="utf-8")
+
+    assert "CURRENT_STAGE5_FRESH_LAUNCHER_VERSION" in cell
+    assert "GH_TOKEN" in cell
+    assert "GITHUB_TOKEN" in cell
+    assert "HF_TOKEN" in cell
+    assert "HUGGINGFACE_HUB_TOKEN" in cell
+    assert "git\", \"-C\", str(ROOT), \"reset\", \"--hard\", \"origin/main" in cell
+    assert 'drive.mount("/content/drive"' in cell
+    assert "STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD" in cell
+    assert "STAGE5_COMPETENCE_MOUNT_DRIVE_FIRST" in cell
+    assert "traced_sft_competence_preserving_pipeline" in cell
+    assert "stage5_debiased_benchmark_assessment_20260625_121302" in cell
+    assert "stage5_competence_recovery_from_reentry_benchmark" in cell
+    assert "exec(compile(bootstrap" in cell
+
+
 def test_traced_capability_ladder_sft_cell_derives_training_env_from_collection() -> None:
     plain = (ROOT / "colab/STAGE5_TRACED_CAPABILITY_LADDER_SFT_CELL.py").read_text(encoding="utf-8")
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
