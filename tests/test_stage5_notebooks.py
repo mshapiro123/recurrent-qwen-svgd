@@ -233,43 +233,32 @@ def test_arc_mix_recovery_notebook_is_single_purpose() -> None:
     assert payload["metadata"]["colab"]["gpuType"] == "A100"
 
 
-def test_current_a100_action_points_to_safe_continue_routing_repair() -> None:
+def test_current_a100_action_points_to_reentry_master_sequence() -> None:
     text = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
 
-    assert "colab/CURRENT_A100_BOOTSTRAP_CELL.md" in text
-    assert "colab/CURRENT_A100_BOOTSTRAP_CELL.py" in text
-    assert "10_stage5_direct_preservation_precheck.ipynb" in text
-    assert "11_stage5_direct_preservation_g4_auto.ipynb" in text
-    assert "STAGE5_CURRENT_A100_TARGET=programmatic_curriculum_cpu" in text
-    assert "colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py" in text
-    assert "git/ref/heads/main" in text
+    assert "colab/00_single_a100_runbook.ipynb" in text
+    assert "docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md" in text
+    assert "docs/PROGRAM_TRACK_MASTER_SEQUENCE.md" in text
+    assert "colab/NEXT_COLAB_SEQUENCE.md" in text
+    assert "master_sequence_status" in text
+    assert "reentry_repair_smoke" in text
+    assert "reentry_recovery_training" in text
+    assert "debiased_benchmark_suite" in text
+    assert "dense_mcq_trace_sft_control" in text
+    assert "stage2_norm / entry_rms_safe_for_smoke" in text
+    assert "outputs/stage5/stage5_reentry_norm_20260625_013527/summary.json" in text
+    assert "Do **not** run ARC-mix depth training, GPQA, scale-up" in text
+    assert "Phase 2/SVGD" in text
+    assert "particles/SVGD" in text
+    assert "run_bounded_recovery_training_with_reentry_repair" in text
+    assert "git/refs/heads/main" in text
     assert "resolved_ref" in text
-    assert "Fetched stale bootstrap" in text
+    assert "Fetched stale or incomplete bootstrap" in text
     assert "sha_resolved_nested_fetch_v3" in text
-    assert "next_action_guard.allowed" in text
-    assert "refuses attached GPU runtimes" in text
-    assert "STAGE5_CURRENT_A100_TARGET=safe_continue_execute" in text
-    assert "STAGE5_CURRENT_A100_SOURCE_SUMMARY" in text
-    assert "## Fetch Doctor" in text
-    assert "diagnostic-only cell" in text
-    assert "colab/CURRENT_A100_BOOTSTRAP_CELL.py" in text
-    assert "colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py" in text
-    assert "STAGE5_SAFE_CONTINUE_SOURCE_SUMMARY" not in text
-    assert "STAGE5_DRIVE_PREFLIGHT_SOURCE_SUMMARY" not in text
-    assert "config/stage5_current_source_summary.txt" in text
-    assert "colab/STAGE5_SAFE_CONTINUE_CELL.md" in text
-    assert "colab/STAGE5_SAFE_CONTINUE_CELL.py" in text
-    assert "colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.py" in text
-    assert "stage5_routing_diagnostic_20260622_041706/summary.json" in text
-    assert "run_stage5_routing_repair.py" in text
-    assert "needs_direct_halting_repair" in text
-    assert "ARC-Easy direct delta = -2" in text
-    assert "ARC-Challenge direct delta = -3" in text
-    assert "STAGE5_ARC_MIX_ARC_EASY_TARGET_LOOP=1" in text
-    assert "STAGE5_ARC_MIX_ARC_CHALLENGE_TARGET_LOOP=2" in text
-    assert "repair_proxy_lift" in text
-    assert "direct rows stop regressing" in text
-    assert "do **not** run GPQA" in text
+    assert "STAGE5_CURRENT_A100_TARGET=safe_continue_execute" not in text
+    assert "traced_sft_score_alignment_repair" not in text
+    assert "capability_ladder_local_hf_trace_sft_scale64" not in text
+    assert "run_stage5_routing_repair.py" not in text
 
 
 def test_current_bootstrap_exposes_model_viability_queue_target() -> None:
@@ -599,7 +588,6 @@ def test_arc_mix_depth_routing_cell_is_single_purpose() -> None:
 
 def test_arc_challenge_mcq_debias_cell_is_bounded_and_pushes_summary() -> None:
     plain = (ROOT / "colab/STAGE5_ARC_CHALLENGE_MCQ_DEBIAS_CELL.py").read_text(encoding="utf-8")
-    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
 
     assert "STAGE5_ARC_CHALLENGE_MCQ_DEBIAS_CELL_VERSION" in plain
     assert 'env["STAGE5_MCQ_DEBIAS_ARC_CONFIG"] = "ARC-Challenge"' in plain
@@ -614,14 +602,11 @@ def test_arc_challenge_mcq_debias_cell_is_bounded_and_pushes_summary() -> None:
     assert "tests/test_mcq_debias.py" in plain
     assert "tests/test_stage5_next_plan.py" in plain
     assert "runtime.unassign()" in plain
-    assert "Previous Paste-Anywhere ARC-Challenge Cell" in current_action
-    assert '"STAGE5_CURRENT_A100_TARGET"] = "arc_challenge_mcq_debias_confirm"' in current_action
 
 
 def test_debiased_benchmark_suite_cell_is_bounded_and_policy_compliant() -> None:
     plain = (ROOT / "colab/STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py").read_text(encoding="utf-8")
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
-    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
 
     assert "STAGE5_DEBIASED_BENCHMARK_SUITE_CELL_VERSION" in plain
     assert "STAGE5_DEBIASED_MOUNT_DRIVE_FIRST" in plain
@@ -652,8 +637,6 @@ def test_debiased_benchmark_suite_cell_is_bounded_and_policy_compliant() -> None
     assert '"STAGE5_DEBIASED_ARC_EASY_LIMIT": "128"' in bootstrap
     assert '"STAGE5_DEBIASED_USE_LEARNED_LOOP_CONTROL": "1"' in bootstrap
     assert '"STAGE5_DEBIASED_BENCHMARK_DISCONNECT": "1"' in bootstrap
-    assert "Next Paste-Anywhere Debiased Benchmark Cell" in current_action
-    assert '"STAGE5_CURRENT_A100_TARGET"] = "debiased_benchmark_suite"' in current_action
 
 
 def test_depth_balanced_benchmark_target_uses_learned_loop_control() -> None:
@@ -695,7 +678,6 @@ def test_capability_ladder_mcq_probe_cell_is_bounded_and_depth_ladder_focused() 
 def test_capability_ladder_trace_jobs_cell_is_cpu_only_and_depth_ladder_focused() -> None:
     plain = (ROOT / "colab/STAGE5_CAPABILITY_LADDER_TRACE_JOBS_CELL.py").read_text(encoding="utf-8")
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
-    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
 
     assert "STAGE5_CAPABILITY_LADDER_TRACE_JOBS_CELL_VERSION" in plain
     assert "capability_ladder_trace_jobs_cpu" in plain
@@ -705,14 +687,11 @@ def test_capability_ladder_trace_jobs_cell_is_cpu_only_and_depth_ladder_focused(
     assert "runtime.unassign()" in plain
     assert "capability_ladder_trace_jobs_cpu" in bootstrap
     assert "STAGE5_CAPABILITY_LADDER_TRACE_JOBS_CELL.py" in bootstrap
-    assert "Next Paste-Anywhere Capability-Ladder Trace Jobs Cell" in current_action
-    assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_trace_jobs_cpu"' in current_action
 
 
 def test_capability_ladder_7b_trace_chain_cell_runs_probe_then_trace_jobs() -> None:
     plain = (ROOT / "colab/STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_CELL.py").read_text(encoding="utf-8")
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
-    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
 
     assert "STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_CELL_VERSION" in plain
     assert "capability_ladder_7b_trace_chain" in plain
@@ -740,13 +719,11 @@ def test_capability_ladder_7b_trace_chain_cell_runs_probe_then_trace_jobs() -> N
     assert "capability_ladder_7b_trace_chain" in bootstrap
     assert "STAGE5_CAPABILITY_LADDER_7B_TRACE_CHAIN_CELL.py" in bootstrap
     assert "STAGE5_CAPABILITY_LADDER_MIN_TARGET_LOOP_ROWS" in bootstrap
-    assert "STAGE5_CURRENT_A100_TARGET=capability_ladder_7b_trace_chain" in current_action
 
 
 def test_capability_ladder_trace_collect_cell_is_cpu_only_and_response_driven() -> None:
     plain = (ROOT / "colab/STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_CELL.py").read_text(encoding="utf-8")
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
-    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
 
     assert "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_CELL_VERSION" in plain
     assert "capability_ladder_trace_collect_cpu" in plain
@@ -756,13 +733,11 @@ def test_capability_ladder_trace_collect_cell_is_cpu_only_and_response_driven() 
     assert "runtime.unassign()" in plain
     assert "capability_ladder_trace_collect_cpu" in bootstrap
     assert "STAGE5_CAPABILITY_LADDER_TRACE_COLLECT_CELL.py" in bootstrap
-    assert "STAGE5_CURRENT_A100_TARGET=capability_ladder_trace_collect_cpu" in current_action
 
 
 def test_capability_ladder_trace_responses_cell_is_cpu_only_and_provider_opt_in() -> None:
     plain = (ROOT / "colab/STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_CELL.py").read_text(encoding="utf-8")
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
-    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
 
     assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_CELL_VERSION" in plain
     assert "capability_ladder_trace_responses_cpu" in plain
@@ -774,14 +749,11 @@ def test_capability_ladder_trace_responses_cell_is_cpu_only_and_provider_opt_in(
     assert "runtime.unassign()" in plain
     assert "capability_ladder_trace_responses_cpu" in bootstrap
     assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSES_CELL.py" in bootstrap
-    assert "Next Paste-Anywhere Capability-Ladder Trace Responses Cell" in current_action
-    assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_trace_responses_cpu"' in current_action
 
 
 def test_capability_ladder_trace_response_collect_cell_runs_both_steps() -> None:
     plain = (ROOT / "colab/STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COLLECT_CELL.py").read_text(encoding="utf-8")
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
-    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
 
     assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COLLECT_CELL_VERSION" in plain
     assert "capability_ladder_trace_response_collect_cpu" in plain
@@ -794,8 +766,6 @@ def test_capability_ladder_trace_response_collect_cell_runs_both_steps() -> None
     assert "runtime.unassign()" in plain
     assert "capability_ladder_trace_response_collect_cpu" in bootstrap
     assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COLLECT_CELL.py" in bootstrap
-    assert "Next Paste-Anywhere Capability-Ladder Trace Response+Collection Cell" in current_action
-    assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_trace_response_collect_cpu"' in current_action
 
 
 def test_stage5_chain_commit_messages_skip_ci() -> None:
@@ -814,7 +784,6 @@ def test_capability_ladder_local_hf_trace_collect_target_is_bootstrapped() -> No
     plain = (ROOT / "colab/STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_COLLECT_CELL.py").read_text(encoding="utf-8")
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
-    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
 
     assert "hf_local" in plain
     assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_RUN_LOCAL_HF" in plain
@@ -825,15 +794,12 @@ def test_capability_ladder_local_hf_trace_collect_target_is_bootstrapped() -> No
     assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_ALLOW_STUDENT_LINEAGE" in bootstrap
     assert "STAGE5_CAPABILITY_LADDER_TRACE_RESPONSE_LIMIT" in bootstrap
     assert "capability_ladder_local_hf_trace_collect" in bootstrap_md
-    assert "Next Paste-Anywhere Local-HF Trace Response+Collection Cell" in current_action
-    assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_local_hf_trace_collect"' in current_action
 
 
 def test_capability_ladder_local_hf_trace_sft_target_is_bootstrapped() -> None:
     plain = (ROOT / "colab/STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_CELL.py").read_text(encoding="utf-8")
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
-    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
 
     assert "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_CELL_VERSION" in plain
     assert "capability_ladder_local_hf_trace_sft" in plain
@@ -866,14 +832,11 @@ def test_capability_ladder_local_hf_trace_sft_target_is_bootstrapped() -> None:
     assert "STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_CELL.py" in bootstrap
     assert "colab/assess_stage5_traced_sft.py" in bootstrap
     assert "capability_ladder_local_hf_trace_sft" in bootstrap_md
-    assert "Next Paste-Anywhere Local-HF Trace-to-SFT Chain Cell" in current_action
-    assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_local_hf_trace_sft"' in current_action
 
 
 def test_capability_ladder_local_hf_trace_sft_scale64_target_is_bootstrapped() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
-    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
 
     assert "capability_ladder_local_hf_trace_sft_scale64" in bootstrap
     assert "outputs/stage5/stage5_capability_ladder_trace_jobs_20260623_150116/summary.json" in bootstrap
@@ -889,15 +852,11 @@ def test_capability_ladder_local_hf_trace_sft_scale64_target_is_bootstrapped() -
     assert '"STAGE5_CAPABILITY_LADDER_LOCAL_HF_TRACE_SFT_ARC_CHALLENGE_LIMIT": "128"' in bootstrap
     assert "colab/assess_stage5_traced_sft.py" in bootstrap
     assert "capability_ladder_local_hf_trace_sft_scale64" in bootstrap_md
-    assert "Short fresh-runtime launcher" in current_action
-    assert 'git", "clone", repo_url' in current_action
-    assert '"STAGE5_CURRENT_A100_TARGET"] = "capability_ladder_local_hf_trace_sft_scale64"' in current_action
 
 
 def test_traced_sft_scale64_benchmark_target_is_bootstrapped() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
-    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
     plain = (ROOT / "colab/STAGE5_TRACED_SFT_BENCHMARK_CELL.py").read_text(encoding="utf-8")
 
     assert "STAGE5_TRACED_SFT_BENCHMARK_CELL_VERSION" in plain
@@ -919,15 +878,11 @@ def test_traced_sft_scale64_benchmark_target_is_bootstrapped() -> None:
     assert "STAGE5_ALLOW_STALE_SCALE64_BENCHMARK" in bootstrap_md
     assert '"traced_sft_scale64_benchmark is complete; rerouting to "' in bootstrap_md
     assert '"traced_sft_direct_preservation_probe. Set "' in bootstrap_md
-    assert "MCQ score-level repair" in current_action
-    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_score_alignment_repair" in current_action
-    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_scale64_benchmark" in current_action
 
 
 def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
-    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
     direct_cell = (ROOT / "colab/STAGE5_DIRECT_PRESERVATION_PROBE_CELL.py").read_text(encoding="utf-8")
     direct_runner = (ROOT / "colab/run_stage5_direct_preservation_probe.py").read_text(encoding="utf-8")
 
@@ -948,25 +903,6 @@ def test_traced_sft_direct_preservation_probe_target_is_bootstrapped() -> None:
     assert "traced_sft_direct_preservation_probe" in bootstrap_md
     assert "traced_sft_direct_preservation_precheck" in bootstrap_md
     assert "traced_sft_direct_preservation_recover_only" in bootstrap_md
-    assert "surface-alignment SFT repairs have now run" in current_action
-    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_score_alignment_repair" in current_action
-    assert "ARC-Easy content:      recurrent 140/256 vs base 148/256, delta -8" in current_action
-    assert "ARC-Challenge content: recurrent 86/256 vs base 87/256, delta -1" in current_action
-    assert "ARC-Easy content delta: -7" in current_action
-    assert "losses on permutation-disagreeing rows: 0/10" in current_action
-    assert "losses rescued by cyclic aggregation: 8/10" in current_action
-    assert "diagnose_content_route_scoring_or_prompt_alignment_before_more_distillation" in current_action
-    assert "direct_route_loop1_matches_base_without_training" in current_action
-    assert "direct_route_precheck_needs_training" in current_action
-    assert "Only after the precheck says training is needed" in current_action
-    assert "bounded\nstop-on-first-pass sweep" in current_action
-    assert "learned-depth router continuation" in current_action
-    assert "traced_sft_depth_router_after_direct_preserve" in current_action
-    assert "before commit `d7682ec`" in current_action
-    assert "Stale-safe fresh-runtime launcher" in current_action
-    assert "api.github.com/repos/mshapiro123/recurrent-qwen-svgd" in current_action
-    assert "STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL_VERSION" in current_action
-    assert '"STAGE5_CURRENT_A100_TARGET"] = "traced_sft_score_alignment_repair"' in current_action
     assert "stage5_latest_direct_preservation_summary.txt" in direct_cell
     assert "stage5_current_source_summary.txt" in direct_cell
     assert "stage5_direct_preservation_probe_failure" in direct_cell
@@ -1029,7 +965,6 @@ def test_traced_sft_direct_preservation_confirm_target_is_bootstrapped() -> None
 def test_traced_sft_surface_alignment_repair_target_is_bootstrapped() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
-    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
     cell = (ROOT / "colab/STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL.py").read_text(encoding="utf-8")
 
     assert "traced_sft_surface_alignment_repair" in bootstrap
@@ -1058,14 +993,11 @@ def test_traced_sft_surface_alignment_repair_target_is_bootstrapped() -> None:
     assert "tests/test_stage5_surface_alignment_repair.py" in cell
     assert "tests/test_stage5_surface_repair_assessment.py" in cell
     assert "runtime.unassign" in cell
-    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_score_alignment_repair" in current_action
-    assert "prioritize_content_cyclic_surface_alignment" in current_action
 
 
 def test_traced_sft_score_alignment_repair_target_is_bootstrapped() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
-    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
 
     assert "traced_sft_score_alignment_repair" in bootstrap
     assert "traced_sft_score_alignment_repair" in bootstrap_md
@@ -1074,9 +1006,6 @@ def test_traced_sft_score_alignment_repair_target_is_bootstrapped() -> None:
     assert "training/train_phase1_mcq_score_align.py" in bootstrap
     assert "stage5_score_alignment_repair_content_route_20260624" in bootstrap
     assert "STAGE5_SURFACE_ALIGN_SCORE_DISTILL_WEIGHT" in bootstrap
-    assert "STAGE5_CURRENT_A100_TARGET=traced_sft_score_alignment_repair" in current_action
-    assert "ARC-Easy content repair delta: -2" in current_action
-    assert "direct option-score CE" in current_action
 
 
 def test_dense_mcq_trace_sft_control_target_is_bootstrapped() -> None:
@@ -1125,7 +1054,6 @@ def test_traced_sft_competence_preserving_pipeline_target_is_bootstrapped() -> N
 def test_traced_capability_ladder_sft_cell_derives_training_env_from_collection() -> None:
     plain = (ROOT / "colab/STAGE5_TRACED_CAPABILITY_LADDER_SFT_CELL.py").read_text(encoding="utf-8")
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
-    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
 
     assert "STAGE5_TRACED_CAPABILITY_LADDER_SFT_CELL_VERSION" in plain
     assert "traced_capability_ladder_sft" in plain
@@ -1145,7 +1073,6 @@ def test_traced_capability_ladder_sft_cell_derives_training_env_from_collection(
     assert "runtime.unassign()" in plain
     assert "traced_capability_ladder_sft" in bootstrap
     assert "STAGE5_TRACED_CAPABILITY_LADDER_SFT_CELL.py" in bootstrap
-    assert "STAGE5_CURRENT_A100_TARGET=traced_capability_ladder_sft" in current_action
 
 
 def test_drive_checkpoint_preflight_cell_is_cpu_only_and_single_purpose() -> None:
