@@ -604,3 +604,9 @@ Colab/Drive backups for selected runs.
   next Colab queue excerpt, and disconnects without Drive mount, model
   downloads, training, or evaluation. This gives restarted notebooks a
   low-cost way to recover the next Phase 0/Phase 1 target before spending GPU.
+- Phase 0 pointer alignment: updated `config/stage5_current_source_summary.txt`
+  to the committed Stage 1 re-entry drift summary and force-published its
+  `reentry_assessment.json/md`. The cheap status target, generic planner, and
+  re-entry reviewer now agree that the next maintained target is
+  `reentry_norm_diagnostic`, rather than falling back to stale score-alignment
+  work.
