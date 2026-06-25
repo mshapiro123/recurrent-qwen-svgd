@@ -195,6 +195,13 @@ The reviewer is intentionally CPU-only. It converts the latest committed
 `reentry_assessment.json` artifacts into one next target or one explicit stop
 reason.
 
+When the reviewer prints a `Launch Env` section, use those key/value pairs for
+the next Colab run. This is especially important for Stage 3 retry cases:
+`extend_reentry_repair_smoke_or_increase_adapter_lr` and
+`extend_reentry_repair_smoke_or_increase_bridge_lr` intentionally use a bounded
+50-step retry with a modest LR increase instead of rerunning the same failed
+smoke unchanged.
+
 ## Return to particles/SVGD
 
 Resume Phase 2/SVGD only after Stage 4 produces a deterministic recurrent model

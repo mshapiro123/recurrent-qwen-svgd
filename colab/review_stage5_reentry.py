@@ -259,6 +259,38 @@ def classify(grouped: dict[str, tuple[Path, dict[str, Any]]]) -> dict[str, Any]:
     }
 
 
+def launch_env_for_decision(decision: dict[str, Any]) -> dict[str, str]:
+    """Return pasteable Colab env for the next allowed re-entry action.
+
+    Stop decisions intentionally return an empty dict. Bounded Stage 3 retry
+    decisions include small, explicit knob changes so a retry is not an
+    ad hoc rerun of the same failed smoke.
+    """
+
+    target = str(decision.get("next_target") or "")
+    action = str(decision.get("action") or "")
+    if not target:
+        return {}
+    env = {"STAGE5_CURRENT_A100_TARGET": target}
+    if action == "extend_reentry_adapter_smoke":
+        env.update(
+            {
+                "STAGE5_REENTRY_REPAIR_MAX_STEPS": "50",
+                "STAGE5_REENTRY_REPAIR_LR": "2e-5",
+                "STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES": "bridge,reentry,halt",
+            }
+        )
+    elif action == "extend_repair_smoke":
+        env.update(
+            {
+                "STAGE5_REENTRY_REPAIR_MAX_STEPS": "50",
+                "STAGE5_REENTRY_REPAIR_LR": "2e-5",
+                "STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES": "bridge,reentry,halt",
+            }
+        )
+    return env
+
+
 def pointer_error_review(pointer_info: dict[str, Any]) -> dict[str, Any]:
     return {
         "kind": REVIEW_KIND,
@@ -278,6 +310,7 @@ def pointer_error_review(pointer_info: dict[str, Any]) -> dict[str, Any]:
         "latest_assessment": pointer_info.get("path"),
         "latest_status": None,
         "latest_recommendation": pointer_info.get("error"),
+        "launch_env": {},
     }
 
 
@@ -286,6 +319,7 @@ def build_review(paths: list[Path], *, pointer: Path | None = None) -> dict[str,
     if pointer_info.get("expected") and pointer_info.get("error"):
         return pointer_error_review(pointer_info)
     decision = classify(grouped)
+    launch_env = launch_env_for_decision(decision)
     assessments = {
         kind: {
             "path": path_for_cli(path),
@@ -307,6 +341,7 @@ def build_review(paths: list[Path], *, pointer: Path | None = None) -> dict[str,
             "preferred": pointer_info.get("preferred"),
         },
         **decision,
+        "launch_env": launch_env,
     }
 
 
@@ -346,6 +381,11 @@ def report_lines(payload: dict[str, Any]) -> list[str]:
                 f"- Error: `{pointer.get('error') or ''}`",
             ]
         )
+    launch_env = payload.get("launch_env") if isinstance(payload.get("launch_env"), dict) else {}
+    if launch_env:
+        lines.extend(["", "## Launch Env"])
+        for key, value in sorted(launch_env.items()):
+            lines.append(f"- `{key}={value}`")
     lines.append("")
     return lines
 

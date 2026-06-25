@@ -89,6 +89,7 @@ def test_review_recommends_recovery_after_repair_pass(tmp_path) -> None:
     assert review["latest_stage"] == "stage3_repair_smoke"
     assert review["action"] == "run_bounded_recovery_training_with_reentry_repair"
     assert review["next_target"] == "reentry_recovery_training"
+    assert review["launch_env"] == {"STAGE5_CURRENT_A100_TARGET": "reentry_recovery_training"}
 
 
 def test_review_stops_on_stage3_loop1_regression(tmp_path) -> None:
@@ -103,6 +104,7 @@ def test_review_stops_on_stage3_loop1_regression(tmp_path) -> None:
 
     assert review["action"] == "stop_loop1_regression"
     assert review["next_target"] == ""
+    assert review["launch_env"] == {}
 
 
 def test_review_stops_on_stage3_missing_loop1_preservation_evidence(tmp_path) -> None:
@@ -145,6 +147,28 @@ def test_review_recommends_adapter_smoke_extension_when_live_but_not_moved(tmp_p
 
     assert review["action"] == "extend_reentry_adapter_smoke"
     assert review["next_target"] == "reentry_repair_smoke"
+    assert review["launch_env"] == {
+        "STAGE5_CURRENT_A100_TARGET": "reentry_repair_smoke",
+        "STAGE5_REENTRY_REPAIR_MAX_STEPS": "50",
+        "STAGE5_REENTRY_REPAIR_LR": "2e-5",
+        "STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES": "bridge,reentry,halt",
+    }
+
+
+def test_review_recommends_bridge_smoke_extension_with_bounded_retry_env(tmp_path) -> None:
+    repair = write_assessment(
+        tmp_path / "stage5_reentry_repair_x" / "reentry_assessment.json",
+        source_kind="stage5_reentry_repair_smoke",
+        status="bridge_live_but_no_observed_movement",
+        recommendation="extend_reentry_repair_smoke_or_increase_bridge_lr",
+    )
+
+    review = build_review([repair])
+
+    assert review["action"] == "extend_repair_smoke"
+    assert review["next_target"] == "reentry_repair_smoke"
+    assert review["launch_env"]["STAGE5_REENTRY_REPAIR_MAX_STEPS"] == "50"
+    assert review["launch_env"]["STAGE5_REENTRY_REPAIR_LR"] == "2e-5"
 
 
 def test_review_prefers_current_pointer_assessment_over_newer_glob(tmp_path) -> None:
