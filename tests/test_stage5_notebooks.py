@@ -676,6 +676,10 @@ def test_debiased_benchmark_suite_cell_is_bounded_and_policy_compliant() -> None
     assert '"STAGE5_BENCHMARK_ASSESS_AGGREGATE"] = "permutation_mean"' in plain
     assert '"STAGE5_DEBIASED_USE_LEARNED_LOOP_CONTROL",\n        "1",' in plain
     assert "benchmark_source_summary" in plain
+    assert "validate_stage4_benchmark_source" in plain
+    assert "stage5_reentry_recovery_training" in plain
+    assert "post_reentry_health_checks.status" in plain
+    assert "stage4_benchmark_source_gate=passed" in plain
     assert "colab/run_stage5_benchmark_suite.py" in plain
     assert "colab/assess_stage5_benchmark_suite.py" in plain
     assert "tests/test_stage5_benchmark_suite.py" in plain

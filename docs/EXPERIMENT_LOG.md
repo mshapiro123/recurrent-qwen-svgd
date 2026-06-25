@@ -901,3 +901,11 @@ Colab/Drive backups for selected runs.
   `STAGE5_REENTRY_RECOVERY_TRACE_SOURCE_SUMMARY` still wins, newer gate-ready
   local/Drive summaries are scanned next, and the historical collection remains
   only the reviewed helper's last fallback.
+- Phase 1 benchmark source guard: `debiased_benchmark_suite` now refuses the
+  normal current-pointer path unless the resolved checkpoint-bearing source is
+  a `stage5_reentry_recovery_training` summary with
+  `post_reentry_health_checks.status == "reentry_health_sane"`. This keeps the
+  master-sequence seam hard: recurrent-vs-base benchmarking starts only after
+  Stage 4 recovery has passed its re-entry health gate. Explicit
+  `STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY` still bypasses this check for
+  intentional older-artifact comparisons.

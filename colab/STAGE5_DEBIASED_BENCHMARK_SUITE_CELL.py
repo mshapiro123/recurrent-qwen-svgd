@@ -149,6 +149,38 @@ def benchmark_source_summary(start: Path) -> Path:
     raise RuntimeError(f"Could not resolve checkpoint-bearing source summary from {start}")
 
 
+def benchmark_source_override_requested() -> bool:
+    return bool(os.environ.get("STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY", "").strip())
+
+
+def validate_stage4_benchmark_source(source_summary: Path, payload: dict, *, allow_override: bool) -> None:
+    if allow_override:
+        print(
+            "stage4_benchmark_source_gate=override "
+            f"source={path_for_cli(source_summary)} kind={payload.get('kind')}",
+            flush=True,
+        )
+        return
+    kind = payload.get("kind")
+    if kind != "stage5_reentry_recovery_training":
+        raise RuntimeError(
+            "debiased_benchmark_suite follows the master sequence and requires "
+            "config/stage5_current_source_summary.txt to resolve to a Stage 4 "
+            f"re-entry recovery summary, got kind={kind!r} at {path_for_cli(source_summary)}. "
+            "Run reentry_recovery_training first, or set "
+            "STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY for an intentional older-artifact test."
+        )
+    health = payload.get("post_reentry_health_checks") if isinstance(payload.get("post_reentry_health_checks"), dict) else {}
+    status = str(health.get("status") or "")
+    if status != "reentry_health_sane":
+        raise RuntimeError(
+            "Stage 4 recovery source is not benchmark-ready: "
+            f"post_reentry_health_checks.status={status!r}, issues={health.get('issues', [])!r}. "
+            "Review or rerun reentry_recovery_training before benchmarking."
+        )
+    print("stage4_benchmark_source_gate=passed", flush=True)
+
+
 GH_TOKEN = secret("GH_TOKEN", "GITHUB_TOKEN")
 assert GH_TOKEN, "Missing GH_TOKEN/GITHUB_TOKEN in Colab secrets."
 
@@ -201,6 +233,11 @@ try:
     current_summary = current_source_summary()
     source_summary = benchmark_source_summary(current_summary)
     source_payload = read_json(source_summary)
+    validate_stage4_benchmark_source(
+        source_summary,
+        source_payload,
+        allow_override=benchmark_source_override_requested(),
+    )
     adjacent_adapter = source_summary.parent / "recurrent_adapter_checkpoint.pt"
     assert payload_has_checkpoint(source_payload) or adjacent_adapter.exists(), (
         "Resolved benchmark source summary does not expose a checkpoint path "
