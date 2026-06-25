@@ -81,10 +81,22 @@ def classify(grouped: dict[str, tuple[Path, dict[str, Any]]]) -> dict[str, Any]:
             action = "run_bounded_recovery_training_with_reentry_repair"
             target = "reentry_recovery_training"
             next_step = "Stage 3 passed; implement or launch the bounded recovery-training target."
+        elif recommendation == "fix_loop1_preservation_eval_before_recovery_training":
+            action = "stop_loop1_preservation_evidence_missing"
+            target = ""
+            next_step = "Stage 3 did not produce comparable loop-1 preservation evidence; fix the preservation eval before recovery training."
         elif recommendation == "review_or_reduce_repair_lr_before_recovery_training":
             action = "stop_loop1_regression"
             target = ""
             next_step = "Stage 3 harmed loop-1 preservation; reduce repair LR or change repair target before training."
+        elif recommendation == "fix_reentry_adapter_before_recovery_training":
+            action = "stop_reentry_adapter_not_live"
+            target = ""
+            next_step = "Stage 3 did not produce live re-entry adapter gradients; fix adapter wiring before training."
+        elif recommendation == "extend_reentry_repair_smoke_or_increase_adapter_lr":
+            action = "extend_reentry_adapter_smoke"
+            target = "reentry_repair_smoke"
+            next_step = "Re-entry adapter gradients are live but movement was too small; rerun a bounded Stage 3 variant."
         elif recommendation == "extend_reentry_repair_smoke_or_increase_bridge_lr":
             action = "extend_repair_smoke"
             target = "reentry_repair_smoke"
