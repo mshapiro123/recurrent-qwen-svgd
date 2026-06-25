@@ -191,6 +191,14 @@ def read_jsonl(path: Path) -> list[dict[str, object]]:
     return rows
 
 
+def parse_csv_ints(value: str) -> list[int]:
+    return [int(item.strip()) for item in str(value).split(",") if item.strip()]
+
+
+def parse_csv_floats(value: str) -> list[float]:
+    return [float(item.strip()) for item in str(value).split(",") if item.strip()]
+
+
 def has_valid_json(path: Path) -> bool:
     if not path.exists():
         return False
@@ -263,6 +271,48 @@ def limited_tasks_jsonl(source: str, out_dir: Path) -> str:
     out_path.write_text("\n".join(selected) + "\n", encoding="utf-8")
     print(f"candidate_task_limit={limit} task_file={out_path.relative_to(ROOT).as_posix()}", flush=True)
     return out_path.relative_to(ROOT).as_posix()
+
+
+def candidate_conversion_is_complete(path: Path, tasks_jsonl: str) -> bool:
+    if not has_valid_jsonl(path):
+        return False
+    rows = read_jsonl(path)
+    tasks = [line for line in (ROOT / normalize_rel_path(tasks_jsonl)).read_text(encoding="utf-8").splitlines() if line.strip()]
+    seeds = parse_csv_ints(os.environ.get("STAGE5_REENTRY_NORM_SEEDS", "0"))
+    noises = parse_csv_floats(os.environ.get("STAGE5_REENTRY_NORM_NOISE_SWEEP", "0,0.05"))
+    loops = parse_csv_ints(os.environ.get("STAGE5_REENTRY_NORM_LOOP_SWEEP", "4,8"))
+    k = int(os.environ.get("STAGE5_REENTRY_NORM_K", "4"))
+    expected_rows = len(tasks) * len(seeds) * len(noises) * len(loops) * k
+    if len(rows) != expected_rows:
+        print(
+            f"incomplete_candidate_conversion={path.relative_to(ROOT).as_posix()} "
+            f"rows={len(rows)} expected={expected_rows}",
+            flush=True,
+        )
+        return False
+
+    grouped: dict[tuple[int, int, float, str], int] = {}
+    for row in rows:
+        key = (
+            int(row.get("seed", -1)),
+            int(row.get("max_loops", -1)),
+            float(row.get("particle_init_noise", -1.0)),
+            str(row.get("task", "")),
+        )
+        grouped[key] = grouped.get(key, 0) + 1
+    if len(grouped) != len(tasks) * len(seeds) * len(noises) * len(loops):
+        print(
+            f"incomplete_candidate_groups={path.relative_to(ROOT).as_posix()} "
+            f"groups={len(grouped)} expected={len(tasks) * len(seeds) * len(noises) * len(loops)}",
+            flush=True,
+        )
+        return False
+    bad_groups = {key: count for key, count in grouped.items() if count != k}
+    if bad_groups:
+        preview = list(bad_groups.items())[:5]
+        print(f"incomplete_candidate_group_sizes={preview}", flush=True)
+        return False
+    return True
 
 
 def run_drift(mode: str, checkpoint: str, prompts: str, out_dir: Path) -> Path:
@@ -345,7 +395,8 @@ def run_effective_pathways(mode: str, checkpoint: str, prompts: str, out_dir: Pa
 
 def run_candidate_conversion(mode: str, checkpoint: str, tasks: str, out_dir: Path) -> Path:
     out_jsonl = out_dir / f"candidate_conversion_{mode}.jsonl"
-    if has_valid_jsonl(out_jsonl):
+    candidate_tasks = limited_tasks_jsonl(tasks, out_dir)
+    if candidate_conversion_is_complete(out_jsonl, candidate_tasks):
         print(f"resume_skip=candidate_conversion_{mode}", flush=True)
         return out_jsonl
     if out_jsonl.exists():
@@ -355,7 +406,7 @@ def run_candidate_conversion(mode: str, checkpoint: str, tasks: str, out_dir: Pa
             sys.executable,
             "eval/eval_best_of_k_jsonl.py",
             "--tasks_jsonl",
-            limited_tasks_jsonl(tasks, out_dir),
+            candidate_tasks,
             "--skip_phase1",
             "--compact",
             "--seeds",
