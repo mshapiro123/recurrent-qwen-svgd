@@ -1331,6 +1331,9 @@ def test_reentry_stage3_stage4_runbook_is_linked_from_current_action() -> None:
     assert "reentry_norm_recover_only" in next_sequence
     assert "reentry_repair_smoke" in next_sequence
     assert "reentry_recovery_training" in next_sequence
+    assert 'TARGET = "debiased_benchmark_suite"' in next_sequence
+    assert 'TARGET = "dense_mcq_trace_sft_control"' in next_sequence
+    assert "STAGE5_CURRENT_A100_SOURCE_SUMMARY" in next_sequence
     assert "standard Qwen same-curriculum LoRA control" in next_sequence
     assert "Leinster" in next_sequence
     assert "Phase 0: Loop-Closure Re-entry" in master

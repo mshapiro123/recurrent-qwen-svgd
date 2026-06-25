@@ -151,9 +151,39 @@ paired depth assessment against:
 - recurrent checkpoint;
 - standard Qwen same-curriculum LoRA control.
 
+First benchmark base versus the repaired recurrent checkpoint:
+
+```python
+TARGET = "debiased_benchmark_suite"
+```
+
+Use the Stage 4 summary as the source summary if it is not already the current
+pointer:
+
+```python
+os.environ["STAGE5_CURRENT_A100_SOURCE_SUMMARY"] = "outputs/stage5/<stage4_run>/summary.json"
+```
+
+Then run the matched dense recipe control:
+
+```python
+TARGET = "dense_mcq_trace_sft_control"
+```
+
 This is the decisive Phase 1 question: does recurrence convert depth-shaped
 failures while preserving easy items, beyond what the data alone gives a dense
 control?
+
+Read this step in order:
+
+1. recurrent versus base on debiased content/cyclic scoring;
+2. dense LoRA control versus base on the same rows and scoring;
+3. recurrent versus dense control, especially on hard/depth-shaped rows.
+
+If recurrent improves over its pre-repair state but dense control matches or
+beats it, the data recipe helped but the architecture has not yet earned the
+claim. If recurrent beats dense control on hard rows without easy regression,
+Phase 1 has a real architecture signal.
 
 Do not run Phase 2/SVGD until this is answered.
 
