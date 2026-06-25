@@ -365,6 +365,18 @@ def write_markdown(payload: dict[str, Any], path: str | Path) -> None:
     ]
     for key, value in metrics.items():
         lines.append(f"- `{key}`: `{value}`")
+    if payload.get("stage") == "repair_smoke":
+        lines.extend(
+            [
+                "",
+                "## Loop-1 Preservation Gate",
+                f"- Source has correct signal: `{metrics.get('loop1_source_has_correct_signal')}`",
+                f"- Source best hits: `{metrics.get('source_loop1_best_hits')}`",
+                f"- Trained best hits: `{metrics.get('trained_loop1_best_hits')}`",
+                f"- Best-hit delta: `{metrics.get('loop1_best_hits_delta')}`",
+                f"- Candidate-hit delta: `{metrics.get('loop1_candidate_hits_delta')}`",
+            ]
+        )
     lines.append("")
     Path(path).write_text("\n".join(lines), encoding="utf-8")
 

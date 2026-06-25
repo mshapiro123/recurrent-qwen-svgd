@@ -561,7 +561,7 @@ def write_preservation_tasks(out_path: Path) -> Path:
     return out_path
 
 
-def summarize_loop1_preservation(jsonl_path: Path) -> dict[str, object]:
+def summarize_loop1_preservation(jsonl_path: Path, *, tasks_jsonl: Path | None = None) -> dict[str, object]:
     rows = [json.loads(line) for line in jsonl_path.read_text(encoding="utf-8").splitlines() if line.strip()]
     by_label: dict[str, list[dict[str, object]]] = {}
     for row in rows:
@@ -584,6 +584,7 @@ def summarize_loop1_preservation(jsonl_path: Path) -> dict[str, object]:
     trained = stats("Phase 2 K=1")
     return {
         "jsonl": jsonl_path.relative_to(ROOT).as_posix(),
+        "tasks_jsonl": tasks_jsonl.relative_to(ROOT).as_posix() if tasks_jsonl is not None else "",
         "source": source,
         "trained": trained,
         "best_hits_delta_trained_minus_source": trained["best_hits"] - source["best_hits"],
@@ -596,7 +597,7 @@ def run_loop1_preservation(source_checkpoint: str, trained_checkpoint: str, out_
     out_jsonl = out_dir / "loop1_preservation.jsonl"
     if has_valid_jsonl(out_jsonl):
         print("resume_skip=loop1_preservation", flush=True)
-        return summarize_loop1_preservation(out_jsonl)
+        return summarize_loop1_preservation(out_jsonl, tasks_jsonl=tasks_jsonl)
     run(
         [
             sys.executable,
@@ -626,7 +627,7 @@ def run_loop1_preservation(source_checkpoint: str, trained_checkpoint: str, out_
             str(out_jsonl.relative_to(ROOT)),
         ]
     )
-    return summarize_loop1_preservation(out_jsonl)
+    return summarize_loop1_preservation(out_jsonl, tasks_jsonl=tasks_jsonl)
 
 
 def bridge_summary(payload: dict[str, object]) -> dict[str, object]:
@@ -880,6 +881,7 @@ def main() -> None:
             "train_config": config_path.relative_to(ROOT).as_posix(),
             "train_log": train_log_path.relative_to(ROOT).as_posix(),
             "loop1_preservation": loop1_preservation["jsonl"],
+            "loop1_preservation_tasks": loop1_preservation["tasks_jsonl"],
         },
         "pre_bridge": bridge_summary(pre_payload),
         "post_bridge": bridge_summary(post_payload),

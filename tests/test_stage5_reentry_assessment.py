@@ -329,3 +329,31 @@ def test_reentry_assessment_cli_writes_outputs(tmp_path) -> None:
     assert payload["status"] == "bridge_dead"
     assert "run_reentry_norm_then_repair_smoke" in result.stdout
     assert "Recommendation" in output_md.read_text(encoding="utf-8")
+
+
+def test_reentry_assessment_cli_highlights_repair_loop1_gate(tmp_path) -> None:
+    summary = tmp_path / "summary.json"
+    output_json = tmp_path / "assessment.json"
+    output_md = tmp_path / "assessment.md"
+    summary.write_text(json.dumps(repair_summary()), encoding="utf-8")
+
+    subprocess.run(
+        [
+            sys.executable,
+            "colab/assess_stage5_reentry.py",
+            "--summary_json",
+            str(summary),
+            "--output_json",
+            str(output_json),
+            "--output_md",
+            str(output_md),
+        ],
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+    )
+
+    text = output_md.read_text(encoding="utf-8")
+    assert "Loop-1 Preservation Gate" in text
+    assert "Source has correct signal: `True`" in text
+    assert "Best-hit delta: `0.0`" in text
