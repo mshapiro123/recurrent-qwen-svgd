@@ -519,8 +519,28 @@ def post_reentry_health_checks(payload: dict[str, Any]) -> dict[str, Any]:
     bridge_weight_grad = finite_float(bridge_live.get("weight_grad_rms"))
     bridge_bias_grad = finite_float(bridge_live.get("bias_grad_rms"))
     adapter_delta = finite_float(adapter.get("sample_adapter_delta_rms"))
+    adapter_mode = str(adapter_live.get("mode") or adapter.get("mode") or env.get("STAGE5_CURRICULUM_REENTRY_ADAPTER_MODE", "affine"))
     adapter_scale_grad = finite_float(adapter_live.get("scale_grad_rms"))
     adapter_bias_grad = finite_float(adapter_live.get("bias_grad_rms"))
+    adapter_spectral_u_grad = finite_float(adapter_live.get("spectral_u_grad_rms"))
+    adapter_spectral_v_grad = finite_float(adapter_live.get("spectral_v_grad_rms"))
+    adapter_spectral_theta_grad = finite_float(adapter_live.get("spectral_theta_grad_abs"))
+    if adapter_mode == "spectral":
+        adapter_gradient_live = (
+            adapter_spectral_u_grad > 0.0
+            and adapter_spectral_v_grad > 0.0
+            and adapter_spectral_theta_grad > 0.0
+        )
+    elif adapter_mode == "affine_spectral":
+        adapter_gradient_live = (
+            adapter_scale_grad > 0.0
+            and adapter_bias_grad > 0.0
+            and adapter_spectral_u_grad > 0.0
+            and adapter_spectral_v_grad > 0.0
+            and adapter_spectral_theta_grad > 0.0
+        )
+    else:
+        adapter_gradient_live = adapter_scale_grad > 0.0 and adapter_bias_grad > 0.0
     loop8 = loop_summary.get("8") if isinstance(loop_summary.get("8"), dict) else {}
     loop8_output_over_entry = finite_float(loop8.get("output_over_entry_rms"), 0.0)
     loop8_output_over_input = finite_float(loop8.get("output_over_input_rms"), 0.0)
@@ -532,7 +552,7 @@ def post_reentry_health_checks(payload: dict[str, Any]) -> dict[str, Any]:
         issues.append("bridge_gradient_not_live_after_recovery")
     if bridge_delta <= 0.0:
         issues.append("bridge_delta_zero_after_recovery")
-    if adapter_scale_grad <= 0.0 or adapter_bias_grad <= 0.0:
+    if not adapter_gradient_live:
         issues.append("reentry_adapter_gradient_not_live_after_recovery")
     if adapter_delta <= 0.0:
         issues.append("reentry_adapter_delta_zero_after_recovery")
@@ -551,9 +571,14 @@ def post_reentry_health_checks(payload: dict[str, Any]) -> dict[str, Any]:
             "bridge_delta_rms": bridge_delta,
             "bridge_weight_grad_rms": bridge_weight_grad,
             "bridge_bias_grad_rms": bridge_bias_grad,
+            "reentry_adapter_mode": adapter_mode,
             "reentry_adapter_delta_rms": adapter_delta,
             "reentry_adapter_scale_grad_rms": adapter_scale_grad,
             "reentry_adapter_bias_grad_rms": adapter_bias_grad,
+            "reentry_adapter_spectral_u_grad_rms": adapter_spectral_u_grad,
+            "reentry_adapter_spectral_v_grad_rms": adapter_spectral_v_grad,
+            "reentry_adapter_spectral_theta_grad_abs": adapter_spectral_theta_grad,
+            "reentry_adapter_gradient_live": adapter_gradient_live,
             "loop8_output_over_entry_rms": loop8_output_over_entry,
             "loop8_output_over_input_rms": loop8_output_over_input,
             "mean_exit_over_entry_rms": finite_float(aggregate.get("mean_exit_over_entry_rms")),
