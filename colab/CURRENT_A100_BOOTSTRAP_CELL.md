@@ -40,6 +40,8 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "arc_mix_depth_routing_probe" - bounded learned-depth ARC-mix SFT probe from the latest recovered checkpoint.
 #   "effective_pathways_diagnostic" - bounded deterministic recurrent pathway-collapse diagnostic.
 #   "candidate_conversion_diagnostic" - bounded particle-noise candidate conversion with correctness-split pathways.
+#   "reentry_drift_diagnostic" - bounded read-only recurrent loop-closure drift diagnostic.
+#   "reentry_norm_diagnostic" - bounded eval-only loop re-entry RMS normalization comparison.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
 #   "capability_ladder_7b_mcq_probe" - high-memory Qwen 0.5B/1.5B/3B/7B ARC MCQ scoring for depth-4 data.
 #   "capability_ladder_7b_trace_chain" - high-memory 7B ladder probe followed by trace-job build.
@@ -292,6 +294,50 @@ TARGETS = {
             "STAGE5_EFFECTIVE_PATHWAYS_NOISE": "0.05",
             "STAGE5_EFFECTIVE_PATHWAYS_LIMIT": "8",
             "STAGE5_EFFECTIVE_PATHWAYS_DISCONNECT": "1",
+        },
+    },
+    "reentry_drift_diagnostic": {
+        "path": "colab/STAGE5_REENTRY_DRIFT_CELL.py",
+        "markers": [
+            "STAGE5_REENTRY_DRIFT_CELL_VERSION",
+            "stage5_reentry_drift_v1_readonly",
+            "eval/eval_reentry_drift.py",
+            "tests/test_eval_reentry_drift.py",
+            "bridge_gradient_liveness",
+            "entry_exit_subspace",
+            "loop_summary",
+            "Readout Pause",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_REENTRY_DRIFT_MAX_LOOPS": "8",
+            "STAGE5_REENTRY_DRIFT_LIMIT": "8",
+            "STAGE5_REENTRY_DRIFT_MAX_LENGTH": "256",
+            "STAGE5_REENTRY_DRIFT_SUBSPACE_RANK": "8",
+            "STAGE5_REENTRY_DRIFT_DISCONNECT": "1",
+        },
+    },
+    "reentry_norm_diagnostic": {
+        "path": "colab/STAGE5_REENTRY_NORM_CELL.py",
+        "markers": [
+            "STAGE5_REENTRY_NORM_CELL_VERSION",
+            "stage5_reentry_norm_v1_eval_only",
+            "eval/eval_reentry_drift.py",
+            "eval/eval_effective_pathways.py",
+            "eval/eval_best_of_k_jsonl.py",
+            "reentry_rescale_mode",
+            "entry_rms",
+            "Candidate Conversion",
+            "Readout Pause",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_REENTRY_NORM_LOOP_SWEEP": "4,8",
+            "STAGE5_REENTRY_NORM_NOISE_SWEEP": "0,0.05",
+            "STAGE5_REENTRY_NORM_SEEDS": "0,1,2",
+            "STAGE5_REENTRY_NORM_K": "4",
+            "STAGE5_REENTRY_NORM_LIMIT": "8",
+            "STAGE5_REENTRY_NORM_DISCONNECT": "1",
         },
     },
     "candidate_conversion_diagnostic": {
@@ -1050,5 +1096,4 @@ print(
 )
 print(f"Fetched {launcher_path} from {REPO}@{REF} ({RESOLVED_REF[:12]}) sha={payload.get('sha')} target={TARGET}", flush=True)
 exec(compile(code, launcher_path, "exec"))
-
 ```

@@ -84,6 +84,48 @@ def test_wrapper_identity_matches_tiny_base_model():
     assert torch.allclose(original, wrapped)
 
 
+def test_reentry_rescale_mode_preserves_loop1_identity_on_tiny_model():
+    torch.manual_seed(0)
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+
+    with torch.no_grad():
+        original = model(input_ids=input_ids, attention_mask=attention_mask).logits
+        wrapped = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=1,
+            reentry_rescale_mode="entry_rms",
+            use_cache=False,
+            return_dict=True,
+        ).logits
+
+    assert torch.allclose(original, wrapped)
+
+
+def test_reentry_rescale_mode_runs_on_recurrent_tiny_model():
+    torch.manual_seed(0)
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+
+    with torch.no_grad():
+        output = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=4,
+            reentry_rescale_mode="entry_rms",
+            use_cache=False,
+            return_dict=True,
+        )
+
+    assert output.logits.shape[:2] == input_ids.shape
+    assert torch.isfinite(output.metrics["mean_expected_loops"])
+
+
 def test_latent_injection_modes_run_on_tiny_model():
     torch.manual_seed(0)
     model = TinyCausalLM().eval()
@@ -239,6 +281,25 @@ def test_invalid_latent_injection_mode_raises():
         assert "latent_injection_mode" in str(exc)
     else:
         raise AssertionError("Expected invalid latent_injection_mode to raise")
+
+
+def test_invalid_reentry_rescale_mode_raises():
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2]])
+
+    try:
+        wrapper(
+            input_ids=input_ids,
+            max_loops=2,
+            reentry_rescale_mode="sideways",
+            use_cache=False,
+            return_dict=True,
+        )
+    except ValueError as exc:
+        assert "reentry_rescale_mode" in str(exc)
+    else:
+        raise AssertionError("Expected invalid reentry_rescale_mode to raise")
 
 
 def test_svgd_particle_update_runs_on_tiny_model():

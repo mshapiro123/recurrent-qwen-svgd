@@ -239,6 +239,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         target_loop_prior: Optional[torch.Tensor] = None,
         return_loop_logits: bool = False,
         force_base_model: bool = False,
+        reentry_rescale_mode: str = "none",
         logits_to_keep: int | torch.Tensor = 0,
         **_: Any,
     ) -> RecurrentQwenOutput | tuple[Any, ...]:
@@ -289,6 +290,8 @@ class RecurrentQwenForCausalLM(nn.Module):
 
         if max_loops < 1:
             raise ValueError("max_loops must be >= 1")
+        if reentry_rescale_mode not in {"none", "entry_rms"}:
+            raise ValueError("reentry_rescale_mode must be one of: none, entry_rms")
         if num_trajectories < 1:
             raise ValueError("num_trajectories must be >= 1")
         if latent_injection_mode not in {"pre", "post", "both"}:
@@ -404,11 +407,20 @@ class RecurrentQwenForCausalLM(nn.Module):
         latent_kls: list[torch.Tensor] = []
         svgd_stats_history: list[Any] = []
         recurrent_state = hidden_states
+        reentry_reference_rms = None
+        if reentry_rescale_mode == "entry_rms" and max_loops > 1:
+            reentry_reference_rms = self._masked_sequence_rms(hidden_states, flat_attention_mask)
 
         for loop_idx in range(max_loops):
             loop_input = recurrent_state
             if loop_idx > 0:
                 loop_input = self.bridge(loop_input)
+                if reentry_reference_rms is not None:
+                    loop_input = self._rescale_to_sequence_rms(
+                        loop_input,
+                        flat_attention_mask,
+                        reentry_reference_rms,
+                    )
             if sample_latents and latent_injection_mode in {"pre", "both"}:
                 loop_input, latent_stats = self.latent_trajectory(
                     loop_input,
@@ -925,6 +937,30 @@ class RecurrentQwenForCausalLM(nn.Module):
     def _entropy(probs: torch.Tensor, eps: float = 1e-8) -> torch.Tensor:
         safe = probs.clamp_min(eps)
         return -(safe * safe.log()).sum(dim=-1)
+
+    @staticmethod
+    def _masked_sequence_rms(
+        hidden_states: torch.Tensor,
+        attention_mask: Optional[torch.Tensor],
+    ) -> torch.Tensor:
+        values = hidden_states.float().square().mean(dim=-1)
+        if attention_mask is None:
+            return values.mean(dim=-1, keepdim=True).sqrt().clamp_min(1e-6)
+        mask = attention_mask.to(device=hidden_states.device, dtype=values.dtype)
+        numerator = (values * mask).sum(dim=-1, keepdim=True)
+        denominator = mask.sum(dim=-1, keepdim=True).clamp_min(1.0)
+        return (numerator / denominator).sqrt().clamp_min(1e-6)
+
+    @classmethod
+    def _rescale_to_sequence_rms(
+        cls,
+        hidden_states: torch.Tensor,
+        attention_mask: Optional[torch.Tensor],
+        target_rms: torch.Tensor,
+    ) -> torch.Tensor:
+        current_rms = cls._masked_sequence_rms(hidden_states, attention_mask)
+        scale = target_rms.to(device=hidden_states.device, dtype=current_rms.dtype) / current_rms
+        return hidden_states * scale.to(dtype=hidden_states.dtype).unsqueeze(-1)
 
     @staticmethod
     def _pooled_final_by_trajectory(

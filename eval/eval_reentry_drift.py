@@ -266,6 +266,7 @@ def loop_records_for_prompt(
     position_embeddings: Any,
     *,
     max_loops: int,
+    reentry_rescale_mode: str = "none",
 ) -> list[dict[str, Any]]:
     entry_rms = rms(entry_state, attention_mask).clamp_min(1e-8)
     records: list[dict[str, Any]] = []
@@ -273,6 +274,9 @@ def loop_records_for_prompt(
     for loop_idx in range(max_loops):
         raw_loop_input = recurrent_state
         loop_input = raw_loop_input if loop_idx == 0 else wrapper.bridge(raw_loop_input)
+        if loop_idx > 0 and reentry_rescale_mode == "entry_rms":
+            current_rms = rms(loop_input, attention_mask).clamp_min(1e-8)
+            loop_input = loop_input * (entry_rms / current_rms).to(dtype=loop_input.dtype)
         loop_output = run_recurrent_block(
             wrapper,
             loop_input,
@@ -336,6 +340,7 @@ def run_prompt(
             cache_position,
             position_embeddings,
             max_loops=args.max_loops,
+            reentry_rescale_mode=args.reentry_rescale_mode,
         )
     entry_rms = rms(entry_state, mask)
     exit_rms = rms(exit_state, mask)
@@ -410,6 +415,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max_loops", type=int, default=8)
     parser.add_argument("--max_length", type=int, default=256)
     parser.add_argument("--subspace_rank", type=int, default=8)
+    parser.add_argument("--reentry_rescale_mode", default="none", choices=("none", "entry_rms"))
     parser.add_argument("--dtype", default="auto")
     parser.add_argument("--adapter_dtype", default="float32")
     parser.add_argument("--attn_implementation", default="default")
@@ -444,6 +450,7 @@ def main() -> int:
         "max_loops": args.max_loops,
         "max_length": args.max_length,
         "subspace_rank": args.subspace_rank,
+        "reentry_rescale_mode": args.reentry_rescale_mode,
         "aggregate": aggregate_prompt_records(records, subspace_rank=args.subspace_rank),
         "bridge": bridge_stats(wrapper.bridge, sample_state),
         "bridge_gradient_liveness": bridge_gradient_liveness(wrapper.bridge, sample_state),

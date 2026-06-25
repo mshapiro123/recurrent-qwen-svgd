@@ -57,6 +57,7 @@ def test_generate_candidates_requests_last_token_logits_only():
         svgd_kernel_projection_path=None,
         svgd_kernel_geometry="euclidean",
         svgd_projection_seed=0,
+        reentry_rescale_mode="entry_rms",
         particle_noise_every_step=False,
         particle_noise_steps=0,
         stop_on_final_answer=False,
@@ -66,6 +67,7 @@ def test_generate_candidates_requests_last_token_logits_only():
 
     assert result.generation_steps == 1
     assert wrapper.calls[0]["logits_to_keep"] == 1
+    assert wrapper.calls[0]["reentry_rescale_mode"] == "entry_rms"
 
 
 def test_pathway_split_diagnostics_separates_correct_and_wrong_candidates():
