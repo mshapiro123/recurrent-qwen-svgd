@@ -616,3 +616,8 @@ Colab/Drive backups for selected runs.
   run, relaunching with the same `STAGE5_REENTRY_NORM_RUN_ID` can reuse valid
   partial outputs through the existing `resume_skip=*` checks instead of
   rerunning the whole diagnostic.
+- Stage 3 restart hardening: `reentry_repair_smoke` now restores any
+  incremental Drive backup for the selected run ID before pre/post drift,
+  smoke training, and loop-1 preservation checks. Relaunching with the same
+  `STAGE5_REENTRY_REPAIR_RUN_ID` can reuse completed pre-drift, train, and
+  preservation artifacts rather than repeating the whole smoke.
