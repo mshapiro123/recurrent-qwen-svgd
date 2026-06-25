@@ -284,6 +284,51 @@ def latest_matching(paths: list[Path]) -> Path | None:
     return sorted(existing, key=lambda path: path.as_posix())[-1]
 
 
+def current_source_summary_file() -> Path:
+    return ROOT / "config" / "stage5_current_source_summary.txt"
+
+
+def current_pointer_norm_assessment_candidates() -> list[Path]:
+    """Return the Stage 2 norm assessment implied by the current pointer.
+
+    The intended Stage 2 -> Stage 3 handoff advances
+    ``config/stage5_current_source_summary.txt`` to the norm ``summary.json``.
+    Prefer that explicit planner-selected artifact over broad Drive globs so a
+    newer unrelated norm diagnostic does not silently become the repair source.
+    Non-norm pointers are ignored.
+    """
+
+    pointer = current_source_summary_file()
+    if not pointer.exists():
+        return []
+    raw = pointer.read_text(encoding="utf-8").strip()
+    if not raw:
+        return []
+    raw_path = Path(raw.replace("\\", "/"))
+    pointer_candidates = [raw_path] if raw_path.is_absolute() else [
+        ROOT / normalize_rel_path(raw),
+        DRIVE_ARTIFACT_ROOT / normalize_rel_path(raw),
+        LEGACY_DRIVE_ROOT / normalize_rel_path(raw),
+    ]
+    assessments: list[Path] = []
+    for pointer_path in pointer_candidates:
+        if not pointer_path.exists():
+            continue
+        try:
+            payload = read_json(pointer_path)
+        except (OSError, json.JSONDecodeError):
+            continue
+        if pointer_path.name == "summary.json" and payload.get("kind") == "stage5_reentry_norm_eval_only":
+            assessments.append(pointer_path.with_name("reentry_assessment.json"))
+        elif (
+            pointer_path.name == "reentry_assessment.json"
+            and payload.get("kind") == "stage5_reentry_assessment"
+            and payload.get("source_kind") == "stage5_reentry_norm_eval_only"
+        ):
+            assessments.append(pointer_path)
+    return unique_paths(assessments)
+
+
 def norm_assessment_candidates() -> list[Path]:
     candidates: list[Path] = []
     override = os.environ.get("STAGE5_REENTRY_REPAIR_NORM_ASSESSMENT", "").strip()
@@ -291,6 +336,7 @@ def norm_assessment_candidates() -> list[Path]:
         candidates.append(ROOT / normalize_rel_path(override))
         candidates.append(DRIVE_ARTIFACT_ROOT / normalize_rel_path(override))
         candidates.append(LEGACY_DRIVE_ROOT / normalize_rel_path(override))
+    candidates.extend(current_pointer_norm_assessment_candidates())
 
     for root in (
         ROOT / "outputs" / "stage5",
@@ -313,10 +359,14 @@ def load_required_norm_assessment() -> dict[str, object] | None:
         print("Stage 2 norm assessment gate disabled by STAGE5_REENTRY_REPAIR_REQUIRE_NORM_PASS=0.", flush=True)
         return None
 
-    local_candidate = latest_matching(norm_assessment_candidates())
+    local_candidate = latest_matching(current_pointer_norm_assessment_candidates())
     if local_candidate is None and not Path("/content/drive/MyDrive").exists():
         print("Mounting Drive to find Stage 2 re-entry norm assessment.", flush=True)
         drive.mount("/content/drive", force_remount=False)
+        local_candidate = latest_matching(current_pointer_norm_assessment_candidates())
+    if local_candidate is not None:
+        print(f"stage2_norm_assessment_source=current_pointer assessment={local_candidate}", flush=True)
+    else:
         local_candidate = latest_matching(norm_assessment_candidates())
 
     if local_candidate is None:

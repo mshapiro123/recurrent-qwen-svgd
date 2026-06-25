@@ -408,6 +408,8 @@ TARGETS = {
             "Training Smoke Metrics",
             "STAGE5_REENTRY_REPAIR_REQUIRE_NORM_PASS",
             "stage2_norm_assessment",
+            "current_pointer_norm_assessment_candidates",
+            "stage2_norm_assessment_source=current_pointer",
             "incremental_backup",
             "colab/assess_stage5_reentry.py",
             "tests/test_bridge.py",

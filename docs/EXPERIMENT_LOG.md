@@ -714,6 +714,12 @@ Colab/Drive backups for selected runs.
   glob fallback remains available, but it no longer shadows the planner-selected
   repair artifact just because an unrelated failed or partial run has a newer
   modification time.
+- Stage 3 current-pointer preference: `reentry_repair_smoke` now applies the
+  same source-selection rule one phase earlier. If
+  `config/stage5_current_source_summary.txt` names a
+  `stage5_reentry_norm_eval_only` summary or assessment, Stage 3 uses that norm
+  assessment before broad Drive glob fallback. This prevents a newer unrelated
+  Stage 2 norm diagnostic from silently becoming the trainable repair source.
 - Single-runtime master-sequence notebook: `00_single_a100_runbook.ipynb` now
   defines one GitHub-SHA-resolved bootstrap helper plus explicit cells for
   `master_sequence_status`, `reentry_repair_smoke`,

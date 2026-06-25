@@ -1311,6 +1311,13 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "halting_target_nll" in cell
     assert "STAGE5_REENTRY_REPAIR_REQUIRE_NORM_PASS" in cell
     assert "stage2_norm_assessment" in cell
+    assert "current_pointer_norm_assessment_candidates" in bootstrap
+    assert "current_pointer_norm_assessment_candidates" in bootstrap_md
+    assert "current_pointer_norm_assessment_candidates" in cell
+    assert "stage2_norm_assessment_source=current_pointer" in bootstrap
+    assert "stage2_norm_assessment_source=current_pointer" in bootstrap_md
+    assert "stage2_norm_assessment_source=current_pointer" in cell
+    assert 'payload.get("kind") == "stage5_reentry_norm_eval_only"' in cell
     assert '"checkpoint": checkpoint' in cell
     assert "checkpoint_override or norm_checkpoint or DEFAULT_CHECKPOINT" in cell
     assert "checkpoint_from_norm = bool(norm_checkpoint and not checkpoint_override)" in cell
