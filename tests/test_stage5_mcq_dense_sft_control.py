@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import subprocess
 
+import yaml
+
 from colab import run_stage5_mcq_dense_sft_control as module
 
 
@@ -58,6 +60,45 @@ def test_source_positive_sft_path_follows_benchmark_source_chain(monkeypatch, tm
     assert module.source_positive_sft_path(json.loads(benchmark_summary.read_text(encoding="utf-8"))) == (
         tmp_path / "data" / "curriculum" / "train" / "positive_sft.jsonl"
     )
+
+
+def test_resolve_curriculum_source_follows_benchmark_to_training_defaults(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    train_summary = tmp_path / "outputs" / "stage5" / "train" / "summary.json"
+    benchmark_summary = tmp_path / "outputs" / "stage5" / "bench" / "summary.json"
+    train_summary.parent.mkdir(parents=True)
+    benchmark_summary.parent.mkdir(parents=True)
+    train_summary.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_reentry_recovery_training",
+                "dataset": {"source_positive_sft": "data/curriculum/train/positive_sft.jsonl"},
+                "config": {"depth_hint_style": "natural", "max_steps": 37, "learning_rate": 5e-5},
+            }
+        ),
+        encoding="utf-8",
+    )
+    benchmark_summary.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_benchmark_suite",
+                "source_summary": module.path_for_cli(train_summary),
+                "config": {"depth_hint_style": "none", "max_steps": 999, "learning_rate": 9e-4},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    resolved_path, resolved_payload = module.resolve_curriculum_source(
+        json.loads(benchmark_summary.read_text(encoding="utf-8")),
+        source_path=benchmark_summary,
+    )
+
+    assert resolved_path == train_summary
+    assert resolved_payload["kind"] == "stage5_reentry_recovery_training"
+    assert resolved_payload["config"]["depth_hint_style"] == "natural"
+    assert resolved_payload["config"]["max_steps"] == 37
+    assert resolved_payload["config"]["learning_rate"] == 5e-5
 
 
 def test_paired_dense_vs_base_reports_wins_losses_and_ties(tmp_path) -> None:
@@ -148,6 +189,70 @@ def test_prepare_train_val_appends_extra_repair_rows_to_train_only(monkeypatch, 
     assert dataset["val_target_loop_counts"] == {"3": 1}
     assert any(row["id"] == "repair_0" for row in train_rows)
     assert all(row["id"] != "repair_0" for row in val_rows)
+
+
+def test_prepare_train_val_uses_resolved_curriculum_depth_hints(monkeypatch, tmp_path) -> None:
+    source = tmp_path / "data" / "trace" / "positive_sft.jsonl"
+    write_jsonl(
+        source,
+        [
+            {"id": "source_0", "prompt": "p0", "completion": "c0", "curriculum_mode": "direct", "target_loop_count": 1},
+            {"id": "source_1", "prompt": "p1", "completion": "c1", "curriculum_mode": "deep_narrow", "target_loop_count": 3},
+        ],
+    )
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "PRIVATE_DATA_DIR", tmp_path / "private")
+    monkeypatch.setattr(module, "EXTRA_TRAIN_JSONL_ENV", "")
+    monkeypatch.setattr(module, "VAL_FRACTION", 0.5)
+    monkeypatch.setattr(module, "VAL_MIN_ROWS", 1)
+    monkeypatch.delenv("STAGE5_DENSE_MCQ_DEPTH_HINT_STYLE", raising=False)
+
+    train_jsonl, val_jsonl, dataset = module.prepare_train_val(
+        {
+            "dataset": {"source_positive_sft": str(source)},
+            "config": {"depth_hint_style": "natural"},
+        }
+    )
+
+    all_rows = [
+        json.loads(line)
+        for path in (train_jsonl, val_jsonl)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert dataset["depth_hint_style"] == "natural"
+    assert {row["depth_hint_style"] for row in all_rows} == {"natural"}
+    assert all(str(row["prompt"]).startswith("Depth hint:") for row in all_rows)
+
+
+def test_train_dense_lora_inherits_resolved_curriculum_training_defaults(monkeypatch, tmp_path) -> None:
+    captured_config = {}
+
+    def fake_run(cmd, *, check=True, log_name=None):
+        cfg_path = tmp_path / cmd[cmd.index("--config") + 1]
+        cfg = yaml.safe_load(cfg_path.read_text(encoding="utf-8"))
+        captured_config.update(cfg)
+        checkpoint = tmp_path / cfg["output_dir"] / f"dense_lora_step_{cfg['max_steps']}.pt"
+        checkpoint.parent.mkdir(parents=True, exist_ok=True)
+        checkpoint.write_bytes(b"checkpoint")
+        return subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_DIR", tmp_path / "outputs" / "stage5" / "dense")
+    monkeypatch.setattr(module, "TRAIN_STEPS_ENV", "")
+    monkeypatch.setattr(module, "SAVE_EVERY_ENV", "")
+    monkeypatch.setattr(module, "LEARNING_RATE_ENV", "")
+    monkeypatch.setattr(module, "run", fake_run)
+
+    checkpoint = module.train_dense_lora(
+        tmp_path / "train.jsonl",
+        {"config": {"max_steps": 37, "learning_rate": 5e-5}},
+    )
+
+    assert checkpoint.exists()
+    assert captured_config["max_steps"] == 37
+    assert captured_config["save_every"] == 37
+    assert captured_config["learning_rate"] == 5e-5
 
 
 def test_write_summary_updates_current_pointer(monkeypatch, tmp_path) -> None:

@@ -145,7 +145,7 @@ def source_summary_path() -> Path:
     return path
 
 
-def source_positive_sft_path(payload: dict[str, Any], *, _seen: set[Path] | None = None) -> Path:
+def direct_positive_sft_path(payload: dict[str, Any]) -> Path | None:
     dataset = payload.get("dataset") if isinstance(payload.get("dataset"), dict) else {}
     if dataset.get("source_positive_sft"):
         return resolve_path(str(dataset["source_positive_sft"]))
@@ -159,6 +159,13 @@ def source_positive_sft_path(payload: dict[str, Any], *, _seen: set[Path] | None
     config = payload.get("config") if isinstance(payload.get("config"), dict) else {}
     if config.get("work_dir"):
         return resolve_path(str(config["work_dir"])) / "positive_sft.jsonl"
+    return None
+
+
+def source_positive_sft_path(payload: dict[str, Any], *, _seen: set[Path] | None = None) -> Path:
+    direct = direct_positive_sft_path(payload)
+    if direct is not None:
+        return direct
     seen = _seen if _seen is not None else set()
     for key in ("source_summary", "nested_source_summary", "benchmark_source_summary"):
         value = payload.get(key)
@@ -173,6 +180,43 @@ def source_positive_sft_path(payload: dict[str, Any], *, _seen: set[Path] | None
         except KeyError:
             continue
     raise KeyError("Source summary does not expose a positive_sft path or curriculum work_dir")
+
+
+def resolve_curriculum_source(
+    payload: dict[str, Any],
+    *,
+    source_path: Path | None = None,
+    _seen: set[Path] | None = None,
+) -> tuple[Path | None, dict[str, Any]]:
+    """Return the summary payload that owns the SFT rows and training defaults.
+
+    Benchmark and assessment summaries are useful comparison wrappers, but the
+    dense control must inherit data/depth/training defaults from the underlying
+    curriculum or SFT summary. Otherwise a benchmark wrapper can supply the
+    right rows through ``source_positive_sft_path`` while silently falling back
+    to stale dense-control defaults for depth hints, steps, or LR.
+    """
+
+    if direct_positive_sft_path(payload) is not None:
+        return source_path, payload
+
+    seen = _seen if _seen is not None else set()
+    if source_path is not None:
+        seen.add(source_path.resolve())
+    for key in ("source_summary", "nested_source_summary", "benchmark_source_summary"):
+        value = payload.get(key)
+        if not isinstance(value, str) or not value.strip():
+            continue
+        candidate = resolve_path(value)
+        resolved = candidate.resolve()
+        if resolved in seen or not candidate.exists():
+            continue
+        seen.add(resolved)
+        try:
+            return resolve_curriculum_source(read_json(candidate), source_path=candidate, _seen=seen)
+        except KeyError:
+            continue
+    raise KeyError("Source summary chain does not expose a curriculum/SFT source")
 
 
 def mount_drive_if_possible() -> None:
@@ -618,6 +662,7 @@ def write_summary(payload: dict[str, Any]) -> Path:
         "Does standard dense Qwen get the same ARC MCQ lift from the traced curriculum as recurrent Qwen?",
         "",
         f"- Source summary: `{payload['source_summary']}`",
+        f"- Curriculum source summary: `{payload.get('curriculum_source_summary')}`",
         f"- Total SFT rows: `{payload['dataset']['rows']}`",
         f"- Source rows: `{payload['dataset'].get('source_rows')}`",
         f"- Extra train rows: `{payload['dataset'].get('extra_train_rows')}`",
@@ -722,8 +767,9 @@ def main() -> int:
     PRIVATE_DATA_DIR.mkdir(parents=True, exist_ok=True)
     source_path = source_summary_path()
     source_payload = read_json(source_path)
-    train_jsonl, val_jsonl, dataset = prepare_train_val(source_payload)
-    dense_checkpoint = train_dense_lora(train_jsonl, source_payload)
+    curriculum_source_path, curriculum_source_payload = resolve_curriculum_source(source_payload, source_path=source_path)
+    train_jsonl, val_jsonl, dataset = prepare_train_val(curriculum_source_payload)
+    dense_checkpoint = train_dense_lora(train_jsonl, curriculum_source_payload)
     benchmark_payload = run_benchmarks(dense_checkpoint)
     backup = drive_backup()
     payload = {
@@ -731,6 +777,10 @@ def main() -> int:
         "kind": "stage5_dense_mcq_trace_sft_control",
         "source_summary": path_for_cli(source_path),
         "source_kind": source_payload.get("kind"),
+        "curriculum_source_summary": path_for_cli(curriculum_source_path)
+        if curriculum_source_path is not None
+        else path_for_cli(source_path),
+        "curriculum_source_kind": curriculum_source_payload.get("kind"),
         "dataset": dataset,
         "config": {
             "model_name": MODEL_NAME,

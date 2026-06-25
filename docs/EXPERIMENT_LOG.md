@@ -590,3 +590,11 @@ Colab/Drive backups for selected runs.
   assessment gate accepts either direct projection movement or output movement
   when gradients are live, so a tiny but real bridge update is not rejected
   because a sampled delta happens to be small.
+- Post-Stage-4 control wiring hardening: the dense standard-Qwen same-curriculum
+  control now separates the comparison source summary from the curriculum/SFT
+  source summary. Benchmark and assessment wrappers are still accepted as the
+  front-of-queue source, but the control follows their source chain to inherit
+  positive-SFT rows, depth-hint style, max steps, and learning rate from the
+  underlying training/curriculum summary. This prevents a repaired recurrent
+  benchmark wrapper from silently falling back to stale dense-control defaults
+  during the standard-Qwen control run.
