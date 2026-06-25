@@ -5,10 +5,13 @@ from eval.eval_reentry_drift import (
     aggregate_prompt_records,
     bridge_gradient_liveness,
     masked_token_matrix,
+    reentry_adapter_gradient_liveness,
+    reentry_adapter_stats,
     rms,
     subspace_overlap,
 )
 from models.bridge import IdentityGatedBridge
+from models.reentry_adapter import ReentryAffineAdapter
 
 
 def test_rms_respects_attention_mask():
@@ -60,6 +63,29 @@ def test_bridge_liveness_detects_live_identity_gate_one():
 
     assert out["gate_grad_abs"] == pytest.approx(0.0)
     assert out["weight_grad_rms"] > 0.0
+    assert out["bias_grad_rms"] > 0.0
+
+
+def test_reentry_adapter_stats_are_identity_at_init():
+    adapter = ReentryAffineAdapter(hidden_size=4)
+    sample = torch.randn(2, 3, 4)
+
+    out = reentry_adapter_stats(adapter, sample)
+
+    assert out["scale_identity_max_abs_diff"] == pytest.approx(0.0)
+    assert out["bias_max_abs"] == pytest.approx(0.0)
+    assert out["sample_adapter_delta_rms"] == pytest.approx(0.0)
+    assert out["sample_state_rms"] > 0.0
+
+
+def test_reentry_adapter_liveness_reports_scale_and_bias_gradients():
+    adapter = ReentryAffineAdapter(hidden_size=4)
+    sample = torch.randn(2, 3, 4)
+
+    out = reentry_adapter_gradient_liveness(adapter, sample)
+
+    assert out["loss"] > 0.0
+    assert out["scale_grad_rms"] > 0.0
     assert out["bias_grad_rms"] > 0.0
 
 

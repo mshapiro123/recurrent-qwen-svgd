@@ -768,3 +768,8 @@ Colab/Drive backups for selected runs.
   loop re-entry adapter, and halting predictor parameters. This protects the
   repair-smoke objective from silently dropping one of the trainable loop
   closure components.
+- Re-entry diagnostic adapter coverage: `tests/test_eval_reentry_drift.py` now
+  verifies that the eval diagnostic emits identity-at-init movement stats and
+  live scale/bias gradients for the re-entry adapter. These are the fields the
+  Stage 3 assessment uses to decide whether the loop re-entry adapter is
+  gradient-live and actually moved.
