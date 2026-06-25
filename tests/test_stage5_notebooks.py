@@ -576,8 +576,10 @@ def test_master_sequence_status_cell_matches_markdown_code() -> None:
     assert "MASTER_SEQUENCE_STATUS" in plain
     assert "colab/print_current_stage5_action.py" in plain
     assert "colab/review_stage5_reentry.py" in plain
+    assert "colab/review_stage5_recovery.py" in plain
     assert "colab/review_stage5_recovery_curriculum.py" in plain
     assert "colab/plan_stage5_curriculum_scaleup.py" in plain
+    assert "Stage 4 Recovery Review" in plain
     assert "Claim-Sized Curriculum Scale-Up Plan" in plain
     assert "Stage 4 Recovery Curriculum Readiness" in (
         ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py"
