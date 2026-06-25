@@ -1,0 +1,23 @@
+{
+  "status": "reentry_health_needs_review",
+  "issues": [
+    "reentry_adapter_gradient_not_live_after_recovery"
+  ],
+  "thresholds": {
+    "min_bridge_gate_abs": 0.05,
+    "max_loop8_output_over_entry_rms": 3.0
+  },
+  "metrics": {
+    "bridge_gate": 1.0004091262817383,
+    "bridge_delta_rms": 0.09639152139425278,
+    "bridge_weight_grad_rms": 0.38928231596946716,
+    "bridge_bias_grad_rms": 0.007569462992250919,
+    "reentry_adapter_delta_rms": 0.005607573315501213,
+    "reentry_adapter_scale_grad_rms": 0.0,
+    "reentry_adapter_bias_grad_rms": 0.0,
+    "loop8_output_over_entry_rms": 1.0062079032262166,
+    "loop8_output_over_input_rms": 1.0060652891794841,
+    "mean_exit_over_entry_rms": 1.001758098602295,
+    "subspace_overlap": 0.34590932726860046
+  }
+}
