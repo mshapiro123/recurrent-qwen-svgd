@@ -1,0 +1,34 @@
+HF auth: token configured from environment.
+Drive mount skipped/failed: 'NoneType' object has no attribute 'kernel'
+Traceback (most recent call last):
+  File "/content/recurrent-qwen-svgd/colab/run_stage5_balanced_arc_mix_gate.py", line 1054, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/content/recurrent-qwen-svgd/colab/run_stage5_balanced_arc_mix_gate.py", line 1030, in main
+    restore_checkpoint_if_needed(resume_checkpoint, run_id=checkpoint_run_id(resume_checkpoint))
+  File "/content/recurrent-qwen-svgd/colab/run_stage5_recovered_phase1_arc_gate.py", line 175, in restore_checkpoint_if_needed
+    raise FileNotFoundError(
+FileNotFoundError: Missing recovered checkpoint /content/recurrent-qwen-svgd/outputs/stage5/stage5_reentry_recovery_20260625_114836_curriculum_sft/phase1/phase1_step_75.pt. Could not restore it from Drive.
+Drive visibility:
+- /content/drive: exists=False is_dir=False
+- /content/drive/MyDrive: exists=False is_dir=False
+- /content/drive/MyDrive/recurrent-qwen-svgd-artifacts: exists=False is_dir=False
+- /content/drive/MyDrive/recurrent-qwen-svgd: exists=False is_dir=False
+- /content/drive/MyDrive/recurrent-qwen-svgd-fresh: exists=False is_dir=False
+If Drive was recently reauthorized or the runtime reset, run this in Colab before retrying:
+from google.colab import drive
+drive.mount('/content/drive', force_remount=True)
+or set FORCE_DRIVE_REMOUNT=1 for this runner.
+Searched:
+/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5_reentry_recovery_20260625_114836_curriculum_sft/run_dir/phase1/phase1_step_75.pt
+/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5_reentry_recovery_20260625_114836_curriculum_sft/phase1/phase1_step_75.pt
+/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/outputs/stage5/stage5_reentry_recovery_20260625_114836_curriculum_sft/run_dir/phase1/phase1_step_75.pt
+/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/outputs/stage5/stage5_reentry_recovery_20260625_114836_curriculum_sft/phase1/phase1_step_75.pt
+/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_reentry_recovery_20260625_114836_curriculum_sft/run_dir/phase1/phase1_step_75.pt
+/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_reentry_recovery_20260625_114836_curriculum_sft/phase1/phase1_step_75.pt
+/content/drive/MyDrive/recurrent-qwen-svgd/stage5_reentry_recovery_20260625_114836_curriculum_sft/run_dir/phase1/phase1_step_75.pt
+/content/drive/MyDrive/recurrent-qwen-svgd/stage5_reentry_recovery_20260625_114836_curriculum_sft/phase1/phase1_step_75.pt
+/content/drive/MyDrive/recurrent-qwen-svgd/outputs/stage5/stage5_reentry_recovery_20260625_114836_curriculum_sft/run_dir/phase1/phase1_step_75.pt
+/content/drive/MyDrive/recurrent-qwen-svgd/outputs/stage5/stage5_reentry_recovery_20260625_114836_curriculum_sft/phase1/phase1_step_75.pt
+/content/drive/MyDrive/recurrent-qwen-svgd/stage5/stage5_reentry_recovery_20260625_114836_curriculum_sft/run_dir/phase1/phase1_step_75.pt
+/content/drive/MyDrive/recurrent-qwen-svgd/stage5/stage5_reentry_recovery_20260625_114836_curriculum_sft/phase1/phase1_step_75.pt

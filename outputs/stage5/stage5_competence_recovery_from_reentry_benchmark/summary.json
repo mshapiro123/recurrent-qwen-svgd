@@ -1,0 +1,18 @@
+{
+  "run_id": "stage5_competence_recovery_from_reentry_benchmark",
+  "kind": "stage5_competence_preserving_pipeline",
+  "source_summary": "outputs/stage5/stage5_debiased_benchmark_assessment_20260625_121302/summary.json",
+  "source_status": "needs_review",
+  "status": "pipeline_failed",
+  "failed_stage": "arc_mix",
+  "error": "command failed: /usr/bin/python3 colab/run_stage5_balanced_arc_mix_gate.py",
+  "next_step": "Inspect arc_mix logs under outputs/stage5/stage5_competence_recovery_from_reentry_benchmark and rerun with the same run ids.",
+  "arc_mix_run_id": "stage5_competence_recovery_from_reentry_benchmark_arc_mix",
+  "arc_mix_summary": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/summary.json",
+  "arc_mix_status": null,
+  "full_assessment_run_id": "stage5_competence_recovery_from_reentry_benchmark_full_assessment",
+  "full_assessment_summary": null,
+  "full_assessment_status": null,
+  "arc_mix": null,
+  "full_assessment": null
+}
