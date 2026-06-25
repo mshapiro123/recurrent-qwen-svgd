@@ -483,10 +483,32 @@ Colab/Drive backups for selected runs.
   passed Stage 3 assessment. When cleared, it resumes from the repaired Stage 3
   checkpoint and uses the existing capability-ladder curriculum SFT path with
   learned loop-control and target-loop validation enabled.
+- Stage 4 depth-count hardening: `reentry_recovery_training` now derives
+  `STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS` from a tested helper that preserves
+  the actual row count per target loop, for example `1=48,2=16,4=8`. It no
+  longer collapses observed depths to presence-only gates such as
+  `1=1,2=1,4=1`, which would erase the intended depth-curriculum signal.
+- Stage 3 preservation hardening: `assess_stage5_reentry.py` now refuses to
+  clear recovery training unless loop-1 preservation evidence is present on
+  both source and trained checkpoints and covers matching task groups. Missing
+  or mismatched preservation evidence now routes to
+  `fix_loop1_preservation_eval_before_recovery_training`.
+- Reviewer routing hardening: `review_stage5_reentry.py` now distinguishes
+  missing loop-1 evidence, loop-1 regression, adapter-not-live, adapter-live but
+  unmoved, bridge-live but unmoved, and full Stage 3 pass. The bootstrap stale
+  marker for `reentry_recovery_training` was updated to
+  `reentry_recovery_training_v2_depth_count_gate`.
+- Added the operational contract
+  `docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md`, which defines the hypotheses,
+  success criteria, failure responses, and exact next targets for Stage 2,
+  Stage 3, and Stage 4.
 - Current reviewer output remains Stage 1 only until Stage 2 lands:
   `bridge_dead -> run_reentry_norm_then_repair_smoke -> next target
   reentry_norm_diagnostic`.
 - Tests after this reset:
+  - `137 passed` after refreshing re-entry recovery routing markers.
+  - `133 passed` after requiring loop-1 evidence before recovery training.
+  - `91 passed` after hardening the Stage 4 depth-count recovery gate.
   - `1294 passed` after adding the Stage 2 recover-only target.
   - `1293 passed` after adding gated Stage 4 recovery training.
   - `1292 passed` after hardening Stage 3 repair smoke.

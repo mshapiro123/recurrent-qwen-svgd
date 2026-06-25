@@ -1310,3 +1310,17 @@ def test_reentry_drift_and_norm_targets_run_self_assessment() -> None:
     assert "incomplete_candidate_conversion" in norm_cell
     assert "incremental_backup" in norm_cell
     assert "resume_skip=candidate_conversion" in norm_cell
+
+
+def test_reentry_stage3_stage4_runbook_is_linked_from_current_action() -> None:
+    current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
+    runbook = (ROOT / "docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md").read_text(encoding="utf-8")
+
+    assert "docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md" in current_action
+    assert "STAGE5_CURRENT_A100_TARGET=reentry_norm_diagnostic" in runbook
+    assert "STAGE5_CURRENT_A100_TARGET=reentry_repair_smoke" in runbook
+    assert "STAGE5_CURRENT_A100_TARGET=reentry_recovery_training" in runbook
+    assert "fix_loop1_preservation_eval_before_recovery_training" in runbook
+    assert "STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS" in runbook
+    assert "1=48,2=16,4=8" in runbook
+    assert "1=1,2=1,4=1" in runbook

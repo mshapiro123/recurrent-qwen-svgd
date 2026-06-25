@@ -22,6 +22,8 @@ recovered recurrent checkpoint has a dead bridge: `bridge_gate=0.0`, bridge
 delta RMS `0.0`, and zero bridge projection/bias/gate gradients. Do **not**
 run more ARC-mix depth training, Phase 2/SVGD, or particle-noise sweeps until
 the loop-closure path is gradient-live and has passed the tiny repair smoke.
+The detailed Stage 3/4 contract is in
+[`docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md`](../docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md).
 
 ```text
 latest reviewer state: stage1_drift / bridge_dead
