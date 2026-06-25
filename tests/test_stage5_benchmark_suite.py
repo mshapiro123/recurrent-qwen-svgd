@@ -291,6 +291,38 @@ def test_checkpoint_bearing_source_summary_unwraps_benchmark_assessment_even_wit
     assert module.checkpoint_bearing_source_summary(assessment_summary, assessment_payload) == benchmark_summary
 
 
+def test_checkpoint_bearing_source_summary_unwraps_forced_depth_diagnostic(tmp_path) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    checkpoint = tmp_path / "outputs" / "stage5" / "train" / "phase1" / "phase1_step_100.pt"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    benchmark_summary = tmp_path / "outputs" / "stage5" / "benchmark" / "summary.json"
+    forced_summary = tmp_path / "outputs" / "stage5" / "forced_depth" / "summary.json"
+    _write_jsonl(
+        benchmark_summary,
+        [
+            {
+                "kind": "stage5_benchmark_suite",
+                "checkpoint": str(checkpoint),
+            }
+        ],
+    )
+    _write_jsonl(
+        forced_summary,
+        [
+            {
+                "kind": "stage5_forced_depth_diagnostic",
+                "source_summary": str(benchmark_summary),
+            }
+        ],
+    )
+
+    forced_payload = json.loads(forced_summary.read_text(encoding="utf-8").splitlines()[0])
+
+    assert module.checkpoint_bearing_source_summary(forced_summary, forced_payload) == benchmark_summary
+
+
 def test_build_summary_compares_base_and_recurrent_rows(tmp_path) -> None:
     base_jsonl = tmp_path / "arc_base_label.jsonl"
     recurrent_jsonl = tmp_path / "arc_recurrent_label.jsonl"

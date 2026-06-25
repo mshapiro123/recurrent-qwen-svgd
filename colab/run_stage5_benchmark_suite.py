@@ -366,6 +366,8 @@ def checkpoint_bearing_source_summary(source_summary: Path | None, payload: dict
                 next_summary = source_summaries.get("arc_challenge") or source_summaries.get("arc_easy")
         elif kind == "stage5_mcq_debias_diagnostic":
             next_summary = current_payload.get("nested_source_summary") or current_payload.get("source_summary")
+        elif kind == "stage5_forced_depth_diagnostic":
+            next_summary = current_payload.get("source_summary")
 
         if not next_summary:
             if (

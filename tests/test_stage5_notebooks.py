@@ -327,6 +327,23 @@ def test_current_bootstrap_exposes_forced_depth_diagnostic_target() -> None:
     assert 'drive.mount("/content/drive", force_remount=FORCE_DRIVE_REMOUNT)' in cell
 
 
+def test_current_bootstrap_exposes_heldout_router_validation_target() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_HELDOUT_ROUTER_VALIDATION_CELL.py").read_text(encoding="utf-8")
+
+    for payload in (text, markdown):
+        assert '"heldout_router_validation"' in payload
+        assert "colab/STAGE5_HELDOUT_ROUTER_VALIDATION_CELL.py" in payload
+        assert "STAGE5_HELDOUT_ROUTER_DISCOVERY_SUMMARY" in payload
+        assert "eval/evaluate_depth_router_transfer.py" in payload
+        assert "open_hard_arc_challenge" in payload
+    assert "STAGE5_HELDOUT_ROUTER_VALIDATION_CELL_VERSION" in cell
+    assert "heldout_router_validation_v1" in cell
+    assert "router_transfer_content_question_only" in cell
+    assert "STAGE5_BENCHMARK_FORCED_LOOP_COUNT" in cell
+
+
 def test_current_bootstrap_source_summary_override_fans_out_to_benchmark_and_control() -> None:
     text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
@@ -337,14 +354,17 @@ def test_current_bootstrap_source_summary_override_fans_out_to_benchmark_and_con
         assert "STAGE5_DENSE_MCQ_SOURCE_SUMMARY" in payload
         assert "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY" in payload
         assert "STAGE5_COMPETENCE_SOURCE_SUMMARY" in payload
+        assert "STAGE5_HELDOUT_ROUTER_DISCOVERY_SUMMARY" in payload
         assert 'os.environ["STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
         assert 'os.environ["STAGE5_DENSE_MCQ_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
         assert 'os.environ["STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
         assert 'os.environ["STAGE5_COMPETENCE_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
+        assert 'os.environ["STAGE5_HELDOUT_ROUTER_DISCOVERY_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
         assert 'os.environ.pop("STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY", None)' in payload
         assert 'os.environ.pop("STAGE5_DENSE_MCQ_SOURCE_SUMMARY", None)' in payload
         assert 'os.environ.pop("STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY", None)' in payload
         assert 'os.environ.pop("STAGE5_COMPETENCE_SOURCE_SUMMARY", None)' in payload
+        assert 'os.environ.pop("STAGE5_HELDOUT_ROUTER_DISCOVERY_SUMMARY", None)' in payload
 
 
 def test_current_bootstrap_can_explicitly_prefer_local_head_to_stale_ref_resolution() -> None:
