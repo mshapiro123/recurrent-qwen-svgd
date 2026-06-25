@@ -167,11 +167,15 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
     use_reentry_adapter = bool(config.get("use_reentry_adapter", False))
     pre_delta = finite_float(pre.get("bridge_delta_rms"))
     post_delta = finite_float(post.get("bridge_delta_rms"))
+    post_identity_diff = finite_float(post.get("proj_identity_max_abs_diff"))
+    post_bias_max = finite_float(post.get("proj_bias_max_abs"))
     post_weight_grad = finite_float(post.get("weight_grad_rms"))
     post_bias_grad = finite_float(post.get("bias_grad_rms"))
     post_gate = finite_float(post.get("bridge_gate"))
     bridge_live = post_weight_grad > 0.0 and post_bias_grad > 0.0
-    bridge_moved = abs(post_delta - pre_delta) > 1e-6 or post_delta > 1e-6
+    bridge_projection_moved = post_identity_diff > 1e-6 or post_bias_max > 1e-6
+    bridge_output_moved = abs(post_delta - pre_delta) > 1e-6 or post_delta > 1e-6
+    bridge_moved = bridge_projection_moved or bridge_output_moved
 
     post_adapter = summary.get("post_reentry_adapter") if isinstance(summary.get("post_reentry_adapter"), dict) else {}
     post_adapter_live = (
@@ -247,6 +251,10 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
             "post_bridge_gate": post_gate,
             "pre_bridge_delta_rms": pre_delta,
             "post_bridge_delta_rms": post_delta,
+            "post_bridge_proj_identity_max_abs_diff": post_identity_diff,
+            "post_bridge_proj_bias_max_abs": post_bias_max,
+            "bridge_projection_moved": bridge_projection_moved,
+            "bridge_output_moved": bridge_output_moved,
             "post_weight_grad_rms": post_weight_grad,
             "post_bias_grad_rms": post_bias_grad,
             "bridge_live": bridge_live,

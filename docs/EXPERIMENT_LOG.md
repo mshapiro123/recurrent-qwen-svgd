@@ -584,3 +584,9 @@ Colab/Drive backups for selected runs.
   per-launcher opt-in env vars for exceptional cases. Checkpoints should remain
   Drive-backed/HF-packaged; GitHub commits should carry lightweight evidence
   artifacts, current-summary pointers, configs, logs, and summaries.
+- Stage 3 bridge-movement hardening: the re-entry repair smoke summary now
+  records direct bridge projection movement (`proj_identity_max_abs_diff` and
+  `proj_bias_max_abs`) in addition to sampled bridge output delta. The
+  assessment gate accepts either direct projection movement or output movement
+  when gradients are live, so a tiny but real bridge update is not rejected
+  because a sampled delta happens to be small.

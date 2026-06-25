@@ -480,6 +480,8 @@ def bridge_summary(payload: dict[str, object]) -> dict[str, object]:
     loops = (payload.get("aggregate") or {}).get("loop_summary", {}) if isinstance(payload.get("aggregate"), dict) else {}
     return {
         "bridge_gate": bridge.get("bridge_gate"),
+        "proj_identity_max_abs_diff": bridge.get("proj_identity_max_abs_diff"),
+        "proj_bias_max_abs": bridge.get("proj_bias_max_abs"),
         "bridge_delta_rms": bridge.get("sample_bridge_delta_rms"),
         "weight_grad_rms": live.get("weight_grad_rms"),
         "bias_grad_rms": live.get("bias_grad_rms"),
@@ -501,13 +503,14 @@ def write_markdown(summary: dict[str, object], path: Path) -> None:
         f"- Use re-entry adapter: `{summary['config'].get('use_reentry_adapter')}`",
         "",
         "## Bridge Liveness",
-        "| stage | gate | bridge delta RMS | weight grad RMS | bias grad RMS | loop4 out/in RMS | loop8 out/in RMS |",
-        "|---|---:|---:|---:|---:|---:|---:|",
+        "| stage | gate | proj identity max diff | proj bias max | bridge delta RMS | weight grad RMS | bias grad RMS | loop4 out/in RMS | loop8 out/in RMS |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for stage in ("pre", "post"):
         row = summary[f"{stage}_bridge"]
         lines.append(
-            f"| {stage} | {row.get('bridge_gate')} | {row.get('bridge_delta_rms')} | "
+            f"| {stage} | {row.get('bridge_gate')} | {row.get('proj_identity_max_abs_diff')} | "
+            f"{row.get('proj_bias_max_abs')} | {row.get('bridge_delta_rms')} | "
             f"{row.get('weight_grad_rms')} | {row.get('bias_grad_rms')} | "
             f"{row.get('loop4_output_over_input_rms')} | {row.get('loop8_output_over_input_rms')} |"
         )

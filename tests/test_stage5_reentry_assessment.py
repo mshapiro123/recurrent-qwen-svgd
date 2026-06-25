@@ -74,6 +74,8 @@ def norm_summary(*, none_hits=20, entry_hits=21, none_best=5, entry_best=5):
 def repair_summary(
     *,
     post_delta=0.01,
+    post_identity_diff=0.0,
+    post_bias_max=0.0,
     weight_grad=1e-4,
     bias_grad=1e-4,
     use_reentry_adapter=True,
@@ -102,6 +104,8 @@ def repair_summary(
         "post_bridge": {
             "bridge_gate": 1.0,
             "bridge_delta_rms": post_delta,
+            "proj_identity_max_abs_diff": post_identity_diff,
+            "proj_bias_max_abs": post_bias_max,
             "weight_grad_rms": weight_grad,
             "bias_grad_rms": bias_grad,
         },
@@ -182,6 +186,17 @@ def test_repair_smoke_assessment_detects_live_but_not_moved() -> None:
 
     assert out["status"] == "bridge_live_but_no_observed_movement"
     assert out["recommendation"] == "extend_reentry_repair_smoke_or_increase_bridge_lr"
+    assert out["metrics"]["bridge_projection_moved"] is False
+    assert out["metrics"]["bridge_output_moved"] is False
+
+
+def test_repair_smoke_assessment_accepts_direct_bridge_projection_movement() -> None:
+    out = assess(repair_summary(post_delta=0.0, post_identity_diff=1e-4, weight_grad=1e-4, bias_grad=1e-4))
+
+    assert out["status"] == "bridge_repair_smoke_passed"
+    assert out["recommendation"] == "run_bounded_recovery_training_with_reentry_repair"
+    assert out["metrics"]["bridge_projection_moved"] is True
+    assert out["metrics"]["bridge_output_moved"] is False
 
 
 def test_repair_smoke_assessment_blocks_when_enabled_adapter_not_live() -> None:
