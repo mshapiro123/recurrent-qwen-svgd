@@ -1,0 +1,6 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Challenge
+split=test
+offset=512
+rows=128
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_heldout_router_validation_20260625_230408_loop1/open_hard_arc_challenge_test_offset512_128.jsonl

@@ -1,0 +1,266 @@
+{
+  "kind": "stage5_depth_router_transfer",
+  "discovery_sweep_summary": "outputs/stage5/stage5_forced_depth_arc_challenge_loop123_20260625_194738/summary.json",
+  "heldout_sweep_summary": "outputs/stage5/stage5_heldout_router_validation_20260625_230408/summary.json",
+  "heldout_sweep_run_id": "stage5_heldout_router_validation_20260625_230408",
+  "train_benchmark": "arc_challenge",
+  "score_target": "cyclic_label_aggregated",
+  "aggregate": "permutation_mean",
+  "loops": [
+    1,
+    2,
+    3
+  ],
+  "selector": {
+    "family": "threshold_router",
+    "source": "loop1",
+    "threshold": 0.25,
+    "fallback_loop": 3,
+    "total": 256,
+    "correct": 156,
+    "delta_vs_loop1": 8,
+    "routed_deep": 41,
+    "wins_vs_loop1": 12,
+    "losses_vs_loop1": 4,
+    "sign_test_p": 0.076812744140625
+  },
+  "selector_signature": "threshold:loop1<0.25->loop3",
+  "discovery": {
+    "baseline": {
+      "total": 256,
+      "base_correct": 154,
+      "loop1_correct": 148,
+      "loop1_delta_vs_base": -6,
+      "loop1_wins_vs_base": 3,
+      "loop1_losses_vs_base": 9,
+      "loop1_sign_test_p_vs_base": 0.14599609375
+    },
+    "oracle": {
+      "any_depth_correct": 164,
+      "any_depth_gain_vs_loop1": 16,
+      "base_or_any_depth_correct": 168
+    },
+    "selected_selector": {
+      "family": "threshold_router",
+      "source": "loop1",
+      "threshold": 0.25,
+      "fallback_loop": 3,
+      "total": 256,
+      "correct": 156,
+      "delta_vs_loop1": 8,
+      "routed_deep": 41,
+      "wins_vs_loop1": 12,
+      "losses_vs_loop1": 4,
+      "sign_test_p": 0.076812744140625
+    },
+    "selected_delta_vs_base": 2,
+    "oracle_gap_capture": 0.5,
+    "prediction_bias": {},
+    "depth_interactions": {
+      "total": 256,
+      "base_correct": 154,
+      "loop1_correct": 148,
+      "any_recurrent_correct": 164,
+      "any_base_or_recurrent_correct": 168,
+      "oracle_recurrent_gain_vs_loop1": 16,
+      "oracle_base_or_recurrent_gain_vs_base": 14,
+      "deeper_unique_over_loop1": 16,
+      "deeper_unique_over_base_and_loop1": 11,
+      "loop1_harmed_by_any_deeper": 11,
+      "all_depths_correct": 137,
+      "all_depths_wrong": 88,
+      "depth_hit_patterns": {
+        "011": 9,
+        "000": 92,
+        "110": 9,
+        "111": 137,
+        "101": 2,
+        "001": 6,
+        "010": 1
+      }
+    }
+  },
+  "heldout": {
+    "arc_easy": {
+      "baseline": {
+        "total": 128,
+        "base_correct": 103,
+        "loop1_correct": 103,
+        "loop1_delta_vs_base": 0,
+        "loop1_wins_vs_base": 1,
+        "loop1_losses_vs_base": 1,
+        "loop1_sign_test_p_vs_base": 1.0
+      },
+      "oracle": {
+        "any_depth_correct": 105,
+        "any_depth_gain_vs_loop1": 2,
+        "base_or_any_depth_correct": 106
+      },
+      "selected_selector": {
+        "family": "threshold_router",
+        "source": "loop1",
+        "threshold": 0.25,
+        "fallback_loop": 3,
+        "total": 128,
+        "correct": 101,
+        "delta_vs_loop1": -2,
+        "routed_deep": 3,
+        "wins_vs_loop1": 0,
+        "losses_vs_loop1": 2,
+        "sign_test_p": 0.5
+      },
+      "selected_delta_vs_base": -2,
+      "oracle_gap_capture": -1.0,
+      "prediction_bias": {},
+      "depth_interactions": {
+        "total": 128,
+        "base_correct": 103,
+        "loop1_correct": 103,
+        "any_recurrent_correct": 105,
+        "any_base_or_recurrent_correct": 106,
+        "oracle_recurrent_gain_vs_loop1": 2,
+        "oracle_base_or_recurrent_gain_vs_base": 3,
+        "deeper_unique_over_loop1": 2,
+        "deeper_unique_over_base_and_loop1": 2,
+        "loop1_harmed_by_any_deeper": 6,
+        "all_depths_correct": 97,
+        "all_depths_wrong": 22,
+        "depth_hit_patterns": {
+          "111": 97,
+          "110": 5,
+          "010": 2,
+          "000": 23,
+          "100": 1
+        }
+      }
+    },
+    "arc_challenge": {
+      "baseline": {
+        "total": 43,
+        "base_correct": 23,
+        "loop1_correct": 23,
+        "loop1_delta_vs_base": 0,
+        "loop1_wins_vs_base": 1,
+        "loop1_losses_vs_base": 1,
+        "loop1_sign_test_p_vs_base": 1.0
+      },
+      "oracle": {
+        "any_depth_correct": 25,
+        "any_depth_gain_vs_loop1": 2,
+        "base_or_any_depth_correct": 25
+      },
+      "selected_selector": {
+        "family": "threshold_router",
+        "source": "loop1",
+        "threshold": 0.25,
+        "fallback_loop": 3,
+        "total": 43,
+        "correct": 21,
+        "delta_vs_loop1": -2,
+        "routed_deep": 12,
+        "wins_vs_loop1": 2,
+        "losses_vs_loop1": 4,
+        "sign_test_p": 0.6875
+      },
+      "selected_delta_vs_base": -2,
+      "oracle_gap_capture": -1.0,
+      "prediction_bias": {},
+      "depth_interactions": {
+        "total": 43,
+        "base_correct": 23,
+        "loop1_correct": 23,
+        "any_recurrent_correct": 25,
+        "any_base_or_recurrent_correct": 25,
+        "oracle_recurrent_gain_vs_loop1": 2,
+        "oracle_base_or_recurrent_gain_vs_base": 2,
+        "deeper_unique_over_loop1": 2,
+        "deeper_unique_over_base_and_loop1": 1,
+        "loop1_harmed_by_any_deeper": 4,
+        "all_depths_correct": 19,
+        "all_depths_wrong": 18,
+        "depth_hit_patterns": {
+          "000": 18,
+          "111": 19,
+          "001": 2,
+          "110": 1,
+          "100": 3
+        }
+      }
+    },
+    "open_hard_arc_challenge": {
+      "baseline": {
+        "total": 128,
+        "base_correct": 75,
+        "loop1_correct": 69,
+        "loop1_delta_vs_base": -6,
+        "loop1_wins_vs_base": 1,
+        "loop1_losses_vs_base": 7,
+        "loop1_sign_test_p_vs_base": 0.0703125
+      },
+      "oracle": {
+        "any_depth_correct": 76,
+        "any_depth_gain_vs_loop1": 7,
+        "base_or_any_depth_correct": 78
+      },
+      "selected_selector": {
+        "family": "threshold_router",
+        "source": "loop1",
+        "threshold": 0.25,
+        "fallback_loop": 3,
+        "total": 128,
+        "correct": 72,
+        "delta_vs_loop1": 3,
+        "routed_deep": 19,
+        "wins_vs_loop1": 4,
+        "losses_vs_loop1": 1,
+        "sign_test_p": 0.375
+      },
+      "selected_delta_vs_base": -3,
+      "oracle_gap_capture": 0.42857142857142855,
+      "prediction_bias": {},
+      "depth_interactions": {
+        "total": 128,
+        "base_correct": 75,
+        "loop1_correct": 69,
+        "any_recurrent_correct": 76,
+        "any_base_or_recurrent_correct": 78,
+        "oracle_recurrent_gain_vs_loop1": 7,
+        "oracle_base_or_recurrent_gain_vs_base": 3,
+        "deeper_unique_over_loop1": 7,
+        "deeper_unique_over_base_and_loop1": 2,
+        "loop1_harmed_by_any_deeper": 1,
+        "all_depths_correct": 68,
+        "all_depths_wrong": 50,
+        "depth_hit_patterns": {
+          "111": 68,
+          "001": 1,
+          "000": 52,
+          "010": 2,
+          "110": 1,
+          "011": 4
+        }
+      }
+    }
+  },
+  "min_oracle_gap_capture": 0.2,
+  "transfer_summary": {
+    "benchmarks": [
+      "arc_easy",
+      "arc_challenge",
+      "open_hard_arc_challenge"
+    ],
+    "positive_delta_vs_loop1_benchmarks": 1,
+    "negative_delta_vs_loop1_benchmarks": 2,
+    "positive_delta_vs_base_benchmarks": 0,
+    "mean_delta_vs_loop1": -0.3333333333333333,
+    "mean_delta_vs_base": -2.3333333333333335,
+    "mean_oracle_gap_capture": -0.5238095238095238
+  },
+  "gate_status": "router_transfer_failed",
+  "recommended_next": "scale_probe_or_depth_signal_rethink",
+  "notes": [
+    "Content scoring is the capability gate; cyclic scoring is an invariance guard.",
+    "Oracle is reported as an upper bound, not as achieved gain.",
+    "Subspace overlap is not measured by MCQ rows; use re-entry drift diagnostics for that instrument."
+  ]
+}

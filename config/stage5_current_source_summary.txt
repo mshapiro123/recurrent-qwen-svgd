@@ -1,1 +1,1 @@
-outputs/stage5/stage5_forced_depth_arc_challenge_loop123_20260625_194738/summary.json
+outputs/stage5/stage5_heldout_router_validation_20260625_230408/router_validation_summary.json
