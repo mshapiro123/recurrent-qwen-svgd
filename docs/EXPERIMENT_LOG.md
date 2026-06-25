@@ -754,3 +754,10 @@ Colab/Drive backups for selected runs.
   `git pull --rebase --autostash`, and a final checked push. This keeps the
   current front-of-queue GPU action covered against the publication failure
   mode that previously cost manual recovery time.
+- Dense-control source-chain hardening: `dense_mcq_trace_sft_control` now
+  follows `child_summary` and `trace_summary` links in addition to the older
+  source/nested/benchmark links when resolving the curriculum owner. This
+  matches the real Stage 4 wrapper shape, where the wrapper carries the
+  repaired checkpoint while the child SFT or trace-collection summary owns the
+  positive-SFT rows and training defaults. New tests cover both
+  wrapper-to-trace and wrapper-to-child resolution.

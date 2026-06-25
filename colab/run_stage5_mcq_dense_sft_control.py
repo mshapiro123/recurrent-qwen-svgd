@@ -77,6 +77,13 @@ RECURRENT_BENCHMARK_SUMMARY = os.environ.get(
     "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY",
     "",
 ).strip()
+SUMMARY_CHAIN_KEYS = (
+    "source_summary",
+    "nested_source_summary",
+    "benchmark_source_summary",
+    "child_summary",
+    "trace_summary",
+)
 
 
 def resolve_path(value: str | Path) -> Path:
@@ -173,7 +180,7 @@ def source_positive_sft_path(payload: dict[str, Any], *, _seen: set[Path] | None
     if direct is not None:
         return direct
     seen = _seen if _seen is not None else set()
-    for key in ("source_summary", "nested_source_summary", "benchmark_source_summary"):
+    for key in SUMMARY_CHAIN_KEYS:
         value = payload.get(key)
         if not isinstance(value, str) or not value.strip():
             continue
@@ -209,7 +216,7 @@ def resolve_curriculum_source(
     seen = _seen if _seen is not None else set()
     if source_path is not None:
         seen.add(source_path.resolve())
-    for key in ("source_summary", "nested_source_summary", "benchmark_source_summary"):
+    for key in SUMMARY_CHAIN_KEYS:
         value = payload.get(key)
         if not isinstance(value, str) or not value.strip():
             continue
