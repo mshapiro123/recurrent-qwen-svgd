@@ -458,6 +458,11 @@ def test_current_a100_bootstrap_fetches_only_current_plain_cells() -> None:
     assert "colab/publish_stage5_curriculum_gate.py" in plain
     assert "Refusing to run CPU-only programmatic curriculum generation" in plain
     assert '"safe_continue_execute"' in plain
+    assert '"master_sequence_status"' in plain
+    assert "colab/STAGE5_MASTER_SEQUENCE_STATUS_CELL.py" in plain
+    assert "STAGE5_MASTER_SEQUENCE_STATUS_CELL_VERSION" in plain
+    assert "colab/print_current_stage5_action.py" in plain
+    assert "colab/review_stage5_reentry.py" in plain
     assert '"STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "1"' in plain
     assert '"STAGE5_SAFE_CONTINUE_PREFER_TRAINING_SOURCE": "1"' in plain
     assert '"STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "0"' in plain
@@ -523,6 +528,20 @@ def test_current_a100_bootstrap_plain_cell_matches_markdown_code() -> None:
     plain_cell = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
 
     assert plain_cell == markdown_cell
+
+
+def test_master_sequence_status_cell_matches_markdown_code() -> None:
+    text = (ROOT / "colab/STAGE5_MASTER_SEQUENCE_STATUS_CELL.md").read_text(encoding="utf-8")
+    plain = (ROOT / "colab/STAGE5_MASTER_SEQUENCE_STATUS_CELL.py").read_text(encoding="utf-8")
+    markdown_cell = fenced_python_block("colab/STAGE5_MASTER_SEQUENCE_STATUS_CELL.md")
+
+    assert plain == markdown_cell
+    assert "STAGE5_MASTER_SEQUENCE_STATUS_CELL_VERSION" in plain
+    assert "master_sequence_status_v1" in plain
+    assert "MASTER_SEQUENCE_STATUS" in plain
+    assert "colab/print_current_stage5_action.py" in plain
+    assert "colab/review_stage5_reentry.py" in plain
+    assert "NEXT_COLAB_SEQUENCE excerpt" in plain
 
 
 def test_model_viability_probe_cell_is_generic_and_matches_markdown_code() -> None:

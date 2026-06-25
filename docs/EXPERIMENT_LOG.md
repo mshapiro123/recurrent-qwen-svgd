@@ -598,3 +598,9 @@ Colab/Drive backups for selected runs.
   underlying training/curriculum summary. This prevents a repaired recurrent
   benchmark wrapper from silently falling back to stale dense-control defaults
   during the standard-Qwen control run.
+- Colab restart/readout hardening: added `master_sequence_status` as a cheap
+  CPU bootstrap target. It fetches the latest repo, prints the current
+  source-summary pointer, runs the planner and re-entry reviewer, prints the
+  next Colab queue excerpt, and disconnects without Drive mount, model
+  downloads, training, or evaluation. This gives restarted notebooks a
+  low-cost way to recover the next Phase 0/Phase 1 target before spending GPU.

@@ -30,6 +30,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 # Safe default: verify Drive/checkpoint visibility on a CPU/cheap runtime.
 # Other options:
 #   "programmatic_curriculum_cpu" - generate/publish the direct/deep curriculum gate on CPU.
+#   "master_sequence_status" - cheap CPU readout of current phase, pointer, and next target.
 #   "safe_continue_dry_run" - fetch safe-continue but do not spend GPU.
 #   "safe_continue_execute" - fetch safe-continue and opt in to the guarded paid action.
 #   "arc_challenge_mcq_debias_confirm" - bounded no-training cyclic MCQ confirmation on ARC-Challenge.
@@ -113,6 +114,20 @@ TARGETS = {
             "Skipping requirements install because no paid action will execute.",
         ],
         "env": {"STAGE5_SAFE_CONTINUE_RUN_A100_ACTION": "0"},
+    },
+    "master_sequence_status": {
+        "path": "colab/STAGE5_MASTER_SEQUENCE_STATUS_CELL.py",
+        "markers": [
+            "STAGE5_MASTER_SEQUENCE_STATUS_CELL_VERSION",
+            "master_sequence_status_v1",
+            "MASTER_SEQUENCE_STATUS",
+            "colab/print_current_stage5_action.py",
+            "colab/review_stage5_reentry.py",
+            "NEXT_COLAB_SEQUENCE excerpt",
+            "STAGE5_MASTER_SEQUENCE_STATUS_DISCONNECT",
+            "runtime.unassign",
+        ],
+        "env": {},
     },
     "programmatic_curriculum_cpu": {
         "path": "colab/STAGE5_PROGRAMMATIC_CURRICULUM_CELL.py",

@@ -67,6 +67,20 @@ exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
 
 ## Queue
 
+### 0. Cheap status after any runtime restart
+
+Target:
+
+```python
+TARGET = "master_sequence_status"
+```
+
+This does not mount Drive, download models, train, or evaluate. It fetches the
+latest repo, prints the current source-summary pointer, asks the planner and
+re-entry reviewer for the next target, prints the queue excerpt, and
+disconnects. Use it when a runtime was restarted or when the notebook state is
+unclear.
+
 ### 1. Finish or recover Stage 2
 
 Target:
