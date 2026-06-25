@@ -971,3 +971,16 @@ Colab/Drive backups for selected runs.
   now defensively cast numeric config values. This prevents generated JSON/YAML
   scientific notation such as `1e-05` from being read as a string and crashing
   `AdamW` or gradient clipping during long Colab chains.
+- Competence pipeline launch/restore hardening: the first
+  `stage5_competence_recovery_from_reentry_benchmark` attempt failed before
+  training because the selected Stage 4 checkpoint was not local and Drive was
+  not mounted in the top-level Colab process. The child subprocess could not
+  mount Drive (`NoneType.kernel`), so checkpoint restore failed. The launcher
+  now mounts Drive before child subprocesses, the wrapper records child-log
+  tails and diagnoses `checkpoint_restore_or_drive_mount_failed`, and the
+  planner maps that diagnosis to a same-run-id resume instead of a vague manual
+  inspect action. The current bootstrap also prefers the synced local HEAD over
+  a possibly stale GitHub ref response, and `CURRENT_STAGE5_FRESH_LAUNCHER_CELL`
+  provides a tracked blank-notebook launcher so future Colab sessions clone,
+  hard-reset, mount Drive, verify the freshness/Drive fixes, and then execute
+  the current Stage 5 target without hand-assembled setup cells.
