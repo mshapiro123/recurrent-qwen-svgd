@@ -812,3 +812,11 @@ Colab/Drive backups for selected runs.
   `STAGE5_CURRICULUM_RUN_PROVIDER_RESPONSES=1` is explicitly set. The bootstrap
   now exposes `claim_curriculum_scaleup_cpu`, so the same single Colab launcher
   can run the CPU/API data path without copy/pasting raw commands.
+- Claim curriculum provider-map ergonomics: the claim-sized CPU/API target now
+  accepts a provider model map from `STAGE5_CURRICULUM_MODEL_MAP_JSON` or from
+  individual `STAGE5_CURRICULUM_OPUS_MODEL`,
+  `STAGE5_CURRICULUM_GLM_MODEL`, and
+  `STAGE5_CURRICULUM_WEAK_REFERENCE_MODEL` values. This removes the need to
+  edit the Colab cell body before enabling provider responses, while preserving
+  the placeholder check that refuses paid calls when concrete model ids are not
+  configured.

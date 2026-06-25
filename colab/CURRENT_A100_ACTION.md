@@ -154,9 +154,12 @@ CPU launch target:
 TARGET = "claim_curriculum_scaleup_cpu"
 ```
 
-Leave provider calls disabled until `MODEL_MAP` and the provider API secret are
-configured. Use `STAGE5_CURRICULUM_PROVIDER_LIMIT=2` for the first paid
-provider smoke.
+Leave provider calls disabled until the provider API secret and model map are
+configured. The model map can be supplied as `STAGE5_CURRICULUM_MODEL_MAP_JSON`
+or as individual `STAGE5_CURRICULUM_OPUS_MODEL`,
+`STAGE5_CURRICULUM_GLM_MODEL`, and
+`STAGE5_CURRICULUM_WEAK_REFERENCE_MODEL` values. Use
+`STAGE5_CURRICULUM_PROVIDER_LIMIT=2` for the first paid provider smoke.
 
 ## Explicit Stops
 

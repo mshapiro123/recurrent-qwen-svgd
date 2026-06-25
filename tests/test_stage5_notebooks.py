@@ -1174,6 +1174,14 @@ def test_curriculum_artifact_pipeline_cell_defaults_to_no_provider_spend() -> No
     assert "STAGE5_CURRICULUM_RUN_PROVIDER_RESPONSES" in plain
     assert "STAGE5_CURRICULUM_PROVIDER_LIMIT" in text
     assert "STAGE5_CURRICULUM_PROVIDER_LIMIT" in plain
+    assert "STAGE5_CURRICULUM_MODEL_MAP_JSON" in text
+    assert "STAGE5_CURRICULUM_MODEL_MAP_JSON" in plain
+    assert "STAGE5_CURRICULUM_OPUS_MODEL" in text
+    assert "STAGE5_CURRICULUM_OPUS_MODEL" in plain
+    assert "STAGE5_CURRICULUM_GLM_MODEL" in plain
+    assert "STAGE5_CURRICULUM_WEAK_REFERENCE_MODEL" in plain
+    assert "resolve_model_map" in plain
+    assert "DEFAULT_MODEL_MAP" in plain
     assert "PROVIDER_LIMIT_RAW" in plain
     assert "MIN_POSITIVE_ROWS = 2000" in text
     assert "MIN_POSITIVE_ROWS = 2000" in plain

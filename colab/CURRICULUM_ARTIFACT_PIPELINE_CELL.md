@@ -6,7 +6,10 @@ one bounded provider-response batch, and backs up the work directory to Drive.
 
 Default behavior is safe: it does **not** call provider APIs. It now targets
 the claim-sized direct/deep curriculum shard from the master-sequence status
-readout. Fill `MODEL_MAP`, set the provider secret, and set
+readout. Configure provider model ids with either a
+`STAGE5_CURRICULUM_MODEL_MAP_JSON` Colab secret/env value or the individual
+`STAGE5_CURRICULUM_OPUS_MODEL`, `STAGE5_CURRICULUM_GLM_MODEL`, and
+`STAGE5_CURRICULUM_WEAK_REFERENCE_MODEL` values. Then set
 `STAGE5_CURRICULUM_RUN_PROVIDER_RESPONSES=1` only when you want to spend API
 credits. Use `STAGE5_CURRICULUM_PROVIDER_LIMIT=2` for a first provider smoke;
 the default is `none`, meaning all pending rows once provider responses are
@@ -37,8 +40,8 @@ PROVIDER_LIMIT = None if PROVIDER_LIMIT_RAW in {"", "none", "all"} else int(PROV
 MIN_POSITIVE_ROWS = 2000
 MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"
 
-API_KEY_ENV = "OPENAI_API_KEY"
-BASE_URL = "https://api.openai.com/v1"
+API_KEY_ENV = os.environ.get("STAGE5_CURRICULUM_API_KEY_ENV", "OPENAI_API_KEY")
+BASE_URL = os.environ.get("STAGE5_CURRICULUM_BASE_URL", "https://api.openai.com/v1")
 MAX_TOKENS = 2048
 TEMPERATURE = 0.2
 JSON_MODE = True
@@ -54,7 +57,7 @@ DISCONNECT_RUNTIME_WHEN_DONE = False
 REFUSE_GPU_RUNTIME = True
 ALLOW_GPU_RUNTIME_FOR_CPU_API_CELL = False
 
-MODEL_MAP = {
+DEFAULT_MODEL_MAP = {
     "opus-strong": "replace-with-opus-compatible-model-id",
     "glm-strong": "replace-with-glm-compatible-model-id",
     "weak-reference": "replace-with-cheap-reference-model-id",
@@ -105,11 +108,36 @@ def secret(*names):
     return None
 
 
+def resolve_model_map():
+    raw = secret("STAGE5_CURRICULUM_MODEL_MAP_JSON")
+    if raw:
+        parsed = json.loads(raw)
+        if not isinstance(parsed, dict):
+            raise AssertionError("STAGE5_CURRICULUM_MODEL_MAP_JSON must be a JSON object.")
+        required = set(DEFAULT_MODEL_MAP)
+        missing = sorted(required - set(parsed))
+        if missing:
+            raise AssertionError(f"STAGE5_CURRICULUM_MODEL_MAP_JSON is missing required keys: {missing}")
+        return {key: str(value) for key, value in parsed.items()}
+    return {
+        "opus-strong": secret("STAGE5_CURRICULUM_OPUS_MODEL", "STAGE5_CURRICULUM_MODEL_OPUS")
+        or DEFAULT_MODEL_MAP["opus-strong"],
+        "glm-strong": secret("STAGE5_CURRICULUM_GLM_MODEL", "STAGE5_CURRICULUM_MODEL_GLM")
+        or DEFAULT_MODEL_MAP["glm-strong"],
+        "weak-reference": secret(
+            "STAGE5_CURRICULUM_WEAK_REFERENCE_MODEL",
+            "STAGE5_CURRICULUM_MODEL_WEAK_REFERENCE",
+        )
+        or DEFAULT_MODEL_MAP["weak-reference"],
+    }
+
+
 GH_TOKEN = secret("GH_TOKEN", "GITHUB_TOKEN")
 assert GH_TOKEN, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
 provider_key = secret(API_KEY_ENV)
 if provider_key:
     os.environ[API_KEY_ENV] = provider_key
+MODEL_MAP = resolve_model_map()
 
 
 def redacted(text):

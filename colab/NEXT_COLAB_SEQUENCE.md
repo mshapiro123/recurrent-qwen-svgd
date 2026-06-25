@@ -100,8 +100,11 @@ TARGET = "claim_curriculum_scaleup_cpu"
 ```
 
 Default behavior builds/resumes the artifact pipeline without provider API
-calls. Set `STAGE5_CURRICULUM_RUN_PROVIDER_RESPONSES=1` only after `MODEL_MAP`
-and the provider secret are configured. Set
+calls. Configure provider models with either
+`STAGE5_CURRICULUM_MODEL_MAP_JSON` or the individual
+`STAGE5_CURRICULUM_OPUS_MODEL`, `STAGE5_CURRICULUM_GLM_MODEL`, and
+`STAGE5_CURRICULUM_WEAK_REFERENCE_MODEL` values. Then set
+`STAGE5_CURRICULUM_RUN_PROVIDER_RESPONSES=1`. Set
 `STAGE5_CURRICULUM_PROVIDER_LIMIT=2` for a tiny provider smoke; leave it unset
 for all pending rows.
 
