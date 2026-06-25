@@ -84,6 +84,14 @@ def test_single_a100_runbook_uses_current_bootstrap_target_queue() -> None:
     assert "claim_curriculum_scaleup_cpu" in text
     assert "Parallel CPU/API Curriculum Scale-Up" in text
     assert "should not be treated as a GPU gate" in text
+    assert "Optional Scale Probe - Information Only" in text
+    assert "model_viability_probe" in text
+    assert "model_viability_queue" in text
+    assert "This does not replace the current re-entry/depth gates" in text
+    assert "Phase 2 Breadth Diagnostics - Gated" in text
+    assert "effective_pathways_diagnostic" in text
+    assert "candidate_conversion_diagnostic" in text
+    assert "Do not run until Phase 1 passes against base" in text
     assert "Phase 1 Gate Review" in text
     assert "bridge_gate_active=true" in text
     assert "do not advance to Phase 2 until the Phase 1 gate reports an architecture signal" in text
@@ -1569,6 +1577,10 @@ def test_reentry_stage3_stage4_runbook_is_linked_from_current_action() -> None:
     assert "claim_curriculum_scaleup_cpu" in staged
     assert "CPU/API data-prep cell" in staged
     assert "is not a GPU gate" in staged
+    assert "model_viability_probe" in staged
+    assert "model_viability_queue" in staged
+    assert "effective_pathways_diagnostic" in staged
+    assert "candidate_conversion_diagnostic" in staged
     assert "PROGRAM_TRACK_MASTER_SEQUENCE.md" in runbook
     assert "reentry_norm_recover_only" in next_sequence
     assert "reentry_repair_smoke" in next_sequence
