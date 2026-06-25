@@ -348,8 +348,12 @@ print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12]
 exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
 ```
 
-After Stage 3 publishes, run the CPU-only reviewer. Continue only if it
-recommends `run_bounded_recovery_training_with_reentry_repair`:
+After Stage 3 publishes, run the CPU-only reviewer. In a fresh runtime, change
+`TARGET` in the paste-anywhere launcher above to `master_sequence_status`;
+only use the shorter repo-local form if `/content/recurrent-qwen-svgd` has
+already been freshly cloned or reset to `main` in the current runtime.
+Continue only if the reviewer recommends
+`run_bounded_recovery_training_with_reentry_repair`:
 
 ```python
 import os
@@ -359,7 +363,9 @@ exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
 
 Only if Stage 3 assessment recommends
 `run_bounded_recovery_training_with_reentry_repair`, launch bounded recovery
-SFT:
+SFT. Again, in a fresh runtime prefer the paste-anywhere launcher above with
+`TARGET = "reentry_recovery_training"`; the snippet below is only for a
+runtime where the repo already exists locally:
 
 ```python
 import os
