@@ -475,6 +475,11 @@ Colab/Drive backups for selected runs.
   completed and backed up to Drive but failed before Git publish, this target
   copies the completed `stage5_reentry_norm_*` artifact from Drive, regenerates
   `reentry_assessment` if needed, and pushes it without rerunning GPU eval.
+- Stage 2 recovery hardening: recover-only can now salvage late-interrupted
+  runs that have all raw drift, effective-pathway, and candidate-conversion
+  files but are missing `summary.json`/`summary.md`. It rebuilds the summary and
+  assessment from raw outputs, so an overnight Colab run that dies after the
+  expensive GPU work should not need to be rerun.
 - Stage 3 guard: `reentry_repair_smoke` now refuses to run unless Stage 2
   recommends `run_reentry_repair_smoke`, except under an explicit override. It
   is resumable and incrementally backs up to Drive after pre-drift, training,
