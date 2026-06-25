@@ -936,3 +936,38 @@ Colab/Drive backups for selected runs.
   an explicit user override, or an explicit fallback. This keeps later Stage 4
   and benchmark readouts from conflating the normal front-of-queue path with an
   archaeology run.
+- Stage 3/4 re-entry repair result: the L4 chained run produced a passing
+  `stage5_reentry_repair_smoke_20260625_114554` artifact. The bridge gate moved
+  from `0.0` to about `1.0002`, bridge and re-entry adapter gradients were live,
+  adapter/bridge deltas moved, and loop-1 preservation did not regress on the
+  small smoke slice. Stage 4 then produced
+  `stage5_reentry_recovery_20260625_114836`, whose post-recovery health check
+  was `reentry_health_sane` with loop-8 output/input RMS about `1.0061`. This
+  resolves the immediate loop-closure/re-entry liveness concern and restores
+  permission to evaluate deterministic recurrent competence.
+- Stage 4 depth-routing readout: the same recovery run remained
+  `validation_needs_review` because target-loop routing was only partially
+  learned. Direct rows averaged about `1.33` expected loops and deep-narrow rows
+  about `1.97`, so a broad depth-gradient signal is present. The explicit
+  target loop ladder was not monotone from target 2 to target 3 (`~1.99` then
+  `~1.93`), so deeper-loop supervision still needs a larger or better separated
+  curriculum before it can support depth claims.
+- Debiased benchmark readout: `stage5_debiased_benchmark_suite_20260625_115004`
+  compared the repaired recurrent checkpoint against base Qwen2.5-0.5B on
+  ARC-Easy/ARC-Challenge. Recurrent was positive on ARC-Easy label/cyclic
+  variants and ARC-Challenge content-only, but slightly negative on
+  ARC-Challenge cyclic-label (`67/128` vs base `68/128`). GPQA-lite did not run
+  because `Idavidrein/gpqa` is gated for the active HF account. The assessment
+  therefore stayed `needs_review`, and the Phase 1 gate correctly blocked dense
+  control and Phase 2/SVGD.
+- Current next branch: because deterministic recurrent competence is close but
+  not yet base-competitive under the strict gate, the planner routes to
+  `traced_sft_competence_preserving_pipeline`: ARC-Easy-weighted mixed recovery
+  with response distillation before any dense control, particles, or SVGD. The
+  target now defaults to the fresh re-entry benchmark assessment
+  (`stage5_debiased_benchmark_assessment_20260625_121302`) instead of an older
+  June 23 direct-preservation artifact.
+- Runtime hardening: Phase 1, Phase 2, dense LoRA, and MCQ score-align training
+  now defensively cast numeric config values. This prevents generated JSON/YAML
+  scientific notation such as `1e-05` from being read as a string and crashing
+  `AdamW` or gradient clipping during long Colab chains.
