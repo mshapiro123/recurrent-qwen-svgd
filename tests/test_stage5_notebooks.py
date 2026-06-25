@@ -271,6 +271,20 @@ def test_current_bootstrap_exposes_model_viability_queue_target() -> None:
     assert "colab/run_stage5_model_viability_queue.py" in text
 
 
+def test_current_bootstrap_source_summary_override_fans_out_to_benchmark_and_control() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+
+    for payload in (text, markdown):
+        assert "SOURCE_SUMMARY_OVERRIDE" in payload
+        assert "STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY" in payload
+        assert "STAGE5_DENSE_MCQ_SOURCE_SUMMARY" in payload
+        assert 'os.environ["STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
+        assert 'os.environ["STAGE5_DENSE_MCQ_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
+        assert 'os.environ.pop("STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY", None)' in payload
+        assert 'os.environ.pop("STAGE5_DENSE_MCQ_SOURCE_SUMMARY", None)' in payload
+
+
 def test_current_bootstrap_exposes_depth_router_after_direct_preserve_target() -> None:
     text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     cell = (ROOT / "colab/STAGE5_DEPTH_ROUTER_AFTER_DIRECT_PRESERVE_CELL.py").read_text(encoding="utf-8")
