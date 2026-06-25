@@ -1257,6 +1257,8 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "STAGE5_REENTRY_REPAIR_REQUIRE_NORM_PASS" in cell
     assert "stage2_norm_assessment" in cell
     assert "colab/assess_stage5_reentry.py" in cell
+    assert "publishable_artifact_paths" in cell
+    assert 'git", "add", "-f", str(out_dir.relative_to(ROOT))' not in cell
     assert "Readout Pause" in cell
     assert "runtime.unassign" in cell
 

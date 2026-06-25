@@ -466,6 +466,12 @@ Colab/Drive backups for selected runs.
   `entry_rms` re-entry normalization and records adapter scale/bias movement
   alongside bridge liveness and loop-1 preservation. Stage 4 recovery defaults
   carry the same re-entry adapter forward only after Stage 3 passes.
+- Stage 3 publish hardening: `reentry_repair_smoke` now uses
+  `colab.stage5_publish_utils.publishable_artifact_paths` instead of
+  force-adding the whole output directory. GitHub receives lightweight evidence
+  artifacts (`.json`, `.jsonl`, `.md`, `.yaml`, `.log`, etc.); checkpoints stay
+  in Drive and are restored by Stage 4 from the `trained_checkpoint` path in the
+  Stage 3 summary.
 - Stage 3 assessment hardening: recovery training is now blocked unless an
   enabled re-entry adapter has live scale/bias gradients and measurable
   movement, in addition to bridge liveness/movement and loop-1 preservation.
