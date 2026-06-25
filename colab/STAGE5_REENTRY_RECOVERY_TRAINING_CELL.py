@@ -427,7 +427,9 @@ def derive_sft_env(trace_summary: Path, repair: dict[str, Any]) -> dict[str, str
 def main() -> None:
     print(f"cell_version={STAGE5_REENTRY_RECOVERY_CELL_VERSION}", flush=True)
     ensure_repo()
-    run(["nvidia-smi"], cwd=Path("/content"), check=False)
+    if shutil.which("nvidia-smi") is None:
+        raise RuntimeError("Attach an L4/T4/A100/H100 GPU runtime before running Stage 4 recovery training.")
+    run(["nvidia-smi"], cwd=Path("/content"))
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"])
     run(
         [

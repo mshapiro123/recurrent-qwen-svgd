@@ -1280,6 +1280,11 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "loop1_preservation" in cell
     assert "STAGE5_REENTRY_REPAIR_REQUIRE_NORM_PASS" in cell
     assert "stage2_norm_assessment" in cell
+    assert '"checkpoint": checkpoint' in cell
+    assert "checkpoint_override or norm_checkpoint or DEFAULT_CHECKPOINT" in cell
+    assert "checkpoint_from_norm = bool(norm_checkpoint and not checkpoint_override)" in cell
+    assert "allow_fallback=checkpoint_override is None and not checkpoint_from_norm" in cell
+    assert "reentry_repair_checkpoint_source=" in cell
     assert "incremental_backup" in cell
     assert "restore_incremental_backup" in cell
     assert "STAGE5_REENTRY_REPAIR_RESTORE_INCREMENTAL_BACKUP" in cell
@@ -1343,6 +1348,8 @@ def test_reentry_recovery_training_target_is_bootstrapped() -> None:
     assert "LEGACY_DRIVE_ROOT / \"outputs\" / \"stage5\"" in cell
     assert "candidates.append(resolve_repo_path(DEFAULT_TRACE_COLLECTION))" in cell
     assert "colab.reentry_recovery_config" in cell
+    assert 'shutil.which("nvidia-smi")' in cell
+    assert "Attach an L4/T4/A100/H100 GPU runtime" in cell
     assert '"STAGE5_CURRICULUM_SFT_COMMIT_CHECKPOINTS": os.environ.get(' in cell
     assert '"STAGE5_REENTRY_RECOVERY_COMMIT_CHECKPOINTS",' in cell
     assert "sys.path.insert(0, root_str)" in cell

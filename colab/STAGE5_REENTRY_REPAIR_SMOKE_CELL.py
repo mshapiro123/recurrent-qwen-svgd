@@ -326,11 +326,18 @@ def load_required_norm_assessment() -> dict[str, object] | None:
             "Stage 2 re-entry norm assessment did not recommend repair smoke. "
             f"status={status!r} recommendation={recommendation!r}. Review before spending GPU."
         )
+    summary_path = local_candidate.parent / "summary.json"
+    summary_payload: dict[str, object] = {}
+    if summary_path.exists():
+        summary_payload = read_json(summary_path)
+    checkpoint = str(summary_payload.get("checkpoint") or "").replace("\\", "/")
     return {
         "path": local_candidate.relative_to(ROOT).as_posix() if local_candidate.is_relative_to(ROOT) else local_candidate.as_posix(),
+        "summary_path": summary_path.relative_to(ROOT).as_posix() if summary_path.exists() and summary_path.is_relative_to(ROOT) else summary_path.as_posix(),
         "status": status,
         "recommendation": recommendation,
         "reason": assessment.get("reason"),
+        "checkpoint": checkpoint,
         "metrics": assessment.get("metrics", {}),
     }
 
@@ -612,7 +619,6 @@ def main() -> None:
     print(f"cell_version={STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION}", flush=True)
     run_id = os.environ.get("STAGE5_REENTRY_REPAIR_RUN_ID") or time.strftime("stage5_reentry_repair_smoke_%Y%m%d_%H%M%S")
     checkpoint_override = os.environ.get("STAGE5_REENTRY_REPAIR_CHECKPOINT")
-    checkpoint = checkpoint_override or DEFAULT_CHECKPOINT
     disconnect = os.environ.get("STAGE5_REENTRY_REPAIR_DISCONNECT", "1").strip().lower() in {
         "1",
         "true",
@@ -622,6 +628,20 @@ def main() -> None:
 
     ensure_repo()
     norm_assessment = load_required_norm_assessment()
+    norm_checkpoint = str((norm_assessment or {}).get("checkpoint") or "")
+    checkpoint = checkpoint_override or norm_checkpoint or DEFAULT_CHECKPOINT
+    checkpoint_from_norm = bool(norm_checkpoint and not checkpoint_override)
+    print(
+        "reentry_repair_checkpoint_source="
+        + (
+            "override"
+            if checkpoint_override
+            else "stage2_norm_assessment"
+            if checkpoint_from_norm
+            else "default_fallback"
+        ),
+        flush=True,
+    )
     run(["nvidia-smi"], cwd=Path("/content"))
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"])
     run(
@@ -636,7 +656,7 @@ def main() -> None:
         ]
     )
 
-    checkpoint_path = restore_checkpoint(checkpoint, allow_fallback=checkpoint_override is None)
+    checkpoint_path = restore_checkpoint(checkpoint, allow_fallback=checkpoint_override is None and not checkpoint_from_norm)
     checkpoint = checkpoint_path.relative_to(ROOT).as_posix()
     out_dir = ROOT / "outputs" / "stage5" / run_id
     restore_incremental_backup(out_dir)
