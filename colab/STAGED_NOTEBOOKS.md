@@ -30,7 +30,8 @@ for a tiny trainable repair smoke. The next targets are:
 1. `reentry_repair_smoke`
    - Runtime: L4/T4 is enough.
    - Purpose: make bridge and re-entry adapter gradient-live, verify movement,
-     and preserve loop-1 behavior.
+     preserve loop-1 behavior, and prove `bridge_gate` stayed active rather
+     than merely moving the bridge projection.
    - Gate: continue only if `review_stage5_reentry.py --no_write` recommends
      `run_bounded_recovery_training_with_reentry_repair`.
 2. `reentry_recovery_training`

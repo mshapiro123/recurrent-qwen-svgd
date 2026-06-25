@@ -169,6 +169,7 @@ Stop conditions:
 - loop-1 regression;
 - adapter gradients not live;
 - adapter or bridge live but unmoved.
+- bridge projection moved but the scalar `bridge_gate` is inactive.
 
 ### 3. Stage 4: bounded deterministic recovery SFT
 
@@ -182,6 +183,7 @@ Purpose: recover deterministic recurrent competence after loop closure is live.
 This uses:
 
 - repaired Stage 3 checkpoint;
+- Stage 3 assessment with `bridge_gate_active=true`;
 - `entry_rms` re-entry normalization during training and validation;
 - re-entry adapter enabled;
 - learned loop control;

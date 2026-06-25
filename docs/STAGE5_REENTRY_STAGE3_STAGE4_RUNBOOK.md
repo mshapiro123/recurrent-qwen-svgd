@@ -87,6 +87,7 @@ Success:
   present when halt-depth supervision is enabled;
 - bridge gradients are live;
 - bridge delta changes measurably;
+- bridge gate remains active, not merely the bridge projection;
 - re-entry adapter scale/bias gradients are live;
 - re-entry adapter moves measurably;
 - loop-1 preservation is present, comparable, informative on at least one
@@ -114,6 +115,9 @@ Failure responses:
   Stage 3 variant; adapter is live but did not move.
 - `extend_reentry_repair_smoke_or_increase_bridge_lr`: retry only a bounded
   Stage 3 variant; bridge is live but did not move.
+- `bridge_gate_collapsed`: retry only a bounded Stage 3 variant; the bridge
+  projection moved or stayed live, but the scalar gate is too close to zero for
+  the repaired path to affect loop re-entry.
 
 ## Stage 4: bounded recovery SFT
 
@@ -135,6 +139,8 @@ Configured behavior:
   finite train metrics, supervised depth metrics, loop-1 preservation evidence,
   source-correct loop-1 preservation signal, and live/moved bridge/re-entry
   repair evidence;
+- refuses stale recommendation-only Stage 3 assessments that do not prove
+  `bridge_gate_active=true`;
 - resumes from the Stage 3 repaired checkpoint;
 - trains `bridge,reentry,halt,lora`;
 - enables learned loop control and target-loop NLL supervision;

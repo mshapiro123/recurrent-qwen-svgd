@@ -85,6 +85,7 @@ def test_single_a100_runbook_uses_current_bootstrap_target_queue() -> None:
     assert "Parallel CPU/API Curriculum Scale-Up" in text
     assert "should not be treated as a GPU gate" in text
     assert "Phase 1 Gate Review" in text
+    assert "bridge_gate_active=true" in text
     assert "do not advance to Phase 2 until the Phase 1 gate reports an architecture signal" in text
     assert "sha_resolved_nested_fetch_v3" in text
     assert "api.github.com/repos/{REPO}/contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py" in text
@@ -279,6 +280,8 @@ def test_current_a100_action_points_to_reentry_master_sequence() -> None:
     assert "debiased_benchmark_suite" in text
     assert "dense_mcq_trace_sft_control" in text
     assert "stage2_norm / entry_rms_safe_for_smoke" in text
+    assert "bridge_gate_active=true" in text
+    assert "bridge projection movement alone is not enough" in text
     assert "outputs/stage5/stage5_reentry_norm_20260625_013527/summary.json" in text
     assert "Do **not** run ARC-mix depth training, GPQA, scale-up" in text
     assert "Phase 2/SVGD" in text
@@ -1541,6 +1544,9 @@ def test_reentry_stage3_stage4_runbook_is_linked_from_current_action() -> None:
     assert "STAGE5_CURRENT_A100_TARGET=reentry_norm_diagnostic" in runbook
     assert "STAGE5_CURRENT_A100_TARGET=reentry_repair_smoke" in runbook
     assert "STAGE5_CURRENT_A100_TARGET=reentry_recovery_training" in runbook
+    assert "bridge gate remains active" in runbook
+    assert "bridge_gate_active=true" in runbook
+    assert "bridge projection moved but the scalar `bridge_gate` is inactive" in next_sequence
     assert "entry_rms" in runbook
     assert "fix_loop1_preservation_eval_before_recovery_training" in runbook
     assert "STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS" in runbook
@@ -1554,6 +1560,7 @@ def test_stage5_control_ledger_names_current_reentry_target() -> None:
     current_action = ledger.split("### Decisions", 1)[0]
 
     assert "Target: `reentry_repair_smoke`" in current_action
+    assert "`bridge_gate` stayed active" in current_action or "bridge_gate_active" in current_action
     assert "stage5_reentry_norm_20260625_013527/summary.json" in current_action
     assert "reentry_repair_smoke -> reentry_recovery_training" in current_action
     assert "debiased_benchmark_suite -> dense_mcq_trace_sft_control" in current_action

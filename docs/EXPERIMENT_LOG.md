@@ -215,6 +215,8 @@ Colab/Drive backups for selected runs.
 - Objective: make the loop-closure path gradient-live and verify that the
   bridge/re-entry adapter moves without damaging loop-1 preservation. This is
   Phase 0, not another particle or surface-alignment experiment.
+- Added Stage 3 guard: `bridge_gate_active=true` is required. Bridge projection
+  movement alone is not enough if the scalar `bridge_gate` collapsed near zero.
 - Expected artifact if successful:
   `outputs/stage5/stage5_reentry_repair_smoke_<timestamp>/summary.json` plus
   `reentry_assessment.json`.
@@ -858,3 +860,8 @@ Colab/Drive backups for selected runs.
   only treats `hard_tail_lift_vs_dense` as an architecture signal. This keeps
   the master sequence honest: recovery is not architecture proof, and particles
   stay blocked until the deterministic Phase 1 control clears.
+- Stage 3 bridge-gate hardening: the re-entry repair assessment now requires
+  `bridge_gate_active=true`. Bridge projection movement is not enough if the
+  scalar `bridge_gate` collapsed back near zero, because that repaired path
+  would still be effectively disconnected from loop re-entry. Stage 4 recovery
+  refuses Stage 3 assessments that lack this active-gate evidence.
