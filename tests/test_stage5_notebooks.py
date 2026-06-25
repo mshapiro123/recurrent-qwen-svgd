@@ -1139,6 +1139,7 @@ def test_current_stage5_fresh_launcher_cell_is_self_contained_for_blank_colab() 
     cell = (ROOT / "colab/CURRENT_STAGE5_FRESH_LAUNCHER_CELL.py").read_text(encoding="utf-8")
 
     assert "CURRENT_STAGE5_FRESH_LAUNCHER_VERSION" in cell
+    assert "fresh_launcher_v2" in cell
     assert "GH_TOKEN" in cell
     assert "GITHUB_TOKEN" in cell
     assert "HF_TOKEN" in cell
@@ -1147,6 +1148,9 @@ def test_current_stage5_fresh_launcher_cell_is_self_contained_for_blank_colab() 
     assert 'drive.mount("/content/drive"' in cell
     assert "STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD" in cell
     assert "STAGE5_COMPETENCE_MOUNT_DRIVE_FIRST" in cell
+    assert 'os.environ.setdefault("STAGE5_COMPETENCE_MOUNT_DRIVE_FIRST", "1")' in cell
+    assert "competence_preserving_pipeline_v2" in cell
+    assert "print_pipeline_artifacts" in cell
     assert "traced_sft_competence_preserving_pipeline" in cell
     assert "stage5_debiased_benchmark_assessment_20260625_121302" in cell
     assert "stage5_competence_recovery_from_reentry_benchmark" in cell

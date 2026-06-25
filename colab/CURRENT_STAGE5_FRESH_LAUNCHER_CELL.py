@@ -15,7 +15,7 @@ from pathlib import Path
 from google.colab import drive, userdata
 
 
-CURRENT_STAGE5_FRESH_LAUNCHER_VERSION = "fresh_launcher_v1"
+CURRENT_STAGE5_FRESH_LAUNCHER_VERSION = "fresh_launcher_v2"
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
@@ -82,6 +82,8 @@ competence_cell = (ROOT / "colab" / "STAGE5_COMPETENCE_PRESERVING_PIPELINE_CELL.
     encoding="utf-8"
 )
 assert "STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD" in bootstrap, "Missing local-HEAD bootstrap freshness guard."
+assert "competence_preserving_pipeline_v2" in competence_cell, "Missing v2 competence pipeline artifact print fix."
+assert "print_pipeline_artifacts" in competence_cell, "Missing failure artifact print helper."
 assert "STAGE5_COMPETENCE_MOUNT_DRIVE_FIRST" in competence_cell, "Missing top-level Drive mount fix."
 
 drive.mount("/content/drive", force_remount=env_bool("FORCE_DRIVE_REMOUNT", False))
@@ -90,7 +92,7 @@ os.environ.setdefault("STAGE5_CURRENT_A100_TARGET", DEFAULT_TARGET)
 os.environ.setdefault("STAGE5_COMPETENCE_SOURCE_SUMMARY", DEFAULT_SOURCE_SUMMARY)
 os.environ.setdefault("STAGE5_COMPETENCE_PIPELINE_RUN_ID", DEFAULT_RUN_ID)
 os.environ.setdefault("STAGE5_COMPETENCE_PIPELINE_DISCONNECT", "0")
-os.environ.setdefault("STAGE5_COMPETENCE_MOUNT_DRIVE_FIRST", "0")
+os.environ.setdefault("STAGE5_COMPETENCE_MOUNT_DRIVE_FIRST", "1")
 os.environ.setdefault("STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD", "1")
 
 exec(compile(bootstrap, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))

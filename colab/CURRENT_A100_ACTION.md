@@ -60,12 +60,13 @@ exec(compile(code, PATH, "exec"))
 Expected early output:
 
 ```text
-launcher_version: fresh_launcher_v1
-ee304c7 ... or newer
+launcher_version: fresh_launcher_v2
+1d698f9 ... or newer
+STAGE5_COMPETENCE_PRESERVING_PIPELINE_CELL_VERSION=competence_preserving_pipeline_v2
 checkpoint_restore_preflight=ok ...
 ```
 
-If the commit is older than `ee304c7`, stop and rerun the launcher. If Drive
+If the commit is older than `1d698f9`, stop and rerun the launcher. If Drive
 authorization is requested, approve it; if it fails, disconnect the GPU runtime
 and repair Drive/auth locally or in a CPU runtime.
 
