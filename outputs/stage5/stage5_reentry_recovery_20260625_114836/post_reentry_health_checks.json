@@ -1,0 +1,21 @@
+{
+  "status": "reentry_health_sane",
+  "issues": [],
+  "thresholds": {
+    "min_bridge_gate_abs": 0.05,
+    "max_loop8_output_over_entry_rms": 3.0
+  },
+  "metrics": {
+    "bridge_gate": 1.0004149675369263,
+    "bridge_delta_rms": 0.1004943698644638,
+    "bridge_weight_grad_rms": 0.3892625570297241,
+    "bridge_bias_grad_rms": 0.007569043897092342,
+    "reentry_adapter_delta_rms": 0.00032979800016619265,
+    "reentry_adapter_scale_grad_rms": 11.3426513671875,
+    "reentry_adapter_bias_grad_rms": 0.0075681316666305065,
+    "loop8_output_over_entry_rms": 1.0066660642623901,
+    "loop8_output_over_input_rms": 1.0060979922612507,
+    "mean_exit_over_entry_rms": 1.0017553965250652,
+    "subspace_overlap": 0.34565362334251404
+  }
+}
