@@ -19,6 +19,7 @@ PROVIDER_LIMIT_RAW = os.environ.get("STAGE5_CURRICULUM_PROVIDER_LIMIT", "none").
 PROVIDER_LIMIT = None if PROVIDER_LIMIT_RAW in {"", "none", "all"} else int(PROVIDER_LIMIT_RAW)
 MIN_POSITIVE_ROWS = 2000
 MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"
+READINESS_FILENAME = "curriculum_readiness.json"
 
 API_KEY_ENV = os.environ.get("STAGE5_CURRICULUM_API_KEY_ENV", "OPENAI_API_KEY")
 BASE_URL = os.environ.get("STAGE5_CURRICULUM_BASE_URL", "https://api.openai.com/v1")
@@ -259,6 +260,71 @@ def response_pairs(summary):
     return pairs
 
 
+def model_map_configured():
+    return not any(value.startswith("replace-with-") for value in MODEL_MAP.values())
+
+
+def next_safe_action(summary, pairs):
+    if summary.get("status") == "complete":
+        return "Run or review the SFT gate; the curriculum artifact pipeline is complete."
+    if not pairs:
+        return "Review summary.json; no pending provider pairs were found for this incomplete status."
+    if not RUN_PROVIDER_RESPONSES:
+        return (
+            "Provider calls are disabled. Configure model ids/API key, then set "
+            "STAGE5_CURRICULUM_RUN_PROVIDER_RESPONSES=1. Use "
+            "STAGE5_CURRICULUM_PROVIDER_LIMIT=2 for the first paid smoke."
+        )
+    if PROVIDER_BACKEND == "openai_compatible" and not provider_key:
+        return f"Provider calls requested, but {API_KEY_ENV} is missing from Colab secrets/env."
+    if not model_map_configured():
+        return "Provider calls requested, but MODEL_MAP still contains placeholder model ids."
+    if PROVIDER_LIMIT is not None:
+        return f"Run bounded provider batch with limit={PROVIDER_LIMIT}, then rerun this cell to resume."
+    return "Run provider responses for all pending rows, then rerun this cell until status=complete."
+
+
+def write_readiness_report(summary, *, phase):
+    pairs = response_pairs(summary)
+    pending = [
+        {
+            "jobs_jsonl": str(jobs),
+            "responses_jsonl": str(responses),
+        }
+        for jobs, responses in pairs
+    ]
+    payload = {
+        "kind": "curriculum_artifact_pipeline_readiness",
+        "phase": phase,
+        "work_dir": WORK_DIR,
+        "summary_status": summary.get("status"),
+        "summary_next_action": summary.get("next_action"),
+        "counts": summary.get("counts", {}),
+        "provider": {
+            "enabled": RUN_PROVIDER_RESPONSES,
+            "backend": PROVIDER_BACKEND,
+            "limit": PROVIDER_LIMIT,
+            "api_key_env": API_KEY_ENV,
+            "api_key_present": bool(provider_key),
+            "model_map_configured": model_map_configured(),
+            "model_map_keys": sorted(MODEL_MAP),
+        },
+        "requirements": {
+            "min_positive_rows": MIN_POSITIVE_ROWS,
+            "min_mode_rows": MIN_MODE_ROWS,
+        },
+        "pending_provider_pairs": pending,
+        "pending_responses": summary.get("pending_responses", []),
+        "next_safe_action": next_safe_action(summary, pairs),
+    }
+    path = ROOT / WORK_DIR / READINESS_FILENAME
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print(f"readiness_json: {path}", flush=True)
+    print(f"readiness_next_safe_action: {payload['next_safe_action']}", flush=True)
+    return payload
+
+
 def write_model_map():
     if RUN_PROVIDER_RESPONSES and any(value.startswith("replace-with-") for value in MODEL_MAP.values()):
         raise AssertionError("Fill MODEL_MAP with concrete provider model ids before RUN_PROVIDER_RESPONSES=True.")
@@ -374,6 +440,7 @@ summary = summary_payload()
 print("status:", summary["status"], flush=True)
 print("next_action:", summary["next_action"], flush=True)
 print("counts:", summary.get("counts", {}), flush=True)
+readiness = write_readiness_report(summary, phase="initial")
 
 if RUN_PROVIDER_RESPONSES:
     if PROVIDER_BACKEND == "openai_compatible":
@@ -387,10 +454,13 @@ if RUN_PROVIDER_RESPONSES:
     summary = summary_payload()
     print("post-provider status:", summary["status"], flush=True)
     print("post-provider next_action:", summary["next_action"], flush=True)
+    readiness = write_readiness_report(summary, phase="post_provider")
 else:
     print("Provider calls skipped. Set RUN_PROVIDER_RESPONSES=True after MODEL_MAP/API key are configured.", flush=True)
 
-run_sft_gate(summary)
+gate = run_sft_gate(summary)
+if gate:
+    readiness = write_readiness_report(summary, phase="post_sft_gate")
 backup_work_dir()
 
 if DISCONNECT_RUNTIME_WHEN_DONE:

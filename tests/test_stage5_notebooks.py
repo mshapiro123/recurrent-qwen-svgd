@@ -1205,6 +1205,11 @@ def test_curriculum_artifact_pipeline_cell_defaults_to_no_provider_spend() -> No
     assert "pending_responses" in plain
     assert "usable_job_ids" in plain
     assert "response pair pending:" in plain
+    assert "curriculum_readiness.json" in text
+    assert "curriculum_readiness.json" in plain
+    assert "write_readiness_report" in plain
+    assert "next_safe_action" in plain
+    assert "model_map_configured" in plain
     assert "response_lines < job_lines" in plain
     assert "runtime.unassign()" in plain
     assert "replace-with-opus-compatible-model-id" in plain
