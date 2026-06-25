@@ -166,38 +166,61 @@ def reference_bridge_liveness(hidden_size: int) -> dict[str, Any]:
     }
 
 
-def reentry_adapter_stats(adapter: ReentryAffineAdapter, sample_state: torch.Tensor) -> dict[str, Any]:
+def reentry_adapter_stats(
+    adapter: ReentryAffineAdapter,
+    sample_state: torch.Tensor,
+    *,
+    mode: str = "affine",
+) -> dict[str, Any]:
     with torch.no_grad():
-        adapter_out = adapter(sample_state.detach())
+        adapter_out = adapter(sample_state.detach(), loop_idx=1, mode=mode)
     scale = adapter.scale.detach().float().cpu()
     bias = adapter.bias.detach().float().cpu()
-    return {
+    stats = {
+        "mode": mode,
         "scale_identity_max_abs_diff": finite_float((scale - 1.0).abs().max()),
         "bias_max_abs": finite_float(bias.abs().max()),
         "sample_adapter_delta_rms": finite_float(rms(adapter_out - sample_state, None)),
         "sample_state_rms": finite_float(rms(sample_state, None)),
     }
+    stats.update({f"spectral_{key}": value for key, value in adapter.spectral_correction.stats(loop_idx=1).items()})
+    return stats
 
 
 def reentry_adapter_gradient_liveness(
     adapter: ReentryAffineAdapter,
     sample_state: torch.Tensor,
+    *,
+    mode: str = "affine",
 ) -> dict[str, Any]:
     was_training = adapter.training
     adapter.train()
     adapter.zero_grad(set_to_none=True)
     sample = sample_state.detach().float().requires_grad_(True)
-    output = adapter(sample)
+    output = adapter(sample, loop_idx=1, mode=mode)
     loss = output.float().square().mean()
     loss.backward()
     scale_grad = adapter.scale.grad
     bias_grad = adapter.bias.grad
+    spectral_u_grad = adapter.spectral_correction.U.grad
+    spectral_v_grad = adapter.spectral_correction.V.grad
+    spectral_theta_grad = adapter.spectral_correction.theta.grad
     adapter.zero_grad(set_to_none=True)
     adapter.train(was_training)
     return {
         "loss": finite_float(loss),
+        "mode": mode,
         "scale_grad_rms": finite_float(scale_grad.float().square().mean().sqrt() if scale_grad is not None else 0.0),
         "bias_grad_rms": finite_float(bias_grad.float().square().mean().sqrt() if bias_grad is not None else 0.0),
+        "spectral_u_grad_rms": finite_float(
+            spectral_u_grad.float().square().mean().sqrt() if spectral_u_grad is not None else 0.0
+        ),
+        "spectral_v_grad_rms": finite_float(
+            spectral_v_grad.float().square().mean().sqrt() if spectral_v_grad is not None else 0.0
+        ),
+        "spectral_theta_grad_abs": finite_float(
+            spectral_theta_grad.float().abs().max() if spectral_theta_grad is not None else 0.0
+        ),
     }
 
 
@@ -304,6 +327,7 @@ def loop_records_for_prompt(
     max_loops: int,
     reentry_rescale_mode: str = "none",
     use_reentry_adapter: bool = False,
+    reentry_adapter_mode: str = "affine",
 ) -> list[dict[str, Any]]:
     entry_rms = rms(entry_state, attention_mask).clamp_min(1e-8)
     records: list[dict[str, Any]] = []
@@ -316,7 +340,7 @@ def loop_records_for_prompt(
             loop_input = loop_input * (entry_rms / current_rms).to(dtype=loop_input.dtype)
         pre_adapter_input = loop_input
         if loop_idx > 0 and use_reentry_adapter:
-            loop_input = wrapper.reentry_adapter(loop_input)
+            loop_input = wrapper.reentry_adapter(loop_input, loop_idx=loop_idx, mode=reentry_adapter_mode)
         loop_output = run_recurrent_block(
             wrapper,
             loop_input,
@@ -384,6 +408,7 @@ def run_prompt(
             max_loops=args.max_loops,
             reentry_rescale_mode=args.reentry_rescale_mode,
             use_reentry_adapter=args.use_reentry_adapter,
+            reentry_adapter_mode=args.reentry_adapter_mode,
         )
     entry_rms = rms(entry_state, mask)
     exit_rms = rms(exit_state, mask)
@@ -461,6 +486,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--subspace_rank", type=int, default=8)
     parser.add_argument("--reentry_rescale_mode", default="none", choices=("none", "entry_rms"))
     parser.add_argument("--use_reentry_adapter", action="store_true")
+    parser.add_argument("--reentry_adapter_mode", default="affine", choices=("affine", "spectral", "affine_spectral"))
     parser.add_argument("--dtype", default="auto")
     parser.add_argument("--adapter_dtype", default="float32")
     parser.add_argument("--attn_implementation", default="default")
@@ -497,13 +523,19 @@ def main() -> int:
         "subspace_rank": args.subspace_rank,
         "reentry_rescale_mode": args.reentry_rescale_mode,
         "use_reentry_adapter": args.use_reentry_adapter,
+        "reentry_adapter_mode": args.reentry_adapter_mode,
         "aggregate": aggregate_prompt_records(records, subspace_rank=args.subspace_rank),
         "bridge": bridge_stats(wrapper.bridge, sample_state),
         "bridge_gradient_liveness": bridge_gradient_liveness(wrapper.bridge, sample_state),
-        "reentry_adapter": reentry_adapter_stats(wrapper.reentry_adapter, sample_state),
+        "reentry_adapter": reentry_adapter_stats(
+            wrapper.reentry_adapter,
+            sample_state,
+            mode=args.reentry_adapter_mode,
+        ),
         "reentry_adapter_gradient_liveness": reentry_adapter_gradient_liveness(
             wrapper.reentry_adapter,
             sample_state,
+            mode=args.reentry_adapter_mode,
         ),
         "reference_bridge_gradient_liveness": reference_bridge_liveness(sample_state.shape[-1]),
         "records": [jsonable_record(row) for row in records],

@@ -450,6 +450,10 @@ def derive_sft_env(trace_summary: Path, repair: dict[str, Any]) -> dict[str, str
                 "entry_rms",
             ),
             "STAGE5_CURRICULUM_USE_REENTRY_ADAPTER": "1",
+            "STAGE5_CURRICULUM_REENTRY_ADAPTER_MODE": os.environ.get(
+                "STAGE5_REENTRY_RECOVERY_REENTRY_ADAPTER_MODE",
+                "affine",
+            ),
             "STAGE5_CURRICULUM_DEPTH_HINT_STYLE": os.environ.get(
                 "STAGE5_REENTRY_RECOVERY_DEPTH_HINT_STYLE",
                 "natural",
@@ -485,6 +489,7 @@ def derive_sft_env(trace_summary: Path, repair: dict[str, Any]) -> dict[str, str
                 "optimizer_modules": env["STAGE5_CURRICULUM_OPTIMIZER_MODULES"],
                 "layer_split": env["STAGE5_CURRICULUM_LAYER_SPLIT"],
                 "reentry_rescale_mode": env["STAGE5_CURRICULUM_REENTRY_RESCALE_MODE"],
+                "reentry_adapter_mode": env["STAGE5_CURRICULUM_REENTRY_ADAPTER_MODE"],
                 "loop_control_ce_weight": env["STAGE5_CURRICULUM_LOOP_CONTROL_CE_WEIGHT"],
                 "halt_target_nll_weight": env["STAGE5_CURRICULUM_HALT_TARGET_NLL_WEIGHT"],
             },
@@ -597,6 +602,7 @@ def run_post_reentry_health_probe(
     ]
     if env.get("STAGE5_CURRICULUM_USE_REENTRY_ADAPTER", "0").strip().lower() in {"1", "true", "yes", "y", "on"}:
         cmd.append("--use_reentry_adapter")
+        cmd.extend(["--reentry_adapter_mode", env.get("STAGE5_CURRICULUM_REENTRY_ADAPTER_MODE", "affine")])
     run(cmd, env=env)
     payload = read_json(output_json)
     health = post_reentry_health_checks(payload)

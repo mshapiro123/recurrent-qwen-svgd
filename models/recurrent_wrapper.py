@@ -243,6 +243,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         return_loop_logits: bool = False,
         force_base_model: bool = False,
         reentry_rescale_mode: str = "none",
+        reentry_adapter_mode: str = "affine",
         logits_to_keep: int | torch.Tensor = 0,
         **_: Any,
     ) -> RecurrentQwenOutput | tuple[Any, ...]:
@@ -295,6 +296,8 @@ class RecurrentQwenForCausalLM(nn.Module):
             raise ValueError("max_loops must be >= 1")
         if reentry_rescale_mode not in {"none", "entry_rms"}:
             raise ValueError("reentry_rescale_mode must be one of: none, entry_rms")
+        if reentry_adapter_mode not in {"affine", "spectral", "affine_spectral"}:
+            raise ValueError("reentry_adapter_mode must be one of: affine, spectral, affine_spectral")
         if num_trajectories < 1:
             raise ValueError("num_trajectories must be >= 1")
         if latent_injection_mode not in {"pre", "post", "both"}:
@@ -425,7 +428,11 @@ class RecurrentQwenForCausalLM(nn.Module):
                         reentry_reference_rms,
                     )
                 if use_reentry_adapter:
-                    loop_input = self.reentry_adapter(loop_input)
+                    loop_input = self.reentry_adapter(
+                        loop_input,
+                        loop_idx=loop_idx,
+                        mode=reentry_adapter_mode,
+                    )
             if sample_latents and latent_injection_mode in {"pre", "both"}:
                 loop_input, latent_stats = self.latent_trajectory(
                     loop_input,

@@ -99,6 +99,11 @@ USE_REENTRY_ADAPTER = os.environ.get(
     "STAGE5_CURRICULUM_USE_REENTRY_ADAPTER",
     "0",
 ).strip().lower() in {"1", "true", "yes", "y"}
+REENTRY_ADAPTER_MODE = os.environ.get("STAGE5_CURRICULUM_REENTRY_ADAPTER_MODE", "affine").strip().lower()
+if REENTRY_ADAPTER_MODE not in {"affine", "spectral", "affine_spectral"}:
+    raise ValueError(
+        "STAGE5_CURRICULUM_REENTRY_ADAPTER_MODE must be one of: affine, spectral, affine_spectral"
+    )
 if USE_TARGET_LOOP_CONTROL and USE_LEARNED_LOOP_CONTROL:
     raise ValueError("Use either target-loop oracle control or learned loop control, not both.")
 MAX_GRAD_NORM = float(os.environ.get("STAGE5_CURRICULUM_PHASE1_MAX_GRAD_NORM", "0.3"))
@@ -550,6 +555,7 @@ def phase1_config(train_output_dir: Path, resume_from: Path | None) -> dict[str,
         "loop_control_ce_weight": LOOP_CONTROL_CE_WEIGHT,
         "reentry_rescale_mode": REENTRY_RESCALE_MODE,
         "use_reentry_adapter": USE_REENTRY_ADAPTER,
+        "reentry_adapter_mode": REENTRY_ADAPTER_MODE,
         "batch_size": 1,
         "learning_rate": LEARNING_RATE,
         "weight_decay": 0.0,
@@ -744,6 +750,7 @@ def eval_jsonl(label: str, data_jsonl: Path, checkpoint: Path) -> dict[str, floa
     command.extend(["--reentry_rescale_mode", REENTRY_RESCALE_MODE])
     if USE_REENTRY_ADAPTER:
         command.append("--use_reentry_adapter")
+        command.extend(["--reentry_adapter_mode", REENTRY_ADAPTER_MODE])
     proc = run(
         command,
         log_name=f"{label}_val.log",
@@ -836,6 +843,7 @@ def write_summary(payload: dict[str, Any]) -> None:
         f"- Learned loop control: `{payload['config'].get('use_learned_loop_control')}`",
         f"- Re-entry rescale: `{payload['config'].get('reentry_rescale_mode')}`",
         f"- Re-entry adapter: `{payload['config'].get('use_reentry_adapter')}`",
+        f"- Re-entry adapter mode: `{payload['config'].get('reentry_adapter_mode')}`",
         f"- Drive preflight: `{payload['drive_preflight']}`",
         f"- Validation status: `{payload.get('validation_checks', {}).get('status')}`",
         f"- Validation issues: `{payload.get('validation_checks', {}).get('issues', [])}`",
@@ -897,6 +905,7 @@ def main() -> int:
         "loop_control_ce_weight": LOOP_CONTROL_CE_WEIGHT,
         "reentry_rescale_mode": REENTRY_RESCALE_MODE,
         "use_reentry_adapter": USE_REENTRY_ADAPTER,
+        "reentry_adapter_mode": REENTRY_ADAPTER_MODE,
         "require_target_loop_gradient": REQUIRE_TARGET_LOOP_GRADIENT,
         "depth_hint_style": DEPTH_HINT_STYLE,
         "dtype": DTYPE,

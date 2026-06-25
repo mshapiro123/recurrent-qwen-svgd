@@ -83,6 +83,10 @@ def repair_summary(
     adapter_delta=0.01,
     adapter_scale_grad=1e-4,
     adapter_bias_grad=1e-4,
+    adapter_spectral_u_grad=1e-4,
+    adapter_spectral_v_grad=1e-4,
+    adapter_spectral_theta_grad=1e-4,
+    reentry_adapter_mode="affine",
     source_best=4,
     trained_best=4,
     source_candidates=4,
@@ -101,6 +105,7 @@ def repair_summary(
         "config": {
             "use_reentry_adapter": use_reentry_adapter,
             "reentry_rescale_mode": reentry_rescale_mode,
+            "reentry_adapter_mode": reentry_adapter_mode,
             "halt_target_nll_weight": 0.05,
         },
         "pre_bridge": {
@@ -130,6 +135,9 @@ def repair_summary(
         "post_reentry_adapter_liveness": {
             "scale_grad_rms": adapter_scale_grad,
             "bias_grad_rms": adapter_bias_grad,
+            "spectral_u_grad_rms": adapter_spectral_u_grad,
+            "spectral_v_grad_rms": adapter_spectral_v_grad,
+            "spectral_theta_grad_abs": adapter_spectral_theta_grad,
         },
         "loop1_preservation": {
             "source": {
@@ -207,6 +215,23 @@ def test_repair_smoke_assessment_passes_when_bridge_live_and_moved() -> None:
     assert out["metrics"]["bridge_gate_active"] is True
     assert out["metrics"]["reentry_rescale_mode"] == "entry_rms"
     assert out["metrics"]["reentry_rescale_mode_ok"] is True
+
+
+def test_repair_smoke_assessment_uses_spectral_adapter_liveness_for_spectral_mode() -> None:
+    out = assess(
+        repair_summary(
+            reentry_adapter_mode="spectral",
+            adapter_scale_grad=0.0,
+            adapter_bias_grad=0.0,
+            adapter_spectral_u_grad=1e-4,
+            adapter_spectral_v_grad=1e-4,
+            adapter_spectral_theta_grad=1e-4,
+        )
+    )
+
+    assert out["status"] == "bridge_repair_smoke_passed"
+    assert out["metrics"]["reentry_adapter_mode"] == "spectral"
+    assert out["metrics"]["adapter_live"] is True
 
 
 def test_repair_smoke_assessment_detects_live_but_not_moved() -> None:

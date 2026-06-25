@@ -190,6 +190,7 @@ def run_prompt(
             particle_update_mode="none",
             reentry_rescale_mode=args.reentry_rescale_mode,
             use_reentry_adapter=args.use_reentry_adapter,
+            reentry_adapter_mode=args.reentry_adapter_mode,
             use_cache=False,
             return_dict=True,
             logits_to_keep=1,
@@ -220,6 +221,7 @@ def run_prompt(
         "particle_init_noise": args.particle_init_noise,
         "reentry_rescale_mode": args.reentry_rescale_mode,
         "use_reentry_adapter": args.use_reentry_adapter,
+        "reentry_adapter_mode": args.reentry_adapter_mode,
         "effective_pathways": diversity,
         "pathway_diagnostics": diagnostics,
         "initial_pairwise_distance": initial_spread,
@@ -275,6 +277,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--kernel_geometry", default="euclidean", choices=("euclidean", "spherical"))
     parser.add_argument("--reentry_rescale_mode", default="none", choices=("none", "entry_rms"))
     parser.add_argument("--use_reentry_adapter", action="store_true")
+    parser.add_argument("--reentry_adapter_mode", default="affine", choices=("affine", "spectral", "affine_spectral"))
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--dtype", default="auto")
     parser.add_argument("--adapter_dtype", default="float32")
@@ -311,6 +314,7 @@ def main() -> int:
         "kernel_geometry": args.kernel_geometry,
         "reentry_rescale_mode": args.reentry_rescale_mode,
         "use_reentry_adapter": args.use_reentry_adapter,
+        "reentry_adapter_mode": args.reentry_adapter_mode,
         "kernel_projection_path": args.kernel_projection_path,
         "kernel_projection_dim": args.kernel_projection_dim,
         "aggregate": aggregate(records, qs),

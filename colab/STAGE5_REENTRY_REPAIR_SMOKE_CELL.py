@@ -19,7 +19,7 @@ from pathlib import Path
 
 from google.colab import drive, runtime, userdata
 
-STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION = "stage5_reentry_repair_smoke_v1_trainable"
+STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION = "stage5_reentry_repair_smoke_v2_spectral_optional"
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 DRIVE_ARTIFACT_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts")
@@ -457,6 +457,7 @@ def build_config(*, checkpoint: str, out_dir: Path) -> dict[str, object]:
         "bridge_gate_override": 1.0,
         "reentry_rescale_mode": "entry_rms",
         "use_reentry_adapter": True,
+        "reentry_adapter_mode": os.environ.get("STAGE5_REENTRY_REPAIR_ADAPTER_MODE", "affine"),
         "output_dir": str(out_dir.relative_to(ROOT)),
         "lora": {"enabled": True, "rank": 8, "alpha": 16, "dropout": 0.0},
     }
@@ -546,6 +547,8 @@ def run_drift(label: str, checkpoint: str, out_dir: Path, *, force: bool = False
             "--reentry_rescale_mode",
             "entry_rms",
             "--use_reentry_adapter",
+            "--reentry_adapter_mode",
+            os.environ.get("STAGE5_REENTRY_REPAIR_ADAPTER_MODE", "affine"),
             "--dtype",
             os.environ.get("STAGE5_REENTRY_REPAIR_DTYPE", "bfloat16"),
             "--adapter_dtype",
@@ -681,6 +684,7 @@ def write_markdown(summary: dict[str, object], path: Path) -> None:
         f"- Optimizer modules: `{summary['config']['optimizer_modules']}`",
         f"- Re-entry mode: `{summary['config']['reentry_rescale_mode']}`",
         f"- Use re-entry adapter: `{summary['config'].get('use_reentry_adapter')}`",
+        f"- Re-entry adapter mode: `{summary['config'].get('reentry_adapter_mode')}`",
         "",
         "## Bridge Liveness",
         "| stage | gate | proj identity max diff | proj bias max | bridge delta RMS | weight grad RMS | bias grad RMS | loop4 out/in RMS | loop8 out/in RMS |",

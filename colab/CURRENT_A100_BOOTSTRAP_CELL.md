@@ -46,6 +46,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "reentry_norm_diagnostic" - bounded eval-only loop re-entry RMS normalization comparison.
 #   "reentry_norm_recover_only" - publish a completed Stage 2 re-entry norm run from Drive without rerunning eval.
 #   "reentry_repair_smoke" - bounded trainable bridge/re-entry repair smoke.
+#   "reentry_spectral_repair_smoke" - same Stage 3 smoke with spectral re-entry adapter mode.
 #   "reentry_recovery_training" - gated recovery SFT after re-entry repair passes.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
 #   "capability_ladder_7b_mcq_probe" - high-memory Qwen 0.5B/1.5B/3B/7B ARC MCQ scoring for depth-4 data.
@@ -439,10 +440,12 @@ TARGETS = {
         "path": "colab/STAGE5_REENTRY_REPAIR_SMOKE_CELL.py",
         "markers": [
             "STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION",
-            "stage5_reentry_repair_smoke_v1_trainable",
+            "stage5_reentry_repair_smoke_v2_spectral_optional",
             "bridge_gate_override",
             "bridge_reset_identity",
             "reentry_rescale_mode",
+            "reentry_adapter_mode",
+            "STAGE5_REENTRY_REPAIR_ADAPTER_MODE",
             "training/train_phase1_ponder.py",
             "eval/eval_reentry_drift.py",
             "Loop-1 Preservation",
@@ -472,6 +475,49 @@ TARGETS = {
             "STAGE5_REENTRY_REPAIR_DRIFT_MAX_LOOPS": "8",
             "STAGE5_REENTRY_REPAIR_LIMIT": "8",
             "STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES": "bridge,reentry,halt",
+            "STAGE5_REENTRY_REPAIR_DISCONNECT": "1",
+        },
+    },
+    "reentry_spectral_repair_smoke": {
+        "path": "colab/STAGE5_REENTRY_REPAIR_SMOKE_CELL.py",
+        "markers": [
+            "STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION",
+            "stage5_reentry_repair_smoke_v2_spectral_optional",
+            "bridge_gate_override",
+            "bridge_reset_identity",
+            "reentry_rescale_mode",
+            "reentry_adapter_mode",
+            "STAGE5_REENTRY_REPAIR_ADAPTER_MODE",
+            "training/train_phase1_ponder.py",
+            "eval/eval_reentry_drift.py",
+            "Loop-1 Preservation",
+            "loop1_preservation",
+            "parse_train_log_metrics",
+            "train_log_metrics",
+            "existing_train_log_metrics",
+            "resume_retrain=train_phase1_ponder",
+            "require_gpu_runtime",
+            "Stage 3 re-entry repair smoke requires an attached GPU runtime",
+            "Training Smoke Metrics",
+            "STAGE5_REENTRY_REPAIR_REQUIRE_NORM_PASS",
+            "STAGE5_REENTRY_REPAIR_ALLOW_FALLBACK_CHECKPOINT",
+            "Stage 3 repair smoke requires a checkpoint from the passed Stage 2 norm assessment",
+            "stage2_norm_assessment",
+            "current_pointer_norm_assessment_candidates",
+            "stage2_norm_assessment_source=current_pointer",
+            "incremental_backup",
+            "colab/assess_stage5_reentry.py",
+            "tests/test_bridge.py",
+            "Readout Pause",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_REENTRY_REPAIR_MAX_STEPS": "25",
+            "STAGE5_REENTRY_REPAIR_MAX_LOOPS": "4",
+            "STAGE5_REENTRY_REPAIR_DRIFT_MAX_LOOPS": "8",
+            "STAGE5_REENTRY_REPAIR_LIMIT": "8",
+            "STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES": "bridge,reentry,halt",
+            "STAGE5_REENTRY_REPAIR_ADAPTER_MODE": "spectral",
             "STAGE5_REENTRY_REPAIR_DISCONNECT": "1",
         },
     },

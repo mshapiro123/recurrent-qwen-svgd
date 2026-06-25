@@ -49,6 +49,7 @@ def main() -> int:
     parser.add_argument("--particle_init_noise", type=float, default=0.0)
     parser.add_argument("--reentry_rescale_mode", default="none", choices=("none", "entry_rms"))
     parser.add_argument("--use_reentry_adapter", action="store_true")
+    parser.add_argument("--reentry_adapter_mode", default="affine", choices=("affine", "spectral", "affine_spectral"))
     parser.add_argument("--svgd_eps", type=float, default=1.0)
     parser.add_argument("--svgd_repulsion_scale", type=float, default=1.0)
     parser.add_argument("--svgd_bandwidth", default="median")
@@ -155,6 +156,7 @@ def main() -> int:
                 loop_control_ce_weight=args.loop_control_ce_weight,
                 reentry_rescale_mode=args.reentry_rescale_mode,
                 use_reentry_adapter=args.use_reentry_adapter,
+                reentry_adapter_mode=args.reentry_adapter_mode,
                 use_cache=False,
                 return_dict=True,
             )

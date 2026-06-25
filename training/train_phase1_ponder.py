@@ -199,6 +199,7 @@ def main() -> int:
                 loop_control_ce_weight=cfg_float(cfg, "loop_control_ce_weight", 0.0),
                 reentry_rescale_mode=cfg.get("reentry_rescale_mode", "none"),
                 use_reentry_adapter=cfg.get("use_reentry_adapter", False),
+                reentry_adapter_mode=cfg.get("reentry_adapter_mode", "affine"),
                 use_cache=False,
                 return_dict=True,
             )

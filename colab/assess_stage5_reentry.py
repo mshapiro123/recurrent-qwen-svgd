@@ -176,6 +176,7 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
     config = summary.get("config") if isinstance(summary.get("config"), dict) else {}
     use_reentry_adapter = bool(config.get("use_reentry_adapter", False))
     reentry_rescale_mode = str(config.get("reentry_rescale_mode") or "")
+    reentry_adapter_mode = str(config.get("reentry_adapter_mode") or "affine")
     reentry_rescale_mode_ok = reentry_rescale_mode == "entry_rms"
     halt_target_nll_weight = finite_float(config.get("halt_target_nll_weight"))
     pre_delta = finite_float(pre.get("bridge_delta_rms"))
@@ -202,7 +203,23 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
     adapter_bias_max = finite_float(post_adapter.get("bias_max_abs"))
     adapter_scale_grad = finite_float(post_adapter_live.get("scale_grad_rms"))
     adapter_bias_grad = finite_float(post_adapter_live.get("bias_grad_rms"))
-    adapter_live = (not use_reentry_adapter) or (adapter_scale_grad > 0.0 and adapter_bias_grad > 0.0)
+    adapter_spectral_u_grad = finite_float(post_adapter_live.get("spectral_u_grad_rms"))
+    adapter_spectral_v_grad = finite_float(post_adapter_live.get("spectral_v_grad_rms"))
+    adapter_spectral_theta_grad = finite_float(post_adapter_live.get("spectral_theta_grad_abs"))
+    affine_live = adapter_scale_grad > 0.0 and adapter_bias_grad > 0.0
+    spectral_live = (
+        adapter_spectral_u_grad > 0.0
+        and adapter_spectral_v_grad > 0.0
+        and adapter_spectral_theta_grad > 0.0
+    )
+    if not use_reentry_adapter:
+        adapter_live = True
+    elif reentry_adapter_mode == "affine":
+        adapter_live = affine_live
+    elif reentry_adapter_mode == "spectral":
+        adapter_live = spectral_live
+    else:
+        adapter_live = affine_live and spectral_live
     adapter_moved = (not use_reentry_adapter) or (
         adapter_delta > 1e-6 or adapter_scale_diff > 1e-6 or adapter_bias_max > 1e-6
     )
@@ -322,11 +339,15 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
             "expected_reentry_rescale_mode": "entry_rms",
             "reentry_rescale_mode_ok": reentry_rescale_mode_ok,
             "use_reentry_adapter": use_reentry_adapter,
+            "reentry_adapter_mode": reentry_adapter_mode,
             "adapter_delta_rms": adapter_delta,
             "adapter_scale_identity_max_abs_diff": adapter_scale_diff,
             "adapter_bias_max_abs": adapter_bias_max,
             "adapter_scale_grad_rms": adapter_scale_grad,
             "adapter_bias_grad_rms": adapter_bias_grad,
+            "adapter_spectral_u_grad_rms": adapter_spectral_u_grad,
+            "adapter_spectral_v_grad_rms": adapter_spectral_v_grad,
+            "adapter_spectral_theta_grad_abs": adapter_spectral_theta_grad,
             "adapter_live": adapter_live,
             "adapter_moved": adapter_moved,
             "train_metrics_available": train_metrics_available,

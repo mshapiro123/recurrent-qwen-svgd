@@ -2,7 +2,7 @@ import torch
 
 from eval.eval_reentry_drift import bridge_gradient_liveness
 from models.bridge import IdentityGatedBridge
-from models.reentry_adapter import ReentryAffineAdapter
+from models.reentry_adapter import ReentryAffineAdapter, SpectralLowRankCorrection
 from training.reentry_repair import apply_reentry_repair_controls
 
 
@@ -74,3 +74,48 @@ def test_reentry_affine_adapter_has_live_identity_gradients():
     assert adapter.bias.grad is not None
     assert adapter.scale.grad.float().square().mean().sqrt() > 0.0
     assert adapter.bias.grad.float().square().mean().sqrt() > 0.0
+
+
+def test_spectral_low_rank_correction_matches_dense_spectral_norm():
+    torch.manual_seed(0)
+    correction = SpectralLowRankCorrection(hidden_size=6, rank=3, max_depth=4)
+    with torch.no_grad():
+        correction.U.normal_(mean=0.0, std=0.2)
+        correction.V.normal_(mean=0.0, std=0.2)
+
+    dense = correction.U @ correction.V.t()
+    exact = torch.linalg.svdvals(dense.float()).max()
+    estimated = correction.spectral_norm(num_iters=80, update=False)
+
+    assert torch.allclose(estimated.float(), exact, rtol=1e-3, atol=1e-4)
+
+
+def test_reentry_spectral_mode_is_near_identity_at_init_and_gradient_live():
+    torch.manual_seed(0)
+    adapter = ReentryAffineAdapter(hidden_size=5)
+    hidden = torch.randn(2, 3, 5)
+
+    out = adapter(hidden, loop_idx=2, mode="spectral")
+    assert (out - hidden).abs().max() < 1e-2
+
+    loss = out.float().square().mean()
+    loss.backward()
+
+    assert adapter.spectral_correction.U.grad is not None
+    assert adapter.spectral_correction.V.grad is not None
+    assert adapter.spectral_correction.theta.grad is not None
+    assert adapter.spectral_correction.U.grad.float().square().mean().sqrt() > 0.0
+    assert adapter.spectral_correction.V.grad.float().square().mean().sqrt() > 0.0
+    assert adapter.spectral_correction.theta.grad.float().abs().max() > 0.0
+
+
+def test_reentry_adapter_rejects_unknown_mode():
+    adapter = ReentryAffineAdapter(hidden_size=4)
+    hidden = torch.randn(1, 2, 4)
+
+    try:
+        adapter(hidden, mode="sideways")
+    except ValueError as exc:
+        assert "mode" in str(exc)
+    else:
+        raise AssertionError("Expected invalid re-entry adapter mode to raise")

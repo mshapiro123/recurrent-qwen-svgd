@@ -1363,7 +1363,13 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "require_gpu_runtime" in bootstrap
     assert "require_gpu_runtime" in bootstrap_md
     assert "STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION" in cell
-    assert "stage5_reentry_repair_smoke_v1_trainable" in cell
+    assert "stage5_reentry_repair_smoke_v2_spectral_optional" in cell
+    assert "reentry_spectral_repair_smoke" in bootstrap
+    assert "reentry_spectral_repair_smoke" in bootstrap_md
+    assert "STAGE5_REENTRY_REPAIR_ADAPTER_MODE" in bootstrap
+    assert "STAGE5_REENTRY_REPAIR_ADAPTER_MODE" in bootstrap_md
+    assert "STAGE5_REENTRY_REPAIR_ADAPTER_MODE" in cell
+    assert "reentry_adapter_mode" in cell
     assert "STAGE5_RECURRENT_LAYER_SPLIT" in cell
     assert "STAGE5_REENTRY_REPAIR_LAYER_SPLIT" in cell
     assert '"layer_split": LAYER_SPLIT' in cell

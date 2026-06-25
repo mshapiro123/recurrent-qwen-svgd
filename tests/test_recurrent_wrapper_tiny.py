@@ -126,6 +126,28 @@ def test_reentry_rescale_mode_runs_on_recurrent_tiny_model():
     assert torch.isfinite(output.metrics["mean_expected_loops"])
 
 
+def test_reentry_adapter_spectral_mode_runs_on_recurrent_tiny_model():
+    torch.manual_seed(0)
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+
+    with torch.no_grad():
+        output = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=4,
+            use_reentry_adapter=True,
+            reentry_adapter_mode="spectral",
+            use_cache=False,
+            return_dict=True,
+        )
+
+    assert output.logits.shape[:2] == input_ids.shape
+    assert torch.isfinite(output.metrics["mean_expected_loops"])
+
+
 def test_latent_injection_modes_run_on_tiny_model():
     torch.manual_seed(0)
     model = TinyCausalLM().eval()
@@ -358,6 +380,26 @@ def test_invalid_reentry_rescale_mode_raises():
         assert "reentry_rescale_mode" in str(exc)
     else:
         raise AssertionError("Expected invalid reentry_rescale_mode to raise")
+
+
+def test_invalid_reentry_adapter_mode_raises():
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2]])
+
+    try:
+        wrapper(
+            input_ids=input_ids,
+            max_loops=2,
+            use_reentry_adapter=True,
+            reentry_adapter_mode="sideways",
+            use_cache=False,
+            return_dict=True,
+        )
+    except ValueError as exc:
+        assert "reentry_adapter_mode" in str(exc)
+    else:
+        raise AssertionError("Expected invalid reentry_adapter_mode to raise")
 
 
 def test_svgd_particle_update_runs_on_tiny_model():
