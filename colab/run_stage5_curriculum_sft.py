@@ -86,6 +86,9 @@ USE_LEARNED_LOOP_CONTROL = os.environ.get(
     "0",
 ).strip().lower() in {"1", "true", "yes", "y"}
 LOOP_CONTROL_CE_WEIGHT = float(os.environ.get("STAGE5_CURRICULUM_LOOP_CONTROL_CE_WEIGHT", "0.0"))
+REENTRY_RESCALE_MODE = os.environ.get("STAGE5_CURRICULUM_REENTRY_RESCALE_MODE", "none").strip().lower()
+if REENTRY_RESCALE_MODE not in {"none", "entry_rms"}:
+    raise ValueError("STAGE5_CURRICULUM_REENTRY_RESCALE_MODE must be one of: none, entry_rms")
 USE_REENTRY_ADAPTER = os.environ.get(
     "STAGE5_CURRICULUM_USE_REENTRY_ADAPTER",
     "0",
@@ -539,6 +542,7 @@ def phase1_config(train_output_dir: Path, resume_from: Path | None) -> dict[str,
         "use_target_loop_control": USE_TARGET_LOOP_CONTROL,
         "use_learned_loop_control": USE_LEARNED_LOOP_CONTROL,
         "loop_control_ce_weight": LOOP_CONTROL_CE_WEIGHT,
+        "reentry_rescale_mode": REENTRY_RESCALE_MODE,
         "use_reentry_adapter": USE_REENTRY_ADAPTER,
         "batch_size": 1,
         "learning_rate": LEARNING_RATE,
@@ -731,6 +735,9 @@ def eval_jsonl(label: str, data_jsonl: Path, checkpoint: Path) -> dict[str, floa
     if USE_LEARNED_LOOP_CONTROL:
         command.append("--use_learned_loop_control")
         command.extend(["--loop_control_ce_weight", str(LOOP_CONTROL_CE_WEIGHT)])
+    command.extend(["--reentry_rescale_mode", REENTRY_RESCALE_MODE])
+    if USE_REENTRY_ADAPTER:
+        command.append("--use_reentry_adapter")
     proc = run(
         command,
         log_name=f"{label}_val.log",
@@ -816,6 +823,7 @@ def write_summary(payload: dict[str, Any]) -> None:
         f"- Depth hint style: `{payload['dataset'].get('depth_hint_style')}`",
         f"- Target loop control: `{payload['config'].get('use_target_loop_control')}`",
         f"- Learned loop control: `{payload['config'].get('use_learned_loop_control')}`",
+        f"- Re-entry rescale: `{payload['config'].get('reentry_rescale_mode')}`",
         f"- Re-entry adapter: `{payload['config'].get('use_reentry_adapter')}`",
         f"- Drive preflight: `{payload['drive_preflight']}`",
         f"- Validation status: `{payload.get('validation_checks', {}).get('status')}`",
@@ -876,6 +884,7 @@ def main() -> int:
         "use_target_loop_control": USE_TARGET_LOOP_CONTROL,
         "use_learned_loop_control": USE_LEARNED_LOOP_CONTROL,
         "loop_control_ce_weight": LOOP_CONTROL_CE_WEIGHT,
+        "reentry_rescale_mode": REENTRY_RESCALE_MODE,
         "use_reentry_adapter": USE_REENTRY_ADAPTER,
         "require_target_loop_gradient": REQUIRE_TARGET_LOOP_GRADIENT,
         "depth_hint_style": DEPTH_HINT_STYLE,

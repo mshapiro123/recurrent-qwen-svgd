@@ -4,6 +4,11 @@ This runbook is the CPU-side contract for the next GPU work. It exists to keep
 the re-entry repair sequence aimed at deterministic recurrent recovery before
 we return to particles, SVGD, or broader architecture experiments.
 
+This is Phase 0 in the master program sequence. See
+[`PROGRAM_TRACK_MASTER_SEQUENCE.md`](PROGRAM_TRACK_MASTER_SEQUENCE.md) for the
+full dependency chain: re-entry, then depth, then breadth/multistability, then
+particles/SVGD and selector conversion.
+
 ## Current blocker
 
 Stage 1 re-entry drift found that the current recovered recurrent checkpoint has
@@ -117,6 +122,8 @@ Configured behavior:
 - resumes from the Stage 3 repaired checkpoint;
 - trains `bridge,reentry,halt,lora`;
 - enables learned loop control and target-loop NLL supervision;
+- keeps `entry_rms` loop re-entry normalization active during training and
+  validation;
 - carries the re-entry adapter forward;
 - uses strict target-loop row gates derived from the actual trace collection.
 

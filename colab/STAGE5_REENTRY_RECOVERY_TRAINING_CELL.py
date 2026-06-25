@@ -371,6 +371,10 @@ def derive_sft_env(trace_summary: Path, repair: dict[str, Any]) -> dict[str, str
                 "STAGE5_REENTRY_RECOVERY_OPTIMIZER_MODULES",
                 "bridge,reentry,halt,lora",
             ),
+            "STAGE5_CURRICULUM_REENTRY_RESCALE_MODE": os.environ.get(
+                "STAGE5_REENTRY_RECOVERY_REENTRY_RESCALE_MODE",
+                "entry_rms",
+            ),
             "STAGE5_CURRICULUM_USE_REENTRY_ADAPTER": "1",
             "STAGE5_CURRICULUM_DEPTH_HINT_STYLE": os.environ.get(
                 "STAGE5_REENTRY_RECOVERY_DEPTH_HINT_STYLE",
@@ -401,6 +405,7 @@ def derive_sft_env(trace_summary: Path, repair: dict[str, Any]) -> dict[str, str
                 "max_loops": max_loops,
                 "run_id": run_id,
                 "optimizer_modules": env["STAGE5_CURRICULUM_OPTIMIZER_MODULES"],
+                "reentry_rescale_mode": env["STAGE5_CURRICULUM_REENTRY_RESCALE_MODE"],
                 "loop_control_ce_weight": env["STAGE5_CURRICULUM_LOOP_CONTROL_CE_WEIGHT"],
                 "halt_target_nll_weight": env["STAGE5_CURRICULUM_HALT_TARGET_NLL_WEIGHT"],
             },

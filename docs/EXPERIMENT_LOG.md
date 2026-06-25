@@ -507,6 +507,14 @@ Colab/Drive backups for selected runs.
   `docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md`, which defines the hypotheses,
   success criteria, failure responses, and exact next targets for Stage 2,
   Stage 3, and Stage 4.
+- Stage 4 consistency fix: `reentry_recovery_training` now passes
+  `STAGE5_CURRICULUM_REENTRY_RESCALE_MODE=entry_rms` into the curriculum SFT
+  runner, and `eval_jsonl.py` now evaluates with the same re-entry rescale mode
+  and adapter flags used during training. This keeps recovery SFT aligned with
+  the loop-closure regime validated in Stage 2 and trained in Stage 3.
+- Added `docs/PROGRAM_TRACK_MASTER_SEQUENCE.md` as the umbrella dependency
+  sequence: Phase 0 re-entry, Phase 1 depth, Phase 2 breadth/multistability,
+  and Phase 3 particles/SVGD plus selector. Current work remains Phase 0.
 - Current reviewer output remains Stage 1 only until Stage 2 lands:
   `bridge_dead -> run_reentry_norm_then_repair_smoke -> next target
   reentry_norm_diagnostic`.

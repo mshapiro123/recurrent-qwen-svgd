@@ -24,6 +24,10 @@ run more ARC-mix depth training, Phase 2/SVGD, or particle-noise sweeps until
 the loop-closure path is gradient-live and has passed the tiny repair smoke.
 The detailed Stage 3/4 contract is in
 [`docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md`](../docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md).
+The overall program sequence is in
+[`docs/PROGRAM_TRACK_MASTER_SEQUENCE.md`](../docs/PROGRAM_TRACK_MASTER_SEQUENCE.md);
+the current work is Phase 0, and particles/SVGD resume only after loop closure,
+depth conversion, and correct-bearing breadth gates clear.
 
 ```text
 latest reviewer state: stage1_drift / bridge_dead

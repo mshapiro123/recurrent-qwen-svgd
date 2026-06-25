@@ -47,6 +47,8 @@ def main() -> int:
     parser.add_argument("--latent_injection_mode", default="pre", choices=("pre", "post", "both"))
     parser.add_argument("--particle_update_mode", default="none", choices=("none", "svgd"))
     parser.add_argument("--particle_init_noise", type=float, default=0.0)
+    parser.add_argument("--reentry_rescale_mode", default="none", choices=("none", "entry_rms"))
+    parser.add_argument("--use_reentry_adapter", action="store_true")
     parser.add_argument("--svgd_eps", type=float, default=1.0)
     parser.add_argument("--svgd_repulsion_scale", type=float, default=1.0)
     parser.add_argument("--svgd_bandwidth", default="median")
@@ -151,6 +153,8 @@ def main() -> int:
                 svgd_repulsion_max_norm=args.svgd_repulsion_max_norm,
                 use_learned_loop_control=args.use_learned_loop_control,
                 loop_control_ce_weight=args.loop_control_ce_weight,
+                reentry_rescale_mode=args.reentry_rescale_mode,
+                use_reentry_adapter=args.use_reentry_adapter,
                 use_cache=False,
                 return_dict=True,
             )

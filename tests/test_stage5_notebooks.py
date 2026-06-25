@@ -1283,6 +1283,9 @@ def test_reentry_recovery_training_target_is_bootstrapped() -> None:
     assert "STAGE5_CURRICULUM_RESUME_FROM" in cell
     assert "STAGE5_CURRICULUM_USE_LEARNED_LOOP_CONTROL" in cell
     assert "STAGE5_CURRICULUM_OPTIMIZER_MODULES" in cell
+    assert "STAGE5_CURRICULUM_REENTRY_RESCALE_MODE" in cell
+    assert "STAGE5_REENTRY_RECOVERY_REENTRY_RESCALE_MODE" in cell
+    assert '"entry_rms"' in cell
     assert "STAGE5_CURRICULUM_USE_REENTRY_ADAPTER" in cell
     assert "colab.reentry_recovery_config" in cell
     assert "sys.path.insert(0, root_str)" in cell
@@ -1318,11 +1321,19 @@ def test_reentry_drift_and_norm_targets_run_self_assessment() -> None:
 def test_reentry_stage3_stage4_runbook_is_linked_from_current_action() -> None:
     current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
     runbook = (ROOT / "docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md").read_text(encoding="utf-8")
+    master = (ROOT / "docs/PROGRAM_TRACK_MASTER_SEQUENCE.md").read_text(encoding="utf-8")
 
     assert "docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md" in current_action
+    assert "docs/PROGRAM_TRACK_MASTER_SEQUENCE.md" in current_action
+    assert "PROGRAM_TRACK_MASTER_SEQUENCE.md" in runbook
+    assert "Phase 0: Loop-Closure Re-entry" in master
+    assert "Phase 1: Depth" in master
+    assert "Phase 2: Breadth and Multistability" in master
+    assert "Phase 3: Particles, SVGD, and Selector" in master
     assert "STAGE5_CURRENT_A100_TARGET=reentry_norm_diagnostic" in runbook
     assert "STAGE5_CURRENT_A100_TARGET=reentry_repair_smoke" in runbook
     assert "STAGE5_CURRENT_A100_TARGET=reentry_recovery_training" in runbook
+    assert "entry_rms" in runbook
     assert "fix_loop1_preservation_eval_before_recovery_training" in runbook
     assert "STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS" in runbook
     assert "1=48,2=16,4=8" in runbook
