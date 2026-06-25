@@ -30,6 +30,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from colab.stage5_publish_utils import publishable_artifact_paths  # noqa: E402
 from colab.colab_auth import ensure_hf_token_from_colab  # noqa: E402
 from colab.run_stage5_curriculum_sft import depth_hint_for_row, insert_depth_hint, split_train_val  # noqa: E402
 from eval.mcq_debias import aggregate_permutation_scores, cyclic_permutation_rows, read_jsonl, write_jsonl  # noqa: E402
@@ -700,7 +701,8 @@ def run_recipe_control_assessment(summary_json: Path) -> dict[str, Any]:
 def commit_results(dense_checkpoint: Path) -> None:
     if not PUSH_RESULTS:
         return
-    paths = [RUN_DIR, current_source_summary_file()]
+    paths = publishable_artifact_paths(RUN_DIR)
+    paths.append(current_source_summary_file())
     if COMMIT_CHECKPOINT:
         paths.append(dense_checkpoint)
     for path in paths:

@@ -455,3 +455,9 @@ def test_curriculum_sft_commit_stages_current_source_pointer(monkeypatch, tmp_pa
     assert "config/stage5_current_source_summary.txt" in staged
     assert "outputs/stage5/curriculum_sft/phase1/phase1_step_150.pt" in staged
     assert "outputs/stage5/curriculum_sft/phase1/phase1_step_50.pt" not in staged
+
+
+def test_curriculum_sft_checkpoint_commits_default_off() -> None:
+    source = (runner.ROOT / "colab/run_stage5_curriculum_sft.py").read_text(encoding="utf-8")
+
+    assert 'STAGE5_CURRICULUM_SFT_COMMIT_CHECKPOINTS", "0"' in source

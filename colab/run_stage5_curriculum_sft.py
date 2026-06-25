@@ -126,7 +126,7 @@ PUSH_RESULTS = os.environ.get("STAGE5_CURRICULUM_SFT_PUSH", "1").strip().lower()
     "yes",
     "y",
 }
-COMMIT_CHECKPOINTS = os.environ.get("STAGE5_CURRICULUM_SFT_COMMIT_CHECKPOINTS", "1").strip().lower() in {
+COMMIT_CHECKPOINTS = os.environ.get("STAGE5_CURRICULUM_SFT_COMMIT_CHECKPOINTS", "0").strip().lower() in {
     "1",
     "true",
     "yes",

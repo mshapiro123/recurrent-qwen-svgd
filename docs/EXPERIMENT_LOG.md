@@ -472,6 +472,11 @@ Colab/Drive backups for selected runs.
   artifacts (`.json`, `.jsonl`, `.md`, `.yaml`, `.log`, etc.); checkpoints stay
   in Drive and are restored by Stage 4 from the `trained_checkpoint` path in the
   Stage 3 summary.
+- Stage 4/dense-control publish hardening: `run_stage5_curriculum_sft.py`
+  now defaults `STAGE5_CURRICULUM_SFT_COMMIT_CHECKPOINTS=0`, and the dense
+  MCQ control reuses the same lightweight artifact allowlist. Checkpoints can
+  still be explicitly committed for a special run, but the default Colab path
+  backs model weights up to Drive and publishes only evidence to GitHub.
 - Stage 3 assessment hardening: recovery training is now blocked unless an
   enabled re-entry adapter has live scale/bias gradients and measurable
   movement, in addition to bridge liveness/movement and loop-1 preservation.

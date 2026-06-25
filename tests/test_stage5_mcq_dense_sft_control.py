@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 
 from colab import run_stage5_mcq_dense_sft_control as module
 
@@ -211,3 +212,34 @@ def test_write_summary_points_front_of_queue_to_recipe_assessment(monkeypatch, t
     assert (tmp_path / "config" / "stage5_current_source_summary.txt").read_text(encoding="utf-8").strip() == (
         "outputs/stage5/dense/mcq_recipe_control_assessment.json"
     )
+
+
+def test_commit_results_excludes_checkpoint_unless_explicitly_enabled(monkeypatch, tmp_path) -> None:
+    run_dir = tmp_path / "outputs" / "stage5" / "dense"
+    checkpoint = run_dir / "dense_lora" / "dense_lora_step_10.pt"
+    pointer = tmp_path / "config" / "stage5_current_source_summary.txt"
+    checkpoint.parent.mkdir(parents=True)
+    pointer.parent.mkdir(parents=True)
+    (run_dir / "summary.json").write_text("{}", encoding="utf-8")
+    (run_dir / "summary.md").write_text("# Summary\n", encoding="utf-8")
+    checkpoint.write_bytes(b"checkpoint")
+    pointer.write_text("outputs/stage5/dense/summary.json\n", encoding="utf-8")
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, *, check=True, log_name=None):
+        commands.append([str(item) for item in cmd])
+        return subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+    monkeypatch.setattr(module, "COMMIT_CHECKPOINT", False)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    module.commit_results(checkpoint)
+
+    add_commands = [cmd for cmd in commands if cmd[:3] == ["git", "add", "-f"]]
+    staged = {item for cmd in add_commands for item in cmd[3:]}
+    assert "outputs/stage5/dense/summary.json" in staged
+    assert "outputs/stage5/dense/summary.md" in staged
+    assert "config/stage5_current_source_summary.txt" in staged
+    assert "outputs/stage5/dense/dense_lora/dense_lora_step_10.pt" not in staged
