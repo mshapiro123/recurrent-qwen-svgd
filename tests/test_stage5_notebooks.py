@@ -1272,8 +1272,13 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "existing_train_log_metrics" in bootstrap_md
     assert "resume_retrain=train_phase1_ponder" in bootstrap
     assert "resume_retrain=train_phase1_ponder" in bootstrap_md
+    assert "require_gpu_runtime" in bootstrap
+    assert "require_gpu_runtime" in bootstrap_md
     assert "STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION" in cell
     assert "stage5_reentry_repair_smoke_v1_trainable" in cell
+    assert "attached_gpu_names" in cell
+    assert "require_gpu_runtime" in cell
+    assert "Stage 3 re-entry repair smoke requires an attached GPU runtime" in cell
     assert "bridge_gate_override" in cell
     assert "bridge_reset_identity" in cell
     assert "reentry_rescale_mode" in cell

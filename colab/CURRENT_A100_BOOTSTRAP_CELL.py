@@ -414,6 +414,8 @@ TARGETS = {
             "train_log_metrics",
             "existing_train_log_metrics",
             "resume_retrain=train_phase1_ponder",
+            "require_gpu_runtime",
+            "Stage 3 re-entry repair smoke requires an attached GPU runtime",
             "Training Smoke Metrics",
             "STAGE5_REENTRY_REPAIR_REQUIRE_NORM_PASS",
             "stage2_norm_assessment",

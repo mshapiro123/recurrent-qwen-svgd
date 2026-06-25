@@ -820,3 +820,8 @@ Colab/Drive backups for selected runs.
   edit the Colab cell body before enabling provider responses, while preserving
   the placeholder check that refuses paid calls when concrete model ids are not
   configured.
+- Stage 3 GPU preflight: `reentry_repair_smoke` now checks for an attached GPU
+  runtime before repo sync, Drive checkpoint restoration, requirements install,
+  or training setup. A CPU-only or disconnected Colab runtime now fails with a
+  clear instruction to reconnect L4/T4/A100/H100, reducing late setup failures
+  on the current front-of-queue GPU action.

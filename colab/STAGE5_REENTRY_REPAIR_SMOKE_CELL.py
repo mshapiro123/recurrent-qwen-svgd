@@ -120,6 +120,36 @@ def run(
     return proc
 
 
+def attached_gpu_names() -> list[str]:
+    if shutil.which("nvidia-smi") is None:
+        return []
+    try:
+        proc = subprocess.run(
+            ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader"],
+            cwd="/content",
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+    except (FileNotFoundError, OSError):
+        return []
+    if proc.returncode:
+        return []
+    return [line.strip() for line in proc.stdout.splitlines() if line.strip()]
+
+
+def require_gpu_runtime() -> None:
+    gpus = attached_gpu_names()
+    if not gpus:
+        raise RuntimeError(
+            "Stage 3 re-entry repair smoke requires an attached GPU runtime. "
+            "Reconnect Colab with L4/T4/A100/H100 before running "
+            "STAGE5_CURRENT_A100_TARGET=reentry_repair_smoke."
+        )
+    print("attached_gpu_runtime=" + "; ".join(gpus), flush=True)
+
+
 def ensure_repo() -> None:
     clone_url = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
     if ROOT.exists():
@@ -749,6 +779,7 @@ def main() -> None:
         "y",
     }
 
+    require_gpu_runtime()
     ensure_repo()
     norm_assessment = load_required_norm_assessment()
     norm_checkpoint = str((norm_assessment or {}).get("checkpoint") or "")

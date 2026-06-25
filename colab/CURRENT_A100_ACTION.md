@@ -49,6 +49,10 @@ Run Stage 3 on L4/T4. Do **not** run ARC-mix depth training, GPQA, scale-up,
 Phase 2/SVGD, or particle-noise sweeps until the loop-closure path is
 gradient-live and the repair smoke passes loop-1 preservation.
 
+The Stage 3 target now performs an immediate GPU-runtime preflight. If Colab is
+not attached to L4/T4/A100/H100, it stops before repo sync, Drive restoration,
+or checkpoint work.
+
 ## Paste-Anywhere Launcher
 
 Change only `TARGET` as you move through the queue.
