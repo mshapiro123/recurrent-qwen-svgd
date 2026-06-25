@@ -1242,6 +1242,25 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "runtime.unassign" in cell
 
 
+def test_reentry_norm_recover_target_is_bootstrapped() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_REENTRY_NORM_RECOVER_CELL.py").read_text(encoding="utf-8")
+
+    assert "reentry_norm_recover_only" in bootstrap
+    assert "reentry_norm_recover_only" in bootstrap_md
+    assert "colab/STAGE5_REENTRY_NORM_RECOVER_CELL.py" in bootstrap
+    assert "STAGE5_REENTRY_NORM_RECOVER_CELL_VERSION" in cell
+    assert "stage5_reentry_norm_recover_v1" in cell
+    assert "STAGE5_REENTRY_NORM_RECOVER_SOURCE" in cell
+    assert "stage5_reentry_norm_*" in cell
+    assert "No complete stage5_reentry_norm_* artifact found on Drive" in cell
+    assert "colab/assess_stage5_reentry.py" in cell
+    assert "colab/review_stage5_reentry.py" in cell
+    assert "Recover Stage 5 re-entry norm" in cell
+    assert "runtime.unassign" in cell
+
+
 def test_reentry_recovery_training_target_is_bootstrapped() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

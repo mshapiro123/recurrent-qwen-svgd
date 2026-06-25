@@ -20,6 +20,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "candidate_conversion_diagnostic" - bounded particle-noise candidate conversion with correctness-split pathways.
 #   "reentry_drift_diagnostic" - bounded read-only recurrent loop-closure drift diagnostic.
 #   "reentry_norm_diagnostic" - bounded eval-only loop re-entry RMS normalization comparison.
+#   "reentry_norm_recover_only" - publish a completed Stage 2 re-entry norm run from Drive without rerunning eval.
 #   "reentry_repair_smoke" - bounded trainable bridge/re-entry repair smoke.
 #   "reentry_recovery_training" - gated recovery SFT after re-entry repair passes.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
@@ -321,6 +322,23 @@ TARGETS = {
             "STAGE5_REENTRY_NORM_K": "4",
             "STAGE5_REENTRY_NORM_LIMIT": "8",
             "STAGE5_REENTRY_NORM_DISCONNECT": "1",
+        },
+    },
+    "reentry_norm_recover_only": {
+        "path": "colab/STAGE5_REENTRY_NORM_RECOVER_CELL.py",
+        "markers": [
+            "STAGE5_REENTRY_NORM_RECOVER_CELL_VERSION",
+            "stage5_reentry_norm_recover_v1",
+            "STAGE5_REENTRY_NORM_RECOVER_SOURCE",
+            "stage5_reentry_norm_*",
+            "No complete stage5_reentry_norm_* artifact found on Drive",
+            "colab/assess_stage5_reentry.py",
+            "colab/review_stage5_reentry.py",
+            "Recover Stage 5 re-entry norm",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_REENTRY_NORM_RECOVER_DISCONNECT": "1",
         },
     },
     "reentry_repair_smoke": {
