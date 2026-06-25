@@ -1,0 +1,11 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 4086.31it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_reentry_repair_smoke_20260625_153526/phase1_reentry_repair/phase1_step_25.pt loaded_keys=184
+optimizer_parameter_tensors=184
+step=0 mean_expected_loops=2.0248 mean_halt_entropy=0.3186 expected_ce=1.7204 halting_kl=0.4689 target_mean_loops=2.0000 target_loop_abs_error=0.0248 loop_control_ce=0.1256 halting_target_nll=0.0794 loss=2.8720
+step=25 mean_expected_loops=1.9603 mean_halt_entropy=0.3078 expected_ce=1.4134 halting_kl=0.4791 target_mean_loops=2.0000 target_loop_abs_error=0.0397 loop_control_ce=0.1946 halting_target_nll=0.0781 loss=2.9028
+step=50 mean_expected_loops=1.9820 mean_halt_entropy=0.2518 expected_ce=1.1424 halting_kl=0.5236 target_mean_loops=2.0000 target_loop_abs_error=0.0180 loop_control_ce=0.1109 halting_target_nll=0.0577 loss=2.0954
+step=75 mean_expected_loops=1.0515 mean_halt_entropy=0.2031 expected_ce=1.0276 halting_kl=0.4443 target_mean_loops=1.0000 target_loop_abs_error=0.0515 loop_control_ce=0.2413 halting_target_nll=0.0529 loss=2.5960
+saved_checkpoint=outputs/stage5/stage5_depth_signal_recovery_20260625_180014_curriculum_sft/phase1/phase1_step_100.pt
