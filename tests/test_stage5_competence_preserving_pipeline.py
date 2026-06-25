@@ -148,3 +148,34 @@ def test_competence_pipeline_commit_retries_failed_push_with_autostash_rebase(mo
 
     assert commands.count(["git", "push", "origin", "main"]) == 2
     assert ["git", "pull", "--rebase", "--autostash", "origin", "main"] in commands
+
+
+def test_failure_summary_diagnoses_checkpoint_restore_drive_mount_failure(monkeypatch, tmp_path) -> None:
+    import colab.run_stage5_competence_preserving_pipeline as module
+
+    run_dir = tmp_path / "outputs" / "stage5" / "competence"
+    run_dir.mkdir(parents=True)
+    (run_dir / "arc_mix.log").write_text(
+        "\n".join(
+            [
+                "Drive mount skipped/failed: 'NoneType' object has no attribute 'kernel'",
+                "FileNotFoundError: Missing recovered checkpoint /content/recurrent-qwen-svgd/outputs/stage5/run/phase1/phase1_step_75.pt.",
+                "Could not restore it from Drive.",
+                "Drive visibility:",
+                "- /content/drive: exists=False is_dir=False",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+
+    payload = module.failure_summary(
+        stage="arc_mix",
+        error="command failed: /usr/bin/python3 colab/run_stage5_balanced_arc_mix_gate.py",
+        source_payload={"status": "needs_review"},
+    )
+
+    assert payload["failure_diagnosis"] == "checkpoint_restore_or_drive_mount_failed"
+    assert "Mount Google Drive" in payload["next_step"]
+    assert "Missing recovered checkpoint" in payload["child_log_tail"]

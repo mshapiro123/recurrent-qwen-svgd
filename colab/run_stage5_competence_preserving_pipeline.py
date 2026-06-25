@@ -164,6 +164,8 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Full assessment summary: `{payload.get('full_assessment_summary') or 'not_run'}`",
         f"- Next step: {payload['next_step']}",
     ]
+    if payload.get("failure_diagnosis"):
+        lines.insert(-1, f"- Failure diagnosis: `{payload['failure_diagnosis']}`")
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))
 
@@ -204,7 +206,39 @@ def build_summary(
     }
 
 
+def child_log_tail(stage: str, *, max_lines: int = 80) -> str:
+    log_name = {
+        "arc_mix": "arc_mix.log",
+        "full_assessment": "full_assessment.log",
+    }.get(stage)
+    if not log_name:
+        return ""
+    path = RUN_DIR / log_name
+    if not path.exists():
+        return ""
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    return "\n".join(lines[-max_lines:])
+
+
+def failure_diagnosis(stage: str, log_tail: str) -> tuple[str | None, str | None]:
+    if (
+        stage in {"arc_mix", "full_assessment"}
+        and "Missing recovered checkpoint" in log_tail
+        and "Could not restore it from Drive" in log_tail
+    ):
+        return (
+            "checkpoint_restore_or_drive_mount_failed",
+            (
+                "Mount Google Drive in the top-level Colab cell, keep the same run ids, "
+                "and rerun so the child stage can restore the required checkpoint."
+            ),
+        )
+    return None, None
+
+
 def failure_summary(*, stage: str, error: str, source_payload: dict[str, Any] | None) -> dict[str, Any]:
+    log_tail = child_log_tail(stage)
+    diagnosis, diagnosed_next_step = failure_diagnosis(stage, log_tail)
     return {
         "run_id": RUN_ID,
         "kind": "stage5_competence_preserving_pipeline",
@@ -212,8 +246,11 @@ def failure_summary(*, stage: str, error: str, source_payload: dict[str, Any] | 
         "source_status": source_payload.get("status") if source_payload else None,
         "status": "pipeline_failed",
         "failed_stage": stage,
+        "failure_diagnosis": diagnosis,
         "error": error,
-        "next_step": f"Inspect {stage} logs under {path_for_cli(RUN_DIR)} and rerun with the same run ids.",
+        "child_log_tail": log_tail,
+        "next_step": diagnosed_next_step
+        or f"Inspect {stage} logs under {path_for_cli(RUN_DIR)} and rerun with the same run ids.",
         "arc_mix_run_id": ARC_MIX_RUN_ID,
         "arc_mix_summary": path_for_cli(arc_mix_summary_path()),
         "arc_mix_status": None,
