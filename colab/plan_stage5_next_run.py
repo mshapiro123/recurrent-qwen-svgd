@@ -173,6 +173,7 @@ def looks_like_stage5_result(payload: dict[str, Any]) -> bool:
         or curriculum_sft_gate_payload(payload) is not None
         or curriculum_sft_payload(payload) is not None
         or traced_sft_assessment_payload(payload) is not None
+        or reentry_payload(payload) is not None
         or reasoning_dataset_audit_payload(payload) is not None
         or stage4_opus_finetune_payload(payload) is not None
         or depth_curve_summary_payload(payload) is not None
@@ -434,6 +435,19 @@ def direct_preservation_probe_payload(payload: dict[str, Any]) -> dict[str, Any]
 
 def traced_sft_assessment_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "stage5_traced_sft_assessment" else None
+
+
+def reentry_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return (
+        payload
+        if payload.get("kind")
+        in {
+            "reentry_drift_diagnostic",
+            "stage5_reentry_norm_eval_only",
+            "stage5_reentry_repair_smoke",
+        }
+        else None
+    )
 
 
 def claim_readiness_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
@@ -717,6 +731,81 @@ def next_validation_limit(current_examples: int, *, first_limit: int = NEXT_LIMI
 
 def make_action(name: str, reason: str, command: str, priority: int) -> dict[str, Any]:
     return {"name": name, "reason": reason, "command": command, "priority": priority}
+
+
+def bootstrap_target_readout_action(*, target: str, reason: str, priority: int = 10) -> dict[str, Any]:
+    return make_action(
+        f"Run current bootstrap target `{target}`",
+        (
+            f"{reason} Use the maintained one-cell launcher with "
+            f"`STAGE5_CURRENT_A100_TARGET={target}`; the action here prints the queue/runbook rather than "
+            "launching an opaque bootstrap target from the generic planner."
+        ),
+        command_env({"STAGE5_CURRENT_A100_TARGET": target}, "cat colab/NEXT_COLAB_SEQUENCE.md"),
+        priority,
+    )
+
+
+def reentry_assessment_for_source(source_summary: Path) -> dict[str, Any] | None:
+    assessment_path = source_summary.parent / "reentry_assessment.json"
+    if not assessment_path.exists():
+        return None
+    try:
+        payload = read_json(assessment_path)
+    except Exception:
+        return None
+    return payload if isinstance(payload, dict) and payload.get("kind") == "stage5_reentry_assessment" else None
+
+
+def reentry_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    assessment = reentry_assessment_for_source(source_summary)
+    recommendation = str((assessment or {}).get("recommendation") or "").strip()
+    status = str((assessment or {}).get("status") or payload.get("status") or "unknown")
+    source_kind = str(payload.get("kind") or "reentry")
+
+    if recommendation in {"run_reentry_norm_then_repair_smoke", "run_reentry_norm_diagnostic"}:
+        return [
+            bootstrap_target_readout_action(
+                target="reentry_norm_diagnostic",
+                reason=f"Re-entry assessment `{status}` from `{source_kind}` says eval-only normalization is next.",
+            )
+        ]
+    if recommendation == "run_reentry_repair_smoke":
+        return [
+            bootstrap_target_readout_action(
+                target="reentry_repair_smoke",
+                reason=f"Re-entry assessment `{status}` says the eval-only norm check cleared tiny trainable repair.",
+            )
+        ]
+    if recommendation == "run_bounded_recovery_training_with_reentry_repair":
+        return [
+            bootstrap_target_readout_action(
+                target="reentry_recovery_training",
+                reason=f"Re-entry assessment `{status}` says bridge/re-entry smoke passed and recovery SFT is next.",
+            )
+        ]
+    if recommendation in {
+        "extend_reentry_repair_smoke_or_increase_adapter_lr",
+        "extend_reentry_repair_smoke_or_increase_bridge_lr",
+    }:
+        return [
+            bootstrap_target_readout_action(
+                target="reentry_repair_smoke",
+                reason=f"Re-entry assessment `{status}` asks for a bounded Stage 3 retry before recovery training.",
+                priority=9,
+            )
+        ]
+    return [
+        make_action(
+            "Review re-entry runbook before more GPU work",
+            (
+                f"Re-entry source `{source_kind}` has recommendation `{recommendation or 'missing'}` and status "
+                f"`{status}`. This is a readout pause; do not route to older ARC/SVGD actions until Phase 0 is resolved."
+            ),
+            "cat docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md",
+            10,
+        )
+    ]
 
 
 def recommendation_areas(analysis: dict[str, Any] | None) -> set[str]:
@@ -4681,6 +4770,9 @@ def plan_next_actions(
     traced_sft_assessment = traced_sft_assessment_payload(payload)
     if traced_sft_assessment:
         return traced_sft_assessment_actions(traced_sft_assessment, source_summary=source_summary)
+    reentry = reentry_payload(payload)
+    if reentry:
+        return reentry_actions(reentry, source_summary=source_summary)
     direct_preservation_probe = direct_preservation_probe_payload(payload)
     if direct_preservation_probe:
         return direct_preservation_probe_actions(direct_preservation_probe, source_summary=source_summary)
@@ -5108,6 +5200,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "direct_preservation_probe"
     if traced_sft_assessment_payload(payload):
         return "traced_sft_assessment"
+    if reentry_payload(payload):
+        return "reentry"
     if claim_readiness_payload(payload):
         return "claim_readiness"
     if arc_agi_baseline_registry_payload(payload):

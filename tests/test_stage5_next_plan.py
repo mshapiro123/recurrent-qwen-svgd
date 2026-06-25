@@ -3364,6 +3364,116 @@ def test_direct_preservation_probe_pass_confirms_larger_arc(tmp_path) -> None:
     assert "STAGE5_BENCHMARK_SCORE_TARGETS=content_question_only,cyclic_label_aggregated" in actions[0]["command"]
 
 
+def test_reentry_drift_routes_to_norm_bootstrap_target(tmp_path) -> None:
+    source = tmp_path / "reentry_drift" / "summary.json"
+    assessment = tmp_path / "reentry_drift" / "reentry_assessment.json"
+    source.parent.mkdir(parents=True)
+    source.write_text(
+        json.dumps({"run_id": "reentry_drift", "kind": "reentry_drift_diagnostic"}),
+        encoding="utf-8",
+    )
+    assessment.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_reentry_assessment",
+                "status": "bridge_dead",
+                "recommendation": "run_reentry_norm_then_repair_smoke",
+            }
+        ),
+        encoding="utf-8",
+    )
+    payload = json.loads(source.read_text(encoding="utf-8"))
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert source_kind(payload) == "reentry"
+    assert actions[0]["name"] == "Run current bootstrap target `reentry_norm_diagnostic`"
+    assert "STAGE5_CURRENT_A100_TARGET=reentry_norm_diagnostic" in actions[0]["command"]
+    assert "cat colab/NEXT_COLAB_SEQUENCE.md" in actions[0]["command"]
+    assert "run_stage5_direct_preservation_probe.py" not in actions[0]["command"]
+
+
+def test_reentry_norm_routes_to_repair_smoke_bootstrap_target(tmp_path) -> None:
+    source = tmp_path / "reentry_norm" / "summary.json"
+    assessment = tmp_path / "reentry_norm" / "reentry_assessment.json"
+    source.parent.mkdir(parents=True)
+    source.write_text(
+        json.dumps({"run_id": "reentry_norm", "kind": "stage5_reentry_norm_eval_only"}),
+        encoding="utf-8",
+    )
+    assessment.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_reentry_assessment",
+                "status": "entry_rms_safe_for_smoke",
+                "recommendation": "run_reentry_repair_smoke",
+            }
+        ),
+        encoding="utf-8",
+    )
+    payload = json.loads(source.read_text(encoding="utf-8"))
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run current bootstrap target `reentry_repair_smoke`"
+    assert "STAGE5_CURRENT_A100_TARGET=reentry_repair_smoke" in actions[0]["command"]
+    assert "cat colab/NEXT_COLAB_SEQUENCE.md" in actions[0]["command"]
+
+
+def test_reentry_repair_smoke_routes_to_recovery_training_bootstrap_target(tmp_path) -> None:
+    source = tmp_path / "reentry_repair" / "summary.json"
+    assessment = tmp_path / "reentry_repair" / "reentry_assessment.json"
+    source.parent.mkdir(parents=True)
+    source.write_text(
+        json.dumps({"run_id": "reentry_repair", "kind": "stage5_reentry_repair_smoke"}),
+        encoding="utf-8",
+    )
+    assessment.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_reentry_assessment",
+                "status": "bridge_repair_smoke_passed",
+                "recommendation": "run_bounded_recovery_training_with_reentry_repair",
+            }
+        ),
+        encoding="utf-8",
+    )
+    payload = json.loads(source.read_text(encoding="utf-8"))
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run current bootstrap target `reentry_recovery_training`"
+    assert "STAGE5_CURRENT_A100_TARGET=reentry_recovery_training" in actions[0]["command"]
+    assert "cat colab/NEXT_COLAB_SEQUENCE.md" in actions[0]["command"]
+
+
+def test_reentry_regression_routes_to_manual_review_runbook(tmp_path) -> None:
+    source = tmp_path / "reentry_norm" / "summary.json"
+    assessment = tmp_path / "reentry_norm" / "reentry_assessment.json"
+    source.parent.mkdir(parents=True)
+    source.write_text(
+        json.dumps({"run_id": "reentry_norm", "kind": "stage5_reentry_norm_eval_only"}),
+        encoding="utf-8",
+    )
+    assessment.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_reentry_assessment",
+                "status": "entry_rms_eval_regression",
+                "recommendation": "review_before_trainable_repair",
+            }
+        ),
+        encoding="utf-8",
+    )
+    payload = json.loads(source.read_text(encoding="utf-8"))
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Review re-entry runbook before more GPU work"
+    assert actions[0]["command"] == "cat docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md"
+    assert "SVGD" in actions[0]["reason"]
+
+
 def test_direct_preservation_precheck_needs_training_runs_full_repair(tmp_path) -> None:
     source = tmp_path / "direct_precheck" / "summary.json"
     source.parent.mkdir()

@@ -52,6 +52,14 @@ def test_parse_action_command_allows_readonly_cat() -> None:
     assert parsed.argv == ["cat", "outputs/stage5/run/summary.md"]
 
 
+def test_parse_action_command_allows_env_readonly_cat() -> None:
+    parsed = parse_action_command("STAGE5_CURRENT_A100_TARGET=reentry_repair_smoke cat colab/NEXT_COLAB_SEQUENCE.md")
+
+    assert parsed.kind == "cat"
+    assert parsed.env == {"STAGE5_CURRENT_A100_TARGET": "reentry_repair_smoke"}
+    assert parsed.argv == ["cat", "colab/NEXT_COLAB_SEQUENCE.md"]
+
+
 def test_parse_action_command_allows_gate1_assessor() -> None:
     parsed = parse_action_command(
         "STAGE5_GATE1_ASSESSMENT_RUN_ID=gate1 "

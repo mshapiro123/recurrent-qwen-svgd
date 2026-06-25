@@ -570,3 +570,11 @@ Colab/Drive backups for selected runs.
   "Re-entry Phase 0" section with recommendation, bridge/adapter liveness, and
   loop-1 or entry-RMS deltas, so the current master-sequence head is visible in
   the same status report as older Stage 5 artifacts.
+- Phase 0 planner hardening: `plan_stage5_next_run.py` now recognizes
+  re-entry drift, eval-only norm, and repair-smoke summaries. It maps
+  assessment recommendations to the next maintained bootstrap target
+  (`reentry_norm_diagnostic`, `reentry_repair_smoke`, or
+  `reentry_recovery_training`) and emits a read-only runbook/target command
+  instead of falling through to older ARC/SVGD planner branches. This keeps
+  generic safe-continue status checks aligned with the master sequence without
+  allowing the generic planner to launch opaque bootstrap targets.
