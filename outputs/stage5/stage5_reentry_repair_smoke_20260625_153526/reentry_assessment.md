@@ -1,0 +1,61 @@
+# Stage 5 Re-entry Assessment - stage5_reentry_repair_smoke_20260625_153526
+
+- Source kind: `stage5_reentry_repair_smoke`
+- Status: `bridge_repair_smoke_passed`
+- Recommendation: `run_bounded_recovery_training_with_reentry_repair`
+- Reason: Bridge and re-entry repair path are gradient-live and changed during the smoke run.
+
+## Metrics
+- `post_bridge_gate`: `1.000227928161621`
+- `pre_bridge_delta_rms`: `0.0`
+- `post_bridge_delta_rms`: `0.08328552544116974`
+- `post_bridge_proj_identity_max_abs_diff`: `0.00025817271671257913`
+- `post_bridge_proj_bias_max_abs`: `0.0002511607308406383`
+- `bridge_gate_active`: `True`
+- `bridge_projection_moved`: `True`
+- `bridge_output_moved`: `True`
+- `post_weight_grad_rms`: `0.3893011212348938`
+- `post_bias_grad_rms`: `0.007555678486824036`
+- `bridge_live`: `True`
+- `bridge_moved`: `True`
+- `reentry_rescale_mode`: `entry_rms`
+- `expected_reentry_rescale_mode`: `entry_rms`
+- `reentry_rescale_mode_ok`: `True`
+- `use_reentry_adapter`: `True`
+- `reentry_adapter_mode`: `spectral`
+- `adapter_delta_rms`: `0.005200215615332127`
+- `adapter_scale_identity_max_abs_diff`: `0.0`
+- `adapter_bias_max_abs`: `0.0`
+- `adapter_scale_grad_rms`: `0.0`
+- `adapter_bias_grad_rms`: `0.0`
+- `adapter_spectral_u_grad_rms`: `0.1291843056678772`
+- `adapter_spectral_v_grad_rms`: `0.05037468671798706`
+- `adapter_spectral_theta_grad_abs`: `0.11753915250301361`
+- `adapter_live`: `True`
+- `adapter_moved`: `True`
+- `train_metrics_available`: `True`
+- `train_last_step`: `20`
+- `train_loss`: `1.9402`
+- `train_expected_ce`: `1.6078`
+- `train_mean_expected_loops`: `1.7387`
+- `train_target_loop_abs_error`: `1.2613`
+- `train_halting_target_nll`: `5.0349`
+- `depth_supervision_metrics_present`: `True`
+- `loop1_preservation_available`: `True`
+- `source_loop1_task_groups`: `6.0`
+- `trained_loop1_task_groups`: `6.0`
+- `source_loop1_best_hits`: `1.0`
+- `trained_loop1_best_hits`: `1.0`
+- `loop1_best_hits_delta`: `0.0`
+- `source_loop1_candidate_hits`: `1.0`
+- `trained_loop1_candidate_hits`: `1.0`
+- `loop1_candidate_hits_delta`: `0.0`
+- `loop1_source_has_correct_signal`: `True`
+- `loop1_regressed`: `False`
+
+## Loop-1 Preservation Gate
+- Source has correct signal: `True`
+- Source best hits: `1.0`
+- Trained best hits: `1.0`
+- Best-hit delta: `0.0`
+- Candidate-hit delta: `0.0`
