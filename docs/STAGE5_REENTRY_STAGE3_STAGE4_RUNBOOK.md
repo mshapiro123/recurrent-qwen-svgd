@@ -129,6 +129,9 @@ Configured behavior:
 
 - refuses to run unless Stage 3 assessment recommends
   `run_bounded_recovery_training_with_reentry_repair`;
+- refuses stale recommendation-only Stage 3 assessments that do not include
+  finite train metrics, supervised depth metrics, loop-1 preservation evidence,
+  and live/moved bridge/re-entry repair evidence;
 - resumes from the Stage 3 repaired checkpoint;
 - trains `bridge,reentry,halt,lora`;
 - enables learned loop control and target-loop NLL supervision;

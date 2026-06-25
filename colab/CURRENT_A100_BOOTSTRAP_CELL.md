@@ -427,6 +427,7 @@ TARGETS = {
             "run_bounded_recovery_training_with_reentry_repair",
             "stage5_reentry_recovery_training",
             "write_reentry_recovery_wrapper_summary",
+            "repair_assessment_recovery_block_reason",
             "STAGE5_CURRICULUM_RESUME_FROM",
             "STAGE5_CURRICULUM_USE_LEARNED_LOOP_CONTROL",
             "STAGE5_CURRICULUM_OPTIMIZER_MODULES",

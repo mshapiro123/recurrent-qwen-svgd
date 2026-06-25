@@ -213,6 +213,8 @@ def restore_checkpoint(rel_path: str, *, run_id: str | None = None) -> Path:
 
 
 def load_required_repair_assessment() -> dict[str, Any]:
+    from colab.reentry_recovery_config import repair_assessment_recovery_block_reason
+
     if not Path("/content/drive/MyDrive").exists():
         mount_drive_if_needed()
     assessment_path = latest_matching(repair_assessment_candidates())
@@ -226,11 +228,9 @@ def load_required_repair_assessment() -> dict[str, Any]:
     status = str(assessment.get("status") or "")
     print(f"stage3_repair_assessment={assessment_path}", flush=True)
     print(f"stage3_repair_status={status} recommendation={recommendation}", flush=True)
-    if recommendation != "run_bounded_recovery_training_with_reentry_repair":
-        raise RuntimeError(
-            "Stage 3 repair smoke did not clear recovery training. "
-            f"status={status!r} recommendation={recommendation!r}."
-        )
+    block_reason = repair_assessment_recovery_block_reason(assessment)
+    if block_reason:
+        raise RuntimeError(block_reason)
     summary_path = assessment_path.parent / "summary.json"
     if not summary_path.exists():
         raise FileNotFoundError(f"Stage 3 assessment has no sibling summary.json: {summary_path}")
@@ -244,6 +244,8 @@ def load_required_repair_assessment() -> dict[str, Any]:
         "summary_path": path_for_cli(summary_path) if summary_path.is_relative_to(ROOT) else summary_path.as_posix(),
         "status": status,
         "recommendation": recommendation,
+        "metrics": assessment.get("metrics", {}),
+        "reason": assessment.get("reason"),
         "checkpoint": path_for_cli(restored),
     }
 

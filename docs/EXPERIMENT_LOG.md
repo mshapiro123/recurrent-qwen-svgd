@@ -665,3 +665,10 @@ Colab/Drive backups for selected runs.
   (`target_loop_abs_error`, `halting_target_nll`) are absent while halt-depth
   supervision is enabled. This keeps the Stage 3 -> Stage 4 decision tied to a
   visible repair-training signal, not only checkpoint existence.
+- Stage 4 stale-assessment guard: `reentry_recovery_training` now revalidates
+  the Stage 3 repair assessment before launching recovery SFT. It refuses
+  older recommendation-only repair artifacts and requires the metric-hardened
+  evidence fields: finite final train loss, depth-supervision metrics,
+  comparable loop-1 preservation, bridge live/moved, and re-entry adapter
+  live/moved when enabled. The wrapper summary also preserves those Stage 3
+  metrics for downstream benchmark and dense-control provenance.

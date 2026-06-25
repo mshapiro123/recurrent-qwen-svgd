@@ -1354,6 +1354,8 @@ def test_reentry_recovery_training_target_is_bootstrapped() -> None:
     assert "reentry_recovery_training_v3_wrapper_summary" in cell
     assert "STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT" in cell
     assert "run_bounded_recovery_training_with_reentry_repair" in cell
+    assert "repair_assessment_recovery_block_reason" in cell
+    assert '"metrics": assessment.get("metrics", {})' in cell
     assert "STAGE5_CURRICULUM_RESUME_FROM" in cell
     assert "STAGE5_CURRICULUM_USE_LEARNED_LOOP_CONTROL" in cell
     assert "STAGE5_CURRICULUM_OPTIMIZER_MODULES" in cell
