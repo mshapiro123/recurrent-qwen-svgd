@@ -627,3 +627,9 @@ Colab/Drive backups for selected runs.
   again after `summary.json`/`summary.md` are written. This preserves the
   repaired recovery checkpoint even if validation, Colab disconnect, or Git
   push fails after training.
+- Stage 2 readout and pointer advance: `stage5_reentry_norm_20260625_013527`
+  reduced loop-8 output/entry RMS under `entry_rms` from about `1.037` to
+  `1.008` without changing candidate hits or best hits. The assessment is
+  `entry_rms_safe_for_smoke -> run_reentry_repair_smoke`, so the current source
+  pointer and `NEXT_COLAB_SEQUENCE` paste-anywhere default now advance to the
+  Stage 3 trainable re-entry repair smoke.

@@ -21,7 +21,7 @@ import base64, json, os, time, urllib.request
 from google.colab import userdata
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
-TARGET = "reentry_norm_diagnostic"
+TARGET = "reentry_repair_smoke"
 
 gh = userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
 assert gh, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
