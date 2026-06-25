@@ -171,6 +171,22 @@ def test_review_recommends_bridge_smoke_extension_with_bounded_retry_env(tmp_pat
     assert review["launch_env"]["STAGE5_REENTRY_REPAIR_LR"] == "2e-5"
 
 
+def test_review_names_bridge_gate_collapse_separately(tmp_path) -> None:
+    repair = write_assessment(
+        tmp_path / "stage5_reentry_repair_x" / "reentry_assessment.json",
+        source_kind="stage5_reentry_repair_smoke",
+        status="bridge_gate_collapsed",
+        recommendation="extend_reentry_repair_smoke_or_increase_bridge_lr",
+    )
+
+    review = build_review([repair])
+
+    assert review["action"] == "extend_repair_smoke_bridge_gate_active"
+    assert review["next_target"] == "reentry_repair_smoke"
+    assert "bridge_gate collapsed" in review["next_step"]
+    assert review["launch_env"]["STAGE5_REENTRY_REPAIR_MAX_STEPS"] == "50"
+
+
 def test_review_prefers_current_pointer_assessment_over_newer_glob(tmp_path) -> None:
     selected_summary = write_summary(
         tmp_path / "stage5_reentry_norm_selected" / "summary.json",

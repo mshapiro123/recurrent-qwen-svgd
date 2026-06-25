@@ -196,9 +196,17 @@ def classify(grouped: dict[str, tuple[Path, dict[str, Any]]]) -> dict[str, Any]:
             target = "reentry_repair_smoke"
             next_step = "Re-entry adapter gradients are live but movement was too small; rerun a bounded Stage 3 variant."
         elif recommendation == "extend_reentry_repair_smoke_or_increase_bridge_lr":
-            action = "extend_repair_smoke"
+            if str(repair_payload.get("status") or "") == "bridge_gate_collapsed":
+                action = "extend_repair_smoke_bridge_gate_active"
+                next_step = (
+                    "Bridge projection moved or stayed live, but bridge_gate collapsed; "
+                    "rerun a bounded Stage 3 variant and inspect whether the gate should "
+                    "be held active during the smoke."
+                )
+            else:
+                action = "extend_repair_smoke"
+                next_step = "Bridge gradients are live but movement was too small; rerun a bounded Stage 3 variant."
             target = "reentry_repair_smoke"
-            next_step = "Bridge gradients are live but movement was too small; rerun a bounded Stage 3 variant."
         else:
             action = "stop_repair_failed"
             target = ""
@@ -280,7 +288,7 @@ def launch_env_for_decision(decision: dict[str, Any]) -> dict[str, str]:
                 "STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES": "bridge,reentry,halt",
             }
         )
-    elif action == "extend_repair_smoke":
+    elif action in {"extend_repair_smoke", "extend_repair_smoke_bridge_gate_active"}:
         env.update(
             {
                 "STAGE5_REENTRY_REPAIR_MAX_STEPS": "50",
