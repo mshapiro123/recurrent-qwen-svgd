@@ -139,19 +139,47 @@ def has_valid_jsonl(path: Path) -> bool:
     return True
 
 
-def stage2_complete(path: Path) -> bool:
+def stage2_missing_reasons(path: Path) -> list[str]:
+    reasons: list[str] = []
     for rel in REQUIRED_FILES:
         candidate = path / rel
         if rel.endswith(".jsonl"):
             if not has_valid_jsonl(candidate):
-                return False
+                reasons.append(f"{rel}: missing, empty, or invalid jsonl")
         elif rel.endswith(".json"):
             if not has_valid_json(candidate):
-                return False
+                reasons.append(f"{rel}: missing or invalid json")
         elif not candidate.exists():
-            return False
-    summary = read_json(path / "summary.json")
-    return summary.get("kind") == "stage5_reentry_norm_eval_only"
+            reasons.append(f"{rel}: missing")
+    if not reasons:
+        summary = read_json(path / "summary.json")
+        if summary.get("kind") != "stage5_reentry_norm_eval_only":
+            reasons.append(f"summary.json: unexpected kind={summary.get('kind')!r}")
+    return reasons
+
+
+def stage2_complete(path: Path) -> bool:
+    return not stage2_missing_reasons(path)
+
+
+def partial_artifact_report(paths: list[Path], *, limit: int = 8) -> str:
+    if not paths:
+        return "No stage5_reentry_norm_* candidate directories were visible on Drive."
+    lines = ["Visible incomplete stage5_reentry_norm_* candidates:"]
+    for path in sorted(paths, key=lambda candidate: candidate.stat().st_mtime if candidate.exists() else 0, reverse=True)[:limit]:
+        if not path.is_dir():
+            lines.append(f"  - {path}: not a directory")
+            continue
+        reasons = stage2_missing_reasons(path)
+        if not reasons:
+            lines.append(f"  - {path}: complete")
+            continue
+        lines.append(f"  - {path}: incomplete")
+        for reason in reasons[:8]:
+            lines.append(f"      * {reason}")
+        if len(reasons) > 8:
+            lines.append(f"      * ... {len(reasons) - 8} more")
+    return "\n".join(lines)
 
 
 def candidate_roots() -> list[Path]:
@@ -181,12 +209,14 @@ def candidate_roots() -> list[Path]:
 
 def latest_complete_stage2() -> Path:
     drive.mount("/content/drive", force_remount=False)
-    complete = [path for path in candidate_roots() if path.is_dir() and stage2_complete(path)]
+    roots = candidate_roots()
+    complete = [path for path in roots if path.is_dir() and stage2_complete(path)]
     if not complete:
-        searched = "\n".join(f"  - {path}" for path in candidate_roots()[:40])
+        searched = "\n".join(f"  - {path}" for path in roots[:40])
         raise FileNotFoundError(
             "No complete stage5_reentry_norm_* artifact found on Drive. "
             "The Stage 2 run may still be active or may not have reached final backup.\n"
+            f"{partial_artifact_report(roots)}\n"
             f"Searched:\n{searched}"
         )
     return sorted(complete, key=lambda path: path.stat().st_mtime)[-1]
