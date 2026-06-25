@@ -734,3 +734,10 @@ Colab/Drive backups for selected runs.
   debiased benchmark target now honors `STAGE5_DEBIASED_BENCHMARK_DISCONNECT`
   so bounded L4/T4 cells can be batched intentionally without changing target
   code.
+- Result-publishing hardening: Stage 4 recovery SFT, post-recovery debiased
+  benchmark, and dense same-curriculum MCQ control now all treat rejected GitHub
+  pushes as recoverable once, not silent. Each runner now attempts a direct
+  push, then one `git pull --rebase --autostash` plus retry, and then fails
+  loudly if publication still cannot land. This preserves the Drive-backed
+  checkpoint policy while reducing the chance that overnight GPU work finishes
+  but leaves no current-source pointer or result artifact on GitHub.
