@@ -14,18 +14,17 @@ def notebook_payload(path: str) -> dict:
 
 CURRENT_STAGE5_QUEUE = [
     "master_sequence_status",
-    "reentry_repair_smoke",
-    "reentry_recovery_training",
+    "traced_sft_competence_preserving_pipeline",
+    "review_stage5_competence_pipeline.py",
     "debiased_benchmark_suite",
     "dense_mcq_trace_sft_control",
 ]
-CURRENT_STAGE5_GPU_QUEUE = CURRENT_STAGE5_QUEUE[1:]
+CURRENT_STAGE5_ACTION_QUEUE = CURRENT_STAGE5_QUEUE[1:]
 
 
 def assert_ordered_queue(text: str) -> None:
     positions = []
-    assert "master_sequence_status" in text
-    for target in CURRENT_STAGE5_GPU_QUEUE:
+    for target in CURRENT_STAGE5_ACTION_QUEUE:
         index = text.find(target)
         assert index >= 0, target
         positions.append(index)
@@ -87,14 +86,14 @@ def test_single_a100_runbook_uses_current_bootstrap_target_queue() -> None:
     assert "Optional Scale Probe - Information Only" in text
     assert "model_viability_probe" in text
     assert "model_viability_queue" in text
-    assert "This does not replace the current re-entry/depth gates" in text
+    assert "This does not replace the current deterministic competence gate" in text
     assert "Phase 2 Breadth Diagnostics - Gated" in text
     assert "effective_pathways_diagnostic" in text
     assert "candidate_conversion_diagnostic" in text
-    assert "Do not run until Phase 1 passes against base" in text
-    assert "Phase 1 Gate Review" in text
-    assert "bridge_gate_active=true" in text
-    assert "do not advance to Phase 2 until the Phase 1 gate reports an architecture signal" in text
+    assert "Do not run until deterministic recurrence passes against base" in text
+    assert "CPU Review - Competence Pipeline" in text
+    assert "checkpoint restore preflight prints `ok`" in text
+    assert "Do not run until deterministic recurrence passes against base" in text
     assert "sha_resolved_nested_fetch_v3" in text
     assert "api.github.com/repos/{REPO}/contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py" in text
     assert "exec(compile(code" in text
@@ -275,30 +274,23 @@ def test_arc_mix_recovery_notebook_is_single_purpose() -> None:
     assert payload["metadata"]["colab"]["gpuType"] == "A100"
 
 
-def test_current_a100_action_points_to_reentry_master_sequence() -> None:
+def test_current_a100_action_points_to_competence_pipeline() -> None:
     text = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
 
-    assert "colab/00_single_a100_runbook.ipynb" in text
-    assert "docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md" in text
     assert "docs/PROGRAM_TRACK_MASTER_SEQUENCE.md" in text
-    assert "colab/NEXT_COLAB_SEQUENCE.md" in text
-    assert "master_sequence_status" in text
-    assert "reentry_repair_smoke" in text
-    assert "reentry_recovery_training" in text
+    assert "docs/EXPERIMENT_LOG.md" in text
+    assert "traced_sft_competence_preserving_pipeline" in text
+    assert "CURRENT_STAGE5_FRESH_LAUNCHER_CELL.py" in text
+    assert "checkpoint_restore_preflight=ok" in text
+    assert "review_stage5_competence_pipeline.py" in text
     assert "debiased_benchmark_suite" in text
     assert "dense_mcq_trace_sft_control" in text
-    assert "stage2_norm / entry_rms_safe_for_smoke" in text
-    assert "bridge_gate_active=true" in text
-    assert "bridge projection movement alone is not enough" in text
-    assert "outputs/stage5/stage5_reentry_norm_20260625_013527/summary.json" in text
-    assert "Do **not** run ARC-mix depth training, GPQA, scale-up" in text
+    assert "checkpoint restore preflight does not print `ok`" in text
     assert "Phase 2/SVGD" in text
-    assert "particles/SVGD" in text
-    assert "run_bounded_recovery_training_with_reentry_repair" in text
-    assert "git/refs/heads/main" in text
-    assert "resolved_ref" in text
-    assert "Fetched stale or incomplete bootstrap" in text
-    assert "sha_resolved_nested_fetch_v3" in text
+    assert "particles/SVGD" not in text or "deferred" in text
+    assert "reentry_repair_smoke -> reentry_recovery_training" not in text
+    assert "stage2_norm / entry_rms_safe_for_smoke" not in text
+    assert "bridge_gate=0.0" not in text
     assert "STAGE5_CURRENT_A100_TARGET=safe_continue_execute" not in text
     assert "traced_sft_score_alignment_repair" not in text
     assert "capability_ladder_local_hf_trace_sft_scale64" not in text
@@ -374,12 +366,12 @@ def test_runbooks_prefer_guarded_current_action_over_legacy_autopilot() -> None:
     assert "legacy\nARC-AGI-specific branch runner" in arc_plan
     assert "For overnight runs, prefer `colab/run_stage5_arc_agi_autopilot.py`" not in arc_plan
     assert "STAGE5_CURRENT_A100_TARGET" in staged
-    assert "reentry_repair_smoke" in staged
-    assert "reentry_recovery_training" in staged
+    assert "traced_sft_competence_preserving_pipeline" in staged
+    assert "review_stage5_competence_pipeline.py" in staged
     assert "debiased_benchmark_suite" in staged
     assert "dense_mcq_trace_sft_control" in staged
-    assert "Phase 3 particles/SVGD only after breadth is correct-bearing" in staged
-    assert "If a historical notebook conflicts with this runbook" in staged
+    assert "particles/SVGD" in staged
+    assert "If a historical notebook conflicts with `CURRENT_A100_ACTION.md`" in staged
 
 
 def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:
@@ -1129,7 +1121,8 @@ def test_traced_sft_competence_preserving_pipeline_target_is_bootstrapped() -> N
     assert "traced_sft_competence_preserving_pipeline" in bootstrap_md
     assert "colab/STAGE5_COMPETENCE_PRESERVING_PIPELINE_CELL.py" in bootstrap
     assert "STAGE5_COMPETENCE_PRESERVING_PIPELINE_CELL_VERSION" in cell
-    assert "competence_preserving_pipeline_v1" in cell
+    assert "competence_preserving_pipeline_v2" in cell
+    assert "print_pipeline_artifacts" in cell
     assert "STAGE5_COMPETENCE_SOURCE_SUMMARY" in cell
     assert "STAGE5_COMPETENCE_MOUNT_DRIVE_FIRST" in cell
     assert "FORCE_DRIVE_REMOUNT" in cell
@@ -1606,40 +1599,37 @@ def test_stage5_sft_launchers_do_not_force_checkpoint_commits() -> None:
         assert "STAGE5_CURRICULUM_SFT_COMMIT_CHECKPOINTS" in text
 
 
-def test_reentry_stage3_stage4_runbook_is_linked_from_current_action() -> None:
+def test_current_colab_docs_link_master_sequence_and_future_gates() -> None:
     current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
     runbook = (ROOT / "docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md").read_text(encoding="utf-8")
     master = (ROOT / "docs/PROGRAM_TRACK_MASTER_SEQUENCE.md").read_text(encoding="utf-8")
     next_sequence = (ROOT / "colab/NEXT_COLAB_SEQUENCE.md").read_text(encoding="utf-8")
     staged = (ROOT / "colab/STAGED_NOTEBOOKS.md").read_text(encoding="utf-8")
 
-    assert "docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md" in current_action
     assert "docs/PROGRAM_TRACK_MASTER_SEQUENCE.md" in current_action
-    assert "colab/NEXT_COLAB_SEQUENCE.md" in current_action
+    assert "docs/EXPERIMENT_LOG.md" in current_action
+    assert "traced_sft_competence_preserving_pipeline" in current_action
+    assert "review_stage5_competence_pipeline.py" in current_action
+    assert "CURRENT_A100_ACTION.md" in next_sequence
     assert "claim_curriculum_scaleup_cpu" in staged
-    assert "CPU/API data-prep cell" in staged
-    assert "is not a GPU gate" in staged
+    assert "CPU/API data-prep target" in staged
+    assert "not a GPU gate" in staged
     assert "model_viability_probe" in staged
     assert "model_viability_queue" in staged
     assert "effective_pathways_diagnostic" in staged
     assert "candidate_conversion_diagnostic" in staged
-    assert "PROGRAM_TRACK_MASTER_SEQUENCE.md" in runbook
-    assert "reentry_norm_recover_only" in next_sequence
     assert "reentry_repair_smoke" in next_sequence
     assert "reentry_recovery_training" in next_sequence
-    assert 'TARGET = "debiased_benchmark_suite"' in next_sequence
-    assert 'TARGET = "dense_mcq_trace_sft_control"' in next_sequence
-    assert "STAGE5_CURRENT_A100_SOURCE_SUMMARY" in next_sequence
-    assert "config/stage5_current_source_summary.txt" in next_sequence
+    assert "Completed Context" in next_sequence
+    assert "PROGRAM_TRACK_MASTER_SEQUENCE.md" in runbook
     assert "STAGE5_REENTRY_REPAIR_NORM_ASSESSMENT" in (
         ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py"
     ).read_text(encoding="utf-8")
     assert "STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT" in (
         ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py"
     ).read_text(encoding="utf-8")
-    assert "resolve it back\nto the recurrent benchmark suite" in next_sequence
-    assert "standard Qwen same-curriculum LoRA control" in next_sequence
-    assert "Leinster" in next_sequence
+    assert "same curriculum" in next_sequence
+    assert "deferred until the deterministic Phase 1 gate passes" in staged
     assert "Phase 0, loop-closure re-entry" in master
     assert "Phase 1, depth" in master
     assert "Phase 2, breadth and multistability" in master
@@ -1651,10 +1641,7 @@ def test_reentry_stage3_stage4_runbook_is_linked_from_current_action() -> None:
     assert "STAGE5_CURRENT_A100_TARGET=reentry_recovery_training" in runbook
     assert "bridge gate remains active" in runbook
     assert "bridge_gate_active=true" in runbook
-    assert "bridge projection moved but the scalar `bridge_gate` is inactive" in next_sequence
-    assert "bridge_proj,reentry,halt" in next_sequence
     assert "bridge_proj,reentry,halt" in runbook
-    assert "bridge_proj,reentry,halt" in current_action
     assert "entry_rms" in runbook
     assert "fix_loop1_preservation_eval_before_recovery_training" in runbook
     assert "STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS" in runbook

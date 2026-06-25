@@ -167,6 +167,15 @@ def commit_results() -> None:
     run(["git", "push", "origin", "main"])
 
 
+def try_commit_results(*, context: str) -> None:
+    """Commit text summaries when possible without hiding the actual run result."""
+
+    try:
+        commit_results()
+    except Exception as exc:
+        print(f"commit_results_failed context={context}: {exc}", flush=True)
+
+
 def write_report(payload: dict[str, Any]) -> None:
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     summary_path = RUN_DIR / "summary.json"
@@ -183,6 +192,17 @@ def write_report(payload: dict[str, Any]) -> None:
     ]
     if payload.get("failure_diagnosis"):
         lines.insert(-1, f"- Failure diagnosis: `{payload['failure_diagnosis']}`")
+    if payload.get("child_log_tail"):
+        lines.extend(
+            [
+                "",
+                "## Child Log Tail",
+                "",
+                "```text",
+                str(payload["child_log_tail"]),
+                "```",
+            ]
+        )
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))
 
@@ -317,12 +337,12 @@ def main() -> int:
 
         payload = build_summary(source_payload=source_payload, arc_payload=arc_payload, full_payload=full_payload)
         write_report(payload)
-        commit_results()
+        try_commit_results(context="success")
         return 0
     except Exception as exc:
         payload = failure_summary(stage=current_stage, error=str(exc), source_payload=source_payload)
         write_report(payload)
-        commit_results()
+        try_commit_results(context="failure")
         return 1
 
 

@@ -1053,7 +1053,7 @@ TARGETS = {
         "path": "colab/STAGE5_COMPETENCE_PRESERVING_PIPELINE_CELL.py",
         "markers": [
             "STAGE5_COMPETENCE_PRESERVING_PIPELINE_CELL_VERSION",
-            "competence_preserving_pipeline_v1",
+            "competence_preserving_pipeline_v2",
             "traced_sft_competence_preserving_pipeline",
             "STAGE5_COMPETENCE_SOURCE_SUMMARY",
             "STAGE5_COMPETENCE_MOUNT_DRIVE_FIRST",

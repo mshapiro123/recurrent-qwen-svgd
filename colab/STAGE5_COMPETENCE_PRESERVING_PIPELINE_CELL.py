@@ -16,7 +16,7 @@ from pathlib import Path
 from google.colab import drive, runtime, userdata
 
 
-STAGE5_COMPETENCE_PRESERVING_PIPELINE_CELL_VERSION = "competence_preserving_pipeline_v1"
+STAGE5_COMPETENCE_PRESERVING_PIPELINE_CELL_VERSION = "competence_preserving_pipeline_v2"
 STAGE5_COMPETENCE_PRESERVING_PIPELINE_TARGET = "traced_sft_competence_preserving_pipeline"
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
@@ -108,6 +108,22 @@ def disconnect(reason: str) -> None:
         print(f"Runtime disconnect skipped: {exc}", flush=True)
 
 
+def print_pipeline_artifacts(run_id: str, *, tail_lines: int = 120) -> None:
+    run_dir = ROOT / "outputs" / "stage5" / run_id
+    print(f"pipeline_artifact_dir={run_dir}", flush=True)
+    for name in ["summary.md", "summary.json", "arc_mix.log", "full_assessment.log"]:
+        path = run_dir / name
+        if not path.exists():
+            continue
+        print(f"\n===== {path} =====", flush=True)
+        text = path.read_text(encoding="utf-8", errors="replace")
+        lines = text.splitlines()
+        if len(lines) > tail_lines:
+            print(f"... showing last {tail_lines} of {len(lines)} lines ...", flush=True)
+            lines = lines[-tail_lines:]
+        print("\n".join(lines), flush=True)
+
+
 try:
     print(
         "STAGE5_COMPETENCE_PRESERVING_PIPELINE_CELL_VERSION="
@@ -142,7 +158,16 @@ try:
     env.setdefault("STAGE5_COMPETENCE_PIPELINE_PUSH", "1")
     print("competence_pipeline_source:", env["STAGE5_COMPETENCE_SOURCE_SUMMARY"], flush=True)
     print("competence_pipeline_run_id:", env["STAGE5_COMPETENCE_PIPELINE_RUN_ID"], flush=True)
-    run([sys.executable, "colab/run_stage5_competence_preserving_pipeline.py"], cwd=ROOT, env=env)
+    proc = run(
+        [sys.executable, "colab/run_stage5_competence_preserving_pipeline.py"],
+        cwd=ROOT,
+        env=env,
+        check=False,
+    )
+    if proc.returncode:
+        print_pipeline_artifacts(env["STAGE5_COMPETENCE_PIPELINE_RUN_ID"])
+        raise subprocess.CalledProcessError(proc.returncode, proc.args)
+    print_pipeline_artifacts(env["STAGE5_COMPETENCE_PIPELINE_RUN_ID"], tail_lines=80)
     disconnect("competence-preserving pipeline finished")
 except Exception:
     disconnect("competence-preserving pipeline errored")

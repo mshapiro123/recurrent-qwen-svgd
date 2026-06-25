@@ -104,10 +104,12 @@ def test_competence_pipeline_write_report_updates_current_source_summary(monkeyp
             "arc_mix_summary": "outputs/stage5/competence_arc_mix/summary.json",
             "full_assessment_summary": "outputs/stage5/competence_full/summary.json",
             "next_step": "benchmark",
+            "child_log_tail": "important child traceback tail",
         }
     )
 
     assert (run_dir / "summary.json").exists()
+    assert "important child traceback tail" in (run_dir / "summary.md").read_text(encoding="utf-8")
     assert (tmp_path / "config" / "stage5_current_source_summary.txt").read_text(
         encoding="utf-8"
     ) == "outputs/stage5/competence/summary.json\n"
