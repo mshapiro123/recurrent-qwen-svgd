@@ -1120,6 +1120,9 @@ def test_traced_sft_competence_preserving_pipeline_target_is_bootstrapped() -> N
     assert "STAGE5_COMPETENCE_PRESERVING_PIPELINE_CELL_VERSION" in cell
     assert "competence_preserving_pipeline_v1" in cell
     assert "STAGE5_COMPETENCE_SOURCE_SUMMARY" in cell
+    assert "STAGE5_COMPETENCE_MOUNT_DRIVE_FIRST" in cell
+    assert "FORCE_DRIVE_REMOUNT" in cell
+    assert 'drive.mount("/content/drive", force_remount=FORCE_DRIVE_REMOUNT)' in cell
     assert "stage5_debiased_benchmark_assessment_20260625_121302" in cell
     assert "stage5_debiased_benchmark_assessment_20260625_121302" in bootstrap
     assert "colab/run_stage5_competence_preserving_pipeline.py" in cell

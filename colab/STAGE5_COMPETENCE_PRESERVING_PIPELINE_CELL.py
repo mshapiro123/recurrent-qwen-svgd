@@ -13,7 +13,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from google.colab import runtime, userdata
+from google.colab import drive, runtime, userdata
 
 
 STAGE5_COMPETENCE_PRESERVING_PIPELINE_CELL_VERSION = "competence_preserving_pipeline_v1"
@@ -34,6 +34,8 @@ def env_bool(name: str, default: bool) -> bool:
 
 
 DISCONNECT_WHEN_DONE = env_bool("STAGE5_COMPETENCE_PIPELINE_DISCONNECT", True)
+MOUNT_DRIVE_FIRST = env_bool("STAGE5_COMPETENCE_MOUNT_DRIVE_FIRST", True)
+FORCE_DRIVE_REMOUNT = env_bool("FORCE_DRIVE_REMOUNT", False)
 
 
 def secret(*names: str) -> str | None:
@@ -86,6 +88,16 @@ def sync_repo() -> None:
     run(["git", "config", "user.name", "Colab Runner"], cwd=ROOT)
 
 
+def mount_drive_for_checkpoints() -> None:
+    if not MOUNT_DRIVE_FIRST:
+        print(
+            "Skipping upfront Drive mount; checkpoint restore will fail fast if the checkpoint is not local.",
+            flush=True,
+        )
+        return
+    drive.mount("/content/drive", force_remount=FORCE_DRIVE_REMOUNT)
+
+
 def disconnect(reason: str) -> None:
     if not DISCONNECT_WHEN_DONE:
         return
@@ -103,6 +115,7 @@ try:
         flush=True,
     )
     run(["nvidia-smi"], cwd=Path("/content"), check=False)
+    mount_drive_for_checkpoints()
     sync_repo()
     os.chdir(ROOT)
     run(["git", "log", "--oneline", "-5"], cwd=ROOT, check=False)
