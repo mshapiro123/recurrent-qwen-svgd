@@ -358,6 +358,7 @@ TARGETS = {
             "loop1_preservation",
             "STAGE5_REENTRY_REPAIR_REQUIRE_NORM_PASS",
             "stage2_norm_assessment",
+            "incremental_backup",
             "colab/assess_stage5_reentry.py",
             "tests/test_bridge.py",
             "Readout Pause",

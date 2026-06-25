@@ -211,6 +211,50 @@ def read_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def has_valid_json(path: Path) -> bool:
+    if not path.exists():
+        return False
+    try:
+        json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return True
+
+
+def has_valid_jsonl(path: Path) -> bool:
+    if not path.exists():
+        return False
+    try:
+        lines = [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        if not lines:
+            return False
+        for line in lines:
+            json.loads(line)
+    except (OSError, json.JSONDecodeError):
+        return False
+    return True
+
+
+def drive_backup_enabled() -> bool:
+    return os.environ.get("STAGE5_REENTRY_REPAIR_DRIVE_BACKUP", "1").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+    }
+
+
+def incremental_backup(out_dir: Path) -> None:
+    if not drive_backup_enabled() or not Path("/content/drive/MyDrive").exists() or not out_dir.exists():
+        return
+    backup_dir = DRIVE_ARTIFACT_ROOT / "outputs" / "stage5" / out_dir.name
+    backup_dir.parent.mkdir(parents=True, exist_ok=True)
+    if backup_dir.exists():
+        shutil.rmtree(backup_dir)
+    shutil.copytree(out_dir, backup_dir)
+    print(f"drive_backup={backup_dir}", flush=True)
+
+
 def latest_matching(paths: list[Path]) -> Path | None:
     existing = [path for path in paths if path.exists()]
     if not existing:
@@ -314,6 +358,9 @@ def write_config(path: Path, *, checkpoint: str, out_dir: Path) -> dict[str, obj
 def run_drift(label: str, checkpoint: str, out_dir: Path) -> Path:
     out_json = out_dir / f"reentry_drift_{label}.json"
     out_jsonl = out_dir / f"reentry_drift_{label}.jsonl"
+    if has_valid_json(out_json) and has_valid_jsonl(out_jsonl):
+        print(f"resume_skip=reentry_drift_{label}", flush=True)
+        return out_json
     run(
         [
             sys.executable,
@@ -390,6 +437,9 @@ def summarize_loop1_preservation(jsonl_path: Path) -> dict[str, object]:
 def run_loop1_preservation(source_checkpoint: str, trained_checkpoint: str, out_dir: Path) -> dict[str, object]:
     tasks_jsonl = write_preservation_tasks(out_dir / "loop1_preservation_tasks.jsonl")
     out_jsonl = out_dir / "loop1_preservation.jsonl"
+    if has_valid_jsonl(out_jsonl):
+        print("resume_skip=loop1_preservation", flush=True)
+        return summarize_loop1_preservation(out_jsonl)
     run(
         [
             sys.executable,
@@ -545,31 +595,37 @@ def main() -> None:
     diag_dir.mkdir(parents=True, exist_ok=True)
 
     pre_drift_path = run_drift("pre", checkpoint, diag_dir)
+    incremental_backup(out_dir)
     train_jsonl = diag_dir / "reentry_repair_smoke_train.jsonl"
     config_path = diag_dir / "reentry_repair_smoke_config.yaml"
     train_out_dir = out_dir / "phase1_reentry_repair"
     write_smoke_data(train_jsonl)
     config = write_config(config_path, checkpoint=checkpoint, out_dir=train_out_dir)
 
-    train_proc = run(
-        [
-            sys.executable,
-            "training/train_phase1_ponder.py",
-            "--config",
-            str(config_path.relative_to(ROOT)),
-            "--train_jsonl",
-            str(train_jsonl.relative_to(ROOT)),
-            "--device",
-            os.environ.get("STAGE5_REENTRY_REPAIR_DEVICE", "cuda"),
-        ]
-    )
-    (diag_dir / "train_phase1_ponder.log").write_text(train_proc.stdout, encoding="utf-8")
     trained_checkpoint = train_out_dir / f"phase1_step_{config['max_steps']}.pt"
+    if trained_checkpoint.exists():
+        print(f"resume_skip=train_phase1_ponder checkpoint={trained_checkpoint}", flush=True)
+    else:
+        train_proc = run(
+            [
+                sys.executable,
+                "training/train_phase1_ponder.py",
+                "--config",
+                str(config_path.relative_to(ROOT)),
+                "--train_jsonl",
+                str(train_jsonl.relative_to(ROOT)),
+                "--device",
+                os.environ.get("STAGE5_REENTRY_REPAIR_DEVICE", "cuda"),
+            ]
+        )
+        (diag_dir / "train_phase1_ponder.log").write_text(train_proc.stdout, encoding="utf-8")
+        incremental_backup(out_dir)
     if not trained_checkpoint.exists():
         raise FileNotFoundError(f"Expected trained checkpoint missing: {trained_checkpoint}")
     trained_checkpoint_rel = trained_checkpoint.relative_to(ROOT).as_posix()
     post_drift_path = run_drift("post", trained_checkpoint_rel, diag_dir)
     loop1_preservation = run_loop1_preservation(checkpoint, trained_checkpoint_rel, diag_dir)
+    incremental_backup(out_dir)
 
     pre_payload = json.loads(pre_drift_path.read_text(encoding="utf-8"))
     post_payload = json.loads(post_drift_path.read_text(encoding="utf-8"))
@@ -598,13 +654,7 @@ def main() -> None:
     print((out_dir / "summary.md").read_text(encoding="utf-8"), flush=True)
     run_reentry_assessment(out_dir)
 
-    if Path("/content/drive/MyDrive").exists():
-        backup_dir = DRIVE_ARTIFACT_ROOT / "outputs" / "stage5" / run_id
-        backup_dir.parent.mkdir(parents=True, exist_ok=True)
-        if backup_dir.exists():
-            shutil.rmtree(backup_dir)
-        shutil.copytree(out_dir, backup_dir)
-        print(f"drive_backup={backup_dir}", flush=True)
+    incremental_backup(out_dir)
 
     publish_outputs(out_dir, run_id)
 
