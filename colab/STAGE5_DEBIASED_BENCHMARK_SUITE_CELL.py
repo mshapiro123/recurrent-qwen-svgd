@@ -300,14 +300,23 @@ try:
         "stage5_debiased_benchmark_suite_" + time.strftime("%Y%m%d_%H%M%S"),
     )
     env["STAGE5_BENCHMARK_SOURCE_SUMMARY"] = path_for_cli(source_summary)
+    env["STAGE5_BENCHMARK_SUITE_PROFILE"] = os.environ.get("STAGE5_DEBIASED_BENCHMARK_SUITE_PROFILE", "default")
     env["STAGE5_BENCHMARKS"] = os.environ.get(
         "STAGE5_DEBIASED_BENCHMARKS",
         "arc_easy,arc_challenge,gpqa_lite",
     )
     env["STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT"] = os.environ.get("STAGE5_DEBIASED_ARC_CHALLENGE_LIMIT", "128")
     env["STAGE5_BENCHMARK_ARC_EASY_LIMIT"] = os.environ.get("STAGE5_DEBIASED_ARC_EASY_LIMIT", "128")
+    env["STAGE5_BENCHMARK_OPEN_HARD_ARC_CHALLENGE_LIMIT"] = os.environ.get(
+        "STAGE5_DEBIASED_OPEN_HARD_ARC_CHALLENGE_LIMIT",
+        "256",
+    )
     env["STAGE5_BENCHMARK_ARC_CHALLENGE_OFFSET"] = os.environ.get("STAGE5_DEBIASED_ARC_CHALLENGE_OFFSET", "0")
     env["STAGE5_BENCHMARK_ARC_EASY_OFFSET"] = os.environ.get("STAGE5_DEBIASED_ARC_EASY_OFFSET", "0")
+    env["STAGE5_BENCHMARK_OPEN_HARD_ARC_CHALLENGE_OFFSET"] = os.environ.get(
+        "STAGE5_DEBIASED_OPEN_HARD_ARC_CHALLENGE_OFFSET",
+        "0",
+    )
     env["STAGE5_BENCHMARK_GPQA_LIMIT"] = os.environ.get("STAGE5_DEBIASED_GPQA_LIMIT", "16")
     env["STAGE5_BENCHMARK_SCORE_TARGETS"] = os.environ.get(
         "STAGE5_DEBIASED_SCORE_TARGETS",
@@ -337,6 +346,10 @@ try:
     assess_env["STAGE5_BENCHMARK_ASSESS_AGGREGATE"] = "permutation_mean"
     assess_env["STAGE5_BENCHMARK_ASSESS_MIN_ARC_EXAMPLES"] = env["STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT"]
     assess_env["STAGE5_BENCHMARK_ASSESS_MIN_GPQA_EXAMPLES"] = env["STAGE5_BENCHMARK_GPQA_LIMIT"]
+    assess_env["STAGE5_BENCHMARK_ASSESS_REQUIRED_BENCHMARKS"] = os.environ.get(
+        "STAGE5_DEBIASED_ASSESS_REQUIRED_BENCHMARKS",
+        "arc_challenge,gpqa_lite",
+    )
     assess_env["STAGE5_BENCHMARK_ASSESS_PUSH"] = "1"
     run([sys.executable, "colab/assess_stage5_benchmark_suite.py", "--summary_json", benchmark_summary], env=assess_env)
 

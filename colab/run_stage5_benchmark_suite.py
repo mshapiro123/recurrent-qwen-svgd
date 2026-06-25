@@ -46,16 +46,52 @@ RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
 RUN_DIR.mkdir(parents=True, exist_ok=True)
 PRIVATE_DATA_DIR = ROOT / "data" / "stage5_benchmark_suite" / RUN_ID
 
+def suite_profile_defaults(profile: str) -> dict[str, str]:
+    """Return environment defaults for named benchmark profiles.
+
+    Profiles keep Colab launch cells small and make the scientific intent of a
+    run explicit. The depth confirmation profile deliberately uses an open
+    ARC-Challenge hard slice as the third leg so the run can complete without
+    gated GPQA access.
+    """
+
+    normalized = profile.strip().lower()
+    if normalized in {"", "default", "debiased"}:
+        return {
+            "benchmarks": "arc_easy,arc_challenge,gpqa_lite",
+            "score_targets": "label,content_question_only,cyclic_label_aggregated",
+            "arc_challenge_limit": "128",
+            "arc_easy_limit": "128",
+            "open_hard_arc_challenge_limit": "256",
+        }
+    if normalized in {"depth_signal_confirmation", "depth_signal"}:
+        return {
+            "benchmarks": "arc_easy,arc_challenge,open_hard_arc_challenge",
+            "score_targets": "content_question_only,cyclic_label_aggregated",
+            "arc_challenge_limit": "256",
+            "arc_easy_limit": "128",
+            "open_hard_arc_challenge_limit": "256",
+        }
+    raise ValueError(f"Unknown STAGE5_BENCHMARK_SUITE_PROFILE={profile!r}")
+
+
+SUITE_PROFILE = os.environ.get("STAGE5_BENCHMARK_SUITE_PROFILE", "default")
+PROFILE_DEFAULTS = suite_profile_defaults(SUITE_PROFILE)
 SOURCE_SUMMARY = os.environ.get("STAGE5_BENCHMARK_SOURCE_SUMMARY", "")
 EXPLICIT_CHECKPOINT = os.environ.get("STAGE5_BENCHMARK_CHECKPOINT", "")
-BENCHMARKS = os.environ.get("STAGE5_BENCHMARKS", "arc_easy,arc_challenge,gpqa_lite")
-ARC_CHALLENGE_LIMIT_RAW = os.environ.get("STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT", "128")
-ARC_EASY_LIMIT_RAW = os.environ.get("STAGE5_BENCHMARK_ARC_EASY_LIMIT", "128")
+BENCHMARKS = os.environ.get("STAGE5_BENCHMARKS", PROFILE_DEFAULTS["benchmarks"])
+ARC_CHALLENGE_LIMIT_RAW = os.environ.get("STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT", PROFILE_DEFAULTS["arc_challenge_limit"])
+ARC_EASY_LIMIT_RAW = os.environ.get("STAGE5_BENCHMARK_ARC_EASY_LIMIT", PROFILE_DEFAULTS["arc_easy_limit"])
 ARC_CHALLENGE_OFFSET = int(os.environ.get("STAGE5_BENCHMARK_ARC_CHALLENGE_OFFSET", "0"))
 ARC_EASY_OFFSET = int(os.environ.get("STAGE5_BENCHMARK_ARC_EASY_OFFSET", "0"))
+OPEN_HARD_ARC_CHALLENGE_LIMIT_RAW = os.environ.get(
+    "STAGE5_BENCHMARK_OPEN_HARD_ARC_CHALLENGE_LIMIT",
+    PROFILE_DEFAULTS["open_hard_arc_challenge_limit"],
+)
+OPEN_HARD_ARC_CHALLENGE_OFFSET = int(os.environ.get("STAGE5_BENCHMARK_OPEN_HARD_ARC_CHALLENGE_OFFSET", "0"))
 GPQA_LIMIT = int(os.environ.get("STAGE5_BENCHMARK_GPQA_LIMIT", "16"))
 GPQA_CONFIG = os.environ.get("STAGE5_BENCHMARK_GPQA_CONFIG", "gpqa_diamond")
-SCORE_TARGETS = os.environ.get("STAGE5_BENCHMARK_SCORE_TARGETS", "label")
+SCORE_TARGETS = os.environ.get("STAGE5_BENCHMARK_SCORE_TARGETS", PROFILE_DEFAULTS["score_targets"])
 AGGREGATES = os.environ.get("STAGE5_BENCHMARK_AGGREGATES", "mean")
 CONTINUE_ON_FAILURE = os.environ.get("STAGE5_BENCHMARK_CONTINUE_ON_FAILURE", "1").strip().lower() in {
     "1",
@@ -259,6 +295,7 @@ def parse_optional_limit(value: str) -> int | None:
 
 ARC_CHALLENGE_LIMIT = parse_optional_limit(ARC_CHALLENGE_LIMIT_RAW)
 ARC_EASY_LIMIT = parse_optional_limit(ARC_EASY_LIMIT_RAW)
+OPEN_HARD_ARC_CHALLENGE_LIMIT = parse_optional_limit(OPEN_HARD_ARC_CHALLENGE_LIMIT_RAW)
 
 
 def latest_summary_with_checkpoint() -> Path | None:
@@ -378,10 +415,14 @@ def resolve_checkpoint(source_summary: Path | None, payload: dict[str, Any] | No
 def benchmark_specs(names: list[str]) -> list[BenchmarkSpec]:
     specs: list[BenchmarkSpec] = []
     for name in names:
-        if name in {"arc_challenge", "arc_easy"}:
+        if name in {"arc_challenge", "arc_easy", "open_hard_arc_challenge"}:
             config = "ARC-Challenge" if name == "arc_challenge" else "ARC-Easy"
             limit = ARC_CHALLENGE_LIMIT if name == "arc_challenge" else ARC_EASY_LIMIT
             offset = ARC_CHALLENGE_OFFSET if name == "arc_challenge" else ARC_EASY_OFFSET
+            if name == "open_hard_arc_challenge":
+                config = "ARC-Challenge"
+                limit = OPEN_HARD_ARC_CHALLENGE_LIMIT
+                offset = OPEN_HARD_ARC_CHALLENGE_OFFSET
             limit_label = "full" if limit is None else str(limit)
             slice_label = f"offset{offset}_{limit_label}" if offset else limit_label
             prepare_cmd = [
@@ -401,6 +442,8 @@ def benchmark_specs(names: list[str]) -> list[BenchmarkSpec]:
             output = PRIVATE_DATA_DIR / f"arc_challenge_validation_{slice_label}.jsonl"
             if name == "arc_easy":
                 output = PRIVATE_DATA_DIR / f"arc_easy_validation_{slice_label}.jsonl"
+            elif name == "open_hard_arc_challenge":
+                output = PRIVATE_DATA_DIR / f"open_hard_arc_challenge_validation_{slice_label}.jsonl"
             prepare_cmd.extend(["--output_jsonl", str(output)])
             specs.append(
                 BenchmarkSpec(
@@ -432,7 +475,9 @@ def benchmark_specs(names: list[str]) -> list[BenchmarkSpec]:
                 )
             )
         else:
-            raise ValueError(f"Unknown benchmark {name!r}; expected arc_challenge, arc_easy, or gpqa_lite")
+            raise ValueError(
+                f"Unknown benchmark {name!r}; expected arc_challenge, arc_easy, open_hard_arc_challenge, or gpqa_lite"
+            )
     return specs
 
 
@@ -622,6 +667,65 @@ def routing_diagnostics(
     return diagnostics
 
 
+def loop_bucket_diagnostics(routing: dict[str, dict[str, dict[str, Any]]]) -> dict[str, dict[str, dict[str, Any]]]:
+    """Extract loop-use telemetry from routing summaries.
+
+    ``routing_diagnostics`` already has the information, but this top-level
+    view makes the depth question visible in downstream assessments: are hard
+    buckets actually routed deeper than direct buckets?
+    """
+
+    out: dict[str, dict[str, dict[str, Any]]] = {}
+    for benchmark, targets in routing.items():
+        for score_target, summary in targets.items():
+            buckets = {}
+            for bucket, values in (summary.get("routing_buckets") or {}).items():
+                buckets[bucket] = {
+                    "n": values.get("n"),
+                    "delta": values.get("delta"),
+                    "wins": values.get("wins"),
+                    "losses": values.get("losses"),
+                    "mean_candidate_expected_loops": values.get("mean_candidate_expected_loops"),
+                    "mean_candidate_answer_expected_loops": values.get("mean_candidate_answer_expected_loops"),
+                    "mean_margin_delta": values.get("mean_margin_delta"),
+                }
+            out.setdefault(benchmark, {})[score_target] = {"routing_buckets": buckets}
+    return out
+
+
+def hard_content_signal(
+    *,
+    comparisons: dict[str, Any],
+    paired_comparisons: dict[str, Any],
+    routing: dict[str, dict[str, dict[str, Any]]],
+) -> dict[str, Any]:
+    """Summarize the thesis-relevant hard content-only surface."""
+
+    signal: dict[str, Any] = {}
+    for benchmark in ("arc_challenge", "open_hard_arc_challenge"):
+        target = (comparisons.get(benchmark) or {}).get("content_question_only")
+        if not target:
+            continue
+        aggregate = "mean"
+        row = target.get(aggregate)
+        if not row:
+            continue
+        signal[benchmark] = {
+            "score_target": "content_question_only",
+            "aggregate": aggregate,
+            "base_correct": row["base"]["correct"],
+            "recurrent_correct": row["recurrent"]["correct"],
+            "total": row["recurrent"]["total"],
+            "correct_delta_recurrent_vs_base": row["correct_delta_recurrent_vs_base"],
+            "accuracy_delta_recurrent_vs_base": row["accuracy_delta_recurrent_vs_base"],
+            "paired": (paired_comparisons.get(benchmark) or {}).get("content_question_only", {}).get(aggregate),
+            "routing_buckets": (
+                (routing.get(benchmark) or {}).get("content_question_only", {}).get("routing_buckets", {})
+            ),
+        }
+    return signal
+
+
 def paired_arm_summaries(
     base_rows: list[dict[str, Any]],
     recurrent_rows: list[dict[str, Any]],
@@ -707,10 +811,12 @@ def build_summary(
                 raw_arms.get("recurrent") or [],
             )
     routing = routing_diagnostics(specs=specs, raw_rows=raw_rows)
+    loop_buckets = loop_bucket_diagnostics(routing)
     payload = {
         "run_id": RUN_ID,
         "kind": "stage5_benchmark_suite",
         "status": "completed_with_failures" if failures else "completed",
+        "suite_profile": SUITE_PROFILE,
         "source_summary": path_for_cli(source_summary) if source_summary else None,
         "checkpoint": path_for_cli(checkpoint),
         "benchmarks": [spec.name for spec in specs],
@@ -725,6 +831,12 @@ def build_summary(
         "comparisons": comparisons,
         "paired_comparisons": paired_comparisons,
         "routing_diagnostics": routing,
+        "loop_bucket_diagnostics": loop_buckets,
+        "hard_content_signal": hard_content_signal(
+            comparisons=comparisons,
+            paired_comparisons=paired_comparisons,
+            routing=routing,
+        ),
     }
     if AFTER_CONFIRM_DENSE_RUN_SUFFIX:
         payload["after_confirmation_dense_control"] = {
@@ -744,6 +856,7 @@ def write_report(payload: dict[str, Any]) -> None:
         f"# Stage 5 Benchmark Suite - {RUN_ID}",
         "",
         f"- Status: `{payload['status']}`",
+        f"- Suite profile: `{payload.get('suite_profile')}`",
         f"- Source summary: `{payload['source_summary']}`",
         f"- Checkpoint: `{payload['checkpoint']}`",
         f"- Benchmarks: `{payload['benchmarks']}`",
@@ -793,6 +906,15 @@ def write_report(payload: dict[str, Any]) -> None:
         lines.extend(["", "## Failures", ""])
         for failure in payload["failures"]:
             lines.append(f"- `{failure['stage']}` `{failure.get('benchmark')}`: {failure['error']}")
+    if payload.get("hard_content_signal"):
+        lines.extend(["", "## Hard Content Signal", ""])
+        for benchmark, signal in payload["hard_content_signal"].items():
+            lines.append(
+                f"- `{benchmark}` `{signal['score_target']}`: delta "
+                f"`{signal['correct_delta_recurrent_vs_base']}` "
+                f"(base `{signal['base_correct']}/{signal['total']}`, "
+                f"recurrent `{signal['recurrent_correct']}/{signal['total']}`)"
+            )
     (RUN_DIR / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"))
 

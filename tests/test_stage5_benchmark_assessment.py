@@ -16,6 +16,9 @@ def _suite(
     arc_delta: int = 0,
     arc_easy_delta: int | None = None,
     gpqa_delta: int = 0,
+    include_gpqa: bool = True,
+    status: str = "completed",
+    failures: list[dict] | None = None,
     arc_n: int = 128,
     arc_easy_n: int = 128,
     gpqa_n: int = 16,
@@ -36,7 +39,9 @@ def _suite(
                 }
             }
         },
-        "gpqa_lite": {
+    }
+    if include_gpqa:
+        paired["gpqa_lite"] = {
             "label": {
                 "mean": {
                     "paired_examples": gpqa_n,
@@ -49,9 +54,10 @@ def _suite(
                     "sign_test_p_value": 1.0,
                 }
             }
-        },
-    }
-    benchmarks = ["arc_challenge", "gpqa_lite"]
+        }
+    benchmarks = ["arc_challenge"]
+    if include_gpqa:
+        benchmarks.append("gpqa_lite")
     if arc_easy_delta is not None:
         benchmarks.insert(0, "arc_easy")
         paired["arc_easy"] = {
@@ -71,10 +77,10 @@ def _suite(
     return {
         "run_id": "suite",
         "kind": "stage5_benchmark_suite",
-        "status": "completed",
+        "status": status,
         "checkpoint": checkpoint,
         "benchmarks": benchmarks,
-        "failures": [],
+        "failures": failures or [],
         "paired_comparisons": paired,
     }
 
@@ -117,6 +123,53 @@ def test_benchmark_assessment_routes_negative_delta_to_recovery(tmp_path) -> Non
     assert assessed["status"] == "needs_recurrent_recovery"
     assert assessed["passed"] is False
     assert assessed["criteria"][2]["passed"] is False
+
+
+def test_benchmark_assessment_marks_missing_required_benchmark_inconclusive(tmp_path) -> None:
+    source = tmp_path / "suite" / "summary.json"
+    payload = _suite(arc_delta=0, include_gpqa=False)
+
+    assessed = assess_benchmark_suite(summary_json=source, payload=payload)
+
+    assert assessed["status"] == "inconclusive"
+    assert assessed["passed"] is False
+    assert assessed["instrument_complete"] is False
+    assert assessed["model_negative_evidence"] is False
+    assert "instrument" in assessed["next_step"].lower()
+
+
+def test_benchmark_assessment_marks_failed_prepare_inconclusive_not_model_failure(tmp_path) -> None:
+    source = tmp_path / "suite" / "summary.json"
+    payload = _suite(
+        arc_delta=0,
+        include_gpqa=True,
+        status="completed_with_failures",
+        failures=[{"stage": "prepare", "benchmark": "gpqa_lite", "error": "gated dataset"}],
+        gpqa_n=0,
+    )
+    del payload["paired_comparisons"]["gpqa_lite"]
+
+    assessed = assess_benchmark_suite(summary_json=source, payload=payload)
+
+    assert assessed["status"] == "inconclusive"
+    assert assessed["instrument_complete"] is False
+    assert assessed["model_negative_evidence"] is False
+    assert assessed["criteria"][0]["passed"] is False
+
+
+def test_benchmark_assessment_distinguishes_noise_level_negative_delta_from_model_failure(tmp_path, monkeypatch) -> None:
+    import colab.assess_stage5_benchmark_suite as module
+
+    source = tmp_path / "suite" / "summary.json"
+    payload = _suite(arc_delta=-1, gpqa_delta=0)
+    monkeypatch.setattr(module, "NEGATIVE_EVIDENCE_SIGN_TEST_P_THRESHOLD", 0.10)
+
+    assessed = module.assess_benchmark_suite(summary_json=source, payload=payload)
+
+    assert assessed["status"] == "inconclusive"
+    assert assessed["instrument_complete"] is True
+    assert assessed["model_negative_evidence"] is False
+    assert assessed["benchmarks"][0]["negative_evidence"] is False
 
 
 def test_benchmark_assessment_requires_paired_coverage(tmp_path) -> None:

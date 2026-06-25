@@ -30,6 +30,17 @@ ARC_EASY_VALIDATION_EXAMPLES = int(os.environ.get("STAGE5_BENCHMARK_ASSESS_ARC_E
 REQUIRED_SCORE_TARGET = os.environ.get("STAGE5_BENCHMARK_ASSESS_SCORE_TARGET", "label")
 REQUIRED_AGGREGATE = os.environ.get("STAGE5_BENCHMARK_ASSESS_AGGREGATE", "mean")
 ALLOWED_NEGATIVE_DELTA = int(os.environ.get("STAGE5_BENCHMARK_ASSESS_ALLOWED_NEGATIVE_DELTA", "0"))
+REQUIRED_BENCHMARKS = [
+    item.strip()
+    for item in os.environ.get("STAGE5_BENCHMARK_ASSESS_REQUIRED_BENCHMARKS", "arc_challenge,gpqa_lite").split(",")
+    if item.strip()
+]
+NEGATIVE_EVIDENCE_MIN_ABS_DELTA = int(
+    os.environ.get("STAGE5_BENCHMARK_ASSESS_NEGATIVE_EVIDENCE_MIN_ABS_DELTA", "2")
+)
+NEGATIVE_EVIDENCE_SIGN_TEST_P_THRESHOLD = float(
+    os.environ.get("STAGE5_BENCHMARK_ASSESS_NEGATIVE_EVIDENCE_SIGN_TEST_P_THRESHOLD", "0.10")
+)
 PUSH_RESULTS = os.environ.get("STAGE5_BENCHMARK_ASSESS_PUSH", "1").strip().lower() in {
     "1",
     "true",
@@ -108,6 +119,8 @@ def benchmark_min_examples(benchmark: str) -> int:
         return min(MIN_ARC_EXAMPLES, ARC_EASY_VALIDATION_EXAMPLES)
     if benchmark == "gpqa_lite":
         return MIN_GPQA_EXAMPLES
+    if benchmark == "open_hard_arc_challenge":
+        return min(MIN_ARC_EXAMPLES, ARC_CHALLENGE_VALIDATION_EXAMPLES)
     return 1
 
 
@@ -134,7 +147,18 @@ def benchmark_evidence(payload: dict[str, Any], benchmark: str) -> dict[str, Any
             "losses": 0,
             "ties": 0,
             "sign_test_p_value": None,
+            "negative_evidence": False,
         }
+    delta = int(row.get("correct_delta_recurrent_vs_base", 0) or 0)
+    p_value = row.get("sign_test_p_value")
+    try:
+        p_float = float(p_value) if p_value is not None else None
+    except (TypeError, ValueError):
+        p_float = None
+    negative_evidence = delta < -ALLOWED_NEGATIVE_DELTA and (
+        abs(delta) >= NEGATIVE_EVIDENCE_MIN_ABS_DELTA
+        or (p_float is not None and p_float <= NEGATIVE_EVIDENCE_SIGN_TEST_P_THRESHOLD)
+    )
     return {
         "benchmark": benchmark,
         "present": True,
@@ -142,11 +166,12 @@ def benchmark_evidence(payload: dict[str, Any], benchmark: str) -> dict[str, Any
         "paired_examples": int(row.get("paired_examples", 0) or 0),
         "base_correct": int(row.get("base_correct", 0) or 0),
         "recurrent_correct": int(row.get("recurrent_correct", 0) or 0),
-        "correct_delta_recurrent_vs_base": int(row.get("correct_delta_recurrent_vs_base", 0) or 0),
+        "correct_delta_recurrent_vs_base": delta,
         "wins": int(row.get("wins", 0) or 0),
         "losses": int(row.get("losses", 0) or 0),
         "ties": int(row.get("ties", 0) or 0),
         "sign_test_p_value": row.get("sign_test_p_value"),
+        "negative_evidence": negative_evidence,
     }
 
 
@@ -156,6 +181,9 @@ def criterion(name: str, passed: bool, reason: str, evidence: dict[str, Any] | l
 
 def assess_benchmark_suite(*, summary_json: Path, payload: dict[str, Any]) -> dict[str, Any]:
     benchmarks = [str(item) for item in payload.get("benchmarks", [])]
+    for required in REQUIRED_BENCHMARKS:
+        if required not in benchmarks:
+            benchmarks.append(required)
     failures = payload.get("failures") or []
     status = str(payload.get("status") or "unknown")
     benchmark_rows = [benchmark_evidence(payload, benchmark) for benchmark in benchmarks]
@@ -171,6 +199,8 @@ def assess_benchmark_suite(*, summary_json: Path, payload: dict[str, Any]) -> di
         if row["present"]
     )
     no_missing = bool(benchmark_rows) and all(row["present"] for row in benchmark_rows)
+    instrument_complete = suite_completed and no_missing and enough_examples
+    model_negative_evidence = any(bool(row.get("negative_evidence")) for row in benchmark_rows)
 
     criteria = [
         criterion(
@@ -195,21 +225,32 @@ def assess_benchmark_suite(*, summary_json: Path, payload: dict[str, Any]) -> di
             (
                 "Recurrent is non-negative versus base on required paired benchmark slices."
                 if nonnegative and no_missing
-                else "Recurrent trails base on at least one paired benchmark slice."
+                else (
+                    "Recurrent has statistically meaningful negative evidence versus base."
+                    if model_negative_evidence
+                    else "Recurrent has only noise-level negative deltas or missing slices."
+                )
             ),
             benchmark_rows,
         ),
     ]
 
-    if not suite_completed:
-        gate_status = "needs_review"
-        next_step = "Inspect benchmark-suite logs and rerun failed slices before using the result."
-    elif not no_missing or not enough_examples:
+    if not suite_completed or not no_missing:
+        gate_status = "inconclusive"
+        next_step = (
+            "Complete the benchmark instrument by rerunning failed or missing slices before making a model-quality call."
+        )
+    elif not enough_examples:
         gate_status = "needs_benchmark_confirmation"
-        next_step = "Rerun the broader benchmark suite with enough ARC-Easy, ARC-Challenge, and GPQA-lite paired examples."
-    elif not nonnegative:
+        next_step = "Rerun the broader benchmark suite with enough paired examples before making a claim."
+    elif model_negative_evidence:
         gate_status = "needs_recurrent_recovery"
         next_step = "Return to deterministic recurrent recovery before GPQA Diamond or release claims."
+    elif not nonnegative:
+        gate_status = "inconclusive"
+        next_step = (
+            "Negative deltas are noise-level under the paired test; rerun with more paired examples before changing the model."
+        )
     else:
         gate_status = "passed"
         next_step = "Proceed to release writeup or larger held-out benchmark confirmation."
@@ -221,10 +262,15 @@ def assess_benchmark_suite(*, summary_json: Path, payload: dict[str, Any]) -> di
         "checkpoint": payload.get("checkpoint"),
         "status": gate_status,
         "passed": gate_status == "passed",
+        "instrument_complete": instrument_complete,
+        "model_negative_evidence": model_negative_evidence,
         "next_step": next_step,
         "required_score_target": REQUIRED_SCORE_TARGET,
         "required_aggregate": REQUIRED_AGGREGATE,
+        "required_benchmarks": REQUIRED_BENCHMARKS,
         "allowed_negative_delta": ALLOWED_NEGATIVE_DELTA,
+        "negative_evidence_min_abs_delta": NEGATIVE_EVIDENCE_MIN_ABS_DELTA,
+        "negative_evidence_sign_test_p_threshold": NEGATIVE_EVIDENCE_SIGN_TEST_P_THRESHOLD,
         "benchmarks": benchmark_rows,
         "criteria": criteria,
     }
@@ -242,6 +288,8 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
         "",
         f"- Status: `{payload['status']}`",
         f"- Passed: `{payload['passed']}`",
+        f"- Instrument complete: `{payload['instrument_complete']}`",
+        f"- Model negative evidence: `{payload['model_negative_evidence']}`",
         f"- Source summary: `{payload['source_summary']}`",
         f"- Score target / aggregate: `{payload['required_score_target']}` / `{payload['required_aggregate']}`",
         f"- Next step: {payload['next_step']}",
@@ -257,6 +305,7 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
             f"- `{row['benchmark']}` paired `{row['paired_examples']}` / required "
             f"`{row['required_examples']}`; delta `{row['correct_delta_recurrent_vs_base']}`; "
             f"W/L/T `{row['wins']}/{row['losses']}/{row['ties']}`; p `{row['sign_test_p_value']}`"
+            f"; negative evidence `{row.get('negative_evidence')}`"
         )
     output_md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(output_md.read_text(encoding="utf-8"))

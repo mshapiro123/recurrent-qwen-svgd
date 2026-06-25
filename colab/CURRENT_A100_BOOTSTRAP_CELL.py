@@ -26,6 +26,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "reentry_repair_smoke" - bounded trainable bridge/re-entry repair smoke.
 #   "reentry_spectral_repair_smoke" - same Stage 3 smoke with spectral re-entry adapter mode.
 #   "reentry_recovery_training" - gated recovery SFT after re-entry repair passes.
+#   "depth_signal_confirmation" - recovery SFT, then expanded hard-content benchmark with open hard fallback.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
 #   "capability_ladder_7b_mcq_probe" - high-memory Qwen 0.5B/1.5B/3B/7B ARC MCQ scoring for depth-4 data.
 #   "capability_ladder_7b_trace_chain" - high-memory 7B ladder probe followed by trace-job build.
@@ -526,6 +527,40 @@ TARGETS = {
             "STAGE5_REENTRY_RECOVERY_LR": "5e-6",
             "STAGE5_REENTRY_RECOVERY_OPTIMIZER_MODULES": "bridge,reentry,halt,lora",
             "STAGE5_REENTRY_RECOVERY_DISCONNECT": "1",
+        },
+    },
+    "depth_signal_confirmation": {
+        "path": "colab/STAGE5_DEPTH_SIGNAL_CONFIRMATION_CELL.py",
+        "markers": [
+            "STAGE5_DEPTH_SIGNAL_CONFIRMATION_CELL_VERSION",
+            "depth_signal_confirmation_v1",
+            "Stage 4: depth-routing recovery",
+            "Stage 5: depth-signal benchmark",
+            "STAGE5_REENTRY_RECOVERY_HALT_TARGET_NLL_WEIGHT",
+            "STAGE5_REENTRY_RECOVERY_LOOP_CONTROL_CE_WEIGHT",
+            "STAGE5_REENTRY_RECOVERY_REENTRY_ADAPTER_MODE",
+            "STAGE5_DEBIASED_BENCHMARK_SUITE_PROFILE",
+            "depth_signal_confirmation",
+            "open_hard_arc_challenge",
+            "STAGE5_DEBIASED_ASSESS_REQUIRED_BENCHMARKS",
+            "STAGE5_REENTRY_RECOVERY_TRAINING_CELL.py",
+            "STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py",
+            "depth_signal_confirmation_complete=true",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_REENTRY_RECOVERY_STEPS": "100",
+            "STAGE5_REENTRY_RECOVERY_HALT_TARGET_NLL_WEIGHT": "6.0",
+            "STAGE5_REENTRY_RECOVERY_LOOP_CONTROL_CE_WEIGHT": "5.0",
+            "STAGE5_REENTRY_RECOVERY_REENTRY_ADAPTER_MODE": "spectral",
+            "STAGE5_DEBIASED_BENCHMARK_SUITE_PROFILE": "depth_signal_confirmation",
+            "STAGE5_DEBIASED_BENCHMARKS": "arc_easy,arc_challenge,open_hard_arc_challenge",
+            "STAGE5_DEBIASED_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
+            "STAGE5_DEBIASED_ARC_EASY_LIMIT": "128",
+            "STAGE5_DEBIASED_ARC_CHALLENGE_LIMIT": "256",
+            "STAGE5_DEBIASED_OPEN_HARD_ARC_CHALLENGE_LIMIT": "256",
+            "STAGE5_DEBIASED_ASSESS_REQUIRED_BENCHMARKS": "arc_challenge,open_hard_arc_challenge",
+            "STAGE5_DEPTH_SIGNAL_CONFIRMATION_DISCONNECT": "1",
         },
     },
     "candidate_conversion_diagnostic": {

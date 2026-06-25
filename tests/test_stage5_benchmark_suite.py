@@ -16,6 +16,7 @@ from colab.run_stage5_benchmark_suite import (
     parse_csv,
     parse_optional_limit,
     resolve_checkpoint,
+    suite_profile_defaults,
     summarize_rows,
     two_sided_sign_p_value,
 )
@@ -326,6 +327,71 @@ def test_build_summary_compares_base_and_recurrent_rows(tmp_path) -> None:
     assert routing["routing_buckets"]["deep_numeric_proxy"]["n"] == 1
     assert routing["routing_buckets"]["deep_numeric_proxy"]["delta"] == 1
     assert routing["routing_buckets"]["deep_numeric_proxy"]["mean_candidate_expected_loops"] == 3.5
+    loop_summary = payload["loop_bucket_diagnostics"]["arc_challenge"]["label"]["routing_buckets"]
+    assert loop_summary["deep_numeric_proxy"]["mean_candidate_expected_loops"] == 3.5
+    assert loop_summary["base_confident_direct_proxy"]["mean_candidate_expected_loops"] == 1.1
+
+
+def test_build_summary_reports_hard_content_signal(tmp_path) -> None:
+    base_jsonl = tmp_path / "arc_base_content_question_only.jsonl"
+    recurrent_jsonl = tmp_path / "arc_recurrent_content_question_only.jsonl"
+    data_jsonl = tmp_path / "arc.jsonl"
+    _write_jsonl(
+        data_jsonl,
+        [
+            {"id": "a", "question": "Why does this happen?", "choices": {"A": "x", "B": "y"}, "answer": "A"},
+            {"id": "b", "question": "What is 3 * 4?", "choices": {"A": "12", "B": "7"}, "answer": "A"},
+        ],
+    )
+    _write_jsonl(
+        base_jsonl,
+        [
+            {"id": "a", "aggregate": "mean", "answer": "A", "prediction": "B", "hit": False, "scores": {"A": 1.0, "B": 2.0}},
+            {"id": "b", "aggregate": "mean", "answer": "A", "prediction": "A", "hit": True, "scores": {"A": 2.0, "B": 1.0}},
+        ],
+    )
+    _write_jsonl(
+        recurrent_jsonl,
+        [
+            {
+                "id": "a",
+                "aggregate": "mean",
+                "answer": "A",
+                "prediction": "A",
+                "hit": True,
+                "scores": {"A": 2.0, "B": 1.0},
+                "loop_diagnostics": {"mean_expected_loops": 2.4},
+            },
+            {
+                "id": "b",
+                "aggregate": "mean",
+                "answer": "A",
+                "prediction": "A",
+                "hit": True,
+                "scores": {"A": 2.0, "B": 1.0},
+                "loop_diagnostics": {"mean_expected_loops": 2.8},
+            },
+        ],
+    )
+
+    payload = build_summary(
+        source_summary=None,
+        checkpoint=tmp_path / "checkpoint.pt",
+        specs=[BenchmarkSpec("arc_challenge", data_jsonl, [])],
+        jobs=[
+            EvalJob("arc_challenge", "base", "content_question_only", base_jsonl, []),
+            EvalJob("arc_challenge", "recurrent", "content_question_only", recurrent_jsonl, []),
+        ],
+        failures=[],
+        elapsed_seconds=1.0,
+    )
+
+    signal = payload["hard_content_signal"]["arc_challenge"]
+    assert signal["score_target"] == "content_question_only"
+    assert signal["aggregate"] == "mean"
+    assert signal["correct_delta_recurrent_vs_base"] == 1
+    assert signal["routing_buckets"]["conceptual_reasoning_proxy"]["delta"] == 1
+    assert signal["routing_buckets"]["conceptual_reasoning_proxy"]["mean_candidate_expected_loops"] == 2.4
 
 
 def test_build_summary_records_after_confirmation_dense_control(tmp_path, monkeypatch) -> None:
@@ -540,6 +606,30 @@ def test_benchmark_specs_supports_limited_arc_easy(tmp_path, monkeypatch) -> Non
 
     assert spec.data_jsonl == tmp_path / "arc_easy_validation_64.jsonl"
     assert spec.prepare_cmd[spec.prepare_cmd.index("--limit") + 1] == "64"
+
+
+def test_benchmark_specs_supports_open_hard_arc_challenge_fallback(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    monkeypatch.setattr(module, "PRIVATE_DATA_DIR", tmp_path)
+    monkeypatch.setattr(module, "OPEN_HARD_ARC_CHALLENGE_LIMIT", 256)
+    monkeypatch.setattr(module, "OPEN_HARD_ARC_CHALLENGE_OFFSET", 0)
+
+    spec = benchmark_specs(["open_hard_arc_challenge"])[0]
+
+    assert spec.name == "open_hard_arc_challenge"
+    assert spec.data_jsonl == tmp_path / "open_hard_arc_challenge_validation_256.jsonl"
+    assert "ARC-Challenge" in spec.prepare_cmd
+    assert spec.prepare_cmd[spec.prepare_cmd.index("--limit") + 1] == "256"
+
+
+def test_suite_profile_depth_signal_confirmation_defaults_to_hard_content_fallback() -> None:
+    defaults = suite_profile_defaults("depth_signal_confirmation")
+
+    assert defaults["benchmarks"] == "arc_easy,arc_challenge,open_hard_arc_challenge"
+    assert defaults["score_targets"] == "content_question_only,cyclic_label_aggregated"
+    assert defaults["arc_challenge_limit"] == "256"
+    assert defaults["open_hard_arc_challenge_limit"] == "256"
 
 
 def test_benchmark_suite_updates_current_source_summary(tmp_path, monkeypatch) -> None:

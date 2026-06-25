@@ -724,6 +724,23 @@ def test_depth_balanced_benchmark_target_uses_learned_loop_control() -> None:
     assert '"STAGE5_DEBIASED_ARC_CHALLENGE_LIMIT": "512"' in bootstrap
 
 
+def test_depth_signal_confirmation_target_chains_recovery_and_hard_content_benchmark() -> None:
+    plain = (ROOT / "colab/STAGE5_DEPTH_SIGNAL_CONFIRMATION_CELL.py").read_text(encoding="utf-8")
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+
+    assert "STAGE5_DEPTH_SIGNAL_CONFIRMATION_CELL_VERSION" in plain
+    assert "Stage 4: depth-routing recovery" in plain
+    assert "Stage 5: depth-signal benchmark" in plain
+    assert "STAGE5_REENTRY_RECOVERY_DISCONNECT" in plain
+    assert "STAGE5_DEBIASED_BENCHMARK_DISCONNECT" in plain
+    assert "open_hard_arc_challenge" in plain
+    assert "STAGE5_DEBIASED_ASSESS_REQUIRED_BENCHMARKS" in plain
+    assert "depth_signal_confirmation_complete=true" in plain
+    assert '"depth_signal_confirmation"' in bootstrap
+    assert '"STAGE5_DEBIASED_BENCHMARKS": "arc_easy,arc_challenge,open_hard_arc_challenge"' in bootstrap
+    assert '"STAGE5_DEBIASED_ASSESS_REQUIRED_BENCHMARKS": "arc_challenge,open_hard_arc_challenge"' in bootstrap
+
+
 def test_capability_ladder_mcq_probe_cell_is_bounded_and_depth_ladder_focused() -> None:
     plain = (ROOT / "colab/STAGE5_CAPABILITY_LADDER_MCQ_PROBE_CELL.py").read_text(encoding="utf-8")
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
