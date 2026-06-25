@@ -22,6 +22,7 @@ from models.recurrent_wrapper import RecurrentQwenForCausalLM
 from training.checkpointing import save_trainable_checkpoint
 from training.dataset import JsonlCausalDataset, collate_causal_batch
 from training.losses import causal_kl_distillation_loss
+from training.reentry_repair import apply_reentry_repair_controls
 from training.stability import (
     assert_finite_trainable_gradients,
     assert_finite_trainable_parameters,
@@ -125,6 +126,9 @@ def main() -> int:
 
         load_info = load_trainable_checkpoint(wrapper, cfg["resume_from"])
         print(f"loaded_checkpoint={cfg['resume_from']} loaded_keys={len(load_info['loaded_keys'])}")
+    repair_info = apply_reentry_repair_controls(wrapper, cfg)
+    if repair_info["applied"]:
+        print("reentry_repair_controls=" + " ".join(f"{key}={value}" for key, value in repair_info.items()))
     assert_finite_trainable_parameters(wrapper, step=0)
     wrapper.train()
 
@@ -165,6 +169,7 @@ def main() -> int:
                 halt_target_nll_weight=cfg.get("halt_target_nll_weight", 0.0),
                 use_learned_loop_control=cfg.get("use_learned_loop_control", False),
                 loop_control_ce_weight=cfg.get("loop_control_ce_weight", 0.0),
+                reentry_rescale_mode=cfg.get("reentry_rescale_mode", "none"),
                 use_cache=False,
                 return_dict=True,
             )

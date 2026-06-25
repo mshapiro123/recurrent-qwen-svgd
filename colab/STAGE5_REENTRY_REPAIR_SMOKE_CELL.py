@@ -1,0 +1,440 @@
+"""Colab launcher: Stage 5 trainable re-entry bridge repair smoke.
+
+This is Stage 3 after the read-only drift diagnostic and eval-only RMS
+normalization check. It runs a tiny bounded continuation that explicitly revives
+the bridge as an identity-preserving but gradient-live module, trains for a few
+steps, and compares pre/post re-entry drift. It is not a recovery-scale run.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+from google.colab import drive, runtime, userdata
+
+STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION = "stage5_reentry_repair_smoke_v1_trainable"
+REPO = "mshapiro123/recurrent-qwen-svgd"
+ROOT = Path("/content/recurrent-qwen-svgd")
+DRIVE_ARTIFACT_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts")
+
+DEFAULT_CHECKPOINT = (
+    "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/"
+    "phase1_direct_preserve/phase1_step_75.pt"
+)
+FALLBACK_CHECKPOINTS = [
+    DEFAULT_CHECKPOINT,
+    (
+        "outputs/stage5/stage5_content_arcmix_qonly_optiontext_20260623_121707/"
+        "arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt"
+    ),
+    (
+        "outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/"
+        "arc_mix_response_w005_lr2e6/phase1/phase1_step_50.pt"
+    ),
+]
+
+SMOKE_ROWS = [
+    {
+        "prompt": "Solve exactly. If a train travels 120 miles in 3 hours, what is its average speed?\n",
+        "completion": "The average speed is 120 / 3 = 40 miles per hour.",
+        "target_loop_count": 2,
+    },
+    {
+        "prompt": "Solve exactly. The pharmacy has 20 tubs and needs 100 total. It buys one quarter of the remaining need from a new vendor. How many tubs come from the usual vendor?\n",
+        "completion": "It needs 80 more tubs. One quarter of 80 is 20, so the usual vendor supplies 60 tubs.",
+        "target_loop_count": 3,
+    },
+    {
+        "prompt": "Solve exactly. What is 17 + 28?\n",
+        "completion": "17 + 28 = 45.",
+        "target_loop_count": 1,
+    },
+    {
+        "prompt": "Solve exactly. A rectangle is 7 units by 6 units. What is its area?\n",
+        "completion": "Area is length times width: 7 * 6 = 42 square units.",
+        "target_loop_count": 2,
+    },
+    {
+        "prompt": "Name one valid strategy for solving a Sudoku puzzle.\n",
+        "completion": "One valid strategy is elimination: remove impossible digits using row, column, and box constraints.",
+        "target_loop_count": 1,
+    },
+]
+
+
+def secret(*names: str) -> str | None:
+    for name in names:
+        value = os.environ.get(name)
+        if value:
+            return value
+        try:
+            value = userdata.get(name)
+        except Exception:
+            value = None
+        if value:
+            return value
+    return None
+
+
+GH_TOKEN = secret("GH_TOKEN", "GITHUB_TOKEN")
+HF_TOKEN = secret("HF_TOKEN", "HUGGINGFACE_HUB_TOKEN")
+assert GH_TOKEN, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
+if HF_TOKEN:
+    os.environ["HF_TOKEN"] = HF_TOKEN
+    os.environ["HUGGINGFACE_HUB_TOKEN"] = HF_TOKEN
+    print("HF token loaded", flush=True)
+else:
+    print("HF token not found; downloads will be anonymous.", flush=True)
+
+
+def run(
+    cmd: list[str | os.PathLike[str]],
+    *,
+    cwd: Path = ROOT,
+    check: bool = True,
+) -> subprocess.CompletedProcess:
+    printable = " ".join(map(str, cmd)).replace(GH_TOKEN, "****")
+    print(f"$ {printable}", flush=True)
+    proc = subprocess.run(
+        list(map(str, cmd)),
+        cwd=str(cwd),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    print(proc.stdout, flush=True)
+    if check:
+        proc.check_returncode()
+    return proc
+
+
+def ensure_repo() -> None:
+    clone_url = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
+    if ROOT.exists():
+        run(["git", "remote", "set-url", "origin", clone_url])
+        run(["git", "fetch", "origin", "main"])
+        run(["git", "checkout", "main"])
+        run(["git", "reset", "--hard", "origin/main"])
+    else:
+        run(["git", "clone", clone_url, ROOT], cwd=Path("/content"))
+    run(["git", "config", "user.email", "colab-runner@local"])
+    run(["git", "config", "user.name", "Colab Runner"])
+    run(["git", "log", "--oneline", "-5"])
+
+
+def normalize_rel_path(path: str) -> str:
+    return str(path).replace("\\", "/").lstrip("/")
+
+
+def unique_paths(paths: list[Path]) -> list[Path]:
+    seen: set[str] = set()
+    out: list[Path] = []
+    for path in paths:
+        key = path.as_posix()
+        if key not in seen:
+            seen.add(key)
+            out.append(path)
+    return out
+
+
+def checkpoint_candidates(requested: str, *, allow_fallback: bool) -> list[str]:
+    requested = normalize_rel_path(requested)
+    candidates = [requested]
+    if allow_fallback:
+        candidates.extend(path for path in FALLBACK_CHECKPOINTS if normalize_rel_path(path) not in candidates)
+    return candidates
+
+
+def drive_checkpoint_candidates(rel_path: str, target: Path) -> list[Path]:
+    rel_path = normalize_rel_path(rel_path)
+    rel = Path(rel_path)
+    roots = [DRIVE_ARTIFACT_ROOT, Path("/content/drive/MyDrive/recurrent-qwen-svgd")]
+    candidates: list[Path] = []
+    for root in roots:
+        candidates.append(root / rel_path)
+        if rel_path.startswith("outputs/stage5/") and len(rel.parts) > 3:
+            run_id = rel.parts[2]
+            after_run = Path(*rel.parts[3:])
+            candidates.append(root / run_id / after_run)
+            candidates.append(root / "outputs" / "stage5" / run_id / after_run)
+            if root.exists():
+                candidates.extend(
+                    p
+                    for p in root.rglob(target.name)
+                    if run_id in p.as_posix() and p.name == target.name
+                )
+    return unique_paths(candidates)
+
+
+def restore_one_checkpoint(rel_path: str) -> Path:
+    rel_path = normalize_rel_path(rel_path)
+    target = ROOT / rel_path
+    if target.exists():
+        print(f"checkpoint already local: {target}", flush=True)
+        return target
+
+    print("Mounting Drive to restore checkpoint.", flush=True)
+    drive.mount("/content/drive", force_remount=False)
+
+    candidates = drive_checkpoint_candidates(rel_path, target)
+    for candidate in candidates:
+        if candidate.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(candidate, target)
+            print(f"restored_checkpoint={candidate} -> {target}", flush=True)
+            return target
+
+    preview = "\n".join(f"  - {path}" for path in candidates[:12])
+    raise FileNotFoundError(f"Could not restore checkpoint from Drive: {rel_path}\nTried:\n{preview}")
+
+
+def restore_checkpoint(rel_path: str, *, allow_fallback: bool) -> Path:
+    errors: list[str] = []
+    for candidate in checkpoint_candidates(rel_path, allow_fallback=allow_fallback):
+        try:
+            return restore_one_checkpoint(candidate)
+        except FileNotFoundError as exc:
+            errors.append(str(exc))
+            if not allow_fallback:
+                break
+            print(f"checkpoint candidate unavailable, trying fallback: {candidate}", flush=True)
+    raise FileNotFoundError("\n\n".join(errors))
+
+
+def write_smoke_data(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(json.dumps(row) for row in SMOKE_ROWS) + "\n", encoding="utf-8")
+
+
+def write_config(path: Path, *, checkpoint: str, out_dir: Path) -> dict[str, object]:
+    cfg = {
+        "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+        "dtype": os.environ.get("STAGE5_REENTRY_REPAIR_DTYPE", "bfloat16"),
+        "adapter_dtype": "float32",
+        "layer_split": "6,18",
+        "max_length": int(os.environ.get("STAGE5_REENTRY_REPAIR_MAX_LENGTH", "256")),
+        "max_loops": int(os.environ.get("STAGE5_REENTRY_REPAIR_MAX_LOOPS", "4")),
+        "initial_halt_prob": 0.15,
+        "beta": 0.08,
+        "halt_target_nll_weight": float(os.environ.get("STAGE5_REENTRY_REPAIR_HALT_NLL_WEIGHT", "0.05")),
+        "batch_size": 1,
+        "learning_rate": float(os.environ.get("STAGE5_REENTRY_REPAIR_LR", "1e-5")),
+        "weight_decay": 0.0,
+        "max_grad_norm": 0.3,
+        "max_steps": int(os.environ.get("STAGE5_REENTRY_REPAIR_MAX_STEPS", "25")),
+        "log_every": 5,
+        "train_on_prompt": False,
+        "optimizer_modules": os.environ.get("STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES", "bridge,halt"),
+        "resume_from": checkpoint,
+        "bridge_reset_identity": True,
+        "bridge_gate_override": 1.0,
+        "reentry_rescale_mode": "entry_rms",
+        "output_dir": str(out_dir.relative_to(ROOT)),
+        "lora": {"enabled": True, "rank": 8, "alpha": 16, "dropout": 0.0},
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+    return cfg
+
+
+def run_drift(label: str, checkpoint: str, out_dir: Path) -> Path:
+    out_json = out_dir / f"reentry_drift_{label}.json"
+    out_jsonl = out_dir / f"reentry_drift_{label}.jsonl"
+    run(
+        [
+            sys.executable,
+            "eval/eval_reentry_drift.py",
+            "--checkpoint",
+            checkpoint,
+            "--prompts_jsonl",
+            os.environ.get("STAGE5_REENTRY_REPAIR_PROMPTS", "eval/smoke_exact_tasks_v2.jsonl"),
+            "--limit",
+            os.environ.get("STAGE5_REENTRY_REPAIR_LIMIT", "8"),
+            "--max_loops",
+            os.environ.get("STAGE5_REENTRY_REPAIR_DRIFT_MAX_LOOPS", "8"),
+            "--max_length",
+            os.environ.get("STAGE5_REENTRY_REPAIR_MAX_LENGTH", "256"),
+            "--reentry_rescale_mode",
+            "entry_rms",
+            "--dtype",
+            os.environ.get("STAGE5_REENTRY_REPAIR_DTYPE", "bfloat16"),
+            "--adapter_dtype",
+            "float32",
+            "--device",
+            os.environ.get("STAGE5_REENTRY_REPAIR_DEVICE", "cuda"),
+            "--output_json",
+            str(out_json.relative_to(ROOT)),
+            "--output_jsonl",
+            str(out_jsonl.relative_to(ROOT)),
+        ]
+    )
+    return out_json
+
+
+def bridge_summary(payload: dict[str, object]) -> dict[str, object]:
+    bridge = payload.get("bridge") if isinstance(payload.get("bridge"), dict) else {}
+    live = payload.get("bridge_gradient_liveness") if isinstance(payload.get("bridge_gradient_liveness"), dict) else {}
+    loops = (payload.get("aggregate") or {}).get("loop_summary", {}) if isinstance(payload.get("aggregate"), dict) else {}
+    return {
+        "bridge_gate": bridge.get("bridge_gate"),
+        "bridge_delta_rms": bridge.get("sample_bridge_delta_rms"),
+        "weight_grad_rms": live.get("weight_grad_rms"),
+        "bias_grad_rms": live.get("bias_grad_rms"),
+        "loop4_output_over_input_rms": (loops.get("4") or {}).get("output_over_input_rms") if isinstance(loops, dict) else None,
+        "loop8_output_over_input_rms": (loops.get("8") or {}).get("output_over_input_rms") if isinstance(loops, dict) else None,
+    }
+
+
+def write_markdown(summary: dict[str, object], path: Path) -> None:
+    lines = [
+        f"# Stage 5 Re-entry Repair Smoke - {summary['run_id']}",
+        "",
+        f"- Source checkpoint: `{summary['source_checkpoint']}`",
+        f"- Trained checkpoint: `{summary['trained_checkpoint']}`",
+        f"- Cell version: `{STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION}`",
+        f"- Max steps: `{summary['config']['max_steps']}`",
+        f"- Optimizer modules: `{summary['config']['optimizer_modules']}`",
+        f"- Re-entry mode: `{summary['config']['reentry_rescale_mode']}`",
+        "",
+        "## Bridge Liveness",
+        "| stage | gate | bridge delta RMS | weight grad RMS | bias grad RMS | loop4 out/in RMS | loop8 out/in RMS |",
+        "|---|---:|---:|---:|---:|---:|---:|",
+    ]
+    for stage in ("pre", "post"):
+        row = summary[f"{stage}_bridge"]
+        lines.append(
+            f"| {stage} | {row.get('bridge_gate')} | {row.get('bridge_delta_rms')} | "
+            f"{row.get('weight_grad_rms')} | {row.get('bias_grad_rms')} | "
+            f"{row.get('loop4_output_over_input_rms')} | {row.get('loop8_output_over_input_rms')} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Readout Pause",
+            "This run intentionally stops after Stage 3. Review bridge movement and loop behavior before recovery training.",
+            "",
+        ]
+    )
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def publish_outputs(out_dir: Path, run_id: str) -> None:
+    run(["git", "status", "-sb"])
+    run(["git", "add", "-f", str(out_dir.relative_to(ROOT))])
+    diff = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=str(ROOT))
+    if diff.returncode == 0:
+        print("No staged changes to commit.", flush=True)
+        return
+    run(["git", "commit", "-m", f"Record Stage 5 re-entry repair smoke {run_id} [skip ci]"])
+    if os.environ.get("STAGE5_REENTRY_REPAIR_PUSH", "1").strip().lower() in {"1", "true", "yes", "y"}:
+        pushed = run(["git", "push", "origin", "main"], check=False)
+        if pushed.returncode != 0:
+            print("Initial push failed; attempting one fast rebase and retry.", flush=True)
+            run(["git", "pull", "--rebase", "--autostash", "origin", "main"])
+            run(["git", "push", "origin", "main"])
+
+
+def main() -> None:
+    print(f"cell_version={STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION}", flush=True)
+    run_id = os.environ.get("STAGE5_REENTRY_REPAIR_RUN_ID") or time.strftime("stage5_reentry_repair_smoke_%Y%m%d_%H%M%S")
+    checkpoint_override = os.environ.get("STAGE5_REENTRY_REPAIR_CHECKPOINT")
+    checkpoint = checkpoint_override or DEFAULT_CHECKPOINT
+    disconnect = os.environ.get("STAGE5_REENTRY_REPAIR_DISCONNECT", "1").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+    }
+
+    ensure_repo()
+    run(["nvidia-smi"], cwd=Path("/content"))
+    run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"])
+    run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "-q",
+            "tests/test_bridge.py",
+            "tests/test_eval_reentry_drift.py",
+            "tests/test_recurrent_wrapper_tiny.py",
+        ]
+    )
+
+    checkpoint_path = restore_checkpoint(checkpoint, allow_fallback=checkpoint_override is None)
+    checkpoint = checkpoint_path.relative_to(ROOT).as_posix()
+    out_dir = ROOT / "outputs" / "stage5" / run_id
+    diag_dir = out_dir / "reentry_repair_smoke"
+    diag_dir.mkdir(parents=True, exist_ok=True)
+
+    pre_drift_path = run_drift("pre", checkpoint, diag_dir)
+    train_jsonl = diag_dir / "reentry_repair_smoke_train.jsonl"
+    config_path = diag_dir / "reentry_repair_smoke_config.yaml"
+    train_out_dir = out_dir / "phase1_reentry_repair"
+    write_smoke_data(train_jsonl)
+    config = write_config(config_path, checkpoint=checkpoint, out_dir=train_out_dir)
+
+    train_proc = run(
+        [
+            sys.executable,
+            "training/train_phase1_ponder.py",
+            "--config",
+            str(config_path.relative_to(ROOT)),
+            "--train_jsonl",
+            str(train_jsonl.relative_to(ROOT)),
+            "--device",
+            os.environ.get("STAGE5_REENTRY_REPAIR_DEVICE", "cuda"),
+        ]
+    )
+    (diag_dir / "train_phase1_ponder.log").write_text(train_proc.stdout, encoding="utf-8")
+    trained_checkpoint = train_out_dir / f"phase1_step_{config['max_steps']}.pt"
+    if not trained_checkpoint.exists():
+        raise FileNotFoundError(f"Expected trained checkpoint missing: {trained_checkpoint}")
+    trained_checkpoint_rel = trained_checkpoint.relative_to(ROOT).as_posix()
+    post_drift_path = run_drift("post", trained_checkpoint_rel, diag_dir)
+
+    pre_payload = json.loads(pre_drift_path.read_text(encoding="utf-8"))
+    post_payload = json.loads(post_drift_path.read_text(encoding="utf-8"))
+    summary = {
+        "kind": "stage5_reentry_repair_smoke",
+        "run_id": run_id,
+        "cell_version": STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION,
+        "source_checkpoint": checkpoint,
+        "trained_checkpoint": trained_checkpoint_rel,
+        "config": config,
+        "paths": {
+            "pre_drift": pre_drift_path.relative_to(ROOT).as_posix(),
+            "post_drift": post_drift_path.relative_to(ROOT).as_posix(),
+            "train_jsonl": train_jsonl.relative_to(ROOT).as_posix(),
+            "train_config": config_path.relative_to(ROOT).as_posix(),
+            "train_log": (diag_dir / "train_phase1_ponder.log").relative_to(ROOT).as_posix(),
+        },
+        "pre_bridge": bridge_summary(pre_payload),
+        "post_bridge": bridge_summary(post_payload),
+    }
+    (out_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    write_markdown(summary, out_dir / "summary.md")
+    print((out_dir / "summary.md").read_text(encoding="utf-8"), flush=True)
+
+    if Path("/content/drive/MyDrive").exists():
+        backup_dir = DRIVE_ARTIFACT_ROOT / "outputs" / "stage5" / run_id
+        backup_dir.parent.mkdir(parents=True, exist_ok=True)
+        if backup_dir.exists():
+            shutil.rmtree(backup_dir)
+        shutil.copytree(out_dir, backup_dir)
+        print(f"drive_backup={backup_dir}", flush=True)
+
+    publish_outputs(out_dir, run_id)
+
+    if disconnect:
+        print("Disconnecting Colab runtime to conserve credits after Stage 3 smoke.", flush=True)
+        runtime.unassign()
+
+
+main()

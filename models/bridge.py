@@ -15,7 +15,7 @@ class IdentityGatedBridge(nn.Module):
     into a plausible recurrent-block input.
     """
 
-    def __init__(self, hidden_size: int, gate_init: float = 0.0) -> None:
+    def __init__(self, hidden_size: int, gate_init: float = 1.0) -> None:
         super().__init__()
         self.proj = nn.Linear(hidden_size, hidden_size)
         self.bridge_gate = nn.Parameter(torch.tensor(float(gate_init)))

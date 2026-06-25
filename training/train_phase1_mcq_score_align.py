@@ -30,6 +30,7 @@ from eval.eval_mcq import MCQExample, format_completion, format_prompt, normaliz
 from models.lora import apply_lora_to_recurrent_block  # noqa: E402
 from models.recurrent_wrapper import RecurrentQwenForCausalLM  # noqa: E402
 from training.checkpointing import save_trainable_checkpoint  # noqa: E402
+from training.reentry_repair import apply_reentry_repair_controls  # noqa: E402
 from training.stability import (  # noqa: E402
     assert_finite_trainable_gradients,
     assert_finite_trainable_parameters,
@@ -202,6 +203,9 @@ def main() -> int:
 
         load_info = load_trainable_checkpoint(wrapper, cfg["resume_from"])
         print(f"loaded_checkpoint={cfg['resume_from']} loaded_keys={len(load_info['loaded_keys'])}")
+    repair_info = apply_reentry_repair_controls(wrapper, cfg)
+    if repair_info["applied"]:
+        print("reentry_repair_controls=" + " ".join(f"{key}={value}" for key, value in repair_info.items()))
     assert_finite_trainable_parameters(wrapper, step=0)
 
     distill_cfg = cfg.get("score_distillation", {})
@@ -263,6 +267,7 @@ def main() -> int:
                 **batch,
                 labels=None,
                 max_loops=max_loops,
+                reentry_rescale_mode=cfg.get("reentry_rescale_mode", "none"),
                 use_cache=False,
                 return_dict=True,
             )

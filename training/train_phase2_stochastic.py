@@ -22,6 +22,7 @@ from models.recurrent_wrapper import RecurrentQwenForCausalLM
 from training.checkpointing import load_trainable_checkpoint, save_trainable_checkpoint
 from training.dataset import JsonlCausalDataset, collate_causal_batch
 from training.losses import causal_kl_distillation_loss
+from training.reentry_repair import apply_reentry_repair_controls
 from training.stability import (
     assert_finite_trainable_gradients,
     assert_finite_trainable_parameters,
@@ -95,6 +96,9 @@ def main() -> int:
     if cfg.get("resume_from"):
         load_info = load_trainable_checkpoint(wrapper, cfg["resume_from"])
         print(f"loaded_checkpoint={cfg['resume_from']} loaded_keys={len(load_info['loaded_keys'])}")
+    repair_info = apply_reentry_repair_controls(wrapper, cfg)
+    if repair_info["applied"]:
+        print("reentry_repair_controls=" + " ".join(f"{key}={value}" for key, value in repair_info.items()))
     assert_finite_trainable_parameters(wrapper, step=0)
     wrapper.train()
 
@@ -144,6 +148,7 @@ def main() -> int:
                 svgd_kernel_projection_path=cfg.get("svgd_kernel_projection_path"),
                 svgd_kernel_geometry=cfg.get("svgd_kernel_geometry", "euclidean"),
                 svgd_projection_seed=cfg.get("svgd_projection_seed", 0),
+                reentry_rescale_mode=cfg.get("reentry_rescale_mode", "none"),
                 use_cache=False,
                 return_dict=True,
             )

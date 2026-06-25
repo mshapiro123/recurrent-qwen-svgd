@@ -20,6 +20,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "candidate_conversion_diagnostic" - bounded particle-noise candidate conversion with correctness-split pathways.
 #   "reentry_drift_diagnostic" - bounded read-only recurrent loop-closure drift diagnostic.
 #   "reentry_norm_diagnostic" - bounded eval-only loop re-entry RMS normalization comparison.
+#   "reentry_repair_smoke" - bounded trainable bridge/re-entry repair smoke.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
 #   "capability_ladder_7b_mcq_probe" - high-memory Qwen 0.5B/1.5B/3B/7B ARC MCQ scoring for depth-4 data.
 #   "capability_ladder_7b_trace_chain" - high-memory 7B ladder probe followed by trace-job build.
@@ -316,6 +317,29 @@ TARGETS = {
             "STAGE5_REENTRY_NORM_K": "4",
             "STAGE5_REENTRY_NORM_LIMIT": "8",
             "STAGE5_REENTRY_NORM_DISCONNECT": "1",
+        },
+    },
+    "reentry_repair_smoke": {
+        "path": "colab/STAGE5_REENTRY_REPAIR_SMOKE_CELL.py",
+        "markers": [
+            "STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION",
+            "stage5_reentry_repair_smoke_v1_trainable",
+            "bridge_gate_override",
+            "bridge_reset_identity",
+            "reentry_rescale_mode",
+            "training/train_phase1_ponder.py",
+            "eval/eval_reentry_drift.py",
+            "tests/test_bridge.py",
+            "Readout Pause",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_REENTRY_REPAIR_MAX_STEPS": "25",
+            "STAGE5_REENTRY_REPAIR_MAX_LOOPS": "4",
+            "STAGE5_REENTRY_REPAIR_DRIFT_MAX_LOOPS": "8",
+            "STAGE5_REENTRY_REPAIR_LIMIT": "8",
+            "STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES": "bridge,halt",
+            "STAGE5_REENTRY_REPAIR_DISCONNECT": "1",
         },
     },
     "candidate_conversion_diagnostic": {

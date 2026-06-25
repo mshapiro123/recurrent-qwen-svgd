@@ -1216,3 +1216,22 @@ def test_programmatic_curriculum_cell_is_cpu_safe_and_matches_markdown_code() ->
     assert "OSError" in plain
     assert "Refusing to run CPU-only programmatic curriculum generation" in plain
     assert "zero-provider" in text
+
+
+def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_REENTRY_REPAIR_SMOKE_CELL.py").read_text(encoding="utf-8")
+
+    assert "reentry_repair_smoke" in bootstrap
+    assert "reentry_repair_smoke" in bootstrap_md
+    assert "colab/STAGE5_REENTRY_REPAIR_SMOKE_CELL.py" in bootstrap
+    assert "STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION" in cell
+    assert "stage5_reentry_repair_smoke_v1_trainable" in cell
+    assert "bridge_gate_override" in cell
+    assert "bridge_reset_identity" in cell
+    assert "reentry_rescale_mode" in cell
+    assert "training/train_phase1_ponder.py" in cell
+    assert "eval/eval_reentry_drift.py" in cell
+    assert "Readout Pause" in cell
+    assert "runtime.unassign" in cell
