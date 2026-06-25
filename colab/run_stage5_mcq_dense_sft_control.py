@@ -811,8 +811,12 @@ def commit_results(dense_checkpoint: Path) -> None:
         print("No dense MCQ control outputs changed.", flush=True)
         return
     run(["git", "commit", "-m", f"Record Stage 5 dense MCQ trace-SFT control {RUN_ID} [skip ci]"])
-    run(["git", "pull", "--rebase", "origin", "main"], check=False)
-    run(["git", "push", "origin", "main"], check=False)
+    pushed = run(["git", "push", "origin", "main"], check=False)
+    if pushed.returncode == 0:
+        return
+    print("Initial dense MCQ control push failed; attempting one autostash rebase and retry.", flush=True)
+    run(["git", "pull", "--rebase", "--autostash", "origin", "main"])
+    run(["git", "push", "origin", "main"])
 
 
 def main() -> int:

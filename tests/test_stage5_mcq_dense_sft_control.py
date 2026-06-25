@@ -498,3 +498,38 @@ def test_commit_results_excludes_checkpoint_unless_explicitly_enabled(monkeypatc
     assert "outputs/stage5/dense/summary.md" in staged
     assert "config/stage5_current_source_summary.txt" in staged
     assert "outputs/stage5/dense/dense_lora/dense_lora_step_10.pt" not in staged
+
+
+def test_commit_results_retries_failed_push_with_autostash_rebase(monkeypatch, tmp_path) -> None:
+    run_dir = tmp_path / "outputs" / "stage5" / "dense"
+    checkpoint = run_dir / "dense_lora" / "dense_lora_step_10.pt"
+    pointer = tmp_path / "config" / "stage5_current_source_summary.txt"
+    checkpoint.parent.mkdir(parents=True)
+    pointer.parent.mkdir(parents=True)
+    (run_dir / "summary.json").write_text("{}", encoding="utf-8")
+    (run_dir / "summary.md").write_text("# Summary\n", encoding="utf-8")
+    checkpoint.write_bytes(b"checkpoint")
+    pointer.write_text("outputs/stage5/dense/summary.json\n", encoding="utf-8")
+    commands: list[list[str]] = []
+    push_calls = 0
+
+    def fake_run(cmd, *, check=True, log_name=None):
+        nonlocal push_calls
+        command = [str(item) for item in cmd]
+        commands.append(command)
+        if command == ["git", "diff", "--cached", "--quiet"]:
+            return subprocess.CompletedProcess(cmd, 1, "", None)
+        if command == ["git", "push", "origin", "main"]:
+            push_calls += 1
+            return subprocess.CompletedProcess(cmd, 1 if push_calls == 1 else 0, "", None)
+        return subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+    monkeypatch.setattr(module, "COMMIT_CHECKPOINT", False)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    module.commit_results(checkpoint)
+
+    assert commands.count(["git", "push", "origin", "main"]) == 2
+    assert ["git", "pull", "--rebase", "--autostash", "origin", "main"] in commands
