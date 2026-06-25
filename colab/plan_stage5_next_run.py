@@ -3035,6 +3035,18 @@ def competence_preserving_pipeline_actions(payload: dict[str, Any], *, source_su
         ]
     if status == "pipeline_failed":
         failed_stage = payload.get("failed_stage") or "unknown"
+        if payload.get("failure_diagnosis") == "checkpoint_restore_or_drive_mount_failed":
+            return [
+                competence_pipeline_resume_action(
+                    payload,
+                    source_summary=source_summary,
+                    reason=(
+                        "The competence-preserving child failed before training because the recovered checkpoint "
+                        "was not local and Drive restore was unavailable. Rerun the wrapper with the same run ids "
+                        "after mounting Drive in the top-level Colab process."
+                    ),
+                )
+            ]
         return [
             make_action(
                 f"Inspect failed competence-preserving pipeline `{failed_stage}`",

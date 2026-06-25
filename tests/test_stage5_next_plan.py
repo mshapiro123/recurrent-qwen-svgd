@@ -2957,6 +2957,30 @@ def test_competence_pipeline_failed_inspects_wrapper_summary(tmp_path) -> None:
     assert "run_stage5_competence_preserving_pipeline.py" not in actions[0]["command"]
 
 
+def test_competence_pipeline_checkpoint_restore_failure_resumes_same_run_ids(tmp_path) -> None:
+    source = tmp_path / "competence" / "summary.json"
+    source.parent.mkdir()
+    payload = {
+        "kind": "stage5_competence_preserving_pipeline",
+        "run_id": "competence_run",
+        "source_summary": "outputs/stage5/source/summary.json",
+        "status": "pipeline_failed",
+        "failed_stage": "arc_mix",
+        "failure_diagnosis": "checkpoint_restore_or_drive_mount_failed",
+        "arc_mix_run_id": "competence_run_arc_mix",
+        "full_assessment_run_id": "competence_run_full_assessment",
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Resume competence-preserving recurrent recovery pipeline"
+    assert "python colab/run_stage5_competence_preserving_pipeline.py" in actions[0]["command"]
+    assert "STAGE5_COMPETENCE_PIPELINE_RUN_ID=competence_run" in actions[0]["command"]
+    assert "STAGE5_COMPETENCE_SOURCE_SUMMARY=outputs/stage5/source/summary.json" in actions[0]["command"]
+    assert "STAGE5_COMPETENCE_ARC_MIX_RUN_ID=competence_run_arc_mix" in actions[0]["command"]
+    assert "STAGE5_COMPETENCE_FULL_ASSESS_RUN_ID=competence_run_full_assessment" in actions[0]["command"]
+
+
 def test_competence_pipeline_failed_arc_mix_delegates_to_routing_diagnostic(tmp_path) -> None:
     source = tmp_path / "competence" / "summary.json"
     source.parent.mkdir()
