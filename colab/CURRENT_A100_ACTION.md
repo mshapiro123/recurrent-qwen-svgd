@@ -28,6 +28,8 @@ The overall program sequence is in
 [`docs/PROGRAM_TRACK_MASTER_SEQUENCE.md`](../docs/PROGRAM_TRACK_MASTER_SEQUENCE.md);
 the current work is Phase 0, and particles/SVGD resume only after loop closure,
 depth conversion, and correct-bearing breadth gates clear.
+The short Colab target queue is in
+[`colab/NEXT_COLAB_SEQUENCE.md`](NEXT_COLAB_SEQUENCE.md).
 
 ```text
 latest reviewer state: stage1_drift / bridge_dead

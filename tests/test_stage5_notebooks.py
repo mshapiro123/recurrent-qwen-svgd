@@ -1322,10 +1322,17 @@ def test_reentry_stage3_stage4_runbook_is_linked_from_current_action() -> None:
     current_action = (ROOT / "colab/CURRENT_A100_ACTION.md").read_text(encoding="utf-8")
     runbook = (ROOT / "docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md").read_text(encoding="utf-8")
     master = (ROOT / "docs/PROGRAM_TRACK_MASTER_SEQUENCE.md").read_text(encoding="utf-8")
+    next_sequence = (ROOT / "colab/NEXT_COLAB_SEQUENCE.md").read_text(encoding="utf-8")
 
     assert "docs/STAGE5_REENTRY_STAGE3_STAGE4_RUNBOOK.md" in current_action
     assert "docs/PROGRAM_TRACK_MASTER_SEQUENCE.md" in current_action
+    assert "colab/NEXT_COLAB_SEQUENCE.md" in current_action
     assert "PROGRAM_TRACK_MASTER_SEQUENCE.md" in runbook
+    assert "reentry_norm_recover_only" in next_sequence
+    assert "reentry_repair_smoke" in next_sequence
+    assert "reentry_recovery_training" in next_sequence
+    assert "standard Qwen same-curriculum LoRA control" in next_sequence
+    assert "Leinster" in next_sequence
     assert "Phase 0: Loop-Closure Re-entry" in master
     assert "Phase 1: Depth" in master
     assert "Phase 2: Breadth and Multistability" in master
