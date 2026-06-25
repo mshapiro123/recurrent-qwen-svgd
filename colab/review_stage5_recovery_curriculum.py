@@ -122,6 +122,7 @@ def resolve_trace_collection_summary(
 
 def print_markdown(path: Path, assessment: dict[str, Any]) -> None:
     counts = assessment.get("counts") if isinstance(assessment.get("counts"), dict) else {}
+    claim = assessment.get("claim_readiness") if isinstance(assessment.get("claim_readiness"), dict) else {}
     print("# Stage 4 Recovery Curriculum Readiness")
     print()
     print(f"- Trace summary: `{path_for_cli(path)}`")
@@ -135,6 +136,14 @@ def print_markdown(path: Path, assessment: dict[str, Any]) -> None:
     print(f"- Warnings: `{assessment.get('warnings')}`")
     print(f"- Issues: `{assessment.get('issues')}`")
     print(f"- Next step: {assessment.get('next_step')}")
+    print()
+    print("## Claim-Sized Readiness")
+    print()
+    print(f"- Claim-sized go: `{claim.get('go')}`")
+    print(f"- Positive row deficit: `{claim.get('positive_row_deficit')}`")
+    print(f"- Mode requirements: `{claim.get('mode_requirements')}`")
+    print(f"- Target-loop requirements: `{claim.get('target_loop_requirements')}`")
+    print(f"- Claim next step: {claim.get('next_step')}")
 
 
 def main() -> int:
@@ -149,6 +158,9 @@ def main() -> int:
         ),
     )
     parser.add_argument("--min-positive-rows", type=int, default=16)
+    parser.add_argument("--claim-min-positive-rows", type=int, default=2000)
+    parser.add_argument("--claim-min-mode-rows", default="direct=1000,deep_narrow=1000")
+    parser.add_argument("--claim-min-target-loop-rows", default="")
     parser.add_argument("--json", action="store_true", help="Print JSON instead of markdown.")
     args = parser.parse_args()
 
@@ -162,6 +174,9 @@ def main() -> int:
     assessment = assess_trace_curriculum_for_reentry_recovery(
         read_json(path),
         min_positive_rows=args.min_positive_rows,
+        claim_min_positive_rows=args.claim_min_positive_rows,
+        claim_min_mode_rows=args.claim_min_mode_rows,
+        claim_min_target_loop_rows=args.claim_min_target_loop_rows,
     )
     if args.json:
         print(json.dumps({"trace_summary": path_for_cli(path), **assessment}, indent=2), flush=True)

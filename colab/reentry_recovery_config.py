@@ -6,6 +6,8 @@ from typing import Any
 
 
 DEFAULT_STAGE4_MIN_POSITIVE_ROWS = 16
+DEFAULT_CLAIM_MIN_POSITIVE_ROWS = 2000
+DEFAULT_CLAIM_MIN_MODE_ROWS = {"direct": 1000, "deep_narrow": 1000}
 
 
 def int_dict_max_key(payload: Any, default: int) -> int:
@@ -93,6 +95,66 @@ def mode_rows_from_counts(mode_counts: Any) -> str:
     return ",".join(parts)
 
 
+def parse_row_requirements(value: str | dict[str, int] | None) -> dict[str, int]:
+    """Parse simple ``name=count`` requirement strings.
+
+    This intentionally accepts generic names so it can be used for curriculum
+    modes such as ``direct`` and ``deep_narrow`` as well as loop labels like
+    ``1`` and ``2``.
+    """
+
+    if value is None:
+        return {}
+    if isinstance(value, dict):
+        out: dict[str, int] = {}
+        for key, count in value.items():
+            try:
+                parsed = int(count)
+            except (TypeError, ValueError):
+                continue
+            if parsed >= 0:
+                out[str(key)] = parsed
+        return out
+
+    requirements: dict[str, int] = {}
+    for item in str(value).split(","):
+        item = item.strip()
+        if not item:
+            continue
+        if "=" in item:
+            key, count = item.split("=", 1)
+        elif ":" in item:
+            key, count = item.split(":", 1)
+        else:
+            continue
+        key = key.strip()
+        try:
+            parsed = int(count.strip())
+        except ValueError:
+            continue
+        if key and parsed >= 0:
+            requirements[key] = parsed
+    return requirements
+
+
+def row_requirement_report(observed: dict[str, int], required: dict[str, int]) -> dict[str, dict[str, Any]]:
+    report: dict[str, dict[str, Any]] = {}
+    for key, required_count in sorted(required.items()):
+        observed_count = int(observed.get(str(key), 0))
+        deficit = max(0, int(required_count) - observed_count)
+        report[str(key)] = {
+            "required": int(required_count),
+            "observed": observed_count,
+            "deficit": deficit,
+            "passed": deficit == 0,
+        }
+    return report
+
+
+def row_requirement_report_go(report: dict[str, dict[str, Any]]) -> bool:
+    return all(bool(item.get("passed")) for item in report.values())
+
+
 def target_loop_rows_from_counts(target_loop_counts: Any) -> str:
     """Convert target-loop counts into strict SFT gate requirements.
 
@@ -159,6 +221,9 @@ def assess_trace_curriculum_for_reentry_recovery(
     summary: dict[str, Any],
     *,
     min_positive_rows: int = DEFAULT_STAGE4_MIN_POSITIVE_ROWS,
+    claim_min_positive_rows: int = DEFAULT_CLAIM_MIN_POSITIVE_ROWS,
+    claim_min_mode_rows: str | dict[str, int] | None = DEFAULT_CLAIM_MIN_MODE_ROWS,
+    claim_min_target_loop_rows: str | dict[str, int] | None = None,
 ) -> dict[str, Any]:
     """Assess whether a trace curriculum is usable for bounded Stage 4 SFT.
 
@@ -199,6 +264,16 @@ def assess_trace_curriculum_for_reentry_recovery(
         warnings.append(f"sparse_highest_loop_bucket:{max_loop}={target_loop_counts.get(str(max_loop), 0)}")
 
     status = "stage4_curriculum_ready" if not issues else "stage4_curriculum_blocked"
+    claim_mode_requirements = parse_row_requirements(claim_min_mode_rows)
+    claim_loop_requirements = parse_row_requirements(claim_min_target_loop_rows)
+    claim_mode_report = row_requirement_report(mode_counts, claim_mode_requirements)
+    claim_loop_report = row_requirement_report(target_loop_counts, claim_loop_requirements)
+    claim_positive_deficit = max(0, int(claim_min_positive_rows) - positive_rows)
+    claim_go = (
+        claim_positive_deficit == 0
+        and row_requirement_report_go(claim_mode_report)
+        and row_requirement_report_go(claim_loop_report)
+    )
     return {
         "status": status,
         "go": not issues,
@@ -208,6 +283,19 @@ def assess_trace_curriculum_for_reentry_recovery(
         "strict_target_loop_gate": target_loop_rows_from_counts(target_loop_counts),
         "strict_mode_gate": mode_rows_from_counts(mode_counts),
         "max_target_loop": max_loop,
+        "claim_readiness": {
+            "go": claim_go,
+            "min_positive_rows": int(claim_min_positive_rows),
+            "positive_rows": positive_rows,
+            "positive_row_deficit": claim_positive_deficit,
+            "mode_requirements": claim_mode_report,
+            "target_loop_requirements": claim_loop_report,
+            "next_step": (
+                "Curriculum is claim-sized for the configured requirements."
+                if claim_go
+                else "Generate or collect more verified positive traces before using this curriculum for a performance claim."
+            ),
+        },
         "next_step": (
             "Use for bounded Stage 4 recovery smoke after Stage 3 passes; do not treat as claim-sized."
             if not issues

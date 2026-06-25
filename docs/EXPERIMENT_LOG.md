@@ -790,3 +790,9 @@ Colab/Drive backups for selected runs.
   explicit trace-summary override first, then latest gate-ready local/Drive
   trace collection, then the known default. Tests cover latest-ready selection,
   explicit override, and rejection of non-gate-ready summaries.
+- Stage 4 claim-size readiness: the recovery-curriculum readout now separates
+  bounded-smoke readiness from performance-claim readiness. The current trace
+  collection remains green for Stage 4 smoke, but against the default
+  claim-sized direct/deep threshold (`2000` positives, `direct=1000`,
+  `deep_narrow=1000`) it reports a `1937` positive-row deficit, with `974`
+  missing direct rows and `963` missing deep-narrow rows.

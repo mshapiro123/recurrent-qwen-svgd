@@ -4,7 +4,9 @@ from colab.reentry_recovery_config import (
     assess_trace_curriculum_for_reentry_recovery,
     int_dict_max_key,
     mode_rows_from_counts,
+    parse_row_requirements,
     repair_assessment_recovery_block_reason,
+    row_requirement_report,
     target_loop_rows_from_counts,
     trace_curriculum_counts,
 )
@@ -87,6 +89,20 @@ def test_trace_curriculum_readiness_allows_small_bounded_stage4_but_warns() -> N
     assert "sparse_highest_loop_bucket:3=9" in readiness["warnings"]
     assert readiness["strict_target_loop_gate"] == "1=26,2=28,3=9"
     assert readiness["strict_mode_gate"] == "deep_narrow=37,direct=26"
+    assert readiness["claim_readiness"]["go"] is False
+    assert readiness["claim_readiness"]["positive_row_deficit"] == 1937
+    assert readiness["claim_readiness"]["mode_requirements"]["direct"] == {
+        "required": 1000,
+        "observed": 26,
+        "deficit": 974,
+        "passed": False,
+    }
+    assert readiness["claim_readiness"]["mode_requirements"]["deep_narrow"] == {
+        "required": 1000,
+        "observed": 37,
+        "deficit": 963,
+        "passed": False,
+    }
 
 
 def test_trace_curriculum_readiness_blocks_missing_deep_rows() -> None:
@@ -99,6 +115,31 @@ def test_trace_curriculum_readiness_blocks_missing_deep_rows() -> None:
     assert readiness["go"] is False
     assert "missing_deep_rows" in readiness["issues"]
     assert "missing_deeper_target_loops" in readiness["issues"]
+
+
+def test_trace_curriculum_claim_readiness_can_be_configured() -> None:
+    readiness = assess_trace_curriculum_for_reentry_recovery(
+        trace_collection_summary(),
+        claim_min_positive_rows=60,
+        claim_min_mode_rows="direct=20,deep_narrow=30",
+        claim_min_target_loop_rows="1=20,2=20,3=8",
+    )
+
+    assert readiness["claim_readiness"]["go"] is True
+    assert readiness["claim_readiness"]["positive_row_deficit"] == 0
+    assert readiness["claim_readiness"]["target_loop_requirements"]["3"]["passed"] is True
+
+
+def test_parse_row_requirements_accepts_dict_and_csv() -> None:
+    assert parse_row_requirements({"direct": "4", "bad": "x", "negative": -1}) == {"direct": 4}
+    assert parse_row_requirements("1=8,2:4") == {"1": 8, "2": 4}
+
+
+def test_row_requirement_report_includes_deficits() -> None:
+    assert row_requirement_report({"direct": 3}, {"direct": 5, "deep_narrow": 2}) == {
+        "deep_narrow": {"required": 2, "observed": 0, "deficit": 2, "passed": False},
+        "direct": {"required": 5, "observed": 3, "deficit": 2, "passed": False},
+    }
 
 
 def passing_repair_assessment() -> dict:
