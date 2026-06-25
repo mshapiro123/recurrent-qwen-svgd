@@ -100,6 +100,12 @@ completed Drive artifact without rerunning GPU eval by using the same cell with:
 TARGET = "reentry_norm_recover_only"
 ```
 
+Use this first even if the run died after writing the raw drift,
+effective-pathway, and candidate-conversion files but before producing
+`summary.json`/`summary.md`; current `main` rebuilds those summaries and the
+assessment from raw outputs. Do not rerun the long GPU cell until recover-only
+has said the artifact is not recoverable.
+
 The current `main` version bounds Stage 2 candidate conversion to the same
 first-8 task subset used by the drift/effective-pathway diagnostics by default.
 It also defaults candidate conversion to seed `0` and `80` generated tokens.
