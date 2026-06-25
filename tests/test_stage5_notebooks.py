@@ -1375,6 +1375,12 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "DEFAULT_CHECKPOINT" not in cell
     assert "FALLBACK_CHECKPOINTS" not in cell
     assert "checkpoint_from_norm = bool(norm_checkpoint and not checkpoint_override)" in cell
+    assert '"checkpoint_source": checkpoint_source' in cell
+    assert '"checkpoint_from_stage2_norm": checkpoint_from_norm' in cell
+    assert '"stage2_norm_checkpoint": norm_checkpoint' in cell
+    assert '"checkpoint_override_used": bool(checkpoint_override)' in cell
+    assert "Checkpoint source:" in cell
+    assert "Checkpoint from Stage 2 norm assessment:" in cell
     assert 'allow_fallback=checkpoint_source == "explicit_fallback"' in cell
     assert "reentry_repair_checkpoint_source=" in cell
     assert 'candidate.with_name("reentry_assessment.json")' in cell

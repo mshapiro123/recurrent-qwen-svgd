@@ -931,3 +931,8 @@ Colab/Drive backups for selected runs.
   `bridge_gate`, finite train/depth metrics, and loop-1 preservation. A stale
   or legacy bridge-only repair smoke is now routed to a bounded Stage 3 rerun
   instead of Stage 4 recovery.
+- Stage 3 checkpoint provenance: the re-entry repair smoke summary now records
+  whether the source checkpoint came from the passed Stage 2 norm assessment,
+  an explicit user override, or an explicit fallback. This keeps later Stage 4
+  and benchmark readouts from conflating the normal front-of-queue path with an
+  archaeology run.
