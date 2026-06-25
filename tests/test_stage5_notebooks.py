@@ -335,6 +335,17 @@ def test_current_bootstrap_source_summary_override_fans_out_to_benchmark_and_con
         assert 'os.environ.pop("STAGE5_COMPETENCE_SOURCE_SUMMARY", None)' in payload
 
 
+def test_current_bootstrap_prefers_local_head_to_stale_ref_resolution() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+
+    for payload in (text, markdown):
+        assert "STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD" in payload
+        assert "git\", \"rev-parse\", \"HEAD" in payload
+        assert "using local HEAD" in payload
+        assert "RESOLVED_REF = local_head" in payload
+
+
 def test_current_bootstrap_exposes_depth_router_after_direct_preserve_target() -> None:
     text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     cell = (ROOT / "colab/STAGE5_DEPTH_ROUTER_AFTER_DIRECT_PRESERVE_CELL.py").read_text(encoding="utf-8")

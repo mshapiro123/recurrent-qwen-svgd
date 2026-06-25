@@ -1,4 +1,4 @@
-import base64, json, os, time, urllib.request
+import base64, json, os, subprocess, time, urllib.request
 from google.colab import userdata
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
@@ -51,6 +51,13 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "model_viability_queue" - queued no-training Qwen 3B/7B probes with VRAM-aware skipping.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
+PREFER_LOCAL_HEAD = os.environ.get("STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD", "1").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+    "on",
+}
 
 if TARGET == "traced_sft_scale64_benchmark" and os.environ.get(
     "STAGE5_ALLOW_STALE_SCALE64_BENCHMARK", "0"
@@ -1027,6 +1034,9 @@ TARGETS = {
             "competence_preserving_pipeline_v1",
             "traced_sft_competence_preserving_pipeline",
             "STAGE5_COMPETENCE_SOURCE_SUMMARY",
+            "STAGE5_COMPETENCE_MOUNT_DRIVE_FIRST",
+            "FORCE_DRIVE_REMOUNT",
+            "drive.mount",
             "stage5_debiased_benchmark_assessment_20260625_121302",
             "colab/run_stage5_competence_preserving_pipeline.py",
             "tests/test_stage5_competence_preserving_pipeline.py",
@@ -1174,6 +1184,22 @@ ref_payload = github_json(
     f"https://api.github.com/repos/{REPO}/git/ref/heads/{REF}?cache_bust={int(time.time())}"
 )
 RESOLVED_REF = ((ref_payload.get("object") or {}).get("sha") or REF).strip()
+if PREFER_LOCAL_HEAD:
+    try:
+        local_head = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except Exception:
+        local_head = ""
+    if local_head and local_head != RESOLVED_REF:
+        print(
+            "GitHub ref resolution differs from local checkout; using local HEAD "
+            f"{local_head[:12]} instead of {RESOLVED_REF[:12]}.",
+            flush=True,
+        )
+        RESOLVED_REF = local_head
 
 selected = TARGETS[TARGET]
 if SOURCE_SUMMARY_OVERRIDE:
