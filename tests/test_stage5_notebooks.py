@@ -1308,6 +1308,8 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "restore_incremental_backup" in cell
     assert "STAGE5_REENTRY_REPAIR_RESTORE_INCREMENTAL_BACKUP" in cell
     assert "restored_repair_incremental_backup" in cell
+    assert "existing_train_log_metrics" in cell
+    assert "resume_retrain=train_phase1_ponder" in cell
     assert "resume_skip=train_phase1_ponder" in cell
     assert "colab/assess_stage5_reentry.py" in cell
     assert "publishable_artifact_paths" in cell

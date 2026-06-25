@@ -690,3 +690,8 @@ Colab/Drive backups for selected runs.
   covered by a planner-style source-chain test that resolves the benchmark
   assessment to both the recurrent benchmark suite and the underlying Stage 4
   curriculum defaults.
+- Stage 3 resume safety: `reentry_repair_smoke` now skips Phase 1 repair
+  training only when both the trained checkpoint and parseable train-log
+  metrics exist. If Colab restores a checkpoint without a usable
+  `train_phase1_ponder.log`, the cell reruns the tiny repair training instead
+  of publishing a metric-empty artifact that Stage 4 would later reject.

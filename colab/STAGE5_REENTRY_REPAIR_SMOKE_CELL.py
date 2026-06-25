@@ -740,9 +740,22 @@ def main() -> None:
     config = write_config(config_path, checkpoint=checkpoint, out_dir=train_out_dir)
 
     trained_checkpoint = train_out_dir / f"phase1_step_{config['max_steps']}.pt"
-    if trained_checkpoint.exists():
-        print(f"resume_skip=train_phase1_ponder checkpoint={trained_checkpoint}", flush=True)
+    train_log_path = diag_dir / "train_phase1_ponder.log"
+    existing_train_log_metrics = parse_train_log_metrics(train_log_path)
+    if trained_checkpoint.exists() and existing_train_log_metrics.get("available") is True:
+        print(
+            "resume_skip=train_phase1_ponder "
+            f"checkpoint={trained_checkpoint} train_log={train_log_path} "
+            f"last_step={existing_train_log_metrics.get('last_step')}",
+            flush=True,
+        )
     else:
+        if trained_checkpoint.exists():
+            print(
+                "resume_retrain=train_phase1_ponder "
+                f"checkpoint={trained_checkpoint} train_log_reason={existing_train_log_metrics.get('reason')}",
+                flush=True,
+            )
         train_proc = run(
             [
                 sys.executable,
@@ -755,14 +768,14 @@ def main() -> None:
                 os.environ.get("STAGE5_REENTRY_REPAIR_DEVICE", "cuda"),
             ]
         )
-        (diag_dir / "train_phase1_ponder.log").write_text(train_proc.stdout, encoding="utf-8")
+        train_log_path.write_text(train_proc.stdout, encoding="utf-8")
         incremental_backup(out_dir)
     if not trained_checkpoint.exists():
         raise FileNotFoundError(f"Expected trained checkpoint missing: {trained_checkpoint}")
     trained_checkpoint_rel = trained_checkpoint.relative_to(ROOT).as_posix()
     post_drift_path = run_drift("post", trained_checkpoint_rel, diag_dir)
     loop1_preservation = run_loop1_preservation(checkpoint, trained_checkpoint_rel, diag_dir)
-    train_log_metrics = parse_train_log_metrics(diag_dir / "train_phase1_ponder.log")
+    train_log_metrics = parse_train_log_metrics(train_log_path)
     incremental_backup(out_dir)
 
     pre_payload = json.loads(pre_drift_path.read_text(encoding="utf-8"))
@@ -779,7 +792,7 @@ def main() -> None:
             "post_drift": post_drift_path.relative_to(ROOT).as_posix(),
             "train_jsonl": train_jsonl.relative_to(ROOT).as_posix(),
             "train_config": config_path.relative_to(ROOT).as_posix(),
-            "train_log": (diag_dir / "train_phase1_ponder.log").relative_to(ROOT).as_posix(),
+            "train_log": train_log_path.relative_to(ROOT).as_posix(),
             "loop1_preservation": loop1_preservation["jsonl"],
         },
         "pre_bridge": bridge_summary(pre_payload),
