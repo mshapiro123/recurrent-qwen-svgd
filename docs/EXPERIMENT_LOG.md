@@ -870,3 +870,9 @@ Colab/Drive backups for selected runs.
   `STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES=bridge_proj,reentry,halt`. This
   keeps the scalar gate active and checkpointed while testing the bridge
   projection plus re-entry adapter.
+- Stage 4 post-recovery re-entry health gate: `reentry_recovery_training` now
+  runs a cheap `eval/eval_reentry_drift.py` probe after recovery SFT and
+  publishes `post_reentry_health_checks`. The Stage 4 reviewer and next-run
+  planner now block the debiased benchmark unless that health status is
+  `reentry_health_sane`, preventing a recovery run from silently closing the
+  bridge/re-entry path after Stage 3 repaired it.

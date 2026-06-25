@@ -3456,6 +3456,7 @@ def test_reentry_recovery_training_routes_to_debiased_benchmark_bootstrap_target
         "kind": "stage5_reentry_recovery_training",
         "checkpoint": "outputs/stage5/reentry_recovery/phase1/phase1_step_75.pt",
         "validation_checks": {"status": "validation_sane", "issues": []},
+        "post_reentry_health_checks": {"status": "reentry_health_sane", "issues": []},
     }
 
     actions = plan_next_actions(payload, source_summary=source)
@@ -3510,6 +3511,7 @@ def test_master_sequence_phase0_phase1_spine_routes_in_order(tmp_path) -> None:
         "kind": "stage5_reentry_recovery_training",
         "checkpoint": "outputs/stage5/reentry_recovery/phase1/phase1_step_75.pt",
         "validation_checks": {"status": "validation_sane", "issues": []},
+        "post_reentry_health_checks": {"status": "reentry_health_sane", "issues": []},
     }
 
     benchmark_summary = tmp_path / "stage5_debiased_benchmark_assessment" / "summary.json"
@@ -3569,6 +3571,44 @@ def test_reentry_recovery_training_blocks_benchmark_when_validation_needs_review
 
     assert actions[0]["name"] == "Inspect re-entry recovery validation before benchmark"
     assert "target_loop_gradient_not_observed" in actions[0]["reason"]
+    assert "debiased_benchmark_suite" not in actions[0]["command"]
+
+
+def test_reentry_recovery_training_blocks_benchmark_without_post_reentry_health(tmp_path) -> None:
+    source = tmp_path / "reentry_recovery" / "summary.json"
+    source.parent.mkdir(parents=True)
+    payload = {
+        "run_id": "reentry_recovery",
+        "kind": "stage5_reentry_recovery_training",
+        "checkpoint": "outputs/stage5/reentry_recovery/phase1/phase1_step_75.pt",
+        "validation_checks": {"status": "validation_sane", "issues": []},
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Rerun re-entry recovery with post-recovery health probe"
+    assert "STAGE5_CURRENT_A100_TARGET=reentry_recovery_training" in actions[0]["command"]
+    assert "debiased_benchmark_suite" not in actions[0]["command"]
+
+
+def test_reentry_recovery_training_blocks_benchmark_when_post_reentry_unhealthy(tmp_path) -> None:
+    source = tmp_path / "reentry_recovery" / "summary.json"
+    source.parent.mkdir(parents=True)
+    payload = {
+        "run_id": "reentry_recovery",
+        "kind": "stage5_reentry_recovery_training",
+        "checkpoint": "outputs/stage5/reentry_recovery/phase1/phase1_step_75.pt",
+        "validation_checks": {"status": "validation_sane", "issues": []},
+        "post_reentry_health_checks": {
+            "status": "reentry_health_needs_review",
+            "issues": ["bridge_gate_inactive_after_recovery"],
+        },
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect post-recovery re-entry health before benchmark"
+    assert "bridge_gate_inactive_after_recovery" in actions[0]["reason"]
     assert "debiased_benchmark_suite" not in actions[0]["command"]
 
 

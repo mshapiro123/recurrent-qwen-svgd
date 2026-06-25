@@ -196,7 +196,9 @@ This uses:
 Runtime: L4 may work for 0.5B; use G4/A100 only if L4 is too slow or unavailable.
 
 Gate: finite validation, loop-depth gradient present, easy/direct behavior not
-collapsed. Benchmark before returning to breadth.
+collapsed, and `post_reentry_health_checks.status == "reentry_health_sane"`
+after the cheap post-recovery drift probe. Benchmark before returning to
+breadth.
 
 ### 4. Phase 1 depth benchmark/control arm
 

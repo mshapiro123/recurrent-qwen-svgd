@@ -70,6 +70,43 @@ def test_phase1_gate_waits_when_no_benchmark_assessment(tmp_path: Path) -> None:
     assert review["launch_env"] == {}
 
 
+def test_phase1_gate_blocks_stage4_pointer_without_post_reentry_health(tmp_path: Path) -> None:
+    current = write_summary(
+        tmp_path / "outputs" / "stage5" / "stage4" / "summary.json",
+        {
+            "kind": "stage5_reentry_recovery_training",
+            "checkpoint": "outputs/stage5/stage4/phase1/phase1_step_75.pt",
+            "validation_checks": {"status": "validation_sane", "issues": []},
+        },
+    )
+    pointer = write_pointer(tmp_path / "config" / "stage5_current_source_summary.txt", current)
+
+    review = build_review(tmp_path / "outputs" / "stage5", pointer=pointer)
+
+    assert review["action"] == "stop_reentry_recovery_health_needs_review"
+    assert review["next_target"] == ""
+    assert "post-recovery re-entry health" in review["next_step"]
+
+
+def test_phase1_gate_waits_for_benchmark_after_healthy_stage4_pointer(tmp_path: Path) -> None:
+    current = write_summary(
+        tmp_path / "outputs" / "stage5" / "stage4" / "summary.json",
+        {
+            "kind": "stage5_reentry_recovery_training",
+            "checkpoint": "outputs/stage5/stage4/phase1/phase1_step_75.pt",
+            "validation_checks": {"status": "validation_sane", "issues": []},
+            "post_reentry_health_checks": {"status": "reentry_health_sane", "issues": []},
+        },
+    )
+    pointer = write_pointer(tmp_path / "config" / "stage5_current_source_summary.txt", current)
+
+    review = build_review(tmp_path / "outputs" / "stage5", pointer=pointer)
+
+    assert review["action"] == "wait_for_debiased_benchmark_suite"
+    assert review["next_target"] == ""
+    assert review["launch_env"] == {}
+
+
 def test_phase1_gate_stops_when_recurrent_benchmark_does_not_pass(tmp_path: Path) -> None:
     benchmark = write_summary(
         tmp_path / "outputs" / "stage5" / "bench" / "summary.json",

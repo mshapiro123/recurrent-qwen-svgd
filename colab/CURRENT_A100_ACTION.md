@@ -130,6 +130,9 @@ run_bounded_recovery_training_with_reentry_repair
 ```
 
 After Stage 4 publishes, run `master_sequence_status` and only then benchmark.
+Stage 4 now also publishes `post_reentry_health_checks`; if that object is
+missing or not `reentry_health_sane`, rerun or inspect Stage 4 instead of
+benchmarking.
 The intended order is:
 
 ```text
@@ -190,6 +193,8 @@ Stop and review if any of these happen:
   `bridge_proj,reentry,halt`.
 - Stage 3 loop-1 preservation regresses.
 - Stage 4 validation is not finite or lacks a target-loop gradient.
+- Stage 4 post-recovery re-entry health is missing or not
+  `reentry_health_sane`.
 - The debiased benchmark shows deterministic recurrence still trails base on
   easy/direct rows.
 

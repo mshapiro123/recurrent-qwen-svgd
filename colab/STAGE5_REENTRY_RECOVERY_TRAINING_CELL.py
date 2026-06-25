@@ -21,7 +21,7 @@ from typing import Any
 from google.colab import drive, runtime, userdata
 
 
-STAGE5_REENTRY_RECOVERY_CELL_VERSION = "reentry_recovery_training_v3_wrapper_summary"
+STAGE5_REENTRY_RECOVERY_CELL_VERSION = "reentry_recovery_training_v4_post_reentry_health"
 STAGE5_REENTRY_RECOVERY_TARGET = "reentry_recovery_training"
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
@@ -121,6 +121,25 @@ def read_json(path: Path) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError(f"{path} is not a JSON object")
     return payload
+
+
+def finite_float(value: Any, default: float = 0.0) -> float:
+    try:
+        out = float(value)
+    except (TypeError, ValueError):
+        return default
+    if out != out or out in {float("inf"), float("-inf")}:
+        return default
+    return out
+
+
+def nested(payload: dict[str, Any], *keys: str, default: Any = None) -> Any:
+    current: Any = payload
+    for key in keys:
+        if not isinstance(current, dict):
+            return default
+        current = current.get(key)
+    return default if current is None else current
 
 
 def env_flag(name: str, default: str = "0") -> bool:
@@ -504,6 +523,122 @@ def derive_sft_env(trace_summary: Path, repair: dict[str, Any]) -> dict[str, str
     return env
 
 
+def post_reentry_health_checks(payload: dict[str, Any]) -> dict[str, Any]:
+    bridge = payload.get("bridge") if isinstance(payload.get("bridge"), dict) else {}
+    bridge_live = payload.get("bridge_gradient_liveness") if isinstance(payload.get("bridge_gradient_liveness"), dict) else {}
+    adapter = payload.get("reentry_adapter") if isinstance(payload.get("reentry_adapter"), dict) else {}
+    adapter_live = (
+        payload.get("reentry_adapter_gradient_liveness")
+        if isinstance(payload.get("reentry_adapter_gradient_liveness"), dict)
+        else {}
+    )
+    aggregate = payload.get("aggregate") if isinstance(payload.get("aggregate"), dict) else {}
+    loop_summary = aggregate.get("loop_summary") if isinstance(aggregate.get("loop_summary"), dict) else {}
+
+    min_gate = finite_float(os.environ.get("STAGE5_REENTRY_RECOVERY_HEALTH_MIN_BRIDGE_GATE", "0.05"), 0.05)
+    max_loop8_output = finite_float(os.environ.get("STAGE5_REENTRY_RECOVERY_HEALTH_MAX_LOOP8_OUTPUT_OVER_ENTRY_RMS", "3.0"), 3.0)
+    gate = finite_float(bridge.get("bridge_gate"))
+    bridge_delta = finite_float(bridge.get("sample_bridge_delta_rms"))
+    bridge_weight_grad = finite_float(bridge_live.get("weight_grad_rms"))
+    bridge_bias_grad = finite_float(bridge_live.get("bias_grad_rms"))
+    adapter_delta = finite_float(adapter.get("sample_adapter_delta_rms"))
+    adapter_scale_grad = finite_float(adapter_live.get("scale_grad_rms"))
+    adapter_bias_grad = finite_float(adapter_live.get("bias_grad_rms"))
+    loop8 = loop_summary.get("8") if isinstance(loop_summary.get("8"), dict) else {}
+    loop8_output_over_entry = finite_float(loop8.get("output_over_entry_rms"), 0.0)
+    loop8_output_over_input = finite_float(loop8.get("output_over_input_rms"), 0.0)
+
+    issues: list[str] = []
+    if abs(gate) < min_gate:
+        issues.append("bridge_gate_inactive_after_recovery")
+    if bridge_weight_grad <= 0.0 or bridge_bias_grad <= 0.0:
+        issues.append("bridge_gradient_not_live_after_recovery")
+    if bridge_delta <= 0.0:
+        issues.append("bridge_delta_zero_after_recovery")
+    if adapter_scale_grad <= 0.0 or adapter_bias_grad <= 0.0:
+        issues.append("reentry_adapter_gradient_not_live_after_recovery")
+    if adapter_delta <= 0.0:
+        issues.append("reentry_adapter_delta_zero_after_recovery")
+    if loop8_output_over_entry <= 0.0 or loop8_output_over_entry > max_loop8_output:
+        issues.append("loop8_output_over_entry_rms_unbounded_after_recovery")
+
+    return {
+        "status": "reentry_health_sane" if not issues else "reentry_health_needs_review",
+        "issues": issues,
+        "thresholds": {
+            "min_bridge_gate_abs": min_gate,
+            "max_loop8_output_over_entry_rms": max_loop8_output,
+        },
+        "metrics": {
+            "bridge_gate": gate,
+            "bridge_delta_rms": bridge_delta,
+            "bridge_weight_grad_rms": bridge_weight_grad,
+            "bridge_bias_grad_rms": bridge_bias_grad,
+            "reentry_adapter_delta_rms": adapter_delta,
+            "reentry_adapter_scale_grad_rms": adapter_scale_grad,
+            "reentry_adapter_bias_grad_rms": adapter_bias_grad,
+            "loop8_output_over_entry_rms": loop8_output_over_entry,
+            "loop8_output_over_input_rms": loop8_output_over_input,
+            "mean_exit_over_entry_rms": finite_float(aggregate.get("mean_exit_over_entry_rms")),
+            "subspace_overlap": finite_float(nested(aggregate, "entry_exit_subspace", "overlap")),
+        },
+    }
+
+
+def run_post_reentry_health_probe(
+    *,
+    checkpoint: str,
+    env: dict[str, str],
+    out_dir: Path,
+) -> dict[str, Any]:
+    output_json = out_dir / "post_reentry_drift.json"
+    output_jsonl = out_dir / "post_reentry_drift.jsonl"
+    max_loops = os.environ.get("STAGE5_REENTRY_RECOVERY_HEALTH_MAX_LOOPS", "8")
+    limit = os.environ.get("STAGE5_REENTRY_RECOVERY_HEALTH_PROMPT_LIMIT", "6")
+    cmd = [
+        sys.executable,
+        "eval/eval_reentry_drift.py",
+        "--model_name",
+        env.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct"),
+        "--checkpoint",
+        checkpoint,
+        "--split",
+        env.get("STAGE5_CURRICULUM_LAYER_SPLIT", "auto"),
+        "--max_loops",
+        max_loops,
+        "--max_length",
+        os.environ.get("STAGE5_REENTRY_RECOVERY_HEALTH_MAX_LENGTH", "256"),
+        "--limit",
+        limit,
+        "--reentry_rescale_mode",
+        env.get("STAGE5_CURRICULUM_REENTRY_RESCALE_MODE", "entry_rms"),
+        "--dtype",
+        env.get("DTYPE", "bfloat16"),
+        "--adapter_dtype",
+        env.get("ADAPTER_DTYPE", "float32"),
+        "--device",
+        env.get("DEVICE", "cuda"),
+        "--output_json",
+        path_for_cli(output_json),
+        "--output_jsonl",
+        path_for_cli(output_jsonl),
+    ]
+    if env.get("STAGE5_CURRICULUM_USE_REENTRY_ADAPTER", "0").strip().lower() in {"1", "true", "yes", "y", "on"}:
+        cmd.append("--use_reentry_adapter")
+    run(cmd, env=env)
+    payload = read_json(output_json)
+    health = post_reentry_health_checks(payload)
+    health_path = out_dir / "post_reentry_health_checks.json"
+    health_path.write_text(json.dumps(health, indent=2), encoding="utf-8")
+    print("post_reentry_health_checks=" + json.dumps(health, indent=2), flush=True)
+    return {
+        "summary_path": path_for_cli(output_json),
+        "records_path": path_for_cli(output_jsonl),
+        "health_path": path_for_cli(health_path),
+        "health_checks": health,
+    }
+
+
 def current_source_summary_file() -> Path:
     return ROOT / "config" / "stage5_current_source_summary.txt"
 
@@ -523,6 +658,7 @@ def write_reentry_recovery_wrapper_summary(
     repair: dict[str, Any],
     trace_summary: Path,
     env: dict[str, str],
+    post_reentry_probe: dict[str, Any],
 ) -> Path:
     from colab.stage5_publish_utils import update_current_source_summary
 
@@ -552,6 +688,11 @@ def write_reentry_recovery_wrapper_summary(
         "phase1_val_by_mode": child_payload.get("phase1_val_by_mode", {}),
         "phase1_val_by_target_loop": child_payload.get("phase1_val_by_target_loop", {}),
         "validation_checks": validation_checks,
+        "post_reentry_drift": {
+            "summary_path": post_reentry_probe.get("summary_path"),
+            "records_path": post_reentry_probe.get("records_path"),
+        },
+        "post_reentry_health_checks": post_reentry_probe.get("health_checks", {}),
         "next_step": (
             "Run debiased_benchmark_suite against this repaired deterministic recurrent checkpoint before "
             "dense control, breadth diagnostics, particles, or SVGD."
@@ -573,6 +714,13 @@ def write_reentry_recovery_wrapper_summary(
         "## Validation Checks",
         "```json",
         json.dumps(validation_checks, indent=2),
+        "```",
+        "",
+        "## Post-Recovery Re-entry Health",
+        f"- Drift summary: `{post_reentry_probe.get('summary_path')}`",
+        f"- Health status: `{post_reentry_probe.get('health_checks', {}).get('status')}`",
+        "```json",
+        json.dumps(post_reentry_probe.get("health_checks", {}), indent=2),
         "```",
         "",
         "## Next Step",
@@ -627,10 +775,24 @@ def main() -> None:
     trace_summary = resolve_trace_collection_summary()
     env = derive_sft_env(trace_summary, repair)
     run([sys.executable, "colab/run_stage5_curriculum_sft.py"], env=env)
+    child_summary = current_source_summary_path()
+    child_payload = read_json(child_summary)
+    checkpoint = str(child_payload.get("phase1_checkpoint") or child_payload.get("checkpoint") or "")
+    if not checkpoint:
+        raise RuntimeError(f"Child Stage 4 curriculum summary is missing checkpoint: {child_summary}")
+    wrapper_run_id = env["STAGE5_REENTRY_RECOVERY_WRAPPER_RUN_ID"]
+    wrapper_run_dir = ROOT / "outputs" / "stage5" / wrapper_run_id
+    wrapper_run_dir.mkdir(parents=True, exist_ok=True)
+    post_reentry_probe = run_post_reentry_health_probe(
+        checkpoint=checkpoint,
+        env=env,
+        out_dir=wrapper_run_dir,
+    )
     wrapper_summary = write_reentry_recovery_wrapper_summary(
         repair=repair,
         trace_summary=trace_summary,
         env=env,
+        post_reentry_probe=post_reentry_probe,
     )
     publish_reentry_recovery_wrapper(wrapper_summary)
     if env_flag("STAGE5_REENTRY_RECOVERY_DISCONNECT", "1"):

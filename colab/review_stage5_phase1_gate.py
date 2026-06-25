@@ -134,6 +134,16 @@ def launch_env_for_dense_control(benchmark_assessment_path: Path) -> dict[str, s
     }
 
 
+def reentry_recovery_health_block_reason(payload: dict[str, Any]) -> str | None:
+    checks = payload.get("post_reentry_health_checks")
+    if not isinstance(checks, dict):
+        return "Stage 4 recovery summary is missing post-recovery re-entry health checks."
+    status = str(checks.get("status") or "")
+    if status != "reentry_health_sane":
+        return f"Stage 4 post-recovery re-entry health is `{status}` with issues `{checks.get('issues', [])}`."
+    return None
+
+
 def build_review(
     scan_root: Path | None = None,
     *,
@@ -142,6 +152,26 @@ def build_review(
     pointer_path, pointer_payload, pointer_info = current_pointer_payload(pointer)
     pointer_kind = pointer_payload.get("kind") if pointer_payload else None
     pointer_gate = pointer_payload.get("gate") if pointer_payload else None
+    if pointer_payload and pointer_kind == "stage5_reentry_recovery_training":
+        health_block_reason = reentry_recovery_health_block_reason(pointer_payload)
+        if health_block_reason:
+            pointer_info.setdefault("preferred", False)
+            return {
+                "kind": REVIEW_KIND,
+                "reviewed_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "benchmark_assessment": None,
+                "benchmark_status": None,
+                "benchmark_passed": False,
+                "arc_challenge_delta_recurrent_vs_base": None,
+                "dense_control_assessment": None,
+                "dense_control_status": None,
+                "dense_control_passed": False,
+                "current_pointer": pointer_info,
+                "action": "stop_reentry_recovery_health_needs_review",
+                "next_target": "",
+                "next_step": health_block_reason + " Do not run debiased benchmark, dense control, or breadth diagnostics yet.",
+                "launch_env": {},
+            }
     if pointer_payload and pointer_gate not in {BENCHMARK_GATE, DENSE_GATE} and pointer_kind != "stage5_reentry_recovery_training":
         pointer_info.setdefault("preferred", False)
         return {

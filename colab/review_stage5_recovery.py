@@ -110,6 +110,11 @@ def launch_env_for_summary(path: Path) -> dict[str, str]:
     }
 
 
+def reentry_health_checks(payload: dict[str, Any]) -> dict[str, Any]:
+    checks = payload.get("post_reentry_health_checks")
+    return checks if isinstance(checks, dict) else {}
+
+
 def build_review(scan_root: Path | None = None, *, pointer: Path | None = None) -> dict[str, Any]:
     summary_path, payload, pointer_info = latest_recovery_summary(scan_root, pointer=pointer)
     if payload is None or summary_path is None:
@@ -130,6 +135,9 @@ def build_review(scan_root: Path | None = None, *, pointer: Path | None = None) 
     validation_checks = payload.get("validation_checks") if isinstance(payload.get("validation_checks"), dict) else {}
     validation_status = str(validation_checks.get("status") or payload.get("status") or "")
     issues = validation_checks.get("issues") if isinstance(validation_checks.get("issues"), list) else []
+    health_checks = reentry_health_checks(payload)
+    health_status = str(health_checks.get("status") or "")
+    health_issues = health_checks.get("issues") if isinstance(health_checks.get("issues"), list) else []
 
     if not checkpoint:
         action = "stop_recovery_checkpoint_missing"
@@ -140,6 +148,16 @@ def build_review(scan_root: Path | None = None, *, pointer: Path | None = None) 
         action = "stop_recovery_validation_needs_review"
         target = ""
         next_step = f"Stage 4 validation status is {validation_status!r} with issues {issues}; do not benchmark or run dense control yet."
+        launch_env = {}
+    elif not health_status:
+        action = "stop_recovery_reentry_health_missing"
+        target = ""
+        next_step = "Stage 4 recovery summary is missing post-recovery re-entry health checks; rerun the updated reentry_recovery_training target before benchmarking."
+        launch_env = {}
+    elif health_status != "reentry_health_sane":
+        action = "stop_recovery_reentry_health_needs_review"
+        target = ""
+        next_step = f"Stage 4 post-recovery re-entry health is {health_status!r} with issues {health_issues}; do not benchmark or run dense control yet."
         launch_env = {}
     else:
         action = "run_debiased_benchmark_suite"
@@ -155,6 +173,8 @@ def build_review(scan_root: Path | None = None, *, pointer: Path | None = None) 
         "latest_status": validation_status or payload.get("status"),
         "checkpoint": checkpoint,
         "validation_issues": issues,
+        "reentry_health_status": health_status,
+        "reentry_health_issues": health_issues,
         "action": action,
         "next_target": target,
         "next_step": next_step,
@@ -172,6 +192,8 @@ def report_lines(payload: dict[str, Any]) -> list[str]:
         f"- Latest status: `{payload.get('latest_status')}`",
         f"- Checkpoint: `{payload.get('checkpoint') or ''}`",
         f"- Validation issues: `{payload.get('validation_issues') or []}`",
+        f"- Re-entry health status: `{payload.get('reentry_health_status') or ''}`",
+        f"- Re-entry health issues: `{payload.get('reentry_health_issues') or []}`",
         f"- Action: `{payload.get('action')}`",
         f"- Next target: `{payload.get('next_target') or 'none'}`",
         f"- Next step: {payload.get('next_step')}",

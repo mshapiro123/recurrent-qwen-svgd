@@ -22,6 +22,7 @@ def recovery_payload(**overrides):
         "run_id": "stage5_reentry_recovery_test",
         "checkpoint": "outputs/stage5/stage5_reentry_recovery_test/phase1/phase1_step_75.pt",
         "validation_checks": {"status": "validation_sane", "issues": []},
+        "post_reentry_health_checks": {"status": "reentry_health_sane", "issues": []},
     }
     payload.update(overrides)
     return payload
@@ -59,6 +60,39 @@ def test_recovery_review_blocks_validation_issues(tmp_path: Path) -> None:
     assert review["action"] == "stop_recovery_validation_needs_review"
     assert review["next_target"] == ""
     assert review["validation_issues"] == ["target_loop_gradient_not_observed"]
+
+
+def test_recovery_review_blocks_missing_post_reentry_health(tmp_path: Path) -> None:
+    payload = recovery_payload()
+    del payload["post_reentry_health_checks"]
+    summary = write_summary(
+        tmp_path / "outputs" / "stage5" / "stage4" / "summary.json",
+        payload,
+    )
+
+    review = build_review(tmp_path / "outputs" / "stage5", pointer=write_pointer(tmp_path / "config" / "stage5_current_source_summary.txt", summary))
+
+    assert review["action"] == "stop_recovery_reentry_health_missing"
+    assert review["next_target"] == ""
+    assert review["launch_env"] == {}
+
+
+def test_recovery_review_blocks_unhealthy_post_reentry_path(tmp_path: Path) -> None:
+    summary = write_summary(
+        tmp_path / "outputs" / "stage5" / "stage4" / "summary.json",
+        recovery_payload(
+            post_reentry_health_checks={
+                "status": "reentry_health_needs_review",
+                "issues": ["bridge_gate_inactive_after_recovery"],
+            }
+        ),
+    )
+
+    review = build_review(tmp_path / "outputs" / "stage5", pointer=write_pointer(tmp_path / "config" / "stage5_current_source_summary.txt", summary))
+
+    assert review["action"] == "stop_recovery_reentry_health_needs_review"
+    assert review["next_target"] == ""
+    assert review["reentry_health_issues"] == ["bridge_gate_inactive_after_recovery"]
 
 
 def test_recovery_review_routes_sane_recovery_to_benchmark_with_source_override(tmp_path: Path) -> None:

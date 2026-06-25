@@ -38,7 +38,7 @@ for a tiny trainable repair smoke. The next targets are:
    - Runtime: L4/T4 for 0.5B unless too slow.
    - Purpose: deterministic depth recovery after loop closure is live.
    - Gate: finite validation, target-loop supervision active, easy/direct
-     behavior not collapsed.
+     behavior not collapsed, and post-recovery re-entry health sane.
 3. `debiased_benchmark_suite`
    - Runtime: L4/T4 for 0.5B benchmark slices.
    - Purpose: compare base Qwen 0.5B and repaired recurrent Qwen on

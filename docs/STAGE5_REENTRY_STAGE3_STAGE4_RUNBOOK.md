@@ -153,6 +153,9 @@ Configured behavior:
 - uses strict target-loop row gates derived from the actual trace collection.
 - backs up the run directory to Drive immediately after training, before
   validation, and refreshes that backup after the final summary is written.
+- runs a cheap post-recovery re-entry drift probe on the trained checkpoint and
+  refuses benchmark handoff unless bridge gate, bridge gradients, re-entry
+  adapter gradients, and loop-8 norm bounds remain healthy.
 
 Benchmark handoff:
 
@@ -186,6 +189,7 @@ Success:
 - target-loop gradient is present;
 - loop-depth behavior changes measurably;
 - direct/loop-1 behavior does not collapse;
+- post-recovery re-entry health status is `reentry_health_sane`;
 - recovered deterministic model is ready for broader base-vs-recurrent
   benchmark assessment.
 
@@ -194,6 +198,8 @@ Failure:
 - nonfinite trainable params or gradients;
 - target-loop gradient missing;
 - target-loop row gates fail;
+- post-recovery bridge gate collapses, bridge gradients go dead, re-entry
+  adapter gradients go dead, or loop-8 output/input norms become unbounded;
 - direct behavior regresses sharply;
 - checkpoint provenance cannot be restored from Drive/Git.
 
@@ -224,10 +230,12 @@ python colab/review_stage5_phase1_gate.py --no_write
 ```
 
 The first reviewer decides whether a Stage 4 checkpoint is ready for the
-debiased benchmark. The second reviewer ignores stale benchmark artifacts until
-the current pointer has reached Stage 4 recovery, then enforces the Phase 1
-claim sequence: recurrent-vs-base benchmark first, dense same-curriculum
-control second, breadth/particles only after architecture lift is visible.
+debiased benchmark and now blocks stale Stage 4 summaries that lack
+`post_reentry_health_checks`. The second reviewer ignores stale benchmark
+artifacts until the current pointer has reached Stage 4 recovery, then
+enforces the Phase 1 claim sequence: recurrent-vs-base benchmark first, dense
+same-curriculum control second, breadth/particles only after architecture lift
+is visible.
 
 ## Return to particles/SVGD
 

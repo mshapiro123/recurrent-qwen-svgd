@@ -1398,7 +1398,7 @@ def test_reentry_recovery_training_target_is_bootstrapped() -> None:
     assert "reentry_recovery_training" in bootstrap_md
     assert "colab/STAGE5_REENTRY_RECOVERY_TRAINING_CELL.py" in bootstrap
     assert "STAGE5_REENTRY_RECOVERY_CELL_VERSION" in cell
-    assert "reentry_recovery_training_v3_wrapper_summary" in cell
+    assert "reentry_recovery_training_v4_post_reentry_health" in cell
     assert "STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT" in cell
     assert 'candidate.with_name("reentry_assessment.json")' in cell
     assert "current_pointer_repair_assessment_candidates" in bootstrap
@@ -1434,6 +1434,9 @@ def test_reentry_recovery_training_target_is_bootstrapped() -> None:
     assert 'parts.append(f"{loop}=1")' not in cell
     assert "colab/run_stage5_curriculum_sft.py" in cell
     assert "write_reentry_recovery_wrapper_summary" in cell
+    assert "run_post_reentry_health_probe" in cell
+    assert "post_reentry_health_checks" in cell
+    assert "eval/eval_reentry_drift.py" in cell
     assert '"kind": "stage5_reentry_recovery_training"' in cell
     assert "publish_reentry_recovery_wrapper" in cell
     assert "debiased_benchmark_suite" in cell

@@ -1592,6 +1592,9 @@ def reentry_recovery_training_actions(payload: dict[str, Any], *, source_summary
     checkpoint = str(payload.get("phase1_checkpoint") or payload.get("checkpoint") or "").strip()
     validation_checks = payload.get("validation_checks") if isinstance(payload.get("validation_checks"), dict) else {}
     validation_status = str(validation_checks.get("status") or payload.get("status") or "")
+    reentry_health = payload.get("post_reentry_health_checks") if isinstance(payload.get("post_reentry_health_checks"), dict) else {}
+    reentry_health_status = str(reentry_health.get("status") or "")
+    reentry_health_issues = reentry_health.get("issues") if isinstance(reentry_health.get("issues"), list) else []
     if not checkpoint:
         return [
             make_action(
@@ -1608,6 +1611,30 @@ def reentry_recovery_training_actions(payload: dict[str, Any], *, source_summary
                 (
                     f"Stage 4 re-entry recovery reports validation status `{validation_status}` with "
                     f"issues `{validation_checks.get('issues', [])}`; do not benchmark or run dense control yet."
+                ),
+                f"cat {shlex.quote(command_path(source_summary))}",
+                10,
+            )
+        ]
+    if not reentry_health_status:
+        return [
+            make_action(
+                "Rerun re-entry recovery with post-recovery health probe",
+                (
+                    "Stage 4 re-entry recovery summary predates the post-recovery bridge/re-entry health gate. "
+                    "Rerun `reentry_recovery_training` before benchmarking so the recovered checkpoint proves the loop-closure path stayed live."
+                ),
+                "STAGE5_CURRENT_A100_TARGET=reentry_recovery_training",
+                10,
+            )
+        ]
+    if reentry_health_status != "reentry_health_sane":
+        return [
+            make_action(
+                "Inspect post-recovery re-entry health before benchmark",
+                (
+                    f"Stage 4 post-recovery re-entry health is `{reentry_health_status}` with issues "
+                    f"`{reentry_health_issues}`; do not benchmark, run dense control, or return to particles yet."
                 ),
                 f"cat {shlex.quote(command_path(source_summary))}",
                 10,

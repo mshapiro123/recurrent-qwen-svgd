@@ -443,7 +443,7 @@ TARGETS = {
         "path": "colab/STAGE5_REENTRY_RECOVERY_TRAINING_CELL.py",
         "markers": [
             "STAGE5_REENTRY_RECOVERY_CELL_VERSION",
-            "reentry_recovery_training_v3_wrapper_summary",
+            "reentry_recovery_training_v4_post_reentry_health",
             "STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT",
             "run_bounded_recovery_training_with_reentry_repair",
             "stage5_reentry_recovery_training",
