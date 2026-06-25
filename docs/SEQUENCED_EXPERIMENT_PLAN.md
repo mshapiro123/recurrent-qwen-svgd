@@ -985,8 +985,9 @@ smoke. The current order follows the master sequence:
 4. Treat the Stage 4 wrapper summary as the next source. The wrapper writes
    `kind=stage5_reentry_recovery_training`, records the child curriculum-SFT
    summary and checkpoint, updates `config/stage5_current_source_summary.txt`,
-   and should route the planner to `debiased_benchmark_suite` when validation
-   is sane.
+   runs a cheap post-recovery re-entry drift probe, and should route the
+   planner to `debiased_benchmark_suite` only when validation is sane and
+   `post_reentry_health_checks.status` is `reentry_health_sane`.
 5. Run `STAGE5_CURRENT_A100_TARGET=debiased_benchmark_suite`.
    Compare base Qwen 0.5B and the repaired recurrent checkpoint on
    ARC-Easy, ARC-Challenge, and GPQA-lite using debiased MCQ scoring. Read

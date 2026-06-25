@@ -141,7 +141,9 @@ Pass condition:
 - finite train and validation metrics;
 - target-loop/depth gradient present;
 - direct/easy behavior does not collapse;
-- wrapper summary publishes as `kind=stage5_reentry_recovery_training`.
+- wrapper summary publishes as `kind=stage5_reentry_recovery_training`;
+- post-recovery re-entry health publishes and reports
+  `post_reentry_health_checks.status = reentry_health_sane`.
 
 ### 3. Benchmark: `debiased_benchmark_suite`
 
@@ -229,7 +231,8 @@ Stage 3 fails:
   fix bridge/re-entry liveness; rerun bounded repair smoke only.
 
 Stage 3 passes, Stage 4 fails:
-  inspect recovery training, target-loop supervision, and easy/direct collapse.
+  inspect recovery training, target-loop supervision, easy/direct collapse, and
+  post-recovery bridge/re-entry health.
 
 Stage 4 passes, recurrent loses to base:
   improve deterministic depth recovery or test 1.5B capacity; no particles yet.

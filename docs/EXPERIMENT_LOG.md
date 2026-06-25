@@ -263,9 +263,12 @@ Colab/Drive backups for selected runs.
   `run_bounded_recovery_training_with_reentry_repair`.
 - If Stage 3 recommends adapter or bridge extension, rerun only the bounded
   repair smoke with adjusted settings; do not skip to recovery training.
-- After Stage 4 recovery, run `debiased_benchmark_suite`, then
-  `dense_mcq_trace_sft_control`. This is the minimum evidence chain for asking
-  whether recurrence adds value beyond the same training data.
+- After Stage 4 recovery, run `master_sequence_status`; continue to
+  `debiased_benchmark_suite` only if validation is sane and
+  `post_reentry_health_checks.status` is `reentry_health_sane`, then run
+  `dense_mcq_trace_sft_control` if the Phase 1 reviewer asks for it. This is
+  the minimum evidence chain for asking whether recurrence adds value beyond
+  the same training data.
 - Before any larger depth-router SFT, require enough positive SFT rows at each
   intended `target_loop_count`, especially for `1`, `2`, `3`, and `4` when
   using a 0.5B/1.5B/3B/7B ladder.

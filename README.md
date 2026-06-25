@@ -81,7 +81,7 @@ Stage 4 and after each benchmark/control artifact.
 | Stage | Runtime | Purpose |
 |---|---|---|
 | `reentry_repair_smoke` | L4/T4 | Make the bridge and re-entry adapter gradient-live while preserving loop-1 behavior. |
-| `reentry_recovery_training` | L4/T4, G4 only if needed | Run bounded deterministic recovery SFT from the repaired checkpoint with learned loop control and target-loop supervision. |
+| `reentry_recovery_training` | L4/T4, G4 only if needed | Run bounded deterministic recovery SFT from the repaired checkpoint with learned loop control, target-loop supervision, and post-recovery re-entry health validation. |
 | `debiased_benchmark_suite` | L4/T4 | Compare base Qwen 0.5B versus the repaired recurrent checkpoint on ARC-Easy, ARC-Challenge, and GPQA-lite surfaces. |
 | `dense_mcq_trace_sft_control` | L4/T4 | Train/evaluate standard dense Qwen LoRA on the same curriculum so architecture lift is separated from data-recipe lift. |
 
@@ -381,8 +381,9 @@ exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
 ```
 
 After Stage 4 recovery publishes, run `master_sequence_status` again. Its Stage
-4 Recovery Review should route to `debiased_benchmark_suite`; after that
-benchmark publishes, run `master_sequence_status` again and follow the
+4 Recovery Review should route to `debiased_benchmark_suite` only if validation
+is sane and `post_reentry_health_checks.status` is `reentry_health_sane`; after
+that benchmark publishes, run `master_sequence_status` again and follow the
 `Phase 1 Gate Review` section. Only run `dense_mcq_trace_sft_control` if that
 reviewer asks for it, and only move toward Phase 2 breadth if the dense control
 returns `hard_tail_lift_vs_dense`.
@@ -394,6 +395,7 @@ Minimum run contract:
 - require loop-1 preservation during Stage 3;
 - require finite validation and target-loop/depth-gradient metrics during Stage
   4;
+- require post-recovery re-entry health during Stage 4 before any benchmark;
 - pause for review after Stage 2, Stage 3, Stage 4, and each Phase 1
   benchmark/control artifact before spending additional GPU.
 
