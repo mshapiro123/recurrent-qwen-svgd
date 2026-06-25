@@ -59,6 +59,11 @@ def test_single_a100_runbook_uses_current_bootstrap_target_queue() -> None:
     assert "debiased_benchmark_suite" in text
     assert "dense_mcq_trace_sft_control" in text
     assert "master_sequence_status" in text
+    assert "KEEP_RUNTIME_OPEN" in text
+    assert "STAGE5_REENTRY_REPAIR_DISCONNECT" in text
+    assert "STAGE5_REENTRY_RECOVERY_DISCONNECT" in text
+    assert "STAGE5_DEBIASED_BENCHMARK_DISCONNECT" in text
+    assert "STAGE5_DENSE_MCQ_DISCONNECT" in text
     assert "sha_resolved_nested_fetch_v3" in text
     assert "api.github.com/repos/{REPO}/contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py" in text
     assert "exec(compile(code" in text
@@ -638,12 +643,15 @@ def test_debiased_benchmark_suite_cell_is_bounded_and_policy_compliant() -> None
     assert "colab/assess_stage5_benchmark_suite.py" in plain
     assert "tests/test_stage5_benchmark_suite.py" in plain
     assert "tests/test_stage5_benchmark_assessment.py" in plain
+    assert "STAGE5_DEBIASED_BENCHMARK_DISCONNECT" in plain
+    assert "Leaving Colab runtime attached because STAGE5_DEBIASED_BENCHMARK_DISCONNECT=0." in plain
     assert "runtime.unassign()" in plain
     assert "debiased_benchmark_suite" in bootstrap
     assert "STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py" in bootstrap
     assert '"STAGE5_DEBIASED_BENCHMARKS": "arc_easy,arc_challenge,gpqa_lite"' in bootstrap
     assert '"STAGE5_DEBIASED_ARC_EASY_LIMIT": "128"' in bootstrap
     assert '"STAGE5_DEBIASED_USE_LEARNED_LOOP_CONTROL": "1"' in bootstrap
+    assert '"STAGE5_DEBIASED_BENCHMARK_DISCONNECT": "1"' in bootstrap
     assert "Next Paste-Anywhere Debiased Benchmark Cell" in current_action
     assert '"STAGE5_CURRENT_A100_TARGET"] = "debiased_benchmark_suite"' in current_action
 

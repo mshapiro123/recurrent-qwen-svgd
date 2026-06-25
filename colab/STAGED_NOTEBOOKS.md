@@ -6,6 +6,12 @@ runtime is active. The older split notebooks remain in `colab/` for provenance,
 but the maintained execution path is the bootstrap target queue in
 [`NEXT_COLAB_SEQUENCE.md`](NEXT_COLAB_SEQUENCE.md).
 
+The maintained notebook is [`00_single_a100_runbook.ipynb`](00_single_a100_runbook.ipynb).
+It defines one helper cell, then separate explicit cells for the current master
+sequence targets. Leave `KEEP_RUNTIME_OPEN = False` to conserve credits after
+each target, or set it to `True` when you intentionally want to run several
+bounded L4/T4 cells back-to-back in one attached runtime.
+
 For the shortest current instruction, use
 [`CURRENT_A100_ACTION.md`](CURRENT_A100_ACTION.md). For the full phase order,
 use [`../docs/PROGRAM_TRACK_MASTER_SEQUENCE.md`](../docs/PROGRAM_TRACK_MASTER_SEQUENCE.md).

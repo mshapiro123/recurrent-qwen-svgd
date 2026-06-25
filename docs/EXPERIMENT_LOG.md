@@ -706,3 +706,11 @@ Colab/Drive backups for selected runs.
   glob fallback remains available, but it no longer shadows the planner-selected
   repair artifact just because an unrelated failed or partial run has a newer
   modification time.
+- Single-runtime master-sequence notebook: `00_single_a100_runbook.ipynb` now
+  defines one GitHub-SHA-resolved bootstrap helper plus explicit cells for
+  `master_sequence_status`, `reentry_repair_smoke`,
+  `reentry_recovery_training`, `debiased_benchmark_suite`, and
+  `dense_mcq_trace_sft_control`. The helper exposes `KEEP_RUNTIME_OPEN`; the
+  debiased benchmark target now honors `STAGE5_DEBIASED_BENCHMARK_DISCONNECT`
+  so bounded L4/T4 cells can be batched intentionally without changing target
+  code.

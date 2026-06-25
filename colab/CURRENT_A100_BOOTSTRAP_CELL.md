@@ -199,6 +199,7 @@ TARGETS = {
             "colab/assess_stage5_benchmark_suite.py",
             "tests/test_stage5_benchmark_suite.py",
             "tests/test_stage5_benchmark_assessment.py",
+            "STAGE5_DEBIASED_BENCHMARK_DISCONNECT",
             "runtime.unassign",
         ],
         "env": {
@@ -207,6 +208,7 @@ TARGETS = {
             "STAGE5_DEBIASED_ARC_CHALLENGE_LIMIT": "128",
             "STAGE5_DEBIASED_GPQA_LIMIT": "16",
             "STAGE5_DEBIASED_USE_LEARNED_LOOP_CONTROL": "1",
+            "STAGE5_DEBIASED_BENCHMARK_DISCONNECT": "1",
         },
     },
     "depth_balanced_benchmark": {

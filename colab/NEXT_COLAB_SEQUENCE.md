@@ -12,6 +12,12 @@ The maintained interface is one Colab notebook plus
 `STAGE5_CURRENT_A100_TARGET`, not a pile of separate notebooks. Prefer L4/T4
 for the current 0.5B diagnostics and smokes.
 
+For lowest friction, use `colab/00_single_a100_runbook.ipynb`: run its helper
+cell once, then run the explicit target cell for status, Stage 3 repair,
+Stage 4 recovery, benchmark, or dense control. Keep its `KEEP_RUNTIME_OPEN`
+flag false by default to conserve credits; set it true only when you are
+deliberately batching several bounded cells in the same runtime.
+
 ## Paste-Anywhere Launcher
 
 Set `TARGET` to one of the targets below.

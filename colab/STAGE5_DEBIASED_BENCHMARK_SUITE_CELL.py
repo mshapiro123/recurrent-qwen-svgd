@@ -23,6 +23,13 @@ REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 
 
+def env_bool(name: str, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "y"}
+
+
 def secret(*names: str) -> str | None:
     for name in names:
         value = os.environ.get(name)
@@ -255,8 +262,11 @@ try:
         print(assessment_md.read_text(encoding="utf-8"), flush=True)
 
 finally:
-    print("Disconnecting Colab runtime to conserve credits.", flush=True)
-    try:
-        runtime.unassign()
-    except Exception as exc:
-        print("runtime.unassign failed:", repr(exc), flush=True)
+    if env_bool("STAGE5_DEBIASED_BENCHMARK_DISCONNECT", True):
+        print("Disconnecting Colab runtime to conserve credits.", flush=True)
+        try:
+            runtime.unassign()
+        except Exception as exc:
+            print("runtime.unassign failed:", repr(exc), flush=True)
+    else:
+        print("Leaving Colab runtime attached because STAGE5_DEBIASED_BENCHMARK_DISCONNECT=0.", flush=True)
