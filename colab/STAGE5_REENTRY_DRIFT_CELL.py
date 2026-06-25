@@ -240,8 +240,17 @@ def write_markdown(summary: dict[str, object], path: Path) -> None:
 
 
 def publish_outputs(out_dir: Path, run_id: str) -> None:
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from colab.stage5_publish_utils import publishable_artifact_paths
+
     run(["git", "status", "-sb"])
-    run(["git", "add", "-f", str(out_dir.relative_to(ROOT))])
+    publishable = publishable_artifact_paths(out_dir)
+    if not publishable:
+        print(f"No lightweight publishable artifacts found under {out_dir}.", flush=True)
+        return
+    for path in publishable:
+        run(["git", "add", "-f", str(path.relative_to(ROOT))])
     diff = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=str(ROOT))
     if diff.returncode == 0:
         print("No staged changes to commit.", flush=True)

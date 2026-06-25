@@ -273,8 +273,17 @@ def ensure_assessment(out_dir: Path) -> None:
 
 
 def publish(out_dir: Path) -> None:
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from colab.stage5_publish_utils import publishable_artifact_paths
+
     run(["git", "status", "-sb"])
-    run(["git", "add", "-f", str(out_dir.relative_to(ROOT))])
+    publishable = publishable_artifact_paths(out_dir)
+    if not publishable:
+        print(f"No lightweight publishable artifacts found under {out_dir}.", flush=True)
+        return
+    for path in publishable:
+        run(["git", "add", "-f", str(path.relative_to(ROOT))])
     if run(["git", "diff", "--cached", "--quiet"], check=False).returncode == 0:
         print("No recovered Stage 2 changes to commit.", flush=True)
         return

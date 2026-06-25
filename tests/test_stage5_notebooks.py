@@ -1284,6 +1284,8 @@ def test_reentry_norm_recover_target_is_bootstrapped() -> None:
     assert "colab/assess_stage5_reentry.py" in cell
     assert "colab/review_stage5_reentry.py" in cell
     assert "Recover Stage 5 re-entry norm" in cell
+    assert "publishable_artifact_paths" in cell
+    assert 'git", "add", "-f", str(out_dir.relative_to(ROOT))' not in cell
     assert "runtime.unassign" in cell
 
 
@@ -1335,6 +1337,10 @@ def test_reentry_drift_and_norm_targets_run_self_assessment() -> None:
     assert "incomplete_candidate_conversion" in norm_cell
     assert "incremental_backup" in norm_cell
     assert "resume_skip=candidate_conversion" in norm_cell
+    assert "publishable_artifact_paths" in drift_cell
+    assert "publishable_artifact_paths" in norm_cell
+    assert 'git", "add", "-f", str(out_dir.relative_to(ROOT))' not in drift_cell
+    assert 'git", "add", "-f", str(out_dir.relative_to(ROOT))' not in norm_cell
 
 
 def test_reentry_stage3_stage4_runbook_is_linked_from_current_action() -> None:

@@ -558,3 +558,9 @@ Colab/Drive backups for selected runs.
 - Do not return to Phase 2/SVGD particle training until deterministic recurrence
   has a gradient-live re-entry path and recovery SFT produces base-competitive
   deterministic depth behavior.
+- Phase 0 publishing hardening: Stage 1 re-entry drift, Stage 2 eval-only
+  re-entry norm, and Stage 2 recover-only now publish through
+  `publishable_artifact_paths` instead of force-adding the entire output
+  directory. This keeps the current Colab execution chain aligned with the
+  low-GitHub-churn policy and prevents accidental checkpoint publication while
+  preserving summaries, JSONL diagnostics, logs, and markdown readouts.
