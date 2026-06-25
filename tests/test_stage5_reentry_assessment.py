@@ -84,6 +84,8 @@ def repair_summary(
     trained_best=4,
     source_candidates=4,
     trained_candidates=4,
+    source_groups=4,
+    trained_groups=4,
 ):
     return {
         "kind": "stage5_reentry_repair_smoke",
@@ -119,13 +121,13 @@ def repair_summary(
         },
         "loop1_preservation": {
             "source": {
-                "task_groups": 4,
+                "task_groups": source_groups,
                 "best_hits": source_best,
                 "candidate_hits": source_candidates,
                 "total_candidates": 4,
             },
             "trained": {
-                "task_groups": 4,
+                "task_groups": trained_groups,
                 "best_hits": trained_best,
                 "candidate_hits": trained_candidates,
                 "total_candidates": 4,
@@ -211,6 +213,23 @@ def test_repair_smoke_assessment_blocks_on_loop1_regression() -> None:
     assert out["status"] == "bridge_live_but_loop1_regressed"
     assert out["recommendation"] == "review_or_reduce_repair_lr_before_recovery_training"
     assert out["metrics"]["loop1_regressed"] is True
+
+
+def test_repair_smoke_assessment_blocks_when_loop1_preservation_missing() -> None:
+    out = assess(repair_summary(source_groups=0, trained_groups=4))
+
+    assert out["status"] == "loop1_preservation_missing_or_mismatched"
+    assert out["recommendation"] == "fix_loop1_preservation_eval_before_recovery_training"
+    assert out["metrics"]["loop1_preservation_available"] is False
+
+
+def test_repair_smoke_assessment_blocks_when_loop1_task_groups_mismatch() -> None:
+    out = assess(repair_summary(source_groups=4, trained_groups=3))
+
+    assert out["status"] == "loop1_preservation_missing_or_mismatched"
+    assert out["recommendation"] == "fix_loop1_preservation_eval_before_recovery_training"
+    assert out["metrics"]["source_loop1_task_groups"] == 4
+    assert out["metrics"]["trained_loop1_task_groups"] == 3
 
 
 def test_reentry_assessment_cli_writes_outputs(tmp_path) -> None:

@@ -192,16 +192,28 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
     preservation = summary.get("loop1_preservation") if isinstance(summary.get("loop1_preservation"), dict) else {}
     source_preservation = preservation.get("source") if isinstance(preservation.get("source"), dict) else {}
     trained_preservation = preservation.get("trained") if isinstance(preservation.get("trained"), dict) else {}
+    source_task_groups = finite_float(source_preservation.get("task_groups"))
+    trained_task_groups = finite_float(trained_preservation.get("task_groups"))
     source_best_hits = finite_float(source_preservation.get("best_hits"))
     trained_best_hits = finite_float(trained_preservation.get("best_hits"))
     source_candidate_hits = finite_float(source_preservation.get("candidate_hits"))
     trained_candidate_hits = finite_float(trained_preservation.get("candidate_hits"))
     best_delta = finite_float(preservation.get("best_hits_delta_trained_minus_source"))
     candidate_delta = finite_float(preservation.get("candidate_hits_delta_trained_minus_source"))
-    preservation_available = bool(source_preservation and trained_preservation)
+    preservation_available = bool(
+        source_preservation
+        and trained_preservation
+        and source_task_groups > 0
+        and trained_task_groups > 0
+        and source_task_groups == trained_task_groups
+    )
     loop1_regressed = preservation_available and (best_delta < 0 or candidate_delta <= -2)
 
-    if loop1_regressed:
+    if not preservation_available:
+        status = "loop1_preservation_missing_or_mismatched"
+        recommendation = "fix_loop1_preservation_eval_before_recovery_training"
+        reason = "The repair smoke did not produce comparable loop-1 preservation evidence."
+    elif loop1_regressed:
         status = "bridge_live_but_loop1_regressed" if bridge_live else "bridge_still_dead_and_loop1_regressed"
         recommendation = "review_or_reduce_repair_lr_before_recovery_training"
         reason = "The repair smoke harmed deterministic loop-1 preservation; review before recovery training."
@@ -248,6 +260,8 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
             "adapter_live": adapter_live,
             "adapter_moved": adapter_moved,
             "loop1_preservation_available": preservation_available,
+            "source_loop1_task_groups": source_task_groups,
+            "trained_loop1_task_groups": trained_task_groups,
             "source_loop1_best_hits": source_best_hits,
             "trained_loop1_best_hits": trained_best_hits,
             "loop1_best_hits_delta": best_delta,
