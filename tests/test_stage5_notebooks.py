@@ -1494,10 +1494,12 @@ def test_reentry_stage3_stage4_runbook_is_linked_from_current_action() -> None:
     assert "resolve it back\nto the recurrent benchmark suite" in next_sequence
     assert "standard Qwen same-curriculum LoRA control" in next_sequence
     assert "Leinster" in next_sequence
-    assert "Phase 0: Loop-Closure Re-entry" in master
-    assert "Phase 1: Depth" in master
-    assert "Phase 2: Breadth and Multistability" in master
-    assert "Phase 3: Particles, SVGD, and Selector" in master
+    assert "Phase 0, loop-closure re-entry" in master
+    assert "Phase 1, depth" in master
+    assert "Phase 2, breadth and multistability" in master
+    assert "Phase 3, particles, SVGD, and the selector" in master
+    assert "These were never parallel workstreams" in master
+    assert "The binding uncertainty has shifted from architectural to empirical" in master
     assert "STAGE5_CURRENT_A100_TARGET=reentry_norm_diagnostic" in runbook
     assert "STAGE5_CURRENT_A100_TARGET=reentry_repair_smoke" in runbook
     assert "STAGE5_CURRENT_A100_TARGET=reentry_recovery_training" in runbook
