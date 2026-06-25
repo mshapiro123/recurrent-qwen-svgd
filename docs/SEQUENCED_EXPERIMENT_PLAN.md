@@ -999,6 +999,9 @@ smoke. The current order follows the master sequence:
 7. If the recurrent checkpoint clears the benchmark/control gate, proceed to
    Phase 2 breadth diagnostics: rerun effective pathways on the loop-fixed,
    depth-trained model and split diversity by correct versus wrong candidates.
+   The Phase 2 Colab targets inherit that checkpoint from the current
+   Phase 1 source-summary chain; explicit checkpoint overrides are reserved for
+   archaeology, not the normal program track.
 8. Resume particles/SVGD only after Phase 2 shows correct-bearing breadth.
    At that point SVGD is a soft regularizer and selector ingredient, not the
    load-bearing source of reasoning ability.

@@ -879,3 +879,11 @@ Colab/Drive backups for selected runs.
   planner now block the debiased benchmark unless that health status is
   `reentry_health_sane`, preventing a recovery run from silently closing the
   bridge/re-entry path after Stage 3 repaired it.
+- Phase 2 checkpoint lineage hardening: `effective_pathways_diagnostic` and
+  `candidate_conversion_diagnostic` no longer default to the old ARC-mix
+  checkpoint. Once the Phase 1 architecture gate passes, the master-sequence
+  gate walks the current source-summary chain back through the recurrent
+  benchmark suite to the Stage 4 recurrent checkpoint and hands that checkpoint
+  to the breadth launchers. Explicit `STAGE5_EFFECTIVE_PATHWAYS_CHECKPOINT` or
+  `STAGE5_CANDIDATE_CONVERSION_CHECKPOINT` overrides remain available only for
+  intentional archaeology runs.

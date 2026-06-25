@@ -24,11 +24,6 @@ REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 DRIVE_ARTIFACT_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts")
 
-DEFAULT_CHECKPOINT = (
-    "outputs/stage5/stage5_content_arcmix_qonly_optiontext_20260623_121707/"
-    "arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt"
-)
-
 
 def secret(*names: str) -> str | None:
     for name in names:
@@ -384,7 +379,7 @@ def main() -> None:
     run_id = os.environ.get("STAGE5_CANDIDATE_CONVERSION_RUN_ID") or time.strftime(
         "stage5_candidate_conversion_%Y%m%d_%H%M%S"
     )
-    checkpoint = os.environ.get("STAGE5_CANDIDATE_CONVERSION_CHECKPOINT", DEFAULT_CHECKPOINT)
+    checkpoint_override = os.environ.get("STAGE5_CANDIDATE_CONVERSION_CHECKPOINT")
     tasks_jsonl = os.environ.get("STAGE5_CANDIDATE_CONVERSION_TASKS", "eval/smoke_exact_tasks_v2.jsonl")
     seeds = os.environ.get("STAGE5_CANDIDATE_CONVERSION_SEEDS", "0,1,2")
     noise_sweep = os.environ.get("STAGE5_CANDIDATE_CONVERSION_NOISE_SWEEP", "0,0.005,0.01,0.02,0.05")
@@ -410,6 +405,25 @@ def main() -> None:
         allow_env="STAGE5_ALLOW_PRE_PHASE1_BREADTH",
     )
     print("master_sequence_phase2_gate=" + json.dumps(phase_gate, sort_keys=True), flush=True)
+    checkpoint = checkpoint_override or str(phase_gate.get("checkpoint") or "")
+    if not checkpoint:
+        raise RuntimeError(
+            "No recurrent checkpoint resolved for candidate-conversion diagnostics. "
+            "Run through the Phase 1 gate or set STAGE5_CANDIDATE_CONVERSION_CHECKPOINT explicitly."
+        )
+    print(
+        "candidate_conversion_checkpoint_source="
+        + json.dumps(
+            {
+                "checkpoint": checkpoint,
+                "override": checkpoint_override is not None,
+                "phase_gate_checkpoint_source_summary": phase_gate.get("checkpoint_source_summary"),
+                "phase_gate_checkpoint_source_kind": phase_gate.get("checkpoint_source_kind"),
+            },
+            sort_keys=True,
+        ),
+        flush=True,
+    )
     run(["nvidia-smi"], cwd=Path("/content"))
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"])
     run(
@@ -525,6 +539,8 @@ def main() -> None:
             "run_id": run_id,
             "cell_version": STAGE5_CANDIDATE_CONVERSION_CELL_VERSION,
             "checkpoint": checkpoint,
+            "phase_gate": phase_gate,
+            "checkpoint_override": checkpoint_override is not None,
             "tasks_jsonl": tasks_jsonl,
             "seeds": split_csv(seeds),
             "noise_sweep": split_csv(noise_sweep),

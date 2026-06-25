@@ -275,6 +275,14 @@ Only after deterministic depth is base-competitive:
 - use Leinster similarity-sensitive diversity;
 - test multi-solution tasks, not single-answer arithmetic.
 
+The Phase 2 launchers now resolve the recurrent checkpoint from the passed
+Phase 1 source-summary chain. In the normal path, the current pointer should be
+the same-recipe architecture assessment or its dense-control wrapper, and the
+launcher will walk back through the recurrent benchmark suite to the Stage 4
+checkpoint. Set `STAGE5_EFFECTIVE_PATHWAYS_CHECKPOINT` or
+`STAGE5_CANDIDATE_CONVERSION_CHECKPOINT` only for an intentional archaeology
+run against an older artifact.
+
 ### Standing scale probe: information only
 
 These targets answer a different question: whether larger Qwen-family bases

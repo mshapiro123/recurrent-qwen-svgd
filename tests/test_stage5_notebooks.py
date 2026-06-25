@@ -1492,6 +1492,15 @@ def test_phase2_breadth_targets_require_master_sequence_gate() -> None:
     assert "require_phase1_depth_gate_for_breadth" in candidate_cell
     assert "master_sequence_phase2_gate" in effective_cell
     assert "master_sequence_phase2_gate" in candidate_cell
+    assert "effective_pathways_checkpoint_source=" in effective_cell
+    assert "candidate_conversion_checkpoint_source=" in candidate_cell
+    assert 'phase_gate.get("checkpoint")' in effective_cell
+    assert 'phase_gate.get("checkpoint")' in candidate_cell
+    assert "STAGE5_EFFECTIVE_PATHWAYS_CHECKPOINT" in effective_cell
+    assert "STAGE5_CANDIDATE_CONVERSION_CHECKPOINT" in candidate_cell
+    stale_checkpoint = "stage5_content_arcmix_qonly_optiontext_20260623_121707"
+    assert stale_checkpoint not in effective_cell
+    assert stale_checkpoint not in candidate_cell
 
 
 def test_stage5_sft_launchers_do_not_force_checkpoint_commits() -> None:

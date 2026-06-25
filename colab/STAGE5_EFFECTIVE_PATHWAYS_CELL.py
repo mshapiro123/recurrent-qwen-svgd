@@ -22,11 +22,6 @@ REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 DRIVE_ARTIFACT_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts")
 
-DEFAULT_CHECKPOINT = (
-    "outputs/stage5/stage5_content_arcmix_qonly_optiontext_20260623_121707/"
-    "arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt"
-)
-
 
 def secret(*names: str) -> str | None:
     for name in names:
@@ -126,7 +121,7 @@ def float_label(value: float) -> str:
 def main() -> None:
     print(f"cell_version={STAGE5_EFFECTIVE_PATHWAYS_CELL_VERSION}", flush=True)
     run_id = os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_RUN_ID") or time.strftime("stage5_effective_pathways_%Y%m%d_%H%M%S")
-    checkpoint = os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_CHECKPOINT", DEFAULT_CHECKPOINT)
+    checkpoint_override = os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_CHECKPOINT")
     prompts = os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_PROMPTS", "eval/smoke_exact_tasks_v2.jsonl")
     loop_sweep = parse_ints(os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_LOOP_SWEEP", "4,8"))
     num_particles = os.environ.get("STAGE5_EFFECTIVE_PATHWAYS_NUM_PARTICLES", "16")
@@ -157,6 +152,25 @@ def main() -> None:
         allow_env="STAGE5_ALLOW_PRE_PHASE1_BREADTH",
     )
     print("master_sequence_phase2_gate=" + json.dumps(phase_gate, sort_keys=True), flush=True)
+    checkpoint = checkpoint_override or str(phase_gate.get("checkpoint") or "")
+    if not checkpoint:
+        raise RuntimeError(
+            "No recurrent checkpoint resolved for effective-pathway diagnostics. "
+            "Run through the Phase 1 gate or set STAGE5_EFFECTIVE_PATHWAYS_CHECKPOINT explicitly."
+        )
+    print(
+        "effective_pathways_checkpoint_source="
+        + json.dumps(
+            {
+                "checkpoint": checkpoint,
+                "override": checkpoint_override is not None,
+                "phase_gate_checkpoint_source_summary": phase_gate.get("checkpoint_source_summary"),
+                "phase_gate_checkpoint_source_kind": phase_gate.get("checkpoint_source_kind"),
+            },
+            sort_keys=True,
+        ),
+        flush=True,
+    )
     run(["nvidia-smi"], cwd=Path("/content"))
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"])
     run([sys.executable, "-m", "pytest", "-q", "tests/test_pathway_diversity.py", "tests/test_eval_effective_pathways.py"])
@@ -209,6 +223,8 @@ def main() -> None:
         "run_id": run_id,
         "cell_version": STAGE5_EFFECTIVE_PATHWAYS_CELL_VERSION,
         "checkpoint": checkpoint,
+        "phase_gate": phase_gate,
+        "checkpoint_override": checkpoint_override is not None,
         "prompts": prompts,
         "loop_sweep": loop_sweep,
         "num_particles": int(num_particles),
