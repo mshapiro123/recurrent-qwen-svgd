@@ -810,8 +810,12 @@ def commit_results() -> None:
         print("No benchmark suite outputs changed.")
         return
     run(["git", "commit", "-m", f"Record Stage 5 benchmark suite {RUN_ID} [skip ci]"])
-    run(["git", "pull", "--rebase", "origin", "main"], check=False)
-    run(["git", "push", "origin", "main"], check=False)
+    pushed = run(["git", "push", "origin", "main"], check=False)
+    if pushed.returncode == 0:
+        return
+    print("Initial benchmark push failed; attempting one autostash rebase and retry.", flush=True)
+    run(["git", "pull", "--rebase", "--autostash", "origin", "main"])
+    run(["git", "push", "origin", "main"])
 
 
 def main() -> int:
