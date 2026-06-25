@@ -648,3 +648,13 @@ Colab/Drive backups for selected runs.
   previous mismatch where a completed Stage 4 run would look like a generic
   `stage5_curriculum_sft` artifact and could fall back to the older routing
   diagnostic branch instead of the master-sequence benchmark gate.
+- Colab handoff alignment: refreshed `STAGED_NOTEBOOKS.md`,
+  `00_stage_launcher.ipynb`, `00_single_a100_runbook.ipynb`, and the
+  current-order section of `SEQUENCED_EXPERIMENT_PLAN.md` so human-facing
+  launchers match the master sequence. The maintained notebook path is now an
+  explicit GitHub-fetched bootstrap target queue:
+  `reentry_repair_smoke -> reentry_recovery_training ->
+  debiased_benchmark_suite -> dense_mcq_trace_sft_control`, with Phase 2/3
+  breadth/SVGD gated behind deterministic depth evidence. This removes stale
+  ARC-mix/direct-preservation "current action" affordances from the main
+  notebooks while preserving those historical notebooks for provenance.

@@ -50,28 +50,34 @@ def test_current_bootstrap_preserves_planner_supplied_target_env() -> None:
     assert "Planner/user-supplied env must win" in text
 
 
-def test_single_a100_runbook_uses_colab_continue_wrapper() -> None:
+def test_single_a100_runbook_uses_current_bootstrap_target_queue() -> None:
     payload = notebook_payload("colab/00_single_a100_runbook.ipynb")
     text = "\n".join(str(cell.get("source", "")) for cell in payload.get("cells", []))
 
-    assert "colab/run_stage5_colab_continue.py" in text
-    assert "colab/run_stage5_reasoning_dataset_pipeline.py" in text
-    assert "STAGE5_REASONING_DATASET_PIPELINE_EXECUTE_NEXT" in text
-    assert "STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS" in text
-    assert "STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE" in text
-    assert "claim" in text
-    assert payload["cells"][3]["cell_type"] == "code"
-    assert payload["cells"][5]["cell_type"] == "code"
+    assert "reentry_repair_smoke" in text
+    assert "reentry_recovery_training" in text
+    assert "debiased_benchmark_suite" in text
+    assert "dense_mcq_trace_sft_control" in text
+    assert "master_sequence_status" in text
+    assert "sha_resolved_nested_fetch_v3" in text
+    assert "api.github.com/repos/{REPO}/contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py" in text
+    assert "exec(compile(code" in text
+    assert "exec(open(" not in text
+    assert "colab/run_stage5_colab_continue.py" not in text
+    assert payload["cells"][1]["cell_type"] == "code"
 
 
-def test_stage_launcher_uses_colab_continue_wrapper() -> None:
+def test_stage_launcher_uses_current_bootstrap_target_queue() -> None:
     payload = notebook_payload("colab/00_stage_launcher.ipynb")
     text = "\n".join(str(cell.get("source", "")) for cell in payload.get("cells", []))
 
-    assert "colab/run_stage5_colab_continue.py" in text
-    assert "STAGE5_ARC_AGI_COLAB_CONTINUE_MAX_ACTIONS" in text
-    assert "STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE" in text
-    assert "claim" in text
+    assert "reentry_repair_smoke" in text
+    assert "STAGE5_CURRENT_A100_TARGET" in text
+    assert "sha_resolved_nested_fetch_v3" in text
+    assert "api.github.com/repos/{REPO}/contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py" in text
+    assert "exec(compile(code" in text
+    assert "exec(open(" not in text
+    assert "colab/run_stage5_colab_continue.py" not in text
     assert payload["cells"][0]["cell_type"] == "markdown"
     assert payload["cells"][1]["cell_type"] == "code"
 
@@ -315,9 +321,13 @@ def test_runbooks_prefer_guarded_current_action_over_legacy_autopilot() -> None:
     assert "colab/CURRENT_A100_BOOTSTRAP_CELL.py" in arc_plan
     assert "legacy\nARC-AGI-specific branch runner" in arc_plan
     assert "For overnight runs, prefer `colab/run_stage5_arc_agi_autopilot.py`" not in arc_plan
-    assert "For unattended A100 time under the current low-credit policy" in staged
-    assert "STAGE5_CURRENT_A100_TARGET=safe_continue_execute" in staged
-    assert "older\n   `colab/run_stage5_arc_agi_autopilot.py` remains available only" in staged
+    assert "STAGE5_CURRENT_A100_TARGET" in staged
+    assert "reentry_repair_smoke" in staged
+    assert "reentry_recovery_training" in staged
+    assert "debiased_benchmark_suite" in staged
+    assert "dense_mcq_trace_sft_control" in staged
+    assert "Phase 3 particles/SVGD only after breadth is correct-bearing" in staged
+    assert "If a historical notebook conflicts with this runbook" in staged
 
 
 def test_safe_continue_cell_defaults_to_dry_run_and_guarded_action() -> None:

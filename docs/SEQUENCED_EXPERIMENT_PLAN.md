@@ -960,57 +960,59 @@ Stop or avoid GPU when:
 
 ## Current Next-Best Order
 
-The ARC-mix offset confirmation, learned-loop benchmark, scale64 local-HF
-traced-SFT run, and score-level surface repair moved the project from "can
-surgery recover?" to "can depth-labeled curriculum improve without stealing
-from the direct route?" The current order is:
+The re-entry diagnostics changed the front of the queue. The older ARC-mix
+offset/depth path remains useful historical evidence, but it is not the next
+source of truth. Stage 1 found a dead bridge and Stage 2 found that eval-only
+`entry_rms` re-entry normalization was safe enough for a tiny trainable repair
+smoke. The current order follows the master sequence:
 
-1. Treat the score-level surface repair as a diagnostic, not the next source.
-   It improved ARC-Challenge content from `86/256` to `91/256`, now `+4` over
-   base, but did not recover ARC-Easy content (`140/256` to `139/256`, still
-   `-7` versus base). Do not rerun the same 75-step score repair unchanged.
-2. Return to the stronger bounded ARC-mix recovered checkpoint as the next
-   competence-preserving source. Its 256-example confirmation remains the best
-   non-toy recurrent-vs-base result so far: ARC-Easy content `+9`,
-   ARC-Challenge content `+10`, ARC-Easy cyclic `+2`, ARC-Challenge cyclic `0`.
-3. Run `STAGE5_CURRENT_A100_TARGET=arc_mix_offset_then_depth_chain`. This first
-   re-confirms the ARC-mix checkpoint on the offset-256 slice, then launches the
-   learned-depth ARC-mix continuation only if the offset gate passes. This is
-   the next GPU target because it directly tests the current mechanism
-   hypothesis: depth 1 for easy/direct rows, depth 3 for harder ARC-Challenge
-   rows.
-4. Assess the post-depth checkpoint on the same ARC-Easy/ARC-Challenge content
-   and cyclic surfaces. Success means ARC-Easy content/cyclic remain
-   non-negative while ARC-Challenge keeps or improves the hard-content gain.
-5. If post-depth improves selected/hard-tail behavior without damaging the
-   easy route, run the matched dense same-curriculum MCQ control. This answers
-   whether recurrence contributes beyond the trace data itself.
-6. If dense control matches or beats recurrent, do not chase more surface
-   repairs. Improve the depth-label curriculum and rerun the recurrent-vs-dense
-   comparison.
-7. If recurrent beats dense on hard-tail surfaces, package that as the first
-   architecture contribution: small-parameter recurrent surgery plus
-   depth-labeled traces produces useful behavior that the same dense LoRA
-   recipe does not.
-8. Keep the CE8 depth curve as the fixed mechanism readout for later runs:
-   [STAGE5_CE8_DEPTH_CURVE_2026_06_23.md](STAGE5_CE8_DEPTH_CURVE_2026_06_23.md).
-9. Build or improve a selector/training objective that can preserve depth 1 on
-   easy/direct rows while using depth 2-3 on hard/ambiguous rows.
-10. Keep debiased/cyclic MCQ scoring as the default benchmark harness, but keep
-   content-question-only scoring as a guardrail because ARC-Easy content
-   calibration has been the main failure surface.
-11. Audit and type trace data before more SFT consumes it.
-12. Run depth-conditional preservation SFT:
-   depth 1 for base-correct/direct/easy rows, depth 2-3 for verified hard rows.
-13. Evaluate fixed depths, learned router, and selector on the same balanced
-   ARC slices.
-14. Compare against a same-recipe dense LoRA control.
-15. Re-test particles/SVGD only after deterministic selected depth is useful.
-16. Run broader GPQA/ARC-AGI-style benchmark gates.
-17. Package HF artifacts and paper claims only after held-out surpass-base or
-    same-recipe architecture evidence exists.
+1. Run `STAGE5_CURRENT_A100_TARGET=reentry_repair_smoke`.
+   This is Phase 0. The target trains only the bridge/re-entry repair smoke,
+   checks bridge and adapter gradient liveness, checks that parameters move,
+   verifies loop-1 preservation, writes `reentry_assessment`, publishes the
+   summary, and stops.
+2. Review the Stage 3 assessment with:
+   `python colab/review_stage5_reentry.py --no_write`.
+   Continue only if it recommends
+   `run_bounded_recovery_training_with_reentry_repair`. If it recommends an
+   extended smoke or a bridge/adapter LR adjustment, rerun only the bounded
+   repair smoke, not depth training and not particles.
+3. Run `STAGE5_CURRENT_A100_TARGET=reentry_recovery_training`.
+   This is bounded deterministic recovery SFT from the repaired Stage 3
+   checkpoint. It keeps particles off, enables `entry_rms` loop re-entry
+   normalization, enables the re-entry adapter, uses learned loop control, and
+   requires explicit target-loop row counts before training.
+4. Treat the Stage 4 wrapper summary as the next source. The wrapper writes
+   `kind=stage5_reentry_recovery_training`, records the child curriculum-SFT
+   summary and checkpoint, updates `config/stage5_current_source_summary.txt`,
+   and should route the planner to `debiased_benchmark_suite` when validation
+   is sane.
+5. Run `STAGE5_CURRENT_A100_TARGET=debiased_benchmark_suite`.
+   Compare base Qwen 0.5B and the repaired recurrent checkpoint on
+   ARC-Easy, ARC-Challenge, and GPQA-lite using debiased MCQ scoring. Read
+   easy-item preservation and hard-tail behavior separately.
+6. Run `STAGE5_CURRENT_A100_TARGET=dense_mcq_trace_sft_control`.
+   This is the standard-Qwen same-curriculum LoRA control. The architecture
+   claim is not live until recurrent beats this dense control on the relevant
+   hard/depth-shaped rows without easy regression.
+7. If the recurrent checkpoint clears the benchmark/control gate, proceed to
+   Phase 2 breadth diagnostics: rerun effective pathways on the loop-fixed,
+   depth-trained model and split diversity by correct versus wrong candidates.
+8. Resume particles/SVGD only after Phase 2 shows correct-bearing breadth.
+   At that point SVGD is a soft regularizer and selector ingredient, not the
+   load-bearing source of reasoning ability.
+9. Keep trace-data audit and capability-ladder construction running on CPU in
+   parallel. The next larger data recipe should label base-correct rows as
+   depth 1, Qwen-1.5B-only rows as depth 2, and Qwen-3B/7B-only verified rows
+   as depth 3/4, but it should not replace the Phase 0 repair gate.
+10. Use the 1.5B no-training viability probe as information if Phase 1 stalls,
+    not as a silent pivot. The 0.5B loop-closure/depth gates decide whether to
+    scale.
 
-The immediate strategic question for the deep-research agent is not whether
-SVGD is the right kernel. It is whether the depth-ladder curriculum and
-selector can turn the observed fixed-depth split into selected-answer
-improvement without sacrificing base-preservation behavior.
+The immediate strategic question for the deep-research agent is now:
+
+> Once loop closure is gradient-live and norm-bounded, does deterministic depth
+> recovery convert depth-shaped failures under debiased scoring, and does it do
+> so beyond a same-curriculum dense LoRA control?
+
+SVGD/kernel geometry is deliberately downstream of that question.
