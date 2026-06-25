@@ -1503,3 +1503,15 @@ def test_reentry_stage3_stage4_runbook_is_linked_from_current_action() -> None:
     assert "STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS" in runbook
     assert "1=48,2=16,4=8" in runbook
     assert "1=1,2=1,4=1" in runbook
+
+
+def test_stage5_control_ledger_names_current_reentry_target() -> None:
+    log = (ROOT / "docs/EXPERIMENT_LOG.md").read_text(encoding="utf-8")
+    ledger = log.split("## 2026-06-24: Stage 5 Control Ledger", 1)[1]
+    current_action = ledger.split("### Decisions", 1)[0]
+
+    assert "Target: `reentry_repair_smoke`" in current_action
+    assert "stage5_reentry_norm_20260625_013527/summary.json" in current_action
+    assert "reentry_repair_smoke -> reentry_recovery_training" in current_action
+    assert "debiased_benchmark_suite -> dense_mcq_trace_sft_control" in current_action
+    assert "Target: `traced_sft_score_alignment_repair`" not in current_action

@@ -203,62 +203,70 @@ Colab/Drive backups for selected runs.
 
 ### Current GPU Action
 
-- Target: `traced_sft_score_alignment_repair`.
-- Runtime class: L4 is expected to be sufficient; A100/G4 is not required for
-  this bounded 0.5B score-level repair unless the run OOMs.
+- Target: `reentry_repair_smoke`.
+- Runtime class: L4/T4 is sufficient for the current 0.5B repair smoke. A100,
+  G4, or H100 is not required unless Colab availability makes it effectively
+  cheaper.
 - Bootstrap source: `colab/CURRENT_A100_BOOTSTRAP_CELL.py` from GitHub `main`.
-- Launcher: `colab/STAGE5_SURFACE_ALIGNMENT_REPAIR_CELL.py`.
-- Runner: `colab/run_stage5_surface_alignment_repair.py`.
+- Maintained notebook: `colab/00_single_a100_runbook.ipynb`.
+- Launcher: `colab/STAGE5_REENTRY_REPAIR_SMOKE_CELL.py`.
 - Source summary:
-  `outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_confirm/summary.json`.
-- Objective: repair ARC-Easy content-route MCQ score behavior using direct
-  option-score cross entropy, without repeating the failed SFT surface repair.
-- Key training settings:
-  - `STAGE5_SURFACE_ALIGN_TRAINER=score_ce`
-  - `STAGE5_SURFACE_ALIGN_MAX_STEPS=75`
-  - `STAGE5_SURFACE_ALIGN_LR=5e-7`
-  - `STAGE5_SURFACE_ALIGN_DISTILL_WEIGHT=0.0`
-  - `STAGE5_SURFACE_ALIGN_SCORE_DISTILL_WEIGHT=0.05`
-  - `STAGE5_SURFACE_ALIGN_SCORE_MARGIN=0.05`
-  - `STAGE5_SURFACE_ALIGN_SCORE_MARGIN_WEIGHT=0.1`
+  `outputs/stage5/stage5_reentry_norm_20260625_013527/summary.json`.
+- Objective: make the loop-closure path gradient-live and verify that the
+  bridge/re-entry adapter moves without damaging loop-1 preservation. This is
+  Phase 0, not another particle or surface-alignment experiment.
 - Expected artifact if successful:
-  `outputs/stage5/stage5_score_alignment_repair_content_route_20260624/summary.json`.
+  `outputs/stage5/stage5_reentry_repair_smoke_<timestamp>/summary.json` plus
+  `reentry_assessment.json`.
+- Immediate next target, only if the reviewer recommends it:
+  `reentry_recovery_training`.
+- Follow-on maintained queue:
+  `reentry_repair_smoke -> reentry_recovery_training ->
+  debiased_benchmark_suite -> dense_mcq_trace_sft_control`.
 
 ### Decisions
 
-- Do not repeat the previous failed SFT-style content/cyclic surface repair. The
-  planner now stops if a score-level repair also produces no easy content lift.
-- Treat base preservation and route repair as necessary gates before scaling
-  SVGD, depth routing, or larger model variants.
-- Use L4/T4 for bounded 0.5B repair and diagnostic runs. Reserve A100/G4/H100
-  for 3B/7B capability-ladder probes, longer SFT, or memory-heavy particle
-  experiments.
+- Do not launch more particle/SVGD, inference-time noise, or kernel-geometry
+  sweeps until the deterministic loop closure is repaired and Phase 1 depth
+  recovery is interpretable.
+- Treat Stage 3 repair smoke and Stage 4 deterministic recovery as Phase 0/1
+  prerequisites. Breadth and SVGD sit downstream of evidence that deterministic
+  depth can recover or improve hard rows without easy regression.
+- Compare repaired recurrent training against a standard dense Qwen LoRA trained
+  on the same curriculum before making any architecture claim.
+- Use L4/T4 for bounded 0.5B repair, recovery, and benchmark slices when
+  practical. Reserve A100/G4/H100 for 1.5B/3B/7B probes, longer SFT, or
+  memory-heavy particle experiments.
 - Continue developing the capability-ladder curriculum in parallel with GPU
   runs so the next depth-training pass is not blocked on bookkeeping.
 
 ### Current Issues
 
-- The recurrent 0.5B checkpoint can beat base on some bounded ARC content
-  surfaces, but it remains fragile across scoring routes.
-- Surface mismatch is still the immediate blocker for honest broader benchmark
-  claims.
-- Capability-ladder data generation supports arbitrary model scales, but the
-  quality gate needs explicit per-depth row requirements before we should launch
-  paid depth-router SFT.
-- Existing run summaries are authoritative but scattered; this log should be
-  updated when decisions change, when a run lands, or when a target is retired.
+- Stage 1/2 re-entry diagnostics showed the bridge path was effectively dead
+  before repair (`bridge_gate=0`, zero bridge delta, and no useful bridge
+  gradient signal). Stage 3 must prove that this path is live.
+- The model has shown depth-shaped signal on hard ARC content, but easy-route
+  preservation and debiased scoring remain the binding benchmark constraints.
+- Inference-time particles/noise produced superficial diversity without reliable
+  correct-candidate conversion, so particles are currently a downstream
+  training objective, not the next mechanism to tune.
+- Existing historical run summaries remain useful, but the current source
+  pointer and master sequence are authoritative for the next GPU action.
 
 ### Next Checks
 
-- Inspect the score-repair run summary when it lands.
-- If score repair improves content accuracy without cyclic collapse, update the
-  current source summary pointer and proceed to a held-out confirmation.
-- If score repair fails, use the score-margin diagnostics to determine whether
-  the repair changed option scores in the right direction but failed to flip
-  enough predictions, or whether it drifted into another label/content prior.
-- Before depth-router SFT, require enough positive SFT rows at each intended
-  `target_loop_count`, especially for `1`, `2`, `3`, and `4` when using a
-  0.5B/1.5B/3B/7B ladder.
+- Inspect the Stage 3 repair summary and `reentry_assessment.json` when it
+  lands.
+- Continue to Stage 4 only if `review_stage5_reentry.py --no_write` recommends
+  `run_bounded_recovery_training_with_reentry_repair`.
+- If Stage 3 recommends adapter or bridge extension, rerun only the bounded
+  repair smoke with adjusted settings; do not skip to recovery training.
+- After Stage 4 recovery, run `debiased_benchmark_suite`, then
+  `dense_mcq_trace_sft_control`. This is the minimum evidence chain for asking
+  whether recurrence adds value beyond the same training data.
+- Before any larger depth-router SFT, require enough positive SFT rows at each
+  intended `target_loop_count`, especially for `1`, `2`, `3`, and `4` when
+  using a 0.5B/1.5B/3B/7B ladder.
 
 ### Local Verification Notes
 
