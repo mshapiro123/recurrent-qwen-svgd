@@ -36,7 +36,7 @@ from training.stability import (  # noqa: E402
     assert_finite_trainable_parameters,
     assert_finite_training_state,
 )
-from training.train_phase1_ponder import optimizer_parameters  # noqa: E402
+from training.train_phase1_ponder import cfg_float, cfg_int, optimizer_parameters  # noqa: E402
 
 
 @dataclass(frozen=True)
@@ -182,16 +182,16 @@ def main() -> int:
     wrapper = RecurrentQwenForCausalLM(
         model,
         layer_split=parse_split(cfg.get("layer_split", "auto")),
-        initial_halt_prob=cfg.get("initial_halt_prob", 0.25),
+        initial_halt_prob=cfg_float(cfg, "initial_halt_prob", 0.25),
     ).to(args.device)
     adapter_dtype = resolve_dtype(cfg.get("adapter_dtype", "float32"))
     lora_cfg = cfg.get("lora", {})
     if lora_cfg.get("enabled", True):
         replaced = apply_lora_to_recurrent_block(
             wrapper,
-            rank=lora_cfg.get("rank", 8),
-            alpha=lora_cfg.get("alpha", 16),
-            dropout=lora_cfg.get("dropout", 0.0),
+            rank=int(lora_cfg.get("rank", 8)),
+            alpha=float(lora_cfg.get("alpha", 16)),
+            dropout=float(lora_cfg.get("dropout", 0.0)),
             adapter_dtype=adapter_dtype,
         )
         print(f"lora_recurrent_modules={replaced}")
@@ -229,19 +229,19 @@ def main() -> int:
     print(f"optimizer_parameter_tensors={len(optimizer_params)}")
     optimizer = torch.optim.AdamW(
         optimizer_params,
-        lr=float(cfg.get("learning_rate", 1e-5)),
-        weight_decay=float(cfg.get("weight_decay", 0.0)),
+        lr=cfg_float(cfg, "learning_rate", 1e-5),
+        weight_decay=cfg_float(cfg, "weight_decay", 0.0),
     )
     wrapper.train()
     wrapper.zero_grad(set_to_none=True)
 
-    max_loops = int(cfg.get("max_loops", 4))
-    max_steps = int(cfg.get("max_steps", 50))
-    save_every = int(cfg.get("save_every", 0) or 0)
-    score_temperature = float(cfg.get("score_temperature", 1.0))
-    margin = float(cfg.get("score_margin", 0.0))
-    margin_weight = float(cfg.get("score_margin_weight", 0.0))
-    halt_nll_weight = float(cfg.get("halt_target_nll_weight", 0.0))
+    max_loops = cfg_int(cfg, "max_loops", 4)
+    max_steps = cfg_int(cfg, "max_steps", 50)
+    save_every = cfg_int(cfg, "save_every", 0) if cfg.get("save_every", 0) else 0
+    score_temperature = cfg_float(cfg, "score_temperature", 1.0)
+    margin = cfg_float(cfg, "score_margin", 0.0)
+    margin_weight = cfg_float(cfg, "score_margin_weight", 0.0)
+    halt_nll_weight = cfg_float(cfg, "halt_target_nll_weight", 0.0)
     distill_weight = float(distill_cfg.get("weight", 0.0))
     distill_temperature = float(distill_cfg.get("temperature", 1.0))
     normalize_option_score = bool(cfg.get("normalize_option_score", True))
@@ -252,7 +252,7 @@ def main() -> int:
             encoded = encode_options(
                 row,
                 tokenizer,
-                max_length=int(cfg.get("max_length", 512)),
+                max_length=cfg_int(cfg, "max_length", 512),
                 pad_token_id=int(tokenizer.pad_token_id),
                 default_prompt_style=str(cfg.get("prompt_style", "question_only")),
                 default_score_target=str(cfg.get("score_target", "option_text")),
@@ -275,7 +275,7 @@ def main() -> int:
             scores = option_scores_from_logits(output.logits, labels, normalize=normalize_option_score)
             target = torch.tensor([encoded.target_index], dtype=torch.long, device=scores.device)
             score_ce = F.cross_entropy((scores / score_temperature).unsqueeze(0), target)
-            loss = float(cfg.get("score_ce_weight", 1.0)) * score_ce
+            loss = cfg_float(cfg, "score_ce_weight", 1.0) * score_ce
             metrics: dict[str, torch.Tensor] = {"score_ce": score_ce.detach()}
 
             if margin_weight and margin:
@@ -321,14 +321,14 @@ def main() -> int:
             assert_finite_trainable_gradients(wrapper, step)
             torch.nn.utils.clip_grad_norm_(
                 optimizer_params,
-                float(cfg.get("max_grad_norm", 0.3)),
+                cfg_float(cfg, "max_grad_norm", 0.3),
                 error_if_nonfinite=True,
             )
             optimizer.step()
             wrapper.zero_grad(set_to_none=True)
             assert_finite_trainable_parameters(wrapper, step + 1)
 
-            if step % int(cfg.get("log_every", 10)) == 0:
+            if step % cfg_int(cfg, "log_every", 10) == 0:
                 metric_text = " ".join(f"{key}={float(value):.4f}" for key, value in metrics.items())
                 print(f"step={step} routing_type={encoded.routing_type} {metric_text}")
             step += 1

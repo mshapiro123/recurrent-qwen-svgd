@@ -26,6 +26,7 @@ from training.stability import (  # noqa: E402
     assert_finite_trainable_parameters,
     assert_finite_training_state,
 )
+from training.train_phase1_ponder import cfg_float, cfg_int  # noqa: E402
 
 
 def load_config(path: str | Path) -> dict:
@@ -91,9 +92,9 @@ def main() -> int:
             model,
             start_layer=start,
             end_layer=end,
-            rank=lora_cfg.get("rank", 8),
-            alpha=lora_cfg.get("alpha", 16),
-            dropout=lora_cfg.get("dropout", 0.0),
+            rank=int(lora_cfg.get("rank", 8)),
+            alpha=float(lora_cfg.get("alpha", 16)),
+            dropout=float(lora_cfg.get("dropout", 0.0)),
             adapter_dtype=adapter_dtype,
         )
         print(f"dense_lora_modules={replaced} layer_range={start},{end}")
@@ -122,24 +123,24 @@ def main() -> int:
     dataset = JsonlCausalDataset(
         args.train_jsonl,
         tokenizer=tokenizer,
-        max_length=cfg.get("max_length", 1024),
-        max_train_loops=cfg.get("max_loops", 4),
+        max_length=cfg_int(cfg, "max_length", 1024),
+        max_train_loops=cfg_int(cfg, "max_loops", 4),
         train_on_prompt=cfg.get("train_on_prompt", False),
     )
     loader = DataLoader(
         dataset,
-        batch_size=cfg.get("batch_size", 1),
+        batch_size=cfg_int(cfg, "batch_size", 1),
         shuffle=True,
         collate_fn=partial(collate_causal_batch, pad_token_id=tokenizer.pad_token_id),
     )
     optimizer = torch.optim.AdamW(
         trainable_parameters(model),
-        lr=cfg.get("learning_rate", 1e-5),
-        weight_decay=cfg.get("weight_decay", 0.0),
+        lr=cfg_float(cfg, "learning_rate", 1e-5),
+        weight_decay=cfg_float(cfg, "weight_decay", 0.0),
     )
 
-    max_steps = int(cfg.get("max_steps", 100))
-    save_every = int(cfg.get("save_every", 0) or 0)
+    max_steps = cfg_int(cfg, "max_steps", 100)
+    save_every = cfg_int(cfg, "save_every", 0) if cfg.get("save_every", 0) else 0
     step = 0
     while step < max_steps:
         for batch in loader:
@@ -170,14 +171,14 @@ def main() -> int:
             assert_finite_trainable_gradients(model, step)
             torch.nn.utils.clip_grad_norm_(
                 trainable_parameters(model),
-                cfg.get("max_grad_norm", 1.0),
+                cfg_float(cfg, "max_grad_norm", 1.0),
                 error_if_nonfinite=True,
             )
             optimizer.step()
             optimizer.zero_grad(set_to_none=True)
             assert_finite_trainable_parameters(model, step + 1)
 
-            if step % cfg.get("log_every", 10) == 0:
+            if step % cfg_int(cfg, "log_every", 10) == 0:
                 metric_text = " ".join(f"{key}={float(value):.4f}" for key, value in metrics.items())
                 print(f"step={step} {metric_text}")
             step += 1

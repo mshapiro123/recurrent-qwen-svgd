@@ -28,6 +28,32 @@ from training.stability import (
     assert_finite_trainable_parameters,
     assert_finite_training_state,
 )
+from training.train_phase1_ponder import cfg_float, cfg_int
+
+
+def cfg_optional_float(cfg: dict, key: str) -> float | None:
+    value = cfg.get(key)
+    if value is None:
+        return None
+    if isinstance(value, str) and value.strip().lower() in {"", "none", "null"}:
+        return None
+    return float(value)
+
+
+def cfg_optional_int(cfg: dict, key: str) -> int | None:
+    value = cfg.get(key)
+    if value is None:
+        return None
+    if isinstance(value, str) and value.strip().lower() in {"", "none", "null"}:
+        return None
+    return int(value)
+
+
+def cfg_bandwidth(cfg: dict) -> str | float:
+    value = cfg.get("svgd_bandwidth", "median")
+    if isinstance(value, str) and value.strip().lower() == "median":
+        return "median"
+    return float(value)
 
 
 def distillation_mask(batch: dict[str, torch.Tensor], mode: str) -> torch.Tensor:
@@ -73,19 +99,19 @@ def main() -> int:
     wrapper = RecurrentQwenForCausalLM(
         model,
         layer_split=parse_split(cfg.get("layer_split", "auto")),
-        latent_dim=cfg.get("latent_dim", 256),
-        latent_scale_init=cfg.get("latent_scale_init", 0.01),
-        latent_adapter_std=cfg.get("latent_adapter_std", 1e-4),
-        initial_halt_prob=cfg.get("initial_halt_prob", 0.25),
+        latent_dim=cfg_int(cfg, "latent_dim", 256),
+        latent_scale_init=cfg_float(cfg, "latent_scale_init", 0.01),
+        latent_adapter_std=cfg_float(cfg, "latent_adapter_std", 1e-4),
+        initial_halt_prob=cfg_float(cfg, "initial_halt_prob", 0.25),
     ).to(args.device)
     adapter_dtype = resolve_dtype(cfg.get("adapter_dtype", "float32"))
     lora_cfg = cfg.get("lora", {})
     if lora_cfg.get("enabled", True):
         replaced = apply_lora_to_recurrent_block(
             wrapper,
-            rank=lora_cfg.get("rank", 8),
-            alpha=lora_cfg.get("alpha", 16),
-            dropout=lora_cfg.get("dropout", 0.0),
+            rank=int(lora_cfg.get("rank", 8)),
+            alpha=float(lora_cfg.get("alpha", 16)),
+            dropout=float(lora_cfg.get("dropout", 0.0)),
             adapter_dtype=adapter_dtype,
         )
         print(f"lora_recurrent_modules={replaced}")
@@ -105,49 +131,49 @@ def main() -> int:
     dataset = JsonlCausalDataset(
         args.train_jsonl,
         tokenizer=tokenizer,
-        max_length=cfg.get("max_length", 1024),
-        max_train_loops=cfg.get("max_loops", 4),
+        max_length=cfg_int(cfg, "max_length", 1024),
+        max_train_loops=cfg_int(cfg, "max_loops", 4),
         train_on_prompt=cfg.get("train_on_prompt", False),
     )
     loader = DataLoader(
         dataset,
-        batch_size=cfg.get("batch_size", 1),
+        batch_size=cfg_int(cfg, "batch_size", 1),
         shuffle=True,
         collate_fn=partial(collate_causal_batch, pad_token_id=tokenizer.pad_token_id),
     )
     optimizer = torch.optim.AdamW(
         wrapper.trainable_component_parameters(),
-        lr=cfg.get("learning_rate", 1e-4),
-        weight_decay=cfg.get("weight_decay", 0.0),
+        lr=cfg_float(cfg, "learning_rate", 1e-4),
+        weight_decay=cfg_float(cfg, "weight_decay", 0.0),
     )
 
-    max_steps = int(cfg.get("max_steps", 100))
-    save_every = int(cfg.get("save_every", 0) or 0)
+    max_steps = cfg_int(cfg, "max_steps", 100)
+    save_every = cfg_int(cfg, "save_every", 0) if cfg.get("save_every", 0) else 0
     step = 0
     while step < max_steps:
         for batch in loader:
             batch = {key: value.to(args.device) for key, value in batch.items()}
             output = wrapper(
                 **batch,
-                max_loops=cfg.get("max_loops", 4),
-                num_trajectories=cfg.get("num_trajectories", 2),
+                max_loops=cfg_int(cfg, "max_loops", 4),
+                num_trajectories=cfg_int(cfg, "num_trajectories", 2),
                 sample_latents=cfg.get("sample_latents", True),
-                beta=cfg.get("beta", 0.02),
-                halt_target_nll_weight=cfg.get("halt_target_nll_weight", 0.0),
-                eta=cfg.get("eta", 1e-4),
-                rho=cfg.get("rho", 1e-3),
+                beta=cfg_float(cfg, "beta", 0.02),
+                halt_target_nll_weight=cfg_float(cfg, "halt_target_nll_weight", 0.0),
+                eta=cfg_float(cfg, "eta", 1e-4),
+                rho=cfg_float(cfg, "rho", 1e-3),
                 latent_injection_mode=cfg.get("latent_injection_mode", "pre"),
                 particle_update_mode=cfg.get("particle_update_mode", "none"),
-                particle_init_noise=cfg.get("particle_init_noise", 0.0),
-                svgd_eps=cfg.get("svgd_eps", 1.0),
-                svgd_repulsion_scale=cfg.get("svgd_repulsion_scale", 1.0),
-                svgd_bandwidth=cfg.get("svgd_bandwidth", "median"),
-                svgd_bandwidth_floor=cfg.get("svgd_bandwidth_floor", 1e-6),
-                svgd_repulsion_max_norm=cfg.get("svgd_repulsion_max_norm"),
-                svgd_kernel_projection_dim=cfg.get("svgd_kernel_projection_dim"),
+                particle_init_noise=cfg_float(cfg, "particle_init_noise", 0.0),
+                svgd_eps=cfg_float(cfg, "svgd_eps", 1.0),
+                svgd_repulsion_scale=cfg_float(cfg, "svgd_repulsion_scale", 1.0),
+                svgd_bandwidth=cfg_bandwidth(cfg),
+                svgd_bandwidth_floor=cfg_float(cfg, "svgd_bandwidth_floor", 1e-6),
+                svgd_repulsion_max_norm=cfg_optional_float(cfg, "svgd_repulsion_max_norm"),
+                svgd_kernel_projection_dim=cfg_optional_int(cfg, "svgd_kernel_projection_dim"),
                 svgd_kernel_projection_path=cfg.get("svgd_kernel_projection_path"),
                 svgd_kernel_geometry=cfg.get("svgd_kernel_geometry", "euclidean"),
-                svgd_projection_seed=cfg.get("svgd_projection_seed", 0),
+                svgd_projection_seed=cfg_int(cfg, "svgd_projection_seed", 0),
                 reentry_rescale_mode=cfg.get("reentry_rescale_mode", "none"),
                 use_reentry_adapter=cfg.get("use_reentry_adapter", False),
                 use_cache=False,
@@ -191,14 +217,14 @@ def main() -> int:
             assert_finite_trainable_gradients(wrapper, step)
             torch.nn.utils.clip_grad_norm_(
                 wrapper.trainable_component_parameters(),
-                cfg.get("max_grad_norm", 1.0),
+                cfg_float(cfg, "max_grad_norm", 1.0),
                 error_if_nonfinite=True,
             )
             optimizer.step()
             optimizer.zero_grad(set_to_none=True)
             assert_finite_trainable_parameters(wrapper, step + 1)
 
-            if step % cfg.get("log_every", 10) == 0:
+            if step % cfg_int(cfg, "log_every", 10) == 0:
                 metrics = " ".join(f"{key}={float(value):.4f}" for key, value in output.metrics.items())
                 print(f"step={step} {metrics}")
             step += 1
