@@ -1341,6 +1341,139 @@ def test_progress_ledger_reports_direct_preservation_repairs(tmp_path) -> None:
     assert "3/2" in report
 
 
+def test_progress_ledger_reports_reentry_norm_statuses(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "reentry_norm" / "summary.json"
+    assessment = scan_root / "reentry_norm" / "reentry_assessment.json"
+    _write(
+        source,
+        {
+            "run_id": "reentry_norm",
+            "kind": "stage5_reentry_norm_eval_only",
+        },
+    )
+    _write(
+        assessment,
+        {
+            "kind": "stage5_reentry_assessment",
+            "source_kind": "stage5_reentry_norm_eval_only",
+            "source_run_id": "reentry_norm",
+            "stage": "norm",
+            "status": "entry_rms_safe_for_smoke",
+            "recommendation": "run_reentry_repair_smoke",
+            "reason": "safe for trainable smoke",
+            "metrics": {
+                "candidate_hits_delta_entry_minus_none": 1,
+                "best_hits_delta_entry_minus_none": 0,
+                "loop8_output_over_entry_delta_entry_minus_none": -0.04,
+            },
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+    output_dir = tmp_path / "ledger"
+    write_report(payload, output_dir)
+
+    assert payload["reentry_statuses"] == [
+        {
+            "path": str(source),
+            "run_id": "reentry_norm",
+            "kind": "stage5_reentry_norm_eval_only",
+            "stage": "norm",
+            "status": "entry_rms_safe_for_smoke",
+            "recommendation": "run_reentry_repair_smoke",
+            "reason": "safe for trainable smoke",
+            "assessment_path": str(assessment),
+            "bridge_gate": None,
+            "bridge_live": None,
+            "bridge_moved": None,
+            "adapter_live": None,
+            "adapter_moved": None,
+            "loop1_best_hits_delta": None,
+            "loop1_candidate_hits_delta": None,
+            "candidate_hits_delta_entry_minus_none": 1,
+            "best_hits_delta_entry_minus_none": 0,
+            "loop8_output_over_entry_delta_entry_minus_none": -0.04,
+        }
+    ]
+    assert payload["recommended_next_plan_source"] == str(source)
+    report = (output_dir / "summary.md").read_text(encoding="utf-8")
+    assert "## Re-entry Phase 0" in report
+    assert "`run_reentry_repair_smoke`" in report
+    assert "entry_rms_safe_for_smoke" in report
+
+
+def test_progress_ledger_preserves_zero_reentry_bridge_gate(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "reentry_drift" / "summary.json"
+    assessment = scan_root / "reentry_drift" / "reentry_assessment.json"
+    _write(
+        source,
+        {
+            "run_id": "reentry_drift",
+            "kind": "reentry_drift_diagnostic",
+        },
+    )
+    _write(
+        assessment,
+        {
+            "kind": "stage5_reentry_assessment",
+            "stage": "drift",
+            "status": "bridge_dead",
+            "recommendation": "run_reentry_norm_then_repair_smoke",
+            "metrics": {"bridge_gate": 0.0, "dead_bridge": True},
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+
+    assert payload["reentry_statuses"][0]["bridge_gate"] == 0.0
+
+
+def test_progress_ledger_reports_reentry_repair_smoke_statuses(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "reentry_repair" / "summary.json"
+    assessment = scan_root / "reentry_repair" / "reentry_assessment.json"
+    _write(
+        source,
+        {
+            "run_id": "reentry_repair",
+            "kind": "stage5_reentry_repair_smoke",
+        },
+    )
+    _write(
+        assessment,
+        {
+            "kind": "stage5_reentry_assessment",
+            "source_kind": "stage5_reentry_repair_smoke",
+            "source_run_id": "reentry_repair",
+            "stage": "repair_smoke",
+            "status": "bridge_repair_smoke_passed",
+            "recommendation": "run_bounded_recovery_training_with_reentry_repair",
+            "reason": "bridge and adapter moved",
+            "metrics": {
+                "post_bridge_gate": 1.0,
+                "bridge_live": True,
+                "bridge_moved": True,
+                "adapter_live": True,
+                "adapter_moved": True,
+                "loop1_best_hits_delta": 0,
+                "loop1_candidate_hits_delta": 0,
+            },
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+    row = payload["reentry_statuses"][0]
+
+    assert row["status"] == "bridge_repair_smoke_passed"
+    assert row["recommendation"] == "run_bounded_recovery_training_with_reentry_repair"
+    assert row["bridge_gate"] == 1.0
+    assert row["bridge_live"] is True
+    assert row["adapter_moved"] is True
+    assert payload["recommended_next_plan_source"] == str(source)
+
+
 def test_progress_ledger_recommends_direct_preservation_probe_over_traced_assessment(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     traced = scan_root / "traced_assessment" / "summary.json"

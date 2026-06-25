@@ -187,6 +187,12 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         "stage5_curriculum_sft",
     }:
         return True
+    if payload.get("kind") in {
+        "reentry_drift_diagnostic",
+        "stage5_reentry_norm_eval_only",
+        "stage5_reentry_repair_smoke",
+    }:
+        return True
     if payload.get("kind") == "stage4_opus_finetune" or {"phase1_checkpoint", "phase2_checkpoint", "arc_ladder"} <= set(payload):
         return True
     if payload.get("gate") == "stage5_arc_agi_candidate_gate" or payload.get("kind") == "stage5_arc_agi_candidate_gate":
@@ -1143,6 +1149,48 @@ def direct_preservation_statuses(summary_files: list[Path]) -> list[dict[str, An
     return sorted(rows, key=lambda item: str(item["path"]))
 
 
+def reentry_statuses(summary_files: list[Path]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for path in summary_files:
+        payload = safe_read_json(path)
+        if not payload or payload.get("kind") not in {
+            "reentry_drift_diagnostic",
+            "stage5_reentry_norm_eval_only",
+            "stage5_reentry_repair_smoke",
+        }:
+            continue
+        assessment_path = path.parent / "reentry_assessment.json"
+        assessment = safe_read_json(assessment_path) if assessment_path.exists() else None
+        metrics = assessment.get("metrics") if isinstance(assessment, dict) else {}
+        if not isinstance(metrics, dict):
+            metrics = {}
+        rows.append(
+            {
+                "path": path_for_cli(path),
+                "run_id": str(payload.get("run_id") or path.parent.name),
+                "kind": payload.get("kind"),
+                "stage": assessment.get("stage") if isinstance(assessment, dict) else None,
+                "status": assessment.get("status") if isinstance(assessment, dict) else payload.get("status"),
+                "recommendation": assessment.get("recommendation") if isinstance(assessment, dict) else None,
+                "reason": assessment.get("reason") if isinstance(assessment, dict) else None,
+                "assessment_path": path_for_cli(assessment_path) if assessment_path.exists() else None,
+                "bridge_gate": metrics.get("bridge_gate") if "bridge_gate" in metrics else metrics.get("post_bridge_gate"),
+                "bridge_live": metrics.get("bridge_live"),
+                "bridge_moved": metrics.get("bridge_moved"),
+                "adapter_live": metrics.get("adapter_live"),
+                "adapter_moved": metrics.get("adapter_moved"),
+                "loop1_best_hits_delta": metrics.get("loop1_best_hits_delta"),
+                "loop1_candidate_hits_delta": metrics.get("loop1_candidate_hits_delta"),
+                "candidate_hits_delta_entry_minus_none": metrics.get("candidate_hits_delta_entry_minus_none"),
+                "best_hits_delta_entry_minus_none": metrics.get("best_hits_delta_entry_minus_none"),
+                "loop8_output_over_entry_delta_entry_minus_none": metrics.get(
+                    "loop8_output_over_entry_delta_entry_minus_none"
+                ),
+            }
+        )
+    return sorted(rows, key=lambda item: str(item["path"]))
+
+
 def iter_summary_files(scan_root: Path) -> list[Path]:
     if not scan_root.exists():
         return []
@@ -1225,6 +1273,12 @@ def planner_source_priority(payload: dict[str, Any]) -> int:
         if payload.get("status") == "validation_needs_review":
             return 40
         return 95
+    if payload.get("kind") == "reentry_drift_diagnostic":
+        return 106
+    if payload.get("kind") == "stage5_reentry_norm_eval_only":
+        return 107
+    if payload.get("kind") == "stage5_reentry_repair_smoke":
+        return 109
     if payload.get("kind") == "curriculum_sft_gate":
         return 85 if payload.get("go") else 35
     if payload.get("kind") == "stage5_capability_ladder_mcq_probe":
@@ -1352,6 +1406,7 @@ def scan_progress(scan_root: Path, *, run_id: str | None = None) -> dict[str, An
         "benchmark_suite_assessments": benchmark_suite_assessments(summary_files),
         "broader_benchmark_gate_assessments": broader_benchmark_gate_assessments(summary_files),
         "balanced_full_assessments": balanced_assessment_rows(summary_files),
+        "reentry_statuses": reentry_statuses(summary_files),
         "direct_preservation_statuses": direct_preservation_statuses(summary_files),
         "claim_readiness_packets": claim_readiness_packets(summary_files),
         "arc_agi_baseline_registries": arc_agi_baseline_registries(summary_files),
@@ -1549,6 +1604,27 @@ def write_report(payload: dict[str, Any], output_dir: Path | None = None) -> Non
             )
     else:
         lines.append("- No full balanced ARC assessment summaries found.")
+    lines.extend(["", "## Re-entry Phase 0", ""])
+    if payload["reentry_statuses"]:
+        lines.extend(
+            [
+                "| Run | Kind | Stage | Status | Recommendation | Bridge | Adapter | Loop-1 Delta | Entry-RMS Delta | Source |",
+                "|---|---|---|---|---|---|---|---:|---:|---|",
+            ]
+        )
+        for row in payload["reentry_statuses"][-12:]:
+            bridge = f"live={row.get('bridge_live')} moved={row.get('bridge_moved')}"
+            adapter = f"live={row.get('adapter_live')} moved={row.get('adapter_moved')}"
+            loop1 = row.get("loop1_best_hits_delta")
+            entry_delta = row.get("candidate_hits_delta_entry_minus_none")
+            lines.append(
+                f"| `{row['run_id']}` | `{row['kind']}` | `{row.get('stage') or ''}` | "
+                f"`{row.get('status')}` | `{row.get('recommendation')}` | {bridge} | {adapter} | "
+                f"{'n/a' if loop1 is None else loop1} | {'n/a' if entry_delta is None else entry_delta} | "
+                f"`{row['path']}` |"
+            )
+    else:
+        lines.append("- No re-entry Phase 0 summaries found.")
     lines.extend(["", "## Direct Preservation Repairs", ""])
     if payload["direct_preservation_statuses"]:
         lines.extend(

@@ -564,3 +564,9 @@ Colab/Drive backups for selected runs.
   directory. This keeps the current Colab execution chain aligned with the
   low-GitHub-churn policy and prevents accidental checkpoint publication while
   preserving summaries, JSONL diagnostics, logs, and markdown readouts.
+- Phase 0 progress-ledger hardening: `summarize_stage5_progress.py` now reads
+  re-entry drift, eval-only norm, and repair-smoke summaries plus their
+  `reentry_assessment.json` files. The generated ledger includes a
+  "Re-entry Phase 0" section with recommendation, bridge/adapter liveness, and
+  loop-1 or entry-RMS deltas, so the current master-sequence head is visible in
+  the same status report as older Stage 5 artifacts.
