@@ -23,6 +23,7 @@ STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION = "stage5_reentry_repair_smoke_v1_train
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 DRIVE_ARTIFACT_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts")
+LEGACY_DRIVE_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd")
 
 DEFAULT_CHECKPOINT = (
     "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/"
@@ -159,7 +160,7 @@ def checkpoint_candidates(requested: str, *, allow_fallback: bool) -> list[str]:
 def drive_checkpoint_candidates(rel_path: str, target: Path) -> list[Path]:
     rel_path = normalize_rel_path(rel_path)
     rel = Path(rel_path)
-    roots = [DRIVE_ARTIFACT_ROOT, Path("/content/drive/MyDrive/recurrent-qwen-svgd")]
+    roots = [DRIVE_ARTIFACT_ROOT, LEGACY_DRIVE_ROOT]
     candidates: list[Path] = []
     for root in roots:
         candidates.append(root / rel_path)
@@ -289,9 +290,13 @@ def norm_assessment_candidates() -> list[Path]:
     if override:
         candidates.append(ROOT / normalize_rel_path(override))
         candidates.append(DRIVE_ARTIFACT_ROOT / normalize_rel_path(override))
-        candidates.append(Path("/content/drive/MyDrive/recurrent-qwen-svgd") / normalize_rel_path(override))
+        candidates.append(LEGACY_DRIVE_ROOT / normalize_rel_path(override))
 
-    for root in (ROOT / "outputs" / "stage5", DRIVE_ARTIFACT_ROOT / "outputs" / "stage5"):
+    for root in (
+        ROOT / "outputs" / "stage5",
+        DRIVE_ARTIFACT_ROOT / "outputs" / "stage5",
+        LEGACY_DRIVE_ROOT / "outputs" / "stage5",
+    ):
         if root.exists():
             candidates.extend(sorted(root.glob("stage5_reentry_norm_*/reentry_assessment.json")))
     return unique_paths(candidates)

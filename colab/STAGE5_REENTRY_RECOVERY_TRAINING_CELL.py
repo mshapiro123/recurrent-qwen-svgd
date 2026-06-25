@@ -173,7 +173,11 @@ def repair_assessment_candidates() -> list[Path]:
     if override:
         rel = normalize_rel_path(override)
         candidates.extend([ROOT / rel, DRIVE_ARTIFACT_ROOT / rel, LEGACY_DRIVE_ROOT / rel])
-    for root in (ROOT / "outputs" / "stage5", DRIVE_ARTIFACT_ROOT / "outputs" / "stage5"):
+    for root in (
+        ROOT / "outputs" / "stage5",
+        DRIVE_ARTIFACT_ROOT / "outputs" / "stage5",
+        LEGACY_DRIVE_ROOT / "outputs" / "stage5",
+    ):
         if root.exists():
             candidates.extend(sorted(root.glob("stage5_reentry_repair_smoke_*/reentry_assessment.json")))
     return unique_paths(candidates)

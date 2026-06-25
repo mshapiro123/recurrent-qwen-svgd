@@ -695,3 +695,8 @@ Colab/Drive backups for selected runs.
   metrics exist. If Colab restores a checkpoint without a usable
   `train_phase1_ponder.log`, the cell reruns the tiny repair training instead
   of publishing a metric-empty artifact that Stage 4 would later reject.
+- Re-entry Drive compatibility: Stage 3 now searches both the current artifact
+  Drive root and the legacy `recurrent-qwen-svgd` Drive root for Stage 2 norm
+  assessments, and Stage 4 does the same for Stage 3 repair assessments. This
+  reduces manual recovery when Colab output exists on Drive but not under the
+  newest artifact prefix.
