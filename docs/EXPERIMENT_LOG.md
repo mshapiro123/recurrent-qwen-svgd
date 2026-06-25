@@ -893,3 +893,11 @@ Colab/Drive backups for selected runs.
   to the breadth launchers. Explicit `STAGE5_EFFECTIVE_PATHWAYS_CHECKPOINT` or
   `STAGE5_CANDIDATE_CONVERSION_CHECKPOINT` overrides remain available only for
   intentional archaeology runs.
+- Stage 4 trace-curriculum source unification: `reentry_recovery_training` now
+  resolves its capability-ladder trace summary through the same
+  `review_stage5_recovery_curriculum` helper used by the CPU status/review
+  path. This removes the duplicated in-cell trace-summary scan and keeps the
+  paid recovery SFT launcher aligned with the tested reviewer: explicit
+  `STAGE5_REENTRY_RECOVERY_TRACE_SOURCE_SUMMARY` still wins, newer gate-ready
+  local/Drive summaries are scanned next, and the historical collection remains
+  only the reviewed helper's last fallback.

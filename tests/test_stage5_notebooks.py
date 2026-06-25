@@ -1430,7 +1430,8 @@ def test_reentry_recovery_training_target_is_bootstrapped() -> None:
     assert "STAGE5_CURRICULUM_USE_REENTRY_ADAPTER" in cell
     assert "DRIVE_ARTIFACT_ROOT / \"outputs\" / \"stage5\"" in cell
     assert "LEGACY_DRIVE_ROOT / \"outputs\" / \"stage5\"" in cell
-    assert "candidates.append(resolve_repo_path(DEFAULT_TRACE_COLLECTION))" in cell
+    assert "colab.review_stage5_recovery_curriculum" in cell
+    assert "_resolve_trace_collection_summary(" in cell
     assert "colab.reentry_recovery_config" in cell
     assert "attached_gpu_names" in cell
     assert "require_gpu_runtime" in cell

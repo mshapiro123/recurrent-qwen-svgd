@@ -27,9 +27,6 @@ REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 DRIVE_ARTIFACT_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts")
 LEGACY_DRIVE_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd")
-DEFAULT_TRACE_COLLECTION = (
-    "outputs/stage5/stage5_capability_ladder_trace_collection_20260623_194537/summary.json"
-)
 
 
 def secret(*names: str) -> str | None:
@@ -339,48 +336,23 @@ def load_required_repair_assessment() -> dict[str, Any]:
     }
 
 
-def is_gate_ready_trace_collection(path: Path) -> bool:
-    try:
-        payload = read_json(path)
-    except Exception:
-        return False
-    return (
-        payload.get("kind") == "stage5_capability_ladder_trace_collection"
-        and payload.get("status") == "trace_curriculum_gate_ready"
-        and isinstance(payload.get("gate"), dict)
-        and payload["gate"].get("go") is True
+def resolve_trace_collection_summary() -> Path:
+    from colab.review_stage5_recovery_curriculum import (
+        resolve_trace_collection_summary as _resolve_trace_collection_summary,
     )
 
-
-def trace_collection_candidates() -> list[Path]:
-    candidates: list[Path] = []
     explicit = (
         os.environ.get("STAGE5_REENTRY_RECOVERY_TRACE_SOURCE_SUMMARY")
         or os.environ.get("STAGE5_TRACED_CAPABILITY_SFT_SOURCE_SUMMARY")
         or ""
     ).strip()
-    if explicit:
-        candidates.append(resolve_repo_path(explicit))
-        return unique_paths(candidates)
-    for root in (
-        ROOT / "outputs" / "stage5",
-        DRIVE_ARTIFACT_ROOT / "outputs" / "stage5",
-        LEGACY_DRIVE_ROOT / "outputs" / "stage5",
-    ):
-        if root.exists():
-            candidates.extend(sorted(root.glob("**/summary.json"), key=lambda path: path.stat().st_mtime, reverse=True))
-    candidates.append(resolve_repo_path(DEFAULT_TRACE_COLLECTION))
-    return unique_paths(candidates)
-
-
-def resolve_trace_collection_summary() -> Path:
-    for candidate in trace_collection_candidates():
-        if candidate.exists() and is_gate_ready_trace_collection(candidate):
-            return candidate
-    raise RuntimeError(
-        "No gate-ready capability-ladder trace collection summary found. "
-        "Set STAGE5_REENTRY_RECOVERY_TRACE_SOURCE_SUMMARY to a gate-ready trace collection."
+    path = _resolve_trace_collection_summary(
+        explicit=explicit,
+        root=ROOT,
+        extra_roots=(DRIVE_ARTIFACT_ROOT, LEGACY_DRIVE_ROOT),
     )
+    print(f"stage4_trace_collection_summary={path_for_cli(path)}", flush=True)
+    return path
 
 
 def int_dict_max_key(payload: Any, default: int) -> int:
