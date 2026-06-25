@@ -142,6 +142,12 @@ Configured behavior:
 - backs up the run directory to Drive immediately after training, before
   validation, and refreshes that backup after the final summary is written.
 
+Benchmark handoff:
+
+- the maintained `debiased_benchmark_suite` target evaluates the repaired
+  Stage 4 checkpoint with learned loop control enabled by default;
+- use an explicit override only for older non-depth-router checkpoints.
+
 Critical gate:
 
 `STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS` must preserve the real row counts, for

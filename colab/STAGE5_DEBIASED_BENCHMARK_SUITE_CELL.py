@@ -224,7 +224,7 @@ try:
     env["STAGE5_BENCHMARK_AGGREGATES"] = "mean"
     env["STAGE5_BENCHMARK_USE_LEARNED_LOOP_CONTROL"] = os.environ.get(
         "STAGE5_DEBIASED_USE_LEARNED_LOOP_CONTROL",
-        "0",
+        "1",
     )
     env["STAGE5_BENCHMARK_PUSH"] = "1"
     env["MODEL_NAME"] = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")

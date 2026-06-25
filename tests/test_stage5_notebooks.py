@@ -632,6 +632,7 @@ def test_debiased_benchmark_suite_cell_is_bounded_and_policy_compliant() -> None
     assert '"label,content_question_only,cyclic_label_aggregated",' in plain
     assert '"STAGE5_BENCHMARK_ASSESS_SCORE_TARGET"] = "cyclic_label_aggregated"' in plain
     assert '"STAGE5_BENCHMARK_ASSESS_AGGREGATE"] = "permutation_mean"' in plain
+    assert '"STAGE5_DEBIASED_USE_LEARNED_LOOP_CONTROL",\n        "1",' in plain
     assert "benchmark_source_summary" in plain
     assert "colab/run_stage5_benchmark_suite.py" in plain
     assert "colab/assess_stage5_benchmark_suite.py" in plain
@@ -642,6 +643,7 @@ def test_debiased_benchmark_suite_cell_is_bounded_and_policy_compliant() -> None
     assert "STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py" in bootstrap
     assert '"STAGE5_DEBIASED_BENCHMARKS": "arc_easy,arc_challenge,gpqa_lite"' in bootstrap
     assert '"STAGE5_DEBIASED_ARC_EASY_LIMIT": "128"' in bootstrap
+    assert '"STAGE5_DEBIASED_USE_LEARNED_LOOP_CONTROL": "1"' in bootstrap
     assert "Next Paste-Anywhere Debiased Benchmark Cell" in current_action
     assert '"STAGE5_CURRENT_A100_TARGET"] = "debiased_benchmark_suite"' in current_action
 

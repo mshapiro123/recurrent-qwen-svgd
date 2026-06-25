@@ -184,6 +184,7 @@ TARGETS = {
             "STAGE5_DEBIASED_ARC_EASY_LIMIT": "128",
             "STAGE5_DEBIASED_ARC_CHALLENGE_LIMIT": "128",
             "STAGE5_DEBIASED_GPQA_LIMIT": "16",
+            "STAGE5_DEBIASED_USE_LEARNED_LOOP_CONTROL": "1",
         },
     },
     "depth_balanced_benchmark": {

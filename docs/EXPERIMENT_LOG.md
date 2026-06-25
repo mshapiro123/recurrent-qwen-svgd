@@ -672,3 +672,9 @@ Colab/Drive backups for selected runs.
   comparable loop-1 preservation, bridge live/moved, and re-entry adapter
   live/moved when enabled. The wrapper summary also preserves those Stage 3
   metrics for downstream benchmark and dense-control provenance.
+- Post-recovery benchmark alignment: the maintained
+  `debiased_benchmark_suite` target now enables learned loop control by
+  default. Stage 4 explicitly trains the depth router, so the first
+  base-vs-recurrent benchmark should evaluate the repaired recurrent model
+  with that learned routing path active unless an older non-router checkpoint
+  is intentionally being tested.

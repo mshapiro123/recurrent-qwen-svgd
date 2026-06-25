@@ -174,7 +174,9 @@ TARGET = "debiased_benchmark_suite"
 The debiased benchmark target follows `config/stage5_current_source_summary.txt`
 by default. Its default slices are ARC-Easy, ARC-Challenge, and GPQA-lite so
 the same run reads easy-item preservation, depth-shaped ARC behavior, and a
-small STEM transfer check. Use an explicit source override only if you
+small STEM transfer check. It evaluates the Stage 4 recurrent checkpoint with
+learned loop control enabled by default, because Stage 4 trains that depth
+router. Use an explicit source override only if you
 intentionally want to benchmark an older Stage 4 run:
 
 ```python
