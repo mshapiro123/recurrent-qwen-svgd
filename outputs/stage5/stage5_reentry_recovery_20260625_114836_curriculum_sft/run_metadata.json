@@ -1,0 +1,32 @@
+{
+  "run_id": "stage5_reentry_recovery_20260625_114836_curriculum_sft",
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "work_dir": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537",
+  "summary_json": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537/summary.json",
+  "curriculum_input_backup_dir": "/content/drive/MyDrive/recurrent-qwen-svgd/curriculum_runs",
+  "input_restore": {
+    "restored": false,
+    "work_dir": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537",
+    "summary_json": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537/summary.json"
+  },
+  "min_positive_rows": 63,
+  "min_mode_rows": "deep_narrow=37,direct=26",
+  "min_target_loop_rows": "1=26,2=28,3=9",
+  "max_length": 512,
+  "max_loops": 3,
+  "max_steps": 75,
+  "learning_rate": 5e-06,
+  "beta": 0.1,
+  "halt_target_nll_weight": 5.0,
+  "optimizer_modules": "bridge,reentry,halt,lora",
+  "use_target_loop_control": false,
+  "use_learned_loop_control": true,
+  "loop_control_ce_weight": 4.0,
+  "reentry_rescale_mode": "entry_rms",
+  "use_reentry_adapter": true,
+  "require_target_loop_gradient": true,
+  "depth_hint_style": "natural",
+  "dtype": "bfloat16",
+  "adapter_dtype": "float32",
+  "commit_checkpoints": false
+}

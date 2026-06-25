@@ -1,0 +1,10 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5910.69it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_reentry_repair_smoke_20260625_114554/phase1_reentry_repair/phase1_step_25.pt loaded_keys=181
+optimizer_parameter_tensors=181
+step=0 mean_expected_loops=1.9740 mean_halt_entropy=0.3144 expected_ce=1.3812 halting_kl=0.4725 target_mean_loops=2.0000 target_loop_abs_error=0.0260 loop_control_ce=0.1713 halting_target_nll=0.0782 loss=2.5047
+step=25 mean_expected_loops=2.0300 mean_halt_entropy=0.3207 expected_ce=1.1196 halting_kl=0.8757 target_mean_loops=3.0000 target_loop_abs_error=0.9700 loop_control_ce=2.2215 halting_target_nll=2.9229 loss=24.7074
+step=50 mean_expected_loops=1.9863 mean_halt_entropy=0.2882 expected_ce=1.4935 halting_kl=0.4933 target_mean_loops=2.0000 target_loop_abs_error=0.0137 loop_control_ce=0.1415 halting_target_nll=0.0685 loss=2.4513
+saved_checkpoint=outputs/stage5/stage5_reentry_recovery_20260625_114836_curriculum_sft/phase1/phase1_step_75.pt
