@@ -3571,7 +3571,7 @@ def test_balanced_arc_mix_calibration_warning_does_not_run_full_assessment(tmp_p
     assert "python colab/run_stage5_routing_diagnostic.py" in actions[0]["command"]
 
 
-def test_benchmark_suite_assessment_passed_prioritizes_capability_ladder(tmp_path) -> None:
+def test_benchmark_suite_assessment_passed_prioritizes_dense_same_curriculum_control(tmp_path) -> None:
     source = tmp_path / "benchmark_assessment" / "summary.json"
     source.parent.mkdir()
     payload = {
@@ -3582,15 +3582,12 @@ def test_benchmark_suite_assessment_passed_prioritizes_capability_ladder(tmp_pat
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Run capability-ladder MCQ depth-label probe"
-    assert "python colab/run_stage5_capability_ladder_mcq_probe.py" in actions[0]["command"]
-    assert "STAGE5_CAPABILITY_LADDER_MODEL_LADDER=qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3" in actions[0][
-        "command"
-    ]
-    assert actions[1]["name"] == "Probe larger Qwen recurrent viability"
-    assert "STAGE5_CURRENT_A100_TARGET=model_viability_queue" in actions[1]["command"]
-    assert actions[2]["name"] == "Build Stage 5 claim readiness packet"
-    assert "python colab/build_stage5_claim_packet.py" in actions[2]["command"]
+    assert len(actions) == 1
+    assert actions[0]["name"] == "Run dense MCQ same-curriculum control"
+    assert "python colab/run_stage5_mcq_dense_sft_control.py" in actions[0]["command"]
+    assert "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY=" in actions[0]["command"]
+    assert "dense_mcq_after_debiased_benchmark" in actions[0]["command"]
+    assert "capability_ladder" not in actions[0]["command"]
 
 
 def test_benchmark_suite_assessment_low_coverage_expands_suite(tmp_path) -> None:

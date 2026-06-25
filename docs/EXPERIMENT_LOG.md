@@ -678,3 +678,9 @@ Colab/Drive backups for selected runs.
   base-vs-recurrent benchmark should evaluate the repaired recurrent model
   with that learned routing path active unless an older non-router checkpoint
   is intentionally being tested.
+- Master-sequence planner alignment: a passed post-recovery debiased benchmark
+  now routes next to `dense_mcq_trace_sft_control`, not directly to capability
+  ladder, scale probes, claim packaging, particles, or SVGD. This keeps the
+  Phase 1 architecture question clean: first compare repaired recurrent Qwen
+  against standard Qwen trained on the same curriculum, then decide whether
+  depth-label/capability-ladder work is needed.

@@ -2819,45 +2819,15 @@ def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summar
         ]
     if status == "passed":
         return [
-            make_action(
-                "Run capability-ladder MCQ depth-label probe",
-                "The learned-depth checkpoint survived the debiased base-vs-recurrent gate; next test whether Qwen scale gaps provide usable depth labels before spending on more recurrent SFT.",
-                command_env(
-                    {
-                        "STAGE5_CAPABILITY_LADDER_RUN_ID": f"{RUN_ID}_capability_ladder_mcq_probe",
-                        "STAGE5_CAPABILITY_LADDER_ARC_LIMIT": os.environ.get(
-                            "STAGE5_ARC_AGI_NEXT_PLAN_CAPABILITY_LADDER_ARC_LIMIT",
-                            "96",
-                        ),
-                        "STAGE5_CAPABILITY_LADDER_SCORE_MODE": "content_question_only",
-                        "STAGE5_CAPABILITY_LADDER_MODEL_LADDER": "qwen_0_5b:1,qwen_1_5b:2,qwen_3b:3",
-                        "STAGE5_CAPABILITY_LADDER_BACKUP_DRIVE": "0",
-                    },
-                    "python colab/run_stage5_capability_ladder_mcq_probe.py",
+            dense_mcq_trace_sft_control_action(
+                recurrent_benchmark_summary=str(payload.get("source_summary") or path_for_cli(source_summary)),
+                run_suffix="dense_mcq_after_debiased_benchmark",
+                reason=(
+                    "The repaired recurrent checkpoint passed the debiased base-vs-recurrent benchmark. "
+                    "Run the standard-Qwen same-curriculum dense control before capability-ladder probes, "
+                    "particles, or scale-up work so any lift is attributable to architecture rather than "
+                    "only the training data or recipe."
                 ),
-                10,
-            ),
-            make_action(
-                "Probe larger Qwen recurrent viability",
-                "If an A100/H100/G4-class runtime is available, run the no-training model-scale probe to see whether 1.5B/3B expose a stronger recurrence-depth signal before committing more 0.5B SFT.",
-                command_env(
-                    {
-                        "STAGE5_CURRENT_A100_TARGET": "model_viability_queue",
-                    },
-                    "python colab/CURRENT_A100_BOOTSTRAP_CELL.py",
-                ),
-                8,
-            ),
-            make_action(
-                "Build Stage 5 claim readiness packet",
-                "The broader paired benchmark gate passed, but claim packaging is secondary to the next capability experiment; synthesize readiness evidence after launching or scheduling the depth-label probe.",
-                command_env(
-                    {
-                        "STAGE5_CLAIM_PACKET_RUN_ID": f"{RUN_ID}_claim_packet",
-                    },
-                    "python colab/build_stage5_claim_packet.py",
-                ),
-                4,
             ),
         ]
     if status == "needs_benchmark_confirmation":
