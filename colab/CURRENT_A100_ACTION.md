@@ -17,27 +17,26 @@ below is preferred for the current evidence state.
 
 ## Current Front-of-Queue Action
 
-The score-level surface repair has completed and should **not** be repeated
-unchanged. The current action is to return to the stronger ARC-mix recovered
-checkpoint, confirm it on held-out offset-256 ARC examples, and only then run
-the bounded learned-depth continuation:
+The active blocker is re-entry architecture repair. Stage 1 showed the current
+recovered recurrent checkpoint has a dead bridge: `bridge_gate=0.0`, bridge
+delta RMS `0.0`, and zero bridge projection/bias/gate gradients. Do **not**
+run more ARC-mix depth training, Phase 2/SVGD, or particle-noise sweeps until
+the loop-closure path is gradient-live and has passed the tiny repair smoke.
 
 ```text
-STAGE5_CURRENT_A100_TARGET=arc_mix_offset_then_depth_chain
-STAGE5_CURRENT_A100_SOURCE_SUMMARY=outputs/stage5/stage5_content_arcmix_qonly_optiontext_arc256_check_20260623_123424/summary.json
+latest reviewer state: stage1_drift / bridge_dead
+next target: reentry_norm_diagnostic
 ```
 
-This chain:
+The current Stage 2 cell may still be running. If it completes and publishes,
+run the reviewer:
 
-1. runs ARC-Easy and ARC-Challenge offset-256 confirmation with
-   `content_question_only` and `cyclic_label_aggregated`;
-2. launches learned-depth ARC-mix SFT only if the offset gate passes;
-3. runs the post-depth debiased gate;
-4. disconnects to conserve credits.
+```bash
+python colab/review_stage5_reentry.py --no_write
+```
 
-Use L4/T4 for this bounded 0.5B chain unless Colab availability makes a larger
-runtime cheaper in practice. Keep particles/SVGD off; this is a deterministic
-depth-routing recovery test.
+If the Stage 2 Colab run finished but did not push to GitHub, publish the
+completed Drive artifact without rerunning GPU eval:
 
 Fresh stale-safe Colab restart cell:
 
@@ -49,12 +48,7 @@ REPO = "mshapiro123/recurrent-qwen-svgd"
 REF = "main"
 BOOTSTRAP = "colab/CURRENT_A100_BOOTSTRAP_CELL.py"
 
-TARGET = "arc_mix_offset_then_depth_chain"
-SOURCE_SUMMARY = (
-    "outputs/stage5/"
-    "stage5_content_arcmix_qonly_optiontext_arc256_check_20260623_123424/"
-    "summary.json"
-)
+TARGET = "reentry_norm_recover_only"
 
 gh = userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
 assert gh, "Missing GH_TOKEN in Colab secrets."
@@ -65,11 +59,6 @@ if hf:
     os.environ["HUGGINGFACE_HUB_TOKEN"] = hf
 
 os.environ["STAGE5_CURRENT_A100_TARGET"] = TARGET
-os.environ["STAGE5_CURRENT_A100_SOURCE_SUMMARY"] = SOURCE_SUMMARY
-os.environ["STAGE5_ARC_MIX_CHAIN_SOURCE_SUMMARY"] = SOURCE_SUMMARY
-os.environ["STAGE5_ARC_MIX_CHAIN_EXECUTE_DEPTH"] = "1"
-os.environ["STAGE5_ARC_MIX_CHAIN_RUN_POST_DEPTH_DEBIASED_GATE"] = "1"
-os.environ["STAGE5_ARC_MIX_CHAIN_DISCONNECT"] = "1"
 
 url = f"https://api.github.com/repos/{REPO}/contents/{BOOTSTRAP}?ref={REF}"
 req = urllib.request.Request(
@@ -91,10 +80,35 @@ print("Target:", TARGET)
 exec(compile(code, BOOTSTRAP, "exec"))
 ```
 
-After it lands, run or inspect `colab/review_stage5_offset_depth_chain.py`
-before launching the next paid action. The reviewer will only recommend dense
-MCQ control if both the ARC-mix extra rows and a compatible upstream
-`positive_sft` source are visible.
+If Stage 2 has not actually completed, use the same cell with:
+
+```python
+TARGET = "reentry_norm_diagnostic"
+```
+
+If the reviewer then says `next_target=reentry_repair_smoke`, run the tiny
+trainable bridge repair:
+
+```python
+import os
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "reentry_repair_smoke"
+exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
+```
+
+If Stage 3 passes and recommends
+`run_bounded_recovery_training_with_reentry_repair`, run the bounded recovery
+SFT:
+
+```python
+import os
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "reentry_recovery_training"
+exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
+```
+
+Use L4/T4 for these 0.5B diagnostics unless Colab availability makes a larger
+runtime cheaper. Each target disconnects by default. The mandatory pause points
+are after Stage 2 and after Stage 3. Keep particles/SVGD off until deterministic
+recurrence has a live bridge and recovery SFT is base-competitive again.
 
 ## Previous Front-of-Queue Action (Completed Score Repair Context)
 

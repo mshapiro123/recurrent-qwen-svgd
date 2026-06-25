@@ -265,33 +265,70 @@ time.
 ## Active Next A100 Action
 
 Credits are tight, so GPU work remains gate-based. The current front-of-queue
-job is the bounded ARC-mix offset-then-depth chain:
+job is the re-entry architecture repair gate, not more ARC-mix depth training
+or particle/SVGD geometry. Stage 1 showed the current recovered checkpoint has
+a dead bridge: `bridge_gate=0.0`, zero bridge delta, and zero bridge projection
+gradients. Until that loop-closure path is repaired, further particle diversity
+experiments are likely to amplify noise rather than produce useful reasoning
+paths.
+
+Current reviewer state:
 
 ```text
-STAGE5_CURRENT_A100_TARGET=arc_mix_offset_then_depth_chain
-STAGE5_CURRENT_A100_SOURCE_SUMMARY=outputs/stage5/stage5_content_arcmix_qonly_optiontext_arc256_check_20260623_123424/summary.json
+latest stage: stage1_drift
+latest status: bridge_dead
+next target: reentry_norm_diagnostic
 ```
 
-This starts from the strongest bounded ARC-mix recovered checkpoint, confirms
-it on offset-256 ARC-Easy/ARC-Challenge examples, then launches learned-depth
-ARC-mix SFT only if that offset gate passes. Use L4/T4 for this 0.5B chain
-unless a larger runtime is cheaper or the restore/eval path memory-fails.
+If the current Stage 2 Colab run is still active, let it finish. If it finished
+but did not push artifacts to GitHub, recover the completed Drive artifact
+without rerunning GPU eval:
+
+```python
+import os
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "reentry_norm_recover_only"
+exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
+```
+
+If Stage 2 needs to be launched from scratch:
+
+```python
+import os
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "reentry_norm_diagnostic"
+exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
+```
+
+Only if Stage 2 assessment recommends `run_reentry_repair_smoke`, launch the
+tiny trainable repair:
+
+```python
+import os
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "reentry_repair_smoke"
+exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
+```
+
+Only if Stage 3 assessment recommends
+`run_bounded_recovery_training_with_reentry_repair`, launch bounded recovery
+SFT:
+
+```python
+import os
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "reentry_recovery_training"
+exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
+```
 
 Minimum run contract:
 
-- confirm ARC-Easy and ARC-Challenge content/cyclic surfaces on offset-256 rows;
-- target depth `1` on easy/direct rows;
-- target depth `3` on ARC-Challenge/deep-narrow rows;
-- keep particles/SVGD off;
-- keep content-only and cyclic-debiased regression as stop conditions;
-- emit an offset/depth/post-depth `summary.json` before any dense-control or
-  particle/SVGD follow-up.
+- keep Phase 2/SVGD and inference-time particle noise off;
+- do not mutate checkpoints during Stage 2;
+- require loop-1 preservation during Stage 3;
+- require finite validation and target-loop/depth-gradient metrics during Stage
+  4;
+- pause for review after Stage 2 and Stage 3 before spending additional GPU.
 
 The concise run card is maintained here:
 [`colab/CURRENT_A100_ACTION.md`](colab/CURRENT_A100_ACTION.md).
-After the run lands, use the CPU-only reviewer
-`colab/review_stage5_offset_depth_chain.py` to decide whether the next paid
-action should be dense MCQ control, a post-depth gate, or diagnosis.
+Use the CPU-only reviewer `colab/review_stage5_reentry.py` after each run.
 
 The longer-term data plan is captured in
 [`docs/CURRICULUM_DATA_PIPELINE.md`](docs/CURRICULUM_DATA_PIPELINE.md): strong
