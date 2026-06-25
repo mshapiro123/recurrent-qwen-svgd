@@ -126,6 +126,8 @@ Configured behavior:
   validation;
 - carries the re-entry adapter forward;
 - uses strict target-loop row gates derived from the actual trace collection.
+- backs up the run directory to Drive immediately after training, before
+  validation, and refreshes that backup after the final summary is written.
 
 Critical gate:
 

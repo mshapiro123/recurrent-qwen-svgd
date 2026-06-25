@@ -461,3 +461,81 @@ def test_curriculum_sft_checkpoint_commits_default_off() -> None:
     source = (runner.ROOT / "colab/run_stage5_curriculum_sft.py").read_text(encoding="utf-8")
 
     assert 'STAGE5_CURRICULUM_SFT_COMMIT_CHECKPOINTS", "0"' in source
+
+
+def test_main_backs_up_checkpoint_before_validation_and_refreshes_after_summary(
+    monkeypatch, tmp_path
+) -> None:
+    run_dir = tmp_path / "outputs" / "stage5" / "stage5_curriculum_sft_test"
+    train_jsonl = tmp_path / "train.jsonl"
+    val_jsonl = tmp_path / "val.jsonl"
+    checkpoint = run_dir / "phase1" / "phase1_step_75.pt"
+    train_jsonl.write_text(json.dumps(positive_row(1)) + "\n", encoding="utf-8")
+    val_jsonl.write_text(json.dumps(positive_row(2)) + "\n", encoding="utf-8")
+    events: list[tuple[str, bool] | str] = []
+
+    monkeypatch.setattr(runner, "ROOT", tmp_path)
+    monkeypatch.setattr(runner, "RUN_DIR", run_dir)
+    monkeypatch.setattr(runner, "RUN_ID", "stage5_curriculum_sft_test")
+    monkeypatch.setattr(runner, "PUSH_RESULTS", False)
+    monkeypatch.setattr(runner, "restore_work_dir_if_needed", lambda: {"restored": False})
+    monkeypatch.setattr(
+        runner,
+        "run_sft_gate",
+        lambda: {"status": "go", "go": True, "issues": [], "checks": {}},
+    )
+    monkeypatch.setattr(
+        runner,
+        "prepare_train_val",
+        lambda gate: (
+            train_jsonl,
+            val_jsonl,
+            {
+                "rows": 2,
+                "train_rows": 1,
+                "val_rows": 1,
+                "train_mode_counts": {"deep_narrow": 1},
+                "val_mode_counts": {"deep_narrow": 1},
+            },
+        ),
+    )
+    monkeypatch.setattr(runner, "mount_drive_if_possible", lambda: None)
+    monkeypatch.setattr(runner, "validate_drive_backup", lambda: {"available": True})
+    monkeypatch.setattr(runner, "resolve_resume_from", lambda: None)
+
+    def fake_train_phase1(train_path, *, resume_from):
+        events.append("train")
+        checkpoint.parent.mkdir(parents=True)
+        checkpoint.write_bytes(b"checkpoint")
+        return checkpoint
+
+    def fake_backup(train_path, val_path):
+        events.append(("backup", (run_dir / "summary.json").exists()))
+        return {"backed_up": True, "path": str(tmp_path / "drive" / runner.RUN_ID)}
+
+    def fake_eval_jsonl(label, data_jsonl, checkpoint_path):
+        events.append("eval")
+        return {
+            "loss": 2.0,
+            "mean_expected_loops": 2.5,
+            "group/curriculum_mode/direct/mean_expected_loops": 1.2,
+            "group/curriculum_mode/deep_narrow/mean_expected_loops": 2.9,
+        }
+
+    monkeypatch.setattr(runner, "train_phase1", fake_train_phase1)
+    monkeypatch.setattr(runner, "backup_to_drive", fake_backup)
+    monkeypatch.setattr(runner, "eval_jsonl", fake_eval_jsonl)
+    monkeypatch.setattr(
+        runner,
+        "validation_checks",
+        lambda phase1_val, by_mode, by_loop: {"status": "validation_sane", "issues": []},
+    )
+
+    assert runner.main() == 0
+
+    assert events == [
+        "train",
+        ("backup", False),
+        "eval",
+        ("backup", True),
+    ]

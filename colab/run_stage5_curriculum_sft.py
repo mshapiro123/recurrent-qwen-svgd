@@ -902,11 +902,11 @@ def main() -> int:
     drive_preflight = validate_drive_backup()
     resume_from = resolve_resume_from()
     checkpoint = train_phase1(train_jsonl, resume_from=resume_from)
+    checkpoint_backup = backup_to_drive(train_jsonl, val_jsonl)
     phase1_val = eval_jsonl("phase1_curriculum_sft", val_jsonl, checkpoint)
     phase1_val_by_mode = grouped_eval_metrics(phase1_val, group_field="curriculum_mode")
     phase1_val_by_target_loop = grouped_eval_metrics(phase1_val, group_field="target_loop_count")
     checks = validation_checks(phase1_val, phase1_val_by_mode, phase1_val_by_target_loop)
-    backup = backup_to_drive(train_jsonl, val_jsonl)
 
     summary = {
         "run_id": RUN_ID,
@@ -922,7 +922,7 @@ def main() -> int:
         "input_restore": input_restore,
         "dataset": dataset_summary,
         "drive_preflight": drive_preflight,
-        "backup": backup,
+        "backup": checkpoint_backup,
         "resume_from": None if resume_from is None else path_for_cli(resume_from),
         "phase1_checkpoint": path_for_cli(checkpoint),
         "phase1_val": phase1_val,
@@ -931,6 +931,7 @@ def main() -> int:
         "validation_checks": checks,
     }
     write_summary(summary)
+    backup_to_drive(train_jsonl, val_jsonl)
     print((RUN_DIR / "summary.md").read_text(encoding="utf-8"), flush=True)
     if PUSH_RESULTS:
         git_commit_results()

@@ -621,3 +621,9 @@ Colab/Drive backups for selected runs.
   smoke training, and loop-1 preservation checks. Relaunching with the same
   `STAGE5_REENTRY_REPAIR_RUN_ID` can reuse completed pre-drift, train, and
   preservation artifacts rather than repeating the whole smoke.
+- Stage 4 checkpoint-first backup hardening: `run_stage5_curriculum_sft.py`
+  now backs the Stage 4 run directory up to Drive immediately after Phase 1
+  training succeeds, before validation begins. It refreshes the Drive backup
+  again after `summary.json`/`summary.md` are written. This preserves the
+  repaired recovery checkpoint even if validation, Colab disconnect, or Git
+  push fails after training.
