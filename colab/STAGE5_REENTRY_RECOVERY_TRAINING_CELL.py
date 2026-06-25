@@ -405,6 +405,10 @@ def derive_sft_env(trace_summary: Path, repair: dict[str, Any]) -> dict[str, str
     env.update(
         {
             "MODEL_NAME": os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct"),
+            "STAGE5_CURRICULUM_LAYER_SPLIT": os.environ.get(
+                "STAGE5_REENTRY_RECOVERY_LAYER_SPLIT",
+                os.environ.get("STAGE5_RECURRENT_LAYER_SPLIT", os.environ.get("LAYER_SPLIT", "auto")),
+            ),
             "STAGE5_REENTRY_RECOVERY_WRAPPER_RUN_ID": run_id,
             "STAGE5_CURRICULUM_SFT_RUN_ID": child_run_id,
             "STAGE5_CURRICULUM_WORK_DIR": work_dir,
@@ -485,6 +489,7 @@ def derive_sft_env(trace_summary: Path, repair: dict[str, Any]) -> dict[str, str
                 "run_id": run_id,
                 "child_run_id": child_run_id,
                 "optimizer_modules": env["STAGE5_CURRICULUM_OPTIMIZER_MODULES"],
+                "layer_split": env["STAGE5_CURRICULUM_LAYER_SPLIT"],
                 "reentry_rescale_mode": env["STAGE5_CURRICULUM_REENTRY_RESCALE_MODE"],
                 "loop_control_ce_weight": env["STAGE5_CURRICULUM_LOOP_CONTROL_CE_WEIGHT"],
                 "halt_target_nll_weight": env["STAGE5_CURRICULUM_HALT_TARGET_NLL_WEIGHT"],

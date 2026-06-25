@@ -48,6 +48,12 @@ RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
 DATA_DIR = RUN_DIR / "data"
 
 MODEL_NAME = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")
+LAYER_SPLIT = (
+    os.environ.get("STAGE5_CURRICULUM_LAYER_SPLIT")
+    or os.environ.get("STAGE5_RECURRENT_LAYER_SPLIT")
+    or os.environ.get("LAYER_SPLIT")
+    or "auto"
+)
 WORK_DIR = Path(
     os.environ.get(
         "STAGE5_CURRICULUM_WORK_DIR",
@@ -532,7 +538,7 @@ def phase1_config(train_output_dir: Path, resume_from: Path | None) -> dict[str,
         "model_name": MODEL_NAME,
         "dtype": DTYPE,
         "adapter_dtype": ADAPTER_DTYPE,
-        "layer_split": "6,18",
+        "layer_split": LAYER_SPLIT,
         "max_length": MAX_LENGTH,
         "max_loops": MAX_LOOPS,
         "initial_halt_prob": 0.15,
@@ -714,7 +720,7 @@ def eval_jsonl(label: str, data_jsonl: Path, checkpoint: Path) -> dict[str, floa
         "--checkpoint",
         path_for_cli(checkpoint),
         "--split",
-        "6,18",
+        LAYER_SPLIT,
         "--max_loops",
         str(MAX_LOOPS),
         "--max_length",

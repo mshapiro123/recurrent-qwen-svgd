@@ -49,6 +49,10 @@ Run Stage 3 on L4/T4. Do **not** run ARC-mix depth training, GPQA, scale-up,
 Phase 2/SVGD, or particle-noise sweeps until the loop-closure path is
 gradient-live and the repair smoke passes loop-1 preservation.
 
+For scale probes, set `MODEL_NAME` and optionally
+`STAGE5_RECURRENT_LAYER_SPLIT`. The default split is now `auto`, which maps to
+the prior 0.5B `6,18` split while remaining valid for larger Qwen layer counts.
+
 The Stage 3 target now performs an immediate GPU-runtime preflight. If Colab is
 not attached to L4/T4/A100/H100, it stops before repo sync, Drive restoration,
 or checkpoint work.

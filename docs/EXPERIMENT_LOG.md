@@ -844,3 +844,9 @@ Colab/Drive backups for selected runs.
   no-provider preflight with the claim-scale defaults created `3904` seed jobs
   and stopped cleanly at `pending_seed_responses`, proving the CPU path starts
   without GPU or provider spend.
+- Model-size modularity for re-entry/depth path: Stage 3 repair smoke and the
+  Stage 4 curriculum SFT runner now pass `MODEL_NAME` and
+  `STAGE5_RECURRENT_LAYER_SPLIT`/`STAGE5_CURRICULUM_LAYER_SPLIT` through their
+  train and eval commands. The default split is `auto`, which preserves the
+  prior Qwen2.5-0.5B `6,18` partition while avoiding stale hardcoded splits for
+  1.5B/3B/7B scale probes.

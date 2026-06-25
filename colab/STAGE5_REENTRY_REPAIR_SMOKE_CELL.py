@@ -40,6 +40,13 @@ FALLBACK_CHECKPOINTS = [
         "arc_mix_response_w005_lr2e6/phase1/phase1_step_50.pt"
     ),
 ]
+MODEL_NAME = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")
+LAYER_SPLIT = (
+    os.environ.get("STAGE5_RECURRENT_LAYER_SPLIT")
+    or os.environ.get("STAGE5_REENTRY_REPAIR_LAYER_SPLIT")
+    or os.environ.get("LAYER_SPLIT")
+    or "auto"
+)
 
 TRAIN_METRIC_RE = re.compile(
     r"([A-Za-z0-9_./-]+)=([-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?|nan|inf|-inf)"
@@ -439,10 +446,10 @@ def write_smoke_data(path: Path) -> None:
 
 def write_config(path: Path, *, checkpoint: str, out_dir: Path) -> dict[str, object]:
     cfg = {
-        "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+        "model_name": MODEL_NAME,
         "dtype": os.environ.get("STAGE5_REENTRY_REPAIR_DTYPE", "bfloat16"),
         "adapter_dtype": "float32",
-        "layer_split": "6,18",
+        "layer_split": LAYER_SPLIT,
         "max_length": int(os.environ.get("STAGE5_REENTRY_REPAIR_MAX_LENGTH", "256")),
         "max_loops": int(os.environ.get("STAGE5_REENTRY_REPAIR_MAX_LOOPS", "4")),
         "initial_halt_prob": 0.15,
@@ -521,8 +528,12 @@ def run_drift(label: str, checkpoint: str, out_dir: Path) -> Path:
         [
             sys.executable,
             "eval/eval_reentry_drift.py",
+            "--model_name",
+            MODEL_NAME,
             "--checkpoint",
             checkpoint,
+            "--split",
+            LAYER_SPLIT,
             "--prompts_jsonl",
             os.environ.get("STAGE5_REENTRY_REPAIR_PROMPTS", "eval/smoke_exact_tasks_v2.jsonl"),
             "--limit",
@@ -602,6 +613,8 @@ def run_loop1_preservation(source_checkpoint: str, trained_checkpoint: str, out_
         [
             sys.executable,
             "eval/eval_best_of_k_jsonl.py",
+            "--model_name",
+            MODEL_NAME,
             "--tasks_jsonl",
             str(tasks_jsonl.relative_to(ROOT)),
             "--phase1_checkpoint",
@@ -612,6 +625,8 @@ def run_loop1_preservation(source_checkpoint: str, trained_checkpoint: str, out_
             "1",
             "--max_loops",
             "1",
+            "--split",
+            LAYER_SPLIT,
             "--max_new_tokens",
             os.environ.get("STAGE5_REENTRY_REPAIR_PRESERVE_MAX_NEW_TOKENS", "80"),
             "--temperature",

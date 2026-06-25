@@ -152,6 +152,14 @@ preservation before any more recovery training.
 
 Runtime: L4/T4 is sufficient.
 
+Scale/model knobs:
+
+- `MODEL_NAME` chooses the Qwen-family checkpoint.
+- `STAGE5_RECURRENT_LAYER_SPLIT` defaults to `auto`, which preserves the
+  existing 0.5B `6,18` split and scales proportionally for larger Qwen layer
+  counts. Set an explicit `prelude_end,recurrent_end` only when intentionally
+  reproducing an older run.
+
 Gate: continue only if recommendation is
 `run_bounded_recovery_training_with_reentry_repair`.
 

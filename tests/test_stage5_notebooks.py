@@ -1231,6 +1231,7 @@ def test_curriculum_artifact_pipeline_plain_cell_matches_markdown_code() -> None
 def test_curriculum_sft_cell_defaults_to_direct_deep_objective() -> None:
     text = (ROOT / "colab/STAGE5_CURRICULUM_SFT_CELL.md").read_text(encoding="utf-8")
     plain = (ROOT / "colab/STAGE5_CURRICULUM_SFT_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_curriculum_sft.py").read_text(encoding="utf-8")
 
     assert 'WORK_DIR = "data/curriculum/programmatic_direct_deep_001"' in text
     assert 'WORK_DIR = "data/curriculum/programmatic_direct_deep_001"' in plain
@@ -1240,6 +1241,10 @@ def test_curriculum_sft_cell_defaults_to_direct_deep_objective() -> None:
     assert 'MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"' in plain
     assert "stale tiny shard" in text
     assert "STAGE5_CURRICULUM_MIN_MODE_ROWS" in plain
+    assert "STAGE5_CURRICULUM_LAYER_SPLIT" in runner
+    assert "STAGE5_RECURRENT_LAYER_SPLIT" in runner
+    assert '"layer_split": LAYER_SPLIT' in runner
+    assert "LAYER_SPLIT," in runner
 
 
 def test_programmatic_curriculum_cell_is_cpu_safe_and_matches_markdown_code() -> None:
@@ -1285,6 +1290,11 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "require_gpu_runtime" in bootstrap_md
     assert "STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION" in cell
     assert "stage5_reentry_repair_smoke_v1_trainable" in cell
+    assert "STAGE5_RECURRENT_LAYER_SPLIT" in cell
+    assert "STAGE5_REENTRY_REPAIR_LAYER_SPLIT" in cell
+    assert '"layer_split": LAYER_SPLIT' in cell
+    assert '"--model_name"' in cell
+    assert '"--split"' in cell
     assert "attached_gpu_names" in cell
     assert "require_gpu_runtime" in cell
     assert "Stage 3 re-entry repair smoke requires an attached GPU runtime" in cell
@@ -1387,6 +1397,8 @@ def test_reentry_recovery_training_target_is_bootstrapped() -> None:
     assert "repair_assessment_recovery_block_reason" in cell
     assert '"metrics": assessment.get("metrics", {})' in cell
     assert "STAGE5_CURRICULUM_RESUME_FROM" in cell
+    assert "STAGE5_CURRICULUM_LAYER_SPLIT" in cell
+    assert "STAGE5_REENTRY_RECOVERY_LAYER_SPLIT" in cell
     assert "STAGE5_CURRICULUM_USE_LEARNED_LOOP_CONTROL" in cell
     assert "STAGE5_CURRICULUM_OPTIMIZER_MODULES" in cell
     assert "STAGE5_CURRICULUM_REENTRY_RESCALE_MODE" in cell
