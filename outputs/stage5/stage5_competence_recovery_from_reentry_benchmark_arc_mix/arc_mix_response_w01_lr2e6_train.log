@@ -1,0 +1,19 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5347.67it/s]
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 6328.52it/s]
+distillation_teacher=Qwen/Qwen2.5-0.5B-Instruct
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_reentry_recovery_20260625_114836_curriculum_sft/phase1/phase1_step_75.pt loaded_keys=181
+optimizer_parameter_tensors=181
+step=0 mean_expected_loops=1.2457 mean_halt_entropy=0.5582 expected_ce=0.8598 halting_kl=0.2912 target_mean_loops=1.0000 target_loop_abs_error=0.2457 loss=0.9202 base_distill_kl=0.2545
+step=25 mean_expected_loops=1.6909 mean_halt_entropy=0.6319 expected_ce=1.4116 halting_kl=0.4837 target_mean_loops=1.0000 target_loop_abs_error=0.6909 loss=1.5240 base_distill_kl=0.5433
+saved_checkpoint=outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/arc_mix_response_w01_lr2e6/phase1/phase1_step_50.pt
+step=50 mean_expected_loops=1.2988 mean_halt_entropy=0.6104 expected_ce=3.1141 halting_kl=0.2708 target_mean_loops=1.0000 target_loop_abs_error=0.2988 loss=3.1866 base_distill_kl=0.4010
+step=75 mean_expected_loops=1.6524 mean_halt_entropy=0.6550 expected_ce=1.9264 halting_kl=0.4376 target_mean_loops=1.0000 target_loop_abs_error=0.6524 loss=2.0485 base_distill_kl=0.6952
+saved_checkpoint=outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/arc_mix_response_w01_lr2e6/phase1/phase1_step_100.pt
+step=100 mean_expected_loops=1.4981 mean_halt_entropy=0.6985 expected_ce=1.7960 halting_kl=0.3018 target_mean_loops=1.0000 target_loop_abs_error=0.4981 loss=1.9344 base_distill_kl=1.0217
+step=125 mean_expected_loops=1.8551 mean_halt_entropy=0.4924 expected_ce=2.4461 halting_kl=0.7213 target_mean_loops=1.0000 target_loop_abs_error=0.8551 loss=2.5832 base_distill_kl=0.5061
+saved_checkpoint=outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/arc_mix_response_w01_lr2e6/phase1/phase1_step_150.pt

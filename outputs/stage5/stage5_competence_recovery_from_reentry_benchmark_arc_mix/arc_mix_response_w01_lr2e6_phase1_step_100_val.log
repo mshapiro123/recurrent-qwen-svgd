@@ -1,0 +1,13 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5253.84it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/arc_mix_response_w01_lr2e6/phase1/phase1_step_100.pt loaded_keys=181
+examples=138
+expected_ce=2.554321
+halting_kl=0.743252
+loss=2.643511
+mean_expected_loops=1.830029
+mean_halt_entropy=0.484756
+target_loop_abs_error=0.812539
+target_mean_loops=1.420290
