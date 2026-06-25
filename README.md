@@ -284,21 +284,66 @@ If the current Stage 2 Colab run is still active from the older `9b81ead`
 launcher, it may be spending time on the full 14-task candidate-conversion
 sweep. That is no longer required for the gate. It is fine to let it finish, but
 if it is still dragging or disconnects, stop it and relaunch the current
-bounded Stage 2 target from `main`. If it finished but did not push artifacts to
-GitHub, recover the completed Drive artifact without rerunning GPU eval:
+bounded Stage 2 target from `main`. Prefer the GitHub-resolved launcher below
+from a restarted or blank runtime; the shorter local `exec(open(...))` form is
+only safe after the repo has already been freshly cloned or reset to `main`.
+
+Fresh-runtime Stage 2 launch:
 
 ```python
-import os
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "reentry_norm_recover_only"
-exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
+import base64, json, os, time, urllib.request
+from google.colab import userdata
+
+REPO = "mshapiro123/recurrent-qwen-svgd"
+TARGET = "reentry_norm_diagnostic"
+
+gh = userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
+assert gh, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
+hf = userdata.get("HF_TOKEN") or userdata.get("HUGGINGFACE_HUB_TOKEN")
+if hf:
+    os.environ["HF_TOKEN"] = hf
+    os.environ["HUGGINGFACE_HUB_TOKEN"] = hf
+
+os.environ["STAGE5_CURRENT_A100_TARGET"] = TARGET
+
+headers = {
+    "Authorization": f"Bearer {gh}",
+    "Accept": "application/vnd.github+json",
+}
+ref_req = urllib.request.Request(
+    f"https://api.github.com/repos/{REPO}/git/refs/heads/main?cache_bust={time.time_ns()}",
+    headers=headers,
+)
+with urllib.request.urlopen(ref_req, timeout=30) as response:
+    resolved_ref = json.load(response)["object"]["sha"]
+
+file_req = urllib.request.Request(
+    f"https://api.github.com/repos/{REPO}/contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py"
+    f"?ref={resolved_ref}&cache_bust={time.time_ns()}",
+    headers=headers,
+)
+with urllib.request.urlopen(file_req, timeout=30) as response:
+    payload = json.load(response)
+
+code = base64.b64decode(payload["content"]).decode("utf-8")
+required = [
+    "sha_resolved_nested_fetch_v3",
+    "reentry_norm_diagnostic",
+    "STAGE5_REENTRY_NORM_CELL_VERSION",
+    "stage5_reentry_norm_v1_eval_only",
+    "candidate_conversion_is_complete",
+    "colab/assess_stage5_reentry.py",
+]
+missing = [marker for marker in required if marker not in code]
+assert not missing, f"Fetched stale or incomplete bootstrap: {missing}"
+print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12])
+exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
 ```
 
-If Stage 2 needs to be launched from scratch:
+If Stage 2 finished but did not push artifacts to GitHub, use the same cell with:
 
 ```python
-import os
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "reentry_norm_diagnostic"
-exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
+TARGET = "reentry_norm_recover_only"
 ```
 
 The current Stage 2 launcher bounds candidate conversion to the first 8 tasks

@@ -37,24 +37,19 @@ publishes, run the reviewer:
 python colab/review_stage5_reentry.py --no_write
 ```
 
-If the Stage 2 Colab run finished but did not push to GitHub, publish the
-completed Drive artifact without rerunning GPU eval:
-
-Fresh stale-safe Colab restart cell:
+If Stage 2 has not actually completed, or if an old long candidate-conversion
+sweep is still running and you want the cheaper gate, stop it and use this
+fresh stale-safe Colab restart cell:
 
 ```python
-import os, base64, json, urllib.request
+import base64, json, os, time, urllib.request
 from google.colab import userdata
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
-REF = "main"
-BOOTSTRAP = "colab/CURRENT_A100_BOOTSTRAP_CELL.py"
-
-TARGET = "reentry_norm_recover_only"
+TARGET = "reentry_norm_diagnostic"
 
 gh = userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
-assert gh, "Missing GH_TOKEN in Colab secrets."
-
+assert gh, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
 hf = userdata.get("HF_TOKEN") or userdata.get("HUGGINGFACE_HUB_TOKEN")
 if hf:
     os.environ["HF_TOKEN"] = hf
@@ -62,32 +57,45 @@ if hf:
 
 os.environ["STAGE5_CURRENT_A100_TARGET"] = TARGET
 
-url = f"https://api.github.com/repos/{REPO}/contents/{BOOTSTRAP}?ref={REF}"
-req = urllib.request.Request(
-    url,
-    headers={
-        "Accept": "application/vnd.github+json",
-        "Authorization": f"Bearer {gh}",
-    },
+headers = {
+    "Authorization": f"Bearer {gh}",
+    "Accept": "application/vnd.github+json",
+}
+ref_req = urllib.request.Request(
+    f"https://api.github.com/repos/{REPO}/git/refs/heads/main?cache_bust={time.time_ns()}",
+    headers=headers,
 )
+with urllib.request.urlopen(ref_req, timeout=30) as response:
+    resolved_ref = json.load(response)["object"]["sha"]
 
-with urllib.request.urlopen(req, timeout=30) as response:
+file_req = urllib.request.Request(
+    f"https://api.github.com/repos/{REPO}/contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py"
+    f"?ref={resolved_ref}&cache_bust={time.time_ns()}",
+    headers=headers,
+)
+with urllib.request.urlopen(file_req, timeout=30) as response:
     payload = json.load(response)
 
 code = base64.b64decode(payload["content"]).decode("utf-8")
-assert TARGET in code, f"Fetched bootstrap missing target: {TARGET}"
-
-print("Fetched bootstrap sha:", payload.get("sha"))
-print("Target:", TARGET)
-exec(compile(code, BOOTSTRAP, "exec"))
+required = [
+    "sha_resolved_nested_fetch_v3",
+    "reentry_norm_diagnostic",
+    "STAGE5_REENTRY_NORM_CELL_VERSION",
+    "stage5_reentry_norm_v1_eval_only",
+    "candidate_conversion_is_complete",
+    "colab/assess_stage5_reentry.py",
+]
+missing = [marker for marker in required if marker not in code]
+assert not missing, f"Fetched stale or incomplete bootstrap: {missing}"
+print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12])
+exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
 ```
 
-If Stage 2 has not actually completed, or if the old long candidate-conversion
-sweep is still running and you want the cheaper gate, stop it and use the same
-cell with:
+If the Stage 2 Colab run finished but did not push to GitHub, publish the
+completed Drive artifact without rerunning GPU eval by using the same cell with:
 
 ```python
-TARGET = "reentry_norm_diagnostic"
+TARGET = "reentry_norm_recover_only"
 ```
 
 The current `main` version bounds Stage 2 candidate conversion to the same
@@ -99,22 +107,18 @@ This is a quick safety gate, not a comprehensive benchmark. Override with
 broader readout is intentional.
 
 If the reviewer then says `next_target=reentry_repair_smoke`, run the tiny
-trainable bridge repair:
+trainable bridge repair by using the same fresh-runtime cell with:
 
 ```python
-import os
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "reentry_repair_smoke"
-exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
+TARGET = "reentry_repair_smoke"
 ```
 
 If Stage 3 passes and recommends
 `run_bounded_recovery_training_with_reentry_repair`, run the bounded recovery
-SFT:
+SFT by using the same fresh-runtime cell with:
 
 ```python
-import os
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "reentry_recovery_training"
-exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
+TARGET = "reentry_recovery_training"
 ```
 
 Use L4/T4 for these 0.5B diagnostics unless Colab availability makes a larger
