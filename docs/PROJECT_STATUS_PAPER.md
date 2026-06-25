@@ -8,18 +8,18 @@ budget so that reasoning moves partly into latent iterative computation. The
 current system wraps `Qwen/Qwen2.5-0.5B-Instruct` into a
 Prelude/Recurrent-Block/Coda architecture, adds sequence-level PonderNet-style
 halting, and extends the recurrent state into a family of particle trajectories
-with stochastic latent injection or SVGD-style repulsion. The strongest current
-result is a bounded non-toy recovery result: a targeted ARC-mixed Phase 1
-checkpoint beats the unmodified base model on a 256-example ARC-Easy and
-ARC-Challenge confirmation slice under content-question scoring, while matching
-or slightly exceeding base under cyclic option-permutation scoring. This is not
-yet a full-dataset or GPQA claim. It does show that the surgery can preserve
-identity under the one-pass gate, that deterministic recurrent training can
-cross the base-model line on a bounded ARC slice, and that SVGD-style particle
-updates can increase useful candidate density on controlled exact-task suites.
-The next scientific gate is replication on an independent ARC offset slice,
-then selector/depth routing and particle/SVGD tests against the recovered
-Phase 1 baseline.
+with stochastic latent injection or SVGD-style repulsion. The strongest
+historical non-toy recovery result is a bounded ARC-mixed Phase 1 checkpoint
+that beat the unmodified base model on one 256-example ARC-Easy/ARC-Challenge
+confirmation slice under content-question scoring while matching or slightly
+exceeding base under cyclic option-permutation scoring. Subsequent diagnostics
+showed that this was not yet a robust full-split or GPQA claim, and that the
+loop-closure path was not trainably reconciled: the bridge was effectively
+dead and the loop dynamics looked expansive rather than multistable. The
+current scientific gate is therefore Phase 0 re-entry repair, followed by
+bounded deterministic depth recovery and a same-curriculum dense-Qwen control.
+Only after that control does it become meaningful to return to breadth,
+particles, SVGD, or selector-conversion claims.
 
 ## 0. Result Maturity
 
@@ -37,11 +37,12 @@ recovery results:
   controlled exact-task suites.
 
 The not-yet-established result is robust benchmark superiority over unmodified
-Qwen 0.5B. That requires the current positive ARC-256 result to replicate on an
-independent offset or full split, followed by particle or selector experiments
-that beat that recovered recurrent baseline. The paper should not claim that
-SVGD or particles have made the model surpass base until those gates are logged
-in `outputs/stage5` and cited from the exact checkpoint summaries.
+Qwen 0.5B. That now requires a stricter sequence: repair loop closure, recover
+deterministic recurrent competence with learned depth, compare against base on
+debiased MCQ surfaces, and then compare against a standard dense Qwen LoRA
+trained on the same curriculum. The paper should not claim that recurrence,
+SVGD, or particles have made the model surpass base until those gates are
+logged in `outputs/stage5` and cited from the exact checkpoint summaries.
 
 ## 1. Research Question
 

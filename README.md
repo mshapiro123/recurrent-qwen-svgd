@@ -60,25 +60,32 @@ at a time, followed by review.
 
 The latest workflow change makes this stricter: MCQ benchmark claims must
 separate content competence from option-label/position bias, and training spend
-must now go through a trace-curriculum gate. The ARC-Easy debias diagnostic at
+must now respect the master sequence: loop-closure re-entry first,
+deterministic depth recovery second, same-curriculum dense control third, and
+particles/SVGD only after correct-bearing breadth is measurable. The ARC-Easy
+debias diagnostic at
 `outputs/stage5/stage5_mcq_debias_direct_20260622_194346/summary.json` reported
 `selection_bias_likely`: the loop-4 recurrent checkpoint looked worse under
 bare `A/B/C/D` scoring, but matched or slightly exceeded base after cyclic
 option-permutation aggregation. See
 [docs/MCQ_DEBIAS_STATUS.md](docs/MCQ_DEBIAS_STATUS.md).
 
-The current front-of-queue action has moved past raw MCQ diagnosis into the
-capability-ladder trace curriculum. The intended sequence is:
+The current front-of-queue action is the Phase 0 re-entry repair chain. Stage 1
+found a dead bridge and Stage 2 found eval-only `entry_rms` re-entry
+normalization safe enough for a tiny trainable smoke. The intended immediate
+sequence is:
 
 | Stage | Runtime | Purpose |
 |---|---|---|
-| `capability_ladder_trace_collect_cpu` | CPU/network-free Colab | Verify provider trace final answers, build a traced curriculum shard, run the SFT gate, and back up safe artifacts. |
-| `safe_continue_execute` after `trace_curriculum_gate_ready` | A100/H100 | Run one bounded deterministic recurrent Phase 1 SFT on the answer-verified traced curriculum. |
-| Post-SFT routing diagnostic | A100/H100, bounded | Check finite validation, non-collapsed loop depth, and whether direct/deep curriculum modes produce the expected depth gradient before any Phase 2/SVGD spend. |
+| `reentry_repair_smoke` | L4/T4 | Make the bridge and re-entry adapter gradient-live while preserving loop-1 behavior. |
+| `reentry_recovery_training` | L4/T4, G4 only if needed | Run bounded deterministic recovery SFT from the repaired checkpoint with learned loop control and target-loop supervision. |
+| `debiased_benchmark_suite` | L4/T4 | Compare base Qwen 0.5B versus the repaired recurrent checkpoint on ARC-Easy, ARC-Challenge, and GPQA-lite surfaces. |
+| `dense_mcq_trace_sft_control` | L4/T4 | Train/evaluate standard dense Qwen LoRA on the same curriculum so architecture lift is separated from data-recipe lift. |
 
 Do not spend A100 credits on GPQA Diamond, Phase 2/SVGD scaling, 1.5B/3B
-models, or more kernel geometry until the traced deterministic recurrent SFT
-path produces a sane checkpoint and a paired routing/benchmark diagnostic.
+models, or more kernel geometry until the repaired deterministic recurrent path
+produces a sane Stage 4 checkpoint and a paired base/recurrent/dense-control
+benchmark diagnostic.
 Auth, Drive, GitHub, notebook-state, source-pointer, and dataset-prep failures
 are CPU/local repair tasks, not GPU tasks.
 
@@ -132,7 +139,9 @@ The implementation has three stages:
 
 For the current manuscript-style status, evidence, negative results, and next
 gates, see [docs/PROJECT_STATUS_PAPER.md](docs/PROJECT_STATUS_PAPER.md). The
-program-level strategy is tracked in [docs/PROGRAM_TRACK.md](docs/PROGRAM_TRACK.md).
+program-level dependency sequence is tracked in
+[docs/PROGRAM_TRACK_MASTER_SEQUENCE.md](docs/PROGRAM_TRACK_MASTER_SEQUENCE.md);
+the older strategy note remains at [docs/PROGRAM_TRACK.md](docs/PROGRAM_TRACK.md).
 The MCQ scoring-confound note is in
 [docs/MCQ_DEBIAS_STATUS.md](docs/MCQ_DEBIAS_STATUS.md). The current
 deep-research handoff, including the direct-route preservation questions that
@@ -275,27 +284,25 @@ paths.
 Current reviewer state:
 
 ```text
-latest stage: stage1_drift
-latest status: bridge_dead
-next target: reentry_norm_diagnostic
+latest stage: stage2_norm
+latest status: entry_rms_safe_for_smoke
+current source summary: outputs/stage5/stage5_reentry_norm_20260625_013527/summary.json
+next target: reentry_repair_smoke
 ```
 
-If the current Stage 2 Colab run is still active from the older `9b81ead`
-launcher, it may be spending time on the full 14-task candidate-conversion
-sweep. That is no longer required for the gate. It is fine to let it finish, but
-if it is still dragging or disconnects, stop it and relaunch the current
-bounded Stage 2 target from `main`. Prefer the GitHub-resolved launcher below
-from a restarted or blank runtime; the shorter local `exec(open(...))` form is
-only safe after the repo has already been freshly cloned or reset to `main`.
+Stage 2 has already cleared the eval-only re-entry normalization gate. Prefer
+the GitHub-resolved launcher below from a restarted or blank runtime; the
+shorter local `exec(open(...))` form is only safe after the repo has already
+been freshly cloned or reset to `main`.
 
-Fresh-runtime Stage 2 launch:
+Fresh-runtime Stage 3 launch:
 
 ```python
 import base64, json, os, time, urllib.request
 from google.colab import userdata
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
-TARGET = "reentry_norm_diagnostic"
+TARGET = "reentry_repair_smoke"
 
 gh = userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
 assert gh, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
@@ -328,37 +335,25 @@ with urllib.request.urlopen(file_req, timeout=30) as response:
 code = base64.b64decode(payload["content"]).decode("utf-8")
 required = [
     "sha_resolved_nested_fetch_v3",
-    "reentry_norm_diagnostic",
-    "STAGE5_REENTRY_NORM_CELL_VERSION",
-    "stage5_reentry_norm_v1_eval_only",
-    "candidate_conversion_is_complete",
+    TARGET,
+    "STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION",
+    "stage5_reentry_repair_smoke_v1_trainable",
+    "stage2_norm_assessment",
+    "Loop-1 Preservation",
     "colab/assess_stage5_reentry.py",
 ]
 missing = [marker for marker in required if marker not in code]
 assert not missing, f"Fetched stale or incomplete bootstrap: {missing}"
-print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12])
+print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12], "target:", TARGET)
 exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
 ```
 
-If Stage 2 finished but did not push artifacts to GitHub, use the same cell with:
-
-```python
-TARGET = "reentry_norm_recover_only"
-```
-
-The current Stage 2 launcher bounds candidate conversion to the first 8 tasks
-by default, matching the drift and effective-pathway readouts, and uses seed
-`0` with `80` generated tokens. This is a quick safety gate, not a benchmark.
-Use `STAGE5_REENTRY_NORM_CANDIDATE_TASK_LIMIT`,
-`STAGE5_REENTRY_NORM_SEEDS`, or `STAGE5_REENTRY_NORM_MAX_NEW_TOKENS` only for
-an intentional broader readout.
-
-Only if Stage 2 assessment recommends `run_reentry_repair_smoke`, launch the
-tiny trainable repair:
+After Stage 3 publishes, run the CPU-only reviewer. Continue only if it
+recommends `run_bounded_recovery_training_with_reentry_repair`:
 
 ```python
 import os
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "reentry_repair_smoke"
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "master_sequence_status"
 exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
 ```
 
