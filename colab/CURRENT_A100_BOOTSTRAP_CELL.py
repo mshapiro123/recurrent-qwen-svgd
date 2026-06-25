@@ -21,6 +21,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "reentry_drift_diagnostic" - bounded read-only recurrent loop-closure drift diagnostic.
 #   "reentry_norm_diagnostic" - bounded eval-only loop re-entry RMS normalization comparison.
 #   "reentry_repair_smoke" - bounded trainable bridge/re-entry repair smoke.
+#   "reentry_recovery_training" - gated recovery SFT after re-entry repair passes.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
 #   "capability_ladder_7b_mcq_probe" - high-memory Qwen 0.5B/1.5B/3B/7B ARC MCQ scoring for depth-4 data.
 #   "capability_ladder_7b_trace_chain" - high-memory 7B ladder probe followed by trace-job build.
@@ -349,6 +350,27 @@ TARGETS = {
             "STAGE5_REENTRY_REPAIR_LIMIT": "8",
             "STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES": "bridge,halt",
             "STAGE5_REENTRY_REPAIR_DISCONNECT": "1",
+        },
+    },
+    "reentry_recovery_training": {
+        "path": "colab/STAGE5_REENTRY_RECOVERY_TRAINING_CELL.py",
+        "markers": [
+            "STAGE5_REENTRY_RECOVERY_CELL_VERSION",
+            "reentry_recovery_training_v1",
+            "STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT",
+            "run_bounded_recovery_training_with_reentry_repair",
+            "STAGE5_CURRICULUM_RESUME_FROM",
+            "STAGE5_CURRICULUM_USE_LEARNED_LOOP_CONTROL",
+            "STAGE5_CURRICULUM_OPTIMIZER_MODULES",
+            "colab/run_stage5_curriculum_sft.py",
+            "tests/test_stage5_curriculum_sft.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_REENTRY_RECOVERY_STEPS": "75",
+            "STAGE5_REENTRY_RECOVERY_LR": "5e-6",
+            "STAGE5_REENTRY_RECOVERY_OPTIMIZER_MODULES": "bridge,halt,lora",
+            "STAGE5_REENTRY_RECOVERY_DISCONNECT": "1",
         },
     },
     "candidate_conversion_diagnostic": {

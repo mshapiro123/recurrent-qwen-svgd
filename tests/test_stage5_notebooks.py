@@ -1242,6 +1242,26 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "runtime.unassign" in cell
 
 
+def test_reentry_recovery_training_target_is_bootstrapped() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_REENTRY_RECOVERY_TRAINING_CELL.py").read_text(encoding="utf-8")
+
+    assert "reentry_recovery_training" in bootstrap
+    assert "reentry_recovery_training" in bootstrap_md
+    assert "colab/STAGE5_REENTRY_RECOVERY_TRAINING_CELL.py" in bootstrap
+    assert "STAGE5_REENTRY_RECOVERY_CELL_VERSION" in cell
+    assert "reentry_recovery_training_v1" in cell
+    assert "STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT" in cell
+    assert "run_bounded_recovery_training_with_reentry_repair" in cell
+    assert "STAGE5_CURRICULUM_RESUME_FROM" in cell
+    assert "STAGE5_CURRICULUM_USE_LEARNED_LOOP_CONTROL" in cell
+    assert "STAGE5_CURRICULUM_OPTIMIZER_MODULES" in cell
+    assert "colab/run_stage5_curriculum_sft.py" in cell
+    assert "tests/test_stage5_curriculum_sft.py" in cell
+    assert "runtime.unassign" in cell
+
+
 def test_reentry_drift_and_norm_targets_run_self_assessment() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
