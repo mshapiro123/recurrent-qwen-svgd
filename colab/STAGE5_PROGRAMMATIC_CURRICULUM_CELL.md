@@ -262,8 +262,9 @@ print("WORK_DIR =", WORK_DIR, flush=True)
 print("MIN_POSITIVE_ROWS =", MIN_POSITIVE_ROWS, flush=True)
 print("MIN_MODE_ROWS =", MIN_MODE_ROWS, flush=True)
 print("Published current-source gate =", PUBLISHED_GATE_DIR + "/curriculum_sft_gate.json", flush=True)
-print("Next GPU step, only after choosing an A100 runtime:", flush=True)
-print("  run colab/CURRENT_A100_BOOTSTRAP_CELL.py with STAGE5_CURRENT_A100_TARGET=safe_continue_execute", flush=True)
+print("Next GPU step remains the master-sequence front of queue:", flush=True)
+print("  run colab/CURRENT_A100_BOOTSTRAP_CELL.py with STAGE5_CURRENT_A100_TARGET=reentry_repair_smoke", flush=True)
+print("  then reentry_recovery_training only if the repair reviewer recommends it.", flush=True)
 
 if DISCONNECT_RUNTIME_WHEN_DONE:
     runtime.unassign()

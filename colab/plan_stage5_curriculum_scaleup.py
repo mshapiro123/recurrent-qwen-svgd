@@ -96,6 +96,7 @@ def build_plan(
     overgenerate_factor: float,
     claim_min_positive_rows: int,
     claim_min_mode_rows: str,
+    claim_min_target_loop_rows: str = "",
 ) -> dict[str, Any]:
     claim = assessment["claim_readiness"]
     positive_deficit = int(claim.get("positive_row_deficit") or 0)
@@ -176,19 +177,20 @@ def build_plan(
             "--json_mode",
         ]
     )
-    gate_cmd = command_text(
-        [
-            "python",
-            "training/check_curriculum_sft_gate.py",
-            "--work_dir",
-            work_dir,
-            "--min_positive_rows",
-            str(claim_min_positive_rows),
-            "--min_mode_rows",
-            compact_requirements(requirements),
-            "--fail_on_no_go",
-        ]
-    )
+    gate_parts = [
+        "python",
+        "training/check_curriculum_sft_gate.py",
+        "--work_dir",
+        work_dir,
+        "--min_positive_rows",
+        str(claim_min_positive_rows),
+        "--min_mode_rows",
+        compact_requirements(requirements),
+    ]
+    if claim_min_target_loop_rows:
+        gate_parts += ["--min_target_loop_rows", claim_min_target_loop_rows]
+    gate_parts.append("--fail_on_no_go")
+    gate_cmd = command_text(gate_parts)
 
     actions = [
         {
@@ -320,6 +322,7 @@ def main(argv: list[str] | None = None) -> int:
         overgenerate_factor=args.overgenerate_factor,
         claim_min_positive_rows=args.claim_min_positive_rows,
         claim_min_mode_rows=args.claim_min_mode_rows,
+        claim_min_target_loop_rows=args.claim_min_target_loop_rows,
     )
     if args.json:
         print(json.dumps(plan, indent=2), flush=True)

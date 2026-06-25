@@ -19,6 +19,7 @@ PROVIDER_LIMIT_RAW = os.environ.get("STAGE5_CURRICULUM_PROVIDER_LIMIT", "none").
 PROVIDER_LIMIT = None if PROVIDER_LIMIT_RAW in {"", "none", "all"} else int(PROVIDER_LIMIT_RAW)
 MIN_POSITIVE_ROWS = 2000
 MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"
+MIN_TARGET_LOOP_ROWS = os.environ.get("STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS", "").strip()
 READINESS_FILENAME = "curriculum_readiness.json"
 
 API_KEY_ENV = os.environ.get("STAGE5_CURRICULUM_API_KEY_ENV", "OPENAI_API_KEY")
@@ -264,6 +265,62 @@ def model_map_configured():
     return not any(value.startswith("replace-with-") for value in MODEL_MAP.values())
 
 
+def positive_int_dict(value):
+    if not isinstance(value, dict):
+        return {}
+    out = {}
+    for key, raw in value.items():
+        try:
+            count = int(raw)
+        except (TypeError, ValueError):
+            continue
+        if count > 0:
+            out[str(key)] = count
+    return dict(sorted(out.items()))
+
+
+def parse_row_requirements(spec):
+    out = {}
+    for item in str(spec or "").split(","):
+        item = item.strip()
+        if not item:
+            continue
+        sep = "=" if "=" in item else ":"
+        if sep not in item:
+            raise AssertionError(f"Bad row requirement item: {item!r}")
+        key, raw = item.split(sep, 1)
+        key = key.strip()
+        count = int(raw.strip())
+        if key and count > 0:
+            out[key] = count
+    return out
+
+
+def row_requirement_report(counts, requirements):
+    counts = positive_int_dict(counts)
+    return {
+        key: {
+            "required": required,
+            "observed": int(counts.get(key, 0)),
+            "deficit": max(0, required - int(counts.get(key, 0))),
+            "passed": int(counts.get(key, 0)) >= required,
+        }
+        for key, required in sorted(requirements.items())
+    }
+
+
+def positive_sft_counts_from_gate(gate):
+    if not isinstance(gate, dict):
+        return {}
+    checks = gate.get("checks") if isinstance(gate.get("checks"), dict) else {}
+    positive = checks.get("positive_sft") if isinstance(checks.get("positive_sft"), dict) else {}
+    return {
+        "mode_counts": positive_int_dict(positive.get("mode_counts")),
+        "target_loop_counts": positive_int_dict(positive.get("target_loop_counts")),
+        "exported_examples": positive.get("exported_examples"),
+    }
+
+
 def next_safe_action(summary, pairs):
     if summary.get("status") == "complete":
         return "Run or review the SFT gate; the curriculum artifact pipeline is complete."
@@ -284,7 +341,7 @@ def next_safe_action(summary, pairs):
     return "Run provider responses for all pending rows, then rerun this cell until status=complete."
 
 
-def write_readiness_report(summary, *, phase):
+def write_readiness_report(summary, *, phase, gate=None):
     pairs = response_pairs(summary)
     pending = [
         {
@@ -293,13 +350,25 @@ def write_readiness_report(summary, *, phase):
         }
         for jobs, responses in pairs
     ]
+    counts = summary.get("counts", {}) if isinstance(summary.get("counts"), dict) else {}
+    gate_counts = positive_sft_counts_from_gate(gate)
+    mode_counts = gate_counts.get("mode_counts") or positive_int_dict(counts.get("mode_counts"))
+    target_loop_counts = gate_counts.get("target_loop_counts") or positive_int_dict(counts.get("target_loop_counts"))
+    mode_requirements = parse_row_requirements(MIN_MODE_ROWS)
+    target_loop_requirements = parse_row_requirements(MIN_TARGET_LOOP_ROWS)
     payload = {
         "kind": "curriculum_artifact_pipeline_readiness",
         "phase": phase,
         "work_dir": WORK_DIR,
         "summary_status": summary.get("status"),
         "summary_next_action": summary.get("next_action"),
-        "counts": summary.get("counts", {}),
+        "counts": counts,
+        "coverage": {
+            "mode_counts": mode_counts,
+            "target_loop_counts": target_loop_counts,
+            "mode_requirements": row_requirement_report(mode_counts, mode_requirements),
+            "target_loop_requirements": row_requirement_report(target_loop_counts, target_loop_requirements),
+        },
         "provider": {
             "enabled": RUN_PROVIDER_RESPONSES,
             "backend": PROVIDER_BACKEND,
@@ -312,10 +381,15 @@ def write_readiness_report(summary, *, phase):
         "requirements": {
             "min_positive_rows": MIN_POSITIVE_ROWS,
             "min_mode_rows": MIN_MODE_ROWS,
+            "min_target_loop_rows": MIN_TARGET_LOOP_ROWS,
         },
         "pending_provider_pairs": pending,
         "pending_responses": summary.get("pending_responses", []),
         "next_safe_action": next_safe_action(summary, pairs),
+        "phase_order_warning": (
+            "This CPU/API curriculum work prepares Phase 1/Stage 4 data in parallel. "
+            "It does not unlock Stage 4 until reentry_repair_smoke passes."
+        ),
     }
     path = ROOT / WORK_DIR / READINESS_FILENAME
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -421,6 +495,8 @@ def run_sft_gate(summary):
     ]
     if MIN_MODE_ROWS:
         cmd += ["--min_mode_rows", MIN_MODE_ROWS]
+    if MIN_TARGET_LOOP_ROWS:
+        cmd += ["--min_target_loop_rows", MIN_TARGET_LOOP_ROWS]
     run(cmd, cwd=ROOT)
     gate = json.loads((ROOT / output_json).read_text(encoding="utf-8"))
     print("sft_gate_status:", gate["status"], flush=True)
@@ -460,7 +536,7 @@ else:
 
 gate = run_sft_gate(summary)
 if gate:
-    readiness = write_readiness_report(summary, phase="post_sft_gate")
+    readiness = write_readiness_report(summary, phase="post_sft_gate", gate=gate)
 backup_work_dir()
 
 if DISCONNECT_RUNTIME_WHEN_DONE:

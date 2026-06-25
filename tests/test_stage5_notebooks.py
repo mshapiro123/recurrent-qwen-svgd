@@ -1235,6 +1235,11 @@ def test_curriculum_artifact_pipeline_cell_defaults_to_no_provider_spend() -> No
     assert "write_readiness_report" in plain
     assert "next_safe_action" in plain
     assert "model_map_configured" in plain
+    assert "MIN_TARGET_LOOP_ROWS" in plain
+    assert "STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS" in plain
+    assert "target_loop_requirements" in plain
+    assert "phase_order_warning" in plain
+    assert "This CPU/API curriculum work prepares Phase 1/Stage 4 data in parallel" in plain
     assert "response_lines < job_lines" in plain
     assert "runtime.unassign()" in plain
     assert "replace-with-opus-compatible-model-id" in plain
@@ -1295,6 +1300,8 @@ def test_programmatic_curriculum_cell_is_cpu_safe_and_matches_markdown_code() ->
     assert "OSError" in plain
     assert "Refusing to run CPU-only programmatic curriculum generation" in plain
     assert "zero-provider" in text
+    assert "STAGE5_CURRENT_A100_TARGET=reentry_repair_smoke" in plain
+    assert "STAGE5_CURRENT_A100_TARGET=safe_continue_execute" not in plain
 
 
 def test_reentry_repair_smoke_target_is_bootstrapped() -> None:

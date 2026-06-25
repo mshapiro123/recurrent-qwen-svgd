@@ -53,6 +53,7 @@ def test_curriculum_scaleup_plan_keeps_gpu_on_reentry_and_reports_deficits(tmp_p
         overgenerate_factor=2.0,
         claim_min_positive_rows=2000,
         claim_min_mode_rows="direct=1000,deep_narrow=1000",
+        claim_min_target_loop_rows="1=1000,2=500,3=500",
     )
 
     assert plan["positive_deficit"] == 1937
@@ -64,4 +65,5 @@ def test_curriculum_scaleup_plan_keeps_gpu_on_reentry_and_reports_deficits(tmp_p
     assert "training/run_curriculum_pipeline_from_artifacts.py" in plan["actions"][2]["command"]
     assert "--min_positive_rows 2000" in plan["actions"][4]["command"]
     assert "--min_mode_rows deep_narrow=1000,direct=1000" in plan["actions"][4]["command"]
+    assert "--min_target_loop_rows 1=1000,2=500,3=500" in plan["actions"][4]["command"]
     assert "does not unlock Stage 4" in plan["phase_order_warning"]
