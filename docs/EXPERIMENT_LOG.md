@@ -785,3 +785,8 @@ Colab/Drive backups for selected runs.
   usable for bounded recovery (`63` positive rows, target loops `1=26,2=28,3=9`)
   but explicitly warns that it is not claim-sized and has a sparse highest-loop
   bucket. This keeps Stage 4 data adequacy visible before spending GPU.
+- Stage 4 curriculum source-resolution hardening: the readiness readout now
+  follows the same source-selection shape as Stage 4 recovery training:
+  explicit trace-summary override first, then latest gate-ready local/Drive
+  trace collection, then the known default. Tests cover latest-ready selection,
+  explicit override, and rejection of non-gate-ready summaries.
