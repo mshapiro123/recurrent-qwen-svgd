@@ -693,6 +693,9 @@ def test_debiased_benchmark_suite_cell_is_bounded_and_policy_compliant() -> None
     assert "validate_stage4_benchmark_source" in plain
     assert "stage5_reentry_recovery_training" in plain
     assert "post_reentry_health_checks.status" in plain
+    assert "spectral_source_health_override" in plain
+    assert "stage4_benchmark_source_gate=spectral_health_override" in plain
+    assert "spectral_source_health_override" in bootstrap
     assert "stage4_benchmark_source_gate=passed" in plain
     assert "colab/run_stage5_benchmark_suite.py" in plain
     assert "colab/assess_stage5_benchmark_suite.py" in plain

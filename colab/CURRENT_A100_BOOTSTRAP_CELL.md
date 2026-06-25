@@ -242,6 +242,8 @@ TARGETS = {
             "arc_easy,arc_challenge,gpqa_lite",
             "colab/run_stage5_benchmark_suite.py",
             "colab/assess_stage5_benchmark_suite.py",
+            "spectral_source_health_override",
+            "stage4_benchmark_source_gate=spectral_health_override",
             "tests/test_stage5_benchmark_suite.py",
             "tests/test_stage5_benchmark_assessment.py",
             "STAGE5_DEBIASED_BENCHMARK_DISCONNECT",

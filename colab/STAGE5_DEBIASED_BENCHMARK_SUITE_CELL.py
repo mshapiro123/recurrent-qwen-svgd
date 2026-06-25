@@ -18,7 +18,7 @@ from pathlib import Path
 from google.colab import drive, runtime, userdata
 
 
-STAGE5_DEBIASED_BENCHMARK_SUITE_CELL_VERSION = "debiased_benchmark_suite_v2"
+STAGE5_DEBIASED_BENCHMARK_SUITE_CELL_VERSION = "debiased_benchmark_suite_v3_spectral_health_gate"
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 
@@ -153,6 +153,52 @@ def benchmark_source_override_requested() -> bool:
     return bool(os.environ.get("STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY", "").strip())
 
 
+def positive_float(value: object) -> bool:
+    try:
+        return float(value) > 0.0
+    except (TypeError, ValueError):
+        return False
+
+
+def spectral_source_health_override(source_summary: Path, payload: dict, health: dict) -> bool:
+    """Allow benchmarking when a stale affine-only health check mislabels spectral liveness."""
+
+    issues = set(health.get("issues") or [])
+    if issues != {"reentry_adapter_gradient_not_live_after_recovery"}:
+        return False
+    drift_info = payload.get("post_reentry_drift") if isinstance(payload.get("post_reentry_drift"), dict) else {}
+    drift_summary = str(drift_info.get("summary_path") or "").strip()
+    if not drift_summary:
+        return False
+    drift_path = resolve_path(drift_summary)
+    if not drift_path.exists():
+        sibling = source_summary.parent / Path(drift_summary).name
+        drift_path = sibling if sibling.exists() else drift_path
+    if not drift_path.exists():
+        return False
+    drift = read_json(drift_path)
+    adapter = drift.get("reentry_adapter") if isinstance(drift.get("reentry_adapter"), dict) else {}
+    liveness = (
+        drift.get("reentry_adapter_gradient_liveness")
+        if isinstance(drift.get("reentry_adapter_gradient_liveness"), dict)
+        else {}
+    )
+    if str(adapter.get("mode") or liveness.get("mode") or "") != "spectral":
+        return False
+    if not (
+        positive_float(liveness.get("spectral_u_grad_rms"))
+        and positive_float(liveness.get("spectral_v_grad_rms"))
+        and positive_float(liveness.get("spectral_theta_grad_abs"))
+    ):
+        return False
+    print(
+        "stage4_benchmark_source_gate=spectral_health_override "
+        f"drift={path_for_cli(drift_path)} issues={sorted(issues)}",
+        flush=True,
+    )
+    return True
+
+
 def validate_stage4_benchmark_source(source_summary: Path, payload: dict, *, allow_override: bool) -> None:
     if allow_override:
         print(
@@ -173,6 +219,8 @@ def validate_stage4_benchmark_source(source_summary: Path, payload: dict, *, all
     health = payload.get("post_reentry_health_checks") if isinstance(payload.get("post_reentry_health_checks"), dict) else {}
     status = str(health.get("status") or "")
     if status != "reentry_health_sane":
+        if spectral_source_health_override(source_summary, payload, health):
+            return
         raise RuntimeError(
             "Stage 4 recovery source is not benchmark-ready: "
             f"post_reentry_health_checks.status={status!r}, issues={health.get('issues', [])!r}. "
