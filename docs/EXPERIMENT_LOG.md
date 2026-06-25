@@ -779,3 +779,9 @@ Colab/Drive backups for selected runs.
   dependency chain: re-entry repair first, deterministic depth recovery second,
   dense same-curriculum control third, breadth diagnostics fourth, and
   particles/SVGD only after correct-bearing breadth exists.
+- Stage 4 curriculum readiness readout: added
+  `colab/review_stage5_recovery_curriculum.py` and wired it into the cheap
+  `master_sequence_status` target. The current Stage 4 trace curriculum is
+  usable for bounded recovery (`63` positive rows, target loops `1=26,2=28,3=9`)
+  but explicitly warns that it is not claim-sized and has a sparse highest-loop
+  bucket. This keeps Stage 4 data adequacy visible before spending GPU.

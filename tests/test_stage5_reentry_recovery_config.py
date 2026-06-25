@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from colab.reentry_recovery_config import (
+    assess_trace_curriculum_for_reentry_recovery,
     int_dict_max_key,
     mode_rows_from_counts,
     repair_assessment_recovery_block_reason,
     target_loop_rows_from_counts,
+    trace_curriculum_counts,
 )
 
 
@@ -43,6 +45,60 @@ def test_mode_rows_preserves_mode_counts() -> None:
 def test_int_dict_max_key_ignores_invalid_and_nonpositive_keys() -> None:
     assert int_dict_max_key({"0": 100, "-1": 100, "2": 1, "4": 1, "bad": 99}, default=3) == 4
     assert int_dict_max_key({"bad": 99, "0": 100}, default=3) == 3
+
+
+def trace_collection_summary() -> dict:
+    return {
+        "kind": "stage5_capability_ladder_trace_collection",
+        "status": "trace_curriculum_gate_ready",
+        "collection": {"target_loop_counts": {"1": 26, "2": 28, "3": 9}},
+        "curriculum": {
+            "counts": {
+                "typed_records": 63,
+                "positive_sft_rows": 63,
+                "mode_counts": {"direct": 26, "deep_narrow": 37},
+                "target_loop_counts": {"1": 26, "2": 28, "3": 9},
+                "tier_counts": {
+                    "base_preservation": 26,
+                    "qwen_0_5b_miss_qwen_1_5b_solve": 28,
+                    "qwen_0_5b_miss_qwen_1_5b_miss_qwen_3b_solve": 9,
+                },
+            }
+        },
+        "gate": {"go": True},
+    }
+
+
+def test_trace_curriculum_counts_accepts_trace_collection_wrapper_shape() -> None:
+    counts = trace_curriculum_counts(trace_collection_summary())
+
+    assert counts["positive_rows"] == 63
+    assert counts["mode_counts"] == {"direct": 26, "deep_narrow": 37}
+    assert counts["target_loop_counts"] == {"1": 26, "2": 28, "3": 9}
+
+
+def test_trace_curriculum_readiness_allows_small_bounded_stage4_but_warns() -> None:
+    readiness = assess_trace_curriculum_for_reentry_recovery(trace_collection_summary())
+
+    assert readiness["go"] is True
+    assert readiness["status"] == "stage4_curriculum_ready"
+    assert readiness["issues"] == []
+    assert "small_recovery_curriculum_not_claim_sized" in readiness["warnings"]
+    assert "sparse_highest_loop_bucket:3=9" in readiness["warnings"]
+    assert readiness["strict_target_loop_gate"] == "1=26,2=28,3=9"
+    assert readiness["strict_mode_gate"] == "deep_narrow=37,direct=26"
+
+
+def test_trace_curriculum_readiness_blocks_missing_deep_rows() -> None:
+    summary = trace_collection_summary()
+    summary["curriculum"]["counts"]["mode_counts"] = {"direct": 20}
+    summary["collection"]["target_loop_counts"] = {"1": 20}
+
+    readiness = assess_trace_curriculum_for_reentry_recovery(summary)
+
+    assert readiness["go"] is False
+    assert "missing_deep_rows" in readiness["issues"]
+    assert "missing_deeper_target_loops" in readiness["issues"]
 
 
 def passing_repair_assessment() -> dict:

@@ -123,6 +123,8 @@ TARGETS = {
             "MASTER_SEQUENCE_STATUS",
             "colab/print_current_stage5_action.py",
             "colab/review_stage5_reentry.py",
+            "colab/review_stage5_recovery_curriculum.py",
+            "Stage 4 Recovery Curriculum Readiness",
             "NEXT_COLAB_SEQUENCE excerpt",
             "STAGE5_MASTER_SEQUENCE_STATUS_DISCONNECT",
             "runtime.unassign",

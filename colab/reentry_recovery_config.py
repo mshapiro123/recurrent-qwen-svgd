@@ -5,6 +5,9 @@ from __future__ import annotations
 from typing import Any
 
 
+DEFAULT_STAGE4_MIN_POSITIVE_ROWS = 16
+
+
 def int_dict_max_key(payload: Any, default: int) -> int:
     """Return the largest positive integer-like key from a count dict."""
     values: list[int] = []
@@ -109,3 +112,105 @@ def target_loop_rows_from_counts(target_loop_counts: Any) -> str:
         if loop_value > 0 and count_value > 0:
             sortable.append((loop_value, count_value))
     return ",".join(f"{loop}={count}" for loop, count in sorted(sortable))
+
+
+def positive_int_dict(payload: Any) -> dict[str, int]:
+    """Return positive integer-like entries from a count dict."""
+
+    out: dict[str, int] = {}
+    if not isinstance(payload, dict):
+        return out
+    for key, value in payload.items():
+        try:
+            n = int(value)
+        except (TypeError, ValueError):
+            continue
+        if n > 0:
+            out[str(key)] = n
+    return out
+
+
+def trace_curriculum_counts(summary: dict[str, Any]) -> dict[str, Any]:
+    """Extract Stage 4-relevant curriculum counts from a trace summary.
+
+    Stage 4 accepts either the trace-collection wrapper shape, where counts
+    live under ``curriculum.counts``, or the raw curriculum pipeline shape,
+    where counts live at the top level.
+    """
+
+    curriculum = summary.get("curriculum") if isinstance(summary.get("curriculum"), dict) else {}
+    counts = curriculum.get("counts") if isinstance(curriculum.get("counts"), dict) else summary.get("counts")
+    if not isinstance(counts, dict):
+        counts = {}
+    collection = summary.get("collection") if isinstance(summary.get("collection"), dict) else {}
+    target_loop_counts = collection.get("target_loop_counts")
+    if not isinstance(target_loop_counts, dict):
+        target_loop_counts = counts.get("target_loop_counts")
+    return {
+        "positive_rows": int(counts.get("positive_sft_rows") or counts.get("typed_records") or 0),
+        "typed_records": int(counts.get("typed_records") or 0),
+        "mode_counts": positive_int_dict(counts.get("mode_counts")),
+        "target_loop_counts": positive_int_dict(target_loop_counts),
+        "tier_counts": positive_int_dict(counts.get("tier_counts")),
+    }
+
+
+def assess_trace_curriculum_for_reentry_recovery(
+    summary: dict[str, Any],
+    *,
+    min_positive_rows: int = DEFAULT_STAGE4_MIN_POSITIVE_ROWS,
+) -> dict[str, Any]:
+    """Assess whether a trace curriculum is usable for bounded Stage 4 SFT.
+
+    This is a readiness report, not a scientific pass/fail claim. A small
+    curriculum can be acceptable for the bounded recovery smoke while still
+    being too thin for a performance claim.
+    """
+
+    counts = trace_curriculum_counts(summary)
+    positive_rows = int(counts["positive_rows"])
+    mode_counts = counts["mode_counts"]
+    target_loop_counts = counts["target_loop_counts"]
+    issues: list[str] = []
+    warnings: list[str] = []
+
+    if summary.get("status") not in {"trace_curriculum_gate_ready", "complete"}:
+        issues.append(f"unexpected_status:{summary.get('status')}")
+    gate = summary.get("gate") if isinstance(summary.get("gate"), dict) else {}
+    if gate and gate.get("go") is not True:
+        issues.append("curriculum_gate_not_go")
+    if positive_rows < min_positive_rows:
+        issues.append(f"positive_rows_below_min:{positive_rows}<{min_positive_rows}")
+    if mode_counts.get("direct", 0) <= 0:
+        issues.append("missing_direct_rows")
+    if mode_counts.get("deep_narrow", 0) <= 0 and mode_counts.get("deep", 0) <= 0:
+        issues.append("missing_deep_rows")
+    if target_loop_counts.get("1", 0) <= 0:
+        issues.append("missing_target_loop_1")
+    if not any(int(loop) > 1 for loop in target_loop_counts):
+        issues.append("missing_deeper_target_loops")
+
+    max_loop = max((int(loop) for loop in target_loop_counts), default=1)
+    if positive_rows < 200:
+        warnings.append("small_recovery_curriculum_not_claim_sized")
+    if max_loop < 3:
+        warnings.append("no_target_loop_3_or_higher")
+    elif target_loop_counts.get(str(max_loop), 0) < 16:
+        warnings.append(f"sparse_highest_loop_bucket:{max_loop}={target_loop_counts.get(str(max_loop), 0)}")
+
+    status = "stage4_curriculum_ready" if not issues else "stage4_curriculum_blocked"
+    return {
+        "status": status,
+        "go": not issues,
+        "issues": issues,
+        "warnings": warnings,
+        "counts": counts,
+        "strict_target_loop_gate": target_loop_rows_from_counts(target_loop_counts),
+        "strict_mode_gate": mode_rows_from_counts(mode_counts),
+        "max_target_loop": max_loop,
+        "next_step": (
+            "Use for bounded Stage 4 recovery smoke after Stage 3 passes; do not treat as claim-sized."
+            if not issues
+            else "Fix or regenerate the trace curriculum before Stage 4 recovery training."
+        ),
+    }
