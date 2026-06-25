@@ -383,6 +383,12 @@ def main() -> int:
 
     payload = {
         "kind": "stage5_model_viability_probe",
+        "program_phase": "standing_scale_probe",
+        "program_role": (
+            "Information-only scale probe. It does not unlock Stage 4, "
+            "Phase 2 breadth work, or particle/SVGD work; those remain gated "
+            "by re-entry repair and deterministic depth recovery."
+        ),
         "run_id": RUN_ID,
         "model_name": MODEL_NAME,
         "model_label": MODEL_LABEL or MODEL_NAME,

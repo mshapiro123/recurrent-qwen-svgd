@@ -52,6 +52,10 @@ gradient-live and the repair smoke passes loop-1 preservation.
 For scale probes, set `MODEL_NAME` and optionally
 `STAGE5_RECURRENT_LAYER_SPLIT`. The default split is now `auto`, which maps to
 the prior 0.5B `6,18` split while remaining valid for larger Qwen layer counts.
+Treat `model_viability_probe` and `model_viability_queue` as standing
+information-value runs only. A larger Qwen identity/loop-preservation pass does
+not unlock Stage 4 or particles; it only tells us whether a later scale move is
+technically viable if Phase 1 says 0.5B is capacity-limited.
 
 The Stage 3 target now performs an immediate GPU-runtime preflight. If Colab is
 not attached to L4/T4/A100/H100, it stops before repo sync, Drive restoration,

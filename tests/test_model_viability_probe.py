@@ -10,6 +10,9 @@ from colab.run_stage5_model_viability_queue import (
 from colab.run_stage5_model_viability_probe import parse_int_csv, summarize_pair
 
 
+ROOT = Path(__file__).resolve().parents[1]
+
+
 def write_jsonl(path: Path, rows: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
@@ -129,3 +132,13 @@ def test_assess_child_rejects_large_loop1_regression():
 
     assert assessment["status"] == "loop1_regression_too_large"
     assert assessment["promote_to_training_probe"] is False
+
+
+def test_model_viability_outputs_are_information_only_scale_probes():
+    probe = (ROOT / "colab/run_stage5_model_viability_probe.py").read_text(encoding="utf-8")
+    queue = (ROOT / "colab/run_stage5_model_viability_queue.py").read_text(encoding="utf-8")
+
+    assert '"program_phase": "standing_scale_probe"' in probe
+    assert '"program_phase": "standing_scale_probe"' in queue
+    assert "Information-only scale probe" in probe
+    assert "information only; this does not unlock Stage 4 recovery" in queue

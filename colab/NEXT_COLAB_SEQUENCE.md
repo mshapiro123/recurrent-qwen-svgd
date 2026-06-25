@@ -258,6 +258,37 @@ Only after deterministic depth is base-competitive:
 - use Leinster similarity-sensitive diversity;
 - test multi-solution tasks, not single-answer arithmetic.
 
+### Standing scale probe: information only
+
+These targets answer a different question: whether larger Qwen-family bases
+survive the recurrent surgery before we commit training budget. They are useful
+overnight or on a high-memory runtime, but they do **not** replace the Phase 0
+and Phase 1 gates above.
+
+Single-model probe, default Qwen 1.5B:
+
+```python
+TARGET = "model_viability_probe"
+```
+
+Queued probe, default Qwen 3B then Qwen 7B with VRAM gates:
+
+```python
+TARGET = "model_viability_queue"
+```
+
+Use these only as information-value runs. A passing 1.5B/3B/7B identity and
+loop-preservation probe means the larger model is viable for a later training
+probe; it does not justify skipping:
+
+```text
+reentry_repair_smoke -> reentry_recovery_training
+-> debiased_benchmark_suite -> dense_mcq_trace_sft_control
+```
+
+If the Phase 1 off-ramp says 0.5B lacks capacity, then the scale-probe result
+decides whether to move development to 1.5B/3B.
+
 Gate: effective pathway count above one with correct-bearing diversity.
 
 ### 6. Phase 3 particles/SVGD and selector

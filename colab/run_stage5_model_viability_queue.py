@@ -253,6 +253,10 @@ def write_summary(payload: dict[str, Any]) -> Path:
     lines = [
         f"# Stage 5 Model Viability Queue - {RUN_ID}",
         "",
+        "- Program role: `standing_scale_probe`",
+        "- Gate status: information only; this does not unlock Stage 4 recovery, Phase 2 breadth, or particles/SVGD.",
+        "- Development should move scale only after the re-entry/depth gates recommend it.",
+        "",
         f"- Available VRAM GB: `{payload['available_vram_gb']}`",
         f"- Allow insufficient VRAM: `{payload['allow_insufficient_vram']}`",
         "",
@@ -347,6 +351,13 @@ def main() -> int:
 
     payload = {
         "kind": "stage5_model_viability_queue",
+        "program_phase": "standing_scale_probe",
+        "program_role": (
+            "Information-only queue for model-scale viability. It tests whether "
+            "larger Qwen checkpoints survive recurrent surgery before any "
+            "training commitment, while the active Phase 0/1 gates remain "
+            "re-entry repair and deterministic depth recovery."
+        ),
         "run_id": RUN_ID,
         "queue_specs": QUEUE_SPECS,
         "available_vram_gb": available_vram_gb,
