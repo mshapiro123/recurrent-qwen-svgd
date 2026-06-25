@@ -141,7 +141,12 @@ def commit_results() -> None:
         print("No competence-preserving pipeline outputs changed.")
         return
     run(["git", "commit", "-m", f"Record Stage 5 competence-preserving pipeline {RUN_ID} [skip ci]"])
-    run(["git", "push", "origin", "main"], check=False)
+    pushed = run(["git", "push", "origin", "main"], check=False)
+    if pushed.returncode == 0:
+        return
+    print("Initial competence pipeline push failed; attempting one autostash rebase and retry.", flush=True)
+    run(["git", "pull", "--rebase", "--autostash", "origin", "main"])
+    run(["git", "push", "origin", "main"])
 
 
 def write_report(payload: dict[str, Any]) -> None:

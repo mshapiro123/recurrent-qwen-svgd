@@ -114,3 +114,37 @@ def test_competence_pipeline_commit_stages_current_source_pointer(monkeypatch, t
     commit_commands = [cmd for cmd in commands if cmd[:2] == ["git", "commit"]]
     assert commit_commands
     assert "[skip ci]" in " ".join(commit_commands[0])
+
+
+def test_competence_pipeline_commit_retries_failed_push_with_autostash_rebase(monkeypatch, tmp_path) -> None:
+    import colab.run_stage5_competence_preserving_pipeline as module
+
+    run_dir = tmp_path / "outputs" / "stage5" / "competence"
+    pointer = tmp_path / "config" / "stage5_current_source_summary.txt"
+    run_dir.mkdir(parents=True)
+    pointer.parent.mkdir(parents=True)
+    (run_dir / "summary.json").write_text("{}", encoding="utf-8")
+    pointer.write_text("outputs/stage5/competence/summary.json\n", encoding="utf-8")
+    commands: list[list[str]] = []
+    push_calls = 0
+
+    def fake_run(cmd, *, env=None, check=True, log_name=None):
+        nonlocal push_calls
+        command = [str(item) for item in cmd]
+        commands.append(command)
+        if command == ["git", "diff", "--cached", "--quiet"]:
+            return subprocess.CompletedProcess(cmd, 1, "", None)
+        if command == ["git", "push", "origin", "main"]:
+            push_calls += 1
+            return subprocess.CompletedProcess(cmd, 1 if push_calls == 1 else 0, "", None)
+        return subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_DIR", run_dir)
+    monkeypatch.setattr(module, "PUSH_RESULTS", True)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    module.commit_results()
+
+    assert commands.count(["git", "push", "origin", "main"]) == 2
+    assert ["git", "pull", "--rebase", "--autostash", "origin", "main"] in commands
