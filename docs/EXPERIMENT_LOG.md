@@ -984,3 +984,13 @@ Colab/Drive backups for selected runs.
   provides a tracked blank-notebook launcher so future Colab sessions clone,
   hard-reset, mount Drive, verify the freshness/Drive fixes, and then execute
   the current Stage 5 target without hand-assembled setup cells.
+- Competence pipeline stale-failure routing: older failed competence summaries
+  did not contain the newer `failure_diagnosis` field, so the planner could
+  still route the current stale checkpoint/Drive failure to manual inspection.
+  The planner now reads durable `arc_mix.log` evidence and recognizes the same
+  missing-checkpoint/Drive-restore signature. It resumes the competence
+  wrapper with the same run ids after the top-level Drive mount instead of
+  forcing another hand triage loop. A CPU-only
+  `review_stage5_competence_pipeline.py` helper now prints the pipeline status,
+  child statuses/checkpoints, and planner-selected next action for immediate
+  post-Colab triage.
