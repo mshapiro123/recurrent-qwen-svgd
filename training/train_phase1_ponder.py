@@ -34,6 +34,20 @@ def load_config(path: str | Path) -> dict:
     return yaml.safe_load(Path(path).read_text(encoding="utf-8"))
 
 
+def cfg_float(cfg: dict, key: str, default: float) -> float:
+    value = cfg.get(key, default)
+    if value is None:
+        return default
+    return float(value)
+
+
+def cfg_int(cfg: dict, key: str, default: int) -> int:
+    value = cfg.get(key, default)
+    if value is None:
+        return default
+    return int(value)
+
+
 def distillation_mask(batch: dict[str, torch.Tensor], mode: str) -> torch.Tensor:
     if mode == "response":
         return batch["labels"].ne(-100)
@@ -119,16 +133,16 @@ def main() -> int:
     wrapper = RecurrentQwenForCausalLM(
         model,
         layer_split=parse_split(cfg.get("layer_split", "auto")),
-        initial_halt_prob=cfg.get("initial_halt_prob", 0.25),
+        initial_halt_prob=cfg_float(cfg, "initial_halt_prob", 0.25),
     ).to(args.device)
     adapter_dtype = resolve_dtype(cfg.get("adapter_dtype", "float32"))
     lora_cfg = cfg.get("lora", {})
     if lora_cfg.get("enabled", True):
         replaced = apply_lora_to_recurrent_block(
             wrapper,
-            rank=lora_cfg.get("rank", 8),
-            alpha=lora_cfg.get("alpha", 16),
-            dropout=lora_cfg.get("dropout", 0.0),
+            rank=int(lora_cfg.get("rank", 8)),
+            alpha=float(lora_cfg.get("alpha", 16)),
+            dropout=float(lora_cfg.get("dropout", 0.0)),
             adapter_dtype=adapter_dtype,
         )
         print(f"lora_recurrent_modules={replaced}")
@@ -149,13 +163,13 @@ def main() -> int:
     dataset = JsonlCausalDataset(
         args.train_jsonl,
         tokenizer=tokenizer,
-        max_length=cfg.get("max_length", 1024),
-        max_train_loops=cfg.get("max_loops", 4),
+        max_length=cfg_int(cfg, "max_length", 1024),
+        max_train_loops=cfg_int(cfg, "max_loops", 4),
         train_on_prompt=cfg.get("train_on_prompt", False),
     )
     loader = DataLoader(
         dataset,
-        batch_size=cfg.get("batch_size", 1),
+        batch_size=cfg_int(cfg, "batch_size", 1),
         shuffle=True,
         collate_fn=partial(collate_causal_batch, pad_token_id=tokenizer.pad_token_id),
     )
@@ -163,13 +177,13 @@ def main() -> int:
     print(f"optimizer_parameter_tensors={len(optimizer_params)}")
     optimizer = torch.optim.AdamW(
         optimizer_params,
-        lr=cfg.get("learning_rate", 1e-4),
-        weight_decay=cfg.get("weight_decay", 0.0),
+        lr=cfg_float(cfg, "learning_rate", 1e-4),
+        weight_decay=cfg_float(cfg, "weight_decay", 0.0),
     )
     wrapper.zero_grad(set_to_none=True)
 
-    max_steps = int(cfg.get("max_steps", 100))
-    save_every = int(cfg.get("save_every", 0) or 0)
+    max_steps = cfg_int(cfg, "max_steps", 100)
+    save_every = cfg_int(cfg, "save_every", 0) if cfg.get("save_every", 0) else 0
     step = 0
     while step < max_steps:
         for batch in loader:
@@ -178,11 +192,11 @@ def main() -> int:
                 batch["halt_control_loop_counts"] = batch["target_loop_counts"]
             output = wrapper(
                 **batch,
-                max_loops=cfg.get("max_loops", 4),
-                beta=cfg.get("beta", 0.02),
-                halt_target_nll_weight=cfg.get("halt_target_nll_weight", 0.0),
+                max_loops=cfg_int(cfg, "max_loops", 4),
+                beta=cfg_float(cfg, "beta", 0.02),
+                halt_target_nll_weight=cfg_float(cfg, "halt_target_nll_weight", 0.0),
                 use_learned_loop_control=cfg.get("use_learned_loop_control", False),
-                loop_control_ce_weight=cfg.get("loop_control_ce_weight", 0.0),
+                loop_control_ce_weight=cfg_float(cfg, "loop_control_ce_weight", 0.0),
                 reentry_rescale_mode=cfg.get("reentry_rescale_mode", "none"),
                 use_reentry_adapter=cfg.get("use_reentry_adapter", False),
                 use_cache=False,
@@ -210,14 +224,14 @@ def main() -> int:
             assert_finite_trainable_gradients(wrapper, step)
             torch.nn.utils.clip_grad_norm_(
                 optimizer_params,
-                cfg.get("max_grad_norm", 1.0),
+                cfg_float(cfg, "max_grad_norm", 1.0),
                 error_if_nonfinite=True,
             )
             optimizer.step()
             wrapper.zero_grad(set_to_none=True)
             assert_finite_trainable_parameters(wrapper, step + 1)
 
-            if step % cfg.get("log_every", 10) == 0:
+            if step % cfg_int(cfg, "log_every", 10) == 0:
                 metrics = " ".join(f"{key}={float(value):.4f}" for key, value in output.metrics.items())
                 print(f"step={step} {metrics}")
             step += 1
