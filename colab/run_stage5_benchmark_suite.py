@@ -89,6 +89,7 @@ OPEN_HARD_ARC_CHALLENGE_LIMIT_RAW = os.environ.get(
     PROFILE_DEFAULTS["open_hard_arc_challenge_limit"],
 )
 OPEN_HARD_ARC_CHALLENGE_OFFSET = int(os.environ.get("STAGE5_BENCHMARK_OPEN_HARD_ARC_CHALLENGE_OFFSET", "0"))
+OPEN_HARD_ARC_CHALLENGE_SPLIT = os.environ.get("STAGE5_BENCHMARK_OPEN_HARD_ARC_CHALLENGE_SPLIT", "validation")
 GPQA_LIMIT = int(os.environ.get("STAGE5_BENCHMARK_GPQA_LIMIT", "16"))
 GPQA_CONFIG = os.environ.get("STAGE5_BENCHMARK_GPQA_CONFIG", "gpqa_diamond")
 SCORE_TARGETS = os.environ.get("STAGE5_BENCHMARK_SCORE_TARGETS", PROFILE_DEFAULTS["score_targets"])
@@ -424,10 +425,12 @@ def benchmark_specs(names: list[str]) -> list[BenchmarkSpec]:
     for name in names:
         if name in {"arc_challenge", "arc_easy", "open_hard_arc_challenge"}:
             config = "ARC-Challenge" if name == "arc_challenge" else "ARC-Easy"
+            split = "validation"
             limit = ARC_CHALLENGE_LIMIT if name == "arc_challenge" else ARC_EASY_LIMIT
             offset = ARC_CHALLENGE_OFFSET if name == "arc_challenge" else ARC_EASY_OFFSET
             if name == "open_hard_arc_challenge":
                 config = "ARC-Challenge"
+                split = OPEN_HARD_ARC_CHALLENGE_SPLIT
                 limit = OPEN_HARD_ARC_CHALLENGE_LIMIT
                 offset = OPEN_HARD_ARC_CHALLENGE_OFFSET
             limit_label = "full" if limit is None else str(limit)
@@ -438,7 +441,7 @@ def benchmark_specs(names: list[str]) -> list[BenchmarkSpec]:
                 "--config",
                 config,
                 "--split",
-                "validation",
+                split,
                 "--seed",
                 "0",
             ]
@@ -450,7 +453,7 @@ def benchmark_specs(names: list[str]) -> list[BenchmarkSpec]:
             if name == "arc_easy":
                 output = PRIVATE_DATA_DIR / f"arc_easy_validation_{slice_label}.jsonl"
             elif name == "open_hard_arc_challenge":
-                output = PRIVATE_DATA_DIR / f"open_hard_arc_challenge_validation_{slice_label}.jsonl"
+                output = PRIVATE_DATA_DIR / f"open_hard_arc_challenge_{split}_{slice_label}.jsonl"
             prepare_cmd.extend(["--output_jsonl", str(output)])
             specs.append(
                 BenchmarkSpec(

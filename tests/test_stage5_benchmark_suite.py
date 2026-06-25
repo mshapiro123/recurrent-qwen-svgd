@@ -695,12 +695,14 @@ def test_benchmark_specs_supports_open_hard_arc_challenge_fallback(tmp_path, mon
     monkeypatch.setattr(module, "PRIVATE_DATA_DIR", tmp_path)
     monkeypatch.setattr(module, "OPEN_HARD_ARC_CHALLENGE_LIMIT", 256)
     monkeypatch.setattr(module, "OPEN_HARD_ARC_CHALLENGE_OFFSET", 0)
+    monkeypatch.setattr(module, "OPEN_HARD_ARC_CHALLENGE_SPLIT", "test")
 
     spec = benchmark_specs(["open_hard_arc_challenge"])[0]
 
     assert spec.name == "open_hard_arc_challenge"
-    assert spec.data_jsonl == tmp_path / "open_hard_arc_challenge_validation_256.jsonl"
+    assert spec.data_jsonl == tmp_path / "open_hard_arc_challenge_test_256.jsonl"
     assert "ARC-Challenge" in spec.prepare_cmd
+    assert spec.prepare_cmd[spec.prepare_cmd.index("--split") + 1] == "test"
     assert spec.prepare_cmd[spec.prepare_cmd.index("--limit") + 1] == "256"
 
 

@@ -413,9 +413,13 @@ try:
                     "STAGE5_HELDOUT_ROUTER_OPEN_HARD_ARC_CHALLENGE_LIMIT",
                     "128",
                 ),
+                "STAGE5_BENCHMARK_OPEN_HARD_ARC_CHALLENGE_SPLIT": os.environ.get(
+                    "STAGE5_HELDOUT_ROUTER_OPEN_HARD_ARC_CHALLENGE_SPLIT",
+                    "test",
+                ),
                 "STAGE5_BENCHMARK_OPEN_HARD_ARC_CHALLENGE_OFFSET": os.environ.get(
                     "STAGE5_HELDOUT_ROUTER_OPEN_HARD_ARC_CHALLENGE_OFFSET",
-                    "512",
+                    "0",
                 ),
                 "STAGE5_BENCHMARK_MAX_LOOPS": str(forward_max_loops),
                 "STAGE5_BENCHMARK_FORCED_LOOP_COUNT": str(forced_loop),
@@ -426,6 +430,7 @@ try:
                     "content_question_only,cyclic_label_aggregated",
                 ),
                 "STAGE5_BENCHMARK_AGGREGATES": "mean",
+                "STAGE5_BENCHMARK_CONTINUE_ON_FAILURE": "0",
                 "STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS": "1",
                 "STAGE5_BENCHMARK_PUSH": "0",
                 "DTYPE": os.environ.get("DTYPE", "bfloat16"),
