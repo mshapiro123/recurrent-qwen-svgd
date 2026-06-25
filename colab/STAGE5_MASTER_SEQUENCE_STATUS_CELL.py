@@ -77,6 +77,8 @@ run([sys.executable, "colab/print_current_stage5_action.py"], cwd=ROOT, check=Fa
 run([sys.executable, "colab/review_stage5_reentry.py", "--no_write"], cwd=ROOT, check=False)
 print("\nStage 4 Recovery Review:", flush=True)
 run([sys.executable, "colab/review_stage5_recovery.py", "--no_write"], cwd=ROOT, check=False)
+print("\nPhase 1 Gate Review:", flush=True)
+run([sys.executable, "colab/review_stage5_phase1_gate.py", "--no_write"], cwd=ROOT, check=False)
 print("\nStage 4 Recovery Curriculum Readiness:", flush=True)
 run([sys.executable, "colab/review_stage5_recovery_curriculum.py"], cwd=ROOT, check=False)
 print("\nClaim-Sized Curriculum Scale-Up Plan:", flush=True)

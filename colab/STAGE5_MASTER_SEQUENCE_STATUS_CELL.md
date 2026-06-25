@@ -1,8 +1,8 @@
 # Stage 5 Master Sequence Status Cell
 
 Cheap CPU readout for restarted Colab sessions. It fetches the latest repo,
-prints the current Stage 5 source pointer, asks the re-entry and recovery
-reviewers for the next target, prints the Stage 4 curriculum readiness and
+prints the current Stage 5 source pointer, asks the re-entry, recovery, and
+Phase 1 gate reviewers for the next target, prints the Stage 4 curriculum readiness and
 claim-sized scale-up plan, prints the queue excerpt, and disconnects by
 default. It does not mount Drive, download models, train, or evaluate.
 
@@ -86,6 +86,8 @@ run([sys.executable, "colab/print_current_stage5_action.py"], cwd=ROOT, check=Fa
 run([sys.executable, "colab/review_stage5_reentry.py", "--no_write"], cwd=ROOT, check=False)
 print("\nStage 4 Recovery Review:", flush=True)
 run([sys.executable, "colab/review_stage5_recovery.py", "--no_write"], cwd=ROOT, check=False)
+print("\nPhase 1 Gate Review:", flush=True)
+run([sys.executable, "colab/review_stage5_phase1_gate.py", "--no_write"], cwd=ROOT, check=False)
 print("\nStage 4 Recovery Curriculum Readiness:", flush=True)
 run([sys.executable, "colab/review_stage5_recovery_curriculum.py"], cwd=ROOT, check=False)
 print("\nClaim-Sized Curriculum Scale-Up Plan:", flush=True)
