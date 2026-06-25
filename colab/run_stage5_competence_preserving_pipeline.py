@@ -27,10 +27,11 @@ RUN_ID = os.environ.get("STAGE5_COMPETENCE_PIPELINE_RUN_ID") or time.strftime(
     "stage5_competence_preserving_%Y%m%d_%H%M%S"
 )
 RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
+DEFAULT_SOURCE_SUMMARY = "outputs/stage5/stage5_debiased_benchmark_assessment_20260625_121302/summary.json"
 SOURCE_SUMMARY = Path(
     os.environ.get(
         "STAGE5_COMPETENCE_SOURCE_SUMMARY",
-        "outputs/stage5/stage5_full_assessment_once_20260622_005522/summary.json",
+        DEFAULT_SOURCE_SUMMARY,
     )
 )
 if not SOURCE_SUMMARY.is_absolute():
