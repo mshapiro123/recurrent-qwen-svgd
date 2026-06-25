@@ -3,16 +3,1376 @@
   "kind": "stage5_competence_preserving_pipeline",
   "source_summary": "outputs/stage5/stage5_debiased_benchmark_assessment_20260625_121302/summary.json",
   "source_status": "needs_review",
-  "status": "pipeline_failed",
-  "failed_stage": "arc_mix",
-  "error": "command failed: /usr/bin/python3 colab/run_stage5_balanced_arc_mix_gate.py",
-  "next_step": "Inspect arc_mix logs under outputs/stage5/stage5_competence_recovery_from_reentry_benchmark and rerun with the same run ids.",
+  "status": "arc_mix_not_passed",
+  "next_step": "Do not run the full paid assessment yet; the proxy lifted accuracy but degraded base-comparison calibration. Increase preservation/distillation or inspect answer-prior drift.",
   "arc_mix_run_id": "stage5_competence_recovery_from_reentry_benchmark_arc_mix",
   "arc_mix_summary": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/summary.json",
-  "arc_mix_status": null,
+  "arc_mix_status": "proxy_lift_calibration_warning",
   "full_assessment_run_id": "stage5_competence_recovery_from_reentry_benchmark_full_assessment",
   "full_assessment_summary": null,
   "full_assessment_status": null,
-  "arc_mix": null,
+  "arc_mix": {
+    "run_id": "stage5_competence_recovery_from_reentry_benchmark_arc_mix",
+    "kind": "stage5_balanced_arc_mix_gate",
+    "objective_rationale": {
+      "failure_mode": "The previous proxy-selected recurrent checkpoint lost full balanced ARC points through answer-calibration drift: lower correct-answer margins and answer-prior shift.",
+      "proxy_hypothesis": "Mix Opus reasoning traces with ARC-style MCQ label supervision and use response-only frozen-base KL distillation to preserve the base model's answer-token distribution.",
+      "response_distillation_reason": "ARC MCQ SFT rows use short answer-surface completions, so response-only distillation is concentrated on the evaluated choice surface rather than the prompt text.",
+      "depth_routing_reason": "When target_loop_count metadata is present, optional learned loop-control CE and halting target NLL let the same ARC-mix runner test whether direct/easy rows can stay shallow while harder rows receive more recurrent computation."
+    },
+    "source_summary": "outputs/stage5/stage5_debiased_benchmark_assessment_20260625_121302/summary.json",
+    "source_status": "needs_review",
+    "resume_checkpoint": "outputs/stage5/stage5_reentry_recovery_20260625_114836_curriculum_sft/phase1/phase1_step_75.pt",
+    "resume_run_id": "stage5_reentry_recovery_20260625_114836_curriculum_sft",
+    "data": {
+      "opus_rows": 2640,
+      "arc_challenge_rows": 1119,
+      "arc_easy_rows": 2251,
+      "arc_repeat": 2,
+      "arc_challenge_repeat": 2,
+      "arc_easy_repeat": 4,
+      "arc_challenge_target_loop": null,
+      "arc_easy_target_loop": null,
+      "arc_challenge_routing_type": null,
+      "arc_easy_routing_type": null,
+      "loop_control": {
+        "use_target_loop_control": false,
+        "use_learned_loop_control": false,
+        "eval_use_learned_loop_control": false,
+        "loop_control_ce_weight": 0.0,
+        "halt_target_nll_weight": 0.0,
+        "optimizer_modules": "all"
+      },
+      "mixed_rows": 13882,
+      "mixed_train_jsonl": "data/stage5_competence_recovery_from_reentry_benchmark_arc_mix_mixed_train.jsonl",
+      "opus_val_jsonl": "data/stage5_competence_recovery_from_reentry_benchmark_arc_mix_opus_val.jsonl",
+      "arc_prompt_style": "with_options",
+      "arc_score_target": "label",
+      "arc_eval_config": "ARC-Challenge"
+    },
+    "arc_eval_limit": 128,
+    "arc_eval_config": "ARC-Challenge",
+    "loop_control": {
+      "use_target_loop_control": false,
+      "use_learned_loop_control": false,
+      "eval_use_learned_loop_control": false,
+      "loop_control_ce_weight": 0.0,
+      "halt_target_nll_weight": 0.0,
+      "optimizer_modules": "all"
+    },
+    "proxy_calibration_thresholds": {
+      "min_mean_margin_delta": -0.05,
+      "max_abs_prediction_count_delta": 16
+    },
+    "status": "proxy_lift_calibration_warning",
+    "passed": false,
+    "decision": "stop_for_calibration_repair",
+    "blocked_reason": "Proxy lifted accuracy but failed the calibration-preservation threshold.",
+    "next_step": "Do not run the full paid assessment yet; the proxy lifted accuracy but degraded base-comparison calibration. Increase preservation/distillation or inspect answer-prior drift.",
+    "best_arm": {
+      "arm": "arc_mix_response_w02_lr2e6",
+      "base_arc": {
+        "mean": {
+          "correct": 69,
+          "total": 128,
+          "accuracy": 0.5390625
+        }
+      },
+      "phase1_start": {
+        "checkpoint": "outputs/stage5/stage5_reentry_recovery_20260625_114836_curriculum_sft/phase1/phase1_step_75.pt",
+        "val": {
+          "lora_recurrent_modules": 84.0,
+          "examples": 138.0,
+          "expected_ce": 2.586391,
+          "halting_kl": 0.756718,
+          "loss": 2.677197,
+          "mean_expected_loops": 1.839993,
+          "mean_halt_entropy": 0.475441,
+          "target_loop_abs_error": 0.819291,
+          "target_mean_loops": 1.42029
+        },
+        "arc": {
+          "mean": {
+            "correct": 67,
+            "total": 128,
+            "accuracy": 0.5234375
+          }
+        }
+      },
+      "checkpoints": [
+        {
+          "checkpoint": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 138.0,
+            "expected_ce": 2.576548,
+            "halting_kl": 0.748622,
+            "loss": 2.666382,
+            "mean_expected_loops": 1.833186,
+            "mean_halt_entropy": 0.480706,
+            "target_loop_abs_error": 0.814756,
+            "target_mean_loops": 1.42029
+          },
+          "arc_path": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/stage5_competence_recovery_from_reentry_benchmark_arc_mix_arc_challenge128_arc_mix_response_w02_lr2e6_phase1_step_50_label.jsonl",
+          "arc": {
+            "mean": {
+              "correct": 70,
+              "total": 128,
+              "accuracy": 0.546875
+            }
+          },
+          "comparison_to_start": {
+            "helped": 5,
+            "hurt": 2,
+            "tied": 121,
+            "prediction_changes": 9,
+            "mean_margin_delta": 0.010954939636576455,
+            "mean_correct_score_delta": -0.01325246552733006,
+            "reference_prediction_counts": {
+              "A": 25,
+              "C": 37,
+              "B": 47,
+              "D": 19
+            },
+            "variant_prediction_counts": {
+              "A": 28,
+              "C": 36,
+              "B": 49,
+              "D": 15
+            },
+            "answer_counts": {
+              "A": 26,
+              "C": 35,
+              "D": 30,
+              "B": 37
+            },
+            "prediction_count_delta": {
+              "A": 3,
+              "B": 2,
+              "C": -1,
+              "D": -4
+            },
+            "max_abs_prediction_count_delta": 4,
+            "calibration_ok": true,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": -0.05,
+              "max_abs_prediction_count_delta": 16
+            }
+          },
+          "comparison_to_base": {
+            "helped": 7,
+            "hurt": 6,
+            "tied": 115,
+            "prediction_changes": 16,
+            "mean_margin_delta": -0.07618233074754244,
+            "mean_correct_score_delta": 0.022841877515020315,
+            "reference_prediction_counts": {
+              "A": 22,
+              "C": 43,
+              "B": 50,
+              "D": 13
+            },
+            "variant_prediction_counts": {
+              "A": 28,
+              "C": 36,
+              "B": 49,
+              "D": 15
+            },
+            "answer_counts": {
+              "A": 26,
+              "C": 35,
+              "D": 30,
+              "B": 37
+            },
+            "prediction_count_delta": {
+              "A": 6,
+              "B": -1,
+              "C": -7,
+              "D": 2
+            },
+            "max_abs_prediction_count_delta": 7,
+            "calibration_ok": false,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": -0.05,
+              "max_abs_prediction_count_delta": 16
+            }
+          }
+        },
+        {
+          "checkpoint": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/arc_mix_response_w02_lr2e6/phase1/phase1_step_100.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 138.0,
+            "expected_ce": 2.568454,
+            "halting_kl": 0.74371,
+            "loss": 2.657699,
+            "mean_expected_loops": 1.828891,
+            "mean_halt_entropy": 0.483826,
+            "target_loop_abs_error": 0.811888,
+            "target_mean_loops": 1.42029
+          },
+          "arc_path": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/stage5_competence_recovery_from_reentry_benchmark_arc_mix_arc_challenge128_arc_mix_response_w02_lr2e6_phase1_step_100_label.jsonl",
+          "arc": {
+            "mean": {
+              "correct": 72,
+              "total": 128,
+              "accuracy": 0.5625
+            }
+          },
+          "comparison_to_start": {
+            "helped": 6,
+            "hurt": 1,
+            "tied": 121,
+            "prediction_changes": 8,
+            "mean_margin_delta": 0.017752947875123937,
+            "mean_correct_score_delta": -0.006715708812407684,
+            "reference_prediction_counts": {
+              "A": 25,
+              "C": 37,
+              "B": 47,
+              "D": 19
+            },
+            "variant_prediction_counts": {
+              "A": 27,
+              "C": 37,
+              "B": 49,
+              "D": 15
+            },
+            "answer_counts": {
+              "A": 26,
+              "C": 35,
+              "D": 30,
+              "B": 37
+            },
+            "prediction_count_delta": {
+              "A": 2,
+              "B": 2,
+              "C": 0,
+              "D": -4
+            },
+            "max_abs_prediction_count_delta": 4,
+            "calibration_ok": true,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": -0.05,
+              "max_abs_prediction_count_delta": 16
+            }
+          },
+          "comparison_to_base": {
+            "helped": 5,
+            "hurt": 2,
+            "tied": 121,
+            "prediction_changes": 9,
+            "mean_margin_delta": -0.06938432250899496,
+            "mean_correct_score_delta": 0.02937863422994269,
+            "reference_prediction_counts": {
+              "A": 22,
+              "C": 43,
+              "B": 50,
+              "D": 13
+            },
+            "variant_prediction_counts": {
+              "A": 27,
+              "C": 37,
+              "B": 49,
+              "D": 15
+            },
+            "answer_counts": {
+              "A": 26,
+              "C": 35,
+              "D": 30,
+              "B": 37
+            },
+            "prediction_count_delta": {
+              "A": 5,
+              "B": -1,
+              "C": -6,
+              "D": 2
+            },
+            "max_abs_prediction_count_delta": 6,
+            "calibration_ok": false,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": -0.05,
+              "max_abs_prediction_count_delta": 16
+            }
+          }
+        },
+        {
+          "checkpoint": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 138.0,
+            "expected_ce": 2.554228,
+            "halting_kl": 0.736752,
+            "loss": 2.642638,
+            "mean_expected_loops": 1.823945,
+            "mean_halt_entropy": 0.488761,
+            "target_loop_abs_error": 0.808574,
+            "target_mean_loops": 1.42029
+          },
+          "arc_path": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/stage5_competence_recovery_from_reentry_benchmark_arc_mix_arc_challenge128_arc_mix_response_w02_lr2e6_phase1_step_150_label.jsonl",
+          "arc": {
+            "mean": {
+              "correct": 72,
+              "total": 128,
+              "accuracy": 0.5625
+            }
+          },
+          "comparison_to_start": {
+            "helped": 6,
+            "hurt": 1,
+            "tied": 121,
+            "prediction_changes": 10,
+            "mean_margin_delta": 0.02115629074978642,
+            "mean_correct_score_delta": -0.014706661546370015,
+            "reference_prediction_counts": {
+              "A": 25,
+              "C": 37,
+              "B": 47,
+              "D": 19
+            },
+            "variant_prediction_counts": {
+              "A": 29,
+              "C": 34,
+              "B": 49,
+              "D": 16
+            },
+            "answer_counts": {
+              "A": 26,
+              "C": 35,
+              "D": 30,
+              "B": 37
+            },
+            "prediction_count_delta": {
+              "A": 4,
+              "B": 2,
+              "C": -3,
+              "D": -3
+            },
+            "max_abs_prediction_count_delta": 4,
+            "calibration_ok": true,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": -0.05,
+              "max_abs_prediction_count_delta": 16
+            }
+          },
+          "comparison_to_base": {
+            "helped": 7,
+            "hurt": 4,
+            "tied": 117,
+            "prediction_changes": 15,
+            "mean_margin_delta": -0.06598097963433247,
+            "mean_correct_score_delta": 0.02138768149598036,
+            "reference_prediction_counts": {
+              "A": 22,
+              "C": 43,
+              "B": 50,
+              "D": 13
+            },
+            "variant_prediction_counts": {
+              "A": 29,
+              "C": 34,
+              "B": 49,
+              "D": 16
+            },
+            "answer_counts": {
+              "A": 26,
+              "C": 35,
+              "D": 30,
+              "B": 37
+            },
+            "prediction_count_delta": {
+              "A": 7,
+              "B": -1,
+              "C": -9,
+              "D": 3
+            },
+            "max_abs_prediction_count_delta": 9,
+            "calibration_ok": false,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": -0.05,
+              "max_abs_prediction_count_delta": 16
+            }
+          }
+        }
+      ],
+      "best_checkpoint": {
+        "checkpoint": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/arc_mix_response_w02_lr2e6/phase1/phase1_step_100.pt",
+        "val": {
+          "lora_recurrent_modules": 84.0,
+          "examples": 138.0,
+          "expected_ce": 2.568454,
+          "halting_kl": 0.74371,
+          "loss": 2.657699,
+          "mean_expected_loops": 1.828891,
+          "mean_halt_entropy": 0.483826,
+          "target_loop_abs_error": 0.811888,
+          "target_mean_loops": 1.42029
+        },
+        "arc_path": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/stage5_competence_recovery_from_reentry_benchmark_arc_mix_arc_challenge128_arc_mix_response_w02_lr2e6_phase1_step_100_label.jsonl",
+        "arc": {
+          "mean": {
+            "correct": 72,
+            "total": 128,
+            "accuracy": 0.5625
+          }
+        },
+        "comparison_to_start": {
+          "helped": 6,
+          "hurt": 1,
+          "tied": 121,
+          "prediction_changes": 8,
+          "mean_margin_delta": 0.017752947875123937,
+          "mean_correct_score_delta": -0.006715708812407684,
+          "reference_prediction_counts": {
+            "A": 25,
+            "C": 37,
+            "B": 47,
+            "D": 19
+          },
+          "variant_prediction_counts": {
+            "A": 27,
+            "C": 37,
+            "B": 49,
+            "D": 15
+          },
+          "answer_counts": {
+            "A": 26,
+            "C": 35,
+            "D": 30,
+            "B": 37
+          },
+          "prediction_count_delta": {
+            "A": 2,
+            "B": 2,
+            "C": 0,
+            "D": -4
+          },
+          "max_abs_prediction_count_delta": 4,
+          "calibration_ok": true,
+          "calibration_thresholds": {
+            "min_mean_margin_delta": -0.05,
+            "max_abs_prediction_count_delta": 16
+          }
+        },
+        "comparison_to_base": {
+          "helped": 5,
+          "hurt": 2,
+          "tied": 121,
+          "prediction_changes": 9,
+          "mean_margin_delta": -0.06938432250899496,
+          "mean_correct_score_delta": 0.02937863422994269,
+          "reference_prediction_counts": {
+            "A": 22,
+            "C": 43,
+            "B": 50,
+            "D": 13
+          },
+          "variant_prediction_counts": {
+            "A": 27,
+            "C": 37,
+            "B": 49,
+            "D": 15
+          },
+          "answer_counts": {
+            "A": 26,
+            "C": 35,
+            "D": 30,
+            "B": 37
+          },
+          "prediction_count_delta": {
+            "A": 5,
+            "B": -1,
+            "C": -6,
+            "D": 2
+          },
+          "max_abs_prediction_count_delta": 6,
+          "calibration_ok": false,
+          "calibration_thresholds": {
+            "min_mean_margin_delta": -0.05,
+            "max_abs_prediction_count_delta": 16
+          }
+        }
+      },
+      "distillation": {
+        "enabled": true,
+        "weight": 0.2,
+        "temperature": 2.0,
+        "on": "response"
+      },
+      "learning_rate": 2e-06,
+      "beta": 0.12,
+      "steps": 150
+    },
+    "arms": [
+      {
+        "arm": "arc_mix_response_w02_lr2e6",
+        "base_arc": {
+          "mean": {
+            "correct": 69,
+            "total": 128,
+            "accuracy": 0.5390625
+          }
+        },
+        "phase1_start": {
+          "checkpoint": "outputs/stage5/stage5_reentry_recovery_20260625_114836_curriculum_sft/phase1/phase1_step_75.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 138.0,
+            "expected_ce": 2.586391,
+            "halting_kl": 0.756718,
+            "loss": 2.677197,
+            "mean_expected_loops": 1.839993,
+            "mean_halt_entropy": 0.475441,
+            "target_loop_abs_error": 0.819291,
+            "target_mean_loops": 1.42029
+          },
+          "arc": {
+            "mean": {
+              "correct": 67,
+              "total": 128,
+              "accuracy": 0.5234375
+            }
+          }
+        },
+        "checkpoints": [
+          {
+            "checkpoint": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/arc_mix_response_w02_lr2e6/phase1/phase1_step_50.pt",
+            "val": {
+              "lora_recurrent_modules": 84.0,
+              "examples": 138.0,
+              "expected_ce": 2.576548,
+              "halting_kl": 0.748622,
+              "loss": 2.666382,
+              "mean_expected_loops": 1.833186,
+              "mean_halt_entropy": 0.480706,
+              "target_loop_abs_error": 0.814756,
+              "target_mean_loops": 1.42029
+            },
+            "arc_path": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/stage5_competence_recovery_from_reentry_benchmark_arc_mix_arc_challenge128_arc_mix_response_w02_lr2e6_phase1_step_50_label.jsonl",
+            "arc": {
+              "mean": {
+                "correct": 70,
+                "total": 128,
+                "accuracy": 0.546875
+              }
+            },
+            "comparison_to_start": {
+              "helped": 5,
+              "hurt": 2,
+              "tied": 121,
+              "prediction_changes": 9,
+              "mean_margin_delta": 0.010954939636576455,
+              "mean_correct_score_delta": -0.01325246552733006,
+              "reference_prediction_counts": {
+                "A": 25,
+                "C": 37,
+                "B": 47,
+                "D": 19
+              },
+              "variant_prediction_counts": {
+                "A": 28,
+                "C": 36,
+                "B": 49,
+                "D": 15
+              },
+              "answer_counts": {
+                "A": 26,
+                "C": 35,
+                "D": 30,
+                "B": 37
+              },
+              "prediction_count_delta": {
+                "A": 3,
+                "B": 2,
+                "C": -1,
+                "D": -4
+              },
+              "max_abs_prediction_count_delta": 4,
+              "calibration_ok": true,
+              "calibration_thresholds": {
+                "min_mean_margin_delta": -0.05,
+                "max_abs_prediction_count_delta": 16
+              }
+            },
+            "comparison_to_base": {
+              "helped": 7,
+              "hurt": 6,
+              "tied": 115,
+              "prediction_changes": 16,
+              "mean_margin_delta": -0.07618233074754244,
+              "mean_correct_score_delta": 0.022841877515020315,
+              "reference_prediction_counts": {
+                "A": 22,
+                "C": 43,
+                "B": 50,
+                "D": 13
+              },
+              "variant_prediction_counts": {
+                "A": 28,
+                "C": 36,
+                "B": 49,
+                "D": 15
+              },
+              "answer_counts": {
+                "A": 26,
+                "C": 35,
+                "D": 30,
+                "B": 37
+              },
+              "prediction_count_delta": {
+                "A": 6,
+                "B": -1,
+                "C": -7,
+                "D": 2
+              },
+              "max_abs_prediction_count_delta": 7,
+              "calibration_ok": false,
+              "calibration_thresholds": {
+                "min_mean_margin_delta": -0.05,
+                "max_abs_prediction_count_delta": 16
+              }
+            }
+          },
+          {
+            "checkpoint": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/arc_mix_response_w02_lr2e6/phase1/phase1_step_100.pt",
+            "val": {
+              "lora_recurrent_modules": 84.0,
+              "examples": 138.0,
+              "expected_ce": 2.568454,
+              "halting_kl": 0.74371,
+              "loss": 2.657699,
+              "mean_expected_loops": 1.828891,
+              "mean_halt_entropy": 0.483826,
+              "target_loop_abs_error": 0.811888,
+              "target_mean_loops": 1.42029
+            },
+            "arc_path": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/stage5_competence_recovery_from_reentry_benchmark_arc_mix_arc_challenge128_arc_mix_response_w02_lr2e6_phase1_step_100_label.jsonl",
+            "arc": {
+              "mean": {
+                "correct": 72,
+                "total": 128,
+                "accuracy": 0.5625
+              }
+            },
+            "comparison_to_start": {
+              "helped": 6,
+              "hurt": 1,
+              "tied": 121,
+              "prediction_changes": 8,
+              "mean_margin_delta": 0.017752947875123937,
+              "mean_correct_score_delta": -0.006715708812407684,
+              "reference_prediction_counts": {
+                "A": 25,
+                "C": 37,
+                "B": 47,
+                "D": 19
+              },
+              "variant_prediction_counts": {
+                "A": 27,
+                "C": 37,
+                "B": 49,
+                "D": 15
+              },
+              "answer_counts": {
+                "A": 26,
+                "C": 35,
+                "D": 30,
+                "B": 37
+              },
+              "prediction_count_delta": {
+                "A": 2,
+                "B": 2,
+                "C": 0,
+                "D": -4
+              },
+              "max_abs_prediction_count_delta": 4,
+              "calibration_ok": true,
+              "calibration_thresholds": {
+                "min_mean_margin_delta": -0.05,
+                "max_abs_prediction_count_delta": 16
+              }
+            },
+            "comparison_to_base": {
+              "helped": 5,
+              "hurt": 2,
+              "tied": 121,
+              "prediction_changes": 9,
+              "mean_margin_delta": -0.06938432250899496,
+              "mean_correct_score_delta": 0.02937863422994269,
+              "reference_prediction_counts": {
+                "A": 22,
+                "C": 43,
+                "B": 50,
+                "D": 13
+              },
+              "variant_prediction_counts": {
+                "A": 27,
+                "C": 37,
+                "B": 49,
+                "D": 15
+              },
+              "answer_counts": {
+                "A": 26,
+                "C": 35,
+                "D": 30,
+                "B": 37
+              },
+              "prediction_count_delta": {
+                "A": 5,
+                "B": -1,
+                "C": -6,
+                "D": 2
+              },
+              "max_abs_prediction_count_delta": 6,
+              "calibration_ok": false,
+              "calibration_thresholds": {
+                "min_mean_margin_delta": -0.05,
+                "max_abs_prediction_count_delta": 16
+              }
+            }
+          },
+          {
+            "checkpoint": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt",
+            "val": {
+              "lora_recurrent_modules": 84.0,
+              "examples": 138.0,
+              "expected_ce": 2.554228,
+              "halting_kl": 0.736752,
+              "loss": 2.642638,
+              "mean_expected_loops": 1.823945,
+              "mean_halt_entropy": 0.488761,
+              "target_loop_abs_error": 0.808574,
+              "target_mean_loops": 1.42029
+            },
+            "arc_path": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/stage5_competence_recovery_from_reentry_benchmark_arc_mix_arc_challenge128_arc_mix_response_w02_lr2e6_phase1_step_150_label.jsonl",
+            "arc": {
+              "mean": {
+                "correct": 72,
+                "total": 128,
+                "accuracy": 0.5625
+              }
+            },
+            "comparison_to_start": {
+              "helped": 6,
+              "hurt": 1,
+              "tied": 121,
+              "prediction_changes": 10,
+              "mean_margin_delta": 0.02115629074978642,
+              "mean_correct_score_delta": -0.014706661546370015,
+              "reference_prediction_counts": {
+                "A": 25,
+                "C": 37,
+                "B": 47,
+                "D": 19
+              },
+              "variant_prediction_counts": {
+                "A": 29,
+                "C": 34,
+                "B": 49,
+                "D": 16
+              },
+              "answer_counts": {
+                "A": 26,
+                "C": 35,
+                "D": 30,
+                "B": 37
+              },
+              "prediction_count_delta": {
+                "A": 4,
+                "B": 2,
+                "C": -3,
+                "D": -3
+              },
+              "max_abs_prediction_count_delta": 4,
+              "calibration_ok": true,
+              "calibration_thresholds": {
+                "min_mean_margin_delta": -0.05,
+                "max_abs_prediction_count_delta": 16
+              }
+            },
+            "comparison_to_base": {
+              "helped": 7,
+              "hurt": 4,
+              "tied": 117,
+              "prediction_changes": 15,
+              "mean_margin_delta": -0.06598097963433247,
+              "mean_correct_score_delta": 0.02138768149598036,
+              "reference_prediction_counts": {
+                "A": 22,
+                "C": 43,
+                "B": 50,
+                "D": 13
+              },
+              "variant_prediction_counts": {
+                "A": 29,
+                "C": 34,
+                "B": 49,
+                "D": 16
+              },
+              "answer_counts": {
+                "A": 26,
+                "C": 35,
+                "D": 30,
+                "B": 37
+              },
+              "prediction_count_delta": {
+                "A": 7,
+                "B": -1,
+                "C": -9,
+                "D": 3
+              },
+              "max_abs_prediction_count_delta": 9,
+              "calibration_ok": false,
+              "calibration_thresholds": {
+                "min_mean_margin_delta": -0.05,
+                "max_abs_prediction_count_delta": 16
+              }
+            }
+          }
+        ],
+        "best_checkpoint": {
+          "checkpoint": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/arc_mix_response_w02_lr2e6/phase1/phase1_step_100.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 138.0,
+            "expected_ce": 2.568454,
+            "halting_kl": 0.74371,
+            "loss": 2.657699,
+            "mean_expected_loops": 1.828891,
+            "mean_halt_entropy": 0.483826,
+            "target_loop_abs_error": 0.811888,
+            "target_mean_loops": 1.42029
+          },
+          "arc_path": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/stage5_competence_recovery_from_reentry_benchmark_arc_mix_arc_challenge128_arc_mix_response_w02_lr2e6_phase1_step_100_label.jsonl",
+          "arc": {
+            "mean": {
+              "correct": 72,
+              "total": 128,
+              "accuracy": 0.5625
+            }
+          },
+          "comparison_to_start": {
+            "helped": 6,
+            "hurt": 1,
+            "tied": 121,
+            "prediction_changes": 8,
+            "mean_margin_delta": 0.017752947875123937,
+            "mean_correct_score_delta": -0.006715708812407684,
+            "reference_prediction_counts": {
+              "A": 25,
+              "C": 37,
+              "B": 47,
+              "D": 19
+            },
+            "variant_prediction_counts": {
+              "A": 27,
+              "C": 37,
+              "B": 49,
+              "D": 15
+            },
+            "answer_counts": {
+              "A": 26,
+              "C": 35,
+              "D": 30,
+              "B": 37
+            },
+            "prediction_count_delta": {
+              "A": 2,
+              "B": 2,
+              "C": 0,
+              "D": -4
+            },
+            "max_abs_prediction_count_delta": 4,
+            "calibration_ok": true,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": -0.05,
+              "max_abs_prediction_count_delta": 16
+            }
+          },
+          "comparison_to_base": {
+            "helped": 5,
+            "hurt": 2,
+            "tied": 121,
+            "prediction_changes": 9,
+            "mean_margin_delta": -0.06938432250899496,
+            "mean_correct_score_delta": 0.02937863422994269,
+            "reference_prediction_counts": {
+              "A": 22,
+              "C": 43,
+              "B": 50,
+              "D": 13
+            },
+            "variant_prediction_counts": {
+              "A": 27,
+              "C": 37,
+              "B": 49,
+              "D": 15
+            },
+            "answer_counts": {
+              "A": 26,
+              "C": 35,
+              "D": 30,
+              "B": 37
+            },
+            "prediction_count_delta": {
+              "A": 5,
+              "B": -1,
+              "C": -6,
+              "D": 2
+            },
+            "max_abs_prediction_count_delta": 6,
+            "calibration_ok": false,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": -0.05,
+              "max_abs_prediction_count_delta": 16
+            }
+          }
+        },
+        "distillation": {
+          "enabled": true,
+          "weight": 0.2,
+          "temperature": 2.0,
+          "on": "response"
+        },
+        "learning_rate": 2e-06,
+        "beta": 0.12,
+        "steps": 150
+      },
+      {
+        "arm": "arc_mix_response_w01_lr2e6",
+        "base_arc": {
+          "mean": {
+            "correct": 69,
+            "total": 128,
+            "accuracy": 0.5390625
+          }
+        },
+        "phase1_start": {
+          "checkpoint": "outputs/stage5/stage5_reentry_recovery_20260625_114836_curriculum_sft/phase1/phase1_step_75.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 138.0,
+            "expected_ce": 2.586391,
+            "halting_kl": 0.756718,
+            "loss": 2.677197,
+            "mean_expected_loops": 1.839993,
+            "mean_halt_entropy": 0.475441,
+            "target_loop_abs_error": 0.819291,
+            "target_mean_loops": 1.42029
+          },
+          "arc": {
+            "mean": {
+              "correct": 67,
+              "total": 128,
+              "accuracy": 0.5234375
+            }
+          }
+        },
+        "checkpoints": [
+          {
+            "checkpoint": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/arc_mix_response_w01_lr2e6/phase1/phase1_step_50.pt",
+            "val": {
+              "lora_recurrent_modules": 84.0,
+              "examples": 138.0,
+              "expected_ce": 2.569273,
+              "halting_kl": 0.749167,
+              "loss": 2.659173,
+              "mean_expected_loops": 1.834636,
+              "mean_halt_entropy": 0.480731,
+              "target_loop_abs_error": 0.815595,
+              "target_mean_loops": 1.42029
+            },
+            "arc_path": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/stage5_competence_recovery_from_reentry_benchmark_arc_mix_arc_challenge128_arc_mix_response_w01_lr2e6_phase1_step_50_label.jsonl",
+            "arc": {
+              "mean": {
+                "correct": 66,
+                "total": 128,
+                "accuracy": 0.515625
+              }
+            },
+            "comparison_to_start": {
+              "helped": 1,
+              "hurt": 2,
+              "tied": 125,
+              "prediction_changes": 4,
+              "mean_margin_delta": 0.005783425593108404,
+              "mean_correct_score_delta": -0.005786250338132959,
+              "reference_prediction_counts": {
+                "A": 25,
+                "C": 37,
+                "B": 47,
+                "D": 19
+              },
+              "variant_prediction_counts": {
+                "A": 27,
+                "C": 35,
+                "B": 46,
+                "D": 20
+              },
+              "answer_counts": {
+                "A": 26,
+                "C": 35,
+                "D": 30,
+                "B": 37
+              },
+              "prediction_count_delta": {
+                "A": 2,
+                "B": -1,
+                "C": -2,
+                "D": 1
+              },
+              "max_abs_prediction_count_delta": 2,
+              "calibration_ok": true,
+              "calibration_thresholds": {
+                "min_mean_margin_delta": -0.05,
+                "max_abs_prediction_count_delta": 16
+              }
+            },
+            "comparison_to_base": {
+              "helped": 5,
+              "hurt": 8,
+              "tied": 115,
+              "prediction_changes": 17,
+              "mean_margin_delta": -0.08135384479101049,
+              "mean_correct_score_delta": 0.030308092704217415,
+              "reference_prediction_counts": {
+                "A": 22,
+                "C": 43,
+                "B": 50,
+                "D": 13
+              },
+              "variant_prediction_counts": {
+                "A": 27,
+                "C": 35,
+                "B": 46,
+                "D": 20
+              },
+              "answer_counts": {
+                "A": 26,
+                "C": 35,
+                "D": 30,
+                "B": 37
+              },
+              "prediction_count_delta": {
+                "A": 5,
+                "B": -4,
+                "C": -8,
+                "D": 7
+              },
+              "max_abs_prediction_count_delta": 8,
+              "calibration_ok": false,
+              "calibration_thresholds": {
+                "min_mean_margin_delta": -0.05,
+                "max_abs_prediction_count_delta": 16
+              }
+            }
+          },
+          {
+            "checkpoint": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/arc_mix_response_w01_lr2e6/phase1/phase1_step_100.pt",
+            "val": {
+              "lora_recurrent_modules": 84.0,
+              "examples": 138.0,
+              "expected_ce": 2.554321,
+              "halting_kl": 0.743252,
+              "loss": 2.643511,
+              "mean_expected_loops": 1.830029,
+              "mean_halt_entropy": 0.484756,
+              "target_loop_abs_error": 0.812539,
+              "target_mean_loops": 1.42029
+            },
+            "arc_path": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/stage5_competence_recovery_from_reentry_benchmark_arc_mix_arc_challenge128_arc_mix_response_w01_lr2e6_phase1_step_100_label.jsonl",
+            "arc": {
+              "mean": {
+                "correct": 69,
+                "total": 128,
+                "accuracy": 0.5390625
+              }
+            },
+            "comparison_to_start": {
+              "helped": 3,
+              "hurt": 1,
+              "tied": 124,
+              "prediction_changes": 5,
+              "mean_margin_delta": 0.007103220901626628,
+              "mean_correct_score_delta": -0.011279897014901508,
+              "reference_prediction_counts": {
+                "A": 25,
+                "C": 37,
+                "B": 47,
+                "D": 19
+              },
+              "variant_prediction_counts": {
+                "A": 27,
+                "C": 37,
+                "B": 47,
+                "D": 17
+              },
+              "answer_counts": {
+                "A": 26,
+                "C": 35,
+                "D": 30,
+                "B": 37
+              },
+              "prediction_count_delta": {
+                "A": 2,
+                "B": 0,
+                "C": 0,
+                "D": -2
+              },
+              "max_abs_prediction_count_delta": 2,
+              "calibration_ok": true,
+              "calibration_thresholds": {
+                "min_mean_margin_delta": -0.05,
+                "max_abs_prediction_count_delta": 16
+              }
+            },
+            "comparison_to_base": {
+              "helped": 5,
+              "hurt": 5,
+              "tied": 118,
+              "prediction_changes": 12,
+              "mean_margin_delta": -0.08003404948249226,
+              "mean_correct_score_delta": 0.024814446027448867,
+              "reference_prediction_counts": {
+                "A": 22,
+                "C": 43,
+                "B": 50,
+                "D": 13
+              },
+              "variant_prediction_counts": {
+                "A": 27,
+                "C": 37,
+                "B": 47,
+                "D": 17
+              },
+              "answer_counts": {
+                "A": 26,
+                "C": 35,
+                "D": 30,
+                "B": 37
+              },
+              "prediction_count_delta": {
+                "A": 5,
+                "B": -3,
+                "C": -6,
+                "D": 4
+              },
+              "max_abs_prediction_count_delta": 6,
+              "calibration_ok": false,
+              "calibration_thresholds": {
+                "min_mean_margin_delta": -0.05,
+                "max_abs_prediction_count_delta": 16
+              }
+            }
+          },
+          {
+            "checkpoint": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/arc_mix_response_w01_lr2e6/phase1/phase1_step_150.pt",
+            "val": {
+              "lora_recurrent_modules": 84.0,
+              "examples": 138.0,
+              "expected_ce": 2.540143,
+              "halting_kl": 0.735508,
+              "loss": 2.628404,
+              "mean_expected_loops": 1.824368,
+              "mean_halt_entropy": 0.49017,
+              "target_loop_abs_error": 0.808737,
+              "target_mean_loops": 1.42029
+            },
+            "arc_path": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/stage5_competence_recovery_from_reentry_benchmark_arc_mix_arc_challenge128_arc_mix_response_w01_lr2e6_phase1_step_150_label.jsonl",
+            "arc": {
+              "mean": {
+                "correct": 71,
+                "total": 128,
+                "accuracy": 0.5546875
+              }
+            },
+            "comparison_to_start": {
+              "helped": 4,
+              "hurt": 0,
+              "tied": 124,
+              "prediction_changes": 5,
+              "mean_margin_delta": 0.02976093169854721,
+              "mean_correct_score_delta": -0.008761373326706234,
+              "reference_prediction_counts": {
+                "A": 25,
+                "C": 37,
+                "B": 47,
+                "D": 19
+              },
+              "variant_prediction_counts": {
+                "A": 26,
+                "C": 37,
+                "B": 49,
+                "D": 16
+              },
+              "answer_counts": {
+                "A": 26,
+                "C": 35,
+                "D": 30,
+                "B": 37
+              },
+              "prediction_count_delta": {
+                "A": 1,
+                "B": 2,
+                "C": 0,
+                "D": -3
+              },
+              "max_abs_prediction_count_delta": 3,
+              "calibration_ok": true,
+              "calibration_thresholds": {
+                "min_mean_margin_delta": -0.05,
+                "max_abs_prediction_count_delta": 16
+              }
+            },
+            "comparison_to_base": {
+              "helped": 6,
+              "hurt": 4,
+              "tied": 118,
+              "prediction_changes": 12,
+              "mean_margin_delta": -0.05737633868557168,
+              "mean_correct_score_delta": 0.02733296971564414,
+              "reference_prediction_counts": {
+                "A": 22,
+                "C": 43,
+                "B": 50,
+                "D": 13
+              },
+              "variant_prediction_counts": {
+                "A": 26,
+                "C": 37,
+                "B": 49,
+                "D": 16
+              },
+              "answer_counts": {
+                "A": 26,
+                "C": 35,
+                "D": 30,
+                "B": 37
+              },
+              "prediction_count_delta": {
+                "A": 4,
+                "B": -1,
+                "C": -6,
+                "D": 3
+              },
+              "max_abs_prediction_count_delta": 6,
+              "calibration_ok": false,
+              "calibration_thresholds": {
+                "min_mean_margin_delta": -0.05,
+                "max_abs_prediction_count_delta": 16
+              }
+            }
+          }
+        ],
+        "best_checkpoint": {
+          "checkpoint": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/arc_mix_response_w01_lr2e6/phase1/phase1_step_150.pt",
+          "val": {
+            "lora_recurrent_modules": 84.0,
+            "examples": 138.0,
+            "expected_ce": 2.540143,
+            "halting_kl": 0.735508,
+            "loss": 2.628404,
+            "mean_expected_loops": 1.824368,
+            "mean_halt_entropy": 0.49017,
+            "target_loop_abs_error": 0.808737,
+            "target_mean_loops": 1.42029
+          },
+          "arc_path": "outputs/stage5/stage5_competence_recovery_from_reentry_benchmark_arc_mix/stage5_competence_recovery_from_reentry_benchmark_arc_mix_arc_challenge128_arc_mix_response_w01_lr2e6_phase1_step_150_label.jsonl",
+          "arc": {
+            "mean": {
+              "correct": 71,
+              "total": 128,
+              "accuracy": 0.5546875
+            }
+          },
+          "comparison_to_start": {
+            "helped": 4,
+            "hurt": 0,
+            "tied": 124,
+            "prediction_changes": 5,
+            "mean_margin_delta": 0.02976093169854721,
+            "mean_correct_score_delta": -0.008761373326706234,
+            "reference_prediction_counts": {
+              "A": 25,
+              "C": 37,
+              "B": 47,
+              "D": 19
+            },
+            "variant_prediction_counts": {
+              "A": 26,
+              "C": 37,
+              "B": 49,
+              "D": 16
+            },
+            "answer_counts": {
+              "A": 26,
+              "C": 35,
+              "D": 30,
+              "B": 37
+            },
+            "prediction_count_delta": {
+              "A": 1,
+              "B": 2,
+              "C": 0,
+              "D": -3
+            },
+            "max_abs_prediction_count_delta": 3,
+            "calibration_ok": true,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": -0.05,
+              "max_abs_prediction_count_delta": 16
+            }
+          },
+          "comparison_to_base": {
+            "helped": 6,
+            "hurt": 4,
+            "tied": 118,
+            "prediction_changes": 12,
+            "mean_margin_delta": -0.05737633868557168,
+            "mean_correct_score_delta": 0.02733296971564414,
+            "reference_prediction_counts": {
+              "A": 22,
+              "C": 43,
+              "B": 50,
+              "D": 13
+            },
+            "variant_prediction_counts": {
+              "A": 26,
+              "C": 37,
+              "B": 49,
+              "D": 16
+            },
+            "answer_counts": {
+              "A": 26,
+              "C": 35,
+              "D": 30,
+              "B": 37
+            },
+            "prediction_count_delta": {
+              "A": 4,
+              "B": -1,
+              "C": -6,
+              "D": 3
+            },
+            "max_abs_prediction_count_delta": 6,
+            "calibration_ok": false,
+            "calibration_thresholds": {
+              "min_mean_margin_delta": -0.05,
+              "max_abs_prediction_count_delta": 16
+            }
+          }
+        },
+        "distillation": {
+          "enabled": true,
+          "weight": 0.1,
+          "temperature": 2.0,
+          "on": "response"
+        },
+        "learning_rate": 2e-06,
+        "beta": 0.12,
+        "steps": 150
+      }
+    ]
+  },
   "full_assessment": null
 }
