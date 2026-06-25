@@ -700,3 +700,9 @@ Colab/Drive backups for selected runs.
   assessments, and Stage 4 does the same for Stage 3 repair assessments. This
   reduces manual recovery when Colab output exists on Drive but not under the
   newest artifact prefix.
+- Stage 4 current-pointer preference: `reentry_recovery_training` now prefers
+  the repair assessment implied by `config/stage5_current_source_summary.txt`
+  when that pointer names a `stage5_reentry_repair_smoke` summary. Broad Drive
+  glob fallback remains available, but it no longer shadows the planner-selected
+  repair artifact just because an unrelated failed or partial run has a newer
+  modification time.

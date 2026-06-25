@@ -167,12 +167,48 @@ def latest_matching(paths: list[Path]) -> Path | None:
     return sorted(existing, key=lambda path: path.stat().st_mtime)[-1]
 
 
+def current_pointer_repair_assessment_candidates() -> list[Path]:
+    """Return the repair assessment implied by the current source pointer.
+
+    The normal Stage 3 publish path advances ``config/stage5_current_source_summary.txt``
+    to the repair-smoke ``summary.json``. Prefer that explicit front-of-queue
+    artifact over broad Drive globs so a newer failed/partial attempt does not
+    accidentally shadow the repair result the planner selected. Non-repair
+    pointers, such as the Stage 2 norm diagnostic, are ignored.
+    """
+
+    pointer = current_source_summary_file()
+    if not pointer.exists():
+        return []
+    raw = pointer.read_text(encoding="utf-8").strip()
+    if not raw:
+        return []
+    raw_path = Path(raw.replace("\\", "/"))
+    summary_candidates = [raw_path] if raw_path.is_absolute() else [
+        ROOT / normalize_rel_path(raw),
+        DRIVE_ARTIFACT_ROOT / normalize_rel_path(raw),
+        LEGACY_DRIVE_ROOT / normalize_rel_path(raw),
+    ]
+    assessments: list[Path] = []
+    for summary_path in summary_candidates:
+        if summary_path.name != "summary.json" or not summary_path.exists():
+            continue
+        try:
+            payload = read_json(summary_path)
+        except Exception:
+            continue
+        if payload.get("kind") == "stage5_reentry_repair_smoke":
+            assessments.append(summary_path.with_name("reentry_assessment.json"))
+    return unique_paths(assessments)
+
+
 def repair_assessment_candidates() -> list[Path]:
     candidates: list[Path] = []
     override = os.environ.get("STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT", "").strip()
     if override:
         rel = normalize_rel_path(override)
         candidates.extend([ROOT / rel, DRIVE_ARTIFACT_ROOT / rel, LEGACY_DRIVE_ROOT / rel])
+    candidates.extend(current_pointer_repair_assessment_candidates())
     for root in (
         ROOT / "outputs" / "stage5",
         DRIVE_ARTIFACT_ROOT / "outputs" / "stage5",
@@ -221,7 +257,11 @@ def load_required_repair_assessment() -> dict[str, Any]:
 
     if not Path("/content/drive/MyDrive").exists():
         mount_drive_if_needed()
-    assessment_path = latest_matching(repair_assessment_candidates())
+    assessment_path = latest_matching(current_pointer_repair_assessment_candidates())
+    if assessment_path is not None:
+        print(f"stage3_repair_assessment_source=current_pointer assessment={assessment_path}", flush=True)
+    else:
+        assessment_path = latest_matching(repair_assessment_candidates())
     if assessment_path is None:
         raise FileNotFoundError(
             "Stage 4 recovery training requires a passed Stage 3 repair smoke. "

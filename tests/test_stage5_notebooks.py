@@ -1363,6 +1363,13 @@ def test_reentry_recovery_training_target_is_bootstrapped() -> None:
     assert "STAGE5_REENTRY_RECOVERY_CELL_VERSION" in cell
     assert "reentry_recovery_training_v3_wrapper_summary" in cell
     assert "STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT" in cell
+    assert "current_pointer_repair_assessment_candidates" in bootstrap
+    assert "current_pointer_repair_assessment_candidates" in bootstrap_md
+    assert "current_pointer_repair_assessment_candidates" in cell
+    assert "stage3_repair_assessment_source=current_pointer" in bootstrap
+    assert "stage3_repair_assessment_source=current_pointer" in bootstrap_md
+    assert "stage3_repair_assessment_source=current_pointer" in cell
+    assert 'payload.get("kind") == "stage5_reentry_repair_smoke"' in cell
     assert "run_bounded_recovery_training_with_reentry_repair" in cell
     assert "repair_assessment_recovery_block_reason" in cell
     assert '"metrics": assessment.get("metrics", {})' in cell
