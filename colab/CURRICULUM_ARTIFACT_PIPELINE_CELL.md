@@ -18,8 +18,10 @@ pending response file has at least as many rows as its matching `jobs_*.jsonl`.
 The cell writes `curriculum_readiness.json` with mode coverage, target-loop
 coverage, pending provider pairs, model-map/API-key readiness, and the next
 safe action after each pass. Set `STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS` only
-when you intentionally want the SFT gate to require specific depth buckets. It
-also refuses attached GPU runtimes by default; this is CPU/API work.
+when you intentionally want a different depth mix; the default claim-sized gate
+requires `1=1000,3=500,4=500` so direct preservation and genuinely deeper
+composition are both present. It also refuses attached GPU runtimes by default;
+this is CPU/API work.
 
 ```python
 import json, os, shutil, subprocess, sys
@@ -43,7 +45,7 @@ PROVIDER_LIMIT_RAW = os.environ.get("STAGE5_CURRICULUM_PROVIDER_LIMIT", "none").
 PROVIDER_LIMIT = None if PROVIDER_LIMIT_RAW in {"", "none", "all"} else int(PROVIDER_LIMIT_RAW)
 MIN_POSITIVE_ROWS = 2000
 MIN_MODE_ROWS = "direct=1000,deep_narrow=1000"
-MIN_TARGET_LOOP_ROWS = os.environ.get("STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS", "").strip()
+MIN_TARGET_LOOP_ROWS = os.environ.get("STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS", "1=1000,3=500,4=500").strip()
 READINESS_FILENAME = "curriculum_readiness.json"
 
 API_KEY_ENV = os.environ.get("STAGE5_CURRICULUM_API_KEY_ENV", "OPENAI_API_KEY")

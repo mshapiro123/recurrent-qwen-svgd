@@ -273,6 +273,7 @@ def test_assemble_deep_narrow_role_and_target_loop() -> None:
     )
 
     assert report["mode_counts"] == {"deep_narrow": 1}
+    assert report["target_loop_counts"] == {"4": 1}
     assert records[0]["mode"] == "deep_narrow"
     assert records[0]["target_loop_count"] == 4
     assert records[0]["traces"][0]["role"] == "positive_depth"

@@ -345,9 +345,13 @@ specific objective; for example direct/deep calibration should not proceed on a
 mostly-wide shard. This is the preferred Colab loop because it is restart-safe
 and burns no GPU while waiting on API/provider artifacts.
 The maintained planner and guarded A100 SFT cell now default to the current
-direct/deep calibration objective, `direct=1000,deep_narrow=1000`. Override
-`STAGE5_CURRICULUM_GATE_MIN_MODE_ROWS` or edit `MIN_MODE_ROWS` only when the
-next experiment is intentionally width-only or mixed.
+direct/deep calibration objective, `direct=1000,deep_narrow=1000`. The
+claim-sized artifact path also defaults to target-loop buckets
+`1=1000,3=500,4=500`, so it teaches both direct preservation and deeper
+composition instead of only generic trace following. Override
+`STAGE5_CURRICULUM_GATE_MIN_MODE_ROWS`, `STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS`,
+or edit `MIN_MODE_ROWS` only when the next experiment is intentionally
+width-only, mixed, or using a different depth-ladder design.
 
 After a shard passes the gate and has enough positive rows for a real run, use
 the guarded GPU handoff:

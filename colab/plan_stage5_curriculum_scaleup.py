@@ -23,6 +23,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from colab.reentry_recovery_config import (  # noqa: E402
+    DEFAULT_CLAIM_MIN_TARGET_LOOP_ROWS,
     DEFAULT_CLAIM_MIN_MODE_ROWS,
     DEFAULT_CLAIM_MIN_POSITIVE_ROWS,
     assess_trace_curriculum_for_reentry_recovery,
@@ -290,7 +291,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--trace-summary", default="")
     parser.add_argument("--claim-min-positive-rows", type=int, default=DEFAULT_CLAIM_MIN_POSITIVE_ROWS)
     parser.add_argument("--claim-min-mode-rows", default=compact_requirements(DEFAULT_CLAIM_MIN_MODE_ROWS))
-    parser.add_argument("--claim-min-target-loop-rows", default="")
+    parser.add_argument("--claim-min-target-loop-rows", default=compact_requirements(DEFAULT_CLAIM_MIN_TARGET_LOOP_ROWS))
     parser.add_argument("--work-dir", default=DEFAULT_WORK_DIR)
     parser.add_argument("--provider-backend", default="openai_compatible")
     parser.add_argument("--api-key-env", default="OPENAI_API_KEY")

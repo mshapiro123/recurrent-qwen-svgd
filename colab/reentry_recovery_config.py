@@ -8,6 +8,7 @@ from typing import Any
 DEFAULT_STAGE4_MIN_POSITIVE_ROWS = 16
 DEFAULT_CLAIM_MIN_POSITIVE_ROWS = 2000
 DEFAULT_CLAIM_MIN_MODE_ROWS = {"direct": 1000, "deep_narrow": 1000}
+DEFAULT_CLAIM_MIN_TARGET_LOOP_ROWS = {"1": 1000, "3": 500, "4": 500}
 
 
 def int_dict_max_key(payload: Any, default: int) -> int:

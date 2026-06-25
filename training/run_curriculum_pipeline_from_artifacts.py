@@ -697,6 +697,7 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
             "typed_records": records_report["records"],
             "positive_sft_rows": sft_report["exported_examples"],
             "mode_counts": records_report["mode_counts"],
+            "target_loop_counts": records_report.get("target_loop_counts", {}),
         },
     )
 

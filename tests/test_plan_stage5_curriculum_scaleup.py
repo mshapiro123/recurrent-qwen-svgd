@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from colab.plan_stage5_curriculum_scaleup import build_plan, estimate_count_per_combo
+from colab.plan_stage5_curriculum_scaleup import build_plan, estimate_count_per_combo, main
 from colab.reentry_recovery_config import assess_trace_curriculum_for_reentry_recovery
 
 
@@ -67,3 +67,10 @@ def test_curriculum_scaleup_plan_keeps_gpu_on_reentry_and_reports_deficits(tmp_p
     assert "--min_mode_rows deep_narrow=1000,direct=1000" in plan["actions"][4]["command"]
     assert "--min_target_loop_rows 1=1000,2=500,3=500" in plan["actions"][4]["command"]
     assert "does not unlock Stage 4" in plan["phase_order_warning"]
+
+
+def test_curriculum_scaleup_plan_defaults_to_depth_bucket_claim_gate(capsys) -> None:
+    assert main(["--trace-summary", str(Path("outputs/stage5/stage5_capability_ladder_trace_collection_20260623_194537/summary.json")), "--json"]) == 0
+    out = capsys.readouterr().out
+
+    assert "--min_target_loop_rows 1=1000,3=500,4=500" in out

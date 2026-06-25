@@ -1237,6 +1237,7 @@ def test_curriculum_artifact_pipeline_cell_defaults_to_no_provider_spend() -> No
     assert "model_map_configured" in plain
     assert "MIN_TARGET_LOOP_ROWS" in plain
     assert "STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS" in plain
+    assert "1=1000,3=500,4=500" in plain
     assert "target_loop_requirements" in plain
     assert "phase_order_warning" in plain
     assert "This CPU/API curriculum work prepares Phase 1/Stage 4 data in parallel" in plain

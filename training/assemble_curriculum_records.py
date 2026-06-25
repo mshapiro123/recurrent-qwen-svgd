@@ -372,6 +372,12 @@ def assemble_curriculum_records(
         "rejected_records": rejected,
         "validation_issues": validation_issues,
         "mode_counts": dict(sorted(Counter(str(record["mode"]) for record in records).items())),
+        "target_loop_counts": dict(
+            sorted(
+                Counter(str(record.get("target_loop_count")) for record in records).items(),
+                key=lambda item: int(item[0]) if str(item[0]).isdigit() else 999,
+            )
+        ),
     }
     return records, report
 
