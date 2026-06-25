@@ -748,3 +748,9 @@ Colab/Drive backups for selected runs.
   `master_sequence_status` target can appear separately, but the operational
   GPU queue should not silently diverge across README, current action,
   next-sequence, staged-notebook, or single-runtime runbook surfaces.
+- Stage 3 publish guard coverage: the re-entry repair smoke bootstrap test now
+  asserts that Stage 3 itself uses the same rejected-push recovery pattern as
+  the later Stage 4/benchmark/control runners: direct push, one
+  `git pull --rebase --autostash`, and a final checked push. This keeps the
+  current front-of-queue GPU action covered against the publication failure
+  mode that previously cost manual recovery time.

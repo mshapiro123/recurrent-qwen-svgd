@@ -1290,6 +1290,10 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "publishable_artifact_paths" in cell
     assert "update_current_source_summary" in cell
     assert 'git", "add", "-f", str(out_dir.relative_to(ROOT))' not in cell
+    assert "STAGE5_REENTRY_REPAIR_PUSH" in cell
+    assert 'run(["git", "push", "origin", "main"], check=False)' in cell
+    assert 'run(["git", "pull", "--rebase", "--autostash", "origin", "main"])' in cell
+    assert 'run(["git", "push", "origin", "main"])' in cell
     assert "Readout Pause" in cell
     assert "runtime.unassign" in cell
 
