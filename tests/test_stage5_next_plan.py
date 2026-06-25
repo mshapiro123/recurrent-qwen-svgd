@@ -3448,6 +3448,60 @@ def test_reentry_repair_smoke_routes_to_recovery_training_bootstrap_target(tmp_p
     assert "cat colab/NEXT_COLAB_SEQUENCE.md" in actions[0]["command"]
 
 
+def test_reentry_repair_smoke_reruns_when_entry_rms_was_not_used(tmp_path) -> None:
+    source = tmp_path / "reentry_repair" / "summary.json"
+    assessment = tmp_path / "reentry_repair" / "reentry_assessment.json"
+    source.parent.mkdir(parents=True)
+    source.write_text(
+        json.dumps({"run_id": "reentry_repair", "kind": "stage5_reentry_repair_smoke"}),
+        encoding="utf-8",
+    )
+    assessment.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_reentry_assessment",
+                "status": "repair_smoke_reentry_mode_mismatch",
+                "recommendation": "rerun_reentry_repair_smoke_with_entry_rms",
+            }
+        ),
+        encoding="utf-8",
+    )
+    payload = json.loads(source.read_text(encoding="utf-8"))
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run current bootstrap target `reentry_repair_smoke`"
+    assert "STAGE5_CURRENT_A100_TARGET=reentry_repair_smoke" in actions[0]["command"]
+    assert "bounded Stage 3 retry" in actions[0]["reason"]
+
+
+def test_reentry_repair_smoke_reruns_when_reentry_adapter_was_disabled(tmp_path) -> None:
+    source = tmp_path / "reentry_repair" / "summary.json"
+    assessment = tmp_path / "reentry_repair" / "reentry_assessment.json"
+    source.parent.mkdir(parents=True)
+    source.write_text(
+        json.dumps({"run_id": "reentry_repair", "kind": "stage5_reentry_repair_smoke"}),
+        encoding="utf-8",
+    )
+    assessment.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_reentry_assessment",
+                "status": "repair_smoke_reentry_adapter_disabled",
+                "recommendation": "rerun_reentry_repair_smoke_with_reentry_adapter",
+            }
+        ),
+        encoding="utf-8",
+    )
+    payload = json.loads(source.read_text(encoding="utf-8"))
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run current bootstrap target `reentry_repair_smoke`"
+    assert "STAGE5_CURRENT_A100_TARGET=reentry_repair_smoke" in actions[0]["command"]
+    assert "bounded Stage 3 retry" in actions[0]["reason"]
+
+
 def test_reentry_recovery_training_routes_to_debiased_benchmark_bootstrap_target(tmp_path) -> None:
     source = tmp_path / "reentry_recovery" / "summary.json"
     source.parent.mkdir(parents=True)

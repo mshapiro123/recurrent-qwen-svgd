@@ -785,6 +785,8 @@ def reentry_actions(payload: dict[str, Any], *, source_summary: Path) -> list[di
             )
         ]
     if recommendation in {
+        "rerun_reentry_repair_smoke_with_entry_rms",
+        "rerun_reentry_repair_smoke_with_reentry_adapter",
         "extend_reentry_repair_smoke_or_increase_adapter_lr",
         "extend_reentry_repair_smoke_or_increase_bridge_lr",
     }:

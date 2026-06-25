@@ -191,6 +191,14 @@ def classify(grouped: dict[str, tuple[Path, dict[str, Any]]]) -> dict[str, Any]:
             action = "stop_reentry_adapter_not_live"
             target = ""
             next_step = "Stage 3 did not produce live re-entry adapter gradients; fix adapter wiring before training."
+        elif recommendation == "rerun_reentry_repair_smoke_with_entry_rms":
+            action = "rerun_repair_smoke_entry_rms_required"
+            target = "reentry_repair_smoke"
+            next_step = "Stage 3 did not use entry_rms loop re-entry rescaling; rerun the current Stage 3 repair-smoke target."
+        elif recommendation == "rerun_reentry_repair_smoke_with_reentry_adapter":
+            action = "rerun_repair_smoke_reentry_adapter_required"
+            target = "reentry_repair_smoke"
+            next_step = "Stage 3 disabled the trainable re-entry adapter; rerun the current Stage 3 repair-smoke target."
         elif recommendation == "extend_reentry_repair_smoke_or_increase_adapter_lr":
             action = "extend_reentry_adapter_smoke"
             target = "reentry_repair_smoke"

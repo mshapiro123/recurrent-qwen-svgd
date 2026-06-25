@@ -135,6 +135,38 @@ def test_review_stops_on_stage3_adapter_not_live(tmp_path) -> None:
     assert review["next_target"] == ""
 
 
+def test_review_reruns_stage3_when_entry_rms_was_not_used(tmp_path) -> None:
+    repair = write_assessment(
+        tmp_path / "stage5_reentry_repair_x" / "reentry_assessment.json",
+        source_kind="stage5_reentry_repair_smoke",
+        status="repair_smoke_reentry_mode_mismatch",
+        recommendation="rerun_reentry_repair_smoke_with_entry_rms",
+    )
+
+    review = build_review([repair])
+
+    assert review["action"] == "rerun_repair_smoke_entry_rms_required"
+    assert review["next_target"] == "reentry_repair_smoke"
+    assert review["launch_env"] == {"STAGE5_CURRENT_A100_TARGET": "reentry_repair_smoke"}
+    assert "entry_rms" in review["next_step"]
+
+
+def test_review_reruns_stage3_when_reentry_adapter_was_disabled(tmp_path) -> None:
+    repair = write_assessment(
+        tmp_path / "stage5_reentry_repair_x" / "reentry_assessment.json",
+        source_kind="stage5_reentry_repair_smoke",
+        status="repair_smoke_reentry_adapter_disabled",
+        recommendation="rerun_reentry_repair_smoke_with_reentry_adapter",
+    )
+
+    review = build_review([repair])
+
+    assert review["action"] == "rerun_repair_smoke_reentry_adapter_required"
+    assert review["next_target"] == "reentry_repair_smoke"
+    assert review["launch_env"] == {"STAGE5_CURRENT_A100_TARGET": "reentry_repair_smoke"}
+    assert "adapter" in review["next_step"]
+
+
 def test_review_recommends_adapter_smoke_extension_when_live_but_not_moved(tmp_path) -> None:
     repair = write_assessment(
         tmp_path / "stage5_reentry_repair_x" / "reentry_assessment.json",
