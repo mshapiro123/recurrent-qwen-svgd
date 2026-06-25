@@ -155,6 +155,7 @@ def passing_repair_assessment() -> dict:
             "loop1_regressed": False,
             "bridge_live": True,
             "bridge_moved": True,
+            "bridge_gate_active": True,
             "use_reentry_adapter": True,
             "adapter_live": True,
             "adapter_moved": True,
@@ -186,6 +187,26 @@ def test_repair_assessment_recovery_gate_rejects_missing_train_metrics() -> None
 
     assert reason is not None
     assert "final training metrics" in reason
+
+
+def test_repair_assessment_recovery_gate_rejects_inactive_bridge_gate() -> None:
+    assessment = passing_repair_assessment()
+    assessment["metrics"]["bridge_gate_active"] = False
+
+    reason = repair_assessment_recovery_block_reason(assessment)
+
+    assert reason is not None
+    assert "bridge_gate stayed active" in reason
+
+
+def test_repair_assessment_recovery_gate_rejects_missing_bridge_gate_evidence() -> None:
+    assessment = passing_repair_assessment()
+    del assessment["metrics"]["bridge_gate_active"]
+
+    reason = repair_assessment_recovery_block_reason(assessment)
+
+    assert reason is not None
+    assert "bridge_gate stayed active" in reason
 
 
 def test_repair_assessment_recovery_gate_rejects_nonfinite_train_loss() -> None:

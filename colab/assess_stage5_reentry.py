@@ -183,6 +183,7 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
     post_weight_grad = finite_float(post.get("weight_grad_rms"))
     post_bias_grad = finite_float(post.get("bias_grad_rms"))
     post_gate = finite_float(post.get("bridge_gate"))
+    bridge_gate_active = abs(post_gate) >= 0.05
     bridge_live = post_weight_grad > 0.0 and post_bias_grad > 0.0
     bridge_projection_moved = post_identity_diff > 1e-6 or post_bias_max > 1e-6
     bridge_output_moved = abs(post_delta - pre_delta) > 1e-6 or post_delta > 1e-6
@@ -272,6 +273,10 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
         status = "reentry_adapter_live_but_not_moved"
         recommendation = "extend_reentry_repair_smoke_or_increase_adapter_lr"
         reason = "The repair smoke enabled the re-entry adapter, but no adapter movement was observed."
+    elif not bridge_gate_active:
+        status = "bridge_gate_collapsed"
+        recommendation = "extend_reentry_repair_smoke_or_increase_bridge_lr"
+        reason = "The bridge projection moved or was live, but bridge_gate is too close to zero for the repaired path to affect loop re-entry."
     elif bridge_live and bridge_moved:
         status = "bridge_repair_smoke_passed"
         recommendation = "run_bounded_recovery_training_with_reentry_repair"
@@ -296,6 +301,7 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
             "post_bridge_delta_rms": post_delta,
             "post_bridge_proj_identity_max_abs_diff": post_identity_diff,
             "post_bridge_proj_bias_max_abs": post_bias_max,
+            "bridge_gate_active": bridge_gate_active,
             "bridge_projection_moved": bridge_projection_moved,
             "bridge_output_moved": bridge_output_moved,
             "post_weight_grad_rms": post_weight_grad,

@@ -74,6 +74,9 @@ def repair_assessment_recovery_block_reason(assessment: dict[str, Any]) -> str |
     if metrics.get("bridge_live") is not True or metrics.get("bridge_moved") is not True:
         return "Stage 3 repair assessment does not prove the bridge is both gradient-live and moved."
 
+    if metrics.get("bridge_gate_active") is not True:
+        return "Stage 3 repair assessment does not prove bridge_gate stayed active; rerun reentry_repair_smoke before Stage 4."
+
     if metrics.get("use_reentry_adapter") is True:
         if metrics.get("adapter_live") is not True:
             return "Stage 3 repair assessment does not prove the re-entry adapter is gradient-live."

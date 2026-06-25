@@ -1322,6 +1322,7 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "Training Smoke Metrics" in cell
     assert "target_loop_abs_error" in cell
     assert "halting_target_nll" in cell
+    assert "bridge_gate_active" in (ROOT / "colab/assess_stage5_reentry.py").read_text(encoding="utf-8")
     assert "STAGE5_REENTRY_REPAIR_REQUIRE_NORM_PASS" in cell
     assert "stage2_norm_assessment" in cell
     assert "current_pointer_norm_assessment_candidates" in bootstrap
