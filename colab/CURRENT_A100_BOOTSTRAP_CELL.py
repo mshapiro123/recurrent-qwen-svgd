@@ -1174,6 +1174,8 @@ if SOURCE_SUMMARY_OVERRIDE:
     os.environ["STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
     os.environ["STAGE5_DENSE_MCQ_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
     os.environ["STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
+    os.environ["STAGE5_REENTRY_REPAIR_NORM_ASSESSMENT"] = SOURCE_SUMMARY_OVERRIDE
+    os.environ["STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT"] = SOURCE_SUMMARY_OVERRIDE
 else:
     # Avoid accidentally pinning a new session to an old target-specific source
     # summary. The safe-continue launcher will follow config/stage5_current_source_summary.txt.
@@ -1186,6 +1188,8 @@ else:
     os.environ.pop("STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY", None)
     os.environ.pop("STAGE5_DENSE_MCQ_SOURCE_SUMMARY", None)
     os.environ.pop("STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY", None)
+    os.environ.pop("STAGE5_REENTRY_REPAIR_NORM_ASSESSMENT", None)
+    os.environ.pop("STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT", None)
 for key, value in selected["env"].items():
     # Target configs are defaults. Planner/user-supplied env must win so chained
     # actions can pass repaired checkpoints, benchmark summaries, and run IDs.

@@ -230,7 +230,10 @@ def repair_assessment_candidates() -> list[Path]:
     override = os.environ.get("STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT", "").strip()
     if override:
         rel = normalize_rel_path(override)
-        candidates.extend([ROOT / rel, DRIVE_ARTIFACT_ROOT / rel, LEGACY_DRIVE_ROOT / rel])
+        for candidate in (ROOT / rel, DRIVE_ARTIFACT_ROOT / rel, LEGACY_DRIVE_ROOT / rel):
+            candidates.append(candidate)
+            if candidate.name == "summary.json":
+                candidates.append(candidate.with_name("reentry_assessment.json"))
     candidates.extend(current_pointer_repair_assessment_candidates())
     for root in (
         ROOT / "outputs" / "stage5",

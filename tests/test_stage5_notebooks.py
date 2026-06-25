@@ -1327,6 +1327,7 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "checkpoint_from_norm = bool(norm_checkpoint and not checkpoint_override)" in cell
     assert "allow_fallback=checkpoint_override is None and not checkpoint_from_norm" in cell
     assert "reentry_repair_checkpoint_source=" in cell
+    assert 'candidate.with_name("reentry_assessment.json")' in cell
     assert "incremental_backup" in cell
     assert "restore_incremental_backup" in cell
     assert "STAGE5_REENTRY_REPAIR_RESTORE_INCREMENTAL_BACKUP" in cell
@@ -1386,6 +1387,7 @@ def test_reentry_recovery_training_target_is_bootstrapped() -> None:
     assert "STAGE5_REENTRY_RECOVERY_CELL_VERSION" in cell
     assert "reentry_recovery_training_v3_wrapper_summary" in cell
     assert "STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT" in cell
+    assert 'candidate.with_name("reentry_assessment.json")' in cell
     assert "current_pointer_repair_assessment_candidates" in bootstrap
     assert "current_pointer_repair_assessment_candidates" in bootstrap_md
     assert "current_pointer_repair_assessment_candidates" in cell
@@ -1511,6 +1513,12 @@ def test_reentry_stage3_stage4_runbook_is_linked_from_current_action() -> None:
     assert 'TARGET = "dense_mcq_trace_sft_control"' in next_sequence
     assert "STAGE5_CURRENT_A100_SOURCE_SUMMARY" in next_sequence
     assert "config/stage5_current_source_summary.txt" in next_sequence
+    assert "STAGE5_REENTRY_REPAIR_NORM_ASSESSMENT" in (
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py"
+    ).read_text(encoding="utf-8")
+    assert "STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT" in (
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py"
+    ).read_text(encoding="utf-8")
     assert "resolve it back\nto the recurrent benchmark suite" in next_sequence
     assert "standard Qwen same-curriculum LoRA control" in next_sequence
     assert "Leinster" in next_sequence

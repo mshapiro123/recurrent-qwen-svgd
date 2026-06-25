@@ -370,9 +370,11 @@ def norm_assessment_candidates() -> list[Path]:
     candidates: list[Path] = []
     override = os.environ.get("STAGE5_REENTRY_REPAIR_NORM_ASSESSMENT", "").strip()
     if override:
-        candidates.append(ROOT / normalize_rel_path(override))
-        candidates.append(DRIVE_ARTIFACT_ROOT / normalize_rel_path(override))
-        candidates.append(LEGACY_DRIVE_ROOT / normalize_rel_path(override))
+        rel = normalize_rel_path(override)
+        for candidate in (ROOT / rel, DRIVE_ARTIFACT_ROOT / rel, LEGACY_DRIVE_ROOT / rel):
+            candidates.append(candidate)
+            if candidate.name == "summary.json":
+                candidates.append(candidate.with_name("reentry_assessment.json"))
     candidates.extend(current_pointer_norm_assessment_candidates())
 
     for root in (
