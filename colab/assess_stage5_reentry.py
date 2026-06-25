@@ -170,8 +170,23 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
     post_gate = finite_float(post.get("bridge_gate"))
     bridge_live = post_weight_grad > 0.0 and post_bias_grad > 0.0
     bridge_moved = abs(post_delta - pre_delta) > 1e-6 or post_delta > 1e-6
+    preservation = summary.get("loop1_preservation") if isinstance(summary.get("loop1_preservation"), dict) else {}
+    source_preservation = preservation.get("source") if isinstance(preservation.get("source"), dict) else {}
+    trained_preservation = preservation.get("trained") if isinstance(preservation.get("trained"), dict) else {}
+    source_best_hits = finite_float(source_preservation.get("best_hits"))
+    trained_best_hits = finite_float(trained_preservation.get("best_hits"))
+    source_candidate_hits = finite_float(source_preservation.get("candidate_hits"))
+    trained_candidate_hits = finite_float(trained_preservation.get("candidate_hits"))
+    best_delta = finite_float(preservation.get("best_hits_delta_trained_minus_source"))
+    candidate_delta = finite_float(preservation.get("candidate_hits_delta_trained_minus_source"))
+    preservation_available = bool(source_preservation and trained_preservation)
+    loop1_regressed = preservation_available and (best_delta < 0 or candidate_delta <= -2)
 
-    if bridge_live and bridge_moved:
+    if loop1_regressed:
+        status = "bridge_live_but_loop1_regressed" if bridge_live else "bridge_still_dead_and_loop1_regressed"
+        recommendation = "review_or_reduce_repair_lr_before_recovery_training"
+        reason = "The repair smoke harmed deterministic loop-1 preservation; review before recovery training."
+    elif bridge_live and bridge_moved:
         status = "bridge_repair_smoke_passed"
         recommendation = "run_bounded_recovery_training_with_reentry_repair"
         reason = "Bridge is gradient-live and changed the re-entry path during the smoke run."
@@ -197,6 +212,14 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
             "post_bias_grad_rms": post_bias_grad,
             "bridge_live": bridge_live,
             "bridge_moved": bridge_moved,
+            "loop1_preservation_available": preservation_available,
+            "source_loop1_best_hits": source_best_hits,
+            "trained_loop1_best_hits": trained_best_hits,
+            "loop1_best_hits_delta": best_delta,
+            "source_loop1_candidate_hits": source_candidate_hits,
+            "trained_loop1_candidate_hits": trained_candidate_hits,
+            "loop1_candidate_hits_delta": candidate_delta,
+            "loop1_regressed": loop1_regressed,
         },
     }
 

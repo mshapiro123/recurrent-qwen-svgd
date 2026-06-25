@@ -71,7 +71,16 @@ def norm_summary(*, none_hits=20, entry_hits=21, none_best=5, entry_best=5):
     }
 
 
-def repair_summary(*, post_delta=0.01, weight_grad=1e-4, bias_grad=1e-4):
+def repair_summary(
+    *,
+    post_delta=0.01,
+    weight_grad=1e-4,
+    bias_grad=1e-4,
+    source_best=4,
+    trained_best=4,
+    source_candidates=4,
+    trained_candidates=4,
+):
     return {
         "kind": "stage5_reentry_repair_smoke",
         "run_id": "stage5_reentry_repair_smoke_test",
@@ -86,6 +95,22 @@ def repair_summary(*, post_delta=0.01, weight_grad=1e-4, bias_grad=1e-4):
             "bridge_delta_rms": post_delta,
             "weight_grad_rms": weight_grad,
             "bias_grad_rms": bias_grad,
+        },
+        "loop1_preservation": {
+            "source": {
+                "task_groups": 4,
+                "best_hits": source_best,
+                "candidate_hits": source_candidates,
+                "total_candidates": 4,
+            },
+            "trained": {
+                "task_groups": 4,
+                "best_hits": trained_best,
+                "candidate_hits": trained_candidates,
+                "total_candidates": 4,
+            },
+            "best_hits_delta_trained_minus_source": trained_best - source_best,
+            "candidate_hits_delta_trained_minus_source": trained_candidates - source_candidates,
         },
     }
 
@@ -124,6 +149,7 @@ def test_repair_smoke_assessment_passes_when_bridge_live_and_moved() -> None:
 
     assert out["status"] == "bridge_repair_smoke_passed"
     assert out["recommendation"] == "run_bounded_recovery_training_with_reentry_repair"
+    assert out["metrics"]["loop1_preservation_available"] is True
 
 
 def test_repair_smoke_assessment_detects_live_but_not_moved() -> None:
@@ -131,6 +157,14 @@ def test_repair_smoke_assessment_detects_live_but_not_moved() -> None:
 
     assert out["status"] == "bridge_live_but_no_observed_movement"
     assert out["recommendation"] == "extend_reentry_repair_smoke_or_increase_bridge_lr"
+
+
+def test_repair_smoke_assessment_blocks_on_loop1_regression() -> None:
+    out = assess(repair_summary(source_best=4, trained_best=3, source_candidates=4, trained_candidates=3))
+
+    assert out["status"] == "bridge_live_but_loop1_regressed"
+    assert out["recommendation"] == "review_or_reduce_repair_lr_before_recovery_training"
+    assert out["metrics"]["loop1_regressed"] is True
 
 
 def test_reentry_assessment_cli_writes_outputs(tmp_path) -> None:

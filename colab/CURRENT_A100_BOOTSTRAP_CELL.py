@@ -331,6 +331,8 @@ TARGETS = {
             "reentry_rescale_mode",
             "training/train_phase1_ponder.py",
             "eval/eval_reentry_drift.py",
+            "Loop-1 Preservation",
+            "loop1_preservation",
             "colab/assess_stage5_reentry.py",
             "tests/test_bridge.py",
             "Readout Pause",

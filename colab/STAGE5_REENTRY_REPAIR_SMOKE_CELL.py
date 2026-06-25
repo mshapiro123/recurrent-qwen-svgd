@@ -277,6 +277,83 @@ def run_drift(label: str, checkpoint: str, out_dir: Path) -> Path:
     return out_json
 
 
+def write_preservation_tasks(out_path: Path) -> Path:
+    source = ROOT / os.environ.get("STAGE5_REENTRY_REPAIR_PRESERVE_TASKS", "eval/smoke_exact_tasks_v2.jsonl")
+    limit = int(os.environ.get("STAGE5_REENTRY_REPAIR_PRESERVE_LIMIT", "6"))
+    rows = [line for line in source.read_text(encoding="utf-8").splitlines() if line.strip()]
+    selected = rows[:limit]
+    if not selected:
+        raise ValueError(f"No loop-1 preservation tasks found in {source}")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text("\n".join(selected) + "\n", encoding="utf-8")
+    return out_path
+
+
+def summarize_loop1_preservation(jsonl_path: Path) -> dict[str, object]:
+    rows = [json.loads(line) for line in jsonl_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    by_label: dict[str, list[dict[str, object]]] = {}
+    for row in rows:
+        by_label.setdefault(str(row.get("label")), []).append(row)
+
+    def stats(label: str) -> dict[str, object]:
+        label_rows = by_label.get(label, [])
+        by_task_seed: dict[tuple[object, object], list[dict[str, object]]] = {}
+        for row in label_rows:
+            by_task_seed.setdefault((row.get("seed"), row.get("task")), []).append(row)
+        return {
+            "label": label,
+            "task_groups": len(by_task_seed),
+            "best_hits": sum(any(bool(item.get("hit")) for item in group) for group in by_task_seed.values()),
+            "candidate_hits": sum(bool(row.get("hit")) for row in label_rows),
+            "total_candidates": len(label_rows),
+        }
+
+    source = stats("Phase 1 K=1")
+    trained = stats("Phase 2 K=1")
+    return {
+        "jsonl": jsonl_path.relative_to(ROOT).as_posix(),
+        "source": source,
+        "trained": trained,
+        "best_hits_delta_trained_minus_source": trained["best_hits"] - source["best_hits"],
+        "candidate_hits_delta_trained_minus_source": trained["candidate_hits"] - source["candidate_hits"],
+    }
+
+
+def run_loop1_preservation(source_checkpoint: str, trained_checkpoint: str, out_dir: Path) -> dict[str, object]:
+    tasks_jsonl = write_preservation_tasks(out_dir / "loop1_preservation_tasks.jsonl")
+    out_jsonl = out_dir / "loop1_preservation.jsonl"
+    run(
+        [
+            sys.executable,
+            "eval/eval_best_of_k_jsonl.py",
+            "--tasks_jsonl",
+            str(tasks_jsonl.relative_to(ROOT)),
+            "--phase1_checkpoint",
+            source_checkpoint,
+            "--phase2_checkpoint",
+            trained_checkpoint,
+            "--phase2_num_trajectories",
+            "1",
+            "--max_loops",
+            "1",
+            "--max_new_tokens",
+            os.environ.get("STAGE5_REENTRY_REPAIR_PRESERVE_MAX_NEW_TOKENS", "80"),
+            "--temperature",
+            "0.0",
+            "--dtype",
+            os.environ.get("STAGE5_REENTRY_REPAIR_DTYPE", "bfloat16"),
+            "--adapter_dtype",
+            "float32",
+            "--device",
+            os.environ.get("STAGE5_REENTRY_REPAIR_DEVICE", "cuda"),
+            "--compact",
+            "--output_jsonl",
+            str(out_jsonl.relative_to(ROOT)),
+        ]
+    )
+    return summarize_loop1_preservation(out_jsonl)
+
+
 def bridge_summary(payload: dict[str, object]) -> dict[str, object]:
     bridge = payload.get("bridge") if isinstance(payload.get("bridge"), dict) else {}
     live = payload.get("bridge_gradient_liveness") if isinstance(payload.get("bridge_gradient_liveness"), dict) else {}
@@ -313,8 +390,17 @@ def write_markdown(summary: dict[str, object], path: Path) -> None:
             f"{row.get('weight_grad_rms')} | {row.get('bias_grad_rms')} | "
             f"{row.get('loop4_output_over_input_rms')} | {row.get('loop8_output_over_input_rms')} |"
         )
+    preservation = summary.get("loop1_preservation") if isinstance(summary.get("loop1_preservation"), dict) else {}
+    source = preservation.get("source") if isinstance(preservation.get("source"), dict) else {}
+    trained = preservation.get("trained") if isinstance(preservation.get("trained"), dict) else {}
     lines.extend(
         [
+            "",
+            "## Loop-1 Preservation",
+            f"- Source loop-1 best hits: `{source.get('best_hits')}/{source.get('task_groups')}`",
+            f"- Trained loop-1 best hits: `{trained.get('best_hits')}/{trained.get('task_groups')}`",
+            f"- Best-hit delta: `{preservation.get('best_hits_delta_trained_minus_source')}`",
+            f"- Candidate-hit delta: `{preservation.get('candidate_hits_delta_trained_minus_source')}`",
             "",
             "## Readout Pause",
             "This run intentionally stops after Stage 3. Review bridge movement and loop behavior before recovery training.",
@@ -414,6 +500,7 @@ def main() -> None:
         raise FileNotFoundError(f"Expected trained checkpoint missing: {trained_checkpoint}")
     trained_checkpoint_rel = trained_checkpoint.relative_to(ROOT).as_posix()
     post_drift_path = run_drift("post", trained_checkpoint_rel, diag_dir)
+    loop1_preservation = run_loop1_preservation(checkpoint, trained_checkpoint_rel, diag_dir)
 
     pre_payload = json.loads(pre_drift_path.read_text(encoding="utf-8"))
     post_payload = json.loads(post_drift_path.read_text(encoding="utf-8"))
@@ -430,9 +517,11 @@ def main() -> None:
             "train_jsonl": train_jsonl.relative_to(ROOT).as_posix(),
             "train_config": config_path.relative_to(ROOT).as_posix(),
             "train_log": (diag_dir / "train_phase1_ponder.log").relative_to(ROOT).as_posix(),
+            "loop1_preservation": loop1_preservation["jsonl"],
         },
         "pre_bridge": bridge_summary(pre_payload),
         "post_bridge": bridge_summary(post_payload),
+        "loop1_preservation": loop1_preservation,
     }
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     write_markdown(summary, out_dir / "summary.md")

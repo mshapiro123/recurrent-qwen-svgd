@@ -1233,6 +1233,8 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "reentry_rescale_mode" in cell
     assert "training/train_phase1_ponder.py" in cell
     assert "eval/eval_reentry_drift.py" in cell
+    assert "Loop-1 Preservation" in cell
+    assert "loop1_preservation" in cell
     assert "colab/assess_stage5_reentry.py" in cell
     assert "Readout Pause" in cell
     assert "runtime.unassign" in cell
