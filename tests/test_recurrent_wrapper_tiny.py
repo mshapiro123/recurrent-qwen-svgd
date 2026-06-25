@@ -287,6 +287,40 @@ def test_phase1_optimizer_parameters_match_stage3_reentry_repair_modules():
     assert [id(param) for param in selected] == [id(param) for param in expected]
 
 
+def test_phase1_optimizer_parameters_can_select_bridge_projection_without_gate():
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    wrapper.freeze_base_model()
+    selected = optimizer_parameters(wrapper, {"optimizer_modules": "bridge_proj,reentry,halt"})
+    selected_ids = {id(param) for param in selected}
+
+    assert id(wrapper.bridge.bridge_gate) not in selected_ids
+    for param in wrapper.bridge.proj.parameters():
+        assert id(param) in selected_ids
+    for param in wrapper.reentry_adapter.parameters():
+        assert id(param) in selected_ids
+    for param in wrapper.halt_predictor.parameters():
+        assert id(param) in selected_ids
+
+
+def test_phase1_optimizer_parameters_can_select_bridge_gate_only():
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    wrapper.freeze_base_model()
+    selected = optimizer_parameters(wrapper, {"optimizer_modules": "bridge_gate"})
+
+    assert selected == [wrapper.bridge.bridge_gate]
+
+
+def test_phase1_optimizer_parameters_deduplicate_overlapping_modules():
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    wrapper.freeze_base_model()
+    selected = optimizer_parameters(wrapper, {"optimizer_modules": "bridge,bridge_proj"})
+
+    assert len({id(param) for param in selected}) == len(selected)
+
+
 def test_invalid_latent_injection_mode_raises():
     model = TinyCausalLM().eval()
     wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()

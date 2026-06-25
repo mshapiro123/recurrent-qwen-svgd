@@ -186,6 +186,8 @@ Stop and review if any of these happen:
 
 - Stage 3 bridge or re-entry adapter gradients are not live.
 - Stage 3 bridge projection moves but `bridge_gate` is inactive.
+  Use the reviewer-provided bounded retry env, which switches to
+  `bridge_proj,reentry,halt`.
 - Stage 3 loop-1 preservation regresses.
 - Stage 4 validation is not finite or lacks a target-loop gradient.
 - The debiased benchmark shows deterministic recurrence still trails base on

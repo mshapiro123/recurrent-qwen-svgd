@@ -117,7 +117,10 @@ Failure responses:
   Stage 3 variant; bridge is live but did not move.
 - `bridge_gate_collapsed`: retry only a bounded Stage 3 variant; the bridge
   projection moved or stayed live, but the scalar gate is too close to zero for
-  the repaired path to affect loop re-entry.
+  the repaired path to affect loop re-entry. The reviewer emits
+  `STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES=bridge_proj,reentry,halt` for this
+  retry so the gate remains checkpointed and active while the projection and
+  re-entry path are tested.
 
 ## Stage 4: bounded recovery SFT
 

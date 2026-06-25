@@ -185,6 +185,7 @@ def test_review_names_bridge_gate_collapse_separately(tmp_path) -> None:
     assert review["next_target"] == "reentry_repair_smoke"
     assert "bridge_gate collapsed" in review["next_step"]
     assert review["launch_env"]["STAGE5_REENTRY_REPAIR_MAX_STEPS"] == "50"
+    assert review["launch_env"]["STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES"] == "bridge_proj,reentry,halt"
 
 
 def test_review_prefers_current_pointer_assessment_over_newer_glob(tmp_path) -> None:

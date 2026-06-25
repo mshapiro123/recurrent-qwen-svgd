@@ -56,7 +56,7 @@ def optimizer_parameters(wrapper: RecurrentQwenForCausalLM, cfg: dict) -> list[t
 
     selected: list[torch.nn.Parameter] = []
     requested = {item.strip() for item in modules.split(",") if item.strip()}
-    valid = {"lora", "bridge", "reentry", "halt", "latent"}
+    valid = {"lora", "bridge", "bridge_proj", "bridge_gate", "reentry", "halt", "latent"}
     unknown = requested - valid
     if unknown:
         raise ValueError(f"Unknown optimizer_modules entries: {sorted(unknown)}")
@@ -64,12 +64,24 @@ def optimizer_parameters(wrapper: RecurrentQwenForCausalLM, cfg: dict) -> list[t
         selected.extend(param for param in wrapper.base_model.parameters() if param.requires_grad)
     if "bridge" in requested:
         selected.extend(param for param in wrapper.bridge.parameters() if param.requires_grad)
+    if "bridge_proj" in requested:
+        selected.extend(param for param in wrapper.bridge.proj.parameters() if param.requires_grad)
+    if "bridge_gate" in requested and wrapper.bridge.bridge_gate.requires_grad:
+        selected.append(wrapper.bridge.bridge_gate)
     if "reentry" in requested:
         selected.extend(param for param in wrapper.reentry_adapter.parameters() if param.requires_grad)
     if "halt" in requested:
         selected.extend(param for param in wrapper.halt_predictor.parameters() if param.requires_grad)
     if "latent" in requested:
         selected.extend(param for param in wrapper.latent_trajectory.parameters() if param.requires_grad)
+    deduped: list[torch.nn.Parameter] = []
+    seen: set[int] = set()
+    for param in selected:
+        param_id = id(param)
+        if param_id not in seen:
+            seen.add(param_id)
+            deduped.append(param)
+    selected = deduped
     if not selected:
         raise ValueError(f"optimizer_modules={modules!r} selected no trainable parameters")
     return selected

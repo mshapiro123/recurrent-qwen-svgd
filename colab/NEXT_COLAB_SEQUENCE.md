@@ -170,6 +170,9 @@ Stop conditions:
 - adapter gradients not live;
 - adapter or bridge live but unmoved.
 - bridge projection moved but the scalar `bridge_gate` is inactive.
+  In that case, use the reviewer-provided bounded retry env; it switches the
+  optimizer modules to `bridge_proj,reentry,halt` so the gate stays active
+  while the bridge projection and re-entry adapter are tested.
 
 ### 3. Stage 4: bounded deterministic recovery SFT
 

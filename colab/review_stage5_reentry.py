@@ -289,11 +289,16 @@ def launch_env_for_decision(decision: dict[str, Any]) -> dict[str, str]:
             }
         )
     elif action in {"extend_repair_smoke", "extend_repair_smoke_bridge_gate_active"}:
+        optimizer_modules = (
+            "bridge_proj,reentry,halt"
+            if action == "extend_repair_smoke_bridge_gate_active"
+            else "bridge,reentry,halt"
+        )
         env.update(
             {
                 "STAGE5_REENTRY_REPAIR_MAX_STEPS": "50",
                 "STAGE5_REENTRY_REPAIR_LR": "2e-5",
-                "STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES": "bridge,reentry,halt",
+                "STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES": optimizer_modules,
             }
         )
     return env

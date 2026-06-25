@@ -1547,6 +1547,9 @@ def test_reentry_stage3_stage4_runbook_is_linked_from_current_action() -> None:
     assert "bridge gate remains active" in runbook
     assert "bridge_gate_active=true" in runbook
     assert "bridge projection moved but the scalar `bridge_gate` is inactive" in next_sequence
+    assert "bridge_proj,reentry,halt" in next_sequence
+    assert "bridge_proj,reentry,halt" in runbook
+    assert "bridge_proj,reentry,halt" in current_action
     assert "entry_rms" in runbook
     assert "fix_loop1_preservation_eval_before_recovery_training" in runbook
     assert "STAGE5_CURRICULUM_MIN_TARGET_LOOP_ROWS" in runbook

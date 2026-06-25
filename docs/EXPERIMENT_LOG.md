@@ -865,3 +865,8 @@ Colab/Drive backups for selected runs.
   scalar `bridge_gate` collapsed back near zero, because that repaired path
   would still be effectively disconnected from loop re-entry. Stage 4 recovery
   refuses Stage 3 assessments that lack this active-gate evidence.
+- Stage 3 gate-collapse retry mode: the re-entry reviewer now names
+  `bridge_gate_collapsed` separately and emits a bounded retry with
+  `STAGE5_REENTRY_REPAIR_OPTIMIZER_MODULES=bridge_proj,reentry,halt`. This
+  keeps the scalar gate active and checkpointed while testing the bridge
+  projection plus re-entry adapter.
