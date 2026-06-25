@@ -3019,6 +3019,29 @@ def competence_pipeline_resume_action(payload: dict[str, Any], *, source_summary
     )
 
 
+def competence_pipeline_failure_evidence(payload: dict[str, Any], *, source_summary: Path) -> str:
+    evidence_parts = [
+        str(payload.get("failure_diagnosis") or ""),
+        str(payload.get("error") or ""),
+        str(payload.get("child_log_tail") or ""),
+    ]
+    child_log = source_summary.parent / "arc_mix.log"
+    if child_log.exists():
+        evidence_parts.append(child_log.read_text(encoding="utf-8", errors="replace")[-8000:])
+    return "\n".join(part for part in evidence_parts if part)
+
+
+def competence_pipeline_checkpoint_restore_failed(payload: dict[str, Any], *, source_summary: Path) -> bool:
+    evidence = competence_pipeline_failure_evidence(payload, source_summary=source_summary)
+    return (
+        "checkpoint_restore_or_drive_mount_failed" in evidence
+        or (
+            "Missing recovered checkpoint" in evidence
+            and "Could not restore it from Drive" in evidence
+        )
+    )
+
+
 def competence_preserving_pipeline_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
     status = str(payload.get("status", "unknown"))
     if status in {"arc_mix_missing", "full_assessment_missing"}:
@@ -3035,7 +3058,7 @@ def competence_preserving_pipeline_actions(payload: dict[str, Any], *, source_su
         ]
     if status == "pipeline_failed":
         failed_stage = payload.get("failed_stage") or "unknown"
-        if payload.get("failure_diagnosis") == "checkpoint_restore_or_drive_mount_failed":
+        if competence_pipeline_checkpoint_restore_failed(payload, source_summary=source_summary):
             return [
                 competence_pipeline_resume_action(
                     payload,
