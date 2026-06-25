@@ -638,3 +638,13 @@ Colab/Drive backups for selected runs.
   `config/stage5_current_source_summary.txt` in the same commit as their
   summary artifacts. This prevents successful Colab runs from leaving a
   restarted notebook pointed at a stale earlier phase.
+- Stage 4 wrapper-summary handoff: `reentry_recovery_training` now runs the
+  generic curriculum SFT child under a child run ID, then publishes a
+  `stage5_reentry_recovery_training` wrapper summary as the current source.
+  The wrapper preserves the repaired checkpoint path, Stage 3 provenance,
+  validation checks, dataset counts, and child summary path. The planner routes
+  this explicit Phase 0/1 recovery wrapper to `debiased_benchmark_suite`
+  before dense control, breadth diagnostics, particles, or SVGD. This fixes the
+  previous mismatch where a completed Stage 4 run would look like a generic
+  `stage5_curriculum_sft` artifact and could fall back to the older routing
+  diagnostic branch instead of the master-sequence benchmark gate.

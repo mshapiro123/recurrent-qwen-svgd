@@ -21,7 +21,7 @@ from typing import Any
 from google.colab import drive, runtime, userdata
 
 
-STAGE5_REENTRY_RECOVERY_CELL_VERSION = "reentry_recovery_training_v2_depth_count_gate"
+STAGE5_REENTRY_RECOVERY_CELL_VERSION = "reentry_recovery_training_v3_wrapper_summary"
 STAGE5_REENTRY_RECOVERY_TARGET = "reentry_recovery_training"
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
@@ -331,11 +331,13 @@ def derive_sft_env(trace_summary: Path, repair: dict[str, Any]) -> dict[str, str
     run_id = os.environ.get("STAGE5_REENTRY_RECOVERY_RUN_ID") or time.strftime(
         "stage5_reentry_recovery_%Y%m%d_%H%M%S"
     )
+    child_run_id = os.environ.get("STAGE5_REENTRY_RECOVERY_CHILD_RUN_ID") or f"{run_id}_curriculum_sft"
     env = os.environ.copy()
     env.update(
         {
             "MODEL_NAME": os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct"),
-            "STAGE5_CURRICULUM_SFT_RUN_ID": run_id,
+            "STAGE5_REENTRY_RECOVERY_WRAPPER_RUN_ID": run_id,
+            "STAGE5_CURRICULUM_SFT_RUN_ID": child_run_id,
             "STAGE5_CURRICULUM_WORK_DIR": work_dir,
             "STAGE5_CURRICULUM_SUMMARY_JSON": summary_json,
             "STAGE5_CURRICULUM_RESUME_FROM": str(repair["checkpoint"]),
@@ -412,6 +414,7 @@ def derive_sft_env(trace_summary: Path, repair: dict[str, Any]) -> dict[str, str
                 "target_loop_counts": target_loop_counts,
                 "max_loops": max_loops,
                 "run_id": run_id,
+                "child_run_id": child_run_id,
                 "optimizer_modules": env["STAGE5_CURRICULUM_OPTIMIZER_MODULES"],
                 "reentry_rescale_mode": env["STAGE5_CURRICULUM_REENTRY_RESCALE_MODE"],
                 "loop_control_ce_weight": env["STAGE5_CURRICULUM_LOOP_CONTROL_CE_WEIGHT"],
@@ -422,6 +425,108 @@ def derive_sft_env(trace_summary: Path, repair: dict[str, Any]) -> dict[str, str
         flush=True,
     )
     return env
+
+
+def current_source_summary_file() -> Path:
+    return ROOT / "config" / "stage5_current_source_summary.txt"
+
+
+def current_source_summary_path() -> Path:
+    pointer = current_source_summary_file()
+    if not pointer.exists():
+        raise FileNotFoundError(pointer)
+    value = pointer.read_text(encoding="utf-8").strip()
+    if not value:
+        raise FileNotFoundError("config/stage5_current_source_summary.txt is empty")
+    return resolve_repo_path(value)
+
+
+def write_reentry_recovery_wrapper_summary(
+    *,
+    repair: dict[str, Any],
+    trace_summary: Path,
+    env: dict[str, str],
+) -> Path:
+    from colab.stage5_publish_utils import update_current_source_summary
+
+    child_summary = current_source_summary_path()
+    child_payload = read_json(child_summary)
+    wrapper_run_id = env["STAGE5_REENTRY_RECOVERY_WRAPPER_RUN_ID"]
+    run_dir = ROOT / "outputs" / "stage5" / wrapper_run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    checkpoint = str(child_payload.get("phase1_checkpoint") or child_payload.get("checkpoint") or "")
+    validation_checks = child_payload.get("validation_checks") if isinstance(child_payload.get("validation_checks"), dict) else {}
+    validation_status = str(validation_checks.get("status") or child_payload.get("status") or "")
+    summary = {
+        "kind": "stage5_reentry_recovery_training",
+        "run_id": wrapper_run_id,
+        "cell_version": STAGE5_REENTRY_RECOVERY_CELL_VERSION,
+        "status": validation_status or "unknown",
+        "passed": validation_status == "validation_sane",
+        "child_summary": path_for_cli(child_summary),
+        "trace_summary": path_for_cli(trace_summary),
+        "stage3_repair": repair,
+        "checkpoint": checkpoint,
+        "phase1_checkpoint": checkpoint,
+        "dataset": child_payload.get("dataset", {}),
+        "config": child_payload.get("config", {}),
+        "phase1_val": child_payload.get("phase1_val", {}),
+        "phase1_val_by_mode": child_payload.get("phase1_val_by_mode", {}),
+        "phase1_val_by_target_loop": child_payload.get("phase1_val_by_target_loop", {}),
+        "validation_checks": validation_checks,
+        "next_step": (
+            "Run debiased_benchmark_suite against this repaired deterministic recurrent checkpoint before "
+            "dense control, breadth diagnostics, particles, or SVGD."
+        ),
+    }
+    summary_path = run_dir / "summary.json"
+    summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    lines = [
+        f"# Stage 5 Re-entry Recovery Training - {wrapper_run_id}",
+        "",
+        f"- Cell version: `{STAGE5_REENTRY_RECOVERY_CELL_VERSION}`",
+        f"- Child curriculum summary: `{summary['child_summary']}`",
+        f"- Trace summary: `{summary['trace_summary']}`",
+        f"- Stage 3 repair assessment: `{repair.get('assessment_path')}`",
+        f"- Status: `{summary['status']}`",
+        f"- Passed: `{summary['passed']}`",
+        f"- Checkpoint: `{checkpoint}`",
+        "",
+        "## Validation Checks",
+        "```json",
+        json.dumps(validation_checks, indent=2),
+        "```",
+        "",
+        "## Next Step",
+        summary["next_step"],
+        "",
+    ]
+    (run_dir / "summary.md").write_text("\n".join(lines), encoding="utf-8")
+    update_current_source_summary(ROOT, summary_path)
+    print((run_dir / "summary.md").read_text(encoding="utf-8"), flush=True)
+    return summary_path
+
+
+def publish_reentry_recovery_wrapper(summary_path: Path) -> None:
+    from colab.stage5_publish_utils import publishable_artifact_paths
+
+    run_dir = summary_path.parent
+    paths = publishable_artifact_paths(run_dir)
+    pointer = current_source_summary_file()
+    if pointer.exists():
+        paths.append(pointer)
+    for path in paths:
+        run(["git", "add", "-f", path_for_cli(path)], check=False)
+    if run(["git", "diff", "--cached", "--quiet"], check=False).returncode == 0:
+        print("No Stage 5 re-entry recovery wrapper outputs changed.", flush=True)
+        return
+    run(["git", "commit", "-m", f"Record Stage 5 re-entry recovery wrapper {summary_path.parent.name} [skip ci]"])
+    pushed = run(["git", "push", "origin", "main"], check=False)
+    if pushed.returncode != 0:
+        print("Initial wrapper push failed; attempting one fast rebase and retry.", flush=True)
+        run(["git", "pull", "--rebase", "--autostash", "origin", "main"])
+        run(["git", "push", "origin", "main"])
 
 
 def main() -> None:
@@ -446,6 +551,12 @@ def main() -> None:
     trace_summary = resolve_trace_collection_summary()
     env = derive_sft_env(trace_summary, repair)
     run([sys.executable, "colab/run_stage5_curriculum_sft.py"], env=env)
+    wrapper_summary = write_reentry_recovery_wrapper_summary(
+        repair=repair,
+        trace_summary=trace_summary,
+        env=env,
+    )
+    publish_reentry_recovery_wrapper(wrapper_summary)
     if env_flag("STAGE5_REENTRY_RECOVERY_DISCONNECT", "1"):
         print("Disconnecting Colab runtime to conserve credits after Stage 4 recovery SFT.", flush=True)
         runtime.unassign()

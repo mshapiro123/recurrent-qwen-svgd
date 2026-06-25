@@ -3448,6 +3448,56 @@ def test_reentry_repair_smoke_routes_to_recovery_training_bootstrap_target(tmp_p
     assert "cat colab/NEXT_COLAB_SEQUENCE.md" in actions[0]["command"]
 
 
+def test_reentry_recovery_training_routes_to_debiased_benchmark_bootstrap_target(tmp_path) -> None:
+    source = tmp_path / "reentry_recovery" / "summary.json"
+    source.parent.mkdir(parents=True)
+    payload = {
+        "run_id": "reentry_recovery",
+        "kind": "stage5_reentry_recovery_training",
+        "checkpoint": "outputs/stage5/reentry_recovery/phase1/phase1_step_75.pt",
+        "validation_checks": {"status": "validation_sane", "issues": []},
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Run current bootstrap target `debiased_benchmark_suite`"
+    assert "STAGE5_CURRENT_A100_TARGET=debiased_benchmark_suite" in actions[0]["command"]
+    assert "cat colab/NEXT_COLAB_SEQUENCE.md" in actions[0]["command"]
+    assert "dense control" in actions[0]["reason"]
+
+
+def test_reentry_recovery_training_blocks_benchmark_without_checkpoint(tmp_path) -> None:
+    source = tmp_path / "reentry_recovery" / "summary.json"
+    source.parent.mkdir(parents=True)
+    payload = {
+        "run_id": "reentry_recovery",
+        "kind": "stage5_reentry_recovery_training",
+        "validation_checks": {"status": "validation_sane", "issues": []},
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect re-entry recovery summary before benchmark"
+    assert "debiased_benchmark_suite" not in actions[0]["command"]
+
+
+def test_reentry_recovery_training_blocks_benchmark_when_validation_needs_review(tmp_path) -> None:
+    source = tmp_path / "reentry_recovery" / "summary.json"
+    source.parent.mkdir(parents=True)
+    payload = {
+        "run_id": "reentry_recovery",
+        "kind": "stage5_reentry_recovery_training",
+        "checkpoint": "outputs/stage5/reentry_recovery/phase1/phase1_step_75.pt",
+        "validation_checks": {"status": "validation_needs_review", "issues": ["target_loop_gradient_not_observed"]},
+    }
+
+    actions = plan_next_actions(payload, source_summary=source)
+
+    assert actions[0]["name"] == "Inspect re-entry recovery validation before benchmark"
+    assert "target_loop_gradient_not_observed" in actions[0]["reason"]
+    assert "debiased_benchmark_suite" not in actions[0]["command"]
+
+
 def test_reentry_regression_routes_to_manual_review_runbook(tmp_path) -> None:
     source = tmp_path / "reentry_norm" / "summary.json"
     assessment = tmp_path / "reentry_norm" / "reentry_assessment.json"

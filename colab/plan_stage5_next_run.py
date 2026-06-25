@@ -1584,6 +1584,47 @@ def curriculum_sft_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload if payload.get("kind") == "stage5_curriculum_sft" else None
 
 
+def reentry_recovery_training_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return payload if payload.get("kind") == "stage5_reentry_recovery_training" else None
+
+
+def reentry_recovery_training_actions(payload: dict[str, Any], *, source_summary: Path) -> list[dict[str, Any]]:
+    checkpoint = str(payload.get("phase1_checkpoint") or payload.get("checkpoint") or "").strip()
+    validation_checks = payload.get("validation_checks") if isinstance(payload.get("validation_checks"), dict) else {}
+    validation_status = str(validation_checks.get("status") or payload.get("status") or "")
+    if not checkpoint:
+        return [
+            make_action(
+                "Inspect re-entry recovery summary before benchmark",
+                "Stage 4 re-entry recovery did not publish a checkpoint path; inspect the wrapper and child SFT summary before spending GPU on benchmarks.",
+                f"cat {shlex.quote(command_path(source_summary))}",
+                10,
+            )
+        ]
+    if validation_status and validation_status != "validation_sane":
+        return [
+            make_action(
+                "Inspect re-entry recovery validation before benchmark",
+                (
+                    f"Stage 4 re-entry recovery reports validation status `{validation_status}` with "
+                    f"issues `{validation_checks.get('issues', [])}`; do not benchmark or run dense control yet."
+                ),
+                f"cat {shlex.quote(command_path(source_summary))}",
+                10,
+            )
+        ]
+    return [
+        bootstrap_target_readout_action(
+            target="debiased_benchmark_suite",
+            reason=(
+                "Stage 4 re-entry recovery SFT finished with a sane validation surface. "
+                "Run the bounded ARC-Easy/ARC-Challenge/GPQA-lite debiased base-vs-recurrent benchmark "
+                "before dense control or Phase 2 breadth/SVGD."
+            ),
+        )
+    ]
+
+
 def curriculum_sft_validation_block_reason(payload: dict[str, Any], *, checkpoint: str) -> str | None:
     if not checkpoint:
         return "Curriculum SFT summary is missing phase1_checkpoint; inspect the run before routing diagnostics."
@@ -4777,6 +4818,9 @@ def plan_next_actions(
     reentry = reentry_payload(payload)
     if reentry:
         return reentry_actions(reentry, source_summary=source_summary)
+    reentry_recovery_training = reentry_recovery_training_payload(payload)
+    if reentry_recovery_training:
+        return reentry_recovery_training_actions(reentry_recovery_training, source_summary=source_summary)
     direct_preservation_probe = direct_preservation_probe_payload(payload)
     if direct_preservation_probe:
         return direct_preservation_probe_actions(direct_preservation_probe, source_summary=source_summary)
@@ -5206,6 +5250,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "traced_sft_assessment"
     if reentry_payload(payload):
         return "reentry"
+    if reentry_recovery_training_payload(payload):
+        return "reentry_recovery_training"
     if claim_readiness_payload(payload):
         return "claim_readiness"
     if arc_agi_baseline_registry_payload(payload):
