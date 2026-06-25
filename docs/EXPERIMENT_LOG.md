@@ -916,3 +916,10 @@ Colab/Drive backups for selected runs.
   optimizer modules, layer split, model, or loop settings now regenerates the
   diagnostics/training instead of silently mixing stale cached artifacts into
   the Stage 4 handoff.
+- Dense-control source gate: `dense_mcq_trace_sft_control` now requires the
+  normal source pointer to be a passed `stage5_broader_benchmark_suite`
+  recurrent-vs-base assessment before spending GPU on the same-curriculum dense
+  LoRA. This keeps the Phase 1 claim sequence in order: Stage 4 recovery, then
+  recurrent-vs-base benchmark, then dense control. Intentional archaeology can
+  still set `STAGE5_DENSE_MCQ_ALLOW_UNPASSED_BENCHMARK=1`, which prints an
+  override marker.

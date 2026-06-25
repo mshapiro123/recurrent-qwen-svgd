@@ -279,6 +279,45 @@ def recurrent_benchmark_summary_path() -> Path | None:
     return resolve_benchmark_suite_summary(source_summary_path())
 
 
+def allow_unpassed_benchmark_source() -> bool:
+    return os.environ.get("STAGE5_DENSE_MCQ_ALLOW_UNPASSED_BENCHMARK", "0").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+    }
+
+
+def validate_dense_control_source_gate(source_path: Path, payload: dict[str, Any]) -> None:
+    """Require the normal dense-control path to start from a passed recurrent benchmark.
+
+    Dense control is the same-recipe architecture gate. Running it before the
+    recurrent-vs-base benchmark passes wastes GPU and can make a failed
+    deterministic recovery look like an architecture comparison. Explicit
+    archaeology runs can bypass this with STAGE5_DENSE_MCQ_ALLOW_UNPASSED_BENCHMARK=1.
+    """
+
+    if allow_unpassed_benchmark_source():
+        print(
+            "dense_control_source_gate=override "
+            f"source={path_for_cli(source_path)} gate={payload.get('gate')} status={payload.get('status')}",
+            flush=True,
+        )
+        return
+    gate = str(payload.get("gate") or "")
+    passed = payload.get("passed") is True
+    if gate != "stage5_broader_benchmark_suite" or not passed:
+        raise RuntimeError(
+            "dense_mcq_trace_sft_control requires a passed recurrent-vs-base "
+            "benchmark assessment as its source. Run debiased_benchmark_suite "
+            "and wait for status='passed' before dense control. "
+            f"Got gate={gate!r}, status={payload.get('status')!r}, passed={payload.get('passed')!r} "
+            f"at {path_for_cli(source_path)}. Set STAGE5_DENSE_MCQ_ALLOW_UNPASSED_BENCHMARK=1 "
+            "only for an intentional older-artifact comparison."
+        )
+    print("dense_control_source_gate=passed_benchmark_assessment", flush=True)
+
+
 def mount_drive_if_possible() -> None:
     if Path("/content/drive/MyDrive").exists():
         return
@@ -832,6 +871,7 @@ def main() -> int:
     PRIVATE_DATA_DIR.mkdir(parents=True, exist_ok=True)
     source_path = source_summary_path()
     source_payload = read_json(source_path)
+    validate_dense_control_source_gate(source_path, source_payload)
     curriculum_source_path, curriculum_source_payload = resolve_curriculum_source(source_payload, source_path=source_path)
     recurrent_benchmark = recurrent_benchmark_summary_path()
     train_jsonl, val_jsonl, dataset = prepare_train_val(curriculum_source_payload)

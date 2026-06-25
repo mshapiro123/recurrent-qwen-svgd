@@ -213,6 +213,37 @@ def test_dense_control_resolves_planner_style_passed_benchmark_assessment(monkey
     assert curriculum_source_path == train_summary
     assert curriculum_payload["kind"] == "stage5_reentry_recovery_training"
     assert curriculum_payload["config"]["depth_hint_style"] == "natural"
+    module.validate_dense_control_source_gate(source_path, source_payload)
+
+
+def test_validate_dense_control_source_gate_blocks_stage4_pointer(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    source = tmp_path / "outputs" / "stage5" / "stage4" / "summary.json"
+    source.parent.mkdir(parents=True)
+    payload = {
+        "kind": "stage5_reentry_recovery_training",
+        "checkpoint": "outputs/stage5/stage4/phase1/phase1_step_75.pt",
+        "post_reentry_health_checks": {"status": "reentry_health_sane"},
+    }
+    source.write_text(json.dumps(payload), encoding="utf-8")
+
+    try:
+        module.validate_dense_control_source_gate(source, payload)
+    except RuntimeError as exc:
+        assert "requires a passed recurrent-vs-base benchmark assessment" in str(exc)
+    else:  # pragma: no cover - assertion branch
+        raise AssertionError("expected dense control source gate to block Stage 4 pointer")
+
+
+def test_validate_dense_control_source_gate_allows_explicit_unpassed_override(monkeypatch, tmp_path, capsys) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setenv("STAGE5_DENSE_MCQ_ALLOW_UNPASSED_BENCHMARK", "1")
+    source = tmp_path / "outputs" / "stage5" / "stage4" / "summary.json"
+    payload = {"kind": "stage5_reentry_recovery_training"}
+
+    module.validate_dense_control_source_gate(source, payload)
+
+    assert "dense_control_source_gate=override" in capsys.readouterr().out
 
 
 def test_resolve_curriculum_source_accepts_stage4_curriculum_sft_summary(monkeypatch, tmp_path) -> None:

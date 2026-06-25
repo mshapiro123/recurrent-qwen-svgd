@@ -1078,6 +1078,15 @@ def test_dense_mcq_trace_sft_control_target_is_bootstrapped() -> None:
     assert "dense_mcq_source_pointer" in cell
     assert "stage5_current_source_summary.txt" in bootstrap
     assert "stage5_dense_mcq_trace_sft_control_current" in bootstrap
+    assert "validate_dense_control_source_gate" in (ROOT / "colab/run_stage5_mcq_dense_sft_control.py").read_text(
+        encoding="utf-8"
+    )
+    assert "STAGE5_DENSE_MCQ_ALLOW_UNPASSED_BENCHMARK" in (
+        ROOT / "colab/run_stage5_mcq_dense_sft_control.py"
+    ).read_text(encoding="utf-8")
+    assert "dense_control_source_gate=passed_benchmark_assessment" in (
+        ROOT / "colab/run_stage5_mcq_dense_sft_control.py"
+    ).read_text(encoding="utf-8")
     assert "training/train_dense_lora.py" in cell
     assert "eval/eval_mcq.py --mode base --checkpoint" in cell
     assert "colab/run_stage5_mcq_dense_sft_control.py" in cell
