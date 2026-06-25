@@ -138,6 +138,9 @@ reentry_repair_smoke -> reentry_recovery_training
 
 The benchmark/control step is the Phase 1 architecture test: recurrent versus
 base, then recurrent versus a standard Qwen same-curriculum LoRA control.
+The `Phase 1 Gate Review` section from `master_sequence_status` is the
+authority for whether to run the dense control, stop for recovery, or review a
+real architecture signal before Phase 2.
 
 ## Parallel CPU/API Data Work
 

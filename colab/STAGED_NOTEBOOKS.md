@@ -119,7 +119,8 @@ TARGET = "master_sequence_status"
 ```
 
 This target does not mount Drive, train, evaluate, or download models. It prints
-the current source-summary pointer, planner recommendation, and re-entry review.
+the current source-summary pointer, planner recommendation, re-entry review,
+Stage 4 recovery review, and Phase 1 benchmark/control gate review.
 
 ## Historical Notebooks
 

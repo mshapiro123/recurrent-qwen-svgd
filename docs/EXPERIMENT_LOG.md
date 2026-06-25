@@ -850,3 +850,11 @@ Colab/Drive backups for selected runs.
   train and eval commands. The default split is `auto`, which preserves the
   prior Qwen2.5-0.5B `6,18` partition while avoiding stale hardcoded splits for
   1.5B/3B/7B scale probes.
+- Phase 1 gate reviewer: added `colab/review_stage5_phase1_gate.py` and wired
+  it into the cheap `master_sequence_status` target. The reviewer is
+  phase-aware: while the current pointer is still Stage 2/3 it ignores stale
+  benchmark artifacts and waits for Stage 4 recovery; after Stage 4, it routes
+  passed recurrent-vs-base benchmarks to the dense same-curriculum control and
+  only treats `hard_tail_lift_vs_dense` as an architecture signal. This keeps
+  the master sequence honest: recovery is not architecture proof, and particles
+  stay blocked until the deterministic Phase 1 control clears.

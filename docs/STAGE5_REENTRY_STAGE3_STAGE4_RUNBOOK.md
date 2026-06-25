@@ -150,6 +150,11 @@ Benchmark handoff:
 - the maintained `debiased_benchmark_suite` target evaluates the repaired
   Stage 4 checkpoint with learned loop control enabled by default;
 - use an explicit override only for older non-depth-router checkpoints.
+- after Stage 4 and after each benchmark/control artifact, run
+  `master_sequence_status`; its `Phase 1 Gate Review` section determines
+  whether the next action is `debiased_benchmark_suite`,
+  `dense_mcq_trace_sft_control`, a deterministic recovery stop, or a reviewed
+  Phase 2 breadth handoff.
 
 Critical gate:
 
@@ -201,6 +206,19 @@ the next Colab run. This is especially important for Stage 3 retry cases:
 `extend_reentry_repair_smoke_or_increase_bridge_lr` intentionally use a bounded
 50-step retry with a modest LR increase instead of rerunning the same failed
 smoke unchanged.
+
+After Stage 4 recovery publishes, the next CPU readout is:
+
+```bash
+python colab/review_stage5_recovery.py --no_write
+python colab/review_stage5_phase1_gate.py --no_write
+```
+
+The first reviewer decides whether a Stage 4 checkpoint is ready for the
+debiased benchmark. The second reviewer ignores stale benchmark artifacts until
+the current pointer has reached Stage 4 recovery, then enforces the Phase 1
+claim sequence: recurrent-vs-base benchmark first, dense same-curriculum
+control second, breadth/particles only after architecture lift is visible.
 
 ## Return to particles/SVGD
 

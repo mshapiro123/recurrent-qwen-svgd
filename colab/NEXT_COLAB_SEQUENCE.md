@@ -83,10 +83,10 @@ TARGET = "master_sequence_status"
 
 This does not mount Drive, download models, train, or evaluate. It fetches the
 latest repo, prints the current source-summary pointer, asks the planner and
-re-entry reviewer for the next target, prints Stage 4 bounded/claim-sized
-curriculum readiness, prints the CPU/API curriculum scale-up plan, prints the
-queue excerpt, and disconnects. Use it when a runtime was restarted or when the
-notebook state is unclear.
+re-entry, Stage 4 recovery, and Phase 1 gate reviewers for the next target,
+prints Stage 4 bounded/claim-sized curriculum readiness, prints the CPU/API
+curriculum scale-up plan, prints the queue excerpt, and disconnects. Use it
+when a runtime was restarted or when the notebook state is unclear.
 
 The scale-up plan is parallel work. It should be run on CPU or a cheap
 non-GPU runtime while the GPU remains focused on Phase 0. It does **not**
@@ -235,6 +235,16 @@ benchmark run.
 This is the decisive Phase 1 question: does recurrence convert depth-shaped
 failures while preserving easy items, beyond what the data alone gives a dense
 control?
+
+After either benchmark/control step, use the cheap status target again:
+
+```python
+TARGET = "master_sequence_status"
+```
+
+The `Phase 1 Gate Review` section is the authority for this seam. It will say
+whether to run the dense control, stop for deterministic recovery, or treat the
+result as a real architecture signal that can be reviewed before Phase 2.
 
 Read this step in order:
 
