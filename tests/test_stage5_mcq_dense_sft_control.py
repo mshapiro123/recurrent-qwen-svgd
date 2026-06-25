@@ -62,6 +62,65 @@ def test_source_positive_sft_path_follows_benchmark_source_chain(monkeypatch, tm
     )
 
 
+def test_source_summary_path_defaults_to_current_pointer(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "SOURCE_SUMMARY", "")
+    pointer = tmp_path / "config" / "stage5_current_source_summary.txt"
+    summary = tmp_path / "outputs" / "stage5" / "current" / "summary.json"
+    pointer.parent.mkdir(parents=True)
+    summary.parent.mkdir(parents=True)
+    pointer.write_text("outputs/stage5/current/summary.json\n", encoding="utf-8")
+    summary.write_text(json.dumps({"kind": "stage5_reentry_repair_smoke"}), encoding="utf-8")
+
+    assert module.source_summary_path() == summary
+
+
+def test_recurrent_benchmark_summary_resolves_current_assessment_source(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "SOURCE_SUMMARY", "")
+    monkeypatch.setattr(module, "RECURRENT_BENCHMARK_SUMMARY", "")
+    pointer = tmp_path / "config" / "stage5_current_source_summary.txt"
+    assessment = tmp_path / "outputs" / "stage5" / "assess" / "summary.json"
+    benchmark = tmp_path / "outputs" / "stage5" / "bench" / "summary.json"
+    pointer.parent.mkdir(parents=True)
+    assessment.parent.mkdir(parents=True)
+    benchmark.parent.mkdir(parents=True)
+    pointer.write_text("outputs/stage5/assess/summary.json\n", encoding="utf-8")
+    assessment.write_text(
+        json.dumps(
+            {
+                "gate": "stage5_broader_benchmark_suite",
+                "source_summary": "outputs/stage5/bench/summary.json",
+            }
+        ),
+        encoding="utf-8",
+    )
+    benchmark.write_text(json.dumps({"kind": "stage5_benchmark_suite"}), encoding="utf-8")
+
+    assert module.recurrent_benchmark_summary_path() == benchmark
+
+
+def test_recurrent_benchmark_summary_resolves_explicit_assessment_source(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RECURRENT_BENCHMARK_SUMMARY", "outputs/stage5/assess/summary.json")
+    assessment = tmp_path / "outputs" / "stage5" / "assess" / "summary.json"
+    benchmark = tmp_path / "outputs" / "stage5" / "bench" / "summary.json"
+    assessment.parent.mkdir(parents=True)
+    benchmark.parent.mkdir(parents=True)
+    assessment.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_broader_benchmark_assessment",
+                "source_summary": "outputs/stage5/bench/summary.json",
+            }
+        ),
+        encoding="utf-8",
+    )
+    benchmark.write_text(json.dumps({"kind": "stage5_benchmark_suite"}), encoding="utf-8")
+
+    assert module.recurrent_benchmark_summary_path() == benchmark
+
+
 def test_resolve_curriculum_source_follows_benchmark_to_training_defaults(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(module, "ROOT", tmp_path)
     train_summary = tmp_path / "outputs" / "stage5" / "train" / "summary.json"
@@ -99,6 +158,42 @@ def test_resolve_curriculum_source_follows_benchmark_to_training_defaults(monkey
     assert resolved_payload["config"]["depth_hint_style"] == "natural"
     assert resolved_payload["config"]["max_steps"] == 37
     assert resolved_payload["config"]["learning_rate"] == 5e-5
+
+
+def test_resolve_curriculum_source_accepts_stage4_curriculum_sft_summary(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    train_summary = tmp_path / "outputs" / "stage5" / "stage4" / "summary.json"
+    benchmark_summary = tmp_path / "outputs" / "stage5" / "bench" / "summary.json"
+    train_summary.parent.mkdir(parents=True)
+    benchmark_summary.parent.mkdir(parents=True)
+    train_summary.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_curriculum_sft",
+                "phase1_checkpoint": "outputs/stage5/stage4/phase1/phase1_step_75.pt",
+                "dataset": {"source_positive_sft": "data/curriculum/stage4/positive_sft.jsonl"},
+                "config": {"depth_hint_style": "natural", "max_steps": 75, "learning_rate": 5e-6},
+            }
+        ),
+        encoding="utf-8",
+    )
+    benchmark_summary.write_text(
+        json.dumps({"kind": "stage5_benchmark_suite", "source_summary": module.path_for_cli(train_summary)}),
+        encoding="utf-8",
+    )
+
+    resolved_path, resolved_payload = module.resolve_curriculum_source(
+        json.loads(benchmark_summary.read_text(encoding="utf-8")),
+        source_path=benchmark_summary,
+    )
+
+    assert resolved_path == train_summary
+    assert resolved_payload["kind"] == "stage5_curriculum_sft"
+    assert module.source_positive_sft_path(resolved_payload) == (
+        tmp_path / "data" / "curriculum" / "stage4" / "positive_sft.jsonl"
+    )
+    assert resolved_payload["config"]["max_steps"] == 75
+    assert resolved_payload["config"]["learning_rate"] == 5e-6
 
 
 def test_paired_dense_vs_base_reports_wins_losses_and_ties(tmp_path) -> None:

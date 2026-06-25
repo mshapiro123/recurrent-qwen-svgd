@@ -26,11 +26,7 @@ STAGE5_DENSE_MCQ_TRACE_SFT_CONTROL_TARGET = "dense_mcq_trace_sft_control"
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
-DEFAULT_SOURCE_SUMMARY = (
-    "outputs/stage5/"
-    "stage5_local_hf_traced_capability_sft_20260623_194543/"
-    "summary.json"
-)
+CURRENT_SOURCE_POINTER = ROOT / "config" / "stage5_current_source_summary.txt"
 
 
 def env_bool(name: str, default: bool) -> bool:
@@ -134,20 +130,20 @@ try:
     )
 
     env = os.environ.copy()
-    env.setdefault("STAGE5_DENSE_MCQ_SOURCE_SUMMARY", DEFAULT_SOURCE_SUMMARY)
-    env.setdefault("STAGE5_DENSE_MCQ_RUN_ID", "stage5_dense_mcq_trace_sft_control_20260623")
+    env.setdefault("STAGE5_DENSE_MCQ_RUN_ID", "stage5_dense_mcq_trace_sft_control_current")
     env.setdefault("STAGE5_DENSE_MCQ_BENCHMARKS", "arc_easy,arc_challenge")
     env.setdefault("STAGE5_DENSE_MCQ_ARC_EASY_LIMIT", "256")
     env.setdefault("STAGE5_DENSE_MCQ_ARC_CHALLENGE_LIMIT", "256")
     env.setdefault("STAGE5_DENSE_MCQ_SCORE_TARGETS", "content_question_only,cyclic_label_aggregated")
     env.setdefault("STAGE5_DENSE_MCQ_AGGREGATES", "mean")
-    env.setdefault(
-        "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY",
-        "outputs/stage5/stage5_local_hf_traced_sft_scale64_benchmark_20260623_201923/summary.json",
-    )
     env.setdefault("STAGE5_DENSE_MCQ_COMMIT_CHECKPOINT", "0")
     env.setdefault("STAGE5_DENSE_MCQ_PUSH", "1")
-    print("dense_mcq_source:", env["STAGE5_DENSE_MCQ_SOURCE_SUMMARY"], flush=True)
+    source_label = env.get("STAGE5_DENSE_MCQ_SOURCE_SUMMARY") or (
+        CURRENT_SOURCE_POINTER.read_text(encoding="utf-8").strip() if CURRENT_SOURCE_POINTER.exists() else "missing"
+    )
+    recurrent_label = env.get("STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY") or "auto"
+    print("dense_mcq_source_pointer:", source_label, flush=True)
+    print("dense_mcq_recurrent_benchmark:", recurrent_label, flush=True)
     print("dense_mcq_run_id:", env["STAGE5_DENSE_MCQ_RUN_ID"], flush=True)
     run([sys.executable, "colab/run_stage5_mcq_dense_sft_control.py"], cwd=ROOT, env=env)
     disconnect("dense MCQ trace-SFT control finished")

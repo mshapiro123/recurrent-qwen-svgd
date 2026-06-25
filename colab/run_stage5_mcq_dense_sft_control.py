@@ -40,10 +40,7 @@ RUN_ID = os.environ.get("STAGE5_DENSE_MCQ_RUN_ID") or time.strftime("stage5_dens
 RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
 PRIVATE_DATA_DIR = ROOT / "data" / "stage5_dense_mcq_trace_sft" / RUN_ID
 
-DEFAULT_SOURCE_SUMMARY = (
-    "outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_194543/summary.json"
-)
-SOURCE_SUMMARY = os.environ.get("STAGE5_DENSE_MCQ_SOURCE_SUMMARY", DEFAULT_SOURCE_SUMMARY).strip()
+SOURCE_SUMMARY = os.environ.get("STAGE5_DENSE_MCQ_SOURCE_SUMMARY", "").strip()
 MODEL_NAME = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")
 DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
@@ -76,12 +73,9 @@ BACKUP_TO_DRIVE = os.environ.get("STAGE5_DENSE_MCQ_BACKUP_DRIVE", "1").strip().l
     "yes",
     "y",
 }
-DEFAULT_RECURRENT_BENCHMARK_SUMMARY = (
-    "outputs/stage5/stage5_local_hf_traced_sft_scale64_benchmark_20260623_201923/summary.json"
-)
 RECURRENT_BENCHMARK_SUMMARY = os.environ.get(
     "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY",
-    DEFAULT_RECURRENT_BENCHMARK_SUMMARY,
+    "",
 ).strip()
 
 
@@ -138,8 +132,20 @@ def parse_csv(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
+def current_source_summary_file() -> Path:
+    return ROOT / "config" / "stage5_current_source_summary.txt"
+
+
 def source_summary_path() -> Path:
-    path = resolve_path(SOURCE_SUMMARY)
+    raw = SOURCE_SUMMARY
+    if not raw or raw == "config/stage5_current_source_summary.txt":
+        pointer = current_source_summary_file()
+        if not pointer.exists():
+            raise FileNotFoundError(pointer)
+        raw = pointer.read_text(encoding="utf-8").strip()
+        if not raw:
+            raise FileNotFoundError("config/stage5_current_source_summary.txt is empty")
+    path = resolve_path(raw)
     if not path.exists():
         raise FileNotFoundError(path)
     return path
@@ -217,6 +223,53 @@ def resolve_curriculum_source(
         except KeyError:
             continue
     raise KeyError("Source summary chain does not expose a curriculum/SFT source")
+
+
+def resolve_benchmark_suite_summary(
+    source_path: Path,
+    *,
+    _seen: set[Path] | None = None,
+) -> Path | None:
+    """Find the benchmark-suite summary represented by a front-of-queue summary.
+
+    The queue pointer often advances from a benchmark suite to an assessment of
+    that suite. Dense-control assessment still needs the benchmark suite itself
+    because it contains the recurrent artifact paths. This resolver follows the
+    local summary chain while avoiding stale hard-coded run IDs.
+    """
+
+    seen = _seen if _seen is not None else set()
+    resolved = source_path.resolve()
+    if resolved in seen or not source_path.exists():
+        return None
+    seen.add(resolved)
+    payload = read_json(source_path)
+    if payload.get("kind") == "stage5_benchmark_suite":
+        return source_path
+    if payload.get("gate") == "stage5_broader_benchmark_suite" and isinstance(payload.get("source_summary"), str):
+        candidate = resolve_path(str(payload["source_summary"]))
+        if candidate.exists():
+            candidate_payload = read_json(candidate)
+            if candidate_payload.get("kind") == "stage5_benchmark_suite":
+                return candidate
+    for key in ("benchmark_summary", "recurrent_benchmark_summary", "source_summary", "benchmark_source_summary"):
+        value = payload.get(key)
+        if not isinstance(value, str) or not value.strip():
+            continue
+        candidate = resolve_path(value)
+        found = resolve_benchmark_suite_summary(candidate, _seen=seen)
+        if found is not None:
+            return found
+    return None
+
+
+def recurrent_benchmark_summary_path() -> Path | None:
+    if RECURRENT_BENCHMARK_SUMMARY:
+        explicit = resolve_path(RECURRENT_BENCHMARK_SUMMARY)
+        if not explicit.exists():
+            raise FileNotFoundError(explicit)
+        return resolve_benchmark_suite_summary(explicit) or explicit
+    return resolve_benchmark_suite_summary(source_summary_path())
 
 
 def mount_drive_if_possible() -> None:
@@ -632,10 +685,6 @@ def drive_backup() -> dict[str, Any]:
     return {"backed_up": True, "path": str(target)}
 
 
-def current_source_summary_file() -> Path:
-    return ROOT / "config" / "stage5_current_source_summary.txt"
-
-
 def update_current_source_summary(summary_path: Path) -> None:
     pointer = current_source_summary_file()
     pointer.parent.mkdir(parents=True, exist_ok=True)
@@ -708,10 +757,15 @@ def write_summary(payload: dict[str, Any]) -> Path:
     return summary_json
 
 
-def run_recipe_control_assessment(summary_json: Path) -> dict[str, Any]:
-    if not RECURRENT_BENCHMARK_SUMMARY:
-        return {"ran": False, "reason": "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY is empty"}
-    recurrent_summary = resolve_path(RECURRENT_BENCHMARK_SUMMARY)
+def run_recipe_control_assessment(summary_json: Path, recurrent_summary: Path | None) -> dict[str, Any]:
+    if recurrent_summary is None:
+        return {
+            "ran": False,
+            "reason": (
+                "No recurrent benchmark summary was resolved from "
+                "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY or the current source chain."
+            ),
+        }
     if not recurrent_summary.exists():
         return {"ran": False, "reason": f"missing recurrent benchmark summary: {path_for_cli(recurrent_summary)}"}
     output_json = RUN_DIR / "mcq_recipe_control_assessment.json"
@@ -768,6 +822,7 @@ def main() -> int:
     source_path = source_summary_path()
     source_payload = read_json(source_path)
     curriculum_source_path, curriculum_source_payload = resolve_curriculum_source(source_payload, source_path=source_path)
+    recurrent_benchmark = recurrent_benchmark_summary_path()
     train_jsonl, val_jsonl, dataset = prepare_train_val(curriculum_source_payload)
     dense_checkpoint = train_dense_lora(train_jsonl, curriculum_source_payload)
     benchmark_payload = run_benchmarks(dense_checkpoint)
@@ -794,9 +849,7 @@ def main() -> int:
             "extra_train_jsonl": parse_csv(EXTRA_TRAIN_JSONL_ENV),
             "commit_checkpoint": COMMIT_CHECKPOINT,
         },
-        "recurrent_benchmark_summary": path_for_cli(resolve_path(RECURRENT_BENCHMARK_SUMMARY))
-        if RECURRENT_BENCHMARK_SUMMARY
-        else None,
+        "recurrent_benchmark_summary": path_for_cli(recurrent_benchmark) if recurrent_benchmark is not None else None,
         "train_jsonl": path_for_cli(train_jsonl),
         "val_jsonl": path_for_cli(val_jsonl),
         "dense_checkpoint": path_for_cli(dense_checkpoint),
@@ -804,7 +857,7 @@ def main() -> int:
         **benchmark_payload,
     }
     summary_json = write_summary(payload)
-    payload["recipe_control_assessment"] = run_recipe_control_assessment(summary_json)
+    payload["recipe_control_assessment"] = run_recipe_control_assessment(summary_json, recurrent_benchmark)
     write_summary(payload)
     commit_results(dense_checkpoint)
     return 0

@@ -171,24 +171,25 @@ First benchmark base versus the repaired recurrent checkpoint:
 TARGET = "debiased_benchmark_suite"
 ```
 
-Use the Stage 4 summary as the source summary if it is not already the current
-pointer:
+The debiased benchmark target follows `config/stage5_current_source_summary.txt`
+by default. Use an explicit source override only if you intentionally want to
+benchmark an older Stage 4 run:
 
 ```python
 os.environ["STAGE5_CURRENT_A100_SOURCE_SUMMARY"] = "outputs/stage5/<stage4_run>/summary.json"
 ```
 
-Then run the matched dense recipe control, pointing the source override at the
-benchmark-suite summary produced by the previous step:
+Then run the matched dense recipe control. By default it also follows the
+current pointer; after the benchmark target finishes, that pointer should refer
+to the benchmark assessment, and the dense-control runner will resolve it back
+to the recurrent benchmark suite and then back to the Stage 4 curriculum rows:
 
 ```python
 TARGET = "dense_mcq_trace_sft_control"
-os.environ["STAGE5_CURRENT_A100_SOURCE_SUMMARY"] = "outputs/stage5/<debiased_benchmark_run>/summary.json"
 ```
 
-For this target the override serves two roles: it identifies the recurrent
-benchmark summary to compare against, and the dense-control runner follows that
-summary's source chain back to the Stage 4 curriculum rows.
+Use an explicit override only if you are comparing against a specific older
+benchmark run.
 
 This is the decisive Phase 1 question: does recurrence convert depth-shaped
 failures while preserving easy items, beyond what the data alone gives a dense

@@ -948,8 +948,8 @@ TARGETS = {
             "STAGE5_DENSE_MCQ_TRACE_SFT_CONTROL_CELL_VERSION",
             "dense_mcq_trace_sft_control_v1",
             "dense_mcq_trace_sft_control",
-            "STAGE5_DENSE_MCQ_SOURCE_SUMMARY",
-            "stage5_local_hf_traced_capability_sft_20260623_194543",
+            "stage5_current_source_summary.txt",
+            "dense_mcq_source_pointer",
             "training/train_dense_lora.py",
             "eval/eval_mcq.py --mode base --checkpoint",
             "STAGE5_DENSE_MCQ_EXTRA_TRAIN_JSONL",
@@ -961,18 +961,12 @@ TARGETS = {
             "runtime.unassign",
         ],
         "env": {
-            "STAGE5_DENSE_MCQ_SOURCE_SUMMARY": (
-                "outputs/stage5/stage5_local_hf_traced_capability_sft_20260623_194543/summary.json"
-            ),
-            "STAGE5_DENSE_MCQ_RUN_ID": "stage5_dense_mcq_trace_sft_control_20260623",
+            "STAGE5_DENSE_MCQ_RUN_ID": "stage5_dense_mcq_trace_sft_control_current",
             "STAGE5_DENSE_MCQ_BENCHMARKS": "arc_easy,arc_challenge",
             "STAGE5_DENSE_MCQ_ARC_EASY_LIMIT": "256",
             "STAGE5_DENSE_MCQ_ARC_CHALLENGE_LIMIT": "256",
             "STAGE5_DENSE_MCQ_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
             "STAGE5_DENSE_MCQ_AGGREGATES": "mean",
-            "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY": (
-                "outputs/stage5/stage5_local_hf_traced_sft_scale64_benchmark_20260623_201923/summary.json"
-            ),
             "STAGE5_DENSE_MCQ_COMMIT_CHECKPOINT": "0",
             "STAGE5_DENSE_MCQ_PUSH": "1",
             "STAGE5_DENSE_MCQ_DISCONNECT": "1",

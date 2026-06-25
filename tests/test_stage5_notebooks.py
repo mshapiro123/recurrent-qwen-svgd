@@ -1065,8 +1065,10 @@ def test_dense_mcq_trace_sft_control_target_is_bootstrapped() -> None:
     assert "colab/STAGE5_DENSE_MCQ_TRACE_SFT_CONTROL_CELL.py" in bootstrap
     assert "STAGE5_DENSE_MCQ_TRACE_SFT_CONTROL_CELL_VERSION" in cell
     assert "dense_mcq_trace_sft_control_v1" in cell
-    assert "STAGE5_DENSE_MCQ_SOURCE_SUMMARY" in cell
-    assert "stage5_local_hf_traced_capability_sft_20260623_194543" in cell
+    assert "CURRENT_SOURCE_POINTER" in cell
+    assert "dense_mcq_source_pointer" in cell
+    assert "stage5_current_source_summary.txt" in bootstrap
+    assert "stage5_dense_mcq_trace_sft_control_current" in bootstrap
     assert "training/train_dense_lora.py" in cell
     assert "eval/eval_mcq.py --mode base --checkpoint" in cell
     assert "colab/run_stage5_mcq_dense_sft_control.py" in cell
@@ -1074,8 +1076,7 @@ def test_dense_mcq_trace_sft_control_target_is_bootstrapped() -> None:
     assert "tests/test_eval_mcq_dense_lora.py" in cell
     assert "tests/test_stage5_mcq_dense_sft_control.py" in cell
     assert "tests/test_stage5_mcq_recipe_control_assessment.py" in cell
-    assert "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY" in cell
-    assert "stage5_local_hf_traced_sft_scale64_benchmark_20260623_201923" in cell
+    assert "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY" in bootstrap
     assert "runtime.unassign" in cell
 
 
@@ -1406,8 +1407,8 @@ def test_reentry_stage3_stage4_runbook_is_linked_from_current_action() -> None:
     assert 'TARGET = "debiased_benchmark_suite"' in next_sequence
     assert 'TARGET = "dense_mcq_trace_sft_control"' in next_sequence
     assert "STAGE5_CURRENT_A100_SOURCE_SUMMARY" in next_sequence
-    assert "<debiased_benchmark_run>" in next_sequence
-    assert "identifies the recurrent\nbenchmark summary" in next_sequence
+    assert "config/stage5_current_source_summary.txt" in next_sequence
+    assert "resolve it back\nto the recurrent benchmark suite" in next_sequence
     assert "standard Qwen same-curriculum LoRA control" in next_sequence
     assert "Leinster" in next_sequence
     assert "Phase 0: Loop-Closure Re-entry" in master
