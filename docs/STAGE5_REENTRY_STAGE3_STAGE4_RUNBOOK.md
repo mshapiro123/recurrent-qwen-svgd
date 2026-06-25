@@ -49,6 +49,11 @@ If the GPU run completed but failed before Git publish, use:
 STAGE5_CURRENT_A100_TARGET=reentry_norm_recover_only
 ```
 
+The recover-only target can also salvage a late-interrupted run that has all
+raw drift, effective-pathway, and candidate-conversion files but is missing the
+final `summary.json`/`summary.md`; it rebuilds the summary and assessment
+without rerunning GPU evaluation.
+
 ## Stage 3: trainable re-entry repair smoke
 
 Target:

@@ -108,6 +108,9 @@ def ensure_repo() -> None:
     run(["git", "config", "user.email", "colab-runner@local"])
     run(["git", "config", "user.name", "Colab Runner"])
     run(["git", "log", "--oneline", "-5"])
+    root_str = str(ROOT)
+    if root_str not in sys.path:
+        sys.path.insert(0, root_str)
 
 
 def read_json(path: Path) -> dict[str, object]:
@@ -140,26 +143,26 @@ def has_valid_jsonl(path: Path) -> bool:
 
 
 def stage2_missing_reasons(path: Path) -> list[str]:
-    reasons: list[str] = []
-    for rel in REQUIRED_FILES:
-        candidate = path / rel
-        if rel.endswith(".jsonl"):
-            if not has_valid_jsonl(candidate):
-                reasons.append(f"{rel}: missing, empty, or invalid jsonl")
-        elif rel.endswith(".json"):
-            if not has_valid_json(candidate):
-                reasons.append(f"{rel}: missing or invalid json")
-        elif not candidate.exists():
-            reasons.append(f"{rel}: missing")
-    if not reasons:
-        summary = read_json(path / "summary.json")
-        if summary.get("kind") != "stage5_reentry_norm_eval_only":
-            reasons.append(f"summary.json: unexpected kind={summary.get('kind')!r}")
-    return reasons
+    from colab.reentry_norm_recover_utils import (
+        FINAL_REQUIRED_FILES,
+        RAW_REQUIRED_FILES,
+        final_stage2_complete,
+        missing_reasons,
+    )
+
+    if final_stage2_complete(path):
+        return []
+    raw_reasons = missing_reasons(path, RAW_REQUIRED_FILES)
+    if not raw_reasons:
+        return []
+    final_reasons = missing_reasons(path, FINAL_REQUIRED_FILES)
+    return final_reasons or raw_reasons
 
 
 def stage2_complete(path: Path) -> bool:
-    return not stage2_missing_reasons(path)
+    from colab.reentry_norm_recover_utils import recoverable_stage2
+
+    return recoverable_stage2(path)
 
 
 def partial_artifact_report(paths: list[Path], *, limit: int = 8) -> str:
@@ -232,6 +235,22 @@ def copy_to_repo(source: Path) -> Path:
     return target
 
 
+def ensure_summary(out_dir: Path) -> None:
+    from colab.reentry_norm_recover_utils import build_summary_payload, summary_markdown
+
+    summary_path = out_dir / "summary.json"
+    summary_md = out_dir / "summary.md"
+    if has_valid_json(summary_path):
+        summary = read_json(summary_path)
+        if summary.get("kind") == "stage5_reentry_norm_eval_only" and summary_md.exists():
+            print(f"summary already present: {summary_path}", flush=True)
+            return
+    summary = build_summary_payload(out_dir, cell_version=STAGE5_REENTRY_NORM_RECOVER_CELL_VERSION)
+    summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    summary_md.write_text(summary_markdown(summary), encoding="utf-8")
+    print(f"rebuilt_summary={summary_path}", flush=True)
+
+
 def ensure_assessment(out_dir: Path) -> None:
     assessment_json = out_dir / "reentry_assessment.json"
     assessment_md = out_dir / "reentry_assessment.md"
@@ -283,6 +302,7 @@ def main() -> None:
     )
     source = latest_complete_stage2()
     out_dir = copy_to_repo(source)
+    ensure_summary(out_dir)
     ensure_assessment(out_dir)
     publish(out_dir)
     run([sys.executable, "colab/review_stage5_reentry.py", "--no_write"])

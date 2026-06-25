@@ -1259,6 +1259,9 @@ def test_reentry_norm_recover_target_is_bootstrapped() -> None:
     assert "No complete stage5_reentry_norm_* artifact found on Drive" in cell
     assert "Visible incomplete stage5_reentry_norm_* candidates" in cell
     assert "stage2_missing_reasons" in cell
+    assert "ensure_summary" in cell
+    assert "rebuilt_summary" in cell
+    assert "reentry_norm_recover_utils" in cell
     assert "colab/assess_stage5_reentry.py" in cell
     assert "colab/review_stage5_reentry.py" in cell
     assert "Recover Stage 5 re-entry norm" in cell
