@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from colab.assess_stage5_reentry import assess
 from colab.reentry_norm_recover_utils import (
     build_summary_payload,
     final_stage2_complete,
@@ -90,3 +91,15 @@ def test_build_summary_payload_from_raw_stage2_outputs(tmp_path) -> None:
     assert summary["candidate_conversion"]["none"]["by_mode"]["none"]["candidate_hits"] == 1
     assert summary["candidate_conversion"]["entry_rms"]["by_mode"]["entry_rms"]["total_candidates"] == 2
     assert "Recovered summary" in summary_markdown(summary)
+
+
+def test_recovered_summary_is_accepted_by_reentry_assessor(tmp_path) -> None:
+    run_dir = tmp_path / "stage5_reentry_norm_partial"
+    write_raw_stage2(run_dir)
+
+    summary = build_summary_payload(run_dir, cell_version="recover-test")
+    assessment = assess(summary)
+
+    assert assessment["stage"] == "norm"
+    assert assessment["status"] == "entry_rms_safe_for_smoke"
+    assert assessment["recommendation"] == "run_reentry_repair_smoke"
