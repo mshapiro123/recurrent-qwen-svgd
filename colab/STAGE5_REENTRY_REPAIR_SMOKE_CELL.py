@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -38,6 +39,10 @@ FALLBACK_CHECKPOINTS = [
         "arc_mix_response_w005_lr2e6/phase1/phase1_step_50.pt"
     ),
 ]
+
+TRAIN_METRIC_RE = re.compile(
+    r"([A-Za-z0-9_./-]+)=([-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?|nan|inf|-inf)"
+)
 
 SMOKE_ROWS = [
     {
@@ -379,6 +384,48 @@ def write_config(path: Path, *, checkpoint: str, out_dir: Path) -> dict[str, obj
     return cfg
 
 
+def parse_train_log_metrics(log_path: Path) -> dict[str, object]:
+    if not log_path.exists():
+        return {
+            "available": False,
+            "reason": "missing_train_log",
+            "steps_logged": 0,
+            "last_step": None,
+            "last_metrics": {},
+        }
+    last_step = None
+    last_metrics: dict[str, float] = {}
+    steps_logged = 0
+    for line in log_path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if not line.startswith("step="):
+            continue
+        parts = line.split(maxsplit=1)
+        try:
+            step = int(parts[0].split("=", 1)[1])
+        except (IndexError, ValueError):
+            continue
+        metrics: dict[str, float] = {}
+        for key, raw_value in TRAIN_METRIC_RE.findall(line):
+            if key == "step":
+                continue
+            try:
+                value = float(raw_value)
+            except ValueError:
+                continue
+            metrics[key] = value
+        if metrics:
+            steps_logged += 1
+            last_step = step
+            last_metrics = metrics
+    return {
+        "available": bool(last_metrics),
+        "reason": "" if last_metrics else "no_step_metric_lines",
+        "steps_logged": steps_logged,
+        "last_step": last_step,
+        "last_metrics": last_metrics,
+    }
+
+
 def run_drift(label: str, checkpoint: str, out_dir: Path) -> Path:
     out_json = out_dir / f"reentry_drift_{label}.json"
     out_jsonl = out_dir / f"reentry_drift_{label}.jsonl"
@@ -558,6 +605,27 @@ def write_markdown(summary: dict[str, object], path: Path) -> None:
     lines.extend(
         [
             "",
+            "## Training Smoke Metrics",
+        ]
+    )
+    train_metrics = summary.get("train_log_metrics") if isinstance(summary.get("train_log_metrics"), dict) else {}
+    last_metrics = train_metrics.get("last_metrics") if isinstance(train_metrics.get("last_metrics"), dict) else {}
+    if last_metrics:
+        lines.extend(
+            [
+                f"- Last logged step: `{train_metrics.get('last_step')}`",
+                f"- Last logged loss: `{last_metrics.get('loss')}`",
+                f"- Last logged expected CE: `{last_metrics.get('expected_ce')}`",
+                f"- Last logged mean expected loops: `{last_metrics.get('mean_expected_loops')}`",
+                f"- Last logged target loop abs error: `{last_metrics.get('target_loop_abs_error')}`",
+                f"- Last logged halting target NLL: `{last_metrics.get('halting_target_nll')}`",
+            ]
+        )
+    else:
+        lines.append(f"- Training metrics unavailable: `{train_metrics.get('reason')}`")
+    lines.extend(
+        [
+            "",
             "## Loop-1 Preservation",
             f"- Source loop-1 best hits: `{source.get('best_hits')}/{source.get('task_groups')}`",
             f"- Trained loop-1 best hits: `{trained.get('best_hits')}/{trained.get('task_groups')}`",
@@ -694,6 +762,7 @@ def main() -> None:
     trained_checkpoint_rel = trained_checkpoint.relative_to(ROOT).as_posix()
     post_drift_path = run_drift("post", trained_checkpoint_rel, diag_dir)
     loop1_preservation = run_loop1_preservation(checkpoint, trained_checkpoint_rel, diag_dir)
+    train_log_metrics = parse_train_log_metrics(diag_dir / "train_phase1_ponder.log")
     incremental_backup(out_dir)
 
     pre_payload = json.loads(pre_drift_path.read_text(encoding="utf-8"))
@@ -719,6 +788,7 @@ def main() -> None:
         "post_reentry_adapter": post_payload.get("reentry_adapter", {}),
         "pre_reentry_adapter_liveness": pre_payload.get("reentry_adapter_gradient_liveness", {}),
         "post_reentry_adapter_liveness": post_payload.get("reentry_adapter_gradient_liveness", {}),
+        "train_log_metrics": train_log_metrics,
         "loop1_preservation": loop1_preservation,
         "stage2_norm_assessment": norm_assessment,
     }

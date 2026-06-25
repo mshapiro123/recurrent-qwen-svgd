@@ -82,6 +82,9 @@ Configured behavior:
 
 Success:
 
+- final repair-smoke training metrics are present and finite;
+- supervised depth metrics (`target_loop_abs_error`, `halting_target_nll`) are
+  present when halt-depth supervision is enabled;
 - bridge gradients are live;
 - bridge delta changes measurably;
 - re-entry adapter scale/bias gradients are live;
@@ -92,6 +95,13 @@ Success:
 
 Failure responses:
 
+- `fix_repair_smoke_training_log_before_recovery_training`: do not train; the
+  repair smoke did not publish final step metrics.
+- `fix_repair_smoke_training_before_recovery_training`: do not train; the
+  final repair-smoke loss is missing or nonfinite.
+- `fix_repair_smoke_depth_supervision_before_recovery_training`: do not train;
+  depth-supervision metrics were not reported even though halt-depth loss was
+  enabled.
 - `fix_loop1_preservation_eval_before_recovery_training`: do not train; the
   preservation evidence is missing or mismatched.
 - `review_or_reduce_repair_lr_before_recovery_training`: do not train; loop-1

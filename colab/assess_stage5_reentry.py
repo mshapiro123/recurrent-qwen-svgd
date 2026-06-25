@@ -22,6 +22,16 @@ def finite_float(value: Any, default: float = 0.0) -> float:
     return out
 
 
+def finite_float_or_none(value: Any) -> float | None:
+    try:
+        out = float(value)
+    except (TypeError, ValueError):
+        return None
+    if out != out or out in {float("inf"), float("-inf")}:
+        return None
+    return out
+
+
 def nested(payload: dict[str, Any], *keys: str, default: Any = None) -> Any:
     current: Any = payload
     for key in keys:
@@ -165,6 +175,7 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
     post = summary.get("post_bridge") if isinstance(summary.get("post_bridge"), dict) else {}
     config = summary.get("config") if isinstance(summary.get("config"), dict) else {}
     use_reentry_adapter = bool(config.get("use_reentry_adapter", False))
+    halt_target_nll_weight = finite_float(config.get("halt_target_nll_weight"))
     pre_delta = finite_float(pre.get("bridge_delta_rms"))
     post_delta = finite_float(post.get("bridge_delta_rms"))
     post_identity_diff = finite_float(post.get("proj_identity_max_abs_diff"))
@@ -193,6 +204,21 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
         adapter_delta > 1e-6 or adapter_scale_diff > 1e-6 or adapter_bias_max > 1e-6
     )
 
+    train_log_metrics = summary.get("train_log_metrics") if isinstance(summary.get("train_log_metrics"), dict) else {}
+    train_last_metrics = (
+        train_log_metrics.get("last_metrics") if isinstance(train_log_metrics.get("last_metrics"), dict) else {}
+    )
+    train_metrics_available = bool(train_log_metrics.get("available")) and bool(train_last_metrics)
+    train_loss = finite_float_or_none(train_last_metrics.get("loss"))
+    train_expected_ce = finite_float_or_none(train_last_metrics.get("expected_ce"))
+    train_mean_expected_loops = finite_float_or_none(train_last_metrics.get("mean_expected_loops"))
+    train_target_loop_abs_error = finite_float_or_none(train_last_metrics.get("target_loop_abs_error"))
+    train_halting_target_nll = finite_float_or_none(train_last_metrics.get("halting_target_nll"))
+    depth_supervision_metrics_present = (
+        halt_target_nll_weight <= 0.0
+        or (train_target_loop_abs_error is not None and train_halting_target_nll is not None)
+    )
+
     preservation = summary.get("loop1_preservation") if isinstance(summary.get("loop1_preservation"), dict) else {}
     source_preservation = preservation.get("source") if isinstance(preservation.get("source"), dict) else {}
     trained_preservation = preservation.get("trained") if isinstance(preservation.get("trained"), dict) else {}
@@ -213,7 +239,19 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
     )
     loop1_regressed = preservation_available and (best_delta < 0 or candidate_delta <= -2)
 
-    if not preservation_available:
+    if not train_metrics_available:
+        status = "repair_smoke_train_metrics_missing"
+        recommendation = "fix_repair_smoke_training_log_before_recovery_training"
+        reason = "The repair smoke did not publish final training metrics, so Stage 4 cannot judge whether the tiny repair optimized cleanly."
+    elif train_loss is None:
+        status = "repair_smoke_train_metrics_nonfinite"
+        recommendation = "fix_repair_smoke_training_before_recovery_training"
+        reason = "The repair smoke final training loss is missing or nonfinite."
+    elif not depth_supervision_metrics_present:
+        status = "repair_smoke_depth_metrics_missing"
+        recommendation = "fix_repair_smoke_depth_supervision_before_recovery_training"
+        reason = "The repair smoke requested supervised halting-depth loss but did not publish the expected depth metrics."
+    elif not preservation_available:
         status = "loop1_preservation_missing_or_mismatched"
         recommendation = "fix_loop1_preservation_eval_before_recovery_training"
         reason = "The repair smoke did not produce comparable loop-1 preservation evidence."
@@ -267,6 +305,14 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
             "adapter_bias_grad_rms": adapter_bias_grad,
             "adapter_live": adapter_live,
             "adapter_moved": adapter_moved,
+            "train_metrics_available": train_metrics_available,
+            "train_last_step": train_log_metrics.get("last_step"),
+            "train_loss": train_loss,
+            "train_expected_ce": train_expected_ce,
+            "train_mean_expected_loops": train_mean_expected_loops,
+            "train_target_loop_abs_error": train_target_loop_abs_error,
+            "train_halting_target_nll": train_halting_target_nll,
+            "depth_supervision_metrics_present": depth_supervision_metrics_present,
             "loop1_preservation_available": preservation_available,
             "source_loop1_task_groups": source_task_groups,
             "trained_loop1_task_groups": trained_task_groups,

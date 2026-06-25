@@ -1288,6 +1288,11 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "eval/eval_reentry_drift.py" in cell
     assert "Loop-1 Preservation" in cell
     assert "loop1_preservation" in cell
+    assert "parse_train_log_metrics" in cell
+    assert "train_log_metrics" in cell
+    assert "Training Smoke Metrics" in cell
+    assert "target_loop_abs_error" in cell
+    assert "halting_target_nll" in cell
     assert "STAGE5_REENTRY_REPAIR_REQUIRE_NORM_PASS" in cell
     assert "stage2_norm_assessment" in cell
     assert '"checkpoint": checkpoint' in cell

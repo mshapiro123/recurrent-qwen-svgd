@@ -658,3 +658,10 @@ Colab/Drive backups for selected runs.
   breadth/SVGD gated behind deterministic depth evidence. This removes stale
   ARC-mix/direct-preservation "current action" affordances from the main
   notebooks while preserving those historical notebooks for provenance.
+- Stage 3 train-metric hardening: `reentry_repair_smoke` now parses the final
+  `train_phase1_ponder.py` step metrics into `summary.json` and `summary.md`.
+  The Stage 3 assessment blocks Stage 4 if final training metrics are missing,
+  if final loss is nonfinite, or if supervised depth metrics
+  (`target_loop_abs_error`, `halting_target_nll`) are absent while halt-depth
+  supervision is enabled. This keeps the Stage 3 -> Stage 4 decision tied to a
+  visible repair-training signal, not only checkpoint existence.

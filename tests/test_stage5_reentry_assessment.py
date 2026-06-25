@@ -88,12 +88,17 @@ def repair_summary(
     trained_candidates=4,
     source_groups=4,
     trained_groups=4,
+    train_metrics=True,
+    train_loss=1.25,
+    target_loop_abs_error=0.4,
+    halting_target_nll=0.7,
 ):
-    return {
+    payload = {
         "kind": "stage5_reentry_repair_smoke",
         "run_id": "stage5_reentry_repair_smoke_test",
         "config": {
             "use_reentry_adapter": use_reentry_adapter,
+            "halt_target_nll_weight": 0.05,
         },
         "pre_bridge": {
             "bridge_gate": 0.0,
@@ -140,6 +145,20 @@ def repair_summary(
             "candidate_hits_delta_trained_minus_source": trained_candidates - source_candidates,
         },
     }
+    if train_metrics:
+        payload["train_log_metrics"] = {
+            "available": True,
+            "steps_logged": 2,
+            "last_step": 20,
+            "last_metrics": {
+                "loss": train_loss,
+                "expected_ce": 1.0,
+                "mean_expected_loops": 2.1,
+                "target_loop_abs_error": target_loop_abs_error,
+                "halting_target_nll": halting_target_nll,
+            },
+        }
+    return payload
 
 
 def test_drift_assessment_flags_dead_bridge() -> None:
@@ -179,6 +198,8 @@ def test_repair_smoke_assessment_passes_when_bridge_live_and_moved() -> None:
     assert out["metrics"]["loop1_preservation_available"] is True
     assert out["metrics"]["adapter_live"] is True
     assert out["metrics"]["adapter_moved"] is True
+    assert out["metrics"]["train_metrics_available"] is True
+    assert out["metrics"]["depth_supervision_metrics_present"] is True
 
 
 def test_repair_smoke_assessment_detects_live_but_not_moved() -> None:
@@ -245,6 +266,30 @@ def test_repair_smoke_assessment_blocks_when_loop1_task_groups_mismatch() -> Non
     assert out["recommendation"] == "fix_loop1_preservation_eval_before_recovery_training"
     assert out["metrics"]["source_loop1_task_groups"] == 4
     assert out["metrics"]["trained_loop1_task_groups"] == 3
+
+
+def test_repair_smoke_assessment_blocks_when_train_metrics_missing() -> None:
+    out = assess(repair_summary(train_metrics=False))
+
+    assert out["status"] == "repair_smoke_train_metrics_missing"
+    assert out["recommendation"] == "fix_repair_smoke_training_log_before_recovery_training"
+    assert out["metrics"]["train_metrics_available"] is False
+
+
+def test_repair_smoke_assessment_blocks_when_train_loss_nonfinite() -> None:
+    out = assess(repair_summary(train_loss=float("nan")))
+
+    assert out["status"] == "repair_smoke_train_metrics_nonfinite"
+    assert out["recommendation"] == "fix_repair_smoke_training_before_recovery_training"
+    assert out["metrics"]["train_loss"] is None
+
+
+def test_repair_smoke_assessment_blocks_when_depth_metrics_missing() -> None:
+    out = assess(repair_summary(target_loop_abs_error=None, halting_target_nll=None))
+
+    assert out["status"] == "repair_smoke_depth_metrics_missing"
+    assert out["recommendation"] == "fix_repair_smoke_depth_supervision_before_recovery_training"
+    assert out["metrics"]["depth_supervision_metrics_present"] is False
 
 
 def test_reentry_assessment_cli_writes_outputs(tmp_path) -> None:
