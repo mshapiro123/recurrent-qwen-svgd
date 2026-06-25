@@ -299,7 +299,7 @@ def build_claim_packet(
             "broader_benchmark_gate_passed",
             broader_passed,
             (
-                "Broader ARC-Challenge/GPQA-lite paired benchmark gate passed."
+                "Broader ARC-Easy/Challenge/GPQA-lite paired benchmark gate passed."
                 if broader_passed
                 else "Broader paired benchmark gate has not passed."
             ),

@@ -2823,6 +2823,8 @@ def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summar
         required_score_target = str(payload.get("required_score_target") or "")
         assignments = {
             "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{RUN_ID}_expanded_benchmark_suite",
+            "STAGE5_BENCHMARKS": "arc_easy,arc_challenge,gpqa_lite",
+            "STAGE5_BENCHMARK_ARC_EASY_LIMIT": "256",
             "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "256",
             "STAGE5_BENCHMARK_GPQA_LIMIT": "32",
         }
@@ -2836,7 +2838,7 @@ def benchmark_suite_assessment_actions(payload: dict[str, Any], *, source_summar
         return [
             make_action(
                 "Expand broader benchmark suite confirmation",
-                "The benchmark-suite gate found too few paired examples; rerun ARC-Challenge/GPQA-lite with larger limits before interpreting deltas.",
+                "The benchmark-suite gate found too few paired examples; rerun ARC-Easy, ARC-Challenge, and GPQA-lite with larger limits before interpreting deltas.",
                 command_env(assignments, "python colab/run_stage5_benchmark_suite.py"),
                 10,
             )
@@ -3107,13 +3109,14 @@ def balanced_full_assessment_actions(payload: dict[str, Any], *, source_summary:
         return [
             make_action(
                 "Run broader benchmark suite for balanced checkpoint",
-                "The full balanced ARC assessment is nonnegative; run ARC-Challenge plus GPQA-lite on the selected deterministic recurrent checkpoint before release or particle claims.",
+                "The full balanced ARC assessment is nonnegative; run ARC-Easy, ARC-Challenge, and GPQA-lite on the selected deterministic recurrent checkpoint before release or particle claims.",
                 command_env(
                     {
                         "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{RUN_ID}_balanced_broader_benchmarks",
                         "STAGE5_BENCHMARK_SOURCE_SUMMARY": path_for_cli(source_summary),
                         "STAGE5_BENCHMARK_CHECKPOINT": checkpoint,
-                        "STAGE5_BENCHMARKS": "arc_challenge,gpqa_lite",
+                        "STAGE5_BENCHMARKS": "arc_easy,arc_challenge,gpqa_lite",
+                        "STAGE5_BENCHMARK_ARC_EASY_LIMIT": "256",
                         "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "256",
                         "STAGE5_BENCHMARK_GPQA_LIMIT": "32",
                     },
@@ -3721,7 +3724,7 @@ def mcq_scoring_policy_actions(payload: dict[str, Any], *, source_summary: Path)
         )
         return [
             make_action(
-                "Run bounded debiased ARC/GPQA benchmark suite",
+                "Run bounded debiased ARC-Easy/Challenge/GPQA benchmark suite",
                 (
                     "The MCQ scoring policy is active. Run a bounded base-vs-recurrent benchmark suite with "
                     "bare-label, content-question-only, and cyclic-permutation scoring before launching more "
@@ -3731,7 +3734,8 @@ def mcq_scoring_policy_actions(payload: dict[str, Any], *, source_summary: Path)
                     {
                         "STAGE5_BENCHMARK_SUITE_RUN_ID": f"{RUN_ID}_debiased_benchmark_suite",
                         "STAGE5_BENCHMARK_SOURCE_SUMMARY": path_for_cli(source_summary),
-                        "STAGE5_BENCHMARKS": "arc_challenge,gpqa_lite",
+                        "STAGE5_BENCHMARKS": "arc_easy,arc_challenge,gpqa_lite",
+                        "STAGE5_BENCHMARK_ARC_EASY_LIMIT": "128",
                         "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT": "128",
                         "STAGE5_BENCHMARK_GPQA_LIMIT": "16",
                         "STAGE5_BENCHMARK_SCORE_TARGETS": "label,content_question_only,cyclic_label_aggregated",

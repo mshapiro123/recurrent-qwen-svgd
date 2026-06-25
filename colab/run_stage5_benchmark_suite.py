@@ -48,7 +48,7 @@ PRIVATE_DATA_DIR = ROOT / "data" / "stage5_benchmark_suite" / RUN_ID
 
 SOURCE_SUMMARY = os.environ.get("STAGE5_BENCHMARK_SOURCE_SUMMARY", "")
 EXPLICIT_CHECKPOINT = os.environ.get("STAGE5_BENCHMARK_CHECKPOINT", "")
-BENCHMARKS = os.environ.get("STAGE5_BENCHMARKS", "arc_challenge,gpqa_lite")
+BENCHMARKS = os.environ.get("STAGE5_BENCHMARKS", "arc_easy,arc_challenge,gpqa_lite")
 ARC_CHALLENGE_LIMIT_RAW = os.environ.get("STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT", "128")
 ARC_EASY_LIMIT_RAW = os.environ.get("STAGE5_BENCHMARK_ARC_EASY_LIMIT", "128")
 ARC_CHALLENGE_OFFSET = int(os.environ.get("STAGE5_BENCHMARK_ARC_CHALLENGE_OFFSET", "0"))

@@ -3263,10 +3263,11 @@ def test_mcq_scoring_policy_routes_stale_label_artifacts_to_debiased_benchmark_s
     actions = plan_next_actions(payload, source_summary=source)
 
     assert source_kind(payload) == "mcq_scoring_policy"
-    assert actions[0]["name"] == "Run bounded debiased ARC/GPQA benchmark suite"
+    assert actions[0]["name"] == "Run bounded debiased ARC-Easy/Challenge/GPQA benchmark suite"
     assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
     assert "STAGE5_BENCHMARK_SOURCE_SUMMARY=" in actions[0]["command"]
-    assert "STAGE5_BENCHMARKS=arc_challenge,gpqa_lite" in actions[0]["command"]
+    assert "STAGE5_BENCHMARKS=arc_easy,arc_challenge,gpqa_lite" in actions[0]["command"]
+    assert "STAGE5_BENCHMARK_ARC_EASY_LIMIT=128" in actions[0]["command"]
     assert "STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT=128" in actions[0]["command"]
     assert "STAGE5_BENCHMARK_GPQA_LIMIT=16" in actions[0]["command"]
     assert "STAGE5_BENCHMARK_SCORE_TARGETS=label,content_question_only,cyclic_label_aggregated" in actions[0]["command"]
@@ -3285,7 +3286,7 @@ def test_mcq_scoring_policy_without_stale_artifacts_still_runs_policy_compliant_
 
     actions = plan_next_actions(payload, source_summary=source)
 
-    assert actions[0]["name"] == "Run bounded debiased ARC/GPQA benchmark suite"
+    assert actions[0]["name"] == "Run bounded debiased ARC-Easy/Challenge/GPQA benchmark suite"
     assert "python colab/run_stage5_benchmark_suite.py" in actions[0]["command"]
     assert "STAGE5_BENCHMARK_SCORE_TARGETS=label,content_question_only,cyclic_label_aggregated" in actions[0]["command"]
 

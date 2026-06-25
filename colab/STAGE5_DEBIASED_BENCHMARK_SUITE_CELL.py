@@ -2,7 +2,9 @@
 
 This is a measurement-only GPU action. It compares base Qwen against the
 current recurrent checkpoint with bare-label, content-question-only, and
-cyclic-label-aggregated MCQ scoring, then assesses the cyclic aggregate.
+cyclic-label-aggregated MCQ scoring. The default suite includes ARC-Easy for
+easy-item preservation, ARC-Challenge for hard-tail depth, and GPQA-lite as a
+small out-of-domain STEM check.
 """
 
 import json
@@ -206,7 +208,10 @@ try:
         "stage5_debiased_benchmark_suite_" + time.strftime("%Y%m%d_%H%M%S"),
     )
     env["STAGE5_BENCHMARK_SOURCE_SUMMARY"] = path_for_cli(source_summary)
-    env["STAGE5_BENCHMARKS"] = os.environ.get("STAGE5_DEBIASED_BENCHMARKS", "arc_challenge,gpqa_lite")
+    env["STAGE5_BENCHMARKS"] = os.environ.get(
+        "STAGE5_DEBIASED_BENCHMARKS",
+        "arc_easy,arc_challenge,gpqa_lite",
+    )
     env["STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT"] = os.environ.get("STAGE5_DEBIASED_ARC_CHALLENGE_LIMIT", "128")
     env["STAGE5_BENCHMARK_ARC_EASY_LIMIT"] = os.environ.get("STAGE5_DEBIASED_ARC_EASY_LIMIT", "128")
     env["STAGE5_BENCHMARK_ARC_CHALLENGE_OFFSET"] = os.environ.get("STAGE5_DEBIASED_ARC_CHALLENGE_OFFSET", "0")

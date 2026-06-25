@@ -34,7 +34,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "safe_continue_dry_run" - fetch safe-continue but do not spend GPU.
 #   "safe_continue_execute" - fetch safe-continue and opt in to the guarded paid action.
 #   "arc_challenge_mcq_debias_confirm" - bounded no-training cyclic MCQ confirmation on ARC-Challenge.
-#   "debiased_benchmark_suite" - bounded ARC-Challenge/GPQA-lite benchmark with debiased MCQ scoring.
+#   "debiased_benchmark_suite" - bounded ARC-Easy/Challenge/GPQA-lite benchmark with debiased MCQ scoring.
 #   "depth_balanced_benchmark" - balanced ARC content/cyclic benchmark for learned-depth checkpoints.
 #   "arc_mix_offset_confirm" - bounded ARC-Easy/Challenge offset-256 confirmation for the latest ARC-mix checkpoint.
 #   "arc_mix_offset_then_depth_chain" - offset confirmation, then learned-depth ARC-mix SFT only if confirmed.
@@ -194,14 +194,19 @@ TARGETS = {
             "cyclic_label_aggregated",
             "permutation_mean",
             "STAGE5_DEBIASED_BENCHMARKS",
-            "arc_challenge,gpqa_lite",
+            "arc_easy,arc_challenge,gpqa_lite",
             "colab/run_stage5_benchmark_suite.py",
             "colab/assess_stage5_benchmark_suite.py",
             "tests/test_stage5_benchmark_suite.py",
             "tests/test_stage5_benchmark_assessment.py",
             "runtime.unassign",
         ],
-        "env": {},
+        "env": {
+            "STAGE5_DEBIASED_BENCHMARKS": "arc_easy,arc_challenge,gpqa_lite",
+            "STAGE5_DEBIASED_ARC_EASY_LIMIT": "128",
+            "STAGE5_DEBIASED_ARC_CHALLENGE_LIMIT": "128",
+            "STAGE5_DEBIASED_GPQA_LIMIT": "16",
+        },
     },
     "depth_balanced_benchmark": {
         "path": "colab/STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py",

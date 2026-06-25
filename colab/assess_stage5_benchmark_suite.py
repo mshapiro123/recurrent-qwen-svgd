@@ -26,6 +26,7 @@ MIN_GPQA_EXAMPLES = int(os.environ.get("STAGE5_BENCHMARK_ASSESS_MIN_GPQA_EXAMPLE
 ARC_CHALLENGE_VALIDATION_EXAMPLES = int(
     os.environ.get("STAGE5_BENCHMARK_ASSESS_ARC_CHALLENGE_VALIDATION_EXAMPLES", "299")
 )
+ARC_EASY_VALIDATION_EXAMPLES = int(os.environ.get("STAGE5_BENCHMARK_ASSESS_ARC_EASY_VALIDATION_EXAMPLES", "570"))
 REQUIRED_SCORE_TARGET = os.environ.get("STAGE5_BENCHMARK_ASSESS_SCORE_TARGET", "label")
 REQUIRED_AGGREGATE = os.environ.get("STAGE5_BENCHMARK_ASSESS_AGGREGATE", "mean")
 ALLOWED_NEGATIVE_DELTA = int(os.environ.get("STAGE5_BENCHMARK_ASSESS_ALLOWED_NEGATIVE_DELTA", "0"))
@@ -103,6 +104,8 @@ def latest_benchmark_suite() -> Path | None:
 def benchmark_min_examples(benchmark: str) -> int:
     if benchmark == "arc_challenge":
         return min(MIN_ARC_EXAMPLES, ARC_CHALLENGE_VALIDATION_EXAMPLES)
+    if benchmark == "arc_easy":
+        return min(MIN_ARC_EXAMPLES, ARC_EASY_VALIDATION_EXAMPLES)
     if benchmark == "gpqa_lite":
         return MIN_GPQA_EXAMPLES
     return 1
@@ -203,7 +206,7 @@ def assess_benchmark_suite(*, summary_json: Path, payload: dict[str, Any]) -> di
         next_step = "Inspect benchmark-suite logs and rerun failed slices before using the result."
     elif not no_missing or not enough_examples:
         gate_status = "needs_benchmark_confirmation"
-        next_step = "Rerun the broader benchmark suite with larger ARC-Challenge/GPQA-lite limits."
+        next_step = "Rerun the broader benchmark suite with enough ARC-Easy, ARC-Challenge, and GPQA-lite paired examples."
     elif not nonnegative:
         gate_status = "needs_recurrent_recovery"
         next_step = "Return to deterministic recurrent recovery before GPQA Diamond or release claims."

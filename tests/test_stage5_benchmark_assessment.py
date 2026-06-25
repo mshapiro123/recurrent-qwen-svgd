@@ -14,48 +14,68 @@ def _write(path, payload) -> None:
 def _suite(
     *,
     arc_delta: int = 0,
+    arc_easy_delta: int | None = None,
     gpqa_delta: int = 0,
     arc_n: int = 128,
+    arc_easy_n: int = 128,
     gpqa_n: int = 16,
     checkpoint: str = "outputs/stage5/run/phase1.pt",
 ):
+    paired = {
+        "arc_challenge": {
+            "label": {
+                "mean": {
+                    "paired_examples": arc_n,
+                    "base_correct": 64,
+                    "recurrent_correct": 64 + arc_delta,
+                    "correct_delta_recurrent_vs_base": arc_delta,
+                    "wins": max(arc_delta, 0),
+                    "losses": max(-arc_delta, 0),
+                    "ties": arc_n - abs(arc_delta),
+                    "sign_test_p_value": 1.0,
+                }
+            }
+        },
+        "gpqa_lite": {
+            "label": {
+                "mean": {
+                    "paired_examples": gpqa_n,
+                    "base_correct": 4,
+                    "recurrent_correct": 4 + gpqa_delta,
+                    "correct_delta_recurrent_vs_base": gpqa_delta,
+                    "wins": max(gpqa_delta, 0),
+                    "losses": max(-gpqa_delta, 0),
+                    "ties": gpqa_n - abs(gpqa_delta),
+                    "sign_test_p_value": 1.0,
+                }
+            }
+        },
+    }
+    benchmarks = ["arc_challenge", "gpqa_lite"]
+    if arc_easy_delta is not None:
+        benchmarks.insert(0, "arc_easy")
+        paired["arc_easy"] = {
+            "label": {
+                "mean": {
+                    "paired_examples": arc_easy_n,
+                    "base_correct": 80,
+                    "recurrent_correct": 80 + arc_easy_delta,
+                    "correct_delta_recurrent_vs_base": arc_easy_delta,
+                    "wins": max(arc_easy_delta, 0),
+                    "losses": max(-arc_easy_delta, 0),
+                    "ties": arc_easy_n - abs(arc_easy_delta),
+                    "sign_test_p_value": 1.0,
+                }
+            }
+        }
     return {
         "run_id": "suite",
         "kind": "stage5_benchmark_suite",
         "status": "completed",
         "checkpoint": checkpoint,
-        "benchmarks": ["arc_challenge", "gpqa_lite"],
+        "benchmarks": benchmarks,
         "failures": [],
-        "paired_comparisons": {
-            "arc_challenge": {
-                "label": {
-                    "mean": {
-                        "paired_examples": arc_n,
-                        "base_correct": 64,
-                        "recurrent_correct": 64 + arc_delta,
-                        "correct_delta_recurrent_vs_base": arc_delta,
-                        "wins": max(arc_delta, 0),
-                        "losses": max(-arc_delta, 0),
-                        "ties": arc_n - abs(arc_delta),
-                        "sign_test_p_value": 1.0,
-                    }
-                }
-            },
-            "gpqa_lite": {
-                "label": {
-                    "mean": {
-                        "paired_examples": gpqa_n,
-                        "base_correct": 4,
-                        "recurrent_correct": 4 + gpqa_delta,
-                        "correct_delta_recurrent_vs_base": gpqa_delta,
-                        "wins": max(gpqa_delta, 0),
-                        "losses": max(-gpqa_delta, 0),
-                        "ties": gpqa_n - abs(gpqa_delta),
-                        "sign_test_p_value": 1.0,
-                    }
-                }
-            },
-        },
+        "paired_comparisons": paired,
     }
 
 
@@ -107,6 +127,18 @@ def test_benchmark_assessment_requires_paired_coverage(tmp_path) -> None:
 
     assert assessed["status"] == "needs_benchmark_confirmation"
     assert assessed["criteria"][1]["passed"] is False
+
+
+def test_benchmark_assessment_requires_real_arc_easy_coverage_when_present(tmp_path) -> None:
+    source = tmp_path / "suite" / "summary.json"
+    payload = _suite(arc_delta=0, arc_easy_delta=0, gpqa_delta=0, arc_easy_n=1)
+
+    assessed = assess_benchmark_suite(summary_json=source, payload=payload)
+
+    assert assessed["status"] == "needs_benchmark_confirmation"
+    arc_easy = next(row for row in assessed["benchmarks"] if row["benchmark"] == "arc_easy")
+    assert arc_easy["required_examples"] == 128
+    assert arc_easy["paired_examples"] == 1
 
 
 def test_benchmark_assessment_caps_arc_challenge_at_validation_size(tmp_path, monkeypatch) -> None:
