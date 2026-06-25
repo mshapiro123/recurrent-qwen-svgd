@@ -84,6 +84,8 @@ def test_single_a100_runbook_uses_current_bootstrap_target_queue() -> None:
     assert "claim_curriculum_scaleup_cpu" in text
     assert "Parallel CPU/API Curriculum Scale-Up" in text
     assert "should not be treated as a GPU gate" in text
+    assert "Phase 1 Gate Review" in text
+    assert "do not advance to Phase 2 until the Phase 1 gate reports an architecture signal" in text
     assert "sha_resolved_nested_fetch_v3" in text
     assert "api.github.com/repos/{REPO}/contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py" in text
     assert "exec(compile(code" in text
