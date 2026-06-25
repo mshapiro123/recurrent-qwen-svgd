@@ -35,6 +35,12 @@ DRIVE_BACKUP = os.environ.get("STAGE5_FORCED_DEPTH_DRIVE_BACKUP", "0").strip().l
     "yes",
     "y",
 }
+FORCE_DRIVE_REMOUNT = os.environ.get("FORCE_DRIVE_REMOUNT", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 
 
 def secret(*names):
@@ -127,6 +133,22 @@ def copy_run_to_drive(run_id: str):
     shutil.copytree(run_dir, drive_dst, dirs_exist_ok=True)
     print(f"backed_up_run_dir={run_dir} -> {drive_dst}", flush=True)
     return drive_dst
+
+
+def ensure_drive_for_checkpoint_restore() -> None:
+    """Mount Drive in the notebook process so child runners can restore checkpoints.
+
+    The benchmark runner executes in a subprocess. Calling ``drive.mount`` from
+    that child can fail because the Colab kernel context is not attached there.
+    Mount once here, then the child sees ``/content/drive/MyDrive`` as a normal
+    filesystem path.
+    """
+
+    if Path("/content/drive/MyDrive").exists() and not FORCE_DRIVE_REMOUNT:
+        print("Drive already mounted for checkpoint restore.", flush=True)
+        return
+    print("Mounting Drive for checkpoint restore.", flush=True)
+    drive.mount("/content/drive", force_remount=FORCE_DRIVE_REMOUNT)
 
 
 def compact_summary(run_id: str) -> dict:
@@ -281,10 +303,9 @@ def disconnect(reason: str) -> None:
 
 
 try:
-    if DRIVE_BACKUP:
-        drive.mount("/content/drive", force_remount=False)
-    else:
-        print("Drive backup disabled; using GitHub as primary artifact store.", flush=True)
+    ensure_drive_for_checkpoint_restore()
+    if not DRIVE_BACKUP:
+        print("Drive backup disabled; using GitHub as primary artifact store for outputs.", flush=True)
     sync_repo()
     os.chdir(ROOT)
     print(f"STAGE5_FORCED_DEPTH_DIAGNOSTIC_CELL_VERSION={STAGE5_FORCED_DEPTH_DIAGNOSTIC_CELL_VERSION}", flush=True)
