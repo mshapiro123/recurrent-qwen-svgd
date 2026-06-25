@@ -1,0 +1,148 @@
+{
+  "kind": "stage5_reentry_repair_smoke",
+  "run_id": "stage5_reentry_repair_smoke_20260625_114554",
+  "cell_version": "stage5_reentry_repair_smoke_v1_trainable",
+  "source_checkpoint": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/phase1_direct_preserve/phase1_step_75.pt",
+  "checkpoint_source": "stage2_norm_assessment",
+  "checkpoint_from_stage2_norm": true,
+  "stage2_norm_checkpoint": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/phase1_direct_preserve/phase1_step_75.pt",
+  "checkpoint_override_used": false,
+  "trained_checkpoint": "outputs/stage5/stage5_reentry_repair_smoke_20260625_114554/phase1_reentry_repair/phase1_step_25.pt",
+  "config": {
+    "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+    "dtype": "bfloat16",
+    "adapter_dtype": "float32",
+    "layer_split": "auto",
+    "max_length": 256,
+    "max_loops": 4,
+    "initial_halt_prob": 0.15,
+    "beta": 0.08,
+    "halt_target_nll_weight": 0.05,
+    "batch_size": 1,
+    "learning_rate": 1e-05,
+    "weight_decay": 0.0,
+    "max_grad_norm": 0.3,
+    "max_steps": 25,
+    "log_every": 5,
+    "train_on_prompt": false,
+    "optimizer_modules": "bridge,reentry,halt",
+    "resume_from": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/phase1_direct_preserve/phase1_step_75.pt",
+    "bridge_reset_identity": true,
+    "bridge_gate_override": 1.0,
+    "reentry_rescale_mode": "entry_rms",
+    "use_reentry_adapter": true,
+    "output_dir": "outputs/stage5/stage5_reentry_repair_smoke_20260625_114554/phase1_reentry_repair",
+    "lora": {
+      "enabled": true,
+      "rank": 8,
+      "alpha": 16,
+      "dropout": 0.0
+    }
+  },
+  "paths": {
+    "pre_drift": "outputs/stage5/stage5_reentry_repair_smoke_20260625_114554/reentry_repair_smoke/reentry_drift_pre.json",
+    "post_drift": "outputs/stage5/stage5_reentry_repair_smoke_20260625_114554/reentry_repair_smoke/reentry_drift_post.json",
+    "train_jsonl": "outputs/stage5/stage5_reentry_repair_smoke_20260625_114554/reentry_repair_smoke/reentry_repair_smoke_train.jsonl",
+    "train_config": "outputs/stage5/stage5_reentry_repair_smoke_20260625_114554/reentry_repair_smoke/reentry_repair_smoke_config.yaml",
+    "train_log": "outputs/stage5/stage5_reentry_repair_smoke_20260625_114554/reentry_repair_smoke/train_phase1_ponder.log",
+    "loop1_preservation": "outputs/stage5/stage5_reentry_repair_smoke_20260625_114554/reentry_repair_smoke/loop1_preservation.jsonl",
+    "loop1_preservation_tasks": "outputs/stage5/stage5_reentry_repair_smoke_20260625_114554/reentry_repair_smoke/loop1_preservation_tasks.jsonl"
+  },
+  "pre_bridge": {
+    "bridge_gate": 0.0,
+    "proj_identity_max_abs_diff": 0.0,
+    "proj_bias_max_abs": 0.0,
+    "bridge_delta_rms": 0.0,
+    "weight_grad_rms": 0.0,
+    "bias_grad_rms": 0.0,
+    "loop4_output_over_input_rms": 1.0042314529418945,
+    "loop8_output_over_input_rms": 1.007548749446869
+  },
+  "post_bridge": {
+    "bridge_gate": 1.0002319812774658,
+    "proj_identity_max_abs_diff": 0.0002565568720456213,
+    "proj_bias_max_abs": 0.00025284389266744256,
+    "bridge_delta_rms": 0.08213316649198532,
+    "weight_grad_rms": 0.38929283618927,
+    "bias_grad_rms": 0.007555652409791946,
+    "loop4_output_over_input_rms": 1.0042655318975449,
+    "loop8_output_over_input_rms": 1.0074928253889084
+  },
+  "pre_reentry_adapter": {
+    "scale_identity_max_abs_diff": 0.0,
+    "bias_max_abs": 0.0,
+    "sample_adapter_delta_rms": 0.0,
+    "sample_state_rms": 13.238465309143066
+  },
+  "post_reentry_adapter": {
+    "scale_identity_max_abs_diff": 0.0002409219741821289,
+    "bias_max_abs": 0.00025282433489337564,
+    "sample_adapter_delta_rms": 0.0018250071443617344,
+    "sample_state_rms": 13.238465309143066
+  },
+  "pre_reentry_adapter_liveness": {
+    "loss": 175.25689697265625,
+    "scale_grad_rms": 11.342706680297852,
+    "bias_grad_rms": 0.007554761134088039
+  },
+  "post_reentry_adapter_liveness": {
+    "loss": 175.30264282226562,
+    "scale_grad_rms": 11.344264030456543,
+    "bias_grad_rms": 0.0075557054951786995
+  },
+  "train_log_metrics": {
+    "available": true,
+    "reason": "",
+    "steps_logged": 5,
+    "last_step": 20,
+    "last_metrics": {
+      "mean_expected_loops": 1.2025,
+      "mean_halt_entropy": 0.5049,
+      "expected_ce": 1.3386,
+      "halting_kl": 0.8485,
+      "target_mean_loops": 2.0,
+      "target_loop_abs_error": 0.7975,
+      "halting_target_nll": 1.5986,
+      "loss": 1.4865
+    }
+  },
+  "loop1_preservation": {
+    "jsonl": "outputs/stage5/stage5_reentry_repair_smoke_20260625_114554/reentry_repair_smoke/loop1_preservation.jsonl",
+    "tasks_jsonl": "outputs/stage5/stage5_reentry_repair_smoke_20260625_114554/reentry_repair_smoke/loop1_preservation_tasks.jsonl",
+    "source": {
+      "label": "Phase 1 K=1",
+      "task_groups": 6,
+      "best_hits": 1,
+      "candidate_hits": 1,
+      "total_candidates": 6
+    },
+    "trained": {
+      "label": "Phase 2 K=1",
+      "task_groups": 6,
+      "best_hits": 1,
+      "candidate_hits": 1,
+      "total_candidates": 6
+    },
+    "best_hits_delta_trained_minus_source": 0,
+    "candidate_hits_delta_trained_minus_source": 0
+  },
+  "stage2_norm_assessment": {
+    "path": "outputs/stage5/stage5_reentry_norm_20260625_013527/reentry_assessment.json",
+    "summary_path": "outputs/stage5/stage5_reentry_norm_20260625_013527/summary.json",
+    "status": "entry_rms_safe_for_smoke",
+    "recommendation": "run_reentry_repair_smoke",
+    "reason": "Eval-only re-entry normalization does not show a large candidate regression; proceed to tiny trainable repair smoke.",
+    "checkpoint": "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/phase1_direct_preserve/phase1_step_75.pt",
+    "metrics": {
+      "loop8_output_over_entry_delta_entry_minus_none": -0.02922689914703369,
+      "candidate_hits_delta_entry_minus_none": 0.0,
+      "best_hits_delta_entry_minus_none": 0.0,
+      "q2_pathways_delta_entry_minus_none": -0.27919115126132965,
+      "mean_unique_delta_entry_minus_none": 0.0,
+      "none_candidate_hits": 240.0,
+      "entry_candidate_hits": 240.0,
+      "none_best_hits": 20.0,
+      "entry_best_hits": 20.0
+    }
+  }
+}

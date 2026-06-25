@@ -1,0 +1,6 @@
+{"name": "train speed", "prompt": "Solve exactly. If a train travels 120 miles in 3 hours, what is its average speed?", "patterns": ["\\b40\\s*(mph|miles per hour|miles/hour)?\\b"]}
+{"name": "pharmacy tubs", "prompt": "Solve exactly. The pharmacy has 20 tubs in storage and needs 100 total tubs for the week. It buys one quarter of the remaining needed tubs from a new vendor. How many tubs must it buy from the usual vendor?", "patterns": ["\\b60\\s*tubs?\\b", "\\b60\\b"]}
+{"name": "arithmetic add", "prompt": "Solve exactly. What is 17 + 28?", "patterns": ["\\b45\\b"]}
+{"name": "arithmetic multiply", "prompt": "Solve exactly. What is 7 times 8?", "patterns": ["\\b56\\b"]}
+{"name": "cookies division", "prompt": "Solve exactly. If 36 cookies are shared equally by 6 children, how many cookies does each child get?", "patterns": ["\\b6\\s*cookies?\\b", "\\b6\\b"]}
+{"name": "unit conversion", "prompt": "Solve exactly. How many minutes are in 2 hours?", "patterns": ["\\b120\\s*minutes?\\b", "\\b120\\b"]}

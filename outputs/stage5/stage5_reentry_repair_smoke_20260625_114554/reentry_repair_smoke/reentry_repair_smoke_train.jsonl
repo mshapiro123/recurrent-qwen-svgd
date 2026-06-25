@@ -1,0 +1,5 @@
+{"prompt": "Solve exactly. If a train travels 120 miles in 3 hours, what is its average speed?\n", "completion": "The average speed is 120 / 3 = 40 miles per hour.", "target_loop_count": 2}
+{"prompt": "Solve exactly. The pharmacy has 20 tubs and needs 100 total. It buys one quarter of the remaining need from a new vendor. How many tubs come from the usual vendor?\n", "completion": "It needs 80 more tubs. One quarter of 80 is 20, so the usual vendor supplies 60 tubs.", "target_loop_count": 3}
+{"prompt": "Solve exactly. What is 17 + 28?\n", "completion": "17 + 28 = 45.", "target_loop_count": 1}
+{"prompt": "Solve exactly. A rectangle is 7 units by 6 units. What is its area?\n", "completion": "Area is length times width: 7 * 6 = 42 square units.", "target_loop_count": 2}
+{"prompt": "Name one valid strategy for solving a Sudoku puzzle.\n", "completion": "One valid strategy is elimination: remove impossible digits using row, column, and box constraints.", "target_loop_count": 1}
