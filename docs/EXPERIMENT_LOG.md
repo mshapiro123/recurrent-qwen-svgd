@@ -763,3 +763,8 @@ Colab/Drive backups for selected runs.
   wrapper-to-trace and wrapper-to-child resolution, and explicitly prefer the
   child SFT summary when both links are present so the dense control inherits
   the actual Stage 4 split/defaults.
+- Stage 3 optimizer-module guard: the tiny recurrent wrapper tests now assert
+  that `optimizer_modules=bridge,reentry,halt` selects exactly the bridge,
+  loop re-entry adapter, and halting predictor parameters. This protects the
+  repair-smoke objective from silently dropping one of the trainable loop
+  closure components.
