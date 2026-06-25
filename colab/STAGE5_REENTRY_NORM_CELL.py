@@ -245,6 +245,26 @@ def summarize_candidate_jsonl(path: Path) -> dict[str, object]:
     return {"rows": len(rows), "by_mode": by_mode}
 
 
+def limited_tasks_jsonl(source: str, out_dir: Path) -> str:
+    limit = int(
+        os.environ.get(
+            "STAGE5_REENTRY_NORM_CANDIDATE_TASK_LIMIT",
+            os.environ.get("STAGE5_REENTRY_NORM_LIMIT", "8"),
+        )
+    )
+    if limit <= 0:
+        return source
+    source_path = ROOT / normalize_rel_path(source)
+    rows = [line for line in source_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    selected = rows[:limit]
+    if len(selected) == len(rows):
+        return source
+    out_path = out_dir / f"candidate_tasks_first_{limit}.jsonl"
+    out_path.write_text("\n".join(selected) + "\n", encoding="utf-8")
+    print(f"candidate_task_limit={limit} task_file={out_path.relative_to(ROOT).as_posix()}", flush=True)
+    return out_path.relative_to(ROOT).as_posix()
+
+
 def run_drift(mode: str, checkpoint: str, prompts: str, out_dir: Path) -> Path:
     out_json = out_dir / f"reentry_drift_{mode}.json"
     out_jsonl = out_dir / f"reentry_drift_{mode}.jsonl"
@@ -335,7 +355,7 @@ def run_candidate_conversion(mode: str, checkpoint: str, tasks: str, out_dir: Pa
             sys.executable,
             "eval/eval_best_of_k_jsonl.py",
             "--tasks_jsonl",
-            tasks,
+            limited_tasks_jsonl(tasks, out_dir),
             "--skip_phase1",
             "--compact",
             "--seeds",

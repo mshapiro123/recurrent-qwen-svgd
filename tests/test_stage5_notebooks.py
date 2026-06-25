@@ -1300,5 +1300,6 @@ def test_reentry_drift_and_norm_targets_run_self_assessment() -> None:
     assert "reentry_assessment.md" in drift_cell
     assert "reentry_assessment.json" in norm_cell
     assert "reentry_assessment.md" in norm_cell
+    assert "STAGE5_REENTRY_NORM_CANDIDATE_TASK_LIMIT" in norm_cell
     assert "incremental_backup" in norm_cell
     assert "resume_skip=candidate_conversion" in norm_cell
