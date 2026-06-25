@@ -760,4 +760,6 @@ Colab/Drive backups for selected runs.
   matches the real Stage 4 wrapper shape, where the wrapper carries the
   repaired checkpoint while the child SFT or trace-collection summary owns the
   positive-SFT rows and training defaults. New tests cover both
-  wrapper-to-trace and wrapper-to-child resolution.
+  wrapper-to-trace and wrapper-to-child resolution, and explicitly prefer the
+  child SFT summary when both links are present so the dense control inherits
+  the actual Stage 4 split/defaults.

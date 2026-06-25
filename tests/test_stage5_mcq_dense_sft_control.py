@@ -345,6 +345,55 @@ def test_resolve_curriculum_source_follows_reentry_wrapper_child_summary(monkeyp
     )
 
 
+def test_resolve_curriculum_source_prefers_child_over_trace_when_both_exist(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    child_summary = tmp_path / "outputs" / "stage5" / "reentry_child" / "summary.json"
+    trace_summary = tmp_path / "outputs" / "stage5" / "trace_collection" / "summary.json"
+    wrapper_summary = tmp_path / "outputs" / "stage5" / "reentry_recovery" / "summary.json"
+    for path in (child_summary, trace_summary, wrapper_summary):
+        path.parent.mkdir(parents=True, exist_ok=True)
+    child_summary.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_curriculum_sft",
+                "dataset": {"source_positive_sft": "data/curriculum/reentry_child/positive_sft.jsonl"},
+                "config": {"depth_hint_style": "natural", "max_steps": 75, "learning_rate": 5e-6},
+            }
+        ),
+        encoding="utf-8",
+    )
+    trace_summary.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_capability_ladder_trace_collection",
+                "curriculum": {"work_dir": "data/curriculum/trace_collection"},
+                "config": {"depth_hint_style": "none", "max_steps": 999, "learning_rate": 1e-3},
+            }
+        ),
+        encoding="utf-8",
+    )
+    wrapper_summary.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_reentry_recovery_training",
+                "checkpoint": "outputs/stage5/reentry_recovery/phase1/phase1_step_75.pt",
+                "child_summary": module.path_for_cli(child_summary),
+                "trace_summary": module.path_for_cli(trace_summary),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    resolved_path, resolved_payload = module.resolve_curriculum_source(
+        json.loads(wrapper_summary.read_text(encoding="utf-8")),
+        source_path=wrapper_summary,
+    )
+
+    assert resolved_path == child_summary
+    assert resolved_payload["kind"] == "stage5_curriculum_sft"
+    assert resolved_payload["config"]["depth_hint_style"] == "natural"
+
+
 def test_paired_dense_vs_base_reports_wins_losses_and_ties(tmp_path) -> None:
     base = tmp_path / "base.jsonl"
     dense = tmp_path / "dense.jsonl"
