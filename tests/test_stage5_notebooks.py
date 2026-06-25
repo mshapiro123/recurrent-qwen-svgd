@@ -1384,6 +1384,24 @@ def test_reentry_drift_and_norm_targets_run_self_assessment() -> None:
     assert 'git", "add", "-f", str(out_dir.relative_to(ROOT))' not in norm_cell
 
 
+def test_phase2_breadth_targets_require_master_sequence_gate() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    effective_cell = (ROOT / "colab/STAGE5_EFFECTIVE_PATHWAYS_CELL.py").read_text(encoding="utf-8")
+    candidate_cell = (ROOT / "colab/STAGE5_CANDIDATE_CONVERSION_CELL.py").read_text(encoding="utf-8")
+
+    for target in ["effective_pathways_diagnostic", "candidate_conversion_diagnostic"]:
+        assert target in bootstrap
+        assert target in bootstrap_md
+    for text in [bootstrap, bootstrap_md, effective_cell, candidate_cell]:
+        assert "colab.master_sequence_gate" in text
+        assert "STAGE5_ALLOW_PRE_PHASE1_BREADTH" in text
+    assert "require_phase1_depth_gate_for_breadth" in effective_cell
+    assert "require_phase1_depth_gate_for_breadth" in candidate_cell
+    assert "master_sequence_phase2_gate" in effective_cell
+    assert "master_sequence_phase2_gate" in candidate_cell
+
+
 def test_stage5_sft_launchers_do_not_force_checkpoint_commits() -> None:
     launcher_paths = [
         ROOT / "colab/STAGE5_REENTRY_RECOVERY_TRAINING_CELL.py",

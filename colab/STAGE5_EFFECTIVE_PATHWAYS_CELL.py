@@ -147,6 +147,16 @@ def main() -> None:
     }
 
     ensure_repo()
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from colab.master_sequence_gate import require_phase1_depth_gate_for_breadth
+
+    phase_gate = require_phase1_depth_gate_for_breadth(
+        root=ROOT,
+        action_name="effective_pathways_diagnostic",
+        allow_env="STAGE5_ALLOW_PRE_PHASE1_BREADTH",
+    )
+    print("master_sequence_phase2_gate=" + json.dumps(phase_gate, sort_keys=True), flush=True)
     run(["nvidia-smi"], cwd=Path("/content"))
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"])
     run([sys.executable, "-m", "pytest", "-q", "tests/test_pathway_diversity.py", "tests/test_eval_effective_pathways.py"])

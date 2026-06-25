@@ -307,6 +307,8 @@ TARGETS = {
             "STAGE5_EFFECTIVE_PATHWAYS_CHECKPOINT",
             "eval/eval_effective_pathways.py",
             "tests/test_pathway_diversity.py",
+            "colab.master_sequence_gate",
+            "STAGE5_ALLOW_PRE_PHASE1_BREADTH",
             "outputs/stage5",
             "particle_init_noise",
             "runtime.unassign",
@@ -445,6 +447,8 @@ TARGETS = {
             "pathway_split_diagnostics",
             "eval/eval_best_of_k_jsonl.py",
             "tests/test_eval_best_of_k_generation.py",
+            "colab.master_sequence_gate",
+            "STAGE5_ALLOW_PRE_PHASE1_BREADTH",
             "runtime.unassign",
         ],
         "env": {
