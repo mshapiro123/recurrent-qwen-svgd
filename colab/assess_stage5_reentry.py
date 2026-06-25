@@ -163,6 +163,8 @@ def assess_norm(summary: dict[str, Any]) -> dict[str, Any]:
 def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
     pre = summary.get("pre_bridge") if isinstance(summary.get("pre_bridge"), dict) else {}
     post = summary.get("post_bridge") if isinstance(summary.get("post_bridge"), dict) else {}
+    config = summary.get("config") if isinstance(summary.get("config"), dict) else {}
+    use_reentry_adapter = bool(config.get("use_reentry_adapter", False))
     pre_delta = finite_float(pre.get("bridge_delta_rms"))
     post_delta = finite_float(post.get("bridge_delta_rms"))
     post_weight_grad = finite_float(post.get("weight_grad_rms"))
@@ -170,6 +172,23 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
     post_gate = finite_float(post.get("bridge_gate"))
     bridge_live = post_weight_grad > 0.0 and post_bias_grad > 0.0
     bridge_moved = abs(post_delta - pre_delta) > 1e-6 or post_delta > 1e-6
+
+    post_adapter = summary.get("post_reentry_adapter") if isinstance(summary.get("post_reentry_adapter"), dict) else {}
+    post_adapter_live = (
+        summary.get("post_reentry_adapter_liveness")
+        if isinstance(summary.get("post_reentry_adapter_liveness"), dict)
+        else {}
+    )
+    adapter_delta = finite_float(post_adapter.get("sample_adapter_delta_rms"))
+    adapter_scale_diff = finite_float(post_adapter.get("scale_identity_max_abs_diff"))
+    adapter_bias_max = finite_float(post_adapter.get("bias_max_abs"))
+    adapter_scale_grad = finite_float(post_adapter_live.get("scale_grad_rms"))
+    adapter_bias_grad = finite_float(post_adapter_live.get("bias_grad_rms"))
+    adapter_live = (not use_reentry_adapter) or (adapter_scale_grad > 0.0 and adapter_bias_grad > 0.0)
+    adapter_moved = (not use_reentry_adapter) or (
+        adapter_delta > 1e-6 or adapter_scale_diff > 1e-6 or adapter_bias_max > 1e-6
+    )
+
     preservation = summary.get("loop1_preservation") if isinstance(summary.get("loop1_preservation"), dict) else {}
     source_preservation = preservation.get("source") if isinstance(preservation.get("source"), dict) else {}
     trained_preservation = preservation.get("trained") if isinstance(preservation.get("trained"), dict) else {}
@@ -186,10 +205,18 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
         status = "bridge_live_but_loop1_regressed" if bridge_live else "bridge_still_dead_and_loop1_regressed"
         recommendation = "review_or_reduce_repair_lr_before_recovery_training"
         reason = "The repair smoke harmed deterministic loop-1 preservation; review before recovery training."
+    elif use_reentry_adapter and not adapter_live:
+        status = "reentry_adapter_not_gradient_live"
+        recommendation = "fix_reentry_adapter_before_recovery_training"
+        reason = "The repair smoke enabled the re-entry adapter, but adapter gradients were not live."
+    elif use_reentry_adapter and not adapter_moved:
+        status = "reentry_adapter_live_but_not_moved"
+        recommendation = "extend_reentry_repair_smoke_or_increase_adapter_lr"
+        reason = "The repair smoke enabled the re-entry adapter, but no adapter movement was observed."
     elif bridge_live and bridge_moved:
         status = "bridge_repair_smoke_passed"
         recommendation = "run_bounded_recovery_training_with_reentry_repair"
-        reason = "Bridge is gradient-live and changed the re-entry path during the smoke run."
+        reason = "Bridge and re-entry repair path are gradient-live and changed during the smoke run."
     elif bridge_live:
         status = "bridge_live_but_no_observed_movement"
         recommendation = "extend_reentry_repair_smoke_or_increase_bridge_lr"
@@ -212,6 +239,14 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
             "post_bias_grad_rms": post_bias_grad,
             "bridge_live": bridge_live,
             "bridge_moved": bridge_moved,
+            "use_reentry_adapter": use_reentry_adapter,
+            "adapter_delta_rms": adapter_delta,
+            "adapter_scale_identity_max_abs_diff": adapter_scale_diff,
+            "adapter_bias_max_abs": adapter_bias_max,
+            "adapter_scale_grad_rms": adapter_scale_grad,
+            "adapter_bias_grad_rms": adapter_bias_grad,
+            "adapter_live": adapter_live,
+            "adapter_moved": adapter_moved,
             "loop1_preservation_available": preservation_available,
             "source_loop1_best_hits": source_best_hits,
             "trained_loop1_best_hits": trained_best_hits,

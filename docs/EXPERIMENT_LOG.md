@@ -466,6 +466,11 @@ Colab/Drive backups for selected runs.
   `entry_rms` re-entry normalization and records adapter scale/bias movement
   alongside bridge liveness and loop-1 preservation. Stage 4 recovery defaults
   carry the same re-entry adapter forward only after Stage 3 passes.
+- Stage 3 assessment hardening: recovery training is now blocked unless an
+  enabled re-entry adapter has live scale/bias gradients and measurable
+  movement, in addition to bridge liveness/movement and loop-1 preservation.
+  This prevents a bridge-only pass from being mistaken for a full loop-entry
+  repair when the adapter is part of the configured smoke.
 - Operational guard: added `reentry_norm_recover_only`. If the Stage 2 run
   completed and backed up to Drive but failed before Git publish, this target
   copies the completed `stage5_reentry_norm_*` artifact from Drive, regenerates

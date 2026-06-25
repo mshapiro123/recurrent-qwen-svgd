@@ -76,6 +76,10 @@ def repair_summary(
     post_delta=0.01,
     weight_grad=1e-4,
     bias_grad=1e-4,
+    use_reentry_adapter=True,
+    adapter_delta=0.01,
+    adapter_scale_grad=1e-4,
+    adapter_bias_grad=1e-4,
     source_best=4,
     trained_best=4,
     source_candidates=4,
@@ -84,6 +88,9 @@ def repair_summary(
     return {
         "kind": "stage5_reentry_repair_smoke",
         "run_id": "stage5_reentry_repair_smoke_test",
+        "config": {
+            "use_reentry_adapter": use_reentry_adapter,
+        },
         "pre_bridge": {
             "bridge_gate": 0.0,
             "bridge_delta_rms": 0.0,
@@ -95,6 +102,20 @@ def repair_summary(
             "bridge_delta_rms": post_delta,
             "weight_grad_rms": weight_grad,
             "bias_grad_rms": bias_grad,
+        },
+        "pre_reentry_adapter": {
+            "scale_identity_max_abs_diff": 0.0,
+            "bias_max_abs": 0.0,
+            "sample_adapter_delta_rms": 0.0,
+        },
+        "post_reentry_adapter": {
+            "scale_identity_max_abs_diff": adapter_delta,
+            "bias_max_abs": 0.0,
+            "sample_adapter_delta_rms": adapter_delta,
+        },
+        "post_reentry_adapter_liveness": {
+            "scale_grad_rms": adapter_scale_grad,
+            "bias_grad_rms": adapter_bias_grad,
         },
         "loop1_preservation": {
             "source": {
@@ -150,6 +171,8 @@ def test_repair_smoke_assessment_passes_when_bridge_live_and_moved() -> None:
     assert out["status"] == "bridge_repair_smoke_passed"
     assert out["recommendation"] == "run_bounded_recovery_training_with_reentry_repair"
     assert out["metrics"]["loop1_preservation_available"] is True
+    assert out["metrics"]["adapter_live"] is True
+    assert out["metrics"]["adapter_moved"] is True
 
 
 def test_repair_smoke_assessment_detects_live_but_not_moved() -> None:
@@ -157,6 +180,29 @@ def test_repair_smoke_assessment_detects_live_but_not_moved() -> None:
 
     assert out["status"] == "bridge_live_but_no_observed_movement"
     assert out["recommendation"] == "extend_reentry_repair_smoke_or_increase_bridge_lr"
+
+
+def test_repair_smoke_assessment_blocks_when_enabled_adapter_not_live() -> None:
+    out = assess(repair_summary(adapter_scale_grad=0.0, adapter_bias_grad=0.0))
+
+    assert out["status"] == "reentry_adapter_not_gradient_live"
+    assert out["recommendation"] == "fix_reentry_adapter_before_recovery_training"
+    assert out["metrics"]["adapter_live"] is False
+
+
+def test_repair_smoke_assessment_blocks_when_enabled_adapter_not_moved() -> None:
+    out = assess(repair_summary(adapter_delta=0.0))
+
+    assert out["status"] == "reentry_adapter_live_but_not_moved"
+    assert out["recommendation"] == "extend_reentry_repair_smoke_or_increase_adapter_lr"
+    assert out["metrics"]["adapter_moved"] is False
+
+
+def test_repair_smoke_assessment_keeps_legacy_bridge_only_pass() -> None:
+    out = assess(repair_summary(use_reentry_adapter=False, adapter_delta=0.0, adapter_scale_grad=0.0, adapter_bias_grad=0.0))
+
+    assert out["status"] == "bridge_repair_smoke_passed"
+    assert out["recommendation"] == "run_bounded_recovery_training_with_reentry_repair"
 
 
 def test_repair_smoke_assessment_blocks_on_loop1_regression() -> None:
