@@ -423,6 +423,8 @@ TARGETS = {
             "Stage 3 re-entry repair smoke requires an attached GPU runtime",
             "Training Smoke Metrics",
             "STAGE5_REENTRY_REPAIR_REQUIRE_NORM_PASS",
+            "STAGE5_REENTRY_REPAIR_ALLOW_FALLBACK_CHECKPOINT",
+            "Stage 3 repair smoke requires a checkpoint from the passed Stage 2 norm assessment",
             "stage2_norm_assessment",
             "current_pointer_norm_assessment_candidates",
             "stage2_norm_assessment_source=current_pointer",

@@ -1327,6 +1327,12 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "halting_target_nll" in cell
     assert "bridge_gate_active" in (ROOT / "colab/assess_stage5_reentry.py").read_text(encoding="utf-8")
     assert "STAGE5_REENTRY_REPAIR_REQUIRE_NORM_PASS" in cell
+    assert "STAGE5_REENTRY_REPAIR_ALLOW_FALLBACK_CHECKPOINT" in cell
+    assert "STAGE5_REENTRY_REPAIR_ALLOW_FALLBACK_CHECKPOINT" in bootstrap
+    assert "STAGE5_REENTRY_REPAIR_ALLOW_FALLBACK_CHECKPOINT" in bootstrap_md
+    assert "Stage 3 repair smoke requires a checkpoint from the passed Stage 2 norm assessment" in cell
+    assert "Stage 3 repair smoke requires a checkpoint from the passed Stage 2 norm assessment" in bootstrap
+    assert "Stage 3 repair smoke requires a checkpoint from the passed Stage 2 norm assessment" in bootstrap_md
     assert "stage2_norm_assessment" in cell
     assert "current_pointer_norm_assessment_candidates" in bootstrap
     assert "current_pointer_norm_assessment_candidates" in bootstrap_md
@@ -1336,9 +1342,11 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "stage2_norm_assessment_source=current_pointer" in cell
     assert 'payload.get("kind") == "stage5_reentry_norm_eval_only"' in cell
     assert '"checkpoint": checkpoint' in cell
-    assert "checkpoint_override or norm_checkpoint or DEFAULT_CHECKPOINT" in cell
+    assert "checkpoint_override or norm_checkpoint or DEFAULT_CHECKPOINT" not in cell
+    assert "DEFAULT_CHECKPOINT" not in cell
+    assert "FALLBACK_CHECKPOINTS" not in cell
     assert "checkpoint_from_norm = bool(norm_checkpoint and not checkpoint_override)" in cell
-    assert "allow_fallback=checkpoint_override is None and not checkpoint_from_norm" in cell
+    assert 'allow_fallback=checkpoint_source == "explicit_fallback"' in cell
     assert "reentry_repair_checkpoint_source=" in cell
     assert 'candidate.with_name("reentry_assessment.json")' in cell
     assert "incremental_backup" in cell

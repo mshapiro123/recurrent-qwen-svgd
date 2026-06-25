@@ -61,6 +61,9 @@ technically viable if Phase 1 says 0.5B is capacity-limited.
 The Stage 3 target now performs an immediate GPU-runtime preflight. If Colab is
 not attached to L4/T4/A100/H100, it stops before repo sync, Drive restoration,
 or checkpoint work.
+It also requires the passed Stage 2 norm assessment to expose the source
+checkpoint. If that lineage is missing, rerun/recover Stage 2 or set
+`STAGE5_REENTRY_REPAIR_CHECKPOINT` explicitly for a deliberate artifact test.
 
 ## Paste-Anywhere Launcher
 

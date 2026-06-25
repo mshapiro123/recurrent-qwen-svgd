@@ -25,21 +25,6 @@ ROOT = Path("/content/recurrent-qwen-svgd")
 DRIVE_ARTIFACT_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts")
 LEGACY_DRIVE_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd")
 
-DEFAULT_CHECKPOINT = (
-    "outputs/stage5/stage5_traced_sft_direct_preservation_20260623_scale64_lr1e6/"
-    "phase1_direct_preserve/phase1_step_75.pt"
-)
-FALLBACK_CHECKPOINTS = [
-    DEFAULT_CHECKPOINT,
-    (
-        "outputs/stage5/stage5_content_arcmix_qonly_optiontext_20260623_121707/"
-        "arc_mix_response_w02_lr2e6/phase1/phase1_step_150.pt"
-    ),
-    (
-        "outputs/stage5/stage5_arc_mix_recovery_once_20260622_003331/"
-        "arc_mix_response_w005_lr2e6/phase1/phase1_step_50.pt"
-    ),
-]
 MODEL_NAME = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")
 LAYER_SPLIT = (
     os.environ.get("STAGE5_RECURRENT_LAYER_SPLIT")
@@ -190,7 +175,9 @@ def checkpoint_candidates(requested: str, *, allow_fallback: bool) -> list[str]:
     requested = normalize_rel_path(requested)
     candidates = [requested]
     if allow_fallback:
-        candidates.extend(path for path in FALLBACK_CHECKPOINTS if normalize_rel_path(path) not in candidates)
+        fallback = os.environ.get("STAGE5_REENTRY_REPAIR_FALLBACK_CHECKPOINT", "").strip()
+        if fallback and normalize_rel_path(fallback) not in candidates:
+            candidates.append(fallback)
     return candidates
 
 
@@ -801,17 +788,31 @@ def main() -> None:
     ensure_repo()
     norm_assessment = load_required_norm_assessment()
     norm_checkpoint = str((norm_assessment or {}).get("checkpoint") or "")
-    checkpoint = checkpoint_override or norm_checkpoint or DEFAULT_CHECKPOINT
+    allow_default_fallback = os.environ.get("STAGE5_REENTRY_REPAIR_ALLOW_FALLBACK_CHECKPOINT", "0").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+    }
+    if checkpoint_override:
+        checkpoint = checkpoint_override
+        checkpoint_source = "override"
+    elif norm_checkpoint:
+        checkpoint = norm_checkpoint
+        checkpoint_source = "stage2_norm_assessment"
+    elif allow_default_fallback and os.environ.get("STAGE5_REENTRY_REPAIR_FALLBACK_CHECKPOINT", "").strip():
+        checkpoint = os.environ["STAGE5_REENTRY_REPAIR_FALLBACK_CHECKPOINT"].strip()
+        checkpoint_source = "explicit_fallback"
+    else:
+        raise RuntimeError(
+            "Stage 3 repair smoke requires a checkpoint from the passed Stage 2 norm assessment. "
+            "The current assessment summary did not expose `checkpoint`. Rerun/recover Stage 2, "
+            "or set STAGE5_REENTRY_REPAIR_CHECKPOINT for an intentional explicit artifact."
+        )
     checkpoint_from_norm = bool(norm_checkpoint and not checkpoint_override)
     print(
         "reentry_repair_checkpoint_source="
-        + (
-            "override"
-            if checkpoint_override
-            else "stage2_norm_assessment"
-            if checkpoint_from_norm
-            else "default_fallback"
-        ),
+        + checkpoint_source,
         flush=True,
     )
     run(["nvidia-smi"], cwd=Path("/content"))
@@ -828,7 +829,7 @@ def main() -> None:
         ]
     )
 
-    checkpoint_path = restore_checkpoint(checkpoint, allow_fallback=checkpoint_override is None and not checkpoint_from_norm)
+    checkpoint_path = restore_checkpoint(checkpoint, allow_fallback=checkpoint_source == "explicit_fallback")
     checkpoint = checkpoint_path.relative_to(ROOT).as_posix()
     out_dir = ROOT / "outputs" / "stage5" / run_id
     restore_incremental_backup(out_dir)

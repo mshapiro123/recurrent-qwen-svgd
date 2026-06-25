@@ -239,6 +239,9 @@ Colab/Drive backups for selected runs.
 - When Phase 2 opens, run breadth diagnostics only on the checkpoint resolved
   from the passed Phase 1 source-summary chain. Manual checkpoint overrides are
   for archaeology, not the normal program track.
+- Stage 3 repair smoke must inherit its checkpoint from the passed Stage 2 norm
+  assessment. If that lineage is missing, rerun or recover Stage 2; use
+  `STAGE5_REENTRY_REPAIR_CHECKPOINT` only for an intentional artifact test.
 - Use L4/T4 for bounded 0.5B repair, recovery, and benchmark slices when
   practical. Reserve A100/G4/H100 for 1.5B/3B/7B probes, longer SFT, or
   memory-heavy particle experiments.
