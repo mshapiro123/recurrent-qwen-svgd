@@ -167,6 +167,8 @@ Stop conditions:
 
 - missing loop-1 preservation evidence;
 - loop-1 regression;
+- repair smoke did not use `entry_rms`;
+- repair smoke disabled the trainable re-entry adapter;
 - adapter gradients not live;
 - adapter or bridge live but unmoved.
 - bridge projection moved but the scalar `bridge_gate` is inactive.

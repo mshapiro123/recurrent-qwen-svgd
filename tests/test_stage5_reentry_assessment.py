@@ -93,12 +93,14 @@ def repair_summary(
     train_loss=1.25,
     target_loop_abs_error=0.4,
     halting_target_nll=0.7,
+    reentry_rescale_mode="entry_rms",
 ):
     payload = {
         "kind": "stage5_reentry_repair_smoke",
         "run_id": "stage5_reentry_repair_smoke_test",
         "config": {
             "use_reentry_adapter": use_reentry_adapter,
+            "reentry_rescale_mode": reentry_rescale_mode,
             "halt_target_nll_weight": 0.05,
         },
         "pre_bridge": {
@@ -203,6 +205,8 @@ def test_repair_smoke_assessment_passes_when_bridge_live_and_moved() -> None:
     assert out["metrics"]["depth_supervision_metrics_present"] is True
     assert out["metrics"]["loop1_source_has_correct_signal"] is True
     assert out["metrics"]["bridge_gate_active"] is True
+    assert out["metrics"]["reentry_rescale_mode"] == "entry_rms"
+    assert out["metrics"]["reentry_rescale_mode_ok"] is True
 
 
 def test_repair_smoke_assessment_detects_live_but_not_moved() -> None:
@@ -248,11 +252,20 @@ def test_repair_smoke_assessment_blocks_when_enabled_adapter_not_moved() -> None
     assert out["metrics"]["adapter_moved"] is False
 
 
-def test_repair_smoke_assessment_keeps_legacy_bridge_only_pass() -> None:
+def test_repair_smoke_assessment_blocks_legacy_bridge_only_pass_before_recovery() -> None:
     out = assess(repair_summary(use_reentry_adapter=False, adapter_delta=0.0, adapter_scale_grad=0.0, adapter_bias_grad=0.0))
 
-    assert out["status"] == "bridge_repair_smoke_passed"
-    assert out["recommendation"] == "run_bounded_recovery_training_with_reentry_repair"
+    assert out["status"] == "repair_smoke_reentry_adapter_disabled"
+    assert out["recommendation"] == "rerun_reentry_repair_smoke_with_reentry_adapter"
+
+
+def test_repair_smoke_assessment_blocks_wrong_reentry_mode_before_recovery() -> None:
+    out = assess(repair_summary(reentry_rescale_mode="none"))
+
+    assert out["status"] == "repair_smoke_reentry_mode_mismatch"
+    assert out["recommendation"] == "rerun_reentry_repair_smoke_with_entry_rms"
+    assert out["metrics"]["reentry_rescale_mode"] == "none"
+    assert out["metrics"]["reentry_rescale_mode_ok"] is False
 
 
 def test_repair_smoke_assessment_blocks_on_loop1_regression() -> None:

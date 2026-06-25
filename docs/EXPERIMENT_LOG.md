@@ -923,3 +923,11 @@ Colab/Drive backups for selected runs.
   recurrent-vs-base benchmark, then dense control. Intentional archaeology can
   still set `STAGE5_DENSE_MCQ_ALLOW_UNPASSED_BENCHMARK=1`, which prints an
   override marker.
+- Stage 3 full-topology gate: the Stage 3 repair assessment and Stage 4
+  recovery gate now require the current loop-closure repair topology, not just
+  a live bridge. A recovery-unlocking repair smoke must report
+  `reentry_rescale_mode="entry_rms"`, `use_reentry_adapter=true`, adapter
+  gradients live, adapter movement, bridge liveness/movement, active
+  `bridge_gate`, finite train/depth metrics, and loop-1 preservation. A stale
+  or legacy bridge-only repair smoke is now routed to a bounded Stage 3 rerun
+  instead of Stage 4 recovery.

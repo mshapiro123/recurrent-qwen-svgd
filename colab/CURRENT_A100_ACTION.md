@@ -38,7 +38,12 @@ The active blocker is re-entry architecture repair. Stage 1 showed the current
 recovered recurrent checkpoint has a dead bridge: `bridge_gate=0.0`, bridge
 delta RMS `0.0`, and zero bridge projection/bias/gate gradients. Stage 2 found
 `entry_rms` loop re-entry normalization safe enough for a tiny repair smoke.
-The Stage 3 assessment now also requires `bridge_gate_active=true`; bridge projection movement alone is not enough if the scalar gate collapses back near zero.
+The Stage 3 assessment now requires the current full repair topology:
+`entry_rms` re-entry rescaling, the trainable re-entry adapter enabled,
+`bridge_gate_active=true`, live/moved adapter evidence, and live/moved bridge
+evidence; bridge projection movement alone is not enough if the scalar gate
+collapses back near zero, and a legacy bridge-only repair smoke no longer
+unlocks Stage 4.
 
 ```text
 latest reviewer state: stage2_norm / entry_rms_safe_for_smoke
@@ -191,6 +196,7 @@ the next safe action.
 Stop and review if any of these happen:
 
 - Stage 3 bridge or re-entry adapter gradients are not live.
+- Stage 3 did not use `entry_rms` or disabled the re-entry adapter.
 - Stage 3 bridge projection moves but `bridge_gate` is inactive.
   Use the reviewer-provided bounded retry env, which switches to
   `bridge_proj,reentry,halt`.

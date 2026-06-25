@@ -78,11 +78,17 @@ def repair_assessment_recovery_block_reason(assessment: dict[str, Any]) -> str |
     if metrics.get("bridge_gate_active") is not True:
         return "Stage 3 repair assessment does not prove bridge_gate stayed active; rerun reentry_repair_smoke before Stage 4."
 
-    if metrics.get("use_reentry_adapter") is True:
-        if metrics.get("adapter_live") is not True:
-            return "Stage 3 repair assessment does not prove the re-entry adapter is gradient-live."
-        if metrics.get("adapter_moved") is not True:
-            return "Stage 3 repair assessment does not prove the re-entry adapter moved."
+    if metrics.get("reentry_rescale_mode") != "entry_rms":
+        return "Stage 3 repair assessment did not use entry_rms re-entry rescaling; rerun reentry_repair_smoke before Stage 4."
+
+    if metrics.get("use_reentry_adapter") is not True:
+        return "Stage 3 repair assessment did not enable the trainable re-entry adapter; rerun reentry_repair_smoke before Stage 4."
+
+    if metrics.get("adapter_live") is not True:
+        return "Stage 3 repair assessment does not prove the re-entry adapter is gradient-live."
+
+    if metrics.get("adapter_moved") is not True:
+        return "Stage 3 repair assessment does not prove the re-entry adapter moved."
 
     return None
 

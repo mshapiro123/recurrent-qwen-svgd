@@ -156,6 +156,8 @@ def passing_repair_assessment() -> dict:
             "bridge_live": True,
             "bridge_moved": True,
             "bridge_gate_active": True,
+            "reentry_rescale_mode": "entry_rms",
+            "reentry_rescale_mode_ok": True,
             "use_reentry_adapter": True,
             "adapter_live": True,
             "adapter_moved": True,
@@ -207,6 +209,37 @@ def test_repair_assessment_recovery_gate_rejects_missing_bridge_gate_evidence() 
 
     assert reason is not None
     assert "bridge_gate stayed active" in reason
+
+
+def test_repair_assessment_recovery_gate_rejects_wrong_reentry_mode() -> None:
+    assessment = passing_repair_assessment()
+    assessment["metrics"]["reentry_rescale_mode"] = "none"
+    assessment["metrics"]["reentry_rescale_mode_ok"] = False
+
+    reason = repair_assessment_recovery_block_reason(assessment)
+
+    assert reason is not None
+    assert "entry_rms" in reason
+
+
+def test_repair_assessment_recovery_gate_rejects_missing_reentry_mode() -> None:
+    assessment = passing_repair_assessment()
+    del assessment["metrics"]["reentry_rescale_mode"]
+
+    reason = repair_assessment_recovery_block_reason(assessment)
+
+    assert reason is not None
+    assert "entry_rms" in reason
+
+
+def test_repair_assessment_recovery_gate_rejects_disabled_reentry_adapter() -> None:
+    assessment = passing_repair_assessment()
+    assessment["metrics"]["use_reentry_adapter"] = False
+
+    reason = repair_assessment_recovery_block_reason(assessment)
+
+    assert reason is not None
+    assert "adapter" in reason
 
 
 def test_repair_assessment_recovery_gate_rejects_nonfinite_train_loss() -> None:

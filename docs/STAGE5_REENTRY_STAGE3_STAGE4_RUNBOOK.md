@@ -109,6 +109,12 @@ Failure responses:
   uninformative.
 - `review_or_reduce_repair_lr_before_recovery_training`: do not train; loop-1
   preservation regressed.
+- `rerun_reentry_repair_smoke_with_entry_rms`: do not train; the repair smoke
+  did not exercise the eval-safe `entry_rms` loop-closure path required for
+  the current Stage 4 contract.
+- `rerun_reentry_repair_smoke_with_reentry_adapter`: do not train; a legacy
+  bridge-only smoke is no longer a pass because Stage 4 must prove the
+  trainable re-entry adapter path.
 - `fix_reentry_adapter_before_recovery_training`: do not train; adapter
   gradients are not live.
 - `extend_reentry_repair_smoke_or_increase_adapter_lr`: retry only a bounded
@@ -144,6 +150,8 @@ Configured behavior:
   repair evidence;
 - refuses stale recommendation-only Stage 3 assessments that do not prove
   `bridge_gate_active=true`;
+- refuses Stage 3 assessments that did not use `entry_rms` re-entry rescaling
+  and did not enable the trainable re-entry adapter;
 - resumes from the Stage 3 repaired checkpoint;
 - trains `bridge,reentry,halt,lora`;
 - enables learned loop control and target-loop NLL supervision;

@@ -175,6 +175,8 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
     post = summary.get("post_bridge") if isinstance(summary.get("post_bridge"), dict) else {}
     config = summary.get("config") if isinstance(summary.get("config"), dict) else {}
     use_reentry_adapter = bool(config.get("use_reentry_adapter", False))
+    reentry_rescale_mode = str(config.get("reentry_rescale_mode") or "")
+    reentry_rescale_mode_ok = reentry_rescale_mode == "entry_rms"
     halt_target_nll_weight = finite_float(config.get("halt_target_nll_weight"))
     pre_delta = finite_float(pre.get("bridge_delta_rms"))
     post_delta = finite_float(post.get("bridge_delta_rms"))
@@ -265,6 +267,14 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
         status = "bridge_live_but_loop1_regressed" if bridge_live else "bridge_still_dead_and_loop1_regressed"
         recommendation = "review_or_reduce_repair_lr_before_recovery_training"
         reason = "The repair smoke harmed deterministic loop-1 preservation; review before recovery training."
+    elif not reentry_rescale_mode_ok:
+        status = "repair_smoke_reentry_mode_mismatch"
+        recommendation = "rerun_reentry_repair_smoke_with_entry_rms"
+        reason = "The repair smoke did not exercise the eval-safe entry_rms loop-closure path required before Stage 4."
+    elif not use_reentry_adapter:
+        status = "repair_smoke_reentry_adapter_disabled"
+        recommendation = "rerun_reentry_repair_smoke_with_reentry_adapter"
+        reason = "The repair smoke used a legacy bridge-only path; Stage 4 requires the trainable re-entry adapter path."
     elif use_reentry_adapter and not adapter_live:
         status = "reentry_adapter_not_gradient_live"
         recommendation = "fix_reentry_adapter_before_recovery_training"
@@ -308,6 +318,9 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
             "post_bias_grad_rms": post_bias_grad,
             "bridge_live": bridge_live,
             "bridge_moved": bridge_moved,
+            "reentry_rescale_mode": reentry_rescale_mode,
+            "expected_reentry_rescale_mode": "entry_rms",
+            "reentry_rescale_mode_ok": reentry_rescale_mode_ok,
             "use_reentry_adapter": use_reentry_adapter,
             "adapter_delta_rms": adapter_delta,
             "adapter_scale_identity_max_abs_diff": adapter_scale_diff,
