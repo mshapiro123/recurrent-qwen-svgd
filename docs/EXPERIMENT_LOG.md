@@ -515,6 +515,13 @@ Colab/Drive backups for selected runs.
 - Added `docs/PROGRAM_TRACK_MASTER_SEQUENCE.md` as the umbrella dependency
   sequence: Phase 0 re-entry, Phase 1 depth, Phase 2 breadth/multistability,
   and Phase 3 particles/SVGD plus selector. Current work remains Phase 0.
+- Added `colab/NEXT_COLAB_SEQUENCE.md` as the short Colab target queue and
+  tightened the post-Stage-4 depth-control path. The generic
+  `STAGE5_CURRENT_A100_SOURCE_SUMMARY` override now fans out to
+  `STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY` and
+  `STAGE5_DENSE_MCQ_SOURCE_SUMMARY`, so a repaired Stage 4 summary can be used
+  consistently for base-vs-recurrent benchmarking and the dense
+  same-curriculum control.
 - Current reviewer output remains Stage 1 only until Stage 2 lands:
   `bridge_dead -> run_reentry_norm_then_repair_smoke -> next target
   reentry_norm_diagnostic`.
