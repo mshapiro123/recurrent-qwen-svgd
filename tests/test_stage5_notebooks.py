@@ -345,12 +345,13 @@ def test_current_bootstrap_source_summary_override_fans_out_to_benchmark_and_con
         assert 'os.environ.pop("STAGE5_COMPETENCE_SOURCE_SUMMARY", None)' in payload
 
 
-def test_current_bootstrap_prefers_local_head_to_stale_ref_resolution() -> None:
+def test_current_bootstrap_can_explicitly_prefer_local_head_to_stale_ref_resolution() -> None:
     text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
 
     for payload in (text, markdown):
         assert "STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD" in payload
+        assert 'os.environ.get("STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD", "0")' in payload
         assert "git\", \"rev-parse\", \"HEAD" in payload
         assert "using local HEAD" in payload
         assert "RESOLVED_REF = local_head" in payload
