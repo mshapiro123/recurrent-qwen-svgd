@@ -106,7 +106,9 @@ calls. Configure provider models with either
 `STAGE5_CURRICULUM_WEAK_REFERENCE_MODEL` values. Then set
 `STAGE5_CURRICULUM_RUN_PROVIDER_RESPONSES=1`. Set
 `STAGE5_CURRICULUM_PROVIDER_LIMIT=2` for a tiny provider smoke; leave it unset
-for all pending rows.
+for all pending rows. The target writes `curriculum_readiness.json` after each
+pass; use it as the resumable status file for pending provider pairs and the
+next safe action.
 
 ### 1. Finish or recover Stage 2
 

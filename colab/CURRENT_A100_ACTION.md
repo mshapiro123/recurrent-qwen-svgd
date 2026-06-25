@@ -164,6 +164,9 @@ or as individual `STAGE5_CURRICULUM_OPUS_MODEL`,
 `STAGE5_CURRICULUM_GLM_MODEL`, and
 `STAGE5_CURRICULUM_WEAK_REFERENCE_MODEL` values. Use
 `STAGE5_CURRICULUM_PROVIDER_LIMIT=2` for the first paid provider smoke.
+Each pass writes `curriculum_readiness.json` in the work directory, so after an
+interrupted CPU/API run, inspect that file first for pending provider pairs and
+the next safe action.
 
 ## Explicit Stops
 

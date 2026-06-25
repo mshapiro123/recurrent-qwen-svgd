@@ -836,3 +836,11 @@ Colab/Drive backups for selected runs.
   at least one correct source example. A zero-hit source comparison proves only
   non-regression on an uninformative slice, so Stage 4 now refuses that artifact
   and asks for a better loop-1 preservation eval before recovery SFT.
+- Claim curriculum readiness artifact: the CPU/API claim-sized curriculum
+  target now writes `curriculum_readiness.json` into its work directory after
+  each pass. The file records provider enabled/disabled state, API-key presence,
+  whether concrete model ids replaced placeholders, pending provider
+  job/response pairs, row requirements, and the next safe action. A local
+  no-provider preflight with the claim-scale defaults created `3904` seed jobs
+  and stopped cleanly at `pending_seed_responses`, proving the CPU path starts
+  without GPU or provider spend.
