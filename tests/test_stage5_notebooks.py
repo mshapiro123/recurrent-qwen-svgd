@@ -321,6 +321,8 @@ def test_current_bootstrap_exposes_forced_depth_diagnostic_target() -> None:
     assert "forced_depth_arc_v1" in cell
     assert "content_question_only,cyclic_label_aggregated" in cell
     assert "eval/analyze_depth_sweep.py" in cell
+    assert "forward_max_loops = max(loops)" in cell
+    assert '"STAGE5_BENCHMARK_MAX_LOOPS": str(forward_max_loops)' in cell
 
 
 def test_current_bootstrap_source_summary_override_fans_out_to_benchmark_and_control() -> None:

@@ -350,19 +350,15 @@ def checkpoint_bearing_source_summary(source_summary: Path | None, payload: dict
     current_payload = payload
     seen: set[Path] = set()
     for _depth in range(8):
-        if (
-            checkpoint_value_from_payload(current_payload)
-            or current_payload.get("checkpoint")
-            or current_payload.get("export_dir")
-            or (current_summary.parent / "recurrent_adapter_checkpoint.pt").exists()
-        ):
-            return current_summary
         if current_summary in seen:
             raise RuntimeError(f"Cycle while resolving checkpoint-bearing source summary: {current_summary}")
         seen.add(current_summary)
         kind = str(current_payload.get("kind") or "")
+        gate = str(current_payload.get("gate") or "")
         next_summary: str | None = None
-        if kind == "stage5_mcq_scoring_policy":
+        if gate == "stage5_broader_benchmark_suite" and current_payload.get("source_summary"):
+            next_summary = current_payload.get("source_summary")
+        elif kind == "stage5_mcq_scoring_policy":
             next_summary = current_payload.get("source_summary")
         elif kind == "stage5_mcq_debias_pair_assessment":
             source_summaries = current_payload.get("source_summaries") or {}
@@ -370,7 +366,15 @@ def checkpoint_bearing_source_summary(source_summary: Path | None, payload: dict
                 next_summary = source_summaries.get("arc_challenge") or source_summaries.get("arc_easy")
         elif kind == "stage5_mcq_debias_diagnostic":
             next_summary = current_payload.get("nested_source_summary") or current_payload.get("source_summary")
+
         if not next_summary:
+            if (
+                checkpoint_value_from_payload(current_payload)
+                or current_payload.get("checkpoint")
+                or current_payload.get("export_dir")
+                or (current_summary.parent / "recurrent_adapter_checkpoint.pt").exists()
+            ):
+                return current_summary
             return current_summary
         current_summary = resolve_path(next_summary)
         current_payload = read_json(current_summary)

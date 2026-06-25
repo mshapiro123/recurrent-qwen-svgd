@@ -62,7 +62,19 @@ if HF_TOKEN:
 def run(cmd, *, cwd=None, env=None, check=True):
     printable = " ".join(map(str, cmd)).replace(GH_TOKEN, "****")
     print("$", printable, flush=True)
-    proc = subprocess.run(cmd, cwd=cwd, env=env)
+    process = subprocess.Popen(
+        cmd,
+        cwd=cwd,
+        env=env,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    for line in process.stdout:
+        print(line, end="", flush=True)
+    proc = subprocess.CompletedProcess(cmd, process.wait())
     if check and proc.returncode:
         raise subprocess.CalledProcessError(proc.returncode, cmd)
     return proc
@@ -162,13 +174,15 @@ def write_pointer(summary_path: Path) -> None:
 def write_sweep_summary(sweep_id: str, source_summary: str, run_ids: list[str]) -> Path:
     out_dir = ROOT / "outputs" / "stage5" / sweep_id
     out_dir.mkdir(parents=True, exist_ok=True)
+    loops = parse_csv_ints(os.environ.get("STAGE5_FORCED_DEPTH_LOOPS", "1,2,3"))
     payload = {
         "kind": "stage5_forced_depth_diagnostic",
         "run_id": sweep_id,
         "cell_version": STAGE5_FORCED_DEPTH_DIAGNOSTIC_CELL_VERSION,
         "source_summary": source_summary,
         "loop_run_ids": run_ids,
-        "loops": parse_csv_ints(os.environ.get("STAGE5_FORCED_DEPTH_LOOPS", "1,2,3")),
+        "loops": loops,
+        "forward_max_loops": max(loops),
         "benchmarks": os.environ.get("STAGE5_FORCED_DEPTH_BENCHMARKS", "arc_challenge"),
         "score_targets": os.environ.get(
             "STAGE5_FORCED_DEPTH_SCORE_TARGETS",
@@ -184,6 +198,7 @@ def write_sweep_summary(sweep_id: str, source_summary: str, run_ids: list[str]) 
         f"- Cell version: `{STAGE5_FORCED_DEPTH_DIAGNOSTIC_CELL_VERSION}`",
         f"- Source summary: `{source_summary}`",
         f"- Loops: `{payload['loops']}`",
+        f"- Forward max loops: `{payload['forward_max_loops']}`",
         f"- Benchmarks: `{payload['benchmarks']}`",
         f"- Score targets: `{payload['score_targets']}`",
         "",
@@ -291,6 +306,7 @@ try:
 
     source_summary = current_source_summary()
     loops = parse_csv_ints(os.environ.get("STAGE5_FORCED_DEPTH_LOOPS", "1,2,3"))
+    forward_max_loops = max(loops)
     sweep_id = os.environ.get("STAGE5_FORCED_DEPTH_RUN_ID") or time.strftime(
         "stage5_forced_depth_arc_challenge_loop123_%Y%m%d_%H%M%S"
     )
@@ -299,6 +315,7 @@ try:
     print("forced_depth_source_summary:", source_summary, flush=True)
     print("forced_depth_sweep_id:", sweep_id, flush=True)
     print("forced_depth_loops:", loops, flush=True)
+    print("forced_depth_forward_max_loops:", forward_max_loops, flush=True)
 
     for forced_loop in loops:
         run_id = f"{sweep_id}_loop{forced_loop}"
@@ -313,7 +330,7 @@ try:
                 "STAGE5_BENCHMARK_ARC_CHALLENGE_OFFSET": os.environ.get("STAGE5_FORCED_DEPTH_ARC_CHALLENGE_OFFSET", "0"),
                 "STAGE5_BENCHMARK_ARC_EASY_LIMIT": os.environ.get("STAGE5_FORCED_DEPTH_ARC_EASY_LIMIT", "128"),
                 "STAGE5_BENCHMARK_ARC_EASY_OFFSET": os.environ.get("STAGE5_FORCED_DEPTH_ARC_EASY_OFFSET", "0"),
-                "STAGE5_BENCHMARK_MAX_LOOPS": str(forced_loop),
+                "STAGE5_BENCHMARK_MAX_LOOPS": str(forward_max_loops),
                 "STAGE5_BENCHMARK_FORCED_LOOP_COUNT": str(forced_loop),
                 "STAGE5_BENCHMARK_USE_LEARNED_LOOP_CONTROL": "0",
                 "STAGE5_BENCHMARK_NUM_TRAJECTORIES": "1",
