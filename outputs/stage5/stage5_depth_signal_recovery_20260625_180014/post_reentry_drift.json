@@ -1,0 +1,496 @@
+{
+  "kind": "reentry_drift_diagnostic",
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "checkpoint": "outputs/stage5/stage5_depth_signal_recovery_20260625_180014_curriculum_sft/phase1/phase1_step_100.pt",
+  "split": "auto",
+  "max_loops": 8,
+  "max_length": 256,
+  "subspace_rank": 8,
+  "reentry_rescale_mode": "entry_rms",
+  "use_reentry_adapter": true,
+  "reentry_adapter_mode": "spectral",
+  "aggregate": {
+    "prompts": 3,
+    "tokens": 50,
+    "mean_entry_rms": 13.732953389485678,
+    "mean_exit_rms": 13.755001068115234,
+    "mean_exit_over_entry_rms": 1.001762827237447,
+    "mean_pooled_entry_exit_cosine": 0.9860819975535074,
+    "entry_exit_subspace": {
+      "rank": 8,
+      "overlap": 0.3456194996833801,
+      "principal_cosines": [
+        0.9998481273651123,
+        0.6566210389137268,
+        0.6126829981803894,
+        0.5597726702690125,
+        0.5093474984169006,
+        0.4406410753726959,
+        0.42166221141815186,
+        0.11825443059206009
+      ],
+      "aligned_dims_cos_ge_0p8": 1,
+      "aligned_dims_cos_ge_0p9": 1
+    },
+    "loop_summary": {
+      "1": {
+        "raw_input_rms": 13.732953389485678,
+        "input_rms": 13.732953389485678,
+        "output_rms": 13.755001068115234,
+        "input_over_entry_rms": 1.0,
+        "output_over_entry_rms": 1.001762827237447,
+        "output_over_input_rms": 1.001762827237447,
+        "bridge_delta_rms": 0.0,
+        "reentry_adapter_delta_rms": 0.0,
+        "pooled_input_output_cosine": 0.9860819975535074
+      },
+      "2": {
+        "raw_input_rms": 13.755001068115234,
+        "input_rms": 13.715339660644531,
+        "output_rms": 13.737404505411783,
+        "input_over_entry_rms": 0.9983758131663004,
+        "output_over_entry_rms": 1.0001067320505779,
+        "output_over_input_rms": 1.0017345746358235,
+        "bridge_delta_rms": 0.1254778355360031,
+        "reentry_adapter_delta_rms": 0.002762629728143414,
+        "pooled_input_output_cosine": 0.995243767897288
+      },
+      "3": {
+        "raw_input_rms": 13.737404505411783,
+        "input_rms": 13.739206314086914,
+        "output_rms": 13.771737098693848,
+        "input_over_entry_rms": 1.0002380013465881,
+        "output_over_entry_rms": 1.0027820269266765,
+        "output_over_input_rms": 1.0025440851847331,
+        "bridge_delta_rms": 0.11494677017132442,
+        "reentry_adapter_delta_rms": 0.002680584555491805,
+        "pooled_input_output_cosine": 0.9970346490542094
+      },
+      "4": {
+        "raw_input_rms": 13.771737098693848,
+        "input_rms": 13.725146611531576,
+        "output_rms": 13.766813278198242,
+        "input_over_entry_rms": 0.9995439251263937,
+        "output_over_entry_rms": 1.0027902921040852,
+        "output_over_input_rms": 1.0032476584116619,
+        "bridge_delta_rms": 0.1286800056695938,
+        "reentry_adapter_delta_rms": 0.0026671181743343673,
+        "pooled_input_output_cosine": 0.9975375930468241
+      },
+      "5": {
+        "raw_input_rms": 13.766813278198242,
+        "input_rms": 13.72981039683024,
+        "output_rms": 13.780109405517578,
+        "input_over_entry_rms": 0.999591588973999,
+        "output_over_entry_rms": 1.0035150051116943,
+        "output_over_input_rms": 1.003926197687785,
+        "bridge_delta_rms": 0.1269609605272611,
+        "reentry_adapter_delta_rms": 0.0026406136651833854,
+        "pooled_input_output_cosine": 0.9979574282964071
+      },
+      "6": {
+        "raw_input_rms": 13.780109405517578,
+        "input_rms": 13.713353792826334,
+        "output_rms": 13.773533503214518,
+        "input_over_entry_rms": 0.9986455043156942,
+        "output_over_entry_rms": 1.003321607907613,
+        "output_over_input_rms": 1.0046820243199666,
+        "bridge_delta_rms": 0.1349927211801211,
+        "reentry_adapter_delta_rms": 0.0026281202056755624,
+        "pooled_input_output_cosine": 0.9980981349945068
+      },
+      "7": {
+        "raw_input_rms": 13.773533503214518,
+        "input_rms": 13.7379150390625,
+        "output_rms": 13.807507832845053,
+        "input_over_entry_rms": 1.0002189079920452,
+        "output_over_entry_rms": 1.0056180556615193,
+        "output_over_input_rms": 1.0053988297780354,
+        "bridge_delta_rms": 0.12791783610979715,
+        "reentry_adapter_delta_rms": 0.0024238151187698045,
+        "pooled_input_output_cosine": 0.998254656791687
+      },
+      "8": {
+        "raw_input_rms": 13.807507832845053,
+        "input_rms": 13.741137186686197,
+        "output_rms": 13.820069313049316,
+        "input_over_entry_rms": 1.0007614493370056,
+        "output_over_entry_rms": 1.0068777799606323,
+        "output_over_input_rms": 1.0061099131902058,
+        "bridge_delta_rms": 0.1357929234703382,
+        "reentry_adapter_delta_rms": 0.0023337489692494273,
+        "pooled_input_output_cosine": 0.9984537959098816
+      }
+    }
+  },
+  "bridge": {
+    "bridge_gate": 1.0005296468734741,
+    "proj_identity_max_abs_diff": 0.0005988914635963738,
+    "proj_bias_max_abs": 0.0004907387774437666,
+    "sample_bridge_delta_rms": 0.10798023641109467,
+    "sample_state_rms": 13.239619255065918
+  },
+  "bridge_gradient_liveness": {
+    "loss": 175.14503479003906,
+    "gate_grad_abs": 0.13073128461837769,
+    "weight_grad_rms": 0.3892977237701416,
+    "bias_grad_rms": 0.00757050234824419
+  },
+  "reentry_adapter": {
+    "mode": "spectral",
+    "scale_identity_max_abs_diff": 0.0,
+    "bias_max_abs": 0.0,
+    "sample_adapter_delta_rms": 0.005204830318689346,
+    "sample_state_rms": 13.239619255065918,
+    "spectral_rank": 8.0,
+    "spectral_sigma": 2.1714609829359688e-05,
+    "spectral_strength": 0.0003354387008585036,
+    "spectral_effective_spectral_bound": 1.0
+  },
+  "reentry_adapter_gradient_liveness": {
+    "loss": 175.16909790039062,
+    "mode": "spectral",
+    "scale_grad_rms": 0.0,
+    "bias_grad_rms": 0.0,
+    "spectral_u_grad_rms": 0.10277573019266129,
+    "spectral_v_grad_rms": 0.04048735648393631,
+    "spectral_theta_grad_abs": 0.11835695058107376
+  },
+  "reference_bridge_gradient_liveness": {
+    "identity_gate0": {
+      "loss": 1.0359077453613281,
+      "gate_grad_abs": 0.0,
+      "weight_grad_rms": 0.0,
+      "bias_grad_rms": 0.0
+    },
+    "identity_gate1": {
+      "loss": 1.0359077453613281,
+      "gate_grad_abs": 0.0,
+      "weight_grad_rms": 0.000948266766499728,
+      "bias_grad_rms": 0.0009177112951874733
+    }
+  },
+  "records": [
+    {
+      "prompt_index": 0,
+      "prompt": "Solve: If a train travels 120 miles in 3 hours, what is its average speed?",
+      "tokens": 23,
+      "entry_rms": 11.028203010559082,
+      "exit_rms": 11.057010650634766,
+      "exit_over_entry_rms": 1.0026122331619263,
+      "pooled_entry_exit_cosine": 0.9777287244796753,
+      "loop_records": [
+        {
+          "loop": 1,
+          "raw_input_rms": 11.028203010559082,
+          "input_rms": 11.028203010559082,
+          "output_rms": 11.057010650634766,
+          "input_over_entry_rms": 1.0,
+          "output_over_entry_rms": 1.0026122331619263,
+          "output_over_input_rms": 1.0026122331619263,
+          "bridge_delta_rms": 0.0,
+          "reentry_adapter_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9777287244796753
+        },
+        {
+          "loop": 2,
+          "raw_input_rms": 11.057010650634766,
+          "input_rms": 11.000608444213867,
+          "output_rms": 11.028264045715332,
+          "input_over_entry_rms": 0.9974977970123291,
+          "output_over_entry_rms": 1.0000054836273193,
+          "output_over_input_rms": 1.0025140047073364,
+          "bridge_delta_rms": 0.10814372450113297,
+          "reentry_adapter_delta_rms": 0.0021815085783600807,
+          "pooled_input_output_cosine": 0.9924471378326416
+        },
+        {
+          "loop": 3,
+          "raw_input_rms": 11.028264045715332,
+          "input_rms": 11.029709815979004,
+          "output_rms": 11.068790435791016,
+          "input_over_entry_rms": 1.0001366138458252,
+          "output_over_entry_rms": 1.0036803483963013,
+          "output_over_input_rms": 1.0035432577133179,
+          "bridge_delta_rms": 0.093182772397995,
+          "reentry_adapter_delta_rms": 0.0021540604066103697,
+          "pooled_input_output_cosine": 0.9954437613487244
+        },
+        {
+          "loop": 4,
+          "raw_input_rms": 11.068790435791016,
+          "input_rms": 11.013812065124512,
+          "output_rms": 11.063191413879395,
+          "input_over_entry_rms": 0.9986950755119324,
+          "output_over_entry_rms": 1.0031726360321045,
+          "output_over_input_rms": 1.0044834613800049,
+          "bridge_delta_rms": 0.108937107026577,
+          "reentry_adapter_delta_rms": 0.0021599314641207457,
+          "pooled_input_output_cosine": 0.9963343739509583
+        },
+        {
+          "loop": 5,
+          "raw_input_rms": 11.063191413879395,
+          "input_rms": 11.008594512939453,
+          "output_rms": 11.067988395690918,
+          "input_over_entry_rms": 0.9982219934463501,
+          "output_over_entry_rms": 1.0036076307296753,
+          "output_over_input_rms": 1.0053951740264893,
+          "bridge_delta_rms": 0.1094626784324646,
+          "reentry_adapter_delta_rms": 0.0021142754703760147,
+          "pooled_input_output_cosine": 0.9971233010292053
+        },
+        {
+          "loop": 6,
+          "raw_input_rms": 11.067988395690918,
+          "input_rms": 11.013837814331055,
+          "output_rms": 11.083699226379395,
+          "input_over_entry_rms": 0.9986974000930786,
+          "output_over_entry_rms": 1.0050321817398071,
+          "output_over_input_rms": 1.0063430070877075,
+          "bridge_delta_rms": 0.11014480888843536,
+          "reentry_adapter_delta_rms": 0.00206203805282712,
+          "pooled_input_output_cosine": 0.9973272681236267
+        },
+        {
+          "loop": 7,
+          "raw_input_rms": 11.083699226379395,
+          "input_rms": 11.029951095581055,
+          "output_rms": 11.11014175415039,
+          "input_over_entry_rms": 1.0001585483551025,
+          "output_over_entry_rms": 1.0074299573898315,
+          "output_over_input_rms": 1.0072702169418335,
+          "bridge_delta_rms": 0.11071006208658218,
+          "reentry_adapter_delta_rms": 0.0019431535620242357,
+          "pooled_input_output_cosine": 0.9976477026939392
+        },
+        {
+          "loop": 8,
+          "raw_input_rms": 11.11014175415039,
+          "input_rms": 11.054611206054688,
+          "output_rms": 11.144688606262207,
+          "input_over_entry_rms": 1.0023945569992065,
+          "output_over_entry_rms": 1.010562539100647,
+          "output_over_input_rms": 1.008148431777954,
+          "bridge_delta_rms": 0.11199474334716797,
+          "reentry_adapter_delta_rms": 0.0018553024856373668,
+          "pooled_input_output_cosine": 0.9979294538497925
+        }
+      ]
+    },
+    {
+      "prompt_index": 1,
+      "prompt": "A rectangle is 7 units long and 5 units wide. What is its area?",
+      "tokens": 18,
+      "entry_rms": 12.465121269226074,
+      "exit_rms": 12.489025115966797,
+      "exit_over_entry_rms": 1.0019176006317139,
+      "pooled_entry_exit_cosine": 0.9846768975257874,
+      "loop_records": [
+        {
+          "loop": 1,
+          "raw_input_rms": 12.465121269226074,
+          "input_rms": 12.465121269226074,
+          "output_rms": 12.489025115966797,
+          "input_over_entry_rms": 1.0,
+          "output_over_entry_rms": 1.0019176006317139,
+          "output_over_input_rms": 1.0019176006317139,
+          "bridge_delta_rms": 0.0,
+          "reentry_adapter_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9846768975257874
+        },
+        {
+          "loop": 2,
+          "raw_input_rms": 12.489025115966797,
+          "input_rms": 12.425348281860352,
+          "output_rms": 12.446759223937988,
+          "input_over_entry_rms": 0.9968092441558838,
+          "output_over_entry_rms": 0.998526930809021,
+          "output_over_input_rms": 1.0017231702804565,
+          "bridge_delta_rms": 0.12161258608102798,
+          "reentry_adapter_delta_rms": 0.002484033815562725,
+          "pooled_input_output_cosine": 0.9949078559875488
+        },
+        {
+          "loop": 3,
+          "raw_input_rms": 12.446759223937988,
+          "input_rms": 12.448403358459473,
+          "output_rms": 12.481402397155762,
+          "input_over_entry_rms": 0.9986588358879089,
+          "output_over_entry_rms": 1.001306176185608,
+          "output_over_input_rms": 1.0026508569717407,
+          "bridge_delta_rms": 0.10443069785833359,
+          "reentry_adapter_delta_rms": 0.002452739980071783,
+          "pooled_input_output_cosine": 0.9966720342636108
+        },
+        {
+          "loop": 4,
+          "raw_input_rms": 12.481402397155762,
+          "input_rms": 12.483931541442871,
+          "output_rms": 12.52564525604248,
+          "input_over_entry_rms": 1.0015090703964233,
+          "output_over_entry_rms": 1.0048555135726929,
+          "output_over_input_rms": 1.0033414363861084,
+          "bridge_delta_rms": 0.10567007213830948,
+          "reentry_adapter_delta_rms": 0.0024623216595500708,
+          "pooled_input_output_cosine": 0.9971954226493835
+        },
+        {
+          "loop": 5,
+          "raw_input_rms": 12.52564525604248,
+          "input_rms": 12.464184761047363,
+          "output_rms": 12.515421867370605,
+          "input_over_entry_rms": 0.999924898147583,
+          "output_over_entry_rms": 1.0040353536605835,
+          "output_over_input_rms": 1.0041106939315796,
+          "bridge_delta_rms": 0.12286833673715591,
+          "reentry_adapter_delta_rms": 0.002379693789407611,
+          "pooled_input_output_cosine": 0.9975748658180237
+        },
+        {
+          "loop": 6,
+          "raw_input_rms": 12.515421867370605,
+          "input_rms": 12.454537391662598,
+          "output_rms": 12.515288352966309,
+          "input_over_entry_rms": 0.9991509318351746,
+          "output_over_entry_rms": 1.004024624824524,
+          "output_over_input_rms": 1.0048778057098389,
+          "bridge_delta_rms": 0.12336523085832596,
+          "reentry_adapter_delta_rms": 0.0024222047068178654,
+          "pooled_input_output_cosine": 0.9977384209632874
+        },
+        {
+          "loop": 7,
+          "raw_input_rms": 12.515288352966309,
+          "input_rms": 12.454853057861328,
+          "output_rms": 12.524911880493164,
+          "input_over_entry_rms": 0.9991762638092041,
+          "output_over_entry_rms": 1.0047966241836548,
+          "output_over_input_rms": 1.0056250095367432,
+          "bridge_delta_rms": 0.1235780194401741,
+          "reentry_adapter_delta_rms": 0.002234162762761116,
+          "pooled_input_output_cosine": 0.9979137182235718
+        },
+        {
+          "loop": 8,
+          "raw_input_rms": 12.524911880493164,
+          "input_rms": 12.464897155761719,
+          "output_rms": 12.544675827026367,
+          "input_over_entry_rms": 0.9999819993972778,
+          "output_over_entry_rms": 1.0063822269439697,
+          "output_over_input_rms": 1.006400227546692,
+          "bridge_delta_rms": 0.12422435730695724,
+          "reentry_adapter_delta_rms": 0.0021421266719698906,
+          "pooled_input_output_cosine": 0.9982216358184814
+        }
+      ]
+    },
+    {
+      "prompt_index": 2,
+      "prompt": "Name one strategy for solving a Sudoku puzzle.",
+      "tokens": 9,
+      "entry_rms": 17.705535888671875,
+      "exit_rms": 17.71896743774414,
+      "exit_over_entry_rms": 1.0007586479187012,
+      "pooled_entry_exit_cosine": 0.9958403706550598,
+      "loop_records": [
+        {
+          "loop": 1,
+          "raw_input_rms": 17.705535888671875,
+          "input_rms": 17.705535888671875,
+          "output_rms": 17.71896743774414,
+          "input_over_entry_rms": 1.0,
+          "output_over_entry_rms": 1.0007586479187012,
+          "output_over_input_rms": 1.0007586479187012,
+          "bridge_delta_rms": 0.0,
+          "reentry_adapter_delta_rms": 0.0,
+          "pooled_input_output_cosine": 0.9958403706550598
+        },
+        {
+          "loop": 2,
+          "raw_input_rms": 17.71896743774414,
+          "input_rms": 17.720062255859375,
+          "output_rms": 17.73719024658203,
+          "input_over_entry_rms": 1.0008203983306885,
+          "output_over_entry_rms": 1.001787781715393,
+          "output_over_input_rms": 1.0009665489196777,
+          "bridge_delta_rms": 0.1466771960258484,
+          "reentry_adapter_delta_rms": 0.003622346790507436,
+          "pooled_input_output_cosine": 0.9983763098716736
+        },
+        {
+          "loop": 3,
+          "raw_input_rms": 17.73719024658203,
+          "input_rms": 17.739505767822266,
+          "output_rms": 17.765018463134766,
+          "input_over_entry_rms": 1.0019185543060303,
+          "output_over_entry_rms": 1.0033595561981201,
+          "output_over_input_rms": 1.0014381408691406,
+          "bridge_delta_rms": 0.14722684025764465,
+          "reentry_adapter_delta_rms": 0.0034349532797932625,
+          "pooled_input_output_cosine": 0.998988151550293
+        },
+        {
+          "loop": 4,
+          "raw_input_rms": 17.765018463134766,
+          "input_rms": 17.677696228027344,
+          "output_rms": 17.71160316467285,
+          "input_over_entry_rms": 0.9984276294708252,
+          "output_over_entry_rms": 1.0003427267074585,
+          "output_over_input_rms": 1.001918077468872,
+          "bridge_delta_rms": 0.17143283784389496,
+          "reentry_adapter_delta_rms": 0.003379101399332285,
+          "pooled_input_output_cosine": 0.9990829825401306
+        },
+        {
+          "loop": 5,
+          "raw_input_rms": 17.71160316467285,
+          "input_rms": 17.716651916503906,
+          "output_rms": 17.75691795349121,
+          "input_over_entry_rms": 1.000627875328064,
+          "output_over_entry_rms": 1.0029020309448242,
+          "output_over_input_rms": 1.0022727251052856,
+          "bridge_delta_rms": 0.14855186641216278,
+          "reentry_adapter_delta_rms": 0.00342787173576653,
+          "pooled_input_output_cosine": 0.9991741180419922
+        },
+        {
+          "loop": 6,
+          "raw_input_rms": 17.75691795349121,
+          "input_rms": 17.67168617248535,
+          "output_rms": 17.72161293029785,
+          "input_over_entry_rms": 0.9980881810188293,
+          "output_over_entry_rms": 1.0009080171585083,
+          "output_over_input_rms": 1.0028252601623535,
+          "bridge_delta_rms": 0.171468123793602,
+          "reentry_adapter_delta_rms": 0.0034001178573817015,
+          "pooled_input_output_cosine": 0.9992287158966064
+        },
+        {
+          "loop": 7,
+          "raw_input_rms": 17.72161293029785,
+          "input_rms": 17.728940963745117,
+          "output_rms": 17.7874698638916,
+          "input_over_entry_rms": 1.0013219118118286,
+          "output_over_entry_rms": 1.0046275854110718,
+          "output_over_input_rms": 1.0033012628555298,
+          "bridge_delta_rms": 0.1494654268026352,
+          "reentry_adapter_delta_rms": 0.003094129031524062,
+          "pooled_input_output_cosine": 0.99920254945755
+        },
+        {
+          "loop": 8,
+          "raw_input_rms": 17.7874698638916,
+          "input_rms": 17.703903198242188,
+          "output_rms": 17.770843505859375,
+          "input_over_entry_rms": 0.9999077916145325,
+          "output_over_entry_rms": 1.0036885738372803,
+          "output_over_input_rms": 1.0037810802459717,
+          "bridge_delta_rms": 0.17115966975688934,
+          "reentry_adapter_delta_rms": 0.0030038177501410246,
+          "pooled_input_output_cosine": 0.9992102980613708
+        }
+      ]
+    }
+  ]
+}
