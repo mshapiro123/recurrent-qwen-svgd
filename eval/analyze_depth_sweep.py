@@ -115,27 +115,32 @@ def load_loop_payloads(sweep_summary: Path) -> tuple[dict[str, Any], dict[int, d
     return sweep, dict(sorted(loop_payloads.items()))
 
 
-def row_file_for(loop_payload: dict[str, Any], benchmark: str, arm: str) -> Path:
+def row_file_for(loop_payload: dict[str, Any], benchmark: str, arm: str, score_target: str) -> Path:
     results = loop_payload.get("results", [])
     if isinstance(results, list):
         for row in results:
-            if row.get("benchmark") == benchmark and row.get("arm") == arm and row.get("score_target") == "label":
+            if row.get("benchmark") == benchmark and row.get("arm") == arm and row.get("score_target") == score_target:
                 value = row.get("output_jsonl")
                 if value:
                     return resolve_path(value)
     run_id = loop_payload.get("run_id")
     if run_id:
-        inferred = ROOT / "outputs" / "stage5" / str(run_id) / f"{benchmark}_{arm}_label.jsonl"
+        inferred = ROOT / "outputs" / "stage5" / str(run_id) / f"{benchmark}_{arm}_{score_target}.jsonl"
         if inferred.exists():
             return inferred
-    raise FileNotFoundError(f"No label output for benchmark={benchmark} arm={arm}")
+    raise FileNotFoundError(f"No {score_target} output for benchmark={benchmark} arm={arm}")
 
 
-def joined_examples(loop_payloads: dict[int, dict[str, Any]], benchmark: str) -> list[dict[str, Any]]:
+def joined_examples(
+    loop_payloads: dict[int, dict[str, Any]],
+    benchmark: str,
+    score_target: str,
+    aggregate: str,
+) -> list[dict[str, Any]]:
     loops = sorted(loop_payloads)
-    base_rows = rows_by_id(row_file_for(loop_payloads[loops[0]], benchmark, "base"))
+    base_rows = rows_by_id_for_aggregate(row_file_for(loop_payloads[loops[0]], benchmark, "base", score_target), aggregate)
     recurrent_by_loop = {
-        loop: rows_by_id(row_file_for(payload, benchmark, "recurrent"))
+        loop: rows_by_id_for_aggregate(row_file_for(payload, benchmark, "recurrent", score_target), aggregate)
         for loop, payload in loop_payloads.items()
     }
     ids = sorted(set(base_rows).intersection(*(set(rows) for rows in recurrent_by_loop.values())))
@@ -160,6 +165,12 @@ def joined_examples(loop_payloads: dict[int, dict[str, Any]], benchmark: str) ->
             }
         )
     return examples
+
+
+def rows_by_id_for_aggregate(path: Path, aggregate: str) -> dict[str, dict[str, Any]]:
+    rows = read_jsonl(path)
+    selected = [row for row in rows if str(row.get("aggregate") or "mean") == aggregate]
+    return {str(row["id"]): row for row in selected}
 
 
 def bucket_by_margin(margin: float | None) -> str:
@@ -395,7 +406,7 @@ def margin_bucket_summary(examples: list[dict[str, Any]], loops: list[int]) -> d
     return out
 
 
-def analyze(sweep_summary: Path) -> dict[str, Any]:
+def analyze(sweep_summary: Path, *, score_target: str = "label", aggregate: str = "mean") -> dict[str, Any]:
     sweep, loop_payloads = load_loop_payloads(sweep_summary)
     loops = sorted(loop_payloads)
     benchmarks = list(loop_payloads[loops[0]].get("benchmarks", []))
@@ -403,11 +414,13 @@ def analyze(sweep_summary: Path) -> dict[str, Any]:
         "kind": "stage5_depth_sweep_analysis",
         "source_sweep_summary": path_for_cli(sweep_summary),
         "source_sweep_run_id": sweep.get("run_id"),
+        "score_target": score_target,
+        "aggregate": aggregate,
         "loops": loops,
         "benchmarks": {},
     }
     for benchmark in benchmarks:
-        examples = joined_examples(loop_payloads, benchmark)
+        examples = joined_examples(loop_payloads, benchmark, score_target, aggregate)
         payload["benchmarks"][benchmark] = {
             "loop_summaries": [loop_summary(examples, loop) for loop in loops],
             "depth_interactions": depth_interaction_summary(examples, loops),
@@ -423,6 +436,8 @@ def write_markdown(payload: dict[str, Any], path: Path) -> None:
         f"# Depth Sweep Analysis - {payload['source_sweep_run_id']}",
         "",
         f"- Source: `{payload['source_sweep_summary']}`",
+        f"- Score target: `{payload.get('score_target')}`",
+        f"- Aggregate: `{payload.get('aggregate')}`",
         f"- Loops: `{payload['loops']}`",
         "",
     ]
@@ -481,11 +496,13 @@ def write_markdown(payload: dict[str, Any], path: Path) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--sweep_summary", required=True)
+    parser.add_argument("--score_target", default="label")
+    parser.add_argument("--aggregate", default="mean")
     parser.add_argument("--output_dir", default="")
     args = parser.parse_args()
 
     sweep_summary = resolve_path(args.sweep_summary)
-    payload = analyze(sweep_summary)
+    payload = analyze(sweep_summary, score_target=args.score_target, aggregate=args.aggregate)
     output_dir = resolve_path(args.output_dir) if args.output_dir else sweep_summary.parent / "depth_analysis"
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "summary.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")

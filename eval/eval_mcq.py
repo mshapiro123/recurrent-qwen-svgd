@@ -196,6 +196,26 @@ def sequence_logprobs(logits: torch.Tensor, labels: torch.Tensor, normalize: boo
     return scores
 
 
+def select_forced_loop_logits(output: Any, forced_loop_count: int) -> torch.Tensor:
+    """Return logits for one 1-based loop from a recurrent output.
+
+    ``RecurrentQwenForCausalLM`` exposes loop logits as
+    ``[batch, trajectories, loops, seq, vocab]`` when ``return_loop_logits`` is
+    enabled. The MCQ scorer expects trajectory-flattened logits.
+    """
+
+    loop_logits = getattr(output, "loop_logits", None)
+    if loop_logits is None:
+        raise RuntimeError("Expected loop_logits when --forced_loop_count is set")
+    loop_index = int(forced_loop_count) - 1
+    if loop_index < 0 or loop_index >= loop_logits.shape[2]:
+        raise RuntimeError(
+            f"Cannot select forced loop {forced_loop_count}; loop_logits shape is {tuple(loop_logits.shape)}"
+        )
+    selected = loop_logits[:, :, loop_index]
+    return selected.reshape(-1, *selected.shape[2:])
+
+
 def score_completion(
     model_or_wrapper,
     tokenizer,
@@ -207,6 +227,9 @@ def score_completion(
     encoded = tokenizer(prompt + completion, return_tensors="pt", add_special_tokens=True).to(args.device)
     labels = encoded["input_ids"].clone()
     labels[:, : min(len(prompt_ids), labels.shape[1])] = -100
+
+    forced_loop_count = int(args.forced_loop_count or 0)
+    forward_max_loops = max(int(args.max_loops), forced_loop_count) if forced_loop_count else int(args.max_loops)
 
     with torch.no_grad():
         if args.mode == "base":
@@ -222,7 +245,7 @@ def score_completion(
                 input_ids=encoded["input_ids"],
                 attention_mask=encoded["attention_mask"],
                 labels=None,
-                max_loops=args.max_loops,
+                max_loops=forward_max_loops,
                 num_trajectories=args.num_trajectories,
                 sample_latents=args.sample_latents,
                 latent_injection_mode=args.latent_injection_mode,
@@ -238,16 +261,24 @@ def score_completion(
                 svgd_kernel_geometry=args.svgd_kernel_geometry,
                 svgd_projection_seed=args.svgd_projection_seed,
                 use_learned_loop_control=args.use_learned_loop_control,
+                return_loop_logits=bool(forced_loop_count),
                 use_cache=False,
                 return_dict=True,
             )
-    logits = output.logits
-    trajectory_logits = getattr(output, "trajectory_logits", None)
-    if args.num_trajectories > 1 and trajectory_logits is None:
-        raise RuntimeError("Expected trajectory_logits when num_trajectories > 1")
-    if trajectory_logits is not None:
-        logits = trajectory_logits.reshape(-1, *trajectory_logits.shape[2:])
+    if forced_loop_count:
+        if args.mode == "base":
+            raise RuntimeError("--forced_loop_count is only valid for recurrent modes")
+        logits = select_forced_loop_logits(output, forced_loop_count)
+    else:
+        logits = output.logits
+        trajectory_logits = getattr(output, "trajectory_logits", None)
+        if args.num_trajectories > 1 and trajectory_logits is None:
+            raise RuntimeError("Expected trajectory_logits when num_trajectories > 1")
+        if trajectory_logits is not None:
+            logits = trajectory_logits.reshape(-1, *trajectory_logits.shape[2:])
     diagnostics = extract_loop_diagnostics(output) if args.include_loop_diagnostics else {}
+    if forced_loop_count and args.include_loop_diagnostics:
+        diagnostics["forced_loop_count"] = forced_loop_count
     scores = sequence_logprobs(logits, labels, normalize=args.normalize_option_score).cpu()
     if args.num_trajectories > 1 and scores.numel() != args.num_trajectories:
         raise RuntimeError(f"Expected {args.num_trajectories} trajectory scores, got {scores.numel()}")
@@ -388,6 +419,14 @@ def main() -> int:
     )
     parser.add_argument("--split", default="6,18")
     parser.add_argument("--max_loops", type=int, default=4)
+    parser.add_argument(
+        "--forced_loop_count",
+        type=int,
+        help=(
+            "For recurrent modes, ignore halting weights and score completions from this "
+            "1-based recurrent loop's logits. Used for forced-depth diagnostics."
+        ),
+    )
     parser.add_argument("--num_trajectories", type=int, default=1)
     parser.add_argument("--dtype", default="bfloat16")
     parser.add_argument("--attn_implementation", default="default")
@@ -421,6 +460,11 @@ def main() -> int:
         raise SystemExit("--checkpoint is required for phase1/phase2 modes")
     if args.mode == "phase1" and args.num_trajectories != 1:
         raise SystemExit("phase1 mode expects --num_trajectories 1")
+    if args.forced_loop_count is not None:
+        if args.forced_loop_count < 1:
+            raise SystemExit("--forced_loop_count must be >= 1")
+        if args.mode == "base":
+            raise SystemExit("--forced_loop_count is only valid for phase1/phase2 modes")
 
     set_seed(args.seed)
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
@@ -465,6 +509,7 @@ def main() -> int:
                 "score_target": args.score_target,
                 "aggregate": aggregate_name,
                 "num_trajectories": args.num_trajectories,
+                "forced_loop_count": args.forced_loop_count,
                 "prediction": prediction,
                 "answer": example.answer,
                 "hit": hit,

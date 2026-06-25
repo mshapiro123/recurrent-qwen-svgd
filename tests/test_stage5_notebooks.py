@@ -307,6 +307,22 @@ def test_current_bootstrap_exposes_model_viability_queue_target() -> None:
     assert "colab/run_stage5_model_viability_queue.py" in text
 
 
+def test_current_bootstrap_exposes_forced_depth_diagnostic_target() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_FORCED_DEPTH_DIAGNOSTIC_CELL.py").read_text(encoding="utf-8")
+
+    for payload in (text, markdown):
+        assert '"forced_depth_diagnostic"' in payload
+        assert "colab/STAGE5_FORCED_DEPTH_DIAGNOSTIC_CELL.py" in payload
+        assert "STAGE5_FORCED_DEPTH_SOURCE_SUMMARY" in payload
+        assert "STAGE5_BENCHMARK_FORCED_LOOP_COUNT" in payload
+    assert "STAGE5_FORCED_DEPTH_DIAGNOSTIC_CELL_VERSION" in cell
+    assert "forced_depth_arc_v1" in cell
+    assert "content_question_only,cyclic_label_aggregated" in cell
+    assert "eval/analyze_depth_sweep.py" in cell
+
+
 def test_current_bootstrap_source_summary_override_fans_out_to_benchmark_and_control() -> None:
     text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

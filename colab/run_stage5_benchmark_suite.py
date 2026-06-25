@@ -125,6 +125,7 @@ RECURRENT_USE_LEARNED_LOOP_CONTROL = os.environ.get(
     "STAGE5_BENCHMARK_USE_LEARNED_LOOP_CONTROL",
     "0",
 ).strip().lower() in {"1", "true", "yes", "y"}
+RECURRENT_FORCED_LOOP_COUNT = os.environ.get("STAGE5_BENCHMARK_FORCED_LOOP_COUNT", "").strip()
 INCLUDE_LOOP_DIAGNOSTICS = os.environ.get("STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS", "1").strip().lower() in {
     "1",
     "true",
@@ -493,6 +494,8 @@ def eval_jobs(specs: list[BenchmarkSpec], *, checkpoint: Path) -> list[EvalJob]:
     ]
     if RECURRENT_USE_LEARNED_LOOP_CONTROL:
         recurrent_extra.append("--use_learned_loop_control")
+    if RECURRENT_FORCED_LOOP_COUNT:
+        recurrent_extra.extend(["--forced_loop_count", RECURRENT_FORCED_LOOP_COUNT])
     if RECURRENT_MODE == "phase2":
         if RECURRENT_SAMPLE_LATENTS:
             recurrent_extra.append("--sample_latents")
@@ -823,8 +826,10 @@ def build_summary(
         "score_targets": effective_score_targets(),
         "aggregates": parse_csv(AGGREGATES),
         "recurrent_mode": RECURRENT_MODE,
+        "recurrent_max_loops": RECURRENT_MAX_LOOPS,
         "recurrent_num_trajectories": RECURRENT_NUM_TRAJECTORIES,
         "recurrent_use_learned_loop_control": RECURRENT_USE_LEARNED_LOOP_CONTROL,
+        "recurrent_forced_loop_count": int(RECURRENT_FORCED_LOOP_COUNT) if RECURRENT_FORCED_LOOP_COUNT else None,
         "elapsed_seconds": elapsed_seconds,
         "failures": failures,
         "results": result_rows,
@@ -861,6 +866,8 @@ def write_report(payload: dict[str, Any]) -> None:
         f"- Checkpoint: `{payload['checkpoint']}`",
         f"- Benchmarks: `{payload['benchmarks']}`",
         f"- Recurrent mode: `{payload['recurrent_mode']}`",
+        f"- Recurrent max loops: `{payload.get('recurrent_max_loops')}`",
+        f"- Forced loop count: `{payload.get('recurrent_forced_loop_count')}`",
         f"- Recurrent trajectories: `{payload['recurrent_num_trajectories']}`",
         f"- Learned loop control: `{payload.get('recurrent_use_learned_loop_control')}`",
         f"- Elapsed seconds: `{payload['elapsed_seconds']:.2f}`",

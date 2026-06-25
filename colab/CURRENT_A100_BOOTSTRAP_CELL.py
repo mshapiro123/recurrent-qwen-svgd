@@ -47,6 +47,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "traced_sft_competence_preserving_pipeline" - mixed recovery after confirmation still trails base.
 #   "traced_sft_depth_router_after_direct_preserve" - learned-depth continuation from a passed direct-preservation checkpoint.
 #   "traced_capability_ladder_sft" - GPU Phase 1 SFT from the latest gate-ready traced capability ladder.
+#   "forced_depth_diagnostic" - no-training ARC-Challenge loop 1/2/3 forced-depth diagnostic.
 #   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
 #   "depth_sweep_heldout" - L4/T4 held-out ARC tail loop-depth sweep for routing validation.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
@@ -1172,6 +1173,32 @@ TARGETS = {
             "STAGE5_DEPTH_ROUTER_DISCONNECT": "1",
         },
     },
+    "forced_depth_diagnostic": {
+        "path": "colab/STAGE5_FORCED_DEPTH_DIAGNOSTIC_CELL.py",
+        "markers": [
+            "STAGE5_FORCED_DEPTH_DIAGNOSTIC_CELL_VERSION",
+            "forced_depth_arc_v1",
+            "STAGE5_BENCHMARK_FORCED_LOOP_COUNT",
+            "STAGE5_FORCED_DEPTH_SOURCE_SUMMARY",
+            "content_question_only,cyclic_label_aggregated",
+            "eval/analyze_depth_sweep.py",
+            "--score_target",
+            "cyclic_label_aggregated",
+            "tests/test_eval_mcq_loop_diagnostics.py",
+            "tests/test_stage5_benchmark_suite.py",
+            "tests/test_analyze_depth_sweep.py",
+            "tests/test_stage5_benchmark_assessment.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_FORCED_DEPTH_LOOPS": "1,2,3",
+            "STAGE5_FORCED_DEPTH_BENCHMARKS": "arc_challenge",
+            "STAGE5_FORCED_DEPTH_ARC_CHALLENGE_LIMIT": "256",
+            "STAGE5_FORCED_DEPTH_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
+            "STAGE5_FORCED_DEPTH_DRIVE_BACKUP": "0",
+            "STAGE5_FORCED_DEPTH_DISCONNECT": "0",
+        },
+    },
     "depth_sweep_heldout": {
         "path": "colab/STAGE5_DEPTH_SWEEP_BENCHMARK_CELL.py",
         "markers": [
@@ -1298,6 +1325,7 @@ if SOURCE_SUMMARY_OVERRIDE:
     os.environ["STAGE5_COMPETENCE_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
     os.environ["STAGE5_REENTRY_REPAIR_NORM_ASSESSMENT"] = SOURCE_SUMMARY_OVERRIDE
     os.environ["STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT"] = SOURCE_SUMMARY_OVERRIDE
+    os.environ["STAGE5_FORCED_DEPTH_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
 else:
     # Avoid accidentally pinning a new session to an old target-specific source
     # summary. The safe-continue launcher will follow config/stage5_current_source_summary.txt.
@@ -1313,6 +1341,7 @@ else:
     os.environ.pop("STAGE5_COMPETENCE_SOURCE_SUMMARY", None)
     os.environ.pop("STAGE5_REENTRY_REPAIR_NORM_ASSESSMENT", None)
     os.environ.pop("STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT", None)
+    os.environ.pop("STAGE5_FORCED_DEPTH_SOURCE_SUMMARY", None)
 for key, value in selected["env"].items():
     # Target configs are defaults. Planner/user-supplied env must win so chained
     # actions can pass repaired checkpoints, benchmark summaries, and run IDs.

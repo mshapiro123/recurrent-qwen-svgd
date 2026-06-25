@@ -155,10 +155,11 @@ def benchmark_evidence(payload: dict[str, Any], benchmark: str) -> dict[str, Any
         p_float = float(p_value) if p_value is not None else None
     except (TypeError, ValueError):
         p_float = None
-    negative_evidence = delta < -ALLOWED_NEGATIVE_DELTA and (
-        abs(delta) >= NEGATIVE_EVIDENCE_MIN_ABS_DELTA
-        or (p_float is not None and p_float <= NEGATIVE_EVIDENCE_SIGN_TEST_P_THRESHOLD)
+    flagged_regression = delta < -ALLOWED_NEGATIVE_DELTA and abs(delta) >= NEGATIVE_EVIDENCE_MIN_ABS_DELTA
+    statistically_supported_regression = (
+        p_float is not None and p_float <= NEGATIVE_EVIDENCE_SIGN_TEST_P_THRESHOLD
     )
+    negative_evidence = flagged_regression and statistically_supported_regression
     return {
         "benchmark": benchmark,
         "present": True,
@@ -171,6 +172,8 @@ def benchmark_evidence(payload: dict[str, Any], benchmark: str) -> dict[str, Any
         "losses": int(row.get("losses", 0) or 0),
         "ties": int(row.get("ties", 0) or 0),
         "sign_test_p_value": row.get("sign_test_p_value"),
+        "flagged_regression": flagged_regression,
+        "statistically_supported_regression": statistically_supported_regression,
         "negative_evidence": negative_evidence,
     }
 
@@ -226,7 +229,7 @@ def assess_benchmark_suite(*, summary_json: Path, payload: dict[str, Any]) -> di
                 "Recurrent is non-negative versus base on required paired benchmark slices."
                 if nonnegative and no_missing
                 else (
-                    "Recurrent has statistically meaningful negative evidence versus base."
+                    "Recurrent has statistically supported negative evidence versus base."
                     if model_negative_evidence
                     else "Recurrent has only noise-level negative deltas or missing slices."
                 )
@@ -305,6 +308,7 @@ def write_report(payload: dict[str, Any], *, output_json: Path, output_md: Path)
             f"- `{row['benchmark']}` paired `{row['paired_examples']}` / required "
             f"`{row['required_examples']}`; delta `{row['correct_delta_recurrent_vs_base']}`; "
             f"W/L/T `{row['wins']}/{row['losses']}/{row['ties']}`; p `{row['sign_test_p_value']}`"
+            f"; flagged regression `{row.get('flagged_regression')}`"
             f"; negative evidence `{row.get('negative_evidence')}`"
         )
     output_md.write_text("\n".join(lines) + "\n", encoding="utf-8")

@@ -22,6 +22,9 @@ def _suite(
     arc_n: int = 128,
     arc_easy_n: int = 128,
     gpqa_n: int = 16,
+    arc_p: float = 1.0,
+    arc_easy_p: float = 1.0,
+    gpqa_p: float = 1.0,
     checkpoint: str = "outputs/stage5/run/phase1.pt",
 ):
     paired = {
@@ -35,7 +38,7 @@ def _suite(
                     "wins": max(arc_delta, 0),
                     "losses": max(-arc_delta, 0),
                     "ties": arc_n - abs(arc_delta),
-                    "sign_test_p_value": 1.0,
+                    "sign_test_p_value": arc_p,
                 }
             }
         },
@@ -51,7 +54,7 @@ def _suite(
                     "wins": max(gpqa_delta, 0),
                     "losses": max(-gpqa_delta, 0),
                     "ties": gpqa_n - abs(gpqa_delta),
-                    "sign_test_p_value": 1.0,
+                    "sign_test_p_value": gpqa_p,
                 }
             }
         }
@@ -70,7 +73,7 @@ def _suite(
                     "wins": max(arc_easy_delta, 0),
                     "losses": max(-arc_easy_delta, 0),
                     "ties": arc_easy_n - abs(arc_easy_delta),
-                    "sign_test_p_value": 1.0,
+                    "sign_test_p_value": arc_easy_p,
                 }
             }
         }
@@ -114,15 +117,31 @@ def test_benchmark_assessment_preserves_after_confirmation_dense_control(tmp_pat
     }
 
 
-def test_benchmark_assessment_routes_negative_delta_to_recovery(tmp_path) -> None:
+def test_benchmark_assessment_flags_unconfirmed_negative_delta_as_inconclusive(tmp_path) -> None:
     source = tmp_path / "suite" / "summary.json"
     payload = _suite(arc_delta=-2, gpqa_delta=0)
 
     assessed = assess_benchmark_suite(summary_json=source, payload=payload)
 
+    assert assessed["status"] == "inconclusive"
+    assert assessed["passed"] is False
+    assert assessed["model_negative_evidence"] is False
+    assert assessed["criteria"][2]["passed"] is False
+    assert assessed["benchmarks"][0]["flagged_regression"] is True
+    assert assessed["benchmarks"][0]["negative_evidence"] is False
+
+
+def test_benchmark_assessment_routes_statistically_supported_negative_delta_to_recovery(tmp_path) -> None:
+    source = tmp_path / "suite" / "summary.json"
+    payload = _suite(arc_delta=-2, gpqa_delta=0, arc_p=0.05)
+
+    assessed = assess_benchmark_suite(summary_json=source, payload=payload)
+
     assert assessed["status"] == "needs_recurrent_recovery"
     assert assessed["passed"] is False
-    assert assessed["criteria"][2]["passed"] is False
+    assert assessed["model_negative_evidence"] is True
+    assert assessed["benchmarks"][0]["flagged_regression"] is True
+    assert assessed["benchmarks"][0]["negative_evidence"] is True
 
 
 def test_benchmark_assessment_marks_missing_required_benchmark_inconclusive(tmp_path) -> None:

@@ -472,6 +472,21 @@ def test_eval_jobs_include_loop_diagnostics_only_for_recurrent(tmp_path, monkeyp
     assert "--include_loop_diagnostics" in recurrent_cmd
 
 
+def test_eval_jobs_passes_forced_loop_count_to_recurrent_only(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    monkeypatch.setattr(module, "RECURRENT_MODE", "phase1")
+    monkeypatch.setattr(module, "RECURRENT_NUM_TRAJECTORIES", 1)
+    monkeypatch.setattr(module, "RECURRENT_FORCED_LOOP_COUNT", "3")
+
+    jobs = module.eval_jobs([BenchmarkSpec("arc_challenge", tmp_path / "arc.jsonl", [])], checkpoint=tmp_path / "phase1.pt")
+    base_cmd = next(job.cmd for job in jobs if job.arm == "base")
+    recurrent_cmd = next(job.cmd for job in jobs if job.arm == "recurrent")
+
+    assert "--forced_loop_count" not in base_cmd
+    assert recurrent_cmd[recurrent_cmd.index("--forced_loop_count") + 1] == "3"
+
+
 def test_eval_jobs_support_content_question_only_target(tmp_path, monkeypatch) -> None:
     import colab.run_stage5_benchmark_suite as module
 
