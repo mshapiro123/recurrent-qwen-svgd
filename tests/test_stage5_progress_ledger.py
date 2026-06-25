@@ -1474,6 +1474,87 @@ def test_progress_ledger_reports_reentry_repair_smoke_statuses(tmp_path) -> None
     assert payload["recommended_next_plan_source"] == str(source)
 
 
+def test_progress_ledger_reports_reentry_recovery_training_as_next_source(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    source = scan_root / "reentry_recovery" / "summary.json"
+    _write(
+        source,
+        {
+            "run_id": "reentry_recovery",
+            "kind": "stage5_reentry_recovery_training",
+            "status": "validation_sane",
+            "checkpoint": "outputs/stage5/reentry_recovery/phase1/phase1_step_75.pt",
+            "phase1_checkpoint": "outputs/stage5/reentry_recovery/phase1/phase1_step_75.pt",
+            "dataset": {"rows": 24, "train_rows": 21, "val_rows": 3},
+            "phase1_val": {"mean_expected_loops": 2.4, "expected_ce": 1.5},
+            "validation_checks": {
+                "status": "validation_sane",
+                "depth_gradient": {"observed": True},
+            },
+        },
+    )
+
+    payload = scan_progress(scan_root, run_id="ledger")
+    row = next(
+        item
+        for item in payload["curriculum_statuses"]
+        if item["kind"] == "stage5_reentry_recovery_training"
+    )
+
+    assert row["validation_status"] == "validation_sane"
+    assert row["depth_gradient_observed"] is True
+    assert row["checkpoint"] == "outputs/stage5/reentry_recovery/phase1/phase1_step_75.pt"
+    assert row["next_action"] == "run debiased_benchmark_suite before dense control or breadth diagnostics"
+    assert payload["recommended_next_plan_source"] == str(source)
+
+
+def test_progress_ledger_does_not_recommend_failed_reentry_recovery_training(tmp_path) -> None:
+    scan_root = tmp_path / "outputs" / "stage5"
+    trace_collection = scan_root / "trace_collection" / "summary.json"
+    recovery = scan_root / "reentry_recovery" / "summary.json"
+    _write(
+        trace_collection,
+        {
+            "run_id": "trace_collection",
+            "kind": "stage5_capability_ladder_trace_collection",
+            "status": "trace_curriculum_gate_ready",
+            "curriculum": {"work_dir": "data/curriculum/traced", "counts": {"positive_sft_rows": 16}},
+            "gate": {"go": True},
+        },
+    )
+    _write(
+        recovery,
+        {
+            "run_id": "reentry_recovery",
+            "kind": "stage5_reentry_recovery_training",
+            "status": "validation_needs_review",
+            "dataset": {"rows": 24, "train_rows": 21, "val_rows": 3},
+            "phase1_val": {"mean_expected_loops": 1.05, "expected_ce": 2.25},
+            "phase1_checkpoint": "outputs/stage5/reentry_recovery/phase1/phase1_step_75.pt",
+            "validation_checks": {
+                "status": "validation_needs_review",
+                "issues": ["depth gradient not observed"],
+                "depth_gradient": {"observed": False},
+            },
+        },
+    )
+    os.utime(trace_collection, (1000, 1000))
+    os.utime(recovery, (2000, 2000))
+
+    payload = scan_progress(scan_root, run_id="ledger")
+    row = next(
+        item
+        for item in payload["curriculum_statuses"]
+        if item["kind"] == "stage5_reentry_recovery_training"
+    )
+
+    assert row["validation_status"] == "validation_needs_review"
+    assert row["validation_issues"] == ["depth gradient not observed"]
+    assert row["depth_gradient_observed"] is False
+    assert row["next_action"] == "inspect re-entry recovery validation before benchmarking"
+    assert payload["recommended_next_plan_source"] == str(trace_collection)
+
+
 def test_progress_ledger_recommends_direct_preservation_probe_over_traced_assessment(tmp_path) -> None:
     scan_root = tmp_path / "outputs" / "stage5"
     traced = scan_root / "traced_assessment" / "summary.json"

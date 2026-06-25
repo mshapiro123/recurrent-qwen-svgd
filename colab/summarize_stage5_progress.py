@@ -191,6 +191,7 @@ def looks_like_planner_source(payload: dict[str, Any]) -> bool:
         "reentry_drift_diagnostic",
         "stage5_reentry_norm_eval_only",
         "stage5_reentry_repair_smoke",
+        "stage5_reentry_recovery_training",
     }:
         return True
     if payload.get("kind") == "stage4_opus_finetune" or {"phase1_checkpoint", "phase2_checkpoint", "arc_ladder"} <= set(payload):
@@ -1036,17 +1037,28 @@ def curriculum_statuses(summary_files: list[Path]) -> list[dict[str, Any]]:
                     "next_action": "run_stage5_curriculum_sft.py" if payload.get("go") else "fix curriculum gate issues",
                 }
             )
-        elif kind == "stage5_curriculum_sft":
+        elif kind in {"stage5_curriculum_sft", "stage5_reentry_recovery_training"}:
             dataset = payload.get("dataset") or {}
             phase1_val = payload.get("phase1_val") or {}
             validation_status = curriculum_sft_validation_status(payload)
             validation_issues = curriculum_sft_validation_issues(payload)
             has_validation_checks = bool(curriculum_sft_validation_checks(payload))
-            next_action = (
-                "inspect curriculum SFT validation before GPU diagnostics"
-                if has_validation_checks and validation_status != "validation_sane"
-                else "run bounded routing diagnostic before broader benchmark suite"
-            )
+            if kind == "stage5_reentry_recovery_training":
+                next_action = (
+                    "inspect re-entry recovery validation before benchmarking"
+                    if has_validation_checks and validation_status != "validation_sane"
+                    else "run debiased_benchmark_suite before dense control or breadth diagnostics"
+                )
+                checkpoint = payload.get("phase1_checkpoint") or payload.get("checkpoint")
+                work_dir = ((payload.get("config") or {}).get("work_dir"))
+            else:
+                next_action = (
+                    "inspect curriculum SFT validation before GPU diagnostics"
+                    if has_validation_checks and validation_status != "validation_sane"
+                    else "run bounded routing diagnostic before broader benchmark suite"
+                )
+                checkpoint = payload.get("phase1_checkpoint")
+                work_dir = ((payload.get("config") or {}).get("work_dir"))
             rows.append(
                 {
                     "path": path_for_cli(path),
@@ -1054,13 +1066,13 @@ def curriculum_statuses(summary_files: list[Path]) -> list[dict[str, Any]]:
                     "kind": kind,
                     "status": payload.get("status") or "completed",
                     "go": None,
-                    "work_dir": ((payload.get("config") or {}).get("work_dir")),
+                    "work_dir": work_dir,
                     "positive_rows": int(dataset.get("rows", 0) or 0),
                     "train_rows": int(dataset.get("train_rows", 0) or 0),
                     "val_rows": int(dataset.get("val_rows", 0) or 0),
                     "mean_expected_loops": phase1_val.get("mean_expected_loops"),
                     "expected_ce": phase1_val.get("expected_ce"),
-                    "checkpoint": payload.get("phase1_checkpoint"),
+                    "checkpoint": checkpoint,
                     "validation_status": validation_status,
                     "validation_issues": validation_issues,
                     "depth_gradient_observed": curriculum_sft_depth_gradient_observed(payload),
@@ -1279,6 +1291,13 @@ def planner_source_priority(payload: dict[str, Any]) -> int:
         return 107
     if payload.get("kind") == "stage5_reentry_repair_smoke":
         return 109
+    if payload.get("kind") == "stage5_reentry_recovery_training":
+        checks = curriculum_sft_validation_checks(payload)
+        if checks and checks.get("status") != "validation_sane":
+            return 40
+        if payload.get("status") == "validation_needs_review":
+            return 40
+        return 111
     if payload.get("kind") == "curriculum_sft_gate":
         return 85 if payload.get("go") else 35
     if payload.get("kind") == "stage5_capability_ladder_mcq_probe":
