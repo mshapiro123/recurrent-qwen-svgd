@@ -401,6 +401,8 @@ TARGETS = {
             "loop1_preservation",
             "parse_train_log_metrics",
             "train_log_metrics",
+            "existing_train_log_metrics",
+            "resume_retrain=train_phase1_ponder",
             "Training Smoke Metrics",
             "STAGE5_REENTRY_REPAIR_REQUIRE_NORM_PASS",
             "stage2_norm_assessment",
