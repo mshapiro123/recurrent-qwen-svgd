@@ -65,6 +65,9 @@ def repair_assessment_recovery_block_reason(assessment: dict[str, Any]) -> str |
     if metrics.get("loop1_preservation_available") is not True:
         return "Stage 3 repair assessment lacks comparable loop-1 preservation evidence; do not start Stage 4."
 
+    if metrics.get("loop1_source_has_correct_signal") is not True:
+        return "Stage 3 loop-1 preservation source had no correct signal; rerun repair smoke with a more informative preservation set before Stage 4."
+
     if metrics.get("loop1_regressed") is True:
         return "Stage 3 repair smoke regressed loop-1 preservation; do not start Stage 4."
 

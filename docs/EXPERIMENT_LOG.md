@@ -831,3 +831,8 @@ Colab/Drive backups for selected runs.
   curriculum generation can run on CPU/API time while the paid GPU sequence
   remains locked on `reentry_repair_smoke -> reentry_recovery_training ->
   debiased_benchmark_suite -> dense_mcq_trace_sft_control`.
+- Stage 3 loop-1 preservation signal hardening: `reentry_repair_smoke`
+  assessment now requires the source loop-1 preservation comparison to contain
+  at least one correct source example. A zero-hit source comparison proves only
+  non-regression on an uninformative slice, so Stage 4 now refuses that artifact
+  and asks for a better loop-1 preservation eval before recovery SFT.

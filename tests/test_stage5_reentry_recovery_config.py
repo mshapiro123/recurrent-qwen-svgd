@@ -151,6 +151,7 @@ def passing_repair_assessment() -> dict:
             "train_loss": 1.25,
             "depth_supervision_metrics_present": True,
             "loop1_preservation_available": True,
+            "loop1_source_has_correct_signal": True,
             "loop1_regressed": False,
             "bridge_live": True,
             "bridge_moved": True,
@@ -205,6 +206,26 @@ def test_repair_assessment_recovery_gate_rejects_missing_depth_metrics() -> None
 
     assert reason is not None
     assert "depth metrics" in reason
+
+
+def test_repair_assessment_recovery_gate_rejects_uninformative_loop1_source() -> None:
+    assessment = passing_repair_assessment()
+    assessment["metrics"]["loop1_source_has_correct_signal"] = False
+
+    reason = repair_assessment_recovery_block_reason(assessment)
+
+    assert reason is not None
+    assert "no correct signal" in reason
+
+
+def test_repair_assessment_recovery_gate_rejects_missing_loop1_source_signal_metric() -> None:
+    assessment = passing_repair_assessment()
+    del assessment["metrics"]["loop1_source_has_correct_signal"]
+
+    reason = repair_assessment_recovery_block_reason(assessment)
+
+    assert reason is not None
+    assert "no correct signal" in reason
 
 
 def test_repair_assessment_recovery_gate_rejects_unmoved_adapter_when_enabled() -> None:

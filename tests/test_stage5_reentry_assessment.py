@@ -200,6 +200,7 @@ def test_repair_smoke_assessment_passes_when_bridge_live_and_moved() -> None:
     assert out["metrics"]["adapter_moved"] is True
     assert out["metrics"]["train_metrics_available"] is True
     assert out["metrics"]["depth_supervision_metrics_present"] is True
+    assert out["metrics"]["loop1_source_has_correct_signal"] is True
 
 
 def test_repair_smoke_assessment_detects_live_but_not_moved() -> None:
@@ -266,6 +267,15 @@ def test_repair_smoke_assessment_blocks_when_loop1_task_groups_mismatch() -> Non
     assert out["recommendation"] == "fix_loop1_preservation_eval_before_recovery_training"
     assert out["metrics"]["source_loop1_task_groups"] == 4
     assert out["metrics"]["trained_loop1_task_groups"] == 3
+
+
+def test_repair_smoke_assessment_blocks_when_loop1_source_has_no_correct_signal() -> None:
+    out = assess(repair_summary(source_best=0, trained_best=0, source_candidates=0, trained_candidates=0))
+
+    assert out["status"] == "loop1_preservation_source_has_no_signal"
+    assert out["recommendation"] == "fix_loop1_preservation_eval_before_recovery_training"
+    assert out["metrics"]["loop1_source_has_correct_signal"] is False
+    assert out["metrics"]["loop1_regressed"] is False
 
 
 def test_repair_smoke_assessment_blocks_when_train_metrics_missing() -> None:

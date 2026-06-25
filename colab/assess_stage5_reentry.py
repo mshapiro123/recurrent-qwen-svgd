@@ -237,6 +237,7 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
         and trained_task_groups > 0
         and source_task_groups == trained_task_groups
     )
+    preservation_source_has_signal = preservation_available and source_best_hits > 0 and source_candidate_hits > 0
     loop1_regressed = preservation_available and (best_delta < 0 or candidate_delta <= -2)
 
     if not train_metrics_available:
@@ -255,6 +256,10 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
         status = "loop1_preservation_missing_or_mismatched"
         recommendation = "fix_loop1_preservation_eval_before_recovery_training"
         reason = "The repair smoke did not produce comparable loop-1 preservation evidence."
+    elif not preservation_source_has_signal:
+        status = "loop1_preservation_source_has_no_signal"
+        recommendation = "fix_loop1_preservation_eval_before_recovery_training"
+        reason = "The loop-1 preservation source scored no correct examples, so non-regression would be uninformative."
     elif loop1_regressed:
         status = "bridge_live_but_loop1_regressed" if bridge_live else "bridge_still_dead_and_loop1_regressed"
         recommendation = "review_or_reduce_repair_lr_before_recovery_training"
@@ -322,6 +327,7 @@ def assess_repair_smoke(summary: dict[str, Any]) -> dict[str, Any]:
             "source_loop1_candidate_hits": source_candidate_hits,
             "trained_loop1_candidate_hits": trained_candidate_hits,
             "loop1_candidate_hits_delta": candidate_delta,
+            "loop1_source_has_correct_signal": preservation_source_has_signal,
             "loop1_regressed": loop1_regressed,
         },
     }

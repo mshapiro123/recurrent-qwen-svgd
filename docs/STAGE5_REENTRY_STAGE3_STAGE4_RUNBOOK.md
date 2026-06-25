@@ -89,7 +89,8 @@ Success:
 - bridge delta changes measurably;
 - re-entry adapter scale/bias gradients are live;
 - re-entry adapter moves measurably;
-- loop-1 preservation is present, comparable, and non-regressed;
+- loop-1 preservation is present, comparable, informative on at least one
+  source-correct example, and non-regressed;
 - assessment recommendation is
   `run_bounded_recovery_training_with_reentry_repair`.
 
@@ -103,7 +104,8 @@ Failure responses:
   depth-supervision metrics were not reported even though halt-depth loss was
   enabled.
 - `fix_loop1_preservation_eval_before_recovery_training`: do not train; the
-  preservation evidence is missing or mismatched.
+  preservation evidence is missing, mismatched, or source-zero and therefore
+  uninformative.
 - `review_or_reduce_repair_lr_before_recovery_training`: do not train; loop-1
   preservation regressed.
 - `fix_reentry_adapter_before_recovery_training`: do not train; adapter
@@ -131,7 +133,8 @@ Configured behavior:
   `run_bounded_recovery_training_with_reentry_repair`;
 - refuses stale recommendation-only Stage 3 assessments that do not include
   finite train metrics, supervised depth metrics, loop-1 preservation evidence,
-  and live/moved bridge/re-entry repair evidence;
+  source-correct loop-1 preservation signal, and live/moved bridge/re-entry
+  repair evidence;
 - resumes from the Stage 3 repaired checkpoint;
 - trains `bridge,reentry,halt,lora`;
 - enables learned loop control and target-loop NLL supervision;
