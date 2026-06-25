@@ -299,7 +299,12 @@ def commit_results(paths: list[Path]) -> None:
         print("No recovery full assessment outputs changed.")
         return
     run(["git", "commit", "-m", f"Record Stage 5 recovery full assessment {RUN_ID} [skip ci]"])
-    run(["git", "push", "origin", "main"], check=False)
+    pushed = run(["git", "push", "origin", "main"], check=False)
+    if pushed.returncode == 0:
+        return
+    print("Initial recovery full assessment push failed; attempting one autostash rebase and retry.", flush=True)
+    run(["git", "pull", "--rebase", "--autostash", "origin", "main"])
+    run(["git", "push", "origin", "main"])
 
 
 def main() -> int:

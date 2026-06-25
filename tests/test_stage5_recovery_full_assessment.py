@@ -160,6 +160,44 @@ def test_commit_results_stages_current_source_pointer(tmp_path, monkeypatch) -> 
     assert "config/stage5_current_source_summary.txt" in staged
 
 
+def test_commit_results_retries_failed_push_with_autostash_rebase(tmp_path, monkeypatch) -> None:
+    import subprocess
+
+    import colab.run_stage5_recovery_full_assessment as module
+
+    run_dir = tmp_path / "outputs" / "stage5" / "full_assess"
+    benchmark_dir = tmp_path / "outputs" / "stage5" / "full_assess_balanced_full"
+    pointer = tmp_path / "config" / "stage5_current_source_summary.txt"
+    run_dir.mkdir(parents=True)
+    benchmark_dir.mkdir(parents=True)
+    pointer.parent.mkdir(parents=True)
+    (run_dir / "summary.json").write_text("{}", encoding="utf-8")
+    (benchmark_dir / "summary.json").write_text("{}", encoding="utf-8")
+    pointer.write_text("outputs/stage5/full_assess/summary.json\n", encoding="utf-8")
+    commands: list[list[str]] = []
+    push_calls = 0
+
+    def fake_run(cmd, *, env=None, check=True, log_name=None):
+        nonlocal push_calls
+        command = [str(item) for item in cmd]
+        commands.append(command)
+        if command == ["git", "diff", "--cached", "--quiet"]:
+            return subprocess.CompletedProcess(cmd, 1, "", None)
+        if command == ["git", "push", "origin", "main"]:
+            push_calls += 1
+            return subprocess.CompletedProcess(cmd, 1 if push_calls == 1 else 0, "", None)
+        return subprocess.CompletedProcess(cmd, 0, "", None)
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "PUSH_RESULTS", True)
+    monkeypatch.setattr(module, "run", fake_run)
+
+    module.commit_results([run_dir, benchmark_dir])
+
+    assert commands.count(["git", "push", "origin", "main"]) == 2
+    assert ["git", "pull", "--rebase", "--autostash", "origin", "main"] in commands
+
+
 def test_main_writes_failure_summary_when_benchmark_child_fails(tmp_path, monkeypatch) -> None:
     import json
     import subprocess
