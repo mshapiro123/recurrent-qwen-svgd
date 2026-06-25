@@ -741,3 +741,10 @@ Colab/Drive backups for selected runs.
   loudly if publication still cannot land. This preserves the Drive-backed
   checkpoint policy while reducing the chance that overnight GPU work finishes
   but leaves no current-source pointer or result artifact on GitHub.
+- Queue-drift guard: `tests/test_stage5_notebooks.py` now checks that the
+  maintained user-facing handoffs keep the paid-GPU target order synchronized:
+  `reentry_repair_smoke -> reentry_recovery_training ->
+  debiased_benchmark_suite -> dense_mcq_trace_sft_control`. The cheap
+  `master_sequence_status` target can appear separately, but the operational
+  GPU queue should not silently diverge across README, current action,
+  next-sequence, staged-notebook, or single-runtime runbook surfaces.

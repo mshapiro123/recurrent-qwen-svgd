@@ -12,6 +12,26 @@ def notebook_payload(path: str) -> dict:
     return json.loads((ROOT / path).read_text(encoding="utf-8"))
 
 
+CURRENT_STAGE5_QUEUE = [
+    "master_sequence_status",
+    "reentry_repair_smoke",
+    "reentry_recovery_training",
+    "debiased_benchmark_suite",
+    "dense_mcq_trace_sft_control",
+]
+CURRENT_STAGE5_GPU_QUEUE = CURRENT_STAGE5_QUEUE[1:]
+
+
+def assert_ordered_queue(text: str) -> None:
+    positions = []
+    assert "master_sequence_status" in text
+    for target in CURRENT_STAGE5_GPU_QUEUE:
+        index = text.find(target)
+        assert index >= 0, target
+        positions.append(index)
+    assert positions == sorted(positions)
+
+
 def fenced_python_block(path: str) -> str:
     text = (ROOT / path).read_text(encoding="utf-8")
     start = text.index("```python\n") + len("```python\n")
@@ -54,11 +74,7 @@ def test_single_a100_runbook_uses_current_bootstrap_target_queue() -> None:
     payload = notebook_payload("colab/00_single_a100_runbook.ipynb")
     text = "\n".join(str(cell.get("source", "")) for cell in payload.get("cells", []))
 
-    assert "reentry_repair_smoke" in text
-    assert "reentry_recovery_training" in text
-    assert "debiased_benchmark_suite" in text
-    assert "dense_mcq_trace_sft_control" in text
-    assert "master_sequence_status" in text
+    assert_ordered_queue(text)
     assert "KEEP_RUNTIME_OPEN" in text
     assert "STAGE5_REENTRY_REPAIR_DISCONNECT" in text
     assert "STAGE5_REENTRY_RECOVERY_DISCONNECT" in text
@@ -70,6 +86,17 @@ def test_single_a100_runbook_uses_current_bootstrap_target_queue() -> None:
     assert "exec(open(" not in text
     assert "colab/run_stage5_colab_continue.py" not in text
     assert payload["cells"][1]["cell_type"] == "code"
+
+
+def test_current_user_facing_colab_queue_stays_in_sync() -> None:
+    paths = [
+        "README.md",
+        "colab/CURRENT_A100_ACTION.md",
+        "colab/NEXT_COLAB_SEQUENCE.md",
+        "colab/STAGED_NOTEBOOKS.md",
+    ]
+    for path in paths:
+        assert_ordered_queue((ROOT / path).read_text(encoding="utf-8"))
 
 
 def test_stage_launcher_uses_current_bootstrap_target_queue() -> None:
