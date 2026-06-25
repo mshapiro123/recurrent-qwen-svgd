@@ -521,7 +521,11 @@ Colab/Drive backups for selected runs.
   `STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY` and
   `STAGE5_DENSE_MCQ_SOURCE_SUMMARY`, so a repaired Stage 4 summary can be used
   consistently for base-vs-recurrent benchmarking and the dense
-  same-curriculum control.
+  same-curriculum control. The dense-control path also forwards the override to
+  `STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY`; after the repaired recurrent
+  benchmark lands, point the override at that benchmark summary for the dense
+  run so the control compares against the intended recurrent artifact rather
+  than a stale default.
 - Current reviewer output remains Stage 1 only until Stage 2 lands:
   `bridge_dead -> run_reentry_norm_then_repair_smoke -> next target
   reentry_norm_diagnostic`.

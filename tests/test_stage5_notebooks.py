@@ -279,10 +279,13 @@ def test_current_bootstrap_source_summary_override_fans_out_to_benchmark_and_con
         assert "SOURCE_SUMMARY_OVERRIDE" in payload
         assert "STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY" in payload
         assert "STAGE5_DENSE_MCQ_SOURCE_SUMMARY" in payload
+        assert "STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY" in payload
         assert 'os.environ["STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
         assert 'os.environ["STAGE5_DENSE_MCQ_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
+        assert 'os.environ["STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
         assert 'os.environ.pop("STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY", None)' in payload
         assert 'os.environ.pop("STAGE5_DENSE_MCQ_SOURCE_SUMMARY", None)' in payload
+        assert 'os.environ.pop("STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY", None)' in payload
 
 
 def test_current_bootstrap_exposes_depth_router_after_direct_preserve_target() -> None:
@@ -1348,6 +1351,8 @@ def test_reentry_stage3_stage4_runbook_is_linked_from_current_action() -> None:
     assert 'TARGET = "debiased_benchmark_suite"' in next_sequence
     assert 'TARGET = "dense_mcq_trace_sft_control"' in next_sequence
     assert "STAGE5_CURRENT_A100_SOURCE_SUMMARY" in next_sequence
+    assert "<debiased_benchmark_run>" in next_sequence
+    assert "identifies the recurrent\nbenchmark summary" in next_sequence
     assert "standard Qwen same-curriculum LoRA control" in next_sequence
     assert "Leinster" in next_sequence
     assert "Phase 0: Loop-Closure Re-entry" in master

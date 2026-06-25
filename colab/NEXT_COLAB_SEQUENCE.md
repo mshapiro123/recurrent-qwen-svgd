@@ -164,11 +164,17 @@ pointer:
 os.environ["STAGE5_CURRENT_A100_SOURCE_SUMMARY"] = "outputs/stage5/<stage4_run>/summary.json"
 ```
 
-Then run the matched dense recipe control:
+Then run the matched dense recipe control, pointing the source override at the
+benchmark-suite summary produced by the previous step:
 
 ```python
 TARGET = "dense_mcq_trace_sft_control"
+os.environ["STAGE5_CURRENT_A100_SOURCE_SUMMARY"] = "outputs/stage5/<debiased_benchmark_run>/summary.json"
 ```
+
+For this target the override serves two roles: it identifies the recurrent
+benchmark summary to compare against, and the dense-control runner follows that
+summary's source chain back to the Stage 4 curriculum rows.
 
 This is the decisive Phase 1 question: does recurrence convert depth-shaped
 failures while preserving easy items, beyond what the data alone gives a dense
