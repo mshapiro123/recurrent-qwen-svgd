@@ -773,3 +773,9 @@ Colab/Drive backups for selected runs.
   live scale/bias gradients for the re-entry adapter. These are the fields the
   Stage 3 assessment uses to decide whether the loop re-entry adapter is
   gradient-live and actually moved.
+- Master-sequence handoff refresh: added
+  `docs/DEEP_RESEARCH_HANDOFF_2026_06_25_MASTER_SEQUENCE.md` and linked it
+  from the README. This is the compact strategy-agent packet for the current
+  dependency chain: re-entry repair first, deterministic depth recovery second,
+  dense same-curriculum control third, breadth diagnostics fourth, and
+  particles/SVGD only after correct-bearing breadth exists.

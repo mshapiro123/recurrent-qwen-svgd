@@ -147,6 +147,8 @@ The MCQ scoring-confound note is in
 deep-research handoff, including the direct-route preservation questions that
 remain relevant if debiased scoring still shows a gap, is
 [docs/DEEP_RESEARCH_HANDOFF_2026_06_22.md](docs/DEEP_RESEARCH_HANDOFF_2026_06_22.md).
+The current master-sequence strategy packet is
+[docs/DEEP_RESEARCH_HANDOFF_2026_06_25_MASTER_SEQUENCE.md](docs/DEEP_RESEARCH_HANDOFF_2026_06_25_MASTER_SEQUENCE.md).
 The no-GPU reasoning-trace data plan is in
 [docs/REASONING_TRACE_DATASETS.md](docs/REASONING_TRACE_DATASETS.md). The
 wide/deep curriculum data contract is in
