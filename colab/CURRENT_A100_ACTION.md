@@ -32,32 +32,28 @@ The short Colab target queue is in
 [`colab/NEXT_COLAB_SEQUENCE.md`](NEXT_COLAB_SEQUENCE.md).
 
 ```text
-latest reviewer state: stage1_drift / bridge_dead
-next target: reentry_norm_diagnostic
+latest reviewer state: stage2_norm / entry_rms_safe_for_smoke
+current source summary: outputs/stage5/stage5_reentry_norm_20260625_013527/summary.json
+next target: reentry_repair_smoke
 ```
 
-The current Stage 2 cell may still be running from an older launcher
-(`9b81ead`). That older cell uses the full 14-task candidate-conversion suite,
-so it can run much longer than the bounded gate needs. If it completes and
-publishes, run the reviewer:
+Stage 2 has completed and the reviewer recommends Stage 3. The next GPU run is
+the tiny trainable bridge/re-entry smoke, not another norm diagnostic and not a
+particle/SVGD run. Use L4/T4 unless Colab availability makes a larger runtime
+effectively free.
 
-```bash
-python colab/review_stage5_reentry.py --no_write
-```
-
-If Stage 2 has not actually completed, or if an old long candidate-conversion
-sweep is still running and you want the cheaper gate, stop it and use this
-fresh stale-safe Colab restart cell:
+Fresh stale-safe Colab launcher:
 
 ```python
 import base64, json, os, time, urllib.request
 from google.colab import userdata
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
-TARGET = "reentry_norm_diagnostic"
+TARGET = "reentry_repair_smoke"
 
 gh = userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
 assert gh, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
+
 hf = userdata.get("HF_TOKEN") or userdata.get("HUGGINGFACE_HUB_TOKEN")
 if hf:
     os.environ["HF_TOKEN"] = hf
@@ -68,77 +64,55 @@ os.environ["STAGE5_CURRENT_A100_TARGET"] = TARGET
 headers = {
     "Authorization": f"Bearer {gh}",
     "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "Cache-Control": "no-cache",
 }
-ref_req = urllib.request.Request(
-    f"https://api.github.com/repos/{REPO}/git/refs/heads/main?cache_bust={time.time_ns()}",
-    headers=headers,
-)
-with urllib.request.urlopen(ref_req, timeout=30) as response:
-    resolved_ref = json.load(response)["object"]["sha"]
 
-file_req = urllib.request.Request(
+def gh_json(url):
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=30) as response:
+        return json.load(response)
+
+resolved_ref = gh_json(
+    f"https://api.github.com/repos/{REPO}/git/refs/heads/main?cache_bust={time.time_ns()}"
+)["object"]["sha"]
+payload = gh_json(
     f"https://api.github.com/repos/{REPO}/contents/colab/CURRENT_A100_BOOTSTRAP_CELL.py"
-    f"?ref={resolved_ref}&cache_bust={time.time_ns()}",
-    headers=headers,
+    f"?ref={resolved_ref}&cache_bust={time.time_ns()}"
 )
-with urllib.request.urlopen(file_req, timeout=30) as response:
-    payload = json.load(response)
 
 code = base64.b64decode(payload["content"]).decode("utf-8")
 required = [
     "sha_resolved_nested_fetch_v3",
-    "reentry_norm_diagnostic",
-    "STAGE5_REENTRY_NORM_CELL_VERSION",
-    "stage5_reentry_norm_v1_eval_only",
-    "candidate_conversion_is_complete",
-    "colab/assess_stage5_reentry.py",
+    TARGET,
+    "STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION",
+    "stage5_reentry_repair_smoke_v1_trainable",
+    "stage2_norm_assessment",
+    "Loop-1 Preservation",
 ]
 missing = [marker for marker in required if marker not in code]
 assert not missing, f"Fetched stale or incomplete bootstrap: {missing}"
-print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12])
+print("Fetched bootstrap sha:", payload.get("sha"), "commit:", resolved_ref[:12], "target:", TARGET)
 exec(compile(code, "colab/CURRENT_A100_BOOTSTRAP_CELL.py", "exec"))
 ```
 
-If the Stage 2 Colab run finished but did not push to GitHub, publish the
-completed Drive artifact without rerunning GPU eval by using the same cell with:
+After Stage 3 publishes, run the reviewer:
 
-```python
-TARGET = "reentry_norm_recover_only"
-```
-
-Use this first even if the run died after writing the raw drift,
-effective-pathway, and candidate-conversion files but before producing
-`summary.json`/`summary.md`; current `main` rebuilds those summaries and the
-assessment from raw outputs. Do not rerun the long GPU cell until recover-only
-has said the artifact is not recoverable.
-
-The current `main` version bounds Stage 2 candidate conversion to the same
-first-8 task subset used by the drift/effective-pathway diagnostics by default.
-It also defaults candidate conversion to seed `0` and `80` generated tokens.
-This is a quick safety gate, not a comprehensive benchmark. Override with
-`STAGE5_REENTRY_NORM_CANDIDATE_TASK_LIMIT`,
-`STAGE5_REENTRY_NORM_SEEDS`, or `STAGE5_REENTRY_NORM_MAX_NEW_TOKENS` only if a
-broader readout is intentional.
-
-If the reviewer then says `next_target=reentry_repair_smoke`, run the tiny
-trainable bridge repair by using the same fresh-runtime cell with:
-
-```python
-TARGET = "reentry_repair_smoke"
+```bash
+python colab/review_stage5_reentry.py --no_write
 ```
 
 If Stage 3 passes and recommends
 `run_bounded_recovery_training_with_reentry_repair`, run the bounded recovery
-SFT by using the same fresh-runtime cell with:
+SFT by changing only:
 
 ```python
 TARGET = "reentry_recovery_training"
 ```
 
-Use L4/T4 for these 0.5B diagnostics unless Colab availability makes a larger
-runtime cheaper. Each target disconnects by default. The mandatory pause points
-are after Stage 2 and after Stage 3. Keep particles/SVGD off until deterministic
-recurrence has a live bridge and recovery SFT is base-competitive again.
+Each target disconnects by default. The mandatory pause point is after Stage 3.
+Keep particles/SVGD off until deterministic recurrence has a live bridge and
+recovery SFT is base-competitive again.
 
 ## Previous Front-of-Queue Action (Completed Score Repair Context)
 
