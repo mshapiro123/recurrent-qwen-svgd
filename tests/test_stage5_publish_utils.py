@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from colab.stage5_publish_utils import publishable_artifact_paths
+from colab.stage5_publish_utils import update_current_source_summary
 
 
 def test_publishable_artifact_paths_excludes_checkpoints(tmp_path) -> None:
@@ -18,3 +19,14 @@ def test_publishable_artifact_paths_excludes_checkpoints(tmp_path) -> None:
     rels = [path.relative_to(run_dir).as_posix() for path in publishable_artifact_paths(run_dir)]
 
     assert rels == ["reentry_assessment.json", "reentry_assessment.md", "summary.json", "summary.md"]
+
+
+def test_update_current_source_summary_writes_repo_relative_pointer(tmp_path) -> None:
+    summary = tmp_path / "outputs" / "stage5" / "run_001" / "summary.json"
+    summary.parent.mkdir(parents=True)
+    summary.write_text("{}", encoding="utf-8")
+
+    pointer = update_current_source_summary(tmp_path, summary)
+
+    assert pointer == tmp_path / "config" / "stage5_current_source_summary.txt"
+    assert pointer.read_text(encoding="utf-8") == "outputs/stage5/run_001/summary.json\n"

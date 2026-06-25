@@ -633,3 +633,8 @@ Colab/Drive backups for selected runs.
   `entry_rms_safe_for_smoke -> run_reentry_repair_smoke`, so the current source
   pointer and `NEXT_COLAB_SEQUENCE` paste-anywhere default now advance to the
   Stage 3 trainable re-entry repair smoke.
+- Re-entry publisher pointer hardening: Stage 1 drift, Stage 2 norm,
+  Stage 2 recover-only, and Stage 3 repair-smoke publishers now write and stage
+  `config/stage5_current_source_summary.txt` in the same commit as their
+  summary artifacts. This prevents successful Colab runs from leaving a
+  restarted notebook pointed at a stale earlier phase.

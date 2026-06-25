@@ -275,13 +275,15 @@ def ensure_assessment(out_dir: Path) -> None:
 def publish(out_dir: Path) -> None:
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    from colab.stage5_publish_utils import publishable_artifact_paths
+    from colab.stage5_publish_utils import publishable_artifact_paths, update_current_source_summary
 
     run(["git", "status", "-sb"])
+    pointer = update_current_source_summary(ROOT, out_dir / "summary.json")
     publishable = publishable_artifact_paths(out_dir)
     if not publishable:
         print(f"No lightweight publishable artifacts found under {out_dir}.", flush=True)
         return
+    publishable.append(pointer)
     for path in publishable:
         run(["git", "add", "-f", str(path.relative_to(ROOT))])
     if run(["git", "diff", "--cached", "--quiet"], check=False).returncode == 0:

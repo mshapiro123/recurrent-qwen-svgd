@@ -1282,6 +1282,7 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "resume_skip=train_phase1_ponder" in cell
     assert "colab/assess_stage5_reentry.py" in cell
     assert "publishable_artifact_paths" in cell
+    assert "update_current_source_summary" in cell
     assert 'git", "add", "-f", str(out_dir.relative_to(ROOT))' not in cell
     assert "Readout Pause" in cell
     assert "runtime.unassign" in cell
@@ -1309,6 +1310,7 @@ def test_reentry_norm_recover_target_is_bootstrapped() -> None:
     assert "colab/review_stage5_reentry.py" in cell
     assert "Recover Stage 5 re-entry norm" in cell
     assert "publishable_artifact_paths" in cell
+    assert "update_current_source_summary" in cell
     assert 'git", "add", "-f", str(out_dir.relative_to(ROOT))' not in cell
     assert "runtime.unassign" in cell
 
@@ -1368,6 +1370,8 @@ def test_reentry_drift_and_norm_targets_run_self_assessment() -> None:
     assert "resume_skip=candidate_conversion" in norm_cell
     assert "publishable_artifact_paths" in drift_cell
     assert "publishable_artifact_paths" in norm_cell
+    assert "update_current_source_summary" in drift_cell
+    assert "update_current_source_summary" in norm_cell
     assert 'git", "add", "-f", str(out_dir.relative_to(ROOT))' not in drift_cell
     assert 'git", "add", "-f", str(out_dir.relative_to(ROOT))' not in norm_cell
 
