@@ -1357,6 +1357,9 @@ def test_reentry_drift_and_norm_targets_run_self_assessment() -> None:
     assert "candidate_conversion_is_complete" in norm_cell
     assert "incomplete_candidate_conversion" in norm_cell
     assert "incremental_backup" in norm_cell
+    assert "restore_incremental_backup" in norm_cell
+    assert "STAGE5_REENTRY_NORM_RESTORE_INCREMENTAL_BACKUP" in norm_cell
+    assert "restored_incremental_backup" in norm_cell
     assert "resume_skip=candidate_conversion" in norm_cell
     assert "publishable_artifact_paths" in drift_cell
     assert "publishable_artifact_paths" in norm_cell

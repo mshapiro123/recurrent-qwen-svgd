@@ -460,6 +460,22 @@ def incremental_backup(out_dir: Path) -> None:
     print(f"incremental_backup={backup_dir}", flush=True)
 
 
+def restore_incremental_backup(out_dir: Path) -> None:
+    if os.environ.get("STAGE5_REENTRY_NORM_RESTORE_INCREMENTAL_BACKUP", "1").strip().lower() not in {
+        "1",
+        "true",
+        "yes",
+        "y",
+    }:
+        return
+    backup_dir = DRIVE_ARTIFACT_ROOT / "outputs" / "stage5" / out_dir.name
+    if not backup_dir.exists():
+        return
+    out_dir.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(backup_dir, out_dir, dirs_exist_ok=True)
+    print(f"restored_incremental_backup={backup_dir} -> {out_dir}", flush=True)
+
+
 def write_summary(
     run_id: str,
     out_dir: Path,
@@ -627,6 +643,7 @@ def main() -> None:
     checkpoint = checkpoint_path.relative_to(ROOT).as_posix()
 
     out_dir = ROOT / "outputs" / "stage5" / run_id
+    restore_incremental_backup(out_dir)
     diag_dir = out_dir / "reentry_norm"
     diag_dir.mkdir(parents=True, exist_ok=True)
 

@@ -610,3 +610,9 @@ Colab/Drive backups for selected runs.
   re-entry reviewer now agree that the next maintained target is
   `reentry_norm_diagnostic`, rather than falling back to stale score-alignment
   work.
+- Stage 2 restart hardening: `reentry_norm_diagnostic` now restores any
+  incremental Drive backup for the selected run ID before beginning its drift,
+  effective-pathway, and candidate-conversion steps. On an interrupted L4/T4
+  run, relaunching with the same `STAGE5_REENTRY_NORM_RUN_ID` can reuse valid
+  partial outputs through the existing `resume_skip=*` checks instead of
+  rerunning the whole diagnostic.
