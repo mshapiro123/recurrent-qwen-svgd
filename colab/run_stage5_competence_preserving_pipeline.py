@@ -23,6 +23,9 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from colab.run_stage5_balanced_arc_mix_gate import checkpoint_run_id, selected_checkpoint  # noqa: E402
+from colab.run_stage5_recovered_phase1_arc_gate import restore_checkpoint_if_needed  # noqa: E402
+
 RUN_ID = os.environ.get("STAGE5_COMPETENCE_PIPELINE_RUN_ID") or time.strftime(
     "stage5_competence_preserving_%Y%m%d_%H%M%S"
 )
@@ -45,6 +48,10 @@ PUSH_RESULTS = os.environ.get("STAGE5_COMPETENCE_PIPELINE_PUSH", "1").strip().lo
     "yes",
     "y",
 }
+PREFLIGHT_CHECKPOINT_RESTORE = os.environ.get(
+    "STAGE5_COMPETENCE_PREFLIGHT_CHECKPOINT_RESTORE",
+    "1",
+).strip().lower() in {"1", "true", "yes", "y"}
 
 
 def path_for_cli(path: Path) -> str:
@@ -129,6 +136,16 @@ def child_env() -> dict[str, str]:
     env.setdefault("STAGE5_RECOVERY_FULL_ASSESS_SOURCE_SUMMARY", f"outputs/stage5/{ARC_MIX_RUN_ID}/summary.json")
     env.setdefault("STAGE5_RECOVERY_FULL_ASSESS_PUSH", "1")
     return env
+
+
+def preflight_checkpoint_restore(source_payload: dict[str, Any]) -> Path | None:
+    if not PREFLIGHT_CHECKPOINT_RESTORE:
+        print("checkpoint_restore_preflight=disabled", flush=True)
+        return None
+    checkpoint = selected_checkpoint(source_payload)
+    restore_checkpoint_if_needed(checkpoint, run_id=checkpoint_run_id(checkpoint))
+    print(f"checkpoint_restore_preflight=ok checkpoint={path_for_cli(checkpoint)}", flush=True)
+    return checkpoint
 
 
 def commit_results() -> None:
@@ -220,11 +237,11 @@ def child_log_tail(stage: str, *, max_lines: int = 80) -> str:
     return "\n".join(lines[-max_lines:])
 
 
-def failure_diagnosis(stage: str, log_tail: str) -> tuple[str | None, str | None]:
+def failure_diagnosis(stage: str, evidence: str) -> tuple[str | None, str | None]:
     if (
-        stage in {"arc_mix", "full_assessment"}
-        and "Missing recovered checkpoint" in log_tail
-        and "Could not restore it from Drive" in log_tail
+        stage in {"checkpoint_restore", "arc_mix", "full_assessment"}
+        and "Missing recovered checkpoint" in evidence
+        and "Could not restore it from Drive" in evidence
     ):
         return (
             "checkpoint_restore_or_drive_mount_failed",
@@ -238,7 +255,7 @@ def failure_diagnosis(stage: str, log_tail: str) -> tuple[str | None, str | None
 
 def failure_summary(*, stage: str, error: str, source_payload: dict[str, Any] | None) -> dict[str, Any]:
     log_tail = child_log_tail(stage)
-    diagnosis, diagnosed_next_step = failure_diagnosis(stage, log_tail)
+    diagnosis, diagnosed_next_step = failure_diagnosis(stage, "\n".join([error, log_tail]))
     return {
         "run_id": RUN_ID,
         "kind": "stage5_competence_preserving_pipeline",
@@ -271,6 +288,8 @@ def main() -> int:
             raise FileNotFoundError(f"Missing source summary: {SOURCE_SUMMARY}")
         source_payload = read_json(SOURCE_SUMMARY)
         env = child_env()
+        current_stage = "checkpoint_restore"
+        preflight_checkpoint_restore(source_payload)
 
         arc_summary = arc_mix_summary_path()
         if arc_summary.exists():

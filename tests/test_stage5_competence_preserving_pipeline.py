@@ -33,6 +33,36 @@ def test_arc_mix_passed_accepts_lift_or_base_match() -> None:
     assert module.arc_mix_passed(None) is False
 
 
+def test_preflight_checkpoint_restore_uses_selected_checkpoint(monkeypatch, tmp_path) -> None:
+    import colab.run_stage5_competence_preserving_pipeline as module
+
+    checkpoint = tmp_path / "outputs" / "stage5" / "run" / "phase1" / "phase1_step_75.pt"
+    calls: list[tuple[str, str]] = []
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "PREFLIGHT_CHECKPOINT_RESTORE", True)
+    monkeypatch.setattr(module, "selected_checkpoint", lambda payload: checkpoint)
+    monkeypatch.setattr(module, "checkpoint_run_id", lambda path: "run")
+    monkeypatch.setattr(
+        module,
+        "restore_checkpoint_if_needed",
+        lambda path, *, run_id: calls.append((str(path), run_id)),
+    )
+
+    assert module.preflight_checkpoint_restore({"checkpoint": "unused"}) == checkpoint
+    assert calls == [(str(checkpoint), "run")]
+
+
+def test_preflight_checkpoint_restore_can_be_disabled(monkeypatch) -> None:
+    import pytest
+    import colab.run_stage5_competence_preserving_pipeline as module
+
+    monkeypatch.setattr(module, "PREFLIGHT_CHECKPOINT_RESTORE", False)
+    monkeypatch.setattr(module, "selected_checkpoint", lambda payload: pytest.fail("should not select checkpoint"))
+
+    assert module.preflight_checkpoint_restore({}) is None
+
+
 def test_build_summary_waits_for_full_assessment_after_arc_mix_passes() -> None:
     import colab.run_stage5_competence_preserving_pipeline as module
 
@@ -179,3 +209,23 @@ def test_failure_summary_diagnoses_checkpoint_restore_drive_mount_failure(monkey
     assert payload["failure_diagnosis"] == "checkpoint_restore_or_drive_mount_failed"
     assert "Mount Google Drive" in payload["next_step"]
     assert "Missing recovered checkpoint" in payload["child_log_tail"]
+
+
+def test_failure_summary_diagnoses_parent_checkpoint_restore_failure(monkeypatch, tmp_path) -> None:
+    import colab.run_stage5_competence_preserving_pipeline as module
+
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module, "RUN_DIR", tmp_path / "outputs" / "stage5" / "competence")
+
+    payload = module.failure_summary(
+        stage="checkpoint_restore",
+        error=(
+            "Missing recovered checkpoint /content/recurrent-qwen-svgd/outputs/stage5/run/phase1/phase1_step_75.pt. "
+            "Could not restore it from Drive."
+        ),
+        source_payload={"status": "needs_review"},
+    )
+
+    assert payload["failed_stage"] == "checkpoint_restore"
+    assert payload["failure_diagnosis"] == "checkpoint_restore_or_drive_mount_failed"
+    assert "Mount Google Drive" in payload["next_step"]
