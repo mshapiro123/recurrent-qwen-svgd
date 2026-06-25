@@ -1277,6 +1277,8 @@ def test_reentry_repair_smoke_target_is_bootstrapped() -> None:
     assert "reentry_repair_smoke" in bootstrap
     assert "reentry_repair_smoke" in bootstrap_md
     assert "colab/STAGE5_REENTRY_REPAIR_SMOKE_CELL.py" in bootstrap
+    assert "train_log_metrics" in bootstrap
+    assert "train_log_metrics" in bootstrap_md
     assert "STAGE5_REENTRY_REPAIR_SMOKE_CELL_VERSION" in cell
     assert "stage5_reentry_repair_smoke_v1_trainable" in cell
     assert "bridge_gate_override" in cell
