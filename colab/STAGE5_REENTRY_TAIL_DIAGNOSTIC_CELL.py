@@ -97,7 +97,19 @@ def mount_drive() -> None:
     if Path("/content/drive/MyDrive").exists() and not FORCE_DRIVE_REMOUNT:
         print("Drive already mounted.", flush=True)
         return
-    drive.mount("/content/drive", force_remount=FORCE_DRIVE_REMOUNT)
+    print(
+        "Mounting Google Drive for checkpoint restore. "
+        "Approve the Drive prompt if Colab asks; this run cannot continue without the checkpoint.",
+        flush=True,
+    )
+    try:
+        drive.mount("/content/drive", force_remount=FORCE_DRIVE_REMOUNT, timeout_ms=300000)
+    except Exception as exc:
+        raise RuntimeError(
+            "Google Drive mount failed while restoring the recurrent checkpoint. "
+            "Reconnect/authorize Drive in Colab, then rerun the same bootstrap cell. "
+            "Set FORCE_DRIVE_REMOUNT=1 if Colab appears half-mounted."
+        ) from exc
 
 
 def path_for_cli(path: Path) -> str:
