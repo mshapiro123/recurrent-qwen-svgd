@@ -427,6 +427,22 @@ def test_current_bootstrap_exposes_reentry_tail_damper_sweep_target() -> None:
     assert "loop8 tail ratio" in eval_script
 
 
+def test_current_bootstrap_exposes_reentry_tail_damper_heldout_target() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_REENTRY_TAIL_DAMPER_SWEEP_CELL.py").read_text(encoding="utf-8")
+    eval_script = (ROOT / "eval/eval_tail_damper_depth_sweep.py").read_text(encoding="utf-8")
+
+    for payload in (text, markdown):
+        assert '"reentry_tail_damper_heldout"' in payload
+        assert '"STAGE5_TAIL_DAMPER_ARC_OFFSET": "256"' in payload
+        assert '"STAGE5_TAIL_DAMPER_ARC_LIMIT": "256"' in payload
+        assert "colab/STAGE5_REENTRY_TAIL_DAMPER_SWEEP_CELL.py" in payload
+    assert "stage5_reentry_tail_damper_sweep_offset{arc_offset}" in cell
+    assert "--source_summary" in cell
+    assert "source_summary" in eval_script
+
+
 def test_current_bootstrap_source_summary_override_fans_out_to_benchmark_and_control() -> None:
     text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

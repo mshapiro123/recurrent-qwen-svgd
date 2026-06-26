@@ -338,6 +338,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lora_rank", type=int, default=8)
     parser.add_argument("--lora_alpha", type=int, default=16)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--source_summary", default="")
     parser.add_argument("--output_dir", required=True)
     return parser.parse_args()
 
@@ -438,6 +439,7 @@ def main() -> int:
         "run_id": output_dir.name,
         "model_name": args.model_name,
         "checkpoint": args.checkpoint,
+        "source_summary": args.source_summary or None,
         "examples": len(examples),
         "arc_config": args.arc_config,
         "arc_split": args.arc_split,
@@ -464,4 +466,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

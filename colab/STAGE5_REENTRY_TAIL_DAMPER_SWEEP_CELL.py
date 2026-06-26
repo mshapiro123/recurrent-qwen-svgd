@@ -262,22 +262,26 @@ try:
     )
     source_summary = current_source_summary()
     checkpoint = restore_checkpoint(checkpoint_from_source(source_summary))
-    run_id = os.environ.get("STAGE5_TAIL_DAMPER_RUN_ID") or time.strftime(
-        "stage5_reentry_tail_damper_sweep_%Y%m%d_%H%M%S"
-    )
+    arc_offset = os.environ.get("STAGE5_TAIL_DAMPER_ARC_OFFSET", "0")
+    arc_limit = os.environ.get("STAGE5_TAIL_DAMPER_ARC_LIMIT", "256")
+    default_run_id = time.strftime(f"stage5_reentry_tail_damper_sweep_offset{arc_offset}_%Y%m%d_%H%M%S")
+    run_id = os.environ.get("STAGE5_TAIL_DAMPER_RUN_ID") or default_run_id
     run_dir = ROOT / "outputs" / "stage5" / run_id
     print("tail_damper_source_summary:", path_for_cli(source_summary), flush=True)
     print("tail_damper_checkpoint:", path_for_cli(checkpoint), flush=True)
+    print("tail_damper_arc_offset:", arc_offset, "tail_damper_arc_limit:", arc_limit, flush=True)
     run(
         [
             sys.executable,
             "eval/eval_tail_damper_depth_sweep.py",
             "--checkpoint",
             path_for_cli(checkpoint),
+            "--source_summary",
+            path_for_cli(source_summary),
             "--arc_limit",
-            os.environ.get("STAGE5_TAIL_DAMPER_ARC_LIMIT", "256"),
+            arc_limit,
             "--arc_offset",
-            os.environ.get("STAGE5_TAIL_DAMPER_ARC_OFFSET", "0"),
+            arc_offset,
             "--strengths",
             os.environ.get("STAGE5_TAIL_DAMPER_STRENGTHS", "0,0.25,0.5,0.75,1.0"),
             "--score_loops",
@@ -313,4 +317,3 @@ try:
 except Exception:
     disconnect("tail-damper sweep errored")
     raise
-
