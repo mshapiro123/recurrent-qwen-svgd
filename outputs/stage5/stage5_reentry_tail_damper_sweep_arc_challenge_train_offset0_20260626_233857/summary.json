@@ -1,0 +1,297 @@
+{
+  "kind": "stage5_tail_damper_depth_sweep",
+  "run_id": "stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857",
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "checkpoint": "outputs/stage5/stage5_depth_signal_recovery_20260625_180014_curriculum_sft/phase1/phase1_step_100.pt",
+  "source_summary": "outputs/stage5/stage5_reentry_tail_damper_sweep_offset256_20260626_191255/summary.json",
+  "examples": 512,
+  "arc_config": "ARC-Challenge",
+  "arc_split": "train",
+  "arc_offset": 0,
+  "arc_limit": 512,
+  "score_target": "option_text",
+  "score_loops": [
+    1,
+    2,
+    3
+  ],
+  "tail_loop_counts": [
+    1,
+    2,
+    3,
+    4,
+    8
+  ],
+  "strengths": [
+    0.0,
+    0.5,
+    1.0
+  ],
+  "reentry_rescale_mode": "none",
+  "damper_artifact": "outputs/stage5/stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857/tail_damper.pt",
+  "records_jsonl": "outputs/stage5/stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857/records.jsonl",
+  "calibration": {
+    "dominant_entry_eigenvalue": 91650.20392831047,
+    "tail_decomposition_loop1": {
+      "n_tail": 7,
+      "tail_mismatch": 2.0879319463924007,
+      "after_damper": 0.4182882730154431,
+      "after_rotation": 1.9515265855386639,
+      "after_rotation_then_damper": 0.36341818354407374,
+      "damper_reduction": 0.7996638378285386,
+      "rotation_reduction": 0.06533036725139563,
+      "both_reduction": 0.8259434728358843,
+      "offdiag_before": 1.2389050783044315,
+      "offdiag_after_damper": 0.4182882730168463,
+      "entry_tail_eigenvalues": [
+        7.023685335216875,
+        5.204911898818105,
+        3.628087955845612,
+        3.2195268014585285,
+        2.8780161633825623,
+        2.274639795891706,
+        1.8580864266719939
+      ],
+      "exit_tail_diagonal": [
+        15.539635231640364,
+        17.424646434929794,
+        8.661059776708921,
+        6.6620588723685,
+        10.579849362265605,
+        4.638085517772692,
+        4.338717959333391
+      ],
+      "exit_over_entry_diag": [
+        2.2124617618793905,
+        3.347731291837324,
+        2.3872243126725015,
+        2.0692664739894124,
+        3.676091016052877,
+        2.039041753401868,
+        2.335046366548428
+      ],
+      "damper_scale": [
+        0.6722984550664833,
+        0.5465434628600714,
+        0.647222170507681,
+        0.6951712283448915,
+        0.5215631171468692,
+        0.7003045379120896,
+        0.6544134936280323
+      ]
+    },
+    "correction_class": {
+      "action": "tail_damper",
+      "reasons": [
+        "per_axis_tail_damping_removes_most_mismatch"
+      ],
+      "tail_mismatch": 2.0879319463924007,
+      "damper_reduction": 0.7996638378285386,
+      "rotation_reduction": 0.06533036725139563,
+      "both_reduction": 0.8259434728358843
+    }
+  },
+  "strength_summaries": [
+    {
+      "strength": 0.0,
+      "tail_trace": {
+        "entry": {
+          "tail_trace": 26.08695437728482,
+          "ratio_vs_entry": 1.0
+        },
+        "loop1": {
+          "tail_trace": 67.84405315501957,
+          "ratio_vs_entry": 2.600688918062995
+        },
+        "loop2": {
+          "tail_trace": 133.3713482286856,
+          "ratio_vs_entry": 5.112568769040304
+        },
+        "loop3": {
+          "tail_trace": 217.77462813877872,
+          "ratio_vs_entry": 8.348028098228504
+        },
+        "loop4": {
+          "tail_trace": 318.92957143573614,
+          "ratio_vs_entry": 12.225634576700285
+        },
+        "loop8": {
+          "tail_trace": 877.8370301928558,
+          "ratio_vs_entry": 33.65042225692821
+        }
+      },
+      "score_summary": {
+        "strength": 0.0,
+        "examples": 512,
+        "loop_results": {
+          "1": {
+            "correct": 180,
+            "total": 512,
+            "accuracy": 0.3515625
+          },
+          "2": {
+            "correct": 167,
+            "total": 512,
+            "accuracy": 0.326171875
+          },
+          "3": {
+            "correct": 160,
+            "total": 512,
+            "accuracy": 0.3125
+          }
+        },
+        "oracle_correct": 229,
+        "oracle_accuracy": 0.447265625,
+        "oracle_gap_vs_loop1": 49,
+        "rescued_vs_loop1": 49,
+        "harmed_vs_loop1": 70,
+        "stable_correct": 110,
+        "stable_wrong": 283,
+        "pattern_counts": {
+          "000": 283,
+          "001": 15,
+          "010": 3,
+          "011": 31,
+          "100": 43,
+          "101": 4,
+          "110": 23,
+          "111": 110
+        }
+      }
+    },
+    {
+      "strength": 0.5,
+      "tail_trace": {
+        "entry": {
+          "tail_trace": 26.08695437728482,
+          "ratio_vs_entry": 1.0
+        },
+        "loop1": {
+          "tail_trace": 67.84405315501957,
+          "ratio_vs_entry": 2.600688918062995
+        },
+        "loop2": {
+          "tail_trace": 105.06776925795245,
+          "ratio_vs_entry": 4.027598152639852
+        },
+        "loop3": {
+          "tail_trace": 137.5767408856691,
+          "ratio_vs_entry": 5.2737755008098555
+        },
+        "loop4": {
+          "tail_trace": 161.9654286665738,
+          "ratio_vs_entry": 6.208675275930448
+        },
+        "loop8": {
+          "tail_trace": 200.09298644141558,
+          "ratio_vs_entry": 7.670231777445292
+        }
+      },
+      "score_summary": {
+        "strength": 0.5,
+        "examples": 512,
+        "loop_results": {
+          "1": {
+            "correct": 180,
+            "total": 512,
+            "accuracy": 0.3515625
+          },
+          "2": {
+            "correct": 168,
+            "total": 512,
+            "accuracy": 0.328125
+          },
+          "3": {
+            "correct": 158,
+            "total": 512,
+            "accuracy": 0.30859375
+          }
+        },
+        "oracle_correct": 229,
+        "oracle_accuracy": 0.447265625,
+        "oracle_gap_vs_loop1": 49,
+        "rescued_vs_loop1": 49,
+        "harmed_vs_loop1": 67,
+        "stable_correct": 113,
+        "stable_wrong": 283,
+        "pattern_counts": {
+          "000": 283,
+          "001": 15,
+          "010": 7,
+          "011": 27,
+          "100": 43,
+          "101": 3,
+          "110": 21,
+          "111": 113
+        }
+      }
+    },
+    {
+      "strength": 1.0,
+      "tail_trace": {
+        "entry": {
+          "tail_trace": 26.08695437728482,
+          "ratio_vs_entry": 1.0
+        },
+        "loop1": {
+          "tail_trace": 67.84405315501957,
+          "ratio_vs_entry": 2.600688918062995
+        },
+        "loop2": {
+          "tail_trace": 84.14814163986759,
+          "ratio_vs_entry": 3.2256790280255743
+        },
+        "loop3": {
+          "tail_trace": 91.2290006635388,
+          "ratio_vs_entry": 3.4971119795792003
+        },
+        "loop4": {
+          "tail_trace": 91.07470932664155,
+          "ratio_vs_entry": 3.4911974778452763
+        },
+        "loop8": {
+          "tail_trace": 75.99897013707607,
+          "ratio_vs_entry": 2.9132940947392494
+        }
+      },
+      "score_summary": {
+        "strength": 1.0,
+        "examples": 512,
+        "loop_results": {
+          "1": {
+            "correct": 180,
+            "total": 512,
+            "accuracy": 0.3515625
+          },
+          "2": {
+            "correct": 165,
+            "total": 512,
+            "accuracy": 0.322265625
+          },
+          "3": {
+            "correct": 159,
+            "total": 512,
+            "accuracy": 0.310546875
+          }
+        },
+        "oracle_correct": 232,
+        "oracle_accuracy": 0.453125,
+        "oracle_gap_vs_loop1": 52,
+        "rescued_vs_loop1": 52,
+        "harmed_vs_loop1": 67,
+        "stable_correct": 113,
+        "stable_wrong": 280,
+        "pattern_counts": {
+          "000": 280,
+          "001": 17,
+          "010": 10,
+          "011": 25,
+          "100": 46,
+          "101": 4,
+          "110": 17,
+          "111": 113
+        }
+      }
+    }
+  ]
+}

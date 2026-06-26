@@ -1,1 +1,1 @@
-outputs/stage5/stage5_reentry_tail_damper_sweep_offset256_20260626_191255/summary.json
+outputs/stage5/stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857/summary.json
