@@ -49,6 +49,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "traced_capability_ladder_sft" - GPU Phase 1 SFT from the latest gate-ready traced capability ladder.
 #   "forced_depth_diagnostic" - no-training ARC-Challenge loop 1/2/3 forced-depth diagnostic.
 #   "heldout_router_validation" - no-training forced-depth router transfer reality test.
+#   "latent_criticality_probe" - prompt-state criticality/Jacobian probe from a completed router-validation run.
 #   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
 #   "depth_sweep_heldout" - L4/T4 held-out ARC tail loop-depth sweep for routing validation.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
@@ -1237,6 +1238,26 @@ TARGETS = {
             "STAGE5_HELDOUT_ROUTER_DISCONNECT": "0",
         },
     },
+    "latent_criticality_probe": {
+        "path": "colab/STAGE5_LATENT_CRITICALITY_CELL.py",
+        "markers": [
+            "STAGE5_LATENT_CRITICALITY_CELL_VERSION",
+            "latent_criticality_probe_v1",
+            "STAGE5_LATENT_CRITICALITY_SOURCE_SUMMARY",
+            "eval/eval_latent_criticality.py",
+            "STAGE5_LATENT_CRITICALITY_JACOBIAN_EXAMPLES_PER_BENCHMARK",
+            "finite_difference_random_gain",
+            "tests/test_eval_latent_criticality.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_LATENT_CRITICALITY_MAX_EXAMPLES_PER_BENCHMARK": "64",
+            "STAGE5_LATENT_CRITICALITY_JACOBIAN_EXAMPLES_PER_BENCHMARK": "8",
+            "STAGE5_LATENT_CRITICALITY_JACOBIAN_RANDOM_PROBES": "1",
+            "STAGE5_LATENT_CRITICALITY_JACOBIAN_EPSILON": "0.02",
+            "STAGE5_LATENT_CRITICALITY_DISCONNECT": "0",
+        },
+    },
     "depth_sweep_heldout": {
         "path": "colab/STAGE5_DEPTH_SWEEP_BENCHMARK_CELL.py",
         "markers": [
@@ -1365,6 +1386,7 @@ if SOURCE_SUMMARY_OVERRIDE:
     os.environ["STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT"] = SOURCE_SUMMARY_OVERRIDE
     os.environ["STAGE5_FORCED_DEPTH_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
     os.environ["STAGE5_HELDOUT_ROUTER_DISCOVERY_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
+    os.environ["STAGE5_LATENT_CRITICALITY_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
 else:
     # Avoid accidentally pinning a new session to an old target-specific source
     # summary. The safe-continue launcher will follow config/stage5_current_source_summary.txt.
@@ -1382,6 +1404,7 @@ else:
     os.environ.pop("STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT", None)
     os.environ.pop("STAGE5_FORCED_DEPTH_SOURCE_SUMMARY", None)
     os.environ.pop("STAGE5_HELDOUT_ROUTER_DISCOVERY_SUMMARY", None)
+    os.environ.pop("STAGE5_LATENT_CRITICALITY_SOURCE_SUMMARY", None)
 for key, value in selected["env"].items():
     # Target configs are defaults. Planner/user-supplied env must win so chained
     # actions can pass repaired checkpoints, benchmark summaries, and run IDs.
