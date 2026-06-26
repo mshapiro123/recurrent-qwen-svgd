@@ -71,6 +71,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "forced_depth_diagnostic" - no-training ARC-Challenge loop 1/2/3 forced-depth diagnostic.
 #   "heldout_router_validation" - no-training forced-depth router transfer reality test.
 #   "latent_criticality_probe" - prompt-state criticality/Jacobian probe from a completed router-validation run.
+#   "reentry_covariance_check" - read-only covariance gate before directional re-entry adapter changes.
 #   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
 #   "depth_sweep_heldout" - L4/T4 held-out ARC tail loop-depth sweep for routing validation.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
@@ -1280,6 +1281,27 @@ TARGETS = {
             "STAGE5_LATENT_CRITICALITY_DISCONNECT": "0",
         },
     },
+    "reentry_covariance_check": {
+        "path": "colab/STAGE5_REENTRY_COVARIANCE_CHECK_CELL.py",
+        "markers": [
+            "STAGE5_REENTRY_COVARIANCE_CHECK_CELL_VERSION",
+            "reentry_covariance_prebuild_v1",
+            "STAGE5_REENTRY_COVARIANCE_SOURCE_SUMMARY",
+            "eval/eval_reentry_covariance_check.py",
+            "covariance_match_check",
+            "directional_prebuild_gate",
+            "restored_reentry_covariance_checkpoint",
+            "tests/test_eval_reentry_covariance_check.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_REENTRY_COVARIANCE_PROMPTS": "eval/smoke_exact_tasks_v2.jsonl",
+            "STAGE5_REENTRY_COVARIANCE_LIMIT": "14",
+            "STAGE5_REENTRY_COVARIANCE_SUBSPACE_RANK": "8",
+            "STAGE5_REENTRY_COVARIANCE_ANALYSIS_RANK": "8",
+            "STAGE5_REENTRY_COVARIANCE_DISCONNECT": "0",
+        },
+    },
     "depth_sweep_heldout": {
         "path": "colab/STAGE5_DEPTH_SWEEP_BENCHMARK_CELL.py",
         "markers": [
@@ -1409,6 +1431,7 @@ if SOURCE_SUMMARY_OVERRIDE:
     os.environ["STAGE5_FORCED_DEPTH_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
     os.environ["STAGE5_HELDOUT_ROUTER_DISCOVERY_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
     os.environ["STAGE5_LATENT_CRITICALITY_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
+    os.environ["STAGE5_REENTRY_COVARIANCE_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
 else:
     # Avoid accidentally pinning a new session to an old target-specific source
     # summary. The safe-continue launcher will follow config/stage5_current_source_summary.txt.
@@ -1427,6 +1450,7 @@ else:
     os.environ.pop("STAGE5_FORCED_DEPTH_SOURCE_SUMMARY", None)
     os.environ.pop("STAGE5_HELDOUT_ROUTER_DISCOVERY_SUMMARY", None)
     os.environ.pop("STAGE5_LATENT_CRITICALITY_SOURCE_SUMMARY", None)
+    os.environ.pop("STAGE5_REENTRY_COVARIANCE_SOURCE_SUMMARY", None)
 for key, value in selected["env"].items():
     # Target configs are defaults. Planner/user-supplied env must win so chained
     # actions can pass repaired checkpoints, benchmark summaries, and run IDs.

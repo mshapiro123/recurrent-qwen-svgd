@@ -365,6 +365,27 @@ def test_current_bootstrap_exposes_latent_criticality_target() -> None:
     assert "finite_difference_random_gain" in (ROOT / "eval/eval_latent_criticality.py").read_text(encoding="utf-8")
 
 
+def test_current_bootstrap_exposes_reentry_covariance_check_target() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_REENTRY_COVARIANCE_CHECK_CELL.py").read_text(encoding="utf-8")
+    eval_script = (ROOT / "eval/eval_reentry_covariance_check.py").read_text(encoding="utf-8")
+
+    for payload in (text, markdown):
+        assert '"reentry_covariance_check"' in payload
+        assert "colab/STAGE5_REENTRY_COVARIANCE_CHECK_CELL.py" in payload
+        assert "STAGE5_REENTRY_COVARIANCE_SOURCE_SUMMARY" in payload
+        assert "eval/eval_reentry_covariance_check.py" in payload
+        assert "covariance_match_check" in payload
+        assert "directional_prebuild_gate" in payload
+    assert "STAGE5_REENTRY_COVARIANCE_CHECK_CELL_VERSION" in cell
+    assert "reentry_covariance_prebuild_v1" in cell
+    assert "restored_reentry_covariance_checkpoint" in cell
+    assert "tests/test_eval_reentry_covariance_check.py" in cell
+    assert "covariance_match_check" in eval_script
+    assert "general_linear_directional_adapter" in eval_script
+
+
 def test_current_bootstrap_source_summary_override_fans_out_to_benchmark_and_control() -> None:
     text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
@@ -377,18 +398,21 @@ def test_current_bootstrap_source_summary_override_fans_out_to_benchmark_and_con
         assert "STAGE5_COMPETENCE_SOURCE_SUMMARY" in payload
         assert "STAGE5_HELDOUT_ROUTER_DISCOVERY_SUMMARY" in payload
         assert "STAGE5_LATENT_CRITICALITY_SOURCE_SUMMARY" in payload
+        assert "STAGE5_REENTRY_COVARIANCE_SOURCE_SUMMARY" in payload
         assert 'os.environ["STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
         assert 'os.environ["STAGE5_DENSE_MCQ_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
         assert 'os.environ["STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
         assert 'os.environ["STAGE5_COMPETENCE_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
         assert 'os.environ["STAGE5_HELDOUT_ROUTER_DISCOVERY_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
         assert 'os.environ["STAGE5_LATENT_CRITICALITY_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
+        assert 'os.environ["STAGE5_REENTRY_COVARIANCE_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
         assert 'os.environ.pop("STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY", None)' in payload
         assert 'os.environ.pop("STAGE5_DENSE_MCQ_SOURCE_SUMMARY", None)' in payload
         assert 'os.environ.pop("STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY", None)' in payload
         assert 'os.environ.pop("STAGE5_COMPETENCE_SOURCE_SUMMARY", None)' in payload
         assert 'os.environ.pop("STAGE5_HELDOUT_ROUTER_DISCOVERY_SUMMARY", None)' in payload
         assert 'os.environ.pop("STAGE5_LATENT_CRITICALITY_SOURCE_SUMMARY", None)' in payload
+        assert 'os.environ.pop("STAGE5_REENTRY_COVARIANCE_SOURCE_SUMMARY", None)' in payload
 
 
 def test_current_bootstrap_can_explicitly_prefer_local_head_to_stale_ref_resolution() -> None:
