@@ -1,0 +1,426 @@
+{
+  "kind": "stage5_tail_damper_depth_sweep",
+  "run_id": "stage5_reentry_tail_damper_sweep_offset256_20260626_191255",
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "checkpoint": "outputs/stage5/stage5_depth_signal_recovery_20260625_180014_curriculum_sft/phase1/phase1_step_100.pt",
+  "source_summary": "outputs/stage5/stage5_reentry_tail_damper_sweep_20260626_182607/summary.json",
+  "examples": 43,
+  "arc_config": "ARC-Challenge",
+  "arc_split": "validation",
+  "arc_offset": 256,
+  "arc_limit": 256,
+  "score_target": "option_text",
+  "score_loops": [
+    1,
+    2,
+    3
+  ],
+  "tail_loop_counts": [
+    1,
+    2,
+    3,
+    4,
+    8
+  ],
+  "strengths": [
+    0.0,
+    0.25,
+    0.5,
+    0.75,
+    1.0
+  ],
+  "reentry_rescale_mode": "none",
+  "damper_artifact": "outputs/stage5/stage5_reentry_tail_damper_sweep_offset256_20260626_191255/tail_damper.pt",
+  "records_jsonl": "outputs/stage5/stage5_reentry_tail_damper_sweep_offset256_20260626_191255/records.jsonl",
+  "calibration": {
+    "dominant_entry_eigenvalue": 102154.40096760714,
+    "tail_decomposition_loop1": {
+      "n_tail": 7,
+      "tail_mismatch": 1.910262042466368,
+      "after_damper": 0.40566840644809143,
+      "after_rotation": 1.7587905938749706,
+      "after_rotation_then_damper": 0.351783700001025,
+      "damper_reduction": 0.78763729926585,
+      "rotation_reduction": 0.07929354466774119,
+      "both_reduction": 0.8158453174587337,
+      "offdiag_before": 1.1687130930568115,
+      "offdiag_after_damper": 0.40566840644800267,
+      "entry_tail_eigenvalues": [
+        7.843370405560484,
+        5.537020481272891,
+        3.8644581990652953,
+        3.5026011099315246,
+        2.9237188319002634,
+        2.5723254188134925,
+        2.0372490674523793
+      ],
+      "exit_tail_diagonal": [
+        16.324311588850133,
+        16.557899260453855,
+        7.605098313828885,
+        8.205688408741985,
+        11.855471905597925,
+        4.923489842228616,
+        3.4037961808740356
+      ],
+      "exit_over_entry_diag": [
+        2.081287857739979,
+        2.990398774296642,
+        1.9679597817019592,
+        2.342741337423491,
+        4.054928872176293,
+        1.9140229327981442,
+        1.6707805811542478
+      ],
+      "damper_scale": [
+        0.6931606889784759,
+        0.5782763710858294,
+        0.7128397195190034,
+        0.6533378659949781,
+        0.49660190326608844,
+        0.7228137933098839,
+        0.7736424480536456
+      ]
+    },
+    "correction_class": {
+      "action": "tail_damper",
+      "reasons": [
+        "per_axis_tail_damping_removes_most_mismatch"
+      ],
+      "tail_mismatch": 1.910262042466368,
+      "damper_reduction": 0.78763729926585,
+      "rotation_reduction": 0.07929354466774119,
+      "both_reduction": 0.8158453174587337
+    }
+  },
+  "strength_summaries": [
+    {
+      "strength": 0.0,
+      "tail_trace": {
+        "entry": {
+          "tail_trace": 28.280743513996175,
+          "ratio_vs_entry": 1.0
+        },
+        "loop1": {
+          "tail_trace": 68.87575550057528,
+          "ratio_vs_entry": 2.4354294457105974
+        },
+        "loop2": {
+          "tail_trace": 137.98521049252858,
+          "ratio_vs_entry": 4.8791224468423025
+        },
+        "loop3": {
+          "tail_trace": 226.9876689258693,
+          "ratio_vs_entry": 8.026227062012454
+        },
+        "loop4": {
+          "tail_trace": 333.39701503629703,
+          "ratio_vs_entry": 11.788834861123734
+        },
+        "loop8": {
+          "tail_trace": 921.9423751719335,
+          "ratio_vs_entry": 32.59965123320266
+        }
+      },
+      "score_summary": {
+        "strength": 0.0,
+        "examples": 43,
+        "loop_results": {
+          "1": {
+            "correct": 11,
+            "total": 43,
+            "accuracy": 0.2558139534883721
+          },
+          "2": {
+            "correct": 8,
+            "total": 43,
+            "accuracy": 0.18604651162790697
+          },
+          "3": {
+            "correct": 7,
+            "total": 43,
+            "accuracy": 0.16279069767441862
+          }
+        },
+        "oracle_correct": 15,
+        "oracle_accuracy": 0.3488372093023256,
+        "oracle_gap_vs_loop1": 4,
+        "rescued_vs_loop1": 4,
+        "harmed_vs_loop1": 8,
+        "stable_correct": 3,
+        "stable_wrong": 28,
+        "pattern_counts": {
+          "000": 28,
+          "001": 2,
+          "011": 2,
+          "100": 5,
+          "110": 3,
+          "111": 3
+        }
+      }
+    },
+    {
+      "strength": 0.25,
+      "tail_trace": {
+        "entry": {
+          "tail_trace": 28.280743513996175,
+          "ratio_vs_entry": 1.0
+        },
+        "loop1": {
+          "tail_trace": 68.87575550057528,
+          "ratio_vs_entry": 2.4354294457105974
+        },
+        "loop2": {
+          "tail_trace": 122.90155101637691,
+          "ratio_vs_entry": 4.345768029597694
+        },
+        "loop3": {
+          "tail_trace": 181.66755655160523,
+          "ratio_vs_entry": 6.423719251288345
+        },
+        "loop4": {
+          "tail_trace": 238.32371149235541,
+          "ratio_vs_entry": 8.427066684947965
+        },
+        "loop8": {
+          "tail_trace": 428.9427077712198,
+          "ratio_vs_entry": 15.167306600653392
+        }
+      },
+      "score_summary": {
+        "strength": 0.25,
+        "examples": 43,
+        "loop_results": {
+          "1": {
+            "correct": 11,
+            "total": 43,
+            "accuracy": 0.2558139534883721
+          },
+          "2": {
+            "correct": 7,
+            "total": 43,
+            "accuracy": 0.16279069767441862
+          },
+          "3": {
+            "correct": 9,
+            "total": 43,
+            "accuracy": 0.20930232558139536
+          }
+        },
+        "oracle_correct": 16,
+        "oracle_accuracy": 0.37209302325581395,
+        "oracle_gap_vs_loop1": 5,
+        "rescued_vs_loop1": 5,
+        "harmed_vs_loop1": 7,
+        "stable_correct": 4,
+        "stable_wrong": 27,
+        "pattern_counts": {
+          "000": 27,
+          "001": 4,
+          "011": 1,
+          "100": 5,
+          "110": 2,
+          "111": 4
+        }
+      }
+    },
+    {
+      "strength": 0.5,
+      "tail_trace": {
+        "entry": {
+          "tail_trace": 28.280743513996175,
+          "ratio_vs_entry": 1.0
+        },
+        "loop1": {
+          "tail_trace": 68.87575550057528,
+          "ratio_vs_entry": 2.4354294457105974
+        },
+        "loop2": {
+          "tail_trace": 109.69183841969021,
+          "ratio_vs_entry": 3.878675904167922
+        },
+        "loop3": {
+          "tail_trace": 146.275640464178,
+          "ratio_vs_entry": 5.172269972031888
+        },
+        "loop4": {
+          "tail_trace": 173.73754678182053,
+          "ratio_vs_entry": 6.14331609407078
+        },
+        "loop8": {
+          "tail_trace": 223.92129769481497,
+          "ratio_vs_entry": 7.917800944094559
+        }
+      },
+      "score_summary": {
+        "strength": 0.5,
+        "examples": 43,
+        "loop_results": {
+          "1": {
+            "correct": 11,
+            "total": 43,
+            "accuracy": 0.2558139534883721
+          },
+          "2": {
+            "correct": 7,
+            "total": 43,
+            "accuracy": 0.16279069767441862
+          },
+          "3": {
+            "correct": 8,
+            "total": 43,
+            "accuracy": 0.18604651162790697
+          }
+        },
+        "oracle_correct": 15,
+        "oracle_accuracy": 0.3488372093023256,
+        "oracle_gap_vs_loop1": 4,
+        "rescued_vs_loop1": 4,
+        "harmed_vs_loop1": 8,
+        "stable_correct": 3,
+        "stable_wrong": 28,
+        "pattern_counts": {
+          "000": 28,
+          "001": 3,
+          "011": 1,
+          "100": 4,
+          "101": 1,
+          "110": 3,
+          "111": 3
+        }
+      }
+    },
+    {
+      "strength": 0.75,
+      "tail_trace": {
+        "entry": {
+          "tail_trace": 28.280743513996175,
+          "ratio_vs_entry": 1.0
+        },
+        "loop1": {
+          "tail_trace": 68.87575550057528,
+          "ratio_vs_entry": 2.4354294457105974
+        },
+        "loop2": {
+          "tail_trace": 99.13018876181543,
+          "ratio_vs_entry": 3.505218620322191
+        },
+        "loop3": {
+          "tail_trace": 119.90522499100527,
+          "ratio_vs_entry": 4.239818692590738
+        },
+        "loop4": {
+          "tail_trace": 130.00282336768493,
+          "ratio_vs_entry": 4.596867239482101
+        },
+        "loop8": {
+          "tail_trace": 131.0436198294892,
+          "ratio_vs_entry": 4.633669541419077
+        }
+      },
+      "score_summary": {
+        "strength": 0.75,
+        "examples": 43,
+        "loop_results": {
+          "1": {
+            "correct": 11,
+            "total": 43,
+            "accuracy": 0.2558139534883721
+          },
+          "2": {
+            "correct": 7,
+            "total": 43,
+            "accuracy": 0.16279069767441862
+          },
+          "3": {
+            "correct": 7,
+            "total": 43,
+            "accuracy": 0.16279069767441862
+          }
+        },
+        "oracle_correct": 14,
+        "oracle_accuracy": 0.32558139534883723,
+        "oracle_gap_vs_loop1": 3,
+        "rescued_vs_loop1": 3,
+        "harmed_vs_loop1": 8,
+        "stable_correct": 3,
+        "stable_wrong": 29,
+        "pattern_counts": {
+          "000": 29,
+          "001": 2,
+          "011": 1,
+          "100": 4,
+          "101": 1,
+          "110": 3,
+          "111": 3
+        }
+      }
+    },
+    {
+      "strength": 1.0,
+      "tail_trace": {
+        "entry": {
+          "tail_trace": 28.280743513996175,
+          "ratio_vs_entry": 1.0
+        },
+        "loop1": {
+          "tail_trace": 68.87575550057528,
+          "ratio_vs_entry": 2.4354294457105974
+        },
+        "loop2": {
+          "tail_trace": 89.43300853601126,
+          "ratio_vs_entry": 3.1623287588514337
+        },
+        "loop3": {
+          "tail_trace": 99.47508503798672,
+          "ratio_vs_entry": 3.51741406617391
+        },
+        "loop4": {
+          "tail_trace": 100.10447381421744,
+          "ratio_vs_entry": 3.5396690954986956
+        },
+        "loop8": {
+          "tail_trace": 84.85650854031131,
+          "ratio_vs_entry": 3.0005048664408602
+        }
+      },
+      "score_summary": {
+        "strength": 1.0,
+        "examples": 43,
+        "loop_results": {
+          "1": {
+            "correct": 11,
+            "total": 43,
+            "accuracy": 0.2558139534883721
+          },
+          "2": {
+            "correct": 7,
+            "total": 43,
+            "accuracy": 0.16279069767441862
+          },
+          "3": {
+            "correct": 9,
+            "total": 43,
+            "accuracy": 0.20930232558139536
+          }
+        },
+        "oracle_correct": 15,
+        "oracle_accuracy": 0.3488372093023256,
+        "oracle_gap_vs_loop1": 4,
+        "rescued_vs_loop1": 4,
+        "harmed_vs_loop1": 7,
+        "stable_correct": 4,
+        "stable_wrong": 28,
+        "pattern_counts": {
+          "000": 28,
+          "001": 3,
+          "011": 1,
+          "100": 4,
+          "101": 1,
+          "110": 2,
+          "111": 4
+        }
+      }
+    }
+  ]
+}
