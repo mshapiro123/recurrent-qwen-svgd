@@ -10,7 +10,9 @@ from eval.eval_reentry_tail_diagnostic import (
     forced_depth_patterns,
     group_summary,
     tail_decomposition,
+    write_damper_artifact,
 )
+from models.reentry_tail_damper import load_tail_damper
 
 
 def rotation(theta: float, dim: int = 4) -> torch.Tensor:
@@ -96,3 +98,25 @@ def test_group_summary_reports_harmed_minus_rescued_delta() -> None:
     assert summary["harmed"]["n"] == 1
     assert summary["rescued"]["n"] == 1
     assert summary["harmed_minus_rescued"]["mean_tipping_tail_energy_ratio_delta"] == 1.5
+
+
+def test_write_damper_artifact_round_trips_required_tensors(tmp_path: Path) -> None:
+    path = tmp_path / "tail_damper.pt"
+    decomp = {
+        "damper_scale": [0.5, 0.75],
+        "exit_over_entry_diag": [4.0, 1.777],
+        "tail_mismatch": 1.0,
+    }
+
+    write_damper_artifact(
+        path=path,
+        mean_entry=torch.tensor([1.0, 2.0, 3.0]),
+        basis=torch.tensor([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]),
+        decomp=decomp,
+        summary={"kind": "test", "run_id": "run", "checkpoint": "ckpt.pt"},
+    )
+    payload = load_tail_damper(path)
+
+    assert payload["mean"].shape == (3,)
+    assert payload["basis"].shape == (3, 2)
+    assert torch.allclose(payload["damper_scale"], torch.tensor([0.5, 0.75]))

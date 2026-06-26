@@ -52,6 +52,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "latent_criticality_probe" - prompt-state criticality/Jacobian probe from a completed router-validation run.
 #   "reentry_covariance_check" - read-only covariance gate before directional re-entry adapter changes.
 #   "reentry_tail_diagnostic" - tail-resolved re-entry inflation/rotation and harmed/rescued diagnostic.
+#   "reentry_tail_damper_sweep" - eval-only tail damper stability/signal tradeoff sweep.
 #   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
 #   "depth_sweep_heldout" - L4/T4 held-out ARC tail loop-depth sweep for routing validation.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
@@ -1302,6 +1303,26 @@ TARGETS = {
             "STAGE5_REENTRY_TAIL_DISCONNECT": "0",
         },
     },
+    "reentry_tail_damper_sweep": {
+        "path": "colab/STAGE5_REENTRY_TAIL_DAMPER_SWEEP_CELL.py",
+        "markers": [
+            "STAGE5_REENTRY_TAIL_DAMPER_SWEEP_CELL_VERSION",
+            "tail_damper_tradeoff_v1",
+            "energy_oracle_tradeoff",
+            "eval/eval_tail_damper_depth_sweep.py",
+            "tests/test_reentry_tail_damper.py",
+            "tests/test_eval_tail_damper_depth_sweep.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_TAIL_DAMPER_ARC_LIMIT": "256",
+            "STAGE5_TAIL_DAMPER_STRENGTHS": "0,0.25,0.5,0.75,1.0",
+            "STAGE5_TAIL_DAMPER_SCORE_LOOPS": "1,2,3",
+            "STAGE5_TAIL_DAMPER_TAIL_LOOPS": "1,2,3,4,8",
+            "STAGE5_TAIL_DAMPER_N": "7",
+            "STAGE5_TAIL_DAMPER_DISCONNECT": "0",
+        },
+    },
     "depth_sweep_heldout": {
         "path": "colab/STAGE5_DEPTH_SWEEP_BENCHMARK_CELL.py",
         "markers": [
@@ -1433,6 +1454,7 @@ if SOURCE_SUMMARY_OVERRIDE:
     os.environ["STAGE5_LATENT_CRITICALITY_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
     os.environ["STAGE5_REENTRY_COVARIANCE_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
     os.environ["STAGE5_REENTRY_TAIL_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
+    os.environ["STAGE5_TAIL_DAMPER_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE
 else:
     # Avoid accidentally pinning a new session to an old target-specific source
     # summary. The safe-continue launcher will follow config/stage5_current_source_summary.txt.
@@ -1453,6 +1475,7 @@ else:
     os.environ.pop("STAGE5_LATENT_CRITICALITY_SOURCE_SUMMARY", None)
     os.environ.pop("STAGE5_REENTRY_COVARIANCE_SOURCE_SUMMARY", None)
     os.environ.pop("STAGE5_REENTRY_TAIL_SOURCE_SUMMARY", None)
+    os.environ.pop("STAGE5_TAIL_DAMPER_SOURCE_SUMMARY", None)
 for key, value in selected["env"].items():
     # Target configs are defaults. Planner/user-supplied env must win so chained
     # actions can pass repaired checkpoints, benchmark summaries, and run IDs.

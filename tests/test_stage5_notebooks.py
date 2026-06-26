@@ -407,6 +407,26 @@ def test_current_bootstrap_exposes_reentry_tail_diagnostic_target() -> None:
     assert "harmed_minus_rescued" in eval_script
 
 
+def test_current_bootstrap_exposes_reentry_tail_damper_sweep_target() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_REENTRY_TAIL_DAMPER_SWEEP_CELL.py").read_text(encoding="utf-8")
+    eval_script = (ROOT / "eval/eval_tail_damper_depth_sweep.py").read_text(encoding="utf-8")
+
+    for payload in (text, markdown):
+        assert '"reentry_tail_damper_sweep"' in payload
+        assert "colab/STAGE5_REENTRY_TAIL_DAMPER_SWEEP_CELL.py" in payload
+        assert "STAGE5_TAIL_DAMPER_SOURCE_SUMMARY" in payload
+        assert "eval/eval_tail_damper_depth_sweep.py" in payload
+        assert "energy_oracle_tradeoff" in payload
+    assert "STAGE5_REENTRY_TAIL_DAMPER_SWEEP_CELL_VERSION" in cell
+    assert "tail_damper_tradeoff_v1" in cell
+    assert "restored_tail_damper_checkpoint" in cell
+    assert "tests/test_eval_tail_damper_depth_sweep.py" in cell
+    assert "oracle_gap_vs_loop1" in eval_script
+    assert "loop8 tail ratio" in eval_script
+
+
 def test_current_bootstrap_source_summary_override_fans_out_to_benchmark_and_control() -> None:
     text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
@@ -421,6 +441,7 @@ def test_current_bootstrap_source_summary_override_fans_out_to_benchmark_and_con
         assert "STAGE5_LATENT_CRITICALITY_SOURCE_SUMMARY" in payload
         assert "STAGE5_REENTRY_COVARIANCE_SOURCE_SUMMARY" in payload
         assert "STAGE5_REENTRY_TAIL_SOURCE_SUMMARY" in payload
+        assert "STAGE5_TAIL_DAMPER_SOURCE_SUMMARY" in payload
         assert 'os.environ["STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
         assert 'os.environ["STAGE5_DENSE_MCQ_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
         assert 'os.environ["STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
@@ -429,6 +450,7 @@ def test_current_bootstrap_source_summary_override_fans_out_to_benchmark_and_con
         assert 'os.environ["STAGE5_LATENT_CRITICALITY_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
         assert 'os.environ["STAGE5_REENTRY_COVARIANCE_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
         assert 'os.environ["STAGE5_REENTRY_TAIL_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
+        assert 'os.environ["STAGE5_TAIL_DAMPER_SOURCE_SUMMARY"] = SOURCE_SUMMARY_OVERRIDE' in payload
         assert 'os.environ.pop("STAGE5_DEBIASED_BENCHMARK_SOURCE_SUMMARY", None)' in payload
         assert 'os.environ.pop("STAGE5_DENSE_MCQ_SOURCE_SUMMARY", None)' in payload
         assert 'os.environ.pop("STAGE5_DENSE_MCQ_RECURRENT_BENCHMARK_SUMMARY", None)' in payload
@@ -437,6 +459,7 @@ def test_current_bootstrap_source_summary_override_fans_out_to_benchmark_and_con
         assert 'os.environ.pop("STAGE5_LATENT_CRITICALITY_SOURCE_SUMMARY", None)' in payload
         assert 'os.environ.pop("STAGE5_REENTRY_COVARIANCE_SOURCE_SUMMARY", None)' in payload
         assert 'os.environ.pop("STAGE5_REENTRY_TAIL_SOURCE_SUMMARY", None)' in payload
+        assert 'os.environ.pop("STAGE5_TAIL_DAMPER_SOURCE_SUMMARY", None)' in payload
 
 
 def test_current_bootstrap_can_explicitly_prefer_local_head_to_stale_ref_resolution() -> None:

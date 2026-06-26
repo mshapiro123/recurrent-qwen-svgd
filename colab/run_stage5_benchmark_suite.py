@@ -127,6 +127,8 @@ RECURRENT_USE_LEARNED_LOOP_CONTROL = os.environ.get(
     "0",
 ).strip().lower() in {"1", "true", "yes", "y"}
 RECURRENT_FORCED_LOOP_COUNT = os.environ.get("STAGE5_BENCHMARK_FORCED_LOOP_COUNT", "").strip()
+RECURRENT_REENTRY_TAIL_DAMPER_PATH = os.environ.get("STAGE5_BENCHMARK_REENTRY_TAIL_DAMPER_PATH", "").strip()
+RECURRENT_REENTRY_TAIL_DAMPER_STRENGTH = os.environ.get("STAGE5_BENCHMARK_REENTRY_TAIL_DAMPER_STRENGTH", "").strip()
 INCLUDE_LOOP_DIAGNOSTICS = os.environ.get("STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS", "1").strip().lower() in {
     "1",
     "true",
@@ -505,6 +507,10 @@ def eval_jobs(specs: list[BenchmarkSpec], *, checkpoint: Path) -> list[EvalJob]:
         recurrent_extra.append("--use_learned_loop_control")
     if RECURRENT_FORCED_LOOP_COUNT:
         recurrent_extra.extend(["--forced_loop_count", RECURRENT_FORCED_LOOP_COUNT])
+    if RECURRENT_REENTRY_TAIL_DAMPER_PATH:
+        recurrent_extra.extend(["--reentry_tail_damper_path", RECURRENT_REENTRY_TAIL_DAMPER_PATH])
+    if RECURRENT_REENTRY_TAIL_DAMPER_STRENGTH:
+        recurrent_extra.extend(["--reentry_tail_damper_strength", RECURRENT_REENTRY_TAIL_DAMPER_STRENGTH])
     if RECURRENT_MODE == "phase2":
         if RECURRENT_SAMPLE_LATENTS:
             recurrent_extra.append("--sample_latents")
@@ -839,6 +845,12 @@ def build_summary(
         "recurrent_num_trajectories": RECURRENT_NUM_TRAJECTORIES,
         "recurrent_use_learned_loop_control": RECURRENT_USE_LEARNED_LOOP_CONTROL,
         "recurrent_forced_loop_count": int(RECURRENT_FORCED_LOOP_COUNT) if RECURRENT_FORCED_LOOP_COUNT else None,
+        "reentry_tail_damper_path": RECURRENT_REENTRY_TAIL_DAMPER_PATH or None,
+        "reentry_tail_damper_strength": (
+            float(RECURRENT_REENTRY_TAIL_DAMPER_STRENGTH)
+            if RECURRENT_REENTRY_TAIL_DAMPER_STRENGTH
+            else 0.0
+        ),
         "elapsed_seconds": elapsed_seconds,
         "failures": failures,
         "results": result_rows,

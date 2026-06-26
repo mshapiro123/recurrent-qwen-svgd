@@ -24,6 +24,7 @@ from .halting import (
 from .latent_policy import LatentTrajectoryModule
 from .lora import mark_only_lora_trainable, set_lora_adapter_dtype
 from .reentry_adapter import ReentryAffineAdapter
+from .reentry_tail_damper import apply_tail_damper, load_tail_damper
 from .svgd import svgd_particle_update
 from .trajectory_utils import (
     average_pairwise_cosine_distance,
@@ -129,6 +130,7 @@ class RecurrentQwenForCausalLM(nn.Module):
             latent_adapter_std,
         )
         self._svgd_projection_cache: dict[str, torch.Tensor] = {}
+        self._reentry_tail_damper_cache: dict[str, dict[str, Any]] = {}
         self._align_auxiliary_modules_to_base()
 
     @property
@@ -202,6 +204,17 @@ class RecurrentQwenForCausalLM(nn.Module):
         self._svgd_projection_cache[resolved] = projection
         return projection
 
+    def _load_reentry_tail_damper(self, path: Optional[str]) -> Optional[dict[str, Any]]:
+        if not path:
+            return None
+        resolved = str(Path(path).expanduser().resolve())
+        cached = self._reentry_tail_damper_cache.get(resolved)
+        if cached is not None:
+            return cached
+        payload = load_tail_damper(resolved)
+        self._reentry_tail_damper_cache[resolved] = payload
+        return payload
+
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,
@@ -244,6 +257,8 @@ class RecurrentQwenForCausalLM(nn.Module):
         force_base_model: bool = False,
         reentry_rescale_mode: str = "none",
         reentry_adapter_mode: str = "affine",
+        reentry_tail_damper_path: Optional[str] = None,
+        reentry_tail_damper_strength: float = 0.0,
         logits_to_keep: int | torch.Tensor = 0,
         **_: Any,
     ) -> RecurrentQwenOutput | tuple[Any, ...]:
@@ -298,6 +313,8 @@ class RecurrentQwenForCausalLM(nn.Module):
             raise ValueError("reentry_rescale_mode must be one of: none, entry_rms")
         if reentry_adapter_mode not in {"affine", "spectral", "affine_spectral"}:
             raise ValueError("reentry_adapter_mode must be one of: affine, spectral, affine_spectral")
+        if reentry_tail_damper_strength < 0.0 or reentry_tail_damper_strength > 1.0:
+            raise ValueError("reentry_tail_damper_strength must be in [0, 1]")
         if num_trajectories < 1:
             raise ValueError("num_trajectories must be >= 1")
         if latent_injection_mode not in {"pre", "post", "both"}:
@@ -416,6 +433,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         reentry_reference_rms = None
         if reentry_rescale_mode == "entry_rms" and max_loops > 1:
             reentry_reference_rms = self._masked_sequence_rms(hidden_states, flat_attention_mask)
+        reentry_tail_damper = self._load_reentry_tail_damper(reentry_tail_damper_path)
 
         for loop_idx in range(max_loops):
             loop_input = recurrent_state
@@ -432,6 +450,14 @@ class RecurrentQwenForCausalLM(nn.Module):
                         loop_input,
                         loop_idx=loop_idx,
                         mode=reentry_adapter_mode,
+                    )
+                if reentry_tail_damper is not None and reentry_tail_damper_strength > 0.0:
+                    loop_input = apply_tail_damper(
+                        loop_input,
+                        mean=reentry_tail_damper["mean"],
+                        basis=reentry_tail_damper["basis"],
+                        damper_scale=reentry_tail_damper["damper_scale"],
+                        strength=reentry_tail_damper_strength,
                     )
             if sample_latents and latent_injection_mode in {"pre", "both"}:
                 loop_input, latent_stats = self.latent_trajectory(

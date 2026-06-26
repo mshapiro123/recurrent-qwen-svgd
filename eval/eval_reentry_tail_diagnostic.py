@@ -506,6 +506,37 @@ def write_markdown(summary: dict[str, Any], path: Path) -> None:
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def write_damper_artifact(
+    *,
+    path: Path,
+    mean_entry: torch.Tensor,
+    basis: torch.Tensor,
+    decomp: dict[str, Any],
+    summary: dict[str, Any],
+) -> None:
+    """Persist the calibrated tail basis and per-axis damping scales."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(
+        {
+            "kind": "reentry_tail_damper",
+            "source_kind": summary.get("kind"),
+            "source_run_id": summary.get("run_id"),
+            "checkpoint": summary.get("checkpoint"),
+            "benchmark": summary.get("benchmark"),
+            "score_target": summary.get("score_target"),
+            "n_tail": int(summary.get("n_tail") or basis.shape[1]),
+            "hidden_dim": int(summary.get("hidden_dim") or basis.shape[0]),
+            "mean": mean_entry.detach().float().cpu(),
+            "basis": basis.detach().float().cpu(),
+            "damper_scale": torch.tensor(decomp["damper_scale"], dtype=torch.float32),
+            "exit_over_entry_diag": torch.tensor(decomp["exit_over_entry_diag"], dtype=torch.float32),
+            "tail_decomposition_loop1": decomp,
+        },
+        path,
+    )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model_name", default="Qwen/Qwen2.5-0.5B-Instruct")
@@ -537,6 +568,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--output_json", default="")
     parser.add_argument("--output_md", default="")
+    parser.add_argument("--output_damper", default="")
     args = parser.parse_args()
     args.loop_counts = [int(item) for item in str(args.loop_counts).split(",") if item.strip()]
     return args
@@ -579,6 +611,7 @@ def main() -> int:
     groups = group_summary(detailed_records, args.loop_counts)
     summary = {
         "kind": "stage5_reentry_tail_diagnostic",
+        "run_id": Path(args.output_json).parent.name if args.output_json else None,
         "model_name": args.model_name,
         "checkpoint": args.checkpoint,
         "forced_depth_summary": args.forced_depth_summary,
@@ -621,6 +654,16 @@ def main() -> int:
         path.parent.mkdir(parents=True, exist_ok=True)
         write_markdown(summary, path)
         print(f"saved_markdown={path_for_cli(path)}", flush=True)
+    if args.output_damper:
+        path = Path(args.output_damper)
+        write_damper_artifact(
+            path=path,
+            mean_entry=mean_entry,
+            basis=basis,
+            decomp=decomp,
+            summary=summary,
+        )
+        print(f"saved_tail_damper={path_for_cli(path)}", flush=True)
     return 0
 
 
