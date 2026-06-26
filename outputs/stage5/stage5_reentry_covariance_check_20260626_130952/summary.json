@@ -1,0 +1,313 @@
+{
+  "kind": "stage5_reentry_covariance_check",
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "checkpoint": "outputs/stage5/stage5_depth_signal_recovery_20260625_180014_curriculum_sft/phase1/phase1_step_100.pt",
+  "prompts_jsonl": "eval/smoke_exact_tasks_v2.jsonl",
+  "limit": 14,
+  "tokens": 298,
+  "hidden_dim": 896,
+  "split": "6,18",
+  "max_length": 256,
+  "subspace_rank": 8,
+  "analysis_rank": 8,
+  "entry_exit_subspace": {
+    "rank": 8,
+    "overlap": 0.3801705539226532,
+    "principal_cosines": [
+      0.9998645782470703,
+      0.6782004833221436,
+      0.6465984582901001,
+      0.6187315583229065,
+      0.5628661513328552,
+      0.47986581921577454,
+      0.4364487826824188,
+      0.20780767500400543
+    ],
+    "aligned_dims_cos_ge_0p8": 1,
+    "aligned_dims_cos_ge_0p9": 1
+  },
+  "mean_relative_distance": 0.17636692359215284,
+  "rank_audit": {
+    "current_adapter_rank": 8,
+    "required_min_rank": 8,
+    "rank_sufficient_for_subspace": true,
+    "projected_delta_effective_rank": 2.14279303923611,
+    "projected_delta_cumulative_dims": {
+      "0.8": 2,
+      "0.9": 2,
+      "0.95": 2
+    }
+  },
+  "projected_covariance_check": {
+    "dimension": 16,
+    "ridge": 0.007230252315617979,
+    "before": 0.02645960681267927,
+    "after_orthogonal": 0.0011629061269536754,
+    "after_linear": 5.036241389784951e-16,
+    "orthogonal_reduction": 0.9560497578370508,
+    "linear_reduction": 0.999999999999981,
+    "spectrum_rel_l2": 0.001162906054221196,
+    "linear_map_singular_min": 0.053249059739779295,
+    "linear_map_singular_max": 5.263699248903171,
+    "linear_map_condition": 98.85055763662557,
+    "delta_effective_rank": 2.14279303923611,
+    "delta_cumulative_dims": {
+      "0.8": 2,
+      "0.9": 2,
+      "0.95": 2
+    },
+    "entry_eigenvalues_top16": [
+      115644.18485927129,
+      9.500192856576646,
+      7.392484640329131,
+      6.070878278890676,
+      4.282859572737256,
+      3.8820021387451775,
+      3.7747949460888055,
+      2.950807536330762,
+      0.809055377129345,
+      0.5076696610394069,
+      0.24295732110381732,
+      0.1591759108567974,
+      0.12616124322630698,
+      0.12110466488611027,
+      0.07947883145314182,
+      0.06825167406055022
+    ],
+    "exit_scaled_eigenvalues_top16": [
+      115518.29833335709,
+      41.22104006113094,
+      26.5232564361532,
+      23.14863610567819,
+      18.06525727887356,
+      16.45417011868226,
+      13.531772118157457,
+      12.296124912029244,
+      6.791378101133242,
+      2.5703278611910774,
+      1.5817009023576234,
+      1.1165158711961696,
+      0.8057210795266411,
+      0.683889938000392,
+      0.5581498091189003,
+      0.5064599744434626
+    ],
+    "delta_abs_eigenvalues_top16": [
+      2223.4994590561914,
+      2101.3599253362454,
+      38.42597578632847,
+      23.552653709304476,
+      21.535728977223595,
+      16.88526891606807,
+      15.199447808755462,
+      11.455379057330244,
+      10.768750676713617,
+      6.165937368679666,
+      3.505115283900764,
+      2.333086223964201,
+      2.2804772567515528,
+      1.3627982057458745,
+      0.43673439955665916,
+      0.4004775267852328
+    ]
+  },
+  "full_hidden_covariance_check": {
+    "dimension": 896,
+    "ridge": 0.00012918417731236796,
+    "before": 0.0265660861145665,
+    "after_orthogonal": 0.002860809296133424,
+    "after_linear": 6.424205529715555e-13,
+    "orthogonal_reduction": 0.8923134825432637,
+    "linear_reduction": 0.999999999975818,
+    "spectrum_rel_l2": 0.002860809292934312,
+    "linear_map_singular_min": 0.002412660570006418,
+    "linear_map_singular_max": 354.1642156869384,
+    "linear_map_condition": 146794.04972660381,
+    "delta_effective_rank": 2.420485248621719,
+    "delta_cumulative_dims": {
+      "0.8": 2,
+      "0.9": 2,
+      "0.95": 19
+    },
+    "entry_eigenvalues_top16": [
+      115644.17775820322,
+      9.493091788423193,
+      7.385383572174934,
+      6.063777210753224,
+      4.275758504624734,
+      3.874901070603684,
+      3.7676938779546827,
+      2.943706468193583,
+      2.78960540561567,
+      2.277202422597549,
+      2.13911029575499,
+      1.998009567128086,
+      1.9531434390698192,
+      1.8482288608835473,
+      1.6039945094595263,
+      1.4990333359394006
+    ],
+    "exit_scaled_eigenvalues_top16": [
+      115317.63690482499,
+      41.142350942207806,
+      26.470097247269944,
+      23.101338604732746,
+      18.026789565388214,
+      16.418500850424188,
+      13.501179031347556,
+      12.267678134303852,
+      12.097764095768287,
+      10.400140612580358,
+      9.020341997376358,
+      8.295124679184564,
+      7.730695752486981,
+      7.389560944482362,
+      6.587634532314729,
+      6.125464536623712
+    ],
+    "delta_abs_eigenvalues_top16": [
+      2327.2864045979654,
+      2004.4864643100436,
+      38.357981295969594,
+      23.533269676508592,
+      21.505795327561,
+      16.874254069837132,
+      15.20547870083931,
+      11.957765983832042,
+      11.246771481485796,
+      10.25479151696999,
+      9.647451079624718,
+      8.497265861794027,
+      7.507634666102162,
+      7.157762070897735,
+      6.408619316446582,
+      6.345323591022176
+    ]
+  },
+  "recommendation": {
+    "action": "no_material_covariance_mismatch",
+    "reasons": [
+      "covariance_mismatch_small"
+    ],
+    "current_adapter_rank": 8,
+    "required_min_rank": 8,
+    "rank_sufficient_for_subspace": true,
+    "orthogonal_reduction": 0.9560497578370508,
+    "linear_reduction": 0.999999999999981,
+    "max_allowed_condition": 16.0
+  },
+  "records": [
+    {
+      "prompt_index": 0,
+      "tokens": 24,
+      "entry_rms": 10.796095848083496,
+      "exit_rms": 10.824809074401855,
+      "exit_over_entry_rms": 1.002659559249878,
+      "pooled_entry_exit_cosine": 0.9776279926300049
+    },
+    {
+      "prompt_index": 1,
+      "tokens": 54,
+      "entry_rms": 7.20262336730957,
+      "exit_rms": 7.245633125305176,
+      "exit_over_entry_rms": 1.0059714317321777,
+      "pooled_entry_exit_cosine": 0.9205998778343201
+    },
+    {
+      "prompt_index": 2,
+      "tokens": 14,
+      "entry_rms": 14.130906105041504,
+      "exit_rms": 14.147875785827637,
+      "exit_over_entry_rms": 1.0012009143829346,
+      "pooled_entry_exit_cosine": 0.990788459777832
+    },
+    {
+      "prompt_index": 3,
+      "tokens": 12,
+      "entry_rms": 15.262386322021484,
+      "exit_rms": 15.277546882629395,
+      "exit_over_entry_rms": 1.0009933710098267,
+      "pooled_entry_exit_cosine": 0.993190348148346
+    },
+    {
+      "prompt_index": 4,
+      "tokens": 25,
+      "entry_rms": 10.57814884185791,
+      "exit_rms": 10.60835075378418,
+      "exit_over_entry_rms": 1.0028551816940308,
+      "pooled_entry_exit_cosine": 0.9732664227485657
+    },
+    {
+      "prompt_index": 5,
+      "tokens": 13,
+      "entry_rms": 14.664482116699219,
+      "exit_rms": 14.680815696716309,
+      "exit_over_entry_rms": 1.001113772392273,
+      "pooled_entry_exit_cosine": 0.9920185208320618
+    },
+    {
+      "prompt_index": 6,
+      "tokens": 22,
+      "entry_rms": 11.27518367767334,
+      "exit_rms": 11.302392959594727,
+      "exit_over_entry_rms": 1.0024131536483765,
+      "pooled_entry_exit_cosine": 0.9791397452354431
+    },
+    {
+      "prompt_index": 7,
+      "tokens": 23,
+      "entry_rms": 11.027421951293945,
+      "exit_rms": 11.054281234741211,
+      "exit_over_entry_rms": 1.0024356842041016,
+      "pooled_entry_exit_cosine": 0.9777942299842834
+    },
+    {
+      "prompt_index": 8,
+      "tokens": 25,
+      "entry_rms": 10.578043937683105,
+      "exit_rms": 10.605123519897461,
+      "exit_over_entry_rms": 1.002560019493103,
+      "pooled_entry_exit_cosine": 0.9772448539733887
+    },
+    {
+      "prompt_index": 9,
+      "tokens": 22,
+      "entry_rms": 11.274420738220215,
+      "exit_rms": 11.300027847290039,
+      "exit_over_entry_rms": 1.002271294593811,
+      "pooled_entry_exit_cosine": 0.9781594276428223
+    },
+    {
+      "prompt_index": 10,
+      "tokens": 13,
+      "entry_rms": 14.664337158203125,
+      "exit_rms": 14.680420875549316,
+      "exit_over_entry_rms": 1.0010968446731567,
+      "pooled_entry_exit_cosine": 0.9923290014266968
+    },
+    {
+      "prompt_index": 11,
+      "tokens": 22,
+      "entry_rms": 12.368043899536133,
+      "exit_rms": 12.388440132141113,
+      "exit_over_entry_rms": 1.0016491413116455,
+      "pooled_entry_exit_cosine": 0.9847912192344666
+    },
+    {
+      "prompt_index": 12,
+      "tokens": 9,
+      "entry_rms": 17.705535888671875,
+      "exit_rms": 17.71896743774414,
+      "exit_over_entry_rms": 1.0007586479187012,
+      "pooled_entry_exit_cosine": 0.9958403706550598
+    },
+    {
+      "prompt_index": 13,
+      "tokens": 20,
+      "entry_rms": 12.971823692321777,
+      "exit_rms": 12.994444847106934,
+      "exit_over_entry_rms": 1.0017439126968384,
+      "pooled_entry_exit_cosine": 0.9850608110427856
+    }
+  ]
+}
