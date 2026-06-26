@@ -34,6 +34,12 @@ DISCONNECT_ON_FINISH = os.environ.get("STAGE5_HELDOUT_ROUTER_DISCONNECT", "0").s
     "yes",
     "y",
 }
+RUN_LATENT_CRITICALITY = os.environ.get("STAGE5_HELDOUT_ROUTER_RUN_LATENT_CRITICALITY", "1").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 FORCE_DRIVE_REMOUNT = os.environ.get("FORCE_DRIVE_REMOUNT", "0").strip().lower() in {
     "1",
     "true",
@@ -318,6 +324,41 @@ def write_final_review(sweep_dir: Path, transfer_dirs: list[Path]) -> Path:
     return final_json
 
 
+def run_latent_criticality(sweep_dir: Path, *, discovery_summary: str) -> Path | None:
+    if not RUN_LATENT_CRITICALITY:
+        print("latent_criticality_skipped=disabled", flush=True)
+        return None
+    output_dir = sweep_dir / "latent_criticality"
+    run(
+        [
+            sys.executable,
+            "eval/eval_latent_criticality.py",
+            "--discovery_sweep_summary",
+            discovery_summary,
+            "--heldout_sweep_summary",
+            path_for_cli(sweep_dir / "summary.json"),
+            "--output_dir",
+            path_for_cli(output_dir),
+            "--max_examples_per_benchmark",
+            os.environ.get("STAGE5_LATENT_CRITICALITY_MAX_EXAMPLES_PER_BENCHMARK", "64"),
+            "--jacobian_examples_per_benchmark",
+            os.environ.get("STAGE5_LATENT_CRITICALITY_JACOBIAN_EXAMPLES_PER_BENCHMARK", "8"),
+            "--jacobian_random_probes",
+            os.environ.get("STAGE5_LATENT_CRITICALITY_JACOBIAN_RANDOM_PROBES", "1"),
+            "--jacobian_epsilon",
+            os.environ.get("STAGE5_LATENT_CRITICALITY_JACOBIAN_EPSILON", "0.02"),
+            "--dtype",
+            os.environ.get("DTYPE", "bfloat16"),
+            "--adapter_dtype",
+            os.environ.get("ADAPTER_DTYPE", "float32"),
+            "--device",
+            os.environ.get("DEVICE", "cuda"),
+        ],
+        cwd=ROOT,
+    )
+    return output_dir
+
+
 def publish_results(paths: list[Path]) -> None:
     run(["git", "pull", "--rebase", "--autostash", "origin", "main"], cwd=ROOT, check=False)
     for path in paths:
@@ -471,6 +512,7 @@ try:
         suffix="cyclic_label_aggregated",
     )
     final_summary = write_final_review(sweep_dir, [content_transfer, cyclic_transfer])
+    criticality_dir = run_latent_criticality(sweep_dir, discovery_summary=discovery_summary)
     publish_paths = [
         sweep_dir,
         content_analysis,
@@ -478,6 +520,7 @@ try:
         content_transfer,
         cyclic_transfer,
         final_summary,
+        *( [criticality_dir] if criticality_dir is not None else [] ),
         *result_paths,
     ]
     publish_results(publish_paths)

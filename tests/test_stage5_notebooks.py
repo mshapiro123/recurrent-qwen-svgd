@@ -337,10 +337,14 @@ def test_current_bootstrap_exposes_heldout_router_validation_target() -> None:
         assert "colab/STAGE5_HELDOUT_ROUTER_VALIDATION_CELL.py" in payload
         assert "STAGE5_HELDOUT_ROUTER_DISCOVERY_SUMMARY" in payload
         assert "eval/evaluate_depth_router_transfer.py" in payload
+        assert "eval/eval_latent_criticality.py" in payload
         assert "open_hard_arc_challenge" in payload
+        assert "STAGE5_LATENT_CRITICALITY_JACOBIAN_EXAMPLES_PER_BENCHMARK" in payload
     assert "STAGE5_HELDOUT_ROUTER_VALIDATION_CELL_VERSION" in cell
     assert "heldout_router_validation_v1" in cell
     assert "router_transfer_content_question_only" in cell
+    assert "eval/eval_latent_criticality.py" in cell
+    assert "latent_criticality" in cell
     assert "STAGE5_BENCHMARK_FORCED_LOOP_COUNT" in cell
 
 
