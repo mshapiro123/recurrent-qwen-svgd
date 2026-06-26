@@ -10,6 +10,7 @@ from pathlib import Path
 from google.colab import drive, runtime, userdata
 
 STAGE5_LATENT_CRITICALITY_CELL_VERSION = "latent_criticality_probe_v1"
+# Bootstrap safety marker: finite_difference_random_gain.
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
