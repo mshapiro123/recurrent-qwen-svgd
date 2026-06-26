@@ -75,6 +75,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "reentry_tail_diagnostic" - tail-resolved re-entry inflation/rotation and harmed/rescued diagnostic.
 #   "reentry_tail_damper_sweep" - eval-only tail damper stability/signal tradeoff sweep.
 #   "reentry_tail_damper_heldout" - held-out ARC offset confirmation of tail damper tradeoff.
+#   "reentry_tail_damper_powered_arc_train" - powered ARC-Challenge train confirmation using 0/0.5/1.0 strengths.
 #   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
 #   "depth_sweep_heldout" - L4/T4 held-out ARC tail loop-depth sweep for routing validation.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
@@ -1363,6 +1364,30 @@ TARGETS = {
             "STAGE5_TAIL_DAMPER_SCORE_LOOPS": "1,2,3",
             "STAGE5_TAIL_DAMPER_TAIL_LOOPS": "1,2,3,4,8",
             "STAGE5_TAIL_DAMPER_N": "7",
+            "STAGE5_TAIL_DAMPER_DISCONNECT": "0",
+        },
+    },
+    "reentry_tail_damper_powered_arc_train": {
+        "path": "colab/STAGE5_REENTRY_TAIL_DAMPER_SWEEP_CELL.py",
+        "markers": [
+            "STAGE5_REENTRY_TAIL_DAMPER_SWEEP_CELL_VERSION",
+            "tail_damper_tradeoff_v1",
+            "energy_oracle_tradeoff",
+            "eval/eval_tail_damper_depth_sweep.py",
+            "tests/test_reentry_tail_damper.py",
+            "tests/test_eval_tail_damper_depth_sweep.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_TAIL_DAMPER_ARC_CONFIG": "ARC-Challenge",
+            "STAGE5_TAIL_DAMPER_ARC_SPLIT": "train",
+            "STAGE5_TAIL_DAMPER_ARC_OFFSET": "0",
+            "STAGE5_TAIL_DAMPER_ARC_LIMIT": "512",
+            "STAGE5_TAIL_DAMPER_STRENGTHS": "0,0.5,1.0",
+            "STAGE5_TAIL_DAMPER_SCORE_LOOPS": "1,2,3",
+            "STAGE5_TAIL_DAMPER_TAIL_LOOPS": "1,2,3,4,8",
+            "STAGE5_TAIL_DAMPER_N": "7",
+            "STAGE5_TAIL_DAMPER_SCORE_TARGET": "option_text",
             "STAGE5_TAIL_DAMPER_DISCONNECT": "0",
         },
     },

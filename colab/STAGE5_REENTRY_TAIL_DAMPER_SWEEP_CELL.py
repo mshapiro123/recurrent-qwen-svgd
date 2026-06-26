@@ -97,6 +97,11 @@ def path_for_cli(path: Path) -> str:
         return str(path).replace("\\", "/")
 
 
+def safe_slug(value: str) -> str:
+    cleaned = "".join(ch.lower() if ch.isalnum() else "_" for ch in value.strip())
+    return "_".join(part for part in cleaned.split("_") if part) or "unset"
+
+
 def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -262,14 +267,32 @@ try:
     )
     source_summary = current_source_summary()
     checkpoint = restore_checkpoint(checkpoint_from_source(source_summary))
+    arc_config = os.environ.get("STAGE5_TAIL_DAMPER_ARC_CONFIG", "ARC-Challenge")
+    arc_split = os.environ.get("STAGE5_TAIL_DAMPER_ARC_SPLIT", "validation")
     arc_offset = os.environ.get("STAGE5_TAIL_DAMPER_ARC_OFFSET", "0")
     arc_limit = os.environ.get("STAGE5_TAIL_DAMPER_ARC_LIMIT", "256")
-    default_run_id = time.strftime(f"stage5_reentry_tail_damper_sweep_offset{arc_offset}_%Y%m%d_%H%M%S")
+    score_target = os.environ.get("STAGE5_TAIL_DAMPER_SCORE_TARGET", "option_text")
+    default_run_id = time.strftime(
+        "stage5_reentry_tail_damper_sweep_"
+        f"{safe_slug(arc_config)}_{safe_slug(arc_split)}_offset{arc_offset}_%Y%m%d_%H%M%S"
+    )
     run_id = os.environ.get("STAGE5_TAIL_DAMPER_RUN_ID") or default_run_id
     run_dir = ROOT / "outputs" / "stage5" / run_id
     print("tail_damper_source_summary:", path_for_cli(source_summary), flush=True)
     print("tail_damper_checkpoint:", path_for_cli(checkpoint), flush=True)
-    print("tail_damper_arc_offset:", arc_offset, "tail_damper_arc_limit:", arc_limit, flush=True)
+    print(
+        "tail_damper_arc_config:",
+        arc_config,
+        "tail_damper_arc_split:",
+        arc_split,
+        "tail_damper_arc_offset:",
+        arc_offset,
+        "tail_damper_arc_limit:",
+        arc_limit,
+        "tail_damper_score_target:",
+        score_target,
+        flush=True,
+    )
     run(
         [
             sys.executable,
@@ -278,10 +301,16 @@ try:
             path_for_cli(checkpoint),
             "--source_summary",
             path_for_cli(source_summary),
+            "--arc_config",
+            arc_config,
+            "--arc_split",
+            arc_split,
             "--arc_limit",
             arc_limit,
             "--arc_offset",
             arc_offset,
+            "--score_target",
+            score_target,
             "--strengths",
             os.environ.get("STAGE5_TAIL_DAMPER_STRENGTHS", "0,0.25,0.5,0.75,1.0"),
             "--score_loops",

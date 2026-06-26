@@ -438,9 +438,31 @@ def test_current_bootstrap_exposes_reentry_tail_damper_heldout_target() -> None:
         assert '"STAGE5_TAIL_DAMPER_ARC_OFFSET": "256"' in payload
         assert '"STAGE5_TAIL_DAMPER_ARC_LIMIT": "256"' in payload
         assert "colab/STAGE5_REENTRY_TAIL_DAMPER_SWEEP_CELL.py" in payload
-    assert "stage5_reentry_tail_damper_sweep_offset{arc_offset}" in cell
+    assert "stage5_reentry_tail_damper_sweep_" in cell
+    assert "safe_slug(arc_config)" in cell
+    assert "safe_slug(arc_split)" in cell
     assert "--source_summary" in cell
+    assert "--arc_config" in cell
+    assert "--arc_split" in cell
+    assert "--score_target" in cell
     assert "source_summary" in eval_script
+
+
+def test_current_bootstrap_exposes_reentry_tail_damper_powered_arc_train_target() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_REENTRY_TAIL_DAMPER_SWEEP_CELL.py").read_text(encoding="utf-8")
+
+    for payload in (text, markdown):
+        assert '"reentry_tail_damper_powered_arc_train"' in payload
+        assert '"STAGE5_TAIL_DAMPER_ARC_CONFIG": "ARC-Challenge"' in payload
+        assert '"STAGE5_TAIL_DAMPER_ARC_SPLIT": "train"' in payload
+        assert '"STAGE5_TAIL_DAMPER_ARC_LIMIT": "512"' in payload
+        assert '"STAGE5_TAIL_DAMPER_STRENGTHS": "0,0.5,1.0"' in payload
+        assert '"STAGE5_TAIL_DAMPER_SCORE_TARGET": "option_text"' in payload
+        assert "powered ARC-Challenge train confirmation" in payload
+    assert "tail_damper_arc_config" in cell
+    assert "tail_damper_score_target" in cell
 
 
 def test_current_bootstrap_source_summary_override_fans_out_to_benchmark_and_control() -> None:
