@@ -359,6 +359,7 @@ def test_current_bootstrap_exposes_latent_criticality_target() -> None:
         assert "STAGE5_LATENT_CRITICALITY_SOURCE_SUMMARY" in payload
         assert "eval/eval_latent_criticality.py" in payload
         assert "STAGE5_LATENT_CRITICALITY_JACOBIAN_EXAMPLES_PER_BENCHMARK" in payload
+        assert "restored_latent_criticality_checkpoint" in payload
     assert "STAGE5_LATENT_CRITICALITY_CELL_VERSION" in cell
     assert "latent_criticality_probe_v1" in cell
     assert "finite_difference_random_gain" in (ROOT / "eval/eval_latent_criticality.py").read_text(encoding="utf-8")

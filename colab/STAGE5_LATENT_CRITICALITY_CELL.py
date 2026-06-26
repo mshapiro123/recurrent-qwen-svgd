@@ -2,6 +2,7 @@
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -53,8 +54,21 @@ if HF_TOKEN:
 def run(cmd, *, cwd=None, env=None, check=True):
     printable = " ".join(map(str, cmd)).replace(GH_TOKEN, "****")
     print("$", printable, flush=True)
-    proc = subprocess.run(cmd, cwd=cwd, env=env)
-    if check and proc.returncode:
+    process = subprocess.Popen(
+        cmd,
+        cwd=cwd,
+        env=env,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    for line in process.stdout:
+        print(line, end="", flush=True)
+    returncode = process.wait()
+    proc = subprocess.CompletedProcess(cmd, returncode)
+    if check and returncode:
         raise subprocess.CalledProcessError(proc.returncode, cmd)
     return proc
 
@@ -119,6 +133,100 @@ def resolve_sweeps(source_summary: Path) -> tuple[str, str]:
     return str(discovery), str(heldout)
 
 
+def infer_artifact_run_id(path: str | Path) -> str | None:
+    parts = Path(path).parts
+    for marker in ("stage5", "stage4"):
+        for idx, part in enumerate(parts):
+            if part == marker and idx + 1 < len(parts):
+                return parts[idx + 1]
+    return None
+
+
+def drive_roots() -> list[Path]:
+    roots = [
+        Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts"),
+        Path("/content/drive/MyDrive/recurrent-qwen-svgd"),
+        Path("/content/drive/MyDrive/recurrent-qwen-svgd-fresh"),
+    ]
+    if os.environ.get("STAGE5_DRIVE_BACKUP_DIR"):
+        roots.insert(0, Path(os.environ["STAGE5_DRIVE_BACKUP_DIR"]))
+    seen = set()
+    unique = []
+    for root in roots:
+        key = str(root)
+        if key not in seen:
+            seen.add(key)
+            unique.append(root)
+    return unique
+
+
+def candidate_drive_checkpoints(run_id: str, filename: str) -> list[Path]:
+    candidates: list[Path] = []
+    seen: set[str] = set()
+
+    def add(path: Path) -> None:
+        key = str(path)
+        if key not in seen:
+            seen.add(key)
+            candidates.append(path)
+
+    for root in drive_roots():
+        for candidate in [
+            root / run_id / "run_dir" / "phase1" / filename,
+            root / run_id / "phase1" / filename,
+            root / "outputs" / "stage5" / run_id / "run_dir" / "phase1" / filename,
+            root / "outputs" / "stage5" / run_id / "phase1" / filename,
+            root / "stage5" / run_id / "run_dir" / "phase1" / filename,
+            root / "stage5" / run_id / "phase1" / filename,
+        ]:
+            add(candidate)
+        if not root.exists():
+            continue
+        for pattern in [
+            f"{run_id}*/run_dir/phase1/{filename}",
+            f"{run_id}*/run_dir/*/phase1/{filename}",
+            f"{run_id}*/phase1/{filename}",
+            f"**/{run_id}*/run_dir/phase1/{filename}",
+            f"**/{run_id}*/phase1/{filename}",
+        ]:
+            for candidate in root.glob(pattern):
+                add(candidate)
+    return candidates
+
+
+def restore_checkpoint(candidate: Path) -> Path | None:
+    if candidate.exists():
+        return candidate
+    run_id = infer_artifact_run_id(candidate)
+    if not run_id:
+        return None
+    mount_drive()
+    for drive_candidate in candidate_drive_checkpoints(run_id, candidate.name):
+        if drive_candidate.exists():
+            candidate.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(drive_candidate, candidate)
+            print(f"restored_latent_criticality_checkpoint={drive_candidate} -> {candidate}", flush=True)
+            return candidate
+    return None
+
+
+def checkpoint_from_sweep(heldout_sweep: str) -> Path:
+    sweep_path = ROOT / heldout_sweep if not heldout_sweep.startswith("/") else Path(heldout_sweep)
+    payload = read_json(sweep_path)
+    for run_id in payload.get("loop_run_ids", []):
+        summary_path = ROOT / "outputs" / "stage5" / str(run_id) / "summary.json"
+        if not summary_path.exists():
+            continue
+        loop_payload = read_json(summary_path)
+        checkpoint = loop_payload.get("checkpoint")
+        if checkpoint:
+            candidate = ROOT / checkpoint if not str(checkpoint).startswith("/") else Path(str(checkpoint))
+            restored = restore_checkpoint(candidate)
+            if restored and restored.exists():
+                return restored
+    raise FileNotFoundError(f"Could not resolve checkpoint from heldout sweep {heldout_sweep}")
+
+
 def write_pointer(summary_path: Path) -> None:
     pointer = ROOT / "config" / "stage5_current_source_summary.txt"
     pointer.parent.mkdir(parents=True, exist_ok=True)
@@ -173,6 +281,7 @@ try:
     )
     source_summary = current_source_summary()
     discovery_sweep, heldout_sweep = resolve_sweeps(source_summary)
+    checkpoint = checkpoint_from_sweep(heldout_sweep)
     run_id = os.environ.get("STAGE5_LATENT_CRITICALITY_RUN_ID") or time.strftime(
         "stage5_latent_criticality_%Y%m%d_%H%M%S"
     )
@@ -180,6 +289,7 @@ try:
     print("latent_criticality_source_summary:", path_for_cli(source_summary), flush=True)
     print("latent_criticality_discovery_sweep:", discovery_sweep, flush=True)
     print("latent_criticality_heldout_sweep:", heldout_sweep, flush=True)
+    print("latent_criticality_checkpoint:", path_for_cli(checkpoint), flush=True)
     run(
         [
             sys.executable,
@@ -190,6 +300,8 @@ try:
             heldout_sweep,
             "--output_dir",
             path_for_cli(run_dir),
+            "--checkpoint",
+            path_for_cli(checkpoint),
             "--max_examples_per_benchmark",
             os.environ.get("STAGE5_LATENT_CRITICALITY_MAX_EXAMPLES_PER_BENCHMARK", "64"),
             "--jacobian_examples_per_benchmark",

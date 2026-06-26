@@ -1246,6 +1246,7 @@ TARGETS = {
             "STAGE5_LATENT_CRITICALITY_SOURCE_SUMMARY",
             "eval/eval_latent_criticality.py",
             "STAGE5_LATENT_CRITICALITY_JACOBIAN_EXAMPLES_PER_BENCHMARK",
+            "restored_latent_criticality_checkpoint",
             "finite_difference_random_gain",
             "tests/test_eval_latent_criticality.py",
             "runtime.unassign",
