@@ -1,0 +1,185 @@
+{
+  "run_id": "stage5_debiased_benchmark_assessment_20260627_194855",
+  "gate": "stage5_broader_benchmark_suite",
+  "source_summary": "outputs/stage5/stage5_debiased_benchmark_suite_20260627_191753/summary.json",
+  "checkpoint": "outputs/stage5/stage5_reentry_recovery_20260627_190155_curriculum_sft/phase1/phase1_step_100.pt",
+  "status": "inconclusive",
+  "passed": false,
+  "instrument_complete": false,
+  "model_negative_evidence": false,
+  "next_step": "Complete the benchmark instrument by rerunning failed or missing slices before making a model-quality call.",
+  "required_score_target": "cyclic_label_aggregated",
+  "required_aggregate": "permutation_mean",
+  "required_benchmarks": [
+    "arc_challenge",
+    "gpqa_lite"
+  ],
+  "allowed_negative_delta": 0,
+  "negative_evidence_min_abs_delta": 2,
+  "negative_evidence_sign_test_p_threshold": 0.1,
+  "benchmarks": [
+    {
+      "benchmark": "arc_easy",
+      "present": true,
+      "required_examples": 128,
+      "paired_examples": 128,
+      "base_correct": 96,
+      "recurrent_correct": 96,
+      "correct_delta_recurrent_vs_base": 0,
+      "wins": 0,
+      "losses": 0,
+      "ties": 128,
+      "sign_test_p_value": null,
+      "flagged_regression": false,
+      "statistically_supported_regression": false,
+      "negative_evidence": false
+    },
+    {
+      "benchmark": "arc_challenge",
+      "present": true,
+      "required_examples": 128,
+      "paired_examples": 128,
+      "base_correct": 67,
+      "recurrent_correct": 67,
+      "correct_delta_recurrent_vs_base": 0,
+      "wins": 0,
+      "losses": 0,
+      "ties": 128,
+      "sign_test_p_value": null,
+      "flagged_regression": false,
+      "statistically_supported_regression": false,
+      "negative_evidence": false
+    },
+    {
+      "benchmark": "gpqa_lite",
+      "present": false,
+      "required_examples": 16,
+      "paired_examples": 0,
+      "correct_delta_recurrent_vs_base": 0,
+      "wins": 0,
+      "losses": 0,
+      "ties": 0,
+      "sign_test_p_value": null,
+      "negative_evidence": false
+    }
+  ],
+  "criteria": [
+    {
+      "name": "suite_completed",
+      "passed": false,
+      "reason": "Benchmark suite had failures or did not complete.",
+      "evidence": {
+        "status": "completed_with_failures",
+        "failures": [
+          {
+            "stage": "prepare",
+            "benchmark": "gpqa_lite",
+            "error": "command failed: /usr/bin/python3 eval/prepare_gpqa_mcq.py --config gpqa_diamond --split train --limit 16 --seed 0 --output_jsonl /content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_debiased_benchmark_suite_20260627_191753/gpqa_diamond_16.jsonl"
+          }
+        ]
+      }
+    },
+    {
+      "name": "paired_coverage",
+      "passed": false,
+      "reason": "Need more paired examples before interpreting broader benchmark deltas.",
+      "evidence": [
+        {
+          "benchmark": "arc_easy",
+          "present": true,
+          "required_examples": 128,
+          "paired_examples": 128,
+          "base_correct": 96,
+          "recurrent_correct": 96,
+          "correct_delta_recurrent_vs_base": 0,
+          "wins": 0,
+          "losses": 0,
+          "ties": 128,
+          "sign_test_p_value": null,
+          "flagged_regression": false,
+          "statistically_supported_regression": false,
+          "negative_evidence": false
+        },
+        {
+          "benchmark": "arc_challenge",
+          "present": true,
+          "required_examples": 128,
+          "paired_examples": 128,
+          "base_correct": 67,
+          "recurrent_correct": 67,
+          "correct_delta_recurrent_vs_base": 0,
+          "wins": 0,
+          "losses": 0,
+          "ties": 128,
+          "sign_test_p_value": null,
+          "flagged_regression": false,
+          "statistically_supported_regression": false,
+          "negative_evidence": false
+        },
+        {
+          "benchmark": "gpqa_lite",
+          "present": false,
+          "required_examples": 16,
+          "paired_examples": 0,
+          "correct_delta_recurrent_vs_base": 0,
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "sign_test_p_value": null,
+          "negative_evidence": false
+        }
+      ]
+    },
+    {
+      "name": "recurrent_nonnegative_vs_base",
+      "passed": false,
+      "reason": "Recurrent has only noise-level negative deltas or missing slices.",
+      "evidence": [
+        {
+          "benchmark": "arc_easy",
+          "present": true,
+          "required_examples": 128,
+          "paired_examples": 128,
+          "base_correct": 96,
+          "recurrent_correct": 96,
+          "correct_delta_recurrent_vs_base": 0,
+          "wins": 0,
+          "losses": 0,
+          "ties": 128,
+          "sign_test_p_value": null,
+          "flagged_regression": false,
+          "statistically_supported_regression": false,
+          "negative_evidence": false
+        },
+        {
+          "benchmark": "arc_challenge",
+          "present": true,
+          "required_examples": 128,
+          "paired_examples": 128,
+          "base_correct": 67,
+          "recurrent_correct": 67,
+          "correct_delta_recurrent_vs_base": 0,
+          "wins": 0,
+          "losses": 0,
+          "ties": 128,
+          "sign_test_p_value": null,
+          "flagged_regression": false,
+          "statistically_supported_regression": false,
+          "negative_evidence": false
+        },
+        {
+          "benchmark": "gpqa_lite",
+          "present": false,
+          "required_examples": 16,
+          "paired_examples": 0,
+          "correct_delta_recurrent_vs_base": 0,
+          "wins": 0,
+          "losses": 0,
+          "ties": 0,
+          "sign_test_p_value": null,
+          "negative_evidence": false
+        }
+      ]
+    }
+  ]
+}
