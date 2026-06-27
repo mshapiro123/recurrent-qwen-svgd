@@ -212,6 +212,24 @@ def test_resolve_checkpoint_missing_error_includes_drive_diagnostics(tmp_path, m
         module.resolve_checkpoint(source, payload)
 
 
+def test_restore_artifact_from_drive_handles_run_level_tail_damper(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    run_id = "stage5_tail_damper_run"
+    candidate = tmp_path / "outputs" / "stage5" / run_id / "tail_damper.pt"
+    drive_candidate = tmp_path / "drive" / "outputs" / "stage5" / run_id / "tail_damper.pt"
+    drive_candidate.parent.mkdir(parents=True)
+    drive_candidate.write_bytes(b"damper")
+
+    monkeypatch.setattr(module, "mount_drive_if_possible", lambda: None)
+    monkeypatch.setattr(module, "drive_roots", lambda: [tmp_path / "drive"])
+
+    restored = module.restore_artifact_from_drive(candidate)
+
+    assert restored == candidate
+    assert candidate.read_bytes() == b"damper"
+
+
 def test_checkpoint_bearing_source_summary_follows_mcq_policy_chain(tmp_path) -> None:
     import colab.run_stage5_benchmark_suite as module
 

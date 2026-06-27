@@ -28,6 +28,7 @@ from colab.colab_auth import ensure_hf_token_from_colab
 from colab.run_stage5_publish_hf_adapter import checkpoint_value_from_payload
 from colab.run_stage5_recovered_phase1_arc_gate import (
     candidate_drive_checkpoints,
+    drive_roots,
     drive_diagnostics,
     mount_drive_if_possible,
 )
@@ -407,6 +408,84 @@ def restore_checkpoint_from_drive(candidate: Path) -> Path | None:
             print(f"restored_benchmark_checkpoint={drive_candidate} -> {candidate}", flush=True)
             return candidate
     return None
+
+
+def relative_after_run_id(path: Path, run_id: str) -> Path | None:
+    parts = path.parts
+    for idx, part in enumerate(parts):
+        if part == run_id and idx + 1 < len(parts):
+            return Path(*parts[idx + 1 :])
+    return None
+
+
+def candidate_drive_artifacts(run_id: str, candidate: Path) -> list[Path]:
+    """Return scoped Drive candidates for a non-checkpoint artifact.
+
+    Checkpoints mostly live under ``phase1/`` and already have a specialized
+    helper. Auxiliary artifacts such as ``tail_damper.pt`` are run-level files,
+    so keep this search scoped to known project roots and the inferred run id.
+    """
+
+    rel_after_run = relative_after_run_id(candidate, run_id)
+    paths: list[Path] = []
+    seen: set[str] = set()
+
+    def add(path: Path) -> None:
+        key = str(path)
+        if key not in seen:
+            seen.add(key)
+            paths.append(path)
+
+    for root in drive_roots():
+        if rel_after_run is not None:
+            add(root / run_id / rel_after_run)
+            add(root / "outputs" / "stage5" / run_id / rel_after_run)
+            add(root / "stage5" / run_id / rel_after_run)
+        add(root / run_id / candidate.name)
+        add(root / "outputs" / "stage5" / run_id / candidate.name)
+        add(root / "stage5" / run_id / candidate.name)
+        if not root.exists():
+            continue
+        for pattern in (
+            f"{run_id}*/**/{candidate.name}",
+            f"outputs/stage5/{run_id}*/**/{candidate.name}",
+            f"stage5/{run_id}*/**/{candidate.name}",
+        ):
+            for path in sorted(root.glob(pattern)):
+                if path.is_file():
+                    add(path)
+    return paths
+
+
+def restore_artifact_from_drive(candidate: Path) -> Path | None:
+    run_id = infer_artifact_run_id(candidate)
+    if not run_id:
+        return None
+    mount_drive_if_possible()
+    for drive_candidate in candidate_drive_artifacts(run_id, candidate):
+        if drive_candidate.exists():
+            candidate.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(drive_candidate, candidate)
+            print(f"restored_benchmark_artifact={drive_candidate} -> {candidate}", flush=True)
+            return candidate
+    return None
+
+
+def resolve_reentry_tail_damper_path() -> str:
+    if not RECURRENT_REENTRY_TAIL_DAMPER_PATH:
+        return ""
+    candidate = resolve_path(RECURRENT_REENTRY_TAIL_DAMPER_PATH)
+    if candidate.exists():
+        return path_for_cli(candidate)
+    restored = restore_artifact_from_drive(candidate)
+    if restored and restored.exists():
+        return path_for_cli(restored)
+    run_id = infer_artifact_run_id(candidate)
+    searched = [path_for_cli(path) for path in candidate_drive_artifacts(run_id, candidate)[:12]] if run_id else []
+    raise FileNotFoundError(
+        f"Missing re-entry tail damper artifact {path_for_cli(candidate)}. "
+        f"Searched: {searched}\n{drive_diagnostics()}"
+    )
 
 
 def resolve_checkpoint(source_summary: Path | None, payload: dict[str, Any] | None) -> Path:
@@ -969,6 +1048,8 @@ def commit_results() -> None:
 
 
 def main() -> int:
+    global RECURRENT_REENTRY_TAIL_DAMPER_PATH
+
     ensure_hf_token_from_colab()
     if RECURRENT_MODE == "phase1" and RECURRENT_NUM_TRAJECTORIES != 1:
         raise SystemExit("phase1 recurrent benchmark requires STAGE5_BENCHMARK_NUM_TRAJECTORIES=1")
@@ -985,6 +1066,13 @@ def main() -> int:
         source_summary = resolved_source_summary
         source_payload = read_json(source_summary) if source_summary else None
     checkpoint = resolve_checkpoint(source_summary, source_payload)
+    RECURRENT_REENTRY_TAIL_DAMPER_PATH = resolve_reentry_tail_damper_path()
+    if RECURRENT_REENTRY_TAIL_DAMPER_PATH:
+        print(
+            "resolved_reentry_tail_damper="
+            f"{RECURRENT_REENTRY_TAIL_DAMPER_PATH} strength={RECURRENT_REENTRY_TAIL_DAMPER_STRENGTH}",
+            flush=True,
+        )
     specs = benchmark_specs(parse_csv(BENCHMARKS))
     failures: list[dict[str, Any]] = []
 

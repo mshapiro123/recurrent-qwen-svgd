@@ -229,6 +229,20 @@ def validate_stage4_benchmark_source(source_summary: Path, payload: dict, *, all
     print("stage4_benchmark_source_gate=passed", flush=True)
 
 
+def fixed_tail_damper_env(payload: dict) -> dict[str, str]:
+    fixed = payload.get("fixed_tail_damper")
+    if not isinstance(fixed, dict):
+        return {}
+    damper_path = str(fixed.get("damper_path") or "").strip()
+    strength = str(fixed.get("strength") or "").strip()
+    if not damper_path or not strength:
+        return {}
+    return {
+        "STAGE5_BENCHMARK_REENTRY_TAIL_DAMPER_PATH": damper_path,
+        "STAGE5_BENCHMARK_REENTRY_TAIL_DAMPER_STRENGTH": strength,
+    }
+
+
 GH_TOKEN = secret("GH_TOKEN", "GITHUB_TOKEN")
 assert GH_TOKEN, "Missing GH_TOKEN/GITHUB_TOKEN in Colab secrets."
 
@@ -275,6 +289,7 @@ try:
             "tests/test_stage5_benchmark_suite.py",
             "tests/test_stage5_benchmark_assessment.py",
             "tests/test_mcq_debias.py",
+            "tests/test_stage5_notebooks.py::test_debiased_benchmark_suite_threads_fixed_tail_damper",
         ]
     )
 
@@ -327,6 +342,17 @@ try:
         "STAGE5_DEBIASED_USE_LEARNED_LOOP_CONTROL",
         "1",
     )
+    if env_bool("STAGE5_DEBIASED_USE_FIXED_TAIL_DAMPER", True):
+        for key, value in fixed_tail_damper_env(source_payload).items():
+            if not env.get(key):
+                env[key] = os.environ.get(key) or value
+        if env.get("STAGE5_BENCHMARK_REENTRY_TAIL_DAMPER_PATH"):
+            print(
+                "benchmark_fixed_tail_damper="
+                f"{env['STAGE5_BENCHMARK_REENTRY_TAIL_DAMPER_PATH']} "
+                f"strength={env.get('STAGE5_BENCHMARK_REENTRY_TAIL_DAMPER_STRENGTH', '')}",
+                flush=True,
+            )
     env["STAGE5_BENCHMARK_PUSH"] = "1"
     env["MODEL_NAME"] = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")
     env["DTYPE"] = os.environ.get("DTYPE", "bfloat16")

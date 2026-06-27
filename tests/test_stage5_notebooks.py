@@ -1758,6 +1758,20 @@ def test_reentry_tail_damper_recovery_readout_only_target_is_bootstrapped() -> N
     assert "skipping curriculum SFT" in cell
 
 
+def test_debiased_benchmark_suite_threads_fixed_tail_damper() -> None:
+    cell = (ROOT / "colab/STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_benchmark_suite.py").read_text(encoding="utf-8")
+
+    assert "fixed_tail_damper_env" in cell
+    assert "STAGE5_DEBIASED_USE_FIXED_TAIL_DAMPER" in cell
+    assert "benchmark_fixed_tail_damper=" in cell
+    assert "STAGE5_BENCHMARK_REENTRY_TAIL_DAMPER_PATH" in cell
+    assert "STAGE5_BENCHMARK_REENTRY_TAIL_DAMPER_STRENGTH" in cell
+    assert "restore_artifact_from_drive" in runner
+    assert "restored_benchmark_artifact=" in runner
+    assert "resolved_reentry_tail_damper=" in runner
+
+
 def test_reentry_drift_and_norm_targets_run_self_assessment() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
