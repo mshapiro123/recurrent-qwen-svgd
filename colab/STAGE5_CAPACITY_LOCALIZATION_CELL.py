@@ -5,10 +5,11 @@ import sys
 import time
 from pathlib import Path
 
-from google.colab import runtime, userdata
+from google.colab import drive, runtime, userdata
 
 
 STAGE5_CAPACITY_LOCALIZATION_CELL_VERSION = "capacity_localization_v1"
+STAGE5_CAPACITY_LOCALIZATION_MOUNT_DRIVE_FIRST = True
 # The child recovery launcher writes fixed_tail_damper_depth_readout; this
 # parent summarizes it across capacity settings.
 REPO = "mshapiro123/recurrent-qwen-svgd"
@@ -96,6 +97,11 @@ def ensure_repo() -> None:
         sys.path.insert(0, root_str)
 
 
+def mount_drive_if_needed() -> None:
+    if not Path("/content/drive/MyDrive").exists():
+        drive.mount("/content/drive", force_remount=False)
+
+
 def parse_ranks(value: str) -> list[int]:
     from colab.capacity_localization import parse_int_csv
 
@@ -128,6 +134,7 @@ def main() -> None:
     print(f"STAGE5_CAPACITY_LOCALIZATION_CELL_VERSION={STAGE5_CAPACITY_LOCALIZATION_CELL_VERSION}", flush=True)
     ensure_repo()
     run(["nvidia-smi"], cwd=Path("/content"))
+    mount_drive_if_needed()
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"])
     run(
         [

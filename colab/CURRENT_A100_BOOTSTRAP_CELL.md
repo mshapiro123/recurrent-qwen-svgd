@@ -641,6 +641,7 @@ TARGETS = {
         "markers": [
             "STAGE5_CAPACITY_LOCALIZATION_CELL_VERSION",
             "capacity_localization_v1",
+            "STAGE5_CAPACITY_LOCALIZATION_MOUNT_DRIVE_FIRST",
             "STAGE5_CAPACITY_LOCALIZATION_RANKS",
             "trainable_parameter_ledger",
             "stage5_current_capacity_localization_summary",

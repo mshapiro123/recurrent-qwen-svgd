@@ -105,3 +105,12 @@ def test_capacity_colab_cell_passes_github_token_to_child_process() -> None:
     assert 'os.environ["GITHUB_TOKEN"] = GH_TOKEN' in text
     assert 'env["GH_TOKEN"] = GH_TOKEN' in text
     assert 'env["GITHUB_TOKEN"] = GH_TOKEN' in text
+
+
+def test_capacity_colab_cell_mounts_drive_before_child_process() -> None:
+    text = (ROOT / "colab/STAGE5_CAPACITY_LOCALIZATION_CELL.py").read_text(encoding="utf-8")
+
+    assert "STAGE5_CAPACITY_LOCALIZATION_MOUNT_DRIVE_FIRST" in text
+    assert "def mount_drive_if_needed" in text
+    assert 'drive.mount("/content/drive", force_remount=False)' in text
+    assert text.index("mount_drive_if_needed()") < text.index('run([sys.executable, "colab/STAGE5_REENTRY_RECOVERY_TRAINING_CELL.py"]')
