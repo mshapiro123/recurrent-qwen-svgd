@@ -74,6 +74,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "forced_depth_diagnostic" - no-training ARC-Challenge loop 1/2/3 forced-depth diagnostic.
 #   "rescue_predictability_analysis" - CPU-only precursor asking whether deeper-loop rescue is predictable.
 #   "rescue_selector_transfer" - CPU-only held-out rescue selector trade curve with spectral/probe diagnostics.
+#   "tail_convergence_selector" - GPU hidden-state probe for cross-loop tail convergence selector features.
 #   "heldout_router_validation" - no-training forced-depth router transfer reality test.
 #   "latent_criticality_probe" - prompt-state criticality/Jacobian probe from a completed router-validation run.
 #   "reentry_covariance_check" - read-only covariance gate before directional re-entry adapter changes.
@@ -1369,6 +1370,26 @@ TARGETS = {
             "STAGE5_RESCUE_SELECTOR_SCORE_TARGET": "content_question_only",
             "STAGE5_RESCUE_SELECTOR_AGGREGATE": "mean",
             "STAGE5_RESCUE_SELECTOR_TRANSFER_DISCONNECT": "1",
+        },
+    },
+    "tail_convergence_selector": {
+        "path": "colab/STAGE5_TAIL_CONVERGENCE_SELECTOR_CELL.py",
+        "markers": [
+            "STAGE5_TAIL_CONVERGENCE_SELECTOR_CELL_VERSION",
+            "tail_convergence_selector_v1",
+            "eval/evaluate_tail_convergence_selector.py",
+            "tail_deceleration_12_minus_23",
+            "stage5_current_tail_convergence_selector_summary",
+            "tests/test_tail_convergence_selector.py",
+            "restore_checkpoint",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_TAIL_CONVERGENCE_SELECTOR_SCORE_TARGET": "content_question_only",
+            "STAGE5_TAIL_CONVERGENCE_SELECTOR_AGGREGATE": "mean",
+            "STAGE5_TAIL_CONVERGENCE_N_TAIL": "7",
+            "STAGE5_TAIL_CONVERGENCE_DROP_TOP": "1",
+            "STAGE5_TAIL_CONVERGENCE_SELECTOR_DISCONNECT": "1",
         },
     },
     "heldout_router_validation": {

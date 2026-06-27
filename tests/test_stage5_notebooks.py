@@ -367,6 +367,27 @@ def test_current_bootstrap_exposes_rescue_selector_transfer_target() -> None:
     assert "regularized_whitened_rescue_score" in evaluator
 
 
+def test_current_bootstrap_exposes_tail_convergence_selector_target() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_TAIL_CONVERGENCE_SELECTOR_CELL.py").read_text(encoding="utf-8")
+    evaluator = (ROOT / "eval/evaluate_tail_convergence_selector.py").read_text(encoding="utf-8")
+
+    for payload in (text, markdown):
+        assert '"tail_convergence_selector"' in payload
+        assert "colab/STAGE5_TAIL_CONVERGENCE_SELECTOR_CELL.py" in payload
+        assert "eval/evaluate_tail_convergence_selector.py" in payload
+        assert "tail_deceleration_12_minus_23" in payload
+        assert "stage5_current_tail_convergence_selector_summary" in payload
+    assert "STAGE5_TAIL_CONVERGENCE_SELECTOR_CELL_VERSION" in cell
+    assert "tail_convergence_selector_v1" in cell
+    assert "restore_checkpoint" in cell
+    assert "runtime.unassign" in cell
+    assert "tail_convergence_features" in evaluator
+    assert "principal_subspace_rotation" in evaluator
+    assert "tail_probe_detectability" in evaluator
+
+
 def test_current_bootstrap_exposes_heldout_router_validation_target() -> None:
     text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
