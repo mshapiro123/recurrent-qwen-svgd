@@ -1,0 +1,252 @@
+{
+  "kind": "stage5_capacity_localization_sweep",
+  "run_id": "stage5_capacity_localization_20260627_210858",
+  "status": "completed",
+  "target_ranks": [
+    128
+  ],
+  "baseline_rank": 32,
+  "baseline_summaries": [
+    "outputs/stage5/stage5_reentry_recovery_20260627_190155/summary.json",
+    "outputs/stage5/stage5_capacity_localization_20260627_205028_lora64/summary.json"
+  ],
+  "result_summaries": [
+    "outputs/stage5/stage5_capacity_localization_20260627_210858_lora128/summary.json"
+  ],
+  "fixed_tail_damper_strength": 1.0,
+  "rows": [
+    {
+      "summary_path": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_reentry_recovery_20260627_190155/summary.json",
+      "run_id": "stage5_reentry_recovery_20260627_190155",
+      "status": "validation_sane",
+      "passed": true,
+      "checkpoint": "outputs/stage5/stage5_reentry_recovery_20260627_190155_curriculum_sft/phase1/phase1_step_100.pt",
+      "child_summary": "outputs/stage5/stage5_reentry_recovery_20260627_190155_curriculum_sft/summary.json",
+      "lora": {
+        "rank": 32,
+        "alpha": 64
+      },
+      "parameter_ledger": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "stored_model_params_estimate": 494000000,
+        "recurrent_block_params_estimate": 179000000,
+        "lora_rank": 32,
+        "lora_alpha": 64,
+        "lora_trainable_params_estimate": 9388032,
+        "lora_trainable_params_millions": 9.388,
+        "recurrent_block_unfreeze_trainable_params_estimate": 179000000,
+        "stored_size_changes_with_rank": false,
+        "per_loop_compute_changes_with_rank": false,
+        "capacity_cost_type": "training_params_not_stored_params"
+      },
+      "fixed_tail_damper_strength": 1.0,
+      "post_reentry_health_status": "reentry_health_sane",
+      "loop_correct": {
+        "1": 182,
+        "2": 163,
+        "3": 159
+      },
+      "loop_accuracy": {
+        "1": 0.35546875,
+        "2": 0.318359375,
+        "3": 0.310546875
+      },
+      "oracle_correct": 234,
+      "oracle_accuracy": 0.45703125,
+      "oracle_gap_vs_loop1": 52,
+      "rescued_vs_loop1": 52,
+      "harmed_vs_loop1": 71,
+      "stable_correct": 111,
+      "stable_wrong": 278,
+      "pattern_counts": {
+        "000": 278,
+        "001": 18,
+        "010": 5,
+        "011": 29,
+        "100": 52,
+        "101": 1,
+        "110": 18,
+        "111": 111
+      },
+      "tail_ratio_vs_entry": {
+        "loop1": 2.5649934072234233,
+        "loop2": 3.1669265738336887,
+        "loop3": 3.4564996855942876,
+        "loop4": 3.5133696286249316,
+        "loop8": 2.8300413441051058
+      },
+      "loops_to_benefit_vs_loop1": null,
+      "rescued_harmed_ratio": 0.7323943661971831,
+      "delta_vs_rank32": {
+        "oracle_correct": 0,
+        "oracle_gap_vs_loop1": 0,
+        "rescued_vs_loop1": 0,
+        "harmed_vs_loop1": 0,
+        "stable_correct": 0,
+        "stable_wrong": 0,
+        "loop1_correct": 0,
+        "loop2_correct": 0,
+        "loop3_correct": 0
+      }
+    },
+    {
+      "summary_path": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_capacity_localization_20260627_205028_lora64/summary.json",
+      "run_id": "stage5_capacity_localization_20260627_205028_lora64",
+      "status": "validation_sane",
+      "passed": true,
+      "checkpoint": "outputs/stage5/stage5_capacity_localization_20260627_205028_lora64_curriculum_sft/phase1/phase1_step_100.pt",
+      "child_summary": "outputs/stage5/stage5_capacity_localization_20260627_205028_lora64_curriculum_sft/summary.json",
+      "lora": {
+        "rank": 64,
+        "alpha": 128
+      },
+      "parameter_ledger": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "stored_model_params_estimate": 494000000,
+        "recurrent_block_params_estimate": 179000000,
+        "lora_rank": 64,
+        "lora_alpha": 128,
+        "lora_trainable_params_estimate": 18776064,
+        "lora_trainable_params_millions": 18.776,
+        "recurrent_block_unfreeze_trainable_params_estimate": 179000000,
+        "stored_size_changes_with_rank": false,
+        "per_loop_compute_changes_with_rank": false,
+        "capacity_cost_type": "training_params_not_stored_params"
+      },
+      "fixed_tail_damper_strength": 1.0,
+      "post_reentry_health_status": "reentry_health_sane",
+      "loop_correct": {
+        "1": 182,
+        "2": 157,
+        "3": 158
+      },
+      "loop_accuracy": {
+        "1": 0.35546875,
+        "2": 0.306640625,
+        "3": 0.30859375
+      },
+      "oracle_correct": 235,
+      "oracle_accuracy": 0.458984375,
+      "oracle_gap_vs_loop1": 53,
+      "rescued_vs_loop1": 53,
+      "harmed_vs_loop1": 74,
+      "stable_correct": 108,
+      "stable_wrong": 277,
+      "pattern_counts": {
+        "000": 277,
+        "001": 22,
+        "010": 4,
+        "011": 27,
+        "100": 55,
+        "101": 1,
+        "110": 18,
+        "111": 108
+      },
+      "tail_ratio_vs_entry": {
+        "loop1": 2.5649934072234233,
+        "loop2": 3.160404560080351,
+        "loop3": 3.42502178370167,
+        "loop4": 3.460019251926227,
+        "loop8": 2.732335107047776
+      },
+      "loops_to_benefit_vs_loop1": null,
+      "rescued_harmed_ratio": 0.7162162162162162,
+      "delta_vs_rank32": {
+        "oracle_correct": 1,
+        "oracle_gap_vs_loop1": 1,
+        "rescued_vs_loop1": 1,
+        "harmed_vs_loop1": 3,
+        "stable_correct": -3,
+        "stable_wrong": -1,
+        "loop1_correct": 0,
+        "loop2_correct": -6,
+        "loop3_correct": -1
+      }
+    },
+    {
+      "summary_path": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_capacity_localization_20260627_210858_lora128/summary.json",
+      "run_id": "stage5_capacity_localization_20260627_210858_lora128",
+      "status": "validation_sane",
+      "passed": true,
+      "checkpoint": "outputs/stage5/stage5_capacity_localization_20260627_210858_lora128_curriculum_sft/phase1/phase1_step_100.pt",
+      "child_summary": "outputs/stage5/stage5_capacity_localization_20260627_210858_lora128_curriculum_sft/summary.json",
+      "lora": {
+        "rank": 128,
+        "alpha": 256
+      },
+      "parameter_ledger": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "stored_model_params_estimate": 494000000,
+        "recurrent_block_params_estimate": 179000000,
+        "lora_rank": 128,
+        "lora_alpha": 256,
+        "lora_trainable_params_estimate": 37552128,
+        "lora_trainable_params_millions": 37.552,
+        "recurrent_block_unfreeze_trainable_params_estimate": 179000000,
+        "stored_size_changes_with_rank": false,
+        "per_loop_compute_changes_with_rank": false,
+        "capacity_cost_type": "training_params_not_stored_params"
+      },
+      "fixed_tail_damper_strength": 1.0,
+      "post_reentry_health_status": "reentry_health_sane",
+      "loop_correct": {
+        "1": 182,
+        "2": 158,
+        "3": 159
+      },
+      "loop_accuracy": {
+        "1": 0.35546875,
+        "2": 0.30859375,
+        "3": 0.310546875
+      },
+      "oracle_correct": 235,
+      "oracle_accuracy": 0.458984375,
+      "oracle_gap_vs_loop1": 53,
+      "rescued_vs_loop1": 53,
+      "harmed_vs_loop1": 73,
+      "stable_correct": 109,
+      "stable_wrong": 277,
+      "pattern_counts": {
+        "000": 277,
+        "001": 22,
+        "010": 4,
+        "011": 27,
+        "100": 54,
+        "101": 1,
+        "110": 18,
+        "111": 109
+      },
+      "tail_ratio_vs_entry": {
+        "loop1": 2.5649934072234233,
+        "loop2": 3.155990374561986,
+        "loop3": 3.413215236662499,
+        "loop4": 3.4227967815935165,
+        "loop8": 2.7015996666280033
+      },
+      "loops_to_benefit_vs_loop1": null,
+      "rescued_harmed_ratio": 0.726027397260274,
+      "delta_vs_rank32": {
+        "oracle_correct": 1,
+        "oracle_gap_vs_loop1": 1,
+        "rescued_vs_loop1": 1,
+        "harmed_vs_loop1": 2,
+        "stable_correct": -2,
+        "stable_wrong": -1,
+        "loop1_correct": 0,
+        "loop2_correct": -5,
+        "loop3_correct": 0
+      }
+    }
+  ],
+  "decision": {
+    "status": "capacity_signal_present",
+    "best_oracle_rank": 64,
+    "best_oracle_correct": 235,
+    "best_loop1_rank": 64,
+    "best_loop1_correct": 182,
+    "any_depth_loop_beats_loop1": false,
+    "any_rescue_count_improves_vs_rank32": true,
+    "recommendation": "If rank64 improves rescued/oracle or produces loop benefit, run rank128 before unfreezing."
+  },
+  "next_step": "Review rank-localization deltas before escalating. Rank128 is justified only if rank64 shows rescued/oracle/depth movement; otherwise the next meaningful test is the unfreeze+Muon bundle."
+}
