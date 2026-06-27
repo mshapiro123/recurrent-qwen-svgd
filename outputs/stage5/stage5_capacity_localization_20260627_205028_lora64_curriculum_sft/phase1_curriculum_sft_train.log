@@ -1,0 +1,11 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 3332.00it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_depth_signal_recovery_20260625_180014_curriculum_sft/phase1/phase1_step_100.pt loaded_keys=16
+optimizer_parameter_tensors=184
+step=0 mean_expected_loops=2.0061 mean_halt_entropy=0.2498 expected_ce=1.5892 halting_kl=0.9609 target_mean_loops=3.0000 target_loop_abs_error=0.9939 loop_control_ce=2.9619 halting_target_nll=3.4922 loss=30.9941
+step=25 mean_expected_loops=1.9503 mean_halt_entropy=0.2731 expected_ce=1.5095 halting_kl=0.9711 target_mean_loops=3.0000 target_loop_abs_error=1.0497 loop_control_ce=2.8389 halting_target_nll=4.7288 loss=36.6064
+step=50 mean_expected_loops=1.0281 mean_halt_entropy=0.1280 expected_ce=1.3794 halting_kl=0.5053 target_mean_loops=1.0000 target_loop_abs_error=0.0281 loop_control_ce=0.1215 halting_target_nll=0.0285 loss=2.0583
+step=75 mean_expected_loops=2.0103 mean_halt_entropy=0.2346 expected_ce=1.3216 halting_kl=0.5376 target_mean_loops=2.0000 target_loop_abs_error=0.0103 loop_control_ce=0.1559 halting_target_nll=0.0520 loss=2.2592
+saved_checkpoint=outputs/stage5/stage5_capacity_localization_20260627_205028_lora64_curriculum_sft/phase1/phase1_step_100.pt
