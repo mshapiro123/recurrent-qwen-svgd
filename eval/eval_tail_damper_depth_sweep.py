@@ -53,7 +53,7 @@ from eval.eval_reentry_tail_diagnostic import (  # noqa: E402
     tail_trace,
     write_damper_artifact,
 )
-from models.reentry_tail_damper import apply_tail_damper  # noqa: E402
+from models.reentry_tail_damper import apply_tail_damper, load_tail_damper  # noqa: E402
 
 
 def parse_csv_ints(value: str) -> list[int]:
@@ -80,6 +80,11 @@ def load_examples(args: argparse.Namespace) -> list[MCQExample]:
             seed=args.arc_seed,
         )
     return examples[: args.limit] if args.limit and args.limit > 0 else examples
+
+
+def resolve_repo_path(path: str | Path) -> Path:
+    candidate = Path(path)
+    return candidate if candidate.is_absolute() else ROOT / candidate
 
 
 def collect_tokens(
@@ -327,6 +332,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--score_loops", default="1,2,3")
     parser.add_argument("--tail_loop_counts", default="1,2,3,4,8")
     parser.add_argument("--strengths", default="0,0.25,0.5,0.75,1.0")
+    parser.add_argument(
+        "--fixed_damper_path",
+        default="",
+        help="Use an existing fixed tail-damper artifact instead of recalibrating one from this checkpoint.",
+    )
     parser.add_argument("--n_tail", type=int, default=7)
     parser.add_argument("--split", default="6,18")
     parser.add_argument("--max_length", type=int, default=192)
@@ -367,31 +377,57 @@ def main() -> int:
         args=args,
         loop_counts=tail_loop_counts,
     )
-    sigma_entry, mean_entry, basis, entry_evals = tail_basis(calibration_tokens["entry"], args.n_tail)
-    loop1_cov = centered_covariance(calibration_tokens["loop1"])[0]
-    decomp = tail_decomposition(sigma_entry, loop1_cov, n_tail=args.n_tail)
-    calibration = {
-        "dominant_entry_eigenvalue": finite_float(entry_evals[0]),
-        "tail_decomposition_loop1": decomp,
-        "correction_class": correction_class(decomp),
-    }
-    damper_path = output_dir / "tail_damper.pt"
-    damper_summary = {
-        "kind": "stage5_tail_damper_depth_sweep",
-        "run_id": output_dir.name,
-        "checkpoint": args.checkpoint,
-        "benchmark": args.arc_config,
-        "score_target": args.score_target,
-        "n_tail": args.n_tail,
-        "hidden_dim": int(calibration_tokens["entry"].shape[1]),
-    }
-    write_damper_artifact(
-        path=damper_path,
-        mean_entry=mean_entry,
-        basis=basis,
-        decomp=decomp,
-        summary=damper_summary,
-    )
+    if args.fixed_damper_path:
+        damper_path = resolve_repo_path(args.fixed_damper_path)
+        fixed_payload = load_tail_damper(damper_path)
+        mean_entry = fixed_payload["mean"]
+        basis = fixed_payload["basis"]
+        decomp = fixed_payload.get("tail_decomposition_loop1")
+        if not isinstance(decomp, dict):
+            decomp = {
+                "n_tail": int(fixed_payload.get("n_tail") or basis.shape[1]),
+                "tail_mismatch": 0.0,
+                "after_damper": 0.0,
+                "after_rotation": 0.0,
+                "after_rotation_then_damper": 0.0,
+                "damper_reduction": 0.0,
+                "rotation_reduction": 0.0,
+                "damper_scale": [finite_float(value) for value in fixed_payload["damper_scale"]],
+            }
+        calibration = {
+            "dominant_entry_eigenvalue": 0.0,
+            "tail_decomposition_loop1": decomp,
+            "correction_class": correction_class(decomp),
+            "fixed_damper_path": path_for_cli(damper_path),
+            "fixed_damper_checkpoint": fixed_payload.get("checkpoint"),
+            "fixed_damper_source_run_id": fixed_payload.get("source_run_id"),
+        }
+    else:
+        sigma_entry, mean_entry, basis, entry_evals = tail_basis(calibration_tokens["entry"], args.n_tail)
+        loop1_cov = centered_covariance(calibration_tokens["loop1"])[0]
+        decomp = tail_decomposition(sigma_entry, loop1_cov, n_tail=args.n_tail)
+        calibration = {
+            "dominant_entry_eigenvalue": finite_float(entry_evals[0]),
+            "tail_decomposition_loop1": decomp,
+            "correction_class": correction_class(decomp),
+        }
+        damper_path = output_dir / "tail_damper.pt"
+        damper_summary = {
+            "kind": "stage5_tail_damper_depth_sweep",
+            "run_id": output_dir.name,
+            "checkpoint": args.checkpoint,
+            "benchmark": args.arc_config,
+            "score_target": args.score_target,
+            "n_tail": args.n_tail,
+            "hidden_dim": int(calibration_tokens["entry"].shape[1]),
+        }
+        write_damper_artifact(
+            path=damper_path,
+            mean_entry=mean_entry,
+            basis=basis,
+            decomp=decomp,
+            summary=damper_summary,
+        )
 
     damper_payload = {
         "mean": mean_entry.detach().float().cpu(),

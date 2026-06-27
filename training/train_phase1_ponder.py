@@ -200,6 +200,8 @@ def main() -> int:
                 reentry_rescale_mode=cfg.get("reentry_rescale_mode", "none"),
                 use_reentry_adapter=cfg.get("use_reentry_adapter", False),
                 reentry_adapter_mode=cfg.get("reentry_adapter_mode", "affine"),
+                reentry_tail_damper_path=cfg.get("reentry_tail_damper_path") or None,
+                reentry_tail_damper_strength=cfg_float(cfg, "reentry_tail_damper_strength", 0.0),
                 use_cache=False,
                 return_dict=True,
             )

@@ -104,6 +104,10 @@ if REENTRY_ADAPTER_MODE not in {"affine", "spectral", "affine_spectral"}:
     raise ValueError(
         "STAGE5_CURRICULUM_REENTRY_ADAPTER_MODE must be one of: affine, spectral, affine_spectral"
     )
+REENTRY_TAIL_DAMPER_PATH = os.environ.get("STAGE5_CURRICULUM_REENTRY_TAIL_DAMPER_PATH", "").strip()
+REENTRY_TAIL_DAMPER_STRENGTH = float(os.environ.get("STAGE5_CURRICULUM_REENTRY_TAIL_DAMPER_STRENGTH", "0.0"))
+if REENTRY_TAIL_DAMPER_STRENGTH < 0.0 or REENTRY_TAIL_DAMPER_STRENGTH > 1.0:
+    raise ValueError("STAGE5_CURRICULUM_REENTRY_TAIL_DAMPER_STRENGTH must be in [0, 1]")
 if USE_TARGET_LOOP_CONTROL and USE_LEARNED_LOOP_CONTROL:
     raise ValueError("Use either target-loop oracle control or learned loop control, not both.")
 MAX_GRAD_NORM = float(os.environ.get("STAGE5_CURRICULUM_PHASE1_MAX_GRAD_NORM", "0.3"))
@@ -567,6 +571,9 @@ def phase1_config(train_output_dir: Path, resume_from: Path | None) -> dict[str,
         "output_dir": path_for_cli(train_output_dir),
         "lora": {"enabled": True, "rank": 8, "alpha": 16, "dropout": 0.0},
     }
+    if REENTRY_TAIL_DAMPER_PATH:
+        cfg["reentry_tail_damper_path"] = REENTRY_TAIL_DAMPER_PATH
+        cfg["reentry_tail_damper_strength"] = REENTRY_TAIL_DAMPER_STRENGTH
     if resume_from is not None:
         cfg["resume_from"] = path_for_cli(resume_from)
     return cfg
@@ -751,6 +758,15 @@ def eval_jsonl(label: str, data_jsonl: Path, checkpoint: Path) -> dict[str, floa
     if USE_REENTRY_ADAPTER:
         command.append("--use_reentry_adapter")
         command.extend(["--reentry_adapter_mode", REENTRY_ADAPTER_MODE])
+    if REENTRY_TAIL_DAMPER_PATH:
+        command.extend(
+            [
+                "--reentry_tail_damper_path",
+                REENTRY_TAIL_DAMPER_PATH,
+                "--reentry_tail_damper_strength",
+                str(REENTRY_TAIL_DAMPER_STRENGTH),
+            ]
+        )
     proc = run(
         command,
         log_name=f"{label}_val.log",
@@ -844,6 +860,8 @@ def write_summary(payload: dict[str, Any]) -> None:
         f"- Re-entry rescale: `{payload['config'].get('reentry_rescale_mode')}`",
         f"- Re-entry adapter: `{payload['config'].get('use_reentry_adapter')}`",
         f"- Re-entry adapter mode: `{payload['config'].get('reentry_adapter_mode')}`",
+        f"- Re-entry tail damper: `{payload['config'].get('reentry_tail_damper_path')}`",
+        f"- Re-entry tail damper strength: `{payload['config'].get('reentry_tail_damper_strength')}`",
         f"- Drive preflight: `{payload['drive_preflight']}`",
         f"- Validation status: `{payload.get('validation_checks', {}).get('status')}`",
         f"- Validation issues: `{payload.get('validation_checks', {}).get('issues', [])}`",
@@ -906,6 +924,8 @@ def main() -> int:
         "reentry_rescale_mode": REENTRY_RESCALE_MODE,
         "use_reentry_adapter": USE_REENTRY_ADAPTER,
         "reentry_adapter_mode": REENTRY_ADAPTER_MODE,
+        "reentry_tail_damper_path": REENTRY_TAIL_DAMPER_PATH or None,
+        "reentry_tail_damper_strength": REENTRY_TAIL_DAMPER_STRENGTH if REENTRY_TAIL_DAMPER_PATH else 0.0,
         "require_target_loop_gradient": REQUIRE_TARGET_LOOP_GRADIENT,
         "depth_hint_style": DEPTH_HINT_STYLE,
         "dtype": DTYPE,

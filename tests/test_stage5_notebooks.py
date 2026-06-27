@@ -1677,7 +1677,7 @@ def test_reentry_recovery_training_target_is_bootstrapped() -> None:
     assert "reentry_recovery_training" in bootstrap_md
     assert "colab/STAGE5_REENTRY_RECOVERY_TRAINING_CELL.py" in bootstrap
     assert "STAGE5_REENTRY_RECOVERY_CELL_VERSION" in cell
-    assert "reentry_recovery_training_v4_post_reentry_health" in cell
+    assert "reentry_recovery_training_v5_fixed_tail_damper" in cell
     assert "STAGE5_REENTRY_RECOVERY_REPAIR_ASSESSMENT" in cell
     assert 'candidate.with_name("reentry_assessment.json")' in cell
     assert "current_pointer_repair_assessment_candidates" in bootstrap
@@ -1722,6 +1722,25 @@ def test_reentry_recovery_training_target_is_bootstrapped() -> None:
     assert "debiased_benchmark_suite" in cell
     assert "tests/test_stage5_curriculum_sft.py" in cell
     assert "runtime.unassign" in cell
+
+
+def test_reentry_tail_damper_recovery_training_target_is_bootstrapped() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_REENTRY_RECOVERY_TRAINING_CELL.py").read_text(encoding="utf-8")
+
+    assert "reentry_tail_damper_recovery_training" in bootstrap
+    assert "reentry_tail_damper_recovery_training" in bootstrap_md
+    assert "STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_SOURCE_SUMMARY" in bootstrap
+    assert "stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857" in bootstrap
+    assert "STAGE5_REENTRY_RECOVERY_REENTRY_TAIL_DAMPER_STRENGTH" in bootstrap
+    assert '"STAGE5_REENTRY_RECOVERY_REENTRY_TAIL_DAMPER_STRENGTH": "1.0"' in bootstrap
+    assert "STAGE5_CURRICULUM_REENTRY_TAIL_DAMPER_PATH" in cell
+    assert "STAGE5_CURRICULUM_REENTRY_TAIL_DAMPER_STRENGTH" in cell
+    assert "fixed_tail_damper_depth_readout" in cell
+    assert "rescued_vs_loop1" in bootstrap
+    assert "harmed_vs_loop1" in bootstrap
+    assert "eval/eval_tail_damper_depth_sweep.py" in cell
 
 
 def test_reentry_drift_and_norm_targets_run_self_assessment() -> None:

@@ -35,11 +35,15 @@ def test_default_curriculum_sft_target_is_programmatic_direct_deep_shard() -> No
 def test_phase1_config_threads_reentry_rescale_mode(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(runner, "REENTRY_RESCALE_MODE", "entry_rms")
     monkeypatch.setattr(runner, "USE_REENTRY_ADAPTER", True)
+    monkeypatch.setattr(runner, "REENTRY_TAIL_DAMPER_PATH", "outputs/stage5/damper/tail_damper.pt")
+    monkeypatch.setattr(runner, "REENTRY_TAIL_DAMPER_STRENGTH", 1.0)
 
     cfg = runner.phase1_config(tmp_path / "phase1", resume_from=None)
 
     assert cfg["reentry_rescale_mode"] == "entry_rms"
     assert cfg["use_reentry_adapter"] is True
+    assert cfg["reentry_tail_damper_path"] == "outputs/stage5/damper/tail_damper.pt"
+    assert cfg["reentry_tail_damper_strength"] == 1.0
 
 
 def test_split_train_val_is_deterministic_and_held_out() -> None:
@@ -379,6 +383,8 @@ def test_eval_jsonl_requests_single_pass_curriculum_mode_groups(monkeypatch, tmp
     monkeypatch.setattr(runner, "run", fake_run)
     monkeypatch.setattr(runner, "REENTRY_RESCALE_MODE", "entry_rms")
     monkeypatch.setattr(runner, "USE_REENTRY_ADAPTER", True)
+    monkeypatch.setattr(runner, "REENTRY_TAIL_DAMPER_PATH", "outputs/stage5/damper/tail_damper.pt")
+    monkeypatch.setattr(runner, "REENTRY_TAIL_DAMPER_STRENGTH", 1.0)
     metrics = runner.eval_jsonl("val", tmp_path / "val.jsonl", tmp_path / "phase1.pt")
 
     assert metrics["group/curriculum_mode/direct/examples"] == 1.0
@@ -391,6 +397,9 @@ def test_eval_jsonl_requests_single_pass_curriculum_mode_groups(monkeypatch, tmp
     assert "--reentry_rescale_mode" in calls[0]
     assert calls[0][calls[0].index("--reentry_rescale_mode") + 1] == "entry_rms"
     assert "--use_reentry_adapter" in calls[0]
+    assert "--reentry_tail_damper_path" in calls[0]
+    assert calls[0][calls[0].index("--reentry_tail_damper_path") + 1] == "outputs/stage5/damper/tail_damper.pt"
+    assert calls[0][calls[0].index("--reentry_tail_damper_strength") + 1] == "1.0"
 
 
 def test_curriculum_sft_updates_current_source_summary(monkeypatch, tmp_path) -> None:

@@ -21,12 +21,18 @@ from typing import Any
 from google.colab import drive, runtime, userdata
 
 
-STAGE5_REENTRY_RECOVERY_CELL_VERSION = "reentry_recovery_training_v4_post_reentry_health"
+STAGE5_REENTRY_RECOVERY_CELL_VERSION = "reentry_recovery_training_v5_fixed_tail_damper"
+# Bootstrap markers for fixed-damper recovery: rescued_vs_loop1 harmed_vs_loop1.
 STAGE5_REENTRY_RECOVERY_TARGET = "reentry_recovery_training"
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 DRIVE_ARTIFACT_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts")
 LEGACY_DRIVE_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd")
+DEFAULT_TAIL_DAMPER_SOURCE_SUMMARY = (
+    "outputs/stage5/"
+    "stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857/"
+    "summary.json"
+)
 
 
 def secret(*names: str) -> str | None:
@@ -291,7 +297,67 @@ def restore_checkpoint(rel_path: str, *, run_id: str | None = None) -> Path:
             print(f"restored_checkpoint={candidate} -> {target}", flush=True)
             return target
     tried = "\n".join(f"  - {path}" for path in checkpoint_drive_candidates(rel_path, run_id)[:16])
-    raise FileNotFoundError(f"Could not restore Stage 3 repaired checkpoint: {rel_path}\nTried:\n{tried}")
+    raise FileNotFoundError(f"Could not restore required artifact: {rel_path}\nTried:\n{tried}")
+
+
+def run_id_from_rel_path(rel_path: str | Path) -> str | None:
+    parts = Path(normalize_rel_path(rel_path)).parts
+    if len(parts) >= 3 and parts[0] == "outputs" and parts[1] == "stage5":
+        return parts[2]
+    return None
+
+
+def load_tail_damper_source_summary() -> dict[str, Any] | None:
+    explicit = (
+        os.environ.get("STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_SOURCE_SUMMARY")
+        or os.environ.get("STAGE5_REENTRY_RECOVERY_REENTRY_TAIL_DAMPER_SOURCE_SUMMARY")
+        or ""
+    ).strip()
+    if not explicit:
+        return None
+    source_path = resolve_repo_path(explicit)
+    if not source_path.exists():
+        mount_drive_if_needed()
+        for candidate in (
+            DRIVE_ARTIFACT_ROOT / normalize_rel_path(explicit),
+            LEGACY_DRIVE_ROOT / normalize_rel_path(explicit),
+        ):
+            if candidate.exists():
+                source_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(candidate, source_path)
+                print(f"restored_tail_damper_source_summary={candidate} -> {source_path}", flush=True)
+                break
+    if not source_path.exists():
+        raise FileNotFoundError(f"Missing fixed tail-damper source summary: {explicit}")
+    payload = read_json(source_path)
+    if payload.get("kind") != "stage5_tail_damper_depth_sweep":
+        raise RuntimeError(f"Fixed tail-damper source is not a tail-damper sweep: {source_path}")
+    damper_artifact = str(payload.get("damper_artifact") or "")
+    checkpoint = str(payload.get("checkpoint") or "")
+    if not damper_artifact or not checkpoint:
+        raise KeyError(f"Tail-damper source is missing damper_artifact or checkpoint: {source_path}")
+    damper = restore_checkpoint(damper_artifact, run_id=str(payload.get("run_id") or source_path.parent.name))
+    resume = restore_checkpoint(checkpoint, run_id=run_id_from_rel_path(checkpoint) or str(payload.get("run_id") or ""))
+    strength = finite_float(
+        os.environ.get("STAGE5_REENTRY_RECOVERY_REENTRY_TAIL_DAMPER_STRENGTH", "1.0"),
+        1.0,
+    )
+    if strength < 0.0 or strength > 1.0:
+        raise ValueError("STAGE5_REENTRY_RECOVERY_REENTRY_TAIL_DAMPER_STRENGTH must be in [0, 1]")
+    info = {
+        "source_summary": path_for_cli(source_path),
+        "source_run_id": payload.get("run_id") or source_path.parent.name,
+        "damper_path": path_for_cli(damper),
+        "resume_checkpoint": path_for_cli(resume),
+        "strength": strength,
+        "source_checkpoint": checkpoint,
+        "arc_config": payload.get("arc_config"),
+        "arc_split": payload.get("arc_split"),
+        "arc_limit": payload.get("arc_limit"),
+        "score_target": payload.get("score_target"),
+    }
+    print("fixed_tail_damper_source=" + json.dumps(info, indent=2), flush=True)
+    return info
 
 
 def load_required_repair_assessment() -> dict[str, Any]:
@@ -373,7 +439,11 @@ def target_loop_rows_from_counts(target_loop_counts: Any) -> str:
     return _target_loop_rows_from_counts(target_loop_counts)
 
 
-def derive_sft_env(trace_summary: Path, repair: dict[str, Any]) -> dict[str, str]:
+def derive_sft_env(
+    trace_summary: Path,
+    repair: dict[str, Any],
+    fixed_tail_damper: dict[str, Any] | None = None,
+) -> dict[str, str]:
     payload = read_json(trace_summary)
     curriculum = payload.get("curriculum") if isinstance(payload.get("curriculum"), dict) else {}
     counts = curriculum.get("counts") if isinstance(curriculum.get("counts"), dict) else {}
@@ -407,7 +477,9 @@ def derive_sft_env(trace_summary: Path, repair: dict[str, Any]) -> dict[str, str
             "STAGE5_CURRICULUM_SFT_RUN_ID": child_run_id,
             "STAGE5_CURRICULUM_WORK_DIR": work_dir,
             "STAGE5_CURRICULUM_SUMMARY_JSON": summary_json,
-            "STAGE5_CURRICULUM_RESUME_FROM": str(repair["checkpoint"]),
+            "STAGE5_CURRICULUM_RESUME_FROM": str(
+                fixed_tail_damper["resume_checkpoint"] if fixed_tail_damper else repair["checkpoint"]
+            ),
             "STAGE5_CURRICULUM_MIN_POSITIVE_ROWS": os.environ.get(
                 "STAGE5_REENTRY_RECOVERY_MIN_POSITIVE_ROWS",
                 str(positive_rows),
@@ -473,6 +545,16 @@ def derive_sft_env(trace_summary: Path, repair: dict[str, Any]) -> dict[str, str
             "DEVICE": os.environ.get("DEVICE", "cuda"),
         }
     )
+    if fixed_tail_damper is not None:
+        env.update(
+            {
+                "STAGE5_CURRICULUM_REENTRY_TAIL_DAMPER_PATH": str(fixed_tail_damper["damper_path"]),
+                "STAGE5_CURRICULUM_REENTRY_TAIL_DAMPER_STRENGTH": str(fixed_tail_damper["strength"]),
+                "STAGE5_REENTRY_RECOVERY_FIXED_TAIL_DAMPER_SOURCE_SUMMARY": str(
+                    fixed_tail_damper["source_summary"]
+                ),
+            }
+        )
     drive_root = str(drive_backup.get("dest_root") or "").strip()
     if drive_root:
         env["STAGE5_CURRICULUM_INPUT_BACKUP_DIR"] = drive_root
@@ -490,6 +572,8 @@ def derive_sft_env(trace_summary: Path, repair: dict[str, Any]) -> dict[str, str
                 "layer_split": env["STAGE5_CURRICULUM_LAYER_SPLIT"],
                 "reentry_rescale_mode": env["STAGE5_CURRICULUM_REENTRY_RESCALE_MODE"],
                 "reentry_adapter_mode": env["STAGE5_CURRICULUM_REENTRY_ADAPTER_MODE"],
+                "reentry_tail_damper_path": env.get("STAGE5_CURRICULUM_REENTRY_TAIL_DAMPER_PATH"),
+                "reentry_tail_damper_strength": env.get("STAGE5_CURRICULUM_REENTRY_TAIL_DAMPER_STRENGTH"),
                 "loop_control_ce_weight": env["STAGE5_CURRICULUM_LOOP_CONTROL_CE_WEIGHT"],
                 "halt_target_nll_weight": env["STAGE5_CURRICULUM_HALT_TARGET_NLL_WEIGHT"],
             },
@@ -519,7 +603,11 @@ def post_reentry_health_checks(payload: dict[str, Any]) -> dict[str, Any]:
     bridge_weight_grad = finite_float(bridge_live.get("weight_grad_rms"))
     bridge_bias_grad = finite_float(bridge_live.get("bias_grad_rms"))
     adapter_delta = finite_float(adapter.get("sample_adapter_delta_rms"))
-    adapter_mode = str(adapter_live.get("mode") or adapter.get("mode") or env.get("STAGE5_CURRICULUM_REENTRY_ADAPTER_MODE", "affine"))
+    adapter_mode = str(
+        adapter_live.get("mode")
+        or adapter.get("mode")
+        or os.environ.get("STAGE5_CURRICULUM_REENTRY_ADAPTER_MODE", "affine")
+    )
     adapter_scale_grad = finite_float(adapter_live.get("scale_grad_rms"))
     adapter_bias_grad = finite_float(adapter_live.get("bias_grad_rms"))
     adapter_spectral_u_grad = finite_float(adapter_live.get("spectral_u_grad_rms"))
@@ -628,6 +716,15 @@ def run_post_reentry_health_probe(
     if env.get("STAGE5_CURRICULUM_USE_REENTRY_ADAPTER", "0").strip().lower() in {"1", "true", "yes", "y", "on"}:
         cmd.append("--use_reentry_adapter")
         cmd.extend(["--reentry_adapter_mode", env.get("STAGE5_CURRICULUM_REENTRY_ADAPTER_MODE", "affine")])
+    if env.get("STAGE5_CURRICULUM_REENTRY_TAIL_DAMPER_PATH"):
+        cmd.extend(
+            [
+                "--reentry_tail_damper_path",
+                env["STAGE5_CURRICULUM_REENTRY_TAIL_DAMPER_PATH"],
+                "--reentry_tail_damper_strength",
+                env.get("STAGE5_CURRICULUM_REENTRY_TAIL_DAMPER_STRENGTH", "1.0"),
+            ]
+        )
     run(cmd, env=env)
     payload = read_json(output_json)
     health = post_reentry_health_checks(payload)
@@ -639,6 +736,86 @@ def run_post_reentry_health_probe(
         "records_path": path_for_cli(output_jsonl),
         "health_path": path_for_cli(health_path),
         "health_checks": health,
+    }
+
+
+def run_fixed_tail_damper_depth_readout(
+    *,
+    checkpoint: str,
+    env: dict[str, str],
+    out_dir: Path,
+    fixed_tail_damper: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if fixed_tail_damper is None:
+        return None
+    readout_dir = out_dir / "fixed_tail_damper_depth_readout"
+    strengths = os.environ.get("STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_READOUT_STRENGTHS", "0,1.0")
+    arc_config = os.environ.get(
+        "STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_ARC_CONFIG",
+        str(fixed_tail_damper.get("arc_config") or "ARC-Challenge"),
+    )
+    arc_split = os.environ.get(
+        "STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_ARC_SPLIT",
+        str(fixed_tail_damper.get("arc_split") or "train"),
+    )
+    arc_limit = os.environ.get(
+        "STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_READOUT_LIMIT",
+        str(fixed_tail_damper.get("arc_limit") or "512"),
+    )
+    cmd = [
+        sys.executable,
+        "eval/eval_tail_damper_depth_sweep.py",
+        "--model_name",
+        env.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct"),
+        "--checkpoint",
+        checkpoint,
+        "--source_summary",
+        fixed_tail_damper["source_summary"],
+        "--output_dir",
+        path_for_cli(readout_dir),
+        "--fixed_damper_path",
+        fixed_tail_damper["damper_path"],
+        "--strengths",
+        strengths,
+        "--arc_config",
+        arc_config,
+        "--arc_split",
+        arc_split,
+        "--arc_offset",
+        os.environ.get("STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_ARC_OFFSET", "0"),
+        "--arc_limit",
+        arc_limit,
+        "--score_target",
+        os.environ.get(
+            "STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_SCORE_TARGET",
+            str(fixed_tail_damper.get("score_target") or "option_text"),
+        ),
+        "--score_loops",
+        os.environ.get("STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_SCORE_LOOPS", "1,2,3"),
+        "--tail_loop_counts",
+        os.environ.get("STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_TAIL_LOOPS", "1,2,3,4,8"),
+        "--split",
+        env.get("STAGE5_CURRICULUM_LAYER_SPLIT", "auto"),
+        "--max_length",
+        os.environ.get("STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_MAX_LENGTH", "192"),
+        "--reentry_rescale_mode",
+        env.get("STAGE5_CURRICULUM_REENTRY_RESCALE_MODE", "entry_rms"),
+        "--dtype",
+        env.get("DTYPE", "bfloat16"),
+        "--adapter_dtype",
+        env.get("ADAPTER_DTYPE", "float32"),
+        "--device",
+        env.get("DEVICE", "cuda"),
+    ]
+    run(cmd, env=env)
+    summary_path = readout_dir / "summary.json"
+    payload = read_json(summary_path)
+    return {
+        "summary_path": path_for_cli(summary_path),
+        "records_path": payload.get("records_jsonl"),
+        "strength_summaries": payload.get("strength_summaries", []),
+        "fixed_damper_path": fixed_tail_damper["damper_path"],
+        "strengths": strengths,
     }
 
 
@@ -662,6 +839,8 @@ def write_reentry_recovery_wrapper_summary(
     trace_summary: Path,
     env: dict[str, str],
     post_reentry_probe: dict[str, Any],
+    fixed_tail_damper: dict[str, Any] | None,
+    fixed_tail_damper_depth_readout: dict[str, Any] | None,
 ) -> Path:
     from colab.stage5_publish_utils import update_current_source_summary
 
@@ -687,6 +866,7 @@ def write_reentry_recovery_wrapper_summary(
         "phase1_checkpoint": checkpoint,
         "dataset": child_payload.get("dataset", {}),
         "config": child_payload.get("config", {}),
+        "fixed_tail_damper": fixed_tail_damper,
         "phase1_val": child_payload.get("phase1_val", {}),
         "phase1_val_by_mode": child_payload.get("phase1_val_by_mode", {}),
         "phase1_val_by_target_loop": child_payload.get("phase1_val_by_target_loop", {}),
@@ -696,9 +876,11 @@ def write_reentry_recovery_wrapper_summary(
             "records_path": post_reentry_probe.get("records_path"),
         },
         "post_reentry_health_checks": post_reentry_probe.get("health_checks", {}),
+        "fixed_tail_damper_depth_readout": fixed_tail_damper_depth_readout,
         "next_step": (
-            "Run debiased_benchmark_suite against this repaired deterministic recurrent checkpoint before "
-            "dense control, breadth diagnostics, particles, or SVGD."
+            "Review fixed-damper depth readout for separate rescued/harmed movement. Depth selection remains "
+            "open; this run tests whether training on a damped recurrent manifold improves recovery. After "
+            "review, use debiased_benchmark_suite for the broader competence check."
         ),
     }
     summary_path = run_dir / "summary.json"
@@ -713,6 +895,8 @@ def write_reentry_recovery_wrapper_summary(
         f"- Status: `{summary['status']}`",
         f"- Passed: `{summary['passed']}`",
         f"- Checkpoint: `{checkpoint}`",
+        f"- Fixed tail damper: `{fixed_tail_damper.get('damper_path') if fixed_tail_damper else None}`",
+        f"- Fixed tail damper strength: `{fixed_tail_damper.get('strength') if fixed_tail_damper else None}`",
         "",
         "## Validation Checks",
         "```json",
@@ -724,6 +908,12 @@ def write_reentry_recovery_wrapper_summary(
         f"- Health status: `{post_reentry_probe.get('health_checks', {}).get('status')}`",
         "```json",
         json.dumps(post_reentry_probe.get("health_checks", {}), indent=2),
+        "```",
+        "",
+        "## Fixed-Damper Depth Readout",
+        f"- Summary: `{(fixed_tail_damper_depth_readout or {}).get('summary_path')}`",
+        "```json",
+        json.dumps((fixed_tail_damper_depth_readout or {}).get("strength_summaries", []), indent=2),
         "```",
         "",
         "## Next Step",
@@ -774,9 +964,21 @@ def main() -> None:
             "tests/test_review_stage5_reentry.py",
         ]
     )
-    repair = load_required_repair_assessment()
+    fixed_tail_damper = load_tail_damper_source_summary()
+    if fixed_tail_damper is None:
+        repair = load_required_repair_assessment()
+    else:
+        repair = {
+            "assessment_path": fixed_tail_damper["source_summary"],
+            "summary_path": fixed_tail_damper["source_summary"],
+            "status": "fixed_tail_damper_recovery_source",
+            "recommendation": "train_with_fixed_reentry_tail_damper",
+            "reason": "Proceeding from powered tail-damper confirmation; depth selection remains open.",
+            "checkpoint": fixed_tail_damper["resume_checkpoint"],
+            "metrics": {"fixed_tail_damper_strength": fixed_tail_damper["strength"]},
+        }
     trace_summary = resolve_trace_collection_summary()
-    env = derive_sft_env(trace_summary, repair)
+    env = derive_sft_env(trace_summary, repair, fixed_tail_damper=fixed_tail_damper)
     run([sys.executable, "colab/run_stage5_curriculum_sft.py"], env=env)
     child_summary = current_source_summary_path()
     child_payload = read_json(child_summary)
@@ -791,11 +993,19 @@ def main() -> None:
         env=env,
         out_dir=wrapper_run_dir,
     )
+    fixed_tail_damper_depth_readout = run_fixed_tail_damper_depth_readout(
+        checkpoint=checkpoint,
+        env=env,
+        out_dir=wrapper_run_dir,
+        fixed_tail_damper=fixed_tail_damper,
+    )
     wrapper_summary = write_reentry_recovery_wrapper_summary(
         repair=repair,
         trace_summary=trace_summary,
         env=env,
         post_reentry_probe=post_reentry_probe,
+        fixed_tail_damper=fixed_tail_damper,
+        fixed_tail_damper_depth_readout=fixed_tail_damper_depth_readout,
     )
     publish_reentry_recovery_wrapper(wrapper_summary)
     if env_flag("STAGE5_REENTRY_RECOVERY_DISCONNECT", "1"):

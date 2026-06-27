@@ -28,6 +28,7 @@ from models.bridge import IdentityGatedBridge  # noqa: E402
 from models.halting import masked_mean  # noqa: E402
 from models.lora import apply_lora_to_recurrent_block  # noqa: E402
 from models.reentry_adapter import ReentryAffineAdapter  # noqa: E402
+from models.reentry_tail_damper import apply_tail_damper  # noqa: E402
 from models.recurrent_wrapper import RecurrentQwenForCausalLM  # noqa: E402
 from training.checkpointing import load_trainable_checkpoint  # noqa: E402
 
@@ -328,6 +329,8 @@ def loop_records_for_prompt(
     reentry_rescale_mode: str = "none",
     use_reentry_adapter: bool = False,
     reentry_adapter_mode: str = "affine",
+    reentry_tail_damper: dict[str, torch.Tensor] | None = None,
+    reentry_tail_damper_strength: float = 0.0,
 ) -> list[dict[str, Any]]:
     entry_rms = rms(entry_state, attention_mask).clamp_min(1e-8)
     records: list[dict[str, Any]] = []
@@ -341,6 +344,15 @@ def loop_records_for_prompt(
         pre_adapter_input = loop_input
         if loop_idx > 0 and use_reentry_adapter:
             loop_input = wrapper.reentry_adapter(loop_input, loop_idx=loop_idx, mode=reentry_adapter_mode)
+        pre_tail_damper_input = loop_input
+        if loop_idx > 0 and reentry_tail_damper is not None and reentry_tail_damper_strength > 0.0:
+            loop_input = apply_tail_damper(
+                loop_input,
+                mean=reentry_tail_damper["mean"],
+                basis=reentry_tail_damper["basis"],
+                damper_scale=reentry_tail_damper["damper_scale"],
+                strength=reentry_tail_damper_strength,
+            )
         loop_output = run_recurrent_block(
             wrapper,
             loop_input,
@@ -353,7 +365,8 @@ def loop_records_for_prompt(
         output_rms = rms(loop_output, attention_mask)
         raw_input_rms = rms(raw_loop_input, attention_mask)
         bridge_delta_rms = rms(loop_input - raw_loop_input, attention_mask)
-        adapter_delta_rms = rms(loop_input - pre_adapter_input, attention_mask)
+        adapter_delta_rms = rms(pre_tail_damper_input - pre_adapter_input, attention_mask)
+        tail_damper_delta_rms = rms(loop_input - pre_tail_damper_input, attention_mask)
         records.append(
             {
                 "loop": loop_idx + 1,
@@ -365,6 +378,7 @@ def loop_records_for_prompt(
                 "output_over_input_rms": finite_float(output_rms / input_rms.clamp_min(1e-8)),
                 "bridge_delta_rms": finite_float(bridge_delta_rms),
                 "reentry_adapter_delta_rms": finite_float(adapter_delta_rms),
+                "reentry_tail_damper_delta_rms": finite_float(tail_damper_delta_rms),
                 "pooled_input_output_cosine": pooled_cosine(loop_input, loop_output, attention_mask),
             }
         )
@@ -409,6 +423,8 @@ def run_prompt(
             reentry_rescale_mode=args.reentry_rescale_mode,
             use_reentry_adapter=args.use_reentry_adapter,
             reentry_adapter_mode=args.reentry_adapter_mode,
+            reentry_tail_damper=wrapper._load_reentry_tail_damper(args.reentry_tail_damper_path),  # noqa: SLF001
+            reentry_tail_damper_strength=args.reentry_tail_damper_strength,
         )
     entry_rms = rms(entry_state, mask)
     exit_rms = rms(exit_state, mask)
@@ -448,6 +464,7 @@ def aggregate_prompt_records(records: list[dict[str, Any]], *, subspace_rank: in
             "output_over_input_rms",
             "bridge_delta_rms",
             "reentry_adapter_delta_rms",
+            "reentry_tail_damper_delta_rms",
             "pooled_input_output_cosine",
         ]
         loop_summary[str(loop)] = {
@@ -487,6 +504,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reentry_rescale_mode", default="none", choices=("none", "entry_rms"))
     parser.add_argument("--use_reentry_adapter", action="store_true")
     parser.add_argument("--reentry_adapter_mode", default="affine", choices=("affine", "spectral", "affine_spectral"))
+    parser.add_argument("--reentry_tail_damper_path")
+    parser.add_argument("--reentry_tail_damper_strength", type=float, default=0.0)
     parser.add_argument("--dtype", default="auto")
     parser.add_argument("--adapter_dtype", default="float32")
     parser.add_argument("--attn_implementation", default="default")
@@ -524,6 +543,8 @@ def main() -> int:
         "reentry_rescale_mode": args.reentry_rescale_mode,
         "use_reentry_adapter": args.use_reentry_adapter,
         "reentry_adapter_mode": args.reentry_adapter_mode,
+        "reentry_tail_damper_path": args.reentry_tail_damper_path,
+        "reentry_tail_damper_strength": args.reentry_tail_damper_strength,
         "aggregate": aggregate_prompt_records(records, subspace_rank=args.subspace_rank),
         "bridge": bridge_stats(wrapper.bridge, sample_state),
         "bridge_gradient_liveness": bridge_gradient_liveness(wrapper.bridge, sample_state),
