@@ -1,0 +1,33 @@
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+dtype: bfloat16
+adapter_dtype: float32
+layer_split: auto
+max_length: 512
+max_loops: 3
+initial_halt_prob: 0.15
+beta: 0.1
+halt_target_nll_weight: 5.0
+optimizer_modules: bridge,reentry,halt,lora
+use_target_loop_control: false
+use_learned_loop_control: true
+loop_control_ce_weight: 4.0
+reentry_rescale_mode: entry_rms
+use_reentry_adapter: true
+reentry_adapter_mode: spectral
+batch_size: 1
+learning_rate: 5.0e-06
+weight_decay: 0.0
+max_grad_norm: 0.3
+max_steps: 100
+save_every: 0
+log_every: 25
+train_on_prompt: false
+output_dir: outputs/stage5/stage5_capacity_localization_20260627_210858_lora128_curriculum_sft/phase1
+lora:
+  enabled: true
+  rank: 128
+  alpha: 256
+  dropout: 0.0
+reentry_tail_damper_path: outputs/stage5/stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857/tail_damper.pt
+reentry_tail_damper_strength: 1.0
+resume_from: outputs/stage5/stage5_depth_signal_recovery_20260625_180014_curriculum_sft/phase1/phase1_step_100.pt
