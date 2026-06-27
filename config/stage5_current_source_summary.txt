@@ -1,1 +1,1 @@
-outputs/stage5/stage5_capacity_localization_20260627_205028_lora64_curriculum_sft/summary.json
+outputs/stage5/stage5_capacity_localization_20260627_205028_lora64/summary.json
