@@ -269,21 +269,44 @@ def capacity_decision(rows: list[dict[str, Any]], *, baseline_rank: int = 32) ->
     best_oracle = max(candidates, key=lambda row: int(row.get("oracle_correct") or -1))
     best_loop1 = max(candidates, key=lambda row: int(row["loop_correct"].get("1") or -1))
     any_depth_pays = any(row.get("loops_to_benefit_vs_loop1") for row in candidates)
-    any_rescue_improves = any(
-        (row.get("delta_vs_rank32") or {}).get("rescued_vs_loop1", 0) > 0 for row in candidates
+    any_oracle_improves = any((row.get("delta_vs_rank32") or {}).get("oracle_correct", 0) > 0 for row in candidates)
+    any_rescue_improves = any((row.get("delta_vs_rank32") or {}).get("rescued_vs_loop1", 0) > 0 for row in candidates)
+    any_harm_worsens = any((row.get("delta_vs_rank32") or {}).get("harmed_vs_loop1", 0) > 0 for row in candidates)
+    any_loop2_or_loop3_regresses = any(
+        (row.get("delta_vs_rank32") or {}).get("loop2_correct", 0) < 0
+        or (row.get("delta_vs_rank32") or {}).get("loop3_correct", 0) < 0
+        for row in candidates
     )
+    useful_signal = any_depth_pays or (
+        any_oracle_improves
+        and any_rescue_improves
+        and not any_harm_worsens
+        and not any_loop2_or_loop3_regresses
+    )
+    weak_or_mixed_signal = (any_oracle_improves or any_rescue_improves) and not useful_signal
     return {
-        "status": "capacity_signal_present" if any_depth_pays or any_rescue_improves else "capacity_signal_not_yet_seen",
+        "status": (
+            "capacity_signal_present"
+            if useful_signal
+            else "capacity_signal_mixed_or_negative"
+            if weak_or_mixed_signal
+            else "capacity_signal_not_yet_seen"
+        ),
         "best_oracle_rank": int(best_oracle["lora"]["rank"]),
         "best_oracle_correct": best_oracle.get("oracle_correct"),
         "best_loop1_rank": int(best_loop1["lora"]["rank"]),
         "best_loop1_correct": best_loop1["loop_correct"].get("1"),
         "any_depth_loop_beats_loop1": any_depth_pays,
+        "any_oracle_count_improves_vs_rank32": any_oracle_improves,
         "any_rescue_count_improves_vs_rank32": any_rescue_improves,
+        "any_harm_count_worsens_vs_rank32": any_harm_worsens,
+        "any_loop2_or_loop3_regresses_vs_rank32": any_loop2_or_loop3_regresses,
         "recommendation": (
-            "If rank64 improves rescued/oracle or produces loop benefit, run rank128 before unfreezing."
-            if any_depth_pays or any_rescue_improves
-            else "If rank64 is flat, review before spending on rank128; the next true escalation is unfreeze+Muon."
+            "Capacity rank produced cleaner deeper-loop benefit; replicate or expand before unfreezing."
+            if useful_signal
+            else "Higher LoRA rank produced only mixed/noisy oracle or rescue movement while harm/deeper-loop regression remained; stop rank-only escalation and review the unfreeze+Muon bundle."
+            if weak_or_mixed_signal
+            else "Rank-only capacity is flat; the next meaningful test is the unfreeze+Muon bundle."
         ),
     }
 
@@ -315,10 +338,7 @@ def write_capacity_localization_summary(
         "fixed_tail_damper_strength": 1.0,
         "rows": rows,
         "decision": capacity_decision(rows, baseline_rank=baseline_rank),
-        "next_step": (
-            "Review rank-localization deltas before escalating. Rank128 is justified only if rank64 "
-            "shows rescued/oracle/depth movement; otherwise the next meaningful test is the unfreeze+Muon bundle."
-        ),
+        "next_step": next_capacity_step(target_ranks),
     }
     summary_path = output_dir / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
@@ -380,3 +400,18 @@ def write_capacity_localization_summary(
     )
     (output_dir / "summary.md").write_text("\n".join(lines), encoding="utf-8")
     return summary_path
+
+
+def next_capacity_step(target_ranks: list[int]) -> str:
+    max_rank = max(target_ranks) if target_ranks else 0
+    if max_rank < 128:
+        return (
+            "Review rank-localization deltas before escalating. Rank128 is justified only if rank64 "
+            "shows rescued/oracle/depth movement; otherwise the next meaningful test is the unfreeze+Muon bundle."
+        )
+    return (
+        "Rank128 completes the clean rank-only capacity sweep. If depth still does not beat loop1 and "
+        "rescued gains come with added harm, stop rank-only escalation. The next experimental fork is "
+        "either close this line or run the unfreeze+Muon recurrence-curriculum bundle as a deliberately "
+        "larger-capacity substrate test."
+    )

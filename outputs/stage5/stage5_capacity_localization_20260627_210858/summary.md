@@ -3,7 +3,7 @@
 - Baseline rank: `32`
 - Target ranks: `128`
 - Status: `completed`
-- Decision: `capacity_signal_present`
+- Decision: `capacity_signal_mixed_or_negative`
 
 ## Capacity Ledger
 
@@ -56,15 +56,18 @@
 ## Decision
 ```json
 {
-  "status": "capacity_signal_present",
+  "status": "capacity_signal_mixed_or_negative",
   "best_oracle_rank": 64,
   "best_oracle_correct": 235,
   "best_loop1_rank": 64,
   "best_loop1_correct": 182,
   "any_depth_loop_beats_loop1": false,
+  "any_oracle_count_improves_vs_rank32": true,
   "any_rescue_count_improves_vs_rank32": true,
-  "recommendation": "If rank64 improves rescued/oracle or produces loop benefit, run rank128 before unfreezing."
+  "any_harm_count_worsens_vs_rank32": true,
+  "any_loop2_or_loop3_regresses_vs_rank32": true,
+  "recommendation": "Higher LoRA rank produced only mixed/noisy oracle or rescue movement while harm/deeper-loop regression remained; stop rank-only escalation and review the unfreeze+Muon bundle."
 }
 ```
 
-Review rank-localization deltas before escalating. Rank128 is justified only if rank64 shows rescued/oracle/depth movement; otherwise the next meaningful test is the unfreeze+Muon bundle.
+Rank128 completes the clean rank-only capacity sweep. If depth still does not beat loop1 and rescued gains come with added harm, stop rank-only escalation. The next experimental fork is either close this line or run the unfreeze+Muon recurrence-curriculum bundle as a deliberately larger-capacity substrate test.

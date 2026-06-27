@@ -6,6 +6,7 @@ from pathlib import Path
 from colab.capacity_localization import (
     QWEN25_05B_RECURRENT_LORA_PARAMS_PER_RANK,
     add_baseline_deltas,
+    capacity_decision,
     extract_capacity_row,
     lora_trainable_params_for_rank,
     parse_int_csv,
@@ -69,6 +70,26 @@ def test_add_baseline_deltas_compares_to_rank32() -> None:
     assert rank64["delta_vs_rank32"]["loop2_correct"] == 5
     assert rank64["delta_vs_rank32"]["oracle_correct"] == 7
     assert rank64["delta_vs_rank32"]["rescued_vs_loop1"] == 3
+
+
+def test_capacity_decision_treats_oracle_gain_with_more_harm_as_mixed() -> None:
+    baseline = extract_capacity_row(ROOT, RANK32_SUMMARY)
+    candidate = json.loads(json.dumps(baseline))
+    candidate["lora"]["rank"] = 64
+    candidate["oracle_correct"] = baseline["oracle_correct"] + 1
+    candidate["rescued_vs_loop1"] = baseline["rescued_vs_loop1"] + 1
+    candidate["harmed_vs_loop1"] = baseline["harmed_vs_loop1"] + 3
+    candidate["loop_correct"]["2"] = baseline["loop_correct"]["2"] - 6
+    rows = add_baseline_deltas([baseline, candidate], baseline_rank=32)
+
+    decision = capacity_decision(rows, baseline_rank=32)
+
+    assert decision["status"] == "capacity_signal_mixed_or_negative"
+    assert decision["any_oracle_count_improves_vs_rank32"] is True
+    assert decision["any_rescue_count_improves_vs_rank32"] is True
+    assert decision["any_harm_count_worsens_vs_rank32"] is True
+    assert decision["any_loop2_or_loop3_regresses_vs_rank32"] is True
+    assert "stop rank-only escalation" in decision["recommendation"]
 
 
 def test_write_capacity_summary_uses_separate_capacity_pointer(tmp_path: Path) -> None:
