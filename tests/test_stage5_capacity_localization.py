@@ -96,3 +96,12 @@ def test_write_capacity_summary_uses_separate_capacity_pointer(tmp_path: Path) -
     assert payload["kind"] == "stage5_capacity_localization_sweep"
     assert payload["rows"][0]["lora"]["rank"] == 32
     assert not (src_root / "config/stage5_current_source_summary.txt").exists()
+
+
+def test_capacity_colab_cell_passes_github_token_to_child_process() -> None:
+    text = (ROOT / "colab/STAGE5_CAPACITY_LOCALIZATION_CELL.py").read_text(encoding="utf-8")
+
+    assert 'os.environ["GH_TOKEN"] = GH_TOKEN' in text
+    assert 'os.environ["GITHUB_TOKEN"] = GH_TOKEN' in text
+    assert 'env["GH_TOKEN"] = GH_TOKEN' in text
+    assert 'env["GITHUB_TOKEN"] = GH_TOKEN' in text

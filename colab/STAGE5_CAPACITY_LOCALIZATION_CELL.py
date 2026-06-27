@@ -30,6 +30,11 @@ def secret(*names: str) -> str:
 GH_TOKEN = secret("GH_TOKEN", "GITHUB_TOKEN")
 HF_TOKEN = secret("HF_TOKEN", "HUGGINGFACE_HUB_TOKEN")
 assert GH_TOKEN, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
+os.environ["GH_TOKEN"] = GH_TOKEN
+os.environ["GITHUB_TOKEN"] = GH_TOKEN
+if HF_TOKEN:
+    os.environ["HF_TOKEN"] = HF_TOKEN
+    os.environ["HUGGINGFACE_HUB_TOKEN"] = HF_TOKEN
 
 
 def redact(text: str) -> str:
@@ -209,6 +214,8 @@ def main() -> None:
         if HF_TOKEN:
             env["HF_TOKEN"] = HF_TOKEN
             env["HUGGINGFACE_HUB_TOKEN"] = HF_TOKEN
+        env["GH_TOKEN"] = GH_TOKEN
+        env["GITHUB_TOKEN"] = GH_TOKEN
         print(f"\n===== capacity localization rank={rank} alpha={alpha} =====", flush=True)
         run([sys.executable, "colab/STAGE5_REENTRY_RECOVERY_TRAINING_CELL.py"], env=env)
         summary_path = ROOT / "outputs" / "stage5" / rank_run_id / "summary.json"
