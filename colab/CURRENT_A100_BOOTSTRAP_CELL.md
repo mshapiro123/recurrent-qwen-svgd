@@ -49,6 +49,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "reentry_recovery_training" - gated recovery SFT after re-entry repair passes.
 #   "reentry_tail_damper_recovery_training" - recovery SFT with fixed strength-1.0 tail damper held constant.
 #   "reentry_tail_damper_capacity_lora32_training" - same fixed-damper recovery arm with recurrent LoRA rank 32.
+#   "reentry_capacity_localization_rank64" - rank-64 fixed-damper capacity localization arm.
 #   "reentry_tail_damper_recovery_readout_only" - finish fixed-damper readout for an already completed recovery SFT.
 #   "depth_signal_confirmation" - recovery SFT, then expanded hard-content benchmark with open hard fallback.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
@@ -633,6 +634,38 @@ TARGETS = {
             "STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_READOUT_STRENGTHS": "0,1.0",
             "STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_READOUT_LIMIT": "512",
             "STAGE5_REENTRY_RECOVERY_DISCONNECT": "0",
+        },
+    },
+    "reentry_capacity_localization_rank64": {
+        "path": "colab/STAGE5_CAPACITY_LOCALIZATION_CELL.py",
+        "markers": [
+            "STAGE5_CAPACITY_LOCALIZATION_CELL_VERSION",
+            "capacity_localization_v1",
+            "STAGE5_CAPACITY_LOCALIZATION_RANKS",
+            "trainable_parameter_ledger",
+            "stage5_current_capacity_localization_summary",
+            "STAGE5_REENTRY_RECOVERY_LORA_RANK",
+            "fixed_tail_damper_depth_readout",
+            "stage5_reentry_recovery_20260627_190155",
+            "colab/STAGE5_REENTRY_RECOVERY_TRAINING_CELL.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_CAPACITY_LOCALIZATION_RANKS": "64",
+            "STAGE5_CAPACITY_LOCALIZATION_BASELINE_SUMMARIES": (
+                "outputs/stage5/stage5_reentry_recovery_20260627_190155/summary.json"
+            ),
+            "STAGE5_CAPACITY_LOCALIZATION_TAIL_DAMPER_SOURCE_SUMMARY": (
+                "outputs/stage5/"
+                "stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857/"
+                "summary.json"
+            ),
+            "STAGE5_CAPACITY_LOCALIZATION_TRACE_SOURCE_SUMMARY": (
+                "outputs/stage5/stage5_capability_ladder_trace_collection_20260623_194537/summary.json"
+            ),
+            "STAGE5_CAPACITY_LOCALIZATION_STEPS": "100",
+            "STAGE5_CAPACITY_LOCALIZATION_LR": "5e-6",
+            "STAGE5_CAPACITY_LOCALIZATION_DISCONNECT": "0",
         },
     },
     "reentry_tail_damper_recovery_readout_only": {

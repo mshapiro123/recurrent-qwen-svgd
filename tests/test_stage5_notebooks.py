@@ -69,6 +69,16 @@ def test_current_bootstrap_preserves_planner_supplied_target_env() -> None:
     assert "Planner/user-supplied env must win" in text
 
 
+def test_current_bootstrap_exposes_capacity_localization_rank64_target() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+
+    assert "reentry_capacity_localization_rank64" in text
+    assert "STAGE5_CAPACITY_LOCALIZATION_RANKS" in text
+    assert '"STAGE5_CAPACITY_LOCALIZATION_RANKS": "64"' in text
+    assert "stage5_current_capacity_localization_summary" in text
+    assert "stage5_reentry_recovery_20260627_190155" in text
+
+
 def test_single_a100_runbook_uses_current_bootstrap_target_queue() -> None:
     payload = notebook_payload("colab/00_single_a100_runbook.ipynb")
     text = "\n".join(str(cell.get("source", "")) for cell in payload.get("cells", []))

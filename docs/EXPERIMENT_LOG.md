@@ -994,3 +994,18 @@ Colab/Drive backups for selected runs.
   `review_stage5_competence_pipeline.py` helper now prints the pipeline status,
   child statuses/checkpoints, and planner-selected next action for immediate
   post-Colab triage.
+- Capacity localization arm: after tail-damper, forced-depth, selector, and
+  tail-convergence diagnostics failed to produce a cheap selection fix, the next
+  decisive question is whether the low-rank recurrent operator is the ceiling.
+  The new `reentry_capacity_localization_rank64` target keeps the fixed
+  strength-1.0 tail damper, data, optimizer modules, trace source, and recovery
+  procedure fixed, then changes only recurrent LoRA capacity from the existing
+  rank-32 baseline to rank 64. The run writes a separate
+  `stage5_current_capacity_localization_summary.txt` pointer rather than
+  moving the generic checkpoint-bearing source pointer to an aggregate summary.
+  The summary reports trainable parameter ledger, loop-1/2/3 scores, oracle,
+  rescued, harmed, tail trace ratio, and deltas versus the June 27 rank-32
+  fixed-damper recovery baseline. Rank 128 remains an explicit follow-up only
+  if rank 64 shows rescued/oracle/depth movement; otherwise the meaningful next
+  escalation is the unfreeze+Muon recurrence-curriculum bundle, not more
+  inference-time geometry.
