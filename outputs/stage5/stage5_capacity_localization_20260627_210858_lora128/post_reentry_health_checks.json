@@ -1,0 +1,26 @@
+{
+  "status": "reentry_health_sane",
+  "issues": [],
+  "thresholds": {
+    "min_bridge_gate_abs": 0.05,
+    "max_loop8_output_over_entry_rms": 3.0
+  },
+  "metrics": {
+    "bridge_gate": 1.000808596611023,
+    "bridge_delta_rms": 0.15300339460372925,
+    "bridge_weight_grad_rms": 0.3893328905105591,
+    "bridge_bias_grad_rms": 0.0075752693228423595,
+    "reentry_adapter_mode": "spectral",
+    "reentry_adapter_delta_rms": 0.006337281316518784,
+    "reentry_adapter_scale_grad_rms": 0.0,
+    "reentry_adapter_bias_grad_rms": 0.0,
+    "reentry_adapter_spectral_u_grad_rms": 0.15144726634025574,
+    "reentry_adapter_spectral_v_grad_rms": 0.039701223373413086,
+    "reentry_adapter_spectral_theta_grad_abs": 0.11867845058441162,
+    "reentry_adapter_gradient_live": true,
+    "loop8_output_over_entry_rms": 1.0061067342758179,
+    "loop8_output_over_input_rms": 1.005152940750122,
+    "mean_exit_over_entry_rms": 1.0017465750376384,
+    "subspace_overlap": 0.3539472818374634
+  }
+}

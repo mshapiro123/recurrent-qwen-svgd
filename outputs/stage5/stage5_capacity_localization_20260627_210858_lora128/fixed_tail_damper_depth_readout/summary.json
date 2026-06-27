@@ -1,0 +1,232 @@
+{
+  "kind": "stage5_tail_damper_depth_sweep",
+  "run_id": "fixed_tail_damper_depth_readout",
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "checkpoint": "outputs/stage5/stage5_capacity_localization_20260627_210858_lora128_curriculum_sft/phase1/phase1_step_100.pt",
+  "source_summary": "outputs/stage5/stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857/summary.json",
+  "examples": 512,
+  "arc_config": "ARC-Challenge",
+  "arc_split": "train",
+  "arc_offset": 0,
+  "arc_limit": 512,
+  "score_target": "option_text",
+  "score_loops": [
+    1,
+    2,
+    3
+  ],
+  "tail_loop_counts": [
+    1,
+    2,
+    3,
+    4,
+    8
+  ],
+  "strengths": [
+    0.0,
+    1.0
+  ],
+  "reentry_rescale_mode": "entry_rms",
+  "damper_artifact": "outputs/stage5/stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857/tail_damper.pt",
+  "records_jsonl": "outputs/stage5/stage5_capacity_localization_20260627_210858_lora128/fixed_tail_damper_depth_readout/records.jsonl",
+  "calibration": {
+    "dominant_entry_eigenvalue": 0.0,
+    "tail_decomposition_loop1": {
+      "n_tail": 7,
+      "tail_mismatch": 2.0879319463924007,
+      "after_damper": 0.4182882730154431,
+      "after_rotation": 1.9515265855386639,
+      "after_rotation_then_damper": 0.36341818354407374,
+      "damper_reduction": 0.7996638378285386,
+      "rotation_reduction": 0.06533036725139563,
+      "both_reduction": 0.8259434728358843,
+      "offdiag_before": 1.2389050783044315,
+      "offdiag_after_damper": 0.4182882730168463,
+      "entry_tail_eigenvalues": [
+        7.023685335216875,
+        5.204911898818105,
+        3.628087955845612,
+        3.2195268014585285,
+        2.8780161633825623,
+        2.274639795891706,
+        1.8580864266719939
+      ],
+      "exit_tail_diagonal": [
+        15.539635231640364,
+        17.424646434929794,
+        8.661059776708921,
+        6.6620588723685,
+        10.579849362265605,
+        4.638085517772692,
+        4.338717959333391
+      ],
+      "exit_over_entry_diag": [
+        2.2124617618793905,
+        3.347731291837324,
+        2.3872243126725015,
+        2.0692664739894124,
+        3.676091016052877,
+        2.039041753401868,
+        2.335046366548428
+      ],
+      "damper_scale": [
+        0.6722984550664833,
+        0.5465434628600714,
+        0.647222170507681,
+        0.6951712283448915,
+        0.5215631171468692,
+        0.7003045379120896,
+        0.6544134936280323
+      ]
+    },
+    "correction_class": {
+      "action": "tail_damper",
+      "reasons": [
+        "per_axis_tail_damping_removes_most_mismatch"
+      ],
+      "tail_mismatch": 2.0879319463924007,
+      "damper_reduction": 0.7996638378285386,
+      "rotation_reduction": 0.06533036725139563,
+      "both_reduction": 0.8259434728358843
+    },
+    "fixed_damper_path": "outputs/stage5/stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857/tail_damper.pt",
+    "fixed_damper_checkpoint": "outputs/stage5/stage5_depth_signal_recovery_20260625_180014_curriculum_sft/phase1/phase1_step_100.pt",
+    "fixed_damper_source_run_id": "stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857"
+  },
+  "strength_summaries": [
+    {
+      "strength": 0.0,
+      "tail_trace": {
+        "entry": {
+          "tail_trace": 26.049549387810607,
+          "ratio_vs_entry": 1.0
+        },
+        "loop1": {
+          "tail_trace": 66.81692244087517,
+          "ratio_vs_entry": 2.5649934072234233
+        },
+        "loop2": {
+          "tail_trace": 130.6778800282757,
+          "ratio_vs_entry": 5.016512112467632
+        },
+        "loop3": {
+          "tail_trace": 213.4400654996682,
+          "ratio_vs_entry": 8.193618335660863
+        },
+        "loop4": {
+          "tail_trace": 312.89091796729696,
+          "ratio_vs_entry": 12.01137544873265
+        },
+        "loop8": {
+          "tail_trace": 839.3088703266695,
+          "ratio_vs_entry": 32.21970782801365
+        }
+      },
+      "score_summary": {
+        "strength": 0.0,
+        "examples": 512,
+        "loop_results": {
+          "1": {
+            "correct": 182,
+            "total": 512,
+            "accuracy": 0.35546875
+          },
+          "2": {
+            "correct": 156,
+            "total": 512,
+            "accuracy": 0.3046875
+          },
+          "3": {
+            "correct": 159,
+            "total": 512,
+            "accuracy": 0.310546875
+          }
+        },
+        "oracle_correct": 229,
+        "oracle_accuracy": 0.447265625,
+        "oracle_gap_vs_loop1": 47,
+        "rescued_vs_loop1": 47,
+        "harmed_vs_loop1": 67,
+        "stable_correct": 115,
+        "stable_wrong": 283,
+        "pattern_counts": {
+          "000": 283,
+          "001": 20,
+          "010": 5,
+          "011": 22,
+          "100": 51,
+          "101": 2,
+          "110": 14,
+          "111": 115
+        }
+      }
+    },
+    {
+      "strength": 1.0,
+      "tail_trace": {
+        "entry": {
+          "tail_trace": 26.049549387810607,
+          "ratio_vs_entry": 1.0
+        },
+        "loop1": {
+          "tail_trace": 66.81692244087517,
+          "ratio_vs_entry": 2.5649934072234233
+        },
+        "loop2": {
+          "tail_trace": 82.21212712960735,
+          "ratio_vs_entry": 3.155990374561986
+        },
+        "loop3": {
+          "tail_trace": 88.91271887866743,
+          "ratio_vs_entry": 3.413215236662499
+        },
+        "loop4": {
+          "tail_trace": 89.16231380655951,
+          "ratio_vs_entry": 3.4227967815935165
+        },
+        "loop8": {
+          "tail_trace": 70.37545394191885,
+          "ratio_vs_entry": 2.7015996666280033
+        }
+      },
+      "score_summary": {
+        "strength": 1.0,
+        "examples": 512,
+        "loop_results": {
+          "1": {
+            "correct": 182,
+            "total": 512,
+            "accuracy": 0.35546875
+          },
+          "2": {
+            "correct": 158,
+            "total": 512,
+            "accuracy": 0.30859375
+          },
+          "3": {
+            "correct": 159,
+            "total": 512,
+            "accuracy": 0.310546875
+          }
+        },
+        "oracle_correct": 235,
+        "oracle_accuracy": 0.458984375,
+        "oracle_gap_vs_loop1": 53,
+        "rescued_vs_loop1": 53,
+        "harmed_vs_loop1": 73,
+        "stable_correct": 109,
+        "stable_wrong": 277,
+        "pattern_counts": {
+          "000": 277,
+          "001": 22,
+          "010": 4,
+          "011": 27,
+          "100": 54,
+          "101": 1,
+          "110": 18,
+          "111": 109
+        }
+      }
+    }
+  ]
+}
