@@ -162,6 +162,7 @@ def joined_examples(
                 "loop_scores": {loop: score_dict(row) for loop, row in rec.items()},
                 "loop_predicted_margins": {loop: predicted_margin(row) for loop, row in rec.items()},
                 "loop_answer_margins": {loop: answer_margin(row) for loop, row in rec.items()},
+                "loop_diagnostics": {loop: row.get("loop_diagnostics", {}) for loop, row in rec.items()},
             }
         )
     return examples

@@ -71,6 +71,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "traced_sft_depth_router_after_direct_preserve" - learned-depth continuation from a passed direct-preservation checkpoint.
 #   "traced_capability_ladder_sft" - GPU Phase 1 SFT from the latest gate-ready traced capability ladder.
 #   "forced_depth_diagnostic" - no-training ARC-Challenge loop 1/2/3 forced-depth diagnostic.
+#   "rescue_predictability_analysis" - CPU-only precursor asking whether deeper-loop rescue is predictable.
 #   "heldout_router_validation" - no-training forced-depth router transfer reality test.
 #   "latent_criticality_probe" - prompt-state criticality/Jacobian probe from a completed router-validation run.
 #   "reentry_covariance_check" - read-only covariance gate before directional re-entry adapter changes.
@@ -1292,6 +1293,24 @@ TARGETS = {
             "STAGE5_FORCED_DEPTH_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",
             "STAGE5_FORCED_DEPTH_DRIVE_BACKUP": "0",
             "STAGE5_FORCED_DEPTH_DISCONNECT": "0",
+        },
+    },
+    "rescue_predictability_analysis": {
+        "path": "colab/STAGE5_RESCUE_PREDICTABILITY_CELL.py",
+        "markers": [
+            "STAGE5_RESCUE_PREDICTABILITY_CELL_VERSION",
+            "rescue_predictability_precursor_v1",
+            "STAGE5_RESCUE_PREDICTABILITY_SWEEP_SUMMARY",
+            "eval/analyze_rescue_predictability.py",
+            "stage5_current_rescue_predictability_summary",
+            "tests/test_analyze_rescue_predictability.py",
+            "oriented AUC",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_RESCUE_PREDICTABILITY_SCORE_TARGET": "content_question_only",
+            "STAGE5_RESCUE_PREDICTABILITY_AGGREGATE": "mean",
+            "STAGE5_RESCUE_PREDICTABILITY_DISCONNECT": "1",
         },
     },
     "heldout_router_validation": {

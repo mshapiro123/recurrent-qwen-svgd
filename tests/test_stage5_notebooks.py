@@ -327,6 +327,24 @@ def test_current_bootstrap_exposes_forced_depth_diagnostic_target() -> None:
     assert 'drive.mount("/content/drive", force_remount=FORCE_DRIVE_REMOUNT)' in cell
 
 
+def test_current_bootstrap_exposes_rescue_predictability_target() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_RESCUE_PREDICTABILITY_CELL.py").read_text(encoding="utf-8")
+    analyzer = (ROOT / "eval/analyze_rescue_predictability.py").read_text(encoding="utf-8")
+
+    for payload in (text, markdown):
+        assert '"rescue_predictability_analysis"' in payload
+        assert "colab/STAGE5_RESCUE_PREDICTABILITY_CELL.py" in payload
+        assert "STAGE5_RESCUE_PREDICTABILITY_SWEEP_SUMMARY" in payload
+        assert "eval/analyze_rescue_predictability.py" in payload
+    assert "STAGE5_RESCUE_PREDICTABILITY_CELL_VERSION" in cell
+    assert "rescue_predictability_precursor_v1" in cell
+    assert "stage5_current_rescue_predictability_summary" in cell
+    assert "oriented AUC" in cell
+    assert "binary_gate_top10" in analyzer
+
+
 def test_current_bootstrap_exposes_heldout_router_validation_target() -> None:
     text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
