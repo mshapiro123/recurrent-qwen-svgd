@@ -1,0 +1,428 @@
+{
+  "kind": "stage5_reentry_recovery_training",
+  "run_id": "stage5_reentry_recovery_20260627_131940_readout",
+  "cell_version": "reentry_recovery_training_v5_fixed_tail_damper",
+  "status": "validation_sane",
+  "passed": true,
+  "child_summary": "outputs/stage5/stage5_reentry_recovery_20260627_131940_curriculum_sft/summary.json",
+  "trace_summary": "outputs/stage5/stage5_capability_ladder_trace_collection_20260623_194537/summary.json",
+  "stage3_repair": {
+    "assessment_path": "outputs/stage5/stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857/summary.json",
+    "summary_path": "outputs/stage5/stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857/summary.json",
+    "status": "fixed_tail_damper_recovery_source",
+    "recommendation": "train_with_fixed_reentry_tail_damper",
+    "reason": "Proceeding from powered tail-damper confirmation; depth selection remains open.",
+    "checkpoint": "outputs/stage5/stage5_depth_signal_recovery_20260625_180014_curriculum_sft/phase1/phase1_step_100.pt",
+    "metrics": {
+      "fixed_tail_damper_strength": 1.0
+    }
+  },
+  "checkpoint": "outputs/stage5/stage5_reentry_recovery_20260627_131940_curriculum_sft/phase1/phase1_step_100.pt",
+  "phase1_checkpoint": "outputs/stage5/stage5_reentry_recovery_20260627_131940_curriculum_sft/phase1/phase1_step_100.pt",
+  "dataset": {
+    "source_positive_sft": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537/positive_sft.jsonl",
+    "rows": 63,
+    "train_rows": 57,
+    "val_rows": 6,
+    "val_fraction": 0.1,
+    "val_min_rows": 1,
+    "split_seed": 17,
+    "depth_hint_style": "natural",
+    "train_mode_counts": {
+      "deep_narrow": 33,
+      "direct": 24
+    },
+    "val_mode_counts": {
+      "deep_narrow": 4,
+      "direct": 2
+    },
+    "train_target_loop_counts": {
+      "1": 24,
+      "2": 25,
+      "3": 8
+    },
+    "val_target_loop_counts": {
+      "1": 2,
+      "2": 3,
+      "3": 1
+    }
+  },
+  "config": {
+    "run_id": "stage5_reentry_recovery_20260627_131940_curriculum_sft",
+    "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+    "work_dir": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537",
+    "summary_json": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537/summary.json",
+    "curriculum_input_backup_dir": "/content/drive/MyDrive/recurrent-qwen-svgd/curriculum_runs",
+    "input_restore": {
+      "restored": false,
+      "work_dir": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537",
+      "summary_json": "data/curriculum/stage5_capability_ladder_trace_collection_20260623_194537/summary.json"
+    },
+    "min_positive_rows": 63,
+    "min_mode_rows": "deep_narrow=37,direct=26",
+    "min_target_loop_rows": "1=26,2=28,3=9",
+    "max_length": 512,
+    "max_loops": 3,
+    "max_steps": 100,
+    "learning_rate": 5e-06,
+    "beta": 0.1,
+    "halt_target_nll_weight": 5.0,
+    "optimizer_modules": "bridge,reentry,halt,lora",
+    "use_target_loop_control": false,
+    "use_learned_loop_control": true,
+    "loop_control_ce_weight": 4.0,
+    "reentry_rescale_mode": "entry_rms",
+    "use_reentry_adapter": true,
+    "reentry_adapter_mode": "spectral",
+    "reentry_tail_damper_path": "outputs/stage5/stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857/tail_damper.pt",
+    "reentry_tail_damper_strength": 1.0,
+    "require_target_loop_gradient": false,
+    "depth_hint_style": "natural",
+    "dtype": "bfloat16",
+    "adapter_dtype": "float32",
+    "commit_checkpoints": false
+  },
+  "fixed_tail_damper": {
+    "source_summary": "outputs/stage5/stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857/summary.json",
+    "source_run_id": "stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857",
+    "damper_path": "outputs/stage5/stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857/tail_damper.pt",
+    "resume_checkpoint": "outputs/stage5/stage5_depth_signal_recovery_20260625_180014_curriculum_sft/phase1/phase1_step_100.pt",
+    "strength": 1.0,
+    "source_checkpoint": "outputs/stage5/stage5_depth_signal_recovery_20260625_180014_curriculum_sft/phase1/phase1_step_100.pt",
+    "arc_config": "ARC-Challenge",
+    "arc_split": "train",
+    "arc_limit": 512,
+    "score_target": "option_text"
+  },
+  "phase1_val": {
+    "lora_recurrent_modules": 84.0,
+    "examples": 6.0,
+    "expected_ce": 1.249848,
+    "halting_kl": 0.547446,
+    "loop_control_ce": 0.767749,
+    "loss": 4.37559,
+    "mean_expected_loops": 1.771071,
+    "mean_halt_entropy": 0.319149,
+    "target_loop_abs_error": 0.298297,
+    "target_mean_loops": 1.833333,
+    "group/curriculum_mode/deep_narrow/examples": 4.0,
+    "group/curriculum_mode/deep_narrow/expected_ce": 0.99855,
+    "group/curriculum_mode/deep_narrow/halting_kl": 0.646212,
+    "group/curriculum_mode/deep_narrow/loop_control_ce": 0.821914,
+    "group/curriculum_mode/deep_narrow/loss": 4.350829,
+    "group/curriculum_mode/deep_narrow/mean_expected_loops": 1.98702,
+    "group/curriculum_mode/deep_narrow/mean_halt_entropy": 0.244028,
+    "group/curriculum_mode/deep_narrow/target_loop_abs_error": 0.277859,
+    "group/curriculum_mode/deep_narrow/target_mean_loops": 2.25,
+    "group/curriculum_mode/direct/examples": 2.0,
+    "group/curriculum_mode/direct/expected_ce": 1.752444,
+    "group/curriculum_mode/direct/halting_kl": 0.349915,
+    "group/curriculum_mode/direct/loop_control_ce": 0.659419,
+    "group/curriculum_mode/direct/loss": 4.425111,
+    "group/curriculum_mode/direct/mean_expected_loops": 1.339174,
+    "group/curriculum_mode/direct/mean_halt_entropy": 0.469392,
+    "group/curriculum_mode/direct/target_loop_abs_error": 0.339174,
+    "group/curriculum_mode/direct/target_mean_loops": 1.0,
+    "group/target_loop_count/1/examples": 2.0,
+    "group/target_loop_count/1/expected_ce": 1.752444,
+    "group/target_loop_count/1/halting_kl": 0.349915,
+    "group/target_loop_count/1/loop_control_ce": 0.659419,
+    "group/target_loop_count/1/loss": 4.425111,
+    "group/target_loop_count/1/mean_expected_loops": 1.339174,
+    "group/target_loop_count/1/mean_halt_entropy": 0.469392,
+    "group/target_loop_count/1/target_loop_abs_error": 0.339174,
+    "group/target_loop_count/1/target_mean_loops": 1.0,
+    "group/target_loop_count/2/examples": 3.0,
+    "group/target_loop_count/2/expected_ce": 0.948221,
+    "group/target_loop_count/2/halting_kl": 0.538327,
+    "group/target_loop_count/2/loop_control_ce": 0.121536,
+    "group/target_loop_count/2/loss": 1.488197,
+    "group/target_loop_count/2/mean_expected_loops": 1.997607,
+    "group/target_loop_count/2/mean_halt_entropy": 0.234952,
+    "group/target_loop_count/2/target_loop_abs_error": 0.022231,
+    "group/target_loop_count/2/target_mean_loops": 2.0,
+    "group/target_loop_count/3/examples": 1.0,
+    "group/target_loop_count/3/expected_ce": 1.149537,
+    "group/target_loop_count/3/halting_kl": 0.969868,
+    "group/target_loop_count/3/loop_control_ce": 2.92305,
+    "group/target_loop_count/3/loss": 12.938725,
+    "group/target_loop_count/3/mean_expected_loops": 1.955259,
+    "group/target_loop_count/3/mean_halt_entropy": 0.271253,
+    "group/target_loop_count/3/target_loop_abs_error": 1.044741,
+    "group/target_loop_count/3/target_mean_loops": 3.0
+  },
+  "phase1_val_by_mode": {
+    "deep_narrow": {
+      "examples": 4.0,
+      "expected_ce": 0.99855,
+      "halting_kl": 0.646212,
+      "loop_control_ce": 0.821914,
+      "loss": 4.350829,
+      "mean_expected_loops": 1.98702,
+      "mean_halt_entropy": 0.244028,
+      "target_loop_abs_error": 0.277859,
+      "target_mean_loops": 2.25
+    },
+    "direct": {
+      "examples": 2.0,
+      "expected_ce": 1.752444,
+      "halting_kl": 0.349915,
+      "loop_control_ce": 0.659419,
+      "loss": 4.425111,
+      "mean_expected_loops": 1.339174,
+      "mean_halt_entropy": 0.469392,
+      "target_loop_abs_error": 0.339174,
+      "target_mean_loops": 1.0
+    }
+  },
+  "phase1_val_by_target_loop": {
+    "1": {
+      "examples": 2.0,
+      "expected_ce": 1.752444,
+      "halting_kl": 0.349915,
+      "loop_control_ce": 0.659419,
+      "loss": 4.425111,
+      "mean_expected_loops": 1.339174,
+      "mean_halt_entropy": 0.469392,
+      "target_loop_abs_error": 0.339174,
+      "target_mean_loops": 1.0
+    },
+    "2": {
+      "examples": 3.0,
+      "expected_ce": 0.948221,
+      "halting_kl": 0.538327,
+      "loop_control_ce": 0.121536,
+      "loss": 1.488197,
+      "mean_expected_loops": 1.997607,
+      "mean_halt_entropy": 0.234952,
+      "target_loop_abs_error": 0.022231,
+      "target_mean_loops": 2.0
+    },
+    "3": {
+      "examples": 1.0,
+      "expected_ce": 1.149537,
+      "halting_kl": 0.969868,
+      "loop_control_ce": 2.92305,
+      "loss": 12.938725,
+      "mean_expected_loops": 1.955259,
+      "mean_halt_entropy": 0.271253,
+      "target_loop_abs_error": 1.044741,
+      "target_mean_loops": 3.0
+    }
+  },
+  "validation_checks": {
+    "status": "validation_sane",
+    "issues": [],
+    "nonfinite_metrics": [],
+    "min_mean_expected_loops": 1.05,
+    "mean_expected_loops": 1.771071,
+    "require_depth_gradient": true,
+    "depth_gradient": {
+      "available": true,
+      "direct_mean_expected_loops": 1.339174,
+      "deep_narrow_mean_expected_loops": 1.98702,
+      "required_margin": 0.25,
+      "observed": true
+    },
+    "require_target_loop_gradient": false,
+    "target_loop_gradient": {
+      "available": true,
+      "points": [
+        {
+          "target_loop_count": 1.0,
+          "mean_expected_loops": 1.339174,
+          "examples": 2.0
+        },
+        {
+          "target_loop_count": 2.0,
+          "mean_expected_loops": 1.997607,
+          "examples": 3.0
+        },
+        {
+          "target_loop_count": 3.0,
+          "mean_expected_loops": 1.955259,
+          "examples": 1.0
+        }
+      ],
+      "required_margin": 0.1,
+      "adjacent_margins": [
+        0.6584329999999998,
+        -0.04234799999999983
+      ],
+      "observed": false
+    }
+  },
+  "post_reentry_drift": {
+    "summary_path": "outputs/stage5/stage5_reentry_recovery_20260627_131940_readout/post_reentry_drift.json",
+    "records_path": "outputs/stage5/stage5_reentry_recovery_20260627_131940_readout/post_reentry_drift.jsonl"
+  },
+  "post_reentry_health_checks": {
+    "status": "reentry_health_sane",
+    "issues": [],
+    "thresholds": {
+      "min_bridge_gate_abs": 0.05,
+      "max_loop8_output_over_entry_rms": 3.0
+    },
+    "metrics": {
+      "bridge_gate": 1.0008049011230469,
+      "bridge_delta_rms": 0.1509188562631607,
+      "bridge_weight_grad_rms": 0.38931503891944885,
+      "bridge_bias_grad_rms": 0.007570483721792698,
+      "reentry_adapter_mode": "spectral",
+      "reentry_adapter_delta_rms": 0.006415508687496185,
+      "reentry_adapter_scale_grad_rms": 0.0,
+      "reentry_adapter_bias_grad_rms": 0.0,
+      "reentry_adapter_spectral_u_grad_rms": 0.15641836822032928,
+      "reentry_adapter_spectral_v_grad_rms": 0.043190859258174896,
+      "reentry_adapter_spectral_theta_grad_abs": 0.11866993457078934,
+      "reentry_adapter_gradient_live": true,
+      "loop8_output_over_entry_rms": 1.0032675663630168,
+      "loop8_output_over_input_rms": 1.0051012833913167,
+      "mean_exit_over_entry_rms": 1.0017683903376262,
+      "subspace_overlap": 0.34538424015045166
+    }
+  },
+  "fixed_tail_damper_depth_readout": {
+    "summary_path": "outputs/stage5/stage5_reentry_recovery_20260627_131940_readout/fixed_tail_damper_depth_readout/summary.json",
+    "records_path": "outputs/stage5/stage5_reentry_recovery_20260627_131940_readout/fixed_tail_damper_depth_readout/records.jsonl",
+    "strength_summaries": [
+      {
+        "strength": 0.0,
+        "tail_trace": {
+          "entry": {
+            "tail_trace": 26.08695414921531,
+            "ratio_vs_entry": 1.0
+          },
+          "loop1": {
+            "tail_trace": 68.12258700684418,
+            "ratio_vs_entry": 2.6113660727576087
+          },
+          "loop2": {
+            "tail_trace": 133.85550122154973,
+            "ratio_vs_entry": 5.131128013485472
+          },
+          "loop3": {
+            "tail_trace": 220.12722947690258,
+            "ratio_vs_entry": 8.438211230709124
+          },
+          "loop4": {
+            "tail_trace": 323.87111065556996,
+            "ratio_vs_entry": 12.415060370906197
+          },
+          "loop8": {
+            "tail_trace": 864.7926109432204,
+            "ratio_vs_entry": 33.15038643440991
+          }
+        },
+        "score_summary": {
+          "strength": 0.0,
+          "examples": 512,
+          "loop_results": {
+            "1": {
+              "correct": 179,
+              "total": 512,
+              "accuracy": 0.349609375
+            },
+            "2": {
+              "correct": 173,
+              "total": 512,
+              "accuracy": 0.337890625
+            },
+            "3": {
+              "correct": 159,
+              "total": 512,
+              "accuracy": 0.310546875
+            }
+          },
+          "oracle_correct": 228,
+          "oracle_accuracy": 0.4453125,
+          "oracle_gap_vs_loop1": 49,
+          "rescued_vs_loop1": 49,
+          "harmed_vs_loop1": 68,
+          "stable_correct": 111,
+          "stable_wrong": 284,
+          "pattern_counts": {
+            "000": 284,
+            "001": 11,
+            "010": 5,
+            "011": 33,
+            "100": 40,
+            "101": 4,
+            "110": 24,
+            "111": 111
+          }
+        }
+      },
+      {
+        "strength": 1.0,
+        "tail_trace": {
+          "entry": {
+            "tail_trace": 26.08695414921531,
+            "ratio_vs_entry": 1.0
+          },
+          "loop1": {
+            "tail_trace": 68.12258700684418,
+            "ratio_vs_entry": 2.6113660727576087
+          },
+          "loop2": {
+            "tail_trace": 84.6943084666186,
+            "ratio_vs_entry": 3.2466154531561586
+          },
+          "loop3": {
+            "tail_trace": 93.33210603298959,
+            "ratio_vs_entry": 3.5777310566476004
+          },
+          "loop4": {
+            "tail_trace": 94.59517317771882,
+            "ratio_vs_entry": 3.6261486349323087
+          },
+          "loop8": {
+            "tail_trace": 78.1278410206142,
+            "ratio_vs_entry": 2.9949008448333654
+          }
+        },
+        "score_summary": {
+          "strength": 1.0,
+          "examples": 512,
+          "loop_results": {
+            "1": {
+              "correct": 179,
+              "total": 512,
+              "accuracy": 0.349609375
+            },
+            "2": {
+              "correct": 168,
+              "total": 512,
+              "accuracy": 0.328125
+            },
+            "3": {
+              "correct": 159,
+              "total": 512,
+              "accuracy": 0.310546875
+            }
+          },
+          "oracle_correct": 233,
+          "oracle_accuracy": 0.455078125,
+          "oracle_gap_vs_loop1": 54,
+          "rescued_vs_loop1": 54,
+          "harmed_vs_loop1": 70,
+          "stable_correct": 109,
+          "stable_wrong": 279,
+          "pattern_counts": {
+            "000": 279,
+            "001": 16,
+            "010": 9,
+            "011": 29,
+            "100": 44,
+            "101": 5,
+            "110": 21,
+            "111": 109
+          }
+        }
+      }
+    ],
+    "fixed_damper_path": "outputs/stage5/stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857/tail_damper.pt",
+    "strengths": "0,1.0"
+  },
+  "next_step": "Review fixed-damper depth readout for separate rescued/harmed movement. Depth selection remains open; this run tests whether training on a damped recurrent manifold improves recovery. After review, use debiased_benchmark_suite for the broader competence check."
+}

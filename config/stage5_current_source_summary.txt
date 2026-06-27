@@ -1,1 +1,1 @@
-outputs/stage5/stage5_reentry_recovery_20260627_131940_curriculum_sft/summary.json
+outputs/stage5/stage5_reentry_recovery_20260627_131940_readout/summary.json
