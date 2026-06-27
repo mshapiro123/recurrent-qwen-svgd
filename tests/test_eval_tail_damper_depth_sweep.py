@@ -3,6 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import torch
+
+from eval.eval_tail_damper_depth_sweep import fixed_damper_components
 from eval.eval_tail_damper_depth_sweep import write_markdown
 
 
@@ -51,3 +54,17 @@ def test_tail_damper_sweep_markdown_reports_tradeoff(tmp_path: Path) -> None:
     assert "6/10" in text
     assert "rescued" in text
 
+
+def test_fixed_damper_components_normalize_covariance_dtype() -> None:
+    mean, basis, decomp = fixed_damper_components(
+        {
+            "mean": torch.zeros(4, dtype=torch.float32),
+            "basis": torch.eye(4, 2, dtype=torch.float32),
+            "damper_scale": torch.tensor([0.5, 0.25], dtype=torch.float32),
+        }
+    )
+
+    assert mean.dtype == torch.float64
+    assert basis.dtype == torch.float64
+    assert decomp["after_rotation"] == 0.0
+    assert decomp["after_rotation_then_damper"] == 0.0

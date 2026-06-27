@@ -87,6 +87,26 @@ def resolve_repo_path(path: str | Path) -> Path:
     return candidate if candidate.is_absolute() else ROOT / candidate
 
 
+def fixed_damper_components(payload: dict[str, Any]) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
+    """Normalize an existing damper artifact for diagnostic covariance math."""
+
+    mean_entry = payload["mean"].detach().double().cpu()
+    basis = payload["basis"].detach().double().cpu()
+    decomp = payload.get("tail_decomposition_loop1")
+    if not isinstance(decomp, dict):
+        decomp = {
+            "n_tail": int(payload.get("n_tail") or basis.shape[1]),
+            "tail_mismatch": 0.0,
+            "after_damper": 0.0,
+            "after_rotation": 0.0,
+            "after_rotation_then_damper": 0.0,
+            "damper_reduction": 0.0,
+            "rotation_reduction": 0.0,
+            "damper_scale": [finite_float(value) for value in payload["damper_scale"]],
+        }
+    return mean_entry, basis, decomp
+
+
 def collect_tokens(
     *,
     wrapper: Any,
@@ -380,20 +400,7 @@ def main() -> int:
     if args.fixed_damper_path:
         damper_path = resolve_repo_path(args.fixed_damper_path)
         fixed_payload = load_tail_damper(damper_path)
-        mean_entry = fixed_payload["mean"]
-        basis = fixed_payload["basis"]
-        decomp = fixed_payload.get("tail_decomposition_loop1")
-        if not isinstance(decomp, dict):
-            decomp = {
-                "n_tail": int(fixed_payload.get("n_tail") or basis.shape[1]),
-                "tail_mismatch": 0.0,
-                "after_damper": 0.0,
-                "after_rotation": 0.0,
-                "after_rotation_then_damper": 0.0,
-                "damper_reduction": 0.0,
-                "rotation_reduction": 0.0,
-                "damper_scale": [finite_float(value) for value in fixed_payload["damper_scale"]],
-            }
+        mean_entry, basis, decomp = fixed_damper_components(fixed_payload)
         calibration = {
             "dominant_entry_eigenvalue": 0.0,
             "tail_decomposition_loop1": decomp,

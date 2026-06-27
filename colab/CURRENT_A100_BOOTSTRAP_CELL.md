@@ -48,6 +48,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "reentry_spectral_repair_smoke" - same Stage 3 smoke with spectral re-entry adapter mode.
 #   "reentry_recovery_training" - gated recovery SFT after re-entry repair passes.
 #   "reentry_tail_damper_recovery_training" - recovery SFT with fixed strength-1.0 tail damper held constant.
+#   "reentry_tail_damper_recovery_readout_only" - finish fixed-damper readout for an already completed recovery SFT.
 #   "depth_signal_confirmation" - recovery SFT, then expanded hard-content benchmark with open hard fallback.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
 #   "capability_ladder_7b_mcq_probe" - high-memory Qwen 0.5B/1.5B/3B/7B ARC MCQ scoring for depth-4 data.
@@ -588,6 +589,37 @@ TARGETS = {
             "STAGE5_REENTRY_RECOVERY_REENTRY_RESCALE_MODE": "entry_rms",
             "STAGE5_REENTRY_RECOVERY_REENTRY_ADAPTER_MODE": "spectral",
             "STAGE5_REENTRY_RECOVERY_REQUIRE_TARGET_LOOP_GRADIENT": "0",
+            "STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_READOUT_STRENGTHS": "0,1.0",
+            "STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_READOUT_LIMIT": "512",
+            "STAGE5_REENTRY_RECOVERY_DISCONNECT": "0",
+        },
+    },
+    "reentry_tail_damper_recovery_readout_only": {
+        "path": "colab/STAGE5_REENTRY_RECOVERY_TRAINING_CELL.py",
+        "markers": [
+            "STAGE5_REENTRY_RECOVERY_CELL_VERSION",
+            "reentry_recovery_training_v5_fixed_tail_damper",
+            "STAGE5_REENTRY_RECOVERY_READOUT_ONLY",
+            "readout_only=true",
+            "STAGE5_REENTRY_RECOVERY_CHILD_SUMMARY",
+            "fixed_tail_damper_depth_readout",
+            "rescued_vs_loop1",
+            "harmed_vs_loop1",
+            "eval/eval_tail_damper_depth_sweep.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_REENTRY_RECOVERY_READOUT_ONLY": "1",
+            "STAGE5_REENTRY_RECOVERY_CHILD_SUMMARY": (
+                "outputs/stage5/stage5_reentry_recovery_20260627_131940_curriculum_sft/summary.json"
+            ),
+            "STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_SOURCE_SUMMARY": (
+                "outputs/stage5/"
+                "stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857/"
+                "summary.json"
+            ),
+            "STAGE5_REENTRY_RECOVERY_REENTRY_TAIL_DAMPER_STRENGTH": "1.0",
+            "STAGE5_REENTRY_RECOVERY_RUN_ID": "stage5_reentry_recovery_20260627_131940_readout",
             "STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_READOUT_STRENGTHS": "0,1.0",
             "STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_READOUT_LIMIT": "512",
             "STAGE5_REENTRY_RECOVERY_DISCONNECT": "0",

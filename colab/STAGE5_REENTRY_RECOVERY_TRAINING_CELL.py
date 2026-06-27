@@ -360,6 +360,17 @@ def load_tail_damper_source_summary() -> dict[str, Any] | None:
     return info
 
 
+def readout_only_child_summary_path() -> Path:
+    explicit = os.environ.get("STAGE5_REENTRY_RECOVERY_CHILD_SUMMARY", "").strip()
+    if explicit:
+        path = resolve_repo_path(explicit)
+    else:
+        path = current_source_summary_path()
+    if not path.exists():
+        raise FileNotFoundError(f"Missing readout-only child summary: {path}")
+    return path
+
+
 def load_required_repair_assessment() -> dict[str, Any]:
     from colab.reentry_recovery_config import repair_assessment_recovery_block_reason
 
@@ -965,6 +976,7 @@ def main() -> None:
         ]
     )
     fixed_tail_damper = load_tail_damper_source_summary()
+    readout_only = env_flag("STAGE5_REENTRY_RECOVERY_READOUT_ONLY", "0")
     if fixed_tail_damper is None:
         repair = load_required_repair_assessment()
     else:
@@ -979,12 +991,18 @@ def main() -> None:
         }
     trace_summary = resolve_trace_collection_summary()
     env = derive_sft_env(trace_summary, repair, fixed_tail_damper=fixed_tail_damper)
-    run([sys.executable, "colab/run_stage5_curriculum_sft.py"], env=env)
-    child_summary = current_source_summary_path()
+    if readout_only:
+        print("readout_only=true; skipping curriculum SFT and using existing child summary.", flush=True)
+        child_summary = readout_only_child_summary_path()
+    else:
+        run([sys.executable, "colab/run_stage5_curriculum_sft.py"], env=env)
+        child_summary = current_source_summary_path()
     child_payload = read_json(child_summary)
     checkpoint = str(child_payload.get("phase1_checkpoint") or child_payload.get("checkpoint") or "")
     if not checkpoint:
         raise RuntimeError(f"Child Stage 4 curriculum summary is missing checkpoint: {child_summary}")
+    restored_checkpoint = restore_checkpoint(checkpoint, run_id=run_id_from_rel_path(checkpoint))
+    checkpoint = path_for_cli(restored_checkpoint)
     wrapper_run_id = env["STAGE5_REENTRY_RECOVERY_WRAPPER_RUN_ID"]
     wrapper_run_dir = ROOT / "outputs" / "stage5" / wrapper_run_id
     wrapper_run_dir.mkdir(parents=True, exist_ok=True)

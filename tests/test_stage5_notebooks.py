@@ -1743,6 +1743,21 @@ def test_reentry_tail_damper_recovery_training_target_is_bootstrapped() -> None:
     assert "eval/eval_tail_damper_depth_sweep.py" in cell
 
 
+def test_reentry_tail_damper_recovery_readout_only_target_is_bootstrapped() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_REENTRY_RECOVERY_TRAINING_CELL.py").read_text(encoding="utf-8")
+
+    assert "reentry_tail_damper_recovery_readout_only" in bootstrap
+    assert "reentry_tail_damper_recovery_readout_only" in bootstrap_md
+    assert "STAGE5_REENTRY_RECOVERY_READOUT_ONLY" in bootstrap
+    assert "stage5_reentry_recovery_20260627_131940_curriculum_sft/summary.json" in bootstrap
+    assert "stage5_reentry_recovery_20260627_131940_readout" in bootstrap
+    assert "readout_only=true" in cell
+    assert "readout_only_child_summary_path" in cell
+    assert "skipping curriculum SFT" in cell
+
+
 def test_reentry_drift_and_norm_targets_run_self_assessment() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
