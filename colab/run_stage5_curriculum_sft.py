@@ -92,6 +92,9 @@ USE_LEARNED_LOOP_CONTROL = os.environ.get(
     "0",
 ).strip().lower() in {"1", "true", "yes", "y"}
 LOOP_CONTROL_CE_WEIGHT = float(os.environ.get("STAGE5_CURRICULUM_LOOP_CONTROL_CE_WEIGHT", "0.0"))
+LORA_RANK = int(os.environ.get("STAGE5_CURRICULUM_LORA_RANK", "8"))
+LORA_ALPHA = int(os.environ.get("STAGE5_CURRICULUM_LORA_ALPHA", str(max(1, 2 * LORA_RANK))))
+LORA_DROPOUT = float(os.environ.get("STAGE5_CURRICULUM_LORA_DROPOUT", "0.0"))
 REENTRY_RESCALE_MODE = os.environ.get("STAGE5_CURRICULUM_REENTRY_RESCALE_MODE", "none").strip().lower()
 if REENTRY_RESCALE_MODE not in {"none", "entry_rms"}:
     raise ValueError("STAGE5_CURRICULUM_REENTRY_RESCALE_MODE must be one of: none, entry_rms")
@@ -569,7 +572,7 @@ def phase1_config(train_output_dir: Path, resume_from: Path | None) -> dict[str,
         "log_every": 25,
         "train_on_prompt": False,
         "output_dir": path_for_cli(train_output_dir),
-        "lora": {"enabled": True, "rank": 8, "alpha": 16, "dropout": 0.0},
+        "lora": {"enabled": True, "rank": LORA_RANK, "alpha": LORA_ALPHA, "dropout": LORA_DROPOUT},
     }
     if REENTRY_TAIL_DAMPER_PATH:
         cfg["reentry_tail_damper_path"] = REENTRY_TAIL_DAMPER_PATH

@@ -27,6 +27,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "reentry_spectral_repair_smoke" - same Stage 3 smoke with spectral re-entry adapter mode.
 #   "reentry_recovery_training" - gated recovery SFT after re-entry repair passes.
 #   "reentry_tail_damper_recovery_training" - recovery SFT with fixed strength-1.0 tail damper held constant.
+#   "reentry_tail_damper_capacity_lora32_training" - same fixed-damper recovery arm with recurrent LoRA rank 32.
 #   "reentry_tail_damper_recovery_readout_only" - finish fixed-damper readout for an already completed recovery SFT.
 #   "depth_signal_confirmation" - recovery SFT, then expanded hard-content benchmark with open hard fallback.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
@@ -51,6 +52,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "traced_capability_ladder_sft" - GPU Phase 1 SFT from the latest gate-ready traced capability ladder.
 #   "forced_depth_diagnostic" - no-training ARC-Challenge loop 1/2/3 forced-depth diagnostic.
 #   "rescue_predictability_analysis" - CPU-only precursor asking whether deeper-loop rescue is predictable.
+#   "rescue_selector_transfer" - CPU-only held-out rescue selector trade curve with spectral/probe diagnostics.
 #   "heldout_router_validation" - no-training forced-depth router transfer reality test.
 #   "latent_criticality_probe" - prompt-state criticality/Jacobian probe from a completed router-validation run.
 #   "reentry_covariance_check" - read-only covariance gate before directional re-entry adapter changes.
@@ -566,6 +568,43 @@ TARGETS = {
             "STAGE5_REENTRY_RECOVERY_STEPS": "100",
             "STAGE5_REENTRY_RECOVERY_LR": "5e-6",
             "STAGE5_REENTRY_RECOVERY_OPTIMIZER_MODULES": "bridge,reentry,halt,lora",
+            "STAGE5_REENTRY_RECOVERY_REENTRY_RESCALE_MODE": "entry_rms",
+            "STAGE5_REENTRY_RECOVERY_REENTRY_ADAPTER_MODE": "spectral",
+            "STAGE5_REENTRY_RECOVERY_REQUIRE_TARGET_LOOP_GRADIENT": "0",
+            "STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_READOUT_STRENGTHS": "0,1.0",
+            "STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_READOUT_LIMIT": "512",
+            "STAGE5_REENTRY_RECOVERY_DISCONNECT": "0",
+        },
+    },
+    "reentry_tail_damper_capacity_lora32_training": {
+        "path": "colab/STAGE5_REENTRY_RECOVERY_TRAINING_CELL.py",
+        "markers": [
+            "STAGE5_REENTRY_RECOVERY_CELL_VERSION",
+            "reentry_recovery_training_v5_fixed_tail_damper",
+            "STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_SOURCE_SUMMARY",
+            "STAGE5_CURRICULUM_REENTRY_TAIL_DAMPER_PATH",
+            "STAGE5_CURRICULUM_REENTRY_TAIL_DAMPER_STRENGTH",
+            "STAGE5_REENTRY_RECOVERY_LORA_RANK",
+            "STAGE5_CURRICULUM_LORA_RANK",
+            "fixed_tail_damper_depth_readout",
+            "rescued_vs_loop1",
+            "harmed_vs_loop1",
+            "colab/run_stage5_curriculum_sft.py",
+            "tests/test_stage5_curriculum_sft.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_SOURCE_SUMMARY": (
+                "outputs/stage5/"
+                "stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857/"
+                "summary.json"
+            ),
+            "STAGE5_REENTRY_RECOVERY_REENTRY_TAIL_DAMPER_STRENGTH": "1.0",
+            "STAGE5_REENTRY_RECOVERY_STEPS": "100",
+            "STAGE5_REENTRY_RECOVERY_LR": "5e-6",
+            "STAGE5_REENTRY_RECOVERY_OPTIMIZER_MODULES": "bridge,reentry,halt,lora",
+            "STAGE5_REENTRY_RECOVERY_LORA_RANK": "32",
+            "STAGE5_REENTRY_RECOVERY_LORA_ALPHA": "64",
             "STAGE5_REENTRY_RECOVERY_REENTRY_RESCALE_MODE": "entry_rms",
             "STAGE5_REENTRY_RECOVERY_REENTRY_ADAPTER_MODE": "spectral",
             "STAGE5_REENTRY_RECOVERY_REQUIRE_TARGET_LOOP_GRADIENT": "0",
@@ -1290,6 +1329,25 @@ TARGETS = {
             "STAGE5_RESCUE_PREDICTABILITY_SCORE_TARGET": "content_question_only",
             "STAGE5_RESCUE_PREDICTABILITY_AGGREGATE": "mean",
             "STAGE5_RESCUE_PREDICTABILITY_DISCONNECT": "1",
+        },
+    },
+    "rescue_selector_transfer": {
+        "path": "colab/STAGE5_RESCUE_SELECTOR_TRANSFER_CELL.py",
+        "markers": [
+            "STAGE5_RESCUE_SELECTOR_TRANSFER_CELL_VERSION",
+            "rescue_selector_transfer_v1",
+            "STAGE5_RESCUE_SELECTOR_DISCOVERY_SWEEP_SUMMARY",
+            "STAGE5_RESCUE_SELECTOR_HELDOUT_SWEEP_SUMMARY",
+            "eval/evaluate_rescue_selector_transfer.py",
+            "transferred_curve_summary",
+            "stage5_current_rescue_selector_transfer_summary",
+            "tests/test_evaluate_rescue_selector_transfer.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_RESCUE_SELECTOR_SCORE_TARGET": "content_question_only",
+            "STAGE5_RESCUE_SELECTOR_AGGREGATE": "mean",
+            "STAGE5_RESCUE_SELECTOR_TRANSFER_DISCONNECT": "1",
         },
     },
     "heldout_router_validation": {

@@ -345,6 +345,28 @@ def test_current_bootstrap_exposes_rescue_predictability_target() -> None:
     assert "binary_gate_top10" in analyzer
 
 
+def test_current_bootstrap_exposes_rescue_selector_transfer_target() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_RESCUE_SELECTOR_TRANSFER_CELL.py").read_text(encoding="utf-8")
+    evaluator = (ROOT / "eval/evaluate_rescue_selector_transfer.py").read_text(encoding="utf-8")
+
+    for payload in (text, markdown):
+        assert '"rescue_selector_transfer"' in payload
+        assert "colab/STAGE5_RESCUE_SELECTOR_TRANSFER_CELL.py" in payload
+        assert "STAGE5_RESCUE_SELECTOR_DISCOVERY_SWEEP_SUMMARY" in payload
+        assert "STAGE5_RESCUE_SELECTOR_HELDOUT_SWEEP_SUMMARY" in payload
+        assert "eval/evaluate_rescue_selector_transfer.py" in payload
+        assert "stage5_current_rescue_selector_transfer_summary" in payload
+    assert "STAGE5_RESCUE_SELECTOR_TRANSFER_CELL_VERSION" in cell
+    assert "rescue_selector_transfer_v1" in cell
+    assert "transferred_curve_summary" in cell
+    assert "runtime.unassign" in cell
+    assert "spectral_localization" in evaluator
+    assert "diverse_probe_detectability" in evaluator
+    assert "regularized_whitened_rescue_score" in evaluator
+
+
 def test_current_bootstrap_exposes_heldout_router_validation_target() -> None:
     text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
@@ -1713,6 +1735,9 @@ def test_reentry_recovery_training_target_is_bootstrapped() -> None:
     assert "STAGE5_REENTRY_RECOVERY_LAYER_SPLIT" in cell
     assert "STAGE5_CURRICULUM_USE_LEARNED_LOOP_CONTROL" in cell
     assert "STAGE5_CURRICULUM_OPTIMIZER_MODULES" in cell
+    assert "STAGE5_CURRICULUM_LORA_RANK" in cell
+    assert "STAGE5_REENTRY_RECOVERY_LORA_RANK" in cell
+    assert "lora_rank" in cell
     assert "STAGE5_CURRICULUM_REENTRY_RESCALE_MODE" in cell
     assert "STAGE5_REENTRY_RECOVERY_REENTRY_RESCALE_MODE" in cell
     assert '"entry_rms"' in cell
@@ -1749,10 +1774,14 @@ def test_reentry_tail_damper_recovery_training_target_is_bootstrapped() -> None:
 
     assert "reentry_tail_damper_recovery_training" in bootstrap
     assert "reentry_tail_damper_recovery_training" in bootstrap_md
+    assert "reentry_tail_damper_capacity_lora32_training" in bootstrap
+    assert "reentry_tail_damper_capacity_lora32_training" in bootstrap_md
     assert "STAGE5_REENTRY_RECOVERY_TAIL_DAMPER_SOURCE_SUMMARY" in bootstrap
     assert "stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857" in bootstrap
     assert "STAGE5_REENTRY_RECOVERY_REENTRY_TAIL_DAMPER_STRENGTH" in bootstrap
     assert '"STAGE5_REENTRY_RECOVERY_REENTRY_TAIL_DAMPER_STRENGTH": "1.0"' in bootstrap
+    assert '"STAGE5_REENTRY_RECOVERY_LORA_RANK": "32"' in bootstrap
+    assert '"STAGE5_REENTRY_RECOVERY_LORA_ALPHA": "64"' in bootstrap
     assert "STAGE5_CURRICULUM_REENTRY_TAIL_DAMPER_PATH" in cell
     assert "STAGE5_CURRICULUM_REENTRY_TAIL_DAMPER_STRENGTH" in cell
     assert "fixed_tail_damper_depth_readout" in cell

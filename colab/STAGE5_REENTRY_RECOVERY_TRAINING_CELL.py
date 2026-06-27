@@ -528,6 +528,18 @@ def derive_sft_env(
                 "STAGE5_REENTRY_RECOVERY_OPTIMIZER_MODULES",
                 "bridge,reentry,halt,lora",
             ),
+            "STAGE5_CURRICULUM_LORA_RANK": os.environ.get(
+                "STAGE5_REENTRY_RECOVERY_LORA_RANK",
+                os.environ.get("STAGE5_CURRICULUM_LORA_RANK", "8"),
+            ),
+            "STAGE5_CURRICULUM_LORA_ALPHA": os.environ.get(
+                "STAGE5_REENTRY_RECOVERY_LORA_ALPHA",
+                os.environ.get("STAGE5_CURRICULUM_LORA_ALPHA", "16"),
+            ),
+            "STAGE5_CURRICULUM_LORA_DROPOUT": os.environ.get(
+                "STAGE5_REENTRY_RECOVERY_LORA_DROPOUT",
+                os.environ.get("STAGE5_CURRICULUM_LORA_DROPOUT", "0.0"),
+            ),
             "STAGE5_CURRICULUM_REENTRY_RESCALE_MODE": os.environ.get(
                 "STAGE5_REENTRY_RECOVERY_REENTRY_RESCALE_MODE",
                 "entry_rms",
@@ -580,6 +592,9 @@ def derive_sft_env(
                 "run_id": run_id,
                 "child_run_id": child_run_id,
                 "optimizer_modules": env["STAGE5_CURRICULUM_OPTIMIZER_MODULES"],
+                "lora_rank": env["STAGE5_CURRICULUM_LORA_RANK"],
+                "lora_alpha": env["STAGE5_CURRICULUM_LORA_ALPHA"],
+                "lora_dropout": env["STAGE5_CURRICULUM_LORA_DROPOUT"],
                 "layer_split": env["STAGE5_CURRICULUM_LAYER_SPLIT"],
                 "reentry_rescale_mode": env["STAGE5_CURRICULUM_REENTRY_RESCALE_MODE"],
                 "reentry_adapter_mode": env["STAGE5_CURRICULUM_REENTRY_ADAPTER_MODE"],

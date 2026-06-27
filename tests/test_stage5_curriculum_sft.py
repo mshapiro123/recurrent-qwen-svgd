@@ -46,6 +46,16 @@ def test_phase1_config_threads_reentry_rescale_mode(monkeypatch, tmp_path) -> No
     assert cfg["reentry_tail_damper_strength"] == 1.0
 
 
+def test_phase1_config_threads_lora_capacity_overrides(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(runner, "LORA_RANK", 32)
+    monkeypatch.setattr(runner, "LORA_ALPHA", 64)
+    monkeypatch.setattr(runner, "LORA_DROPOUT", 0.05)
+
+    cfg = runner.phase1_config(tmp_path / "phase1", resume_from=None)
+
+    assert cfg["lora"] == {"enabled": True, "rank": 32, "alpha": 64, "dropout": 0.05}
+
+
 def test_split_train_val_is_deterministic_and_held_out() -> None:
     rows = [positive_row(index) for index in range(10)]
 
