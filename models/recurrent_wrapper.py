@@ -400,6 +400,7 @@ class RecurrentQwenForCausalLM(nn.Module):
 
         if num_trajectories > 1 and not inputs_are_trajectories:
             hidden_states = repeat_for_trajectories(hidden_states, num_trajectories)
+            prelude_hidden_states = hidden_states
             if particle_init_noise:
                 hidden_states = hidden_states + float(particle_init_noise) * torch.randn_like(hidden_states)
             flat_attention_mask = repeat_for_trajectories(attention_mask, num_trajectories)
@@ -414,8 +415,10 @@ class RecurrentQwenForCausalLM(nn.Module):
                 output_attentions,
             )
             flat_position_embeddings = self._rotary_embeddings(hidden_states, flat_position_ids)
-        elif inputs_are_trajectories and particle_init_noise:
-            hidden_states = hidden_states + float(particle_init_noise) * torch.randn_like(hidden_states)
+        else:
+            prelude_hidden_states = hidden_states
+            if inputs_are_trajectories and particle_init_noise:
+                hidden_states = hidden_states + float(particle_init_noise) * torch.randn_like(hidden_states)
 
         if use_learned_loop_control:
             control_pooled = masked_mean(hidden_states, flat_attention_mask)
@@ -438,7 +441,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         for loop_idx in range(max_loops):
             loop_input = recurrent_state
             if loop_idx > 0:
-                loop_input = self.bridge(loop_input)
+                loop_input = self.bridge(loop_input, prelude_hidden=prelude_hidden_states)
                 if reentry_reference_rms is not None:
                     loop_input = self._rescale_to_sequence_rms(
                         loop_input,

@@ -64,6 +64,22 @@ class TinyCausalLM(nn.Module):
         return type("Output", (), {"logits": logits})()
 
 
+class RecordingBridge(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.calls = []
+
+    def forward(self, hidden_states, prelude_hidden=None):
+        self.calls.append(
+            {
+                "hidden_shape": tuple(hidden_states.shape),
+                "prelude_shape": None if prelude_hidden is None else tuple(prelude_hidden.shape),
+                "prelude_is_none": prelude_hidden is None,
+            }
+        )
+        return hidden_states
+
+
 def test_wrapper_identity_matches_tiny_base_model():
     torch.manual_seed(0)
     model = TinyCausalLM().eval()
@@ -82,6 +98,50 @@ def test_wrapper_identity_matches_tiny_base_model():
         ).logits
 
     assert torch.allclose(original, wrapped)
+
+
+def test_recurrent_reentry_bridge_receives_prelude_hidden_after_first_loop():
+    torch.manual_seed(0)
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    bridge = RecordingBridge()
+    wrapper.bridge = bridge
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+
+    with torch.no_grad():
+        wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=3,
+            use_cache=False,
+            return_dict=True,
+        )
+
+    assert len(bridge.calls) == 2
+    assert all(call["prelude_shape"] == call["hidden_shape"] for call in bridge.calls)
+    assert not any(call["prelude_is_none"] for call in bridge.calls)
+
+
+def test_recurrent_loop1_does_not_call_reentry_bridge():
+    torch.manual_seed(0)
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    bridge = RecordingBridge()
+    wrapper.bridge = bridge
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+
+    with torch.no_grad():
+        wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=1,
+            use_cache=False,
+            return_dict=True,
+        )
+
+    assert bridge.calls == []
 
 
 def test_reentry_rescale_mode_preserves_loop1_identity_on_tiny_model():

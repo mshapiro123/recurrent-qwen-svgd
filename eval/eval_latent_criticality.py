@@ -164,12 +164,13 @@ def logit_lens_signatures(
 def next_recurrent_map(
     wrapper: RecurrentQwenForCausalLM,
     state: torch.Tensor,
+    prelude_state: torch.Tensor,
     causal_mask: torch.Tensor | None,
     position_ids: torch.Tensor,
     cache_position: torch.Tensor,
     position_embeddings: Any,
 ) -> torch.Tensor:
-    loop_input = wrapper.bridge(state)
+    loop_input = wrapper.bridge(state, prelude_hidden=prelude_state)
     return run_recurrent_block(
         wrapper,
         loop_input,
@@ -183,6 +184,7 @@ def next_recurrent_map(
 def finite_difference_jacobian_signatures(
     wrapper: RecurrentQwenForCausalLM,
     state: torch.Tensor,
+    prelude_state: torch.Tensor,
     attention_mask: torch.Tensor,
     causal_mask: torch.Tensor | None,
     position_ids: torch.Tensor,
@@ -196,7 +198,15 @@ def finite_difference_jacobian_signatures(
         return {"jacobian_gain_mean": None, "jacobian_gain_max": None}
     gains: list[float] = []
     with torch.no_grad():
-        base_out = next_recurrent_map(wrapper, state, causal_mask, position_ids, cache_position, position_embeddings)
+        base_out = next_recurrent_map(
+            wrapper,
+            state,
+            prelude_state,
+            causal_mask,
+            position_ids,
+            cache_position,
+            position_embeddings,
+        )
         state_rms = masked_rms(state, attention_mask).clamp_min(1e-8)
         for _ in range(random_probes):
             direction = torch.randn_like(state)
@@ -205,6 +215,7 @@ def finite_difference_jacobian_signatures(
             perturbed_out = next_recurrent_map(
                 wrapper,
                 state + perturb,
+                prelude_state,
                 causal_mask,
                 position_ids,
                 cache_position,
@@ -332,10 +343,15 @@ def recurrent_depth_states(
         encoded["attention_mask"],
     )
     states: list[torch.Tensor] = []
+    prelude_state = hidden
     recurrent_state = hidden
     with torch.no_grad():
         for loop_idx in range(max_loops):
-            loop_input = recurrent_state if loop_idx == 0 else wrapper.bridge(recurrent_state)
+            loop_input = (
+                recurrent_state
+                if loop_idx == 0
+                else wrapper.bridge(recurrent_state, prelude_hidden=prelude_state)
+            )
             recurrent_state = run_recurrent_block(
                 wrapper,
                 loop_input,
@@ -347,6 +363,7 @@ def recurrent_depth_states(
             states.append(recurrent_state)
     return {
         "states": states,
+        "prelude_state": prelude_state,
         "attention_mask": attention_mask,
         "causal_mask": causal_mask,
         "position_ids": position_ids,
@@ -416,6 +433,7 @@ def feature_rows_for_examples(
                     finite_difference_jacobian_signatures(
                         wrapper,
                         state,
+                        state_bundle["prelude_state"],
                         attention_mask,
                         state_bundle["causal_mask"],
                         state_bundle["position_ids"],

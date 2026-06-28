@@ -20,8 +20,15 @@ def _as_bool(value: Any, *, default: bool = False) -> bool:
 def _bridge_identity_max_abs_diff(wrapper: torch.nn.Module) -> float:
     bridge = wrapper.bridge
     weight = bridge.proj.weight.detach().float().cpu()
-    eye = torch.eye(weight.shape[0], dtype=weight.dtype)
-    return float((weight - eye).abs().max().item())
+    hidden = weight.shape[0]
+    if weight.shape[1] == hidden:
+        target = torch.eye(hidden, dtype=weight.dtype)
+    elif weight.shape[1] == 2 * hidden:
+        target = torch.zeros_like(weight)
+        target[:, hidden:] = torch.eye(hidden, dtype=weight.dtype)
+    else:
+        raise ValueError(f"Unsupported bridge projection shape: {tuple(weight.shape)}")
+    return float((weight - target).abs().max().item())
 
 
 def apply_reentry_repair_controls(wrapper: torch.nn.Module, cfg: dict[str, Any]) -> dict[str, Any]:

@@ -51,11 +51,28 @@ def load_trainable_checkpoint(
     current = wrapper.state_dict()
     compatible = {}
     skipped = {}
+    upgraded = {}
     for name, tensor in state.items():
         if name not in current:
             skipped[name] = "missing"
             continue
         if current[name].shape != tensor.shape:
+            if (
+                name == "bridge.proj.weight"
+                and tensor.dim() == 2
+                and current[name].dim() == 2
+                and current[name].shape[0] == tensor.shape[0]
+                and current[name].shape[1] == 2 * tensor.shape[1]
+            ):
+                upgraded_tensor = current[name].detach().clone()
+                upgraded_tensor[:, : tensor.shape[1]].zero_()
+                upgraded_tensor[:, tensor.shape[1] :] = tensor.to(
+                    device=upgraded_tensor.device,
+                    dtype=upgraded_tensor.dtype,
+                )
+                compatible[name] = upgraded_tensor.to(device=current[name].device, dtype=current[name].dtype)
+                upgraded[name] = f"warm_start_state_half {tuple(tensor.shape)} -> {tuple(current[name].shape)}"
+                continue
             skipped[name] = f"shape {tuple(tensor.shape)} != {tuple(current[name].shape)}"
             continue
         compatible[name] = tensor.to(device=current[name].device, dtype=current[name].dtype)
@@ -69,6 +86,7 @@ def load_trainable_checkpoint(
     return {
         "checkpoint": checkpoint,
         "loaded_keys": sorted(compatible),
+        "upgraded": upgraded,
         "skipped": skipped,
         "missing": missing,
         "unexpected": unexpected,

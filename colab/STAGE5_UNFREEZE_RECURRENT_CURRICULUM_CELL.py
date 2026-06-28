@@ -526,6 +526,8 @@ try:
             "-m",
             "pytest",
             "-q",
+            "tests/test_bridge.py",
+            "tests/test_recurrent_wrapper_tiny.py",
             "tests/test_lora.py",
             "tests/test_muon.py",
             "tests/test_train_unfrozen_recurrent.py",

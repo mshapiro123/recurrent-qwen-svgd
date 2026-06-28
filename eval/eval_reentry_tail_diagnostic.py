@@ -311,7 +311,11 @@ def collect_loop_tokens(wrapper: Any, tokenizer: Any, rows: list[PromptRow], arg
             loop_rms: dict[str, float] = {}
             for loop_idx in range(max_loop):
                 loop_number = loop_idx + 1
-                loop_input = recurrent_state if loop_idx == 0 else wrapper.bridge(recurrent_state)
+                loop_input = (
+                    recurrent_state
+                    if loop_idx == 0
+                    else wrapper.bridge(recurrent_state, prelude_hidden=entry_state)
+                )
                 if loop_idx > 0 and args.reentry_rescale_mode == "entry_rms":
                     current_rms = rms(loop_input, mask).clamp_min(1e-8)
                     loop_input = loop_input * (entry_rms / current_rms).to(dtype=loop_input.dtype)
@@ -393,7 +397,11 @@ def per_record_tail_metrics(
             entry_rms = rms(entry_state, mask).clamp_min(1e-8)
             for loop_idx in range(max_loop):
                 loop_number = loop_idx + 1
-                loop_input = recurrent_state if loop_idx == 0 else wrapper.bridge(recurrent_state)
+                loop_input = (
+                    recurrent_state
+                    if loop_idx == 0
+                    else wrapper.bridge(recurrent_state, prelude_hidden=entry_state)
+                )
                 if loop_idx > 0 and args.reentry_rescale_mode == "entry_rms":
                     current_rms = rms(loop_input, mask).clamp_min(1e-8)
                     loop_input = loop_input * (entry_rms / current_rms).to(dtype=loop_input.dtype)

@@ -1,8 +1,10 @@
 import torch
+from torch import nn
 
 from eval.eval_reentry_drift import bridge_gradient_liveness
 from models.bridge import IdentityGatedBridge
 from models.reentry_adapter import ReentryAffineAdapter, SpectralLowRankCorrection
+from training.checkpointing import load_trainable_checkpoint
 from training.reentry_repair import apply_reentry_repair_controls
 
 
@@ -19,6 +21,29 @@ def test_identity_gated_bridge_does_not_double_hidden_state():
     out = bridge(hidden)
     assert torch.allclose(out, hidden)
     assert not torch.allclose(out, hidden + hidden)
+
+
+def test_identity_gated_bridge_is_two_width_warm_started_to_autonomous_path():
+    bridge = IdentityGatedBridge(hidden_size=4)
+    hidden = torch.randn(1, 3, 4)
+    prelude = torch.randn(1, 3, 4)
+
+    assert bridge.proj.in_features == 8
+    assert torch.equal(bridge.proj.weight[:, :4], torch.zeros_like(bridge.proj.weight[:, :4]))
+    assert torch.equal(bridge.proj.weight[:, 4:], torch.eye(4))
+    assert torch.allclose(bridge(hidden, prelude_hidden=prelude), hidden)
+
+
+def test_identity_gated_bridge_prelude_path_is_functional_when_trained():
+    bridge = IdentityGatedBridge(hidden_size=4)
+    hidden = torch.zeros(1, 3, 4)
+    prelude = torch.randn(1, 3, 4)
+    with torch.no_grad():
+        bridge.proj.weight[:, :4] = torch.eye(4)
+
+    out = bridge(hidden, prelude_hidden=prelude)
+
+    assert not torch.allclose(out, hidden)
 
 
 def test_identity_gated_bridge_default_is_gradient_live():
@@ -52,6 +77,32 @@ def test_reentry_repair_controls_can_revive_dead_identity_bridge():
     assert info["bridge_identity_max_abs_diff_after"] == 0.0
     assert after["weight_grad_rms"] > 0.0
     assert after["bias_grad_rms"] > 0.0
+
+
+def test_old_autonomous_bridge_checkpoint_upgrades_into_state_half(tmp_path):
+    class Wrapper(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.bridge = IdentityGatedBridge(hidden_size=4)
+
+    wrapper = Wrapper()
+    old_weight = torch.randn(4, 4)
+    path = tmp_path / "old_bridge.pt"
+    torch.save(
+        {
+            "phase": "test",
+            "step": 0,
+            "config": {},
+            "trainable_state_dict": {"bridge.proj.weight": old_weight},
+        },
+        path,
+    )
+
+    info = load_trainable_checkpoint(wrapper, path)
+
+    assert "bridge.proj.weight" in info["upgraded"]
+    assert torch.allclose(wrapper.bridge.proj.weight[:, :4], torch.zeros(4, 4))
+    assert torch.allclose(wrapper.bridge.proj.weight[:, 4:], old_weight)
 
 
 def test_reentry_affine_adapter_preserves_hidden_state_at_init():

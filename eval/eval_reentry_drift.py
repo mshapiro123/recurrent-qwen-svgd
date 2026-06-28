@@ -124,14 +124,29 @@ def subspace_overlap(
 def bridge_stats(bridge: IdentityGatedBridge, sample_state: torch.Tensor) -> dict[str, Any]:
     weight = bridge.proj.weight.detach().float().cpu()
     bias = bridge.proj.bias.detach().float().cpu()
+    hidden_size = int(getattr(bridge, "hidden_size", weight.shape[0]))
     eye = torch.eye(weight.shape[0], dtype=weight.dtype)
+    if weight.shape[1] == 2 * hidden_size:
+        prelude_weight = weight[:, :hidden_size]
+        state_weight = weight[:, hidden_size:]
+        prelude_max_abs = finite_float(prelude_weight.abs().max())
+        state_identity_max_abs = finite_float((state_weight - eye).abs().max())
+        identity_max_abs = state_identity_max_abs
+    else:
+        prelude_max_abs = 0.0
+        state_identity_max_abs = finite_float((weight - eye).abs().max())
+        identity_max_abs = state_identity_max_abs
     with torch.no_grad():
-        bridge_out = bridge(sample_state.detach())
+        autonomous_out = bridge(sample_state.detach())
+        reinjected_out = bridge(sample_state.detach(), prelude_hidden=sample_state.detach())
     return {
         "bridge_gate": finite_float(bridge.bridge_gate),
-        "proj_identity_max_abs_diff": finite_float((weight - eye).abs().max()),
+        "proj_identity_max_abs_diff": identity_max_abs,
+        "proj_prelude_max_abs": prelude_max_abs,
+        "proj_state_identity_max_abs_diff": state_identity_max_abs,
         "proj_bias_max_abs": finite_float(bias.abs().max()),
-        "sample_bridge_delta_rms": finite_float(rms(bridge_out - sample_state, None)),
+        "sample_bridge_delta_rms": finite_float(rms(autonomous_out - sample_state, None)),
+        "sample_reinject_bridge_delta_rms": finite_float(rms(reinjected_out - sample_state, None)),
         "sample_state_rms": finite_float(rms(sample_state, None)),
     }
 
@@ -141,18 +156,32 @@ def bridge_gradient_liveness(bridge: IdentityGatedBridge, sample_state: torch.Te
     bridge.train()
     bridge.zero_grad(set_to_none=True)
     sample = sample_state.detach().float().requires_grad_(True)
-    output = bridge(sample)
+    prelude = torch.randn_like(sample)
+    output = bridge(sample, prelude_hidden=prelude)
     loss = output.float().square().mean()
     loss.backward()
     gate_grad = bridge.bridge_gate.grad
     weight_grad = bridge.proj.weight.grad
     bias_grad = bridge.proj.bias.grad
+    hidden_size = int(getattr(bridge, "hidden_size", bridge.proj.weight.shape[0]))
+    if weight_grad is not None and weight_grad.dim() == 2 and weight_grad.shape[1] == 2 * hidden_size:
+        prelude_weight_grad = weight_grad[:, :hidden_size]
+        state_weight_grad = weight_grad[:, hidden_size:]
+    else:
+        prelude_weight_grad = None
+        state_weight_grad = weight_grad
     bridge.zero_grad(set_to_none=True)
     bridge.train(was_training)
     return {
         "loss": finite_float(loss),
         "gate_grad_abs": finite_float(gate_grad.abs() if gate_grad is not None else 0.0),
         "weight_grad_rms": finite_float(weight_grad.float().square().mean().sqrt() if weight_grad is not None else 0.0),
+        "prelude_weight_grad_rms": finite_float(
+            prelude_weight_grad.float().square().mean().sqrt() if prelude_weight_grad is not None else 0.0
+        ),
+        "state_weight_grad_rms": finite_float(
+            state_weight_grad.float().square().mean().sqrt() if state_weight_grad is not None else 0.0
+        ),
         "bias_grad_rms": finite_float(bias_grad.float().square().mean().sqrt() if bias_grad is not None else 0.0),
     }
 
@@ -339,7 +368,7 @@ def loop_records_for_prompt(
     recurrent_state = entry_state
     for loop_idx in range(max_loops):
         raw_loop_input = recurrent_state
-        loop_input = raw_loop_input if loop_idx == 0 else wrapper.bridge(raw_loop_input)
+        loop_input = raw_loop_input if loop_idx == 0 else wrapper.bridge(raw_loop_input, prelude_hidden=entry_state)
         if loop_idx > 0 and reentry_rescale_mode == "entry_rms":
             current_rms = rms(loop_input, attention_mask).clamp_min(1e-8)
             loop_input = loop_input * (entry_rms / current_rms).to(dtype=loop_input.dtype)
