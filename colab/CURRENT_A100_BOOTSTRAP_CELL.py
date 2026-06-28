@@ -52,7 +52,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "traced_sft_competence_preserving_pipeline" - mixed recovery after confirmation still trails base.
 #   "traced_sft_depth_router_after_direct_preserve" - learned-depth continuation from a passed direct-preservation checkpoint.
 #   "traced_capability_ladder_sft" - GPU Phase 1 SFT from the latest gate-ready traced capability ladder.
-#   "forced_depth_diagnostic" - no-training ARC-Challenge loop 1/2/3 forced-depth diagnostic.
+#   "forced_depth_diagnostic" - no-training ARC-Challenge forced-depth diagnostic.
 #   "rescue_predictability_analysis" - CPU-only precursor asking whether deeper-loop rescue is predictable.
 #   "rescue_selector_transfer" - CPU-only held-out rescue selector trade curve with spectral/probe diagnostics.
 #   "tail_convergence_selector" - GPU hidden-state probe for cross-loop tail convergence selector features.
@@ -1353,6 +1353,9 @@ TARGETS = {
             "forced_depth_arc_v1",
             "STAGE5_BENCHMARK_FORCED_LOOP_COUNT",
             "STAGE5_FORCED_DEPTH_SOURCE_SUMMARY",
+            "STAGE5_FORCED_DEPTH_LORA_RANK",
+            "STAGE5_BENCHMARK_LORA_RANK",
+            "forced_depth_lora_rank",
             "content_question_only,cyclic_label_aggregated",
             "eval/analyze_depth_sweep.py",
             "--score_target",
@@ -1364,7 +1367,7 @@ TARGETS = {
             "runtime.unassign",
         ],
         "env": {
-            "STAGE5_FORCED_DEPTH_LOOPS": "1,2,3",
+            "STAGE5_FORCED_DEPTH_LOOPS": "1,2,3,4,8",
             "STAGE5_FORCED_DEPTH_BENCHMARKS": "arc_challenge",
             "STAGE5_FORCED_DEPTH_ARC_CHALLENGE_LIMIT": "256",
             "STAGE5_FORCED_DEPTH_SCORE_TARGETS": "content_question_only,cyclic_label_aggregated",

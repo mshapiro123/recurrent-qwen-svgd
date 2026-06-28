@@ -15,6 +15,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 from google.colab import drive, runtime, userdata
 
@@ -115,6 +116,34 @@ def current_source_summary() -> str:
     value = pointer.read_text(encoding="utf-8").strip()
     assert value, "Current source summary pointer is empty."
     return value
+
+
+def resolve_path(path: str | Path) -> Path:
+    candidate = Path(str(path).replace("\\", "/"))
+    return candidate if candidate.is_absolute() else ROOT / candidate
+
+
+def read_json(path: Path) -> dict[str, Any]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"{path} is not a JSON object")
+    return payload
+
+
+def forced_depth_lora_rank(source_payload: dict[str, Any]) -> str:
+    override = os.environ.get("STAGE5_FORCED_DEPTH_LORA_RANK", "").strip()
+    if override:
+        return override
+    if source_payload.get("kind") == "stage5_unfreeze_recurrent_curriculum":
+        return "0"
+    return "8"
+
+
+def forced_depth_lora_alpha(rank: str) -> str:
+    override = os.environ.get("STAGE5_FORCED_DEPTH_LORA_ALPHA", "").strip()
+    if override:
+        return override
+    return "16"
 
 
 def parse_csv_ints(value: str) -> list[int]:
@@ -326,6 +355,9 @@ try:
     )
 
     source_summary = current_source_summary()
+    source_payload = read_json(resolve_path(source_summary))
+    lora_rank = forced_depth_lora_rank(source_payload)
+    lora_alpha = forced_depth_lora_alpha(lora_rank)
     loops = parse_csv_ints(os.environ.get("STAGE5_FORCED_DEPTH_LOOPS", "1,2,3"))
     forward_max_loops = max(loops)
     sweep_id = os.environ.get("STAGE5_FORCED_DEPTH_RUN_ID") or time.strftime(
@@ -337,6 +369,7 @@ try:
     print("forced_depth_sweep_id:", sweep_id, flush=True)
     print("forced_depth_loops:", loops, flush=True)
     print("forced_depth_forward_max_loops:", forward_max_loops, flush=True)
+    print(f"forced_depth_lora_rank={lora_rank} forced_depth_lora_alpha={lora_alpha}", flush=True)
 
     for forced_loop in loops:
         run_id = f"{sweep_id}_loop{forced_loop}"
@@ -361,6 +394,8 @@ try:
                 ),
                 "STAGE5_BENCHMARK_AGGREGATES": "mean",
                 "STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS": "1",
+                "STAGE5_BENCHMARK_LORA_RANK": lora_rank,
+                "STAGE5_BENCHMARK_LORA_ALPHA": lora_alpha,
                 "STAGE5_BENCHMARK_PUSH": "0",
                 "DTYPE": os.environ.get("DTYPE", "bfloat16"),
                 "ADAPTER_DTYPE": os.environ.get("ADAPTER_DTYPE", "float32"),

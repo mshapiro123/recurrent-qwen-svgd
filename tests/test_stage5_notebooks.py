@@ -327,6 +327,9 @@ def test_current_bootstrap_exposes_forced_depth_diagnostic_target() -> None:
         assert "colab/STAGE5_FORCED_DEPTH_DIAGNOSTIC_CELL.py" in payload
         assert "STAGE5_FORCED_DEPTH_SOURCE_SUMMARY" in payload
         assert "STAGE5_BENCHMARK_FORCED_LOOP_COUNT" in payload
+        assert "STAGE5_FORCED_DEPTH_LORA_RANK" in payload
+        assert "STAGE5_BENCHMARK_LORA_RANK" in payload
+        assert "forced_depth_lora_rank" in payload
     assert "STAGE5_FORCED_DEPTH_DIAGNOSTIC_CELL_VERSION" in cell
     assert "forced_depth_arc_v1" in cell
     assert "content_question_only,cyclic_label_aggregated" in cell
@@ -335,6 +338,8 @@ def test_current_bootstrap_exposes_forced_depth_diagnostic_target() -> None:
     assert '"STAGE5_BENCHMARK_MAX_LOOPS": str(forward_max_loops)' in cell
     assert "ensure_drive_for_checkpoint_restore" in cell
     assert 'drive.mount("/content/drive", force_remount=FORCE_DRIVE_REMOUNT)' in cell
+    assert 'source_payload.get("kind") == "stage5_unfreeze_recurrent_curriculum"' in cell
+    assert '"STAGE5_BENCHMARK_LORA_RANK": lora_rank' in cell
 
 
 def test_current_bootstrap_exposes_rescue_predictability_target() -> None:
