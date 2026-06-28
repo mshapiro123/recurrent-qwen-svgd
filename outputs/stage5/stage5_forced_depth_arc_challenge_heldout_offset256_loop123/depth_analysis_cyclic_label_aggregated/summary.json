@@ -1,0 +1,433 @@
+{
+  "kind": "stage5_depth_sweep_analysis",
+  "source_sweep_summary": "outputs/stage5/stage5_forced_depth_arc_challenge_heldout_offset256_loop123/summary.json",
+  "source_sweep_run_id": "stage5_forced_depth_arc_challenge_heldout_offset256_loop123",
+  "score_target": "cyclic_label_aggregated",
+  "aggregate": "permutation_mean",
+  "loops": [
+    1,
+    2,
+    3
+  ],
+  "benchmarks": {
+    "arc_challenge": {
+      "loop_summaries": [
+        {
+          "loop": 1,
+          "total": 43,
+          "base_correct": 23,
+          "loop_correct": 24,
+          "delta_vs_base": 1,
+          "wins_vs_base": 1,
+          "losses_vs_base": 0,
+          "ties_vs_base": 42,
+          "sign_test_p": 1.0,
+          "mean_predicted_margin": 1.3960755809865415,
+          "mean_answer_margin": 0.28924418532906837
+        },
+        {
+          "loop": 2,
+          "total": 43,
+          "base_correct": 23,
+          "loop_correct": 21,
+          "delta_vs_base": -2,
+          "wins_vs_base": 0,
+          "losses_vs_base": 2,
+          "ties_vs_base": 41,
+          "sign_test_p": 0.5,
+          "mean_predicted_margin": 0.21984011264041411,
+          "mean_answer_margin": 0.041061044605665425
+        },
+        {
+          "loop": 3,
+          "total": 43,
+          "base_correct": 23,
+          "loop_correct": 17,
+          "delta_vs_base": -6,
+          "wins_vs_base": 0,
+          "losses_vs_base": 6,
+          "ties_vs_base": 37,
+          "sign_test_p": 0.03125,
+          "mean_predicted_margin": 0.0868459309256354,
+          "mean_answer_margin": 2.772309059320494e-09
+        }
+      ],
+      "depth_interactions": {
+        "total": 43,
+        "base_correct": 23,
+        "loop1_correct": 24,
+        "any_recurrent_correct": 24,
+        "any_base_or_recurrent_correct": 24,
+        "oracle_recurrent_gain_vs_loop1": 0,
+        "oracle_base_or_recurrent_gain_vs_base": 1,
+        "deeper_unique_over_loop1": 0,
+        "deeper_unique_over_base_and_loop1": 0,
+        "loop1_harmed_by_any_deeper": 8,
+        "all_depths_correct": 16,
+        "all_depths_wrong": 19,
+        "depth_hit_patterns": {
+          "000": 19,
+          "111": 16,
+          "100": 2,
+          "101": 1,
+          "110": 5
+        }
+      },
+      "margin_buckets": {
+        "confident": {
+          "n": 8,
+          "base_correct": 5,
+          "by_loop": {
+            "1": 5,
+            "2": 5,
+            "3": 5
+          },
+          "any_recurrent_correct": 5
+        },
+        "low": {
+          "n": 15,
+          "base_correct": 4,
+          "by_loop": {
+            "1": 5,
+            "2": 3,
+            "3": 1
+          },
+          "any_recurrent_correct": 5
+        },
+        "thin": {
+          "n": 10,
+          "base_correct": 7,
+          "by_loop": {
+            "1": 7,
+            "2": 6,
+            "3": 5
+          },
+          "any_recurrent_correct": 7
+        },
+        "very_confident": {
+          "n": 10,
+          "base_correct": 7,
+          "by_loop": {
+            "1": 7,
+            "2": 7,
+            "3": 6
+          },
+          "any_recurrent_correct": 7
+        }
+      },
+      "threshold_router_top10": [
+        {
+          "source": "base",
+          "threshold": 0.0,
+          "fallback_loop": 2,
+          "total": 43,
+          "correct": 24,
+          "delta_vs_loop1": 0,
+          "routed_deep": 0,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 0,
+          "sign_test_p": null
+        },
+        {
+          "source": "base",
+          "threshold": 0.0,
+          "fallback_loop": 3,
+          "total": 43,
+          "correct": 24,
+          "delta_vs_loop1": 0,
+          "routed_deep": 0,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 0,
+          "sign_test_p": null
+        },
+        {
+          "source": "loop1",
+          "threshold": 0.0,
+          "fallback_loop": 2,
+          "total": 43,
+          "correct": 24,
+          "delta_vs_loop1": 0,
+          "routed_deep": 0,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 0,
+          "sign_test_p": null
+        },
+        {
+          "source": "loop1",
+          "threshold": 0.0,
+          "fallback_loop": 3,
+          "total": 43,
+          "correct": 24,
+          "delta_vs_loop1": 0,
+          "routed_deep": 0,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 0,
+          "sign_test_p": null
+        },
+        {
+          "source": "base",
+          "threshold": 0.25,
+          "fallback_loop": 2,
+          "total": 43,
+          "correct": 23,
+          "delta_vs_loop1": -1,
+          "routed_deep": 10,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 1,
+          "sign_test_p": 1.0
+        },
+        {
+          "source": "base",
+          "threshold": 0.5,
+          "fallback_loop": 2,
+          "total": 43,
+          "correct": 22,
+          "delta_vs_loop1": -2,
+          "routed_deep": 15,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 2,
+          "sign_test_p": 0.5
+        },
+        {
+          "source": "loop1",
+          "threshold": 0.25,
+          "fallback_loop": 2,
+          "total": 43,
+          "correct": 22,
+          "delta_vs_loop1": -2,
+          "routed_deep": 10,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 2,
+          "sign_test_p": 0.5
+        },
+        {
+          "source": "base",
+          "threshold": 0.75,
+          "fallback_loop": 2,
+          "total": 43,
+          "correct": 21,
+          "delta_vs_loop1": -3,
+          "routed_deep": 19,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 3,
+          "sign_test_p": 0.25
+        },
+        {
+          "source": "base",
+          "threshold": 1.0,
+          "fallback_loop": 2,
+          "total": 43,
+          "correct": 21,
+          "delta_vs_loop1": -3,
+          "routed_deep": 25,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 3,
+          "sign_test_p": 0.25
+        },
+        {
+          "source": "base",
+          "threshold": 1.5,
+          "fallback_loop": 2,
+          "total": 43,
+          "correct": 21,
+          "delta_vs_loop1": -3,
+          "routed_deep": 30,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 3,
+          "sign_test_p": 0.25
+        }
+      ],
+      "score_selector_top10": [
+        {
+          "subset": [
+            1
+          ],
+          "method": "mean",
+          "total": 43,
+          "correct": 24,
+          "delta_vs_loop1": 0,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 0,
+          "sign_test_p": null,
+          "prediction_counts": {
+            "A": 9,
+            "C": 12,
+            "D": 15,
+            "B": 7
+          }
+        },
+        {
+          "subset": [
+            1
+          ],
+          "method": "max",
+          "total": 43,
+          "correct": 24,
+          "delta_vs_loop1": 0,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 0,
+          "sign_test_p": null,
+          "prediction_counts": {
+            "A": 9,
+            "C": 12,
+            "D": 15,
+            "B": 7
+          }
+        },
+        {
+          "subset": [
+            1,
+            2
+          ],
+          "method": "mean",
+          "total": 43,
+          "correct": 24,
+          "delta_vs_loop1": 0,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 0,
+          "sign_test_p": null,
+          "prediction_counts": {
+            "A": 9,
+            "C": 12,
+            "D": 15,
+            "B": 7
+          }
+        },
+        {
+          "subset": [
+            1,
+            2
+          ],
+          "method": "max",
+          "total": 43,
+          "correct": 24,
+          "delta_vs_loop1": 0,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 0,
+          "sign_test_p": null,
+          "prediction_counts": {
+            "A": 10,
+            "C": 11,
+            "D": 15,
+            "B": 7
+          }
+        },
+        {
+          "subset": [
+            1,
+            2
+          ],
+          "method": "loop1_plus_weighted_deeper:0.1",
+          "total": 43,
+          "correct": 24,
+          "delta_vs_loop1": 0,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 0,
+          "sign_test_p": null,
+          "prediction_counts": {
+            "A": 9,
+            "C": 12,
+            "D": 15,
+            "B": 7
+          }
+        },
+        {
+          "subset": [
+            1,
+            2
+          ],
+          "method": "loop1_plus_weighted_deeper:0.25",
+          "total": 43,
+          "correct": 24,
+          "delta_vs_loop1": 0,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 0,
+          "sign_test_p": null,
+          "prediction_counts": {
+            "A": 9,
+            "C": 12,
+            "D": 15,
+            "B": 7
+          }
+        },
+        {
+          "subset": [
+            1,
+            2
+          ],
+          "method": "loop1_plus_weighted_deeper:0.5",
+          "total": 43,
+          "correct": 24,
+          "delta_vs_loop1": 0,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 0,
+          "sign_test_p": null,
+          "prediction_counts": {
+            "A": 9,
+            "C": 12,
+            "D": 15,
+            "B": 7
+          }
+        },
+        {
+          "subset": [
+            1,
+            2
+          ],
+          "method": "loop1_plus_weighted_deeper:0.75",
+          "total": 43,
+          "correct": 24,
+          "delta_vs_loop1": 0,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 0,
+          "sign_test_p": null,
+          "prediction_counts": {
+            "A": 9,
+            "C": 12,
+            "D": 15,
+            "B": 7
+          }
+        },
+        {
+          "subset": [
+            1,
+            2
+          ],
+          "method": "loop1_plus_weighted_deeper:1.0",
+          "total": 43,
+          "correct": 24,
+          "delta_vs_loop1": 0,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 0,
+          "sign_test_p": null,
+          "prediction_counts": {
+            "A": 9,
+            "C": 12,
+            "D": 15,
+            "B": 7
+          }
+        },
+        {
+          "subset": [
+            1,
+            2,
+            3
+          ],
+          "method": "max",
+          "total": 43,
+          "correct": 24,
+          "delta_vs_loop1": 0,
+          "wins_vs_loop1": 0,
+          "losses_vs_loop1": 0,
+          "sign_test_p": null,
+          "prediction_counts": {
+            "A": 10,
+            "C": 11,
+            "D": 15,
+            "B": 7
+          }
+        }
+      ]
+    }
+  }
+}
