@@ -232,13 +232,15 @@ def load_wrapper(args: argparse.Namespace) -> RecurrentQwenForCausalLM:
     ).to(args.device)
     wrapper = RecurrentQwenForCausalLM(model, layer_split=parse_split(args.split)).to(args.device)
     adapter_dtype = resolve_dtype(args.adapter_dtype)
-    replaced = apply_lora_to_recurrent_block(
-        wrapper,
-        rank=args.lora_rank,
-        alpha=args.lora_alpha,
-        dropout=0.0,
-        adapter_dtype=adapter_dtype,
-    )
+    replaced = 0
+    if args.lora_rank > 0:
+        replaced = apply_lora_to_recurrent_block(
+            wrapper,
+            rank=args.lora_rank,
+            alpha=args.lora_alpha,
+            dropout=0.0,
+            adapter_dtype=adapter_dtype,
+        )
     print(f"lora_recurrent_modules={replaced}", flush=True)
     wrapper.set_trainable_modules_dtype(adapter_dtype)
     if args.checkpoint:

@@ -1,4 +1,4 @@
-﻿# Current A100 Bootstrap Cell
+# Current A100 Bootstrap Cell
 
 Use this from a blank or Drive-backed Colab notebook when you want the shortest
 GitHub-backed path. It fetches the maintained plain cell from the private repo,
@@ -19,7 +19,8 @@ current list, including the bounded cyclic-permutation MCQ diagnostic,
 
 Then run the bootstrap cell:
 
-```pythonimport base64, json, os, subprocess, time, urllib.request
+```python
+import base64, json, os, subprocess, time, urllib.request
 from google.colab import userdata
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
@@ -50,6 +51,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "reentry_tail_damper_recovery_training" - recovery SFT with fixed strength-1.0 tail damper held constant.
 #   "reentry_tail_damper_capacity_lora32_training" - same fixed-damper recovery arm with recurrent LoRA rank 32.
 #   "reentry_capacity_localization_rank64" - rank-64 fixed-damper capacity localization arm.
+#   "unfreeze_recurrent_curriculum" - merge recovered LoRA, unfreeze recurrent block, train with Muon and loop curriculum.
 #   "reentry_tail_damper_recovery_readout_only" - finish fixed-damper readout for an already completed recovery SFT.
 #   "depth_signal_confirmation" - recovery SFT, then expanded hard-content benchmark with open hard fallback.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
@@ -667,6 +669,28 @@ TARGETS = {
             "STAGE5_CAPACITY_LOCALIZATION_STEPS": "100",
             "STAGE5_CAPACITY_LOCALIZATION_LR": "5e-6",
             "STAGE5_CAPACITY_LOCALIZATION_DISCONNECT": "0",
+        },
+    },
+    "unfreeze_recurrent_curriculum": {
+        "path": "colab/STAGE5_UNFREEZE_RECURRENT_CURRICULUM_CELL.py",
+        "markers": [
+            "STAGE5_UNFREEZE_RECURRENT_CURRICULUM_CELL_VERSION",
+            "unfreeze_recurrent_curriculum_v1",
+            "training/train_unfrozen_recurrent.py",
+            "merge_lora_before_unfreeze",
+            "STAGE5_UNFREEZE_SOURCE_SUMMARY",
+            "STAGE5_UNFREEZE_MAX_STEPS",
+            "STAGE5_BENCHMARK_LORA_RANK",
+            "STAGE5_UNFREEZE_DISCONNECT",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_UNFREEZE_SOURCE_SUMMARY": (
+                "outputs/stage5/stage5_reentry_recovery_20260627_190155/summary.json"
+            ),
+            "STAGE5_UNFREEZE_MAX_STEPS": "50",
+            "STAGE5_UNFREEZE_END_LOOP": "8",
+            "STAGE5_UNFREEZE_DISCONNECT": "0",
         },
     },
     "reentry_tail_damper_recovery_readout_only": {

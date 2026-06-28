@@ -1836,6 +1836,32 @@ def test_reentry_tail_damper_recovery_readout_only_target_is_bootstrapped() -> N
     assert "skipping curriculum SFT" in cell
 
 
+def test_current_bootstrap_exposes_unfreeze_recurrent_curriculum_target() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_UNFREEZE_RECURRENT_CURRICULUM_CELL.py").read_text(encoding="utf-8")
+    trainer = (ROOT / "training/train_unfrozen_recurrent.py").read_text(encoding="utf-8")
+
+    for text in (bootstrap, bootstrap_md):
+        assert "unfreeze_recurrent_curriculum" in text
+        assert "STAGE5_UNFREEZE_SOURCE_SUMMARY" in text
+        assert "STAGE5_UNFREEZE_MAX_STEPS" in text
+        assert "STAGE5_BENCHMARK_LORA_RANK" in text
+        assert "stage5_reentry_recovery_20260627_190155/summary.json" in text
+    assert "STAGE5_UNFREEZE_RECURRENT_CURRICULUM_CELL_VERSION" in cell
+    assert "unfreeze_recurrent_curriculum_v1" in cell
+    assert "training/train_unfrozen_recurrent.py" in cell
+    assert "merge_lora_before_unfreeze" in cell
+    assert "STAGE5_BENCHMARK_LORA_RANK=0" in cell
+    assert "lora_rank" in cell
+    assert "eval/eval_reentry_drift.py" in cell
+    assert "publishable_artifact_paths" in cell
+    assert "unfrozen_recurrent_step_" in cell
+    assert "merge_lora_adapters" in trainer
+    assert "reentry_tail_damper_path=None" in trainer
+    assert "use_reentry_adapter=False" in trainer
+
+
 def test_debiased_benchmark_suite_threads_fixed_tail_damper() -> None:
     cell = (ROOT / "colab/STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py").read_text(encoding="utf-8")
     runner = (ROOT / "colab/run_stage5_benchmark_suite.py").read_text(encoding="utf-8")

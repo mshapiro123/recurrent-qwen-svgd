@@ -130,6 +130,8 @@ RECURRENT_USE_LEARNED_LOOP_CONTROL = os.environ.get(
 RECURRENT_FORCED_LOOP_COUNT = os.environ.get("STAGE5_BENCHMARK_FORCED_LOOP_COUNT", "").strip()
 RECURRENT_REENTRY_TAIL_DAMPER_PATH = os.environ.get("STAGE5_BENCHMARK_REENTRY_TAIL_DAMPER_PATH", "").strip()
 RECURRENT_REENTRY_TAIL_DAMPER_STRENGTH = os.environ.get("STAGE5_BENCHMARK_REENTRY_TAIL_DAMPER_STRENGTH", "").strip()
+RECURRENT_LORA_RANK = os.environ.get("STAGE5_BENCHMARK_LORA_RANK", "8").strip()
+RECURRENT_LORA_ALPHA = os.environ.get("STAGE5_BENCHMARK_LORA_ALPHA", "16").strip()
 INCLUDE_LOOP_DIAGNOSTICS = os.environ.get("STAGE5_BENCHMARK_INCLUDE_LOOP_DIAGNOSTICS", "1").strip().lower() in {
     "1",
     "true",
@@ -648,6 +650,10 @@ def eval_jobs(specs: list[BenchmarkSpec], *, checkpoint: Path) -> list[EvalJob]:
                 ADAPTER_DTYPE,
                 "--device",
                 DEVICE,
+                "--lora_rank",
+                RECURRENT_LORA_RANK,
+                "--lora_alpha",
+                RECURRENT_LORA_ALPHA,
                 "--seed",
                 "0",
             ]
@@ -922,6 +928,8 @@ def build_summary(
         "recurrent_mode": RECURRENT_MODE,
         "recurrent_max_loops": RECURRENT_MAX_LOOPS,
         "recurrent_num_trajectories": RECURRENT_NUM_TRAJECTORIES,
+        "recurrent_lora_rank": int(RECURRENT_LORA_RANK),
+        "recurrent_lora_alpha": int(RECURRENT_LORA_ALPHA),
         "recurrent_use_learned_loop_control": RECURRENT_USE_LEARNED_LOOP_CONTROL,
         "recurrent_forced_loop_count": int(RECURRENT_FORCED_LOOP_COUNT) if RECURRENT_FORCED_LOOP_COUNT else None,
         "reentry_tail_damper_path": RECURRENT_REENTRY_TAIL_DAMPER_PATH or None,

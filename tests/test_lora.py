@@ -2,7 +2,7 @@ import pytest
 import torch
 from torch import nn
 
-from models.lora import LoRALinear, apply_lora_to_qwen_layers
+from models.lora import LoRALinear, apply_lora_to_qwen_layers, merge_lora_adapters
 
 
 def test_lora_linear_zero_init_preserves_base_output():
@@ -56,3 +56,21 @@ def test_apply_lora_to_qwen_layers_rejects_invalid_range() -> None:
 
     with pytest.raises(ValueError):
         apply_lora_to_qwen_layers(model, start_layer=2, end_layer=4)
+
+
+def test_merge_lora_adapters_preserves_output_and_removes_wrappers() -> None:
+    torch.manual_seed(0)
+    model = TinyDenseQwen()
+    apply_lora_to_qwen_layers(model, start_layer=0, end_layer=3, rank=2, alpha=4)
+    with torch.no_grad():
+        for module in model.modules():
+            if isinstance(module, LoRALinear):
+                module.lora_b.weight.normal_(mean=0.0, std=0.02)
+    x = torch.randn(2, 4)
+    before = model(x)
+
+    merged = merge_lora_adapters(model)
+
+    assert merged == 6
+    assert not any(isinstance(module, LoRALinear) for module in model.modules())
+    assert torch.allclose(model(x), before, atol=1e-5)

@@ -131,15 +131,17 @@ def load_base_model(args: argparse.Namespace, *, load_dense_lora_checkpoint: boo
     ).to(args.device)
     if load_dense_lora_checkpoint and args.checkpoint:
         start, end = parse_base_lora_layer_range(args.base_lora_layer_range, len(model.model.layers))
-        replaced = apply_lora_to_qwen_layers(
-            model,
-            start_layer=start,
-            end_layer=end,
-            rank=args.lora_rank,
-            alpha=args.lora_alpha,
-            dropout=0.0,
-            adapter_dtype=resolve_dtype(args.adapter_dtype),
-        )
+        replaced = 0
+        if args.lora_rank > 0:
+            replaced = apply_lora_to_qwen_layers(
+                model,
+                start_layer=start,
+                end_layer=end,
+                rank=args.lora_rank,
+                alpha=args.lora_alpha,
+                dropout=0.0,
+                adapter_dtype=resolve_dtype(args.adapter_dtype),
+            )
         print(f"dense_lora_modules={replaced} layer_range={start},{end}")
         load_info = load_trainable_checkpoint(model, args.checkpoint)
         print(f"loaded_base_lora_checkpoint={args.checkpoint} loaded_keys={len(load_info['loaded_keys'])}")
@@ -159,13 +161,15 @@ def load_recurrent_wrapper(args: argparse.Namespace, checkpoint: str | None) -> 
     model = load_base_model(args, load_dense_lora_checkpoint=False)
     wrapper = RecurrentQwenForCausalLM(model, layer_split=parse_split(args.split)).to(args.device)
     adapter_dtype = resolve_dtype(args.adapter_dtype)
-    replaced = apply_lora_to_recurrent_block(
-        wrapper,
-        rank=args.lora_rank,
-        alpha=args.lora_alpha,
-        dropout=0.0,
-        adapter_dtype=adapter_dtype,
-    )
+    replaced = 0
+    if args.lora_rank > 0:
+        replaced = apply_lora_to_recurrent_block(
+            wrapper,
+            rank=args.lora_rank,
+            alpha=args.lora_alpha,
+            dropout=0.0,
+            adapter_dtype=adapter_dtype,
+        )
     print(f"lora_recurrent_modules={replaced}")
     wrapper.set_trainable_modules_dtype(adapter_dtype)
     if checkpoint:

@@ -66,6 +66,16 @@ class LoRALinear(nn.Module):
         self.lora_a.to(device=device, dtype=dtype)
         self.lora_b.to(device=device, dtype=dtype)
 
+    @torch.no_grad()
+    def merge(self) -> nn.Linear:
+        """Fold the LoRA branch into ``base`` and return the plain Linear layer."""
+
+        delta = (self.lora_b.weight.float() @ self.lora_a.weight.float()) * float(self.scaling)
+        self.base.weight.add_(delta.to(device=self.base.weight.device, dtype=self.base.weight.dtype))
+        for param in self.base.parameters():
+            param.requires_grad_(False)
+        return self.base
+
 
 def apply_lora_to_recurrent_block(
     wrapper: nn.Module,
@@ -135,6 +145,19 @@ def set_lora_adapter_dtype(module: nn.Module, dtype: torch.dtype) -> None:
     for child in module.modules():
         if isinstance(child, LoRALinear):
             child.set_adapter_dtype(dtype)
+
+
+def merge_lora_adapters(module: nn.Module) -> int:
+    """Replace every ``LoRALinear`` child with its merged base Linear layer."""
+
+    merged = 0
+    for child_name, child in list(module.named_children()):
+        if isinstance(child, LoRALinear):
+            setattr(module, child_name, child.merge())
+            merged += 1
+            continue
+        merged += merge_lora_adapters(child)
+    return merged
 
 
 def _replace_lora_targets(
