@@ -1,0 +1,41 @@
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+dtype: bfloat16
+adapter_dtype: float32
+attn_implementation: default
+layer_split: 6,18
+max_length: 512
+max_loops: 8
+initial_halt_prob: 0.15
+beta: 0.1
+halt_target_nll_weight: 1.0
+batch_size: 1
+optimizer: muon
+learning_rate: 5.0e-06
+adamw_lr: 5.0e-06
+weight_decay: 0.0
+max_grad_norm: 0.5
+max_steps: 50
+log_every: 5
+train_on_prompt: false
+gradient_checkpointing: true
+output_dir: outputs/stage5/stage5_corrected_reinject_unfreeze_20260628/unfrozen
+resume_from: outputs/stage5/stage5_reentry_recovery_20260627_190155_curriculum_sft/phase1/phase1_step_100.pt
+resume_lora:
+  enabled: true
+  rank: auto
+  alpha: auto
+  dropout: 0.0
+merge_lora_before_unfreeze: true
+require_lora_loaded_before_merge: true
+train_auxiliary:
+  bridge: true
+  halting: true
+  reentry_adapter: false
+  latent: false
+recurrence_curriculum:
+  enabled: true
+  start_loop: 1
+  end_loop: 8
+  schedule: linear
+  target_source: schedule
+  ramp_compute: true

@@ -1,0 +1,186 @@
+{
+  "setup": {
+    "resume_lora_wrapped": 84,
+    "merged_lora_modules": 84,
+    "resume_lora": {
+      "enabled": true,
+      "rank": 32,
+      "alpha": 64.0,
+      "dropout": 0.0
+    },
+    "checkpoint_lora_key_counts": {
+      "loaded_lora_keys": 168,
+      "skipped_lora_keys": 0
+    },
+    "trainable_parameters": {
+      "total": 180601122,
+      "recurrent_block": 178948608,
+      "bridge": 1608321,
+      "halting": 44193,
+      "reentry_adapter": 0,
+      "latent": 0
+    }
+  },
+  "curriculum_trace": [
+    {
+      "step": 0,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 2.134582042694092,
+        "halting_kl": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "halting_target_nll": 0.0,
+        "loss": 2.134582042694092
+      }
+    },
+    {
+      "step": 5,
+      "scheduled_loops": 2,
+      "forward_loops": 2,
+      "metrics": {
+        "mean_expected_loops": 1.0148420333862305,
+        "mean_halt_entropy": 0.07722088694572449,
+        "expected_ce": 1.069894552230835,
+        "halting_kl": 0.9499979019165039,
+        "target_mean_loops": 2.0,
+        "target_loop_abs_error": 0.9851579666137695,
+        "halting_target_nll": 4.210288047790527,
+        "loss": 5.375182151794434
+      }
+    },
+    {
+      "step": 10,
+      "scheduled_loops": 2,
+      "forward_loops": 2,
+      "metrics": {
+        "mean_expected_loops": 1.2577190399169922,
+        "mean_halt_entropy": 0.5706576108932495,
+        "expected_ce": 1.1414985656738281,
+        "halting_kl": 0.311360239982605,
+        "target_mean_loops": 2.0,
+        "target_loop_abs_error": 0.7422809600830078,
+        "halting_target_nll": 1.3558850288391113,
+        "loss": 2.528519630432129
+      }
+    },
+    {
+      "step": 15,
+      "scheduled_loops": 3,
+      "forward_loops": 3,
+      "metrics": {
+        "mean_expected_loops": 1.8917346000671387,
+        "mean_halt_entropy": 0.3813789188861847,
+        "expected_ce": 1.4830818176269531,
+        "halting_kl": 0.897719144821167,
+        "target_mean_loops": 3.0,
+        "target_loop_abs_error": 1.1082653999328613,
+        "halting_target_nll": 5.378100872039795,
+        "loss": 6.950954437255859
+      }
+    },
+    {
+      "step": 20,
+      "scheduled_loops": 4,
+      "forward_loops": 4,
+      "metrics": {
+        "mean_expected_loops": 1.9482264518737793,
+        "mean_halt_entropy": 0.32290682196617126,
+        "expected_ce": 1.1807283163070679,
+        "halting_kl": 1.6062597036361694,
+        "target_mean_loops": 4.0,
+        "target_loop_abs_error": 2.0517735481262207,
+        "halting_target_nll": 7.683864116668701,
+        "loss": 9.02521800994873
+      }
+    },
+    {
+      "step": 25,
+      "scheduled_loops": 5,
+      "forward_loops": 5,
+      "metrics": {
+        "mean_expected_loops": 2.012428045272827,
+        "mean_halt_entropy": 0.3291752338409424,
+        "expected_ce": 1.2680301666259766,
+        "halting_kl": 2.2037742137908936,
+        "target_mean_loops": 5.0,
+        "target_loop_abs_error": 2.987571954727173,
+        "halting_target_nll": 10.81713581085205,
+        "loss": 12.305543899536133
+      }
+    },
+    {
+      "step": 30,
+      "scheduled_loops": 5,
+      "forward_loops": 5,
+      "metrics": {
+        "mean_expected_loops": 1.382323145866394,
+        "mean_halt_entropy": 0.6678528785705566,
+        "expected_ce": 1.3459582328796387,
+        "halting_kl": 2.2417967319488525,
+        "target_mean_loops": 5.0,
+        "target_loop_abs_error": 3.6176767349243164,
+        "halting_target_nll": 18.42068099975586,
+        "loss": 19.99081802368164
+      }
+    },
+    {
+      "step": 35,
+      "scheduled_loops": 6,
+      "forward_loops": 6,
+      "metrics": {
+        "mean_expected_loops": 2.1063547134399414,
+        "mean_halt_entropy": 0.4843396544456482,
+        "expected_ce": 1.2700366973876953,
+        "halting_kl": 2.6138625144958496,
+        "target_mean_loops": 6.0,
+        "target_loop_abs_error": 3.8936452865600586,
+        "halting_target_nll": 12.279091835021973,
+        "loss": 13.810514450073242
+      }
+    },
+    {
+      "step": 40,
+      "scheduled_loops": 7,
+      "forward_loops": 7,
+      "metrics": {
+        "mean_expected_loops": 1.7566895484924316,
+        "mean_halt_entropy": 0.596793532371521,
+        "expected_ce": 1.5994383096694946,
+        "halting_kl": 3.3210175037384033,
+        "target_mean_loops": 7.0,
+        "target_loop_abs_error": 5.243310451507568,
+        "halting_target_nll": 18.42068099975586,
+        "loss": 20.35222053527832
+      }
+    },
+    {
+      "step": 45,
+      "scheduled_loops": 7,
+      "forward_loops": 7,
+      "metrics": {
+        "mean_expected_loops": 2.3953421115875244,
+        "mean_halt_entropy": 0.8315234184265137,
+        "expected_ce": 1.3746778964996338,
+        "halting_kl": 2.7044777870178223,
+        "target_mean_loops": 7.0,
+        "target_loop_abs_error": 4.604658126831055,
+        "halting_target_nll": 8.283780097961426,
+        "loss": 9.928905487060547
+      }
+    }
+  ],
+  "checkpoint": "outputs/stage5/stage5_corrected_reinject_unfreeze_20260628/unfrozen/unfrozen_recurrent_step_50.pt",
+  "final_step": 50,
+  "trainable_parameters": {
+    "total": 180601122,
+    "recurrent_block": 178948608,
+    "bridge": 1608321,
+    "halting": 44193,
+    "reentry_adapter": 0,
+    "latent": 0
+  }
+}
