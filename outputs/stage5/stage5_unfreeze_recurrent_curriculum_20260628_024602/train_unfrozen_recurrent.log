@@ -1,0 +1,19 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 4724.20it/s]
+resume_lora_recurrent_modules=84
+loaded_checkpoint=outputs/stage5/stage5_reentry_recovery_20260627_190155_curriculum_sft/phase1/phase1_step_100.pt loaded_keys=184
+checkpoint_lora_key_counts=loaded_lora_keys=168 skipped_lora_keys=0
+merged_lora_modules=84
+step=0 scheduled_loops=1 forward_loops=1 mean_expected_loops=1.0000 mean_halt_entropy=0.0000 expected_ce=1.0943 halting_kl=0.0000 target_mean_loops=1.0000 target_loop_abs_error=0.0000 halting_target_nll=0.0000 loss=1.0943
+step=5 scheduled_loops=2 forward_loops=2 mean_expected_loops=1.9594 mean_halt_entropy=0.1699 expected_ce=1.2066 halting_kl=0.2926 target_mean_loops=2.0000 target_loop_abs_error=0.0406 halting_target_nll=0.0415 loss=1.2774
+step=10 scheduled_loops=2 forward_loops=2 mean_expected_loops=1.9616 mean_halt_entropy=0.1630 expected_ce=0.9912 halting_kl=0.2983 target_mean_loops=2.0000 target_loop_abs_error=0.0384 halting_target_nll=0.0392 loss=1.0602
+step=15 scheduled_loops=3 forward_loops=3 mean_expected_loops=1.3028 mean_halt_entropy=0.6138 expected_ce=1.6307 halting_kl=1.0174 target_mean_loops=3.0000 target_loop_abs_error=1.6972 halting_target_nll=9.6331 loss=11.3656
+step=20 scheduled_loops=4 forward_loops=4 mean_expected_loops=1.9573 mean_halt_entropy=0.3163 expected_ce=1.3811 halting_kl=1.6075 target_mean_loops=4.0000 target_loop_abs_error=2.0427 halting_target_nll=7.2159 loss=8.7578
+step=25 scheduled_loops=5 forward_loops=5 mean_expected_loops=2.2018 mean_halt_entropy=0.5977 expected_ce=1.7941 halting_kl=1.8220 target_mean_loops=5.0000 target_loop_abs_error=2.7982 halting_target_nll=6.3126 loss=8.2890
+step=30 scheduled_loops=5 forward_loops=5 mean_expected_loops=1.3338 mean_halt_entropy=0.6385 expected_ce=1.2576 halting_kl=2.3002 target_mean_loops=5.0000 target_loop_abs_error=3.6662 halting_target_nll=18.4207 loss=19.9083
+step=35 scheduled_loops=6 forward_loops=6 mean_expected_loops=1.9628 mean_halt_entropy=0.3606 expected_ce=1.3302 halting_kl=2.8235 target_mean_loops=6.0000 target_loop_abs_error=4.0372 halting_target_nll=18.2741 loss=19.8867
+step=40 scheduled_loops=7 forward_loops=7 mean_expected_loops=2.0272 mean_halt_entropy=0.4430 expected_ce=1.3046 halting_kl=3.3131 target_mean_loops=7.0000 target_loop_abs_error=4.9728 halting_target_nll=18.4207 loss=20.0565
+step=45 scheduled_loops=7 forward_loops=7 mean_expected_loops=1.4447 mean_halt_entropy=0.6934 expected_ce=1.1310 halting_kl=3.4109 target_mean_loops=7.0000 target_loop_abs_error=5.5553 halting_target_nll=18.4207 loss=19.8928
+saved_checkpoint=outputs/stage5/stage5_unfreeze_recurrent_curriculum_20260628_024602/unfrozen/unfrozen_recurrent_step_50.pt
+training_summary=outputs/stage5/stage5_unfreeze_recurrent_curriculum_20260628_024602/unfrozen/train_unfrozen_recurrent_summary.json
