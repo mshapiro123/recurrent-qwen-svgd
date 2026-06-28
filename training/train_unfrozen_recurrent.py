@@ -173,6 +173,44 @@ def maybe_enable_gradient_checkpointing(model: torch.nn.Module, cfg: dict[str, A
         enable()
 
 
+def resolve_resume_lora_config(cfg: dict[str, Any]) -> dict[str, Any]:
+    resume_lora = dict(cfg.get("resume_lora", {}))
+    if not resume_lora.get("enabled", True):
+        return {"enabled": False}
+    rank = resume_lora.get("rank", "auto")
+    alpha = resume_lora.get("alpha", "auto")
+    needs_checkpoint = str(rank).lower() == "auto" or str(alpha).lower() == "auto"
+    checkpoint_lora: dict[str, Any] = {}
+    if needs_checkpoint:
+        resume_from = cfg.get("resume_from")
+        if not resume_from:
+            raise ValueError("resume_lora rank/alpha auto requires resume_from")
+        checkpoint = torch.load(resume_from, map_location="cpu")
+        checkpoint_cfg = checkpoint.get("config", {})
+        checkpoint_lora = dict(checkpoint_cfg.get("lora", {}))
+    if str(rank).lower() == "auto":
+        if "rank" not in checkpoint_lora:
+            raise ValueError("Could not infer LoRA rank from checkpoint config")
+        rank = checkpoint_lora["rank"]
+    if str(alpha).lower() == "auto":
+        alpha = checkpoint_lora.get("alpha", 2 * int(rank))
+    return {
+        "enabled": True,
+        "rank": int(rank),
+        "alpha": float(alpha),
+        "dropout": float(resume_lora.get("dropout", 0.0)),
+    }
+
+
+def lora_key_counts(load_info: dict[str, Any]) -> dict[str, int]:
+    loaded = load_info.get("loaded_keys", [])
+    skipped = load_info.get("skipped", {})
+    return {
+        "loaded_lora_keys": sum(".lora_a." in key or ".lora_b." in key for key in loaded),
+        "skipped_lora_keys": sum(".lora_a." in key or ".lora_b." in key for key in skipped),
+    }
+
+
 def prepare_wrapper(
     model: torch.nn.Module,
     cfg: dict[str, Any],
@@ -185,7 +223,7 @@ def prepare_wrapper(
         initial_halt_prob=cfg_float(cfg, "initial_halt_prob", 0.15),
     ).to(device)
     adapter_dtype = resolve_dtype(cfg.get("adapter_dtype", "float32"))
-    resume_lora = cfg.get("resume_lora", {})
+    resume_lora = resolve_resume_lora_config(cfg)
     lora_wrapped = 0
     if resume_lora.get("enabled", True):
         lora_wrapped = apply_lora_to_recurrent_block(
@@ -197,9 +235,26 @@ def prepare_wrapper(
         )
         print(f"resume_lora_recurrent_modules={lora_wrapped}")
     wrapper.set_trainable_modules_dtype(adapter_dtype)
+    load_counts = {"loaded_lora_keys": 0, "skipped_lora_keys": 0}
     if cfg.get("resume_from"):
         info = load_trainable_checkpoint(wrapper, cfg["resume_from"])
         print(f"loaded_checkpoint={cfg['resume_from']} loaded_keys={len(info['loaded_keys'])}")
+        load_counts = lora_key_counts(info)
+        print(
+            "checkpoint_lora_key_counts="
+            + " ".join(f"{key}={value}" for key, value in load_counts.items())
+        )
+        if (
+            bool(cfg.get("require_lora_loaded_before_merge", True))
+            and bool(cfg.get("merge_lora_before_unfreeze", True))
+            and lora_wrapped
+            and load_counts["loaded_lora_keys"] < 2 * lora_wrapped
+        ):
+            raise RuntimeError(
+                "Refusing to merge LoRA before unfreeze because not all LoRA keys loaded: "
+                f"wrapped_modules={lora_wrapped}, {load_counts}. "
+                "Set resume_lora.rank/alpha correctly or use auto inference."
+            )
     merged_lora = 0
     if bool(cfg.get("merge_lora_before_unfreeze", True)):
         merged_lora = merge_lora_adapters(wrapper.base_model)
@@ -209,6 +264,8 @@ def prepare_wrapper(
     return wrapper, {
         "resume_lora_wrapped": lora_wrapped,
         "merged_lora_modules": merged_lora,
+        "resume_lora": resume_lora,
+        "checkpoint_lora_key_counts": load_counts,
         "trainable_parameters": trainable_parameter_summary(wrapper),
     }
 

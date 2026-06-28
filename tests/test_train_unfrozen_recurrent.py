@@ -7,6 +7,7 @@ from models.recurrent_wrapper import LayerSplit
 from training.train_unfrozen_recurrent import (
     configure_trainable_modules,
     curriculum_target_counts,
+    resolve_resume_lora_config,
     scheduled_loop_count,
     trainable_parameter_summary,
 )
@@ -43,6 +44,21 @@ def test_curriculum_target_counts_modes() -> None:
     assert curriculum_target_counts(row_targets, 4, mode="schedule").tolist() == [4, 4, 4]
     assert curriculum_target_counts(row_targets, 4, mode="row_capped").tolist() == [1, 3, 4]
     assert curriculum_target_counts(row_targets, 4, mode="row_or_schedule_max").tolist() == [4, 4, 8]
+
+
+def test_resolve_resume_lora_config_reads_checkpoint_config(tmp_path) -> None:
+    checkpoint = tmp_path / "phase1.pt"
+    torch.save({"config": {"lora": {"rank": 64, "alpha": 128}}}, checkpoint)
+
+    resolved = resolve_resume_lora_config(
+        {
+            "resume_from": str(checkpoint),
+            "resume_lora": {"enabled": True, "rank": "auto", "alpha": "auto", "dropout": 0.0},
+        }
+    )
+
+    assert resolved["rank"] == 64
+    assert resolved["alpha"] == 128.0
 
 
 def test_configure_trainable_modules_unfreezes_only_recurrent_block_by_default() -> None:

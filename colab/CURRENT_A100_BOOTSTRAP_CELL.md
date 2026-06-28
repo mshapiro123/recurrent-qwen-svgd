@@ -678,6 +678,7 @@ TARGETS = {
             "unfreeze_recurrent_curriculum_v1",
             "training/train_unfrozen_recurrent.py",
             "merge_lora_before_unfreeze",
+            "require_lora_loaded_before_merge",
             "STAGE5_UNFREEZE_SOURCE_SUMMARY",
             "STAGE5_UNFREEZE_MAX_STEPS",
             "STAGE5_BENCHMARK_LORA_RANK",

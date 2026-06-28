@@ -308,8 +308,8 @@ def latest_checkpoint(output_dir: Path) -> Path:
 def write_config(run_dir: Path, checkpoint: Path) -> Path:
     max_steps = int(os.environ.get("STAGE5_UNFREEZE_MAX_STEPS", "50"))
     end_loop = int(os.environ.get("STAGE5_UNFREEZE_END_LOOP", "8"))
-    resume_lora_rank = int(os.environ.get("STAGE5_UNFREEZE_RESUME_LORA_RANK", "8"))
-    resume_lora_alpha = int(os.environ.get("STAGE5_UNFREEZE_RESUME_LORA_ALPHA", str(2 * resume_lora_rank)))
+    resume_lora_rank = os.environ.get("STAGE5_UNFREEZE_RESUME_LORA_RANK", "auto")
+    resume_lora_alpha = os.environ.get("STAGE5_UNFREEZE_RESUME_LORA_ALPHA", "auto")
     cfg = {
         "model_name": os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct"),
         "dtype": os.environ.get("DTYPE", "bfloat16"),
@@ -340,6 +340,7 @@ def write_config(run_dir: Path, checkpoint: Path) -> Path:
             "dropout": 0.0,
         },
         "merge_lora_before_unfreeze": True,
+        "require_lora_loaded_before_merge": True,
         "train_auxiliary": {
             "bridge": True,
             "halting": True,

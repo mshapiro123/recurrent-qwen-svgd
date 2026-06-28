@@ -1847,11 +1847,15 @@ def test_current_bootstrap_exposes_unfreeze_recurrent_curriculum_target() -> Non
         assert "STAGE5_UNFREEZE_SOURCE_SUMMARY" in text
         assert "STAGE5_UNFREEZE_MAX_STEPS" in text
         assert "STAGE5_BENCHMARK_LORA_RANK" in text
+        assert "require_lora_loaded_before_merge" in text
         assert "stage5_reentry_recovery_20260627_190155/summary.json" in text
     assert "STAGE5_UNFREEZE_RECURRENT_CURRICULUM_CELL_VERSION" in cell
     assert "unfreeze_recurrent_curriculum_v1" in cell
     assert "training/train_unfrozen_recurrent.py" in cell
     assert "merge_lora_before_unfreeze" in cell
+    assert "require_lora_loaded_before_merge" in cell
+    assert '"rank": resume_lora_rank' in cell
+    assert '"auto"' in cell
     assert "STAGE5_BENCHMARK_LORA_RANK=0" in cell
     assert "lora_rank" in cell
     assert "eval/eval_reentry_drift.py" in cell
