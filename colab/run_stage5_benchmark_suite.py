@@ -499,6 +499,9 @@ def resolve_checkpoint(source_summary: Path | None, payload: dict[str, Any] | No
         restored = restore_checkpoint_from_drive(candidate)
         if restored and restored.exists():
             return restored
+        restored = restore_artifact_from_drive(candidate)
+        if restored and restored.exists():
+            return restored
     searched = [path_for_cli(path) for path in candidates]
     raise FileNotFoundError(f"No recurrent checkpoint found. Searched: {searched}\n{drive_diagnostics()}")
 

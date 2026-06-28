@@ -196,6 +196,36 @@ def test_resolve_checkpoint_restores_missing_stage5_checkpoint_from_drive(tmp_pa
     assert checkpoint.read_bytes() == b"checkpoint"
 
 
+def test_resolve_checkpoint_restores_missing_unfreeze_checkpoint_from_drive_run_dir(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    run_id = "stage5_unfreeze_recurrent_curriculum_20260628_024602"
+    source = tmp_path / "outputs" / "stage5" / run_id / "summary.json"
+    checkpoint = tmp_path / "outputs" / "stage5" / run_id / "unfrozen" / "unfrozen_recurrent_step_50.pt"
+    drive_checkpoint = (
+        tmp_path
+        / "drive"
+        / "outputs"
+        / "stage5"
+        / run_id
+        / "unfrozen"
+        / "unfrozen_recurrent_step_50.pt"
+    )
+    drive_checkpoint.parent.mkdir(parents=True)
+    drive_checkpoint.write_bytes(b"dense-unfreeze")
+    payload = {"final_checkpoint": str(checkpoint)}
+
+    monkeypatch.setattr(module, "EXPLICIT_CHECKPOINT", "")
+    monkeypatch.setattr(module, "mount_drive_if_possible", lambda: None)
+    monkeypatch.setattr(module, "candidate_drive_checkpoints", lambda run_id, filename: [])
+    monkeypatch.setattr(module, "drive_roots", lambda: [tmp_path / "drive"])
+
+    restored = module.resolve_checkpoint(source, payload)
+
+    assert restored == checkpoint
+    assert checkpoint.read_bytes() == b"dense-unfreeze"
+
+
 def test_resolve_checkpoint_missing_error_includes_drive_diagnostics(tmp_path, monkeypatch) -> None:
     import colab.run_stage5_benchmark_suite as module
 

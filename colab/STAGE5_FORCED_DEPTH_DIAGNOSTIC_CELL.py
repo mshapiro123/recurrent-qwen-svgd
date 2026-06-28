@@ -130,6 +130,34 @@ def read_json(path: Path) -> dict[str, Any]:
     return payload
 
 
+def checkpoint_bearing_source_summary(source_summary: str) -> tuple[str, dict[str, Any]]:
+    current_summary = source_summary
+    seen: set[Path] = set()
+    for _depth in range(8):
+        current_path = resolve_path(current_summary)
+        if current_path in seen:
+            raise RuntimeError(f"Cycle while resolving forced-depth source summary: {current_summary}")
+        seen.add(current_path)
+        payload = read_json(current_path)
+        kind = str(payload.get("kind") or "")
+        next_summary = None
+        if kind == "stage5_forced_depth_diagnostic":
+            next_summary = payload.get("source_summary")
+        elif kind == "stage5_mcq_scoring_policy":
+            next_summary = payload.get("source_summary")
+        elif kind == "stage5_mcq_debias_pair_assessment":
+            source_summaries = payload.get("source_summaries") or {}
+            if isinstance(source_summaries, dict):
+                next_summary = source_summaries.get("arc_challenge") or source_summaries.get("arc_easy")
+        elif kind == "stage5_mcq_debias_diagnostic":
+            next_summary = payload.get("nested_source_summary") or payload.get("source_summary")
+
+        if not next_summary:
+            return path_for_cli(current_path), payload
+        current_summary = str(next_summary)
+    raise RuntimeError(f"Could not resolve checkpoint-bearing forced-depth source summary from {source_summary}")
+
+
 def forced_depth_lora_rank(source_payload: dict[str, Any]) -> str:
     override = os.environ.get("STAGE5_FORCED_DEPTH_LORA_RANK", "").strip()
     if override:
@@ -354,8 +382,8 @@ try:
         cwd=ROOT,
     )
 
-    source_summary = current_source_summary()
-    source_payload = read_json(resolve_path(source_summary))
+    requested_source_summary = current_source_summary()
+    source_summary, source_payload = checkpoint_bearing_source_summary(requested_source_summary)
     lora_rank = forced_depth_lora_rank(source_payload)
     lora_alpha = forced_depth_lora_alpha(lora_rank)
     loops = parse_csv_ints(os.environ.get("STAGE5_FORCED_DEPTH_LOOPS", "1,2,3"))
@@ -365,6 +393,7 @@ try:
     )
     run_ids = []
     result_paths: list[Path] = []
+    print("forced_depth_requested_source_summary:", requested_source_summary, flush=True)
     print("forced_depth_source_summary:", source_summary, flush=True)
     print("forced_depth_sweep_id:", sweep_id, flush=True)
     print("forced_depth_loops:", loops, flush=True)

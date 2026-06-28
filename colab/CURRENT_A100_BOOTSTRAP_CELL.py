@@ -1354,6 +1354,8 @@ TARGETS = {
             "forced_depth_arc_v1",
             "STAGE5_BENCHMARK_FORCED_LOOP_COUNT",
             "STAGE5_FORCED_DEPTH_SOURCE_SUMMARY",
+            "forced_depth_requested_source_summary",
+            "checkpoint_bearing_source_summary",
             "STAGE5_FORCED_DEPTH_LORA_RANK",
             "STAGE5_BENCHMARK_LORA_RANK",
             "forced_depth_lora_rank",
