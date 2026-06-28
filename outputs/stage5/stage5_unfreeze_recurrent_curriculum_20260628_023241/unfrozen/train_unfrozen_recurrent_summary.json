@@ -1,0 +1,176 @@
+{
+  "setup": {
+    "resume_lora_wrapped": 84,
+    "merged_lora_modules": 84,
+    "trainable_parameters": {
+      "total": 179796514,
+      "recurrent_block": 178948608,
+      "bridge": 803713,
+      "halting": 44193,
+      "reentry_adapter": 0,
+      "latent": 0
+    }
+  },
+  "curriculum_trace": [
+    {
+      "step": 0,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.9067794680595398,
+        "halting_kl": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "halting_target_nll": 0.0,
+        "loss": 0.9067794680595398
+      }
+    },
+    {
+      "step": 5,
+      "scheduled_loops": 2,
+      "forward_loops": 2,
+      "metrics": {
+        "mean_expected_loops": 1.9384955167770386,
+        "mean_halt_entropy": 0.2310870736837387,
+        "expected_ce": 1.0763624906539917,
+        "halting_kl": 0.2439374178647995,
+        "target_mean_loops": 2.0,
+        "target_loop_abs_error": 0.061504483222961426,
+        "halting_target_nll": 0.06347713619470596,
+        "loss": 1.1642334461212158
+      }
+    },
+    {
+      "step": 10,
+      "scheduled_loops": 2,
+      "forward_loops": 2,
+      "metrics": {
+        "mean_expected_loops": 1.9235591888427734,
+        "mean_halt_entropy": 0.2699895203113556,
+        "expected_ce": 1.1980063915252686,
+        "halting_kl": 0.2139645218849182,
+        "target_mean_loops": 2.0,
+        "target_loop_abs_error": 0.07644081115722656,
+        "halting_target_nll": 0.07952045649290085,
+        "loss": 1.2989232540130615
+      }
+    },
+    {
+      "step": 15,
+      "scheduled_loops": 3,
+      "forward_loops": 3,
+      "metrics": {
+        "mean_expected_loops": 1.3630266189575195,
+        "mean_halt_entropy": 0.6562181711196899,
+        "expected_ce": 1.4251786470413208,
+        "halting_kl": 0.9389612078666687,
+        "target_mean_loops": 3.0,
+        "target_loop_abs_error": 1.6369733810424805,
+        "halting_target_nll": 8.958355903625488,
+        "loss": 10.47743034362793
+      }
+    },
+    {
+      "step": 20,
+      "scheduled_loops": 4,
+      "forward_loops": 4,
+      "metrics": {
+        "mean_expected_loops": 1.2770568132400513,
+        "mean_halt_entropy": 0.5911217927932739,
+        "expected_ce": 0.7918996214866638,
+        "halting_kl": 1.7392947673797607,
+        "target_mean_loops": 4.0,
+        "target_loop_abs_error": 2.7229433059692383,
+        "halting_target_nll": 15.933337211608887,
+        "loss": 16.899166107177734
+      }
+    },
+    {
+      "step": 25,
+      "scheduled_loops": 5,
+      "forward_loops": 5,
+      "metrics": {
+        "mean_expected_loops": 1.9792383909225464,
+        "mean_halt_entropy": 0.3001522421836853,
+        "expected_ce": 1.5597507953643799,
+        "halting_kl": 2.2526395320892334,
+        "target_mean_loops": 5.0,
+        "target_loop_abs_error": 3.020761489868164,
+        "halting_target_nll": 12.953651428222656,
+        "loss": 14.738666534423828
+      }
+    },
+    {
+      "step": 30,
+      "scheduled_loops": 5,
+      "forward_loops": 5,
+      "metrics": {
+        "mean_expected_loops": 2.178617477416992,
+        "mean_halt_entropy": 0.5909873843193054,
+        "expected_ce": 1.272269606590271,
+        "halting_kl": 1.842607855796814,
+        "target_mean_loops": 5.0,
+        "target_loop_abs_error": 2.821382522583008,
+        "halting_target_nll": 5.425118446350098,
+        "loss": 6.881649017333984
+      }
+    },
+    {
+      "step": 35,
+      "scheduled_loops": 6,
+      "forward_loops": 6,
+      "metrics": {
+        "mean_expected_loops": 2.295004367828369,
+        "mean_halt_entropy": 0.7329195737838745,
+        "expected_ce": 1.130287766456604,
+        "halting_kl": 2.252500534057617,
+        "target_mean_loops": 6.0,
+        "target_loop_abs_error": 3.704995632171631,
+        "halting_target_nll": 6.435832500457764,
+        "loss": 7.791370391845703
+      }
+    },
+    {
+      "step": 40,
+      "scheduled_loops": 7,
+      "forward_loops": 7,
+      "metrics": {
+        "mean_expected_loops": 2.080742835998535,
+        "mean_halt_entropy": 0.46404847502708435,
+        "expected_ce": 1.2602144479751587,
+        "halting_kl": 3.2600319385528564,
+        "target_mean_loops": 7.0,
+        "target_loop_abs_error": 4.919257164001465,
+        "halting_target_nll": 18.42068099975586,
+        "loss": 20.006898880004883
+      }
+    },
+    {
+      "step": 45,
+      "scheduled_loops": 7,
+      "forward_loops": 7,
+      "metrics": {
+        "mean_expected_loops": 1.6690292358398438,
+        "mean_halt_entropy": 0.6763544082641602,
+        "expected_ce": 1.3727397918701172,
+        "halting_kl": 3.293863296508789,
+        "target_mean_loops": 7.0,
+        "target_loop_abs_error": 5.330970764160156,
+        "halting_target_nll": 18.42068099975586,
+        "loss": 20.122806549072266
+      }
+    }
+  ],
+  "checkpoint": "outputs/stage5/stage5_unfreeze_recurrent_curriculum_20260628_023241/unfrozen/unfrozen_recurrent_step_50.pt",
+  "final_step": 50,
+  "trainable_parameters": {
+    "total": 179796514,
+    "recurrent_block": 178948608,
+    "bridge": 803713,
+    "halting": 44193,
+    "reentry_adapter": 0,
+    "latent": 0
+  }
+}

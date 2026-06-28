@@ -1,0 +1,45 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 4855.16it/s]
+lora_recurrent_modules=0
+loaded_checkpoint=outputs/stage5/stage5_unfreeze_recurrent_curriculum_20260628_023241/unfrozen/unfrozen_recurrent_step_50.pt loaded_keys=155
+examples=6
+expected_ce=1.472253
+halting_kl=0.459691
+loss=1.518222
+mean_expected_loops=1.986687
+mean_halt_entropy=0.689705
+target_loop_abs_error=0.320020
+target_mean_loops=1.666667
+group/curriculum_mode/deep_narrow/examples=4
+group/curriculum_mode/deep_narrow/expected_ce=1.155895
+group/curriculum_mode/deep_narrow/halting_kl=0.500948
+group/curriculum_mode/deep_narrow/loss=1.205990
+group/curriculum_mode/deep_narrow/mean_expected_loops=2.235033
+group/curriculum_mode/deep_narrow/mean_halt_entropy=0.681628
+group/curriculum_mode/deep_narrow/target_loop_abs_error=0.235033
+group/curriculum_mode/deep_narrow/target_mean_loops=2.000000
+group/curriculum_mode/direct/examples=2
+group/curriculum_mode/direct/expected_ce=2.104969
+group/curriculum_mode/direct/halting_kl=0.377177
+group/curriculum_mode/direct/loss=2.142686
+group/curriculum_mode/direct/mean_expected_loops=1.489995
+group/curriculum_mode/direct/mean_halt_entropy=0.705860
+group/curriculum_mode/direct/target_loop_abs_error=0.489995
+group/curriculum_mode/direct/target_mean_loops=1.000000
+group/target_loop_count/1/examples=2
+group/target_loop_count/1/expected_ce=2.104969
+group/target_loop_count/1/halting_kl=0.377177
+group/target_loop_count/1/loss=2.142686
+group/target_loop_count/1/mean_expected_loops=1.489995
+group/target_loop_count/1/mean_halt_entropy=0.705860
+group/target_loop_count/1/target_loop_abs_error=0.489995
+group/target_loop_count/1/target_mean_loops=1.000000
+group/target_loop_count/2/examples=4
+group/target_loop_count/2/expected_ce=1.155895
+group/target_loop_count/2/halting_kl=0.500948
+group/target_loop_count/2/loss=1.205990
+group/target_loop_count/2/mean_expected_loops=2.235033
+group/target_loop_count/2/mean_halt_entropy=0.681628
+group/target_loop_count/2/target_loop_abs_error=0.235033
+group/target_loop_count/2/target_mean_loops=2.000000
