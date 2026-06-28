@@ -53,6 +53,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "traced_sft_depth_router_after_direct_preserve" - learned-depth continuation from a passed direct-preservation checkpoint.
 #   "traced_capability_ladder_sft" - GPU Phase 1 SFT from the latest gate-ready traced capability ladder.
 #   "forced_depth_diagnostic" - no-training ARC-Challenge forced-depth diagnostic.
+#   "rescue_detectability_gate" - CPU-only rescue-direction agreement against a permutation null.
 #   "rescue_predictability_analysis" - CPU-only precursor asking whether deeper-loop rescue is predictable.
 #   "rescue_selector_transfer" - CPU-only held-out rescue selector trade curve with spectral/probe diagnostics.
 #   "tail_convergence_selector" - GPU hidden-state probe for cross-loop tail convergence selector features.
@@ -1391,6 +1392,27 @@ TARGETS = {
             "STAGE5_RESCUE_PREDICTABILITY_SCORE_TARGET": "content_question_only",
             "STAGE5_RESCUE_PREDICTABILITY_AGGREGATE": "mean",
             "STAGE5_RESCUE_PREDICTABILITY_DISCONNECT": "1",
+        },
+    },
+    "rescue_detectability_gate": {
+        "path": "colab/STAGE5_RESCUE_DETECTABILITY_CELL.py",
+        "markers": [
+            "STAGE5_RESCUE_DETECTABILITY_CELL_VERSION",
+            "rescue_detectability_gate_v1",
+            "STAGE5_RESCUE_DETECTABILITY_SWEEP_SUMMARY",
+            "eval/evaluate_rescue_detectability.py",
+            "observed_minus_null_p95",
+            "stage5_current_rescue_detectability_summary",
+            "tests/test_evaluate_rescue_detectability.py",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_RESCUE_DETECTABILITY_SCORE_TARGET": "content_question_only",
+            "STAGE5_RESCUE_DETECTABILITY_AGGREGATE": "mean",
+            "STAGE5_RESCUE_DETECTABILITY_SHRINKAGES": "0.1,1,10",
+            "STAGE5_RESCUE_DETECTABILITY_REPEATS": "64",
+            "STAGE5_RESCUE_DETECTABILITY_PERMUTATIONS": "128",
+            "STAGE5_RESCUE_DETECTABILITY_DISCONNECT": "1",
         },
     },
     "rescue_selector_transfer": {

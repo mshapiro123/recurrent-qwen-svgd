@@ -360,6 +360,25 @@ def test_current_bootstrap_exposes_rescue_predictability_target() -> None:
     assert "binary_gate_top10" in analyzer
 
 
+def test_current_bootstrap_exposes_rescue_detectability_gate_target() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_RESCUE_DETECTABILITY_CELL.py").read_text(encoding="utf-8")
+    evaluator = (ROOT / "eval/evaluate_rescue_detectability.py").read_text(encoding="utf-8")
+
+    for payload in (text, markdown):
+        assert '"rescue_detectability_gate"' in payload
+        assert "colab/STAGE5_RESCUE_DETECTABILITY_CELL.py" in payload
+        assert "STAGE5_RESCUE_DETECTABILITY_SWEEP_SUMMARY" in payload
+        assert "observed_minus_null_p95" in payload
+    assert "STAGE5_RESCUE_DETECTABILITY_CELL_VERSION" in cell
+    assert "rescue_detectability_gate_v1" in cell
+    assert "eval/evaluate_rescue_detectability.py" in cell
+    assert "stage5_current_rescue_detectability_summary" in cell
+    assert "diverse_probe_detectability" in evaluator
+    assert "train_supervised_probes" in evaluator
+
+
 def test_current_bootstrap_exposes_rescue_selector_transfer_target() -> None:
     text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     markdown = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
