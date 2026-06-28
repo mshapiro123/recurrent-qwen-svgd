@@ -1359,6 +1359,8 @@ TARGETS = {
             "STAGE5_FORCED_DEPTH_LORA_RANK",
             "STAGE5_BENCHMARK_LORA_RANK",
             "forced_depth_lora_rank",
+            "require_cuda_runtime",
+            "Forced-depth diagnostic requires an attached GPU runtime",
             "content_question_only,cyclic_label_aggregated",
             "eval/analyze_depth_sweep.py",
             "--score_target",

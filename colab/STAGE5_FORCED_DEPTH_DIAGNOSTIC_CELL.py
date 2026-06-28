@@ -87,6 +87,18 @@ def run(cmd, *, cwd=None, env=None, check=True):
     return proc
 
 
+def require_cuda_runtime() -> None:
+    requested_device = os.environ.get("DEVICE", "cuda").strip().lower()
+    if not requested_device.startswith("cuda"):
+        return
+    if shutil.which("nvidia-smi") is None:
+        raise RuntimeError(
+            "Forced-depth diagnostic requires an attached GPU runtime because DEVICE=cuda. "
+            "Reconnect Colab with an L4/T4/A100/H100 runtime, or explicitly set DEVICE=cpu for a very slow CPU debug run."
+        )
+    run(["nvidia-smi"], check=False)
+
+
 def sync_repo():
     clone_url = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
     if ROOT.exists():
@@ -360,6 +372,7 @@ def disconnect(reason: str) -> None:
 
 
 try:
+    require_cuda_runtime()
     ensure_drive_for_checkpoint_restore()
     if not DRIVE_BACKUP:
         print("Drive backup disabled; using GitHub as primary artifact store for outputs.", flush=True)

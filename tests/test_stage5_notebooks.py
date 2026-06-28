@@ -332,12 +332,15 @@ def test_current_bootstrap_exposes_forced_depth_diagnostic_target() -> None:
         assert "forced_depth_lora_rank" in payload
         assert "forced_depth_requested_source_summary" in payload
         assert "checkpoint_bearing_source_summary" in payload
+        assert "require_cuda_runtime" in payload
+        assert "Forced-depth diagnostic requires an attached GPU runtime" in payload
     assert "STAGE5_FORCED_DEPTH_DIAGNOSTIC_CELL_VERSION" in cell
     assert "forced_depth_arc_v1" in cell
     assert "content_question_only,cyclic_label_aggregated" in cell
     assert "eval/analyze_depth_sweep.py" in cell
     assert "checkpoint_bearing_source_summary" in cell
     assert 'kind == "stage5_forced_depth_diagnostic"' in cell
+    assert "require_cuda_runtime" in cell
     assert "forward_max_loops = max(loops)" in cell
     assert '"STAGE5_BENCHMARK_MAX_LOOPS": str(forward_max_loops)' in cell
     assert "ensure_drive_for_checkpoint_restore" in cell
