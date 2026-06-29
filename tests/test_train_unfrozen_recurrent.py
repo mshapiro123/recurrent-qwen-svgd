@@ -3,8 +3,12 @@ from __future__ import annotations
 import torch
 from torch import nn
 
+from models.bridge import IdentityGatedBridge
 from models.recurrent_wrapper import LayerSplit
 from training.train_unfrozen_recurrent import (
+    apply_bridge_prelude_grad_multiplier,
+    bridge_prelude_grad_stats,
+    bridge_prelude_weight_stats,
     configure_trainable_modules,
     curriculum_target_counts,
     resolve_resume_lora_config,
@@ -76,3 +80,41 @@ def test_configure_trainable_modules_unfreezes_only_recurrent_block_by_default()
     summary = trainable_parameter_summary(wrapper)  # type: ignore[arg-type]
     assert summary["recurrent_block"] > 0
     assert summary["total"] >= summary["recurrent_block"]
+
+
+class TinyBridgeWrapper(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.bridge = IdentityGatedBridge(2)
+
+
+def test_bridge_prelude_grad_multiplier_scales_only_prelude_half() -> None:
+    wrapper = TinyBridgeWrapper()
+    wrapper.bridge.proj.weight.grad = torch.ones_like(wrapper.bridge.proj.weight)
+
+    stats = apply_bridge_prelude_grad_multiplier(wrapper, 10.0)  # type: ignore[arg-type]
+
+    grad = wrapper.bridge.proj.weight.grad
+    assert grad is not None
+    assert torch.allclose(grad[:, :2], torch.full_like(grad[:, :2], 10.0))
+    assert torch.allclose(grad[:, 2:], torch.ones_like(grad[:, 2:]))
+    assert stats["bridge_prelude_grad_multiplier"] == 10.0
+    assert stats["bridge_prelude_grad_rms_after_multiplier"] > stats["bridge_prelude_grad_rms"]
+
+
+def test_bridge_prelude_weight_stats_reports_warm_start() -> None:
+    wrapper = TinyBridgeWrapper()
+
+    stats = bridge_prelude_weight_stats(wrapper)  # type: ignore[arg-type]
+
+    assert stats["bridge_prelude_weight_rms"] == 0.0
+    assert stats["bridge_prelude_weight_max_abs"] == 0.0
+    assert stats["bridge_state_identity_max_abs_diff"] == 0.0
+
+
+def test_bridge_prelude_grad_stats_handles_missing_grad() -> None:
+    wrapper = TinyBridgeWrapper()
+
+    stats = bridge_prelude_grad_stats(wrapper)  # type: ignore[arg-type]
+
+    assert stats == {"bridge_prelude_grad_rms": 0.0, "bridge_state_grad_rms": 0.0}

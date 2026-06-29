@@ -1916,6 +1916,28 @@ def test_current_bootstrap_exposes_unfreeze_recurrent_curriculum_target() -> Non
     assert "use_reentry_adapter=False" in trainer
 
 
+def test_current_bootstrap_exposes_prelude_path_development_target() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_UNFREEZE_RECURRENT_CURRICULUM_CELL.py").read_text(encoding="utf-8")
+    trainer = (ROOT / "training/train_unfrozen_recurrent.py").read_text(encoding="utf-8")
+    ablation = (ROOT / "eval/eval_prelude_ablation.py").read_text(encoding="utf-8")
+
+    for text in (bootstrap, bootstrap_md):
+        assert "prelude_path_development" in text
+        assert "STAGE5_UNFREEZE_BRIDGE_PRELUDE_GRAD_MULTIPLIER" in text
+        assert "STAGE5_UNFREEZE_RUN_PRELUDE_ABLATION" in text
+        assert "stage5_prelude_path_development" in text
+        assert '"STAGE5_UNFREEZE_MAX_STEPS": "300"' in text
+        assert '"STAGE5_UNFREEZE_SAVE_EVERY": "50"' in text
+    assert "eval/eval_prelude_ablation.py" in cell
+    assert "prelude_ablation_summary" in cell
+    assert "bridge_prelude_grad_multiplier" in trainer
+    assert "apply_bridge_prelude_grad_multiplier" in trainer
+    assert "prelude_variant" in ablation
+    assert "shuffled" in ablation
+
+
 def test_debiased_benchmark_suite_threads_fixed_tail_damper() -> None:
     cell = (ROOT / "colab/STAGE5_DEBIASED_BENCHMARK_SUITE_CELL.py").read_text(encoding="utf-8")
     runner = (ROOT / "colab/run_stage5_benchmark_suite.py").read_text(encoding="utf-8")

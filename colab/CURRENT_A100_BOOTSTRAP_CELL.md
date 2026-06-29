@@ -52,6 +52,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "reentry_tail_damper_capacity_lora32_training" - same fixed-damper recovery arm with recurrent LoRA rank 32.
 #   "reentry_capacity_localization_rank64" - rank-64 fixed-damper capacity localization arm.
 #   "unfreeze_recurrent_curriculum" - merge recovered LoRA, unfreeze recurrent block, train with Muon and loop curriculum.
+#   "prelude_path_development" - corrected re-injection unfreeze with boosted bridge-prelude gradient and ablation.
 #   "reentry_tail_damper_recovery_readout_only" - finish fixed-damper readout for an already completed recovery SFT.
 #   "depth_signal_confirmation" - recovery SFT, then expanded hard-content benchmark with open hard fallback.
 #   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
@@ -692,6 +693,36 @@ TARGETS = {
             ),
             "STAGE5_UNFREEZE_MAX_STEPS": "50",
             "STAGE5_UNFREEZE_END_LOOP": "8",
+            "STAGE5_UNFREEZE_DISCONNECT": "0",
+        },
+    },
+    "prelude_path_development": {
+        "path": "colab/STAGE5_UNFREEZE_RECURRENT_CURRICULUM_CELL.py",
+        "markers": [
+            "STAGE5_UNFREEZE_RECURRENT_CURRICULUM_CELL_VERSION",
+            "unfreeze_recurrent_curriculum_v1",
+            "training/train_unfrozen_recurrent.py",
+            "merge_lora_before_unfreeze",
+            "require_lora_loaded_before_merge",
+            "STAGE5_UNFREEZE_BRIDGE_PRELUDE_GRAD_MULTIPLIER",
+            "STAGE5_UNFREEZE_RUN_PRELUDE_ABLATION",
+            "eval/eval_prelude_ablation.py",
+            "prelude_ablation_summary",
+            "save_every",
+            "runtime.unassign",
+        ],
+        "env": {
+            "STAGE5_UNFREEZE_SOURCE_SUMMARY": (
+                "outputs/stage5/stage5_reentry_recovery_20260627_190155/summary.json"
+            ),
+            "STAGE5_UNFREEZE_RUN_ID": "stage5_prelude_path_development",
+            "STAGE5_UNFREEZE_MAX_STEPS": "300",
+            "STAGE5_UNFREEZE_SAVE_EVERY": "50",
+            "STAGE5_UNFREEZE_END_LOOP": "8",
+            "STAGE5_UNFREEZE_LOG_EVERY": "10",
+            "STAGE5_UNFREEZE_BRIDGE_PRELUDE_GRAD_MULTIPLIER": "10.0",
+            "STAGE5_UNFREEZE_RUN_PRELUDE_ABLATION": "1",
+            "STAGE5_UNFREEZE_PRELUDE_ABLATION_LIMIT": "8",
             "STAGE5_UNFREEZE_DISCONNECT": "0",
         },
     },

@@ -130,6 +130,69 @@ def trainable_parameter_summary(wrapper: RecurrentQwenForCausalLM) -> dict[str, 
     }
 
 
+def bridge_prelude_weight_stats(wrapper: RecurrentQwenForCausalLM) -> dict[str, float]:
+    weight = wrapper.bridge.proj.weight.detach().float()
+    hidden_size = int(getattr(wrapper.bridge, "hidden_size", weight.shape[0]))
+    if weight.dim() != 2 or weight.shape[1] != 2 * hidden_size:
+        return {
+            "bridge_prelude_weight_rms": 0.0,
+            "bridge_prelude_weight_max_abs": 0.0,
+            "bridge_state_identity_max_abs_diff": 0.0,
+        }
+    prelude_weight = weight[:, :hidden_size]
+    state_weight = weight[:, hidden_size:]
+    eye = torch.eye(hidden_size, device=weight.device, dtype=weight.dtype)
+    return {
+        "bridge_prelude_weight_rms": float(prelude_weight.square().mean().sqrt().item()),
+        "bridge_prelude_weight_max_abs": float(prelude_weight.abs().max().item()),
+        "bridge_state_identity_max_abs_diff": float((state_weight - eye).abs().max().item()),
+    }
+
+
+def bridge_prelude_grad_stats(wrapper: RecurrentQwenForCausalLM) -> dict[str, float]:
+    grad = wrapper.bridge.proj.weight.grad
+    hidden_size = int(getattr(wrapper.bridge, "hidden_size", wrapper.bridge.proj.weight.shape[0]))
+    if grad is None or grad.dim() != 2 or grad.shape[1] != 2 * hidden_size:
+        return {
+            "bridge_prelude_grad_rms": 0.0,
+            "bridge_state_grad_rms": 0.0,
+        }
+    prelude_grad = grad[:, :hidden_size].detach().float()
+    state_grad = grad[:, hidden_size:].detach().float()
+    return {
+        "bridge_prelude_grad_rms": float(prelude_grad.square().mean().sqrt().item()),
+        "bridge_state_grad_rms": float(state_grad.square().mean().sqrt().item()),
+    }
+
+
+def apply_bridge_prelude_grad_multiplier(
+    wrapper: RecurrentQwenForCausalLM,
+    multiplier: float,
+) -> dict[str, float]:
+    """Scale the bridge prelude-half gradient as a slice-specific LR proxy.
+
+    PyTorch optimizers cannot assign a separate parameter group to a slice of a
+    single ``Parameter``. The corrected bridge keeps a single projection weight
+    for checkpoint compatibility, so this multiplier is applied after global
+    clipping and before the optimizer step.
+    """
+
+    before = bridge_prelude_grad_stats(wrapper)
+    if multiplier == 1.0:
+        return {**before, "bridge_prelude_grad_multiplier": 1.0}
+    grad = wrapper.bridge.proj.weight.grad
+    hidden_size = int(getattr(wrapper.bridge, "hidden_size", wrapper.bridge.proj.weight.shape[0]))
+    if grad is not None and grad.dim() == 2 and grad.shape[1] == 2 * hidden_size:
+        grad[:, :hidden_size].mul_(float(multiplier))
+    after = bridge_prelude_grad_stats(wrapper)
+    return {
+        **before,
+        "bridge_prelude_grad_multiplier": float(multiplier),
+        "bridge_prelude_grad_rms_after_multiplier": after["bridge_prelude_grad_rms"],
+        "bridge_state_grad_rms_after_multiplier": after["bridge_state_grad_rms"],
+    }
+
+
 def build_optimizer(wrapper: RecurrentQwenForCausalLM, cfg: dict[str, Any]) -> OptimizerBundle | torch.optim.Optimizer:
     optimizer_name = str(cfg.get("optimizer", "muon")).lower()
     params = [param for param in wrapper.parameters() if param.requires_grad]
@@ -316,8 +379,10 @@ def main() -> int:
     target_source = str(curriculum.get("target_source", "schedule"))
     ramp_compute = bool(curriculum.get("ramp_compute", True))
 
-    summary = {"setup": setup, "curriculum_trace": []}
+    summary = {"setup": setup, "curriculum_trace": [], "interval_checkpoints": []}
     max_steps = cfg_int(cfg, "max_steps", 25)
+    save_every = cfg_int(cfg, "save_every", 0) if cfg.get("save_every", 0) else 0
+    prelude_grad_multiplier = cfg_float(cfg, "bridge_prelude_grad_multiplier", 1.0)
     step = 0
     while step < max_steps:
         for batch in loader:
@@ -349,27 +414,45 @@ def main() -> int:
             assert_finite_training_state(wrapper, output.loss, output.metrics, step)
             output.loss.backward()
             assert_finite_trainable_gradients(wrapper, step)
+            pre_clip_bridge_grad = {
+                f"pre_clip_{key}": value
+                for key, value in bridge_prelude_grad_stats(wrapper).items()
+            }
             torch.nn.utils.clip_grad_norm_(
                 [param for param in wrapper.parameters() if param.requires_grad],
                 cfg_float(cfg, "max_grad_norm", 0.5),
                 error_if_nonfinite=True,
             )
+            bridge_grad = apply_bridge_prelude_grad_multiplier(wrapper, prelude_grad_multiplier)
+            assert_finite_trainable_gradients(wrapper, step)
             optimizer.step()
             optimizer.zero_grad(set_to_none=True)
             assert_finite_trainable_parameters(wrapper, step + 1)
 
             if step % cfg_int(cfg, "log_every", 5) == 0:
-                metrics = " ".join(f"{key}={float(value):.4f}" for key, value in output.metrics.items())
+                bridge_weight = bridge_prelude_weight_stats(wrapper)
+                metric_values = {
+                    **{key: float(value) for key, value in output.metrics.items()},
+                    **pre_clip_bridge_grad,
+                    **bridge_grad,
+                    **bridge_weight,
+                }
+                metrics = " ".join(f"{key}={float(value):.4f}" for key, value in metric_values.items())
                 print(f"step={step} scheduled_loops={scheduled} forward_loops={forward_loops} {metrics}")
                 summary["curriculum_trace"].append(
                     {
                         "step": step,
                         "scheduled_loops": scheduled,
                         "forward_loops": forward_loops,
-                        "metrics": {key: float(value.detach().float().cpu()) for key, value in output.metrics.items()},
+                        "metrics": metric_values,
                     }
                 )
             step += 1
+            if output_dir := cfg.get("output_dir"):
+                if save_every and step % save_every == 0 and step < max_steps:
+                    checkpoint_path = save_trainable_checkpoint(wrapper, output_dir, "unfrozen_recurrent", step, cfg)
+                    print(f"saved_checkpoint={checkpoint_path}")
+                    summary["interval_checkpoints"].append(str(checkpoint_path))
             if step >= max_steps:
                 break
 
@@ -380,6 +463,8 @@ def main() -> int:
         summary["checkpoint"] = str(checkpoint_path)
     summary["final_step"] = step
     summary["trainable_parameters"] = trainable_parameter_summary(wrapper)
+    summary["bridge_prelude_weight_stats"] = bridge_prelude_weight_stats(wrapper)
+    summary["bridge_prelude_grad_multiplier"] = prelude_grad_multiplier
     if output_dir:
         summary_path = Path(output_dir) / "train_unfrozen_recurrent_summary.json"
         summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")

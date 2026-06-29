@@ -328,7 +328,11 @@ def write_config(run_dir: Path, checkpoint: Path) -> Path:
         "weight_decay": float(os.environ.get("STAGE5_UNFREEZE_WEIGHT_DECAY", "0.0")),
         "max_grad_norm": float(os.environ.get("STAGE5_UNFREEZE_MAX_GRAD_NORM", "0.5")),
         "max_steps": max_steps,
+        "save_every": int(os.environ.get("STAGE5_UNFREEZE_SAVE_EVERY", "0")),
         "log_every": int(os.environ.get("STAGE5_UNFREEZE_LOG_EVERY", "5")),
+        "bridge_prelude_grad_multiplier": float(
+            os.environ.get("STAGE5_UNFREEZE_BRIDGE_PRELUDE_GRAD_MULTIPLIER", "1.0")
+        ),
         "train_on_prompt": False,
         "gradient_checkpointing": True,
         "output_dir": path_for_cli(run_dir / "unfrozen"),
@@ -438,6 +442,52 @@ def run_drift_probe(checkpoint: Path, run_dir: Path) -> Path:
     return output_json
 
 
+def run_prelude_ablation(checkpoint: Path, run_dir: Path) -> Path | None:
+    if not env_flag("STAGE5_UNFREEZE_RUN_PRELUDE_ABLATION", "0"):
+        return None
+    output_json = run_dir / "prelude_ablation.json"
+    end_loop = int(os.environ.get("STAGE5_UNFREEZE_END_LOOP", "8"))
+    loop_counts = [
+        loop
+        for loop in (1, 2, 4, 8)
+        if loop <= end_loop
+    ]
+    run(
+        [
+            sys.executable,
+            "eval/eval_prelude_ablation.py",
+            "--checkpoint",
+            path_for_cli(checkpoint),
+            "--prompts_jsonl",
+            os.environ.get("STAGE5_UNFREEZE_PRELUDE_ABLATION_PROMPTS", "eval/smoke_exact_tasks_v2.jsonl"),
+            "--limit",
+            os.environ.get("STAGE5_UNFREEZE_PRELUDE_ABLATION_LIMIT", "8"),
+            "--max_loops",
+            str(end_loop),
+            "--loop_counts",
+            ",".join(str(loop) for loop in loop_counts),
+            "--max_length",
+            os.environ.get("STAGE5_UNFREEZE_PRELUDE_ABLATION_MAX_LENGTH", "256"),
+            "--split",
+            os.environ.get("STAGE5_UNFREEZE_LAYER_SPLIT", "6,18"),
+            "--dtype",
+            os.environ.get("DTYPE", "bfloat16"),
+            "--adapter_dtype",
+            os.environ.get("ADAPTER_DTYPE", "float32"),
+            "--lora_rank",
+            "0",
+            "--device",
+            os.environ.get("DEVICE", "cuda"),
+            "--output_json",
+            path_for_cli(output_json),
+            "--output_jsonl",
+            path_for_cli(run_dir / "prelude_ablation.jsonl"),
+        ],
+        cwd=ROOT,
+    )
+    return output_json
+
+
 def backup_run_dir_to_drive(run_dir: Path) -> None:
     if not env_flag("STAGE5_UNFREEZE_BACKUP_TO_DRIVE", "1"):
         print("Drive backup disabled for unfreeze run.", flush=True)
@@ -460,6 +510,9 @@ def write_markdown_summary(summary_path: Path, payload: dict[str, Any]) -> None:
         f"- Checkpoint: `{payload['checkpoint']}`",
         f"- Training rows: `{payload['dataset']['train_rows']}`; validation rows: `{payload['dataset']['val_rows']}`",
         f"- Optimizer: `{payload['config']['optimizer']}`; max steps: `{payload['config']['max_steps']}`",
+        f"- Bridge prelude grad multiplier: `{payload['config'].get('bridge_prelude_grad_multiplier')}`",
+        f"- Save every: `{payload['config'].get('save_every')}`",
+        f"- Interval checkpoints: `{len(payload.get('interval_checkpoints', []))}`",
         f"- Merge LoRA before unfreeze: `{payload['config']['merge_lora_before_unfreeze']}`",
         "",
         "## Validation Loop Sweep",
@@ -475,6 +528,8 @@ def write_markdown_summary(summary_path: Path, payload: dict[str, Any]) -> None:
             "",
             "## Interpretation",
             "",
+            f"- Prelude ablation summary: `{payload.get('prelude_ablation_summary')}`",
+            f"- Bridge prelude weight stats: `{payload.get('bridge_prelude_weight_stats')}`",
             f"- Any deeper loop beats loop 1 on validation CE: `{payload['decision']['any_deeper_loop_val_ce_beats_loop1']}`",
             f"- Best validation loop by CE: `{payload['decision']['best_val_ce_loop']}`",
             f"- Next step: `{payload['decision']['next_step']}`",
@@ -531,7 +586,9 @@ try:
             "tests/test_lora.py",
             "tests/test_muon.py",
             "tests/test_train_unfrozen_recurrent.py",
+            "tests/test_eval_prelude_ablation.py",
             "tests/test_stage5_notebooks.py::test_current_bootstrap_exposes_unfreeze_recurrent_curriculum_target",
+            "tests/test_stage5_notebooks.py::test_current_bootstrap_exposes_prelude_path_development_target",
         ],
         cwd=ROOT,
     )
@@ -580,6 +637,7 @@ try:
     checkpoint_out = latest_checkpoint(run_dir / "unfrozen")
     loop_eval = run_val_loop_eval(checkpoint_out, val_jsonl, run_dir)
     drift_json = run_drift_probe(checkpoint_out, run_dir)
+    prelude_ablation_json = run_prelude_ablation(checkpoint_out, run_dir)
     training_summary_path = run_dir / "unfrozen" / "train_unfrozen_recurrent_summary.json"
     training_summary = read_json(training_summary_path) if training_summary_path.exists() else {}
 
@@ -611,9 +669,13 @@ try:
         "config_path": path_for_cli(config_path),
         "training_summary": path_for_cli(training_summary_path),
         "drift_summary": path_for_cli(drift_json),
+        "prelude_ablation_summary": path_for_cli(prelude_ablation_json) if prelude_ablation_json else None,
         "dataset": dataset_summary,
         "config": yaml.safe_load(config_path.read_text(encoding="utf-8")),
         "trainable_parameters": training_summary.get("trainable_parameters", {}),
+        "bridge_prelude_weight_stats": training_summary.get("bridge_prelude_weight_stats", {}),
+        "bridge_prelude_grad_multiplier": training_summary.get("bridge_prelude_grad_multiplier"),
+        "interval_checkpoints": training_summary.get("interval_checkpoints", []),
         "loop_eval": loop_eval,
         "decision": {
             "any_deeper_loop_val_ce_beats_loop1": any_deeper_beats,
