@@ -142,6 +142,7 @@ DTYPE = os.environ.get("DTYPE", "bfloat16")
 ADAPTER_DTYPE = os.environ.get("ADAPTER_DTYPE", "float32")
 DEVICE = os.environ.get("DEVICE", "cuda")
 PUSH_RESULTS = os.environ.get("STAGE5_BENCHMARK_PUSH", "1").strip().lower() in {"1", "true", "yes", "y"}
+BASE_REUSE_RUN_ID = os.environ.get("STAGE5_BENCHMARK_BASE_REUSE_RUN_ID", "").strip()
 AFTER_CONFIRM_DENSE_RUN_SUFFIX = os.environ.get("STAGE5_BENCHMARK_AFTER_CONFIRM_DENSE_RUN_SUFFIX", "").strip()
 AFTER_CONFIRM_DENSE_EXTRA_TRAIN_JSONL = os.environ.get(
     "STAGE5_BENCHMARK_AFTER_CONFIRM_DENSE_EXTRA_TRAIN_JSONL",
@@ -694,6 +695,34 @@ def eval_jobs(specs: list[BenchmarkSpec], *, checkpoint: Path) -> list[EvalJob]:
     return jobs
 
 
+def copy_reusable_base_outputs(jobs: list[EvalJob]) -> set[Path]:
+    """Copy base-arm outputs from a previous run so forced-depth sweeps only pay recurrent eval."""
+
+    if not BASE_REUSE_RUN_ID:
+        return set()
+    source_dir = ROOT / "outputs" / "stage5" / BASE_REUSE_RUN_ID
+    if not source_dir.exists():
+        raise FileNotFoundError(f"STAGE5_BENCHMARK_BASE_REUSE_RUN_ID not found: {source_dir}")
+    copied: set[Path] = set()
+    for job in jobs:
+        if job.arm != "base":
+            continue
+        targets = [job.output_jsonl]
+        if job.eval_output_jsonl and job.eval_output_jsonl != job.output_jsonl:
+            targets.append(job.eval_output_jsonl)
+        for target in targets:
+            source = source_dir / target.name
+            if not source.exists():
+                raise FileNotFoundError(
+                    f"Missing reusable base output {source}; cannot reuse base arm for {RUN_ID}."
+                )
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+            copied.add(target)
+            print(f"reused_base_output={source} -> {target}", flush=True)
+    return copied
+
+
 def read_rows(path: Path) -> list[dict[str, Any]]:
     if not path.exists():
         return []
@@ -1096,6 +1125,7 @@ def main() -> int:
                 raise
 
     jobs = [job for job in eval_jobs(specs, checkpoint=checkpoint) if job.output_jsonl.parent.exists()]
+    reused_base_outputs = copy_reusable_base_outputs(jobs)
     for job in jobs:
         if not job.cmd[job.cmd.index("--data_jsonl") + 1]:
             continue
@@ -1103,6 +1133,9 @@ def main() -> int:
         if not data_path.exists():
             continue
         eval_output = job.eval_output_jsonl or job.output_jsonl
+        if job.arm == "base" and job.output_jsonl in reused_base_outputs:
+            print(f"skip_reused_base_job={job.output_jsonl}", flush=True)
+            continue
         if eval_output.exists():
             eval_output.unlink()
         if job.output_jsonl.exists():

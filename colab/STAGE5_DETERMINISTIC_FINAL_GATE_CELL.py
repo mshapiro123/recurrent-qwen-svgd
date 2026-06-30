@@ -38,6 +38,12 @@ DISCONNECT_ON_FINISH = os.environ.get("STAGE5_FINAL_GATE_DISCONNECT", "0").strip
     "yes",
     "y",
 }
+RESUME_EXISTING = os.environ.get("STAGE5_FINAL_GATE_RESUME_EXISTING", "1").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 FORCE_DRIVE_REMOUNT = os.environ.get("FORCE_DRIVE_REMOUNT", "0").strip().lower() in {
     "1",
     "true",
@@ -386,9 +392,16 @@ try:
         loops_tag = "".join(str(loop) for loop in loops)
         sweep_id = f"{run_id}_forced_depth_pooled_loop{loops_tag}"
         loop_run_ids: list[str] = []
+        base_reuse_run_id = ""
         for forced_loop in loops:
             loop_run_id = f"{sweep_id}_loop{forced_loop}"
             loop_run_ids.append(loop_run_id)
+            loop_summary = ROOT / "outputs" / "stage5" / loop_run_id / "summary.json"
+            if RESUME_EXISTING and loop_summary.exists():
+                print(f"skip_existing_forced_loop_summary={path_for_cli(loop_summary)}", flush=True)
+                if not base_reuse_run_id:
+                    base_reuse_run_id = loop_run_id
+                continue
             env = os.environ.copy()
             env.update(
                 {
@@ -426,8 +439,12 @@ try:
                     "DEVICE": os.environ.get("DEVICE", "cuda"),
                 }
             )
+            if base_reuse_run_id:
+                env["STAGE5_BENCHMARK_BASE_REUSE_RUN_ID"] = base_reuse_run_id
             print(f"\n===== final gate forced_loop_count={forced_loop} =====", flush=True)
             run([sys.executable, "colab/run_stage5_benchmark_suite.py"], cwd=ROOT, env=env)
+            if not base_reuse_run_id:
+                base_reuse_run_id = loop_run_id
         sweep_dir = write_forced_depth_sweep_summary(
             sweep_id=sweep_id,
             source_summary=source_summary,

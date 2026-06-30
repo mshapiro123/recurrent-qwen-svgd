@@ -360,6 +360,8 @@ def test_current_bootstrap_exposes_deterministic_final_gate_target() -> None:
         assert "STAGE5_FINAL_GATE_DISCOVERY_SWEEP" in text
         assert "STAGE5_FINAL_GATE_SOURCE_SUMMARY" in text
         assert "STAGE5_FINAL_GATE_OPEN_HARD_ARC_CHALLENGE_SPLIT" in text
+        assert "STAGE5_FINAL_GATE_RESUME_EXISTING" in text
+        assert "STAGE5_BENCHMARK_BASE_REUSE_RUN_ID" in text
         assert "eval/evaluate_rescue_selector_kfold.py" in text
     assert "STAGE5_DETERMINISTIC_FINAL_GATE_CELL_VERSION" in cell
     assert "deterministic_final_gate_v2_nested_selector" in cell
