@@ -1,0 +1,45 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5004.60it/s]
+lora_recurrent_modules=0
+loaded_checkpoint=outputs/stage5/stage5_prelude_path_development/unfrozen/unfrozen_recurrent_step_300.pt loaded_keys=157
+examples=6
+expected_ce=0.927838
+halting_kl=0.000000
+loss=0.927838
+mean_expected_loops=1.000000
+mean_halt_entropy=0.000000
+target_loop_abs_error=0.000000
+target_mean_loops=1.000000
+group/curriculum_mode/deep_narrow/examples=4
+group/curriculum_mode/deep_narrow/expected_ce=0.777038
+group/curriculum_mode/deep_narrow/halting_kl=0.000000
+group/curriculum_mode/deep_narrow/loss=0.777038
+group/curriculum_mode/deep_narrow/mean_expected_loops=1.000000
+group/curriculum_mode/deep_narrow/mean_halt_entropy=0.000000
+group/curriculum_mode/deep_narrow/target_loop_abs_error=0.000000
+group/curriculum_mode/deep_narrow/target_mean_loops=1.000000
+group/curriculum_mode/direct/examples=2
+group/curriculum_mode/direct/expected_ce=1.229438
+group/curriculum_mode/direct/halting_kl=0.000000
+group/curriculum_mode/direct/loss=1.229438
+group/curriculum_mode/direct/mean_expected_loops=1.000000
+group/curriculum_mode/direct/mean_halt_entropy=0.000000
+group/curriculum_mode/direct/target_loop_abs_error=0.000000
+group/curriculum_mode/direct/target_mean_loops=1.000000
+group/target_loop_count/1/examples=2
+group/target_loop_count/1/expected_ce=1.229438
+group/target_loop_count/1/halting_kl=0.000000
+group/target_loop_count/1/loss=1.229438
+group/target_loop_count/1/mean_expected_loops=1.000000
+group/target_loop_count/1/mean_halt_entropy=0.000000
+group/target_loop_count/1/target_loop_abs_error=0.000000
+group/target_loop_count/1/target_mean_loops=1.000000
+group/target_loop_count/2/examples=4
+group/target_loop_count/2/expected_ce=0.777038
+group/target_loop_count/2/halting_kl=0.000000
+group/target_loop_count/2/loss=0.777038
+group/target_loop_count/2/mean_expected_loops=1.000000
+group/target_loop_count/2/mean_halt_entropy=0.000000
+group/target_loop_count/2/target_loop_abs_error=0.000000
+group/target_loop_count/2/target_mean_loops=1.000000
