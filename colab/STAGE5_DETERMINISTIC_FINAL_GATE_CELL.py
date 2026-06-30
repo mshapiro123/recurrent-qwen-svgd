@@ -450,40 +450,37 @@ try:
             ],
             cwd=ROOT,
         )
-        best = detectability.get("best_detectability") or {}
-        primary_shrinkage = str(best.get("shrinkage") or "1.0")
         kfold_dir = run_dir / "selector_kfold_cyclic"
-        run(
-            [
-                sys.executable,
-                "eval/evaluate_rescue_selector_kfold.py",
-                "--sweep_summary",
-                path_for_cli(sweep_dir / "summary.json"),
-                "--benchmarks",
-                os.environ.get("STAGE5_FINAL_GATE_BENCHMARKS", "arc_easy,arc_challenge,open_hard_arc_challenge"),
-                "--score_target",
-                "cyclic_label_aggregated",
-                "--aggregate",
-                "permutation_mean",
-                "--folds",
-                os.environ.get("STAGE5_FINAL_GATE_KFOLD_FOLDS", "5"),
-                "--inner_folds",
-                os.environ.get("STAGE5_FINAL_GATE_KFOLD_INNER_FOLDS", "4"),
-                "--seed",
-                os.environ.get("STAGE5_FINAL_GATE_SEED", "17"),
-                "--shrinkages",
-                os.environ.get("STAGE5_FINAL_GATE_KFOLD_SHRINKAGES", "0.1,1.0,10.0"),
-                "--primary_shrinkage",
-                primary_shrinkage,
-                "--selection_policy_labels",
-                os.environ.get("STAGE5_FINAL_GATE_KFOLD_POLICY_LABELS", "zero_harm,harm_budget_1"),
-                "--run_id",
-                f"{run_id}_selector_kfold_cyclic",
-                "--output_dir",
-                path_for_cli(kfold_dir),
-            ],
-            cwd=ROOT,
-        )
+        kfold_cmd = [
+            sys.executable,
+            "eval/evaluate_rescue_selector_kfold.py",
+            "--sweep_summary",
+            path_for_cli(sweep_dir / "summary.json"),
+            "--benchmarks",
+            os.environ.get("STAGE5_FINAL_GATE_BENCHMARKS", "arc_easy,arc_challenge,open_hard_arc_challenge"),
+            "--score_target",
+            "cyclic_label_aggregated",
+            "--aggregate",
+            "permutation_mean",
+            "--folds",
+            os.environ.get("STAGE5_FINAL_GATE_KFOLD_FOLDS", "5"),
+            "--inner_folds",
+            os.environ.get("STAGE5_FINAL_GATE_KFOLD_INNER_FOLDS", "4"),
+            "--seed",
+            os.environ.get("STAGE5_FINAL_GATE_SEED", "17"),
+            "--shrinkages",
+            os.environ.get("STAGE5_FINAL_GATE_KFOLD_SHRINKAGES", "0.1,1.0,10.0"),
+            "--selection_policy_labels",
+            os.environ.get("STAGE5_FINAL_GATE_KFOLD_POLICY_LABELS", "zero_harm,harm_budget_1"),
+            "--run_id",
+            f"{run_id}_selector_kfold_cyclic",
+            "--output_dir",
+            path_for_cli(kfold_dir),
+        ]
+        primary_shrinkage = os.environ.get("STAGE5_FINAL_GATE_KFOLD_PRIMARY_SHRINKAGE", "").strip()
+        if primary_shrinkage:
+            kfold_cmd.extend(["--primary_shrinkage", primary_shrinkage])
+        run(kfold_cmd, cwd=ROOT)
         write_final_summary(
             run_dir=run_dir,
             detectability_dir=detectability_dir,
