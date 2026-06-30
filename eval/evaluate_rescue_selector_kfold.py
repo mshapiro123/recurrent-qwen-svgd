@@ -52,6 +52,8 @@ POLICY_SPECS = [
     ("max_net", None),
 ]
 
+DEFAULT_SELECTION_POLICY_LABELS = ["zero_harm", "harm_budget_1"]
+
 
 def parse_csv(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
@@ -205,31 +207,231 @@ def aggregate_fold_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     return out
 
 
-def conservative_primary(
-    aggregate_rows: list[dict[str, Any]],
-    *,
-    primary_shrinkage: float | None,
-) -> dict[str, Any] | None:
-    candidates = [
-        row
-        for row in aggregate_rows
-        if row.get("policy_label") in {"zero_harm", "harm_budget_1"}
-        and (primary_shrinkage is None or math.isclose(float(row["shrinkage"]), primary_shrinkage))
-    ]
-    if not candidates:
-        candidates = [row for row in aggregate_rows if row.get("policy_label") in {"zero_harm", "harm_budget_1"}]
-    if not candidates:
-        return None
+def sort_policy_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(
-        candidates,
+        rows,
         key=lambda row: (
             int(row.get("delta_vs_loop1", 0)),
             int(row.get("rescue_captured", 0)),
             -int(row.get("harm_triggered", 0)),
             -int(row.get("routed_deep", 0)),
+            int(row.get("wins_vs_loop1", 0)),
+            -int(row.get("losses_vs_loop1", 0)),
         ),
         reverse=True,
-    )[0]
+    )
+
+
+def select_policy_from_rows(
+    aggregate_rows: list[dict[str, Any]],
+    *,
+    primary_shrinkage: float | None,
+    policy_labels: set[str],
+) -> dict[str, Any] | None:
+    candidates = [
+        row
+        for row in aggregate_rows
+        if row.get("policy_label") in policy_labels
+        and (primary_shrinkage is None or math.isclose(float(row["shrinkage"]), primary_shrinkage))
+    ]
+    if not candidates:
+        candidates = [row for row in aggregate_rows if row.get("policy_label") in policy_labels]
+    if not candidates:
+        return None
+    return sort_policy_rows(candidates)[0]
+
+
+def aggregate_by_policy(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, float], list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        grouped[(str(row["policy_label"]), float(row["shrinkage"]))].append(row)
+    aggregate_rows = [
+        aggregate_fold_rows(policy_rows)
+        for _key, policy_rows in sorted(grouped.items(), key=lambda item: (item[0][0], item[0][1]))
+    ]
+    return sort_policy_rows(aggregate_rows)
+
+
+def split_by_stable_fold(
+    examples: list[dict[str, Any]],
+    *,
+    folds: int,
+    fold: int,
+    seed: int,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    train = [example for example in examples if stable_fold(example, folds=folds, seed=seed) != fold]
+    test = [example for example in examples if stable_fold(example, folds=folds, seed=seed) == fold]
+    return train, test
+
+
+def evaluate_candidate_policies(
+    *,
+    train_examples: list[dict[str, Any]],
+    test_examples: list[dict[str, Any]],
+    loops: list[int],
+    shrinkages: list[float],
+    fold: int | None = None,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for shrinkage in shrinkages:
+        probe = train_probe_curve(train_examples, loops, shrinkage=shrinkage)
+        for label, _harm_budget in POLICY_SPECS:
+            policy = (probe or {}).get("train_curve_summary", {}).get(label)
+            if not probe or not policy:
+                row = zero_result(
+                    len(test_examples),
+                    loop1_correct(test_examples),
+                    any_depth_correct(test_examples, loops),
+                    policy_label=label,
+                    shrinkage=shrinkage,
+                )
+                row["train_policy_unavailable"] = 1
+            else:
+                applied = apply_fixed_policy(test_examples, probe, policy)
+                row = {
+                    **applied,
+                    "policy_label": label,
+                    "shrinkage": shrinkage,
+                    "train_policy_unavailable": 0,
+                    "train_policy": {
+                        key: policy.get(key)
+                        for key in [
+                            "feature",
+                            "threshold",
+                            "direction",
+                            "fallback_loop",
+                            "delta_vs_loop1",
+                            "rescue_captured",
+                            "harm_triggered",
+                            "routed_deep",
+                        ]
+                    },
+                }
+            if fold is not None:
+                row["fold"] = fold
+            rows.append(row)
+    return rows
+
+
+def select_policy_nested_on_train(
+    train_examples: list[dict[str, Any]],
+    loops: list[int],
+    *,
+    outer_fold: int,
+    inner_folds: int,
+    seed: int,
+    shrinkages: list[float],
+    primary_shrinkage: float | None,
+    policy_labels: set[str],
+) -> dict[str, Any] | None:
+    inner_rows: list[dict[str, Any]] = []
+    if inner_folds < 2 or len(train_examples) < inner_folds:
+        return None
+    inner_seed = seed + 1009 + outer_fold * 7919
+    for inner_fold in range(inner_folds):
+        inner_train, inner_valid = split_by_stable_fold(
+            train_examples,
+            folds=inner_folds,
+            fold=inner_fold,
+            seed=inner_seed,
+        )
+        if not inner_train or not inner_valid:
+            continue
+        inner_rows.extend(
+            evaluate_candidate_policies(
+                train_examples=inner_train,
+                test_examples=inner_valid,
+                loops=loops,
+                shrinkages=shrinkages,
+                fold=inner_fold,
+            )
+        )
+    aggregate_rows = aggregate_by_policy(inner_rows)
+    selected = select_policy_from_rows(
+        aggregate_rows,
+        primary_shrinkage=primary_shrinkage,
+        policy_labels=policy_labels,
+    )
+    if not selected:
+        return None
+    return {
+        "selection_protocol": "inner_kfold_training_only",
+        "outer_fold": outer_fold,
+        "inner_folds": inner_folds,
+        "inner_seed": inner_seed,
+        "policy_label": selected.get("policy_label"),
+        "shrinkage": selected.get("shrinkage"),
+        "inner_cv_result": selected,
+        "inner_candidate_results_top8": aggregate_rows[:8],
+    }
+
+
+def apply_selected_training_policy(
+    *,
+    train_examples: list[dict[str, Any]],
+    test_examples: list[dict[str, Any]],
+    loops: list[int],
+    selected: dict[str, Any] | None,
+    fold: int,
+) -> dict[str, Any]:
+    if not selected:
+        row = zero_result(
+            len(test_examples),
+            loop1_correct(test_examples),
+            any_depth_correct(test_examples, loops),
+            policy_label="loop1_default",
+            shrinkage=float("nan"),
+        )
+        row.update(
+            {
+                "fold": fold,
+                "selection_protocol": "nested_outer_fold_train_only",
+                "train_policy_unavailable": 1,
+                "selected_policy": None,
+            }
+        )
+        return row
+    shrinkage = float(selected["shrinkage"])
+    policy_label = str(selected["policy_label"])
+    probe = train_probe_curve(train_examples, loops, shrinkage=shrinkage)
+    policy = (probe or {}).get("train_curve_summary", {}).get(policy_label)
+    if not probe or not policy:
+        row = zero_result(
+            len(test_examples),
+            loop1_correct(test_examples),
+            any_depth_correct(test_examples, loops),
+            policy_label=policy_label,
+            shrinkage=shrinkage,
+        )
+        row["train_policy_unavailable"] = 1
+    else:
+        row = {
+            **apply_fixed_policy(test_examples, probe, policy),
+            "policy_label": policy_label,
+            "shrinkage": shrinkage,
+            "train_policy_unavailable": 0,
+            "train_refit_policy": {
+                key: policy.get(key)
+                for key in [
+                    "feature",
+                    "threshold",
+                    "direction",
+                    "fallback_loop",
+                    "delta_vs_loop1",
+                    "rescue_captured",
+                    "harm_triggered",
+                    "routed_deep",
+                ]
+            },
+        }
+    row.update(
+        {
+            "fold": fold,
+            "selection_protocol": "nested_outer_fold_train_only",
+            "selected_policy": selected,
+        }
+    )
+    return row
 
 
 def analyze_kfold(
@@ -239,9 +441,11 @@ def analyze_kfold(
     score_target: str,
     aggregate: str,
     folds: int,
+    inner_folds: int,
     seed: int,
     shrinkages: list[float],
     primary_shrinkage: float | None,
+    selection_policy_labels: list[str],
     run_id: str | None = None,
 ) -> dict[str, Any]:
     loops, examples, per_benchmark = load_pooled_examples(
@@ -253,87 +457,77 @@ def analyze_kfold(
     if folds < 2:
         raise ValueError("--folds must be >= 2")
     fold_rows: list[dict[str, Any]] = []
+    nested_primary_rows: list[dict[str, Any]] = []
     fold_details: list[dict[str, Any]] = []
+    selection_policy_label_set = set(selection_policy_labels)
     for fold in range(folds):
-        train = [example for example in examples if stable_fold(example, folds=folds, seed=seed) != fold]
-        test = [example for example in examples if stable_fold(example, folds=folds, seed=seed) == fold]
+        train, test = split_by_stable_fold(examples, folds=folds, fold=fold, seed=seed)
         fold_detail: dict[str, Any] = {
             "fold": fold,
             "train_total": len(train),
             "test_total": len(test),
             "train_categories": category_counts(train),
             "test_categories": category_counts(test),
-            "selected": [],
+            "diagnostic_test_candidates": [],
         }
-        for shrinkage in shrinkages:
-            probe = train_probe_curve(train, loops, shrinkage=shrinkage)
-            for label, _harm_budget in POLICY_SPECS:
-                policy = (probe or {}).get("train_curve_summary", {}).get(label)
-                if not probe or not policy:
-                    row = zero_result(
-                        len(test),
-                        loop1_correct(test),
-                        any_depth_correct(test, loops),
-                        policy_label=label,
-                        shrinkage=shrinkage,
-                    )
-                    row["fold"] = fold
-                    row["train_policy_unavailable"] = 1
-                else:
-                    applied = apply_fixed_policy(test, probe, policy)
-                    row = {
-                        **applied,
-                        "fold": fold,
-                        "policy_label": label,
-                        "shrinkage": shrinkage,
-                        "train_policy_unavailable": 0,
-                        "train_policy": {
-                            key: policy.get(key)
-                            for key in [
-                                "feature",
-                                "threshold",
-                                "direction",
-                                "fallback_loop",
-                                "delta_vs_loop1",
-                                "rescue_captured",
-                                "harm_triggered",
-                                "routed_deep",
-                            ]
-                        },
+        diagnostic_rows = evaluate_candidate_policies(
+            train_examples=train,
+            test_examples=test,
+            loops=loops,
+            shrinkages=shrinkages,
+            fold=fold,
+        )
+        fold_rows.extend(diagnostic_rows)
+        for row in diagnostic_rows:
+            if row["policy_label"] in selection_policy_label_set:
+                fold_detail["diagnostic_test_candidates"].append(
+                    {
+                        "policy_label": row["policy_label"],
+                        "shrinkage": row["shrinkage"],
+                        "correct": row["correct"],
+                        "delta_vs_loop1": row.get("delta_vs_loop1"),
+                        "rescue_captured": row["rescue_captured"],
+                        "harm_triggered": row["harm_triggered"],
+                        "routed_deep": row["routed_deep"],
                     }
-                fold_rows.append(row)
-                if label in {"zero_harm", "harm_budget_1"}:
-                    fold_detail["selected"].append(
-                        {
-                            "policy_label": label,
-                            "shrinkage": shrinkage,
-                            "correct": row["correct"],
-                            "delta_vs_loop1": row.get("delta_vs_loop1"),
-                            "rescue_captured": row["rescue_captured"],
-                            "harm_triggered": row["harm_triggered"],
-                            "routed_deep": row["routed_deep"],
-                        }
-                    )
+                )
+        selected = select_policy_nested_on_train(
+            train,
+            loops,
+            outer_fold=fold,
+            inner_folds=inner_folds,
+            seed=seed,
+            shrinkages=shrinkages,
+            primary_shrinkage=primary_shrinkage,
+            policy_labels=selection_policy_label_set,
+        )
+        nested_row = apply_selected_training_policy(
+            train_examples=train,
+            test_examples=test,
+            loops=loops,
+            selected=selected,
+            fold=fold,
+        )
+        nested_primary_rows.append(nested_row)
+        fold_detail["nested_selected"] = {
+            "policy_label": nested_row.get("policy_label"),
+            "shrinkage": nested_row.get("shrinkage"),
+            "correct": nested_row.get("correct"),
+            "delta_vs_loop1": nested_row.get("delta_vs_loop1"),
+            "rescue_captured": nested_row.get("rescue_captured"),
+            "harm_triggered": nested_row.get("harm_triggered"),
+            "routed_deep": nested_row.get("routed_deep"),
+            "selected_policy": selected,
+        }
         fold_details.append(fold_detail)
 
-    grouped: dict[tuple[str, float], list[dict[str, Any]]] = defaultdict(list)
-    for row in fold_rows:
-        grouped[(str(row["policy_label"]), float(row["shrinkage"]))].append(row)
-    aggregate_rows = [
-        aggregate_fold_rows(rows)
-        for _key, rows in sorted(grouped.items(), key=lambda item: (item[0][0], item[0][1]))
-    ]
-    aggregate_rows = sorted(
-        aggregate_rows,
-        key=lambda row: (
-            int(row.get("delta_vs_loop1", 0)),
-            int(row.get("rescue_captured", 0)),
-            -int(row.get("harm_triggered", 0)),
-            -int(row.get("routed_deep", 0)),
-        ),
-        reverse=True,
-    )
-    primary = conservative_primary(aggregate_rows, primary_shrinkage=primary_shrinkage)
+    aggregate_rows = aggregate_by_policy(fold_rows)
+    primary = aggregate_fold_rows(nested_primary_rows)
+    if primary:
+        primary["selection_protocol"] = "nested_outer_fold_train_only"
+        primary["policy_label"] = "nested_training_selected"
+        primary["selected_policy_labels"] = selection_policy_labels
+        primary["primary_shrinkage_preference"] = primary_shrinkage
     status = "selector_transfer_failed"
     if primary and int(primary.get("delta_vs_loop1", 0)) > 0 and int(primary.get("harm_triggered", 0)) <= folds:
         status = "selector_transfer_passed"
@@ -349,9 +543,12 @@ def analyze_kfold(
         "aggregate": aggregate,
         "loops": loops,
         "folds": folds,
+        "inner_folds": inner_folds,
         "seed": seed,
         "shrinkages": shrinkages,
         "primary_shrinkage": primary_shrinkage,
+        "selection_policy_labels": selection_policy_labels,
+        "selection_protocol": "nested_outer_fold_train_only",
         "pooled": {
             "total": len(examples),
             "loop1_correct": loop1_correct(examples),
@@ -362,6 +559,11 @@ def analyze_kfold(
         },
         "per_benchmark": per_benchmark,
         "primary_conservative_result": primary,
+        "nested_primary_fold_results": nested_primary_rows,
+        "diagnostic_outer_candidate_results_note": (
+            "aggregate_policy_results are reported for diagnostics only; "
+            "primary_conservative_result is selected inside each outer training split."
+        ),
         "aggregate_policy_results": aggregate_rows,
         "fold_details": fold_details,
     }
@@ -379,8 +581,11 @@ def write_markdown(payload: dict[str, Any], path: Path) -> None:
         f"- Score target / aggregate: `{payload['score_target']}` / `{payload['aggregate']}`",
         f"- Loops: `{payload['loops']}`",
         f"- Folds: `{payload['folds']}`",
+        f"- Inner folds: `{payload['inner_folds']}`",
         f"- Shrinkages: `{payload['shrinkages']}`",
         f"- Primary shrinkage: `{payload['primary_shrinkage']}`",
+        f"- Selection protocol: `{payload['selection_protocol']}`",
+        f"- Selection policy labels: `{payload['selection_policy_labels']}`",
         "",
         "## Pooled Oracle",
         "",
@@ -396,7 +601,8 @@ def write_markdown(payload: dict[str, Any], path: Path) -> None:
     if primary:
         lines.extend(
             [
-                f"- Policy: `{primary.get('policy_label')}` shrinkage `{primary.get('shrinkage')}`",
+                f"- Policy: `{primary.get('policy_label')}`",
+                f"- Selection protocol: `{primary.get('selection_protocol')}`",
                 f"- Correct: `{primary.get('correct')}/{primary.get('total')}`",
                 f"- Loop 1 correct: `{primary.get('loop1_correct')}/{primary.get('total')}`",
                 f"- Delta vs loop 1: `{primary.get('delta_vs_loop1')}`",
@@ -438,9 +644,11 @@ def main() -> int:
     parser.add_argument("--score_target", default="cyclic_label_aggregated")
     parser.add_argument("--aggregate", default="permutation_mean")
     parser.add_argument("--folds", type=int, default=5)
+    parser.add_argument("--inner_folds", type=int, default=4)
     parser.add_argument("--seed", type=int, default=17)
     parser.add_argument("--shrinkages", default=",".join(str(value) for value in DEFAULT_PROBE_SHRINKAGES))
     parser.add_argument("--primary_shrinkage", type=float, default=None)
+    parser.add_argument("--selection_policy_labels", default=",".join(DEFAULT_SELECTION_POLICY_LABELS))
     parser.add_argument("--run_id", default="")
     parser.add_argument("--output_dir", default="")
     args = parser.parse_args()
@@ -451,9 +659,11 @@ def main() -> int:
         score_target=args.score_target,
         aggregate=args.aggregate,
         folds=args.folds,
+        inner_folds=args.inner_folds,
         seed=args.seed,
         shrinkages=parse_floats(args.shrinkages),
         primary_shrinkage=args.primary_shrinkage,
+        selection_policy_labels=parse_csv(args.selection_policy_labels),
         run_id=args.run_id or None,
     )
     output_dir = resolve_path(args.output_dir) if args.output_dir else ROOT / "outputs" / "stage5" / payload["run_id"]

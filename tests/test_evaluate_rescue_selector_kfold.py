@@ -97,18 +97,54 @@ def test_kfold_rescue_selector_reports_conservative_transfer(tmp_path, monkeypat
         score_target="content_question_only",
         aggregate="mean",
         folds=2,
+        inner_folds=2,
         seed=1,
         shrinkages=[1.0],
         primary_shrinkage=1.0,
+        selection_policy_labels=["zero_harm", "harm_budget_1"],
         run_id="toy_kfold",
     )
 
     assert payload["kind"] == "stage5_rescue_selector_kfold"
+    assert payload["selection_protocol"] == "nested_outer_fold_train_only"
     assert payload["pooled"]["total"] == 4
     assert payload["pooled"]["category_counts"]["rescuable"] == 1
     assert payload["aggregate_policy_results"]
-    assert payload["primary_conservative_result"]["policy_label"] in {"zero_harm", "harm_budget_1"}
-    assert payload["primary_conservative_result"]["shrinkage"] == 1.0
+    assert payload["primary_conservative_result"]["policy_label"] == "nested_training_selected"
+    assert payload["primary_conservative_result"]["selection_protocol"] == "nested_outer_fold_train_only"
+    assert payload["nested_primary_fold_results"]
+    assert all(
+        row["selection_protocol"] == "nested_outer_fold_train_only"
+        for row in payload["nested_primary_fold_results"]
+    )
+    assert all("nested_selected" in detail for detail in payload["fold_details"])
+
+
+def test_inner_selection_uses_training_only_protocol(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(depth, "ROOT", tmp_path)
+    monkeypatch.setattr(transfer, "ROOT", tmp_path)
+    monkeypatch.setattr(kfold, "ROOT", tmp_path)
+    sweep = write_sweep(tmp_path, "pooled_protocol")
+
+    payload = kfold.analyze_kfold(
+        sweep_summary=sweep,
+        benchmarks=["toy"],
+        score_target="content_question_only",
+        aggregate="mean",
+        folds=2,
+        inner_folds=2,
+        seed=7,
+        shrinkages=[0.1, 1.0],
+        primary_shrinkage=None,
+        selection_policy_labels=["zero_harm", "harm_budget_1"],
+        run_id="toy_kfold_protocol",
+    )
+
+    for detail in payload["fold_details"]:
+        selected = detail["nested_selected"]["selected_policy"]
+        if selected is not None:
+            assert selected["selection_protocol"] == "inner_kfold_training_only"
+            assert selected["inner_folds"] == 2
 
 
 def test_stable_fold_is_repeatable() -> None:

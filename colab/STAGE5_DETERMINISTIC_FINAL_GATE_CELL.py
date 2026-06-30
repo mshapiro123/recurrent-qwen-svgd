@@ -24,7 +24,8 @@ from typing import Any
 from google.colab import drive, runtime, userdata
 
 
-STAGE5_DETERMINISTIC_FINAL_GATE_CELL_VERSION = "deterministic_final_gate_v1"
+STAGE5_DETERMINISTIC_FINAL_GATE_CELL_VERSION = "deterministic_final_gate_v2_nested_selector"
+# Bootstrap safety marker: nested_outer_fold_train_only.
 # Expected terminal statuses include closed_at_detectability_gate,
 # selector_transfer_passed, selector_transfer_failed, and
 # selector_transfer_needs_review.
@@ -337,7 +338,7 @@ try:
     detectability_dir = run_dir / "detectability_cyclic"
     discovery_sweep = os.environ.get(
         "STAGE5_FINAL_GATE_DISCOVERY_SWEEP",
-        "outputs/stage5/stage5_forced_depth_arc_challenge_loop123_20260628_031842/summary.json",
+        "outputs/stage5/stage5_prelude_forced_depth_heldout_arc_loop1248/summary.json",
     )
     run(
         [
@@ -379,10 +380,11 @@ try:
         require_cuda_runtime()
         source_summary = os.environ.get(
             "STAGE5_FINAL_GATE_SOURCE_SUMMARY",
-            "outputs/stage5/stage5_unfreeze_recurrent_curriculum_20260628_024602/summary.json",
+            "outputs/stage5/stage5_prelude_path_development/summary.json",
         )
-        loops = [int(item.strip()) for item in os.environ.get("STAGE5_FINAL_GATE_LOOPS", "1,2,3").split(",") if item.strip()]
-        sweep_id = f"{run_id}_forced_depth_pooled_loop123"
+        loops = [int(item.strip()) for item in os.environ.get("STAGE5_FINAL_GATE_LOOPS", "1,2,4,8").split(",") if item.strip()]
+        loops_tag = "".join(str(loop) for loop in loops)
+        sweep_id = f"{run_id}_forced_depth_pooled_loop{loops_tag}"
         loop_run_ids: list[str] = []
         for forced_loop in loops:
             loop_run_id = f"{sweep_id}_loop{forced_loop}"
@@ -465,12 +467,16 @@ try:
                 "permutation_mean",
                 "--folds",
                 os.environ.get("STAGE5_FINAL_GATE_KFOLD_FOLDS", "5"),
+                "--inner_folds",
+                os.environ.get("STAGE5_FINAL_GATE_KFOLD_INNER_FOLDS", "4"),
                 "--seed",
                 os.environ.get("STAGE5_FINAL_GATE_SEED", "17"),
                 "--shrinkages",
                 os.environ.get("STAGE5_FINAL_GATE_KFOLD_SHRINKAGES", "0.1,1.0,10.0"),
                 "--primary_shrinkage",
                 primary_shrinkage,
+                "--selection_policy_labels",
+                os.environ.get("STAGE5_FINAL_GATE_KFOLD_POLICY_LABELS", "zero_harm,harm_budget_1"),
                 "--run_id",
                 f"{run_id}_selector_kfold_cyclic",
                 "--output_dir",

@@ -362,7 +362,8 @@ def test_current_bootstrap_exposes_deterministic_final_gate_target() -> None:
         assert "STAGE5_FINAL_GATE_OPEN_HARD_ARC_CHALLENGE_SPLIT" in text
         assert "eval/evaluate_rescue_selector_kfold.py" in text
     assert "STAGE5_DETERMINISTIC_FINAL_GATE_CELL_VERSION" in cell
-    assert "deterministic_final_gate_v1" in cell
+    assert "deterministic_final_gate_v2_nested_selector" in cell
+    assert "nested_outer_fold_train_only" in cell
     assert "closed_at_detectability_gate" in cell
     assert "selector_transfer_passed" in cell
     assert "STAGE5_BENCHMARK_FORCED_LOOP_COUNT" in cell
