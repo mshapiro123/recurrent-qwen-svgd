@@ -2152,3 +2152,27 @@ def test_synthetic_depth_primitive_curve_target_is_wired_and_guarded() -> None:
     assert "colab/summarize_synthetic_depth_primitive_curve.py" in cell
     assert "primitive_accuracy_bar" in cell
     assert "recommended_phase2_n_symbols" in summarizer
+
+
+def test_synthetic_depth_staged_staircase_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_SYNTHETIC_DEPTH_STAGED_STAIRCASE_CELL.py").read_text(encoding="utf-8")
+    wrapper = (ROOT / "models/recurrent_wrapper.py").read_text(encoding="utf-8")
+
+    for text in (bootstrap, bootstrap_md):
+        assert "synthetic_depth_staged_staircase" in text
+        assert "colab/STAGE5_SYNTHETIC_DEPTH_STAGED_STAIRCASE_CELL.py" in text
+        assert "STAGE5_SYNTH_STAIRCASE_STAGE12_STEPS" in text
+        assert "STAGE5_SYNTH_STAIRCASE_STAGE1234_STEPS" in text
+        assert "loop_loss_mode=target" in text
+
+    assert "STAGE5_SYNTHETIC_DEPTH_STAGED_STAIRCASE_CELL_VERSION" in cell
+    assert "synthetic_depth_staged_staircase_v1" in cell
+    assert "restore_primitive_checkpoint" in cell
+    assert "train_depth_le2_mcq_option_text_sft.jsonl" in cell
+    assert "train_depth_le4_mcq_option_text_sft.jsonl" in cell
+    assert '"loop_loss_mode": "target"' in cell
+    assert "stage_depth_le2_finished" in cell
+    assert "tests/test_recurrent_wrapper_tiny.py::test_target_loop_loss_mode_uses_requested_loop_on_tiny_model" in cell
+    assert "loop_loss_mode: str = \"halting_weighted\"" in wrapper

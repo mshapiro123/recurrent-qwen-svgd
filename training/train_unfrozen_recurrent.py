@@ -403,6 +403,7 @@ def main() -> int:
                 max_loops=forward_loops,
                 beta=cfg_float(cfg, "beta", 0.08),
                 halt_target_nll_weight=cfg_float(cfg, "halt_target_nll_weight", 0.0),
+                loop_loss_mode=str(cfg.get("loop_loss_mode", "halting_weighted")),
                 reentry_rescale_mode="none",
                 use_reentry_adapter=False,
                 reentry_tail_damper_path=None,

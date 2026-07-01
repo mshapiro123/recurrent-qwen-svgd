@@ -69,6 +69,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "depth_sweep_heldout" - L4/T4 held-out ARC tail loop-depth sweep for routing validation.
 #   "synthetic_depth_task" - L4/T4 iterated-function staircase test for whether recurrence supplies sequential depth.
 #   "synthetic_depth_primitive_curve" - L4/T4 Phase 1 depth-1 primitive curve over N=8,12,16.
+#   "synthetic_depth_staged_staircase" - L4/T4 Phase 2 target-loop staircase from the N=16 primitive checkpoint.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
 #   "model_viability_queue" - queued no-training Qwen 3B/7B probes with VRAM-aware skipping.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
@@ -1760,6 +1761,30 @@ TARGETS = {
             "STAGE5_SYNTH_PRIMITIVE_MAX_STEPS": "500",
             "STAGE5_SYNTH_PRIMITIVE_BACKUP_CHECKPOINTS_TO_DRIVE": "0",
             "STAGE5_SYNTH_PRIMITIVE_DISCONNECT": "0",
+        },
+    },
+    "synthetic_depth_staged_staircase": {
+        "path": "colab/STAGE5_SYNTHETIC_DEPTH_STAGED_STAIRCASE_CELL.py",
+        "markers": [
+            "STAGE5_SYNTHETIC_DEPTH_STAGED_STAIRCASE_CELL_VERSION",
+            "synthetic_depth_staged_staircase_v1",
+            "Phase 2 resumes from primitive N=16 and uses loop_loss_mode=target",
+            "STAGE5_SYNTH_STAIRCASE_PRIMITIVE_CURVE_SUMMARY",
+            "stage_depth_le2_finished",
+            "train_depth_le2_mcq_option_text_sft.jsonl",
+            "train_depth_le4_mcq_option_text_sft.jsonl",
+            "\"loop_loss_mode\": \"target\"",
+            "tests/test_recurrent_wrapper_tiny.py::test_target_loop_loss_mode_uses_requested_loop_on_tiny_model",
+        ],
+        "env": {
+            "STAGE5_SYNTH_STAIRCASE_N_SYMBOLS": "16",
+            "STAGE5_SYNTH_STAIRCASE_MAX_DEPTH": "4",
+            "STAGE5_SYNTH_STAIRCASE_ROWS_PER_DEPTH": "256",
+            "STAGE5_SYNTH_STAIRCASE_STAGE12_STEPS": "500",
+            "STAGE5_SYNTH_STAIRCASE_STAGE1234_STEPS": "1000",
+            "STAGE5_SYNTH_STAIRCASE_EVAL_LOOPS": "1,2,3,4",
+            "STAGE5_SYNTH_STAIRCASE_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
+            "STAGE5_SYNTH_STAIRCASE_DISCONNECT": "0",
         },
     },
     "model_viability_probe": {

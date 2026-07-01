@@ -251,6 +251,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         halt_control_loop_counts: Optional[torch.Tensor] = None,
         use_learned_loop_control: bool = False,
         loop_control_ce_weight: float = 0.0,
+        loop_loss_mode: str = "halting_weighted",
         use_reentry_adapter: bool = False,
         target_loop_prior: Optional[torch.Tensor] = None,
         return_loop_logits: bool = False,
@@ -593,7 +594,31 @@ class RecurrentQwenForCausalLM(nn.Module):
         loss = None
         if labels_flat is not None:
             ce_tensor = torch.stack(per_loop_ce, dim=-1)
-            loss = (ce_tensor * halting_weights).sum(dim=-1).mean()
+            target_indices = self._resolve_target_loop_indices(
+                target_loop_counts=target_loop_counts,
+                batch_size=batch_size,
+                num_trajectories=num_trajectories,
+                max_loops=max_loops,
+                device=halting_weights.device,
+            )
+            loop_loss_mode = str(loop_loss_mode)
+            if loop_loss_mode == "halting_weighted":
+                loss = (ce_tensor * halting_weights).sum(dim=-1).mean()
+            elif loop_loss_mode == "last":
+                loss = ce_tensor[:, -1].mean()
+                metrics["last_loop_ce"] = loss.detach()
+            elif loop_loss_mode == "target":
+                if target_indices is None:
+                    raise ValueError("loop_loss_mode='target' requires target_loop_counts")
+                loss = ce_tensor.gather(dim=-1, index=target_indices.view(-1, 1)).squeeze(-1).mean()
+                metrics["target_loop_ce"] = loss.detach()
+            elif loop_loss_mode == "uniform":
+                loss = ce_tensor.mean()
+                metrics["uniform_loop_ce"] = loss.detach()
+            else:
+                raise ValueError(
+                    "loop_loss_mode must be one of: halting_weighted, last, target, uniform"
+                )
             metrics["expected_ce"] = loss.detach()
 
             prior = self._resolve_target_prior(
@@ -609,13 +634,6 @@ class RecurrentQwenForCausalLM(nn.Module):
                 loss = loss + float(beta) * halt_kl
                 metrics["halting_kl"] = halt_kl.detach()
 
-            target_indices = self._resolve_target_loop_indices(
-                target_loop_counts=target_loop_counts,
-                batch_size=batch_size,
-                num_trajectories=num_trajectories,
-                max_loops=max_loops,
-                device=halting_weights.device,
-            )
             if target_indices is not None:
                 expected_flat = expected_loop_count(halting_weights)
                 target_values = target_indices.to(dtype=expected_flat.dtype) + 1.0

@@ -208,6 +208,31 @@ def test_reentry_adapter_spectral_mode_runs_on_recurrent_tiny_model():
     assert torch.isfinite(output.metrics["mean_expected_loops"])
 
 
+def test_target_loop_loss_mode_uses_requested_loop_on_tiny_model():
+    torch.manual_seed(0)
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+    labels = input_ids.clone()
+
+    output = wrapper(
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        labels=labels,
+        target_loop_counts=torch.tensor([2]),
+        max_loops=3,
+        loop_loss_mode="target",
+        use_cache=False,
+        return_dict=True,
+    )
+
+    assert output.loss is not None
+    assert torch.isfinite(output.loss)
+    assert torch.allclose(output.loss.detach(), output.metrics["target_loop_ce"])
+    assert torch.allclose(output.metrics["expected_ce"], output.metrics["target_loop_ce"])
+
+
 def test_latent_injection_modes_run_on_tiny_model():
     torch.manual_seed(0)
     model = TinyCausalLM().eval()
