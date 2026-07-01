@@ -223,7 +223,7 @@ def write_training_config(run_dir: Path, train_jsonl: Path, *, n_symbols: int, m
             "enabled": True,
             "start_loop": 1,
             "end_loop": 1,
-            "schedule": "constant",
+            "schedule": "linear",
             "target_source": "row_capped",
             "ramp_compute": True,
         },
@@ -304,6 +304,10 @@ def run_one_primitive_setting(
         )
         base_eval_log.parent.mkdir(parents=True, exist_ok=True)
         base_eval_log.write_text(base_proc.stdout or "", encoding="utf-8")
+        publish(
+            [base_matrix_summary, base_matrix_jsonl, base_eval_log],
+            message=f"Record synthetic primitive base eval N={n_symbols} {run_id} [skip ci]",
+        )
 
     train_jsonl = data_dir / "train_mcq_option_text_sft.jsonl"
     config_path = write_training_config(run_dir, train_jsonl, n_symbols=n_symbols, max_steps=max_steps)

@@ -2146,6 +2146,8 @@ def test_synthetic_depth_primitive_curve_target_is_wired_and_guarded() -> None:
     assert "synthetic_depth_primitive_curve_v1" in cell
     assert "Phase 1 changes only N and keeps max_depth=1" in cell
     assert "max_depth" in cell
+    assert '"schedule": "linear"' in cell
+    assert '"schedule": "constant"' not in cell
     assert "STAGE5_SYNTH_PRIMITIVE_BACKUP_CHECKPOINTS_TO_DRIVE" in cell
     assert "colab/summarize_synthetic_depth_primitive_curve.py" in cell
     assert "primitive_accuracy_bar" in cell
