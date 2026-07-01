@@ -20,7 +20,7 @@ import yaml
 from google.colab import runtime, userdata
 
 
-STAGE5_SYNTHETIC_DEPTH_TASK_CELL_VERSION = "synthetic_depth_task_v1"
+STAGE5_SYNTHETIC_DEPTH_TASK_CELL_VERSION = "synthetic_depth_task_v2_mcq_aligned"
 # Safety marker: generated instances must preserve distinct_prefix_length_depth_plus_one.
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
@@ -145,6 +145,22 @@ def latest_checkpoint(output_dir: Path) -> Path:
     return checkpoints[-1]
 
 
+def train_jsonl_for_format(data_dir: Path, train_format: str) -> Path:
+    normalized = train_format.strip().lower()
+    mapping = {
+        "free_answer": data_dir / "train_sft.jsonl",
+        "mcq_option_text": data_dir / "train_mcq_option_text_sft.jsonl",
+        "mcq_label": data_dir / "train_mcq_label_sft.jsonl",
+        "mcq_label_and_text": data_dir / "train_mcq_label_and_text_sft.jsonl",
+    }
+    if normalized not in mapping:
+        raise ValueError(
+            "STAGE5_SYNTH_DEPTH_TRAIN_FORMAT must be one of "
+            f"{sorted(mapping)}, got {train_format!r}"
+        )
+    return mapping[normalized]
+
+
 def publish(paths: list[Path], *, message: str) -> None:
     run(["git", "pull", "--rebase", "--autostash", "origin", "main"], check=False)
     for path in paths:
@@ -162,7 +178,7 @@ def publish(paths: list[Path], *, message: str) -> None:
     run(["git", "push", "origin", "main"])
 
 
-def write_training_config(run_dir: Path, train_jsonl: Path) -> Path:
+def write_training_config(run_dir: Path, train_jsonl: Path, *, train_format: str) -> Path:
     max_loops = int(os.environ.get("STAGE5_SYNTH_DEPTH_MAX_LOOPS", "8"))
     cfg = {
         "model_name": os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct"),
@@ -207,6 +223,7 @@ def write_training_config(run_dir: Path, train_jsonl: Path) -> Path:
             "ramp_compute": True,
         },
         "synthetic_train_jsonl": path_for_cli(train_jsonl),
+        "synthetic_train_format": train_format,
     }
     config_path = run_dir / "synthetic_depth_train_config.yaml"
     write_yaml(config_path, cfg)
@@ -220,10 +237,22 @@ def write_summary(run_dir: Path, payload: dict[str, Any]) -> None:
         "",
         f"- Status: `{payload['status']}`",
         f"- Dataset: `{payload['dataset_summary']}`",
+        f"- Train format: `{payload.get('train_format')}`",
         f"- Checkpoint: `{payload.get('checkpoint')}`",
         f"- Matrix summary: `{payload.get('matrix_summary')}`",
         "",
     ]
+    base_matrix = payload.get("base_matrix") or {}
+    if base_matrix:
+        lines.extend(
+            [
+                "## Base Qwen MCQ Baseline",
+                "",
+                f"- Frontier by loop key: `{base_matrix.get('frontier_by_loop')}`",
+                f"- Rows: `{base_matrix.get('rows')}`",
+                "",
+            ]
+        )
     matrix = payload.get("matrix") or {}
     if matrix:
         lines.extend(
@@ -290,7 +319,45 @@ try:
         message=f"Record synthetic depth dataset {run_id} [skip ci]",
     )
 
-    config_path = write_training_config(run_dir, data_dir / "train_sft.jsonl")
+    train_format = os.environ.get("STAGE5_SYNTH_DEPTH_TRAIN_FORMAT", "free_answer").strip().lower()
+    train_jsonl = train_jsonl_for_format(data_dir, train_format)
+    print(f"synthetic_depth_train_format={train_format}", flush=True)
+    print(f"synthetic_depth_train_jsonl={path_for_cli(train_jsonl)}", flush=True)
+
+    base_matrix_jsonl = run_dir / "eval" / "base_test_matrix_rows.jsonl"
+    base_matrix_summary = run_dir / "eval" / "base_test_matrix_summary.json"
+    base_eval_log = run_dir / "eval" / "base_eval_synthetic_depth_matrix.log"
+    base_matrix: dict[str, Any] | None = None
+    if env_flag("STAGE5_SYNTH_DEPTH_RUN_BASE_EVAL", "0"):
+        base_proc = run(
+            [
+                sys.executable,
+                "eval/eval_synthetic_depth_matrix.py",
+                "--mode",
+                "base",
+                "--data_jsonl",
+                path_for_cli(data_dir / "test_mcq.jsonl"),
+                "--output_jsonl",
+                path_for_cli(base_matrix_jsonl),
+                "--output_summary",
+                path_for_cli(base_matrix_summary),
+                "--threshold",
+                os.environ.get("STAGE5_SYNTH_DEPTH_THRESHOLD", "0.75"),
+                "--score_target",
+                os.environ.get("STAGE5_SYNTH_DEPTH_SCORE_TARGET", "option_text"),
+                "--dtype",
+                os.environ.get("DTYPE", "bfloat16"),
+                "--adapter_dtype",
+                os.environ.get("ADAPTER_DTYPE", "float32"),
+                "--device",
+                os.environ.get("DEVICE", "cuda"),
+            ]
+        )
+        base_eval_log.parent.mkdir(parents=True, exist_ok=True)
+        base_eval_log.write_text(base_proc.stdout or "", encoding="utf-8")
+        base_matrix = read_json(base_matrix_summary)
+
+    config_path = write_training_config(run_dir, train_jsonl, train_format=train_format)
     train_proc = run(
         [
             sys.executable,
@@ -298,7 +365,7 @@ try:
             "--config",
             path_for_cli(config_path),
             "--train_jsonl",
-            path_for_cli(data_dir / "train_sft.jsonl"),
+            path_for_cli(train_jsonl),
             "--device",
             os.environ.get("DEVICE", "cuda"),
         ]
@@ -312,6 +379,8 @@ try:
         [
             sys.executable,
             "eval/eval_synthetic_depth_matrix.py",
+            "--mode",
+            "recurrent",
             "--data_jsonl",
             path_for_cli(data_dir / "test_mcq.jsonl"),
             "--checkpoint",
@@ -345,10 +414,15 @@ try:
         "run_id": run_id,
         "cell_version": STAGE5_SYNTHETIC_DEPTH_TASK_CELL_VERSION,
         "status": "finished",
+        "train_format": train_format,
+        "train_jsonl": path_for_cli(train_jsonl),
         "dataset_summary": path_for_cli(dataset_summary),
         "train_config": path_for_cli(config_path),
         "training_summary": path_for_cli(training_summary),
         "checkpoint": path_for_cli(checkpoint),
+        "base_matrix_rows": path_for_cli(base_matrix_jsonl) if base_matrix_jsonl.exists() else None,
+        "base_matrix_summary": path_for_cli(base_matrix_summary) if base_matrix_summary.exists() else None,
+        "base_matrix": base_matrix,
         "matrix_rows": path_for_cli(matrix_jsonl),
         "matrix_summary": path_for_cli(matrix_summary),
         "matrix": matrix,
@@ -367,6 +441,9 @@ try:
             dataset_summary,
             training_summary,
             run_dir / "train" / "train_unfrozen_recurrent.log",
+            base_matrix_summary,
+            base_matrix_jsonl,
+            base_eval_log,
             matrix_summary,
             matrix_jsonl,
             run_dir / "eval" / "eval_synthetic_depth_matrix.log",

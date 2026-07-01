@@ -2114,11 +2114,14 @@ def test_synthetic_depth_task_target_is_wired_and_guarded() -> None:
         assert "frontier_strictly_expands" in text
 
     assert "STAGE5_SYNTHETIC_DEPTH_TASK_CELL_VERSION" in cell
-    assert "synthetic_depth_task_v1" in cell
+    assert "synthetic_depth_task_v2_mcq_aligned" in cell
     assert "tests/test_synthetic_depth_task.py" in cell
     assert "tests/test_eval_synthetic_depth_matrix.py" in cell
     assert "STAGE5_SYNTH_DEPTH_MAX_STEPS" in cell
     assert "STAGE5_SYNTH_DEPTH_ROWS_PER_DEPTH" in cell
+    assert "STAGE5_SYNTH_DEPTH_TRAIN_FORMAT" in cell
+    assert "STAGE5_SYNTH_DEPTH_RUN_BASE_EVAL" in cell
+    assert "train_mcq_option_text_sft.jsonl" in cell
     assert "frontier_strictly_expands" in cell
     assert 'run(["nvidia-smi"], cwd=Path("/content"), check=False)' in cell
 

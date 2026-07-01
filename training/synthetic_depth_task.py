@@ -154,6 +154,30 @@ def build_mcq_row(instance: SyntheticDepthInstance, *, value_prefix: str = "") -
     }
 
 
+def render_mcq_prompt(instance: SyntheticDepthInstance, *, value_prefix: str = "") -> str:
+    row = build_mcq_row(instance, value_prefix=value_prefix)
+    rendered_choices = "\n".join(f"{label}. {text}" for label, text in row["choices"].items())
+    return f"{row['question'].rstrip()}\n{rendered_choices}\nAnswer:"
+
+
+def render_mcq_completion(
+    instance: SyntheticDepthInstance,
+    *,
+    score_target: str,
+    value_prefix: str = "",
+) -> str:
+    labels = LABELS[: len(instance.choices)]
+    answer_label = labels[instance.answer_index]
+    answer_text = symbol(instance.target, prefix=value_prefix)
+    if score_target == "label":
+        return f" {answer_label}"
+    if score_target == "option_text":
+        return f" {answer_text}"
+    if score_target == "label_and_text":
+        return f" {answer_label}. {answer_text}"
+    raise ValueError(f"Unknown score_target={score_target!r}")
+
+
 def build_sft_row(
     instance: SyntheticDepthInstance,
     *,
@@ -177,6 +201,38 @@ def build_sft_row(
         "target": symbol(instance.target, prefix=value_prefix),
         "orbit": [symbol(value, prefix=value_prefix) for value in instance.orbit],
         "instance_id": instance.instance_id,
+    }
+
+
+def build_mcq_sft_row(
+    instance: SyntheticDepthInstance,
+    *,
+    max_target_loops: int,
+    score_target: str = "option_text",
+    value_prefix: str = "",
+) -> dict[str, Any]:
+    target_loop_count = max(1, min(int(max_target_loops), int(instance.depth)))
+    mcq = build_mcq_row(instance, value_prefix=value_prefix)
+    return {
+        "prompt": render_mcq_prompt(instance, value_prefix=value_prefix),
+        "completion": render_mcq_completion(
+            instance,
+            score_target=score_target,
+            value_prefix=value_prefix,
+        ),
+        "target_loop_count": target_loop_count,
+        "synthetic_task": "iterated_function",
+        "synthetic_depth": instance.depth,
+        "depth": instance.depth,
+        "n_symbols": instance.n_symbols,
+        "start": symbol(instance.start, prefix=value_prefix),
+        "target": symbol(instance.target, prefix=value_prefix),
+        "orbit": [symbol(value, prefix=value_prefix) for value in instance.orbit],
+        "instance_id": instance.instance_id,
+        "answer": mcq["answer"],
+        "choices": mcq["choices"],
+        "score_target": score_target,
+        "prompt_style": "with_options",
     }
 
 
@@ -231,6 +287,19 @@ def write_synthetic_depth_dataset(
             out / f"{split}_mcq.jsonl",
             [build_mcq_row(instance, value_prefix=config.value_prefix) for instance in split_instances],
         )
+        for score_target in ("option_text", "label", "label_and_text"):
+            _write_jsonl(
+                out / f"{split}_mcq_{score_target}_sft.jsonl",
+                [
+                    build_mcq_sft_row(
+                        instance,
+                        max_target_loops=config.max_target_loops,
+                        score_target=score_target,
+                        value_prefix=config.value_prefix,
+                    )
+                    for instance in split_instances
+                ],
+            )
 
     summary = {
         "kind": "synthetic_depth_dataset",
@@ -248,6 +317,9 @@ def write_synthetic_depth_dataset(
             split: {
                 "sft": f"{split}_sft.jsonl",
                 "mcq": f"{split}_mcq.jsonl",
+                "mcq_option_text_sft": f"{split}_mcq_option_text_sft.jsonl",
+                "mcq_label_sft": f"{split}_mcq_label_sft.jsonl",
+                "mcq_label_and_text_sft": f"{split}_mcq_label_and_text_sft.jsonl",
             }
             for split in instances
         },

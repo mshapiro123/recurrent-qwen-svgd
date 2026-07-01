@@ -10,8 +10,11 @@ from training.synthetic_depth_task import (
     apply_mapping,
     build_dataset,
     build_instance,
+    build_mcq_sft_row,
     build_mcq_row,
     build_sft_row,
+    render_mcq_completion,
+    render_mcq_prompt,
     write_synthetic_depth_dataset,
 )
 
@@ -79,6 +82,43 @@ def test_sft_row_uses_depth_as_loop_target_when_not_overridden() -> None:
     assert "Answer with only the final value" in row["prompt"]
 
 
+def test_mcq_sft_row_matches_eval_prompt_and_option_text_completion() -> None:
+    instance = build_instance(
+        instance_id="depth1",
+        n_symbols=8,
+        depth=1,
+        seed=18,
+        num_choices=4,
+    )
+
+    row = build_mcq_sft_row(instance, max_target_loops=4, score_target="option_text")
+
+    assert row["prompt"] == render_mcq_prompt(instance)
+    assert row["completion"] == f" {instance.target}"
+    assert row["target_loop_count"] == 1
+    assert row["score_target"] == "option_text"
+    assert "Answer:" in row["prompt"]
+    assert "A. " in row["prompt"]
+    assert row["choices"][row["answer"]] == str(instance.target)
+
+
+def test_mcq_sft_completion_modes() -> None:
+    instance = build_instance(
+        instance_id="depth2",
+        n_symbols=8,
+        depth=2,
+        seed=19,
+        num_choices=4,
+    )
+    label = "ABCDEF"[instance.answer_index]
+
+    assert render_mcq_completion(instance, score_target="label") == f" {label}"
+    assert render_mcq_completion(instance, score_target="option_text") == f" {instance.target}"
+    assert render_mcq_completion(instance, score_target="label_and_text") == f" {label}. {instance.target}"
+    with pytest.raises(ValueError, match="Unknown score_target"):
+        render_mcq_completion(instance, score_target="bad")
+
+
 def test_dataset_generation_is_deterministic_and_balanced() -> None:
     config = SyntheticDepthConfig(
         n_symbols=10,
@@ -130,3 +170,7 @@ def test_write_synthetic_depth_dataset_writes_train_val_test_and_summary(tmp_pat
     assert len(test_rows) == 6
     assert all("target_loop_count" in row for row in train_rows)
     assert all("choices" in row and "answer" in row for row in test_rows)
+    assert (tmp_path / "train_mcq_option_text_sft.jsonl").exists()
+    assert (tmp_path / "train_mcq_label_sft.jsonl").exists()
+    assert (tmp_path / "train_mcq_label_and_text_sft.jsonl").exists()
+    assert summary["files"]["train"]["mcq_option_text_sft"] == "train_mcq_option_text_sft.jsonl"

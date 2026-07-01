@@ -50,6 +50,15 @@ Core files:
 - `eval/eval_synthetic_depth_matrix.py`
 - `colab/STAGE5_SYNTHETIC_DEPTH_TASK_CELL.py`
 
+The generator writes both free-answer and MCQ-aligned SFT formats. The MCQ
+option-text format is the preferred primitive diagnostic because it matches the
+matrix evaluator's default scoring target:
+
+- `train_sft.jsonl`: free-answer prompt, completion is the final value.
+- `train_mcq_option_text_sft.jsonl`: MCQ prompt, completion is the correct option text.
+- `train_mcq_label_sft.jsonl`: MCQ prompt, completion is the correct label.
+- `train_mcq_label_and_text_sft.jsonl`: MCQ prompt, completion is `label. text`.
+
 Launch target:
 
 ```python
@@ -66,6 +75,15 @@ The default target is a pilot-sized L4/T4 run:
 - `25` training steps
 
 Increase `STAGE5_SYNTH_DEPTH_ROWS_PER_DEPTH` and `STAGE5_SYNTH_DEPTH_MAX_STEPS` only after the pilot proves the plumbing and format are sane.
+
+Primitive competence gate:
+
+Before spending time on deeper staircase runs, use `max_depth=1`,
+`max_loops=1`, `STAGE5_SYNTH_DEPTH_TRAIN_FORMAT=mcq_option_text`, and
+`STAGE5_SYNTH_DEPTH_RUN_BASE_EVAL=1`. This checks whether the base model and
+the recurrent model can learn the lookup primitive under the same MCQ format
+used at evaluation. If depth-1 does not clear the threshold, deeper recurrence
+claims are not yet interpretable.
 
 ## Decision Rule
 
