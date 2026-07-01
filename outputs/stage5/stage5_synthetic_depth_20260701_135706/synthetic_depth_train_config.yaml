@@ -1,0 +1,41 @@
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+dtype: bfloat16
+adapter_dtype: float32
+attn_implementation: default
+layer_split: 6,18
+max_length: 512
+max_loops: 8
+initial_halt_prob: 0.15
+beta: 0.02
+halt_target_nll_weight: 0.5
+batch_size: 1
+optimizer: adamw
+learning_rate: 1.0e-05
+adamw_lr: 1.0e-05
+weight_decay: 0.0
+max_grad_norm: 0.5
+max_steps: 25
+save_every: 0
+log_every: 5
+bridge_prelude_grad_multiplier: 2.0
+train_on_prompt: false
+gradient_checkpointing: true
+output_dir: outputs/stage5/stage5_synthetic_depth_20260701_135706/train/unfrozen
+resume_from: null
+resume_lora:
+  enabled: false
+merge_lora_before_unfreeze: false
+require_lora_loaded_before_merge: false
+train_auxiliary:
+  bridge: true
+  halting: true
+  reentry_adapter: false
+  latent: false
+recurrence_curriculum:
+  enabled: true
+  start_loop: 1
+  end_loop: 8
+  schedule: linear
+  target_source: row_capped
+  ramp_compute: true
+synthetic_train_jsonl: outputs/stage5/stage5_synthetic_depth_20260701_135706/data/train_sft.jsonl

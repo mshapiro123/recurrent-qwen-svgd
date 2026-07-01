@@ -1,0 +1,217 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 3801.61it/s]
+lora_recurrent_modules=0
+loaded_checkpoint=outputs/stage5/stage5_synthetic_depth_20260701_135706/train/unfrozen/unfrozen_recurrent_step_25.pt loaded_keys=157
+{
+  "kind": "synthetic_depth_accuracy_matrix",
+  "threshold": 0.75,
+  "depths": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "loops": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "matrix": {
+    "1": {
+      "1": {
+        "correct": 9,
+        "total": 24,
+        "accuracy": 0.375
+      },
+      "2": {
+        "correct": 8,
+        "total": 24,
+        "accuracy": 0.3333333333333333
+      },
+      "4": {
+        "correct": 7,
+        "total": 24,
+        "accuracy": 0.2916666666666667
+      },
+      "8": {
+        "correct": 6,
+        "total": 24,
+        "accuracy": 0.25
+      }
+    },
+    "2": {
+      "1": {
+        "correct": 9,
+        "total": 24,
+        "accuracy": 0.375
+      },
+      "2": {
+        "correct": 9,
+        "total": 24,
+        "accuracy": 0.375
+      },
+      "4": {
+        "correct": 5,
+        "total": 24,
+        "accuracy": 0.20833333333333334
+      },
+      "8": {
+        "correct": 2,
+        "total": 24,
+        "accuracy": 0.08333333333333333
+      }
+    },
+    "3": {
+      "1": {
+        "correct": 6,
+        "total": 24,
+        "accuracy": 0.25
+      },
+      "2": {
+        "correct": 8,
+        "total": 24,
+        "accuracy": 0.3333333333333333
+      },
+      "4": {
+        "correct": 5,
+        "total": 24,
+        "accuracy": 0.20833333333333334
+      },
+      "8": {
+        "correct": 7,
+        "total": 24,
+        "accuracy": 0.2916666666666667
+      }
+    },
+    "4": {
+      "1": {
+        "correct": 5,
+        "total": 24,
+        "accuracy": 0.20833333333333334
+      },
+      "2": {
+        "correct": 3,
+        "total": 24,
+        "accuracy": 0.125
+      },
+      "4": {
+        "correct": 4,
+        "total": 24,
+        "accuracy": 0.16666666666666666
+      },
+      "8": {
+        "correct": 2,
+        "total": 24,
+        "accuracy": 0.08333333333333333
+      }
+    },
+    "5": {
+      "1": {
+        "correct": 7,
+        "total": 24,
+        "accuracy": 0.2916666666666667
+      },
+      "2": {
+        "correct": 10,
+        "total": 24,
+        "accuracy": 0.4166666666666667
+      },
+      "4": {
+        "correct": 5,
+        "total": 24,
+        "accuracy": 0.20833333333333334
+      },
+      "8": {
+        "correct": 7,
+        "total": 24,
+        "accuracy": 0.2916666666666667
+      }
+    },
+    "6": {
+      "1": {
+        "correct": 7,
+        "total": 24,
+        "accuracy": 0.2916666666666667
+      },
+      "2": {
+        "correct": 5,
+        "total": 24,
+        "accuracy": 0.20833333333333334
+      },
+      "4": {
+        "correct": 4,
+        "total": 24,
+        "accuracy": 0.16666666666666666
+      },
+      "8": {
+        "correct": 3,
+        "total": 24,
+        "accuracy": 0.125
+      }
+    },
+    "7": {
+      "1": {
+        "correct": 4,
+        "total": 24,
+        "accuracy": 0.16666666666666666
+      },
+      "2": {
+        "correct": 4,
+        "total": 24,
+        "accuracy": 0.16666666666666666
+      },
+      "4": {
+        "correct": 6,
+        "total": 24,
+        "accuracy": 0.25
+      },
+      "8": {
+        "correct": 6,
+        "total": 24,
+        "accuracy": 0.25
+      }
+    },
+    "8": {
+      "1": {
+        "correct": 3,
+        "total": 24,
+        "accuracy": 0.125
+      },
+      "2": {
+        "correct": 3,
+        "total": 24,
+        "accuracy": 0.125
+      },
+      "4": {
+        "correct": 7,
+        "total": 24,
+        "accuracy": 0.2916666666666667
+      },
+      "8": {
+        "correct": 9,
+        "total": 24,
+        "accuracy": 0.375
+      }
+    }
+  },
+  "frontier_by_loop": {
+    "1": 0,
+    "2": 0,
+    "4": 0,
+    "8": 0
+  },
+  "frontier_is_non_decreasing": true,
+  "frontier_strictly_expands": false,
+  "mode": "recurrent",
+  "checkpoint": "outputs/stage5/stage5_synthetic_depth_20260701_135706/train/unfrozen/unfrozen_recurrent_step_25.pt",
+  "data_jsonl": "outputs/stage5/stage5_synthetic_depth_20260701_135706/data/test_mcq.jsonl",
+  "score_target": "option_text",
+  "aggregate": "mean",
+  "rows": 768
+}
