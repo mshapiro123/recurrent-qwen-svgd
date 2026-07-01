@@ -2,7 +2,7 @@
   "kind": "stage5_synthetic_depth_chain_supervision",
   "run_id": "stage5_synthetic_depth_chain_supervision_20260701_201715",
   "cell_version": "synthetic_depth_chain_supervision_v1",
-  "status": "chain_depth_le2_finished",
+  "status": "finished",
   "source_summary": "outputs/stage5/stage5_synthetic_depth_staged_staircase_20260701_180040/summary.json",
   "n_symbols": 16,
   "max_depth": 4,
@@ -434,6 +434,287 @@
           "4": 0.24609375
         }
       }
+    },
+    {
+      "stage_name": "chain_depth_le4",
+      "max_loops": 4,
+      "max_steps": 1000,
+      "learning_rate": 1e-05,
+      "bridge_prelude_grad_multiplier": 8.0,
+      "train_jsonl": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/train_chain_label_depth_le4_sft.jsonl",
+      "train_config": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/chain_depth_le4_train_config.yaml",
+      "train_log": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/train/chain_depth_le4_train_unfrozen_recurrent.log",
+      "training_summary": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/train/chain_depth_le4/train_unfrozen_recurrent_summary.json",
+      "checkpoint": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/train/chain_depth_le4/unfrozen_recurrent_step_1000.pt",
+      "checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_synthetic_depth_chain_supervision_20260701_201715/chain_depth_le4/unfrozen_recurrent_step_1000.pt",
+      "train_eval": {
+        "name": "chain_depth_le4_train",
+        "data_jsonl": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/train_chain_mcq.jsonl",
+        "score_target": "label",
+        "matrix_rows": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/eval/chain_depth_le4_train_matrix_rows.jsonl",
+        "matrix_summary": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/eval/chain_depth_le4_train_matrix_summary.json",
+        "eval_log": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/eval/chain_depth_le4_train_eval_synthetic_depth_matrix.log",
+        "matrix": {
+          "kind": "synthetic_depth_accuracy_matrix",
+          "threshold": 0.71,
+          "depths": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "loops": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "matrix": {
+            "1": {
+              "1": {
+                "correct": 248,
+                "total": 256,
+                "accuracy": 0.96875
+              },
+              "2": {
+                "correct": 85,
+                "total": 256,
+                "accuracy": 0.33203125
+              },
+              "3": {
+                "correct": 81,
+                "total": 256,
+                "accuracy": 0.31640625
+              },
+              "4": {
+                "correct": 52,
+                "total": 256,
+                "accuracy": 0.203125
+              }
+            },
+            "2": {
+              "1": {
+                "correct": 2,
+                "total": 256,
+                "accuracy": 0.0078125
+              },
+              "2": {
+                "correct": 123,
+                "total": 256,
+                "accuracy": 0.48046875
+              },
+              "3": {
+                "correct": 127,
+                "total": 256,
+                "accuracy": 0.49609375
+              },
+              "4": {
+                "correct": 119,
+                "total": 256,
+                "accuracy": 0.46484375
+              }
+            },
+            "3": {
+              "1": {
+                "correct": 2,
+                "total": 256,
+                "accuracy": 0.0078125
+              },
+              "2": {
+                "correct": 74,
+                "total": 256,
+                "accuracy": 0.2890625
+              },
+              "3": {
+                "correct": 94,
+                "total": 256,
+                "accuracy": 0.3671875
+              },
+              "4": {
+                "correct": 101,
+                "total": 256,
+                "accuracy": 0.39453125
+              }
+            },
+            "4": {
+              "1": {
+                "correct": 2,
+                "total": 256,
+                "accuracy": 0.0078125
+              },
+              "2": {
+                "correct": 71,
+                "total": 256,
+                "accuracy": 0.27734375
+              },
+              "3": {
+                "correct": 79,
+                "total": 256,
+                "accuracy": 0.30859375
+              },
+              "4": {
+                "correct": 86,
+                "total": 256,
+                "accuracy": 0.3359375
+              }
+            }
+          },
+          "frontier_by_loop": {
+            "1": 1,
+            "2": 0,
+            "3": 0,
+            "4": 0
+          },
+          "frontier_is_non_decreasing": false,
+          "frontier_strictly_expands": false,
+          "mode": "recurrent",
+          "checkpoint": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/train/chain_depth_le4/unfrozen_recurrent_step_1000.pt",
+          "data_jsonl": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/train_chain_mcq.jsonl",
+          "score_target": "label",
+          "aggregate": "mean",
+          "rows": 4096
+        },
+        "diagonal_accuracy": {
+          "1": 0.96875,
+          "2": 0.48046875,
+          "3": 0.3671875,
+          "4": 0.3359375
+        }
+      },
+      "test_eval": {
+        "name": "chain_depth_le4_test",
+        "data_jsonl": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/test_chain_mcq.jsonl",
+        "score_target": "label",
+        "matrix_rows": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/eval/chain_depth_le4_test_matrix_rows.jsonl",
+        "matrix_summary": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/eval/chain_depth_le4_test_matrix_summary.json",
+        "eval_log": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/eval/chain_depth_le4_test_eval_synthetic_depth_matrix.log",
+        "matrix": {
+          "kind": "synthetic_depth_accuracy_matrix",
+          "threshold": 0.71,
+          "depths": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "loops": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "matrix": {
+            "1": {
+              "1": {
+                "correct": 239,
+                "total": 256,
+                "accuracy": 0.93359375
+              },
+              "2": {
+                "correct": 86,
+                "total": 256,
+                "accuracy": 0.3359375
+              },
+              "3": {
+                "correct": 76,
+                "total": 256,
+                "accuracy": 0.296875
+              },
+              "4": {
+                "correct": 50,
+                "total": 256,
+                "accuracy": 0.1953125
+              }
+            },
+            "2": {
+              "1": {
+                "correct": 5,
+                "total": 256,
+                "accuracy": 0.01953125
+              },
+              "2": {
+                "correct": 95,
+                "total": 256,
+                "accuracy": 0.37109375
+              },
+              "3": {
+                "correct": 114,
+                "total": 256,
+                "accuracy": 0.4453125
+              },
+              "4": {
+                "correct": 110,
+                "total": 256,
+                "accuracy": 0.4296875
+              }
+            },
+            "3": {
+              "1": {
+                "correct": 5,
+                "total": 256,
+                "accuracy": 0.01953125
+              },
+              "2": {
+                "correct": 78,
+                "total": 256,
+                "accuracy": 0.3046875
+              },
+              "3": {
+                "correct": 94,
+                "total": 256,
+                "accuracy": 0.3671875
+              },
+              "4": {
+                "correct": 91,
+                "total": 256,
+                "accuracy": 0.35546875
+              }
+            },
+            "4": {
+              "1": {
+                "correct": 3,
+                "total": 256,
+                "accuracy": 0.01171875
+              },
+              "2": {
+                "correct": 82,
+                "total": 256,
+                "accuracy": 0.3203125
+              },
+              "3": {
+                "correct": 93,
+                "total": 256,
+                "accuracy": 0.36328125
+              },
+              "4": {
+                "correct": 87,
+                "total": 256,
+                "accuracy": 0.33984375
+              }
+            }
+          },
+          "frontier_by_loop": {
+            "1": 1,
+            "2": 0,
+            "3": 0,
+            "4": 0
+          },
+          "frontier_is_non_decreasing": false,
+          "frontier_strictly_expands": false,
+          "mode": "recurrent",
+          "checkpoint": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/train/chain_depth_le4/unfrozen_recurrent_step_1000.pt",
+          "data_jsonl": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/test_chain_mcq.jsonl",
+          "score_target": "label",
+          "aggregate": "mean",
+          "rows": 4096
+        },
+        "diagonal_accuracy": {
+          "1": 0.93359375,
+          "2": 0.37109375,
+          "3": 0.3671875,
+          "4": 0.33984375
+        }
+      }
     }
   ],
   "chain_train_filters": {
@@ -459,5 +740,27 @@
         "4": 256
       }
     }
+  },
+  "interpretation_gate": {
+    "success_signature": "chain_depth_le4 test diagonal clears threshold through depth 4",
+    "train_diagonal": {
+      "1": 0.96875,
+      "2": 0.48046875,
+      "3": 0.3671875,
+      "4": 0.3359375
+    },
+    "test_diagonal": {
+      "1": 0.93359375,
+      "2": 0.37109375,
+      "3": 0.3671875,
+      "4": 0.33984375
+    },
+    "test_frontier_by_loop": {
+      "1": 1,
+      "2": 0,
+      "3": 0,
+      "4": 0
+    },
+    "test_diagonal_clears_bar": false
   }
 }

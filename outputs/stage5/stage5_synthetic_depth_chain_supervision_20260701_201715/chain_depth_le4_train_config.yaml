@@ -1,0 +1,46 @@
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+dtype: bfloat16
+adapter_dtype: float32
+attn_implementation: default
+layer_split: 6,18
+max_length: 512
+max_loops: 4
+loop_loss_mode: per_loop_labels
+initial_halt_prob: 0.15
+beta: 0.0
+halt_target_nll_weight: 0.0
+loop_control_ce_weight: 0.0
+batch_size: 1
+optimizer: adamw
+learning_rate: 1.0e-05
+adamw_lr: 1.0e-05
+weight_decay: 0.0
+max_grad_norm: 0.5
+max_steps: 1000
+save_every: 0
+log_every: 25
+bridge_prelude_grad_multiplier: 8.0
+train_on_prompt: false
+gradient_checkpointing: true
+output_dir: outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/train/chain_depth_le4
+resume_from: outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/train/chain_depth_le2/unfrozen_recurrent_step_500.pt
+resume_lora:
+  enabled: false
+merge_lora_before_unfreeze: false
+require_lora_loaded_before_merge: false
+train_auxiliary:
+  bridge: true
+  halting: false
+  reentry_adapter: false
+  latent: false
+recurrence_curriculum:
+  enabled: false
+  start_loop: 4
+  end_loop: 4
+  schedule: linear
+  target_source: row_capped
+  ramp_compute: false
+synthetic_train_jsonl: outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/train_chain_label_depth_le4_sft.jsonl
+synthetic_train_format: chain_label
+synthetic_phase: intermediate_chain_supervision
+synthetic_stage: chain_depth_le4
