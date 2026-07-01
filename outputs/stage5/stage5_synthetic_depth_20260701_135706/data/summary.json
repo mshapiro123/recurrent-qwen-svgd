@@ -1,0 +1,64 @@
+{
+  "kind": "synthetic_depth_dataset",
+  "config": {
+    "n_symbols": 16,
+    "max_depth": 8,
+    "rows_per_depth": 24,
+    "seed": 20260701,
+    "num_choices": 4,
+    "max_target_loops": 8,
+    "value_prefix": ""
+  },
+  "rows": {
+    "train": 192,
+    "val": 192,
+    "test": 192
+  },
+  "depth_counts": {
+    "train": {
+      "1": 24,
+      "2": 24,
+      "3": 24,
+      "4": 24,
+      "5": 24,
+      "6": 24,
+      "7": 24,
+      "8": 24
+    },
+    "val": {
+      "1": 24,
+      "2": 24,
+      "3": 24,
+      "4": 24,
+      "5": 24,
+      "6": 24,
+      "7": 24,
+      "8": 24
+    },
+    "test": {
+      "1": 24,
+      "2": 24,
+      "3": 24,
+      "4": 24,
+      "5": 24,
+      "6": 24,
+      "7": 24,
+      "8": 24
+    }
+  },
+  "orbit_guarantee": "distinct_prefix_length_depth_plus_one",
+  "files": {
+    "train": {
+      "sft": "train_sft.jsonl",
+      "mcq": "train_mcq.jsonl"
+    },
+    "val": {
+      "sft": "val_sft.jsonl",
+      "mcq": "val_mcq.jsonl"
+    },
+    "test": {
+      "sft": "test_sft.jsonl",
+      "mcq": "test_mcq.jsonl"
+    }
+  }
+}
