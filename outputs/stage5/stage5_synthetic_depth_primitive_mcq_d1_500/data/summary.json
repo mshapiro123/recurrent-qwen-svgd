@@ -1,0 +1,52 @@
+{
+  "kind": "synthetic_depth_dataset",
+  "config": {
+    "n_symbols": 8,
+    "max_depth": 1,
+    "rows_per_depth": 256,
+    "seed": 20260701,
+    "num_choices": 4,
+    "max_target_loops": 1,
+    "value_prefix": ""
+  },
+  "rows": {
+    "train": 256,
+    "val": 256,
+    "test": 256
+  },
+  "depth_counts": {
+    "train": {
+      "1": 256
+    },
+    "val": {
+      "1": 256
+    },
+    "test": {
+      "1": 256
+    }
+  },
+  "orbit_guarantee": "distinct_prefix_length_depth_plus_one",
+  "files": {
+    "train": {
+      "sft": "train_sft.jsonl",
+      "mcq": "train_mcq.jsonl",
+      "mcq_option_text_sft": "train_mcq_option_text_sft.jsonl",
+      "mcq_label_sft": "train_mcq_label_sft.jsonl",
+      "mcq_label_and_text_sft": "train_mcq_label_and_text_sft.jsonl"
+    },
+    "val": {
+      "sft": "val_sft.jsonl",
+      "mcq": "val_mcq.jsonl",
+      "mcq_option_text_sft": "val_mcq_option_text_sft.jsonl",
+      "mcq_label_sft": "val_mcq_label_sft.jsonl",
+      "mcq_label_and_text_sft": "val_mcq_label_and_text_sft.jsonl"
+    },
+    "test": {
+      "sft": "test_sft.jsonl",
+      "mcq": "test_mcq.jsonl",
+      "mcq_option_text_sft": "test_mcq_option_text_sft.jsonl",
+      "mcq_label_sft": "test_mcq_label_sft.jsonl",
+      "mcq_label_and_text_sft": "test_mcq_label_and_text_sft.jsonl"
+    }
+  }
+}
