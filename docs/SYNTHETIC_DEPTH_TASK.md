@@ -85,6 +85,34 @@ the recurrent model can learn the lookup primitive under the same MCQ format
 used at evaluation. If depth-1 does not clear the threshold, deeper recurrence
 claims are not yet interpretable.
 
+## Two-Phase Discipline
+
+The first staircase run changed symbol space, depth, and supervision pressure at
+once. That made the result ambiguous: depth-1 accuracy collapsed before the
+depth mechanism could be read. The corrected sequence is:
+
+1. **Phase 1, primitive-generalization curve.** Keep `max_depth=1`,
+   `max_loops=1`, and MCQ option-text SFT fixed. Vary only symbol count,
+   usually `N=8,12,16`. The launch target is:
+
+   ```python
+   os.environ["STAGE5_CURRENT_A100_TARGET"] = "synthetic_depth_primitive_curve"
+   exec(open("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read())
+   ```
+
+   The decision bar is `0.71`, because depth-4 four-option accuracy is floored
+   when the primitive is below roughly `chance ** (1 / 4)`. Prefer `0.90+` for
+   margin. The output recommends the largest `N` that clears the primitive bar.
+
+2. **Phase 2, staged-depth forced-loop staircase.** Only after Phase 1 identifies
+   a solid primitive `N`, add depths through a staged curriculum. Keep forced
+   loop evaluation and keep router supervision off. This tests the mechanism,
+   not the router.
+
+3. **Phase 3, depth router.** Only if Phase 2 shows a staircase, turn on
+   `halt_target_nll_weight` and a small nonzero `beta` to test whether the model
+   can allocate loops without forcing.
+
 ## Decision Rule
 
 Proceed only if:

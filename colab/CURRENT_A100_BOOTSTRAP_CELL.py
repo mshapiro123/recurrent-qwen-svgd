@@ -68,6 +68,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
 #   "depth_sweep_heldout" - L4/T4 held-out ARC tail loop-depth sweep for routing validation.
 #   "synthetic_depth_task" - L4/T4 iterated-function staircase test for whether recurrence supplies sequential depth.
+#   "synthetic_depth_primitive_curve" - L4/T4 Phase 1 depth-1 primitive curve over N=8,12,16.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
 #   "model_viability_queue" - queued no-training Qwen 3B/7B probes with VRAM-aware skipping.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
@@ -1737,6 +1738,28 @@ TARGETS = {
             "STAGE5_SYNTH_DEPTH_TRAIN_FORMAT": "free_answer",
             "STAGE5_SYNTH_DEPTH_RUN_BASE_EVAL": "0",
             "STAGE5_SYNTH_DEPTH_DISCONNECT": "0",
+        },
+    },
+    "synthetic_depth_primitive_curve": {
+        "path": "colab/STAGE5_SYNTHETIC_DEPTH_PRIMITIVE_CURVE_CELL.py",
+        "markers": [
+            "STAGE5_SYNTHETIC_DEPTH_PRIMITIVE_CURVE_CELL_VERSION",
+            "synthetic_depth_primitive_curve_v1",
+            "Phase 1 changes only N and keeps max_depth=1",
+            "STAGE5_SYNTH_PRIMITIVE_N_VALUES",
+            "STAGE5_SYNTH_PRIMITIVE_ROWS_PER_DEPTH",
+            "STAGE5_SYNTH_PRIMITIVE_MAX_STEPS",
+            "STAGE5_SYNTH_PRIMITIVE_BACKUP_CHECKPOINTS_TO_DRIVE",
+            "colab/summarize_synthetic_depth_primitive_curve.py",
+            "tests/test_synthetic_depth_primitive_curve.py",
+            "primitive_accuracy_bar",
+        ],
+        "env": {
+            "STAGE5_SYNTH_PRIMITIVE_N_VALUES": "8,12,16",
+            "STAGE5_SYNTH_PRIMITIVE_ROWS_PER_DEPTH": "256",
+            "STAGE5_SYNTH_PRIMITIVE_MAX_STEPS": "500",
+            "STAGE5_SYNTH_PRIMITIVE_BACKUP_CHECKPOINTS_TO_DRIVE": "0",
+            "STAGE5_SYNTH_PRIMITIVE_DISCONNECT": "0",
         },
     },
     "model_viability_probe": {

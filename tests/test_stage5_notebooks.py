@@ -2128,3 +2128,25 @@ def test_synthetic_depth_task_target_is_wired_and_guarded() -> None:
     assert "A(d, k)" in spec
     assert "distinct orbit prefix" in spec
     assert "Launch target" in spec
+
+
+def test_synthetic_depth_primitive_curve_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_SYNTHETIC_DEPTH_PRIMITIVE_CURVE_CELL.py").read_text(encoding="utf-8")
+    summarizer = (ROOT / "colab/summarize_synthetic_depth_primitive_curve.py").read_text(encoding="utf-8")
+
+    for text in (bootstrap, bootstrap_md):
+        assert "synthetic_depth_primitive_curve" in text
+        assert "colab/STAGE5_SYNTHETIC_DEPTH_PRIMITIVE_CURVE_CELL.py" in text
+        assert "STAGE5_SYNTH_PRIMITIVE_N_VALUES" in text
+        assert "tests/test_synthetic_depth_primitive_curve.py" in text
+
+    assert "STAGE5_SYNTHETIC_DEPTH_PRIMITIVE_CURVE_CELL_VERSION" in cell
+    assert "synthetic_depth_primitive_curve_v1" in cell
+    assert "Phase 1 changes only N and keeps max_depth=1" in cell
+    assert "max_depth" in cell
+    assert "STAGE5_SYNTH_PRIMITIVE_BACKUP_CHECKPOINTS_TO_DRIVE" in cell
+    assert "colab/summarize_synthetic_depth_primitive_curve.py" in cell
+    assert "primitive_accuracy_bar" in cell
+    assert "recommended_phase2_n_symbols" in summarizer
