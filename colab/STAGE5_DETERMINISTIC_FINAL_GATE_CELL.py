@@ -153,22 +153,52 @@ def compact_loop_summary(run_id: str) -> dict[str, Any]:
     path = ROOT / "outputs" / "stage5" / run_id / "summary.json"
     payload = read_json(path)
     rows: list[dict[str, Any]] = []
-    for comparison in payload.get("comparisons", []):
-        rows.append(
-            {
-                "benchmark": comparison.get("benchmark"),
-                "score_target": comparison.get("score_target"),
-                "aggregate": comparison.get("aggregate"),
-                "paired_examples": comparison.get("paired_examples"),
-                "base_correct": comparison.get("base_correct"),
-                "recurrent_correct": comparison.get("recurrent_correct"),
-                "delta": comparison.get("delta"),
-                "wins": comparison.get("wins"),
-                "losses": comparison.get("losses"),
-                "ties": comparison.get("ties"),
-                "sign_test_p": comparison.get("sign_test_p"),
-            }
-        )
+    paired = payload.get("paired_comparisons")
+    if isinstance(paired, dict):
+        for benchmark, by_target in paired.items():
+            if not isinstance(by_target, dict):
+                continue
+            for score_target, by_aggregate in by_target.items():
+                if not isinstance(by_aggregate, dict):
+                    continue
+                for aggregate, comparison in by_aggregate.items():
+                    if not isinstance(comparison, dict):
+                        continue
+                    rows.append(
+                        {
+                            "benchmark": benchmark,
+                            "score_target": score_target,
+                            "aggregate": aggregate,
+                            "paired_examples": comparison.get("paired_examples"),
+                            "base_correct": comparison.get("base_correct"),
+                            "recurrent_correct": comparison.get("recurrent_correct"),
+                            "delta": comparison.get("correct_delta_recurrent_vs_base"),
+                            "wins": comparison.get("wins"),
+                            "losses": comparison.get("losses"),
+                            "ties": comparison.get("ties"),
+                            "sign_test_p": comparison.get("sign_test_p_value"),
+                        }
+                    )
+    else:
+        # Legacy summaries used a flat comparison list.
+        for comparison in payload.get("comparisons", []):
+            if not isinstance(comparison, dict):
+                continue
+            rows.append(
+                {
+                    "benchmark": comparison.get("benchmark"),
+                    "score_target": comparison.get("score_target"),
+                    "aggregate": comparison.get("aggregate"),
+                    "paired_examples": comparison.get("paired_examples"),
+                    "base_correct": comparison.get("base_correct"),
+                    "recurrent_correct": comparison.get("recurrent_correct"),
+                    "delta": comparison.get("delta"),
+                    "wins": comparison.get("wins"),
+                    "losses": comparison.get("losses"),
+                    "ties": comparison.get("ties"),
+                    "sign_test_p": comparison.get("sign_test_p"),
+                }
+            )
     return {
         "run_id": run_id,
         "status": payload.get("status"),
