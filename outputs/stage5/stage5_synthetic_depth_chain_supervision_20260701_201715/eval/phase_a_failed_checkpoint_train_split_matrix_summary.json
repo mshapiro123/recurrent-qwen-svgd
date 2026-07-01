@@ -1,0 +1,120 @@
+{
+  "kind": "synthetic_depth_accuracy_matrix",
+  "threshold": 0.71,
+  "depths": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "loops": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "matrix": {
+    "1": {
+      "1": {
+        "correct": 244,
+        "total": 256,
+        "accuracy": 0.953125
+      },
+      "2": {
+        "correct": 111,
+        "total": 256,
+        "accuracy": 0.43359375
+      },
+      "3": {
+        "correct": 108,
+        "total": 256,
+        "accuracy": 0.421875
+      },
+      "4": {
+        "correct": 109,
+        "total": 256,
+        "accuracy": 0.42578125
+      }
+    },
+    "2": {
+      "1": {
+        "correct": 106,
+        "total": 256,
+        "accuracy": 0.4140625
+      },
+      "2": {
+        "correct": 176,
+        "total": 256,
+        "accuracy": 0.6875
+      },
+      "3": {
+        "correct": 161,
+        "total": 256,
+        "accuracy": 0.62890625
+      },
+      "4": {
+        "correct": 153,
+        "total": 256,
+        "accuracy": 0.59765625
+      }
+    },
+    "3": {
+      "1": {
+        "correct": 101,
+        "total": 256,
+        "accuracy": 0.39453125
+      },
+      "2": {
+        "correct": 156,
+        "total": 256,
+        "accuracy": 0.609375
+      },
+      "3": {
+        "correct": 147,
+        "total": 256,
+        "accuracy": 0.57421875
+      },
+      "4": {
+        "correct": 145,
+        "total": 256,
+        "accuracy": 0.56640625
+      }
+    },
+    "4": {
+      "1": {
+        "correct": 85,
+        "total": 256,
+        "accuracy": 0.33203125
+      },
+      "2": {
+        "correct": 160,
+        "total": 256,
+        "accuracy": 0.625
+      },
+      "3": {
+        "correct": 155,
+        "total": 256,
+        "accuracy": 0.60546875
+      },
+      "4": {
+        "correct": 152,
+        "total": 256,
+        "accuracy": 0.59375
+      }
+    }
+  },
+  "frontier_by_loop": {
+    "1": 1,
+    "2": 0,
+    "3": 0,
+    "4": 0
+  },
+  "frontier_is_non_decreasing": false,
+  "frontier_strictly_expands": false,
+  "mode": "recurrent",
+  "checkpoint": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/restored/failed_staircase_checkpoint.pt",
+  "data_jsonl": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/train_mcq.jsonl",
+  "score_target": "option_text",
+  "aggregate": "mean",
+  "rows": 4096
+}
