@@ -67,6 +67,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "reentry_tail_damper_powered_arc_train" - powered ARC-Challenge train confirmation using 0/0.5/1.0 strengths.
 #   "direct_preservation_probe" - bounded max_loops=1 base-preservation training probe.
 #   "depth_sweep_heldout" - L4/T4 held-out ARC tail loop-depth sweep for routing validation.
+#   "synthetic_depth_task" - L4/T4 iterated-function staircase test for whether recurrence supplies sequential depth.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
 #   "model_viability_queue" - queued no-training Qwen 3B/7B probes with VRAM-aware skipping.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
@@ -1708,6 +1709,29 @@ TARGETS = {
             "STAGE5_DEPTH_SWEEP_ARC_CHALLENGE_LIMIT": "full",
             "STAGE5_DEPTH_SWEEP_DISCONNECT": "0",
             "STAGE5_DEPTH_SWEEP_DRIVE_BACKUP": "0",
+        },
+    },
+    "synthetic_depth_task": {
+        "path": "colab/STAGE5_SYNTHETIC_DEPTH_TASK_CELL.py",
+        "markers": [
+            "STAGE5_SYNTHETIC_DEPTH_TASK_CELL_VERSION",
+            "synthetic_depth_task_v1",
+            "training/generate_synthetic_depth_task.py",
+            "eval/eval_synthetic_depth_matrix.py",
+            "distinct_prefix_length_depth_plus_one",
+            "frontier_strictly_expands",
+            "STAGE5_SYNTH_DEPTH_MAX_DEPTH",
+            "STAGE5_SYNTH_DEPTH_ROWS_PER_DEPTH",
+            "STAGE5_SYNTH_DEPTH_MAX_STEPS",
+            "tests/test_synthetic_depth_task.py",
+            "tests/test_eval_synthetic_depth_matrix.py",
+        ],
+        "env": {
+            "STAGE5_SYNTH_DEPTH_MAX_DEPTH": "8",
+            "STAGE5_SYNTH_DEPTH_MAX_LOOPS": "8",
+            "STAGE5_SYNTH_DEPTH_ROWS_PER_DEPTH": "24",
+            "STAGE5_SYNTH_DEPTH_MAX_STEPS": "25",
+            "STAGE5_SYNTH_DEPTH_DISCONNECT": "0",
         },
     },
     "model_viability_probe": {

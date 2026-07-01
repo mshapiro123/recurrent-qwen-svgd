@@ -1,0 +1,288 @@
+"""Synthetic iterated-function task for recurrent-depth mechanism tests.
+
+The task presents a shuffled table for a finite function ``f: S -> S`` and asks
+for ``f^d(x)``.  Instances are generated with a distinct orbit prefix of length
+``d + 1`` so the requested depth is real: the target cannot be reached earlier by
+falling into a short cycle.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import random
+from dataclasses import asdict, dataclass
+from pathlib import Path
+from typing import Any
+
+
+LABELS = ("A", "B", "C", "D", "E", "F")
+
+
+@dataclass(frozen=True)
+class SyntheticDepthConfig:
+    n_symbols: int = 16
+    max_depth: int = 8
+    rows_per_depth: int = 64
+    seed: int = 0
+    num_choices: int = 4
+    max_target_loops: int = 8
+    value_prefix: str = ""
+
+
+@dataclass(frozen=True)
+class SyntheticDepthInstance:
+    instance_id: str
+    split: str
+    n_symbols: int
+    depth: int
+    start: int
+    target: int
+    mapping: dict[int, int]
+    table_order: list[int]
+    choices: list[int]
+    answer_index: int
+    orbit: list[int]
+
+
+def symbol(value: int, *, prefix: str = "") -> str:
+    return f"{prefix}{value}" if prefix else str(value)
+
+
+def apply_mapping(mapping: dict[int, int], start: int, depth: int) -> int:
+    current = int(start)
+    for _ in range(int(depth)):
+        current = int(mapping[current])
+    return current
+
+
+def _seed_for(seed: int, split: str, depth: int, row_index: int) -> int:
+    split_offsets = {"train": 0, "val": 1_000_000, "test": 2_000_000}
+    return int(seed) + split_offsets.get(split, 3_000_000) + int(depth) * 10_000 + int(row_index)
+
+
+def build_instance(
+    *,
+    instance_id: str,
+    n_symbols: int,
+    depth: int,
+    seed: int,
+    split: str = "test",
+    num_choices: int = 4,
+) -> SyntheticDepthInstance:
+    if n_symbols < 3:
+        raise ValueError("n_symbols must be at least 3")
+    if depth < 1:
+        raise ValueError("depth must be >= 1")
+    if depth >= n_symbols:
+        raise ValueError("depth must be < n_symbols to guarantee a distinct d+1 orbit prefix")
+    if not 2 <= num_choices <= min(len(LABELS), n_symbols):
+        raise ValueError("num_choices must be between 2 and min(6, n_symbols)")
+
+    rng = random.Random(seed)
+    values = list(range(n_symbols))
+    orbit = rng.sample(values, depth + 1)
+    mapping: dict[int, int] = {}
+    for left, right in zip(orbit, orbit[1:]):
+        mapping[left] = right
+    for value in values:
+        if value not in mapping:
+            mapping[value] = rng.choice(values)
+
+    table_order = values[:]
+    rng.shuffle(table_order)
+    target = orbit[-1]
+    distractors = [value for value in values if value != target]
+    choices = rng.sample(distractors, num_choices - 1) + [target]
+    rng.shuffle(choices)
+    answer_index = choices.index(target)
+
+    computed = apply_mapping(mapping, orbit[0], depth)
+    if computed != target:
+        raise AssertionError("Synthetic-depth construction failed to preserve target")
+
+    return SyntheticDepthInstance(
+        instance_id=instance_id,
+        split=split,
+        n_symbols=n_symbols,
+        depth=depth,
+        start=orbit[0],
+        target=target,
+        mapping=mapping,
+        table_order=table_order,
+        choices=choices,
+        answer_index=answer_index,
+        orbit=orbit,
+    )
+
+
+def render_table(instance: SyntheticDepthInstance, *, value_prefix: str = "") -> str:
+    return "\n".join(
+        f"{symbol(left, prefix=value_prefix)} -> {symbol(instance.mapping[left], prefix=value_prefix)}"
+        for left in instance.table_order
+    )
+
+
+def render_question(instance: SyntheticDepthInstance, *, value_prefix: str = "") -> str:
+    return (
+        "You are given a finite function f as a shuffled lookup table.\n"
+        f"Function table:\n{render_table(instance, value_prefix=value_prefix)}\n\n"
+        f"Start value: {symbol(instance.start, prefix=value_prefix)}\n"
+        f"Apply f exactly {instance.depth} times.\n"
+        "What is the final value?"
+    )
+
+
+def build_mcq_row(instance: SyntheticDepthInstance, *, value_prefix: str = "") -> dict[str, Any]:
+    labels = LABELS[: len(instance.choices)]
+    choices = {
+        label: symbol(value, prefix=value_prefix)
+        for label, value in zip(labels, instance.choices)
+    }
+    answer = labels[instance.answer_index]
+    return {
+        "id": instance.instance_id,
+        "question": render_question(instance, value_prefix=value_prefix),
+        "choices": choices,
+        "answer": answer,
+        "target": symbol(instance.target, prefix=value_prefix),
+        "depth": instance.depth,
+        "start": symbol(instance.start, prefix=value_prefix),
+        "orbit": [symbol(value, prefix=value_prefix) for value in instance.orbit],
+        "n_symbols": instance.n_symbols,
+        "synthetic_task": "iterated_function",
+    }
+
+
+def build_sft_row(
+    instance: SyntheticDepthInstance,
+    *,
+    max_target_loops: int,
+    value_prefix: str = "",
+) -> dict[str, Any]:
+    prompt = (
+        render_question(instance, value_prefix=value_prefix).rstrip()
+        + "\nAnswer with only the final value.\nAnswer: "
+    )
+    target_loop_count = max(1, min(int(max_target_loops), int(instance.depth)))
+    return {
+        "prompt": prompt,
+        "completion": f"{symbol(instance.target, prefix=value_prefix)}",
+        "target_loop_count": target_loop_count,
+        "synthetic_task": "iterated_function",
+        "synthetic_depth": instance.depth,
+        "depth": instance.depth,
+        "n_symbols": instance.n_symbols,
+        "start": symbol(instance.start, prefix=value_prefix),
+        "target": symbol(instance.target, prefix=value_prefix),
+        "orbit": [symbol(value, prefix=value_prefix) for value in instance.orbit],
+        "instance_id": instance.instance_id,
+    }
+
+
+def build_dataset(config: SyntheticDepthConfig, *, split: str) -> list[SyntheticDepthInstance]:
+    rows: list[SyntheticDepthInstance] = []
+    for depth in range(1, config.max_depth + 1):
+        for idx in range(config.rows_per_depth):
+            instance_id = f"{split}_d{depth:02d}_{idx:05d}"
+            rows.append(
+                build_instance(
+                    instance_id=instance_id,
+                    split=split,
+                    n_symbols=config.n_symbols,
+                    depth=depth,
+                    seed=_seed_for(config.seed, split, depth, idx),
+                    num_choices=config.num_choices,
+                )
+            )
+    return rows
+
+
+def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "".join(json.dumps(row, ensure_ascii=True) + "\n" for row in rows),
+        encoding="utf-8",
+    )
+
+
+def write_synthetic_depth_dataset(
+    *,
+    output_dir: str | Path,
+    config: SyntheticDepthConfig,
+) -> dict[str, Any]:
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    instances = {split: build_dataset(config, split=split) for split in ("train", "val", "test")}
+    for split, split_instances in instances.items():
+        _write_jsonl(
+            out / f"{split}_sft.jsonl",
+            [
+                build_sft_row(
+                    instance,
+                    max_target_loops=config.max_target_loops,
+                    value_prefix=config.value_prefix,
+                )
+                for instance in split_instances
+            ],
+        )
+        _write_jsonl(
+            out / f"{split}_mcq.jsonl",
+            [build_mcq_row(instance, value_prefix=config.value_prefix) for instance in split_instances],
+        )
+
+    summary = {
+        "kind": "synthetic_depth_dataset",
+        "config": asdict(config),
+        "rows": {split: len(split_instances) for split, split_instances in instances.items()},
+        "depth_counts": {
+            split: {
+                str(depth): sum(1 for instance in split_instances if instance.depth == depth)
+                for depth in range(1, config.max_depth + 1)
+            }
+            for split, split_instances in instances.items()
+        },
+        "orbit_guarantee": "distinct_prefix_length_depth_plus_one",
+        "files": {
+            split: {
+                "sft": f"{split}_sft.jsonl",
+                "mcq": f"{split}_mcq.jsonl",
+            }
+            for split in instances
+        },
+    }
+    (out / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    return summary
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output_dir", required=True)
+    parser.add_argument("--n_symbols", type=int, default=16)
+    parser.add_argument("--max_depth", type=int, default=8)
+    parser.add_argument("--rows_per_depth", type=int, default=64)
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--num_choices", type=int, default=4)
+    parser.add_argument("--max_target_loops", type=int, default=8)
+    parser.add_argument("--value_prefix", default="")
+    args = parser.parse_args()
+
+    summary = write_synthetic_depth_dataset(
+        output_dir=args.output_dir,
+        config=SyntheticDepthConfig(
+            n_symbols=args.n_symbols,
+            max_depth=args.max_depth,
+            rows_per_depth=args.rows_per_depth,
+            seed=args.seed,
+            num_choices=args.num_choices,
+            max_target_loops=args.max_target_loops,
+            value_prefix=args.value_prefix,
+        ),
+    )
+    print(json.dumps(summary, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

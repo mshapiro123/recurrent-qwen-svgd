@@ -2097,3 +2097,30 @@ def test_stage5_control_ledger_names_current_reentry_target() -> None:
     assert "reentry_repair_smoke -> reentry_recovery_training" in current_action
     assert "debiased_benchmark_suite -> dense_mcq_trace_sft_control" in current_action
     assert "Target: `traced_sft_score_alignment_repair`" not in current_action
+
+
+def test_synthetic_depth_task_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_SYNTHETIC_DEPTH_TASK_CELL.py").read_text(encoding="utf-8")
+    spec = (ROOT / "docs/SYNTHETIC_DEPTH_TASK.md").read_text(encoding="utf-8")
+
+    for text in (bootstrap, bootstrap_md):
+        assert "synthetic_depth_task" in text
+        assert "colab/STAGE5_SYNTHETIC_DEPTH_TASK_CELL.py" in text
+        assert "training/generate_synthetic_depth_task.py" in text
+        assert "eval/eval_synthetic_depth_matrix.py" in text
+        assert "distinct_prefix_length_depth_plus_one" in text
+        assert "frontier_strictly_expands" in text
+
+    assert "STAGE5_SYNTHETIC_DEPTH_TASK_CELL_VERSION" in cell
+    assert "synthetic_depth_task_v1" in cell
+    assert "tests/test_synthetic_depth_task.py" in cell
+    assert "tests/test_eval_synthetic_depth_matrix.py" in cell
+    assert "STAGE5_SYNTH_DEPTH_MAX_STEPS" in cell
+    assert "STAGE5_SYNTH_DEPTH_ROWS_PER_DEPTH" in cell
+    assert "frontier_strictly_expands" in cell
+
+    assert "A(d, k)" in spec
+    assert "distinct orbit prefix" in spec
+    assert "Launch target" in spec
