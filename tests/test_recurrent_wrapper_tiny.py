@@ -233,6 +233,35 @@ def test_target_loop_loss_mode_uses_requested_loop_on_tiny_model():
     assert torch.allclose(output.metrics["expected_ce"], output.metrics["target_loop_ce"])
 
 
+def test_per_loop_label_loss_mode_uses_active_intermediate_labels_on_tiny_model():
+    torch.manual_seed(0)
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+    labels = torch.full_like(input_ids, -100)
+    labels[:, -1] = input_ids[:, -1]
+    loop_labels = torch.full((1, 3, input_ids.shape[1]), -100, dtype=torch.long)
+    loop_labels[:, 0, -1] = 5
+    loop_labels[:, 1, -1] = 6
+
+    output = wrapper(
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        labels=labels,
+        loop_labels=loop_labels,
+        max_loops=3,
+        loop_loss_mode="per_loop_labels",
+        use_cache=False,
+        return_dict=True,
+    )
+
+    assert output.loss is not None
+    assert torch.isfinite(output.loss)
+    assert torch.allclose(output.loss.detach(), output.metrics["per_loop_label_ce"])
+    assert output.metrics["per_loop_label_active"].item() == 2
+
+
 def test_latent_injection_modes_run_on_tiny_model():
     torch.manual_seed(0)
     model = TinyCausalLM().eval()

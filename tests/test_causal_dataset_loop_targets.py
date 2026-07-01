@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import json
 
+import torch
+
 from training.dataset import JsonlCausalDataset
+from training.dataset import collate_causal_batch
 
 
 class TinyTokenizer:
@@ -73,3 +76,38 @@ def test_jsonl_dataset_clamps_explicit_target_loop_count(tmp_path) -> None:
     )
 
     assert int(dataset[0]["target_loop_counts"]) == 4
+
+
+def test_jsonl_dataset_builds_and_collates_loop_labels(tmp_path) -> None:
+    path = tmp_path / "train.jsonl"
+    path.write_text(
+        json.dumps(
+            {
+                "prompt": "Question:",
+                "completion": " A",
+                "loop_completions": [" A", " B"],
+                "target_loop_count": 2,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    tokenizer = TinyTokenizer()
+    dataset = JsonlCausalDataset(
+        path,
+        tokenizer=tokenizer,
+        max_length=32,
+        max_train_loops=4,
+        train_on_prompt=False,
+    )
+
+    item = dataset[0]
+    assert item["loop_labels"].shape == (4, item["input_ids"].numel())
+    active_count = item["labels"].ne(-100).sum()
+    assert item["loop_labels"][0].ne(-100).sum() == active_count
+    assert item["loop_labels"][1].ne(-100).sum() == active_count
+    assert item["loop_labels"][2].eq(-100).all()
+
+    batch = collate_causal_batch([item], pad_token_id=0)
+    assert batch["loop_labels"].shape == (1, 4, item["input_ids"].numel())
+    assert torch.equal(batch["target_loop_counts"], torch.tensor([2]))

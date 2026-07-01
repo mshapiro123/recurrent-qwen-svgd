@@ -9,6 +9,7 @@ from training.synthetic_depth_task import (
     SyntheticDepthConfig,
     apply_mapping,
     build_dataset,
+    build_chain_label_sft_row,
     build_instance,
     build_mcq_sft_row,
     build_mcq_row,
@@ -119,6 +120,27 @@ def test_mcq_sft_completion_modes() -> None:
         render_mcq_completion(instance, score_target="bad")
 
 
+def test_chain_label_sft_row_has_intermediate_loop_targets_in_choices() -> None:
+    instance = build_instance(
+        instance_id="depth4",
+        n_symbols=12,
+        depth=4,
+        seed=42,
+        num_choices=4,
+    )
+
+    row = build_chain_label_sft_row(instance, max_target_loops=4)
+
+    assert row["intermediate_chain_supervision"] is True
+    assert row["score_target"] == "label"
+    assert len(row["loop_completions"]) == 4
+    assert set(row["choices"].values()) == {str(value) for value in instance.orbit[1:5]}
+    for loop_idx, completion in enumerate(row["loop_completions"], start=1):
+        label = completion.strip()
+        assert row["choices"][label] == str(instance.orbit[loop_idx])
+    assert row["completion"].strip() == row["loop_completions"][-1].strip()
+
+
 def test_dataset_generation_is_deterministic_and_balanced() -> None:
     config = SyntheticDepthConfig(
         n_symbols=10,
@@ -173,4 +195,8 @@ def test_write_synthetic_depth_dataset_writes_train_val_test_and_summary(tmp_pat
     assert (tmp_path / "train_mcq_option_text_sft.jsonl").exists()
     assert (tmp_path / "train_mcq_label_sft.jsonl").exists()
     assert (tmp_path / "train_mcq_label_and_text_sft.jsonl").exists()
+    assert (tmp_path / "train_chain_label_sft.jsonl").exists()
+    assert (tmp_path / "train_chain_mcq.jsonl").exists()
     assert summary["files"]["train"]["mcq_option_text_sft"] == "train_mcq_option_text_sft.jsonl"
+    assert summary["files"]["train"]["chain_label_sft"] == "train_chain_label_sft.jsonl"
+    assert summary["files"]["train"]["chain_mcq"] == "train_chain_mcq.jsonl"

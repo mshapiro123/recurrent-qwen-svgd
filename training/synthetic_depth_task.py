@@ -236,6 +236,96 @@ def build_mcq_sft_row(
     }
 
 
+def _stable_shuffle_seed(text: str) -> int:
+    return sum((idx + 1) * ord(char) for idx, char in enumerate(text))
+
+
+def build_chain_mcq_row(
+    instance: SyntheticDepthInstance,
+    *,
+    max_target_loops: int,
+    value_prefix: str = "",
+) -> dict[str, Any]:
+    max_active = min(int(max_target_loops), int(instance.depth))
+    chain_targets = list(instance.orbit[1 : max_active + 1])
+    choices = list(dict.fromkeys(chain_targets))
+    for value in instance.table_order:
+        if len(choices) >= len(instance.choices):
+            break
+        if value not in choices:
+            choices.append(value)
+    rng = random.Random(_stable_shuffle_seed(instance.instance_id + ":chain"))
+    rng.shuffle(choices)
+    labels = LABELS[: len(choices)]
+    label_by_value = {value: label for label, value in zip(labels, choices)}
+    choices_text = {
+        label: symbol(value, prefix=value_prefix)
+        for label, value in zip(labels, choices)
+    }
+    final_label = label_by_value[instance.orbit[max_active]]
+    return {
+        "id": instance.instance_id,
+        "question": render_question(instance, value_prefix=value_prefix),
+        "choices": choices_text,
+        "answer": final_label,
+        "target": symbol(instance.target, prefix=value_prefix),
+        "depth": instance.depth,
+        "start": symbol(instance.start, prefix=value_prefix),
+        "orbit": [symbol(value, prefix=value_prefix) for value in instance.orbit],
+        "n_symbols": instance.n_symbols,
+        "score_target": "label",
+        "prompt_style": "with_options",
+        "intermediate_chain_supervision": True,
+        "chain_answer_by_loop": {
+            str(loop_idx): label_by_value[instance.orbit[loop_idx]]
+            for loop_idx in range(1, max_active + 1)
+        },
+    }
+
+
+def build_chain_label_sft_row(
+    instance: SyntheticDepthInstance,
+    *,
+    max_target_loops: int,
+    value_prefix: str = "",
+) -> dict[str, Any]:
+    mcq = build_chain_mcq_row(
+        instance,
+        max_target_loops=max_target_loops,
+        value_prefix=value_prefix,
+    )
+    prompt = (
+        mcq["question"].rstrip()
+        + "\n"
+        + "\n".join(f"{label}. {text}" for label, text in mcq["choices"].items())
+        + "\nAnswer:"
+    )
+    loop_completions = [
+        f" {mcq['chain_answer_by_loop'][str(loop_idx)]}"
+        for loop_idx in range(1, min(int(max_target_loops), int(instance.depth)) + 1)
+    ]
+    return {
+        "prompt": prompt,
+        "completion": f" {mcq['answer']}",
+        "loop_completions": loop_completions,
+        "target_loop_count": len(loop_completions),
+        "synthetic_task": "iterated_function",
+        "synthetic_depth": instance.depth,
+        "depth": instance.depth,
+        "n_symbols": instance.n_symbols,
+        "start": mcq["start"],
+        "target": mcq["target"],
+        "orbit": mcq["orbit"],
+        "instance_id": instance.instance_id,
+        "answer": mcq["answer"],
+        "choices": mcq["choices"],
+        "score_target": "label",
+        "prompt_style": "with_options",
+        "intermediate_chain_supervision": True,
+        "chain_answer_by_loop": mcq["chain_answer_by_loop"],
+    }
+
+
 def build_dataset(config: SyntheticDepthConfig, *, split: str) -> list[SyntheticDepthInstance]:
     rows: list[SyntheticDepthInstance] = []
     for depth in range(1, config.max_depth + 1):
@@ -300,6 +390,28 @@ def write_synthetic_depth_dataset(
                     for instance in split_instances
                 ],
             )
+        _write_jsonl(
+            out / f"{split}_chain_label_sft.jsonl",
+            [
+                build_chain_label_sft_row(
+                    instance,
+                    max_target_loops=config.max_target_loops,
+                    value_prefix=config.value_prefix,
+                )
+                for instance in split_instances
+            ],
+        )
+        _write_jsonl(
+            out / f"{split}_chain_mcq.jsonl",
+            [
+                build_chain_mcq_row(
+                    instance,
+                    max_target_loops=config.max_target_loops,
+                    value_prefix=config.value_prefix,
+                )
+                for instance in split_instances
+            ],
+        )
 
     summary = {
         "kind": "synthetic_depth_dataset",
@@ -320,6 +432,8 @@ def write_synthetic_depth_dataset(
                 "mcq_option_text_sft": f"{split}_mcq_option_text_sft.jsonl",
                 "mcq_label_sft": f"{split}_mcq_label_sft.jsonl",
                 "mcq_label_and_text_sft": f"{split}_mcq_label_and_text_sft.jsonl",
+                "chain_label_sft": f"{split}_chain_label_sft.jsonl",
+                "chain_mcq": f"{split}_chain_mcq.jsonl",
             }
             for split in instances
         },

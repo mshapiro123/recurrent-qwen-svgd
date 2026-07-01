@@ -223,6 +223,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         past_key_values: Optional[Any] = None,
         inputs_embeds: Optional[torch.Tensor] = None,
         labels: Optional[torch.LongTensor] = None,
+        loop_labels: Optional[torch.LongTensor] = None,
         use_cache: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
@@ -395,6 +396,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         flat_causal_mask = causal_mask
         flat_position_embeddings = position_embeddings
         labels_flat = labels
+        loop_labels_flat = loop_labels
         halt_control_flat = halt_control_loop_counts
         learned_loop_control_logits = None
         learned_loop_control_probs = None
@@ -407,6 +409,8 @@ class RecurrentQwenForCausalLM(nn.Module):
             flat_attention_mask = repeat_for_trajectories(attention_mask, num_trajectories)
             flat_position_ids = repeat_for_trajectories(position_ids, num_trajectories)
             labels_flat = repeat_for_trajectories(labels, num_trajectories)
+            if loop_labels is not None:
+                loop_labels_flat = loop_labels.repeat_interleave(num_trajectories, dim=0)
             halt_control_flat = repeat_for_trajectories(halt_control_flat, num_trajectories)
             flat_causal_mask = self._update_causal_mask(
                 flat_attention_mask,
@@ -430,6 +434,7 @@ class RecurrentQwenForCausalLM(nn.Module):
 
         loop_logits: list[torch.Tensor] = []
         per_loop_ce: list[torch.Tensor] = []
+        per_loop_label_active: list[torch.Tensor] = []
         halt_probs: list[torch.Tensor] = []
         latent_kls: list[torch.Tensor] = []
         svgd_stats_history: list[Any] = []
@@ -545,7 +550,16 @@ class RecurrentQwenForCausalLM(nn.Module):
             if labels_flat is not None:
                 if not self._keeps_full_logits(logits_to_keep):
                     raise ValueError("labels require full-sequence logits; set logits_to_keep=0")
-                per_loop_ce.append(self._sequence_cross_entropy(logits.float(), labels_flat))
+                labels_for_loop = labels_flat
+                if loop_labels_flat is not None:
+                    if loop_labels_flat.dim() != 3:
+                        raise ValueError("loop_labels must be shaped [batch, max_loops, seq_len]")
+                    if loop_idx >= loop_labels_flat.shape[1]:
+                        labels_for_loop = torch.full_like(labels_flat, -100)
+                    else:
+                        labels_for_loop = loop_labels_flat[:, loop_idx, :]
+                per_loop_ce.append(self._sequence_cross_entropy(logits.float(), labels_for_loop))
+                per_loop_label_active.append(self._sequence_has_labels(labels_for_loop))
 
         halt_probs_tensor = torch.stack(halt_probs, dim=-1)
         halting_weights = pondernet_halting_probabilities(halt_probs_tensor)
@@ -615,9 +629,16 @@ class RecurrentQwenForCausalLM(nn.Module):
             elif loop_loss_mode == "uniform":
                 loss = ce_tensor.mean()
                 metrics["uniform_loop_ce"] = loss.detach()
+            elif loop_loss_mode == "per_loop_labels":
+                if loop_labels_flat is None:
+                    raise ValueError("loop_loss_mode='per_loop_labels' requires loop_labels")
+                active = torch.stack(per_loop_label_active, dim=-1).to(dtype=ce_tensor.dtype)
+                loss = (ce_tensor * active).sum() / active.sum().clamp_min(1.0)
+                metrics["per_loop_label_ce"] = loss.detach()
+                metrics["per_loop_label_active"] = active.sum().detach()
             else:
                 raise ValueError(
-                    "loop_loss_mode must be one of: halting_weighted, last, target, uniform"
+                    "loop_loss_mode must be one of: halting_weighted, last, target, uniform, per_loop_labels"
                 )
             metrics["expected_ce"] = loss.detach()
 
@@ -949,6 +970,10 @@ class RecurrentQwenForCausalLM(nn.Module):
         ).view(labels.shape[0], -1)
         valid = shift_labels.ne(-100).to(dtype=flat_loss.dtype)
         return (flat_loss * valid).sum(dim=-1) / valid.sum(dim=-1).clamp_min(1.0)
+
+    @staticmethod
+    def _sequence_has_labels(labels: torch.Tensor) -> torch.Tensor:
+        return labels[:, 1:].ne(-100).any(dim=-1)
 
     def _resolve_target_prior(
         self,

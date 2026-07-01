@@ -2176,3 +2176,29 @@ def test_synthetic_depth_staged_staircase_target_is_wired_and_guarded() -> None:
     assert "stage_depth_le2_finished" in cell
     assert "tests/test_recurrent_wrapper_tiny.py::test_target_loop_loss_mode_uses_requested_loop_on_tiny_model" in cell
     assert "loop_loss_mode: str = \"halting_weighted\"" in wrapper
+
+
+def test_synthetic_depth_chain_supervision_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_SYNTHETIC_DEPTH_CHAIN_SUPERVISION_CELL.py").read_text(encoding="utf-8")
+    dataset = (ROOT / "training/synthetic_depth_task.py").read_text(encoding="utf-8")
+    wrapper = (ROOT / "models/recurrent_wrapper.py").read_text(encoding="utf-8")
+
+    for text in (bootstrap, bootstrap_md):
+        assert "synthetic_depth_chain_supervision" in text
+        assert "colab/STAGE5_SYNTHETIC_DEPTH_CHAIN_SUPERVISION_CELL.py" in text
+        assert "STAGE5_SYNTH_CHAIN_RUN_AFTER_TRAIN_DIAGNOSTIC" in text
+        assert "loop_loss_mode=per_loop_labels" in text
+
+    assert "STAGE5_SYNTHETIC_DEPTH_CHAIN_SUPERVISION_CELL_VERSION" in cell
+    assert "synthetic_depth_chain_supervision_v1" in cell
+    assert "phase_a_failed_checkpoint_train_split" in cell
+    assert "train_chain_label_depth_le2_sft.jsonl" in cell
+    assert "train_chain_label_depth_le4_sft.jsonl" in cell
+    assert '"loop_loss_mode": "per_loop_labels"' in cell
+    assert "chain_depth_le2_finished" in cell
+    assert "tests/test_recurrent_wrapper_tiny.py::test_per_loop_label_loss_mode_uses_active_intermediate_labels_on_tiny_model" in cell
+    assert "build_chain_label_sft_row" in dataset
+    assert "chain_answer_by_loop" in dataset
+    assert "loop_loss_mode == \"per_loop_labels\"" in wrapper
