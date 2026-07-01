@@ -1,0 +1,45 @@
+{
+  "kind": "stage5_synthetic_depth_staged_staircase_dataset",
+  "run_id": "stage5_synthetic_depth_staged_staircase_20260701_180040",
+  "n_symbols": 16,
+  "max_depth": 4,
+  "rows_per_depth": 256,
+  "seed": 20260702,
+  "primitive_checkpoint": "outputs/stage5/stage5_synthetic_depth_staged_staircase_20260701_180040/restored/primitive_checkpoint.pt",
+  "data_summary": "outputs/stage5/stage5_synthetic_depth_staged_staircase_20260701_180040/data/summary.json",
+  "train_filters": {
+    "depth_le2": {
+      "source": "outputs/stage5/stage5_synthetic_depth_staged_staircase_20260701_180040/data/train_mcq_option_text_sft.jsonl",
+      "path": "outputs/stage5/stage5_synthetic_depth_staged_staircase_20260701_180040/data/train_depth_le2_mcq_option_text_sft.jsonl",
+      "max_depth": 2,
+      "rows": 512,
+      "depth_counts": {
+        "1": 256,
+        "2": 256
+      },
+      "target_loop_counts": {
+        "1": 256,
+        "2": 256
+      }
+    },
+    "depth_le4": {
+      "source": "outputs/stage5/stage5_synthetic_depth_staged_staircase_20260701_180040/data/train_mcq_option_text_sft.jsonl",
+      "path": "outputs/stage5/stage5_synthetic_depth_staged_staircase_20260701_180040/data/train_depth_le4_mcq_option_text_sft.jsonl",
+      "max_depth": 4,
+      "rows": 1024,
+      "depth_counts": {
+        "1": 256,
+        "2": 256,
+        "3": 256,
+        "4": 256
+      },
+      "target_loop_counts": {
+        "1": 256,
+        "2": 256,
+        "3": 256,
+        "4": 256
+      }
+    }
+  },
+  "loop_loss_mode": "target"
+}
