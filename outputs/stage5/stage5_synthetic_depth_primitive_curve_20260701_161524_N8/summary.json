@@ -1,0 +1,87 @@
+{
+  "kind": "stage5_synthetic_depth_primitive_curve_run",
+  "run_id": "stage5_synthetic_depth_primitive_curve_20260701_161524_N8",
+  "curve_id": "stage5_synthetic_depth_primitive_curve_20260701_161524",
+  "cell_version": "synthetic_depth_primitive_curve_v1",
+  "status": "finished",
+  "phase": "phase1_primitive_generalization",
+  "n_symbols": 8,
+  "max_depth": 1,
+  "max_loops": 1,
+  "rows_per_depth": 256,
+  "max_steps": 500,
+  "train_format": "mcq_option_text",
+  "primitive_accuracy_bar": 0.71,
+  "strong_accuracy_bar": 0.9,
+  "clears_primitive_bar": true,
+  "clears_strong_bar": true,
+  "dataset_summary": "outputs/stage5/stage5_synthetic_depth_primitive_curve_20260701_161524_N8/data/summary.json",
+  "train_config": "outputs/stage5/stage5_synthetic_depth_primitive_curve_20260701_161524_N8/synthetic_depth_train_config.yaml",
+  "training_summary": "outputs/stage5/stage5_synthetic_depth_primitive_curve_20260701_161524_N8/train/unfrozen/train_unfrozen_recurrent_summary.json",
+  "checkpoint": "outputs/stage5/stage5_synthetic_depth_primitive_curve_20260701_161524_N8/train/unfrozen/unfrozen_recurrent_step_500.pt",
+  "checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_synthetic_depth_primitive_curve_20260701_161524/stage5_synthetic_depth_primitive_curve_20260701_161524_N8/unfrozen_recurrent_step_500.pt",
+  "base_matrix_rows": "outputs/stage5/stage5_synthetic_depth_primitive_curve_20260701_161524_N8/eval/base_test_matrix_rows.jsonl",
+  "base_matrix_summary": "outputs/stage5/stage5_synthetic_depth_primitive_curve_20260701_161524_N8/eval/base_test_matrix_summary.json",
+  "base_matrix": {
+    "kind": "synthetic_depth_accuracy_matrix",
+    "threshold": 0.71,
+    "depths": [
+      1
+    ],
+    "loops": [
+      0
+    ],
+    "matrix": {
+      "1": {
+        "0": {
+          "correct": 52,
+          "total": 256,
+          "accuracy": 0.203125
+        }
+      }
+    },
+    "frontier_by_loop": {
+      "0": 0
+    },
+    "frontier_is_non_decreasing": true,
+    "frontier_strictly_expands": false,
+    "mode": "base",
+    "checkpoint": null,
+    "data_jsonl": "outputs/stage5/stage5_synthetic_depth_primitive_curve_20260701_161524_N8/data/test_mcq.jsonl",
+    "score_target": "option_text",
+    "aggregate": "mean",
+    "rows": 256
+  },
+  "matrix_rows": "outputs/stage5/stage5_synthetic_depth_primitive_curve_20260701_161524_N8/eval/test_matrix_rows.jsonl",
+  "matrix_summary": "outputs/stage5/stage5_synthetic_depth_primitive_curve_20260701_161524_N8/eval/test_matrix_summary.json",
+  "matrix": {
+    "kind": "synthetic_depth_accuracy_matrix",
+    "threshold": 0.71,
+    "depths": [
+      1
+    ],
+    "loops": [
+      1
+    ],
+    "matrix": {
+      "1": {
+        "1": {
+          "correct": 252,
+          "total": 256,
+          "accuracy": 0.984375
+        }
+      }
+    },
+    "frontier_by_loop": {
+      "1": 1
+    },
+    "frontier_is_non_decreasing": true,
+    "frontier_strictly_expands": false,
+    "mode": "recurrent",
+    "checkpoint": "outputs/stage5/stage5_synthetic_depth_primitive_curve_20260701_161524_N8/train/unfrozen/unfrozen_recurrent_step_500.pt",
+    "data_jsonl": "outputs/stage5/stage5_synthetic_depth_primitive_curve_20260701_161524_N8/data/test_mcq.jsonl",
+    "score_target": "option_text",
+    "aggregate": "mean",
+    "rows": 256
+  }
+}
