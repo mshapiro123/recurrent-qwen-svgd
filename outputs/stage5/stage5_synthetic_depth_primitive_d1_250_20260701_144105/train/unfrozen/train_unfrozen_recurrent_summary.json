@@ -1,0 +1,1090 @@
+{
+  "setup": {
+    "resume_lora_wrapped": 0,
+    "merged_lora_modules": 0,
+    "resume_lora": {
+      "enabled": false
+    },
+    "checkpoint_lora_key_counts": {
+      "loaded_lora_keys": 0,
+      "skipped_lora_keys": 0
+    },
+    "trainable_parameters": {
+      "total": 180601122,
+      "recurrent_block": 178948608,
+      "bridge": 1608321,
+      "halting": 44193,
+      "reentry_adapter": 0,
+      "latent": 0
+    }
+  },
+  "curriculum_trace": [
+    {
+      "step": 0,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 1.773098349571228,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 1.773098349571228,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 5,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 10,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 15,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 20,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 25,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 30,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 35,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 40,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 45,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 50,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 2.3841855067985307e-07,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 2.3841855067985307e-07,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 55,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 60,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 65,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 70,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 75,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 80,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 85,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 90,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 95,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 100,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 105,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 110,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 115,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 1.1920928244535389e-07,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 1.1920928244535389e-07,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 120,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 125,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 130,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 135,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 140,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 145,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 1.1920928244535389e-07,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 1.1920928244535389e-07,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 150,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 155,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 160,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 165,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 170,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 175,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 180,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 185,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 190,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 195,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 2.3841855067985307e-07,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 2.3841855067985307e-07,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 200,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 205,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 210,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 215,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 220,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 225,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 230,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 235,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 240,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    },
+    {
+      "step": 245,
+      "scheduled_loops": 1,
+      "forward_loops": 1,
+      "metrics": {
+        "mean_expected_loops": 1.0,
+        "mean_halt_entropy": 0.0,
+        "expected_ce": 0.0,
+        "target_mean_loops": 1.0,
+        "target_loop_abs_error": 0.0,
+        "loss": 0.0,
+        "pre_clip_bridge_prelude_grad_rms": 0.0,
+        "pre_clip_bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_rms": 0.0,
+        "bridge_state_grad_rms": 0.0,
+        "bridge_prelude_grad_multiplier": 1.0,
+        "bridge_prelude_weight_rms": 0.0,
+        "bridge_prelude_weight_max_abs": 0.0,
+        "bridge_state_identity_max_abs_diff": 0.0
+      }
+    }
+  ],
+  "interval_checkpoints": [],
+  "checkpoint": "outputs/stage5/stage5_synthetic_depth_primitive_d1_250_20260701_144105/train/unfrozen/unfrozen_recurrent_step_250.pt",
+  "final_step": 250,
+  "trainable_parameters": {
+    "total": 180601122,
+    "recurrent_block": 178948608,
+    "bridge": 1608321,
+    "halting": 44193,
+    "reentry_adapter": 0,
+    "latent": 0
+  },
+  "bridge_prelude_weight_stats": {
+    "bridge_prelude_weight_rms": 0.0,
+    "bridge_prelude_weight_max_abs": 0.0,
+    "bridge_state_identity_max_abs_diff": 0.0
+  },
+  "bridge_prelude_grad_multiplier": 1.0
+}

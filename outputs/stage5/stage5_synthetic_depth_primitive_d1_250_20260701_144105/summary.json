@@ -1,0 +1,49 @@
+{
+  "kind": "stage5_synthetic_depth_task",
+  "run_id": "stage5_synthetic_depth_primitive_d1_250_20260701_144105",
+  "cell_version": "synthetic_depth_task_v1",
+  "status": "finished",
+  "dataset_summary": "outputs/stage5/stage5_synthetic_depth_primitive_d1_250_20260701_144105/data/summary.json",
+  "train_config": "outputs/stage5/stage5_synthetic_depth_primitive_d1_250_20260701_144105/synthetic_depth_train_config.yaml",
+  "training_summary": "outputs/stage5/stage5_synthetic_depth_primitive_d1_250_20260701_144105/train/unfrozen/train_unfrozen_recurrent_summary.json",
+  "checkpoint": "outputs/stage5/stage5_synthetic_depth_primitive_d1_250_20260701_144105/train/unfrozen/unfrozen_recurrent_step_250.pt",
+  "matrix_rows": "outputs/stage5/stage5_synthetic_depth_primitive_d1_250_20260701_144105/eval/test_matrix_rows.jsonl",
+  "matrix_summary": "outputs/stage5/stage5_synthetic_depth_primitive_d1_250_20260701_144105/eval/test_matrix_summary.json",
+  "matrix": {
+    "kind": "synthetic_depth_accuracy_matrix",
+    "threshold": 0.75,
+    "depths": [
+      1
+    ],
+    "loops": [
+      1
+    ],
+    "matrix": {
+      "1": {
+        "1": {
+          "correct": 58,
+          "total": 128,
+          "accuracy": 0.453125
+        }
+      }
+    },
+    "frontier_by_loop": {
+      "1": 0
+    },
+    "frontier_is_non_decreasing": true,
+    "frontier_strictly_expands": false,
+    "mode": "recurrent",
+    "checkpoint": "outputs/stage5/stage5_synthetic_depth_primitive_d1_250_20260701_144105/train/unfrozen/unfrozen_recurrent_step_250.pt",
+    "data_jsonl": "outputs/stage5/stage5_synthetic_depth_primitive_d1_250_20260701_144105/data/test_mcq.jsonl",
+    "score_target": "option_text",
+    "aggregate": "mean",
+    "rows": 128
+  },
+  "interpretation_gate": {
+    "success_signature": "frontier_strictly_expands with loop count after loop-1 ceiling is visible",
+    "observed_frontier_strictly_expands": false,
+    "observed_frontier_by_loop": {
+      "1": 0
+    }
+  }
+}
