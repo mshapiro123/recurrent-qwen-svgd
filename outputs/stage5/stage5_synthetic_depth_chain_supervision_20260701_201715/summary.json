@@ -2,7 +2,7 @@
   "kind": "stage5_synthetic_depth_chain_supervision",
   "run_id": "stage5_synthetic_depth_chain_supervision_20260701_201715",
   "cell_version": "synthetic_depth_chain_supervision_v1",
-  "status": "phase_a_train_split_diagnostic_finished",
+  "status": "chain_depth_le2_finished",
   "source_summary": "outputs/stage5/stage5_synthetic_depth_staged_staircase_20260701_180040/summary.json",
   "n_symbols": 16,
   "max_depth": 4,
@@ -147,11 +147,317 @@
     },
     "diagonal_clears_bar": false
   },
-  "chain_run_executed": false,
+  "chain_run_executed": true,
   "chain_run_decision": {
     "mode": "auto",
     "should_run_chain": true,
     "reason": "train diagonal did not clear bar"
   },
-  "chain_stages": []
+  "chain_stages": [
+    {
+      "stage_name": "chain_depth_le2",
+      "max_loops": 2,
+      "max_steps": 500,
+      "learning_rate": 1e-05,
+      "bridge_prelude_grad_multiplier": 8.0,
+      "train_jsonl": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/train_chain_label_depth_le2_sft.jsonl",
+      "train_config": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/chain_depth_le2_train_config.yaml",
+      "train_log": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/train/chain_depth_le2_train_unfrozen_recurrent.log",
+      "training_summary": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/train/chain_depth_le2/train_unfrozen_recurrent_summary.json",
+      "checkpoint": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/train/chain_depth_le2/unfrozen_recurrent_step_500.pt",
+      "checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_synthetic_depth_chain_supervision_20260701_201715/chain_depth_le2/unfrozen_recurrent_step_500.pt",
+      "train_eval": {
+        "name": "chain_depth_le2_train",
+        "data_jsonl": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/train_chain_mcq.jsonl",
+        "score_target": "label",
+        "matrix_rows": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/eval/chain_depth_le2_train_matrix_rows.jsonl",
+        "matrix_summary": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/eval/chain_depth_le2_train_matrix_summary.json",
+        "eval_log": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/eval/chain_depth_le2_train_eval_synthetic_depth_matrix.log",
+        "matrix": {
+          "kind": "synthetic_depth_accuracy_matrix",
+          "threshold": 0.71,
+          "depths": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "loops": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "matrix": {
+            "1": {
+              "1": {
+                "correct": 196,
+                "total": 256,
+                "accuracy": 0.765625
+              },
+              "2": {
+                "correct": 62,
+                "total": 256,
+                "accuracy": 0.2421875
+              },
+              "3": {
+                "correct": 68,
+                "total": 256,
+                "accuracy": 0.265625
+              },
+              "4": {
+                "correct": 63,
+                "total": 256,
+                "accuracy": 0.24609375
+              }
+            },
+            "2": {
+              "1": {
+                "correct": 46,
+                "total": 256,
+                "accuracy": 0.1796875
+              },
+              "2": {
+                "correct": 69,
+                "total": 256,
+                "accuracy": 0.26953125
+              },
+              "3": {
+                "correct": 86,
+                "total": 256,
+                "accuracy": 0.3359375
+              },
+              "4": {
+                "correct": 87,
+                "total": 256,
+                "accuracy": 0.33984375
+              }
+            },
+            "3": {
+              "1": {
+                "correct": 57,
+                "total": 256,
+                "accuracy": 0.22265625
+              },
+              "2": {
+                "correct": 68,
+                "total": 256,
+                "accuracy": 0.265625
+              },
+              "3": {
+                "correct": 69,
+                "total": 256,
+                "accuracy": 0.26953125
+              },
+              "4": {
+                "correct": 63,
+                "total": 256,
+                "accuracy": 0.24609375
+              }
+            },
+            "4": {
+              "1": {
+                "correct": 41,
+                "total": 256,
+                "accuracy": 0.16015625
+              },
+              "2": {
+                "correct": 73,
+                "total": 256,
+                "accuracy": 0.28515625
+              },
+              "3": {
+                "correct": 61,
+                "total": 256,
+                "accuracy": 0.23828125
+              },
+              "4": {
+                "correct": 75,
+                "total": 256,
+                "accuracy": 0.29296875
+              }
+            }
+          },
+          "frontier_by_loop": {
+            "1": 1,
+            "2": 0,
+            "3": 0,
+            "4": 0
+          },
+          "frontier_is_non_decreasing": false,
+          "frontier_strictly_expands": false,
+          "mode": "recurrent",
+          "checkpoint": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/train/chain_depth_le2/unfrozen_recurrent_step_500.pt",
+          "data_jsonl": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/train_chain_mcq.jsonl",
+          "score_target": "label",
+          "aggregate": "mean",
+          "rows": 4096
+        },
+        "diagonal_accuracy": {
+          "1": 0.765625,
+          "2": 0.26953125,
+          "3": 0.26953125,
+          "4": 0.29296875
+        }
+      },
+      "test_eval": {
+        "name": "chain_depth_le2_test",
+        "data_jsonl": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/test_chain_mcq.jsonl",
+        "score_target": "label",
+        "matrix_rows": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/eval/chain_depth_le2_test_matrix_rows.jsonl",
+        "matrix_summary": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/eval/chain_depth_le2_test_matrix_summary.json",
+        "eval_log": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/eval/chain_depth_le2_test_eval_synthetic_depth_matrix.log",
+        "matrix": {
+          "kind": "synthetic_depth_accuracy_matrix",
+          "threshold": 0.71,
+          "depths": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "loops": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "matrix": {
+            "1": {
+              "1": {
+                "correct": 167,
+                "total": 256,
+                "accuracy": 0.65234375
+              },
+              "2": {
+                "correct": 62,
+                "total": 256,
+                "accuracy": 0.2421875
+              },
+              "3": {
+                "correct": 70,
+                "total": 256,
+                "accuracy": 0.2734375
+              },
+              "4": {
+                "correct": 66,
+                "total": 256,
+                "accuracy": 0.2578125
+              }
+            },
+            "2": {
+              "1": {
+                "correct": 48,
+                "total": 256,
+                "accuracy": 0.1875
+              },
+              "2": {
+                "correct": 66,
+                "total": 256,
+                "accuracy": 0.2578125
+              },
+              "3": {
+                "correct": 69,
+                "total": 256,
+                "accuracy": 0.26953125
+              },
+              "4": {
+                "correct": 70,
+                "total": 256,
+                "accuracy": 0.2734375
+              }
+            },
+            "3": {
+              "1": {
+                "correct": 38,
+                "total": 256,
+                "accuracy": 0.1484375
+              },
+              "2": {
+                "correct": 71,
+                "total": 256,
+                "accuracy": 0.27734375
+              },
+              "3": {
+                "correct": 72,
+                "total": 256,
+                "accuracy": 0.28125
+              },
+              "4": {
+                "correct": 74,
+                "total": 256,
+                "accuracy": 0.2890625
+              }
+            },
+            "4": {
+              "1": {
+                "correct": 39,
+                "total": 256,
+                "accuracy": 0.15234375
+              },
+              "2": {
+                "correct": 76,
+                "total": 256,
+                "accuracy": 0.296875
+              },
+              "3": {
+                "correct": 70,
+                "total": 256,
+                "accuracy": 0.2734375
+              },
+              "4": {
+                "correct": 63,
+                "total": 256,
+                "accuracy": 0.24609375
+              }
+            }
+          },
+          "frontier_by_loop": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0
+          },
+          "frontier_is_non_decreasing": true,
+          "frontier_strictly_expands": false,
+          "mode": "recurrent",
+          "checkpoint": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/train/chain_depth_le2/unfrozen_recurrent_step_500.pt",
+          "data_jsonl": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/test_chain_mcq.jsonl",
+          "score_target": "label",
+          "aggregate": "mean",
+          "rows": 4096
+        },
+        "diagonal_accuracy": {
+          "1": 0.65234375,
+          "2": 0.2578125,
+          "3": 0.28125,
+          "4": 0.24609375
+        }
+      }
+    }
+  ],
+  "chain_train_filters": {
+    "depth_le2": {
+      "source": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/train_chain_label_sft.jsonl",
+      "path": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/train_chain_label_depth_le2_sft.jsonl",
+      "max_depth": 2,
+      "rows": 512,
+      "depth_counts": {
+        "1": 256,
+        "2": 256
+      }
+    },
+    "depth_le4": {
+      "source": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/train_chain_label_sft.jsonl",
+      "path": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/train_chain_label_depth_le4_sft.jsonl",
+      "max_depth": 4,
+      "rows": 1024,
+      "depth_counts": {
+        "1": 256,
+        "2": 256,
+        "3": 256,
+        "4": 256
+      }
+    }
+  }
 }

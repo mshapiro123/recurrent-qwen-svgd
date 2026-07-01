@@ -1,0 +1,125 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 4012.75it/s]
+lora_recurrent_modules=0
+loaded_checkpoint=outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/train/chain_depth_le2/unfrozen_recurrent_step_500.pt loaded_keys=149
+{
+  "kind": "synthetic_depth_accuracy_matrix",
+  "threshold": 0.71,
+  "depths": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "loops": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "matrix": {
+    "1": {
+      "1": {
+        "correct": 167,
+        "total": 256,
+        "accuracy": 0.65234375
+      },
+      "2": {
+        "correct": 62,
+        "total": 256,
+        "accuracy": 0.2421875
+      },
+      "3": {
+        "correct": 70,
+        "total": 256,
+        "accuracy": 0.2734375
+      },
+      "4": {
+        "correct": 66,
+        "total": 256,
+        "accuracy": 0.2578125
+      }
+    },
+    "2": {
+      "1": {
+        "correct": 48,
+        "total": 256,
+        "accuracy": 0.1875
+      },
+      "2": {
+        "correct": 66,
+        "total": 256,
+        "accuracy": 0.2578125
+      },
+      "3": {
+        "correct": 69,
+        "total": 256,
+        "accuracy": 0.26953125
+      },
+      "4": {
+        "correct": 70,
+        "total": 256,
+        "accuracy": 0.2734375
+      }
+    },
+    "3": {
+      "1": {
+        "correct": 38,
+        "total": 256,
+        "accuracy": 0.1484375
+      },
+      "2": {
+        "correct": 71,
+        "total": 256,
+        "accuracy": 0.27734375
+      },
+      "3": {
+        "correct": 72,
+        "total": 256,
+        "accuracy": 0.28125
+      },
+      "4": {
+        "correct": 74,
+        "total": 256,
+        "accuracy": 0.2890625
+      }
+    },
+    "4": {
+      "1": {
+        "correct": 39,
+        "total": 256,
+        "accuracy": 0.15234375
+      },
+      "2": {
+        "correct": 76,
+        "total": 256,
+        "accuracy": 0.296875
+      },
+      "3": {
+        "correct": 70,
+        "total": 256,
+        "accuracy": 0.2734375
+      },
+      "4": {
+        "correct": 63,
+        "total": 256,
+        "accuracy": 0.24609375
+      }
+    }
+  },
+  "frontier_by_loop": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0
+  },
+  "frontier_is_non_decreasing": true,
+  "frontier_strictly_expands": false,
+  "mode": "recurrent",
+  "checkpoint": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/train/chain_depth_le2/unfrozen_recurrent_step_500.pt",
+  "data_jsonl": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/test_chain_mcq.jsonl",
+  "score_target": "label",
+  "aggregate": "mean",
+  "rows": 4096
+}

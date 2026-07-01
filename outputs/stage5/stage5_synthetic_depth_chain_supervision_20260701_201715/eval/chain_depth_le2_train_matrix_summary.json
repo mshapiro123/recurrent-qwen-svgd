@@ -1,0 +1,120 @@
+{
+  "kind": "synthetic_depth_accuracy_matrix",
+  "threshold": 0.71,
+  "depths": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "loops": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "matrix": {
+    "1": {
+      "1": {
+        "correct": 196,
+        "total": 256,
+        "accuracy": 0.765625
+      },
+      "2": {
+        "correct": 62,
+        "total": 256,
+        "accuracy": 0.2421875
+      },
+      "3": {
+        "correct": 68,
+        "total": 256,
+        "accuracy": 0.265625
+      },
+      "4": {
+        "correct": 63,
+        "total": 256,
+        "accuracy": 0.24609375
+      }
+    },
+    "2": {
+      "1": {
+        "correct": 46,
+        "total": 256,
+        "accuracy": 0.1796875
+      },
+      "2": {
+        "correct": 69,
+        "total": 256,
+        "accuracy": 0.26953125
+      },
+      "3": {
+        "correct": 86,
+        "total": 256,
+        "accuracy": 0.3359375
+      },
+      "4": {
+        "correct": 87,
+        "total": 256,
+        "accuracy": 0.33984375
+      }
+    },
+    "3": {
+      "1": {
+        "correct": 57,
+        "total": 256,
+        "accuracy": 0.22265625
+      },
+      "2": {
+        "correct": 68,
+        "total": 256,
+        "accuracy": 0.265625
+      },
+      "3": {
+        "correct": 69,
+        "total": 256,
+        "accuracy": 0.26953125
+      },
+      "4": {
+        "correct": 63,
+        "total": 256,
+        "accuracy": 0.24609375
+      }
+    },
+    "4": {
+      "1": {
+        "correct": 41,
+        "total": 256,
+        "accuracy": 0.16015625
+      },
+      "2": {
+        "correct": 73,
+        "total": 256,
+        "accuracy": 0.28515625
+      },
+      "3": {
+        "correct": 61,
+        "total": 256,
+        "accuracy": 0.23828125
+      },
+      "4": {
+        "correct": 75,
+        "total": 256,
+        "accuracy": 0.29296875
+      }
+    }
+  },
+  "frontier_by_loop": {
+    "1": 1,
+    "2": 0,
+    "3": 0,
+    "4": 0
+  },
+  "frontier_is_non_decreasing": false,
+  "frontier_strictly_expands": false,
+  "mode": "recurrent",
+  "checkpoint": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/train/chain_depth_le2/unfrozen_recurrent_step_500.pt",
+  "data_jsonl": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/train_chain_mcq.jsonl",
+  "score_target": "label",
+  "aggregate": "mean",
+  "rows": 4096
+}
