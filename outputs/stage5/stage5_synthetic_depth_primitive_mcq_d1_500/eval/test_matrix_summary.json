@@ -1,0 +1,30 @@
+{
+  "kind": "synthetic_depth_accuracy_matrix",
+  "threshold": 0.75,
+  "depths": [
+    1
+  ],
+  "loops": [
+    1
+  ],
+  "matrix": {
+    "1": {
+      "1": {
+        "correct": 256,
+        "total": 256,
+        "accuracy": 1.0
+      }
+    }
+  },
+  "frontier_by_loop": {
+    "1": 1
+  },
+  "frontier_is_non_decreasing": true,
+  "frontier_strictly_expands": false,
+  "mode": "recurrent",
+  "checkpoint": "outputs/stage5/stage5_synthetic_depth_primitive_mcq_d1_500/train/unfrozen/unfrozen_recurrent_step_500.pt",
+  "data_jsonl": "outputs/stage5/stage5_synthetic_depth_primitive_mcq_d1_500/data/test_mcq.jsonl",
+  "score_target": "option_text",
+  "aggregate": "mean",
+  "rows": 256
+}
