@@ -1,0 +1,63 @@
+{
+  "kind": "stage5_synthetic_depth_primitive_curve",
+  "primitive_accuracy_bar": 0.71,
+  "strong_accuracy_bar": 0.9,
+  "runs": [
+    {
+      "run_id": "stage5_synthetic_depth_primitive_curve_20260701_161524_N8",
+      "summary_path": "outputs/stage5/stage5_synthetic_depth_primitive_curve_20260701_161524_N8/summary.json",
+      "n_symbols": 8,
+      "rows_per_depth": 256,
+      "max_steps": 500,
+      "train_format": "mcq_option_text",
+      "base_accuracy": 0.203125,
+      "base_correct": 52,
+      "base_total": 256,
+      "recurrent_accuracy": 0.984375,
+      "recurrent_correct": 252,
+      "recurrent_total": 256,
+      "clears_primitive_bar": true,
+      "clears_strong_bar": true,
+      "checkpoint": "outputs/stage5/stage5_synthetic_depth_primitive_curve_20260701_161524_N8/train/unfrozen/unfrozen_recurrent_step_500.pt"
+    },
+    {
+      "run_id": "stage5_synthetic_depth_primitive_curve_20260701_161524_N12",
+      "summary_path": "outputs/stage5/stage5_synthetic_depth_primitive_curve_20260701_161524_N12/summary.json",
+      "n_symbols": 12,
+      "rows_per_depth": 256,
+      "max_steps": 500,
+      "train_format": "mcq_option_text",
+      "base_accuracy": 0.27734375,
+      "base_correct": 71,
+      "base_total": 256,
+      "recurrent_accuracy": 0.97265625,
+      "recurrent_correct": 249,
+      "recurrent_total": 256,
+      "clears_primitive_bar": true,
+      "clears_strong_bar": true,
+      "checkpoint": "outputs/stage5/stage5_synthetic_depth_primitive_curve_20260701_161524_N12/train/unfrozen/unfrozen_recurrent_step_500.pt"
+    },
+    {
+      "run_id": "stage5_synthetic_depth_primitive_curve_20260701_161524_N16",
+      "summary_path": "outputs/stage5/stage5_synthetic_depth_primitive_curve_20260701_161524_N16/summary.json",
+      "n_symbols": 16,
+      "rows_per_depth": 256,
+      "max_steps": 500,
+      "train_format": "mcq_option_text",
+      "base_accuracy": 0.2265625,
+      "base_correct": 58,
+      "base_total": 256,
+      "recurrent_accuracy": 0.9609375,
+      "recurrent_correct": 246,
+      "recurrent_total": 256,
+      "clears_primitive_bar": true,
+      "clears_strong_bar": true,
+      "checkpoint": "outputs/stage5/stage5_synthetic_depth_primitive_curve_20260701_161524_N16/train/unfrozen/unfrozen_recurrent_step_500.pt"
+    }
+  ],
+  "largest_n_clearing_primitive_bar": 16,
+  "largest_n_clearing_strong_bar": 16,
+  "all_runs_clear_primitive_bar": true,
+  "recommended_phase2_n_symbols": 16,
+  "decision_rule": "Proceed to staged-depth forced-loop staircase at the largest N whose depth-1 primitive accuracy clears the primitive bar; prefer the largest N clearing the strong bar if available."
+}
