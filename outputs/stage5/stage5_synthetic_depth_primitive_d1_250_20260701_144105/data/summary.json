@@ -1,0 +1,43 @@
+{
+  "kind": "synthetic_depth_dataset",
+  "config": {
+    "n_symbols": 8,
+    "max_depth": 1,
+    "rows_per_depth": 128,
+    "seed": 20260701,
+    "num_choices": 4,
+    "max_target_loops": 1,
+    "value_prefix": ""
+  },
+  "rows": {
+    "train": 128,
+    "val": 128,
+    "test": 128
+  },
+  "depth_counts": {
+    "train": {
+      "1": 128
+    },
+    "val": {
+      "1": 128
+    },
+    "test": {
+      "1": 128
+    }
+  },
+  "orbit_guarantee": "distinct_prefix_length_depth_plus_one",
+  "files": {
+    "train": {
+      "sft": "train_sft.jsonl",
+      "mcq": "train_mcq.jsonl"
+    },
+    "val": {
+      "sft": "val_sft.jsonl",
+      "mcq": "val_mcq.jsonl"
+    },
+    "test": {
+      "sft": "test_sft.jsonl",
+      "mcq": "test_mcq.jsonl"
+    }
+  }
+}
