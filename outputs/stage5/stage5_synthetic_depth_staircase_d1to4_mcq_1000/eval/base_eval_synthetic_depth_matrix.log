@@ -1,0 +1,57 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5143.99it/s]
+{
+  "kind": "synthetic_depth_accuracy_matrix",
+  "threshold": 0.75,
+  "depths": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "loops": [
+    0
+  ],
+  "matrix": {
+    "1": {
+      "0": {
+        "correct": 31,
+        "total": 128,
+        "accuracy": 0.2421875
+      }
+    },
+    "2": {
+      "0": {
+        "correct": 33,
+        "total": 128,
+        "accuracy": 0.2578125
+      }
+    },
+    "3": {
+      "0": {
+        "correct": 29,
+        "total": 128,
+        "accuracy": 0.2265625
+      }
+    },
+    "4": {
+      "0": {
+        "correct": 22,
+        "total": 128,
+        "accuracy": 0.171875
+      }
+    }
+  },
+  "frontier_by_loop": {
+    "0": 0
+  },
+  "frontier_is_non_decreasing": true,
+  "frontier_strictly_expands": false,
+  "mode": "base",
+  "checkpoint": null,
+  "data_jsonl": "outputs/stage5/stage5_synthetic_depth_staircase_d1to4_mcq_1000/data/test_mcq.jsonl",
+  "score_target": "option_text",
+  "aggregate": "mean",
+  "rows": 512
+}

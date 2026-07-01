@@ -1,0 +1,177 @@
+{
+  "kind": "stage5_synthetic_depth_task",
+  "run_id": "stage5_synthetic_depth_staircase_d1to4_mcq_1000",
+  "cell_version": "synthetic_depth_task_v2_mcq_aligned",
+  "status": "finished",
+  "train_format": "mcq_option_text",
+  "train_jsonl": "outputs/stage5/stage5_synthetic_depth_staircase_d1to4_mcq_1000/data/train_mcq_option_text_sft.jsonl",
+  "dataset_summary": "outputs/stage5/stage5_synthetic_depth_staircase_d1to4_mcq_1000/data/summary.json",
+  "train_config": "outputs/stage5/stage5_synthetic_depth_staircase_d1to4_mcq_1000/synthetic_depth_train_config.yaml",
+  "training_summary": "outputs/stage5/stage5_synthetic_depth_staircase_d1to4_mcq_1000/train/unfrozen/train_unfrozen_recurrent_summary.json",
+  "checkpoint": "outputs/stage5/stage5_synthetic_depth_staircase_d1to4_mcq_1000/train/unfrozen/unfrozen_recurrent_step_1000.pt",
+  "base_matrix_rows": "outputs/stage5/stage5_synthetic_depth_staircase_d1to4_mcq_1000/eval/base_test_matrix_rows.jsonl",
+  "base_matrix_summary": "outputs/stage5/stage5_synthetic_depth_staircase_d1to4_mcq_1000/eval/base_test_matrix_summary.json",
+  "base_matrix": {
+    "kind": "synthetic_depth_accuracy_matrix",
+    "threshold": 0.75,
+    "depths": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "loops": [
+      0
+    ],
+    "matrix": {
+      "1": {
+        "0": {
+          "correct": 31,
+          "total": 128,
+          "accuracy": 0.2421875
+        }
+      },
+      "2": {
+        "0": {
+          "correct": 33,
+          "total": 128,
+          "accuracy": 0.2578125
+        }
+      },
+      "3": {
+        "0": {
+          "correct": 29,
+          "total": 128,
+          "accuracy": 0.2265625
+        }
+      },
+      "4": {
+        "0": {
+          "correct": 22,
+          "total": 128,
+          "accuracy": 0.171875
+        }
+      }
+    },
+    "frontier_by_loop": {
+      "0": 0
+    },
+    "frontier_is_non_decreasing": true,
+    "frontier_strictly_expands": false,
+    "mode": "base",
+    "checkpoint": null,
+    "data_jsonl": "outputs/stage5/stage5_synthetic_depth_staircase_d1to4_mcq_1000/data/test_mcq.jsonl",
+    "score_target": "option_text",
+    "aggregate": "mean",
+    "rows": 512
+  },
+  "matrix_rows": "outputs/stage5/stage5_synthetic_depth_staircase_d1to4_mcq_1000/eval/test_matrix_rows.jsonl",
+  "matrix_summary": "outputs/stage5/stage5_synthetic_depth_staircase_d1to4_mcq_1000/eval/test_matrix_summary.json",
+  "matrix": {
+    "kind": "synthetic_depth_accuracy_matrix",
+    "threshold": 0.75,
+    "depths": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "loops": [
+      1,
+      2,
+      4
+    ],
+    "matrix": {
+      "1": {
+        "1": {
+          "correct": 65,
+          "total": 128,
+          "accuracy": 0.5078125
+        },
+        "2": {
+          "correct": 61,
+          "total": 128,
+          "accuracy": 0.4765625
+        },
+        "4": {
+          "correct": 62,
+          "total": 128,
+          "accuracy": 0.484375
+        }
+      },
+      "2": {
+        "1": {
+          "correct": 57,
+          "total": 128,
+          "accuracy": 0.4453125
+        },
+        "2": {
+          "correct": 58,
+          "total": 128,
+          "accuracy": 0.453125
+        },
+        "4": {
+          "correct": 60,
+          "total": 128,
+          "accuracy": 0.46875
+        }
+      },
+      "3": {
+        "1": {
+          "correct": 62,
+          "total": 128,
+          "accuracy": 0.484375
+        },
+        "2": {
+          "correct": 65,
+          "total": 128,
+          "accuracy": 0.5078125
+        },
+        "4": {
+          "correct": 58,
+          "total": 128,
+          "accuracy": 0.453125
+        }
+      },
+      "4": {
+        "1": {
+          "correct": 54,
+          "total": 128,
+          "accuracy": 0.421875
+        },
+        "2": {
+          "correct": 53,
+          "total": 128,
+          "accuracy": 0.4140625
+        },
+        "4": {
+          "correct": 52,
+          "total": 128,
+          "accuracy": 0.40625
+        }
+      }
+    },
+    "frontier_by_loop": {
+      "1": 0,
+      "2": 0,
+      "4": 0
+    },
+    "frontier_is_non_decreasing": true,
+    "frontier_strictly_expands": false,
+    "mode": "recurrent",
+    "checkpoint": "outputs/stage5/stage5_synthetic_depth_staircase_d1to4_mcq_1000/train/unfrozen/unfrozen_recurrent_step_1000.pt",
+    "data_jsonl": "outputs/stage5/stage5_synthetic_depth_staircase_d1to4_mcq_1000/data/test_mcq.jsonl",
+    "score_target": "option_text",
+    "aggregate": "mean",
+    "rows": 1536
+  },
+  "interpretation_gate": {
+    "success_signature": "frontier_strictly_expands with loop count after loop-1 ceiling is visible",
+    "observed_frontier_strictly_expands": false,
+    "observed_frontier_by_loop": {
+      "1": 0,
+      "2": 0,
+      "4": 0
+    }
+  }
+}
