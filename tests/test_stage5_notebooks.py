@@ -2202,3 +2202,26 @@ def test_synthetic_depth_chain_supervision_target_is_wired_and_guarded() -> None
     assert "build_chain_label_sft_row" in dataset
     assert "chain_answer_by_loop" in dataset
     assert "loop_loss_mode == \"per_loop_labels\"" in wrapper
+
+
+def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py").read_text(encoding="utf-8")
+    audit = (ROOT / "eval/eval_gradient_path_audit.py").read_text(encoding="utf-8")
+
+    for text in (bootstrap, bootstrap_md):
+        assert "gradient_path_audit" in text
+        assert "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py" in text
+        assert "STAGE5_GRADIENT_PATH_AUDIT_SOURCE_SUMMARY" in text
+        assert "finite_difference_bridge_prelude" in text
+
+    assert "STAGE5_GRADIENT_PATH_AUDIT_CELL_VERSION" in cell
+    assert "gradient_path_audit_v1" in cell
+    assert "read-only gradient matrix plus finite_difference_bridge_prelude" in cell
+    assert "eval/eval_gradient_path_audit.py" in cell
+    assert "stage5_synthetic_depth_chain_supervision_20260701_201715/summary.json" in cell
+    assert "Record Stage 5 gradient-path audit" in cell
+    assert "interpret_gradient_signature" in audit
+    assert "autograd_cut_suspected" in audit
+    assert "structural_independence_or_decode_bypass_suspected" in audit

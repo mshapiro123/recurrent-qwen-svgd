@@ -93,6 +93,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "synthetic_depth_primitive_curve" - L4/T4 Phase 1 depth-1 primitive curve over N=8,12,16.
 #   "synthetic_depth_staged_staircase" - L4/T4 Phase 2 target-loop staircase from the N=16 primitive checkpoint.
 #   "synthetic_depth_chain_supervision" - L4/T4 train-split diagnostic plus per-loop intermediate-chain supervision.
+#   "gradient_path_audit" - read-only per-loop gradient matrix plus finite-difference bridge check.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
 #   "model_viability_queue" - queued no-training Qwen 3B/7B probes with VRAM-aware skipping.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
@@ -1833,6 +1834,25 @@ TARGETS = {
             "STAGE5_SYNTH_CHAIN_EVAL_LOOPS": "1,2,3,4",
             "STAGE5_SYNTH_CHAIN_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
             "STAGE5_SYNTH_CHAIN_DISCONNECT": "0",
+        },
+    },
+    "gradient_path_audit": {
+        "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
+        "markers": [
+            "STAGE5_GRADIENT_PATH_AUDIT_CELL_VERSION",
+            "gradient_path_audit_v1",
+            "read-only gradient matrix plus finite_difference_bridge_prelude",
+            "STAGE5_GRADIENT_PATH_AUDIT_SOURCE_SUMMARY",
+            "eval/eval_gradient_path_audit.py",
+            "tests/test_eval_gradient_path_audit.py",
+            "tests/test_stage5_notebooks.py::test_gradient_path_audit_target_is_wired_and_guarded",
+            "Record Stage 5 gradient-path audit",
+        ],
+        "env": {
+            "STAGE5_GRADIENT_PATH_AUDIT_SOURCE_SUMMARY": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/summary.json",
+            "STAGE5_GRADIENT_PATH_AUDIT_MAX_LOOPS": "2",
+            "STAGE5_GRADIENT_PATH_AUDIT_FD_EPSILON": "0.01",
+            "STAGE5_GRADIENT_PATH_AUDIT_DISCONNECT": "0",
         },
     },
     "model_viability_probe": {
