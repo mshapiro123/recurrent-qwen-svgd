@@ -124,7 +124,9 @@ def sync_repo() -> None:
 def require_gpu_runtime() -> None:
     if shutil.which("nvidia-smi") is None:
         raise RuntimeError("Attach a cheap GPU runtime first. L4/T4 is sufficient for the synthetic-depth pilot.")
-    run(["nvidia-smi"], check=False)
+    # This runs before the repo exists in a fresh Colab runtime, so do not use
+    # ROOT as cwd here.
+    run(["nvidia-smi"], cwd=Path("/content"), check=False)
 
 
 def write_yaml(path: Path, payload: dict[str, Any]) -> None:

@@ -2120,6 +2120,7 @@ def test_synthetic_depth_task_target_is_wired_and_guarded() -> None:
     assert "STAGE5_SYNTH_DEPTH_MAX_STEPS" in cell
     assert "STAGE5_SYNTH_DEPTH_ROWS_PER_DEPTH" in cell
     assert "frontier_strictly_expands" in cell
+    assert 'run(["nvidia-smi"], cwd=Path("/content"), check=False)' in cell
 
     assert "A(d, k)" in spec
     assert "distinct orbit prefix" in spec
