@@ -127,14 +127,26 @@ def require_gpu_runtime() -> None:
 
 
 def read_json(path: str | Path) -> dict[str, Any]:
-    return json.loads(Path(path).read_text(encoding="utf-8"))
+    return json.loads(resolve_repo_path(path).read_text(encoding="utf-8"))
 
 
-def latest_chain_stage(source_summary: Path) -> dict[str, Any]:
+def resolve_repo_path(path: str | Path) -> Path:
+    candidate = Path(path)
+    if candidate.is_absolute():
+        return candidate
+    return ROOT / candidate
+
+
+def latest_chain_stage(source_summary: Path, *, stage_name: str | None = None) -> dict[str, Any]:
     payload = read_json(source_summary)
     stages = payload.get("chain_stages") or []
     if not stages:
         raise RuntimeError(f"No chain_stages found in {source_summary}")
+    if stage_name:
+        for stage in stages:
+            if str(stage.get("stage_name")) == stage_name:
+                return dict(stage)
+        raise RuntimeError(f"No chain stage named {stage_name!r} found in {source_summary}")
     return dict(stages[-1])
 
 
@@ -202,7 +214,10 @@ try:
             "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/summary.json",
         )
     )
-    stage = latest_chain_stage(source_summary)
+    stage = latest_chain_stage(
+        source_summary,
+        stage_name=os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_STAGE_NAME", "").strip() or None,
+    )
     checkpoint = restore_checkpoint(stage)
     train_jsonl = ROOT / str(stage["train_jsonl"])
     train_config = ROOT / str(stage["train_config"])
@@ -215,7 +230,8 @@ try:
         "stage5_gradient_path_audit_%Y%m%d_%H%M%S"
     )
     out_dir = ROOT / "outputs" / "stage5" / run_id
-    max_loops = os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_MAX_LOOPS", str(stage.get("max_loops", 2)))
+    max_loops_raw = os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_MAX_LOOPS", "auto").strip().lower()
+    max_loops = str(stage.get("max_loops", 2)) if max_loops_raw in {"", "auto"} else max_loops_raw
     print("gradient_path_audit_source_summary:", source_summary, flush=True)
     print("gradient_path_audit_checkpoint:", path_for_cli(checkpoint), flush=True)
     print("gradient_path_audit_train_jsonl:", path_for_cli(train_jsonl), flush=True)
