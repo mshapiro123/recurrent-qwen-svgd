@@ -232,6 +232,8 @@ try:
     out_dir = ROOT / "outputs" / "stage5" / run_id
     max_loops_raw = os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_MAX_LOOPS", "auto").strip().lower()
     max_loops = str(stage.get("max_loops", 2)) if max_loops_raw in {"", "auto"} else max_loops_raw
+    min_active_raw = os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_MIN_ACTIVE_LOOP_LABELS", "auto").strip().lower()
+    min_active = max_loops if min_active_raw in {"", "auto"} else min_active_raw
     print("gradient_path_audit_source_summary:", source_summary, flush=True)
     print("gradient_path_audit_checkpoint:", path_for_cli(checkpoint), flush=True)
     print("gradient_path_audit_train_jsonl:", path_for_cli(train_jsonl), flush=True)
@@ -251,6 +253,8 @@ try:
             path_for_cli(out_dir),
             "--max_loops",
             max_loops,
+            "--min_active_loop_labels",
+            min_active,
             "--max_length",
             os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_MAX_LENGTH", "512"),
             "--fd_epsilon",

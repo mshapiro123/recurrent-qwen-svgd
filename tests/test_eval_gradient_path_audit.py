@@ -114,7 +114,36 @@ def test_select_audit_rows_scans_past_depth_one_prefix(tmp_path):
     rows.append({"id": "d2", "depth": 2, "loop_completions": [" A", " B"]})
     source.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
 
-    out = select_audit_rows(source, tmp_path / "audit.jsonl", max_loops=2, max_scan_rows=512, row_id=None)
+    out = select_audit_rows(
+        source,
+        tmp_path / "audit.jsonl",
+        max_loops=2,
+        max_scan_rows=512,
+        row_id=None,
+        min_active_loop_labels=2,
+    )
 
     assert out["selected_id"] == "d2"
     assert out["selected_depth"] == 2
+
+
+def test_select_audit_rows_can_require_all_four_loop_labels(tmp_path):
+    source = tmp_path / "train.jsonl"
+    rows = [
+        {"id": "d2", "depth": 2, "loop_completions": [" A", " B"]},
+        {"id": "d4", "depth": 4, "loop_completions": [" A", " B", " C", " D"]},
+    ]
+    source.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+
+    out = select_audit_rows(
+        source,
+        tmp_path / "audit.jsonl",
+        max_loops=4,
+        max_scan_rows=10,
+        row_id=None,
+        min_active_loop_labels=4,
+    )
+
+    assert out["selected_id"] == "d4"
+    assert out["selected_depth"] == 4
+    assert out["min_active_loop_labels"] == 4

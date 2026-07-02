@@ -1830,6 +1830,7 @@ TARGETS = {
             "STAGE5_GRADIENT_PATH_AUDIT_SOURCE_SUMMARY": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/summary.json",
             "STAGE5_GRADIENT_PATH_AUDIT_STAGE_NAME": "",
             "STAGE5_GRADIENT_PATH_AUDIT_MAX_LOOPS": "auto",
+            "STAGE5_GRADIENT_PATH_AUDIT_MIN_ACTIVE_LOOP_LABELS": "auto",
             "STAGE5_GRADIENT_PATH_AUDIT_FD_EPSILON": "0.01",
             "STAGE5_GRADIENT_PATH_AUDIT_DISCONNECT": "0",
         },

@@ -409,7 +409,18 @@ def static_source_audit() -> dict[str, Any]:
     }
 
 
-def select_audit_rows(source: Path, dest: Path, *, max_loops: int, max_scan_rows: int, row_id: str | None) -> dict[str, Any]:
+def select_audit_rows(
+    source: Path,
+    dest: Path,
+    *,
+    max_loops: int,
+    max_scan_rows: int,
+    row_id: str | None,
+    min_active_loop_labels: int | None = None,
+) -> dict[str, Any]:
+    min_active = int(min_active_loop_labels or max_loops)
+    if min_active < 1 or min_active > max_loops:
+        raise ValueError("min_active_loop_labels must be in [1, max_loops]")
     rows = [json.loads(line) for line in source.read_text(encoding="utf-8").splitlines() if line.strip()]
     selected: list[dict[str, Any]] = []
     for idx, row in enumerate(rows[:max_scan_rows]):
@@ -417,12 +428,13 @@ def select_audit_rows(source: Path, dest: Path, *, max_loops: int, max_scan_rows
             continue
         completions = list(row.get("loop_completions") or [])
         active = sum(item is not None for item in completions[:max_loops])
-        if active >= min(2, max_loops):
+        if active >= min_active:
             selected.append(row)
             break
     if not selected:
         raise RuntimeError(
-            f"No audit row with >=2 active loop_completions found in first {max_scan_rows} rows of {source}"
+            f"No audit row with >={min_active} active loop_completions found in "
+            f"first {max_scan_rows} rows of {source}"
         )
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text("".join(json.dumps(row, ensure_ascii=True) + "\n" for row in selected), encoding="utf-8")
@@ -433,6 +445,7 @@ def select_audit_rows(source: Path, dest: Path, *, max_loops: int, max_scan_rows
         "selected_rows": len(selected),
         "selected_id": str(row.get("id") or row.get("instance_id") or "0"),
         "selected_depth": row.get("depth") or row.get("synthetic_depth"),
+        "min_active_loop_labels": min_active,
         "loop_completions": row.get("loop_completions"),
     }
 
@@ -530,6 +543,7 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--max_scan_rows", type=int, default=2048)
     parser.add_argument("--row_id")
+    parser.add_argument("--min_active_loop_labels", type=int)
     parser.add_argument("--grad_tol", type=float, default=1e-12)
     parser.add_argument("--fd_tol", type=float, default=1e-6)
     args = parser.parse_args()
@@ -544,6 +558,7 @@ def main() -> int:
         max_loops=args.max_loops,
         max_scan_rows=args.max_scan_rows,
         row_id=args.row_id,
+        min_active_loop_labels=args.min_active_loop_labels,
     )
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
