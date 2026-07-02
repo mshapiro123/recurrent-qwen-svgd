@@ -2,7 +2,7 @@
   "kind": "stage5_split_bridge_true_lr_microtest",
   "run_id": "stage5_split_bridge_microtest_20260702_154804",
   "cell_version": "split_bridge_true_lr_microtest_v1",
-  "status": "stage_depth_le2_finished",
+  "status": "finished",
   "n_symbols": 8,
   "max_depth": 4,
   "rows_per_depth": 4,
@@ -332,6 +332,319 @@
           "total": 64
         }
       }
+    },
+    {
+      "stage_name": "split_chain_depth_le4",
+      "max_loops": 4,
+      "max_steps": 4000,
+      "train_jsonl": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/data/train_chain_label_depth_le4_sft.jsonl",
+      "train_config": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/split_chain_depth_le4_train_config.yaml",
+      "train_log": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/train/split_chain_depth_le4_train_unfrozen_recurrent.log",
+      "training_summary": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/train/split_chain_depth_le4/train_unfrozen_recurrent_summary.json",
+      "optimizer_setup": {
+        "bridge_prelude_optimizer_group_ok": true,
+        "bridge_prelude_optimizer_group_lr": 0.0001,
+        "bridge_prelude_optimizer_group_weight_decay": 0.0,
+        "bridge_prelude_optimizer_group_num_tensors": 1
+      },
+      "bridge_prelude_weight_stats": {
+        "bridge_prelude_weight_rms": 0.001821611076593399,
+        "bridge_prelude_weight_max_abs": 0.010336860083043575,
+        "bridge_state_identity_max_abs_diff": 0.001189125352539122
+      },
+      "checkpoint": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/train/split_chain_depth_le4/unfrozen_recurrent_step_4000.pt",
+      "checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_split_bridge_microtest_20260702_154804/split_chain_depth_le4/unfrozen_recurrent_step_4000.pt",
+      "train_eval": {
+        "name": "split_chain_depth_le4_train",
+        "data_jsonl": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/data/train_chain_mcq.jsonl",
+        "matrix_rows": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/eval/split_chain_depth_le4_train_matrix_rows.jsonl",
+        "matrix_summary": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/eval/split_chain_depth_le4_train_matrix_summary.json",
+        "eval_log": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/eval/split_chain_depth_le4_train_eval_synthetic_depth_matrix.log",
+        "matrix": {
+          "kind": "synthetic_depth_accuracy_matrix",
+          "threshold": 0.71,
+          "depths": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "loops": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "matrix": {
+            "1": {
+              "1": {
+                "correct": 4,
+                "total": 4,
+                "accuracy": 1.0
+              },
+              "2": {
+                "correct": 0,
+                "total": 4,
+                "accuracy": 0.0
+              },
+              "3": {
+                "correct": 0,
+                "total": 4,
+                "accuracy": 0.0
+              },
+              "4": {
+                "correct": 2,
+                "total": 4,
+                "accuracy": 0.5
+              }
+            },
+            "2": {
+              "1": {
+                "correct": 0,
+                "total": 4,
+                "accuracy": 0.0
+              },
+              "2": {
+                "correct": 4,
+                "total": 4,
+                "accuracy": 1.0
+              },
+              "3": {
+                "correct": 1,
+                "total": 4,
+                "accuracy": 0.25
+              },
+              "4": {
+                "correct": 0,
+                "total": 4,
+                "accuracy": 0.0
+              }
+            },
+            "3": {
+              "1": {
+                "correct": 0,
+                "total": 4,
+                "accuracy": 0.0
+              },
+              "2": {
+                "correct": 0,
+                "total": 4,
+                "accuracy": 0.0
+              },
+              "3": {
+                "correct": 4,
+                "total": 4,
+                "accuracy": 1.0
+              },
+              "4": {
+                "correct": 3,
+                "total": 4,
+                "accuracy": 0.75
+              }
+            },
+            "4": {
+              "1": {
+                "correct": 0,
+                "total": 4,
+                "accuracy": 0.0
+              },
+              "2": {
+                "correct": 0,
+                "total": 4,
+                "accuracy": 0.0
+              },
+              "3": {
+                "correct": 0,
+                "total": 4,
+                "accuracy": 0.0
+              },
+              "4": {
+                "correct": 4,
+                "total": 4,
+                "accuracy": 1.0
+              }
+            }
+          },
+          "frontier_by_loop": {
+            "1": 1,
+            "2": 2,
+            "3": 3,
+            "4": 4
+          },
+          "frontier_is_non_decreasing": true,
+          "frontier_strictly_expands": true,
+          "mode": "recurrent",
+          "checkpoint": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/train/split_chain_depth_le4/unfrozen_recurrent_step_4000.pt",
+          "data_jsonl": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/data/train_chain_mcq.jsonl",
+          "score_target": "label",
+          "aggregate": "mean",
+          "rows": 64
+        },
+        "diagonal_accuracy": {
+          "1": 1.0,
+          "2": 1.0,
+          "3": 1.0,
+          "4": 1.0
+        },
+        "total_hits": {
+          "correct": 22,
+          "total": 64
+        }
+      },
+      "test_eval": {
+        "name": "split_chain_depth_le4_test",
+        "data_jsonl": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/data/test_chain_mcq.jsonl",
+        "matrix_rows": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/eval/split_chain_depth_le4_test_matrix_rows.jsonl",
+        "matrix_summary": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/eval/split_chain_depth_le4_test_matrix_summary.json",
+        "eval_log": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/eval/split_chain_depth_le4_test_eval_synthetic_depth_matrix.log",
+        "matrix": {
+          "kind": "synthetic_depth_accuracy_matrix",
+          "threshold": 0.71,
+          "depths": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "loops": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "matrix": {
+            "1": {
+              "1": {
+                "correct": 1,
+                "total": 4,
+                "accuracy": 0.25
+              },
+              "2": {
+                "correct": 0,
+                "total": 4,
+                "accuracy": 0.0
+              },
+              "3": {
+                "correct": 1,
+                "total": 4,
+                "accuracy": 0.25
+              },
+              "4": {
+                "correct": 0,
+                "total": 4,
+                "accuracy": 0.0
+              }
+            },
+            "2": {
+              "1": {
+                "correct": 1,
+                "total": 4,
+                "accuracy": 0.25
+              },
+              "2": {
+                "correct": 1,
+                "total": 4,
+                "accuracy": 0.25
+              },
+              "3": {
+                "correct": 3,
+                "total": 4,
+                "accuracy": 0.75
+              },
+              "4": {
+                "correct": 2,
+                "total": 4,
+                "accuracy": 0.5
+              }
+            },
+            "3": {
+              "1": {
+                "correct": 0,
+                "total": 4,
+                "accuracy": 0.0
+              },
+              "2": {
+                "correct": 1,
+                "total": 4,
+                "accuracy": 0.25
+              },
+              "3": {
+                "correct": 2,
+                "total": 4,
+                "accuracy": 0.5
+              },
+              "4": {
+                "correct": 1,
+                "total": 4,
+                "accuracy": 0.25
+              }
+            },
+            "4": {
+              "1": {
+                "correct": 1,
+                "total": 4,
+                "accuracy": 0.25
+              },
+              "2": {
+                "correct": 2,
+                "total": 4,
+                "accuracy": 0.5
+              },
+              "3": {
+                "correct": 0,
+                "total": 4,
+                "accuracy": 0.0
+              },
+              "4": {
+                "correct": 1,
+                "total": 4,
+                "accuracy": 0.25
+              }
+            }
+          },
+          "frontier_by_loop": {
+            "1": 0,
+            "2": 0,
+            "3": 2,
+            "4": 0
+          },
+          "frontier_is_non_decreasing": false,
+          "frontier_strictly_expands": true,
+          "mode": "recurrent",
+          "checkpoint": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/train/split_chain_depth_le4/unfrozen_recurrent_step_4000.pt",
+          "data_jsonl": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/data/test_chain_mcq.jsonl",
+          "score_target": "label",
+          "aggregate": "mean",
+          "rows": 64
+        },
+        "diagonal_accuracy": {
+          "1": 0.25,
+          "2": 0.25,
+          "3": 0.5,
+          "4": 0.25
+        },
+        "total_hits": {
+          "correct": 17,
+          "total": 64
+        }
+      }
     }
-  ]
+  ],
+  "decision_gate": {
+    "pass_bar": "micro-test train total hits should approach 63/64 or better if the corrected prelude path can memorize",
+    "final_train_hits": {
+      "correct": 22,
+      "total": 64
+    },
+    "final_test_hits": {
+      "correct": 17,
+      "total": 64
+    },
+    "final_test_frontier_by_loop": {
+      "1": 0,
+      "2": 0,
+      "3": 2,
+      "4": 0
+    }
+  }
 }

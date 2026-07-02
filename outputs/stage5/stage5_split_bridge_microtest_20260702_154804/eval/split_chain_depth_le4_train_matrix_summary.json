@@ -1,0 +1,120 @@
+{
+  "kind": "synthetic_depth_accuracy_matrix",
+  "threshold": 0.71,
+  "depths": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "loops": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "matrix": {
+    "1": {
+      "1": {
+        "correct": 4,
+        "total": 4,
+        "accuracy": 1.0
+      },
+      "2": {
+        "correct": 0,
+        "total": 4,
+        "accuracy": 0.0
+      },
+      "3": {
+        "correct": 0,
+        "total": 4,
+        "accuracy": 0.0
+      },
+      "4": {
+        "correct": 2,
+        "total": 4,
+        "accuracy": 0.5
+      }
+    },
+    "2": {
+      "1": {
+        "correct": 0,
+        "total": 4,
+        "accuracy": 0.0
+      },
+      "2": {
+        "correct": 4,
+        "total": 4,
+        "accuracy": 1.0
+      },
+      "3": {
+        "correct": 1,
+        "total": 4,
+        "accuracy": 0.25
+      },
+      "4": {
+        "correct": 0,
+        "total": 4,
+        "accuracy": 0.0
+      }
+    },
+    "3": {
+      "1": {
+        "correct": 0,
+        "total": 4,
+        "accuracy": 0.0
+      },
+      "2": {
+        "correct": 0,
+        "total": 4,
+        "accuracy": 0.0
+      },
+      "3": {
+        "correct": 4,
+        "total": 4,
+        "accuracy": 1.0
+      },
+      "4": {
+        "correct": 3,
+        "total": 4,
+        "accuracy": 0.75
+      }
+    },
+    "4": {
+      "1": {
+        "correct": 0,
+        "total": 4,
+        "accuracy": 0.0
+      },
+      "2": {
+        "correct": 0,
+        "total": 4,
+        "accuracy": 0.0
+      },
+      "3": {
+        "correct": 0,
+        "total": 4,
+        "accuracy": 0.0
+      },
+      "4": {
+        "correct": 4,
+        "total": 4,
+        "accuracy": 1.0
+      }
+    }
+  },
+  "frontier_by_loop": {
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "4": 4
+  },
+  "frontier_is_non_decreasing": true,
+  "frontier_strictly_expands": true,
+  "mode": "recurrent",
+  "checkpoint": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/train/split_chain_depth_le4/unfrozen_recurrent_step_4000.pt",
+  "data_jsonl": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/data/train_chain_mcq.jsonl",
+  "score_target": "label",
+  "aggregate": "mean",
+  "rows": 64
+}
