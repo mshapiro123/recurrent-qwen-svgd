@@ -1,7 +1,7 @@
 {
   "kind": "stage5_chain_scaled_corrected",
   "run_id": "stage5_chain_scaled_corrected_20260702_182827",
-  "status": "dataset_ready",
+  "status": "stage_depth_le2_finished",
   "n_symbols": 16,
   "max_depth": 4,
   "rows_per_depth": 256,
@@ -19,7 +19,117 @@
   "microtest_active_readout": {
     "status": "skipped"
   },
-  "stages": [],
+  "stages": [
+    {
+      "stage_name": "chain_scaled_corrected_depth_le2",
+      "max_loops": 2,
+      "max_steps": 2000,
+      "train_jsonl": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/data/train_chain_symbol_depth_le2_sft.jsonl",
+      "train_config": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/chain_scaled_corrected_depth_le2_train_config.yaml",
+      "train_log": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/train/chain_scaled_corrected_depth_le2_train_unfrozen_recurrent.log",
+      "training_summary": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/train/chain_scaled_corrected_depth_le2/train_unfrozen_recurrent_summary.json",
+      "optimizer_setup": {
+        "bridge_prelude_optimizer_group_ok": true,
+        "bridge_prelude_optimizer_group_lr": 0.0001,
+        "bridge_prelude_optimizer_group_weight_decay": 0.0,
+        "bridge_prelude_optimizer_group_num_tensors": 1
+      },
+      "bridge_prelude_weight_stats": {
+        "bridge_prelude_weight_rms": 0.002700953045859933,
+        "bridge_prelude_weight_max_abs": 0.014273237437009811,
+        "bridge_state_identity_max_abs_diff": 0.0025808343198150396
+      },
+      "checkpoint": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/train/chain_scaled_corrected_depth_le2/unfrozen_recurrent_step_2000.pt",
+      "checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_chain_scaled_corrected_20260702_182827/chain_scaled_corrected_depth_le2/unfrozen_recurrent_step_2000.pt",
+      "train_active_eval": {
+        "name": "chain_scaled_corrected_depth_le2_train_full_symbol_active",
+        "data_jsonl": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/data/train_chain_mcq_eval64.jsonl",
+        "active_rows": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/eval/chain_scaled_corrected_depth_le2_train_full_symbol_active_active_rows.jsonl",
+        "active_summary": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/eval/chain_scaled_corrected_depth_le2_train_full_symbol_active_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/eval/chain_scaled_corrected_depth_le2_train_full_symbol_active_active_eval.log",
+        "prediction_space": "full_symbols",
+        "prompt_style": "question_only",
+        "value_prefix": "letter:",
+        "active_diagonal": {
+          "1": 1.0,
+          "2": 0.96875,
+          "3": 0.046875,
+          "4": 0.03125
+        },
+        "active_diagonal_min": 0.03125,
+        "active_total": {
+          "correct": 427,
+          "total": 640,
+          "accuracy": 0.6671875
+        },
+        "above_diagonal": {
+          "iterate": 97,
+          "hold": 107,
+          "other": 180,
+          "unknown_iterate_target": 0,
+          "n": 384,
+          "rates": {
+            "iterate": 0.2526041666666667,
+            "hold": 0.2786458333333333,
+            "other": 0.46875,
+            "unknown_iterate_target": 0.0
+          }
+        }
+      },
+      "heldout_active_eval": {
+        "name": "chain_scaled_corrected_depth_le2_heldout_full_symbol_active",
+        "data_jsonl": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/data/test_chain_mcq_heldout64.jsonl",
+        "active_rows": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/eval/chain_scaled_corrected_depth_le2_heldout_full_symbol_active_active_rows.jsonl",
+        "active_summary": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/eval/chain_scaled_corrected_depth_le2_heldout_full_symbol_active_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/eval/chain_scaled_corrected_depth_le2_heldout_full_symbol_active_active_eval.log",
+        "prediction_space": "full_symbols",
+        "prompt_style": "question_only",
+        "value_prefix": "letter:",
+        "active_diagonal": {
+          "1": 1.0,
+          "2": 0.875,
+          "3": 0.125,
+          "4": 0.046875
+        },
+        "active_diagonal_min": 0.046875,
+        "active_total": {
+          "correct": 430,
+          "total": 640,
+          "accuracy": 0.671875
+        },
+        "above_diagonal": {
+          "iterate": 104,
+          "hold": 97,
+          "other": 183,
+          "unknown_iterate_target": 0,
+          "n": 384,
+          "rates": {
+            "iterate": 0.2708333333333333,
+            "hold": 0.2526041666666667,
+            "other": 0.4765625,
+            "unknown_iterate_target": 0.0
+          }
+        }
+      },
+      "heldout_final_eval": {
+        "name": "chain_scaled_corrected_depth_le2_heldout_final_answer",
+        "data_jsonl": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/data/test_mcq_heldout64.jsonl",
+        "matrix_rows": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/eval/chain_scaled_corrected_depth_le2_heldout_final_answer_matrix_rows.jsonl",
+        "matrix_summary": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/eval/chain_scaled_corrected_depth_le2_heldout_final_answer_matrix_summary.json",
+        "eval_log": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/eval/chain_scaled_corrected_depth_le2_heldout_final_answer_matrix_eval.log",
+        "total_hits": {
+          "correct": 371,
+          "total": 1024
+        },
+        "frontier_by_loop": {
+          "1": 1,
+          "2": 0,
+          "3": 0,
+          "4": 0
+        }
+      }
+    }
+  ],
   "primitive_checkpoint": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/restored/primitive_n16_checkpoint.pt",
   "data_summary": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/data/summary.json",
   "filters": {

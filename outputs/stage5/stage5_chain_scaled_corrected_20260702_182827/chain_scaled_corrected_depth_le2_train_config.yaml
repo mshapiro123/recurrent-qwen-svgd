@@ -1,0 +1,48 @@
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+dtype: bfloat16
+adapter_dtype: float32
+attn_implementation: default
+layer_split: 6,18
+max_length: 512
+max_loops: 2
+loop_loss_mode: per_loop_labels
+initial_halt_prob: 0.15
+beta: 0.0
+halt_target_nll_weight: 0.0
+loop_control_ce_weight: 0.0
+batch_size: 1
+optimizer: adamw
+learning_rate: 1.0e-05
+adamw_lr: 1.0e-05
+weight_decay: 0.0
+max_grad_norm: 0.5
+max_steps: 2000
+save_every: 0
+log_every: 100
+bridge_projection_mode: split
+bridge_prelude_lr_multiplier: 10.0
+bridge_prelude_weight_decay: 0.0
+bridge_prelude_lr_include_norm: false
+bridge_prelude_grad_multiplier: 1.0
+train_on_prompt: false
+gradient_checkpointing: true
+output_dir: outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/train/chain_scaled_corrected_depth_le2
+resume_from: outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/restored/primitive_n16_checkpoint.pt
+resume_lora:
+  enabled: false
+merge_lora_before_unfreeze: false
+require_lora_loaded_before_merge: false
+train_auxiliary:
+  bridge: true
+  halting: false
+  reentry_adapter: false
+  latent: false
+recurrence_curriculum:
+  enabled: false
+  start_loop: 2
+  end_loop: 2
+  schedule: linear
+  target_source: row_capped
+  ramp_compute: false
+synthetic_phase: chain_scaled_corrected
+synthetic_stage: chain_scaled_corrected_depth_le2

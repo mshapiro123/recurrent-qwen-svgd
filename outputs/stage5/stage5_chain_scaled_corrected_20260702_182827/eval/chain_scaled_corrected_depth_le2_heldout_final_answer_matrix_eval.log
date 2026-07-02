@@ -1,0 +1,126 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 4093.50it/s]
+bridge_projection_mode=split
+lora_recurrent_modules=0
+loaded_checkpoint=outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/train/chain_scaled_corrected_depth_le2/unfrozen_recurrent_step_2000.pt loaded_keys=152
+{
+  "kind": "synthetic_depth_accuracy_matrix",
+  "threshold": 0.71,
+  "depths": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "loops": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "matrix": {
+    "1": {
+      "1": {
+        "correct": 63,
+        "total": 64,
+        "accuracy": 0.984375
+      },
+      "2": {
+        "correct": 21,
+        "total": 64,
+        "accuracy": 0.328125
+      },
+      "3": {
+        "correct": 25,
+        "total": 64,
+        "accuracy": 0.390625
+      },
+      "4": {
+        "correct": 23,
+        "total": 64,
+        "accuracy": 0.359375
+      }
+    },
+    "2": {
+      "1": {
+        "correct": 19,
+        "total": 64,
+        "accuracy": 0.296875
+      },
+      "2": {
+        "correct": 36,
+        "total": 64,
+        "accuracy": 0.5625
+      },
+      "3": {
+        "correct": 23,
+        "total": 64,
+        "accuracy": 0.359375
+      },
+      "4": {
+        "correct": 19,
+        "total": 64,
+        "accuracy": 0.296875
+      }
+    },
+    "3": {
+      "1": {
+        "correct": 13,
+        "total": 64,
+        "accuracy": 0.203125
+      },
+      "2": {
+        "correct": 21,
+        "total": 64,
+        "accuracy": 0.328125
+      },
+      "3": {
+        "correct": 24,
+        "total": 64,
+        "accuracy": 0.375
+      },
+      "4": {
+        "correct": 20,
+        "total": 64,
+        "accuracy": 0.3125
+      }
+    },
+    "4": {
+      "1": {
+        "correct": 20,
+        "total": 64,
+        "accuracy": 0.3125
+      },
+      "2": {
+        "correct": 17,
+        "total": 64,
+        "accuracy": 0.265625
+      },
+      "3": {
+        "correct": 14,
+        "total": 64,
+        "accuracy": 0.21875
+      },
+      "4": {
+        "correct": 13,
+        "total": 64,
+        "accuracy": 0.203125
+      }
+    }
+  },
+  "frontier_by_loop": {
+    "1": 1,
+    "2": 0,
+    "3": 0,
+    "4": 0
+  },
+  "frontier_is_non_decreasing": false,
+  "frontier_strictly_expands": false,
+  "mode": "recurrent",
+  "checkpoint": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/train/chain_scaled_corrected_depth_le2/unfrozen_recurrent_step_2000.pt",
+  "data_jsonl": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/data/test_mcq_heldout64.jsonl",
+  "score_target": "option_text",
+  "aggregate": "mean",
+  "rows": 1024
+}
