@@ -5,8 +5,10 @@ import pytest
 from eval.eval_gradient_path_audit import (
     SignatureThresholds,
     interpret_gradient_signature,
+    numeric_summary,
     select_audit_rows,
     static_source_audit,
+    target_validity_summary,
 )
 
 
@@ -147,3 +149,58 @@ def test_select_audit_rows_can_require_all_four_loop_labels(tmp_path):
     assert out["selected_id"] == "d4"
     assert out["selected_depth"] == 4
     assert out["min_active_loop_labels"] == 4
+
+
+def test_select_audit_rows_balances_depths_with_auto_active_requirement(tmp_path):
+    source = tmp_path / "train.jsonl"
+    rows = []
+    for depth in (1, 2, 3, 4):
+        for idx in range(3):
+            rows.append(
+                {
+                    "id": f"d{depth}_{idx}",
+                    "depth": depth,
+                    "loop_completions": [" A", " B", " C", " D"][:depth],
+                }
+            )
+    source.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+
+    out = select_audit_rows(
+        source,
+        tmp_path / "audit.jsonl",
+        max_loops=4,
+        max_scan_rows=100,
+        row_id=None,
+        min_active_loop_labels="auto",
+        num_rows=8,
+        depths=[1, 2, 3, 4],
+    )
+
+    assert out["selected_rows"] == 8
+    assert out["depth_counts"] == {"1": 2, "2": 2, "3": 2, "4": 2}
+
+
+def test_target_validity_summary_accepts_chain_labels_matching_orbit():
+    rows = [
+        {
+            "id": "ok",
+            "depth": 2,
+            "choices": {"A": "9", "C": "8"},
+            "orbit": ["13", "9", "8"],
+            "loop_completions": [" A", " C"],
+            "chain_answer_by_loop": {"1": "A", "2": "C"},
+        }
+    ]
+
+    out = target_validity_summary(rows, max_loops=2)
+
+    assert out["checked_loop_targets"] == 2
+    assert out["invalid_loop_targets"] == 0
+
+
+def test_numeric_summary_reports_zero_fraction_and_quantiles():
+    out = numeric_summary([0.0, 0.0, 2.0, 4.0])
+
+    assert out["count"] == 4
+    assert out["zero_fraction"] == 0.5
+    assert out["median"] == pytest.approx(1.0)

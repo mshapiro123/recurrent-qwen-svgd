@@ -10,6 +10,7 @@ independence.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
 import sys
@@ -155,6 +156,27 @@ def move_batch(batch: dict[str, torch.Tensor], device: str) -> dict[str, torch.T
     return {key: value.to(device) for key, value in batch.items()}
 
 
+def resolve_amp_dtype(name: str, device: str) -> torch.dtype | None:
+    normalized = str(name or "").lower()
+    if not str(device).startswith("cuda"):
+        return None
+    if normalized in {"", "none", "off", "false", "float32", "fp32"}:
+        return None
+    if normalized in {"float16", "fp16"}:
+        return torch.float16
+    if normalized in {"bfloat16", "bf16"}:
+        if torch.cuda.is_available() and torch.cuda.is_bf16_supported():
+            return torch.bfloat16
+        return None
+    return None
+
+
+def autocast_context(device: str, amp_dtype: torch.dtype | None):
+    if amp_dtype is None or not str(device).startswith("cuda"):
+        return contextlib.nullcontext()
+    return torch.autocast("cuda", dtype=amp_dtype)
+
+
 def sequence_ce(logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
     if labels.shape != logits.shape[:2]:
         raise ValueError(f"labels/logits shape mismatch: labels={tuple(labels.shape)}, logits={tuple(logits.shape)}")
@@ -186,19 +208,22 @@ def compute_loop_losses(
     batch: dict[str, torch.Tensor],
     *,
     max_loops: int,
+    amp_dtype: torch.dtype | None = None,
+    device: str = "cuda",
 ) -> list[dict[str, Any]]:
-    output = wrapper(
-        input_ids=batch["input_ids"],
-        attention_mask=batch["attention_mask"],
-        labels=None,
-        loop_labels=None,
-        max_loops=max_loops,
-        num_trajectories=1,
-        particle_update_mode="none",
-        use_cache=False,
-        return_loop_logits=True,
-        return_dict=True,
-    )
+    with autocast_context(device, amp_dtype):
+        output = wrapper(
+            input_ids=batch["input_ids"],
+            attention_mask=batch["attention_mask"],
+            labels=None,
+            loop_labels=None,
+            max_loops=max_loops,
+            num_trajectories=1,
+            particle_update_mode="none",
+            use_cache=False,
+            return_loop_logits=True,
+            return_dict=True,
+        )
     loop_labels = batch["loop_labels"]
     losses: list[dict[str, Any]] = []
     for loop_idx in range(max_loops):
@@ -228,17 +253,25 @@ def per_loop_gradient_matrix(
     batch: dict[str, torch.Tensor],
     *,
     max_loops: int,
+    row_metadata: dict[str, Any] | None = None,
+    amp_dtype: torch.dtype | None = None,
+    device: str = "cuda",
+    manual_loss_scale: float = 1.0,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
+    scale = float(manual_loss_scale or 1.0)
     for loop_idx in range(max_loops):
         zero_grad(wrapper)
-        losses = compute_loop_losses(wrapper, batch, max_loops=max_loops)
+        losses = compute_loop_losses(wrapper, batch, max_loops=max_loops, amp_dtype=amp_dtype, device=device)
         loss_entry = losses[loop_idx]
         loss = loss_entry["loss"]
         row: dict[str, Any] = {
+            "row_id": None if row_metadata is None else str(row_metadata.get("id") or row_metadata.get("instance_id") or ""),
+            "depth": None if row_metadata is None else row_metadata.get("depth") or row_metadata.get("synthetic_depth"),
             "loop": loop_idx + 1,
             "active_label_tokens": int(loss_entry["active_label_tokens"]),
             "loss": finite_float(loss) if loss is not None else None,
+            "manual_loss_scale": scale,
         }
         if loss is None:
             row.update(
@@ -251,10 +284,19 @@ def per_loop_gradient_matrix(
             )
             rows.append(row)
             continue
-        loss.backward()
-        row.update(bridge_slice_grad_stats(wrapper))
-        row.update({f"recurrent_block_{key}": value for key, value in parameter_grad_stats(recurrent_block_params(wrapper)).items()})
-        row.update({f"coda_{key}": value for key, value in parameter_grad_stats(coda_params(wrapper)).items()})
+        (loss * scale).backward()
+        scaled_bridge = bridge_slice_grad_stats(wrapper)
+        scaled_recurrent = parameter_grad_stats(recurrent_block_params(wrapper))
+        scaled_coda = parameter_grad_stats(coda_params(wrapper))
+        for key, value in scaled_bridge.items():
+            row[f"scaled_{key}"] = value
+            row[key] = value / scale
+        for key, value in scaled_recurrent.items():
+            row[f"scaled_recurrent_block_{key}"] = value
+            row[f"recurrent_block_{key}"] = value if key == "grad_param_tensors" else value / scale
+        for key, value in scaled_coda.items():
+            row[f"scaled_coda_{key}"] = value
+            row[f"coda_{key}"] = value if key == "grad_param_tensors" else value / scale
         rows.append(row)
     zero_grad(wrapper)
     return rows
@@ -267,6 +309,8 @@ def finite_difference_bridge_prelude(
     max_loops: int,
     epsilon: float,
     seed: int,
+    amp_dtype: torch.dtype | None = None,
+    device: str = "cuda",
 ) -> list[dict[str, Any]]:
     bridge = wrapper.bridge
     hidden = int(getattr(bridge, "hidden_size", bridge.proj.weight.shape[0]))
@@ -279,10 +323,10 @@ def finite_difference_bridge_prelude(
     direction = direction / direction.float().square().mean().sqrt().clamp_min(1e-12).to(dtype=direction.dtype)
 
     with torch.no_grad():
-        base = compute_loop_losses(wrapper, batch, max_loops=max_loops)
+        base = compute_loop_losses(wrapper, batch, max_loops=max_loops, amp_dtype=amp_dtype, device=device)
         base_values = [finite_float(entry["loss"]) if entry["loss"] is not None else None for entry in base]
         weight[:, :hidden].add_(float(epsilon) * direction)
-        perturbed = compute_loop_losses(wrapper, batch, max_loops=max_loops)
+        perturbed = compute_loop_losses(wrapper, batch, max_loops=max_loops, amp_dtype=amp_dtype, device=device)
         perturbed_values = [finite_float(entry["loss"]) if entry["loss"] is not None else None for entry in perturbed]
         weight[:, :hidden].sub_(float(epsilon) * direction)
 
@@ -305,6 +349,80 @@ def finite_difference_bridge_prelude(
             }
         )
     return rows
+
+
+def cross_loop_bridge_output_fd(
+    wrapper: torch.nn.Module,
+    batch: dict[str, torch.Tensor],
+    *,
+    max_loops: int,
+    perturb_loop: int,
+    read_loop: int,
+    epsilon: float,
+    seed: int,
+    amp_dtype: torch.dtype | None = None,
+    device: str = "cuda",
+) -> dict[str, Any]:
+    if perturb_loop < 2:
+        raise ValueError("perturb_loop must be >=2 because loop 1 has no bridge application")
+    if read_loop < perturb_loop or read_loop > max_loops:
+        raise ValueError("read_loop must satisfy perturb_loop <= read_loop <= max_loops")
+
+    with torch.no_grad():
+        base = compute_loop_losses(wrapper, batch, max_loops=max_loops, amp_dtype=amp_dtype, device=device)
+    base_loss = base[read_loop - 1]["loss"]
+    if base_loss is None:
+        return {
+            "perturb_loop": perturb_loop,
+            "read_loop": read_loop,
+            "base_loss": None,
+            "perturbed_loss": None,
+            "abs_delta": None,
+            "delta_per_epsilon": None,
+            "active_label_tokens": int(base[read_loop - 1]["active_label_tokens"]),
+        }
+
+    bridge = wrapper.bridge
+    original_forward = bridge.forward
+    generator = torch.Generator(device=next(bridge.parameters()).device)
+    generator.manual_seed(int(seed))
+    call_state = {"count": 0}
+
+    def patched_forward(hidden_states, prelude_hidden=None):
+        output = original_forward(hidden_states, prelude_hidden=prelude_hidden)
+        call_state["count"] += 1
+        loop_number = call_state["count"] + 1
+        if loop_number == perturb_loop:
+            noise = torch.randn(
+                output.shape,
+                device=output.device,
+                dtype=output.dtype,
+                generator=generator,
+            )
+            noise = noise / noise.float().square().mean().sqrt().clamp_min(1e-12).to(dtype=output.dtype)
+            return output + float(epsilon) * noise
+        return output
+
+    try:
+        bridge.forward = patched_forward  # type: ignore[method-assign]
+        call_state["count"] = 0
+        with torch.no_grad():
+            perturbed = compute_loop_losses(wrapper, batch, max_loops=max_loops, amp_dtype=amp_dtype, device=device)
+    finally:
+        bridge.forward = original_forward  # type: ignore[method-assign]
+
+    perturbed_loss = perturbed[read_loop - 1]["loss"]
+    delta = finite_float(perturbed_loss) - finite_float(base_loss)
+    return {
+        "perturb_loop": perturb_loop,
+        "read_loop": read_loop,
+        "base_loss": finite_float(base_loss),
+        "perturbed_loss": finite_float(perturbed_loss),
+        "delta": delta,
+        "abs_delta": abs(delta),
+        "delta_per_epsilon": delta / float(epsilon),
+        "active_label_tokens": int(base[read_loop - 1]["active_label_tokens"]),
+    }
 
 
 def interpret_gradient_signature(
@@ -409,6 +527,37 @@ def static_source_audit() -> dict[str, Any]:
     }
 
 
+def row_depth(row: dict[str, Any]) -> int | None:
+    value = row.get("depth", row.get("synthetic_depth"))
+    if value is None:
+        return None
+    return int(value)
+
+
+def row_active_loop_labels(row: dict[str, Any], *, max_loops: int) -> int:
+    return sum(item is not None for item in list(row.get("loop_completions") or [])[:max_loops])
+
+
+def parse_int_csv(value: str | None) -> list[int]:
+    if not value:
+        return []
+    return [int(item.strip()) for item in str(value).split(",") if item.strip()]
+
+
+def resolve_min_active_requirement(
+    value: int | str | None,
+    *,
+    depth: int | None,
+    max_loops: int,
+) -> int:
+    if value is None or str(value).lower() in {"", "auto", "per_depth"}:
+        return max(1, min(int(depth or max_loops), max_loops))
+    requirement = int(value)
+    if requirement < 1 or requirement > max_loops:
+        raise ValueError("min_active_loop_labels must be in [1, max_loops] or 'auto'")
+    return requirement
+
+
 def select_audit_rows(
     source: Path,
     dest: Path,
@@ -416,37 +565,82 @@ def select_audit_rows(
     max_loops: int,
     max_scan_rows: int,
     row_id: str | None,
-    min_active_loop_labels: int | None = None,
+    min_active_loop_labels: int | str | None = None,
+    num_rows: int = 1,
+    depths: list[int] | None = None,
 ) -> dict[str, Any]:
-    min_active = int(min_active_loop_labels or max_loops)
-    if min_active < 1 or min_active > max_loops:
-        raise ValueError("min_active_loop_labels must be in [1, max_loops]")
     rows = [json.loads(line) for line in source.read_text(encoding="utf-8").splitlines() if line.strip()]
     selected: list[dict[str, Any]] = []
-    for idx, row in enumerate(rows[:max_scan_rows]):
-        if row_id and str(row.get("id") or row.get("instance_id") or idx) != row_id:
-            continue
-        completions = list(row.get("loop_completions") or [])
-        active = sum(item is not None for item in completions[:max_loops])
-        if active >= min_active:
+    scanned = rows[:max_scan_rows]
+    requested_depths = depths or sorted({depth for row in scanned if (depth := row_depth(row)) is not None})
+    if row_id:
+        for idx, row in enumerate(scanned):
+            if str(row.get("id") or row.get("instance_id") or idx) != row_id:
+                continue
+            depth = row_depth(row)
+            min_active = resolve_min_active_requirement(min_active_loop_labels, depth=depth, max_loops=max_loops)
+            if row_active_loop_labels(row, max_loops=max_loops) < min_active:
+                raise RuntimeError(f"Requested row {row_id!r} does not have {min_active} active loop labels")
             selected.append(row)
             break
+    elif num_rows <= 1:
+        for row in scanned:
+            depth = row_depth(row)
+            min_active = resolve_min_active_requirement(min_active_loop_labels, depth=depth, max_loops=max_loops)
+            if row_active_loop_labels(row, max_loops=max_loops) >= min_active:
+                selected.append(row)
+                break
+    else:
+        per_depth_target = max(1, math.ceil(int(num_rows) / max(1, len(requested_depths))))
+        buckets: dict[int, list[dict[str, Any]]] = {depth: [] for depth in requested_depths}
+        for row in scanned:
+            depth = row_depth(row)
+            if depth not in buckets or len(buckets[depth]) >= per_depth_target:
+                continue
+            min_active = resolve_min_active_requirement(min_active_loop_labels, depth=depth, max_loops=max_loops)
+            if row_active_loop_labels(row, max_loops=max_loops) >= min_active:
+                buckets[depth].append(row)
+        selected = [row for depth in requested_depths for row in buckets.get(depth, [])]
+        if len(selected) < int(num_rows):
+            seen = {id(row) for row in selected}
+            for row in scanned:
+                if id(row) in seen:
+                    continue
+                depth = row_depth(row)
+                if requested_depths and depth not in requested_depths:
+                    continue
+                min_active = resolve_min_active_requirement(min_active_loop_labels, depth=depth, max_loops=max_loops)
+                if row_active_loop_labels(row, max_loops=max_loops) >= min_active:
+                    selected.append(row)
+                    seen.add(id(row))
+                if len(selected) >= int(num_rows):
+                    break
+        selected = selected[: int(num_rows)]
     if not selected:
         raise RuntimeError(
-            f"No audit row with >={min_active} active loop_completions found in "
+            f"No audit rows satisfying min_active_loop_labels={min_active_loop_labels!r} found in "
             f"first {max_scan_rows} rows of {source}"
         )
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text("".join(json.dumps(row, ensure_ascii=True) + "\n" for row in selected), encoding="utf-8")
-    row = selected[0]
+    counts_by_depth: dict[str, int] = {}
+    active_by_depth: dict[str, list[int]] = {}
+    for row in selected:
+        key = str(row_depth(row))
+        counts_by_depth[key] = counts_by_depth.get(key, 0) + 1
+        active_by_depth.setdefault(key, []).append(row_active_loop_labels(row, max_loops=max_loops))
     return {
         "source": str(source),
         "audit_batch_jsonl": str(dest),
         "selected_rows": len(selected),
-        "selected_id": str(row.get("id") or row.get("instance_id") or "0"),
-        "selected_depth": row.get("depth") or row.get("synthetic_depth"),
-        "min_active_loop_labels": min_active,
-        "loop_completions": row.get("loop_completions"),
+        "selected_id": str(selected[0].get("id") or selected[0].get("instance_id") or "0"),
+        "selected_depth": row_depth(selected[0]),
+        "selected_ids": [str(row.get("id") or row.get("instance_id") or idx) for idx, row in enumerate(selected)],
+        "depth_counts": dict(sorted(counts_by_depth.items(), key=lambda item: int(item[0]))),
+        "active_loop_labels_by_depth": active_by_depth,
+        "min_active_loop_labels": min_active_loop_labels,
+        "requested_depths": requested_depths,
+        "loop_completions": selected[0].get("loop_completions"),
     }
 
 
@@ -470,6 +664,132 @@ def optimizer_bookkeeping(cfg: dict[str, Any], wrapper: torch.nn.Module) -> dict
     }
 
 
+GRADIENT_GROUP_KEYS = {
+    "bridge_prelude": "bridge_prelude_weight_grad_rms",
+    "bridge_state": "bridge_state_weight_grad_rms",
+    "bridge_prelude_norm": "bridge_prelude_norm_weight_grad_rms",
+    "recurrent_block": "recurrent_block_grad_rms",
+    "coda": "coda_grad_rms",
+}
+
+
+def numeric_summary(values: list[float]) -> dict[str, Any]:
+    if not values:
+        return {
+            "count": 0,
+            "zero_fraction": 0.0,
+            "min": 0.0,
+            "q10": 0.0,
+            "median": 0.0,
+            "q90": 0.0,
+            "max": 0.0,
+            "mean": 0.0,
+        }
+    tensor = torch.tensor(values, dtype=torch.float32)
+    return {
+        "count": int(tensor.numel()),
+        "zero_fraction": float(tensor.eq(0).float().mean().item()),
+        "min": finite_float(tensor.min()),
+        "q10": finite_float(torch.quantile(tensor, 0.10)),
+        "median": finite_float(torch.quantile(tensor, 0.50)),
+        "q90": finite_float(torch.quantile(tensor, 0.90)),
+        "max": finite_float(tensor.max()),
+        "mean": finite_float(tensor.mean()),
+    }
+
+
+def summarize_gradient_records(records: list[dict[str, Any]], cfg: dict[str, Any]) -> dict[str, Any]:
+    by_loop: dict[str, Any] = {}
+    lr = float(cfg.get("adamw_lr") or cfg.get("learning_rate") or 0.0)
+    multiplier = float(cfg.get("bridge_prelude_grad_multiplier") or 1.0)
+    for loop in sorted({int(row["loop"]) for row in records}):
+        loop_rows = [row for row in records if int(row["loop"]) == loop and int(row.get("active_label_tokens") or 0) > 0]
+        loop_summary: dict[str, Any] = {
+            "active_rows": len(loop_rows),
+            "depth_counts": {},
+            "groups": {},
+        }
+        for row in loop_rows:
+            depth = str(row.get("depth"))
+            loop_summary["depth_counts"][depth] = loop_summary["depth_counts"].get(depth, 0) + 1
+        for name, key in GRADIENT_GROUP_KEYS.items():
+            values = [float(row.get(key) or 0.0) for row in loop_rows]
+            loop_summary["groups"][name] = numeric_summary(values)
+        prelude_median = loop_summary["groups"]["bridge_prelude"]["median"]
+        state_median = loop_summary["groups"]["bridge_state"]["median"]
+        loop_summary["optimizer_update_preview"] = {
+            "optimizer": cfg.get("optimizer"),
+            "learning_rate": lr,
+            "bridge_prelude_grad_multiplier": multiplier,
+            "bridge_prelude_raw_grad_median": prelude_median,
+            "bridge_prelude_after_multiplier_median": prelude_median * multiplier,
+            "bridge_prelude_adamw_step_rms_preview": prelude_median * multiplier * lr,
+            "bridge_state_adamw_step_rms_preview": state_median * lr,
+            "note": (
+                "AdamW-style scalar preview only; Muon orthogonalization is not modeled here."
+                if str(cfg.get("optimizer", "")).lower() == "muon"
+                else "Current config is AdamW-like; no Muon orthogonalization applies to bridge update preview."
+            ),
+        }
+        by_loop[str(loop)] = loop_summary
+    return {
+        "records": len(records),
+        "by_loop": by_loop,
+    }
+
+
+def summarize_fd_records(records: list[dict[str, Any]], *, key_loop: str = "loop") -> dict[str, Any]:
+    by_loop: dict[str, Any] = {}
+    loops = sorted({int(row[key_loop]) for row in records if row.get("abs_delta") is not None})
+    for loop in loops:
+        values = [float(row.get("abs_delta") or 0.0) for row in records if int(row[key_loop]) == loop]
+        by_loop[str(loop)] = numeric_summary(values)
+    return {"records": len(records), "by_loop": by_loop}
+
+
+def target_validity_summary(rows: list[dict[str, Any]], *, max_loops: int) -> dict[str, Any]:
+    checked = 0
+    invalid = 0
+    examples: list[dict[str, Any]] = []
+    for row in rows:
+        choices = row.get("choices") or {}
+        orbit = [str(item) for item in (row.get("orbit") or [])]
+        chain_answer_by_loop = {str(k): str(v).strip() for k, v in (row.get("chain_answer_by_loop") or {}).items()}
+        for loop_idx, completion in enumerate(list(row.get("loop_completions") or [])[:max_loops], start=1):
+            if completion is None:
+                continue
+            checked += 1
+            label = str(completion).strip()
+            expected_value = orbit[loop_idx] if loop_idx < len(orbit) else None
+            in_choices = label in choices
+            choice_text = str(choices.get(label)) if in_choices else None
+            matches_orbit = expected_value is not None and choice_text == str(expected_value)
+            matches_chain_answer = not chain_answer_by_loop or chain_answer_by_loop.get(str(loop_idx)) == label
+            ok = in_choices and matches_orbit and matches_chain_answer
+            if not ok:
+                invalid += 1
+                if len(examples) < 10:
+                    examples.append(
+                        {
+                            "id": row.get("id") or row.get("instance_id"),
+                            "depth": row.get("depth") or row.get("synthetic_depth"),
+                            "loop": loop_idx,
+                            "label": label,
+                            "expected_value": expected_value,
+                            "choice_text": choice_text,
+                            "in_choices": in_choices,
+                            "matches_orbit": matches_orbit,
+                            "matches_chain_answer": matches_chain_answer,
+                        }
+                    )
+    return {
+        "checked_loop_targets": checked,
+        "invalid_loop_targets": invalid,
+        "invalid_fraction": invalid / checked if checked else 0.0,
+        "examples": examples,
+    }
+
+
 def write_markdown(path: Path, summary: dict[str, Any]) -> None:
     lines = [
         "# Gradient-Path Audit",
@@ -479,45 +799,57 @@ def write_markdown(path: Path, summary: dict[str, Any]) -> None:
         "",
         "## Selected Batch",
         "",
-        f"- row: `{summary['batch_selection']['selected_id']}`",
-        f"- depth: `{summary['batch_selection']['selected_depth']}`",
+        f"- rows: `{summary['batch_selection']['selected_rows']}`",
+        f"- depth counts: `{summary['batch_selection'].get('depth_counts', {})}`",
+        f"- target validity: `{summary.get('target_validity', {})}`",
+        f"- precision: `{summary.get('precision', {})}`",
         "",
-        "## Per-Loop Gradient Matrix",
+        "## Per-Loop Gradient Distribution",
         "",
-        "| loop | active_tokens | loss | bridge_prelude_rms | bridge_state_rms | recurrent_rms | coda_rms |",
-        "|---:|---:|---:|---:|---:|---:|---:|",
+        "| loop | active_rows | group | median | q10 | q90 | zero_fraction |",
+        "|---:|---:|---|---:|---:|---:|---:|",
     ]
-    for row in summary["gradient_matrix"]:
-        loss = row.get("loss")
-        lines.append(
-            "| {loop} | {active} | {loss} | {bp:.3e} | {bs:.3e} | {rb:.3e} | {coda:.3e} |".format(
-                loop=row["loop"],
-                active=row["active_label_tokens"],
-                loss="NA" if loss is None else f"{float(loss):.6f}",
-                bp=float(row.get("bridge_prelude_weight_grad_rms") or 0.0),
-                bs=float(row.get("bridge_state_weight_grad_rms") or 0.0),
-                rb=float(row.get("recurrent_block_grad_rms") or 0.0),
-                coda=float(row.get("coda_grad_rms") or 0.0),
+    for loop, loop_summary in summary.get("gradient_summary", {}).get("by_loop", {}).items():
+        for group, stats in loop_summary.get("groups", {}).items():
+            lines.append(
+                "| {loop} | {active} | {group} | {median:.3e} | {q10:.3e} | {q90:.3e} | {zero:.2f} |".format(
+                    loop=loop,
+                    active=loop_summary.get("active_rows", 0),
+                    group=group,
+                    median=float(stats.get("median") or 0.0),
+                    q10=float(stats.get("q10") or 0.0),
+                    q90=float(stats.get("q90") or 0.0),
+                    zero=float(stats.get("zero_fraction") or 0.0),
+                )
             )
-        )
     lines.extend(
         [
             "",
-            "## Finite Difference",
+            "## Bridge Prelude Finite Difference",
             "",
-            "| loop | base_loss | perturbed_loss | abs_delta | delta_per_epsilon |",
-            "|---:|---:|---:|---:|---:|",
+            "| loop | records | median_abs_delta | q10 | q90 | zero_fraction |",
+            "|---:|---:|---:|---:|---:|---:|",
         ]
     )
-    for row in summary["finite_difference"]:
+    for loop, stats in summary.get("finite_difference_summary", {}).get("by_loop", {}).items():
         lines.append(
-            "| {loop} | {base} | {pert} | {delta} | {dpe} |".format(
-                loop=row["loop"],
-                base="NA" if row.get("base_loss") is None else f"{float(row['base_loss']):.6f}",
-                pert="NA" if row.get("perturbed_loss") is None else f"{float(row['perturbed_loss']):.6f}",
-                delta="NA" if row.get("abs_delta") is None else f"{float(row['abs_delta']):.3e}",
-                dpe="NA" if row.get("delta_per_epsilon") is None else f"{float(row['delta_per_epsilon']):.3e}",
+            "| {loop} | {count} | {median:.3e} | {q10:.3e} | {q90:.3e} | {zero:.2f} |".format(
+                loop=loop,
+                count=stats.get("count", 0),
+                median=float(stats.get("median") or 0.0),
+                q10=float(stats.get("q10") or 0.0),
+                q90=float(stats.get("q90") or 0.0),
+                zero=float(stats.get("zero_fraction") or 0.0),
             )
+        )
+    if summary.get("cross_loop_finite_difference_summary"):
+        lines.extend(
+            [
+                "",
+                "## Cross-Loop Finite Difference",
+                "",
+                f"records: `{summary.get('cross_loop_finite_difference', [])}`",
+            ]
         )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -543,7 +875,14 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--max_scan_rows", type=int, default=2048)
     parser.add_argument("--row_id")
-    parser.add_argument("--min_active_loop_labels", type=int)
+    parser.add_argument("--num_rows", type=int, default=1)
+    parser.add_argument("--depths", default="")
+    parser.add_argument("--min_active_loop_labels", default=None)
+    parser.add_argument("--fd_rows", type=int, default=8)
+    parser.add_argument("--cross_loop_fd", default="")
+    parser.add_argument("--cross_loop_fd_rows", type=int, default=8)
+    parser.add_argument("--match_train_precision", action="store_true")
+    parser.add_argument("--manual_loss_scale", type=float, default=1.0)
     parser.add_argument("--grad_tol", type=float, default=1e-12)
     parser.add_argument("--fd_tol", type=float, default=1e-6)
     args = parser.parse_args()
@@ -559,6 +898,8 @@ def main() -> int:
         max_scan_rows=args.max_scan_rows,
         row_id=args.row_id,
         min_active_loop_labels=args.min_active_loop_labels,
+        num_rows=args.num_rows,
+        depths=parse_int_csv(args.depths),
     )
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
@@ -573,13 +914,11 @@ def main() -> int:
     )
     loader = DataLoader(
         dataset,
-        batch_size=args.batch_size,
+        batch_size=1,
         shuffle=False,
         collate_fn=lambda rows: collate_causal_batch(rows, pad_token_id=tokenizer.pad_token_id),
     )
-    batch = move_batch(next(iter(loader)), args.device)
-    if "loop_labels" not in batch:
-        raise RuntimeError("Selected audit batch has no loop_labels")
+    amp_dtype = resolve_amp_dtype(args.dtype if args.match_train_precision else "none", args.device)
 
     wrapper_args = SimpleNamespace(
         model_name=args.model_name,
@@ -595,14 +934,75 @@ def main() -> int:
     set_audit_requires_grad(wrapper)
     wrapper.eval()
 
-    gradient_rows = per_loop_gradient_matrix(wrapper, batch, max_loops=args.max_loops)
-    fd_rows = finite_difference_bridge_prelude(
-        wrapper,
-        batch,
-        max_loops=args.max_loops,
-        epsilon=args.fd_epsilon,
-        seed=args.seed,
-    )
+    selected_rows = dataset.rows
+    gradient_rows: list[dict[str, Any]] = []
+    fd_rows: list[dict[str, Any]] = []
+    cross_loop_fd_rows: list[dict[str, Any]] = []
+    fd_source_rows = 0
+    cross_loop_pair = None
+    if args.cross_loop_fd:
+        left, right = str(args.cross_loop_fd).split(":", maxsplit=1)
+        cross_loop_pair = (int(left), int(right))
+
+    for row_idx, batch_cpu in enumerate(loader):
+        batch = move_batch(batch_cpu, args.device)
+        if "loop_labels" not in batch:
+            raise RuntimeError("Selected audit batch has no loop_labels")
+        metadata = selected_rows[row_idx]
+        gradient_rows.extend(
+            per_loop_gradient_matrix(
+                wrapper,
+                batch,
+                max_loops=args.max_loops,
+                row_metadata=metadata,
+                amp_dtype=amp_dtype,
+                device=args.device,
+                manual_loss_scale=args.manual_loss_scale,
+            )
+        )
+        if fd_source_rows < args.fd_rows and row_active_loop_labels(metadata, max_loops=args.max_loops) >= args.max_loops:
+            fd_source_rows += 1
+            for fd_row in finite_difference_bridge_prelude(
+                wrapper,
+                batch,
+                max_loops=args.max_loops,
+                epsilon=args.fd_epsilon,
+                seed=args.seed + row_idx,
+                amp_dtype=amp_dtype,
+                device=args.device,
+            ):
+                fd_row.update(
+                    {
+                        "row_id": str(metadata.get("id") or metadata.get("instance_id") or row_idx),
+                        "depth": metadata.get("depth") or metadata.get("synthetic_depth"),
+                    }
+                )
+                fd_rows.append(fd_row)
+        if cross_loop_pair is not None and len(cross_loop_fd_rows) < args.cross_loop_fd_rows:
+            perturb_loop, read_loop = cross_loop_pair
+            if row_active_loop_labels(metadata, max_loops=args.max_loops) >= read_loop:
+                fd = cross_loop_bridge_output_fd(
+                    wrapper,
+                    batch,
+                    max_loops=args.max_loops,
+                    perturb_loop=perturb_loop,
+                    read_loop=read_loop,
+                    epsilon=args.fd_epsilon,
+                    seed=args.seed + 1000 + row_idx,
+                    amp_dtype=amp_dtype,
+                    device=args.device,
+                )
+                fd.update(
+                    {
+                        "row_id": str(metadata.get("id") or metadata.get("instance_id") or row_idx),
+                        "depth": metadata.get("depth") or metadata.get("synthetic_depth"),
+                    }
+                )
+                cross_loop_fd_rows.append(fd)
+
+    gradient_summary = summarize_gradient_records(gradient_rows, config)
+    fd_summary = summarize_fd_records(fd_rows)
+    cross_loop_fd_summary = summarize_fd_records(cross_loop_fd_rows, key_loop="read_loop")
     interpretation = interpret_gradient_signature(
         gradient_rows,
         fd_rows,
@@ -616,8 +1016,21 @@ def main() -> int:
         "static_source_audit": static_source_audit(),
         "bridge_weight_stats": bridge_weight_stats(wrapper),
         "optimizer_bookkeeping": optimizer_bookkeeping(config, wrapper),
-        "gradient_matrix": gradient_rows,
+        "precision": {
+            "match_train_precision": bool(args.match_train_precision),
+            "requested_dtype": args.dtype,
+            "autocast_dtype": None if amp_dtype is None else str(amp_dtype).replace("torch.", ""),
+            "manual_loss_scale": float(args.manual_loss_scale),
+            "note": "No torch GradScaler is used here unless represented by manual_loss_scale; current chain configs use AdamW without scaler.",
+        },
+        "target_validity": target_validity_summary(selected_rows, max_loops=args.max_loops),
+        "gradient_records": gradient_rows,
+        "gradient_matrix": gradient_rows[: args.max_loops],
+        "gradient_summary": gradient_summary,
         "finite_difference": fd_rows,
+        "finite_difference_summary": fd_summary,
+        "cross_loop_finite_difference": cross_loop_fd_rows,
+        "cross_loop_finite_difference_summary": cross_loop_fd_summary,
         "interpretation": interpretation,
     }
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")

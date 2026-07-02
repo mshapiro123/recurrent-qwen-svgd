@@ -2215,13 +2215,19 @@ def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
         assert "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py" in text
         assert "STAGE5_GRADIENT_PATH_AUDIT_SOURCE_SUMMARY" in text
         assert "finite_difference_bridge_prelude" in text
+        assert "STAGE5_GRADIENT_PATH_AUDIT_NUM_ROWS" in text
+        assert "STAGE5_GRADIENT_PATH_AUDIT_CROSS_LOOP_FD" in text
 
     assert "STAGE5_GRADIENT_PATH_AUDIT_CELL_VERSION" in cell
     assert "gradient_path_audit_v1" in cell
     assert "read-only gradient matrix plus finite_difference_bridge_prelude" in cell
     assert "eval/eval_gradient_path_audit.py" in cell
+    assert "STAGE5_GRADIENT_PATH_AUDIT_MATCH_TRAIN_PRECISION" in cell
+    assert "--cross_loop_fd" in cell
     assert "stage5_synthetic_depth_chain_supervision_20260701_201715/summary.json" in cell
     assert "Record Stage 5 gradient-path audit" in cell
     assert "interpret_gradient_signature" in audit
     assert "autograd_cut_suspected" in audit
     assert "structural_independence_or_decode_bypass_suspected" in audit
+    assert "cross_loop_bridge_output_fd" in audit
+    assert "target_validity_summary" in audit

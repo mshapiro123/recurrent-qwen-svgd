@@ -234,6 +234,10 @@ try:
     max_loops = str(stage.get("max_loops", 2)) if max_loops_raw in {"", "auto"} else max_loops_raw
     min_active_raw = os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_MIN_ACTIVE_LOOP_LABELS", "auto").strip().lower()
     min_active = max_loops if min_active_raw in {"", "auto"} else min_active_raw
+    num_rows = os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_NUM_ROWS", "48")
+    depths = os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_DEPTHS", "1,2,3,4")
+    cross_loop_fd = os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_CROSS_LOOP_FD", "2:4")
+    match_train_precision = os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_MATCH_TRAIN_PRECISION", "1").strip().lower()
     print("gradient_path_audit_source_summary:", source_summary, flush=True)
     print("gradient_path_audit_checkpoint:", path_for_cli(checkpoint), flush=True)
     print("gradient_path_audit_train_jsonl:", path_for_cli(train_jsonl), flush=True)
@@ -255,6 +259,18 @@ try:
             max_loops,
             "--min_active_loop_labels",
             min_active,
+            "--num_rows",
+            num_rows,
+            "--depths",
+            depths,
+            "--fd_rows",
+            os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_FD_ROWS", "8"),
+            "--cross_loop_fd",
+            cross_loop_fd,
+            "--cross_loop_fd_rows",
+            os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_CROSS_LOOP_FD_ROWS", "8"),
+            "--manual_loss_scale",
+            os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_MANUAL_LOSS_SCALE", "1.0"),
             "--max_length",
             os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_MAX_LENGTH", "512"),
             "--fd_epsilon",
@@ -266,6 +282,7 @@ try:
             "--device",
             os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_DEVICE", "cuda"),
         ]
+        + (["--match_train_precision"] if match_train_precision in {"1", "true", "yes", "y", "on"} else [])
     )
     publish(
         [out_dir],
