@@ -233,7 +233,7 @@ try:
     max_loops_raw = os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_MAX_LOOPS", "auto").strip().lower()
     max_loops = str(stage.get("max_loops", 2)) if max_loops_raw in {"", "auto"} else max_loops_raw
     min_active_raw = os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_MIN_ACTIVE_LOOP_LABELS", "auto").strip().lower()
-    min_active = max_loops if min_active_raw in {"", "auto"} else min_active_raw
+    min_active = "auto" if min_active_raw in {"", "auto"} else min_active_raw
     num_rows = os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_NUM_ROWS", "48")
     depths = os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_DEPTHS", "1,2,3,4")
     cross_loop_fd = os.environ.get("STAGE5_GRADIENT_PATH_AUDIT_CROSS_LOOP_FD", "2:4")
