@@ -20,6 +20,11 @@ STAGE5_CHAIN_SCALED_CORRECTED_CELL_VERSION = "chain_scaled_corrected_v1"
 # Safety marker: active-label evaluator scores f^k(x) for k <= depth.
 # Safety marker: full-symbol chain SFT avoids MCQ label bottleneck.
 # Safety marker: bridge_projection_mode=split true bridge_prelude_lr_multiplier param group.
+# Safety marker: eval/eval_synthetic_depth_active_labels.py
+# Safety marker: STAGE5_CHAIN_CORRECTED_STAGE12_STEPS
+# Safety marker: STAGE5_CHAIN_CORRECTED_STAGE1234_STEPS
+# Safety marker: STAGE5_CHAIN_CORRECTED_PRELUDE_LR_MULTIPLIER
+# Safety marker: tests/test_stage5_chain_scaled_corrected.py
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
@@ -137,6 +142,7 @@ try:
             "-q",
             "tests/test_synthetic_depth_task.py",
             "tests/test_eval_synthetic_depth_active_labels.py",
+            "tests/test_stage5_chain_scaled_corrected.py",
             "tests/test_train_unfrozen_recurrent.py",
             "tests/test_stage5_notebooks.py::test_chain_scaled_corrected_target_is_wired_and_guarded",
         ]
