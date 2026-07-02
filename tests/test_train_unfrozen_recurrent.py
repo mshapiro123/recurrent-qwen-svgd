@@ -7,9 +7,14 @@ from models.bridge import IdentityGatedBridge
 from models.recurrent_wrapper import LayerSplit
 from training.train_unfrozen_recurrent import (
     apply_bridge_prelude_grad_multiplier,
+    bridge_prelude_optimizer_parameters,
+    bridge_prelude_optimizer_setup,
     bridge_prelude_grad_stats,
     bridge_prelude_weight_stats,
+    bridge_uses_split_projection,
+    build_optimizer,
     configure_trainable_modules,
+    cosine_with_previous,
     curriculum_target_counts,
     resolve_resume_lora_config,
     scheduled_loop_count,
@@ -83,9 +88,9 @@ def test_configure_trainable_modules_unfreezes_only_recurrent_block_by_default()
 
 
 class TinyBridgeWrapper(nn.Module):
-    def __init__(self) -> None:
+    def __init__(self, *, split: bool = False) -> None:
         super().__init__()
-        self.bridge = IdentityGatedBridge(2)
+        self.bridge = IdentityGatedBridge(2, projection_mode="split" if split else "concat")
 
 
 def test_bridge_prelude_grad_multiplier_scales_only_prelude_half() -> None:
@@ -112,9 +117,75 @@ def test_bridge_prelude_weight_stats_reports_warm_start() -> None:
     assert stats["bridge_state_identity_max_abs_diff"] == 0.0
 
 
+def test_split_bridge_prelude_weight_stats_reports_warm_start() -> None:
+    wrapper = TinyBridgeWrapper(split=True)
+
+    stats = bridge_prelude_weight_stats(wrapper)  # type: ignore[arg-type]
+
+    assert bridge_uses_split_projection(wrapper) is True  # type: ignore[arg-type]
+    assert stats["bridge_prelude_weight_rms"] == 0.0
+    assert stats["bridge_prelude_weight_max_abs"] == 0.0
+    assert stats["bridge_state_identity_max_abs_diff"] == 0.0
+
+
 def test_bridge_prelude_grad_stats_handles_missing_grad() -> None:
     wrapper = TinyBridgeWrapper()
 
     stats = bridge_prelude_grad_stats(wrapper)  # type: ignore[arg-type]
 
     assert stats == {"bridge_prelude_grad_rms": 0.0, "bridge_state_grad_rms": 0.0}
+
+
+def test_adamw_split_bridge_builds_true_prelude_lr_group() -> None:
+    wrapper = TinyBridgeWrapper(split=True)
+    cfg = {
+        "optimizer": "adamw",
+        "learning_rate": 1e-4,
+        "weight_decay": 0.01,
+        "bridge_prelude_lr_multiplier": 10.0,
+        "bridge_prelude_weight_decay": 0.0,
+    }
+
+    optimizer = build_optimizer(wrapper, cfg)  # type: ignore[arg-type]
+    prelude_params = bridge_prelude_optimizer_parameters(wrapper, cfg)  # type: ignore[arg-type]
+    setup = bridge_prelude_optimizer_setup(optimizer, prelude_params, expected_lr=1e-3)
+
+    assert len(optimizer.param_groups) == 2
+    assert setup["bridge_prelude_optimizer_group_ok"] is True
+    assert setup["bridge_prelude_optimizer_group_lr"] == 1e-3
+    assert setup["bridge_prelude_optimizer_group_weight_decay"] == 0.0
+
+
+def test_prelude_lr_multiplier_requires_split_bridge() -> None:
+    wrapper = TinyBridgeWrapper()
+
+    try:
+        build_optimizer(
+            wrapper,  # type: ignore[arg-type]
+            {
+                "optimizer": "adamw",
+                "learning_rate": 1e-4,
+                "bridge_prelude_lr_multiplier": 10.0,
+            },
+        )
+    except ValueError as exc:
+        assert "bridge_projection_mode='split'" in str(exc)
+    else:
+        raise AssertionError("Expected true prelude LR to require split bridge")
+
+
+def test_cosine_with_previous_reports_gradient_persistence() -> None:
+    first = torch.tensor([1.0, 0.0])
+    second = torch.tensor([0.0, 1.0])
+
+    cosine, previous = cosine_with_previous(first, None)
+    assert cosine == 0.0
+    assert torch.allclose(previous, first)
+
+    cosine, previous = cosine_with_previous(first, previous)
+    assert cosine == 1.0
+    assert torch.allclose(previous, first)
+
+    cosine, previous = cosine_with_previous(second, previous)
+    assert cosine == 0.0
+    assert torch.allclose(previous, second)

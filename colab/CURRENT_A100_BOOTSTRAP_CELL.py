@@ -71,6 +71,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "synthetic_depth_primitive_curve" - L4/T4 Phase 1 depth-1 primitive curve over N=8,12,16.
 #   "synthetic_depth_staged_staircase" - L4/T4 Phase 2 target-loop staircase from the N=16 primitive checkpoint.
 #   "synthetic_depth_chain_supervision" - L4/T4 train-split diagnostic plus per-loop intermediate-chain supervision.
+#   "synthetic_depth_split_bridge_microtest" - L4/T4 split-bridge true prelude-LR micro-fit.
 #   "gradient_path_audit" - read-only per-loop gradient matrix plus finite-difference bridge check.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
 #   "model_viability_queue" - queued no-training Qwen 3B/7B probes with VRAM-aware skipping.
@@ -1812,6 +1813,32 @@ TARGETS = {
             "STAGE5_SYNTH_CHAIN_EVAL_LOOPS": "1,2,3,4",
             "STAGE5_SYNTH_CHAIN_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
             "STAGE5_SYNTH_CHAIN_DISCONNECT": "0",
+        },
+    },
+    "synthetic_depth_split_bridge_microtest": {
+        "path": "colab/STAGE5_SPLIT_BRIDGE_MICROTEST_CELL.py",
+        "markers": [
+            "STAGE5_SPLIT_BRIDGE_MICROTEST_CELL_VERSION",
+            "split_bridge_true_lr_microtest_v1",
+            "bridge_projection_mode=split",
+            "true bridge_prelude_lr_multiplier param group",
+            "STAGE5_SPLIT_MICRO_PRELUDE_LR_MULTIPLIER",
+            "STAGE5_SPLIT_MICRO_STAGE12_STEPS",
+            "STAGE5_SPLIT_MICRO_STAGE1234_STEPS",
+            "tests/test_bridge.py",
+            "tests/test_train_unfrozen_recurrent.py",
+            "tests/test_eval_synthetic_depth_matrix.py",
+        ],
+        "env": {
+            "STAGE5_SPLIT_MICRO_N_SYMBOLS": "8",
+            "STAGE5_SPLIT_MICRO_MAX_DEPTH": "4",
+            "STAGE5_SPLIT_MICRO_ROWS_PER_DEPTH": "4",
+            "STAGE5_SPLIT_MICRO_DTYPE": "float32",
+            "STAGE5_SPLIT_MICRO_PRELUDE_LR_MULTIPLIER": "10.0",
+            "STAGE5_SPLIT_MICRO_STAGE12_STEPS": "2000",
+            "STAGE5_SPLIT_MICRO_STAGE1234_STEPS": "4000",
+            "STAGE5_SPLIT_MICRO_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
+            "STAGE5_SPLIT_MICRO_DISCONNECT": "0",
         },
     },
     "gradient_path_audit": {

@@ -267,6 +267,7 @@ def main() -> int:
     parser.add_argument("--normalize_option_score", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--include_loop_diagnostics", action="store_true")
     parser.add_argument("--split", default="6,18")
+    parser.add_argument("--bridge_projection_mode", choices=("concat", "split"), default="concat")
     parser.add_argument("--num_trajectories", type=int, default=1)
     parser.add_argument("--dtype", default="bfloat16")
     parser.add_argument("--attn_implementation", default="default")

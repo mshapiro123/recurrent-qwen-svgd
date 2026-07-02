@@ -2204,6 +2204,33 @@ def test_synthetic_depth_chain_supervision_target_is_wired_and_guarded() -> None
     assert "loop_loss_mode == \"per_loop_labels\"" in wrapper
 
 
+def test_split_bridge_microtest_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_SPLIT_BRIDGE_MICROTEST_CELL.py").read_text(encoding="utf-8")
+    bridge = (ROOT / "models/bridge.py").read_text(encoding="utf-8")
+    trainer = (ROOT / "training/train_unfrozen_recurrent.py").read_text(encoding="utf-8")
+    evaluator = (ROOT / "eval/eval_synthetic_depth_matrix.py").read_text(encoding="utf-8")
+
+    for text in (bootstrap, bootstrap_md):
+        assert "synthetic_depth_split_bridge_microtest" in text
+        assert "colab/STAGE5_SPLIT_BRIDGE_MICROTEST_CELL.py" in text
+        assert "STAGE5_SPLIT_MICRO_PRELUDE_LR_MULTIPLIER" in text
+        assert "STAGE5_SPLIT_MICRO_STAGE1234_STEPS" in text
+
+    assert "STAGE5_SPLIT_BRIDGE_MICROTEST_CELL_VERSION" in cell
+    assert "split_bridge_true_lr_microtest_v1" in cell
+    assert "bridge_projection_mode=split" in cell
+    assert "true bridge_prelude_lr_multiplier param group" in cell
+    assert "split_chain_depth_le2" in cell
+    assert "split_chain_depth_le4" in cell
+    assert '"bridge_projection_mode": "split"' in cell
+    assert '"bridge_prelude_lr_multiplier"' in cell
+    assert "bridge_projection_mode" in evaluator
+    assert "convert_to_split_projection" in bridge
+    assert "bridge_prelude_optimizer_group_ok" in trainer
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

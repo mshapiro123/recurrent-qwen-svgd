@@ -160,6 +160,12 @@ def set_seed(seed: int) -> None:
 def load_recurrent_wrapper(args: argparse.Namespace, checkpoint: str | None) -> RecurrentQwenForCausalLM:
     model = load_base_model(args, load_dense_lora_checkpoint=False)
     wrapper = RecurrentQwenForCausalLM(model, layer_split=parse_split(args.split)).to(args.device)
+    bridge_projection_mode = str(getattr(args, "bridge_projection_mode", "concat")).lower()
+    if bridge_projection_mode not in {"concat", "split"}:
+        raise ValueError("bridge_projection_mode must be one of: concat, split")
+    if bridge_projection_mode == "split":
+        wrapper.bridge.convert_to_split_projection()
+        print("bridge_projection_mode=split")
     adapter_dtype = resolve_dtype(args.adapter_dtype)
     replaced = 0
     if args.lora_rank > 0:

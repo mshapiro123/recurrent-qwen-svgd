@@ -53,6 +53,50 @@ def load_trainable_checkpoint(
     skipped = {}
     upgraded = {}
     for name, tensor in state.items():
+        if name == "bridge.proj.weight" and "bridge.prelude_proj.weight" in current and "bridge.state_proj.weight" in current:
+            hidden = current["bridge.state_proj.weight"].shape[0]
+            if tensor.dim() == 2 and tensor.shape == current["bridge.proj.weight"].shape:
+                compatible[name] = tensor.to(device=current[name].device, dtype=current[name].dtype)
+                compatible["bridge.prelude_proj.weight"] = tensor[:, :hidden].to(
+                    device=current["bridge.prelude_proj.weight"].device,
+                    dtype=current["bridge.prelude_proj.weight"].dtype,
+                )
+                compatible["bridge.state_proj.weight"] = tensor[:, hidden:].to(
+                    device=current["bridge.state_proj.weight"].device,
+                    dtype=current["bridge.state_proj.weight"].dtype,
+                )
+                upgraded[name] = "split_concat_projection_into_prelude_state"
+                continue
+            if tensor.dim() == 2 and tensor.shape == current["bridge.state_proj.weight"].shape:
+                upgraded_tensor = current[name].detach().clone()
+                upgraded_tensor[:, :hidden].zero_()
+                upgraded_tensor[:, hidden:] = tensor.to(
+                    device=upgraded_tensor.device,
+                    dtype=upgraded_tensor.dtype,
+                )
+                compatible[name] = upgraded_tensor.to(device=current[name].device, dtype=current[name].dtype)
+                compatible["bridge.prelude_proj.weight"] = torch.zeros_like(current["bridge.prelude_proj.weight"])
+                compatible["bridge.state_proj.weight"] = tensor.to(
+                    device=current["bridge.state_proj.weight"].device,
+                    dtype=current["bridge.state_proj.weight"].dtype,
+                )
+                upgraded[name] = (
+                    f"warm_start_split_state_half {tuple(tensor.shape)} -> "
+                    f"{tuple(current[name].shape)}"
+                )
+                continue
+        if (
+            name == "bridge.proj.bias"
+            and "bridge.state_proj.bias" in current
+            and tensor.shape == current["bridge.state_proj.bias"].shape
+        ):
+            compatible[name] = tensor.to(device=current[name].device, dtype=current[name].dtype)
+            compatible["bridge.state_proj.bias"] = tensor.to(
+                device=current["bridge.state_proj.bias"].device,
+                dtype=current["bridge.state_proj.bias"].dtype,
+            )
+            upgraded[name] = "copy_concat_bias_to_split_state_bias"
+            continue
         if name not in current:
             skipped[name] = "missing"
             continue

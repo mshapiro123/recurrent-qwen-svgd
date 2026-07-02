@@ -46,6 +46,29 @@ def test_identity_gated_bridge_prelude_path_is_functional_when_trained():
     assert not torch.allclose(out, hidden)
 
 
+def test_split_identity_gated_bridge_matches_concat_projection():
+    torch.manual_seed(0)
+    concat = IdentityGatedBridge(hidden_size=4)
+    with torch.no_grad():
+        concat.proj.weight.normal_(mean=0.0, std=0.2)
+        concat.proj.bias.normal_(mean=0.0, std=0.1)
+        concat.prelude_norm.weight.uniform_(0.8, 1.2)
+        concat.prelude_norm.bias.normal_(mean=0.0, std=0.05)
+        concat.bridge_gate.fill_(0.7)
+    split = IdentityGatedBridge(hidden_size=4)
+    split.load_state_dict(concat.state_dict())
+    split.convert_to_split_projection()
+    hidden = torch.randn(2, 3, 4)
+    prelude = torch.randn(2, 3, 4)
+
+    assert split.split_projection is True
+    assert torch.allclose(
+        split(hidden, prelude_hidden=prelude),
+        concat(hidden, prelude_hidden=prelude),
+        atol=1e-6,
+    )
+
+
 def test_identity_gated_bridge_default_is_gradient_live():
     bridge = IdentityGatedBridge(hidden_size=4)
     sample = torch.randn(2, 3, 4)
@@ -103,6 +126,38 @@ def test_old_autonomous_bridge_checkpoint_upgrades_into_state_half(tmp_path):
     assert "bridge.proj.weight" in info["upgraded"]
     assert torch.allclose(wrapper.bridge.proj.weight[:, :4], torch.zeros(4, 4))
     assert torch.allclose(wrapper.bridge.proj.weight[:, 4:], old_weight)
+
+
+def test_concat_bridge_checkpoint_upgrades_into_split_projection(tmp_path):
+    class Wrapper(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.bridge = IdentityGatedBridge(hidden_size=4, projection_mode="split")
+
+    wrapper = Wrapper()
+    concat_weight = torch.randn(4, 8)
+    concat_bias = torch.randn(4)
+    path = tmp_path / "concat_bridge.pt"
+    torch.save(
+        {
+            "phase": "test",
+            "step": 0,
+            "config": {},
+            "trainable_state_dict": {
+                "bridge.proj.weight": concat_weight,
+                "bridge.proj.bias": concat_bias,
+            },
+        },
+        path,
+    )
+
+    info = load_trainable_checkpoint(wrapper, path)
+
+    assert "bridge.proj.weight" in info["upgraded"]
+    assert "bridge.proj.bias" in info["upgraded"]
+    assert torch.allclose(wrapper.bridge.prelude_proj.weight, concat_weight[:, :4])
+    assert torch.allclose(wrapper.bridge.state_proj.weight, concat_weight[:, 4:])
+    assert torch.allclose(wrapper.bridge.state_proj.bias, concat_bias)
 
 
 def test_reentry_affine_adapter_preserves_hidden_state_at_init():

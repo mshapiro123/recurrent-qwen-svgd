@@ -130,18 +130,38 @@ def trainable_parameter_summary(wrapper: RecurrentQwenForCausalLM) -> dict[str, 
     }
 
 
+def bridge_uses_split_projection(wrapper: RecurrentQwenForCausalLM) -> bool:
+    bridge = wrapper.bridge
+    return bool(
+        getattr(bridge, "split_projection", False)
+        and hasattr(bridge, "prelude_proj")
+        and hasattr(bridge, "state_proj")
+    )
+
+
 def bridge_prelude_weight_stats(wrapper: RecurrentQwenForCausalLM) -> dict[str, float]:
-    weight = wrapper.bridge.proj.weight.detach().float()
-    hidden_size = int(getattr(wrapper.bridge, "hidden_size", weight.shape[0]))
-    if weight.dim() != 2 or weight.shape[1] != 2 * hidden_size:
+    if bridge_uses_split_projection(wrapper):
+        prelude_weight = wrapper.bridge.prelude_proj.weight.detach().float()
+        state_weight = wrapper.bridge.state_proj.weight.detach().float()
+        hidden_size = int(getattr(wrapper.bridge, "hidden_size", state_weight.shape[0]))
+    else:
+        weight = wrapper.bridge.proj.weight.detach().float()
+        hidden_size = int(getattr(wrapper.bridge, "hidden_size", weight.shape[0]))
+        if weight.dim() != 2 or weight.shape[1] != 2 * hidden_size:
+            return {
+                "bridge_prelude_weight_rms": 0.0,
+                "bridge_prelude_weight_max_abs": 0.0,
+                "bridge_state_identity_max_abs_diff": 0.0,
+            }
+        prelude_weight = weight[:, :hidden_size]
+        state_weight = weight[:, hidden_size:]
+    if state_weight.shape != (hidden_size, hidden_size):
         return {
             "bridge_prelude_weight_rms": 0.0,
             "bridge_prelude_weight_max_abs": 0.0,
             "bridge_state_identity_max_abs_diff": 0.0,
         }
-    prelude_weight = weight[:, :hidden_size]
-    state_weight = weight[:, hidden_size:]
-    eye = torch.eye(hidden_size, device=weight.device, dtype=weight.dtype)
+    eye = torch.eye(hidden_size, device=state_weight.device, dtype=state_weight.dtype)
     return {
         "bridge_prelude_weight_rms": float(prelude_weight.square().mean().sqrt().item()),
         "bridge_prelude_weight_max_abs": float(prelude_weight.abs().max().item()),
@@ -150,6 +170,17 @@ def bridge_prelude_weight_stats(wrapper: RecurrentQwenForCausalLM) -> dict[str, 
 
 
 def bridge_prelude_grad_stats(wrapper: RecurrentQwenForCausalLM) -> dict[str, float]:
+    if bridge_uses_split_projection(wrapper):
+        prelude_grad = wrapper.bridge.prelude_proj.weight.grad
+        state_grad = wrapper.bridge.state_proj.weight.grad
+        return {
+            "bridge_prelude_grad_rms": 0.0 if prelude_grad is None else float(
+                prelude_grad.detach().float().square().mean().sqrt().item()
+            ),
+            "bridge_state_grad_rms": 0.0 if state_grad is None else float(
+                state_grad.detach().float().square().mean().sqrt().item()
+            ),
+        }
     grad = wrapper.bridge.proj.weight.grad
     hidden_size = int(getattr(wrapper.bridge, "hidden_size", wrapper.bridge.proj.weight.shape[0]))
     if grad is None or grad.dim() != 2 or grad.shape[1] != 2 * hidden_size:
@@ -163,6 +194,33 @@ def bridge_prelude_grad_stats(wrapper: RecurrentQwenForCausalLM) -> dict[str, fl
         "bridge_prelude_grad_rms": float(prelude_grad.square().mean().sqrt().item()),
         "bridge_state_grad_rms": float(state_grad.square().mean().sqrt().item()),
     }
+
+
+def bridge_prelude_grad_vector(wrapper: RecurrentQwenForCausalLM) -> torch.Tensor | None:
+    if bridge_uses_split_projection(wrapper):
+        grad = wrapper.bridge.prelude_proj.weight.grad
+        if grad is None:
+            return None
+        return grad.detach().float().flatten()
+    grad = wrapper.bridge.proj.weight.grad
+    hidden_size = int(getattr(wrapper.bridge, "hidden_size", wrapper.bridge.proj.weight.shape[0]))
+    if grad is None or grad.dim() != 2 or grad.shape[1] != 2 * hidden_size:
+        return None
+    return grad[:, :hidden_size].detach().float().flatten()
+
+
+def cosine_with_previous(
+    current: torch.Tensor | None,
+    previous: torch.Tensor | None,
+) -> tuple[float, torch.Tensor | None]:
+    if current is None or current.numel() == 0:
+        return 0.0, previous
+    if previous is None or previous.shape != current.shape:
+        return 0.0, current.detach().clone()
+    denom = current.norm() * previous.norm()
+    if float(denom.item()) == 0.0:
+        return 0.0, current.detach().clone()
+    return float(torch.dot(current, previous).div(denom).item()), current.detach().clone()
 
 
 def apply_bridge_prelude_grad_multiplier(
@@ -180,6 +238,11 @@ def apply_bridge_prelude_grad_multiplier(
     before = bridge_prelude_grad_stats(wrapper)
     if multiplier == 1.0:
         return {**before, "bridge_prelude_grad_multiplier": 1.0}
+    if bridge_uses_split_projection(wrapper):
+        raise ValueError(
+            "bridge_prelude_grad_multiplier is the old slice-gradient proxy. "
+            "Use bridge_prelude_lr_multiplier with bridge_projection_mode='split' instead."
+        )
     grad = wrapper.bridge.proj.weight.grad
     hidden_size = int(getattr(wrapper.bridge, "hidden_size", wrapper.bridge.proj.weight.shape[0]))
     if grad is not None and grad.dim() == 2 and grad.shape[1] == 2 * hidden_size:
@@ -193,6 +256,52 @@ def apply_bridge_prelude_grad_multiplier(
     }
 
 
+def bridge_prelude_optimizer_parameters(
+    wrapper: RecurrentQwenForCausalLM,
+    cfg: dict[str, Any],
+) -> list[torch.nn.Parameter]:
+    if not bridge_uses_split_projection(wrapper):
+        return []
+    params = [param for param in wrapper.bridge.prelude_proj.parameters() if param.requires_grad]
+    if bool(cfg.get("bridge_prelude_lr_include_norm", False)):
+        params.extend(param for param in wrapper.bridge.prelude_norm.parameters() if param.requires_grad)
+    return params
+
+
+def bridge_prelude_optimizer_setup(
+    optimizer: OptimizerBundle | torch.optim.Optimizer,
+    prelude_params: list[torch.nn.Parameter],
+    *,
+    expected_lr: float,
+) -> dict[str, Any]:
+    if isinstance(optimizer, OptimizerBundle):
+        groups = [
+            group
+            for opt in optimizer.optimizers
+            for group in opt.param_groups
+        ]
+    else:
+        groups = list(optimizer.param_groups)
+    prelude_ids = {id(param) for param in prelude_params}
+    matching = [
+        group
+        for group in groups
+        if any(id(param) in prelude_ids for param in group.get("params", []))
+    ]
+    ok = len(matching) == 1 and abs(float(matching[0]["lr"]) - float(expected_lr)) < 1e-15
+    if not ok:
+        raise AssertionError(
+            "bridge prelude optimizer group missing or has wrong LR: "
+            f"expected_lr={expected_lr}, group_lrs={[float(group['lr']) for group in groups]}"
+        )
+    return {
+        "bridge_prelude_optimizer_group_ok": True,
+        "bridge_prelude_optimizer_group_lr": float(matching[0]["lr"]),
+        "bridge_prelude_optimizer_group_weight_decay": float(matching[0].get("weight_decay", 0.0)),
+        "bridge_prelude_optimizer_group_num_tensors": len(matching[0].get("params", [])),
+    }
+
+
 def build_optimizer(wrapper: RecurrentQwenForCausalLM, cfg: dict[str, Any]) -> OptimizerBundle | torch.optim.Optimizer:
     optimizer_name = str(cfg.get("optimizer", "muon")).lower()
     params = [param for param in wrapper.parameters() if param.requires_grad]
@@ -200,10 +309,35 @@ def build_optimizer(wrapper: RecurrentQwenForCausalLM, cfg: dict[str, Any]) -> O
         raise ValueError("No trainable parameters selected")
     lr = cfg_float(cfg, "learning_rate", 5e-6)
     weight_decay = cfg_float(cfg, "weight_decay", 0.0)
+    prelude_lr_multiplier = cfg_float(cfg, "bridge_prelude_lr_multiplier", 1.0)
+    prelude_params = bridge_prelude_optimizer_parameters(wrapper, cfg)
+    prelude_param_ids = {id(param) for param in prelude_params}
+    if prelude_lr_multiplier != 1.0 and not prelude_params:
+        raise ValueError(
+            "bridge_prelude_lr_multiplier requires bridge_projection_mode='split' "
+            "and train_auxiliary.bridge=true"
+        )
     if optimizer_name == "adamw":
+        if prelude_params:
+            rest = [param for param in params if id(param) not in prelude_param_ids]
+            return torch.optim.AdamW(
+                [
+                    {"params": rest, "lr": lr, "weight_decay": weight_decay},
+                    {
+                        "params": prelude_params,
+                        "lr": prelude_lr_multiplier * lr,
+                        "weight_decay": cfg_float(cfg, "bridge_prelude_weight_decay", 0.0),
+                    },
+                ]
+            )
         return torch.optim.AdamW(params, lr=lr, weight_decay=weight_decay)
     if optimizer_name != "muon":
         raise ValueError("optimizer must be one of: muon, adamw")
+    if prelude_lr_multiplier != 1.0:
+        raise ValueError(
+            "bridge_prelude_lr_multiplier is currently supported for optimizer='adamw' only. "
+            "Use AdamW for the split-bridge micro-test."
+        )
 
     muon_params, adamw_params = split_muon_and_adamw_params(wrapper.named_parameters())
     optimizers: list[torch.optim.Optimizer] = []
@@ -285,6 +419,14 @@ def prepare_wrapper(
         layer_split=parse_split(cfg.get("layer_split", "auto")),
         initial_halt_prob=cfg_float(cfg, "initial_halt_prob", 0.15),
     ).to(device)
+    bridge_projection_mode = str(cfg.get("bridge_projection_mode", "concat")).lower()
+    if bridge_projection_mode not in {"concat", "split"}:
+        raise ValueError("bridge_projection_mode must be one of: concat, split")
+    if bridge_projection_mode == "split":
+        wrapper.bridge.convert_to_split_projection()
+        print("bridge_projection_mode=split true_prelude_lr_groups_available=1")
+    else:
+        print("bridge_projection_mode=concat true_prelude_lr_groups_available=0")
     adapter_dtype = resolve_dtype(cfg.get("adapter_dtype", "float32"))
     resume_lora = resolve_resume_lora_config(cfg)
     lora_wrapped = 0
@@ -330,6 +472,7 @@ def prepare_wrapper(
         "resume_lora": resume_lora,
         "checkpoint_lora_key_counts": load_counts,
         "trainable_parameters": trainable_parameter_summary(wrapper),
+        "bridge_projection_mode": bridge_projection_mode,
     }
 
 
@@ -369,6 +512,21 @@ def main() -> int:
         collate_fn=partial(collate_causal_batch, pad_token_id=tokenizer.pad_token_id),
     )
     optimizer = build_optimizer(wrapper, cfg)
+    optimizer_setup: dict[str, Any] = {}
+    prelude_lr_multiplier = cfg_float(cfg, "bridge_prelude_lr_multiplier", 1.0)
+    prelude_params = bridge_prelude_optimizer_parameters(wrapper, cfg)
+    if prelude_params:
+        optimizer_setup = bridge_prelude_optimizer_setup(
+            optimizer,
+            prelude_params,
+            expected_lr=prelude_lr_multiplier * cfg_float(cfg, "learning_rate", 5e-6),
+        )
+        print(
+            "[assert-ok] bridge_prelude_optimizer_group "
+            f"lr={optimizer_setup['bridge_prelude_optimizer_group_lr']:.6e} "
+            f"wd={optimizer_setup['bridge_prelude_optimizer_group_weight_decay']:.6e} "
+            f"tensors={optimizer_setup['bridge_prelude_optimizer_group_num_tensors']}"
+        )
     optimizer.zero_grad(set_to_none=True)
 
     curriculum = cfg.get("recurrence_curriculum", {})
@@ -379,11 +537,22 @@ def main() -> int:
     target_source = str(curriculum.get("target_source", "schedule"))
     ramp_compute = bool(curriculum.get("ramp_compute", True))
 
-    summary = {"setup": setup, "curriculum_trace": [], "interval_checkpoints": []}
+    summary = {
+        "setup": setup,
+        "optimizer_setup": optimizer_setup,
+        "curriculum_trace": [],
+        "interval_checkpoints": [],
+    }
     max_steps = cfg_int(cfg, "max_steps", 25)
     save_every = cfg_int(cfg, "save_every", 0) if cfg.get("save_every", 0) else 0
     prelude_grad_multiplier = cfg_float(cfg, "bridge_prelude_grad_multiplier", 1.0)
+    if prelude_grad_multiplier != 1.0 and bridge_uses_split_projection(wrapper):
+        raise ValueError(
+            "Do not combine split bridge true prelude LR with bridge_prelude_grad_multiplier. "
+            "Set bridge_prelude_grad_multiplier=1.0."
+        )
     step = 0
+    previous_prelude_grad: torch.Tensor | None = None
     while step < max_steps:
         for batch in loader:
             batch = {key: value.to(args.device) for key, value in batch.items()}
@@ -415,10 +584,15 @@ def main() -> int:
             assert_finite_training_state(wrapper, output.loss, output.metrics, step)
             output.loss.backward()
             assert_finite_trainable_gradients(wrapper, step)
+            prelude_grad_cosine_prev, previous_prelude_grad = cosine_with_previous(
+                bridge_prelude_grad_vector(wrapper),
+                previous_prelude_grad,
+            )
             pre_clip_bridge_grad = {
                 f"pre_clip_{key}": value
                 for key, value in bridge_prelude_grad_stats(wrapper).items()
             }
+            pre_clip_bridge_grad["bridge_prelude_grad_cosine_prev"] = prelude_grad_cosine_prev
             torch.nn.utils.clip_grad_norm_(
                 [param for param in wrapper.parameters() if param.requires_grad],
                 cfg_float(cfg, "max_grad_norm", 0.5),
