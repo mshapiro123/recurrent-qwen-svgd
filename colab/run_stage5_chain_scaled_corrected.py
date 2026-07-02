@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from transformers import AutoTokenizer
 
 ROOT = Path(os.environ.get("STAGE5_ROOT", "/content/recurrent-qwen-svgd"))
 if str(ROOT) not in sys.path:
@@ -252,6 +253,7 @@ def eval_active_checkpoint(
     loop_counts: str,
     threshold: float,
     dtype: str,
+    value_prefix: str,
 ) -> dict[str, Any]:
     rows_path = run_dir / "eval" / f"{name}_active_rows.jsonl"
     summary_path = run_dir / "eval" / f"{name}_active_summary.json"
@@ -275,6 +277,8 @@ def eval_active_checkpoint(
             prediction_space,
             "--prompt_style",
             prompt_style,
+            "--value_prefix",
+            value_prefix,
             "--split",
             os.environ.get("STAGE5_CHAIN_CORRECTED_LAYER_SPLIT", "6,18"),
             "--bridge_projection_mode",
@@ -300,6 +304,7 @@ def eval_active_checkpoint(
         "eval_log": path_for_cli(log_path),
         "prediction_space": prediction_space,
         "prompt_style": prompt_style,
+        "value_prefix": value_prefix,
         "active_diagonal": active_diag(summary),
         "active_diagonal_min": active_diag_min(summary),
         "active_total": summary.get("active_total", {}),
@@ -434,6 +439,40 @@ def write_training_config(
     path = run_dir / f"{stage_name}_train_config.yaml"
     write_yaml(path, cfg)
     return path
+
+
+def validate_loop_completion_token_lengths(data_jsonl: Path, *, model_name: str, max_length: int) -> dict[str, Any]:
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    checked = 0
+    for row in read_jsonl(data_jsonl):
+        prompt = str(row.get("prompt", ""))
+        completion = str(row.get("completion", ""))
+        expected = len(
+            tokenizer(
+                prompt + completion,
+                add_special_tokens=True,
+                truncation=True,
+                max_length=max_length,
+            )["input_ids"]
+        )
+        for loop_idx, loop_completion in enumerate(row.get("loop_completions") or [], start=1):
+            actual = len(
+                tokenizer(
+                    prompt + str(loop_completion),
+                    add_special_tokens=True,
+                    truncation=True,
+                    max_length=max_length,
+                )["input_ids"]
+            )
+            if actual != expected:
+                raise ValueError(
+                    "loop_completions must tokenize to the same length as prompt + completion. "
+                    f"row={row.get('id') or row.get('instance_id') or '<unknown>'} "
+                    f"loop={loop_idx} got={actual} expected={expected} "
+                    f"completion={completion!r} loop_completion={loop_completion!r}"
+                )
+        checked += 1
+    return {"path": path_for_cli(data_jsonl), "rows_checked": checked, "status": "ok"}
 
 
 def train_stage(
@@ -589,6 +628,7 @@ def run_microtest_active_readout(run_dir: Path, *, loop_counts: str, threshold: 
             loop_counts=loop_counts,
             threshold=threshold,
             dtype=dtype,
+            value_prefix="",
         ),
         "test": eval_active_checkpoint(
             run_dir,
@@ -600,6 +640,7 @@ def run_microtest_active_readout(run_dir: Path, *, loop_counts: str, threshold: 
             loop_counts=loop_counts,
             threshold=threshold,
             dtype=dtype,
+            value_prefix="",
         ),
     }
 
@@ -618,6 +659,9 @@ def main() -> int:
     threshold = float(os.environ.get("STAGE5_CHAIN_CORRECTED_THRESHOLD", "0.71"))
     loop_counts = os.environ.get("STAGE5_CHAIN_CORRECTED_EVAL_LOOPS", "1,2,3,4")
     dtype = os.environ.get("STAGE5_CHAIN_CORRECTED_DTYPE", "bfloat16")
+    value_prefix = os.environ.get("STAGE5_CHAIN_CORRECTED_VALUE_PREFIX", "letter:")
+    model_name = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct")
+    max_length = int(os.environ.get("STAGE5_CHAIN_CORRECTED_MAX_LENGTH", "512"))
 
     run_dir.mkdir(parents=True, exist_ok=True)
     summary: dict[str, Any] = {
@@ -633,6 +677,7 @@ def main() -> int:
         "threshold": threshold,
         "eval_loops": loop_counts,
         "dtype": dtype,
+        "value_prefix": value_prefix,
         "prediction_space": "full_symbols",
         "prompt_style": "question_only",
         "bridge_projection_mode": "split",
@@ -671,6 +716,8 @@ def main() -> int:
             "4",
             "--max_target_loops",
             str(max_depth),
+            "--value_prefix",
+            value_prefix,
         ]
     )
     train_le2 = data_dir / "train_chain_symbol_depth_le2_sft.jsonl"
@@ -703,12 +750,25 @@ def main() -> int:
             rows_per_depth=heldout_rows_per_depth,
         ),
     }
+    tokenization_checks = {
+        "train_depth_le2": validate_loop_completion_token_lengths(
+            train_le2,
+            model_name=model_name,
+            max_length=max_length,
+        ),
+        "train_depth_le4": validate_loop_completion_token_lengths(
+            train_le4,
+            model_name=model_name,
+            max_length=max_length,
+        ),
+    }
     summary.update(
         {
             "status": "dataset_ready",
             "primitive_checkpoint": path_for_cli(primitive_checkpoint),
             "data_summary": path_for_cli(data_dir / "summary.json"),
             "filters": filters,
+            "tokenization_checks": tokenization_checks,
         }
     )
     write_run_summary(run_dir, summary)
@@ -739,6 +799,7 @@ def main() -> int:
         loop_counts=loop_counts,
         threshold=threshold,
         dtype=dtype,
+        value_prefix=value_prefix,
     )
     stage12["heldout_active_eval"] = eval_active_checkpoint(
         run_dir,
@@ -750,6 +811,7 @@ def main() -> int:
         loop_counts=loop_counts,
         threshold=threshold,
         dtype=dtype,
+        value_prefix=value_prefix,
     )
     stage12["heldout_final_eval"] = eval_matrix_checkpoint(
         run_dir,
@@ -790,6 +852,7 @@ def main() -> int:
         loop_counts=loop_counts,
         threshold=threshold,
         dtype=dtype,
+        value_prefix=value_prefix,
     )
     stage1234["heldout_active_eval"] = eval_active_checkpoint(
         run_dir,
@@ -801,6 +864,7 @@ def main() -> int:
         loop_counts=loop_counts,
         threshold=threshold,
         dtype=dtype,
+        value_prefix=value_prefix,
     )
     stage1234["heldout_final_eval"] = eval_matrix_checkpoint(
         run_dir,

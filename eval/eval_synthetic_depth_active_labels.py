@@ -23,12 +23,22 @@ if str(ROOT) not in sys.path:
 
 from eval.eval_mcq import load_recurrent_wrapper, sequence_logprobs, select_forced_loop_logits
 
+LETTER_SYMBOLS = tuple("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
 
 def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in Path(path).read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
 def symbol(value: int | str, *, prefix: str = "") -> str:
+    if prefix == "letter:":
+        text = str(value)
+        if text in LETTER_SYMBOLS:
+            return text
+        idx = int(text)
+        if idx < 0 or idx >= len(LETTER_SYMBOLS):
+            raise ValueError(f"letter: value_prefix supports values 0-{len(LETTER_SYMBOLS) - 1}; got {value}")
+        return LETTER_SYMBOLS[idx]
     text = str(value)
     if prefix and not text.startswith(prefix):
         return f"{prefix}{text}"
@@ -37,6 +47,10 @@ def symbol(value: int | str, *, prefix: str = "") -> str:
 
 def parse_int_symbol(value: Any, *, prefix: str = "") -> int:
     text = str(value)
+    if prefix == "letter:":
+        if text in LETTER_SYMBOLS:
+            return LETTER_SYMBOLS.index(text)
+        return int(text)
     if prefix and text.startswith(prefix):
         text = text[len(prefix) :]
     return int(text)

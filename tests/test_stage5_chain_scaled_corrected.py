@@ -73,3 +73,45 @@ def test_matrix_total_hits_sums_all_cells() -> None:
     }
 
     assert runner.matrix_total_hits(matrix) == {"correct": 6, "total": 12}
+
+
+def test_validate_loop_completion_token_lengths_catches_bad_surface_form(tmp_path: Path, monkeypatch) -> None:
+    class FakeTokenizer:
+        def __call__(self, text, **_kwargs):
+            return {"input_ids": text.split()}
+
+    monkeypatch.setattr(runner.AutoTokenizer, "from_pretrained", lambda _model_name: FakeTokenizer())
+    monkeypatch.setattr(runner, "ROOT", tmp_path)
+    good = tmp_path / "good.jsonl"
+    bad = tmp_path / "bad.jsonl"
+    write_rows(
+        good,
+        [
+            {
+                "instance_id": "good",
+                "prompt": "Prompt Answer:",
+                "completion": " A",
+                "loop_completions": [" B", " C"],
+            }
+        ],
+    )
+    write_rows(
+        bad,
+        [
+            {
+                "instance_id": "bad",
+                "prompt": "Prompt Answer:",
+                "completion": " A",
+                "loop_completions": [" B C"],
+            }
+        ],
+    )
+
+    assert runner.validate_loop_completion_token_lengths(good, model_name="fake", max_length=64)["rows_checked"] == 1
+    try:
+        runner.validate_loop_completion_token_lengths(bad, model_name="fake", max_length=64)
+    except ValueError as exc:
+        assert "row=bad" in str(exc)
+        assert "loop=1" in str(exc)
+    else:
+        raise AssertionError("expected token-length validator to reject inconsistent loop completion")

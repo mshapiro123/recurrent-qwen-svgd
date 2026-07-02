@@ -166,6 +166,27 @@ def test_chain_symbol_sft_row_uses_intermediate_symbol_targets_without_choices()
     assert row["completion"].strip() == str(instance.target)
 
 
+def test_chain_symbol_sft_row_can_render_full_symbols_as_letters() -> None:
+    instance = build_instance(
+        instance_id="depth4_letter_symbols",
+        n_symbols=16,
+        depth=4,
+        seed=44,
+        num_choices=4,
+    )
+
+    row = build_chain_symbol_sft_row(instance, max_target_loops=4, value_prefix="letter:")
+
+    assert row["score_target"] == "full_symbols"
+    assert row["completion"].strip().isalpha()
+    assert all(completion.strip().isalpha() for completion in row["loop_completions"])
+    assert set(row["mapping"].keys()).issubset(set("ABCDEFGHIJKLMNOP"))
+    assert row["chain_symbol_by_loop"] == {
+        str(loop_idx): row["orbit"][loop_idx]
+        for loop_idx in range(1, 5)
+    }
+
+
 def test_dataset_generation_is_deterministic_and_balanced() -> None:
     config = SyntheticDepthConfig(
         n_symbols=10,

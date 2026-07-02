@@ -17,6 +17,7 @@ from typing import Any
 
 
 LABELS = ("A", "B", "C", "D", "E", "F")
+LETTER_SYMBOLS = tuple("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 
 @dataclass(frozen=True)
@@ -46,6 +47,11 @@ class SyntheticDepthInstance:
 
 
 def symbol(value: int, *, prefix: str = "") -> str:
+    if prefix == "letter:":
+        idx = int(value)
+        if idx < 0 or idx >= len(LETTER_SYMBOLS):
+            raise ValueError(f"letter: value_prefix supports values 0-{len(LETTER_SYMBOLS) - 1}; got {value}")
+        return LETTER_SYMBOLS[idx]
     return f"{prefix}{value}" if prefix else str(value)
 
 

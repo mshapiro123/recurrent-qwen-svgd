@@ -6,7 +6,9 @@ from eval.eval_synthetic_depth_active_labels import (
     active_target_for_loop,
     candidates_for_row,
     continued_symbol_for_loop,
+    parse_int_symbol,
     prompt_for_row,
+    symbol,
     summarize_active_rows,
 )
 
@@ -57,6 +59,22 @@ def test_prompt_and_candidates_match_prediction_space() -> None:
     }
     assert candidates_for_row(row, prediction_space="full_symbols", value_prefix="")["7"] == " 7"
     assert len(candidates_for_row(row, prediction_space="full_symbols", value_prefix="")) == 10
+
+
+def test_letter_value_prefix_maps_full_symbol_space() -> None:
+    row = sample_row() | {
+        "start": "B",
+        "orbit": ["B", "D", "F"],
+        "mapping": {"B": "D", "D": "F", "F": "H"},
+        "n_symbols": 16,
+    }
+
+    assert symbol(0, prefix="letter:") == "A"
+    assert symbol("C", prefix="letter:") == "C"
+    assert parse_int_symbol("P", prefix="letter:") == 15
+    assert candidates_for_row(row, prediction_space="full_symbols", value_prefix="letter:")["P"] == " P"
+    assert active_target_for_loop(row, 2, prediction_space="full_symbols", value_prefix="letter:") == "F"
+    assert continued_symbol_for_loop(row, 3, value_prefix="letter:") == "H"
 
 
 def test_continued_symbol_uses_serialized_mapping_for_above_diagonal_behavior() -> None:
