@@ -1,6 +1,6 @@
 # Corrected Scaled Synthetic-Depth Chain Run - stage5_chain_scaled_corrected_20260702_182115
 
-- Status: `microtest_active_readout_finished`
+- Status: `dataset_ready`
 - N symbols: `16`
 - Rows/depth train: `256`
 - Heldout rows/depth eval: `64`
