@@ -1,0 +1,145 @@
+{
+  "kind": "gradient_path_audit",
+  "status": "graph_connected",
+  "args": {
+    "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+    "train_jsonl": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/train_chain_label_depth_le4_sft.jsonl",
+    "checkpoint": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/train/chain_depth_le4/unfrozen_recurrent_step_1000.pt",
+    "output_dir": "outputs/stage5/stage5_gradient_path_audit_20260702_023819",
+    "config": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/chain_depth_le4_train_config.yaml",
+    "split": "6,18",
+    "max_loops": 2,
+    "max_length": 512,
+    "batch_size": 1,
+    "dtype": "bfloat16",
+    "adapter_dtype": "float32",
+    "attn_implementation": "default",
+    "device": "cuda",
+    "lora_rank": 0,
+    "lora_alpha": 16,
+    "fd_epsilon": 0.01,
+    "seed": 0,
+    "max_scan_rows": 2048,
+    "row_id": null,
+    "grad_tol": 1e-12,
+    "fd_tol": 1e-06
+  },
+  "batch_selection": {
+    "source": "outputs/stage5/stage5_synthetic_depth_chain_supervision_20260701_201715/data/train_chain_label_depth_le4_sft.jsonl",
+    "audit_batch_jsonl": "outputs/stage5/stage5_gradient_path_audit_20260702_023819/audit_batch.jsonl",
+    "selected_rows": 1,
+    "selected_id": "train_d02_00000",
+    "selected_depth": 2,
+    "loop_completions": [
+      " A",
+      " C"
+    ]
+  },
+  "static_source_audit": {
+    "bridge_call_in_loop_body": true,
+    "loop_logits_after_coda": true,
+    "per_loop_labels_path": true,
+    "loop_body_contains_detach": false,
+    "loop_body_contains_data_access": false,
+    "loop_body_contains_no_grad": false,
+    "loop_body_contains_inplace_detach": false
+  },
+  "bridge_weight_stats": {
+    "bridge_gate": 0.9992048144340515,
+    "bridge_prelude_weight_rms": 0.00038154236972332,
+    "bridge_prelude_weight_max_abs": 0.00197611004114151,
+    "bridge_state_identity_max_abs_diff": 0.002425487618893385,
+    "bridge_bias_rms": 0.00040115704177878797
+  },
+  "optimizer_bookkeeping": {
+    "optimizer": "adamw",
+    "learning_rate": 1e-05,
+    "adamw_lr": 1e-05,
+    "bridge_prelude_grad_multiplier": 8.0,
+    "loop_loss_mode": "per_loop_labels",
+    "train_auxiliary_bridge": true,
+    "bridge_params_require_grad": {
+      "bridge.bridge_gate": true,
+      "bridge.prelude_norm.weight": true,
+      "bridge.prelude_norm.bias": true,
+      "bridge.proj.weight": true,
+      "bridge.proj.bias": true
+    }
+  },
+  "gradient_matrix": [
+    {
+      "loop": 1,
+      "active_label_tokens": 1,
+      "loss": 4.172316494077677e-06,
+      "bridge_prelude_weight_grad_rms": 0.0,
+      "bridge_prelude_weight_grad_l2": 0.0,
+      "bridge_state_weight_grad_rms": 0.0,
+      "bridge_state_weight_grad_l2": 0.0,
+      "bridge_bias_grad_rms": 0.0,
+      "bridge_gate_grad_abs": 0.0,
+      "bridge_prelude_norm_weight_grad_rms": 0.0,
+      "bridge_prelude_norm_bias_grad_rms": 0.0,
+      "recurrent_block_grad_rms": 2.0677215673003957e-07,
+      "recurrent_block_grad_l2": 0.0027660257183015347,
+      "recurrent_block_grad_param_tensors": 144.0,
+      "coda_grad_rms": 1.453300200182639e-07,
+      "coda_grad_l2": 0.0021829025354236364,
+      "coda_grad_param_tensors": 74.0
+    },
+    {
+      "loop": 2,
+      "active_label_tokens": 1,
+      "loss": 0.20377887785434723,
+      "bridge_prelude_weight_grad_rms": 0.004998736083507538,
+      "bridge_prelude_weight_grad_l2": 4.478868007659912,
+      "bridge_state_weight_grad_rms": 0.009081925265491009,
+      "bridge_state_weight_grad_l2": 8.137405395507812,
+      "bridge_bias_grad_rms": 0.005634049419313669,
+      "bridge_gate_grad_abs": 0.01888519898056984,
+      "bridge_prelude_norm_weight_grad_rms": 0.00011329283006489277,
+      "bridge_prelude_norm_bias_grad_rms": 0.00010847677185665816,
+      "recurrent_block_grad_rms": 0.0025181693490594625,
+      "recurrent_block_grad_l2": 33.68597412109375,
+      "recurrent_block_grad_param_tensors": 144.0,
+      "coda_grad_rms": 0.003907640930265188,
+      "coda_grad_l2": 58.694000244140625,
+      "coda_grad_param_tensors": 74.0
+    }
+  ],
+  "finite_difference": [
+    {
+      "loop": 1,
+      "base_loss": 4.172316494077677e-06,
+      "perturbed_loss": 4.172316494077677e-06,
+      "delta": 0.0,
+      "abs_delta": 0.0,
+      "delta_per_epsilon": 0.0
+    },
+    {
+      "loop": 2,
+      "base_loss": 0.20377887785434723,
+      "perturbed_loss": 0.2280217856168747,
+      "delta": 0.024242907762527466,
+      "abs_delta": 0.024242907762527466,
+      "delta_per_epsilon": 2.4242907762527466
+    }
+  ],
+  "interpretation": {
+    "status": "graph_connected",
+    "issues": [],
+    "deep_loops_analyzed": 1,
+    "any_bridge_autograd": true,
+    "any_finite_difference_dependence": true,
+    "any_non_bridge_grad": true,
+    "per_loop": [
+      {
+        "loop": 2,
+        "bridge_grad_rms_max": 0.009081925265491009,
+        "non_bridge_grad_rms_max": 0.003907640930265188,
+        "finite_difference_abs_delta": 0.024242907762527466,
+        "bridge_autograd_live": true,
+        "finite_difference_dependence": true
+      }
+    ]
+  }
+}
