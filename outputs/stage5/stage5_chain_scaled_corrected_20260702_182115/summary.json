@@ -1,0 +1,92 @@
+{
+  "kind": "stage5_chain_scaled_corrected",
+  "run_id": "stage5_chain_scaled_corrected_20260702_182115",
+  "status": "microtest_active_readout_finished",
+  "n_symbols": 16,
+  "max_depth": 4,
+  "rows_per_depth": 256,
+  "heldout_rows_per_depth": 64,
+  "train_eval_rows_per_depth": 64,
+  "seed": 20260702,
+  "threshold": 0.71,
+  "eval_loops": "1,2,3,4",
+  "dtype": "bfloat16",
+  "prediction_space": "full_symbols",
+  "prompt_style": "question_only",
+  "bridge_projection_mode": "split",
+  "prelude_lr_multiplier": 10.0,
+  "microtest_active_readout": {
+    "status": "finished",
+    "source_summary": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/summary.json",
+    "checkpoint": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182115/restored/split_bridge_microtest_final.pt",
+    "train": {
+      "name": "microtest_train_choice_active",
+      "data_jsonl": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/data/train_chain_mcq.jsonl",
+      "active_rows": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182115/eval/microtest_train_choice_active_active_rows.jsonl",
+      "active_summary": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182115/eval/microtest_train_choice_active_active_summary.json",
+      "eval_log": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182115/eval/microtest_train_choice_active_active_eval.log",
+      "prediction_space": "choice_labels",
+      "prompt_style": "with_options",
+      "active_diagonal": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0,
+        "4": 1.0
+      },
+      "active_diagonal_min": 1.0,
+      "active_total": {
+        "correct": 40,
+        "total": 40,
+        "accuracy": 1.0
+      },
+      "above_diagonal": {
+        "iterate": 0,
+        "hold": 0,
+        "other": 0,
+        "unknown_iterate_target": 24,
+        "n": 24,
+        "rates": {
+          "iterate": 0.0,
+          "hold": 0.0,
+          "other": 0.0,
+          "unknown_iterate_target": 1.0
+        }
+      }
+    },
+    "test": {
+      "name": "microtest_test_choice_active",
+      "data_jsonl": "outputs/stage5/stage5_split_bridge_microtest_20260702_154804/data/test_chain_mcq.jsonl",
+      "active_rows": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182115/eval/microtest_test_choice_active_active_rows.jsonl",
+      "active_summary": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182115/eval/microtest_test_choice_active_active_summary.json",
+      "eval_log": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182115/eval/microtest_test_choice_active_active_eval.log",
+      "prediction_space": "choice_labels",
+      "prompt_style": "with_options",
+      "active_diagonal": {
+        "1": 0.25,
+        "2": 0.25,
+        "3": 0.5,
+        "4": 0.25
+      },
+      "active_diagonal_min": 0.25,
+      "active_total": {
+        "correct": 10,
+        "total": 40,
+        "accuracy": 0.25
+      },
+      "above_diagonal": {
+        "iterate": 0,
+        "hold": 0,
+        "other": 0,
+        "unknown_iterate_target": 24,
+        "n": 24,
+        "rates": {
+          "iterate": 0.0,
+          "hold": 0.0,
+          "other": 0.0,
+          "unknown_iterate_target": 1.0
+        }
+      }
+    }
+  },
+  "stages": []
+}
