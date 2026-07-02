@@ -10,6 +10,7 @@ from training.synthetic_depth_task import (
     apply_mapping,
     build_dataset,
     build_chain_label_sft_row,
+    build_chain_symbol_sft_row,
     build_instance,
     build_mcq_sft_row,
     build_mcq_row,
@@ -141,6 +142,30 @@ def test_chain_label_sft_row_has_intermediate_loop_targets_in_choices() -> None:
     assert row["completion"].strip() == row["loop_completions"][-1].strip()
 
 
+def test_chain_symbol_sft_row_uses_intermediate_symbol_targets_without_choices() -> None:
+    instance = build_instance(
+        instance_id="depth4_symbols",
+        n_symbols=12,
+        depth=4,
+        seed=43,
+        num_choices=4,
+    )
+
+    row = build_chain_symbol_sft_row(instance, max_target_loops=4)
+
+    assert row["intermediate_chain_supervision"] is True
+    assert row["score_target"] == "full_symbols"
+    assert row["prompt_style"] == "question_only"
+    assert "choices" not in row
+    assert row["loop_completions"] == [f" {value}" for value in instance.orbit[1:5]]
+    assert row["chain_symbol_by_loop"] == {
+        str(loop_idx): str(instance.orbit[loop_idx])
+        for loop_idx in range(1, 5)
+    }
+    assert row["mapping"][str(instance.start)] == str(instance.mapping[instance.start])
+    assert row["completion"].strip() == str(instance.target)
+
+
 def test_dataset_generation_is_deterministic_and_balanced() -> None:
     config = SyntheticDepthConfig(
         n_symbols=10,
@@ -196,7 +221,9 @@ def test_write_synthetic_depth_dataset_writes_train_val_test_and_summary(tmp_pat
     assert (tmp_path / "train_mcq_label_sft.jsonl").exists()
     assert (tmp_path / "train_mcq_label_and_text_sft.jsonl").exists()
     assert (tmp_path / "train_chain_label_sft.jsonl").exists()
+    assert (tmp_path / "train_chain_symbol_sft.jsonl").exists()
     assert (tmp_path / "train_chain_mcq.jsonl").exists()
     assert summary["files"]["train"]["mcq_option_text_sft"] == "train_mcq_option_text_sft.jsonl"
     assert summary["files"]["train"]["chain_label_sft"] == "train_chain_label_sft.jsonl"
+    assert summary["files"]["train"]["chain_symbol_sft"] == "train_chain_symbol_sft.jsonl"
     assert summary["files"]["train"]["chain_mcq"] == "train_chain_mcq.jsonl"

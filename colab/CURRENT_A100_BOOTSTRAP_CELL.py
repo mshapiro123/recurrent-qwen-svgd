@@ -72,6 +72,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "synthetic_depth_staged_staircase" - L4/T4 Phase 2 target-loop staircase from the N=16 primitive checkpoint.
 #   "synthetic_depth_chain_supervision" - L4/T4 train-split diagnostic plus per-loop intermediate-chain supervision.
 #   "synthetic_depth_split_bridge_microtest" - L4/T4 split-bridge true prelude-LR micro-fit.
+#   "synthetic_depth_chain_scaled_corrected" - L4/T4 active-label full-symbol chain run at N=16.
 #   "gradient_path_audit" - read-only per-loop gradient matrix plus finite-difference bridge check.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
 #   "model_viability_queue" - queued no-training Qwen 3B/7B probes with VRAM-aware skipping.
@@ -1839,6 +1840,35 @@ TARGETS = {
             "STAGE5_SPLIT_MICRO_STAGE1234_STEPS": "4000",
             "STAGE5_SPLIT_MICRO_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
             "STAGE5_SPLIT_MICRO_DISCONNECT": "0",
+        },
+    },
+    "synthetic_depth_chain_scaled_corrected": {
+        "path": "colab/STAGE5_CHAIN_SCALED_CORRECTED_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_SCALED_CORRECTED_CELL_VERSION",
+            "chain_scaled_corrected_v1",
+            "active-label evaluator scores f^k(x) for k <= depth",
+            "full-symbol chain SFT avoids MCQ label bottleneck",
+            "eval/eval_synthetic_depth_active_labels.py",
+            "colab/run_stage5_chain_scaled_corrected.py",
+            "STAGE5_CHAIN_CORRECTED_STAGE12_STEPS",
+            "STAGE5_CHAIN_CORRECTED_STAGE1234_STEPS",
+            "STAGE5_CHAIN_CORRECTED_PRELUDE_LR_MULTIPLIER",
+            "tests/test_eval_synthetic_depth_active_labels.py",
+            "tests/test_stage5_chain_scaled_corrected.py",
+        ],
+        "env": {
+            "STAGE5_CHAIN_CORRECTED_N_SYMBOLS": "16",
+            "STAGE5_CHAIN_CORRECTED_MAX_DEPTH": "4",
+            "STAGE5_CHAIN_CORRECTED_ROWS_PER_DEPTH": "256",
+            "STAGE5_CHAIN_CORRECTED_HELDOUT_ROWS_PER_DEPTH": "64",
+            "STAGE5_CHAIN_CORRECTED_TRAIN_EVAL_ROWS_PER_DEPTH": "64",
+            "STAGE5_CHAIN_CORRECTED_DTYPE": "bfloat16",
+            "STAGE5_CHAIN_CORRECTED_PRELUDE_LR_MULTIPLIER": "10.0",
+            "STAGE5_CHAIN_CORRECTED_STAGE12_STEPS": "2000",
+            "STAGE5_CHAIN_CORRECTED_STAGE1234_STEPS": "4000",
+            "STAGE5_CHAIN_CORRECTED_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
+            "STAGE5_CHAIN_CORRECTED_DISCONNECT": "0",
         },
     },
     "gradient_path_audit": {

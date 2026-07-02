@@ -2231,6 +2231,41 @@ def test_split_bridge_microtest_target_is_wired_and_guarded() -> None:
     assert "bridge_prelude_optimizer_group_ok" in trainer
 
 
+def test_chain_scaled_corrected_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_CHAIN_SCALED_CORRECTED_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_chain_scaled_corrected.py").read_text(encoding="utf-8")
+    evaluator = (ROOT / "eval/eval_synthetic_depth_active_labels.py").read_text(encoding="utf-8")
+    dataset = (ROOT / "training/synthetic_depth_task.py").read_text(encoding="utf-8")
+
+    for text in (bootstrap, bootstrap_md):
+        assert "synthetic_depth_chain_scaled_corrected" in text
+        assert "colab/STAGE5_CHAIN_SCALED_CORRECTED_CELL.py" in text
+        assert "STAGE5_CHAIN_CORRECTED_STAGE12_STEPS" in text
+        assert "eval/eval_synthetic_depth_active_labels.py" in text
+
+    assert "STAGE5_CHAIN_SCALED_CORRECTED_CELL_VERSION" in cell
+    assert "chain_scaled_corrected_v1" in cell
+    assert "active-label evaluator scores f^k(x) for k <= depth" in cell
+    assert "full-symbol chain SFT avoids MCQ label bottleneck" in cell
+    assert "tests/test_eval_synthetic_depth_active_labels.py" in cell
+    assert "colab/run_stage5_chain_scaled_corrected.py" in cell
+    assert "chain_scaled_corrected_depth_le2" in runner
+    assert "chain_scaled_corrected_depth_le4" in runner
+    assert "train_chain_symbol_depth_le4_sft.jsonl" in runner
+    assert "--prediction_space" in runner
+    assert "full_symbols" in runner
+    assert "active_diagonal_min" in runner
+    assert "bridge_prelude_lr_multiplier" in runner
+    assert "stage5_split_bridge_microtest_20260702_154804/summary.json" in runner
+    assert "stage5_synthetic_depth_primitive_curve_20260701_161524/summary.json" in runner
+    assert "active_target_for_loop" in evaluator
+    assert "above_diagonal_behavior" in evaluator
+    assert "build_chain_symbol_sft_row" in dataset
+    assert "chain_symbol_sft" in dataset
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

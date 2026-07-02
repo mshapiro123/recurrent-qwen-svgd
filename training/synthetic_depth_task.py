@@ -178,6 +178,13 @@ def render_mcq_completion(
     raise ValueError(f"Unknown score_target={score_target!r}")
 
 
+def serialized_mapping(instance: SyntheticDepthInstance, *, value_prefix: str = "") -> dict[str, str]:
+    return {
+        symbol(left, prefix=value_prefix): symbol(right, prefix=value_prefix)
+        for left, right in instance.mapping.items()
+    }
+
+
 def build_sft_row(
     instance: SyntheticDepthInstance,
     *,
@@ -199,6 +206,7 @@ def build_sft_row(
         "n_symbols": instance.n_symbols,
         "start": symbol(instance.start, prefix=value_prefix),
         "target": symbol(instance.target, prefix=value_prefix),
+        "mapping": serialized_mapping(instance, value_prefix=value_prefix),
         "orbit": [symbol(value, prefix=value_prefix) for value in instance.orbit],
         "instance_id": instance.instance_id,
     }
@@ -227,6 +235,7 @@ def build_mcq_sft_row(
         "n_symbols": instance.n_symbols,
         "start": symbol(instance.start, prefix=value_prefix),
         "target": symbol(instance.target, prefix=value_prefix),
+        "mapping": serialized_mapping(instance, value_prefix=value_prefix),
         "orbit": [symbol(value, prefix=value_prefix) for value in instance.orbit],
         "instance_id": instance.instance_id,
         "answer": mcq["answer"],
@@ -271,6 +280,7 @@ def build_chain_mcq_row(
         "target": symbol(instance.target, prefix=value_prefix),
         "depth": instance.depth,
         "start": symbol(instance.start, prefix=value_prefix),
+        "mapping": serialized_mapping(instance, value_prefix=value_prefix),
         "orbit": [symbol(value, prefix=value_prefix) for value in instance.orbit],
         "n_symbols": instance.n_symbols,
         "score_target": "label",
@@ -315,6 +325,7 @@ def build_chain_label_sft_row(
         "n_symbols": instance.n_symbols,
         "start": mcq["start"],
         "target": mcq["target"],
+        "mapping": mcq["mapping"],
         "orbit": mcq["orbit"],
         "instance_id": instance.instance_id,
         "answer": mcq["answer"],
@@ -323,6 +334,42 @@ def build_chain_label_sft_row(
         "prompt_style": "with_options",
         "intermediate_chain_supervision": True,
         "chain_answer_by_loop": mcq["chain_answer_by_loop"],
+    }
+
+
+def build_chain_symbol_sft_row(
+    instance: SyntheticDepthInstance,
+    *,
+    max_target_loops: int,
+    value_prefix: str = "",
+) -> dict[str, Any]:
+    prompt = render_question(instance, value_prefix=value_prefix).rstrip() + "\nAnswer:"
+    max_active = min(int(max_target_loops), int(instance.depth))
+    loop_completions = [
+        f" {symbol(instance.orbit[loop_idx], prefix=value_prefix)}"
+        for loop_idx in range(1, max_active + 1)
+    ]
+    return {
+        "prompt": prompt,
+        "completion": loop_completions[-1],
+        "loop_completions": loop_completions,
+        "target_loop_count": len(loop_completions),
+        "synthetic_task": "iterated_function",
+        "synthetic_depth": instance.depth,
+        "depth": instance.depth,
+        "n_symbols": instance.n_symbols,
+        "start": symbol(instance.start, prefix=value_prefix),
+        "target": symbol(instance.target, prefix=value_prefix),
+        "mapping": serialized_mapping(instance, value_prefix=value_prefix),
+        "orbit": [symbol(value, prefix=value_prefix) for value in instance.orbit],
+        "instance_id": instance.instance_id,
+        "score_target": "full_symbols",
+        "prompt_style": "question_only",
+        "intermediate_chain_supervision": True,
+        "chain_symbol_by_loop": {
+            str(loop_idx): symbol(instance.orbit[loop_idx], prefix=value_prefix)
+            for loop_idx in range(1, max_active + 1)
+        },
     }
 
 
@@ -402,6 +449,17 @@ def write_synthetic_depth_dataset(
             ],
         )
         _write_jsonl(
+            out / f"{split}_chain_symbol_sft.jsonl",
+            [
+                build_chain_symbol_sft_row(
+                    instance,
+                    max_target_loops=config.max_target_loops,
+                    value_prefix=config.value_prefix,
+                )
+                for instance in split_instances
+            ],
+        )
+        _write_jsonl(
             out / f"{split}_chain_mcq.jsonl",
             [
                 build_chain_mcq_row(
@@ -433,6 +491,7 @@ def write_synthetic_depth_dataset(
                 "mcq_label_sft": f"{split}_mcq_label_sft.jsonl",
                 "mcq_label_and_text_sft": f"{split}_mcq_label_and_text_sft.jsonl",
                 "chain_label_sft": f"{split}_chain_label_sft.jsonl",
+                "chain_symbol_sft": f"{split}_chain_symbol_sft.jsonl",
                 "chain_mcq": f"{split}_chain_mcq.jsonl",
             }
             for split in instances
