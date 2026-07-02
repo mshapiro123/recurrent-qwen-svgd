@@ -1,10 +1,13 @@
 import json
 
 import pytest
+import torch
 
 from eval.eval_gradient_path_audit import (
+    CoherenceAccumulator,
     SignatureThresholds,
     interpret_gradient_signature,
+    multiplier_consumption_check,
     numeric_summary,
     select_audit_rows,
     static_source_audit,
@@ -204,3 +207,32 @@ def test_numeric_summary_reports_zero_fraction_and_quantiles():
     assert out["count"] == 4
     assert out["zero_fraction"] == 0.5
     assert out["median"] == pytest.approx(1.0)
+
+
+def test_coherence_accumulator_distinguishes_agreement_from_cancellation():
+    aligned = CoherenceAccumulator()
+    cancelled = CoherenceAccumulator()
+    for _ in range(4):
+        aligned.add(2, "bridge_prelude", torch.tensor([1.0, 0.0]))
+    for value in ([1.0, 0.0], [-1.0, 0.0], [0.0, 1.0], [0.0, -1.0]):
+        cancelled.add(2, "bridge_prelude", torch.tensor(value))
+
+    aligned_summary = aligned.summary()["by_loop"]["2"]["bridge_prelude"]
+    cancelled_summary = cancelled.summary()["by_loop"]["2"]["bridge_prelude"]
+
+    assert aligned_summary["coherence"] == pytest.approx(1.0)
+    assert cancelled_summary["coherence"] == pytest.approx(0.0)
+    assert cancelled_summary["random_cancellation_floor"] == pytest.approx(0.5)
+
+
+def test_multiplier_consumption_check_flags_gradient_scale_inert_risk():
+    out = multiplier_consumption_check(
+        {
+            "optimizer": "adamw",
+            "bridge_prelude_grad_multiplier": 8.0,
+        }
+    )
+
+    assert out["implementation"] == "slice_gradient_scaled_before_optimizer_step"
+    assert out["inert_under_adamw_or_muon_risk"] is True
+    assert "param group" in out["reason"]

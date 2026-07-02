@@ -1846,6 +1846,8 @@ TARGETS = {
             "eval/eval_gradient_path_audit.py",
             "tests/test_eval_gradient_path_audit.py",
             "tests/test_stage5_notebooks.py::test_gradient_path_audit_target_is_wired_and_guarded",
+            "CoherenceAccumulator",
+            "multiplier_consumption_check",
             "Record Stage 5 gradient-path audit",
         ],
         "env": {

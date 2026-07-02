@@ -2231,3 +2231,5 @@ def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     assert "structural_independence_or_decode_bypass_suspected" in audit
     assert "cross_loop_bridge_output_fd" in audit
     assert "target_validity_summary" in audit
+    assert "CoherenceAccumulator" in audit
+    assert "multiplier_consumption_check" in audit

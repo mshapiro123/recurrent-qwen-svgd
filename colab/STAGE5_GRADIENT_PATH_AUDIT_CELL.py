@@ -21,6 +21,7 @@ from google.colab import drive, runtime, userdata
 
 STAGE5_GRADIENT_PATH_AUDIT_CELL_VERSION = "gradient_path_audit_v1"
 # Safety marker: read-only gradient matrix plus finite_difference_bridge_prelude.
+# Safety marker: CoherenceAccumulator and multiplier_consumption_check are required in eval/eval_gradient_path_audit.py.
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 

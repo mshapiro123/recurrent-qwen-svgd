@@ -248,6 +248,70 @@ def zero_grad(wrapper: torch.nn.Module) -> None:
         param.grad = None
 
 
+class CoherenceAccumulator:
+    def __init__(self) -> None:
+        self.sums: dict[int, dict[str, torch.Tensor]] = {}
+        self.norms: dict[int, dict[str, list[float]]] = {}
+
+    def add(self, loop: int, group: str, grad_vector: torch.Tensor | None) -> None:
+        if grad_vector is None:
+            value = torch.zeros(1, dtype=torch.float32)
+        else:
+            value = grad_vector.detach().float().reshape(-1).cpu()
+            if value.numel() == 0:
+                value = torch.zeros(1, dtype=torch.float32)
+        self.norms.setdefault(loop, {}).setdefault(group, []).append(finite_float(torch.linalg.vector_norm(value)))
+        if group not in self.sums.setdefault(loop, {}):
+            self.sums[loop][group] = torch.zeros_like(value)
+        self.sums[loop][group].add_(value)
+
+    def summary(self) -> dict[str, Any]:
+        by_loop: dict[str, Any] = {}
+        for loop in sorted(self.norms):
+            loop_summary: dict[str, Any] = {}
+            for group, norms in sorted(self.norms[loop].items()):
+                count = len(norms)
+                mean_norm = sum(norms) / max(1, count)
+                mean_vector = self.sums[loop][group] / max(1, count)
+                coherence = finite_float(torch.linalg.vector_norm(mean_vector)) / max(mean_norm, 1e-12)
+                loop_summary[group] = {
+                    "rows": count,
+                    "mean_grad_norm": mean_norm,
+                    "sum_grad_norm": finite_float(torch.linalg.vector_norm(self.sums[loop][group])),
+                    "coherence": coherence,
+                    "random_cancellation_floor": 1.0 / math.sqrt(max(1, count)),
+                    "zero_fraction": sum(value == 0.0 for value in norms) / max(1, count),
+                }
+            by_loop[str(loop)] = loop_summary
+        return {
+            "kind": "gradient_direction_coherence",
+            "definition": "||mean_row_gradient|| / mean_row(||gradient||)",
+            "interpretation": "~1 means rows agree; ~1/sqrt(rows) means random-direction cancellation",
+            "by_loop": by_loop,
+        }
+
+
+def bridge_coherence_grad_vectors(wrapper: torch.nn.Module, *, scale: float) -> dict[str, torch.Tensor | None]:
+    bridge = wrapper.bridge
+    hidden = int(getattr(bridge, "hidden_size", bridge.proj.weight.shape[0]))
+    weight_grad = bridge.proj.weight.grad
+    vectors: dict[str, torch.Tensor | None] = {
+        "bridge_prelude": None,
+        "bridge_state": None,
+        "bridge_prelude_norm": None,
+    }
+    if weight_grad is not None and weight_grad.dim() == 2 and weight_grad.shape[1] == 2 * hidden:
+        vectors["bridge_prelude"] = weight_grad[:, :hidden] / float(scale)
+        vectors["bridge_state"] = weight_grad[:, hidden:] / float(scale)
+    norm_parts: list[torch.Tensor] = []
+    for param in (bridge.prelude_norm.weight, bridge.prelude_norm.bias):
+        if param.grad is not None:
+            norm_parts.append((param.grad / float(scale)).reshape(-1))
+    if norm_parts:
+        vectors["bridge_prelude_norm"] = torch.cat(norm_parts)
+    return vectors
+
+
 def per_loop_gradient_matrix(
     wrapper: torch.nn.Module,
     batch: dict[str, torch.Tensor],
@@ -257,6 +321,7 @@ def per_loop_gradient_matrix(
     amp_dtype: torch.dtype | None = None,
     device: str = "cuda",
     manual_loss_scale: float = 1.0,
+    coherence: CoherenceAccumulator | None = None,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     scale = float(manual_loss_scale or 1.0)
@@ -285,6 +350,9 @@ def per_loop_gradient_matrix(
             rows.append(row)
             continue
         (loss * scale).backward()
+        if coherence is not None:
+            for group, grad_vector in bridge_coherence_grad_vectors(wrapper, scale=scale).items():
+                coherence.add(loop_idx + 1, group, grad_vector)
         scaled_bridge = bridge_slice_grad_stats(wrapper)
         scaled_recurrent = parameter_grad_stats(recurrent_block_params(wrapper))
         scaled_coda = parameter_grad_stats(coda_params(wrapper))
@@ -664,6 +732,44 @@ def optimizer_bookkeeping(cfg: dict[str, Any], wrapper: torch.nn.Module) -> dict
     }
 
 
+def multiplier_consumption_check(cfg: dict[str, Any]) -> dict[str, Any]:
+    trainer_path = ROOT / "training/train_unfrozen_recurrent.py"
+    source = trainer_path.read_text(encoding="utf-8")
+    multiplier = float(cfg.get("bridge_prelude_grad_multiplier") or 1.0)
+    gradient_slice_scaled = "grad[:, :hidden_size].mul_(float(multiplier))" in source
+    scaling_before_step = (
+        source.find("apply_bridge_prelude_grad_multiplier(wrapper, prelude_grad_multiplier)")
+        < source.find("optimizer.step()")
+        if "apply_bridge_prelude_grad_multiplier(wrapper, prelude_grad_multiplier)" in source
+        and "optimizer.step()" in source
+        else False
+    )
+    optimizer = str(cfg.get("optimizer") or "").lower()
+    inert_risk = multiplier != 1.0 and gradient_slice_scaled and scaling_before_step and optimizer in {"adamw", "muon"}
+    return {
+        "trainer": "training/train_unfrozen_recurrent.py",
+        "configured_bridge_prelude_grad_multiplier": multiplier,
+        "optimizer": cfg.get("optimizer"),
+        "implementation": (
+            "slice_gradient_scaled_before_optimizer_step"
+            if gradient_slice_scaled and scaling_before_step
+            else "not_detected_or_changed"
+        ),
+        "gradient_slice_scaled": gradient_slice_scaled,
+        "scaling_before_optimizer_step": scaling_before_step,
+        "inert_under_adamw_or_muon_risk": inert_risk,
+        "reason": (
+            "AdamW normalizes first-step gradient scale through moments; Muon orthogonalization discards update magnitude. "
+            "A true raised prelude rate requires an optimizer param group or refactored bridge parameterization."
+            if inert_risk
+            else "No inert multiplier risk detected by static source check."
+        ),
+        "current_bridge_param_group_limitation": (
+            "bridge prelude/state are slices of bridge.proj.weight, so ordinary torch param groups cannot assign a distinct LR to prelude only"
+        ),
+    }
+
+
 GRADIENT_GROUP_KEYS = {
     "bridge_prelude": "bridge_prelude_weight_grad_rms",
     "bridge_state": "bridge_state_weight_grad_rms",
@@ -803,6 +909,7 @@ def write_markdown(path: Path, summary: dict[str, Any]) -> None:
         f"- depth counts: `{summary['batch_selection'].get('depth_counts', {})}`",
         f"- target validity: `{summary.get('target_validity', {})}`",
         f"- precision: `{summary.get('precision', {})}`",
+        f"- multiplier check: `{summary.get('multiplier_consumption_check', {})}`",
         "",
         "## Per-Loop Gradient Distribution",
         "",
@@ -819,6 +926,28 @@ def write_markdown(path: Path, summary: dict[str, Any]) -> None:
                     median=float(stats.get("median") or 0.0),
                     q10=float(stats.get("q10") or 0.0),
                     q90=float(stats.get("q90") or 0.0),
+                    zero=float(stats.get("zero_fraction") or 0.0),
+                )
+            )
+    lines.extend(
+        [
+            "",
+            "## Bridge Gradient Coherence",
+            "",
+            "| loop | group | rows | coherence | floor | mean_grad_norm | zero_fraction |",
+            "|---:|---|---:|---:|---:|---:|---:|",
+        ]
+    )
+    for loop, groups in summary.get("coherence_summary", {}).get("by_loop", {}).items():
+        for group, stats in groups.items():
+            lines.append(
+                "| {loop} | {group} | {rows} | {coh:.3f} | {floor:.3f} | {norm:.3e} | {zero:.2f} |".format(
+                    loop=loop,
+                    group=group,
+                    rows=stats.get("rows", 0),
+                    coh=float(stats.get("coherence") or 0.0),
+                    floor=float(stats.get("random_cancellation_floor") or 0.0),
+                    norm=float(stats.get("mean_grad_norm") or 0.0),
                     zero=float(stats.get("zero_fraction") or 0.0),
                 )
             )
@@ -939,6 +1068,7 @@ def main() -> int:
     fd_rows: list[dict[str, Any]] = []
     cross_loop_fd_rows: list[dict[str, Any]] = []
     fd_source_rows = 0
+    coherence = CoherenceAccumulator()
     cross_loop_pair = None
     if args.cross_loop_fd:
         left, right = str(args.cross_loop_fd).split(":", maxsplit=1)
@@ -958,6 +1088,7 @@ def main() -> int:
                 amp_dtype=amp_dtype,
                 device=args.device,
                 manual_loss_scale=args.manual_loss_scale,
+                coherence=coherence,
             )
         )
         if fd_source_rows < args.fd_rows and row_active_loop_labels(metadata, max_loops=args.max_loops) >= args.max_loops:
@@ -1001,6 +1132,7 @@ def main() -> int:
                 cross_loop_fd_rows.append(fd)
 
     gradient_summary = summarize_gradient_records(gradient_rows, config)
+    coherence_summary = coherence.summary()
     fd_summary = summarize_fd_records(fd_rows)
     cross_loop_fd_summary = summarize_fd_records(cross_loop_fd_rows, key_loop="read_loop")
     interpretation = interpret_gradient_signature(
@@ -1016,6 +1148,7 @@ def main() -> int:
         "static_source_audit": static_source_audit(),
         "bridge_weight_stats": bridge_weight_stats(wrapper),
         "optimizer_bookkeeping": optimizer_bookkeeping(config, wrapper),
+        "multiplier_consumption_check": multiplier_consumption_check(config),
         "precision": {
             "match_train_precision": bool(args.match_train_precision),
             "requested_dtype": args.dtype,
@@ -1027,6 +1160,7 @@ def main() -> int:
         "gradient_records": gradient_rows,
         "gradient_matrix": gradient_rows[: args.max_loops],
         "gradient_summary": gradient_summary,
+        "coherence_summary": coherence_summary,
         "finite_difference": fd_rows,
         "finite_difference_summary": fd_summary,
         "cross_loop_finite_difference": cross_loop_fd_rows,
