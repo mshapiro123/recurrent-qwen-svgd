@@ -1,0 +1,50 @@
+{
+  "kind": "stage5_chain_anneal_to_outcome",
+  "run_id": "stage5_chain_anneal_20260703_160250",
+  "status": "dataset_ready",
+  "n_symbols": 16,
+  "max_depth": 4,
+  "rows_per_depth": 256,
+  "heldout_rows_per_depth": 64,
+  "total_steps": 2000,
+  "ramp_steps": 1000,
+  "hold_steps": 1000,
+  "threshold": 0.71,
+  "init_checkpoint": "outputs/stage5/stage5_chain_anneal_20260703_160250/restored/scaled_corrected_final.pt",
+  "init_checkpoint_metadata": {
+    "source_reference": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/summary.json",
+    "source_summary": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/summary.json",
+    "source_run_id": "stage5_chain_scaled_corrected_20260702_182827",
+    "source_stage_name": "chain_scaled_corrected_depth_le4",
+    "source_checkpoint": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/train/chain_scaled_corrected_depth_le4/unfrozen_recurrent_step_4000.pt",
+    "source_checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_chain_scaled_corrected_20260702_182827/chain_scaled_corrected_depth_le4/unfrozen_recurrent_step_4000.pt"
+  },
+  "data_summary": "outputs/stage5/stage5_chain_anneal_20260703_160250/data/summary.json",
+  "filters": {
+    "heldout_active_eval": {
+      "source": "outputs/stage5/stage5_chain_anneal_20260703_160250/data/test_chain_mcq.jsonl",
+      "path": "outputs/stage5/stage5_chain_anneal_20260703_160250/data/test_chain_mcq_heldout64.jsonl",
+      "rows_per_depth": 64,
+      "rows": 256,
+      "depth_counts": {
+        "1": 64,
+        "2": 64,
+        "3": 64,
+        "4": 64
+      }
+    },
+    "heldout_final_eval": {
+      "source": "outputs/stage5/stage5_chain_anneal_20260703_160250/data/test_mcq.jsonl",
+      "path": "outputs/stage5/stage5_chain_anneal_20260703_160250/data/test_mcq_heldout64.jsonl",
+      "rows_per_depth": 64,
+      "rows": 256,
+      "depth_counts": {
+        "1": 64,
+        "2": 64,
+        "3": 64,
+        "4": 64
+      }
+    }
+  },
+  "train_config": "outputs/stage5/stage5_chain_anneal_20260703_160250/anneal_to_outcome_train_config.yaml"
+}
