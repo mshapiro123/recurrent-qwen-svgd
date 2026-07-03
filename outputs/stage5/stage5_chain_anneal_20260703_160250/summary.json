@@ -1,7 +1,7 @@
 {
   "kind": "stage5_chain_anneal_to_outcome",
   "run_id": "stage5_chain_anneal_20260703_160250",
-  "status": "training_finished",
+  "status": "finished",
   "n_symbols": 16,
   "max_depth": 4,
   "rows_per_depth": 256,
@@ -53,5 +53,116 @@
   "ramp_checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_chain_anneal_20260703_160250/anneal_to_outcome_ramp/unfrozen_recurrent_step_1000.pt",
   "final_checkpoint": "outputs/stage5/stage5_chain_anneal_20260703_160250/train/anneal_to_outcome/unfrozen_recurrent_step_2000.pt",
   "final_checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_chain_anneal_20260703_160250/anneal_to_outcome_final/unfrozen_recurrent_step_2000.pt",
-  "prelude_trajectory_source": "outputs/stage5/stage5_chain_anneal_20260703_160250/train/anneal_to_outcome/train_unfrozen_recurrent_summary.json"
+  "prelude_trajectory_source": "outputs/stage5/stage5_chain_anneal_20260703_160250/train/anneal_to_outcome/train_unfrozen_recurrent_summary.json",
+  "ramp_eval": {
+    "active": {
+      "name": "ramp_checkpoint_heldout",
+      "active_rows": "outputs/stage5/stage5_chain_anneal_20260703_160250/eval/ramp_checkpoint_heldout_active_rows.jsonl",
+      "active_summary": "outputs/stage5/stage5_chain_anneal_20260703_160250/eval/ramp_checkpoint_heldout_active_summary.json",
+      "active_diagonal": {
+        "1": 1.0,
+        "2": 0.9375,
+        "3": 0.984375,
+        "4": 0.90625
+      },
+      "active_diagonal_min": 0.90625,
+      "active_total": {
+        "correct": 621,
+        "total": 640,
+        "accuracy": 0.9703125
+      },
+      "above_diagonal": {
+        "iterate": 342,
+        "hold": 7,
+        "other": 35,
+        "unknown_iterate_target": 0,
+        "n": 384,
+        "rates": {
+          "iterate": 0.890625,
+          "hold": 0.018229166666666668,
+          "other": 0.09114583333333333,
+          "unknown_iterate_target": 0.0
+        }
+      }
+    },
+    "final": {
+      "name": "ramp_checkpoint_heldout",
+      "matrix_rows": "outputs/stage5/stage5_chain_anneal_20260703_160250/eval/ramp_checkpoint_heldout_matrix_rows.jsonl",
+      "matrix_summary": "outputs/stage5/stage5_chain_anneal_20260703_160250/eval/ramp_checkpoint_heldout_matrix_summary.json",
+      "final_answer_diagonal": {
+        "1": 0.984375,
+        "2": 0.671875,
+        "3": 0.40625,
+        "4": 0.390625
+      },
+      "frontier_by_loop": {
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0
+      }
+    }
+  },
+  "final_eval": {
+    "active": {
+      "name": "final_checkpoint_heldout",
+      "active_rows": "outputs/stage5/stage5_chain_anneal_20260703_160250/eval/final_checkpoint_heldout_active_rows.jsonl",
+      "active_summary": "outputs/stage5/stage5_chain_anneal_20260703_160250/eval/final_checkpoint_heldout_active_summary.json",
+      "active_diagonal": {
+        "1": 1.0,
+        "2": 0.96875,
+        "3": 0.96875,
+        "4": 0.9375
+      },
+      "active_diagonal_min": 0.9375,
+      "active_total": {
+        "correct": 625,
+        "total": 640,
+        "accuracy": 0.9765625
+      },
+      "above_diagonal": {
+        "iterate": 357,
+        "hold": 1,
+        "other": 26,
+        "unknown_iterate_target": 0,
+        "n": 384,
+        "rates": {
+          "iterate": 0.9296875,
+          "hold": 0.0026041666666666665,
+          "other": 0.06770833333333333,
+          "unknown_iterate_target": 0.0
+        }
+      }
+    },
+    "final": {
+      "name": "final_checkpoint_heldout",
+      "matrix_rows": "outputs/stage5/stage5_chain_anneal_20260703_160250/eval/final_checkpoint_heldout_matrix_rows.jsonl",
+      "matrix_summary": "outputs/stage5/stage5_chain_anneal_20260703_160250/eval/final_checkpoint_heldout_matrix_summary.json",
+      "final_answer_diagonal": {
+        "1": 1.0,
+        "2": 0.609375,
+        "3": 0.359375,
+        "4": 0.375
+      },
+      "frontier_by_loop": {
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0
+      }
+    }
+  },
+  "decision_read": {
+    "capability_component": {
+      "metric": "heldout final-answer diagonal minimum",
+      "min_accuracy": 0.359375,
+      "strong_bar": 0.9
+    },
+    "mechanism_component": {
+      "metric": "heldout active-label diagonal minimum",
+      "min_accuracy": 0.9375,
+      "bar": 0.71,
+      "pass": true
+    }
+  }
 }
