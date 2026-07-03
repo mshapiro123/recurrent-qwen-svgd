@@ -1,0 +1,136 @@
+{
+  "kind": "stage5_depth_extrapolation_eval",
+  "run_id": "stage5_post_anneal_readouts_20260703_191158_depth_extrapolation",
+  "status": "finished",
+  "n_symbols": 16,
+  "max_depth": 6,
+  "rows_per_depth": 64,
+  "max_loops": 6,
+  "threshold": 0.71,
+  "value_prefix": "letter:",
+  "checkpoint": "outputs/stage5/stage5_post_anneal_readouts_20260703_191158_depth_extrapolation/restored/scaled_corrected_final.pt",
+  "checkpoint_metadata": {
+    "source_reference": "outputs/stage5/stage5_chain_anneal_20260703_160250/summary.json",
+    "source_summary": "outputs/stage5/stage5_chain_anneal_20260703_160250/summary.json",
+    "source_run_id": "stage5_chain_anneal_20260703_160250",
+    "source_stage_name": null,
+    "source_checkpoint": null,
+    "source_checkpoint_drive_backup": null,
+    "source_final_checkpoint": "outputs/stage5/stage5_chain_anneal_20260703_160250/train/anneal_to_outcome/unfrozen_recurrent_step_2000.pt",
+    "source_final_checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_chain_anneal_20260703_160250/anneal_to_outcome_final/unfrozen_recurrent_step_2000.pt"
+  },
+  "pre_registered_bands": {
+    "5": {
+      "mle_prediction": 0.946,
+      "mle_interval": [
+        0.89,
+        1.0
+      ],
+      "conservative_prediction": 0.903,
+      "conservative_interval": [
+        0.831,
+        0.976
+      ]
+    },
+    "6": {
+      "mle_prediction": 0.935,
+      "mle_interval": [
+        0.875,
+        0.996
+      ],
+      "conservative_prediction": 0.885,
+      "conservative_interval": [
+        0.807,
+        0.963
+      ]
+    }
+  },
+  "data_summary": "outputs/stage5/stage5_post_anneal_readouts_20260703_191158_depth_extrapolation/data/summary.json",
+  "test_chain_mcq": "outputs/stage5/stage5_post_anneal_readouts_20260703_191158_depth_extrapolation/data/test_chain_mcq.jsonl",
+  "artifact_check": {
+    "kind": "synthetic_depth_extrapolation_artifact_check",
+    "checkpoint": "outputs/stage5/stage5_post_anneal_readouts_20260703_191158_depth_extrapolation/restored/scaled_corrected_final.pt",
+    "data_jsonl": "outputs/stage5/stage5_post_anneal_readouts_20260703_191158_depth_extrapolation/data/test_chain_mcq.jsonl",
+    "sample_id": "test_d01_00000",
+    "requested_max_loops": 6,
+    "loop_logits_shape": [
+      1,
+      1,
+      6,
+      100,
+      151936
+    ],
+    "loop_states_observed": 6,
+    "bridge_forward_calls": 5,
+    "expected_bridge_forward_calls": 5,
+    "forced_loop_count_honored": true,
+    "bridge_fires_on_reentry": true,
+    "source_static_checks": {
+      "learned_loop_control_optional": true,
+      "learned_loop_control_default_false": true,
+      "halting_loop_embedding_present": true,
+      "halting_target_loop_router_present": true,
+      "max_loop_embedding_capacity_64": false,
+      "no_literal_four_loop_cap_in_wrapper": true
+    },
+    "pass": true
+  },
+  "active_eval": {
+    "active_rows": "outputs/stage5/stage5_post_anneal_readouts_20260703_191158_depth_extrapolation/eval/depth_extrapolation_active_rows.jsonl",
+    "active_summary": "outputs/stage5/stage5_post_anneal_readouts_20260703_191158_depth_extrapolation/eval/depth_extrapolation_active_summary.json",
+    "active_diagonal": {
+      "1": 1.0,
+      "2": 0.96875,
+      "3": 0.96875,
+      "4": 0.9375,
+      "5": 0.8125,
+      "6": 0.515625
+    },
+    "active_total": {
+      "correct": 1257,
+      "total": 1344,
+      "accuracy": 0.9352678571428571
+    },
+    "above_diagonal": {
+      "iterate": 689,
+      "hold": 45,
+      "other": 226,
+      "unknown_iterate_target": 0,
+      "n": 960,
+      "rates": {
+        "iterate": 0.7177083333333333,
+        "hold": 0.046875,
+        "other": 0.23541666666666666,
+        "unknown_iterate_target": 0.0
+      }
+    }
+  },
+  "control_read": {
+    "depths": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "min_active_diagonal": 0.9375,
+    "pass": true
+  },
+  "extrapolation_read": {
+    "5": {
+      "observed": 0.8125,
+      "classification": "partial_extrapolation_below_conservative_band",
+      "conservative_interval": [
+        0.831,
+        0.976
+      ]
+    },
+    "6": {
+      "observed": 0.515625,
+      "classification": "below_bar",
+      "conservative_interval": [
+        0.807,
+        0.963
+      ]
+    }
+  }
+}
