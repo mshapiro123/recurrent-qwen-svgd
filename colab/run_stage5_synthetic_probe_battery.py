@@ -131,6 +131,8 @@ def main() -> int:
             os.environ.get("STAGE5_PROBE_LOOP_COUNTS", "1,2,3,4,5,6"),
             "--target_steps",
             os.environ.get("STAGE5_PROBE_TARGET_STEPS", "0,1,2,3,4,5,6"),
+            "--feature_transforms",
+            os.environ.get("STAGE5_PROBE_FEATURE_TRANSFORMS", "raw,unit_norm"),
             "--n_symbols",
             str(n_symbols),
             "--value_prefix",
@@ -165,6 +167,7 @@ def main() -> int:
                 "depth_stratified_diagonal": probe.get("depth_stratified_diagonal"),
                 "loop_index_deflation_curve": probe.get("loop_index_deflation_curve"),
                 "state_envelope": probe.get("state_envelope"),
+                "feature_transform_probes": probe.get("feature_transform_probes"),
                 "router_leak_exclusion": probe.get("router_leak_exclusion"),
             },
         }

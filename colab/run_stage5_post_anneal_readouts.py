@@ -57,12 +57,14 @@ def maybe_read_json(path: str | Path | None) -> dict[str, Any] | None:
 
 
 def run_reader_alignment(source_summary: dict[str, Any], output_path: Path) -> dict[str, Any] | None:
-    active = source_summary.get("final_active_eval") or {}
-    final = source_summary.get("final_matrix_eval") or {}
+    final_eval = source_summary.get("final_eval") or {}
+    active = source_summary.get("final_active_eval") or final_eval.get("active") or {}
+    final = source_summary.get("final_matrix_eval") or final_eval.get("final") or {}
     active_rows = active.get("active_rows")
     final_rows = final.get("matrix_rows")
-    final_data = final.get("data_jsonl")
-    chain_data = active.get("data_jsonl")
+    filters = source_summary.get("filters") or {}
+    final_data = final.get("data_jsonl") or (filters.get("heldout_final_eval") or {}).get("path")
+    chain_data = active.get("data_jsonl") or (filters.get("heldout_active_eval") or {}).get("path")
     active_summary = active.get("active_summary")
     final_summary = final.get("matrix_summary")
     required = [active_rows, final_rows, final_data, chain_data, active_summary, final_summary]
@@ -123,6 +125,7 @@ def compact_probe(payload: dict[str, Any] | None) -> dict[str, Any] | None:
         "depth_stratified_diagonal": probe.get("depth_stratified_diagonal"),
         "loop_index_deflation_curve": probe.get("loop_index_deflation_curve"),
         "state_envelope": probe.get("state_envelope"),
+        "feature_transform_probes": probe.get("feature_transform_probes"),
         "router_leak_exclusion": probe.get("router_leak_exclusion"),
     }
 

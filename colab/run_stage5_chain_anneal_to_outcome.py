@@ -187,6 +187,10 @@ def eval_final(
     }
 
 
+def train_stage_name_for_loss_mode(loop_loss_mode: str) -> str:
+    return "anneal_to_outcome" if loop_loss_mode == "annealed_chain_to_outcome" else "chain_continuation"
+
+
 def write_train_config(
     run_dir: Path,
     *,
@@ -197,8 +201,10 @@ def write_train_config(
     ramp_steps: int,
     dtype: str,
     prelude_lr_mult: float,
+    loop_loss_mode: str,
 ) -> Path:
     lr = float(os.environ.get("STAGE5_ANNEAL_LR", "1e-5"))
+    train_stage_name = train_stage_name_for_loss_mode(loop_loss_mode)
     cfg = {
         "model_name": os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct"),
         "dtype": dtype,
@@ -207,7 +213,7 @@ def write_train_config(
         "layer_split": os.environ.get("STAGE5_ANNEAL_LAYER_SPLIT", "6,18"),
         "max_length": int(os.environ.get("STAGE5_ANNEAL_MAX_LENGTH", "512")),
         "max_loops": int(max_loops),
-        "loop_loss_mode": "annealed_chain_to_outcome",
+        "loop_loss_mode": loop_loss_mode,
         "chain_anneal_hold_frac": float(os.environ.get("STAGE5_ANNEAL_HOLD_FRAC", "0.5")),
         "chain_outcome_loss_weight": 1.0,
         "initial_halt_prob": 0.15,
@@ -228,7 +234,7 @@ def write_train_config(
         "bridge_prelude_weight_decay": 0.0,
         "train_on_prompt": False,
         "gradient_checkpointing": True,
-        "output_dir": path_for_cli(run_dir / "train" / "anneal_to_outcome"),
+        "output_dir": path_for_cli(run_dir / "train" / train_stage_name),
         "resume_from": path_for_cli(resume_from),
         "resume_lora": {"enabled": False},
         "merge_lora_before_unfreeze": False,
@@ -247,9 +253,9 @@ def write_train_config(
             "target_source": "row_capped",
             "ramp_compute": False,
         },
-        "synthetic_phase": "chain_anneal_to_outcome",
+        "synthetic_phase": "chain_anneal_to_outcome" if loop_loss_mode == "annealed_chain_to_outcome" else "chain_continuation_attribution",
     }
-    path = run_dir / "anneal_to_outcome_train_config.yaml"
+    path = run_dir / f"{train_stage_name}_train_config.yaml"
     path.write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")
     return path
 
@@ -271,7 +277,11 @@ def write_markdown(run_dir: Path, payload: dict[str, Any]) -> None:
 
 
 def main() -> int:
-    run_id = os.environ.get("STAGE5_ANNEAL_RUN_ID") or time.strftime("stage5_chain_anneal_%Y%m%d_%H%M%S")
+    loop_loss_mode = os.environ.get("STAGE5_ANNEAL_LOOP_LOSS_MODE", "annealed_chain_to_outcome")
+    if loop_loss_mode not in {"annealed_chain_to_outcome", "per_loop_labels"}:
+        raise ValueError("STAGE5_ANNEAL_LOOP_LOSS_MODE must be annealed_chain_to_outcome or per_loop_labels")
+    default_prefix = "stage5_chain_anneal" if loop_loss_mode == "annealed_chain_to_outcome" else "stage5_chain_continuation_attribution"
+    run_id = os.environ.get("STAGE5_ANNEAL_RUN_ID") or time.strftime(f"{default_prefix}_%Y%m%d_%H%M%S")
     run_dir = ROOT / "outputs" / "stage5" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     n_symbols = int(os.environ.get("STAGE5_ANNEAL_N_SYMBOLS", "16"))
@@ -296,9 +306,12 @@ def main() -> int:
         label="scaled_corrected_final",
     )
     payload: dict[str, Any] = {
-        "kind": "stage5_chain_anneal_to_outcome",
+        "kind": "stage5_chain_anneal_to_outcome"
+        if loop_loss_mode == "annealed_chain_to_outcome"
+        else "stage5_chain_continuation_attribution",
         "run_id": run_id,
         "status": "started",
+        "loop_loss_mode": loop_loss_mode,
         "n_symbols": n_symbols,
         "max_depth": max_depth,
         "rows_per_depth": rows_per_depth,
@@ -358,6 +371,7 @@ def main() -> int:
         ramp_steps=ramp_steps,
         dtype=dtype,
         prelude_lr_mult=float(os.environ.get("STAGE5_ANNEAL_PRELUDE_LR_MULT", "10.0")),
+        loop_loss_mode=loop_loss_mode,
     )
     payload.update(
         {
@@ -383,10 +397,11 @@ def main() -> int:
             os.environ.get("DEVICE", "cuda"),
         ]
     )
-    train_log = run_dir / "train" / "anneal_to_outcome_train.log"
+    train_stage_name = train_stage_name_for_loss_mode(loop_loss_mode)
+    train_log = run_dir / "train" / f"{train_stage_name}_train.log"
     train_log.parent.mkdir(parents=True, exist_ok=True)
     train_log.write_text(proc.stdout or "", encoding="utf-8")
-    train_dir = run_dir / "train" / "anneal_to_outcome"
+    train_dir = run_dir / "train" / train_stage_name
     ramp_checkpoint = checkpoint_at_step(train_dir, ramp_steps)
     final_checkpoint = latest_checkpoint(train_dir)
     ramp_backup = backup_checkpoint_to_drive(
@@ -473,6 +488,14 @@ def main() -> int:
             "min_accuracy": final_active_min,
             "bar": threshold,
             "pass": final_active_min >= threshold,
+        },
+        "attribution_component": {
+            "comparison_question": (
+                "Does continued chain supervision match the post-anneal extrapolation jump, "
+                "or was label removal the active ingredient?"
+            ),
+            "loss_mode": loop_loss_mode,
+            "needs_depth_5_to_8_readout": True,
         },
     }
     payload["status"] = "finished"

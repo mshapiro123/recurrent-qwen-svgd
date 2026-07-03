@@ -48,15 +48,16 @@ def write_markdown(run_dir: Path, payload: dict[str, Any]) -> None:
         f"- Source checkpoint: `{payload['checkpoint']}`",
         f"- Artifact check pass: `{payload.get('artifact_check', {}).get('pass')}`",
         f"- Active diagonal: `{diag}`",
-        f"- Depth 5 read: `{payload.get('extrapolation_read', {}).get('5')}`",
-        f"- Depth 6 read: `{payload.get('extrapolation_read', {}).get('6')}`",
+        f"- Extrapolation read: `{payload.get('extrapolation_read')}`",
         f"- Controls pass: `{payload.get('control_read', {}).get('pass')}`",
         "",
     ]
     (run_dir / "summary.md").write_text("\n".join(lines), encoding="utf-8")
 
 
-def classify_depth(value: float, *, lower: float, bar: float) -> str:
+def classify_depth(value: float, *, lower: float | None, bar: float) -> str:
+    if lower is None:
+        return "meets_bar_unbanded" if value >= bar else "below_bar"
     if value >= lower and value >= bar:
         return "inside_or_above_conservative_band"
     if value >= bar:
@@ -204,18 +205,17 @@ def main() -> int:
     active = read_json(active_summary)
     diag = {str(key): float(value) for key, value in active.get("active_diagonal", {}).items()}
     bands = payload["pre_registered_bands"]
-    extrapolation_read = {
-        depth: {
+    extrapolation_read = {}
+    for depth_int in sorted(int(depth) for depth in diag if int(depth) > 4):
+        depth = str(depth_int)
+        band = bands.get(depth)
+        lower = float(band["conservative_interval"][0]) if band else None
+        extrapolation_read[depth] = {
             "observed": diag.get(depth, 0.0),
-            "classification": classify_depth(
-                diag.get(depth, 0.0),
-                lower=float(bands[depth]["conservative_interval"][0]),
-                bar=threshold,
-            ),
-            "conservative_interval": bands[depth]["conservative_interval"],
+            "classification": classify_depth(diag.get(depth, 0.0), lower=lower, bar=threshold),
+            "conservative_interval": band.get("conservative_interval") if band else None,
+            "threshold": threshold,
         }
-        for depth in ("5", "6")
-    }
     control_values = [diag.get(str(depth), 0.0) for depth in range(1, 5)]
     payload.update(
         {

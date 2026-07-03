@@ -2281,19 +2281,25 @@ def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
         assert "depth_extrapolation_eval" in text
         assert "synthetic_probe_battery" in text
         assert "chain_anneal_to_outcome" in text
+        assert "post_anneal_extended_readouts" in text
+        assert "chain_continuation_attribution" in text
         assert "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py" in text
         assert "STAGE5_EXTRAP_MAX_LOOPS" in text
         assert "STAGE5_ANNEAL_TOTAL_STEPS" in text
+        assert "STAGE5_CHAIN_CONTINUATION_EXTRAP_DEPTHS" in text
 
     assert "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION" in cell
     assert "eval/eval_synthetic_depth_artifact_check.py" in cell
     assert "eval/eval_synthetic_depth_probe.py" in cell
     assert "loop_loss_mode='annealed_chain_to_outcome'" in cell
+    assert "chain_continuation_attribution" in cell
     assert "pre_registered_bands" in extrap
     assert "bridge_forward_calls" in artifact
     assert "loop_index_probe" in probe
+    assert "feature_transforms" in probe
     assert "permutation_p95" in probe
     assert "annealed_chain_to_outcome" in anneal
+    assert "STAGE5_ANNEAL_LOOP_LOSS_MODE" in anneal
     assert "STAGE5_ANNEAL_PRELUDE_LR_MULT" in anneal
     assert "loop_loss_mode == \"annealed_chain_to_outcome\"" in wrapper
     assert "chain_label_weight" in trainer

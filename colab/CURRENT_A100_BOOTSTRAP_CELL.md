@@ -76,6 +76,8 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "depth_extrapolation_eval" - forward-only depth 5/6 extrapolation from the positive synthetic chain checkpoint.
 #   "synthetic_probe_battery" - forward-only state probe grid plus loop-index probe for the positive synthetic chain checkpoint.
 #   "chain_anneal_to_outcome" - persistence test: anneal active chain labels away while keeping outcome supervision.
+#   "post_anneal_extended_readouts" - eval-only depth 1-8 and norm-standardized clock probes from the annealed checkpoint.
+#   "chain_continuation_attribution" - same-budget continued chain supervision control plus depth 1-8 extrapolation.
 #   "gradient_path_audit" - read-only per-loop gradient matrix plus finite-difference bridge check.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
 #   "model_viability_queue" - queued no-training Qwen 3B/7B probes with VRAM-aware skipping.
@@ -1914,7 +1916,64 @@ TARGETS = {
             "STAGE5_PROBE_ROWS_PER_DEPTH": "64",
             "STAGE5_PROBE_LOOP_COUNTS": "1,2,3,4,5,6",
             "STAGE5_PROBE_TARGET_STEPS": "0,1,2,3,4,5,6",
+            "STAGE5_PROBE_FEATURE_TRANSFORMS": "raw,unit_norm",
             "STAGE5_PROBE_DISCONNECT": "0",
+        },
+    },
+    "post_anneal_readouts": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "post_anneal_readouts",
+            "eval/analyze_synthetic_reader_alignment.py",
+            "colab/run_stage5_post_anneal_readouts.py",
+            "STAGE5_POST_ANNEAL_SOURCE_SUMMARY",
+            "STAGE5_EXTRAP_CHECKPOINT",
+            "STAGE5_PROBE_CHECKPOINT",
+            "router_leak_exclusion",
+            "state_envelope",
+            "tests/test_analyze_synthetic_reader_alignment.py",
+            "tests/test_stage5_chain_consolidation.py",
+        ],
+        "env": {
+            "STAGE5_POST_ANNEAL_SOURCE_SUMMARY": "outputs/stage5/stage5_chain_anneal_20260703_160250/summary.json",
+            "STAGE5_POST_ANNEAL_N_SYMBOLS": "16",
+            "STAGE5_POST_ANNEAL_EXTRAP_DEPTHS": "1,2,3,4,5,6",
+            "STAGE5_POST_ANNEAL_MAX_LOOPS": "6",
+            "STAGE5_POST_ANNEAL_PROBE_MAX_DEPTH": "6",
+            "STAGE5_POST_ANNEAL_ROWS_PER_DEPTH": "64",
+            "STAGE5_POST_ANNEAL_PROBE_LOOP_COUNTS": "1,2,3,4,5,6",
+            "STAGE5_POST_ANNEAL_PROBE_TARGET_STEPS": "0,1,2,3,4,5,6",
+            "STAGE5_PROBE_FEATURE_TRANSFORMS": "raw,unit_norm",
+            "STAGE5_POST_ANNEAL_DTYPE": "bfloat16",
+            "STAGE5_POST_ANNEAL_DISCONNECT": "0",
+        },
+    },
+    "post_anneal_extended_readouts": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "post_anneal_readouts",
+            "eval/analyze_synthetic_reader_alignment.py",
+            "colab/run_stage5_post_anneal_readouts.py",
+            "STAGE5_POST_ANNEAL_SOURCE_SUMMARY",
+            "STAGE5_PROBE_FEATURE_TRANSFORMS",
+            "router_leak_exclusion",
+            "state_envelope",
+            "tests/test_stage5_chain_consolidation.py",
+        ],
+        "env": {
+            "STAGE5_POST_ANNEAL_SOURCE_SUMMARY": "outputs/stage5/stage5_chain_anneal_20260703_160250/summary.json",
+            "STAGE5_POST_ANNEAL_N_SYMBOLS": "16",
+            "STAGE5_POST_ANNEAL_EXTRAP_DEPTHS": "1,2,3,4,5,6,7,8",
+            "STAGE5_POST_ANNEAL_MAX_LOOPS": "8",
+            "STAGE5_POST_ANNEAL_PROBE_MAX_DEPTH": "8",
+            "STAGE5_POST_ANNEAL_ROWS_PER_DEPTH": "128",
+            "STAGE5_POST_ANNEAL_PROBE_LOOP_COUNTS": "1,2,3,4,5,6,7,8",
+            "STAGE5_POST_ANNEAL_PROBE_TARGET_STEPS": "0,1,2,3,4,5,6,7,8",
+            "STAGE5_PROBE_FEATURE_TRANSFORMS": "raw,unit_norm",
+            "STAGE5_POST_ANNEAL_DTYPE": "bfloat16",
+            "STAGE5_POST_ANNEAL_DISCONNECT": "0",
         },
     },
     "chain_anneal_to_outcome": {
@@ -1939,6 +1998,34 @@ TARGETS = {
             "STAGE5_ANNEAL_PRELUDE_LR_MULT": "10.0",
             "STAGE5_ANNEAL_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
             "STAGE5_ANNEAL_DISCONNECT": "0",
+        },
+    },
+    "chain_continuation_attribution": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "chain_continuation_attribution",
+            "colab/run_stage5_chain_continuation_attribution.py",
+            "STAGE5_CHAIN_CONTINUATION_EXTRAP_DEPTHS",
+            "STAGE5_ANNEAL_LOOP_LOSS_MODE",
+            "per_loop_labels",
+            "tests/test_stage5_chain_consolidation.py",
+        ],
+        "env": {
+            "STAGE5_CHAIN_CONTINUATION_INIT_CHECKPOINT": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/summary.json",
+            "STAGE5_CHAIN_CONTINUATION_N_SYMBOLS": "16",
+            "STAGE5_CHAIN_CONTINUATION_MAX_DEPTH": "4",
+            "STAGE5_CHAIN_CONTINUATION_ROWS_PER_DEPTH": "256",
+            "STAGE5_CHAIN_CONTINUATION_HELDOUT_ROWS_PER_DEPTH": "64",
+            "STAGE5_CHAIN_CONTINUATION_TOTAL_STEPS": "2000",
+            "STAGE5_CHAIN_CONTINUATION_SAVE_MID_FRAC": "0.5",
+            "STAGE5_CHAIN_CONTINUATION_PRELUDE_LR_MULT": "10.0",
+            "STAGE5_CHAIN_CONTINUATION_EXTRAP_DEPTHS": "1,2,3,4,5,6,7,8",
+            "STAGE5_CHAIN_CONTINUATION_EXTRAP_ROWS_PER_DEPTH": "128",
+            "STAGE5_CHAIN_CONTINUATION_EXTRAP_MAX_LOOPS": "8",
+            "STAGE5_CHAIN_CONTINUATION_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
+            "STAGE5_CHAIN_CONTINUATION_DTYPE": "bfloat16",
+            "STAGE5_CHAIN_CONTINUATION_DISCONNECT": "0",
         },
     },
     "gradient_path_audit": {

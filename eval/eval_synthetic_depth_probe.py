@@ -31,6 +31,10 @@ def parse_csv_ints(text: str) -> list[int]:
     return [int(item) for item in str(text).split(",") if item.strip()]
 
 
+def parse_csv_strings(text: str) -> list[str]:
+    return [item.strip() for item in str(text).split(",") if item.strip()]
+
+
 def deterministic_split(n: int, *, train_frac: float, seed: int) -> tuple[list[int], list[int]]:
     indices = list(range(n))
     random.Random(seed).shuffle(indices)
@@ -165,6 +169,29 @@ def loop_index_tensors(
     train_y = torch.tensor([loops.index(int(record["loop"])) for record in train_records], dtype=torch.long)
     test_y = torch.tensor([loops.index(int(record["loop"])) for record in test_records], dtype=torch.long)
     return train_x, train_y, test_x, test_y
+
+
+def transformed_features(features: torch.Tensor, transform: str) -> torch.Tensor:
+    normalized = str(transform).strip().lower()
+    if normalized in {"", "raw", "none"}:
+        return features
+    if normalized in {"unit_norm", "l2", "direction"}:
+        return torch.nn.functional.normalize(features.float(), p=2, dim=-1, eps=1e-8)
+    if normalized in {"rms_norm", "rms"}:
+        scale = features.float().square().mean(dim=-1, keepdim=True).sqrt().clamp_min(1e-8)
+        return features.float() / scale
+    raise ValueError(f"Unknown feature transform: {transform!r}")
+
+
+def transform_records(records: list[dict[str, Any]], transform: str) -> list[dict[str, Any]]:
+    if str(transform).strip().lower() in {"", "raw", "none"}:
+        return records
+    transformed: list[dict[str, Any]] = []
+    for record in records:
+        copied = dict(record)
+        copied["feature"] = transformed_features(record["feature"], transform).detach().clone()
+        transformed.append(copied)
+    return transformed
 
 
 def loop_discriminant_directions(
@@ -524,6 +551,8 @@ def collect_state_rows(args: argparse.Namespace) -> tuple[list[dict[str, Any]], 
 def probe_grid(records: list[dict[str, Any]], args: argparse.Namespace, *, n_symbols: int) -> dict[str, Any]:
     loops = parse_csv_ints(args.loop_counts)
     target_steps = parse_csv_ints(args.target_steps)
+    feature_transform = str(getattr(args, "feature_transform", "raw"))
+    records = transform_records(records, feature_transform)
     row_ids = sorted({int(record["row_index"]) for record in records})
     train_rows, test_rows = deterministic_split(len(row_ids), train_frac=args.train_frac, seed=args.seed)
     row_id_by_pos = {pos: row_id for pos, row_id in enumerate(row_ids)}
@@ -609,6 +638,7 @@ def probe_grid(records: list[dict[str, Any]], args: argparse.Namespace, *, n_sym
             )
             depth_stratified_diagonal[str(depth)][str(loop)] = result
     return {
+        "feature_transform": feature_transform,
         "grid": grid,
         "depth_stratified_diagonal": depth_stratified_diagonal,
         "loop_index_probe": loop_index,
@@ -657,6 +687,11 @@ def main() -> int:
     parser.add_argument("--envelope_fit_depth_max", type=int, default=4)
     parser.add_argument("--router_leak_check", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--router_leak_atol", type=float, default=1e-5)
+    parser.add_argument(
+        "--feature_transforms",
+        default="raw",
+        help="Comma-separated feature views for probes. Use unit_norm/rms_norm to remove per-state scale.",
+    )
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--split", default="6,18")
     parser.add_argument("--bridge_projection_mode", choices=("concat", "split"), default="split")
@@ -669,7 +704,22 @@ def main() -> int:
     args = parser.parse_args()
 
     records, n_symbols, router_leak = collect_state_rows(args)
+    transforms = parse_csv_strings(args.feature_transforms)
+    if not transforms:
+        transforms = ["raw"]
+    primary_transform = transforms[0]
+    setattr(args, "feature_transform", primary_transform)
     payload = probe_grid(records, args, n_symbols=n_symbols)
+    feature_transform_probes: dict[str, Any] = {}
+    for transform in transforms:
+        setattr(args, "feature_transform", transform)
+        transformed_payload = probe_grid(records, args, n_symbols=n_symbols)
+        feature_transform_probes[transform] = {
+            "feature_transform": transform,
+            "loop_index_probe": transformed_payload.get("loop_index_probe"),
+            "loop_index_deflation_curve": transformed_payload.get("loop_index_deflation_curve"),
+            "state_envelope": transformed_payload.get("state_envelope"),
+        }
     summary = {
         "kind": "synthetic_depth_state_probe",
         "checkpoint": args.checkpoint,
@@ -679,7 +729,9 @@ def main() -> int:
         "n_symbols": n_symbols,
         "loop_counts": parse_csv_ints(args.loop_counts),
         "target_steps": parse_csv_ints(args.target_steps),
+        "feature_transforms": transforms,
         "router_leak_exclusion": router_leak,
+        "feature_transform_probes": feature_transform_probes,
         **payload,
     }
     out = Path(args.output_summary)

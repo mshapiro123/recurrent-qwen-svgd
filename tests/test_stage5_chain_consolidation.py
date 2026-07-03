@@ -60,6 +60,7 @@ def test_extrapolation_classification_uses_conservative_band_and_bar() -> None:
     assert extrap.classify_depth(0.90, lower=0.831, bar=0.71) == "inside_or_above_conservative_band"
     assert extrap.classify_depth(0.80, lower=0.831, bar=0.71) == "partial_extrapolation_below_conservative_band"
     assert extrap.classify_depth(0.30, lower=0.831, bar=0.71) == "below_bar"
+    assert extrap.classify_depth(0.80, lower=None, bar=0.71) == "meets_bar_unbanded"
 
 
 def test_chain_consolidation_cell_names_all_three_targets() -> None:
@@ -69,8 +70,11 @@ def test_chain_consolidation_cell_names_all_three_targets() -> None:
     assert "synthetic_probe_battery" in text
     assert "chain_anneal_to_outcome" in text
     assert "post_anneal_readouts" in text
+    assert "post_anneal_extended_readouts" in text
+    assert "chain_continuation_attribution" in text
     assert "colab/run_stage5_chain_anneal_to_outcome.py" in text
     assert "colab/run_stage5_post_anneal_readouts.py" in text
+    assert "colab/run_stage5_chain_continuation_attribution.py" in text
 
 
 def test_chain_consolidation_runners_import_when_executed_by_path() -> None:
@@ -79,6 +83,7 @@ def test_chain_consolidation_runners_import_when_executed_by_path() -> None:
         "colab/run_stage5_synthetic_probe_battery.py",
         "colab/run_stage5_chain_anneal_to_outcome.py",
         "colab/run_stage5_post_anneal_readouts.py",
+        "colab/run_stage5_chain_continuation_attribution.py",
     ]:
         namespace = runpy.run_path(path, run_name="not_main")
         assert "main" in namespace
@@ -107,6 +112,7 @@ def test_post_anneal_readout_compacts_extrapolation_and_probe_fields() -> None:
             "depth_stratified_diagonal": {"5": {"5": {"accuracy": 0.1}}},
             "loop_index_deflation_curve": [{"rank": 1}],
             "state_envelope": {"late_loop_reconstruction_error": 0.2},
+            "feature_transform_probes": {"unit_norm": {"loop_index_probe": {"accuracy": 0.3}}},
             "router_leak_exclusion": {"forced_loop_path_pass": True},
         },
     }
@@ -115,3 +121,4 @@ def test_post_anneal_readout_compacts_extrapolation_and_probe_fields() -> None:
     compacted_probe = compact_probe(probe_payload)
     assert compacted_probe["router_leak_exclusion"]["forced_loop_path_pass"] is True
     assert compacted_probe["state_envelope"]["late_loop_reconstruction_error"] == 0.2
+    assert compacted_probe["feature_transform_probes"]["unit_norm"]["loop_index_probe"]["accuracy"] == 0.3

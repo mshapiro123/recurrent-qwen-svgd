@@ -146,6 +146,43 @@ def test_loop_index_deflation_curve_removes_low_rank_clock() -> None:
     assert curve[2]["accuracy"] < curve[0]["accuracy"]
 
 
+def test_unit_norm_feature_transform_removes_pure_scale_clock() -> None:
+    records = []
+    base = torch.ones(6)
+    for row_idx in range(36):
+        for loop in [1, 2, 3]:
+            records.append(
+                {
+                    "row_index": row_idx,
+                    "depth": 3,
+                    "loop": loop,
+                    "feature": base * float(loop),
+                    "targets": {"0": 0, "1": 1, "2": 2, "3": 3},
+                }
+            )
+
+    class Args:
+        train_frac = 0.7
+        seed = 0
+        loop_counts = "1,2,3"
+        target_steps = "0,1,2,3"
+        ridge_l2 = 1e-3
+        permutations = 0
+        deflation_max_rank = 2
+        envelope_rank = 2
+        envelope_fit_loop_max = 3
+        envelope_fit_depth_max = 3
+
+    Args.feature_transform = "raw"
+    raw = probe_grid(records, Args(), n_symbols=4)
+    Args.feature_transform = "unit_norm"
+    unit = probe_grid(records, Args(), n_symbols=4)
+
+    assert raw["loop_index_probe"]["accuracy"] > 0.6
+    assert unit["loop_index_probe"]["accuracy"] <= 0.34
+    assert raw["loop_index_probe"]["accuracy"] - unit["loop_index_probe"]["accuracy"] > 0.25
+
+
 def test_state_envelope_detects_late_loop_drift() -> None:
     records = []
     generator = torch.Generator().manual_seed(0)
