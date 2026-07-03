@@ -90,6 +90,26 @@ def curriculum_target_counts(
     raise ValueError("target_source must be one of: schedule, row_capped, row_or_schedule_max")
 
 
+def chain_label_weight(
+    step: int,
+    total_steps: int,
+    *,
+    hold_frac: float = 0.5,
+) -> float:
+    """Anneal intermediate-chain supervision from 1 to 0, then hold at 0."""
+
+    if total_steps <= 0:
+        raise ValueError("total_steps must be positive")
+    if hold_frac < 0.0 or hold_frac > 1.0:
+        raise ValueError("hold_frac must be in [0, 1]")
+    ramp_steps = int(total_steps * (1.0 - hold_frac))
+    if ramp_steps <= 0:
+        return 0.0
+    if step >= ramp_steps:
+        return 0.0
+    return max(0.0, 1.0 - float(step) / float(ramp_steps))
+
+
 def freeze_all_base_then_unfreeze_recurrent_block(wrapper: RecurrentQwenForCausalLM) -> None:
     for param in wrapper.base_model.parameters():
         param.requires_grad_(False)
@@ -546,6 +566,9 @@ def main() -> int:
     max_steps = cfg_int(cfg, "max_steps", 25)
     save_every = cfg_int(cfg, "save_every", 0) if cfg.get("save_every", 0) else 0
     prelude_grad_multiplier = cfg_float(cfg, "bridge_prelude_grad_multiplier", 1.0)
+    loop_loss_mode = str(cfg.get("loop_loss_mode", "halting_weighted"))
+    chain_anneal_hold_frac = cfg_float(cfg, "chain_anneal_hold_frac", 0.5)
+    chain_outcome_loss_weight = cfg_float(cfg, "chain_outcome_loss_weight", 1.0)
     if prelude_grad_multiplier != 1.0 and bridge_uses_split_projection(wrapper):
         raise ValueError(
             "Do not combine split bridge true prelude LR with bridge_prelude_grad_multiplier. "
@@ -572,7 +595,17 @@ def main() -> int:
                 max_loops=forward_loops,
                 beta=cfg_float(cfg, "beta", 0.08),
                 halt_target_nll_weight=cfg_float(cfg, "halt_target_nll_weight", 0.0),
-                loop_loss_mode=str(cfg.get("loop_loss_mode", "halting_weighted")),
+                loop_loss_mode=loop_loss_mode,
+                loop_label_loss_weight=(
+                    chain_label_weight(step, max_steps, hold_frac=chain_anneal_hold_frac)
+                    if loop_loss_mode == "annealed_chain_to_outcome"
+                    else 1.0
+                ),
+                outcome_label_loss_weight=(
+                    chain_outcome_loss_weight
+                    if loop_loss_mode == "annealed_chain_to_outcome"
+                    else 1.0
+                ),
                 reentry_rescale_mode="none",
                 use_reentry_adapter=False,
                 reentry_tail_damper_path=None,

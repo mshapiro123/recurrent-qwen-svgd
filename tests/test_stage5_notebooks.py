@@ -2266,6 +2266,39 @@ def test_chain_scaled_corrected_target_is_wired_and_guarded() -> None:
     assert "chain_symbol_sft" in dataset
 
 
+def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py").read_text(encoding="utf-8")
+    extrap = (ROOT / "colab/run_stage5_depth_extrapolation_eval.py").read_text(encoding="utf-8")
+    artifact = (ROOT / "eval/eval_synthetic_depth_artifact_check.py").read_text(encoding="utf-8")
+    probe = (ROOT / "eval/eval_synthetic_depth_probe.py").read_text(encoding="utf-8")
+    anneal = (ROOT / "colab/run_stage5_chain_anneal_to_outcome.py").read_text(encoding="utf-8")
+    wrapper = (ROOT / "models/recurrent_wrapper.py").read_text(encoding="utf-8")
+    trainer = (ROOT / "training/train_unfrozen_recurrent.py").read_text(encoding="utf-8")
+
+    for text in (bootstrap, bootstrap_md):
+        assert "depth_extrapolation_eval" in text
+        assert "synthetic_probe_battery" in text
+        assert "chain_anneal_to_outcome" in text
+        assert "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py" in text
+        assert "STAGE5_EXTRAP_MAX_LOOPS" in text
+        assert "STAGE5_ANNEAL_TOTAL_STEPS" in text
+
+    assert "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION" in cell
+    assert "eval/eval_synthetic_depth_artifact_check.py" in cell
+    assert "eval/eval_synthetic_depth_probe.py" in cell
+    assert "loop_loss_mode='annealed_chain_to_outcome'" in cell
+    assert "pre_registered_bands" in extrap
+    assert "bridge_forward_calls" in artifact
+    assert "loop_index_probe" in probe
+    assert "permutation_p95" in probe
+    assert "annealed_chain_to_outcome" in anneal
+    assert "STAGE5_ANNEAL_PRELUDE_LR_MULT" in anneal
+    assert "loop_loss_mode == \"annealed_chain_to_outcome\"" in wrapper
+    assert "chain_label_weight" in trainer
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

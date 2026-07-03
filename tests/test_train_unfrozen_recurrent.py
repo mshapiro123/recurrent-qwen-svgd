@@ -13,6 +13,7 @@ from training.train_unfrozen_recurrent import (
     bridge_prelude_weight_stats,
     bridge_uses_split_projection,
     build_optimizer,
+    chain_label_weight,
     configure_trainable_modules,
     cosine_with_previous,
     curriculum_target_counts,
@@ -53,6 +54,14 @@ def test_curriculum_target_counts_modes() -> None:
     assert curriculum_target_counts(row_targets, 4, mode="schedule").tolist() == [4, 4, 4]
     assert curriculum_target_counts(row_targets, 4, mode="row_capped").tolist() == [1, 3, 4]
     assert curriculum_target_counts(row_targets, 4, mode="row_or_schedule_max").tolist() == [4, 4, 8]
+
+
+def test_chain_label_weight_ramps_then_holds_zero() -> None:
+    assert chain_label_weight(0, 10, hold_frac=0.5) == 1.0
+    assert chain_label_weight(2, 10, hold_frac=0.5) == 0.6
+    assert chain_label_weight(5, 10, hold_frac=0.5) == 0.0
+    assert chain_label_weight(9, 10, hold_frac=0.5) == 0.0
+    assert chain_label_weight(0, 10, hold_frac=1.0) == 0.0
 
 
 def test_resolve_resume_lora_config_reads_checkpoint_config(tmp_path) -> None:

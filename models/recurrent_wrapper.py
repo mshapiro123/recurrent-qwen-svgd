@@ -253,6 +253,8 @@ class RecurrentQwenForCausalLM(nn.Module):
         use_learned_loop_control: bool = False,
         loop_control_ce_weight: float = 0.0,
         loop_loss_mode: str = "halting_weighted",
+        loop_label_loss_weight: float = 1.0,
+        outcome_label_loss_weight: float = 1.0,
         use_reentry_adapter: bool = False,
         target_loop_prior: Optional[torch.Tensor] = None,
         return_loop_logits: bool = False,
@@ -434,6 +436,7 @@ class RecurrentQwenForCausalLM(nn.Module):
 
         loop_logits: list[torch.Tensor] = []
         per_loop_ce: list[torch.Tensor] = []
+        per_loop_outcome_ce: list[torch.Tensor] = []
         per_loop_label_active: list[torch.Tensor] = []
         halt_probs: list[torch.Tensor] = []
         latent_kls: list[torch.Tensor] = []
@@ -551,6 +554,7 @@ class RecurrentQwenForCausalLM(nn.Module):
                 if not self._keeps_full_logits(logits_to_keep):
                     raise ValueError("labels require full-sequence logits; set logits_to_keep=0")
                 labels_for_loop = labels_flat
+                outcome_ce = self._sequence_cross_entropy(logits.float(), labels_flat)
                 if loop_labels_flat is not None:
                     if loop_labels_flat.dim() != 3:
                         raise ValueError("loop_labels must be shaped [batch, max_loops, seq_len]")
@@ -559,6 +563,7 @@ class RecurrentQwenForCausalLM(nn.Module):
                     else:
                         labels_for_loop = loop_labels_flat[:, loop_idx, :]
                 per_loop_ce.append(self._sequence_cross_entropy(logits.float(), labels_for_loop))
+                per_loop_outcome_ce.append(outcome_ce)
                 per_loop_label_active.append(self._sequence_has_labels(labels_for_loop))
 
         halt_probs_tensor = torch.stack(halt_probs, dim=-1)
@@ -636,9 +641,33 @@ class RecurrentQwenForCausalLM(nn.Module):
                 loss = (ce_tensor * active).sum() / active.sum().clamp_min(1.0)
                 metrics["per_loop_label_ce"] = loss.detach()
                 metrics["per_loop_label_active"] = active.sum().detach()
+            elif loop_loss_mode == "annealed_chain_to_outcome":
+                if loop_labels_flat is None:
+                    raise ValueError("loop_loss_mode='annealed_chain_to_outcome' requires loop_labels")
+                if target_indices is None:
+                    raise ValueError("loop_loss_mode='annealed_chain_to_outcome' requires target_loop_counts")
+                active = torch.stack(per_loop_label_active, dim=-1).to(dtype=ce_tensor.dtype)
+                chain_ce = (ce_tensor * active).sum() / active.sum().clamp_min(1.0)
+                outcome_ce_tensor = torch.stack(per_loop_outcome_ce, dim=-1)
+                outcome_ce = outcome_ce_tensor.gather(dim=-1, index=target_indices.view(-1, 1)).squeeze(-1).mean()
+                loss = float(loop_label_loss_weight) * chain_ce + float(outcome_label_loss_weight) * outcome_ce
+                metrics["per_loop_label_ce"] = chain_ce.detach()
+                metrics["per_loop_label_active"] = active.sum().detach()
+                metrics["outcome_target_ce"] = outcome_ce.detach()
+                metrics["loop_label_loss_weight"] = torch.tensor(
+                    float(loop_label_loss_weight),
+                    device=ce_tensor.device,
+                    dtype=ce_tensor.dtype,
+                )
+                metrics["outcome_label_loss_weight"] = torch.tensor(
+                    float(outcome_label_loss_weight),
+                    device=ce_tensor.device,
+                    dtype=ce_tensor.dtype,
+                )
             else:
                 raise ValueError(
-                    "loop_loss_mode must be one of: halting_weighted, last, target, uniform, per_loop_labels"
+                    "loop_loss_mode must be one of: halting_weighted, last, target, uniform, "
+                    "per_loop_labels, annealed_chain_to_outcome"
                 )
             metrics["expected_ce"] = loss.detach()
 

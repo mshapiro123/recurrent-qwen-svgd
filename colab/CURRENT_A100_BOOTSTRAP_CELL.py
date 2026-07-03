@@ -73,6 +73,9 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "synthetic_depth_chain_supervision" - L4/T4 train-split diagnostic plus per-loop intermediate-chain supervision.
 #   "synthetic_depth_split_bridge_microtest" - L4/T4 split-bridge true prelude-LR micro-fit.
 #   "synthetic_depth_chain_scaled_corrected" - L4/T4 active-label full-symbol chain run at N=16.
+#   "depth_extrapolation_eval" - forward-only depth 5/6 extrapolation from the positive synthetic chain checkpoint.
+#   "synthetic_probe_battery" - forward-only state probe grid plus loop-index probe for the positive synthetic chain checkpoint.
+#   "chain_anneal_to_outcome" - persistence test: anneal active chain labels away while keeping outcome supervision.
 #   "gradient_path_audit" - read-only per-loop gradient matrix plus finite-difference bridge check.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
 #   "model_viability_queue" - queued no-training Qwen 3B/7B probes with VRAM-aware skipping.
@@ -1869,6 +1872,73 @@ TARGETS = {
             "STAGE5_CHAIN_CORRECTED_STAGE1234_STEPS": "4000",
             "STAGE5_CHAIN_CORRECTED_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
             "STAGE5_CHAIN_CORRECTED_DISCONNECT": "0",
+        },
+    },
+    "depth_extrapolation_eval": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "depth_extrapolation_eval",
+            "eval/eval_synthetic_depth_artifact_check.py",
+            "colab/run_stage5_depth_extrapolation_eval.py",
+            "STAGE5_EXTRAP_DEPTHS",
+            "STAGE5_EXTRAP_MAX_LOOPS",
+            "tests/test_stage5_chain_consolidation.py",
+        ],
+        "env": {
+            "STAGE5_EXTRAP_CHECKPOINT": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/summary.json",
+            "STAGE5_EXTRAP_N_SYMBOLS": "16",
+            "STAGE5_EXTRAP_DEPTHS": "1,2,3,4,5,6",
+            "STAGE5_EXTRAP_ROWS_PER_DEPTH": "64",
+            "STAGE5_EXTRAP_MAX_LOOPS": "6",
+            "STAGE5_EXTRAP_FORCE_LOOPS": "1",
+            "STAGE5_EXTRAP_DTYPE": "bfloat16",
+            "STAGE5_EXTRAP_DISCONNECT": "0",
+        },
+    },
+    "synthetic_probe_battery": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "synthetic_probe_battery",
+            "eval/eval_synthetic_depth_probe.py",
+            "loop_index_probe",
+            "colab/run_stage5_synthetic_probe_battery.py",
+            "tests/test_eval_synthetic_depth_probe.py",
+            "tests/test_stage5_chain_consolidation.py",
+        ],
+        "env": {
+            "STAGE5_PROBE_CHECKPOINT": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/summary.json",
+            "STAGE5_PROBE_N_SYMBOLS": "16",
+            "STAGE5_PROBE_MAX_DEPTH": "6",
+            "STAGE5_PROBE_ROWS_PER_DEPTH": "64",
+            "STAGE5_PROBE_LOOP_COUNTS": "1,2,3,4,5,6",
+            "STAGE5_PROBE_TARGET_STEPS": "0,1,2,3,4,5,6",
+            "STAGE5_PROBE_DISCONNECT": "0",
+        },
+    },
+    "chain_anneal_to_outcome": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "chain_anneal_to_outcome",
+            "loop_loss_mode='annealed_chain_to_outcome'",
+            "colab/run_stage5_chain_anneal_to_outcome.py",
+            "STAGE5_ANNEAL_TOTAL_STEPS",
+            "STAGE5_ANNEAL_PRELUDE_LR_MULT",
+            "tests/test_recurrent_wrapper_tiny.py::test_annealed_chain_to_outcome_loss_mixes_chain_and_target_ce_on_tiny_model",
+        ],
+        "env": {
+            "STAGE5_ANNEAL_INIT_CHECKPOINT": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/summary.json",
+            "STAGE5_ANNEAL_N_SYMBOLS": "16",
+            "STAGE5_ANNEAL_MAX_DEPTH": "4",
+            "STAGE5_ANNEAL_ROWS_PER_DEPTH": "256",
+            "STAGE5_ANNEAL_HELDOUT_ROWS_PER_DEPTH": "64",
+            "STAGE5_ANNEAL_TOTAL_STEPS": "2000",
+            "STAGE5_ANNEAL_HOLD_FRAC": "0.5",
+            "STAGE5_ANNEAL_PRELUDE_LR_MULT": "10.0",
+            "STAGE5_ANNEAL_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
+            "STAGE5_ANNEAL_DISCONNECT": "0",
         },
     },
     "gradient_path_audit": {
