@@ -1,0 +1,55 @@
+{
+  "kind": "stage5_synthetic_depth_probe_battery",
+  "run_id": "stage5_synthetic_probe_20260703_155744",
+  "status": "finished",
+  "n_symbols": 16,
+  "max_depth": 6,
+  "rows_per_depth": 64,
+  "checkpoint": "outputs/stage5/stage5_synthetic_probe_20260703_155744/restored/scaled_corrected_final.pt",
+  "checkpoint_metadata": {
+    "source_reference": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/summary.json",
+    "source_summary": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/summary.json",
+    "source_run_id": "stage5_chain_scaled_corrected_20260702_182827",
+    "source_stage_name": "chain_scaled_corrected_depth_le4",
+    "source_checkpoint": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/train/chain_scaled_corrected_depth_le4/unfrozen_recurrent_step_4000.pt",
+    "source_checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_chain_scaled_corrected_20260702_182827/chain_scaled_corrected_depth_le4/unfrozen_recurrent_step_4000.pt"
+  },
+  "data_summary": "outputs/stage5/stage5_synthetic_probe_20260703_155744/data/summary.json",
+  "probe_summary": "outputs/stage5/stage5_synthetic_probe_20260703_155744/probe/synthetic_depth_state_probe.json",
+  "probe_diagonal": {
+    "1": 1.0,
+    "2": 0.9826086759567261,
+    "3": 0.939130425453186,
+    "4": 0.695652186870575,
+    "5": 0.156521737575531,
+    "6": 0.11304347962141037
+  },
+  "probe": {
+    "rows": 384,
+    "state_records": 2304,
+    "loop_counts": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "target_steps": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "loop_index_probe": {
+      "accuracy": 0.8971014618873596,
+      "permutation_p95": 0.18115942180156708,
+      "train_rows": 1614,
+      "test_rows": 690,
+      "lift_over_p95": 0.7159420400857925
+    }
+  }
+}

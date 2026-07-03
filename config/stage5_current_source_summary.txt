@@ -1,1 +1,1 @@
-outputs/stage5/stage5_depth_extrapolation_20260703_145652/summary.json
+outputs/stage5/stage5_synthetic_probe_20260703_155744/summary.json
