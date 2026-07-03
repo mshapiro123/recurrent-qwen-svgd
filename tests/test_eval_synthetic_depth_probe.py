@@ -39,10 +39,12 @@ def test_ridge_multiclass_accuracy_decodes_planted_signal() -> None:
 
 
 def test_permutation_null_stays_below_planted_signal() -> None:
-    train_x = torch.eye(4).repeat_interleave(4, dim=0)
-    train_y = torch.arange(4).repeat_interleave(4)
-    test_x = torch.eye(4)
-    test_y = torch.arange(4)
+    generator = torch.Generator().manual_seed(0)
+    centers = torch.eye(4)
+    train_x = centers.repeat_interleave(12, dim=0) + 0.03 * torch.randn(48, 4, generator=generator)
+    train_y = torch.arange(4).repeat_interleave(12)
+    test_x = centers.repeat_interleave(8, dim=0) + 0.03 * torch.randn(32, 4, generator=generator)
+    test_y = torch.arange(4).repeat_interleave(8)
 
     observed = ridge_multiclass_accuracy(train_x, train_y, test_x, test_y, n_classes=4, l2=1e-3)
     null = permutation_p95(
