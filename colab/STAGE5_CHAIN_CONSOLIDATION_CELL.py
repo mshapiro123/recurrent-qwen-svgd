@@ -17,9 +17,18 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: chain_anneal_to_outcome
 # Safety marker: eval/eval_synthetic_depth_artifact_check.py
 # Safety marker: eval/eval_synthetic_depth_probe.py
+# Safety marker: colab/run_stage5_depth_extrapolation_eval.py
+# Safety marker: colab/run_stage5_synthetic_probe_battery.py
+# Safety marker: colab/run_stage5_chain_anneal_to_outcome.py
+# Safety marker: STAGE5_EXTRAP_DEPTHS
+# Safety marker: STAGE5_EXTRAP_MAX_LOOPS
+# Safety marker: STAGE5_ANNEAL_TOTAL_STEPS
+# Safety marker: STAGE5_ANNEAL_PRELUDE_LR_MULT
+# Safety marker: loop_index_probe
 # Safety marker: loop_loss_mode='annealed_chain_to_outcome'
 # Safety marker: tests/test_eval_synthetic_depth_probe.py
 # Safety marker: tests/test_stage5_chain_consolidation.py
+# Safety marker: tests/test_recurrent_wrapper_tiny.py::test_annealed_chain_to_outcome_loss_mixes_chain_and_target_ce_on_tiny_model
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
