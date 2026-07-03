@@ -1,0 +1,464 @@
+{
+  "kind": "synthetic_depth_reader_alignment",
+  "active_rows": 1024,
+  "final_rows": 1024,
+  "matched_rows": 1024,
+  "total_diagonal_rows": 256,
+  "total_active_right_final_wrong": 100,
+  "reader_mismatch": {
+    "active_data_jsonl": "outputs/stage5/stage5_chain_anneal_20260703_160250/data/test_chain_mcq_heldout64.jsonl",
+    "final_data_jsonl": "outputs/stage5/stage5_chain_anneal_20260703_160250/data/test_mcq_heldout64.jsonl",
+    "active_prediction_space": "full_symbols",
+    "final_score_target": "option_text",
+    "active_prompt_style": "question_only",
+    "final_prompt_style": "with_options",
+    "different_data_jsonl": true,
+    "different_reader_surface": true
+  },
+  "final_answer_metric_suspended": true,
+  "interpretation": "Active-label and final-answer rows are not scored by the same reader/surface; do not interpret their diagonal disagreement as answer-collapse failure.",
+  "by_depth": {
+    "1": {
+      "diagonal_rows": 64,
+      "table": {
+        "both_right": 64,
+        "active_right_final_wrong": 0,
+        "active_wrong_final_right": 0,
+        "both_wrong": 0
+      },
+      "active_right_final_wrong": {
+        "count": 0,
+        "active_prediction_in_final_choices": 0,
+        "active_prediction_equals_final_prediction_symbol": 0,
+        "active_target_equals_final_answer_symbol": 0,
+        "examples": []
+      }
+    },
+    "2": {
+      "diagonal_rows": 64,
+      "table": {
+        "both_right": 38,
+        "active_right_final_wrong": 24,
+        "active_wrong_final_right": 1,
+        "both_wrong": 1
+      },
+      "active_right_final_wrong": {
+        "count": 24,
+        "active_prediction_in_final_choices": 24,
+        "active_prediction_equals_final_prediction_symbol": 0,
+        "active_target_equals_final_answer_symbol": 24,
+        "examples": [
+          {
+            "id": "test_d02_00000",
+            "depth": 2,
+            "active_prediction_symbol": "P",
+            "active_target_symbol": "P",
+            "final_prediction_label": "B",
+            "final_prediction_symbol": "E",
+            "final_answer_label": "D",
+            "final_answer_symbol": "P",
+            "active_prediction_in_final_choices": true,
+            "active_prediction_equals_final_prediction_symbol": false,
+            "active_target_equals_final_answer_symbol": true,
+            "final_choices": {
+              "A": "F",
+              "B": "E",
+              "C": "D",
+              "D": "P"
+            },
+            "chain_choices": {
+              "A": "G",
+              "B": "I",
+              "C": "P",
+              "D": "D"
+            }
+          },
+          {
+            "id": "test_d02_00004",
+            "depth": 2,
+            "active_prediction_symbol": "O",
+            "active_target_symbol": "O",
+            "final_prediction_label": "C",
+            "final_prediction_symbol": "I",
+            "final_answer_label": "B",
+            "final_answer_symbol": "O",
+            "active_prediction_in_final_choices": true,
+            "active_prediction_equals_final_prediction_symbol": false,
+            "active_target_equals_final_answer_symbol": true,
+            "final_choices": {
+              "A": "B",
+              "B": "O",
+              "C": "I",
+              "D": "C"
+            },
+            "chain_choices": {
+              "A": "O",
+              "B": "E",
+              "C": "D",
+              "D": "I"
+            }
+          },
+          {
+            "id": "test_d02_00010",
+            "depth": 2,
+            "active_prediction_symbol": "G",
+            "active_target_symbol": "G",
+            "final_prediction_label": "C",
+            "final_prediction_symbol": "B",
+            "final_answer_label": "D",
+            "final_answer_symbol": "G",
+            "active_prediction_in_final_choices": true,
+            "active_prediction_equals_final_prediction_symbol": false,
+            "active_target_equals_final_answer_symbol": true,
+            "final_choices": {
+              "A": "A",
+              "B": "O",
+              "C": "B",
+              "D": "G"
+            },
+            "chain_choices": {
+              "A": "B",
+              "B": "K",
+              "C": "G",
+              "D": "M"
+            }
+          },
+          {
+            "id": "test_d02_00014",
+            "depth": 2,
+            "active_prediction_symbol": "L",
+            "active_target_symbol": "L",
+            "final_prediction_label": "C",
+            "final_prediction_symbol": "B",
+            "final_answer_label": "B",
+            "final_answer_symbol": "L",
+            "active_prediction_in_final_choices": true,
+            "active_prediction_equals_final_prediction_symbol": false,
+            "active_target_equals_final_answer_symbol": true,
+            "final_choices": {
+              "A": "M",
+              "B": "L",
+              "C": "B",
+              "D": "I"
+            },
+            "chain_choices": {
+              "A": "F",
+              "B": "N",
+              "C": "L",
+              "D": "J"
+            }
+          },
+          {
+            "id": "test_d02_00017",
+            "depth": 2,
+            "active_prediction_symbol": "P",
+            "active_target_symbol": "P",
+            "final_prediction_label": "D",
+            "final_prediction_symbol": "H",
+            "final_answer_label": "B",
+            "final_answer_symbol": "P",
+            "active_prediction_in_final_choices": true,
+            "active_prediction_equals_final_prediction_symbol": false,
+            "active_target_equals_final_answer_symbol": true,
+            "final_choices": {
+              "A": "K",
+              "B": "P",
+              "C": "G",
+              "D": "H"
+            },
+            "chain_choices": {
+              "A": "P",
+              "B": "D",
+              "C": "H",
+              "D": "K"
+            }
+          }
+        ]
+      }
+    },
+    "3": {
+      "diagonal_rows": 64,
+      "table": {
+        "both_right": 23,
+        "active_right_final_wrong": 39,
+        "active_wrong_final_right": 0,
+        "both_wrong": 2
+      },
+      "active_right_final_wrong": {
+        "count": 39,
+        "active_prediction_in_final_choices": 39,
+        "active_prediction_equals_final_prediction_symbol": 0,
+        "active_target_equals_final_answer_symbol": 39,
+        "examples": [
+          {
+            "id": "test_d03_00000",
+            "depth": 3,
+            "active_prediction_symbol": "F",
+            "active_target_symbol": "F",
+            "final_prediction_label": "C",
+            "final_prediction_symbol": "N",
+            "final_answer_label": "D",
+            "final_answer_symbol": "F",
+            "active_prediction_in_final_choices": true,
+            "active_prediction_equals_final_prediction_symbol": false,
+            "active_target_equals_final_answer_symbol": true,
+            "final_choices": {
+              "A": "I",
+              "B": "E",
+              "C": "N",
+              "D": "F"
+            },
+            "chain_choices": {
+              "A": "D",
+              "B": "F",
+              "C": "E",
+              "D": "C"
+            }
+          },
+          {
+            "id": "test_d03_00001",
+            "depth": 3,
+            "active_prediction_symbol": "O",
+            "active_target_symbol": "O",
+            "final_prediction_label": "A",
+            "final_prediction_symbol": "B",
+            "final_answer_label": "C",
+            "final_answer_symbol": "O",
+            "active_prediction_in_final_choices": true,
+            "active_prediction_equals_final_prediction_symbol": false,
+            "active_target_equals_final_answer_symbol": true,
+            "final_choices": {
+              "A": "B",
+              "B": "I",
+              "C": "O",
+              "D": "A"
+            },
+            "chain_choices": {
+              "A": "F",
+              "B": "B",
+              "C": "P",
+              "D": "O"
+            }
+          },
+          {
+            "id": "test_d03_00002",
+            "depth": 3,
+            "active_prediction_symbol": "F",
+            "active_target_symbol": "F",
+            "final_prediction_label": "A",
+            "final_prediction_symbol": "C",
+            "final_answer_label": "C",
+            "final_answer_symbol": "F",
+            "active_prediction_in_final_choices": true,
+            "active_prediction_equals_final_prediction_symbol": false,
+            "active_target_equals_final_answer_symbol": true,
+            "final_choices": {
+              "A": "C",
+              "B": "H",
+              "C": "F",
+              "D": "N"
+            },
+            "chain_choices": {
+              "A": "F",
+              "B": "L",
+              "C": "I",
+              "D": "O"
+            }
+          },
+          {
+            "id": "test_d03_00003",
+            "depth": 3,
+            "active_prediction_symbol": "L",
+            "active_target_symbol": "L",
+            "final_prediction_label": "A",
+            "final_prediction_symbol": "C",
+            "final_answer_label": "B",
+            "final_answer_symbol": "L",
+            "active_prediction_in_final_choices": true,
+            "active_prediction_equals_final_prediction_symbol": false,
+            "active_target_equals_final_answer_symbol": true,
+            "final_choices": {
+              "A": "C",
+              "B": "L",
+              "C": "G",
+              "D": "D"
+            },
+            "chain_choices": {
+              "A": "B",
+              "B": "K",
+              "C": "A",
+              "D": "L"
+            }
+          },
+          {
+            "id": "test_d03_00006",
+            "depth": 3,
+            "active_prediction_symbol": "M",
+            "active_target_symbol": "M",
+            "final_prediction_label": "C",
+            "final_prediction_symbol": "N",
+            "final_answer_label": "A",
+            "final_answer_symbol": "M",
+            "active_prediction_in_final_choices": true,
+            "active_prediction_equals_final_prediction_symbol": false,
+            "active_target_equals_final_answer_symbol": true,
+            "final_choices": {
+              "A": "M",
+              "B": "G",
+              "C": "N",
+              "D": "O"
+            },
+            "chain_choices": {
+              "A": "M",
+              "B": "F",
+              "C": "C",
+              "D": "G"
+            }
+          }
+        ]
+      }
+    },
+    "4": {
+      "diagonal_rows": 64,
+      "table": {
+        "both_right": 23,
+        "active_right_final_wrong": 37,
+        "active_wrong_final_right": 1,
+        "both_wrong": 3
+      },
+      "active_right_final_wrong": {
+        "count": 37,
+        "active_prediction_in_final_choices": 37,
+        "active_prediction_equals_final_prediction_symbol": 0,
+        "active_target_equals_final_answer_symbol": 37,
+        "examples": [
+          {
+            "id": "test_d04_00000",
+            "depth": 4,
+            "active_prediction_symbol": "F",
+            "active_target_symbol": "F",
+            "final_prediction_label": "C",
+            "final_prediction_symbol": "O",
+            "final_answer_label": "B",
+            "final_answer_symbol": "F",
+            "active_prediction_in_final_choices": true,
+            "active_prediction_equals_final_prediction_symbol": false,
+            "active_target_equals_final_answer_symbol": true,
+            "final_choices": {
+              "A": "A",
+              "B": "F",
+              "C": "O",
+              "D": "K"
+            },
+            "chain_choices": {
+              "A": "M",
+              "B": "E",
+              "C": "C",
+              "D": "F"
+            }
+          },
+          {
+            "id": "test_d04_00001",
+            "depth": 4,
+            "active_prediction_symbol": "D",
+            "active_target_symbol": "D",
+            "final_prediction_label": "C",
+            "final_prediction_symbol": "C",
+            "final_answer_label": "A",
+            "final_answer_symbol": "D",
+            "active_prediction_in_final_choices": true,
+            "active_prediction_equals_final_prediction_symbol": false,
+            "active_target_equals_final_answer_symbol": true,
+            "final_choices": {
+              "A": "D",
+              "B": "O",
+              "C": "C",
+              "D": "J"
+            },
+            "chain_choices": {
+              "A": "D",
+              "B": "M",
+              "C": "K",
+              "D": "O"
+            }
+          },
+          {
+            "id": "test_d04_00003",
+            "depth": 4,
+            "active_prediction_symbol": "G",
+            "active_target_symbol": "G",
+            "final_prediction_label": "C",
+            "final_prediction_symbol": "D",
+            "final_answer_label": "B",
+            "final_answer_symbol": "G",
+            "active_prediction_in_final_choices": true,
+            "active_prediction_equals_final_prediction_symbol": false,
+            "active_target_equals_final_answer_symbol": true,
+            "final_choices": {
+              "A": "K",
+              "B": "G",
+              "C": "D",
+              "D": "L"
+            },
+            "chain_choices": {
+              "A": "N",
+              "B": "I",
+              "C": "G",
+              "D": "J"
+            }
+          },
+          {
+            "id": "test_d04_00004",
+            "depth": 4,
+            "active_prediction_symbol": "J",
+            "active_target_symbol": "J",
+            "final_prediction_label": "A",
+            "final_prediction_symbol": "E",
+            "final_answer_label": "B",
+            "final_answer_symbol": "J",
+            "active_prediction_in_final_choices": true,
+            "active_prediction_equals_final_prediction_symbol": false,
+            "active_target_equals_final_answer_symbol": true,
+            "final_choices": {
+              "A": "E",
+              "B": "J",
+              "C": "D",
+              "D": "I"
+            },
+            "chain_choices": {
+              "A": "K",
+              "B": "H",
+              "C": "O",
+              "D": "J"
+            }
+          },
+          {
+            "id": "test_d04_00005",
+            "depth": 4,
+            "active_prediction_symbol": "P",
+            "active_target_symbol": "P",
+            "final_prediction_label": "C",
+            "final_prediction_symbol": "J",
+            "final_answer_label": "B",
+            "final_answer_symbol": "P",
+            "active_prediction_in_final_choices": true,
+            "active_prediction_equals_final_prediction_symbol": false,
+            "active_target_equals_final_answer_symbol": true,
+            "final_choices": {
+              "A": "L",
+              "B": "P",
+              "C": "J",
+              "D": "O"
+            },
+            "chain_choices": {
+              "A": "H",
+              "B": "P",
+              "C": "K",
+              "D": "B"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
