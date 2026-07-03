@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import runpy
 from pathlib import Path
 
 from colab import run_stage5_depth_extrapolation_eval as extrap
@@ -45,3 +46,13 @@ def test_chain_consolidation_cell_names_all_three_targets() -> None:
     assert "synthetic_probe_battery" in text
     assert "chain_anneal_to_outcome" in text
     assert "colab/run_stage5_chain_anneal_to_outcome.py" in text
+
+
+def test_chain_consolidation_runners_import_when_executed_by_path() -> None:
+    for path in [
+        "colab/run_stage5_depth_extrapolation_eval.py",
+        "colab/run_stage5_synthetic_probe_battery.py",
+        "colab/run_stage5_chain_anneal_to_outcome.py",
+    ]:
+        namespace = runpy.run_path(path, run_name="not_main")
+        assert "main" in namespace

@@ -156,6 +156,7 @@ try:
     drive.mount("/content/drive", force_remount=False)
     sync_repo()
     os.chdir(ROOT)
+    os.environ["PYTHONPATH"] = str(ROOT) + os.pathsep + os.environ.get("PYTHONPATH", "")
     print(f"STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION={STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION}", flush=True)
     print(f"stage5_chain_consolidation_target={TARGET}", flush=True)
     run(["python", "-m", "pip", "install", "-q", "-r", "requirements.txt"])
