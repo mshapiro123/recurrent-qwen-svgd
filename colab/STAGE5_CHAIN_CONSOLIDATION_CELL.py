@@ -15,16 +15,24 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: depth_extrapolation_eval
 # Safety marker: synthetic_probe_battery
 # Safety marker: chain_anneal_to_outcome
+# Safety marker: post_anneal_readouts
 # Safety marker: eval/eval_synthetic_depth_artifact_check.py
 # Safety marker: eval/eval_synthetic_depth_probe.py
+# Safety marker: eval/analyze_synthetic_reader_alignment.py
 # Safety marker: colab/run_stage5_depth_extrapolation_eval.py
 # Safety marker: colab/run_stage5_synthetic_probe_battery.py
 # Safety marker: colab/run_stage5_chain_anneal_to_outcome.py
+# Safety marker: colab/run_stage5_post_anneal_readouts.py
 # Safety marker: STAGE5_EXTRAP_DEPTHS
 # Safety marker: STAGE5_EXTRAP_MAX_LOOPS
+# Safety marker: STAGE5_EXTRAP_CHECKPOINT
+# Safety marker: STAGE5_PROBE_CHECKPOINT
+# Safety marker: STAGE5_POST_ANNEAL_SOURCE_SUMMARY
 # Safety marker: STAGE5_ANNEAL_TOTAL_STEPS
 # Safety marker: STAGE5_ANNEAL_PRELUDE_LR_MULT
 # Safety marker: loop_index_probe
+# Safety marker: router_leak_exclusion
+# Safety marker: state_envelope
 # Safety marker: loop_loss_mode='annealed_chain_to_outcome'
 # Safety marker: tests/test_eval_synthetic_depth_probe.py
 # Safety marker: tests/test_stage5_chain_consolidation.py
@@ -62,6 +70,17 @@ TARGETS = {
             "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
         ],
         "disconnect_env": "STAGE5_ANNEAL_DISCONNECT",
+    },
+    "post_anneal_readouts": {
+        "script": "colab/run_stage5_post_anneal_readouts.py",
+        "tests": [
+            "tests/test_analyze_synthetic_reader_alignment.py",
+            "tests/test_eval_synthetic_depth_active_labels.py",
+            "tests/test_eval_synthetic_depth_probe.py",
+            "tests/test_stage5_chain_consolidation.py",
+            "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
+        ],
+        "disconnect_env": "STAGE5_POST_ANNEAL_DISCONNECT",
     },
 }
 

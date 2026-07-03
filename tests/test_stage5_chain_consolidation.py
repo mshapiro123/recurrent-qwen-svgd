@@ -5,6 +5,7 @@ import runpy
 from pathlib import Path
 
 from colab import run_stage5_depth_extrapolation_eval as extrap
+from colab.run_stage5_post_anneal_readouts import compact_extrapolation, compact_probe
 from colab.stage5_chain_consolidation_utils import resolve_checkpoint_reference
 
 
@@ -67,7 +68,9 @@ def test_chain_consolidation_cell_names_all_three_targets() -> None:
     assert "depth_extrapolation_eval" in text
     assert "synthetic_probe_battery" in text
     assert "chain_anneal_to_outcome" in text
+    assert "post_anneal_readouts" in text
     assert "colab/run_stage5_chain_anneal_to_outcome.py" in text
+    assert "colab/run_stage5_post_anneal_readouts.py" in text
 
 
 def test_chain_consolidation_runners_import_when_executed_by_path() -> None:
@@ -75,6 +78,40 @@ def test_chain_consolidation_runners_import_when_executed_by_path() -> None:
         "colab/run_stage5_depth_extrapolation_eval.py",
         "colab/run_stage5_synthetic_probe_battery.py",
         "colab/run_stage5_chain_anneal_to_outcome.py",
+        "colab/run_stage5_post_anneal_readouts.py",
     ]:
         namespace = runpy.run_path(path, run_name="not_main")
         assert "main" in namespace
+
+
+def test_post_anneal_readout_compacts_extrapolation_and_probe_fields() -> None:
+    extrap_payload = {
+        "run_id": "extrap",
+        "status": "finished",
+        "checkpoint": "ckpt.pt",
+        "artifact_check": {"pass": True},
+        "active_eval": {
+            "active_diagonal": {"5": 0.5},
+            "active_total": {"accuracy": 0.9},
+            "above_diagonal": {"rates": {"iterate": 1.0}},
+        },
+        "extrapolation_read": {"5": {"observed": 0.5}},
+    }
+    probe_payload = {
+        "run_id": "probe",
+        "status": "finished",
+        "checkpoint": "ckpt.pt",
+        "probe_diagonal": {"5": 0.1},
+        "probe": {
+            "loop_index_probe": {"accuracy": 0.8},
+            "depth_stratified_diagonal": {"5": {"5": {"accuracy": 0.1}}},
+            "loop_index_deflation_curve": [{"rank": 1}],
+            "state_envelope": {"late_loop_reconstruction_error": 0.2},
+            "router_leak_exclusion": {"forced_loop_path_pass": True},
+        },
+    }
+
+    assert compact_extrapolation(extrap_payload)["artifact_check_pass"] is True
+    compacted_probe = compact_probe(probe_payload)
+    assert compacted_probe["router_leak_exclusion"]["forced_loop_path_pass"] is True
+    assert compacted_probe["state_envelope"]["late_loop_reconstruction_error"] == 0.2

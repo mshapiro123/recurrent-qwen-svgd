@@ -162,6 +162,10 @@ def main() -> int:
                 "loop_counts": probe.get("loop_counts"),
                 "target_steps": probe.get("target_steps"),
                 "loop_index_probe": probe.get("loop_index_probe"),
+                "depth_stratified_diagonal": probe.get("depth_stratified_diagonal"),
+                "loop_index_deflation_curve": probe.get("loop_index_deflation_curve"),
+                "state_envelope": probe.get("state_envelope"),
+                "router_leak_exclusion": probe.get("router_leak_exclusion"),
             },
         }
     )
