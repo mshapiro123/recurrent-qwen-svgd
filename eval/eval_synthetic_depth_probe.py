@@ -101,6 +101,165 @@ def permutation_p95(
     return float(values[idx])
 
 
+def _records_for_loop(
+    records: list[dict[str, Any]],
+    *,
+    loop: int,
+    row_set: set[int],
+    depth: int | None = None,
+) -> list[dict[str, Any]]:
+    selected = [
+        record
+        for record in records
+        if int(record["loop"]) == int(loop)
+        and int(record["row_index"]) in row_set
+        and (depth is None or int(record["depth"]) == int(depth))
+    ]
+    return selected
+
+
+def _probe_accuracy_for_records(
+    train_records: list[dict[str, Any]],
+    test_records: list[dict[str, Any]],
+    *,
+    target_step: int,
+    n_symbols: int,
+    l2: float,
+) -> dict[str, Any]:
+    if not train_records or not test_records:
+        return {"accuracy": 0.0, "train_rows": len(train_records), "test_rows": len(test_records)}
+    train_x = torch.stack([record["feature"] for record in train_records])
+    test_x = torch.stack([record["feature"] for record in test_records])
+    train_y = torch.tensor([record["targets"][str(target_step)] for record in train_records], dtype=torch.long)
+    test_y = torch.tensor([record["targets"][str(target_step)] for record in test_records], dtype=torch.long)
+    return {
+        "accuracy": ridge_multiclass_accuracy(
+            train_x,
+            train_y,
+            test_x,
+            test_y,
+            n_classes=n_symbols,
+            l2=l2,
+        ),
+        "train_rows": len(train_records),
+        "test_rows": len(test_records),
+    }
+
+
+def loop_index_tensors(
+    records: list[dict[str, Any]],
+    *,
+    loops: list[int],
+    train_set: set[int],
+    test_set: set[int],
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    loop_set = {int(loop) for loop in loops}
+    train_records = [
+        record for record in records if int(record["loop"]) in loop_set and int(record["row_index"]) in train_set
+    ]
+    test_records = [
+        record for record in records if int(record["loop"]) in loop_set and int(record["row_index"]) in test_set
+    ]
+    train_x = torch.stack([record["feature"] for record in train_records])
+    test_x = torch.stack([record["feature"] for record in test_records])
+    train_y = torch.tensor([loops.index(int(record["loop"])) for record in train_records], dtype=torch.long)
+    test_y = torch.tensor([loops.index(int(record["loop"])) for record in test_records], dtype=torch.long)
+    return train_x, train_y, test_x, test_y
+
+
+def loop_discriminant_directions(
+    train_x: torch.Tensor,
+    train_y: torch.Tensor,
+    *,
+    n_classes: int,
+) -> torch.Tensor:
+    standardized, _ = standardize(train_x.float(), train_x.float())
+    means = []
+    for label in range(n_classes):
+        class_x = standardized[train_y.long() == label]
+        if class_x.numel() == 0:
+            means.append(torch.zeros(standardized.shape[1], dtype=standardized.dtype))
+        else:
+            means.append(class_x.mean(dim=0))
+    centered = torch.stack(means) - standardized.mean(dim=0, keepdim=True)
+    try:
+        _, _, vh = torch.linalg.svd(centered, full_matrices=False)
+    except RuntimeError:
+        _, _, vh = torch.linalg.svd(centered.cpu(), full_matrices=False)
+        vh = vh.to(device=centered.device)
+    rank = min(n_classes - 1, vh.shape[0])
+    return vh[:rank].T.contiguous()
+
+
+def project_out_directions(
+    train_x: torch.Tensor,
+    test_x: torch.Tensor,
+    directions: torch.Tensor,
+    *,
+    rank: int,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    if rank <= 0 or directions.numel() == 0:
+        return train_x, test_x
+    train_s, test_s = standardize(train_x.float(), test_x.float())
+    basis = directions[:, : min(rank, directions.shape[1])].to(dtype=train_s.dtype, device=train_s.device)
+    train_deflated = train_s - (train_s @ basis) @ basis.T
+    test_deflated = test_s - (test_s @ basis) @ basis.T
+    return train_deflated, test_deflated
+
+
+def loop_index_deflation_curve(
+    records: list[dict[str, Any]],
+    args: argparse.Namespace,
+    *,
+    loops: list[int],
+    train_set: set[int],
+    test_set: set[int],
+) -> list[dict[str, Any]]:
+    train_x, train_y, test_x, test_y = loop_index_tensors(
+        records,
+        loops=loops,
+        train_set=train_set,
+        test_set=test_set,
+    )
+    directions = loop_discriminant_directions(train_x, train_y, n_classes=len(loops))
+    max_rank = min(int(args.deflation_max_rank), directions.shape[1])
+    rows: list[dict[str, Any]] = []
+    for removed_rank in range(max_rank + 1):
+        deflated_train_x, deflated_test_x = project_out_directions(
+            train_x,
+            test_x,
+            directions,
+            rank=removed_rank,
+        )
+        accuracy = ridge_multiclass_accuracy(
+            deflated_train_x,
+            train_y,
+            deflated_test_x,
+            test_y,
+            n_classes=len(loops),
+            l2=args.ridge_l2,
+        )
+        null_p95 = permutation_p95(
+            deflated_train_x,
+            train_y,
+            deflated_test_x,
+            test_y,
+            n_classes=len(loops),
+            l2=args.ridge_l2,
+            permutations=args.permutations,
+            seed=args.seed + 27183 + removed_rank,
+        )
+        rows.append(
+            {
+                "removed_rank": removed_rank,
+                "accuracy": accuracy,
+                "permutation_p95": null_p95,
+                "lift_over_p95": accuracy - null_p95,
+            }
+        )
+    return rows
+
+
 def target_for_step(row: dict[str, Any], step: int, *, value_prefix: str) -> int:
     text = continued_symbol_for_loop(row, step, value_prefix=value_prefix)
     if text is None:
@@ -179,29 +338,23 @@ def probe_grid(records: list[dict[str, Any]], args: argparse.Namespace, *, n_sym
     row_id_by_pos = {pos: row_id for pos, row_id in enumerate(row_ids)}
     train_set = {row_id_by_pos[pos] for pos in train_rows}
     test_set = {row_id_by_pos[pos] for pos in test_rows}
-    by_loop: dict[int, list[dict[str, Any]]] = {loop: [] for loop in loops}
-    for record in records:
-        by_loop[int(record["loop"])].append(record)
-
     grid: dict[str, dict[str, Any]] = {}
     for loop in loops:
-        loop_records = by_loop[loop]
-        train_records = [record for record in loop_records if int(record["row_index"]) in train_set]
-        test_records = [record for record in loop_records if int(record["row_index"]) in test_set]
-        train_x = torch.stack([record["feature"] for record in train_records])
-        test_x = torch.stack([record["feature"] for record in test_records])
+        train_records = _records_for_loop(records, loop=loop, row_set=train_set)
+        test_records = _records_for_loop(records, loop=loop, row_set=test_set)
         grid[str(loop)] = {}
         for target_step in target_steps:
-            train_y = torch.tensor([record["targets"][str(target_step)] for record in train_records], dtype=torch.long)
-            test_y = torch.tensor([record["targets"][str(target_step)] for record in test_records], dtype=torch.long)
-            accuracy = ridge_multiclass_accuracy(
-                train_x,
-                train_y,
-                test_x,
-                test_y,
-                n_classes=n_symbols,
+            result = _probe_accuracy_for_records(
+                train_records,
+                test_records,
+                target_step=target_step,
+                n_symbols=n_symbols,
                 l2=args.ridge_l2,
             )
+            train_x = torch.stack([record["feature"] for record in train_records])
+            test_x = torch.stack([record["feature"] for record in test_records])
+            train_y = torch.tensor([record["targets"][str(target_step)] for record in train_records], dtype=torch.long)
+            test_y = torch.tensor([record["targets"][str(target_step)] for record in test_records], dtype=torch.long)
             null_p95 = permutation_p95(
                 train_x,
                 train_y,
@@ -213,20 +366,19 @@ def probe_grid(records: list[dict[str, Any]], args: argparse.Namespace, *, n_sym
                 seed=args.seed + 997 * loop + target_step,
             )
             grid[str(loop)][str(target_step)] = {
-                "accuracy": accuracy,
+                "accuracy": result["accuracy"],
                 "permutation_p95": null_p95,
-                "lift_over_p95": accuracy - null_p95,
-                "train_rows": len(train_records),
-                "test_rows": len(test_records),
+                "lift_over_p95": result["accuracy"] - null_p95,
+                "train_rows": result["train_rows"],
+                "test_rows": result["test_rows"],
             }
 
-    all_records = [record for record in records if int(record["loop"]) in loops]
-    train_records = [record for record in all_records if int(record["row_index"]) in train_set]
-    test_records = [record for record in all_records if int(record["row_index"]) in test_set]
-    train_x = torch.stack([record["feature"] for record in train_records])
-    test_x = torch.stack([record["feature"] for record in test_records])
-    train_y = torch.tensor([int(record["loop"]) - 1 for record in train_records], dtype=torch.long)
-    test_y = torch.tensor([int(record["loop"]) - 1 for record in test_records], dtype=torch.long)
+    train_x, train_y, test_x, test_y = loop_index_tensors(
+        records,
+        loops=loops,
+        train_set=train_set,
+        test_set=test_set,
+    )
     loop_index = {
         "accuracy": ridge_multiclass_accuracy(
             train_x,
@@ -246,13 +398,36 @@ def probe_grid(records: list[dict[str, Any]], args: argparse.Namespace, *, n_sym
             permutations=args.permutations,
             seed=args.seed + 12345,
         ),
-        "train_rows": len(train_records),
-        "test_rows": len(test_records),
+        "train_rows": int(train_y.numel()),
+        "test_rows": int(test_y.numel()),
     }
     loop_index["lift_over_p95"] = loop_index["accuracy"] - loop_index["permutation_p95"]
+    depths = sorted({int(record["depth"]) for record in records})
+    depth_stratified_diagonal: dict[str, dict[str, Any]] = {}
+    for depth in depths:
+        depth_stratified_diagonal[str(depth)] = {}
+        for loop in loops:
+            if str(loop) not in {str(step) for step in target_steps}:
+                continue
+            result = _probe_accuracy_for_records(
+                _records_for_loop(records, loop=loop, row_set=train_set, depth=depth),
+                _records_for_loop(records, loop=loop, row_set=test_set, depth=depth),
+                target_step=loop,
+                n_symbols=n_symbols,
+                l2=args.ridge_l2,
+            )
+            depth_stratified_diagonal[str(depth)][str(loop)] = result
     return {
         "grid": grid,
+        "depth_stratified_diagonal": depth_stratified_diagonal,
         "loop_index_probe": loop_index,
+        "loop_index_deflation_curve": loop_index_deflation_curve(
+            records,
+            args,
+            loops=loops,
+            train_set=train_set,
+            test_set=test_set,
+        ),
         "split": {
             "train_row_indices": sorted(train_set),
             "test_row_indices": sorted(test_set),
@@ -278,6 +453,7 @@ def main() -> int:
     parser.add_argument("--train_frac", type=float, default=0.7)
     parser.add_argument("--ridge_l2", type=float, default=1e-2)
     parser.add_argument("--permutations", type=int, default=20)
+    parser.add_argument("--deflation_max_rank", type=int, default=6)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--split", default="6,18")
     parser.add_argument("--bridge_projection_mode", choices=("concat", "split"), default="split")

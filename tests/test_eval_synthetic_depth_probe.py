@@ -4,6 +4,8 @@ import torch
 
 from eval.eval_synthetic_depth_probe import (
     deterministic_split,
+    loop_index_deflation_curve,
+    probe_grid,
     permutation_p95,
     ridge_multiclass_accuracy,
     target_for_step,
@@ -69,3 +71,74 @@ def test_deterministic_split_is_reproducible() -> None:
     assert first == second
     assert len(first[0]) == 7
     assert len(first[1]) == 3
+
+
+def test_probe_grid_reports_depth_stratified_diagonal() -> None:
+    records = []
+    for row_idx in range(12):
+        depth = 1 + (row_idx % 2)
+        for loop in [1, 2]:
+            label = loop % 4
+            feature = torch.zeros(4)
+            feature[label] = 1.0
+            records.append(
+                {
+                    "row_index": row_idx,
+                    "depth": depth,
+                    "loop": loop,
+                    "feature": feature,
+                    "targets": {"0": 0, "1": 1, "2": 2},
+                }
+            )
+
+    class Args:
+        train_frac = 0.75
+        seed = 0
+        loop_counts = "1,2"
+        target_steps = "0,1,2"
+        ridge_l2 = 1e-3
+        permutations = 0
+        deflation_max_rank = 2
+
+    summary = probe_grid(records, Args(), n_symbols=4)
+
+    assert set(summary["depth_stratified_diagonal"]) == {"1", "2"}
+    assert summary["depth_stratified_diagonal"]["1"]["1"]["test_rows"] > 0
+    assert summary["depth_stratified_diagonal"]["2"]["2"]["test_rows"] > 0
+    assert "loop_index_deflation_curve" in summary
+
+
+def test_loop_index_deflation_curve_removes_low_rank_clock() -> None:
+    records = []
+    for row_idx in range(30):
+        for loop in [1, 2, 3]:
+            feature = torch.randn(8, generator=torch.Generator().manual_seed(row_idx * 10 + loop)) * 0.001
+            feature[loop - 1] = 1.0
+            records.append(
+                {
+                    "row_index": row_idx,
+                    "depth": 3,
+                    "loop": loop,
+                    "feature": feature,
+                    "targets": {"0": 0, "1": 1, "2": 2, "3": 3},
+                }
+            )
+
+    train_rows, test_rows = deterministic_split(30, train_frac=0.7, seed=1)
+
+    class Args:
+        ridge_l2 = 1e-3
+        permutations = 0
+        seed = 0
+        deflation_max_rank = 2
+
+    curve = loop_index_deflation_curve(
+        records,
+        Args(),
+        loops=[1, 2, 3],
+        train_set=set(train_rows),
+        test_set=set(test_rows),
+    )
+
+    assert curve[0]["accuracy"] > 0.9
+    assert curve[2]["accuracy"] < curve[0]["accuracy"]
