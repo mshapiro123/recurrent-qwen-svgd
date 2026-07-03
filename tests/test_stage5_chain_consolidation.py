@@ -33,6 +33,28 @@ def test_resolve_checkpoint_reference_restores_from_stage_summary(tmp_path: Path
     assert metadata["source_stage_name"] == "final"
 
 
+def test_resolve_checkpoint_reference_restores_from_final_checkpoint_summary(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    checkpoint = tmp_path / "final.pt"
+    checkpoint.write_bytes(b"final checkpoint")
+    summary = {
+        "run_id": "anneal",
+        "final_checkpoint": str(checkpoint),
+        "final_checkpoint_drive_backup": None,
+    }
+    summary_path = tmp_path / "summary.json"
+    summary_path.write_text(json.dumps(summary), encoding="utf-8")
+    monkeypatch.setattr("colab.stage5_chain_consolidation_utils.ROOT", tmp_path)
+
+    restored, metadata = resolve_checkpoint_reference(summary_path, tmp_path / "restored.pt")
+
+    assert restored.read_bytes() == b"final checkpoint"
+    assert metadata["source_run_id"] == "anneal"
+    assert metadata["source_final_checkpoint"] == str(checkpoint)
+
+
 def test_extrapolation_classification_uses_conservative_band_and_bar() -> None:
     assert extrap.classify_depth(0.90, lower=0.831, bar=0.71) == "inside_or_above_conservative_band"
     assert extrap.classify_depth(0.80, lower=0.831, bar=0.71) == "partial_extrapolation_below_conservative_band"

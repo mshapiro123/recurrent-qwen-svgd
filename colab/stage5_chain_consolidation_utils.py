@@ -101,9 +101,13 @@ def resolve_checkpoint_reference(raw: str | Path, dest: Path, *, label: str = "c
     stage = final_stage_from_summary(summary)
     checkpoint = restore_checkpoint(
         [
+            stage.get("final_checkpoint_drive_backup"),
             stage.get("checkpoint_drive_backup"),
+            stage.get("final_checkpoint"),
             stage.get("checkpoint"),
+            summary.get("final_checkpoint_drive_backup"),
             summary.get("checkpoint_drive_backup"),
+            summary.get("final_checkpoint"),
             summary.get("checkpoint"),
         ],
         dest,
@@ -117,6 +121,9 @@ def resolve_checkpoint_reference(raw: str | Path, dest: Path, *, label: str = "c
             "source_checkpoint": stage.get("checkpoint") or summary.get("checkpoint"),
             "source_checkpoint_drive_backup": stage.get("checkpoint_drive_backup")
             or summary.get("checkpoint_drive_backup"),
+            "source_final_checkpoint": stage.get("final_checkpoint") or summary.get("final_checkpoint"),
+            "source_final_checkpoint_drive_backup": stage.get("final_checkpoint_drive_backup")
+            or summary.get("final_checkpoint_drive_backup"),
         }
     )
     return checkpoint, metadata
