@@ -260,6 +260,190 @@ def loop_index_deflation_curve(
     return rows
 
 
+def fit_linear_envelope(features: torch.Tensor, *, rank: int) -> dict[str, torch.Tensor]:
+    features = features.float()
+    mean = features.mean(dim=0, keepdim=True)
+    std = features.std(dim=0, unbiased=False, keepdim=True).clamp_min(1e-6)
+    standardized = (features - mean) / std
+    centered = standardized - standardized.mean(dim=0, keepdim=True)
+    try:
+        _, _, vh = torch.linalg.svd(centered, full_matrices=False)
+    except RuntimeError:
+        _, _, vh = torch.linalg.svd(centered.cpu(), full_matrices=False)
+        vh = vh.to(device=centered.device)
+    kept = min(int(rank), vh.shape[0], features.shape[1])
+    return {
+        "mean": mean,
+        "std": std,
+        "basis": vh[:kept].T.contiguous(),
+    }
+
+
+def envelope_reconstruction_error(features: torch.Tensor, envelope: dict[str, torch.Tensor]) -> torch.Tensor:
+    features = features.float()
+    mean = envelope["mean"].to(device=features.device, dtype=features.dtype)
+    std = envelope["std"].to(device=features.device, dtype=features.dtype)
+    basis = envelope["basis"].to(device=features.device, dtype=features.dtype)
+    standardized = (features - mean) / std
+    if basis.numel() == 0:
+        recon = torch.zeros_like(standardized)
+    else:
+        recon = (standardized @ basis) @ basis.T
+    return (standardized - recon).square().mean(dim=-1)
+
+
+def _mean_float(values: list[float]) -> float:
+    return float(sum(values) / len(values)) if values else 0.0
+
+
+def state_envelope_diagnostic(
+    records: list[dict[str, Any]],
+    args: argparse.Namespace,
+    *,
+    loops: list[int],
+    train_set: set[int],
+    test_set: set[int],
+) -> dict[str, Any]:
+    fit_loop_max = int(getattr(args, "envelope_fit_loop_max", 4))
+    fit_depth_max = int(getattr(args, "envelope_fit_depth_max", 4))
+    fit_records = [
+        record
+        for record in records
+        if int(record["row_index"]) in train_set
+        and int(record["loop"]) <= fit_loop_max
+        and int(record["depth"]) <= fit_depth_max
+    ]
+    if not fit_records:
+        return {
+            "fit_rows": 0,
+            "rank": 0,
+            "by_loop": {},
+            "by_depth_loop": {},
+        }
+    fit_features = torch.stack([record["feature"] for record in fit_records])
+    envelope = fit_linear_envelope(fit_features, rank=int(getattr(args, "envelope_rank", 32)))
+    basis_rank = int(envelope["basis"].shape[1])
+    by_loop: dict[str, dict[str, float | int]] = {}
+    by_depth_loop: dict[str, dict[str, dict[str, float | int]]] = {}
+    for loop in loops:
+        loop_records = [
+            record
+            for record in records
+            if int(record["row_index"]) in test_set and int(record["loop"]) == int(loop)
+        ]
+        if not loop_records:
+            continue
+        features = torch.stack([record["feature"] for record in loop_records])
+        errors = envelope_reconstruction_error(features, envelope).tolist()
+        norms = features.float().norm(dim=-1).tolist()
+        by_loop[str(loop)] = {
+            "rows": len(loop_records),
+            "mean_reconstruction_mse": _mean_float([float(value) for value in errors]),
+            "mean_feature_norm": _mean_float([float(value) for value in norms]),
+        }
+    depths = sorted({int(record["depth"]) for record in records})
+    for depth in depths:
+        by_depth_loop[str(depth)] = {}
+        for loop in loops:
+            loop_records = [
+                record
+                for record in records
+                if int(record["row_index"]) in test_set
+                and int(record["depth"]) == int(depth)
+                and int(record["loop"]) == int(loop)
+            ]
+            if not loop_records:
+                continue
+            features = torch.stack([record["feature"] for record in loop_records])
+            errors = envelope_reconstruction_error(features, envelope).tolist()
+            by_depth_loop[str(depth)][str(loop)] = {
+                "rows": len(loop_records),
+                "mean_reconstruction_mse": _mean_float([float(value) for value in errors]),
+            }
+    return {
+        "fit_rows": len(fit_records),
+        "fit_loop_max": fit_loop_max,
+        "fit_depth_max": fit_depth_max,
+        "rank": basis_rank,
+        "by_loop": by_loop,
+        "by_depth_loop": by_depth_loop,
+    }
+
+
+def loop_conditioning_parameter_names(wrapper: Any) -> list[str]:
+    tokens = (
+        "halt_predictor.loop_embedding",
+        "halt_predictor.loop_bias",
+        "halt_predictor.target_loop_embedding",
+        "halt_predictor.target_loop_bias",
+        "halt_predictor.target_loop_router",
+    )
+    return [name for name, _param in wrapper.named_parameters() if any(token in name for token in tokens)]
+
+
+def router_leak_exclusion(
+    wrapper: Any,
+    tokenizer: Any,
+    row: dict[str, Any],
+    args: argparse.Namespace,
+    *,
+    loops: list[int],
+) -> dict[str, Any]:
+    if not bool(args.router_leak_check):
+        return {"enabled": False}
+    prompt = prompt_for_row(row, prediction_space="full_symbols", prompt_style=args.prompt_style)
+    encoded = tokenizer(
+        prompt,
+        return_tensors="pt",
+        add_special_tokens=True,
+        truncation=True,
+        max_length=args.max_length,
+    ).to(args.device)
+    max_loop = max(loops)
+
+    def run_forward() -> tuple[torch.Tensor, torch.Tensor]:
+        output = wrapper(
+            input_ids=encoded["input_ids"],
+            attention_mask=encoded["attention_mask"],
+            labels=None,
+            max_loops=max_loop,
+            num_trajectories=1,
+            particle_update_mode="none",
+            use_cache=False,
+            return_dict=True,
+            return_loop_logits=True,
+            logits_to_keep=1,
+        )
+        if output.loop_logits is None:
+            raise RuntimeError("router leak check requires loop_logits")
+        return output.loop_logits.detach().float().cpu(), output.logits.detach().float().cpu()
+
+    with torch.no_grad():
+        base_loop_logits, base_weighted_logits = run_forward()
+        saved: dict[str, torch.Tensor] = {}
+        for name, param in wrapper.named_parameters():
+            if name in loop_conditioning_parameter_names(wrapper):
+                saved[name] = param.detach().clone()
+                param.zero_()
+        test_loop_logits, test_weighted_logits = run_forward()
+        for name, param in wrapper.named_parameters():
+            if name in saved:
+                param.copy_(saved[name])
+    loop_delta = (base_loop_logits - test_loop_logits).abs()
+    weighted_delta = (base_weighted_logits - test_weighted_logits).abs()
+    return {
+        "enabled": True,
+        "row_id": row.get("id") or row.get("instance_id"),
+        "parameter_names": sorted(saved),
+        "forced_loop_logits_max_abs_delta": float(loop_delta.max().item()),
+        "forced_loop_logits_mean_abs_delta": float(loop_delta.mean().item()),
+        "weighted_logits_max_abs_delta": float(weighted_delta.max().item()),
+        "weighted_logits_mean_abs_delta": float(weighted_delta.mean().item()),
+        "forced_loop_path_pass": bool(loop_delta.max().item() <= float(args.router_leak_atol)),
+        "atol": float(args.router_leak_atol),
+    }
+
+
 def target_for_step(row: dict[str, Any], step: int, *, value_prefix: str) -> int:
     text = continued_symbol_for_loop(row, step, value_prefix=value_prefix)
     if text is None:
@@ -267,7 +451,7 @@ def target_for_step(row: dict[str, Any], step: int, *, value_prefix: str) -> int
     return parse_int_symbol(text, prefix=value_prefix)
 
 
-def collect_state_rows(args: argparse.Namespace) -> tuple[list[dict[str, Any]], int]:
+def collect_state_rows(args: argparse.Namespace) -> tuple[list[dict[str, Any]], int, dict[str, Any]]:
     rows = read_jsonl(args.data_jsonl)
     max_rows = int(args.max_rows)
     if max_rows > 0:
@@ -276,6 +460,13 @@ def collect_state_rows(args: argparse.Namespace) -> tuple[list[dict[str, Any]], 
     target_steps = parse_csv_ints(args.target_steps)
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     wrapper = load_recurrent_wrapper(args, args.checkpoint)
+    router_leak = router_leak_exclusion(
+        wrapper,
+        tokenizer,
+        rows[0],
+        args,
+        loops=parse_csv_ints(args.loop_counts),
+    )
     records: list[dict[str, Any]] = []
     max_loop = max(loops)
     with torch.no_grad():
@@ -327,7 +518,7 @@ def collect_state_rows(args: argparse.Namespace) -> tuple[list[dict[str, Any]], 
                     }
                 )
     n_symbols = int(rows[0]["n_symbols"]) if rows else int(args.n_symbols)
-    return records, n_symbols
+    return records, n_symbols, router_leak
 
 
 def probe_grid(records: list[dict[str, Any]], args: argparse.Namespace, *, n_symbols: int) -> dict[str, Any]:
@@ -428,6 +619,13 @@ def probe_grid(records: list[dict[str, Any]], args: argparse.Namespace, *, n_sym
             train_set=train_set,
             test_set=test_set,
         ),
+        "state_envelope": state_envelope_diagnostic(
+            records,
+            args,
+            loops=loops,
+            train_set=train_set,
+            test_set=test_set,
+        ),
         "split": {
             "train_row_indices": sorted(train_set),
             "test_row_indices": sorted(test_set),
@@ -454,6 +652,11 @@ def main() -> int:
     parser.add_argument("--ridge_l2", type=float, default=1e-2)
     parser.add_argument("--permutations", type=int, default=20)
     parser.add_argument("--deflation_max_rank", type=int, default=6)
+    parser.add_argument("--envelope_rank", type=int, default=32)
+    parser.add_argument("--envelope_fit_loop_max", type=int, default=4)
+    parser.add_argument("--envelope_fit_depth_max", type=int, default=4)
+    parser.add_argument("--router_leak_check", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--router_leak_atol", type=float, default=1e-5)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--split", default="6,18")
     parser.add_argument("--bridge_projection_mode", choices=("concat", "split"), default="split")
@@ -465,7 +668,7 @@ def main() -> int:
     parser.add_argument("--adapter_dtype", default="float32")
     args = parser.parse_args()
 
-    records, n_symbols = collect_state_rows(args)
+    records, n_symbols, router_leak = collect_state_rows(args)
     payload = probe_grid(records, args, n_symbols=n_symbols)
     summary = {
         "kind": "synthetic_depth_state_probe",
@@ -476,6 +679,7 @@ def main() -> int:
         "n_symbols": n_symbols,
         "loop_counts": parse_csv_ints(args.loop_counts),
         "target_steps": parse_csv_ints(args.target_steps),
+        "router_leak_exclusion": router_leak,
         **payload,
     }
     out = Path(args.output_summary)

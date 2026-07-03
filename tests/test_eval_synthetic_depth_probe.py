@@ -5,9 +5,11 @@ import torch
 from eval.eval_synthetic_depth_probe import (
     deterministic_split,
     loop_index_deflation_curve,
+    loop_conditioning_parameter_names,
     probe_grid,
     permutation_p95,
     ridge_multiclass_accuracy,
+    state_envelope_diagnostic,
     target_for_step,
 )
 
@@ -142,3 +144,58 @@ def test_loop_index_deflation_curve_removes_low_rank_clock() -> None:
 
     assert curve[0]["accuracy"] > 0.9
     assert curve[2]["accuracy"] < curve[0]["accuracy"]
+
+
+def test_state_envelope_detects_late_loop_drift() -> None:
+    records = []
+    generator = torch.Generator().manual_seed(0)
+    for row_idx in range(24):
+        for loop in [1, 2, 3, 4, 5, 6]:
+            feature = 0.01 * torch.randn(6, generator=generator)
+            if loop >= 5:
+                feature[-1] = 10.0 + loop
+            records.append(
+                {
+                    "row_index": row_idx,
+                    "depth": 6,
+                    "loop": loop,
+                    "feature": feature,
+                    "targets": {"0": 0, "1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6},
+                }
+            )
+    train_rows, test_rows = deterministic_split(24, train_frac=0.7, seed=0)
+
+    class Args:
+        envelope_rank = 2
+        envelope_fit_loop_max = 4
+        envelope_fit_depth_max = 6
+
+    summary = state_envelope_diagnostic(
+        records,
+        Args(),
+        loops=[1, 2, 3, 4, 5, 6],
+        train_set=set(train_rows),
+        test_set=set(test_rows),
+    )
+
+    early = summary["by_loop"]["4"]["mean_reconstruction_mse"]
+    late = summary["by_loop"]["6"]["mean_reconstruction_mse"]
+    assert late > early
+
+
+def test_loop_conditioning_parameter_names_selects_router_side_controls() -> None:
+    class TinyWrapper(torch.nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.halt_predictor = torch.nn.Module()
+            self.halt_predictor.loop_embedding = torch.nn.Embedding(2, 3)
+            self.halt_predictor.loop_bias = torch.nn.Parameter(torch.zeros(2))
+            self.halt_predictor.target_loop_router = torch.nn.Linear(3, 2)
+            self.bridge = torch.nn.Linear(3, 3)
+
+    names = loop_conditioning_parameter_names(TinyWrapper())
+
+    assert any("loop_embedding" in name for name in names)
+    assert any("loop_bias" in name for name in names)
+    assert any("target_loop_router" in name for name in names)
+    assert not any(name.startswith("bridge") for name in names)
