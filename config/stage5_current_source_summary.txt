@@ -1,1 +1,1 @@
-outputs/stage5/stage5_post_anneal_readouts_20260703_191158_depth_extrapolation/summary.json
+outputs/stage5/stage5_post_anneal_readouts_20260703_191158_synthetic_probe/summary.json
