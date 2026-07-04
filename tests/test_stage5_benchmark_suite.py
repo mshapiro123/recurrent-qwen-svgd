@@ -305,6 +305,25 @@ def test_checkpoint_bearing_source_summary_follows_mcq_policy_chain(tmp_path) ->
     assert module.checkpoint_bearing_source_summary(policy_summary, policy_payload) == train_summary
 
 
+def test_checkpoint_candidates_include_explicit_final_drive_backup(tmp_path) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    local_final = tmp_path / "outputs" / "stage5" / "run" / "train" / "unfrozen_recurrent_step_2000.pt"
+    drive_final = tmp_path / "drive" / "run" / "final" / "unfrozen_recurrent_step_2000.pt"
+    drive_final.parent.mkdir(parents=True)
+    drive_final.write_bytes(b"checkpoint")
+    payload = {
+        "run_id": "run",
+        "final_checkpoint": str(local_final),
+        "final_checkpoint_drive_backup": str(drive_final),
+    }
+
+    candidates = module.checkpoint_candidates_from_payload(tmp_path / "outputs" / "stage5" / "run" / "summary.json", payload)
+
+    assert drive_final in candidates
+    assert module.resolve_checkpoint(None, payload) == drive_final
+
+
 def test_checkpoint_bearing_source_summary_unwraps_benchmark_assessment_even_with_checkpoint(tmp_path) -> None:
     import colab.run_stage5_benchmark_suite as module
 

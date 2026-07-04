@@ -340,17 +340,46 @@ def resolve_source_summary() -> Path | None:
 
 def checkpoint_candidates_from_payload(source_summary: Path | None, payload: dict[str, Any] | None) -> list[Path]:
     candidates: list[Path] = []
+    seen: set[str] = set()
+
+    def add(value: Any) -> None:
+        if not value:
+            return
+        path = resolve_path(str(value))
+        key = str(path)
+        if key not in seen:
+            seen.add(key)
+            candidates.append(path)
+
     if EXPLICIT_CHECKPOINT:
-        candidates.append(resolve_path(EXPLICIT_CHECKPOINT))
+        add(EXPLICIT_CHECKPOINT)
     if payload:
         value = checkpoint_value_from_payload(payload) or payload.get("checkpoint")
-        if value:
-            candidates.append(resolve_path(str(value)))
+        add(value)
+        for key in (
+            "final_checkpoint_drive_backup",
+            "checkpoint_drive_backup",
+            "ramp_checkpoint_drive_backup",
+            "final_checkpoint",
+            "checkpoint",
+            "phase1_checkpoint",
+        ):
+            add(payload.get(key))
+        stages = payload.get("stages") or []
+        if stages:
+            final_stage = stages[-1] or {}
+            for key in (
+                "final_checkpoint_drive_backup",
+                "checkpoint_drive_backup",
+                "final_checkpoint",
+                "checkpoint",
+            ):
+                add(final_stage.get(key))
         export_dir = payload.get("export_dir")
         if export_dir:
-            candidates.append(resolve_path(str(export_dir)) / "recurrent_adapter_checkpoint.pt")
+            add(resolve_path(str(export_dir)) / "recurrent_adapter_checkpoint.pt")
     if source_summary:
-        candidates.append(source_summary.parent / "recurrent_adapter_checkpoint.pt")
+        add(source_summary.parent / "recurrent_adapter_checkpoint.pt")
     return candidates
 
 
