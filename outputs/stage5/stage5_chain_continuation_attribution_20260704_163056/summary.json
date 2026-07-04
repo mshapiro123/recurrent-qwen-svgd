@@ -1,7 +1,7 @@
 {
   "kind": "stage5_chain_continuation_attribution",
   "run_id": "stage5_chain_continuation_attribution_20260704_163056",
-  "status": "finished",
+  "status": "finished_with_extrapolation",
   "loop_loss_mode": "per_loop_labels",
   "n_symbols": 16,
   "max_depth": 4,
@@ -171,6 +171,85 @@
       "comparison_question": "Does continued chain supervision match the post-anneal extrapolation jump, or was label removal the active ingredient?",
       "loss_mode": "per_loop_labels",
       "needs_depth_5_to_8_readout": true
-    }
+    },
+    "attribution_question": "chain_only_continuation_vs_outcome_anneal",
+    "compare_against": "outputs/stage5/stage5_post_anneal_readouts_20260703_191158/summary.json"
+  },
+  "attribution_extrapolation": {
+    "run_id": "stage5_chain_continuation_attribution_20260704_163056_depth_extrapolation",
+    "summary": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056_depth_extrapolation/summary.json",
+    "checkpoint": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056_depth_extrapolation/restored/scaled_corrected_final.pt",
+    "status": "finished",
+    "control_read": {
+      "depths": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "min_active_diagonal": 0.9609375,
+      "pass": true
+    },
+    "active_diagonal": {
+      "1": 1.0,
+      "2": 0.9609375,
+      "3": 0.96875,
+      "4": 0.96875,
+      "5": 0.890625,
+      "6": 0.6484375,
+      "7": 0.328125,
+      "8": 0.09375
+    },
+    "active_total": {
+      "correct": 4043,
+      "total": 4608,
+      "accuracy": 0.8773871527777778
+    },
+    "above_diagonal": {
+      "iterate": 1933,
+      "hold": 237,
+      "other": 1414,
+      "unknown_iterate_target": 0,
+      "n": 3584,
+      "rates": {
+        "iterate": 0.5393415178571429,
+        "hold": 0.06612723214285714,
+        "other": 0.39453125,
+        "unknown_iterate_target": 0.0
+      }
+    },
+    "extrapolation_read": {
+      "5": {
+        "observed": 0.890625,
+        "classification": "inside_or_above_conservative_band",
+        "conservative_interval": [
+          0.831,
+          0.976
+        ],
+        "threshold": 0.71
+      },
+      "6": {
+        "observed": 0.6484375,
+        "classification": "below_bar",
+        "conservative_interval": [
+          0.807,
+          0.963
+        ],
+        "threshold": 0.71
+      },
+      "7": {
+        "observed": 0.328125,
+        "classification": "below_bar",
+        "conservative_interval": null,
+        "threshold": 0.71
+      },
+      "8": {
+        "observed": 0.09375,
+        "classification": "below_bar",
+        "conservative_interval": null,
+        "threshold": 0.71
+      }
+    },
+    "artifact_check_pass": true
   }
 }
