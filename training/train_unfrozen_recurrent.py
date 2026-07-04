@@ -150,6 +150,52 @@ def trainable_parameter_summary(wrapper: RecurrentQwenForCausalLM) -> dict[str, 
     }
 
 
+def _parameter_norm_summary(named_params: list[tuple[str, torch.nn.Parameter]], prefix: str) -> dict[str, float]:
+    total_numel = 0
+    sum_sq = 0.0
+    max_abs = 0.0
+    for _, param in named_params:
+        if not param.requires_grad:
+            continue
+        tensor = param.detach().float()
+        if tensor.numel() == 0:
+            continue
+        total_numel += int(tensor.numel())
+        sum_sq += float(tensor.square().sum().item())
+        max_abs = max(max_abs, float(tensor.abs().max().item()))
+    l2 = math.sqrt(sum_sq) if sum_sq > 0.0 else 0.0
+    rms = math.sqrt(sum_sq / total_numel) if total_numel > 0 and sum_sq > 0.0 else 0.0
+    return {
+        f"{prefix}_param_numel": float(total_numel),
+        f"{prefix}_param_l2": l2,
+        f"{prefix}_param_rms": rms,
+        f"{prefix}_param_max_abs": max_abs,
+    }
+
+
+def trainable_parameter_norm_stats(wrapper: RecurrentQwenForCausalLM) -> dict[str, float]:
+    recurrent_params: list[tuple[str, torch.nn.Parameter]] = []
+    for layer_idx in range(wrapper.layer_split.prelude_end, wrapper.layer_split.recurrent_end):
+        recurrent_params.extend(
+            (f"recurrent_layer_{layer_idx}.{name}", param)
+            for name, param in wrapper.qwen.layers[layer_idx].named_parameters()
+        )
+    groups = {
+        "trainable_total": [(name, param) for name, param in wrapper.named_parameters()],
+        "recurrent_block": recurrent_params,
+        "bridge": [(f"bridge.{name}", param) for name, param in wrapper.bridge.named_parameters()],
+        "halting": [(f"halt_predictor.{name}", param) for name, param in wrapper.halt_predictor.named_parameters()],
+        "reentry_adapter": [
+            (f"reentry_adapter.{name}", param) for name, param in wrapper.reentry_adapter.named_parameters()
+        ],
+        "latent": [(f"latent_trajectory.{name}", param) for name, param in wrapper.latent_trajectory.named_parameters()],
+    }
+    stats: dict[str, float] = {}
+    for prefix, params in groups.items():
+        stats.update(_parameter_norm_summary(params, prefix))
+    return stats
+
+
 def bridge_uses_split_projection(wrapper: RecurrentQwenForCausalLM) -> bool:
     bridge = wrapper.bridge
     return bool(
@@ -639,11 +685,13 @@ def main() -> int:
 
             if step % cfg_int(cfg, "log_every", 5) == 0:
                 bridge_weight = bridge_prelude_weight_stats(wrapper)
+                parameter_norms = trainable_parameter_norm_stats(wrapper)
                 metric_values = {
                     **{key: float(value) for key, value in output.metrics.items()},
                     **pre_clip_bridge_grad,
                     **bridge_grad,
                     **bridge_weight,
+                    **parameter_norms,
                 }
                 metrics = " ".join(f"{key}={float(value):.4f}" for key, value in metric_values.items())
                 print(f"step={step} scheduled_loops={scheduled} forward_loops={forward_loops} {metrics}")
@@ -672,6 +720,7 @@ def main() -> int:
     summary["final_step"] = step
     summary["trainable_parameters"] = trainable_parameter_summary(wrapper)
     summary["bridge_prelude_weight_stats"] = bridge_prelude_weight_stats(wrapper)
+    summary["parameter_norm_stats"] = trainable_parameter_norm_stats(wrapper)
     summary["bridge_prelude_grad_multiplier"] = prelude_grad_multiplier
     if output_dir:
         summary_path = Path(output_dir) / "train_unfrozen_recurrent_summary.json"

@@ -5,6 +5,7 @@ import runpy
 from pathlib import Path
 
 from colab import run_stage5_depth_extrapolation_eval as extrap
+from colab import run_stage5_depth_support_route_comparison as route
 from colab.run_stage5_post_anneal_readouts import compact_extrapolation, compact_probe
 from colab.stage5_chain_consolidation_utils import resolve_checkpoint_reference
 
@@ -72,9 +73,12 @@ def test_chain_consolidation_cell_names_all_three_targets() -> None:
     assert "post_anneal_readouts" in text
     assert "post_anneal_extended_readouts" in text
     assert "chain_continuation_attribution" in text
+    assert "chain_continuation_probe_readout" in text
+    assert "depth_support_route_comparison" in text
     assert "colab/run_stage5_chain_anneal_to_outcome.py" in text
     assert "colab/run_stage5_post_anneal_readouts.py" in text
     assert "colab/run_stage5_chain_continuation_attribution.py" in text
+    assert "colab/run_stage5_depth_support_route_comparison.py" in text
 
 
 def test_chain_consolidation_runners_import_when_executed_by_path() -> None:
@@ -84,6 +88,7 @@ def test_chain_consolidation_runners_import_when_executed_by_path() -> None:
         "colab/run_stage5_chain_anneal_to_outcome.py",
         "colab/run_stage5_post_anneal_readouts.py",
         "colab/run_stage5_chain_continuation_attribution.py",
+        "colab/run_stage5_depth_support_route_comparison.py",
     ]:
         namespace = runpy.run_path(path, run_name="not_main")
         assert "main" in namespace
@@ -122,3 +127,53 @@ def test_post_anneal_readout_compacts_extrapolation_and_probe_fields() -> None:
     assert compacted_probe["router_leak_exclusion"]["forced_loop_path_pass"] is True
     assert compacted_probe["state_envelope"]["late_loop_reconstruction_error"] == 0.2
     assert compacted_probe["feature_transform_probes"]["unit_norm"]["loop_index_probe"]["accuracy"] == 0.3
+
+
+def test_depth_route_scoring_locks_thresholds_and_nonregression() -> None:
+    def cell(correct: int, total: int = 128) -> dict[str, float | int]:
+        return {"correct": correct, "total": total, "accuracy": correct / total}
+
+    active_summary = {
+        "active_matrix": {
+            "1": {"1": cell(128)},
+            "2": {"2": cell(124)},
+            "3": {"3": cell(124)},
+            "4": {"4": cell(124)},
+            "5": {"5": cell(110)},
+            "6": {"6": cell(109)},
+            "7": {"7": cell(52)},
+            "8": {"8": cell(19)},
+            "9": {"9": cell(14)},
+            "10": {"10": cell(14)},
+        }
+    }
+
+    score = route.score_route(active_summary, rows_per_depth=128)
+
+    assert score["overall_pass"] is True
+    assert score["locked_thresholds"]["selection_min_correct"]["7"] == 52
+    assert score["locked_thresholds"]["selection_min_correct"]["8"] == 19
+    assert score["locked_thresholds"]["nonregression_floors"]["6"] == 0.85
+
+
+def test_depth_route_scoring_fails_depth6_nonregression() -> None:
+    active_summary = {
+        "active_matrix": {
+            "1": {"1": {"correct": 128, "total": 128, "accuracy": 1.0}},
+            "2": {"2": {"correct": 124, "total": 128, "accuracy": 0.96875}},
+            "3": {"3": {"correct": 124, "total": 128, "accuracy": 0.96875}},
+            "4": {"4": {"correct": 124, "total": 128, "accuracy": 0.96875}},
+            "5": {"5": {"correct": 110, "total": 128, "accuracy": 0.859375}},
+            "6": {"6": {"correct": 108, "total": 128, "accuracy": 0.84375}},
+            "7": {"7": {"correct": 52, "total": 128, "accuracy": 0.40625}},
+            "8": {"8": {"correct": 19, "total": 128, "accuracy": 0.1484375}},
+            "9": {"9": {"correct": 14, "total": 128, "accuracy": 0.109375}},
+            "10": {"10": {"correct": 14, "total": 128, "accuracy": 0.109375}},
+        }
+    }
+
+    score = route.score_route(active_summary, rows_per_depth=128)
+
+    assert score["nonregression"]["6"]["pass"] is False
+    assert score["selection_pass"] is True
+    assert score["overall_pass"] is False

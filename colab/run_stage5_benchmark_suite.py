@@ -83,6 +83,8 @@ EXPLICIT_CHECKPOINT = os.environ.get("STAGE5_BENCHMARK_CHECKPOINT", "")
 BENCHMARKS = os.environ.get("STAGE5_BENCHMARKS", PROFILE_DEFAULTS["benchmarks"])
 ARC_CHALLENGE_LIMIT_RAW = os.environ.get("STAGE5_BENCHMARK_ARC_CHALLENGE_LIMIT", PROFILE_DEFAULTS["arc_challenge_limit"])
 ARC_EASY_LIMIT_RAW = os.environ.get("STAGE5_BENCHMARK_ARC_EASY_LIMIT", PROFILE_DEFAULTS["arc_easy_limit"])
+ARC_CHALLENGE_SPLIT = os.environ.get("STAGE5_BENCHMARK_ARC_CHALLENGE_SPLIT", "validation").strip() or "validation"
+ARC_EASY_SPLIT = os.environ.get("STAGE5_BENCHMARK_ARC_EASY_SPLIT", "validation").strip() or "validation"
 ARC_CHALLENGE_OFFSET = int(os.environ.get("STAGE5_BENCHMARK_ARC_CHALLENGE_OFFSET", "0"))
 ARC_EASY_OFFSET = int(os.environ.get("STAGE5_BENCHMARK_ARC_EASY_OFFSET", "0"))
 OPEN_HARD_ARC_CHALLENGE_LIMIT_RAW = os.environ.get(
@@ -306,6 +308,10 @@ ARC_EASY_LIMIT = parse_optional_limit(ARC_EASY_LIMIT_RAW)
 OPEN_HARD_ARC_CHALLENGE_LIMIT = parse_optional_limit(OPEN_HARD_ARC_CHALLENGE_LIMIT_RAW)
 
 
+def split_label(value: str) -> str:
+    return value.strip().lower().replace(",", "-").replace("+", "-").replace("/", "-")
+
+
 def latest_summary_with_checkpoint() -> Path | None:
     candidates: list[Path] = []
     for root in (ROOT / "outputs" / "hf_exports", ROOT / "outputs" / "stage5"):
@@ -512,7 +518,7 @@ def benchmark_specs(names: list[str]) -> list[BenchmarkSpec]:
     for name in names:
         if name in {"arc_challenge", "arc_easy", "open_hard_arc_challenge"}:
             config = "ARC-Challenge" if name == "arc_challenge" else "ARC-Easy"
-            split = "validation"
+            split = ARC_CHALLENGE_SPLIT if name == "arc_challenge" else ARC_EASY_SPLIT
             limit = ARC_CHALLENGE_LIMIT if name == "arc_challenge" else ARC_EASY_LIMIT
             offset = ARC_CHALLENGE_OFFSET if name == "arc_challenge" else ARC_EASY_OFFSET
             if name == "open_hard_arc_challenge":
@@ -536,9 +542,9 @@ def benchmark_specs(names: list[str]) -> list[BenchmarkSpec]:
                 prepare_cmd.extend(["--offset", str(offset)])
             if limit is not None:
                 prepare_cmd.extend(["--limit", str(limit)])
-            output = PRIVATE_DATA_DIR / f"arc_challenge_validation_{slice_label}.jsonl"
+            output = PRIVATE_DATA_DIR / f"arc_challenge_{split_label(split)}_{slice_label}.jsonl"
             if name == "arc_easy":
-                output = PRIVATE_DATA_DIR / f"arc_easy_validation_{slice_label}.jsonl"
+                output = PRIVATE_DATA_DIR / f"arc_easy_{split_label(split)}_{slice_label}.jsonl"
             elif name == "open_hard_arc_challenge":
                 output = PRIVATE_DATA_DIR / f"open_hard_arc_challenge_{split}_{slice_label}.jsonl"
             prepare_cmd.extend(["--output_jsonl", str(output)])

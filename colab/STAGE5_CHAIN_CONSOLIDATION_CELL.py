@@ -17,6 +17,8 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: chain_anneal_to_outcome
 # Safety marker: post_anneal_readouts
 # Safety marker: chain_continuation_attribution
+# Safety marker: chain_continuation_probe_readout
+# Safety marker: depth_support_route_comparison
 # Safety marker: eval/eval_synthetic_depth_artifact_check.py
 # Safety marker: eval/eval_synthetic_depth_probe.py
 # Safety marker: eval/analyze_synthetic_reader_alignment.py
@@ -25,6 +27,7 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: colab/run_stage5_chain_anneal_to_outcome.py
 # Safety marker: colab/run_stage5_post_anneal_readouts.py
 # Safety marker: colab/run_stage5_chain_continuation_attribution.py
+# Safety marker: colab/run_stage5_depth_support_route_comparison.py
 # Safety marker: STAGE5_EXTRAP_DEPTHS
 # Safety marker: STAGE5_EXTRAP_MAX_LOOPS
 # Safety marker: STAGE5_EXTRAP_CHECKPOINT
@@ -33,6 +36,11 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: STAGE5_ANNEAL_TOTAL_STEPS
 # Safety marker: STAGE5_ANNEAL_PRELUDE_LR_MULT
 # Safety marker: STAGE5_CHAIN_CONTINUATION_EXTRAP_DEPTHS
+# Safety marker: STAGE5_ROUTE_FROZEN_EVAL_ID
+# Safety marker: STAGE5_ROUTE_TRAIN_MAX_DEPTH
+# Safety marker: STAGE5_ROUTE_EVAL_MAX_DEPTH
+# Safety marker: SELECTION_MIN_CORRECT
+# Safety marker: NONREGRESSION_FLOORS
 # Safety marker: STAGE5_ANNEAL_LOOP_LOSS_MODE
 # Safety marker: per_loop_labels
 # Safety marker: STAGE5_PROBE_FEATURE_TRANSFORMS
@@ -59,6 +67,15 @@ TARGETS = {
         "disconnect_env": "STAGE5_EXTRAP_DISCONNECT",
     },
     "synthetic_probe_battery": {
+        "script": "colab/run_stage5_synthetic_probe_battery.py",
+        "tests": [
+            "tests/test_eval_synthetic_depth_probe.py",
+            "tests/test_stage5_chain_consolidation.py",
+            "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
+        ],
+        "disconnect_env": "STAGE5_PROBE_DISCONNECT",
+    },
+    "chain_continuation_probe_readout": {
         "script": "colab/run_stage5_synthetic_probe_battery.py",
         "tests": [
             "tests/test_eval_synthetic_depth_probe.py",
@@ -108,6 +125,17 @@ TARGETS = {
             "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
         ],
         "disconnect_env": "STAGE5_CHAIN_CONTINUATION_DISCONNECT",
+    },
+    "depth_support_route_comparison": {
+        "script": "colab/run_stage5_depth_support_route_comparison.py",
+        "tests": [
+            "tests/test_recurrent_wrapper_tiny.py::test_per_loop_label_loss_mode_uses_active_intermediate_labels_on_tiny_model",
+            "tests/test_eval_synthetic_depth_active_labels.py",
+            "tests/test_stage5_chain_consolidation.py",
+            "tests/test_train_unfrozen_recurrent.py::test_trainable_parameter_norm_stats_groups_recurrent_and_bridge_params",
+            "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
+        ],
+        "disconnect_env": "STAGE5_ROUTE_DISCONNECT",
     },
 }
 

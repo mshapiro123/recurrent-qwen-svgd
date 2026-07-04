@@ -716,6 +716,7 @@ def test_benchmark_specs_supports_arc_easy(tmp_path, monkeypatch) -> None:
 
     monkeypatch.setattr(module, "PRIVATE_DATA_DIR", tmp_path)
     monkeypatch.setattr(module, "ARC_EASY_LIMIT", None)
+    monkeypatch.setattr(module, "ARC_EASY_SPLIT", "validation")
 
     spec = benchmark_specs(["arc_easy"])[0]
 
@@ -730,11 +731,25 @@ def test_benchmark_specs_supports_limited_arc_easy(tmp_path, monkeypatch) -> Non
 
     monkeypatch.setattr(module, "PRIVATE_DATA_DIR", tmp_path)
     monkeypatch.setattr(module, "ARC_EASY_LIMIT", 64)
+    monkeypatch.setattr(module, "ARC_EASY_SPLIT", "validation")
 
     spec = benchmark_specs(["arc_easy"])[0]
 
     assert spec.data_jsonl == tmp_path / "arc_easy_validation_64.jsonl"
     assert spec.prepare_cmd[spec.prepare_cmd.index("--limit") + 1] == "64"
+
+
+def test_benchmark_specs_supports_all_arc_splits(tmp_path, monkeypatch) -> None:
+    import colab.run_stage5_benchmark_suite as module
+
+    monkeypatch.setattr(module, "PRIVATE_DATA_DIR", tmp_path)
+    monkeypatch.setattr(module, "ARC_CHALLENGE_LIMIT", None)
+    monkeypatch.setattr(module, "ARC_CHALLENGE_SPLIT", "all")
+
+    spec = benchmark_specs(["arc_challenge"])[0]
+
+    assert spec.data_jsonl == tmp_path / "arc_challenge_all_full.jsonl"
+    assert spec.prepare_cmd[spec.prepare_cmd.index("--split") + 1] == "all"
 
 
 def test_benchmark_specs_supports_open_hard_arc_challenge_fallback(tmp_path, monkeypatch) -> None:

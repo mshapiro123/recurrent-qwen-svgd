@@ -78,6 +78,9 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "chain_anneal_to_outcome" - persistence test: anneal active chain labels away while keeping outcome supervision.
 #   "post_anneal_extended_readouts" - eval-only depth 1-8 and norm-standardized clock probes from the annealed checkpoint.
 #   "chain_continuation_attribution" - same-budget continued chain supervision control plus depth 1-8 extrapolation.
+#   "chain_continuation_probe_readout" - probe battery on the chain-continuation checkpoint.
+#   "regression_battery_loop1_current" - loop-1 AI2 ARC non-inferiority battery before route comparison.
+#   "depth_support_route_comparison" - train support depth 1-6 and score on frozen depth 1-10 rows.
 #   "gradient_path_audit" - read-only per-loop gradient matrix plus finite-difference bridge check.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
 #   "model_viability_queue" - queued no-training Qwen 3B/7B probes with VRAM-aware skipping.
@@ -1902,6 +1905,7 @@ TARGETS = {
         "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
         "markers": [
             "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "chain_continuation_probe_readout",
             "synthetic_probe_battery",
             "eval/eval_synthetic_depth_probe.py",
             "loop_index_probe",
@@ -2026,6 +2030,86 @@ TARGETS = {
             "STAGE5_CHAIN_CONTINUATION_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
             "STAGE5_CHAIN_CONTINUATION_DTYPE": "bfloat16",
             "STAGE5_CHAIN_CONTINUATION_DISCONNECT": "0",
+        },
+    },
+    "chain_continuation_probe_readout": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "synthetic_probe_battery",
+            "colab/run_stage5_synthetic_probe_battery.py",
+            "STAGE5_PROBE_CHECKPOINT",
+            "STAGE5_PROBE_FEATURE_TRANSFORMS",
+            "loop_index_probe",
+            "state_envelope",
+            "tests/test_stage5_chain_consolidation.py",
+        ],
+        "env": {
+            "STAGE5_PROBE_CHECKPOINT": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/summary.json",
+            "STAGE5_PROBE_RUN_ID": "stage5_chain_continuation_probe_readout",
+            "STAGE5_PROBE_N_SYMBOLS": "16",
+            "STAGE5_PROBE_MAX_DEPTH": "10",
+            "STAGE5_PROBE_ROWS_PER_DEPTH": "128",
+            "STAGE5_PROBE_LOOP_COUNTS": "1,2,3,4,5,6,7,8,9,10",
+            "STAGE5_PROBE_TARGET_STEPS": "0,1,2,3,4,5,6,7,8,9,10",
+            "STAGE5_PROBE_FEATURE_TRANSFORMS": "raw,unit_norm",
+            "STAGE5_PROBE_DTYPE": "bfloat16",
+            "STAGE5_PROBE_DISCONNECT": "0",
+        },
+    },
+    "depth_support_route_comparison": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "depth_support_route_comparison",
+            "colab/run_stage5_depth_support_route_comparison.py",
+            "STAGE5_ROUTE_FROZEN_EVAL_ID",
+            "STAGE5_ROUTE_TRAIN_MAX_DEPTH",
+            "STAGE5_ROUTE_EVAL_MAX_DEPTH",
+            "SELECTION_MIN_CORRECT",
+            "NONREGRESSION_FLOORS",
+            "tests/test_stage5_chain_consolidation.py",
+        ],
+        "env": {
+            "STAGE5_ROUTE_INIT_CHECKPOINT": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/summary.json",
+            "STAGE5_ROUTE_N_SYMBOLS": "16",
+            "STAGE5_ROUTE_TRAIN_MAX_DEPTH": "6",
+            "STAGE5_ROUTE_EVAL_MAX_DEPTH": "10",
+            "STAGE5_ROUTE_ROWS_PER_DEPTH": "256",
+            "STAGE5_ROUTE_FROZEN_ROWS_PER_DEPTH": "128",
+            "STAGE5_ROUTE_TOTAL_STEPS": "2000",
+            "STAGE5_ROUTE_PRELUDE_LR_MULT": "10.0",
+            "STAGE5_ROUTE_FROZEN_EVAL_ID": "stage5_synthetic_depth_frozen_eval_v1",
+            "STAGE5_ROUTE_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
+            "STAGE5_ROUTE_DTYPE": "bfloat16",
+            "STAGE5_ROUTE_DISCONNECT": "0",
+        },
+    },
+    "regression_battery_loop1_current": {
+        "path": "colab/STAGE5_REGRESSION_BATTERY_CELL.py",
+        "markers": [
+            "STAGE5_REGRESSION_BATTERY_CELL_VERSION",
+            "regression_battery_ai2_arc_v1",
+            "STAGE5_REGRESSION_SOURCE_SUMMARIES",
+            "STAGE5_REGRESSION_ARC_SPLIT",
+            "STAGE5_BENCHMARK_ARC_EASY_SPLIT",
+            "STAGE5_BENCHMARK_ARC_CHALLENGE_SPLIT",
+            "forced loop 1",
+            "AI2 ARC, not ARC-AGI",
+            "eval/assess_regression_battery.py",
+            "colab/run_stage5_regression_battery.py",
+            "tests/test_regression_battery.py",
+        ],
+        "env": {
+            "STAGE5_REGRESSION_CURRENT_SOURCE_SUMMARY": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/summary.json",
+            "STAGE5_REGRESSION_BATTERY_RUN_ID": "stage5_regression_battery_loop1_current",
+            "STAGE5_REGRESSION_ARC_SPLIT": "all",
+            "STAGE5_REGRESSION_ARC_EASY_LIMIT": "all",
+            "STAGE5_REGRESSION_ARC_CHALLENGE_LIMIT": "all",
+            "STAGE5_REGRESSION_MARGIN": "0.03",
+            "STAGE5_REGRESSION_YELLOW_MARGIN": "0.015",
+            "STAGE5_REGRESSION_PUSH": "1",
+            "STAGE5_REGRESSION_DISCONNECT": "0",
         },
     },
     "gradient_path_audit": {

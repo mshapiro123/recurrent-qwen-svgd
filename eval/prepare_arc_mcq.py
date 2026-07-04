@@ -49,6 +49,24 @@ def row_to_mcq(row: dict[str, Any], index: int, seed: int, shuffle_choices: bool
     }
 
 
+def split_names(value: str) -> list[str]:
+    normalized = value.strip()
+    if normalized.lower() == "all":
+        return ["train", "validation", "test"]
+    return [item.strip() for item in normalized.split(",") if item.strip()]
+
+
+def load_split_rows(dataset_id: str, config: str, split: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for split_name in split_names(split):
+        dataset = load_dataset(dataset_id, config, split=split_name)
+        for idx, row in enumerate(dataset):
+            raw = dict(row)
+            raw["id"] = f"{split_name}:{raw.get('id') or idx}"
+            rows.append(raw)
+    return rows
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset_id", default="allenai/ai2_arc")
@@ -61,18 +79,18 @@ def main() -> int:
     parser.add_argument("--no_shuffle_choices", action="store_true")
     args = parser.parse_args()
 
-    dataset = load_dataset(args.dataset_id, args.config, split=args.split)
+    rows = load_split_rows(args.dataset_id, args.config, args.split)
     if args.offset < 0:
         raise ValueError("--offset must be non-negative")
     if args.offset:
-        dataset = dataset.select(range(min(args.offset, len(dataset)), len(dataset)))
+        rows = rows[min(args.offset, len(rows)) :]
     if args.limit is not None:
-        dataset = dataset.select(range(min(args.limit, len(dataset))))
+        rows = rows[: args.limit]
 
     output_path = Path(args.output_jsonl)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as handle:
-        for idx, row in enumerate(dataset):
+        for idx, row in enumerate(rows):
             prepared = row_to_mcq(
                 dict(row),
                 index=idx,
@@ -85,7 +103,7 @@ def main() -> int:
     print(f"config={args.config}")
     print(f"split={args.split}")
     print(f"offset={args.offset}")
-    print(f"rows={len(dataset)}")
+    print(f"rows={len(rows)}")
     print(f"output_jsonl={output_path}")
     return 0
 

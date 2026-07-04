@@ -19,6 +19,7 @@ from training.train_unfrozen_recurrent import (
     curriculum_target_counts,
     resolve_resume_lora_config,
     scheduled_loop_count,
+    trainable_parameter_norm_stats,
     trainable_parameter_summary,
 )
 
@@ -94,6 +95,20 @@ def test_configure_trainable_modules_unfreezes_only_recurrent_block_by_default()
     summary = trainable_parameter_summary(wrapper)  # type: ignore[arg-type]
     assert summary["recurrent_block"] > 0
     assert summary["total"] >= summary["recurrent_block"]
+
+
+def test_trainable_parameter_norm_stats_groups_recurrent_and_bridge_params() -> None:
+    wrapper = TinyWrapper()
+    configure_trainable_modules(wrapper, {"train_auxiliary": {"bridge": True, "halting": False}})
+
+    stats = trainable_parameter_norm_stats(wrapper)  # type: ignore[arg-type]
+
+    assert stats["trainable_total_param_numel"] > 0
+    assert stats["recurrent_block_param_numel"] > 0
+    assert stats["bridge_param_numel"] > 0
+    assert stats["halting_param_numel"] == 0.0
+    assert stats["trainable_total_param_rms"] > 0.0
+    assert stats["recurrent_block_param_l2"] > 0.0
 
 
 class TinyBridgeWrapper(nn.Module):
