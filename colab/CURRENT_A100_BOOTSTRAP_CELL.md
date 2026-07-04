@@ -2096,6 +2096,7 @@ TARGETS = {
             "STAGE5_BENCHMARK_ARC_CHALLENGE_SPLIT",
             "forced loop 1",
             "AI2 ARC, not ARC-AGI",
+            "drive.mount",
             "eval/assess_regression_battery.py",
             "colab/run_stage5_regression_battery.py",
             "tests/test_regression_battery.py",

@@ -13,7 +13,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from google.colab import runtime, userdata
+from google.colab import drive, runtime, userdata
 
 
 STAGE5_REGRESSION_BATTERY_CELL_VERSION = "regression_battery_ai2_arc_v1"
@@ -24,6 +24,7 @@ STAGE5_REGRESSION_BATTERY_CELL_VERSION = "regression_battery_ai2_arc_v1"
 # Safety marker: STAGE5_BENCHMARK_ARC_CHALLENGE_SPLIT
 # Safety marker: forced loop 1
 # Safety marker: AI2 ARC, not ARC-AGI
+# Safety marker: drive.mount
 # Safety marker: eval/assess_regression_battery.py
 # Safety marker: colab/run_stage5_regression_battery.py
 # Safety marker: tests/test_regression_battery.py
@@ -101,6 +102,22 @@ def require_gpu_runtime() -> None:
     run(["nvidia-smi"], cwd=Path("/content"))
 
 
+def mount_drive_first() -> None:
+    """Mount Drive in the notebook process before subprocess restore attempts.
+
+    ``google.colab.drive.mount`` can fail from a plain Python subprocess because
+    the notebook kernel object is unavailable there. Mounting here leaves
+    ``/content/drive`` visible to the benchmark runner's checkpoint restore
+    code.
+    """
+
+    if env_flag("STAGE5_REGRESSION_SKIP_DRIVE_MOUNT", "0"):
+        print("Skipping upfront Drive mount by request.", flush=True)
+        return
+    force = env_flag("FORCE_DRIVE_REMOUNT", "0") or env_flag("STAGE5_REGRESSION_FORCE_DRIVE_REMOUNT", "0")
+    drive.mount("/content/drive", force_remount=force)
+
+
 def sync_repo() -> None:
     clone_url = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
     if ROOT.exists():
@@ -117,6 +134,7 @@ def sync_repo() -> None:
 
 def main() -> None:
     require_gpu_runtime()
+    mount_drive_first()
     sync_repo()
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"])
     run(
