@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 
-LABELS = ("A", "B", "C", "D", "E", "F")
+LABELS = tuple("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 LETTER_SYMBOLS = tuple("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 

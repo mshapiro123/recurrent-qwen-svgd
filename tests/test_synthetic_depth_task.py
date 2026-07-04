@@ -187,6 +187,24 @@ def test_chain_symbol_sft_row_can_render_full_symbols_as_letters() -> None:
     }
 
 
+def test_chain_label_sft_supports_depth8_letter_symbols() -> None:
+    instance = build_instance(
+        instance_id="depth8_letter_chain_labels",
+        n_symbols=16,
+        depth=8,
+        seed=45,
+        num_choices=4,
+    )
+
+    row = build_chain_label_sft_row(instance, max_target_loops=8, value_prefix="letter:")
+
+    assert len(row["loop_completions"]) == 8
+    assert len(row["chain_answer_by_loop"]) == 8
+    assert set(row["choices"].values()) == set(row["orbit"][1:9])
+    for loop_idx, completion in enumerate(row["loop_completions"], start=1):
+        assert row["choices"][completion.strip()] == row["orbit"][loop_idx]
+
+
 def test_dataset_generation_is_deterministic_and_balanced() -> None:
     config = SyntheticDepthConfig(
         n_symbols=10,
@@ -248,3 +266,26 @@ def test_write_synthetic_depth_dataset_writes_train_val_test_and_summary(tmp_pat
     assert summary["files"]["train"]["chain_label_sft"] == "train_chain_label_sft.jsonl"
     assert summary["files"]["train"]["chain_symbol_sft"] == "train_chain_symbol_sft.jsonl"
     assert summary["files"]["train"]["chain_mcq"] == "train_chain_mcq.jsonl"
+
+
+def test_write_synthetic_depth_dataset_supports_depth8_letter_prefix(tmp_path: Path) -> None:
+    summary = write_synthetic_depth_dataset(
+        output_dir=tmp_path,
+        config=SyntheticDepthConfig(
+            n_symbols=16,
+            max_depth=8,
+            rows_per_depth=1,
+            seed=20260703,
+            max_target_loops=8,
+            value_prefix="letter:",
+        ),
+    )
+
+    assert summary["rows"]["test"] == 8
+    rows = [
+        json.loads(line)
+        for line in (tmp_path / "test_chain_label_sft.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    depth8 = next(row for row in rows if row["depth"] == 8)
+    assert len(depth8["loop_completions"]) == 8
+    assert all(value in set("ABCDEFGHIJKLMNOP") for value in depth8["orbit"])
