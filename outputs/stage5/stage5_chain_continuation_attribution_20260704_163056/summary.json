@@ -1,7 +1,7 @@
 {
   "kind": "stage5_chain_continuation_attribution",
   "run_id": "stage5_chain_continuation_attribution_20260704_163056",
-  "status": "training_finished",
+  "status": "finished",
   "loop_loss_mode": "per_loop_labels",
   "n_symbols": 16,
   "max_depth": 4,
@@ -56,5 +56,121 @@
   "ramp_checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_chain_continuation_attribution_20260704_163056/anneal_to_outcome_ramp/unfrozen_recurrent_step_1000.pt",
   "final_checkpoint": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/train/chain_continuation/unfrozen_recurrent_step_2000.pt",
   "final_checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_chain_continuation_attribution_20260704_163056/anneal_to_outcome_final/unfrozen_recurrent_step_2000.pt",
-  "prelude_trajectory_source": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/train/chain_continuation/train_unfrozen_recurrent_summary.json"
+  "prelude_trajectory_source": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/train/chain_continuation/train_unfrozen_recurrent_summary.json",
+  "ramp_eval": {
+    "active": {
+      "name": "ramp_checkpoint_heldout",
+      "active_rows": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/eval/ramp_checkpoint_heldout_active_rows.jsonl",
+      "active_summary": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/eval/ramp_checkpoint_heldout_active_summary.json",
+      "active_diagonal": {
+        "1": 1.0,
+        "2": 0.984375,
+        "3": 0.984375,
+        "4": 0.984375
+      },
+      "active_diagonal_min": 0.984375,
+      "active_total": {
+        "correct": 632,
+        "total": 640,
+        "accuracy": 0.9875
+      },
+      "above_diagonal": {
+        "iterate": 361,
+        "hold": 4,
+        "other": 19,
+        "unknown_iterate_target": 0,
+        "n": 384,
+        "rates": {
+          "iterate": 0.9401041666666666,
+          "hold": 0.010416666666666666,
+          "other": 0.049479166666666664,
+          "unknown_iterate_target": 0.0
+        }
+      }
+    },
+    "final": {
+      "name": "ramp_checkpoint_heldout",
+      "matrix_rows": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/eval/ramp_checkpoint_heldout_matrix_rows.jsonl",
+      "matrix_summary": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/eval/ramp_checkpoint_heldout_matrix_summary.json",
+      "final_answer_diagonal": {
+        "1": 1.0,
+        "2": 0.609375,
+        "3": 0.5,
+        "4": 0.453125
+      },
+      "frontier_by_loop": {
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0
+      }
+    }
+  },
+  "final_eval": {
+    "active": {
+      "name": "final_checkpoint_heldout",
+      "active_rows": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/eval/final_checkpoint_heldout_active_rows.jsonl",
+      "active_summary": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/eval/final_checkpoint_heldout_active_summary.json",
+      "active_diagonal": {
+        "1": 1.0,
+        "2": 0.96875,
+        "3": 0.96875,
+        "4": 0.953125
+      },
+      "active_diagonal_min": 0.953125,
+      "active_total": {
+        "correct": 628,
+        "total": 640,
+        "accuracy": 0.98125
+      },
+      "above_diagonal": {
+        "iterate": 359,
+        "hold": 1,
+        "other": 24,
+        "unknown_iterate_target": 0,
+        "n": 384,
+        "rates": {
+          "iterate": 0.9348958333333334,
+          "hold": 0.0026041666666666665,
+          "other": 0.0625,
+          "unknown_iterate_target": 0.0
+        }
+      }
+    },
+    "final": {
+      "name": "final_checkpoint_heldout",
+      "matrix_rows": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/eval/final_checkpoint_heldout_matrix_rows.jsonl",
+      "matrix_summary": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/eval/final_checkpoint_heldout_matrix_summary.json",
+      "final_answer_diagonal": {
+        "1": 1.0,
+        "2": 0.640625,
+        "3": 0.5625,
+        "4": 0.625
+      },
+      "frontier_by_loop": {
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0
+      }
+    }
+  },
+  "decision_read": {
+    "capability_component": {
+      "metric": "heldout final-answer diagonal minimum",
+      "min_accuracy": 0.5625,
+      "strong_bar": 0.9
+    },
+    "mechanism_component": {
+      "metric": "heldout active-label diagonal minimum",
+      "min_accuracy": 0.953125,
+      "bar": 0.71,
+      "pass": true
+    },
+    "attribution_component": {
+      "comparison_question": "Does continued chain supervision match the post-anneal extrapolation jump, or was label removal the active ingredient?",
+      "loss_mode": "per_loop_labels",
+      "needs_depth_5_to_8_readout": true
+    }
+  }
 }

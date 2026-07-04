@@ -1,0 +1,120 @@
+{
+  "kind": "synthetic_depth_accuracy_matrix",
+  "threshold": 0.71,
+  "depths": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "loops": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "matrix": {
+    "1": {
+      "1": {
+        "correct": 64,
+        "total": 64,
+        "accuracy": 1.0
+      },
+      "2": {
+        "correct": 15,
+        "total": 64,
+        "accuracy": 0.234375
+      },
+      "3": {
+        "correct": 23,
+        "total": 64,
+        "accuracy": 0.359375
+      },
+      "4": {
+        "correct": 23,
+        "total": 64,
+        "accuracy": 0.359375
+      }
+    },
+    "2": {
+      "1": {
+        "correct": 19,
+        "total": 64,
+        "accuracy": 0.296875
+      },
+      "2": {
+        "correct": 39,
+        "total": 64,
+        "accuracy": 0.609375
+      },
+      "3": {
+        "correct": 20,
+        "total": 64,
+        "accuracy": 0.3125
+      },
+      "4": {
+        "correct": 27,
+        "total": 64,
+        "accuracy": 0.421875
+      }
+    },
+    "3": {
+      "1": {
+        "correct": 16,
+        "total": 64,
+        "accuracy": 0.25
+      },
+      "2": {
+        "correct": 20,
+        "total": 64,
+        "accuracy": 0.3125
+      },
+      "3": {
+        "correct": 32,
+        "total": 64,
+        "accuracy": 0.5
+      },
+      "4": {
+        "correct": 20,
+        "total": 64,
+        "accuracy": 0.3125
+      }
+    },
+    "4": {
+      "1": {
+        "correct": 10,
+        "total": 64,
+        "accuracy": 0.15625
+      },
+      "2": {
+        "correct": 25,
+        "total": 64,
+        "accuracy": 0.390625
+      },
+      "3": {
+        "correct": 26,
+        "total": 64,
+        "accuracy": 0.40625
+      },
+      "4": {
+        "correct": 29,
+        "total": 64,
+        "accuracy": 0.453125
+      }
+    }
+  },
+  "frontier_by_loop": {
+    "1": 1,
+    "2": 0,
+    "3": 0,
+    "4": 0
+  },
+  "frontier_is_non_decreasing": false,
+  "frontier_strictly_expands": false,
+  "mode": "recurrent",
+  "checkpoint": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/train/chain_continuation/unfrozen_recurrent_step_1000.pt",
+  "data_jsonl": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/data/test_mcq_heldout64.jsonl",
+  "score_target": "option_text",
+  "aggregate": "mean",
+  "rows": 1024
+}
