@@ -144,8 +144,11 @@ def paired_rows(
     for _, bucket in sorted(buckets.items(), key=lambda item: len(item[1]), reverse=True):
         order = torch.randperm(len(bucket), generator=generator).tolist()
         shuffled = [bucket[idx] for idx in order]
-        half = len(shuffled) // 2
-        for left, right in zip(shuffled[:half], reversed(shuffled[half:])):
+        for pair_idx in range(n_pairs - len(pairs)):
+            left = shuffled[pair_idx % len(shuffled)]
+            right = shuffled[(len(shuffled) - 1 - pair_idx) % len(shuffled)]
+            if row_id(left) == row_id(right):
+                right = shuffled[(pair_idx + 1) % len(shuffled)]
             pairs.append((left, right))
             if len(pairs) >= n_pairs:
                 return pairs

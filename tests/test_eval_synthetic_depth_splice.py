@@ -89,9 +89,10 @@ def test_paired_rows_only_uses_compatible_prompt_lengths_at_target_depth() -> No
         row("odd_length", question="different length"),
     ]
 
-    pairs = paired_rows(rows, tokenizer, target_depth=8, n_pairs=2, seed=0)
+    pairs = paired_rows(rows, tokenizer, target_depth=8, n_pairs=5, seed=0)
 
-    assert len(pairs) == 2
+    assert len(pairs) == 5
+    assert all(left["id"] != right["id"] for left, right in pairs)
     flattened = {item["id"] for pair in pairs for item in pair}
     assert "wrong_depth" not in flattened
     assert "odd_length" not in flattened
