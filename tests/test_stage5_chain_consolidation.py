@@ -5,6 +5,7 @@ import runpy
 from pathlib import Path
 
 from colab import run_stage5_depth_extrapolation_eval as extrap
+from colab import run_stage5_depth_support_ladder as ladder
 from colab import run_stage5_depth_support_route_comparison as route
 from colab.run_stage5_post_anneal_readouts import compact_extrapolation, compact_probe
 from colab.stage5_chain_consolidation_utils import resolve_checkpoint_reference
@@ -75,11 +76,13 @@ def test_chain_consolidation_cell_names_all_three_targets() -> None:
     assert "chain_continuation_attribution" in text
     assert "chain_continuation_probe_readout" in text
     assert "depth_support_route_comparison" in text
+    assert "depth_support_ladder8" in text
     assert "splice_injection_diagnostic" in text
     assert "colab/run_stage5_chain_anneal_to_outcome.py" in text
     assert "colab/run_stage5_post_anneal_readouts.py" in text
     assert "colab/run_stage5_chain_continuation_attribution.py" in text
     assert "colab/run_stage5_depth_support_route_comparison.py" in text
+    assert "colab/run_stage5_depth_support_ladder.py" in text
     assert "colab/run_stage5_splice_injection.py" in text
 
 
@@ -91,6 +94,7 @@ def test_chain_consolidation_runners_import_when_executed_by_path() -> None:
         "colab/run_stage5_post_anneal_readouts.py",
         "colab/run_stage5_chain_continuation_attribution.py",
         "colab/run_stage5_depth_support_route_comparison.py",
+        "colab/run_stage5_depth_support_ladder.py",
         "colab/run_stage5_splice_injection.py",
     ]:
         namespace = runpy.run_path(path, run_name="not_main")
@@ -178,5 +182,51 @@ def test_depth_route_scoring_fails_depth6_nonregression() -> None:
     score = route.score_route(active_summary, rows_per_depth=128)
 
     assert score["nonregression"]["6"]["pass"] is False
-    assert score["selection_pass"] is True
+
+
+def test_depth_support_ladder_scores_strong_scaling() -> None:
+    def cell(correct: int, total: int = 128) -> dict[str, float | int]:
+        return {"correct": correct, "total": total, "accuracy": correct / total}
+
+    active_summary = {
+        "active_matrix": {
+            **{str(depth): {str(depth): cell(128 if depth <= 4 else 110)} for depth in range(1, 9)},
+            "9": {"9": cell(80)},
+            "10": {"10": cell(91)},
+            "11": {"11": cell(91)},
+            "12": {"12": cell(14)},
+            "13": {"13": cell(14)},
+            "14": {"14": cell(14)},
+        }
+    }
+
+    score = ladder.score_ladder(active_summary)
+
+    assert score["nonregression_pass"] is True
+    assert score["strong_scaling_pass"] is True
+    assert score["verdict"] == "strong_scaling"
+
+
+def test_depth_support_ladder_detects_asymptote_rejection_without_strong_scaling() -> None:
+    def cell(correct: int, total: int = 128) -> dict[str, float | int]:
+        return {"correct": correct, "total": total, "accuracy": correct / total}
+
+    active_summary = {
+        "active_matrix": {
+            **{str(depth): {str(depth): cell(128 if depth <= 4 else 110)} for depth in range(1, 9)},
+            "9": {"9": cell(52)},
+            "10": {"10": cell(79)},
+            "11": {"11": cell(13)},
+            "12": {"12": cell(13)},
+            "13": {"13": cell(13)},
+            "14": {"14": cell(13)},
+        }
+    }
+
+    score = ladder.score_ladder(active_summary)
+
+    assert score["asymptote_rejected"] is True
+    assert score["strong_scaling_pass"] is False
+    assert score["verdict"] == "asymptote_rejected_at_depth10"
+    assert score["selection_pass"] is False
     assert score["overall_pass"] is False

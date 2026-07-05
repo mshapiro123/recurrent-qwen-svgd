@@ -4,7 +4,8 @@ The active-label accuracy curve cannot distinguish a genuine state-driven
 iterator from a prompt/position shortcut.  This diagnostic captures row B's
 recurrent state after loop k0, injects that state into row A before loop k0+1,
 and then scores whether later predictions follow A's table from B's symbol
-(``lawful``) or stay on A's original orbit (``shortcut``).
+(``lawful``), stay on A's original orbit (``shortcut``), or continue B's source
+orbit carried by the spliced hidden state (``source_orbit``).
 """
 
 from __future__ import annotations
@@ -155,7 +156,13 @@ def paired_rows(
     return pairs
 
 
-def classify_prediction(prediction: str, lawful: str, shortcut: str) -> str:
+def splice_count_template() -> dict[str, int]:
+    return {"source_orbit": 0, "lawful": 0, "shortcut": 0, "other": 0, "n": 0}
+
+
+def classify_prediction(prediction: str, lawful: str, shortcut: str, source_orbit: str) -> str:
+    if prediction == source_orbit:
+        return "source_orbit"
     if prediction == lawful:
         return "lawful"
     if prediction == shortcut:
@@ -163,15 +170,23 @@ def classify_prediction(prediction: str, lawful: str, shortcut: str) -> str:
     return "other"
 
 
-def summarize_records(records: list[dict[str, Any]], *, lawful_bar: float, shortcut_bar: float) -> dict[str, Any]:
+def summarize_records(
+    records: list[dict[str, Any]],
+    *,
+    lawful_bar: float,
+    shortcut_bar: float,
+    source_orbit_bar: float,
+) -> dict[str, Any]:
     by_k0_j: dict[str, dict[str, int]] = {}
     verdict_rows: list[dict[str, Any]] = []
-    overall = {"lawful": 0, "shortcut": 0, "other": 0, "n": 0}
-    verdict_totals = {"lawful": 0, "shortcut": 0, "other": 0, "n": 0}
+    overall = splice_count_template()
+    verdict_totals = splice_count_template()
     for record in records:
         key = f"k0={record['k0']},j={record['j']}"
-        counts = by_k0_j.setdefault(key, {"lawful": 0, "shortcut": 0, "other": 0, "n": 0})
+        counts = by_k0_j.setdefault(key, splice_count_template())
         label = str(record["classification"])
+        if label not in counts:
+            label = "other"
         counts[label] += 1
         counts["n"] += 1
         overall[label] += 1
@@ -186,6 +201,7 @@ def summarize_records(records: list[dict[str, Any]], *, lawful_bar: float, short
             {
                 "condition": key,
                 **counts,
+                "source_orbit_fraction": counts["source_orbit"] / n,
                 "lawful_fraction": counts["lawful"] / n,
                 "shortcut_fraction": counts["shortcut"] / n,
                 "other_fraction": counts["other"] / n,
@@ -193,10 +209,13 @@ def summarize_records(records: list[dict[str, Any]], *, lawful_bar: float, short
         )
 
     verdict_n = max(int(verdict_totals["n"]), 1)
+    source_orbit_fraction = verdict_totals["source_orbit"] / verdict_n
     lawful_fraction = verdict_totals["lawful"] / verdict_n
     shortcut_fraction = verdict_totals["shortcut"] / verdict_n
-    if lawful_fraction >= lawful_bar:
-        verdict = "state_driven"
+    if source_orbit_fraction >= source_orbit_bar:
+        verdict = "source_state_continuation"
+    elif lawful_fraction >= lawful_bar:
+        verdict = "a_table_state_driven"
     elif shortcut_fraction >= shortcut_bar:
         verdict = "prompt_position_shortcut"
     else:
@@ -208,8 +227,10 @@ def summarize_records(records: list[dict[str, Any]], *, lawful_bar: float, short
         "overall_counts": overall,
         "verdict_window": "j<=3",
         "verdict_counts": verdict_totals,
+        "source_orbit_fraction_j1_to_j3": source_orbit_fraction,
         "lawful_fraction_j1_to_j3": lawful_fraction,
         "shortcut_fraction_j1_to_j3": shortcut_fraction,
+        "source_orbit_bar": source_orbit_bar,
         "lawful_bar": lawful_bar,
         "shortcut_bar": shortcut_bar,
         "verdict": verdict,
@@ -261,6 +282,7 @@ def evaluate(args: argparse.Namespace) -> tuple[list[dict[str, Any]], dict[str, 
                 loop = k0 + j
                 lawful = lawful_symbol(row_a, spliced, j, value_prefix=args.value_prefix)
                 shortcut = symbol_at_orbit(row_a, loop, value_prefix=args.value_prefix)
+                source_orbit = symbol_at_orbit(row_b, loop, value_prefix=args.value_prefix)
                 if lawful == shortcut:
                     continue
                 prediction = predictions[loop]
@@ -275,14 +297,16 @@ def evaluate(args: argparse.Namespace) -> tuple[list[dict[str, Any]], dict[str, 
                         "spliced_symbol": spliced,
                         "lawful_target": lawful,
                         "shortcut_target": shortcut,
+                        "source_orbit_target": source_orbit,
                         "prediction": prediction,
-                        "classification": classify_prediction(prediction, lawful, shortcut),
+                        "classification": classify_prediction(prediction, lawful, shortcut, source_orbit),
                     }
                 )
     summary = summarize_records(
         records,
         lawful_bar=args.lawful_bar,
         shortcut_bar=args.shortcut_bar,
+        source_orbit_bar=args.source_orbit_bar,
     )
     summary.update(
         {
@@ -315,6 +339,7 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--lawful_bar", type=float, default=0.75)
     parser.add_argument("--shortcut_bar", type=float, default=0.50)
+    parser.add_argument("--source_orbit_bar", type=float, default=0.75)
     parser.add_argument("--value_prefix", default="letter:")
     parser.add_argument("--split", default="6,18")
     parser.add_argument("--bridge_projection_mode", choices=("concat", "split"), default="split")

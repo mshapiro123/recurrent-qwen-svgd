@@ -81,6 +81,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "chain_continuation_probe_readout" - probe battery on the chain-continuation checkpoint.
 #   "regression_battery_loop1_current" - loop-1 AI2 ARC non-inferiority battery before route comparison.
 #   "depth_support_route_comparison" - train support depth 1-6 and score on frozen depth 1-10 rows.
+#   "depth_support_ladder8" - train support depth 1-8 and score on frozen depth 1-14 rows.
 #   "splice_injection_diagnostic" - inference-only hidden-state splice test for state-driven iteration vs shortcut.
 #   "gradient_path_audit" - read-only per-loop gradient matrix plus finite-difference bridge check.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
@@ -2086,6 +2087,34 @@ TARGETS = {
             "STAGE5_ROUTE_DISCONNECT": "0",
         },
     },
+    "depth_support_ladder8": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "depth_support_ladder8",
+            "colab/run_stage5_depth_support_ladder.py",
+            "STAGE5_LADDER_FROZEN_EVAL_ID",
+            "STAGE5_LADDER_TRAIN_MAX_DEPTH",
+            "STAGE5_LADDER_EVAL_MAX_DEPTH",
+            "STRONG_SCALING_MIN_CORRECT",
+            "tests/test_stage5_chain_consolidation.py",
+        ],
+        "env": {
+            "STAGE5_LADDER_INIT_CHECKPOINT": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/summary.json",
+            "STAGE5_LADDER_N_SYMBOLS": "16",
+            "STAGE5_LADDER_TRAIN_MAX_DEPTH": "8",
+            "STAGE5_LADDER_EVAL_MAX_DEPTH": "14",
+            "STAGE5_LADDER_ROWS_PER_DEPTH": "256",
+            "STAGE5_LADDER_FROZEN_ROWS_PER_DEPTH": "128",
+            "STAGE5_LADDER_STEPS": "2000",
+            "STAGE5_LADDER_PRELUDE_LR_MULT": "10.0",
+            "STAGE5_LADDER_FROZEN_EVAL_ID": "stage5_synthetic_depth_frozen_eval_v2_depth14",
+            "STAGE5_LADDER_BASE_FROZEN_EVAL_ID": "stage5_synthetic_depth_frozen_eval_v1",
+            "STAGE5_LADDER_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
+            "STAGE5_LADDER_DTYPE": "bfloat16",
+            "STAGE5_LADDER_DISCONNECT": "0",
+        },
+    },
     "splice_injection_diagnostic": {
         "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
         "markers": [
@@ -2095,6 +2124,8 @@ TARGETS = {
             "eval/eval_synthetic_depth_splice.py",
             "STAGE5_SPLICE_SOURCE_SUMMARY",
             "STAGE5_SPLICE_POINTS",
+            "source_orbit_fraction_j1_to_j3",
+            "source_state_continuation",
             "lawful_fraction_j1_to_j3",
             "prompt_position_shortcut",
             "tests/test_eval_synthetic_depth_splice.py",

@@ -19,6 +19,7 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: chain_continuation_attribution
 # Safety marker: chain_continuation_probe_readout
 # Safety marker: depth_support_route_comparison
+# Safety marker: depth_support_ladder8
 # Safety marker: splice_injection_diagnostic
 # Safety marker: eval/eval_synthetic_depth_artifact_check.py
 # Safety marker: eval/eval_synthetic_depth_probe.py
@@ -30,6 +31,7 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: colab/run_stage5_post_anneal_readouts.py
 # Safety marker: colab/run_stage5_chain_continuation_attribution.py
 # Safety marker: colab/run_stage5_depth_support_route_comparison.py
+# Safety marker: colab/run_stage5_depth_support_ladder.py
 # Safety marker: colab/run_stage5_splice_injection.py
 # Safety marker: STAGE5_EXTRAP_DEPTHS
 # Safety marker: STAGE5_EXTRAP_MAX_LOOPS
@@ -42,8 +44,14 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: STAGE5_ROUTE_FROZEN_EVAL_ID
 # Safety marker: STAGE5_ROUTE_TRAIN_MAX_DEPTH
 # Safety marker: STAGE5_ROUTE_EVAL_MAX_DEPTH
+# Safety marker: STAGE5_LADDER_FROZEN_EVAL_ID
+# Safety marker: STAGE5_LADDER_TRAIN_MAX_DEPTH
+# Safety marker: STAGE5_LADDER_EVAL_MAX_DEPTH
+# Safety marker: STRONG_SCALING_MIN_CORRECT
 # Safety marker: STAGE5_SPLICE_SOURCE_SUMMARY
 # Safety marker: STAGE5_SPLICE_POINTS
+# Safety marker: source_orbit_fraction_j1_to_j3
+# Safety marker: source_state_continuation
 # Safety marker: lawful_fraction_j1_to_j3
 # Safety marker: prompt_position_shortcut
 # Safety marker: SELECTION_MIN_CORRECT
@@ -143,6 +151,17 @@ TARGETS = {
             "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
         ],
         "disconnect_env": "STAGE5_ROUTE_DISCONNECT",
+    },
+    "depth_support_ladder8": {
+        "script": "colab/run_stage5_depth_support_ladder.py",
+        "tests": [
+            "tests/test_recurrent_wrapper_tiny.py::test_per_loop_label_loss_mode_uses_active_intermediate_labels_on_tiny_model",
+            "tests/test_eval_synthetic_depth_active_labels.py",
+            "tests/test_stage5_chain_consolidation.py",
+            "tests/test_train_unfrozen_recurrent.py::test_trainable_parameter_norm_stats_groups_recurrent_and_bridge_params",
+            "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
+        ],
+        "disconnect_env": "STAGE5_LADDER_DISCONNECT",
     },
     "splice_injection_diagnostic": {
         "script": "colab/run_stage5_splice_injection.py",

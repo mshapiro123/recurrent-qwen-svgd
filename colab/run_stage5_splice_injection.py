@@ -51,6 +51,7 @@ def write_markdown(run_dir: Path, payload: dict[str, Any]) -> None:
         f"- Target depth: `{payload.get('target_depth')}`",
         f"- Splice points: `{payload.get('splice_points')}`",
         f"- Verdict: `{splice.get('verdict')}`",
+        f"- Source-orbit fraction j<=3: `{splice.get('source_orbit_fraction_j1_to_j3')}`",
         f"- Lawful fraction j<=3: `{splice.get('lawful_fraction_j1_to_j3')}`",
         f"- Shortcut fraction j<=3: `{splice.get('shortcut_fraction_j1_to_j3')}`",
         f"- Records: `{splice.get('records')}`",
@@ -103,7 +104,8 @@ def main() -> int:
         "n_symbols": n_symbols,
         "value_prefix": value_prefix,
         "interpretation_rule": {
-            "state_driven": "lawful_fraction_j1_to_j3 >= 0.75",
+            "source_state_continuation": "source_orbit_fraction_j1_to_j3 >= 0.75",
+            "a_table_state_driven": "lawful_fraction_j1_to_j3 >= 0.75",
             "prompt_position_shortcut": "shortcut_fraction_j1_to_j3 >= 0.50",
             "mixed": "otherwise",
         },
@@ -157,6 +159,7 @@ def main() -> int:
             "decision_read": {
                 "question": "Does the support-6 synthetic model continue from spliced hidden state or ignore it?",
                 "verdict": splice_summary.get("verdict"),
+                "source_orbit_fraction_j1_to_j3": splice_summary.get("source_orbit_fraction_j1_to_j3"),
                 "lawful_fraction_j1_to_j3": splice_summary.get("lawful_fraction_j1_to_j3"),
                 "shortcut_fraction_j1_to_j3": splice_summary.get("shortcut_fraction_j1_to_j3"),
                 "ladder_interpretation_gate": "Run support-8 ladder only after reading this verdict.",

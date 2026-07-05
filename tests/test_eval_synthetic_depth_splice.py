@@ -46,10 +46,11 @@ def test_symbol_targets_distinguish_lawful_from_shortcut_after_splice() -> None:
     assert symbol_at_orbit(row_a, 5, value_prefix="letter:") == "F"
 
 
-def test_classify_prediction_prefers_lawful_then_shortcut_then_other() -> None:
-    assert classify_prediction("E", "E", "C") == "lawful"
-    assert classify_prediction("C", "E", "C") == "shortcut"
-    assert classify_prediction("P", "E", "C") == "other"
+def test_classify_prediction_prefers_source_orbit_then_lawful_then_shortcut_then_other() -> None:
+    assert classify_prediction("B", "E", "C", "B") == "source_orbit"
+    assert classify_prediction("E", "E", "C", "B") == "lawful"
+    assert classify_prediction("C", "E", "C", "B") == "shortcut"
+    assert classify_prediction("P", "E", "C", "B") == "other"
 
 
 def test_summarize_records_applies_preregistered_verdict_window() -> None:
@@ -61,10 +62,10 @@ def test_summarize_records_applies_preregistered_verdict_window() -> None:
     for idx in range(12):
         records.append({"k0": 2, "j": 4, "classification": "shortcut"})
 
-    summary = summarize_records(records, lawful_bar=0.75, shortcut_bar=0.5)
+    summary = summarize_records(records, lawful_bar=0.75, shortcut_bar=0.5, source_orbit_bar=0.75)
 
-    assert summary["verdict"] == "state_driven"
-    assert summary["verdict_counts"] == {"lawful": 8, "shortcut": 0, "other": 2, "n": 10}
+    assert summary["verdict"] == "a_table_state_driven"
+    assert summary["verdict_counts"] == {"source_orbit": 0, "lawful": 8, "shortcut": 0, "other": 2, "n": 10}
     assert summary["overall_counts"]["shortcut"] == 12
 
 
@@ -72,10 +73,20 @@ def test_summarize_records_detects_prompt_position_shortcut() -> None:
     records = [{"k0": 4, "j": 1, "classification": "shortcut"} for _ in range(6)]
     records.extend({"k0": 4, "j": 2, "classification": "lawful"} for _ in range(4))
 
-    summary = summarize_records(records, lawful_bar=0.75, shortcut_bar=0.5)
+    summary = summarize_records(records, lawful_bar=0.75, shortcut_bar=0.5, source_orbit_bar=0.75)
 
     assert summary["verdict"] == "prompt_position_shortcut"
     assert summary["shortcut_fraction_j1_to_j3"] == pytest.approx(0.6)
+
+
+def test_summarize_records_detects_source_state_continuation() -> None:
+    records = [{"k0": 2, "j": 1, "classification": "source_orbit"} for _ in range(9)]
+    records.extend({"k0": 2, "j": 2, "classification": "lawful"} for _ in range(1))
+
+    summary = summarize_records(records, lawful_bar=0.75, shortcut_bar=0.5, source_orbit_bar=0.75)
+
+    assert summary["verdict"] == "source_state_continuation"
+    assert summary["source_orbit_fraction_j1_to_j3"] == pytest.approx(0.9)
 
 
 def test_paired_rows_only_uses_compatible_prompt_lengths_at_target_depth() -> None:

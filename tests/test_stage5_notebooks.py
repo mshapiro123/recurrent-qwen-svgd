@@ -2298,13 +2298,16 @@ def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
         assert "chain_continuation_attribution" in text
         assert "chain_continuation_probe_readout" in text
         assert "depth_support_route_comparison" in text
+        assert "depth_support_ladder8" in text
         assert "splice_injection_diagnostic" in text
         assert "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py" in text
         assert "STAGE5_EXTRAP_MAX_LOOPS" in text
         assert "STAGE5_ANNEAL_TOTAL_STEPS" in text
         assert "STAGE5_CHAIN_CONTINUATION_EXTRAP_DEPTHS" in text
         assert "STAGE5_ROUTE_FROZEN_EVAL_ID" in text
+        assert "STAGE5_LADDER_FROZEN_EVAL_ID" in text
         assert "STAGE5_SPLICE_SOURCE_SUMMARY" in text
+        assert "source_orbit_fraction_j1_to_j3" in text
 
     assert "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION" in cell
     assert "eval/eval_synthetic_depth_artifact_check.py" in cell
@@ -2313,8 +2316,12 @@ def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
     assert "loop_loss_mode='annealed_chain_to_outcome'" in cell
     assert "chain_continuation_attribution" in cell
     assert "depth_support_route_comparison" in cell
+    assert "depth_support_ladder8" in cell
     assert "splice_injection_diagnostic" in cell
+    assert "colab/run_stage5_depth_support_ladder.py" in cell
     assert "colab/run_stage5_splice_injection.py" in cell
+    assert "source_orbit_fraction_j1_to_j3" in cell
+    assert "source_state_continuation" in cell
     assert "lawful_fraction_j1_to_j3" in cell
     assert "prompt_position_shortcut" in cell
     assert "pre_registered_bands" in extrap
@@ -2328,6 +2335,9 @@ def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
     assert "SELECTION_MIN_CORRECT" in route
     assert "NONREGRESSION_FLOORS" in route
     assert "stage5_synthetic_depth_frozen_eval_v1" in route
+    ladder = (ROOT / "colab/run_stage5_depth_support_ladder.py").read_text(encoding="utf-8")
+    assert "STRONG_SCALING_MIN_CORRECT" in ladder
+    assert "stage5_synthetic_depth_frozen_eval_v2_depth14" in ladder
     assert "loop_loss_mode == \"annealed_chain_to_outcome\"" in wrapper
     assert "chain_label_weight" in trainer
     assert "trainable_parameter_norm_stats" in trainer
