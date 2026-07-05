@@ -1,0 +1,202 @@
+{
+  "kind": "stage5_synthetic_depth_extended_frozen_eval_set",
+  "run_id": "stage5_synthetic_depth_frozen_eval_v2_depth14",
+  "status": "finished",
+  "base_frozen_eval_set": {
+    "kind": "stage5_synthetic_depth_frozen_eval_set",
+    "run_id": "stage5_synthetic_depth_frozen_eval_v1",
+    "status": "finished",
+    "n_symbols": 16,
+    "max_depth": 10,
+    "rows_per_depth": 128,
+    "value_prefix": "letter:",
+    "seed": "20260704",
+    "data_summary": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v1/data/summary.json",
+    "test_chain_mcq": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v1/data/test_chain_mcq.jsonl",
+    "test_mcq": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v1/data/test_mcq.jsonl"
+  },
+  "base_route_identity_check": {
+    "route_source_summary": "outputs/stage5/stage5_depth_support_route_20260705_124320/summary.json",
+    "route_run_id": "stage5_depth_support_route_20260705_124320",
+    "base_run_id": "stage5_synthetic_depth_frozen_eval_v1",
+    "manifests": {
+      "test_chain_mcq": {
+        "base": {
+          "rows": 1280,
+          "max_depth": 10,
+          "depth_counts": {
+            "1": 128,
+            "2": 128,
+            "3": 128,
+            "4": 128,
+            "5": 128,
+            "6": 128,
+            "7": 128,
+            "8": 128,
+            "9": 128,
+            "10": 128
+          },
+          "row_id_sha256": "f53781375490c75d29f232845321d21634135c26647a75970539127cad63742b",
+          "row_sha256": "21171e40bcfa2a242d269c0f2d64aad54d33659efe472e25c451a7762c7a8ebe",
+          "first_row_ids": [
+            "test_d01_00000",
+            "test_d01_00001",
+            "test_d01_00002",
+            "test_d01_00003",
+            "test_d01_00004"
+          ],
+          "last_row_ids": [
+            "test_d10_00123",
+            "test_d10_00124",
+            "test_d10_00125",
+            "test_d10_00126",
+            "test_d10_00127"
+          ]
+        },
+        "route": {
+          "rows": 1280,
+          "max_depth": 10,
+          "depth_counts": {
+            "1": 128,
+            "2": 128,
+            "3": 128,
+            "4": 128,
+            "5": 128,
+            "6": 128,
+            "7": 128,
+            "8": 128,
+            "9": 128,
+            "10": 128
+          },
+          "row_id_sha256": "f53781375490c75d29f232845321d21634135c26647a75970539127cad63742b",
+          "row_sha256": "21171e40bcfa2a242d269c0f2d64aad54d33659efe472e25c451a7762c7a8ebe",
+          "first_row_ids": [
+            "test_d01_00000",
+            "test_d01_00001",
+            "test_d01_00002",
+            "test_d01_00003",
+            "test_d01_00004"
+          ],
+          "last_row_ids": [
+            "test_d10_00123",
+            "test_d10_00124",
+            "test_d10_00125",
+            "test_d10_00126",
+            "test_d10_00127"
+          ]
+        },
+        "match": true
+      },
+      "test_mcq": {
+        "base": {
+          "rows": 1280,
+          "max_depth": 10,
+          "depth_counts": {
+            "1": 128,
+            "2": 128,
+            "3": 128,
+            "4": 128,
+            "5": 128,
+            "6": 128,
+            "7": 128,
+            "8": 128,
+            "9": 128,
+            "10": 128
+          },
+          "row_id_sha256": "f53781375490c75d29f232845321d21634135c26647a75970539127cad63742b",
+          "row_sha256": "be2c736955d8a793931ae0220c38a527a29aeb240a44e42b6d3e2a6bbe73ee95",
+          "first_row_ids": [
+            "test_d01_00000",
+            "test_d01_00001",
+            "test_d01_00002",
+            "test_d01_00003",
+            "test_d01_00004"
+          ],
+          "last_row_ids": [
+            "test_d10_00123",
+            "test_d10_00124",
+            "test_d10_00125",
+            "test_d10_00126",
+            "test_d10_00127"
+          ]
+        },
+        "route": {
+          "rows": 1280,
+          "max_depth": 10,
+          "depth_counts": {
+            "1": 128,
+            "2": 128,
+            "3": 128,
+            "4": 128,
+            "5": 128,
+            "6": 128,
+            "7": 128,
+            "8": 128,
+            "9": 128,
+            "10": 128
+          },
+          "row_id_sha256": "f53781375490c75d29f232845321d21634135c26647a75970539127cad63742b",
+          "row_sha256": "be2c736955d8a793931ae0220c38a527a29aeb240a44e42b6d3e2a6bbe73ee95",
+          "first_row_ids": [
+            "test_d01_00000",
+            "test_d01_00001",
+            "test_d01_00002",
+            "test_d01_00003",
+            "test_d01_00004"
+          ],
+          "last_row_ids": [
+            "test_d10_00123",
+            "test_d10_00124",
+            "test_d10_00125",
+            "test_d10_00126",
+            "test_d10_00127"
+          ]
+        },
+        "match": true
+      }
+    }
+  },
+  "extension_policy": "preserve depth 1..10 rows from base frozen v1; append generated depths 11..14",
+  "extension_generator": "constructive_distinct_orbit_prefix_no_rejection",
+  "n_symbols": 16,
+  "max_depth": 14,
+  "rows_per_depth": 128,
+  "value_prefix": "letter:",
+  "seed": "20260704",
+  "test_chain_mcq": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v2_depth14/data/test_chain_mcq.jsonl",
+  "test_mcq": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v2_depth14/data/test_mcq.jsonl",
+  "depth_counts": {
+    "test_chain_mcq": {
+      "1": 128,
+      "2": 128,
+      "3": 128,
+      "4": 128,
+      "5": 128,
+      "6": 128,
+      "7": 128,
+      "8": 128,
+      "9": 128,
+      "10": 128,
+      "11": 128,
+      "12": 128,
+      "13": 128,
+      "14": 128
+    },
+    "test_mcq": {
+      "1": 128,
+      "2": 128,
+      "3": 128,
+      "4": 128,
+      "5": 128,
+      "6": 128,
+      "7": 128,
+      "8": 128,
+      "9": 128,
+      "10": 128,
+      "11": 128,
+      "12": 128,
+      "13": 128,
+      "14": 128
+    }
+  }
+}
