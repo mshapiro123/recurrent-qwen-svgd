@@ -4,6 +4,8 @@ import json
 import runpy
 from pathlib import Path
 
+import pytest
+
 from colab import run_stage5_depth_extrapolation_eval as extrap
 from colab import run_stage5_depth_support_ladder as ladder
 from colab import run_stage5_depth_support_route_comparison as route
@@ -205,6 +207,11 @@ def test_depth_support_ladder_scores_strong_scaling() -> None:
     assert score["nonregression_pass"] is True
     assert score["strong_scaling_pass"] is True
     assert score["verdict"] == "strong_scaling"
+    gates = ladder.locked_gate_summary()
+    assert gates["strong_scaling_min_correct"] == 91
+    assert gates["asymptote_rejection_min_correct"] == 79
+    assert gates["chance_rejection_min_correct"] == 14
+    assert gates["nonregression_floors"]["1"] == 0.93
 
 
 def test_depth_support_ladder_detects_asymptote_rejection_without_strong_scaling() -> None:
@@ -230,3 +237,31 @@ def test_depth_support_ladder_detects_asymptote_rejection_without_strong_scaling
     assert score["verdict"] == "asymptote_rejected_at_depth10"
     assert score["selection_pass"] is False
     assert score["overall_pass"] is False
+
+
+def test_depth_support_ladder_manifest_detects_row_identity_mismatch() -> None:
+    rows = [
+        {"id": "r1", "depth": 1, "question": "a"},
+        {"id": "r2", "depth": 2, "question": "b"},
+    ]
+    same = ladder.manifest_for_rows(list(rows))
+    changed = ladder.manifest_for_rows([{**rows[0]}, {**rows[1], "question": "changed"}])
+
+    assert same["row_id_sha256"] == changed["row_id_sha256"]
+    assert same["row_sha256"] != changed["row_sha256"]
+
+    with pytest.raises(RuntimeError, match="Frozen eval manifest mismatch"):
+        ladder.assert_manifest_match(same, changed, label="test_chain_mcq")
+
+
+def test_depth_support_ladder_refuses_to_regenerate_missing_base_frozen_set(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(ladder, "ROOT", tmp_path)
+
+    with pytest.raises(FileNotFoundError, match="regeneration is intentionally forbidden"):
+        ladder.ensure_base_frozen_eval_set(
+            base_id="missing_frozen",
+            n_symbols=16,
+            rows_per_depth=128,
+            seed="20260704",
+            value_prefix="letter:",
+        )

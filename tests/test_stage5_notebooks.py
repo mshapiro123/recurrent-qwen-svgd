@@ -2306,6 +2306,9 @@ def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
         assert "STAGE5_CHAIN_CONTINUATION_EXTRAP_DEPTHS" in text
         assert "STAGE5_ROUTE_FROZEN_EVAL_ID" in text
         assert "STAGE5_LADDER_FROZEN_EVAL_ID" in text
+        assert "STRONG_SCALING_MIN_CORRECT = 91" in text
+        assert "ASYMPTOTE_REJECTION_MIN_CORRECT = 79" in text
+        assert "CHANCE_REJECTION_MIN_CORRECT = 14" in text
         assert "STAGE5_SPLICE_SOURCE_SUMMARY" in text
         assert "source_orbit_fraction_j1_to_j3" in text
 
@@ -2319,6 +2322,9 @@ def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
     assert "depth_support_ladder8" in cell
     assert "splice_injection_diagnostic" in cell
     assert "colab/run_stage5_depth_support_ladder.py" in cell
+    assert "STRONG_SCALING_MIN_CORRECT = 91" in cell
+    assert "ASYMPTOTE_REJECTION_MIN_CORRECT = 79" in cell
+    assert "CHANCE_REJECTION_MIN_CORRECT = 14" in cell
     assert "colab/run_stage5_splice_injection.py" in cell
     assert "source_orbit_fraction_j1_to_j3" in cell
     assert "source_state_continuation" in cell
@@ -2337,6 +2343,9 @@ def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
     assert "stage5_synthetic_depth_frozen_eval_v1" in route
     ladder = (ROOT / "colab/run_stage5_depth_support_ladder.py").read_text(encoding="utf-8")
     assert "STRONG_SCALING_MIN_CORRECT" in ladder
+    assert "DEFAULT_ROUTE_SOURCE_SUMMARY" in ladder
+    assert "base_route_identity_check" in ladder
+    assert "constructive_distinct_orbit_prefix_no_rejection" in ladder
     assert "stage5_synthetic_depth_frozen_eval_v2_depth14" in ladder
     assert "loop_loss_mode == \"annealed_chain_to_outcome\"" in wrapper
     assert "chain_label_weight" in trainer

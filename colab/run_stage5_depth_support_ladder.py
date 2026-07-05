@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import time
+import hashlib
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +22,7 @@ from colab.stage5_chain_consolidation_utils import (
     publish_run,
     read_json,
     read_jsonl,
+    resolve_checkpoint_reference,
     write_json,
     write_jsonl,
 )
@@ -41,6 +43,7 @@ STRONG_SCALING_MIN_CORRECT = 91
 ASYMPTOTE_REJECTION_MIN_CORRECT = 79
 CHANCE_REJECTION_MIN_CORRECT = 14
 ADJACENT_EXTENSION_MIN_CORRECT = 52
+DEFAULT_ROUTE_SOURCE_SUMMARY = "outputs/stage5/stage5_depth_support_route_20260705_124320/summary.json"
 
 
 def run(
@@ -77,6 +80,39 @@ def rows_by_depth(rows: list[dict[str, Any]]) -> dict[str, int]:
         key = str(depth_of(row))
         counts[key] = counts.get(key, 0) + 1
     return dict(sorted(counts.items(), key=lambda item: int(item[0])))
+
+
+def canonical_row(row: dict[str, Any]) -> str:
+    return json.dumps(row, sort_keys=True, ensure_ascii=True, separators=(",", ":"))
+
+
+def row_key(row: dict[str, Any]) -> str:
+    return str(row.get("id") or row.get("instance_id") or "")
+
+
+def sha256_lines(lines: list[str]) -> str:
+    return hashlib.sha256(("\n".join(lines) + "\n").encode("utf-8")).hexdigest()
+
+
+def manifest_for_rows(rows: list[dict[str, Any]], *, max_depth: int = 10) -> dict[str, Any]:
+    kept = [row for row in rows if 1 <= depth_of(row) <= max_depth]
+    ids = [row_key(row) for row in kept]
+    return {
+        "rows": len(kept),
+        "max_depth": max_depth,
+        "depth_counts": rows_by_depth(kept),
+        "row_id_sha256": sha256_lines(ids),
+        "row_sha256": sha256_lines([canonical_row(row) for row in kept]),
+        "first_row_ids": ids[:5],
+        "last_row_ids": ids[-5:],
+    }
+
+
+def assert_manifest_match(left: dict[str, Any], right: dict[str, Any], *, label: str) -> None:
+    keys = ("rows", "depth_counts", "row_id_sha256", "row_sha256")
+    mismatches = {key: (left.get(key), right.get(key)) for key in keys if left.get(key) != right.get(key)}
+    if mismatches:
+        raise RuntimeError(f"Frozen eval manifest mismatch for {label}: {mismatches}")
 
 
 def diagonal_counts(active_summary: dict[str, Any]) -> dict[str, dict[str, float | int]]:
@@ -152,6 +188,40 @@ def score_ladder(active_summary: dict[str, Any], *, rows_per_depth: int = LOCKED
     }
 
 
+def locked_gate_summary(*, rows_per_depth: int = LOCKED_ROWS_PER_DEPTH) -> dict[str, Any]:
+    return {
+        "rows_per_depth": int(rows_per_depth),
+        "strong_scaling_min_correct": STRONG_SCALING_MIN_CORRECT,
+        "asymptote_rejection_min_correct": ASYMPTOTE_REJECTION_MIN_CORRECT,
+        "chance_rejection_min_correct": CHANCE_REJECTION_MIN_CORRECT,
+        "adjacent_extension_min_correct": ADJACENT_EXTENSION_MIN_CORRECT,
+        "nonregression_floors": dict(NONREGRESSION_FLOORS),
+    }
+
+
+def verify_constructive_synthetic_generator() -> dict[str, Any]:
+    source_path = ROOT / "training" / "synthetic_depth_task.py"
+    text = source_path.read_text(encoding="utf-8")
+    required_markers = [
+        "orbit = rng.sample(values, depth + 1)",
+        "for left, right in zip(orbit, orbit[1:])",
+        "mapping[value] = rng.choice(values)",
+    ]
+    missing = [marker for marker in required_markers if marker not in text]
+    if missing:
+        raise RuntimeError(
+            "Synthetic-depth generator no longer matches the constructive distinct-orbit implementation. "
+            f"Missing markers: {missing}"
+        )
+    payload = {
+        "source": path_for_cli(source_path),
+        "mode": "constructive_distinct_orbit_prefix_no_rejection",
+        "markers_verified": required_markers,
+    }
+    print("synthetic_depth_generator_preflight:", json.dumps(payload, indent=2), flush=True)
+    return payload
+
+
 def generate_depth_dataset(
     *,
     data_dir: Path,
@@ -197,50 +267,88 @@ def ensure_base_frozen_eval_set(
     summary_path = run_dir / "summary.json"
     data_dir = run_dir / "data"
     if summary_path.exists() and (data_dir / "test_chain_mcq.jsonl").exists() and (data_dir / "test_mcq.jsonl").exists():
-        return read_json(summary_path)
-    run_dir.mkdir(parents=True, exist_ok=True)
-    generate_depth_dataset(
-        data_dir=data_dir,
-        n_symbols=n_symbols,
-        max_depth=10,
-        rows_per_depth=rows_per_depth,
-        seed=seed,
-        value_prefix=value_prefix,
+        payload = read_json(summary_path)
+        expected = {
+            "n_symbols": int(n_symbols),
+            "rows_per_depth": int(rows_per_depth),
+            "value_prefix": value_prefix,
+            "seed": str(seed),
+        }
+        mismatches = {
+            key: (payload.get(key), value)
+            for key, value in expected.items()
+            if payload.get(key) != value
+        }
+        if mismatches:
+            raise RuntimeError(f"Frozen eval set {base_id} metadata mismatch: {mismatches}")
+        return payload
+    raise FileNotFoundError(
+        f"Required frozen eval set is absent: {summary_path}. "
+        "The ladder comparison must preserve the exact depth 1..10 rows from the support-route run; "
+        "regeneration is intentionally forbidden."
     )
-    payload = {
-        "kind": "stage5_synthetic_depth_frozen_eval_set",
-        "run_id": base_id,
-        "status": "finished",
-        "n_symbols": n_symbols,
-        "max_depth": 10,
-        "rows_per_depth": rows_per_depth,
-        "value_prefix": value_prefix,
-        "seed": seed,
-        "data_summary": path_for_cli(data_dir / "summary.json"),
-        "test_chain_mcq": path_for_cli(data_dir / "test_chain_mcq.jsonl"),
-        "test_mcq": path_for_cli(data_dir / "test_mcq.jsonl"),
+
+
+def validate_base_frozen_against_route(
+    *,
+    base: dict[str, Any],
+    route_source_summary: str,
+) -> dict[str, Any]:
+    route_path = ROOT / route_source_summary
+    if not route_path.exists():
+        raise FileNotFoundError(
+            f"Required route source summary is absent: {route_source_summary}. "
+            "Cannot verify frozen depth 1..10 identity before ladder training."
+        )
+    route_payload = read_json(route_source_summary)
+    route_frozen = route_payload.get("frozen_eval_set") or {}
+    manifests: dict[str, Any] = {}
+    for key in ("test_chain_mcq", "test_mcq"):
+        if not base.get(key):
+            raise RuntimeError(f"Base frozen eval summary missing {key!r}")
+        if not route_frozen.get(key):
+            raise RuntimeError(f"Route summary frozen_eval_set missing {key!r}")
+        base_manifest = manifest_for_rows(read_jsonl(base[key]), max_depth=10)
+        route_manifest = manifest_for_rows(read_jsonl(route_frozen[key]), max_depth=10)
+        assert_manifest_match(base_manifest, route_manifest, label=key)
+        manifests[key] = {
+            "base": base_manifest,
+            "route": route_manifest,
+            "match": True,
+        }
+    return {
+        "route_source_summary": path_for_cli(route_source_summary),
+        "route_run_id": route_payload.get("run_id"),
+        "base_run_id": base.get("run_id"),
+        "manifests": manifests,
     }
-    write_json(summary_path, payload)
-    (run_dir / "summary.md").write_text(
-        "\n".join(
-            [
-                f"# Frozen Synthetic Depth Eval Set - {base_id}",
-                "",
-                "- Depths: `1..10`",
-                f"- Rows per depth: `{rows_per_depth}`",
-                "",
-            ]
-        ),
-        encoding="utf-8",
+
+
+def preflight_init_checkpoint(init_reference: str, run_dir: Path) -> dict[str, Any]:
+    checkpoint, metadata = resolve_checkpoint_reference(
+        init_reference,
+        run_dir / "restored" / "ladder_init.pt",
+        label="ladder_init",
     )
-    publish_run(run_dir, message=f"Record Stage 5 frozen synthetic eval set {base_id} [skip ci]")
-    return payload
+    source_run_id = metadata.get("source_run_id")
+    if source_run_id != "stage5_chain_scaled_corrected_20260702_182827":
+        raise RuntimeError(
+            "Ladder init checkpoint is not the registered pre-anneal scaled-corrected checkpoint: "
+            f"source_run_id={source_run_id!r}, reference={init_reference!r}."
+        )
+    print("ladder_init_checkpoint:", path_for_cli(checkpoint), flush=True)
+    print("ladder_init_metadata:", json.dumps(metadata, indent=2), flush=True)
+    return {
+        "checkpoint": path_for_cli(checkpoint),
+        "metadata": metadata,
+    }
 
 
 def ensure_extended_frozen_eval_set(
     *,
     frozen_id: str,
     base_id: str,
+    route_source_summary: str,
     n_symbols: int,
     max_depth: int,
     rows_per_depth: int,
@@ -253,7 +361,13 @@ def ensure_extended_frozen_eval_set(
     test_chain = data_dir / "test_chain_mcq.jsonl"
     test_mcq = data_dir / "test_mcq.jsonl"
     if summary_path.exists() and test_chain.exists() and test_mcq.exists():
-        return read_json(summary_path)
+        payload = read_json(summary_path)
+        if not payload.get("base_route_identity_check"):
+            raise RuntimeError(
+                f"Existing extended frozen eval set lacks base_route_identity_check: {summary_path}. "
+                "Use a new STAGE5_LADDER_FROZEN_EVAL_ID or remove the stale directory."
+            )
+        return payload
 
     base = ensure_base_frozen_eval_set(
         base_id=base_id,
@@ -261,6 +375,10 @@ def ensure_extended_frozen_eval_set(
         rows_per_depth=rows_per_depth,
         seed=seed,
         value_prefix=value_prefix,
+    )
+    identity_check = validate_base_frozen_against_route(
+        base=base,
+        route_source_summary=route_source_summary,
     )
     tmp_dir = run_dir / "_generated_depth14"
     generate_depth_dataset(
@@ -292,7 +410,9 @@ def ensure_extended_frozen_eval_set(
         "run_id": frozen_id,
         "status": "finished",
         "base_frozen_eval_set": base,
+        "base_route_identity_check": identity_check,
         "extension_policy": "preserve depth 1..10 rows from base frozen v1; append generated depths 11..14",
+        "extension_generator": "constructive_distinct_orbit_prefix_no_rejection",
         "n_symbols": n_symbols,
         "max_depth": max_depth,
         "rows_per_depth": rows_per_depth,
@@ -308,7 +428,9 @@ def ensure_extended_frozen_eval_set(
             [
                 f"# Extended Frozen Synthetic Depth Eval Set - {frozen_id}",
                 "",
-                "- Shared rows: depth `1..10` from `stage5_synthetic_depth_frozen_eval_v1` when available.",
+                "- Shared rows: depth `1..10` from `stage5_synthetic_depth_frozen_eval_v1`, fatal if absent.",
+                f"- Route identity check: `{identity_check.get('route_run_id')}`",
+                "- Extension generator: `constructive_distinct_orbit_prefix_no_rejection`",
                 f"- Added rows: depth `11..{max_depth}` generated with seed `{seed}`.",
                 f"- Rows per depth: `{rows_per_depth}`",
                 "",
@@ -358,21 +480,34 @@ def main() -> int:
     frozen_id = os.environ.get("STAGE5_LADDER_FROZEN_EVAL_ID", "stage5_synthetic_depth_frozen_eval_v2_depth14")
     base_frozen_id = os.environ.get("STAGE5_LADDER_BASE_FROZEN_EVAL_ID", "stage5_synthetic_depth_frozen_eval_v1")
     frozen_seed = os.environ.get("STAGE5_LADDER_FROZEN_EVAL_SEED", "20260704")
+    route_source_summary = os.environ.get("STAGE5_LADDER_ROUTE_SOURCE_SUMMARY", DEFAULT_ROUTE_SOURCE_SUMMARY)
+    init_reference = os.environ.get(
+        "STAGE5_LADDER_INIT_CHECKPOINT",
+        "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/summary.json",
+    )
 
     if train_max_depth != 8:
         raise ValueError("This registered ladder target expects STAGE5_LADDER_TRAIN_MAX_DEPTH=8.")
     if eval_max_depth < 14:
         raise ValueError("This registered ladder target expects eval coverage through at least depth 14.")
 
+    generator_preflight = verify_constructive_synthetic_generator()
+    init_preflight = preflight_init_checkpoint(init_reference, run_dir)
+
     frozen = ensure_extended_frozen_eval_set(
         frozen_id=frozen_id,
         base_id=base_frozen_id,
+        route_source_summary=route_source_summary,
         n_symbols=n_symbols,
         max_depth=eval_max_depth,
         rows_per_depth=frozen_rows_per_depth,
         seed=frozen_seed,
         value_prefix=value_prefix,
     )
+    if frozen.get("base_route_identity_check"):
+        print("frozen_depth1_10_identity_check:", json.dumps(frozen["base_route_identity_check"], indent=2), flush=True)
+    gates = locked_gate_summary(rows_per_depth=frozen_rows_per_depth)
+    print("ladder_scoring_gates:", json.dumps(gates, indent=2), flush=True)
 
     payload: dict[str, Any] = {
         "kind": "stage5_depth_support_ladder",
@@ -384,6 +519,9 @@ def main() -> int:
         "frozen_rows_per_depth": frozen_rows_per_depth,
         "total_steps": total_steps,
         "threshold": threshold,
+        "generator_preflight": generator_preflight,
+        "locked_gates": gates,
+        "init_checkpoint_preflight": init_preflight,
         "frozen_eval_set": frozen,
         "ladder_hypothesis": (
             "If the finite recurrent operator can be extended by support, training depths 1-8 should "
@@ -398,10 +536,7 @@ def main() -> int:
         env={
             "STAGE5_ANNEAL_RUN_ID": run_id,
             "STAGE5_ANNEAL_LOOP_LOSS_MODE": "per_loop_labels",
-            "STAGE5_ANNEAL_INIT_CHECKPOINT": os.environ.get(
-                "STAGE5_LADDER_INIT_CHECKPOINT",
-                "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/summary.json",
-            ),
+            "STAGE5_ANNEAL_INIT_CHECKPOINT": str(ROOT / init_preflight["checkpoint"]),
             "STAGE5_ANNEAL_N_SYMBOLS": str(n_symbols),
             "STAGE5_ANNEAL_MAX_DEPTH": str(train_max_depth),
             "STAGE5_ANNEAL_ROWS_PER_DEPTH": str(rows_per_depth),
@@ -493,6 +628,9 @@ def main() -> int:
             "status": "finished_with_frozen_eval",
             "train_max_depth": train_max_depth,
             "eval_max_depth": eval_max_depth,
+            "generator_preflight": generator_preflight,
+            "init_checkpoint_preflight": init_preflight,
+            "locked_gates": gates,
             "frozen_eval_set": frozen,
             "frozen_artifact_check": read_json(artifact_summary),
             "frozen_active_eval": {

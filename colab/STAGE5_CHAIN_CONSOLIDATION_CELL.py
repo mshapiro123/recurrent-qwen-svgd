@@ -47,7 +47,10 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: STAGE5_LADDER_FROZEN_EVAL_ID
 # Safety marker: STAGE5_LADDER_TRAIN_MAX_DEPTH
 # Safety marker: STAGE5_LADDER_EVAL_MAX_DEPTH
-# Safety marker: STRONG_SCALING_MIN_CORRECT
+# Safety marker: STRONG_SCALING_MIN_CORRECT = 91
+# Safety marker: ASYMPTOTE_REJECTION_MIN_CORRECT = 79
+# Safety marker: CHANCE_REJECTION_MIN_CORRECT = 14
+# Safety marker: NONREGRESSION_FLOORS = {"1": 0.93
 # Safety marker: STAGE5_SPLICE_SOURCE_SUMMARY
 # Safety marker: STAGE5_SPLICE_POINTS
 # Safety marker: source_orbit_fraction_j1_to_j3
