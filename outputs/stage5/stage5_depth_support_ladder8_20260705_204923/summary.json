@@ -1,7 +1,7 @@
 {
   "kind": "stage5_chain_continuation_attribution",
   "run_id": "stage5_depth_support_ladder8_20260705_204923",
-  "status": "dataset_ready",
+  "status": "training_finished",
   "loop_loss_mode": "per_loop_labels",
   "n_symbols": 16,
   "max_depth": 8,
@@ -50,5 +50,12 @@
       }
     }
   },
-  "train_config": "outputs/stage5/stage5_depth_support_ladder8_20260705_204923/chain_continuation_train_config.yaml"
+  "train_config": "outputs/stage5/stage5_depth_support_ladder8_20260705_204923/chain_continuation_train_config.yaml",
+  "train_log": "outputs/stage5/stage5_depth_support_ladder8_20260705_204923/train/chain_continuation_train.log",
+  "training_summary": "outputs/stage5/stage5_depth_support_ladder8_20260705_204923/train/chain_continuation/train_unfrozen_recurrent_summary.json",
+  "ramp_checkpoint": "outputs/stage5/stage5_depth_support_ladder8_20260705_204923/train/chain_continuation/unfrozen_recurrent_step_1000.pt",
+  "ramp_checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_depth_support_ladder8_20260705_204923/anneal_to_outcome_ramp/unfrozen_recurrent_step_1000.pt",
+  "final_checkpoint": "outputs/stage5/stage5_depth_support_ladder8_20260705_204923/train/chain_continuation/unfrozen_recurrent_step_2000.pt",
+  "final_checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_depth_support_ladder8_20260705_204923/anneal_to_outcome_final/unfrozen_recurrent_step_2000.pt",
+  "prelude_trajectory_source": "outputs/stage5/stage5_depth_support_ladder8_20260705_204923/train/chain_continuation/train_unfrozen_recurrent_summary.json"
 }
