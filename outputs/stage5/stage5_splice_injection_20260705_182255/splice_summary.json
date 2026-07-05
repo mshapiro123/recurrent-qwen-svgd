@@ -1,0 +1,136 @@
+{
+  "kind": "synthetic_depth_splice_injection",
+  "records": 1106,
+  "by_k0_j": [
+    {
+      "condition": "k0=2,j=1",
+      "lawful": 9,
+      "shortcut": 8,
+      "other": 104,
+      "n": 121,
+      "lawful_fraction": 0.0743801652892562,
+      "shortcut_fraction": 0.06611570247933884,
+      "other_fraction": 0.859504132231405
+    },
+    {
+      "condition": "k0=2,j=2",
+      "lawful": 8,
+      "shortcut": 21,
+      "other": 92,
+      "n": 121,
+      "lawful_fraction": 0.06611570247933884,
+      "shortcut_fraction": 0.17355371900826447,
+      "other_fraction": 0.7603305785123967
+    },
+    {
+      "condition": "k0=2,j=3",
+      "lawful": 6,
+      "shortcut": 11,
+      "other": 101,
+      "n": 118,
+      "lawful_fraction": 0.05084745762711865,
+      "shortcut_fraction": 0.09322033898305085,
+      "other_fraction": 0.8559322033898306
+    },
+    {
+      "condition": "k0=2,j=4",
+      "lawful": 4,
+      "shortcut": 13,
+      "other": 101,
+      "n": 118,
+      "lawful_fraction": 0.03389830508474576,
+      "shortcut_fraction": 0.11016949152542373,
+      "other_fraction": 0.8559322033898306
+    },
+    {
+      "condition": "k0=2,j=5",
+      "lawful": 12,
+      "shortcut": 7,
+      "other": 98,
+      "n": 117,
+      "lawful_fraction": 0.10256410256410256,
+      "shortcut_fraction": 0.05982905982905983,
+      "other_fraction": 0.8376068376068376
+    },
+    {
+      "condition": "k0=2,j=6",
+      "lawful": 10,
+      "shortcut": 8,
+      "other": 94,
+      "n": 112,
+      "lawful_fraction": 0.08928571428571429,
+      "shortcut_fraction": 0.07142857142857142,
+      "other_fraction": 0.8392857142857143
+    },
+    {
+      "condition": "k0=4,j=1",
+      "lawful": 8,
+      "shortcut": 14,
+      "other": 82,
+      "n": 104,
+      "lawful_fraction": 0.07692307692307693,
+      "shortcut_fraction": 0.1346153846153846,
+      "other_fraction": 0.7884615384615384
+    },
+    {
+      "condition": "k0=4,j=2",
+      "lawful": 8,
+      "shortcut": 6,
+      "other": 87,
+      "n": 101,
+      "lawful_fraction": 0.07920792079207921,
+      "shortcut_fraction": 0.0594059405940594,
+      "other_fraction": 0.8613861386138614
+    },
+    {
+      "condition": "k0=4,j=3",
+      "lawful": 9,
+      "shortcut": 2,
+      "other": 88,
+      "n": 99,
+      "lawful_fraction": 0.09090909090909091,
+      "shortcut_fraction": 0.020202020202020204,
+      "other_fraction": 0.8888888888888888
+    },
+    {
+      "condition": "k0=4,j=4",
+      "lawful": 10,
+      "shortcut": 3,
+      "other": 82,
+      "n": 95,
+      "lawful_fraction": 0.10526315789473684,
+      "shortcut_fraction": 0.031578947368421054,
+      "other_fraction": 0.8631578947368421
+    }
+  ],
+  "overall_counts": {
+    "lawful": 84,
+    "shortcut": 93,
+    "other": 929,
+    "n": 1106
+  },
+  "verdict_window": "j<=3",
+  "verdict_counts": {
+    "lawful": 48,
+    "shortcut": 62,
+    "other": 554,
+    "n": 664
+  },
+  "lawful_fraction_j1_to_j3": 0.07228915662650602,
+  "shortcut_fraction_j1_to_j3": 0.09337349397590361,
+  "lawful_bar": 0.75,
+  "shortcut_bar": 0.5,
+  "verdict": "mixed",
+  "checkpoint": "outputs/stage5/stage5_splice_injection_20260705_182255/restored/support_route_final.pt",
+  "data_jsonl": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v1/data/test_chain_mcq.jsonl",
+  "target_depth": 8,
+  "splice_points": [
+    2,
+    4
+  ],
+  "max_loops": 8,
+  "n_pairs_requested": 128,
+  "n_pairs_used": 128,
+  "n_symbols": 16,
+  "value_prefix": "letter:"
+}
