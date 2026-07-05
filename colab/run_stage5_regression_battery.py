@@ -49,6 +49,12 @@ PUSH_RESULTS = os.environ.get("STAGE5_REGRESSION_PUSH", "1").strip().lower() in 
     "yes",
     "y",
 }
+RESUME_EXISTING = os.environ.get("STAGE5_REGRESSION_RESUME_EXISTING", "1").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "y",
+}
 
 
 def path_for_cli(path: Path) -> str:
@@ -225,7 +231,7 @@ def write_summary(payload: dict[str, Any]) -> None:
 def commit_results() -> None:
     if not PUSH_RESULTS:
         return
-    run(["git", "add", path_for_cli(RUN_DIR), path_for_cli(current_source_summary_file())])
+    run(["git", "add", "-f", path_for_cli(RUN_DIR), path_for_cli(current_source_summary_file())])
     diff = run(["git", "diff", "--cached", "--quiet"], check=False)
     if diff.returncode == 0:
         print("No regression battery changes to commit.", flush=True)
@@ -251,18 +257,21 @@ def main() -> int:
             payload = read_json(source)
             label = safe_label(source, payload)
             child_run_id = f"{RUN_ID}_{idx + 1}_{label}"
+            child_summary = ROOT / "outputs" / "stage5" / child_run_id / "summary.json"
             print(f"regression_source={source} child_run_id={child_run_id}", flush=True)
-            run(
-                [sys.executable, "colab/run_stage5_benchmark_suite.py"],
-                env=benchmark_env(
-                    child_run_id=child_run_id,
-                    source_summary=source,
-                    base_reuse_run_id=first_child_run_id if idx else None,
-                ),
-            )
+            if RESUME_EXISTING and child_summary.exists():
+                print(f"resume_existing_benchmark_suite={path_for_cli(child_summary)}", flush=True)
+            else:
+                run(
+                    [sys.executable, "colab/run_stage5_benchmark_suite.py"],
+                    env=benchmark_env(
+                        child_run_id=child_run_id,
+                        source_summary=source,
+                        base_reuse_run_id=first_child_run_id if idx else None,
+                    ),
+                )
             if first_child_run_id is None:
                 first_child_run_id = child_run_id
-            child_summary = ROOT / "outputs" / "stage5" / child_run_id / "summary.json"
             assessment_payload = assess_child(child_summary=child_summary, assessment_run_id=f"{idx + 1}_{label}")
             assessments.append(
                 {

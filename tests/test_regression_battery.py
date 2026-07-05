@@ -114,3 +114,11 @@ def test_regression_runner_combined_status_uses_worst_assessment() -> None:
         runner.combined_status([{"status": "green_noninferior"}, {"status": "red_regression_established"}])
         == "red_regression_established"
     )
+
+
+def test_regression_runner_can_resume_existing_and_force_add_outputs() -> None:
+    text = Path("colab/run_stage5_regression_battery.py").read_text(encoding="utf-8")
+
+    assert "STAGE5_REGRESSION_RESUME_EXISTING" in text
+    assert "resume_existing_benchmark_suite" in text
+    assert '["git", "add", "-f"' in text
