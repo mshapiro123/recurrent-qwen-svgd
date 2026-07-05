@@ -1,0 +1,230 @@
+{
+  "kind": "synthetic_depth_accuracy_matrix",
+  "threshold": 0.71,
+  "depths": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "loops": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "matrix": {
+    "1": {
+      "1": {
+        "correct": 62,
+        "total": 64,
+        "accuracy": 0.96875
+      },
+      "2": {
+        "correct": 13,
+        "total": 64,
+        "accuracy": 0.203125
+      },
+      "3": {
+        "correct": 12,
+        "total": 64,
+        "accuracy": 0.1875
+      },
+      "4": {
+        "correct": 11,
+        "total": 64,
+        "accuracy": 0.171875
+      },
+      "5": {
+        "correct": 13,
+        "total": 64,
+        "accuracy": 0.203125
+      },
+      "6": {
+        "correct": 12,
+        "total": 64,
+        "accuracy": 0.1875
+      }
+    },
+    "2": {
+      "1": {
+        "correct": 15,
+        "total": 64,
+        "accuracy": 0.234375
+      },
+      "2": {
+        "correct": 30,
+        "total": 64,
+        "accuracy": 0.46875
+      },
+      "3": {
+        "correct": 25,
+        "total": 64,
+        "accuracy": 0.390625
+      },
+      "4": {
+        "correct": 28,
+        "total": 64,
+        "accuracy": 0.4375
+      },
+      "5": {
+        "correct": 22,
+        "total": 64,
+        "accuracy": 0.34375
+      },
+      "6": {
+        "correct": 28,
+        "total": 64,
+        "accuracy": 0.4375
+      }
+    },
+    "3": {
+      "1": {
+        "correct": 12,
+        "total": 64,
+        "accuracy": 0.1875
+      },
+      "2": {
+        "correct": 20,
+        "total": 64,
+        "accuracy": 0.3125
+      },
+      "3": {
+        "correct": 17,
+        "total": 64,
+        "accuracy": 0.265625
+      },
+      "4": {
+        "correct": 16,
+        "total": 64,
+        "accuracy": 0.25
+      },
+      "5": {
+        "correct": 16,
+        "total": 64,
+        "accuracy": 0.25
+      },
+      "6": {
+        "correct": 18,
+        "total": 64,
+        "accuracy": 0.28125
+      }
+    },
+    "4": {
+      "1": {
+        "correct": 16,
+        "total": 64,
+        "accuracy": 0.25
+      },
+      "2": {
+        "correct": 17,
+        "total": 64,
+        "accuracy": 0.265625
+      },
+      "3": {
+        "correct": 22,
+        "total": 64,
+        "accuracy": 0.34375
+      },
+      "4": {
+        "correct": 22,
+        "total": 64,
+        "accuracy": 0.34375
+      },
+      "5": {
+        "correct": 23,
+        "total": 64,
+        "accuracy": 0.359375
+      },
+      "6": {
+        "correct": 23,
+        "total": 64,
+        "accuracy": 0.359375
+      }
+    },
+    "5": {
+      "1": {
+        "correct": 11,
+        "total": 64,
+        "accuracy": 0.171875
+      },
+      "2": {
+        "correct": 18,
+        "total": 64,
+        "accuracy": 0.28125
+      },
+      "3": {
+        "correct": 18,
+        "total": 64,
+        "accuracy": 0.28125
+      },
+      "4": {
+        "correct": 20,
+        "total": 64,
+        "accuracy": 0.3125
+      },
+      "5": {
+        "correct": 14,
+        "total": 64,
+        "accuracy": 0.21875
+      },
+      "6": {
+        "correct": 16,
+        "total": 64,
+        "accuracy": 0.25
+      }
+    },
+    "6": {
+      "1": {
+        "correct": 13,
+        "total": 64,
+        "accuracy": 0.203125
+      },
+      "2": {
+        "correct": 19,
+        "total": 64,
+        "accuracy": 0.296875
+      },
+      "3": {
+        "correct": 18,
+        "total": 64,
+        "accuracy": 0.28125
+      },
+      "4": {
+        "correct": 21,
+        "total": 64,
+        "accuracy": 0.328125
+      },
+      "5": {
+        "correct": 18,
+        "total": 64,
+        "accuracy": 0.28125
+      },
+      "6": {
+        "correct": 21,
+        "total": 64,
+        "accuracy": 0.328125
+      }
+    }
+  },
+  "frontier_by_loop": {
+    "1": 1,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0,
+    "6": 0
+  },
+  "frontier_is_non_decreasing": false,
+  "frontier_strictly_expands": false,
+  "mode": "recurrent",
+  "checkpoint": "outputs/stage5/stage5_depth_support_route_20260705_124320/train/chain_continuation/unfrozen_recurrent_step_2000.pt",
+  "data_jsonl": "outputs/stage5/stage5_depth_support_route_20260705_124320/data/test_mcq_heldout64.jsonl",
+  "score_target": "option_text",
+  "aggregate": "mean",
+  "rows": 2304
+}
