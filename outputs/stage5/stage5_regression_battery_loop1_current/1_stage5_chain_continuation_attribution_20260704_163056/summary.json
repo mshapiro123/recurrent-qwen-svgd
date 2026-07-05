@@ -1,0 +1,170 @@
+{
+  "kind": "stage5_regression_battery_assessment",
+  "run_id": "1_stage5_chain_continuation_attribution_20260704_163056",
+  "status": "green_noninferior",
+  "source_benchmark_suite": "C:/Users/mshap/Documents/Codex/2026-06-15/below-is-a-codex-ready-handoff/outputs/stage5/stage5_regression_battery_loop1_current_1_stage5_chain_continuation_attribution_20260704_163056/summary.json",
+  "suite_status": "completed",
+  "source_summary": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/summary.json",
+  "checkpoint": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_chain_continuation_attribution_20260704_163056/anneal_to_outcome_final/unfrozen_recurrent_step_2000.pt",
+  "primary_loop": 1,
+  "required_benchmarks": [
+    "arc_easy",
+    "arc_challenge"
+  ],
+  "target_specs": [
+    {
+      "score_target": "content_question_only",
+      "aggregate": "mean"
+    },
+    {
+      "score_target": "cyclic_label_aggregated",
+      "aggregate": "permutation_mean"
+    }
+  ],
+  "noninferiority_margin_accuracy": 0.03,
+  "yellow_margin_accuracy": 0.015,
+  "rows": [
+    {
+      "benchmark": "arc_easy",
+      "score_target": "content_question_only",
+      "aggregate": "mean",
+      "present": true,
+      "base_correct": 3115,
+      "recurrent_correct": 3117,
+      "base_accuracy": 0.5993842601500866,
+      "recurrent_accuracy": 0.5997690975562825,
+      "accuracy_delta_recurrent_vs_base": 0.00038483740619588223,
+      "ties": 5153,
+      "paired_examples": 5197,
+      "wins": 23,
+      "losses": 21,
+      "delta": 0.00038483740619588223,
+      "ci95": [
+        -0.002116762857045196,
+        0.0028864376694369607
+      ],
+      "standard_error": 0.001276350118151855,
+      "noninferiority_margin": 0.03,
+      "yellow_margin": 0.015,
+      "verdict": "green_noninferior"
+    },
+    {
+      "benchmark": "arc_easy",
+      "score_target": "cyclic_label_aggregated",
+      "aggregate": "permutation_mean",
+      "present": true,
+      "base_correct": 3976,
+      "recurrent_correct": 3964,
+      "base_accuracy": 0.7650567635174139,
+      "recurrent_accuracy": 0.7627477390802386,
+      "accuracy_delta_recurrent_vs_base": -0.0023090244371752936,
+      "ties": 5159,
+      "paired_examples": 5197,
+      "wins": 13,
+      "losses": 25,
+      "delta": -0.0023090244371752936,
+      "ci95": [
+        -0.004632985131451699,
+        1.4936257101112217e-05
+      ],
+      "standard_error": 0.0011857160195837839,
+      "noninferiority_margin": 0.03,
+      "yellow_margin": 0.015,
+      "verdict": "green_noninferior"
+    },
+    {
+      "benchmark": "arc_challenge",
+      "score_target": "content_question_only",
+      "aggregate": "mean",
+      "present": true,
+      "base_correct": 886,
+      "recurrent_correct": 883,
+      "base_accuracy": 0.3420849420849421,
+      "recurrent_accuracy": 0.34092664092664093,
+      "accuracy_delta_recurrent_vs_base": -0.0011583011583011582,
+      "ties": 2567,
+      "paired_examples": 2590,
+      "wins": 10,
+      "losses": 13,
+      "delta": -0.0011583011583011582,
+      "ci95": [
+        -0.004787238213022501,
+        0.0024706358964201843
+      ],
+      "standard_error": 0.0018515325196513483,
+      "noninferiority_margin": 0.03,
+      "yellow_margin": 0.015,
+      "verdict": "green_noninferior"
+    },
+    {
+      "benchmark": "arc_challenge",
+      "score_target": "cyclic_label_aggregated",
+      "aggregate": "permutation_mean",
+      "present": true,
+      "base_correct": 1522,
+      "recurrent_correct": 1521,
+      "base_accuracy": 0.5876447876447877,
+      "recurrent_accuracy": 0.5872586872586872,
+      "accuracy_delta_recurrent_vs_base": -0.0003861003861003861,
+      "ties": 2567,
+      "paired_examples": 2590,
+      "wins": 11,
+      "losses": 12,
+      "delta": -0.0003861003861003861,
+      "ci95": [
+        -0.004015281144937291,
+        0.0032430803727365193
+      ],
+      "standard_error": 0.0018516568607706164,
+      "noninferiority_margin": 0.03,
+      "yellow_margin": 0.015,
+      "verdict": "green_noninferior"
+    }
+  ],
+  "pooled": {
+    "content_question_only:mean": {
+      "paired_examples": 7787,
+      "base_correct": 4001,
+      "recurrent_correct": 4000,
+      "base_accuracy": 0.5138050597149094,
+      "recurrent_accuracy": 0.5136766405547708,
+      "accuracy_delta_recurrent_vs_base": -0.0001284191601386927,
+      "wins": 33,
+      "losses": 34,
+      "delta": -0.0001284191601386927,
+      "ci95": [
+        -0.002188645339512106,
+        0.0019318070192347206
+      ],
+      "standard_error": 0.0010511551210247814,
+      "noninferiority_margin": 0.03,
+      "yellow_margin": 0.015,
+      "verdict": "green_noninferior"
+    },
+    "cyclic_label_aggregated:permutation_mean": {
+      "paired_examples": 7787,
+      "base_correct": 5498,
+      "recurrent_correct": 5485,
+      "base_accuracy": 0.7060485424425325,
+      "recurrent_accuracy": 0.7043790933607295,
+      "accuracy_delta_recurrent_vs_base": -0.001669449081803005,
+      "wins": 24,
+      "losses": 37,
+      "delta": -0.001669449081803005,
+      "ci95": [
+        -0.00363491520411307,
+        0.0002960170405070597
+      ],
+      "standard_error": 0.0010028072647321128,
+      "noninferiority_margin": 0.03,
+      "yellow_margin": 0.015,
+      "verdict": "green_noninferior"
+    }
+  },
+  "pending_extensions": {
+    "tier1_natural_text_nll_canary": "not yet wired in this repository",
+    "hellaswag_500": "not yet supported by colab/run_stage5_benchmark_suite.py",
+    "winogrande_500": "not yet supported by colab/run_stage5_benchmark_suite.py",
+    "lambada_500": "not yet supported by colab/run_stage5_benchmark_suite.py"
+  }
+}

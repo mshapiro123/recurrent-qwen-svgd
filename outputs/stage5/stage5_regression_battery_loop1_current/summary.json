@@ -1,0 +1,70 @@
+{
+  "kind": "stage5_regression_battery",
+  "run_id": "stage5_regression_battery_loop1_current",
+  "status": "green_noninferior",
+  "benchmarks": "arc_easy,arc_challenge",
+  "score_targets": "content_question_only,cyclic_label_aggregated",
+  "target_specs": "content_question_only:mean,cyclic_label_aggregated:permutation_mean",
+  "arc_split": "all",
+  "accuracy_margin": 0.03,
+  "yellow_margin": 0.015,
+  "source_summaries": [
+    "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/summary.json"
+  ],
+  "assessments": [
+    {
+      "label": "stage5_chain_continuation_attribution_20260704_163056",
+      "source_summary": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/summary.json",
+      "suite_summary": "outputs/stage5/stage5_regression_battery_loop1_current_1_stage5_chain_continuation_attribution_20260704_163056/summary.json",
+      "assessment_summary": "outputs/stage5/stage5_regression_battery_loop1_current/1_stage5_chain_continuation_attribution_20260704_163056/summary.json",
+      "status": "green_noninferior",
+      "pooled": {
+        "content_question_only:mean": {
+          "paired_examples": 7787,
+          "base_correct": 4001,
+          "recurrent_correct": 4000,
+          "base_accuracy": 0.5138050597149094,
+          "recurrent_accuracy": 0.5136766405547708,
+          "accuracy_delta_recurrent_vs_base": -0.0001284191601386927,
+          "wins": 33,
+          "losses": 34,
+          "delta": -0.0001284191601386927,
+          "ci95": [
+            -0.002188645339512106,
+            0.0019318070192347206
+          ],
+          "standard_error": 0.0010511551210247814,
+          "noninferiority_margin": 0.03,
+          "yellow_margin": 0.015,
+          "verdict": "green_noninferior"
+        },
+        "cyclic_label_aggregated:permutation_mean": {
+          "paired_examples": 7787,
+          "base_correct": 5498,
+          "recurrent_correct": 5485,
+          "base_accuracy": 0.7060485424425325,
+          "recurrent_accuracy": 0.7043790933607295,
+          "accuracy_delta_recurrent_vs_base": -0.001669449081803005,
+          "wins": 24,
+          "losses": 37,
+          "delta": -0.001669449081803005,
+          "ci95": [
+            -0.00363491520411307,
+            0.0002960170405070597
+          ],
+          "standard_error": 0.0010028072647321128,
+          "noninferiority_margin": 0.03,
+          "yellow_margin": 0.015,
+          "verdict": "green_noninferior"
+        }
+      }
+    }
+  ],
+  "policy": {
+    "ai2_arc_not_arc_agi": true,
+    "arc_eval_only": true,
+    "if_red_or_yellow": "Review before route comparison; add uniform generic LM rehearsal to future training arms only if confirmed damage is real.",
+    "tier1_canary_status": "pending",
+    "hellaswag_winogrande_lambada_status": "pending"
+  }
+}
