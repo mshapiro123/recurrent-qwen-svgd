@@ -1,0 +1,15 @@
+
+Generating train split:   0%|          | 0/1119 [00:00<?, ? examples/s]
+Generating train split: 100%|██████████| 1119/1119 [00:00<00:00, 191599.70 examples/s]
+
+Generating test split:   0%|          | 0/1172 [00:00<?, ? examples/s]
+Generating test split: 100%|██████████| 1172/1172 [00:00<00:00, 256454.73 examples/s]
+
+Generating validation split:   0%|          | 0/299 [00:00<?, ? examples/s]
+Generating validation split: 100%|██████████| 299/299 [00:00<00:00, 107288.64 examples/s]
+dataset_id=allenai/ai2_arc
+config=ARC-Challenge
+split=all
+offset=0
+rows=2590
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_regression_battery_loop1_current_1_stage5_chain_continuation_attribution_20260704_163056/arc_challenge_all_full.jsonl
