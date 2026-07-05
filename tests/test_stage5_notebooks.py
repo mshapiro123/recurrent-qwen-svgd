@@ -2298,18 +2298,25 @@ def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
         assert "chain_continuation_attribution" in text
         assert "chain_continuation_probe_readout" in text
         assert "depth_support_route_comparison" in text
+        assert "splice_injection_diagnostic" in text
         assert "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py" in text
         assert "STAGE5_EXTRAP_MAX_LOOPS" in text
         assert "STAGE5_ANNEAL_TOTAL_STEPS" in text
         assert "STAGE5_CHAIN_CONTINUATION_EXTRAP_DEPTHS" in text
         assert "STAGE5_ROUTE_FROZEN_EVAL_ID" in text
+        assert "STAGE5_SPLICE_SOURCE_SUMMARY" in text
 
     assert "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION" in cell
     assert "eval/eval_synthetic_depth_artifact_check.py" in cell
     assert "eval/eval_synthetic_depth_probe.py" in cell
+    assert "eval/eval_synthetic_depth_splice.py" in cell
     assert "loop_loss_mode='annealed_chain_to_outcome'" in cell
     assert "chain_continuation_attribution" in cell
     assert "depth_support_route_comparison" in cell
+    assert "splice_injection_diagnostic" in cell
+    assert "colab/run_stage5_splice_injection.py" in cell
+    assert "lawful_fraction_j1_to_j3" in cell
+    assert "prompt_position_shortcut" in cell
     assert "pre_registered_bands" in extrap
     assert "bridge_forward_calls" in artifact
     assert "loop_index_probe" in probe

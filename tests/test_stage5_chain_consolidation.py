@@ -75,10 +75,12 @@ def test_chain_consolidation_cell_names_all_three_targets() -> None:
     assert "chain_continuation_attribution" in text
     assert "chain_continuation_probe_readout" in text
     assert "depth_support_route_comparison" in text
+    assert "splice_injection_diagnostic" in text
     assert "colab/run_stage5_chain_anneal_to_outcome.py" in text
     assert "colab/run_stage5_post_anneal_readouts.py" in text
     assert "colab/run_stage5_chain_continuation_attribution.py" in text
     assert "colab/run_stage5_depth_support_route_comparison.py" in text
+    assert "colab/run_stage5_splice_injection.py" in text
 
 
 def test_chain_consolidation_runners_import_when_executed_by_path() -> None:
@@ -89,6 +91,7 @@ def test_chain_consolidation_runners_import_when_executed_by_path() -> None:
         "colab/run_stage5_post_anneal_readouts.py",
         "colab/run_stage5_chain_continuation_attribution.py",
         "colab/run_stage5_depth_support_route_comparison.py",
+        "colab/run_stage5_splice_injection.py",
     ]:
         namespace = runpy.run_path(path, run_name="not_main")
         assert "main" in namespace

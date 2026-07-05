@@ -19,8 +19,10 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: chain_continuation_attribution
 # Safety marker: chain_continuation_probe_readout
 # Safety marker: depth_support_route_comparison
+# Safety marker: splice_injection_diagnostic
 # Safety marker: eval/eval_synthetic_depth_artifact_check.py
 # Safety marker: eval/eval_synthetic_depth_probe.py
+# Safety marker: eval/eval_synthetic_depth_splice.py
 # Safety marker: eval/analyze_synthetic_reader_alignment.py
 # Safety marker: colab/run_stage5_depth_extrapolation_eval.py
 # Safety marker: colab/run_stage5_synthetic_probe_battery.py
@@ -28,6 +30,7 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: colab/run_stage5_post_anneal_readouts.py
 # Safety marker: colab/run_stage5_chain_continuation_attribution.py
 # Safety marker: colab/run_stage5_depth_support_route_comparison.py
+# Safety marker: colab/run_stage5_splice_injection.py
 # Safety marker: STAGE5_EXTRAP_DEPTHS
 # Safety marker: STAGE5_EXTRAP_MAX_LOOPS
 # Safety marker: STAGE5_EXTRAP_CHECKPOINT
@@ -39,6 +42,10 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: STAGE5_ROUTE_FROZEN_EVAL_ID
 # Safety marker: STAGE5_ROUTE_TRAIN_MAX_DEPTH
 # Safety marker: STAGE5_ROUTE_EVAL_MAX_DEPTH
+# Safety marker: STAGE5_SPLICE_SOURCE_SUMMARY
+# Safety marker: STAGE5_SPLICE_POINTS
+# Safety marker: lawful_fraction_j1_to_j3
+# Safety marker: prompt_position_shortcut
 # Safety marker: SELECTION_MIN_CORRECT
 # Safety marker: NONREGRESSION_FLOORS
 # Safety marker: STAGE5_ANNEAL_LOOP_LOSS_MODE
@@ -136,6 +143,16 @@ TARGETS = {
             "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
         ],
         "disconnect_env": "STAGE5_ROUTE_DISCONNECT",
+    },
+    "splice_injection_diagnostic": {
+        "script": "colab/run_stage5_splice_injection.py",
+        "tests": [
+            "tests/test_recurrent_wrapper_tiny.py::test_recurrent_state_override_applies_before_requested_next_loop_on_tiny_model",
+            "tests/test_eval_synthetic_depth_splice.py",
+            "tests/test_stage5_chain_consolidation.py",
+            "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
+        ],
+        "disconnect_env": "STAGE5_SPLICE_DISCONNECT",
     },
 }
 

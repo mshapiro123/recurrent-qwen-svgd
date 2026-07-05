@@ -63,6 +63,7 @@ class RecurrentQwenOutput:
     logits: Optional[torch.Tensor] = None
     trajectory_logits: Optional[torch.Tensor] = None
     loop_logits: Optional[torch.Tensor] = None
+    loop_recurrent_states: Optional[torch.Tensor] = None
     halting_probs: Optional[torch.Tensor] = None
     halting_weights: Optional[torch.Tensor] = None
     expected_loops: Optional[torch.Tensor] = None
@@ -263,6 +264,8 @@ class RecurrentQwenForCausalLM(nn.Module):
         reentry_adapter_mode: str = "affine",
         reentry_tail_damper_path: Optional[str] = None,
         reentry_tail_damper_strength: float = 0.0,
+        recurrent_state_overrides: Optional[dict[int, torch.Tensor]] = None,
+        return_loop_recurrent_states: bool = False,
         logits_to_keep: int | torch.Tensor = 0,
         **_: Any,
     ) -> RecurrentQwenOutput | tuple[Any, ...]:
@@ -441,6 +444,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         halt_probs: list[torch.Tensor] = []
         latent_kls: list[torch.Tensor] = []
         svgd_stats_history: list[Any] = []
+        loop_recurrent_states: list[torch.Tensor] = []
         recurrent_state = hidden_states
         reentry_reference_rms = None
         if reentry_rescale_mode == "entry_rms" and max_loops > 1:
@@ -448,6 +452,16 @@ class RecurrentQwenForCausalLM(nn.Module):
         reentry_tail_damper = self._load_reentry_tail_damper(reentry_tail_damper_path)
 
         for loop_idx in range(max_loops):
+            if loop_idx > 0 and recurrent_state_overrides:
+                override = recurrent_state_overrides.get(loop_idx)
+                if override is not None:
+                    override = override.to(device=recurrent_state.device, dtype=recurrent_state.dtype)
+                    if override.shape != recurrent_state.shape:
+                        raise ValueError(
+                            "recurrent_state_overrides entries must match the carried recurrent state shape; "
+                            f"got override={tuple(override.shape)}, expected={tuple(recurrent_state.shape)}"
+                        )
+                    recurrent_state = override
             loop_input = recurrent_state
             if loop_idx > 0:
                 loop_input = self.bridge(loop_input, prelude_hidden=prelude_hidden_states)
@@ -520,6 +534,9 @@ class RecurrentQwenForCausalLM(nn.Module):
                     sample=True,
                 )
                 latent_kls.append(latent_stats.kl)
+
+            if return_loop_recurrent_states:
+                loop_recurrent_states.append(recurrent_state)
 
             pooled = masked_mean(recurrent_state, flat_attention_mask)
             halt_probs.append(
@@ -724,6 +741,11 @@ class RecurrentQwenForCausalLM(nn.Module):
             loop_logits=(
                 unflatten_trajectories(logits_stack, batch_size, num_trajectories)
                 if return_loop_logits
+                else None
+            ),
+            loop_recurrent_states=(
+                unflatten_trajectories(torch.stack(loop_recurrent_states, dim=1), batch_size, num_trajectories)
+                if return_loop_recurrent_states
                 else None
             ),
             halting_probs=halting_probs_by_traj,

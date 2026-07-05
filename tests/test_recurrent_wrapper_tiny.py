@@ -381,6 +381,85 @@ def test_logits_to_keep_preserves_trajectory_last_token_logits_on_tiny_model():
     assert torch.allclose(full.trajectory_logits[:, :, -1:, :], last_only.trajectory_logits)
 
 
+def test_return_loop_recurrent_states_exposes_one_state_per_loop_on_tiny_model():
+    torch.manual_seed(0)
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+
+    with torch.no_grad():
+        output = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=3,
+            use_cache=False,
+            return_dict=True,
+            return_loop_recurrent_states=True,
+        )
+
+    assert output.loop_recurrent_states.shape == (1, 1, 3, 4, 8)
+    assert torch.allclose(output.final_recurrent_hidden, output.loop_recurrent_states[:, :, -1])
+
+
+def test_recurrent_state_override_applies_before_requested_next_loop_on_tiny_model():
+    torch.manual_seed(0)
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+
+    with torch.no_grad():
+        baseline = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=3,
+            use_cache=False,
+            return_dict=True,
+            return_loop_logits=True,
+            return_loop_recurrent_states=True,
+        )
+        override_state = torch.zeros_like(baseline.loop_recurrent_states[:, :, 0]).reshape(1, 4, 8)
+        spliced = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=3,
+            recurrent_state_overrides={1: override_state},
+            use_cache=False,
+            return_dict=True,
+            return_loop_logits=True,
+            return_loop_recurrent_states=True,
+        )
+
+    assert torch.allclose(baseline.loop_logits[:, :, 0], spliced.loop_logits[:, :, 0])
+    assert not torch.allclose(baseline.loop_logits[:, :, 1], spliced.loop_logits[:, :, 1])
+    assert torch.allclose(spliced.loop_recurrent_states[:, :, 0], baseline.loop_recurrent_states[:, :, 0])
+    assert not torch.allclose(spliced.loop_recurrent_states[:, :, 1], baseline.loop_recurrent_states[:, :, 1])
+
+
+def test_recurrent_state_override_rejects_wrong_shape_on_tiny_model():
+    torch.manual_seed(0)
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+    bad_state = torch.zeros(1, 3, 8)
+
+    try:
+        wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=2,
+            recurrent_state_overrides={1: bad_state},
+            use_cache=False,
+            return_dict=True,
+        )
+    except ValueError as exc:
+        assert "recurrent_state_overrides" in str(exc)
+    else:
+        raise AssertionError("Expected bad recurrent_state_overrides shape to raise")
+
+
 def test_halting_target_nll_weight_adds_supervised_loop_loss_on_tiny_model():
     torch.manual_seed(0)
     model = TinyCausalLM().eval()

@@ -81,6 +81,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "chain_continuation_probe_readout" - probe battery on the chain-continuation checkpoint.
 #   "regression_battery_loop1_current" - loop-1 AI2 ARC non-inferiority battery before route comparison.
 #   "depth_support_route_comparison" - train support depth 1-6 and score on frozen depth 1-10 rows.
+#   "splice_injection_diagnostic" - inference-only hidden-state splice test for state-driven iteration vs shortcut.
 #   "gradient_path_audit" - read-only per-loop gradient matrix plus finite-difference bridge check.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
 #   "model_viability_queue" - queued no-training Qwen 3B/7B probes with VRAM-aware skipping.
@@ -2083,6 +2084,29 @@ TARGETS = {
             "STAGE5_ROUTE_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
             "STAGE5_ROUTE_DTYPE": "bfloat16",
             "STAGE5_ROUTE_DISCONNECT": "0",
+        },
+    },
+    "splice_injection_diagnostic": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "splice_injection_diagnostic",
+            "colab/run_stage5_splice_injection.py",
+            "eval/eval_synthetic_depth_splice.py",
+            "STAGE5_SPLICE_SOURCE_SUMMARY",
+            "STAGE5_SPLICE_POINTS",
+            "lawful_fraction_j1_to_j3",
+            "prompt_position_shortcut",
+            "tests/test_eval_synthetic_depth_splice.py",
+        ],
+        "env": {
+            "STAGE5_SPLICE_SOURCE_SUMMARY": "outputs/stage5/stage5_depth_support_route_20260705_124320/summary.json",
+            "STAGE5_SPLICE_TARGET_DEPTH": "8",
+            "STAGE5_SPLICE_POINTS": "2,4",
+            "STAGE5_SPLICE_MAX_LOOPS": "8",
+            "STAGE5_SPLICE_N_PAIRS": "128",
+            "STAGE5_SPLICE_DTYPE": "bfloat16",
+            "STAGE5_SPLICE_DISCONNECT": "0",
         },
     },
     "regression_battery_loop1_current": {
