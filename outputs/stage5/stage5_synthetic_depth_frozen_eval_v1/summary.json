@@ -1,0 +1,13 @@
+{
+  "kind": "stage5_synthetic_depth_frozen_eval_set",
+  "run_id": "stage5_synthetic_depth_frozen_eval_v1",
+  "status": "finished",
+  "n_symbols": 16,
+  "max_depth": 10,
+  "rows_per_depth": 128,
+  "value_prefix": "letter:",
+  "seed": "20260704",
+  "data_summary": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v1/data/summary.json",
+  "test_chain_mcq": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v1/data/test_chain_mcq.jsonl",
+  "test_mcq": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v1/data/test_mcq.jsonl"
+}
