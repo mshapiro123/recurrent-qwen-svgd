@@ -1,9 +1,13 @@
-# Chain Anneal To Outcome - stage5_depth_support_ladder8_20260705_204923
+# Depth Support Ladder - stage5_depth_support_ladder8_20260705_204923
 
-- Status: `finished`
-- Init checkpoint: `outputs/stage5/stage5_depth_support_ladder8_20260705_204923/restored/scaled_corrected_final.pt`
-- Ramp checkpoint: `outputs/stage5/stage5_depth_support_ladder8_20260705_204923/train/chain_continuation/unfrozen_recurrent_step_1000.pt`
-- Final checkpoint: `outputs/stage5/stage5_depth_support_ladder8_20260705_204923/train/chain_continuation/unfrozen_recurrent_step_2000.pt`
-- Ramp active diagonal: `{'1': 1.0, '2': 0.984375, '3': 0.984375, '4': 0.96875, '5': 1.0, '6': 0.96875, '7': 0.9375, '8': 0.890625}`
-- Final active diagonal: `{'1': 1.0, '2': 0.984375, '3': 1.0, '4': 1.0, '5': 1.0, '6': 0.921875, '7': 0.921875, '8': 0.890625}`
-- Final-answer diagonal: `{'1': 0.9375, '2': 0.671875, '3': 0.453125, '4': 0.5625, '5': 0.484375, '6': 0.4375, '7': 0.453125, '8': 0.359375}`
+- Status: `finished_with_frozen_eval`
+- Train support depth: `1..8`
+- Frozen eval depth: `1..14`
+- Frozen eval set: `stage5_synthetic_depth_frozen_eval_v2_depth14`
+- Verdict: `asymptote_rejected_at_depth10`
+- Non-regression pass: `True`
+- Adjacent depth-9 extension pass: `True`
+- Depth-10 asymptote rejected: `True`
+- Scaling pass: `False`
+- Strong scaling pass: `False`
+- Selected correct: `{9: 109, 10: 85, 11: 64, 12: 48, 13: 26, 14: 20}`
