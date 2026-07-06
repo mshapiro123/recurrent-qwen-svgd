@@ -1,1 +1,1 @@
-outputs/stage5/stage5_depth_support_ladder8_20260705_204923/summary.json
+outputs/stage5/stage5_support8_probe_readout_20260706_151627/summary.json
