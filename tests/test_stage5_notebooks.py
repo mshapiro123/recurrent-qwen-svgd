@@ -2299,6 +2299,8 @@ def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
         assert "chain_continuation_probe_readout" in text
         assert "depth_support_route_comparison" in text
         assert "depth_support_ladder8" in text
+        assert "support8_probe_readout" in text
+        assert "support8_dose_arm" in text
         assert "splice_injection_diagnostic" in text
         assert "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py" in text
         assert "STAGE5_EXTRAP_MAX_LOOPS" in text
@@ -2306,6 +2308,8 @@ def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
         assert "STAGE5_CHAIN_CONTINUATION_EXTRAP_DEPTHS" in text
         assert "STAGE5_ROUTE_FROZEN_EVAL_ID" in text
         assert "STAGE5_LADDER_FROZEN_EVAL_ID" in text
+        assert "STAGE5_SUPPORT8_SOURCE_SUMMARY" in text
+        assert "STAGE5_DOSE_SOURCE_SUMMARY" in text
         assert "STRONG_SCALING_MIN_CORRECT = 91" in text
         assert "ASYMPTOTE_REJECTION_MIN_CORRECT = 79" in text
         assert "CHANCE_REJECTION_MIN_CORRECT = 14" in text
@@ -2320,8 +2324,14 @@ def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
     assert "chain_continuation_attribution" in cell
     assert "depth_support_route_comparison" in cell
     assert "depth_support_ladder8" in cell
+    assert "support8_probe_readout" in cell
+    assert "support8_dose_arm" in cell
     assert "splice_injection_diagnostic" in cell
     assert "colab/run_stage5_depth_support_ladder.py" in cell
+    assert "colab/run_stage5_support8_probe_readout.py" in cell
+    assert "colab/run_stage5_support8_dose_arm.py" in cell
+    assert "soft_depth10_min_correct" in cell
+    assert "soft_depth11_min_correct" in cell
     assert "STRONG_SCALING_MIN_CORRECT = 91" in cell
     assert "ASYMPTOTE_REJECTION_MIN_CORRECT = 79" in cell
     assert "CHANCE_REJECTION_MIN_CORRECT = 14" in cell

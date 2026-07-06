@@ -82,6 +82,8 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "regression_battery_loop1_current" - loop-1 AI2 ARC non-inferiority battery before route comparison.
 #   "depth_support_route_comparison" - train support depth 1-6 and score on frozen depth 1-10 rows.
 #   "depth_support_ladder8" - train support depth 1-8 and score on frozen depth 1-14 rows.
+#   "support8_probe_readout" - eval-only envelope/clock/probe readout on the support-8 checkpoint over frozen depth 1-14 rows.
+#   "support8_dose_arm" - continue support-8 for +2000 same-curriculum steps and rescore locked frozen depth 1-14 gates.
 #   "splice_injection_diagnostic" - inference-only hidden-state splice test for state-driven iteration vs shortcut.
 #   "gradient_path_audit" - read-only per-loop gradient matrix plus finite-difference bridge check.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
@@ -2117,6 +2119,58 @@ TARGETS = {
             "STAGE5_LADDER_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
             "STAGE5_LADDER_DTYPE": "bfloat16",
             "STAGE5_LADDER_DISCONNECT": "0",
+        },
+    },
+    "support8_probe_readout": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "support8_probe_readout",
+            "colab/run_stage5_support8_probe_readout.py",
+            "STAGE5_SUPPORT8_SOURCE_SUMMARY",
+            "STAGE5_SUPPORT8_PROBE_LOOP_COUNTS",
+            "STAGE5_SUPPORT8_PROBE_TARGET_STEPS",
+            "STAGE5_SUPPORT8_PROBE_FEATURE_TRANSFORMS",
+            "state_envelope",
+            "loop_index_probe",
+            "router_leak_exclusion",
+            "tests/test_eval_synthetic_depth_probe.py",
+            "tests/test_stage5_chain_consolidation.py",
+        ],
+        "env": {
+            "STAGE5_SUPPORT8_SOURCE_SUMMARY": "outputs/stage5/stage5_depth_support_ladder8_20260705_204923/summary.json",
+            "STAGE5_SUPPORT8_PROBE_LOOP_COUNTS": "1,2,3,4,5,6,7,8,9,10,11,12,13,14",
+            "STAGE5_SUPPORT8_PROBE_TARGET_STEPS": "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14",
+            "STAGE5_SUPPORT8_PROBE_FEATURE_TRANSFORMS": "raw,unit_norm,rms_norm",
+            "STAGE5_SUPPORT8_PROBE_DTYPE": "bfloat16",
+            "STAGE5_SUPPORT8_PROBE_DISCONNECT": "0",
+        },
+    },
+    "support8_dose_arm": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "support8_dose_arm",
+            "colab/run_stage5_support8_dose_arm.py",
+            "STAGE5_DOSE_SOURCE_SUMMARY",
+            "STAGE5_DOSE_STEPS",
+            "soft_depth10_min_correct",
+            "soft_depth11_min_correct",
+            "STRONG_SCALING_MIN_CORRECT = 91",
+            "ASYMPTOTE_REJECTION_MIN_CORRECT = 79",
+            "CHANCE_REJECTION_MIN_CORRECT = 14",
+            "tests/test_stage5_chain_consolidation.py",
+        ],
+        "env": {
+            "STAGE5_DOSE_SOURCE_SUMMARY": "outputs/stage5/stage5_depth_support_ladder8_20260705_204923/summary.json",
+            "STAGE5_DOSE_MAX_DEPTH": "8",
+            "STAGE5_DOSE_ROWS_PER_DEPTH": "256",
+            "STAGE5_DOSE_STEPS": "2000",
+            "STAGE5_DOSE_SEED": "20260705",
+            "STAGE5_DOSE_PRELUDE_LR_MULT": "10.0",
+            "STAGE5_DOSE_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
+            "STAGE5_DOSE_DTYPE": "bfloat16",
+            "STAGE5_DOSE_DISCONNECT": "0",
         },
     },
     "splice_injection_diagnostic": {

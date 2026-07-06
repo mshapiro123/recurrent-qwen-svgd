@@ -9,6 +9,7 @@ import pytest
 from colab import run_stage5_depth_extrapolation_eval as extrap
 from colab import run_stage5_depth_support_ladder as ladder
 from colab import run_stage5_depth_support_route_comparison as route
+from colab import stage5_support8_followup as support8
 from colab.run_stage5_post_anneal_readouts import compact_extrapolation, compact_probe
 from colab.stage5_chain_consolidation_utils import resolve_checkpoint_reference
 
@@ -79,12 +80,16 @@ def test_chain_consolidation_cell_names_all_three_targets() -> None:
     assert "chain_continuation_probe_readout" in text
     assert "depth_support_route_comparison" in text
     assert "depth_support_ladder8" in text
+    assert "support8_probe_readout" in text
+    assert "support8_dose_arm" in text
     assert "splice_injection_diagnostic" in text
     assert "colab/run_stage5_chain_anneal_to_outcome.py" in text
     assert "colab/run_stage5_post_anneal_readouts.py" in text
     assert "colab/run_stage5_chain_continuation_attribution.py" in text
     assert "colab/run_stage5_depth_support_route_comparison.py" in text
     assert "colab/run_stage5_depth_support_ladder.py" in text
+    assert "colab/run_stage5_support8_probe_readout.py" in text
+    assert "colab/run_stage5_support8_dose_arm.py" in text
     assert "colab/run_stage5_splice_injection.py" in text
 
 
@@ -97,6 +102,8 @@ def test_chain_consolidation_runners_import_when_executed_by_path() -> None:
         "colab/run_stage5_chain_continuation_attribution.py",
         "colab/run_stage5_depth_support_route_comparison.py",
         "colab/run_stage5_depth_support_ladder.py",
+        "colab/run_stage5_support8_probe_readout.py",
+        "colab/run_stage5_support8_dose_arm.py",
         "colab/run_stage5_splice_injection.py",
     ]:
         namespace = runpy.run_path(path, run_name="not_main")
@@ -265,3 +272,75 @@ def test_depth_support_ladder_refuses_to_regenerate_missing_base_frozen_set(tmp_
             seed="20260704",
             value_prefix="letter:",
         )
+
+
+def test_support8_source_validation_locks_completed_ladder_identity() -> None:
+    payload = {
+        "kind": "stage5_depth_support_ladder",
+        "run_id": support8.SUPPORT8_RUN_ID,
+        "status": "finished_with_frozen_eval",
+        "train_max_depth": 8,
+        "rows_per_depth": 256,
+        "final_checkpoint": "outputs/run/final.pt",
+        "final_checkpoint_drive_backup": "/content/drive/final.pt",
+        "frozen_eval_set": {
+            "run_id": support8.DEFAULT_FROZEN_DEPTH14_EVAL_ID,
+            "base_route_identity_check": {"match": True},
+            "test_chain_mcq": "outputs/frozen/test_chain_mcq.jsonl",
+        },
+        "ladder_score": {"selected_correct": dict(support8.EXPECTED_SUPPORT8_SELECTED_CORRECT)},
+    }
+
+    result = support8.validate_support8_source_summary("summary.json", payload)
+
+    assert result["source_run_id"] == support8.SUPPORT8_RUN_ID
+    assert result["selected_correct"]["10"] == 85
+
+
+def test_support8_source_validation_rejects_stale_or_unscored_source() -> None:
+    payload = {
+        "kind": "stage5_depth_support_ladder",
+        "run_id": support8.SUPPORT8_RUN_ID,
+        "status": "finished_with_frozen_eval",
+        "train_max_depth": 8,
+        "rows_per_depth": 256,
+        "final_checkpoint": "outputs/run/final.pt",
+        "final_checkpoint_drive_backup": "/content/drive/final.pt",
+        "frozen_eval_set": {
+            "run_id": support8.DEFAULT_FROZEN_DEPTH14_EVAL_ID,
+            "base_route_identity_check": {"match": True},
+            "test_chain_mcq": "outputs/frozen/test_chain_mcq.jsonl",
+        },
+        "ladder_score": {"selected_correct": {"10": 91}},
+    }
+
+    with pytest.raises(RuntimeError, match="selected_correct"):
+        support8.validate_support8_source_summary("summary.json", payload)
+
+
+def test_support8_dose_arm_scoring_separates_locked_bar_and_soft_deceleration() -> None:
+    score = support8.score_dose_arm({"selected_correct": {"10": 92, "11": 70}})
+
+    assert score["scaling_revived"] is True
+    assert score["locked_depth10_bar_revived"] is True
+    assert score["soft_joint_depth10_11_revived"] is False
+    assert score["deceleration_confirmed_below_95"] is True
+    assert score["verdict"] == "locked_scaling_revived_but_soft_deceleration"
+
+
+def test_support8_dose_arm_scoring_detects_soft_joint_revival() -> None:
+    score = support8.score_dose_arm({"selected_correct": {"10": 95, "11": 74}})
+
+    assert score["scaling_revived"] is True
+    assert score["soft_joint_depth10_11_revived"] is True
+    assert score["deceleration_confirmed_below_95"] is False
+    assert score["verdict"] == "soft_scaling_revived"
+
+
+def test_support8_decay_alignment_marks_observed_decay_onset() -> None:
+    diag = {"8": 0.914, "9": 0.852, "10": 0.664}
+
+    result = support8.decay_alignment(diag)
+
+    assert result["first_depth_below_0_90"] == 9
+    assert result["first_depth_below_strong_scaling_bar"] == 10

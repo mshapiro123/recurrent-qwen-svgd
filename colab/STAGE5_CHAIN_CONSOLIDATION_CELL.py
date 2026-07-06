@@ -20,6 +20,8 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: chain_continuation_probe_readout
 # Safety marker: depth_support_route_comparison
 # Safety marker: depth_support_ladder8
+# Safety marker: support8_probe_readout
+# Safety marker: support8_dose_arm
 # Safety marker: splice_injection_diagnostic
 # Safety marker: eval/eval_synthetic_depth_artifact_check.py
 # Safety marker: eval/eval_synthetic_depth_probe.py
@@ -32,6 +34,8 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: colab/run_stage5_chain_continuation_attribution.py
 # Safety marker: colab/run_stage5_depth_support_route_comparison.py
 # Safety marker: colab/run_stage5_depth_support_ladder.py
+# Safety marker: colab/run_stage5_support8_probe_readout.py
+# Safety marker: colab/run_stage5_support8_dose_arm.py
 # Safety marker: colab/run_stage5_splice_injection.py
 # Safety marker: STAGE5_EXTRAP_DEPTHS
 # Safety marker: STAGE5_EXTRAP_MAX_LOOPS
@@ -47,6 +51,14 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: STAGE5_LADDER_FROZEN_EVAL_ID
 # Safety marker: STAGE5_LADDER_TRAIN_MAX_DEPTH
 # Safety marker: STAGE5_LADDER_EVAL_MAX_DEPTH
+# Safety marker: STAGE5_SUPPORT8_SOURCE_SUMMARY
+# Safety marker: STAGE5_SUPPORT8_PROBE_LOOP_COUNTS
+# Safety marker: STAGE5_SUPPORT8_PROBE_TARGET_STEPS
+# Safety marker: STAGE5_SUPPORT8_PROBE_FEATURE_TRANSFORMS
+# Safety marker: STAGE5_DOSE_SOURCE_SUMMARY
+# Safety marker: STAGE5_DOSE_STEPS
+# Safety marker: soft_depth10_min_correct
+# Safety marker: soft_depth11_min_correct
 # Safety marker: STRONG_SCALING_MIN_CORRECT = 91
 # Safety marker: ASYMPTOTE_REJECTION_MIN_CORRECT = 79
 # Safety marker: CHANCE_REJECTION_MIN_CORRECT = 14
@@ -165,6 +177,26 @@ TARGETS = {
             "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
         ],
         "disconnect_env": "STAGE5_LADDER_DISCONNECT",
+    },
+    "support8_probe_readout": {
+        "script": "colab/run_stage5_support8_probe_readout.py",
+        "tests": [
+            "tests/test_eval_synthetic_depth_probe.py",
+            "tests/test_stage5_chain_consolidation.py",
+            "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
+        ],
+        "disconnect_env": "STAGE5_SUPPORT8_PROBE_DISCONNECT",
+    },
+    "support8_dose_arm": {
+        "script": "colab/run_stage5_support8_dose_arm.py",
+        "tests": [
+            "tests/test_recurrent_wrapper_tiny.py::test_per_loop_label_loss_mode_uses_active_intermediate_labels_on_tiny_model",
+            "tests/test_eval_synthetic_depth_active_labels.py",
+            "tests/test_stage5_chain_consolidation.py",
+            "tests/test_train_unfrozen_recurrent.py::test_trainable_parameter_norm_stats_groups_recurrent_and_bridge_params",
+            "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
+        ],
+        "disconnect_env": "STAGE5_DOSE_DISCONNECT",
     },
     "splice_injection_diagnostic": {
         "script": "colab/run_stage5_splice_injection.py",
