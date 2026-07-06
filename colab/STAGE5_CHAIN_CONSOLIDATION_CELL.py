@@ -22,10 +22,17 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: depth_support_ladder8
 # Safety marker: support8_probe_readout
 # Safety marker: support8_dose_arm
+# Safety marker: same_reader_final_symbol
+# Safety marker: n24_support12_rung
+# Safety marker: support6_seed_replication
+# Safety marker: phase_a_surpass_prereg
 # Safety marker: splice_injection_diagnostic
 # Safety marker: eval/eval_synthetic_depth_artifact_check.py
 # Safety marker: eval/eval_synthetic_depth_probe.py
 # Safety marker: eval/eval_synthetic_depth_splice.py
+# Safety marker: eval/eval_synthetic_depth_final_symbol.py
+# Safety marker: full-symbol argmax
+# Safety marker: same-reader final-symbol metric
 # Safety marker: eval/analyze_synthetic_reader_alignment.py
 # Safety marker: colab/run_stage5_depth_extrapolation_eval.py
 # Safety marker: colab/run_stage5_synthetic_probe_battery.py
@@ -36,6 +43,10 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: colab/run_stage5_depth_support_ladder.py
 # Safety marker: colab/run_stage5_support8_probe_readout.py
 # Safety marker: colab/run_stage5_support8_dose_arm.py
+# Safety marker: colab/run_stage5_same_reader_final_symbol.py
+# Safety marker: colab/run_stage5_n24_support12_rung.py
+# Safety marker: colab/run_stage5_support6_seed_replication.py
+# Safety marker: colab/run_stage5_phase_a_surpass_plan.py
 # Safety marker: colab/run_stage5_splice_injection.py
 # Safety marker: STAGE5_EXTRAP_DEPTHS
 # Safety marker: STAGE5_EXTRAP_MAX_LOOPS
@@ -57,8 +68,17 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: STAGE5_SUPPORT8_PROBE_FEATURE_TRANSFORMS
 # Safety marker: STAGE5_DOSE_SOURCE_SUMMARY
 # Safety marker: STAGE5_DOSE_STEPS
+# Safety marker: STAGE5_SAME_READER_SOURCE_SUMMARY
+# Safety marker: STAGE5_N24_FROZEN_EVAL_ID
+# Safety marker: STAGE5_N24_EVAL_CHECKPOINTS
+# Safety marker: STAGE5_RUNG_CANARY_HARD_STOP
+# Safety marker: STAGE5_SUPPORT6_REPLICATION_SEEDS
+# Safety marker: STAGE5_ROUTE_TRAIN_SEED
+# Safety marker: STAGE5_PHASE_A_PLAN_RUN_ID
 # Safety marker: soft_depth10_min_correct
 # Safety marker: soft_depth11_min_correct
+# Safety marker: N24_STRONG_SCALING_MIN_CORRECT
+# Safety marker: N24_CHANCE_REJECTION_MIN_CORRECT
 # Safety marker: STRONG_SCALING_MIN_CORRECT = 91
 # Safety marker: ASYMPTOTE_REJECTION_MIN_CORRECT = 79
 # Safety marker: CHANCE_REJECTION_MIN_CORRECT = 14
@@ -197,6 +217,44 @@ TARGETS = {
             "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
         ],
         "disconnect_env": "STAGE5_DOSE_DISCONNECT",
+    },
+    "same_reader_final_symbol": {
+        "script": "colab/run_stage5_same_reader_final_symbol.py",
+        "tests": [
+            "tests/test_eval_synthetic_depth_final_symbol.py",
+            "tests/test_eval_synthetic_depth_active_labels.py",
+            "tests/test_stage5_chain_consolidation.py",
+            "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
+        ],
+        "disconnect_env": "STAGE5_SAME_READER_DISCONNECT",
+    },
+    "n24_support12_rung": {
+        "script": "colab/run_stage5_n24_support12_rung.py",
+        "tests": [
+            "tests/test_stage5_n24_rung.py",
+            "tests/test_eval_synthetic_depth_active_labels.py",
+            "tests/test_stage5_chain_consolidation.py",
+            "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
+        ],
+        "disconnect_env": "STAGE5_N24_DISCONNECT",
+    },
+    "support6_seed_replication": {
+        "script": "colab/run_stage5_support6_seed_replication.py",
+        "tests": [
+            "tests/test_stage5_support6_seed_replication.py",
+            "tests/test_stage5_chain_consolidation.py",
+            "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
+        ],
+        "disconnect_env": "STAGE5_SUPPORT6_REPLICATION_DISCONNECT",
+    },
+    "phase_a_surpass_prereg": {
+        "script": "colab/run_stage5_phase_a_surpass_plan.py",
+        "tests": [
+            "tests/test_stage5_phase_a_surpass.py",
+            "tests/test_stage5_chain_consolidation.py",
+            "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
+        ],
+        "disconnect_env": "STAGE5_PHASE_A_PLAN_DISCONNECT",
     },
     "splice_injection_diagnostic": {
         "script": "colab/run_stage5_splice_injection.py",

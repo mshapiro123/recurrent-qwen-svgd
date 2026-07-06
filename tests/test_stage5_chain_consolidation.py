@@ -82,6 +82,10 @@ def test_chain_consolidation_cell_names_all_three_targets() -> None:
     assert "depth_support_ladder8" in text
     assert "support8_probe_readout" in text
     assert "support8_dose_arm" in text
+    assert "same_reader_final_symbol" in text
+    assert "n24_support12_rung" in text
+    assert "support6_seed_replication" in text
+    assert "phase_a_surpass_prereg" in text
     assert "splice_injection_diagnostic" in text
     assert "colab/run_stage5_chain_anneal_to_outcome.py" in text
     assert "colab/run_stage5_post_anneal_readouts.py" in text
@@ -90,6 +94,10 @@ def test_chain_consolidation_cell_names_all_three_targets() -> None:
     assert "colab/run_stage5_depth_support_ladder.py" in text
     assert "colab/run_stage5_support8_probe_readout.py" in text
     assert "colab/run_stage5_support8_dose_arm.py" in text
+    assert "colab/run_stage5_same_reader_final_symbol.py" in text
+    assert "colab/run_stage5_n24_support12_rung.py" in text
+    assert "colab/run_stage5_support6_seed_replication.py" in text
+    assert "colab/run_stage5_phase_a_surpass_plan.py" in text
     assert "colab/run_stage5_splice_injection.py" in text
 
 
@@ -104,6 +112,10 @@ def test_chain_consolidation_runners_import_when_executed_by_path() -> None:
         "colab/run_stage5_depth_support_ladder.py",
         "colab/run_stage5_support8_probe_readout.py",
         "colab/run_stage5_support8_dose_arm.py",
+        "colab/run_stage5_same_reader_final_symbol.py",
+        "colab/run_stage5_n24_support12_rung.py",
+        "colab/run_stage5_support6_seed_replication.py",
+        "colab/run_stage5_phase_a_surpass_plan.py",
         "colab/run_stage5_splice_injection.py",
     ]:
         namespace = runpy.run_path(path, run_name="not_main")

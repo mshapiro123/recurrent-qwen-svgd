@@ -1,3 +1,4 @@
+```python
 import base64, json, os, subprocess, time, urllib.request
 from google.colab import userdata
 
@@ -33,7 +34,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "prelude_path_development" - corrected re-injection unfreeze with boosted bridge-prelude gradient and ablation.
 #   "reentry_tail_damper_recovery_readout_only" - finish fixed-damper readout for an already completed recovery SFT.
 #   "depth_signal_confirmation" - recovery SFT, then expanded hard-content benchmark with open hard fallback.
-#   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ scoring for depth-label data.
+#   "capability_ladder_mcq_probe" - bounded Qwen 0.5B/1.5B/3B ARC MCQ cyclic-permutation MCQ diagnostic for depth-label data.
 #   "capability_ladder_7b_mcq_probe" - high-memory Qwen 0.5B/1.5B/3B/7B ARC MCQ scoring for depth-4 data.
 #   "capability_ladder_7b_trace_chain" - high-memory 7B ladder probe followed by trace-job build.
 #   "capability_ladder_trace_jobs_cpu" - CPU-only trace-job build from latest capability ladder probe.
@@ -84,6 +85,10 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "depth_support_ladder8" - train support depth 1-8 and score on frozen depth 1-14 rows.
 #   "support8_probe_readout" - eval-only envelope/clock/probe readout on the support-8 checkpoint over frozen depth 1-14 rows.
 #   "support8_dose_arm" - continue support-8 for +2000 same-curriculum steps and rescore locked frozen depth 1-14 gates.
+#   "same_reader_final_symbol" - release-gate final-symbol scoring with the same full-symbol reader used by active labels.
+#   "support6_seed_replication" - two added support-6 route seeds for replication-band evidence.
+#   "n24_support12_rung" - final N-24 support-12 synthetic rung with locked gates and canary policy.
+#   "phase_a_surpass_prereg" - publish the same-reader Phase-A surpass comparison preregistration.
 #   "splice_injection_diagnostic" - inference-only hidden-state splice test for state-driven iteration vs shortcut.
 #   "gradient_path_audit" - read-only per-loop gradient matrix plus finite-difference bridge check.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
@@ -2173,6 +2178,80 @@ TARGETS = {
             "STAGE5_DOSE_DISCONNECT": "0",
         },
     },
+    "same_reader_final_symbol": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "same_reader_final_symbol",
+            "colab/run_stage5_same_reader_final_symbol.py",
+            "eval/eval_synthetic_depth_final_symbol.py",
+            "STAGE5_SAME_READER_SOURCE_SUMMARY",
+            "full-symbol argmax",
+            "tests/test_eval_synthetic_depth_final_symbol.py",
+        ],
+        "env": {
+            "STAGE5_SAME_READER_SOURCE_SUMMARY": "outputs/stage5/stage5_support8_dose_arm_20260706_153028/summary.json",
+            "STAGE5_SAME_READER_MAX_LOOPS": "14",
+            "STAGE5_SAME_READER_DTYPE": "bfloat16",
+            "STAGE5_SAME_READER_DISCONNECT": "0",
+        },
+    },
+    "support6_seed_replication": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "support6_seed_replication",
+            "colab/run_stage5_support6_seed_replication.py",
+            "STAGE5_SUPPORT6_REPLICATION_SEEDS",
+            "STAGE5_ROUTE_TRAIN_SEED",
+            "tests/test_stage5_support6_seed_replication.py",
+        ],
+        "env": {
+            "STAGE5_SUPPORT6_REPLICATION_SEEDS": "20260716,20260726",
+            "STAGE5_SUPPORT6_REPLICATION_STEPS": "2000",
+            "STAGE5_SUPPORT6_REPLICATION_ROWS_PER_DEPTH": "256",
+            "STAGE5_SUPPORT6_REPLICATION_DISCONNECT": "0",
+        },
+    },
+    "n24_support12_rung": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "n24_support12_rung",
+            "colab/run_stage5_n24_support12_rung.py",
+            "STAGE5_N24_FROZEN_EVAL_ID",
+            "STAGE5_N24_EVAL_CHECKPOINTS",
+            "STAGE5_RUNG_CANARY_HARD_STOP",
+            "N24_STRONG_SCALING_MIN_CORRECT",
+            "N24_CHANCE_REJECTION_MIN_CORRECT",
+            "tests/test_stage5_n24_rung.py",
+        ],
+        "env": {
+            "STAGE5_N24_INIT_CHECKPOINT": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/summary.json",
+            "STAGE5_N24_FROZEN_EVAL_ID": "stage5_synthetic_depth_frozen_eval_v3_depth22_n24",
+            "STAGE5_N24_EVAL_CHECKPOINTS": "2000,4000,6000",
+            "STAGE5_N24_STEPS": "6000",
+            "STAGE5_N24_PRELUDE_LR_MULT": "10.0",
+            "STAGE5_RUNG_CANARY_EVERY": "1000",
+            "STAGE5_RUNG_CANARY_HARD_STOP": "1",
+            "STAGE5_N24_DTYPE": "bfloat16",
+            "STAGE5_N24_DISCONNECT": "0",
+        },
+    },
+    "phase_a_surpass_prereg": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "phase_a_surpass_prereg",
+            "colab/run_stage5_phase_a_surpass_plan.py",
+            "STAGE5_PHASE_A_PLAN_RUN_ID",
+            "tests/test_stage5_phase_a_surpass.py",
+            "same-reader final-symbol metric",
+        ],
+        "env": {
+            "STAGE5_PHASE_A_PLAN_DISCONNECT": "0",
+        },
+    },
     "splice_injection_diagnostic": {
         "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
         "markers": [
@@ -2419,3 +2498,5 @@ print(
 )
 print(f"Fetched {launcher_path} from {REPO}@{REF} ({RESOLVED_REF[:12]}) sha={payload.get('sha')} target={TARGET}", flush=True)
 exec(compile(code, launcher_path, "exec"))
+
+```

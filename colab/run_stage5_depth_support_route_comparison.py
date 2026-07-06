@@ -273,6 +273,7 @@ def main() -> int:
             ),
             "STAGE5_ANNEAL_DTYPE": dtype,
             "STAGE5_ANNEAL_VALUE_PREFIX": value_prefix,
+            "STAGE5_ANNEAL_SEED": os.environ.get("STAGE5_ROUTE_TRAIN_SEED", "20260705"),
         },
     )
     payload = read_json(run_dir / "summary.json")

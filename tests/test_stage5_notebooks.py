@@ -2301,6 +2301,10 @@ def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
         assert "depth_support_ladder8" in text
         assert "support8_probe_readout" in text
         assert "support8_dose_arm" in text
+        assert "same_reader_final_symbol" in text
+        assert "support6_seed_replication" in text
+        assert "n24_support12_rung" in text
+        assert "phase_a_surpass_prereg" in text
         assert "splice_injection_diagnostic" in text
         assert "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py" in text
         assert "STAGE5_EXTRAP_MAX_LOOPS" in text
@@ -2310,6 +2314,11 @@ def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
         assert "STAGE5_LADDER_FROZEN_EVAL_ID" in text
         assert "STAGE5_SUPPORT8_SOURCE_SUMMARY" in text
         assert "STAGE5_DOSE_SOURCE_SUMMARY" in text
+        assert "STAGE5_SAME_READER_SOURCE_SUMMARY" in text
+        assert "STAGE5_SUPPORT6_REPLICATION_SEEDS" in text
+        assert "STAGE5_N24_FROZEN_EVAL_ID" in text
+        assert "STAGE5_RUNG_CANARY_HARD_STOP" in text
+        assert "STAGE5_PHASE_A_PLAN_RUN_ID" in text
         assert "STRONG_SCALING_MIN_CORRECT = 91" in text
         assert "ASYMPTOTE_REJECTION_MIN_CORRECT = 79" in text
         assert "CHANCE_REJECTION_MIN_CORRECT = 14" in text
@@ -2326,12 +2335,21 @@ def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
     assert "depth_support_ladder8" in cell
     assert "support8_probe_readout" in cell
     assert "support8_dose_arm" in cell
+    assert "same_reader_final_symbol" in cell
+    assert "support6_seed_replication" in cell
+    assert "n24_support12_rung" in cell
+    assert "phase_a_surpass_prereg" in cell
     assert "splice_injection_diagnostic" in cell
     assert "colab/run_stage5_depth_support_ladder.py" in cell
     assert "colab/run_stage5_support8_probe_readout.py" in cell
     assert "colab/run_stage5_support8_dose_arm.py" in cell
+    assert "colab/run_stage5_same_reader_final_symbol.py" in cell
+    assert "colab/run_stage5_support6_seed_replication.py" in cell
+    assert "colab/run_stage5_n24_support12_rung.py" in cell
+    assert "colab/run_stage5_phase_a_surpass_plan.py" in cell
     assert "soft_depth10_min_correct" in cell
     assert "soft_depth11_min_correct" in cell
+    assert "N24_STRONG_SCALING_MIN_CORRECT" in cell
     assert "STRONG_SCALING_MIN_CORRECT = 91" in cell
     assert "ASYMPTOTE_REJECTION_MIN_CORRECT = 79" in cell
     assert "CHANCE_REJECTION_MIN_CORRECT = 14" in cell
