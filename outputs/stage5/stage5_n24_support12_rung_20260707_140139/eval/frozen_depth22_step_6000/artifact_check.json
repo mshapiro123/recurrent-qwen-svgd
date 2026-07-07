@@ -1,0 +1,28 @@
+{
+  "kind": "synthetic_depth_extrapolation_artifact_check",
+  "checkpoint": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/train/chain_continuation/unfrozen_recurrent_step_6000.pt",
+  "data_jsonl": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v3_depth22_n24/data/test_chain_mcq.jsonl",
+  "sample_id": "test_d01_00000",
+  "requested_max_loops": 22,
+  "loop_logits_shape": [
+    1,
+    1,
+    22,
+    132,
+    151936
+  ],
+  "loop_states_observed": 22,
+  "bridge_forward_calls": 21,
+  "expected_bridge_forward_calls": 21,
+  "forced_loop_count_honored": true,
+  "bridge_fires_on_reentry": true,
+  "source_static_checks": {
+    "learned_loop_control_optional": true,
+    "learned_loop_control_default_false": true,
+    "halting_loop_embedding_present": true,
+    "halting_target_loop_router_present": true,
+    "max_loop_embedding_capacity_64": false,
+    "no_literal_four_loop_cap_in_wrapper": true
+  },
+  "pass": true
+}
