@@ -1,0 +1,14 @@
+{
+  "kind": "stage5_synthetic_depth_frozen_eval_set",
+  "run_id": "stage5_synthetic_depth_frozen_eval_v3_depth22_n24",
+  "status": "finished",
+  "extension_generator": "constructive_distinct_orbit_prefix_no_rejection",
+  "n_symbols": 24,
+  "max_depth": 22,
+  "rows_per_depth": 128,
+  "value_prefix": "letter:",
+  "seed": "20260706",
+  "data_summary": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v3_depth22_n24/data/summary.json",
+  "test_chain_mcq": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v3_depth22_n24/data/test_chain_mcq.jsonl",
+  "test_mcq": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v3_depth22_n24/data/test_mcq.jsonl"
+}
