@@ -491,6 +491,21 @@ def direct_tta_sweep_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
     return None
 
 
+def synthetic_depth_followup_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    return (
+        payload
+        if payload.get("kind")
+        in {
+            "stage5_support8_probe_readout",
+            "stage5_support8_dose_arm",
+            "stage5_same_reader_final_symbol_gate",
+            "stage5_phase_a_surpass_preregistration",
+            "stage5_chain_continuation_attribution",
+        }
+        else None
+    )
+
+
 def needs_gate1_assessment(payload: dict[str, Any]) -> bool:
     if gate1_assessment_payload(payload):
         return False
@@ -5330,6 +5345,8 @@ def source_kind(payload: dict[str, Any]) -> str:
         return "recovery_particle_gate"
     if direct_tta_sweep_payload(payload):
         return "tta_sweep"
+    if synthetic_depth_followup_payload(payload):
+        return str(payload.get("kind"))
     if "recovered_benchmark" in payload or "tta_sweep" in payload:
         return "followup"
     if "compact" in payload:

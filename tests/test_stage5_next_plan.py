@@ -1848,6 +1848,11 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"kind": "stage4_opus_finetune"}) == "stage4_opus_finetune"
     assert source_kind({"kind": "trace_sft_gate"}) == "trace_sft_gate"
     assert source_kind({"kind": "distill_sft_gate"}) == "distill_sft_gate"
+    assert source_kind({"kind": "stage5_support8_probe_readout"}) == "stage5_support8_probe_readout"
+    assert source_kind({"kind": "stage5_support8_dose_arm"}) == "stage5_support8_dose_arm"
+    assert source_kind({"kind": "stage5_same_reader_final_symbol_gate"}) == "stage5_same_reader_final_symbol_gate"
+    assert source_kind({"kind": "stage5_phase_a_surpass_preregistration"}) == "stage5_phase_a_surpass_preregistration"
+    assert source_kind({"kind": "stage5_chain_continuation_attribution"}) == "stage5_chain_continuation_attribution"
     assert source_kind({"phase1_arc_agi_tuned": {}, "tuned_checkpoint": "ckpt.pt"}) == "recurrent_sft"
     assert source_kind({"rows": [], "deltas": {}, "paired_comparisons": {}}) == "tta_sweep"
 
