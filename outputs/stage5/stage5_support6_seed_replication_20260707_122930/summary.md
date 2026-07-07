@@ -6,3 +6,4 @@
 
 ## Results
 - seed `20260716`: frontier=`9`, overall_pass=`False`, summary=`outputs/stage5/stage5_support6_seed_replication_20260707_122930_seed20260716/summary.json`
+- seed `20260726`: frontier=`9`, overall_pass=`False`, summary=`outputs/stage5/stage5_support6_seed_replication_20260707_122930_seed20260726/summary.json`
