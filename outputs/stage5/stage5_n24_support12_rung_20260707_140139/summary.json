@@ -1,7 +1,7 @@
 {
   "kind": "stage5_n24_support12_rung",
   "run_id": "stage5_n24_support12_rung_20260707_140139",
-  "status": "partial_eval_finished",
+  "status": "finished_with_frozen_eval",
   "loop_loss_mode": "per_loop_labels",
   "n_symbols": 24,
   "max_depth": 12,
@@ -617,5 +617,12 @@
       "step": 4000,
       "reason": "checkpoint step 4000 is unavailable locally and in known Drive backup paths"
     }
-  ]
+  ],
+  "decision_read": {
+    "question": "Does the final synthetic rung confirm a four-point frontier law or characterize a ceiling?",
+    "final_step": 6000,
+    "final_verdict": "strong_four_point_law",
+    "synthetic_line_closed": true,
+    "resume_note": "Eval-only resume after the original Colab run completed training before checkpoint evals landed."
+  }
 }

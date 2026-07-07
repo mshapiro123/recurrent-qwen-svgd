@@ -1,6 +1,6 @@
 # N-24 Support-12 Final Synthetic Rung - stage5_n24_support12_rung_20260707_140139
 
-- Status: `partial_eval_finished`
+- Status: `finished_with_frozen_eval`
 - Frozen eval set: `None`
 - Planned steps: `6000`
 - Evaluated checkpoints: `None`
