@@ -1,0 +1,38 @@
+{
+  "kind": "stage5_phase_a_surpass_preregistration",
+  "run_id": "stage5_phase_a_surpass_prereg_20260707_122918",
+  "status": "preregistered",
+  "preregistration": {
+    "kind": "stage5_phase_a_surpass_preregistration",
+    "arms": {
+      "A_looped": "support-8 dose-arm checkpoint, same-reader final-symbol metric",
+      "B_dense_direct": "dense Qwen2.5-0.5B LoRA direct final-symbol SFT, 4000 steps",
+      "C_dense_scratchpad": "dense Qwen2.5-0.5B LoRA serialized-orbit scratchpad SFT, 4000 steps",
+      "D_dense_1p5b_direct_optional": "dense Qwen2.5-1.5B direct-answer exchange-rate arm"
+    },
+    "train_distribution": {
+      "n_symbols": 16,
+      "support_depths": "1..8",
+      "rows_per_depth": 256,
+      "eval_frozen_set": "stage5_synthetic_depth_frozen_eval_v2_depth14"
+    },
+    "surpass_gate": {
+      "primary": "A beats B at >=3 consecutive depths with one-sided Fisher p<0.05 per depth",
+      "pooled_secondary": "pooled three-depth test may be reported, but does not replace row-level shape",
+      "rows_per_depth": 128,
+      "per_depth_mde_note": "about 14-15 percentage points at 80% power",
+      "three_depth_mde_note": "about 8-9 points pooled"
+    },
+    "compute_ledger": {
+      "looped_arm_context_growth": "zero text context growth across latent loops",
+      "scratchpad_arm_context_growth": "linear serialized-orbit context growth",
+      "flop_claim_policy": "do not claim raw FLOP advantage; report one parallel pass per latent step and sequence/context tradeoff"
+    }
+  },
+  "implementation_status": {
+    "A_looped": "available from support-8 dose arm",
+    "B_dense_direct": "pending dense synthetic direct SFT runner",
+    "C_dense_scratchpad": "pending dense serialized-orbit scratchpad SFT runner",
+    "D_dense_1p5b_direct_optional": "pending optional larger dense exchange-rate arm"
+  }
+}
