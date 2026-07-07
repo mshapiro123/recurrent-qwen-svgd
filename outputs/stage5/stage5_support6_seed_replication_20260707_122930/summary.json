@@ -1,0 +1,35 @@
+{
+  "kind": "stage5_support6_seed_replication",
+  "run_id": "stage5_support6_seed_replication_20260707_122930",
+  "status": "replication_pass",
+  "seeds": [
+    20260716,
+    20260726
+  ],
+  "pre_registered_bar": "bar-crossing frontier within +/-1 depth of 9 across added seeds",
+  "results": [
+    {
+      "seed": 20260716,
+      "summary": "outputs/stage5/stage5_support6_seed_replication_20260707_122930_seed20260716/summary.json",
+      "overall_pass": false,
+      "selected_correct": {
+        "7": 93,
+        "8": 48,
+        "9": 25,
+        "10": 13
+      },
+      "frontier": 9
+    }
+  ],
+  "replication_summary": {
+    "target_frontier": 9,
+    "frontiers": [
+      9
+    ],
+    "min_frontier": 9,
+    "max_frontier": 9,
+    "mean_frontier": 9.0,
+    "within_plus_minus_one": true,
+    "status": "replication_pass"
+  }
+}
