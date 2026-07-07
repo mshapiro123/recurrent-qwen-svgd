@@ -1,0 +1,11 @@
+{
+  "kind": "stage5_n24_eval_resume_status",
+  "updated_at_unix": 1783465922.4451768,
+  "status": "publishing_step",
+  "run_id": "stage5_n24_support12_rung_20260707_140139",
+  "current_step": 2000,
+  "completed_steps": [
+    2000
+  ],
+  "skipped_steps": []
+}

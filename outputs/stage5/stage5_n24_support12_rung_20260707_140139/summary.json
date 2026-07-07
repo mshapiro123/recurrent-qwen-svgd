@@ -1,7 +1,7 @@
 {
-  "kind": "stage5_chain_continuation_attribution",
+  "kind": "stage5_n24_support12_rung",
   "run_id": "stage5_n24_support12_rung_20260707_140139",
-  "status": "training_finished",
+  "status": "partial_eval_finished",
   "loop_loss_mode": "per_loop_labels",
   "n_symbols": 24,
   "max_depth": 12,
@@ -72,5 +72,277 @@
   "ramp_checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_n24_support12_rung_20260707_140139/anneal_to_outcome_ramp/unfrozen_recurrent_step_2000.pt",
   "final_checkpoint": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/train/chain_continuation/unfrozen_recurrent_step_6000.pt",
   "final_checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_n24_support12_rung_20260707_140139/anneal_to_outcome_final/unfrozen_recurrent_step_6000.pt",
-  "prelude_trajectory_source": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/train/chain_continuation/train_unfrozen_recurrent_summary.json"
+  "prelude_trajectory_source": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/train/chain_continuation/train_unfrozen_recurrent_summary.json",
+  "resume_eval_only": true,
+  "checkpoint_evals": [
+    {
+      "step": 2000,
+      "checkpoint": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/train/chain_continuation/unfrozen_recurrent_step_2000.pt",
+      "artifact_check": {
+        "kind": "synthetic_depth_extrapolation_artifact_check",
+        "checkpoint": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/train/chain_continuation/unfrozen_recurrent_step_2000.pt",
+        "data_jsonl": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v3_depth22_n24/data/test_chain_mcq.jsonl",
+        "sample_id": "test_d01_00000",
+        "requested_max_loops": 22,
+        "loop_logits_shape": [
+          1,
+          1,
+          22,
+          132,
+          151936
+        ],
+        "loop_states_observed": 22,
+        "bridge_forward_calls": 21,
+        "expected_bridge_forward_calls": 21,
+        "forced_loop_count_honored": true,
+        "bridge_fires_on_reentry": true,
+        "source_static_checks": {
+          "learned_loop_control_optional": true,
+          "learned_loop_control_default_false": true,
+          "halting_loop_embedding_present": true,
+          "halting_target_loop_router_present": true,
+          "max_loop_embedding_capacity_64": false,
+          "no_literal_four_loop_cap_in_wrapper": true
+        },
+        "pass": true
+      },
+      "active_rows": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/eval/frozen_depth22_step_2000/active_rows.jsonl",
+      "active_summary": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/eval/frozen_depth22_step_2000/active_summary.json",
+      "score": {
+        "diagonal_counts": {
+          "1": {
+            "correct": 128,
+            "total": 128,
+            "accuracy": 1.0
+          },
+          "2": {
+            "correct": 123,
+            "total": 128,
+            "accuracy": 0.9609375
+          },
+          "3": {
+            "correct": 128,
+            "total": 128,
+            "accuracy": 1.0
+          },
+          "4": {
+            "correct": 126,
+            "total": 128,
+            "accuracy": 0.984375
+          },
+          "5": {
+            "correct": 122,
+            "total": 128,
+            "accuracy": 0.953125
+          },
+          "6": {
+            "correct": 126,
+            "total": 128,
+            "accuracy": 0.984375
+          },
+          "7": {
+            "correct": 123,
+            "total": 128,
+            "accuracy": 0.9609375
+          },
+          "8": {
+            "correct": 120,
+            "total": 128,
+            "accuracy": 0.9375
+          },
+          "9": {
+            "correct": 119,
+            "total": 128,
+            "accuracy": 0.9296875
+          },
+          "10": {
+            "correct": 116,
+            "total": 128,
+            "accuracy": 0.90625
+          },
+          "11": {
+            "correct": 117,
+            "total": 128,
+            "accuracy": 0.9140625
+          },
+          "12": {
+            "correct": 104,
+            "total": 128,
+            "accuracy": 0.8125
+          },
+          "13": {
+            "correct": 103,
+            "total": 128,
+            "accuracy": 0.8046875
+          },
+          "14": {
+            "correct": 89,
+            "total": 128,
+            "accuracy": 0.6953125
+          },
+          "15": {
+            "correct": 67,
+            "total": 128,
+            "accuracy": 0.5234375
+          },
+          "16": {
+            "correct": 48,
+            "total": 128,
+            "accuracy": 0.375
+          },
+          "17": {
+            "correct": 23,
+            "total": 128,
+            "accuracy": 0.1796875
+          },
+          "18": {
+            "correct": 13,
+            "total": 128,
+            "accuracy": 0.1015625
+          },
+          "19": {
+            "correct": 7,
+            "total": 128,
+            "accuracy": 0.0546875
+          },
+          "20": {
+            "correct": 6,
+            "total": 128,
+            "accuracy": 0.046875
+          },
+          "21": {
+            "correct": 6,
+            "total": 128,
+            "accuracy": 0.046875
+          },
+          "22": {
+            "correct": 8,
+            "total": 128,
+            "accuracy": 0.0625
+          }
+        },
+        "locked_thresholds": {
+          "n_symbols": 24,
+          "rows_per_depth": 128,
+          "support_depth": 12,
+          "max_eval_depth": 22,
+          "strong_depths": [
+            16,
+            17
+          ],
+          "strong_scaling_min_correct": 91,
+          "scaling_depth16_min_correct": 91,
+          "law_consistent_depth17_chance_min_correct": 10,
+          "asymptote_break_depth15_min_correct": 91,
+          "adjacent_extension_depth13_min_correct": 10,
+          "chance_floor": 0.041666666666666664,
+          "chance_rejection_min_correct": 10,
+          "nonregression_floors": {
+            "1": 0.93,
+            "2": 0.93,
+            "3": 0.93,
+            "4": 0.93,
+            "5": 0.93,
+            "6": 0.93,
+            "7": 0.93,
+            "8": 0.93,
+            "9": 0.85,
+            "10": 0.85,
+            "11": 0.85,
+            "12": 0.85
+          },
+          "planned_steps": 6000,
+          "planned_checkpoints": [
+            2000,
+            4000,
+            6000
+          ]
+        },
+        "nonregression": {
+          "1": {
+            "accuracy": 1.0,
+            "floor": 0.93,
+            "pass": true
+          },
+          "2": {
+            "accuracy": 0.9609375,
+            "floor": 0.93,
+            "pass": true
+          },
+          "3": {
+            "accuracy": 1.0,
+            "floor": 0.93,
+            "pass": true
+          },
+          "4": {
+            "accuracy": 0.984375,
+            "floor": 0.93,
+            "pass": true
+          },
+          "5": {
+            "accuracy": 0.953125,
+            "floor": 0.93,
+            "pass": true
+          },
+          "6": {
+            "accuracy": 0.984375,
+            "floor": 0.93,
+            "pass": true
+          },
+          "7": {
+            "accuracy": 0.9609375,
+            "floor": 0.93,
+            "pass": true
+          },
+          "8": {
+            "accuracy": 0.9375,
+            "floor": 0.93,
+            "pass": true
+          },
+          "9": {
+            "accuracy": 0.9296875,
+            "floor": 0.85,
+            "pass": true
+          },
+          "10": {
+            "accuracy": 0.90625,
+            "floor": 0.85,
+            "pass": true
+          },
+          "11": {
+            "accuracy": 0.9140625,
+            "floor": 0.85,
+            "pass": true
+          },
+          "12": {
+            "accuracy": 0.8125,
+            "floor": 0.85,
+            "pass": false
+          }
+        },
+        "nonregression_pass": false,
+        "selected_correct": {
+          "13": 103,
+          "14": 89,
+          "15": 67,
+          "16": 48,
+          "17": 23,
+          "18": 13,
+          "19": 7,
+          "20": 6,
+          "21": 6,
+          "22": 8
+        },
+        "strong_scaling_pass": false,
+        "scaling_pass": false,
+        "law_consistent_floor_pass": true,
+        "asymptote_broken": true,
+        "adjacent_extension_pass": true,
+        "long_tail_above_chance": false,
+        "overall_pass": false,
+        "verdict": "law_broken_or_ceiling_at_14"
+      }
+    }
+  ],
+  "skipped_checkpoints": []
 }
