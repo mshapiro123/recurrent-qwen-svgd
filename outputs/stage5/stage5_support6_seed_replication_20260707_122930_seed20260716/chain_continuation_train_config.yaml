@@ -1,0 +1,47 @@
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+dtype: bfloat16
+adapter_dtype: float32
+attn_implementation: default
+layer_split: 6,18
+max_length: 512
+max_loops: 6
+loop_loss_mode: per_loop_labels
+chain_anneal_hold_frac: 0.5
+chain_outcome_loss_weight: 1.0
+initial_halt_prob: 0.15
+beta: 0.0
+halt_target_nll_weight: 0.0
+loop_control_ce_weight: 0.0
+batch_size: 1
+optimizer: adamw
+learning_rate: 1.0e-05
+adamw_lr: 1.0e-05
+weight_decay: 0.0
+max_grad_norm: 0.5
+max_steps: 2000
+save_every: 1000
+log_every: 100
+bridge_projection_mode: split
+bridge_prelude_lr_multiplier: 10.0
+bridge_prelude_weight_decay: 0.0
+train_on_prompt: false
+gradient_checkpointing: true
+output_dir: outputs/stage5/stage5_support6_seed_replication_20260707_122930_seed20260716/train/chain_continuation
+resume_from: outputs/stage5/stage5_support6_seed_replication_20260707_122930_seed20260716/restored/scaled_corrected_final.pt
+resume_lora:
+  enabled: false
+merge_lora_before_unfreeze: false
+require_lora_loaded_before_merge: false
+train_auxiliary:
+  bridge: true
+  halting: false
+  reentry_adapter: false
+  latent: false
+recurrence_curriculum:
+  enabled: false
+  start_loop: 6
+  end_loop: 6
+  schedule: linear
+  target_source: row_capped
+  ramp_compute: false
+synthetic_phase: chain_continuation_attribution
