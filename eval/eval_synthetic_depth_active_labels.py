@@ -91,6 +91,26 @@ def candidates_for_row(row: dict[str, Any], *, prediction_space: str, value_pref
     raise ValueError("prediction_space must be one of: choice_labels, full_symbols")
 
 
+def single_token_candidate_ids(tokenizer: Any, prompt: str, candidates: dict[str, str]) -> dict[str, int] | None:
+    """Return candidate token ids when every completion is exactly one prompt suffix token.
+
+    The check tokenizes ``prompt + completion`` and compares against the prompt
+    prefix, matching the slower sequence-scoring path.  If a tokenizer merges
+    across the prompt/completion boundary, this returns ``None`` and callers
+    should fall back to exact sequence scoring.
+    """
+
+    prompt_ids = tokenizer(prompt, add_special_tokens=True)["input_ids"]
+    token_ids: dict[str, int] = {}
+    for name, completion in candidates.items():
+        full_ids = tokenizer(prompt + completion, add_special_tokens=True)["input_ids"]
+        suffix = full_ids[len(prompt_ids) :]
+        if len(suffix) != 1:
+            return None
+        token_ids[name] = int(suffix[0])
+    return token_ids
+
+
 def active_target_for_loop(
     row: dict[str, Any],
     loop: int,
@@ -129,6 +149,30 @@ def score_candidates_all_loops(
 ) -> dict[int, dict[str, float]]:
     scores_by_loop: dict[int, dict[str, float]] = {loop: {} for loop in loop_counts}
     max_loops = max(loop_counts)
+    fast_token_ids = single_token_candidate_ids(tokenizer, prompt, candidates)
+    if fast_token_ids is not None:
+        encoded = tokenizer(prompt, return_tensors="pt", add_special_tokens=True).to(args.device)
+        with torch.no_grad():
+            output = wrapper(
+                input_ids=encoded["input_ids"],
+                attention_mask=encoded["attention_mask"],
+                labels=None,
+                max_loops=max_loops,
+                num_trajectories=1,
+                particle_update_mode="none",
+                use_cache=False,
+                return_dict=True,
+                return_loop_logits=True,
+            )
+        for loop in loop_counts:
+            logits = select_forced_loop_logits(output, loop)
+            next_token_logits = logits[0, -1]
+            scores_by_loop[loop] = {
+                name: float(next_token_logits[token_id].detach().cpu().item())
+                for name, token_id in fast_token_ids.items()
+            }
+        return scores_by_loop
+
     prompt_ids = tokenizer(prompt, add_special_tokens=True)["input_ids"]
     for name, completion in candidates.items():
         encoded = tokenizer(prompt + completion, return_tensors="pt", add_special_tokens=True).to(args.device)
@@ -217,7 +261,13 @@ def evaluate(args: argparse.Namespace) -> list[dict[str, Any]]:
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     wrapper = load_recurrent_wrapper(args, args.checkpoint)
     output_rows: list[dict[str, Any]] = []
-    for row in rows:
+    total_rows = len(rows)
+    for row_index, row in enumerate(rows, start=1):
+        if args.progress_every and (row_index == 1 or row_index % args.progress_every == 0 or row_index == total_rows):
+            print(
+                f"active_eval_progress row={row_index}/{total_rows} depth={row.get('depth')}",
+                flush=True,
+            )
         prompt = prompt_for_row(row, prediction_space=args.prediction_space, prompt_style=args.prompt_style)
         candidates = candidates_for_row(row, prediction_space=args.prediction_space, value_prefix=args.value_prefix)
         scores_by_loop = score_candidates_all_loops(
@@ -302,6 +352,7 @@ def main() -> int:
     parser.add_argument("--lora_rank", type=int, default=0)
     parser.add_argument("--lora_alpha", type=int, default=16)
     parser.add_argument("--adapter_dtype", default="float32")
+    parser.add_argument("--progress_every", type=int, default=25)
     args = parser.parse_args()
 
     Path(args.output_jsonl).parent.mkdir(parents=True, exist_ok=True)

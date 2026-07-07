@@ -8,6 +8,7 @@ from eval.eval_synthetic_depth_active_labels import (
     continued_symbol_for_loop,
     parse_int_symbol,
     prompt_for_row,
+    single_token_candidate_ids,
     symbol,
     summarize_active_rows,
 )
@@ -59,6 +60,26 @@ def test_prompt_and_candidates_match_prediction_space() -> None:
     }
     assert candidates_for_row(row, prediction_space="full_symbols", value_prefix="")["7"] == " 7"
     assert len(candidates_for_row(row, prediction_space="full_symbols", value_prefix="")) == 10
+
+
+def test_single_token_candidate_ids_detects_prompt_suffix_tokens() -> None:
+    class FakeTokenizer:
+        vocab = {"Question\nAnswer:": [10, 11], " A": [101], " B": [102], " multi": [201, 202]}
+
+        def __call__(self, text: str, *, add_special_tokens: bool = True):
+            if text == "Question\nAnswer:":
+                return {"input_ids": [10, 11]}
+            if text == "Question\nAnswer: A":
+                return {"input_ids": [10, 11, 101]}
+            if text == "Question\nAnswer: B":
+                return {"input_ids": [10, 11, 102]}
+            if text == "Question\nAnswer: multi":
+                return {"input_ids": [10, 11, 201, 202]}
+            raise AssertionError(text)
+
+    prompt = "Question\nAnswer:"
+    assert single_token_candidate_ids(FakeTokenizer(), prompt, {"A": " A", "B": " B"}) == {"A": 101, "B": 102}
+    assert single_token_candidate_ids(FakeTokenizer(), prompt, {"bad": " multi"}) is None
 
 
 def test_letter_value_prefix_maps_full_symbol_space() -> None:
