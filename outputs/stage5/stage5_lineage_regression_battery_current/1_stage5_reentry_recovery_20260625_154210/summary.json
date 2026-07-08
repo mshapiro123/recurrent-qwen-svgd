@@ -1,0 +1,170 @@
+{
+  "kind": "stage5_regression_battery_assessment",
+  "run_id": "1_stage5_reentry_recovery_20260625_154210",
+  "status": "green_noninferior",
+  "source_benchmark_suite": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_lineage_regression_battery_current_1_stage5_reentry_recovery_20260625_154210/summary.json",
+  "suite_status": "completed",
+  "source_summary": "outputs/stage5/stage5_reentry_recovery_20260625_154210/summary.json",
+  "checkpoint": "outputs/stage5/stage5_reentry_recovery_20260625_154210_curriculum_sft/phase1/phase1_step_75.pt",
+  "primary_loop": 1,
+  "required_benchmarks": [
+    "arc_easy",
+    "arc_challenge"
+  ],
+  "target_specs": [
+    {
+      "score_target": "content_question_only",
+      "aggregate": "mean"
+    },
+    {
+      "score_target": "cyclic_label_aggregated",
+      "aggregate": "permutation_mean"
+    }
+  ],
+  "noninferiority_margin_accuracy": 0.03,
+  "yellow_margin_accuracy": 0.015,
+  "rows": [
+    {
+      "benchmark": "arc_easy",
+      "score_target": "content_question_only",
+      "aggregate": "mean",
+      "present": true,
+      "base_correct": 3115,
+      "recurrent_correct": 3145,
+      "base_accuracy": 0.5993842601500866,
+      "recurrent_accuracy": 0.6051568212430248,
+      "accuracy_delta_recurrent_vs_base": 0.005772561092938233,
+      "ties": 4865,
+      "paired_examples": 5197,
+      "wins": 181,
+      "losses": 151,
+      "delta": 0.005772561092938233,
+      "ci95": [
+        -0.0010973500339418818,
+        0.01264247221981835
+      ],
+      "standard_error": 0.0035051211048106484,
+      "noninferiority_margin": 0.03,
+      "yellow_margin": 0.015,
+      "verdict": "green_noninferior"
+    },
+    {
+      "benchmark": "arc_easy",
+      "score_target": "cyclic_label_aggregated",
+      "aggregate": "permutation_mean",
+      "present": true,
+      "base_correct": 3976,
+      "recurrent_correct": 3984,
+      "base_accuracy": 0.7650567635174139,
+      "recurrent_accuracy": 0.7665961131421974,
+      "accuracy_delta_recurrent_vs_base": 0.001539349624783529,
+      "ties": 5083,
+      "paired_examples": 5197,
+      "wins": 61,
+      "losses": 53,
+      "delta": 0.001539349624783529,
+      "ci95": [
+        -0.0024871192044746315,
+        0.00556581845404169
+      ],
+      "standard_error": 0.0020543585805751705,
+      "noninferiority_margin": 0.03,
+      "yellow_margin": 0.015,
+      "verdict": "green_noninferior"
+    },
+    {
+      "benchmark": "arc_challenge",
+      "score_target": "content_question_only",
+      "aggregate": "mean",
+      "present": true,
+      "base_correct": 886,
+      "recurrent_correct": 894,
+      "base_accuracy": 0.3420849420849421,
+      "recurrent_accuracy": 0.34517374517374516,
+      "accuracy_delta_recurrent_vs_base": 0.003088803088803089,
+      "ties": 2460,
+      "paired_examples": 2590,
+      "wins": 69,
+      "losses": 61,
+      "delta": 0.003088803088803089,
+      "ci95": [
+        -0.0055385728679336315,
+        0.01171617904553981
+      ],
+      "standard_error": 0.004401803311075286,
+      "noninferiority_margin": 0.03,
+      "yellow_margin": 0.015,
+      "verdict": "green_noninferior"
+    },
+    {
+      "benchmark": "arc_challenge",
+      "score_target": "cyclic_label_aggregated",
+      "aggregate": "permutation_mean",
+      "present": true,
+      "base_correct": 1522,
+      "recurrent_correct": 1526,
+      "base_accuracy": 0.5876447876447877,
+      "recurrent_accuracy": 0.5891891891891892,
+      "accuracy_delta_recurrent_vs_base": 0.0015444015444015444,
+      "ties": 2504,
+      "paired_examples": 2590,
+      "wins": 45,
+      "losses": 41,
+      "delta": 0.0015444015444015444,
+      "ci95": [
+        -0.005473090900529113,
+        0.008561893989332202
+      ],
+      "standard_error": 0.0035804190792707124,
+      "noninferiority_margin": 0.03,
+      "yellow_margin": 0.015,
+      "verdict": "green_noninferior"
+    }
+  ],
+  "pooled": {
+    "content_question_only:mean": {
+      "paired_examples": 7787,
+      "base_correct": 4001,
+      "recurrent_correct": 4039,
+      "base_accuracy": 0.5138050597149094,
+      "recurrent_accuracy": 0.5186849878001798,
+      "accuracy_delta_recurrent_vs_base": 0.0048799280852703224,
+      "wins": 250,
+      "losses": 212,
+      "delta": 0.0048799280852703224,
+      "ci95": [
+        -0.0005290064874577281,
+        0.010288862657998374
+      ],
+      "standard_error": 0.002759711206630855,
+      "noninferiority_margin": 0.03,
+      "yellow_margin": 0.015,
+      "verdict": "green_noninferior"
+    },
+    "cyclic_label_aggregated:permutation_mean": {
+      "paired_examples": 7787,
+      "base_correct": 5498,
+      "recurrent_correct": 5510,
+      "base_accuracy": 0.7060485424425325,
+      "recurrent_accuracy": 0.7075895723641967,
+      "accuracy_delta_recurrent_vs_base": 0.0015410299216643123,
+      "wins": 106,
+      "losses": 94,
+      "delta": 0.0015410299216643123,
+      "ci95": [
+        -0.002018337617287042,
+        0.005100397460615667
+      ],
+      "standard_error": 0.0018160372165137684,
+      "noninferiority_margin": 0.03,
+      "yellow_margin": 0.015,
+      "verdict": "green_noninferior"
+    }
+  },
+  "pending_extensions": {
+    "tier1_natural_text_nll_canary": "not yet wired in this repository",
+    "hellaswag_500": "not yet supported by colab/run_stage5_benchmark_suite.py",
+    "winogrande_500": "not yet supported by colab/run_stage5_benchmark_suite.py",
+    "lambada_500": "not yet supported by colab/run_stage5_benchmark_suite.py"
+  }
+}

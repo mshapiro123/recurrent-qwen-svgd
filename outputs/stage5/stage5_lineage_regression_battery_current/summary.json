@@ -1,0 +1,214 @@
+{
+  "kind": "stage5_regression_battery",
+  "run_id": "stage5_lineage_regression_battery_current",
+  "status": "green_noninferior",
+  "benchmarks": "arc_easy,arc_challenge",
+  "score_targets": "content_question_only,cyclic_label_aggregated",
+  "target_specs": "content_question_only:mean,cyclic_label_aggregated:permutation_mean",
+  "arc_split": "all",
+  "accuracy_margin": 0.03,
+  "yellow_margin": 0.015,
+  "source_summaries": [
+    "outputs/stage5/stage5_reentry_recovery_20260625_154210/summary.json",
+    "outputs/stage5/stage5_depth_support_route_20260705_124320/summary.json",
+    "outputs/stage5/stage5_support8_dose_arm_20260706_153028/summary.json",
+    "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json"
+  ],
+  "assessments": [
+    {
+      "label": "stage5_reentry_recovery_20260625_154210",
+      "source_summary": "outputs/stage5/stage5_reentry_recovery_20260625_154210/summary.json",
+      "suite_summary": "outputs/stage5/stage5_lineage_regression_battery_current_1_stage5_reentry_recovery_20260625_154210/summary.json",
+      "assessment_summary": "outputs/stage5/stage5_lineage_regression_battery_current/1_stage5_reentry_recovery_20260625_154210/summary.json",
+      "status": "green_noninferior",
+      "pooled": {
+        "content_question_only:mean": {
+          "paired_examples": 7787,
+          "base_correct": 4001,
+          "recurrent_correct": 4039,
+          "base_accuracy": 0.5138050597149094,
+          "recurrent_accuracy": 0.5186849878001798,
+          "accuracy_delta_recurrent_vs_base": 0.0048799280852703224,
+          "wins": 250,
+          "losses": 212,
+          "delta": 0.0048799280852703224,
+          "ci95": [
+            -0.0005290064874577281,
+            0.010288862657998374
+          ],
+          "standard_error": 0.002759711206630855,
+          "noninferiority_margin": 0.03,
+          "yellow_margin": 0.015,
+          "verdict": "green_noninferior"
+        },
+        "cyclic_label_aggregated:permutation_mean": {
+          "paired_examples": 7787,
+          "base_correct": 5498,
+          "recurrent_correct": 5510,
+          "base_accuracy": 0.7060485424425325,
+          "recurrent_accuracy": 0.7075895723641967,
+          "accuracy_delta_recurrent_vs_base": 0.0015410299216643123,
+          "wins": 106,
+          "losses": 94,
+          "delta": 0.0015410299216643123,
+          "ci95": [
+            -0.002018337617287042,
+            0.005100397460615667
+          ],
+          "standard_error": 0.0018160372165137684,
+          "noninferiority_margin": 0.03,
+          "yellow_margin": 0.015,
+          "verdict": "green_noninferior"
+        }
+      }
+    },
+    {
+      "label": "stage5_depth_support_route_20260705_124320",
+      "source_summary": "outputs/stage5/stage5_depth_support_route_20260705_124320/summary.json",
+      "suite_summary": "outputs/stage5/stage5_lineage_regression_battery_current_2_stage5_depth_support_route_20260705_124320/summary.json",
+      "assessment_summary": "outputs/stage5/stage5_lineage_regression_battery_current/2_stage5_depth_support_route_20260705_124320/summary.json",
+      "status": "green_noninferior",
+      "pooled": {
+        "content_question_only:mean": {
+          "paired_examples": 7787,
+          "base_correct": 4001,
+          "recurrent_correct": 3996,
+          "base_accuracy": 0.5138050597149094,
+          "recurrent_accuracy": 0.513162963914216,
+          "accuracy_delta_recurrent_vs_base": -0.0006420958006934634,
+          "wins": 30,
+          "losses": 35,
+          "delta": -0.0006420958006934634,
+          "ci95": [
+            -0.0026712912002572684,
+            0.0013870995988703415
+          ],
+          "standard_error": 0.0010353227995870534,
+          "noninferiority_margin": 0.03,
+          "yellow_margin": 0.015,
+          "verdict": "green_noninferior"
+        },
+        "cyclic_label_aggregated:permutation_mean": {
+          "paired_examples": 7787,
+          "base_correct": 5498,
+          "recurrent_correct": 5495,
+          "base_accuracy": 0.7060485424425325,
+          "recurrent_accuracy": 0.7056632849621164,
+          "accuracy_delta_recurrent_vs_base": -0.0003852574804160781,
+          "wins": 33,
+          "losses": 36,
+          "delta": -0.0003852574804160781,
+          "ci95": [
+            -0.002475991684923166,
+            0.0017054767240910098
+          ],
+          "standard_error": 0.0010667207259921778,
+          "noninferiority_margin": 0.03,
+          "yellow_margin": 0.015,
+          "verdict": "green_noninferior"
+        }
+      }
+    },
+    {
+      "label": "stage5_support8_dose_arm_20260706_153028",
+      "source_summary": "outputs/stage5/stage5_support8_dose_arm_20260706_153028/summary.json",
+      "suite_summary": "outputs/stage5/stage5_lineage_regression_battery_current_3_stage5_support8_dose_arm_20260706_153028/summary.json",
+      "assessment_summary": "outputs/stage5/stage5_lineage_regression_battery_current/3_stage5_support8_dose_arm_20260706_153028/summary.json",
+      "status": "green_noninferior",
+      "pooled": {
+        "content_question_only:mean": {
+          "paired_examples": 7787,
+          "base_correct": 4001,
+          "recurrent_correct": 3997,
+          "base_accuracy": 0.5138050597149094,
+          "recurrent_accuracy": 0.5132913830743547,
+          "accuracy_delta_recurrent_vs_base": -0.0005136766405547708,
+          "wins": 30,
+          "losses": 34,
+          "delta": -0.0005136766405547708,
+          "ci95": [
+            -0.0025272197479608884,
+            0.0014998664668513465
+          ],
+          "standard_error": 0.001027336789496485,
+          "noninferiority_margin": 0.03,
+          "yellow_margin": 0.015,
+          "verdict": "green_noninferior"
+        },
+        "cyclic_label_aggregated:permutation_mean": {
+          "paired_examples": 7787,
+          "base_correct": 5498,
+          "recurrent_correct": 5491,
+          "base_accuracy": 0.7060485424425325,
+          "recurrent_accuracy": 0.7051496083215616,
+          "accuracy_delta_recurrent_vs_base": -0.0008989341209708489,
+          "wins": 29,
+          "losses": 36,
+          "delta": -0.0008989341209708489,
+          "ci95": [
+            -0.002928081409113741,
+            0.0011302131671720433
+          ],
+          "standard_error": 0.001035298252492672,
+          "noninferiority_margin": 0.03,
+          "yellow_margin": 0.015,
+          "verdict": "green_noninferior"
+        }
+      }
+    },
+    {
+      "label": "stage5_n24_support12_rung_20260707_140139",
+      "source_summary": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json",
+      "suite_summary": "outputs/stage5/stage5_lineage_regression_battery_current_4_stage5_n24_support12_rung_20260707_140139/summary.json",
+      "assessment_summary": "outputs/stage5/stage5_lineage_regression_battery_current/4_stage5_n24_support12_rung_20260707_140139/summary.json",
+      "status": "green_noninferior",
+      "pooled": {
+        "content_question_only:mean": {
+          "paired_examples": 7787,
+          "base_correct": 4001,
+          "recurrent_correct": 4009,
+          "base_accuracy": 0.5138050597149094,
+          "recurrent_accuracy": 0.514832412996019,
+          "accuracy_delta_recurrent_vs_base": 0.0010273532811095416,
+          "wins": 36,
+          "losses": 28,
+          "delta": 0.0010273532811095416,
+          "ci95": [
+            -0.0009860928542802696,
+            0.0030407994164993526
+          ],
+          "standard_error": 0.0010272873130688204,
+          "noninferiority_margin": 0.03,
+          "yellow_margin": 0.015,
+          "verdict": "green_noninferior"
+        },
+        "cyclic_label_aggregated:permutation_mean": {
+          "paired_examples": 7787,
+          "base_correct": 5498,
+          "recurrent_correct": 5482,
+          "base_accuracy": 0.7060485424425325,
+          "recurrent_accuracy": 0.7039938358803134,
+          "accuracy_delta_recurrent_vs_base": -0.0020547065622190832,
+          "wins": 24,
+          "losses": 40,
+          "delta": -0.0020547065622190832,
+          "ci95": [
+            -0.004067764762830805,
+            -4.164836160736084e-05
+          ],
+          "standard_error": 0.0010270893835246304,
+          "noninferiority_margin": 0.03,
+          "yellow_margin": 0.015,
+          "verdict": "green_noninferior"
+        }
+      }
+    }
+  ],
+  "policy": {
+    "ai2_arc_not_arc_agi": true,
+    "arc_eval_only": true,
+    "if_red_or_yellow": "Review before route comparison; add uniform generic LM rehearsal to future training arms only if confirmed damage is real.",
+    "tier1_canary_status": "pending",
+    "hellaswag_winogrande_lambada_status": "pending"
+  }
+}
