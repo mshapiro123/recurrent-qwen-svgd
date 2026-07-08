@@ -1,0 +1,12 @@
+{
+  "kind": "stage5_synthetic_depth_permutation_eval_set",
+  "run_id": "stage5_synthetic_depth_permutation_eval_v1_n24_depth12",
+  "status": "finished",
+  "n_symbols": 24,
+  "max_depth": 12,
+  "rows_per_depth": 128,
+  "value_prefix": "letter:",
+  "seed": "20260708",
+  "data_summary": "outputs/stage5/stage5_synthetic_depth_permutation_eval_v1_n24_depth12/data/summary.json",
+  "test_chain_mcq": "outputs/stage5/stage5_synthetic_depth_permutation_eval_v1_n24_depth12/data/test_chain_mcq.jsonl"
+}
