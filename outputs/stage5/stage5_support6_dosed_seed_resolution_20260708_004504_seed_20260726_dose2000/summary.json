@@ -1,7 +1,7 @@
 {
-  "kind": "stage5_chain_continuation_attribution",
+  "kind": "stage5_depth_support_route_comparison",
   "run_id": "stage5_support6_dosed_seed_resolution_20260708_004504_seed_20260726_dose2000",
-  "status": "finished",
+  "status": "finished_with_frozen_eval",
   "loop_loss_mode": "per_loop_labels",
   "n_symbols": 16,
   "max_depth": 6,
@@ -172,21 +172,256 @@
     }
   },
   "decision_read": {
-    "capability_component": {
-      "metric": "heldout final-answer diagonal minimum",
-      "min_accuracy": 0.421875,
-      "strong_bar": 0.9
+    "question": "Does extending support from depth 1-4 to 1-6 extend held-out validity at depths 7-10?",
+    "single_variable": "training_support_depth",
+    "comparator": "stage5_chain_continuation_attribution_20260704_163056",
+    "selection_depths": [
+      "7",
+      "8",
+      "9",
+      "10"
+    ],
+    "nonregression_depths": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "overall_pass": true
+  },
+  "train_max_depth": 6,
+  "eval_max_depth": 10,
+  "frozen_eval_set": {
+    "kind": "stage5_synthetic_depth_frozen_eval_set",
+    "run_id": "stage5_synthetic_depth_frozen_eval_v1",
+    "status": "finished",
+    "n_symbols": 16,
+    "max_depth": 10,
+    "rows_per_depth": 128,
+    "value_prefix": "letter:",
+    "seed": "20260704",
+    "data_summary": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v1/data/summary.json",
+    "test_chain_mcq": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v1/data/test_chain_mcq.jsonl",
+    "test_mcq": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v1/data/test_mcq.jsonl"
+  },
+  "frozen_artifact_check": {
+    "kind": "synthetic_depth_extrapolation_artifact_check",
+    "checkpoint": "outputs/stage5/stage5_support6_dosed_seed_resolution_20260708_004504_seed_20260726_dose2000/train/chain_continuation/unfrozen_recurrent_step_2000.pt",
+    "data_jsonl": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v1/data/test_chain_mcq.jsonl",
+    "sample_id": "test_d01_00000",
+    "requested_max_loops": 10,
+    "loop_logits_shape": [
+      1,
+      1,
+      10,
+      100,
+      151936
+    ],
+    "loop_states_observed": 10,
+    "bridge_forward_calls": 9,
+    "expected_bridge_forward_calls": 9,
+    "forced_loop_count_honored": true,
+    "bridge_fires_on_reentry": true,
+    "source_static_checks": {
+      "learned_loop_control_optional": true,
+      "learned_loop_control_default_false": true,
+      "halting_loop_embedding_present": true,
+      "halting_target_loop_router_present": true,
+      "max_loop_embedding_capacity_64": false,
+      "no_literal_four_loop_cap_in_wrapper": true
     },
-    "mechanism_component": {
-      "metric": "heldout active-label diagonal minimum",
-      "min_accuracy": 0.859375,
-      "bar": 0.71,
-      "pass": true
+    "pass": true
+  },
+  "frozen_active_eval": {
+    "active_rows": "outputs/stage5/stage5_support6_dosed_seed_resolution_20260708_004504_seed_20260726_dose2000/eval/frozen_depth10_active_rows.jsonl",
+    "active_summary": "outputs/stage5/stage5_support6_dosed_seed_resolution_20260708_004504_seed_20260726_dose2000/eval/frozen_depth10_active_summary.json",
+    "active_diagonal": {
+      "1": 1.0,
+      "2": 1.0,
+      "3": 0.96875,
+      "4": 0.953125,
+      "5": 0.921875,
+      "6": 0.859375,
+      "7": 0.8125,
+      "8": 0.6796875,
+      "9": 0.4375,
+      "10": 0.3046875
     },
-    "attribution_component": {
-      "comparison_question": "Does continued chain supervision match the post-anneal extrapolation jump, or was label removal the active ingredient?",
-      "loss_mode": "per_loop_labels",
-      "needs_depth_5_to_8_readout": true
+    "active_total": {
+      "correct": 6307,
+      "total": 7040,
+      "accuracy": 0.8958806818181818
+    },
+    "above_diagonal": {
+      "iterate": 3679,
+      "hold": 205,
+      "other": 1876,
+      "unknown_iterate_target": 0,
+      "n": 5760,
+      "rates": {
+        "iterate": 0.6387152777777778,
+        "hold": 0.035590277777777776,
+        "other": 0.32569444444444445,
+        "unknown_iterate_target": 0.0
+      }
     }
+  },
+  "route_score": {
+    "diagonal_counts": {
+      "1": {
+        "correct": 128,
+        "total": 128,
+        "accuracy": 1.0
+      },
+      "2": {
+        "correct": 128,
+        "total": 128,
+        "accuracy": 1.0
+      },
+      "3": {
+        "correct": 124,
+        "total": 128,
+        "accuracy": 0.96875
+      },
+      "4": {
+        "correct": 122,
+        "total": 128,
+        "accuracy": 0.953125
+      },
+      "5": {
+        "correct": 118,
+        "total": 128,
+        "accuracy": 0.921875
+      },
+      "6": {
+        "correct": 110,
+        "total": 128,
+        "accuracy": 0.859375
+      },
+      "7": {
+        "correct": 104,
+        "total": 128,
+        "accuracy": 0.8125
+      },
+      "8": {
+        "correct": 87,
+        "total": 128,
+        "accuracy": 0.6796875
+      },
+      "9": {
+        "correct": 56,
+        "total": 128,
+        "accuracy": 0.4375
+      },
+      "10": {
+        "correct": 39,
+        "total": 128,
+        "accuracy": 0.3046875
+      }
+    },
+    "locked_thresholds": {
+      "selection_min_correct": {
+        "7": 52,
+        "8": 19,
+        "9": 14,
+        "10": 14
+      },
+      "selection_min_accuracy": {
+        "7": 0.40625,
+        "8": 0.1484375,
+        "9": 0.109375,
+        "10": 0.109375
+      },
+      "nonregression_floors": {
+        "1": 0.93,
+        "2": 0.93,
+        "3": 0.93,
+        "4": 0.93,
+        "5": 0.85,
+        "6": 0.85
+      },
+      "rows_per_depth": 128,
+      "selection_depths": [
+        "7",
+        "8",
+        "9",
+        "10"
+      ],
+      "nonregression_depths": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    "nonregression": {
+      "1": {
+        "accuracy": 1.0,
+        "floor": 0.93,
+        "pass": true
+      },
+      "2": {
+        "accuracy": 1.0,
+        "floor": 0.93,
+        "pass": true
+      },
+      "3": {
+        "accuracy": 0.96875,
+        "floor": 0.93,
+        "pass": true
+      },
+      "4": {
+        "accuracy": 0.953125,
+        "floor": 0.93,
+        "pass": true
+      },
+      "5": {
+        "accuracy": 0.921875,
+        "floor": 0.85,
+        "pass": true
+      },
+      "6": {
+        "accuracy": 0.859375,
+        "floor": 0.85,
+        "pass": true
+      }
+    },
+    "selection": {
+      "7": {
+        "correct": 104,
+        "total": 128,
+        "min_correct": 52,
+        "accuracy": 0.8125,
+        "pass": true
+      },
+      "8": {
+        "correct": 87,
+        "total": 128,
+        "min_correct": 19,
+        "accuracy": 0.6796875,
+        "pass": true
+      },
+      "9": {
+        "correct": 56,
+        "total": 128,
+        "min_correct": 14,
+        "accuracy": 0.4375,
+        "pass": true
+      },
+      "10": {
+        "correct": 39,
+        "total": 128,
+        "min_correct": 14,
+        "accuracy": 0.3046875,
+        "pass": true
+      }
+    },
+    "nonregression_pass": true,
+    "selection_pass": true,
+    "overall_pass": true
   }
 }
