@@ -253,11 +253,17 @@ def main() -> int:
         "Canonical synthetic frontier is bar_crossing_frontier at accuracy bar 0.71.",
         "MCQ option-text final tables remain suspended for release claims; same-reader final-symbol scoring is the live final metric.",
     ]
-    if receipts["support6_replication"].get("status") == "replication_needs_dosed_seed_resolution":
+    support6_replication_needs_dose = (
+        receipts["support6_replication"].get("status") == "replication_needs_dosed_seed_resolution"
+    )
+    support6_dosed_status = receipts["support6_dosed_resolution"].get("status")
+    if support6_replication_needs_dose and support6_dosed_status in {"pending", "missing"}:
         pending.append("Run support6_dosed_seed_resolution before treating support-6 replication as robustness evidence.")
-    if receipts["support6_dosed_resolution"].get("status") in {"pending", "missing"}:
+    elif support6_replication_needs_dose and support6_dosed_status == "dosed_seed_resolution_running":
+        pending.append("Wait for support6_dosed_seed_resolution to finish before treating support-6 replication as robustness evidence.")
+    if support6_dosed_status in {"pending", "missing"}:
         pending.append("Support-6 dosed seed resolution receipt is not present yet.")
-    elif receipts["support6_dosed_resolution"].get("status") != "dosed_seed_resolution_pass":
+    elif support6_dosed_status != "dosed_seed_resolution_pass":
         blockers.append("Support-6 dosed seed resolution did not pass.")
     if receipts["scorer_equivalence"].get("pass") is not True:
         blockers.append("Fast active-label scorer has not been proven equivalent to the slow scorer.")
