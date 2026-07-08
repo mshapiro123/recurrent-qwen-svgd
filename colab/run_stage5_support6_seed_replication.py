@@ -15,6 +15,12 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from colab.stage5_chain_consolidation_utils import ROOT, path_for_cli, publish_run, read_json, write_json
+from colab.stage5_frontier_metrics import (
+    bar_crossing_frontier,
+    deepest_passing_selection_frontier,
+    diagonal_counts_to_accuracy,
+    frontier_in_band,
+)
 
 
 def run(
@@ -45,12 +51,8 @@ def parse_csv_ints(value: str) -> list[int]:
     return [int(item.strip()) for item in value.split(",") if item.strip()]
 
 
-def frontier_from_selection(selection: dict[str, Any]) -> int:
-    frontier = 0
-    for depth, item in sorted(selection.items(), key=lambda item: int(item[0])):
-        if isinstance(item, dict) and bool(item.get("pass")):
-            frontier = int(depth)
-    return frontier
+def canonical_frontier_from_score(score: dict[str, Any], *, bar: float = 0.71) -> float:
+    return bar_crossing_frontier(diagonal_counts_to_accuracy(score.get("diagonal_counts") or {}), bar=bar)
 
 
 def write_markdown(run_dir: Path, payload: dict[str, Any]) -> None:
@@ -65,20 +67,28 @@ def write_markdown(run_dir: Path, payload: dict[str, Any]) -> None:
     ]
     for result in payload.get("results", []):
         lines.append(
-            f"- seed `{result['seed']}`: frontier=`{result.get('frontier')}`, "
+            f"- seed `{result['seed']}`: canonical_frontier=`{result.get('canonical_frontier')}`, "
+            f"deepest_passing_selection_frontier=`{result.get('deepest_passing_selection_frontier')}`, "
             f"overall_pass=`{result.get('overall_pass')}`, summary=`{result.get('summary')}`"
         )
     (run_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def summarize_results(results: list[dict[str, Any]]) -> dict[str, Any]:
-    frontiers = [int(item.get("frontier", 0)) for item in results if item.get("frontier") is not None]
+    frontiers = [
+        float(item["canonical_frontier"])
+        for item in results
+        if item.get("canonical_frontier") is not None
+    ]
     if not frontiers:
         return {"status": "incomplete_no_frontiers"}
-    target = int(os.environ.get("STAGE5_SUPPORT6_REPLICATION_TARGET_FRONTIER", "9"))
-    within_band = [abs(frontier - target) <= 1 for frontier in frontiers]
+    target = float(os.environ.get("STAGE5_SUPPORT6_REPLICATION_TARGET_FRONTIER", "9"))
+    within_band = [frontier_in_band(frontier, target=target, tolerance=1.0) for frontier in frontiers]
     return {
         "target_frontier": target,
+        "frontier_definition": "bar_crossing_frontier",
+        "frontier_bar": 0.71,
+        "frontier_tolerance": 1.0,
         "frontiers": frontiers,
         "min_frontier": min(frontiers),
         "max_frontier": max(frontiers),
@@ -101,6 +111,8 @@ def main() -> int:
         "status": "started",
         "seeds": seeds,
         "pre_registered_bar": "bar-crossing frontier within +/-1 depth of 9 across added seeds",
+        "frontier_definition": "bar_crossing_frontier",
+        "deprecated_frontier_definition": "deepest_passing_selection_frontier",
         "results": [],
     }
     write_json(run_dir / "summary.json", payload)
@@ -126,12 +138,14 @@ def main() -> int:
         score = child.get("route_score") or {}
         selection = score.get("selection") or {}
         selected = {depth: item.get("correct", 0) for depth, item in selection.items() if isinstance(item, dict)}
+        canonical_frontier = canonical_frontier_from_score(score)
         result = {
             "seed": seed,
             "summary": path_for_cli(child_summary),
             "overall_pass": bool(score.get("overall_pass")),
             "selected_correct": selected,
-            "frontier": frontier_from_selection(selection),
+            "canonical_frontier": canonical_frontier,
+            "deepest_passing_selection_frontier": deepest_passing_selection_frontier(selection),
         }
         payload["results"].append(result)
         payload["replication_summary"] = summarize_results(payload["results"])

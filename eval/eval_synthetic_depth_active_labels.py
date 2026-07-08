@@ -149,7 +149,11 @@ def score_candidates_all_loops(
 ) -> dict[int, dict[str, float]]:
     scores_by_loop: dict[int, dict[str, float]] = {loop: {} for loop in loop_counts}
     max_loops = max(loop_counts)
-    fast_token_ids = single_token_candidate_ids(tokenizer, prompt, candidates)
+    fast_token_ids = None if getattr(args, "force_slow_candidate_score", False) else single_token_candidate_ids(
+        tokenizer,
+        prompt,
+        candidates,
+    )
     if fast_token_ids is not None:
         encoded = tokenizer(prompt, return_tensors="pt", add_special_tokens=True).to(args.device)
         with torch.no_grad():
@@ -344,6 +348,7 @@ def main() -> int:
     parser.add_argument("--prompt_style", choices=("with_options", "question_only"), default="question_only")
     parser.add_argument("--value_prefix", default="")
     parser.add_argument("--normalize_candidate_score", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--force_slow_candidate_score", action="store_true")
     parser.add_argument("--split", default="6,18")
     parser.add_argument("--bridge_projection_mode", choices=("concat", "split"), default="concat")
     parser.add_argument("--dtype", default="bfloat16")

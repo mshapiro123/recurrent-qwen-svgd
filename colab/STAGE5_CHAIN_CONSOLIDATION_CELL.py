@@ -25,6 +25,8 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: same_reader_final_symbol
 # Safety marker: n24_support12_rung
 # Safety marker: support6_seed_replication
+# Safety marker: support6_replication_receipts
+# Safety marker: scorer_equivalence_receipt
 # Safety marker: phase_a_surpass_prereg
 # Safety marker: splice_injection_diagnostic
 # Safety marker: eval/eval_synthetic_depth_artifact_check.py
@@ -46,6 +48,11 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: colab/run_stage5_same_reader_final_symbol.py
 # Safety marker: colab/run_stage5_n24_support12_rung.py
 # Safety marker: colab/run_stage5_support6_seed_replication.py
+# Safety marker: colab/run_stage5_support6_replication_receipts.py
+# Safety marker: colab/run_stage5_scorer_equivalence_receipt.py
+# Safety marker: eval/check_synthetic_active_label_scorer_equivalence.py
+# Safety marker: bar_crossing_frontier
+# Safety marker: force_slow_candidate_score
 # Safety marker: colab/run_stage5_phase_a_surpass_plan.py
 # Safety marker: colab/run_stage5_splice_injection.py
 # Safety marker: STAGE5_EXTRAP_DEPTHS
@@ -247,6 +254,26 @@ TARGETS = {
         ],
         "disconnect_env": "STAGE5_SUPPORT6_REPLICATION_DISCONNECT",
     },
+    "support6_replication_receipts": {
+        "script": "colab/run_stage5_support6_replication_receipts.py",
+        "tests": [
+            "tests/test_stage5_support6_seed_replication.py",
+            "tests/test_stage5_chain_consolidation.py",
+            "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
+        ],
+        "disconnect_env": "STAGE5_SUPPORT6_RECEIPTS_DISCONNECT",
+        "requires_gpu": False,
+        "mount_drive": False,
+    },
+    "scorer_equivalence_receipt": {
+        "script": "colab/run_stage5_scorer_equivalence_receipt.py",
+        "tests": [
+            "tests/test_eval_synthetic_depth_active_labels.py",
+            "tests/test_stage5_chain_consolidation.py",
+            "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
+        ],
+        "disconnect_env": "STAGE5_SCORER_EQUIV_DISCONNECT",
+    },
     "phase_a_surpass_prereg": {
         "script": "colab/run_stage5_phase_a_surpass_plan.py",
         "tests": [
@@ -355,15 +382,21 @@ def require_gpu_runtime() -> None:
 try:
     if TARGET not in TARGETS:
         raise ValueError(f"Unknown consolidation target: {TARGET}")
-    require_gpu_runtime()
-    drive.mount("/content/drive", force_remount=False)
+    target = TARGETS[TARGET]
+    if target.get("requires_gpu", True):
+        require_gpu_runtime()
+    else:
+        print(f"Skipping GPU requirement for CPU-safe target {TARGET}.", flush=True)
+    if target.get("mount_drive", True):
+        drive.mount("/content/drive", force_remount=False)
+    else:
+        print(f"Skipping Drive mount for target {TARGET}.", flush=True)
     sync_repo()
     os.chdir(ROOT)
     os.environ["PYTHONPATH"] = str(ROOT) + os.pathsep + os.environ.get("PYTHONPATH", "")
     print(f"STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION={STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION}", flush=True)
     print(f"stage5_chain_consolidation_target={TARGET}", flush=True)
     run(["python", "-m", "pip", "install", "-q", "-r", "requirements.txt"])
-    target = TARGETS[TARGET]
     run([sys.executable, "-m", "pytest", "-q", *target["tests"]])
     run([sys.executable, target["script"]])
     if env_flag(str(target["disconnect_env"]), "0"):

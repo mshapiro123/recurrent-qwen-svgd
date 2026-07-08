@@ -86,6 +86,8 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "support8_dose_arm" - continue support-8 for +2000 same-curriculum steps and rescore locked frozen depth 1-14 gates.
 #   "same_reader_final_symbol" - release-gate final-symbol scoring with the same full-symbol reader used by active labels.
 #   "support6_seed_replication" - two added support-6 route seeds for replication-band evidence.
+#   "support6_replication_receipts" - CPU-only canonical frontier rescore and config-diff receipts for support-6 seeds.
+#   "scorer_equivalence_receipt" - tiny GPU fast-vs-slow active-label scorer equivalence receipt.
 #   "n24_support12_rung" - final N-24 support-12 synthetic rung with locked gates and canary policy.
 #   "phase_a_surpass_prereg" - publish the same-reader Phase-A surpass comparison preregistration.
 #   "splice_injection_diagnostic" - inference-only hidden-state splice test for state-driven iteration vs shortcut.
@@ -2210,6 +2212,37 @@ TARGETS = {
             "STAGE5_SUPPORT6_REPLICATION_STEPS": "2000",
             "STAGE5_SUPPORT6_REPLICATION_ROWS_PER_DEPTH": "256",
             "STAGE5_SUPPORT6_REPLICATION_DISCONNECT": "0",
+        },
+    },
+    "support6_replication_receipts": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "support6_replication_receipts",
+            "colab/run_stage5_support6_replication_receipts.py",
+            "bar_crossing_frontier",
+            "tests/test_stage5_support6_seed_replication.py",
+        ],
+        "env": {
+            "STAGE5_SUPPORT6_RECEIPTS_DISCONNECT": "0",
+        },
+    },
+    "scorer_equivalence_receipt": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "scorer_equivalence_receipt",
+            "colab/run_stage5_scorer_equivalence_receipt.py",
+            "eval/check_synthetic_active_label_scorer_equivalence.py",
+            "force_slow_candidate_score",
+            "tests/test_eval_synthetic_depth_active_labels.py",
+        ],
+        "env": {
+            "STAGE5_SCORER_EQUIV_SOURCE_SUMMARY": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json",
+            "STAGE5_SCORER_EQUIV_MAX_ROWS": "2",
+            "STAGE5_SCORER_EQUIV_LOOP_COUNTS": "1,2,12,22",
+            "STAGE5_SCORER_EQUIV_DTYPE": "bfloat16",
+            "STAGE5_SCORER_EQUIV_DISCONNECT": "0",
         },
     },
     "n24_support12_rung": {
