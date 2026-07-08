@@ -1,0 +1,228 @@
+{
+  "kind": "synthetic_depth_same_reader_final_symbol",
+  "threshold": 0.71,
+  "depths": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22
+  ],
+  "by_depth": {
+    "1": {
+      "total": 128,
+      "same_reader_correct": 128,
+      "same_reader_accuracy": 1.0,
+      "mapped_final_correct": 128,
+      "mapped_final_accuracy": 1.0,
+      "same_reader_clears_threshold": true
+    },
+    "2": {
+      "total": 128,
+      "same_reader_correct": 127,
+      "same_reader_accuracy": 0.9921875,
+      "mapped_final_correct": 127,
+      "mapped_final_accuracy": 0.9921875,
+      "same_reader_clears_threshold": true
+    },
+    "3": {
+      "total": 128,
+      "same_reader_correct": 127,
+      "same_reader_accuracy": 0.9921875,
+      "mapped_final_correct": 127,
+      "mapped_final_accuracy": 0.9921875,
+      "same_reader_clears_threshold": true
+    },
+    "4": {
+      "total": 128,
+      "same_reader_correct": 128,
+      "same_reader_accuracy": 1.0,
+      "mapped_final_correct": 128,
+      "mapped_final_accuracy": 1.0,
+      "same_reader_clears_threshold": true
+    },
+    "5": {
+      "total": 128,
+      "same_reader_correct": 127,
+      "same_reader_accuracy": 0.9921875,
+      "mapped_final_correct": 127,
+      "mapped_final_accuracy": 0.9921875,
+      "same_reader_clears_threshold": true
+    },
+    "6": {
+      "total": 128,
+      "same_reader_correct": 127,
+      "same_reader_accuracy": 0.9921875,
+      "mapped_final_correct": 127,
+      "mapped_final_accuracy": 0.9921875,
+      "same_reader_clears_threshold": true
+    },
+    "7": {
+      "total": 128,
+      "same_reader_correct": 127,
+      "same_reader_accuracy": 0.9921875,
+      "mapped_final_correct": 127,
+      "mapped_final_accuracy": 0.9921875,
+      "same_reader_clears_threshold": true
+    },
+    "8": {
+      "total": 128,
+      "same_reader_correct": 125,
+      "same_reader_accuracy": 0.9765625,
+      "mapped_final_correct": 125,
+      "mapped_final_accuracy": 0.9765625,
+      "same_reader_clears_threshold": true
+    },
+    "9": {
+      "total": 128,
+      "same_reader_correct": 125,
+      "same_reader_accuracy": 0.9765625,
+      "mapped_final_correct": 125,
+      "mapped_final_accuracy": 0.9765625,
+      "same_reader_clears_threshold": true
+    },
+    "10": {
+      "total": 128,
+      "same_reader_correct": 125,
+      "same_reader_accuracy": 0.9765625,
+      "mapped_final_correct": 125,
+      "mapped_final_accuracy": 0.9765625,
+      "same_reader_clears_threshold": true
+    },
+    "11": {
+      "total": 128,
+      "same_reader_correct": 124,
+      "same_reader_accuracy": 0.96875,
+      "mapped_final_correct": 124,
+      "mapped_final_accuracy": 0.96875,
+      "same_reader_clears_threshold": true
+    },
+    "12": {
+      "total": 128,
+      "same_reader_correct": 125,
+      "same_reader_accuracy": 0.9765625,
+      "mapped_final_correct": 125,
+      "mapped_final_accuracy": 0.9765625,
+      "same_reader_clears_threshold": true
+    },
+    "13": {
+      "total": 128,
+      "same_reader_correct": 123,
+      "same_reader_accuracy": 0.9609375,
+      "mapped_final_correct": 123,
+      "mapped_final_accuracy": 0.9609375,
+      "same_reader_clears_threshold": true
+    },
+    "14": {
+      "total": 128,
+      "same_reader_correct": 117,
+      "same_reader_accuracy": 0.9140625,
+      "mapped_final_correct": 117,
+      "mapped_final_accuracy": 0.9140625,
+      "same_reader_clears_threshold": true
+    },
+    "15": {
+      "total": 128,
+      "same_reader_correct": 113,
+      "same_reader_accuracy": 0.8828125,
+      "mapped_final_correct": 113,
+      "mapped_final_accuracy": 0.8828125,
+      "same_reader_clears_threshold": true
+    },
+    "16": {
+      "total": 128,
+      "same_reader_correct": 110,
+      "same_reader_accuracy": 0.859375,
+      "mapped_final_correct": 110,
+      "mapped_final_accuracy": 0.859375,
+      "same_reader_clears_threshold": true
+    },
+    "17": {
+      "total": 128,
+      "same_reader_correct": 103,
+      "same_reader_accuracy": 0.8046875,
+      "mapped_final_correct": 103,
+      "mapped_final_accuracy": 0.8046875,
+      "same_reader_clears_threshold": true
+    },
+    "18": {
+      "total": 128,
+      "same_reader_correct": 90,
+      "same_reader_accuracy": 0.703125,
+      "mapped_final_correct": 90,
+      "mapped_final_accuracy": 0.703125,
+      "same_reader_clears_threshold": false
+    },
+    "19": {
+      "total": 128,
+      "same_reader_correct": 82,
+      "same_reader_accuracy": 0.640625,
+      "mapped_final_correct": 82,
+      "mapped_final_accuracy": 0.640625,
+      "same_reader_clears_threshold": false
+    },
+    "20": {
+      "total": 128,
+      "same_reader_correct": 59,
+      "same_reader_accuracy": 0.4609375,
+      "mapped_final_correct": 59,
+      "mapped_final_accuracy": 0.4609375,
+      "same_reader_clears_threshold": false
+    },
+    "21": {
+      "total": 128,
+      "same_reader_correct": 44,
+      "same_reader_accuracy": 0.34375,
+      "mapped_final_correct": 44,
+      "mapped_final_accuracy": 0.34375,
+      "same_reader_clears_threshold": false
+    },
+    "22": {
+      "total": 128,
+      "same_reader_correct": 14,
+      "same_reader_accuracy": 0.109375,
+      "mapped_final_correct": 14,
+      "mapped_final_accuracy": 0.109375,
+      "same_reader_clears_threshold": false
+    }
+  },
+  "same_reader_total": {
+    "correct": 2370,
+    "total": 2816,
+    "accuracy": 0.8416193181818182
+  },
+  "mapped_final_total": {
+    "correct": 2370,
+    "total": 2816,
+    "accuracy": 0.8416193181818182
+  },
+  "all_depths_clear_threshold": false,
+  "metric_policy": {
+    "active": "full-symbol active-label diagonal",
+    "raw_final": "same-reader full-symbol argmax at loop == depth",
+    "mapped_final": "same-reader full-symbol argmax deterministically mapped to MCQ label",
+    "suspended_reader": "option-text/choice MCQ final-answer matrices remain diagnostic only"
+  },
+  "checkpoint": "outputs/stage5/stage5_n24_same_reader_final_symbol_current/restored/source_checkpoint.pt",
+  "data_jsonl": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v3_depth22_n24/data/test_chain_mcq.jsonl",
+  "prediction_space": "full_symbols",
+  "prompt_style": "question_only",
+  "rows": 2816
+}
