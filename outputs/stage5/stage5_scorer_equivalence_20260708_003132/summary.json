@@ -1,0 +1,27 @@
+{
+  "kind": "stage5_scorer_equivalence_receipt",
+  "run_id": "stage5_scorer_equivalence_20260708_003132",
+  "status": "passed",
+  "source_summary": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json",
+  "data_jsonl": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v3_depth22_n24/data/test_chain_mcq.jsonl",
+  "checkpoint": "outputs/stage5/stage5_scorer_equivalence_20260708_003132/restored/source_checkpoint.pt",
+  "equivalence_summary": "outputs/stage5/stage5_scorer_equivalence_20260708_003132/eval/scorer_equivalence_summary.json",
+  "equivalence": {
+    "kind": "synthetic_active_label_scorer_equivalence",
+    "data_jsonl": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v3_depth22_n24/data/test_chain_mcq.jsonl",
+    "checkpoint": "outputs/stage5/stage5_scorer_equivalence_20260708_003132/restored/source_checkpoint.pt",
+    "max_rows": 2,
+    "loop_counts": [
+      1,
+      2,
+      12,
+      22
+    ],
+    "prediction_space": "full_symbols",
+    "prompt_style": "question_only",
+    "value_prefix": "letter:",
+    "records": 8,
+    "mismatches": [],
+    "pass": true
+  }
+}
