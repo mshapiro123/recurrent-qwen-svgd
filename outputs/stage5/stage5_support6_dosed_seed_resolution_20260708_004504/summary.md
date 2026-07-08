@@ -23,4 +23,4 @@
 - Child summary: `outputs/stage5/stage5_support6_dosed_seed_resolution_20260708_004504_seed_20260726_dose2000/summary.json`
 
 ## Decision
-At least one completed dosed failed-seed frontier remains outside the target band.
+Dosed seed resolution did not fully pass; support-6 robustness remains seed-sensitive.

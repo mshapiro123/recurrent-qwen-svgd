@@ -498,7 +498,7 @@
       }
     }
   ],
-  "decision": "At least one completed dosed failed-seed frontier remains outside the target band.",
+  "decision": "Dosed seed resolution did not fully pass; support-6 robustness remains seed-sensitive.",
   "resolution_summary": {
     "frontier_policy": "bar_crossing_frontier",
     "frontier_bar": 0.71,
