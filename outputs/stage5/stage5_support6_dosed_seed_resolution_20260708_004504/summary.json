@@ -1,0 +1,349 @@
+{
+  "kind": "stage5_support6_dosed_seed_resolution",
+  "run_id": "stage5_support6_dosed_seed_resolution_20260708_004504",
+  "status": "dosed_seed_resolution_pass",
+  "source_receipt_summary": "outputs/stage5/stage5_support6_replication_receipts_20260708_003055/summary.json",
+  "extra_steps": 2000,
+  "failed_replicates": [
+    {
+      "run_id": "stage5_support6_seed_replication_20260707_122930_seed20260716",
+      "summary": "outputs/stage5/stage5_support6_seed_replication_20260707_122930_seed20260716/summary.json",
+      "status": "finished_with_frozen_eval",
+      "overall_pass": false,
+      "canonical_frontier": 7.0471111111111115,
+      "canonical_frontier_pass": false,
+      "deepest_passing_selection_frontier": 9,
+      "active_diagonal": {
+        "1": 1.0,
+        "2": 0.984375,
+        "3": 0.96875,
+        "4": 0.984375,
+        "5": 0.9765625,
+        "6": 0.9453125,
+        "7": 0.7265625,
+        "8": 0.375,
+        "9": 0.1953125,
+        "10": 0.1015625
+      },
+      "diagonal_counts": {
+        "1": {
+          "correct": 128,
+          "total": 128,
+          "accuracy": 1.0
+        },
+        "2": {
+          "correct": 126,
+          "total": 128,
+          "accuracy": 0.984375
+        },
+        "3": {
+          "correct": 124,
+          "total": 128,
+          "accuracy": 0.96875
+        },
+        "4": {
+          "correct": 126,
+          "total": 128,
+          "accuracy": 0.984375
+        },
+        "5": {
+          "correct": 125,
+          "total": 128,
+          "accuracy": 0.9765625
+        },
+        "6": {
+          "correct": 121,
+          "total": 128,
+          "accuracy": 0.9453125
+        },
+        "7": {
+          "correct": 93,
+          "total": 128,
+          "accuracy": 0.7265625
+        },
+        "8": {
+          "correct": 48,
+          "total": 128,
+          "accuracy": 0.375
+        },
+        "9": {
+          "correct": 25,
+          "total": 128,
+          "accuracy": 0.1953125
+        },
+        "10": {
+          "correct": 13,
+          "total": 128,
+          "accuracy": 0.1015625
+        }
+      },
+      "selected_correct": {
+        "7": 93,
+        "8": 48,
+        "9": 25,
+        "10": 13
+      },
+      "label": "seed_20260716"
+    },
+    {
+      "run_id": "stage5_support6_seed_replication_20260707_122930_seed20260726",
+      "summary": "outputs/stage5/stage5_support6_seed_replication_20260707_122930_seed20260726/summary.json",
+      "status": "finished_with_frozen_eval",
+      "overall_pass": false,
+      "canonical_frontier": 6.9511111111111115,
+      "canonical_frontier_pass": false,
+      "deepest_passing_selection_frontier": 9,
+      "active_diagonal": {
+        "1": 1.0,
+        "2": 0.9453125,
+        "3": 0.9921875,
+        "4": 0.9765625,
+        "5": 0.9609375,
+        "6": 0.84375,
+        "7": 0.703125,
+        "8": 0.3671875,
+        "9": 0.125,
+        "10": 0.1015625
+      },
+      "diagonal_counts": {
+        "1": {
+          "correct": 128,
+          "total": 128,
+          "accuracy": 1.0
+        },
+        "2": {
+          "correct": 121,
+          "total": 128,
+          "accuracy": 0.9453125
+        },
+        "3": {
+          "correct": 127,
+          "total": 128,
+          "accuracy": 0.9921875
+        },
+        "4": {
+          "correct": 125,
+          "total": 128,
+          "accuracy": 0.9765625
+        },
+        "5": {
+          "correct": 123,
+          "total": 128,
+          "accuracy": 0.9609375
+        },
+        "6": {
+          "correct": 108,
+          "total": 128,
+          "accuracy": 0.84375
+        },
+        "7": {
+          "correct": 90,
+          "total": 128,
+          "accuracy": 0.703125
+        },
+        "8": {
+          "correct": 47,
+          "total": 128,
+          "accuracy": 0.3671875
+        },
+        "9": {
+          "correct": 16,
+          "total": 128,
+          "accuracy": 0.125
+        },
+        "10": {
+          "correct": 13,
+          "total": 128,
+          "accuracy": 0.1015625
+        }
+      },
+      "selected_correct": {
+        "7": 90,
+        "8": 47,
+        "9": 16,
+        "10": 13
+      },
+      "label": "seed_20260726"
+    }
+  ],
+  "results": [
+    {
+      "label": "seed_20260716",
+      "seed": "20260716",
+      "pre_dose": {
+        "run_id": "stage5_support6_seed_replication_20260707_122930_seed20260716",
+        "summary": "outputs/stage5/stage5_support6_seed_replication_20260707_122930_seed20260716/summary.json",
+        "status": "finished_with_frozen_eval",
+        "overall_pass": false,
+        "canonical_frontier": 7.0471111111111115,
+        "canonical_frontier_pass": false,
+        "deepest_passing_selection_frontier": 9,
+        "active_diagonal": {
+          "1": 1.0,
+          "2": 0.984375,
+          "3": 0.96875,
+          "4": 0.984375,
+          "5": 0.9765625,
+          "6": 0.9453125,
+          "7": 0.7265625,
+          "8": 0.375,
+          "9": 0.1953125,
+          "10": 0.1015625
+        },
+        "diagonal_counts": {
+          "1": {
+            "correct": 128,
+            "total": 128,
+            "accuracy": 1.0
+          },
+          "2": {
+            "correct": 126,
+            "total": 128,
+            "accuracy": 0.984375
+          },
+          "3": {
+            "correct": 124,
+            "total": 128,
+            "accuracy": 0.96875
+          },
+          "4": {
+            "correct": 126,
+            "total": 128,
+            "accuracy": 0.984375
+          },
+          "5": {
+            "correct": 125,
+            "total": 128,
+            "accuracy": 0.9765625
+          },
+          "6": {
+            "correct": 121,
+            "total": 128,
+            "accuracy": 0.9453125
+          },
+          "7": {
+            "correct": 93,
+            "total": 128,
+            "accuracy": 0.7265625
+          },
+          "8": {
+            "correct": 48,
+            "total": 128,
+            "accuracy": 0.375
+          },
+          "9": {
+            "correct": 25,
+            "total": 128,
+            "accuracy": 0.1953125
+          },
+          "10": {
+            "correct": 13,
+            "total": 128,
+            "accuracy": 0.1015625
+          }
+        },
+        "selected_correct": {
+          "7": 93,
+          "8": 48,
+          "9": 25,
+          "10": 13
+        },
+        "label": "seed_20260716"
+      },
+      "source_summary": "outputs/stage5/stage5_support6_seed_replication_20260707_122930_seed20260716/summary.json",
+      "child_summary": "outputs/stage5/stage5_support6_dosed_seed_resolution_20260708_004504_seed_20260716_dose2000/summary.json",
+      "post_dose": {
+        "run_id": "stage5_support6_dosed_seed_resolution_20260708_004504_seed_20260716_dose2000",
+        "summary": null,
+        "status": "finished_with_frozen_eval",
+        "overall_pass": true,
+        "canonical_frontier": 9.504285714285714,
+        "canonical_frontier_pass": true,
+        "deepest_passing_selection_frontier": 10,
+        "active_diagonal": {
+          "1": 1.0,
+          "2": 1.0,
+          "3": 0.9921875,
+          "4": 0.9921875,
+          "5": 0.9765625,
+          "6": 0.9765625,
+          "7": 0.9609375,
+          "8": 0.890625,
+          "9": 0.8203125,
+          "10": 0.6015625
+        },
+        "diagonal_counts": {
+          "1": {
+            "correct": 128,
+            "total": 128,
+            "accuracy": 1.0
+          },
+          "2": {
+            "correct": 128,
+            "total": 128,
+            "accuracy": 1.0
+          },
+          "3": {
+            "correct": 127,
+            "total": 128,
+            "accuracy": 0.9921875
+          },
+          "4": {
+            "correct": 127,
+            "total": 128,
+            "accuracy": 0.9921875
+          },
+          "5": {
+            "correct": 125,
+            "total": 128,
+            "accuracy": 0.9765625
+          },
+          "6": {
+            "correct": 125,
+            "total": 128,
+            "accuracy": 0.9765625
+          },
+          "7": {
+            "correct": 123,
+            "total": 128,
+            "accuracy": 0.9609375
+          },
+          "8": {
+            "correct": 114,
+            "total": 128,
+            "accuracy": 0.890625
+          },
+          "9": {
+            "correct": 105,
+            "total": 128,
+            "accuracy": 0.8203125
+          },
+          "10": {
+            "correct": 77,
+            "total": 128,
+            "accuracy": 0.6015625
+          }
+        },
+        "selected_correct": {
+          "7": 123,
+          "8": 114,
+          "9": 105,
+          "10": 77
+        }
+      }
+    }
+  ],
+  "decision": "All completed dosed failed-seed frontiers are back inside the preregistered target band.",
+  "resolution_summary": {
+    "frontier_policy": "bar_crossing_frontier",
+    "frontier_bar": 0.71,
+    "target_frontier": 9.0,
+    "frontier_tolerance": 1.0,
+    "all_dosed_frontiers_in_band": true,
+    "all_dosed_frontiers_improved": true,
+    "post_dose_frontiers": [
+      9.504285714285714
+    ],
+    "status": "dosed_seed_resolution_pass"
+  }
+}
