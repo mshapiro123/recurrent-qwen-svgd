@@ -18,6 +18,28 @@ from typing import Any
 
 LABELS = tuple("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 LETTER_SYMBOLS = tuple("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+NAME_SYMBOLS = (
+    "Ben",
+    "Sam",
+    "Tom",
+    "Max",
+    "Ada",
+    "Eve",
+    "Kai",
+    "Lee",
+    "Ana",
+    "Joe",
+    "Amy",
+    "Dan",
+    "Ida",
+    "Gus",
+    "Mia",
+    "Ray",
+    "Sue",
+    "Ted",
+    "Una",
+    "Val",
+)
 
 
 @dataclass(frozen=True)
@@ -52,6 +74,11 @@ def symbol(value: int, *, prefix: str = "") -> str:
         if idx < 0 or idx >= len(LETTER_SYMBOLS):
             raise ValueError(f"letter: value_prefix supports values 0-{len(LETTER_SYMBOLS) - 1}; got {value}")
         return LETTER_SYMBOLS[idx]
+    if prefix == "name:":
+        idx = int(value)
+        if idx < 0 or idx >= len(NAME_SYMBOLS):
+            raise ValueError(f"name: value_prefix supports values 0-{len(NAME_SYMBOLS) - 1}; got {value}")
+        return NAME_SYMBOLS[idx]
     return f"{prefix}{value}" if prefix else str(value)
 
 

@@ -24,6 +24,28 @@ if str(ROOT) not in sys.path:
 from eval.eval_mcq import load_recurrent_wrapper, sequence_logprobs, select_forced_loop_logits
 
 LETTER_SYMBOLS = tuple("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+NAME_SYMBOLS = (
+    "Ben",
+    "Sam",
+    "Tom",
+    "Max",
+    "Ada",
+    "Eve",
+    "Kai",
+    "Lee",
+    "Ana",
+    "Joe",
+    "Amy",
+    "Dan",
+    "Ida",
+    "Gus",
+    "Mia",
+    "Ray",
+    "Sue",
+    "Ted",
+    "Una",
+    "Val",
+)
 
 
 def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
@@ -39,6 +61,14 @@ def symbol(value: int | str, *, prefix: str = "") -> str:
         if idx < 0 or idx >= len(LETTER_SYMBOLS):
             raise ValueError(f"letter: value_prefix supports values 0-{len(LETTER_SYMBOLS) - 1}; got {value}")
         return LETTER_SYMBOLS[idx]
+    if prefix == "name:":
+        text = str(value)
+        if text in NAME_SYMBOLS:
+            return text
+        idx = int(text)
+        if idx < 0 or idx >= len(NAME_SYMBOLS):
+            raise ValueError(f"name: value_prefix supports values 0-{len(NAME_SYMBOLS) - 1}; got {value}")
+        return NAME_SYMBOLS[idx]
     text = str(value)
     if prefix and not text.startswith(prefix):
         return f"{prefix}{text}"
@@ -50,6 +80,10 @@ def parse_int_symbol(value: Any, *, prefix: str = "") -> int:
     if prefix == "letter:":
         if text in LETTER_SYMBOLS:
             return LETTER_SYMBOLS.index(text)
+        return int(text)
+    if prefix == "name:":
+        if text in NAME_SYMBOLS:
+            return NAME_SYMBOLS.index(text)
         return int(text)
     if prefix and text.startswith(prefix):
         text = text[len(prefix) :]

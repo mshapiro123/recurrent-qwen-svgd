@@ -2400,6 +2400,36 @@ def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
     assert "trainable_parameter_norm_stats" in trainer
 
 
+def test_natural_surface_prepare_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_NATURAL_SURFACE_PREPARE_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_natural_surface_prepare.py").read_text(encoding="utf-8")
+    generator = (ROOT / "training/generate_natural_surface_transfer.py").read_text(encoding="utf-8")
+    dataset = (ROOT / "training/natural_surface_transfer.py").read_text(encoding="utf-8")
+    active_eval = (ROOT / "eval/eval_synthetic_depth_active_labels.py").read_text(encoding="utf-8")
+
+    for text in (bootstrap, bootstrap_md):
+        assert "natural_surface_prepare_cpu" in text
+        assert "colab/STAGE5_NATURAL_SURFACE_PREPARE_CELL.py" in text
+        assert "STAGE5_NATURAL_VERIFY_TOKENIZER" in text
+        assert "value_prefix=name:" in text
+
+    assert "STAGE5_NATURAL_SURFACE_PREPARE_CELL_VERSION" in cell
+    assert "natural_surface_prepare_v1" in cell
+    assert "stage5_natural_surface_transfer_dataset" in cell
+    assert "stage5_natural_surface_transfer_prepare" in runner
+    assert "update_pointer=False" in runner
+    assert "verify_single_token_names" in runner
+    assert "training.natural_surface_transfer" in generator
+    assert "main" in generator
+    assert "verbalize_relay" in dataset
+    assert "verbalize_pointer" in dataset
+    assert "rung0_train_mix_chain_symbol_sft" in dataset
+    assert "NAME_SYMBOLS" in active_eval
+    assert 'prefix == "name:"' in active_eval
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

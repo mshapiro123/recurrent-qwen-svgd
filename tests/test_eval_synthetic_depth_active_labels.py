@@ -98,6 +98,24 @@ def test_letter_value_prefix_maps_full_symbol_space() -> None:
     assert continued_symbol_for_loop(row, 3, value_prefix="letter:") == "H"
 
 
+def test_name_value_prefix_maps_full_symbol_space() -> None:
+    row = sample_row() | {
+        "start": "Sam",
+        "orbit": ["Sam", "Max", "Eve"],
+        "mapping": {"Sam": "Max", "Max": "Eve", "Eve": "Kai"},
+        "n_symbols": 20,
+    }
+
+    assert symbol(0, prefix="name:") == "Ben"
+    assert symbol("Ada", prefix="name:") == "Ada"
+    assert parse_int_symbol("Val", prefix="name:") == 19
+    candidates = candidates_for_row(row, prediction_space="full_symbols", value_prefix="name:")
+    assert candidates["Ben"] == " Ben"
+    assert candidates["Val"] == " Val"
+    assert active_target_for_loop(row, 2, prediction_space="full_symbols", value_prefix="name:") == "Eve"
+    assert continued_symbol_for_loop(row, 3, value_prefix="name:") == "Kai"
+
+
 def test_continued_symbol_uses_serialized_mapping_for_above_diagonal_behavior() -> None:
     row = sample_row()
 

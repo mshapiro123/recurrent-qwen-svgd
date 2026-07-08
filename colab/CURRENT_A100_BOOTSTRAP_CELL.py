@@ -96,6 +96,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "gradient_path_audit" - read-only per-loop gradient matrix plus finite-difference bridge check.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
 #   "model_viability_queue" - queued no-training Qwen 3B/7B probes with VRAM-aware skipping.
+#   "natural_surface_prepare_cpu" - CPU-only verbal relay/pointer transfer dataset prep and manifest receipt.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 PREFER_LOCAL_HEAD = os.environ.get("STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD", "0").strip().lower() in {
@@ -2379,6 +2380,24 @@ TARGETS = {
             "STAGE5_PERM_PARITY_TOLERANCE": "0.05",
             "STAGE5_PERM_DTYPE": "bfloat16",
             "STAGE5_PERM_DISCONNECT": "0",
+        },
+    },
+    "natural_surface_prepare_cpu": {
+        "path": "colab/STAGE5_NATURAL_SURFACE_PREPARE_CELL.py",
+        "markers": [
+            "STAGE5_NATURAL_SURFACE_PREPARE_CELL_VERSION",
+            "natural_surface_prepare_cpu",
+            "stage5_natural_surface_transfer_dataset",
+            "training/generate_natural_surface_transfer.py",
+            "colab/run_stage5_natural_surface_prepare.py",
+            "relay_test_chain_mcq",
+            "pointer_test_chain_mcq",
+            "rung0_train_mix_chain_symbol_sft",
+            "STAGE5_NATURAL_VERIFY_TOKENIZER",
+            "value_prefix=name:",
+        ],
+        "env": {
+            "STAGE5_NATURAL_VERIFY_TOKENIZER": "1",
         },
     },
     "splice_injection_diagnostic": {
