@@ -1,0 +1,204 @@
+{
+  "kind": "stage5_synthetic_release_receipts",
+  "run_id": "stage5_synthetic_release_receipts_20260708_022806",
+  "status": "release_receipts_blocked",
+  "sources": {
+    "support6_receipts": "outputs/stage5/stage5_support6_replication_receipts_20260708_003055/summary.json",
+    "support6_dosed": "outputs/stage5/stage5_support6_dosed_seed_resolution_20260708_004504/summary.json",
+    "support8_same_reader": "outputs/stage5/stage5_same_reader_final_symbol_20260707_021010/summary.json",
+    "n24_summary": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json",
+    "scorer_equivalence": "outputs/stage5/stage5_scorer_equivalence_20260708_003132/summary.json",
+    "regression_battery": "outputs/stage5/stage5_regression_battery_loop1_current/summary.json"
+  },
+  "receipts": {
+    "support6_replication": {
+      "status": "replication_needs_dosed_seed_resolution",
+      "decision": "At least one replicate seed fails the canonical bar-crossing frontier band. Run the pre-registered dosed-seed resolution before using this cell as robustness evidence.",
+      "frontier_policy": {
+        "canonical_function": "bar_crossing_frontier",
+        "bar": 0.71,
+        "target": 9.0,
+        "tolerance": 1.0,
+        "deprecated_metric": "deepest_passing_selection_frontier"
+      },
+      "runs": [
+        {
+          "label": "original",
+          "run_id": "stage5_depth_support_route_20260705_124320",
+          "canonical_frontier": 9.005454545454546,
+          "canonical_frontier_pass": true,
+          "selected_correct": {
+            "7": 116,
+            "8": 106,
+            "9": 91,
+            "10": 69
+          }
+        },
+        {
+          "label": "seed_20260716",
+          "run_id": "stage5_support6_seed_replication_20260707_122930_seed20260716",
+          "canonical_frontier": 7.0471111111111115,
+          "canonical_frontier_pass": false,
+          "selected_correct": {
+            "7": 93,
+            "8": 48,
+            "9": 25,
+            "10": 13
+          }
+        },
+        {
+          "label": "seed_20260726",
+          "run_id": "stage5_support6_seed_replication_20260707_122930_seed20260726",
+          "canonical_frontier": 6.9511111111111115,
+          "canonical_frontier_pass": false,
+          "selected_correct": {
+            "7": 90,
+            "8": 47,
+            "9": 16,
+            "10": 13
+          }
+        }
+      ]
+    },
+    "support6_dosed_resolution": {
+      "status": "dosed_seed_resolution_needs_review",
+      "resolution_summary": {
+        "frontier_policy": "bar_crossing_frontier",
+        "frontier_bar": 0.71,
+        "target_frontier": 9.0,
+        "frontier_tolerance": 1.0,
+        "all_dosed_frontiers_in_band": false,
+        "all_dosed_frontiers_improved": true,
+        "post_dose_frontiers": [
+          9.504285714285714,
+          7.771764705882354
+        ],
+        "status": "dosed_seed_resolution_needs_review"
+      },
+      "failed_replicate_count": 2,
+      "completed_result_count": 2,
+      "all_expected_completed": true,
+      "decision": "Dosed seed resolution did not fully pass; support-6 robustness remains seed-sensitive.",
+      "results": [
+        {
+          "label": "seed_20260716",
+          "seed": "20260716",
+          "pre_frontier": 7.0471111111111115,
+          "post_frontier": 9.504285714285714,
+          "post_pass": true
+        },
+        {
+          "label": "seed_20260726",
+          "seed": "20260726",
+          "pre_frontier": 6.9511111111111115,
+          "post_frontier": 7.771764705882354,
+          "post_pass": false
+        }
+      ]
+    },
+    "support8_same_reader": {
+      "status": "finished",
+      "run_id": "stage5_same_reader_final_symbol_20260707_021010",
+      "source_summary": "outputs/stage5/stage5_support8_dose_arm_20260706_153028/summary.json",
+      "max_loops": 14,
+      "same_reader_total": {
+        "correct": 1506,
+        "total": 1792,
+        "accuracy": 0.8404017857142857
+      },
+      "metric_policy": {
+        "active": "full-symbol active-label diagonal",
+        "raw_final": "same-reader full-symbol argmax at loop == depth",
+        "mapped_final": "same-reader full-symbol argmax deterministically mapped to MCQ label",
+        "suspended_reader": "option-text/choice MCQ final-answer matrices remain diagnostic only"
+      },
+      "release_gate": {
+        "same_reader_decoder_wired": true,
+        "retire_suspended_mcq_final_tables": true
+      }
+    },
+    "n24": {
+      "status": "finished_with_frozen_eval",
+      "run_id": "stage5_n24_support12_rung_20260707_140139",
+      "final_checkpoint": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/train/chain_continuation/unfrozen_recurrent_step_6000.pt",
+      "final_checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_n24_support12_rung_20260707_140139/anneal_to_outcome_final/unfrozen_recurrent_step_6000.pt",
+      "final_step": 6000,
+      "final_verdict": "strong_four_point_law",
+      "overall_pass": true,
+      "selected_correct": {
+        "13": 123,
+        "14": 117,
+        "15": 113,
+        "16": 110,
+        "17": 103,
+        "18": 90,
+        "19": 82,
+        "20": 59,
+        "21": 44,
+        "22": 14
+      },
+      "nonregression_pass": true,
+      "skipped_checkpoints": [
+        {
+          "step": 4000,
+          "reason": "checkpoint step 4000 is unavailable locally and in known Drive backup paths"
+        }
+      ],
+      "canary_policy": null,
+      "canary_fields_present": [],
+      "archive_note": "Step 4000 was unavailable in the resume artifact; final step 6000 and ramp step 2000 are preserved."
+    },
+    "scorer_equivalence": {
+      "status": "passed",
+      "run_id": "stage5_scorer_equivalence_20260708_003132",
+      "pass": true,
+      "records_checked": null,
+      "mismatch_count": null,
+      "loop_counts": [
+        1,
+        2,
+        12,
+        22
+      ]
+    },
+    "regression_battery": {
+      "status": "green_noninferior",
+      "run_id": "stage5_regression_battery_loop1_current",
+      "source_summaries": [
+        "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/summary.json"
+      ],
+      "assessments": [
+        {
+          "label": "stage5_chain_continuation_attribution_20260704_163056",
+          "status": "green_noninferior",
+          "assessment_summary": "outputs/stage5/stage5_regression_battery_loop1_current/1_stage5_chain_continuation_attribution_20260704_163056/summary.json"
+        }
+      ],
+      "tier1_canary_status": "pending",
+      "hellaswag_winogrande_lambada_status": "pending",
+      "policy": {
+        "ai2_arc_not_arc_agi": true,
+        "arc_eval_only": true,
+        "if_red_or_yellow": "Review before route comparison; add uniform generic LM rehearsal to future training arms only if confirmed damage is real.",
+        "tier1_canary_status": "pending",
+        "hellaswag_winogrande_lambada_status": "pending"
+      }
+    }
+  },
+  "blockers": [
+    "Support-6 dosed seed resolution did not pass."
+  ],
+  "pending_followups": [
+    "Run support6_dosed_seed_resolution before treating support-6 replication as robustness evidence.",
+    "N24 checkpoint step 4000 is missing; archive note is recorded but the interval checkpoint is unavailable.",
+    "N24 run recorded the canary policy, but no external Tier-1 canary deltas were provided.",
+    "Natural-text NLL canary is still not wired into the regression battery.",
+    "HellaSwag/Winogrande/LAMBADA regression extensions remain pending.",
+    "N24 same-reader final-symbol scoring should be run before any final-symbol release claim.",
+    "Full lineage regression battery across base/recovery/scaled/support6/support8/N24 is not complete yet."
+  ],
+  "notes": [
+    "Canonical synthetic frontier is bar_crossing_frontier at accuracy bar 0.71.",
+    "MCQ option-text final tables remain suspended for release claims; same-reader final-symbol scoring is the live final metric."
+  ]
+}
