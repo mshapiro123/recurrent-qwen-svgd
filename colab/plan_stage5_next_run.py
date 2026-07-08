@@ -501,6 +501,7 @@ def synthetic_depth_followup_payload(payload: dict[str, Any]) -> dict[str, Any] 
             "stage5_same_reader_final_symbol_gate",
             "stage5_phase_a_surpass_preregistration",
             "stage5_chain_continuation_attribution",
+            "stage5_depth_support_route_comparison",
         }
         else None
     )

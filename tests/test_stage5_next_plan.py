@@ -1853,6 +1853,7 @@ def test_source_kind_classifies_followup_and_autopilot() -> None:
     assert source_kind({"kind": "stage5_same_reader_final_symbol_gate"}) == "stage5_same_reader_final_symbol_gate"
     assert source_kind({"kind": "stage5_phase_a_surpass_preregistration"}) == "stage5_phase_a_surpass_preregistration"
     assert source_kind({"kind": "stage5_chain_continuation_attribution"}) == "stage5_chain_continuation_attribution"
+    assert source_kind({"kind": "stage5_depth_support_route_comparison"}) == "stage5_depth_support_route_comparison"
     assert source_kind({"phase1_arc_agi_tuned": {}, "tuned_checkpoint": "ckpt.pt"}) == "recurrent_sft"
     assert source_kind({"rows": [], "deltas": {}, "paired_comparisons": {}}) == "tta_sweep"
 
