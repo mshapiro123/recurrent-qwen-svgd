@@ -1,0 +1,230 @@
+{
+  "kind": "synthetic_depth_accuracy_matrix",
+  "threshold": 0.71,
+  "depths": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "loops": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "matrix": {
+    "1": {
+      "1": {
+        "correct": 61,
+        "total": 64,
+        "accuracy": 0.953125
+      },
+      "2": {
+        "correct": 12,
+        "total": 64,
+        "accuracy": 0.1875
+      },
+      "3": {
+        "correct": 22,
+        "total": 64,
+        "accuracy": 0.34375
+      },
+      "4": {
+        "correct": 14,
+        "total": 64,
+        "accuracy": 0.21875
+      },
+      "5": {
+        "correct": 15,
+        "total": 64,
+        "accuracy": 0.234375
+      },
+      "6": {
+        "correct": 21,
+        "total": 64,
+        "accuracy": 0.328125
+      }
+    },
+    "2": {
+      "1": {
+        "correct": 14,
+        "total": 64,
+        "accuracy": 0.21875
+      },
+      "2": {
+        "correct": 36,
+        "total": 64,
+        "accuracy": 0.5625
+      },
+      "3": {
+        "correct": 15,
+        "total": 64,
+        "accuracy": 0.234375
+      },
+      "4": {
+        "correct": 21,
+        "total": 64,
+        "accuracy": 0.328125
+      },
+      "5": {
+        "correct": 26,
+        "total": 64,
+        "accuracy": 0.40625
+      },
+      "6": {
+        "correct": 18,
+        "total": 64,
+        "accuracy": 0.28125
+      }
+    },
+    "3": {
+      "1": {
+        "correct": 17,
+        "total": 64,
+        "accuracy": 0.265625
+      },
+      "2": {
+        "correct": 20,
+        "total": 64,
+        "accuracy": 0.3125
+      },
+      "3": {
+        "correct": 37,
+        "total": 64,
+        "accuracy": 0.578125
+      },
+      "4": {
+        "correct": 19,
+        "total": 64,
+        "accuracy": 0.296875
+      },
+      "5": {
+        "correct": 21,
+        "total": 64,
+        "accuracy": 0.328125
+      },
+      "6": {
+        "correct": 19,
+        "total": 64,
+        "accuracy": 0.296875
+      }
+    },
+    "4": {
+      "1": {
+        "correct": 15,
+        "total": 64,
+        "accuracy": 0.234375
+      },
+      "2": {
+        "correct": 17,
+        "total": 64,
+        "accuracy": 0.265625
+      },
+      "3": {
+        "correct": 15,
+        "total": 64,
+        "accuracy": 0.234375
+      },
+      "4": {
+        "correct": 27,
+        "total": 64,
+        "accuracy": 0.421875
+      },
+      "5": {
+        "correct": 12,
+        "total": 64,
+        "accuracy": 0.1875
+      },
+      "6": {
+        "correct": 13,
+        "total": 64,
+        "accuracy": 0.203125
+      }
+    },
+    "5": {
+      "1": {
+        "correct": 14,
+        "total": 64,
+        "accuracy": 0.21875
+      },
+      "2": {
+        "correct": 15,
+        "total": 64,
+        "accuracy": 0.234375
+      },
+      "3": {
+        "correct": 15,
+        "total": 64,
+        "accuracy": 0.234375
+      },
+      "4": {
+        "correct": 19,
+        "total": 64,
+        "accuracy": 0.296875
+      },
+      "5": {
+        "correct": 27,
+        "total": 64,
+        "accuracy": 0.421875
+      },
+      "6": {
+        "correct": 20,
+        "total": 64,
+        "accuracy": 0.3125
+      }
+    },
+    "6": {
+      "1": {
+        "correct": 16,
+        "total": 64,
+        "accuracy": 0.25
+      },
+      "2": {
+        "correct": 17,
+        "total": 64,
+        "accuracy": 0.265625
+      },
+      "3": {
+        "correct": 22,
+        "total": 64,
+        "accuracy": 0.34375
+      },
+      "4": {
+        "correct": 16,
+        "total": 64,
+        "accuracy": 0.25
+      },
+      "5": {
+        "correct": 15,
+        "total": 64,
+        "accuracy": 0.234375
+      },
+      "6": {
+        "correct": 28,
+        "total": 64,
+        "accuracy": 0.4375
+      }
+    }
+  },
+  "frontier_by_loop": {
+    "1": 1,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0,
+    "6": 0
+  },
+  "frontier_is_non_decreasing": false,
+  "frontier_strictly_expands": false,
+  "mode": "recurrent",
+  "checkpoint": "outputs/stage5/stage5_support6_dosed_seed_resolution_20260708_004504_seed_20260726_dose2000/train/chain_continuation/unfrozen_recurrent_step_2000.pt",
+  "data_jsonl": "outputs/stage5/stage5_support6_dosed_seed_resolution_20260708_004504_seed_20260726_dose2000/data/test_mcq_heldout64.jsonl",
+  "score_target": "option_text",
+  "aggregate": "mean",
+  "rows": 2304
+}
