@@ -86,7 +86,9 @@ def test_chain_consolidation_cell_names_all_three_targets() -> None:
     assert "n24_support12_rung" in text
     assert "support6_seed_replication" in text
     assert "support6_replication_receipts" in text
+    assert "support6_dosed_seed_resolution" in text
     assert "scorer_equivalence_receipt" in text
+    assert "synthetic_release_receipts" in text
     assert "phase_a_surpass_prereg" in text
     assert "splice_injection_diagnostic" in text
     assert "colab/run_stage5_chain_anneal_to_outcome.py" in text
@@ -100,7 +102,9 @@ def test_chain_consolidation_cell_names_all_three_targets() -> None:
     assert "colab/run_stage5_n24_support12_rung.py" in text
     assert "colab/run_stage5_support6_seed_replication.py" in text
     assert "colab/run_stage5_support6_replication_receipts.py" in text
+    assert "colab/run_stage5_support6_dosed_seed_resolution.py" in text
     assert "colab/run_stage5_scorer_equivalence_receipt.py" in text
+    assert "colab/run_stage5_synthetic_release_receipts.py" in text
     assert "eval/check_synthetic_active_label_scorer_equivalence.py" in text
     assert "colab/run_stage5_phase_a_surpass_plan.py" in text
     assert "colab/run_stage5_splice_injection.py" in text
@@ -121,7 +125,9 @@ def test_chain_consolidation_runners_import_when_executed_by_path() -> None:
         "colab/run_stage5_n24_support12_rung.py",
         "colab/run_stage5_support6_seed_replication.py",
         "colab/run_stage5_support6_replication_receipts.py",
+        "colab/run_stage5_support6_dosed_seed_resolution.py",
         "colab/run_stage5_scorer_equivalence_receipt.py",
+        "colab/run_stage5_synthetic_release_receipts.py",
         "colab/run_stage5_phase_a_surpass_plan.py",
         "colab/run_stage5_splice_injection.py",
     ]:

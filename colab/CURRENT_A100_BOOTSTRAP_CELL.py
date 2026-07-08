@@ -87,7 +87,9 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "same_reader_final_symbol" - release-gate final-symbol scoring with the same full-symbol reader used by active labels.
 #   "support6_seed_replication" - two added support-6 route seeds for replication-band evidence.
 #   "support6_replication_receipts" - CPU-only canonical frontier rescore and config-diff receipts for support-6 seeds.
+#   "support6_dosed_seed_resolution" - continue failed support-6 replicate seeds for a fixed-dose resolution.
 #   "scorer_equivalence_receipt" - tiny GPU fast-vs-slow active-label scorer equivalence receipt.
+#   "synthetic_release_receipts" - CPU-only dashboard of synthetic-line release receipts and missing guardrails.
 #   "n24_support12_rung" - final N-24 support-12 synthetic rung with locked gates and canary policy.
 #   "phase_a_surpass_prereg" - publish the same-reader Phase-A surpass comparison preregistration.
 #   "splice_injection_diagnostic" - inference-only hidden-state splice test for state-driven iteration vs shortcut.
@@ -2227,6 +2229,25 @@ TARGETS = {
             "STAGE5_SUPPORT6_RECEIPTS_DISCONNECT": "0",
         },
     },
+    "support6_dosed_seed_resolution": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "support6_dosed_seed_resolution",
+            "colab/run_stage5_support6_dosed_seed_resolution.py",
+            "STAGE5_SUPPORT6_DOSED_RECEIPT_SUMMARY",
+            "STAGE5_SUPPORT6_DOSED_STEPS",
+            "bar_crossing_frontier",
+            "tests/test_stage5_support6_seed_replication.py",
+        ],
+        "env": {
+            "STAGE5_SUPPORT6_DOSED_RECEIPT_SUMMARY": "outputs/stage5/stage5_support6_replication_receipts_20260708_003055/summary.json",
+            "STAGE5_SUPPORT6_DOSED_STEPS": "2000",
+            "STAGE5_SUPPORT6_DOSED_ROWS_PER_DEPTH": "256",
+            "STAGE5_SUPPORT6_DOSED_DTYPE": "bfloat16",
+            "STAGE5_SUPPORT6_DOSED_DISCONNECT": "0",
+        },
+    },
     "scorer_equivalence_receipt": {
         "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
         "markers": [
@@ -2243,6 +2264,21 @@ TARGETS = {
             "STAGE5_SCORER_EQUIV_LOOP_COUNTS": "1,2,12,22",
             "STAGE5_SCORER_EQUIV_DTYPE": "bfloat16",
             "STAGE5_SCORER_EQUIV_DISCONNECT": "0",
+        },
+    },
+    "synthetic_release_receipts": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "synthetic_release_receipts",
+            "colab/run_stage5_synthetic_release_receipts.py",
+            "stage5_synthetic_release_receipts",
+            "STAGE5_RELEASE_RECEIPTS_PUBLISH",
+            "support6_dosed_seed_resolution",
+            "scorer_equivalence_receipt",
+        ],
+        "env": {
+            "STAGE5_RELEASE_RECEIPTS_DISCONNECT": "0",
         },
     },
     "n24_support12_rung": {

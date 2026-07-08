@@ -26,7 +26,9 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: n24_support12_rung
 # Safety marker: support6_seed_replication
 # Safety marker: support6_replication_receipts
+# Safety marker: support6_dosed_seed_resolution
 # Safety marker: scorer_equivalence_receipt
+# Safety marker: synthetic_release_receipts
 # Safety marker: phase_a_surpass_prereg
 # Safety marker: splice_injection_diagnostic
 # Safety marker: eval/eval_synthetic_depth_artifact_check.py
@@ -49,10 +51,14 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: colab/run_stage5_n24_support12_rung.py
 # Safety marker: colab/run_stage5_support6_seed_replication.py
 # Safety marker: colab/run_stage5_support6_replication_receipts.py
+# Safety marker: colab/run_stage5_support6_dosed_seed_resolution.py
 # Safety marker: colab/run_stage5_scorer_equivalence_receipt.py
+# Safety marker: colab/run_stage5_synthetic_release_receipts.py
 # Safety marker: eval/check_synthetic_active_label_scorer_equivalence.py
 # Safety marker: bar_crossing_frontier
 # Safety marker: force_slow_candidate_score
+# Safety marker: STAGE5_RELEASE_RECEIPTS_PUBLISH
+# Safety marker: stage5_synthetic_release_receipts
 # Safety marker: colab/run_stage5_phase_a_surpass_plan.py
 # Safety marker: colab/run_stage5_splice_injection.py
 # Safety marker: STAGE5_EXTRAP_DEPTHS
@@ -80,6 +86,8 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: STAGE5_N24_EVAL_CHECKPOINTS
 # Safety marker: STAGE5_RUNG_CANARY_HARD_STOP
 # Safety marker: STAGE5_SUPPORT6_REPLICATION_SEEDS
+# Safety marker: STAGE5_SUPPORT6_DOSED_RECEIPT_SUMMARY
+# Safety marker: STAGE5_SUPPORT6_DOSED_STEPS
 # Safety marker: STAGE5_ROUTE_TRAIN_SEED
 # Safety marker: STAGE5_PHASE_A_PLAN_RUN_ID
 # Safety marker: soft_depth10_min_correct
@@ -265,6 +273,15 @@ TARGETS = {
         "requires_gpu": False,
         "mount_drive": False,
     },
+    "support6_dosed_seed_resolution": {
+        "script": "colab/run_stage5_support6_dosed_seed_resolution.py",
+        "tests": [
+            "tests/test_stage5_support6_seed_replication.py",
+            "tests/test_stage5_chain_consolidation.py",
+            "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
+        ],
+        "disconnect_env": "STAGE5_SUPPORT6_DOSED_DISCONNECT",
+    },
     "scorer_equivalence_receipt": {
         "script": "colab/run_stage5_scorer_equivalence_receipt.py",
         "tests": [
@@ -273,6 +290,17 @@ TARGETS = {
             "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
         ],
         "disconnect_env": "STAGE5_SCORER_EQUIV_DISCONNECT",
+    },
+    "synthetic_release_receipts": {
+        "script": "colab/run_stage5_synthetic_release_receipts.py",
+        "tests": [
+            "tests/test_stage5_support6_seed_replication.py",
+            "tests/test_stage5_chain_consolidation.py",
+            "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
+        ],
+        "disconnect_env": "STAGE5_RELEASE_RECEIPTS_DISCONNECT",
+        "requires_gpu": False,
+        "mount_drive": False,
     },
     "phase_a_surpass_prereg": {
         "script": "colab/run_stage5_phase_a_surpass_plan.py",

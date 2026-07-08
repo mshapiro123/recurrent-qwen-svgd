@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import pytest
 
+from colab.run_stage5_support6_dosed_seed_resolution import (
+    failed_replicate_runs,
+    seed_from_label,
+    summarize_dosed_results,
+)
 from colab.run_stage5_support6_seed_replication import canonical_frontier_from_score, summarize_results
+from colab.run_stage5_synthetic_release_receipts import release_status
 from colab.stage5_frontier_metrics import (
     bar_crossing_frontier,
     deepest_passing_selection_frontier,
@@ -52,3 +58,51 @@ def test_seed_replication_summary_requires_band_around_target() -> None:
     assert passing["status"] == "replication_pass"
     assert passing["within_plus_minus_one"] is True
     assert failing["status"] == "replication_needs_review"
+
+
+def test_dosed_seed_resolution_selects_only_failed_replicates() -> None:
+    receipt = {
+        "runs": [
+            {"label": "original", "canonical_frontier_pass": True},
+            {"label": "seed_20260716", "canonical_frontier_pass": False},
+            {"label": "seed_20260726", "canonical_frontier_pass": True},
+        ]
+    }
+
+    failed = failed_replicate_runs(receipt)
+
+    assert [item["label"] for item in failed] == ["seed_20260716"]
+    assert seed_from_label("seed_20260716") == "20260716"
+
+
+def test_dosed_seed_resolution_requires_post_dose_frontier_band() -> None:
+    passing = summarize_dosed_results(
+        [
+            {
+                "pre_dose": {"canonical_frontier": 7.0},
+                "post_dose": {"canonical_frontier": 8.1},
+            },
+            {
+                "pre_dose": {"canonical_frontier": 6.9},
+                "post_dose": {"canonical_frontier": 9.2},
+            },
+        ]
+    )
+    failing = summarize_dosed_results(
+        [
+            {
+                "pre_dose": {"canonical_frontier": 7.0},
+                "post_dose": {"canonical_frontier": 7.9},
+            }
+        ]
+    )
+
+    assert passing["status"] == "dosed_seed_resolution_pass"
+    assert passing["all_dosed_frontiers_improved"] is True
+    assert failing["status"] == "dosed_seed_resolution_needs_review"
+
+
+def test_release_receipt_status_prioritizes_blockers_then_pending() -> None:
+    assert release_status({"blockers": ["x"], "pending_followups": []}) == "release_receipts_blocked"
+    assert release_status({"blockers": [], "pending_followups": ["x"]}) == "release_receipts_need_followup"
+    assert release_status({"blockers": [], "pending_followups": []}) == "release_receipts_complete"
