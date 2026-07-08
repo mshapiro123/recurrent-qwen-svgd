@@ -1,0 +1,7 @@
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5225.09it/s]
+lora_recurrent_modules=84
+loaded_checkpoint=/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_n24_support12_rung_20260707_140139/anneal_to_outcome_final/unfrozen_recurrent_step_6000.pt loaded_keys=29
+skipped_keys=123
+aggregate=mean accuracy=0.6000 correct=3118 total=5197

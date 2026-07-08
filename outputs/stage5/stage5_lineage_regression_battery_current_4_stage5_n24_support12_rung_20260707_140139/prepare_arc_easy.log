@@ -1,0 +1,6 @@
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=all
+offset=0
+rows=5197
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_lineage_regression_battery_current_4_stage5_n24_support12_rung_20260707_140139/arc_easy_all_full.jsonl
