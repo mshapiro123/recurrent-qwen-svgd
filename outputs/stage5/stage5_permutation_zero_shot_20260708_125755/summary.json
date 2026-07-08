@@ -1,0 +1,181 @@
+{
+  "kind": "stage5_permutation_zero_shot",
+  "run_id": "stage5_permutation_zero_shot_20260708_125755",
+  "status": "permutation_zero_shot_parity_pass",
+  "source_summary": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json",
+  "checkpoint": "outputs/stage5/stage5_permutation_zero_shot_20260708_125755/restored/n24_checkpoint.pt",
+  "checkpoint_metadata": {
+    "source_reference": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_n24_support12_rung_20260707_140139/anneal_to_outcome_final/unfrozen_recurrent_step_6000.pt"
+  },
+  "permutation_eval_set": {
+    "kind": "stage5_synthetic_depth_permutation_eval_set",
+    "run_id": "stage5_synthetic_depth_permutation_eval_v1_n24_depth12",
+    "status": "finished",
+    "n_symbols": 24,
+    "max_depth": 12,
+    "rows_per_depth": 128,
+    "value_prefix": "letter:",
+    "seed": "20260708",
+    "data_summary": "outputs/stage5/stage5_synthetic_depth_permutation_eval_v1_n24_depth12/data/summary.json",
+    "test_chain_mcq": "outputs/stage5/stage5_synthetic_depth_permutation_eval_v1_n24_depth12/data/test_chain_mcq.jsonl"
+  },
+  "artifact_check": {
+    "kind": "synthetic_depth_extrapolation_artifact_check",
+    "checkpoint": "outputs/stage5/stage5_permutation_zero_shot_20260708_125755/restored/n24_checkpoint.pt",
+    "data_jsonl": "outputs/stage5/stage5_synthetic_depth_permutation_eval_v1_n24_depth12/data/test_chain_mcq.jsonl",
+    "sample_id": "test_d01_00000",
+    "requested_max_loops": 12,
+    "loop_logits_shape": [
+      1,
+      1,
+      12,
+      132,
+      151936
+    ],
+    "loop_states_observed": 12,
+    "bridge_forward_calls": 11,
+    "expected_bridge_forward_calls": 11,
+    "forced_loop_count_honored": true,
+    "bridge_fires_on_reentry": true,
+    "source_static_checks": {
+      "learned_loop_control_optional": true,
+      "learned_loop_control_default_false": true,
+      "halting_loop_embedding_present": true,
+      "halting_target_loop_router_present": true,
+      "max_loop_embedding_capacity_64": false,
+      "no_literal_four_loop_cap_in_wrapper": true
+    },
+    "pass": true
+  },
+  "active_eval": {
+    "active_rows": "outputs/stage5/stage5_permutation_zero_shot_20260708_125755/eval/active_rows.jsonl",
+    "active_summary": "outputs/stage5/stage5_permutation_zero_shot_20260708_125755/eval/active_summary.json",
+    "active_diagonal": {
+      "1": 1.0,
+      "2": 0.9765625,
+      "3": 0.9921875,
+      "4": 0.9765625,
+      "5": 0.9921875,
+      "6": 0.984375,
+      "7": 0.9765625,
+      "8": 0.9453125,
+      "9": 0.9921875,
+      "10": 0.984375,
+      "11": 0.953125,
+      "12": 0.9609375
+    },
+    "active_total": {
+      "correct": 9841,
+      "total": 9984,
+      "accuracy": 0.9856770833333334
+    }
+  },
+  "arbitrary_n24_diagonal": {
+    "1": 1.0,
+    "2": 0.9921875,
+    "3": 0.9921875,
+    "4": 1.0,
+    "5": 0.9921875,
+    "6": 0.9921875,
+    "7": 0.9921875,
+    "8": 0.9765625,
+    "9": 0.9765625,
+    "10": 0.9765625,
+    "11": 0.96875,
+    "12": 0.9765625
+  },
+  "parity": {
+    "tolerance": 0.05,
+    "depths_compared": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11",
+      "12"
+    ],
+    "max_abs_delta": 0.03125,
+    "within_tolerance_each_depth": true,
+    "deltas": {
+      "1": {
+        "arbitrary_accuracy": 1.0,
+        "permutation_accuracy": 1.0,
+        "delta": 0.0,
+        "abs_delta": 0.0
+      },
+      "2": {
+        "arbitrary_accuracy": 0.9921875,
+        "permutation_accuracy": 0.9765625,
+        "delta": -0.015625,
+        "abs_delta": 0.015625
+      },
+      "3": {
+        "arbitrary_accuracy": 0.9921875,
+        "permutation_accuracy": 0.9921875,
+        "delta": 0.0,
+        "abs_delta": 0.0
+      },
+      "4": {
+        "arbitrary_accuracy": 1.0,
+        "permutation_accuracy": 0.9765625,
+        "delta": -0.0234375,
+        "abs_delta": 0.0234375
+      },
+      "5": {
+        "arbitrary_accuracy": 0.9921875,
+        "permutation_accuracy": 0.9921875,
+        "delta": 0.0,
+        "abs_delta": 0.0
+      },
+      "6": {
+        "arbitrary_accuracy": 0.9921875,
+        "permutation_accuracy": 0.984375,
+        "delta": -0.0078125,
+        "abs_delta": 0.0078125
+      },
+      "7": {
+        "arbitrary_accuracy": 0.9921875,
+        "permutation_accuracy": 0.9765625,
+        "delta": -0.015625,
+        "abs_delta": 0.015625
+      },
+      "8": {
+        "arbitrary_accuracy": 0.9765625,
+        "permutation_accuracy": 0.9453125,
+        "delta": -0.03125,
+        "abs_delta": 0.03125
+      },
+      "9": {
+        "arbitrary_accuracy": 0.9765625,
+        "permutation_accuracy": 0.9921875,
+        "delta": 0.015625,
+        "abs_delta": 0.015625
+      },
+      "10": {
+        "arbitrary_accuracy": 0.9765625,
+        "permutation_accuracy": 0.984375,
+        "delta": 0.0078125,
+        "abs_delta": 0.0078125
+      },
+      "11": {
+        "arbitrary_accuracy": 0.96875,
+        "permutation_accuracy": 0.953125,
+        "delta": -0.015625,
+        "abs_delta": 0.015625
+      },
+      "12": {
+        "arbitrary_accuracy": 0.9765625,
+        "permutation_accuracy": 0.9609375,
+        "delta": -0.015625,
+        "abs_delta": 0.015625
+      }
+    }
+  },
+  "decision": "Permutation zero-shot parity holds within tolerance."
+}

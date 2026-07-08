@@ -1,0 +1,28 @@
+{
+  "kind": "synthetic_depth_extrapolation_artifact_check",
+  "checkpoint": "outputs/stage5/stage5_permutation_zero_shot_20260708_125755/restored/n24_checkpoint.pt",
+  "data_jsonl": "outputs/stage5/stage5_synthetic_depth_permutation_eval_v1_n24_depth12/data/test_chain_mcq.jsonl",
+  "sample_id": "test_d01_00000",
+  "requested_max_loops": 12,
+  "loop_logits_shape": [
+    1,
+    1,
+    12,
+    132,
+    151936
+  ],
+  "loop_states_observed": 12,
+  "bridge_forward_calls": 11,
+  "expected_bridge_forward_calls": 11,
+  "forced_loop_count_honored": true,
+  "bridge_fires_on_reentry": true,
+  "source_static_checks": {
+    "learned_loop_control_optional": true,
+    "learned_loop_control_default_false": true,
+    "halting_loop_embedding_present": true,
+    "halting_target_loop_router_present": true,
+    "max_loop_embedding_capacity_64": false,
+    "no_literal_four_loop_cap_in_wrapper": true
+  },
+  "pass": true
+}
