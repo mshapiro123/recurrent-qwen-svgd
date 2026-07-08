@@ -12,6 +12,7 @@ from training.synthetic_depth_task import (
     build_chain_label_sft_row,
     build_chain_symbol_sft_row,
     build_instance,
+    build_permutation_instance,
     build_mcq_sft_row,
     build_mcq_row,
     build_sft_row,
@@ -49,6 +50,23 @@ def test_instance_rejects_depth_too_large_for_distinct_orbit() -> None:
             depth=4,
             seed=1,
         )
+
+
+def test_permutation_instance_is_bijective_and_preserves_orbit_prefix() -> None:
+    instance = build_permutation_instance(
+        instance_id="perm_depth5",
+        n_symbols=12,
+        depth=5,
+        seed=1234,
+        num_choices=4,
+    )
+
+    assert sorted(instance.mapping) == list(range(12))
+    assert sorted(instance.mapping.values()) == list(range(12))
+    assert len(set(instance.orbit)) == instance.depth + 1
+    assert apply_mapping(instance.mapping, instance.start, instance.depth) == instance.target
+    for left, right in zip(instance.orbit, instance.orbit[1:]):
+        assert instance.mapping[left] == right
 
 
 def test_mcq_row_contains_target_once_and_preserves_metadata() -> None:
@@ -227,6 +245,16 @@ def test_dataset_generation_is_deterministic_and_balanced() -> None:
     }
 
 
+def test_permutation_dataset_generation_is_deterministic_and_bijective() -> None:
+    config = SyntheticDepthConfig(n_symbols=10, max_depth=4, rows_per_depth=2, seed=78, max_target_loops=4)
+
+    rows = build_dataset(config, split="test", permutation=True)
+
+    assert len(rows) == 8
+    assert [row.instance_id for row in rows] == [row.instance_id for row in build_dataset(config, split="test", permutation=True)]
+    assert all(sorted(row.mapping.values()) == list(range(10)) for row in rows)
+
+
 def test_write_synthetic_depth_dataset_writes_train_val_test_and_summary(tmp_path: Path) -> None:
     summary = write_synthetic_depth_dataset(
         output_dir=tmp_path,
@@ -289,3 +317,15 @@ def test_write_synthetic_depth_dataset_supports_depth8_letter_prefix(tmp_path: P
     depth8 = next(row for row in rows if row["depth"] == 8)
     assert len(depth8["loop_completions"]) == 8
     assert all(value in set("ABCDEFGHIJKLMNOP") for value in depth8["orbit"])
+
+
+def test_write_synthetic_depth_dataset_can_emit_permutation_family(tmp_path: Path) -> None:
+    summary = write_synthetic_depth_dataset(
+        output_dir=tmp_path,
+        config=SyntheticDepthConfig(n_symbols=8, max_depth=3, rows_per_depth=1, seed=20260708, max_target_loops=3),
+        permutation=True,
+    )
+
+    assert summary["mapping_family"] == "permutation"
+    row = json.loads((tmp_path / "test_chain_mcq.jsonl").read_text(encoding="utf-8").splitlines()[0])
+    assert row["intermediate_chain_supervision"] is True

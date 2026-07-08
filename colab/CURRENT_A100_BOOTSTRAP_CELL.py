@@ -2199,6 +2199,27 @@ TARGETS = {
             "STAGE5_SAME_READER_DISCONNECT": "0",
         },
     },
+    "n24_same_reader_receipt": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "n24_same_reader_receipt",
+            "colab/run_stage5_same_reader_final_symbol.py",
+            "STAGE5_SAME_READER_EXPECT_IDENTITY_WITH_ACTIVE",
+            "same_reader_active_identity_check",
+            "stage5_n24_same_reader_final_symbol_current",
+        ],
+        "env": {
+            "STAGE5_SAME_READER_RUN_ID": "stage5_n24_same_reader_final_symbol_current",
+            "STAGE5_SAME_READER_SOURCE_SUMMARY": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json",
+            "STAGE5_SAME_READER_DATA_JSONL": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v3_depth22_n24/data/test_chain_mcq.jsonl",
+            "STAGE5_SAME_READER_MAX_LOOPS": "22",
+            "STAGE5_SAME_READER_EXPECT_IDENTITY_WITH_ACTIVE": "1",
+            "STAGE5_SAME_READER_IDENTITY_TOLERANCE": "0.000001",
+            "STAGE5_SAME_READER_DTYPE": "bfloat16",
+            "STAGE5_SAME_READER_DISCONNECT": "0",
+        },
+    },
     "support6_seed_replication": {
         "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
         "markers": [
@@ -2246,6 +2267,25 @@ TARGETS = {
             "STAGE5_SUPPORT6_DOSED_ROWS_PER_DEPTH": "256",
             "STAGE5_SUPPORT6_DOSED_DTYPE": "bfloat16",
             "STAGE5_SUPPORT6_DOSED_DISCONNECT": "0",
+        },
+    },
+    "support6_seed26_plateau_test": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "support6_seed26_plateau_test",
+            "colab/run_stage5_support6_seed26_plateau.py",
+            "STAGE5_SEED26_PLATEAU_SOURCE_SUMMARY",
+            "PLATEAU_MIN_GAIN",
+            "seed26_unified",
+            "seed26_plateau",
+        ],
+        "env": {
+            "STAGE5_SEED26_PLATEAU_SOURCE_SUMMARY": "outputs/stage5/stage5_support6_dosed_seed_resolution_20260708_004504_seed_20260726_dose2000/summary.json",
+            "STAGE5_SEED26_PLATEAU_STEPS": "2000",
+            "STAGE5_SEED26_PLATEAU_SEED": "20260726",
+            "STAGE5_SEED26_PLATEAU_DTYPE": "bfloat16",
+            "STAGE5_SEED26_PLATEAU_DISCONNECT": "0",
         },
     },
     "scorer_equivalence_receipt": {
@@ -2320,6 +2360,27 @@ TARGETS = {
             "STAGE5_PHASE_A_PLAN_DISCONNECT": "0",
         },
     },
+    "permutation_zero_shot_baseline": {
+        "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
+        "markers": [
+            "STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION",
+            "permutation_zero_shot_baseline",
+            "colab/run_stage5_permutation_zero_shot.py",
+            "stage5_synthetic_depth_permutation_eval_set",
+            "STAGE5_PERM_PARITY_TOLERANCE",
+            "--permutation",
+        ],
+        "env": {
+            "STAGE5_PERM_SOURCE_SUMMARY": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json",
+            "STAGE5_PERM_EVAL_ID": "stage5_synthetic_depth_permutation_eval_v1_n24_depth12",
+            "STAGE5_PERM_N_SYMBOLS": "24",
+            "STAGE5_PERM_MAX_DEPTH": "12",
+            "STAGE5_PERM_ROWS_PER_DEPTH": "128",
+            "STAGE5_PERM_PARITY_TOLERANCE": "0.05",
+            "STAGE5_PERM_DTYPE": "bfloat16",
+            "STAGE5_PERM_DISCONNECT": "0",
+        },
+    },
     "splice_injection_diagnostic": {
         "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
         "markers": [
@@ -2364,6 +2425,29 @@ TARGETS = {
         "env": {
             "STAGE5_REGRESSION_CURRENT_SOURCE_SUMMARY": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/summary.json",
             "STAGE5_REGRESSION_BATTERY_RUN_ID": "stage5_regression_battery_loop1_current",
+            "STAGE5_REGRESSION_ARC_SPLIT": "all",
+            "STAGE5_REGRESSION_ARC_EASY_LIMIT": "all",
+            "STAGE5_REGRESSION_ARC_CHALLENGE_LIMIT": "all",
+            "STAGE5_REGRESSION_MARGIN": "0.03",
+            "STAGE5_REGRESSION_YELLOW_MARGIN": "0.015",
+            "STAGE5_REGRESSION_PUSH": "1",
+            "STAGE5_REGRESSION_DISCONNECT": "0",
+        },
+    },
+    "lineage_regression_battery": {
+        "path": "colab/STAGE5_REGRESSION_BATTERY_CELL.py",
+        "markers": [
+            "STAGE5_REGRESSION_BATTERY_CELL_VERSION",
+            "regression_battery_ai2_arc_v1",
+            "STAGE5_REGRESSION_SOURCE_SUMMARIES",
+            "forced loop 1",
+            "AI2 ARC, not ARC-AGI",
+            "tier1_canary_status",
+            "hellaswag_winogrande_lambada_status",
+        ],
+        "env": {
+            "STAGE5_REGRESSION_SOURCE_SUMMARIES": "outputs/stage5/stage5_reentry_recovery_20260625_154210/summary.json,outputs/stage5/stage5_depth_support_route_20260705_124320/summary.json,outputs/stage5/stage5_support8_dose_arm_20260706_153028/summary.json,outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json",
+            "STAGE5_REGRESSION_BATTERY_RUN_ID": "stage5_lineage_regression_battery_current",
             "STAGE5_REGRESSION_ARC_SPLIT": "all",
             "STAGE5_REGRESSION_ARC_EASY_LIMIT": "all",
             "STAGE5_REGRESSION_ARC_CHALLENGE_LIMIT": "all",

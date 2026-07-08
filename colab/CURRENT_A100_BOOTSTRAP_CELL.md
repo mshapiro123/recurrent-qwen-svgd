@@ -81,17 +81,24 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "chain_continuation_attribution" - same-budget continued chain supervision control plus depth 1-8 extrapolation.
 #   "chain_continuation_probe_readout" - probe battery on the chain-continuation checkpoint.
 #   "regression_battery_loop1_current" - loop-1 AI2 ARC non-inferiority battery before route comparison.
+#   "lineage_regression_battery" - loop-1 AI2 ARC battery across the current recurrent checkpoint lineage.
 #   "depth_support_route_comparison" - train support depth 1-6 and score on frozen depth 1-10 rows.
 #   "depth_support_ladder8" - train support depth 1-8 and score on frozen depth 1-14 rows.
 #   "support8_probe_readout" - eval-only envelope/clock/probe readout on the support-8 checkpoint over frozen depth 1-14 rows.
 #   "support8_dose_arm" - continue support-8 for +2000 same-curriculum steps and rescore locked frozen depth 1-14 gates.
 #   "same_reader_final_symbol" - release-gate final-symbol scoring with the same full-symbol reader used by active labels.
+#   "n24_same_reader_receipt" - N24 same-reader final-symbol identity receipt against active-label diagonal.
+#   uses STAGE5_SAME_READER_EXPECT_IDENTITY_WITH_ACTIVE for the N24 identity receipt.
 #   "support6_seed_replication" - two added support-6 route seeds for replication-band evidence.
 #   "support6_replication_receipts" - CPU-only canonical frontier rescore and config-diff receipts for support-6 seeds.
 #   "support6_dosed_seed_resolution" - continue failed support-6 replicate seeds for a fixed-dose resolution.
+#   "support6_seed26_plateau_test" - one final 2k dose from seed-26 rescue checkpoint under locked plateau rules.
+#   uses STAGE5_SEED26_PLATEAU_SOURCE_SUMMARY to pin the rescue checkpoint source.
 #   "scorer_equivalence_receipt" - tiny GPU fast-vs-slow active-label scorer equivalence receipt.
 #   "synthetic_release_receipts" - CPU-only dashboard of synthetic-line release receipts and missing guardrails.
 #   "n24_support12_rung" - final N-24 support-12 synthetic rung with locked gates and canary policy.
+#   "permutation_zero_shot_baseline" - N24 eval-only transfer control on bijective/permutation tables.
+#   uses STAGE5_PERM_SOURCE_SUMMARY and STAGE5_PERM_PARITY_TOLERANCE for the permutation transfer gate.
 #   "phase_a_surpass_prereg" - publish the same-reader Phase-A surpass comparison preregistration.
 #   "splice_injection_diagnostic" - inference-only hidden-state splice test for state-driven iteration vs shortcut.
 #   "gradient_path_audit" - read-only per-loop gradient matrix plus finite-difference bridge check.

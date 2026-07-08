@@ -83,13 +83,16 @@ def test_chain_consolidation_cell_names_all_three_targets() -> None:
     assert "support8_probe_readout" in text
     assert "support8_dose_arm" in text
     assert "same_reader_final_symbol" in text
+    assert "n24_same_reader_receipt" in text
     assert "n24_support12_rung" in text
     assert "support6_seed_replication" in text
     assert "support6_replication_receipts" in text
     assert "support6_dosed_seed_resolution" in text
+    assert "support6_seed26_plateau_test" in text
     assert "scorer_equivalence_receipt" in text
     assert "synthetic_release_receipts" in text
     assert "phase_a_surpass_prereg" in text
+    assert "permutation_zero_shot_baseline" in text
     assert "splice_injection_diagnostic" in text
     assert "colab/run_stage5_chain_anneal_to_outcome.py" in text
     assert "colab/run_stage5_post_anneal_readouts.py" in text
@@ -103,8 +106,10 @@ def test_chain_consolidation_cell_names_all_three_targets() -> None:
     assert "colab/run_stage5_support6_seed_replication.py" in text
     assert "colab/run_stage5_support6_replication_receipts.py" in text
     assert "colab/run_stage5_support6_dosed_seed_resolution.py" in text
+    assert "colab/run_stage5_support6_seed26_plateau.py" in text
     assert "colab/run_stage5_scorer_equivalence_receipt.py" in text
     assert "colab/run_stage5_synthetic_release_receipts.py" in text
+    assert "colab/run_stage5_permutation_zero_shot.py" in text
     assert "eval/check_synthetic_active_label_scorer_equivalence.py" in text
     assert "colab/run_stage5_phase_a_surpass_plan.py" in text
     assert "colab/run_stage5_splice_injection.py" in text
@@ -126,9 +131,11 @@ def test_chain_consolidation_runners_import_when_executed_by_path() -> None:
         "colab/run_stage5_support6_seed_replication.py",
         "colab/run_stage5_support6_replication_receipts.py",
         "colab/run_stage5_support6_dosed_seed_resolution.py",
+        "colab/run_stage5_support6_seed26_plateau.py",
         "colab/run_stage5_scorer_equivalence_receipt.py",
         "colab/run_stage5_synthetic_release_receipts.py",
         "colab/run_stage5_phase_a_surpass_plan.py",
+        "colab/run_stage5_permutation_zero_shot.py",
         "colab/run_stage5_splice_injection.py",
     ]:
         namespace = runpy.run_path(path, run_name="not_main")

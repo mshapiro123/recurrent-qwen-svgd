@@ -7,6 +7,7 @@ from colab.run_stage5_support6_dosed_seed_resolution import (
     seed_from_label,
     summarize_dosed_results,
 )
+from colab.run_stage5_support6_seed26_plateau import plateau_outcome
 from colab.run_stage5_support6_seed_replication import canonical_frontier_from_score, summarize_results
 from colab.run_stage5_synthetic_release_receipts import release_status
 from colab.run_stage5_synthetic_release_receipts import compact_dosed
@@ -109,6 +110,14 @@ def test_dosed_seed_resolution_requires_post_dose_frontier_band() -> None:
     partial = summarize_dosed_results(one_completed_result, expected_count=2)
     assert partial["status"] == "dosed_seed_resolution_running"
     assert failing["status"] == "dosed_seed_resolution_needs_review"
+
+
+def test_seed26_plateau_classifier_uses_locked_rules() -> None:
+    assert plateau_outcome(pre_frontier=7.77, post_frontier=8.01)["status"] == "seed26_unified"
+    assert plateau_outcome(pre_frontier=7.77, post_frontier=7.95)["status"] == "seed26_plateau"
+    ambiguous = plateau_outcome(pre_frontier=7.40, post_frontier=7.80)
+    assert ambiguous["status"] == "seed26_ambiguous"
+    assert ambiguous["gain"] == pytest.approx(0.4)
 
 
 def test_release_receipt_status_prioritizes_blockers_then_pending() -> None:

@@ -2302,12 +2302,15 @@ def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
         assert "support8_probe_readout" in text
         assert "support8_dose_arm" in text
         assert "same_reader_final_symbol" in text
+        assert "n24_same_reader_receipt" in text
         assert "support6_seed_replication" in text
         assert "support6_replication_receipts" in text
         assert "support6_dosed_seed_resolution" in text
+        assert "support6_seed26_plateau_test" in text
         assert "synthetic_release_receipts" in text
         assert "n24_support12_rung" in text
         assert "phase_a_surpass_prereg" in text
+        assert "permutation_zero_shot_baseline" in text
         assert "splice_injection_diagnostic" in text
         assert "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py" in text
         assert "STAGE5_EXTRAP_MAX_LOOPS" in text
@@ -2318,8 +2321,10 @@ def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
         assert "STAGE5_SUPPORT8_SOURCE_SUMMARY" in text
         assert "STAGE5_DOSE_SOURCE_SUMMARY" in text
         assert "STAGE5_SAME_READER_SOURCE_SUMMARY" in text
+        assert "STAGE5_SAME_READER_EXPECT_IDENTITY_WITH_ACTIVE" in text
         assert "STAGE5_SUPPORT6_REPLICATION_SEEDS" in text
         assert "STAGE5_SUPPORT6_DOSED_RECEIPT_SUMMARY" in text
+        assert "STAGE5_SEED26_PLATEAU_SOURCE_SUMMARY" in text
         assert "STAGE5_RELEASE_RECEIPTS_PUBLISH" in text
         assert "STAGE5_N24_FROZEN_EVAL_ID" in text
         assert "STAGE5_RUNG_CANARY_HARD_STOP" in text
@@ -2355,9 +2360,13 @@ def test_chain_consolidation_targets_are_wired_and_guarded() -> None:
     assert "colab/run_stage5_support6_seed_replication.py" in cell
     assert "colab/run_stage5_support6_replication_receipts.py" in cell
     assert "colab/run_stage5_support6_dosed_seed_resolution.py" in cell
+    assert "colab/run_stage5_support6_seed26_plateau.py" in cell
     assert "colab/run_stage5_synthetic_release_receipts.py" in cell
     assert "colab/run_stage5_n24_support12_rung.py" in cell
     assert "colab/run_stage5_phase_a_surpass_plan.py" in cell
+    assert "colab/run_stage5_permutation_zero_shot.py" in cell
+    assert "same_reader_active_identity_check" in cell
+    assert "STAGE5_PERM_PARITY_TOLERANCE" in cell
     assert "soft_depth10_min_correct" in cell
     assert "soft_depth11_min_correct" in cell
     assert "N24_STRONG_SCALING_MIN_CORRECT" in cell

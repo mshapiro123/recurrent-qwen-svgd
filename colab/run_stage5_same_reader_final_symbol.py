@@ -22,6 +22,7 @@ from colab.stage5_chain_consolidation_utils import (  # noqa: E402
     resolve_checkpoint_reference,
     write_json,
 )
+from colab.stage5_frontier_metrics import diagonal_counts_to_accuracy  # noqa: E402
 
 
 DEFAULT_SOURCE = "outputs/stage5/stage5_support8_dose_arm_20260706_153028/summary.json"
@@ -68,6 +69,78 @@ def max_depth_from_source(payload: dict[str, Any]) -> int:
     if diag:
         return max(int(depth) for depth in diag)
     return int(os.environ.get("STAGE5_SAME_READER_MAX_LOOPS", "14"))
+
+
+def latest_checkpoint_eval(payload: dict[str, Any]) -> dict[str, Any] | None:
+    evals = [item for item in payload.get("checkpoint_evals") or [] if isinstance(item, dict)]
+    if not evals:
+        return None
+    return max(evals, key=lambda item: int(item.get("step") or -1))
+
+
+def source_active_diagonal(payload: dict[str, Any]) -> dict[str, float]:
+    """Return the active-label diagonal that same-reader scoring should match.
+
+    Route-style summaries store it under ``frozen_active_eval``.  N24 summaries
+    store per-checkpoint evals and the release receipt must compare against the
+    latest checkpoint eval, not an older partial readout.
+    """
+
+    active = payload.get("frozen_active_eval") if isinstance(payload.get("frozen_active_eval"), dict) else {}
+    diagonal = active.get("active_diagonal") if isinstance(active.get("active_diagonal"), dict) else {}
+    if diagonal:
+        return {str(depth): float(value) for depth, value in diagonal.items()}
+
+    latest = latest_checkpoint_eval(payload)
+    score = latest.get("score") if isinstance(latest, dict) else {}
+    counts = score.get("diagonal_counts") if isinstance(score, dict) else {}
+    if isinstance(counts, dict) and counts:
+        return {str(depth): float(value) for depth, value in diagonal_counts_to_accuracy(counts).items()}
+    return {}
+
+
+def same_reader_diagonal(same_reader: dict[str, Any]) -> dict[str, float]:
+    by_depth = same_reader.get("by_depth") if isinstance(same_reader.get("by_depth"), dict) else {}
+    return {
+        str(depth): float(item.get("same_reader_accuracy"))
+        for depth, item in by_depth.items()
+        if isinstance(item, dict) and item.get("same_reader_accuracy") is not None
+    }
+
+
+def identity_check_against_active(
+    *,
+    source_payload: dict[str, Any],
+    same_reader: dict[str, Any],
+    tolerance: float,
+) -> dict[str, Any]:
+    expected = source_active_diagonal(source_payload)
+    observed = same_reader_diagonal(same_reader)
+    common = sorted(set(expected) & set(observed), key=int)
+    deltas = {
+        depth: {
+            "active_accuracy": expected[depth],
+            "same_reader_accuracy": observed[depth],
+            "delta": observed[depth] - expected[depth],
+            "abs_delta": abs(observed[depth] - expected[depth]),
+        }
+        for depth in common
+    }
+    missing_expected = sorted(set(expected) - set(observed), key=int)
+    missing_observed = sorted(set(observed) - set(expected), key=int)
+    max_abs_delta = max((item["abs_delta"] for item in deltas.values()), default=None)
+    pass_check = bool(common) and not missing_expected and (max_abs_delta is not None and max_abs_delta <= tolerance)
+    return {
+        "kind": "same_reader_active_identity_check",
+        "expected_source": "source active-label diagonal",
+        "tolerance": tolerance,
+        "depths_compared": common,
+        "missing_expected_depths": missing_expected,
+        "extra_same_reader_depths": missing_observed,
+        "max_abs_delta": max_abs_delta,
+        "pass": pass_check,
+        "deltas": deltas,
+    }
 
 
 def write_markdown(run_dir: Path, payload: dict[str, Any]) -> None:
@@ -152,10 +225,29 @@ def main() -> int:
         ]
     )
     same_reader = read_json(summary_path)
+    identity_check = None
+    if os.environ.get("STAGE5_SAME_READER_EXPECT_IDENTITY_WITH_ACTIVE", "0").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+        "on",
+    }:
+        identity_check = identity_check_against_active(
+            source_payload=source_payload,
+            same_reader=same_reader,
+            tolerance=float(os.environ.get("STAGE5_SAME_READER_IDENTITY_TOLERANCE", "0.000001")),
+        )
+        if not identity_check["pass"]:
+            payload.update({"status": "identity_check_failed", "same_reader_final": same_reader, "identity_check": identity_check})
+            write_json(run_dir / "summary.json", payload)
+            write_markdown(run_dir, payload)
+            raise RuntimeError(f"Same-reader identity check failed: {identity_check}")
     payload.update(
         {
             "status": "finished",
             "same_reader_final": same_reader,
+            "identity_check": identity_check,
             "rows_path": path_for_cli(rows_path),
             "summary_path": path_for_cli(summary_path),
             "release_gate": {

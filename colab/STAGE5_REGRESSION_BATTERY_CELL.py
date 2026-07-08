@@ -29,6 +29,8 @@ STAGE5_REGRESSION_BATTERY_CELL_VERSION = "regression_battery_ai2_arc_v1"
 # Safety marker: colab/run_stage5_regression_battery.py
 # Safety marker: tests/test_regression_battery.py
 # Safety marker: tests/test_stage5_benchmark_suite.py::test_benchmark_specs_supports_all_arc_splits
+# Safety marker: tier1_canary_status
+# Safety marker: hellaswag_winogrande_lambada_status
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")

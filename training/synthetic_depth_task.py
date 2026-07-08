@@ -122,6 +122,75 @@ def build_instance(
     )
 
 
+def build_permutation_instance(
+    *,
+    instance_id: str,
+    n_symbols: int,
+    depth: int,
+    seed: int,
+    split: str = "test",
+    num_choices: int = 4,
+) -> SyntheticDepthInstance:
+    """Build an iterated-function row whose mapping is bijective.
+
+    This is the permutation zero-shot control for the synthetic-depth line.  It
+    keeps the same distinct orbit-prefix condition as ``build_instance`` while
+    removing the many-to-one arbitrary-function statistics from the table.
+    """
+
+    if n_symbols < 3:
+        raise ValueError("n_symbols must be at least 3")
+    if depth < 1:
+        raise ValueError("depth must be >= 1")
+    if depth >= n_symbols:
+        raise ValueError("depth must be < n_symbols to guarantee a distinct d+1 orbit prefix")
+    if not 2 <= num_choices <= min(len(LABELS), n_symbols):
+        raise ValueError("num_choices must be between 2 and min(6, n_symbols)")
+
+    rng = random.Random(seed)
+    values = list(range(n_symbols))
+    orbit = rng.sample(values, depth + 1)
+    mapping: dict[int, int] = {}
+    for left, right in zip(orbit, orbit[1:]):
+        mapping[left] = right
+
+    used_images = set(orbit[1:])
+    remaining_domains = [value for value in values if value not in mapping]
+    remaining_images = [value for value in values if value not in used_images]
+    rng.shuffle(remaining_images)
+    for left, right in zip(remaining_domains, remaining_images):
+        mapping[left] = right
+
+    if sorted(mapping) != values or sorted(mapping.values()) != values:
+        raise AssertionError("Permutation construction failed to produce a bijection")
+
+    table_order = values[:]
+    rng.shuffle(table_order)
+    target = orbit[-1]
+    distractors = [value for value in values if value != target]
+    choices = rng.sample(distractors, num_choices - 1) + [target]
+    rng.shuffle(choices)
+    answer_index = choices.index(target)
+
+    computed = apply_mapping(mapping, orbit[0], depth)
+    if computed != target:
+        raise AssertionError("Synthetic-depth permutation construction failed to preserve target")
+
+    return SyntheticDepthInstance(
+        instance_id=instance_id,
+        split=split,
+        n_symbols=n_symbols,
+        depth=depth,
+        start=orbit[0],
+        target=target,
+        mapping=mapping,
+        table_order=table_order,
+        choices=choices,
+        answer_index=answer_index,
+        orbit=orbit,
+    )
+
+
 def render_table(instance: SyntheticDepthInstance, *, value_prefix: str = "") -> str:
     return "\n".join(
         f"{symbol(left, prefix=value_prefix)} -> {symbol(instance.mapping[left], prefix=value_prefix)}"
@@ -379,13 +448,19 @@ def build_chain_symbol_sft_row(
     }
 
 
-def build_dataset(config: SyntheticDepthConfig, *, split: str) -> list[SyntheticDepthInstance]:
+def build_dataset(
+    config: SyntheticDepthConfig,
+    *,
+    split: str,
+    permutation: bool = False,
+) -> list[SyntheticDepthInstance]:
     rows: list[SyntheticDepthInstance] = []
+    builder = build_permutation_instance if permutation else build_instance
     for depth in range(1, config.max_depth + 1):
         for idx in range(config.rows_per_depth):
             instance_id = f"{split}_d{depth:02d}_{idx:05d}"
             rows.append(
-                build_instance(
+                builder(
                     instance_id=instance_id,
                     split=split,
                     n_symbols=config.n_symbols,
@@ -409,11 +484,15 @@ def write_synthetic_depth_dataset(
     *,
     output_dir: str | Path,
     config: SyntheticDepthConfig,
+    permutation: bool = False,
 ) -> dict[str, Any]:
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
 
-    instances = {split: build_dataset(config, split=split) for split in ("train", "val", "test")}
+    instances = {
+        split: build_dataset(config, split=split, permutation=permutation)
+        for split in ("train", "val", "test")
+    }
     for split, split_instances in instances.items():
         _write_jsonl(
             out / f"{split}_sft.jsonl",
@@ -480,6 +559,7 @@ def write_synthetic_depth_dataset(
     summary = {
         "kind": "synthetic_depth_dataset",
         "config": asdict(config),
+        "mapping_family": "permutation" if permutation else "arbitrary_function",
         "rows": {split: len(split_instances) for split, split_instances in instances.items()},
         "depth_counts": {
             split: {
@@ -517,6 +597,7 @@ def main() -> int:
     parser.add_argument("--num_choices", type=int, default=4)
     parser.add_argument("--max_target_loops", type=int, default=8)
     parser.add_argument("--value_prefix", default="")
+    parser.add_argument("--permutation", action="store_true")
     args = parser.parse_args()
 
     summary = write_synthetic_depth_dataset(
@@ -530,6 +611,7 @@ def main() -> int:
             max_target_loops=args.max_target_loops,
             value_prefix=args.value_prefix,
         ),
+        permutation=args.permutation,
     )
     print(json.dumps(summary, indent=2))
     return 0

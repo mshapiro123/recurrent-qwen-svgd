@@ -27,10 +27,13 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: support6_seed_replication
 # Safety marker: support6_replication_receipts
 # Safety marker: support6_dosed_seed_resolution
+# Safety marker: support6_seed26_plateau_test
 # Safety marker: scorer_equivalence_receipt
 # Safety marker: synthetic_release_receipts
 # Safety marker: phase_a_surpass_prereg
 # Safety marker: splice_injection_diagnostic
+# Safety marker: n24_same_reader_receipt
+# Safety marker: permutation_zero_shot_baseline
 # Safety marker: eval/eval_synthetic_depth_artifact_check.py
 # Safety marker: eval/eval_synthetic_depth_probe.py
 # Safety marker: eval/eval_synthetic_depth_splice.py
@@ -52,8 +55,17 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: colab/run_stage5_support6_seed_replication.py
 # Safety marker: colab/run_stage5_support6_replication_receipts.py
 # Safety marker: colab/run_stage5_support6_dosed_seed_resolution.py
+# Safety marker: colab/run_stage5_support6_seed26_plateau.py
 # Safety marker: colab/run_stage5_scorer_equivalence_receipt.py
 # Safety marker: colab/run_stage5_synthetic_release_receipts.py
+# Safety marker: colab/run_stage5_permutation_zero_shot.py
+# Safety marker: same_reader_active_identity_check
+# Safety marker: stage5_n24_same_reader_final_symbol_current
+# Safety marker: PLATEAU_MIN_GAIN
+# Safety marker: seed26_unified
+# Safety marker: seed26_plateau
+# Safety marker: stage5_synthetic_depth_permutation_eval_set
+# Safety marker: --permutation
 # Safety marker: eval/check_synthetic_active_label_scorer_equivalence.py
 # Safety marker: bar_crossing_frontier
 # Safety marker: force_slow_candidate_score
@@ -82,12 +94,16 @@ STAGE5_CHAIN_CONSOLIDATION_CELL_VERSION = "chain_consolidation_v1"
 # Safety marker: STAGE5_DOSE_SOURCE_SUMMARY
 # Safety marker: STAGE5_DOSE_STEPS
 # Safety marker: STAGE5_SAME_READER_SOURCE_SUMMARY
+# Safety marker: STAGE5_SAME_READER_EXPECT_IDENTITY_WITH_ACTIVE
 # Safety marker: STAGE5_N24_FROZEN_EVAL_ID
 # Safety marker: STAGE5_N24_EVAL_CHECKPOINTS
 # Safety marker: STAGE5_RUNG_CANARY_HARD_STOP
 # Safety marker: STAGE5_SUPPORT6_REPLICATION_SEEDS
 # Safety marker: STAGE5_SUPPORT6_DOSED_RECEIPT_SUMMARY
 # Safety marker: STAGE5_SUPPORT6_DOSED_STEPS
+# Safety marker: STAGE5_SEED26_PLATEAU_SOURCE_SUMMARY
+# Safety marker: STAGE5_PERM_SOURCE_SUMMARY
+# Safety marker: STAGE5_PERM_PARITY_TOLERANCE
 # Safety marker: STAGE5_ROUTE_TRAIN_SEED
 # Safety marker: STAGE5_PHASE_A_PLAN_RUN_ID
 # Safety marker: soft_depth10_min_correct
@@ -243,6 +259,25 @@ TARGETS = {
         ],
         "disconnect_env": "STAGE5_SAME_READER_DISCONNECT",
     },
+    "n24_same_reader_receipt": {
+        "script": "colab/run_stage5_same_reader_final_symbol.py",
+        "tests": [
+            "tests/test_eval_synthetic_depth_final_symbol.py",
+            "tests/test_eval_synthetic_depth_active_labels.py",
+            "tests/test_stage5_chain_consolidation.py",
+            "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
+        ],
+        "env": {
+            "STAGE5_SAME_READER_RUN_ID": "stage5_n24_same_reader_final_symbol_current",
+            "STAGE5_SAME_READER_SOURCE_SUMMARY": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json",
+            "STAGE5_SAME_READER_DATA_JSONL": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v3_depth22_n24/data/test_chain_mcq.jsonl",
+            "STAGE5_SAME_READER_MAX_LOOPS": "22",
+            "STAGE5_SAME_READER_EXPECT_IDENTITY_WITH_ACTIVE": "1",
+            "STAGE5_SAME_READER_IDENTITY_TOLERANCE": "0.000001",
+            "STAGE5_SAME_READER_DTYPE": "bfloat16",
+        },
+        "disconnect_env": "STAGE5_SAME_READER_DISCONNECT",
+    },
     "n24_support12_rung": {
         "script": "colab/run_stage5_n24_support12_rung.py",
         "tests": [
@@ -282,6 +317,21 @@ TARGETS = {
         ],
         "disconnect_env": "STAGE5_SUPPORT6_DOSED_DISCONNECT",
     },
+    "support6_seed26_plateau_test": {
+        "script": "colab/run_stage5_support6_seed26_plateau.py",
+        "tests": [
+            "tests/test_stage5_support6_seed_replication.py",
+            "tests/test_stage5_chain_consolidation.py",
+            "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
+        ],
+        "env": {
+            "STAGE5_SEED26_PLATEAU_SOURCE_SUMMARY": "outputs/stage5/stage5_support6_dosed_seed_resolution_20260708_004504_seed_20260726_dose2000/summary.json",
+            "STAGE5_SEED26_PLATEAU_STEPS": "2000",
+            "STAGE5_SEED26_PLATEAU_SEED": "20260726",
+            "STAGE5_SEED26_PLATEAU_DTYPE": "bfloat16",
+        },
+        "disconnect_env": "STAGE5_SEED26_PLATEAU_DISCONNECT",
+    },
     "scorer_equivalence_receipt": {
         "script": "colab/run_stage5_scorer_equivalence_receipt.py",
         "tests": [
@@ -310,6 +360,25 @@ TARGETS = {
             "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
         ],
         "disconnect_env": "STAGE5_PHASE_A_PLAN_DISCONNECT",
+    },
+    "permutation_zero_shot_baseline": {
+        "script": "colab/run_stage5_permutation_zero_shot.py",
+        "tests": [
+            "tests/test_synthetic_depth_task.py",
+            "tests/test_eval_synthetic_depth_active_labels.py",
+            "tests/test_stage5_chain_consolidation.py",
+            "tests/test_stage5_notebooks.py::test_chain_consolidation_targets_are_wired_and_guarded",
+        ],
+        "env": {
+            "STAGE5_PERM_SOURCE_SUMMARY": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json",
+            "STAGE5_PERM_EVAL_ID": "stage5_synthetic_depth_permutation_eval_v1_n24_depth12",
+            "STAGE5_PERM_N_SYMBOLS": "24",
+            "STAGE5_PERM_MAX_DEPTH": "12",
+            "STAGE5_PERM_ROWS_PER_DEPTH": "128",
+            "STAGE5_PERM_PARITY_TOLERANCE": "0.05",
+            "STAGE5_PERM_DTYPE": "bfloat16",
+        },
+        "disconnect_env": "STAGE5_PERM_DISCONNECT",
     },
     "splice_injection_diagnostic": {
         "script": "colab/run_stage5_splice_injection.py",
