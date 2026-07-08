@@ -1,0 +1,175 @@
+{
+  "kind": "stage5_natural_surface_transfer_dataset",
+  "status": "finished",
+  "config": {
+    "n_symbols": 20,
+    "train_max_depth": 8,
+    "eval_max_depth": 12,
+    "train_rows_per_depth": 256,
+    "val_rows_per_depth": 64,
+    "eval_rows_per_depth": 128,
+    "seed": 910031,
+    "max_target_loops": 12,
+    "value_prefix": "name:"
+  },
+  "name_symbols": [
+    "Ben",
+    "Sam",
+    "Tom",
+    "Max",
+    "Ada",
+    "Lee",
+    "Ana",
+    "Joe",
+    "Amy",
+    "Dan",
+    "Ray",
+    "Ted",
+    "Una",
+    "Val",
+    "Bob",
+    "Ann",
+    "Tim",
+    "Jan",
+    "Kim",
+    "Jon"
+  ],
+  "families": {
+    "relay": "temporal key passing, trained at rung zero",
+    "pointer": "spatial note following, held out for zero-shot cross-template read"
+  },
+  "files": {
+    "train_relay_chain_symbol_sft": "train_relay_chain_symbol_sft.jsonl",
+    "val_relay_chain_symbol_sft": "val_relay_chain_symbol_sft.jsonl",
+    "relay_test_chain_mcq": "relay_test_chain_mcq.jsonl",
+    "pointer_test_chain_mcq": "pointer_test_chain_mcq.jsonl",
+    "synthetic_rehearsal_chain_symbol_sft": "synthetic_rehearsal_chain_symbol_sft.jsonl",
+    "rung0_train_mix_chain_symbol_sft": "rung0_train_mix_chain_symbol_sft.jsonl"
+  },
+  "manifests": {
+    "train_relay_chain_symbol_sft": {
+      "rows": 2048,
+      "depth_counts": {
+        "1": 256,
+        "2": 256,
+        "3": 256,
+        "4": 256,
+        "5": 256,
+        "6": 256,
+        "7": 256,
+        "8": 256
+      },
+      "row_id_sha256": "cf8620d963297681b5f92b4a307f6d6a2e43706fb3171d2b4a1f0bc9c5647720",
+      "row_sha256": "d50fc9055c0a45343ca0357452f8fd150fa6d53bbcde53d13ebac5f5becf4088"
+    },
+    "val_relay_chain_symbol_sft": {
+      "rows": 512,
+      "depth_counts": {
+        "1": 64,
+        "2": 64,
+        "3": 64,
+        "4": 64,
+        "5": 64,
+        "6": 64,
+        "7": 64,
+        "8": 64
+      },
+      "row_id_sha256": "a2dadbed3275bd804b15fc08da4a06d8cadbbb8d8f8e47c0928c1af6a170898f",
+      "row_sha256": "d195900cd36eab5fcaa41b14f2df62f0402dc245f387dcebf231a606dfb3e82e"
+    },
+    "relay_test_chain_mcq": {
+      "rows": 1536,
+      "depth_counts": {
+        "1": 128,
+        "2": 128,
+        "3": 128,
+        "4": 128,
+        "5": 128,
+        "6": 128,
+        "7": 128,
+        "8": 128,
+        "9": 128,
+        "10": 128,
+        "11": 128,
+        "12": 128
+      },
+      "row_id_sha256": "76b39b50c133c8b49c22015f86ab868edb6c8bc38c071cc012bb9107d2cab3dd",
+      "row_sha256": "f76ae5d657f740bc71d85b36007327b48eb8ea4ab30a20637032a21b157e6fb9"
+    },
+    "pointer_test_chain_mcq": {
+      "rows": 1536,
+      "depth_counts": {
+        "1": 128,
+        "2": 128,
+        "3": 128,
+        "4": 128,
+        "5": 128,
+        "6": 128,
+        "7": 128,
+        "8": 128,
+        "9": 128,
+        "10": 128,
+        "11": 128,
+        "12": 128
+      },
+      "row_id_sha256": "97830dcb311d042b803c12e15cfd83ea95220059829380d5300baf4c67d4d904",
+      "row_sha256": "77711fb3ac76c6b35614245d738b38b16192fea7149e0fb2743fbb4ff46263e0"
+    },
+    "synthetic_rehearsal_chain_symbol_sft": {
+      "rows": 2048,
+      "depth_counts": {
+        "1": 256,
+        "2": 256,
+        "3": 256,
+        "4": 256,
+        "5": 256,
+        "6": 256,
+        "7": 256,
+        "8": 256
+      },
+      "row_id_sha256": "115a798b5a836dd07dfb412b2ed0db54db7e5f9c3f3de966cf8043926b9982d9",
+      "row_sha256": "4f380a0fa011a2e3dbbdb52d771102871ab2d223c689da317879c49e5f379089"
+    },
+    "rung0_train_mix_chain_symbol_sft": {
+      "rows": 4096,
+      "depth_counts": {
+        "1": 512,
+        "2": 512,
+        "3": 512,
+        "4": 512,
+        "5": 512,
+        "6": 512,
+        "7": 512,
+        "8": 512
+      },
+      "row_id_sha256": "10742401edcd12418f3f8c672afb7949c18705b9349c4e2191f76ec86e51f0a2",
+      "row_sha256": "93fc3e9e470213a5ca30933c36ee1e933b8d7d6fa8abcd22ea996797a97b50bd"
+    }
+  },
+  "gates": {
+    "relay_train_depths": [
+      1,
+      8
+    ],
+    "relay_eval_depths": [
+      1,
+      12
+    ],
+    "pointer_eval_depths": [
+      1,
+      12
+    ],
+    "active_label_bar": {
+      "correct": 91,
+      "total": 128,
+      "accuracy": 0.7109375
+    },
+    "synthetic_nonregression_floor_delta": 0.03
+  },
+  "standing_rules": {
+    "text_born_from_steps": true,
+    "answer_space": "single-token names must be tokenizer-verified before training",
+    "segmentation_required": false,
+    "prontoqa": "queued behind verbal generator as weak-supervision external-data track"
+  }
+}
