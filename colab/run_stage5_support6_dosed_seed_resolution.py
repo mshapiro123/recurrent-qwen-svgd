@@ -69,9 +69,16 @@ def failed_replicate_runs(receipt: dict[str, Any]) -> list[dict[str, Any]]:
     return failed
 
 
-def summarize_dosed_results(results: list[dict[str, Any]]) -> dict[str, Any]:
+def summarize_dosed_results(results: list[dict[str, Any]], *, expected_count: int | None = None) -> dict[str, Any]:
     if not results:
-        return {"status": "no_failed_replicates_to_resolve"}
+        return {
+            "expected_count": int(expected_count or 0),
+            "completed_count": 0,
+            "all_expected_completed": expected_count in {None, 0},
+            "status": "no_failed_replicates_to_resolve" if expected_count in {None, 0} else "dosed_seed_resolution_running",
+        }
+    completed_count = len(results)
+    all_expected_completed = expected_count is None or completed_count >= int(expected_count)
     frontier_passes = [
         frontier_in_band(
             float(item["post_dose"]["canonical_frontier"]),
@@ -92,11 +99,16 @@ def summarize_dosed_results(results: list[dict[str, Any]]) -> dict[str, Any]:
         "frontier_bar": FRONTIER_BAR,
         "target_frontier": TARGET_FRONTIER,
         "frontier_tolerance": TOLERANCE,
+        "expected_count": expected_count,
+        "completed_count": completed_count,
+        "all_expected_completed": all_expected_completed,
         "all_dosed_frontiers_in_band": bool(frontier_passes) and all(frontier_passes),
         "all_dosed_frontiers_improved": bool(improved) and all(improved),
         "post_dose_frontiers": [item["post_dose"]["canonical_frontier"] for item in results],
         "status": "dosed_seed_resolution_pass"
-        if frontier_passes and all(frontier_passes)
+        if all_expected_completed and frontier_passes and all(frontier_passes)
+        else "dosed_seed_resolution_running"
+        if not all_expected_completed
         else "dosed_seed_resolution_needs_review",
     }
 
@@ -156,7 +168,7 @@ def main() -> int:
         payload.update(
             {
                 "status": "no_failed_replicates_to_resolve",
-                "resolution_summary": summarize_dosed_results([]),
+                "resolution_summary": summarize_dosed_results([], expected_count=0),
                 "decision": "The source receipt has no failed replicate seeds under the canonical frontier policy.",
             }
         )
@@ -200,7 +212,7 @@ def main() -> int:
             "post_dose": post_dose,
         }
         payload["results"].append(result)
-        resolution = summarize_dosed_results(payload["results"])
+        resolution = summarize_dosed_results(payload["results"], expected_count=len(failed))
         payload.update(
             {
                 "status": resolution["status"],
@@ -216,7 +228,7 @@ def main() -> int:
         write_markdown(run_dir, payload)
         publish_run(run_dir, message=f"Record Stage 5 support-6 dosed seed partial {run_id} {label} [skip ci]")
 
-    resolution = summarize_dosed_results(payload["results"])
+    resolution = summarize_dosed_results(payload["results"], expected_count=len(failed))
     payload.update(
         {
             "status": resolution["status"],

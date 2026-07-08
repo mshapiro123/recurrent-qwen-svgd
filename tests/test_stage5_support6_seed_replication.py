@@ -9,6 +9,7 @@ from colab.run_stage5_support6_dosed_seed_resolution import (
 )
 from colab.run_stage5_support6_seed_replication import canonical_frontier_from_score, summarize_results
 from colab.run_stage5_synthetic_release_receipts import release_status
+from colab.run_stage5_synthetic_release_receipts import compact_dosed
 from colab.stage5_frontier_metrics import (
     bar_crossing_frontier,
     deepest_passing_selection_frontier,
@@ -99,6 +100,14 @@ def test_dosed_seed_resolution_requires_post_dose_frontier_band() -> None:
 
     assert passing["status"] == "dosed_seed_resolution_pass"
     assert passing["all_dosed_frontiers_improved"] is True
+    one_completed_result = [
+        {
+            "pre_dose": {"canonical_frontier": 7.0},
+            "post_dose": {"canonical_frontier": 8.1},
+        }
+    ]
+    partial = summarize_dosed_results(one_completed_result, expected_count=2)
+    assert partial["status"] == "dosed_seed_resolution_running"
     assert failing["status"] == "dosed_seed_resolution_needs_review"
 
 
@@ -106,3 +115,17 @@ def test_release_receipt_status_prioritizes_blockers_then_pending() -> None:
     assert release_status({"blockers": ["x"], "pending_followups": []}) == "release_receipts_blocked"
     assert release_status({"blockers": [], "pending_followups": ["x"]}) == "release_receipts_need_followup"
     assert release_status({"blockers": [], "pending_followups": []}) == "release_receipts_complete"
+
+
+def test_release_receipts_reclassify_partial_dosed_parent_as_running() -> None:
+    compact = compact_dosed(
+        {
+            "status": "dosed_seed_resolution_pass",
+            "failed_replicates": [{"label": "seed_a"}, {"label": "seed_b"}],
+            "results": [{"label": "seed_a"}],
+        },
+        None,
+    )
+
+    assert compact["status"] == "dosed_seed_resolution_running"
+    assert compact["all_expected_completed"] is False

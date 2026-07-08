@@ -83,9 +83,17 @@ def compact_support6(payload: dict[str, Any] | None, error: str | None) -> dict[
 def compact_dosed(payload: dict[str, Any] | None, error: str | None) -> dict[str, Any]:
     if payload is None:
         return {"status": "pending", "error": error}
+    failed_count = len(payload.get("failed_replicates") or [])
+    completed_count = len(payload.get("results") or [])
+    status = payload.get("status")
+    if failed_count and completed_count < failed_count:
+        status = "dosed_seed_resolution_running"
     return {
-        "status": payload.get("status"),
+        "status": status,
         "resolution_summary": payload.get("resolution_summary"),
+        "failed_replicate_count": failed_count,
+        "completed_result_count": completed_count,
+        "all_expected_completed": (not failed_count) or completed_count >= failed_count,
         "decision": payload.get("decision"),
         "results": [
             {
