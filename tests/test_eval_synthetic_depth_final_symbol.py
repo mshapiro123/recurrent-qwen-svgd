@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from colab.run_stage5_same_reader_final_symbol import identity_check_against_active
+from colab.run_stage5_same_reader_final_symbol import identity_check_against_active, source_data_jsonl
 from eval.eval_synthetic_depth_final_symbol import choice_label_for_symbol, summarize_final_symbol_rows
 
 
@@ -44,3 +44,14 @@ def test_same_reader_identity_check_compares_against_latest_checkpoint_eval() ->
 
     assert check["pass"] is True
     assert check["deltas"]["1"]["active_accuracy"] == 1.0
+
+
+def test_same_reader_source_data_jsonl_falls_back_to_latest_artifact_check() -> None:
+    source = {
+        "checkpoint_evals": [
+            {"step": 2000, "artifact_check": {"data_jsonl": "old.jsonl"}},
+            {"step": 6000, "artifact_check": {"data_jsonl": "latest.jsonl"}},
+        ]
+    }
+
+    assert source_data_jsonl(source) == "latest.jsonl"

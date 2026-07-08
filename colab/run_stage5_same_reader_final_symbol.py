@@ -57,6 +57,11 @@ def source_data_jsonl(payload: dict[str, Any]) -> str:
     value = frozen.get("test_chain_mcq") or payload.get("data_jsonl")
     if isinstance(value, str) and value.strip():
         return value
+    latest = latest_checkpoint_eval(payload)
+    artifact = latest.get("artifact_check") if isinstance(latest, dict) else {}
+    value = artifact.get("data_jsonl") if isinstance(artifact, dict) else None
+    if isinstance(value, str) and value.strip():
+        return value
     raise KeyError("Source summary does not expose frozen_eval_set.test_chain_mcq")
 
 
@@ -168,13 +173,14 @@ def main() -> int:
     run_dir.mkdir(parents=True, exist_ok=True)
     source_summary = os.environ.get("STAGE5_SAME_READER_SOURCE_SUMMARY", DEFAULT_SOURCE)
     source_payload = read_json(source_summary)
+    checkpoint_ref = os.environ.get("STAGE5_SAME_READER_CHECKPOINT") or source_checkpoint(source_payload)
     checkpoint, checkpoint_meta = resolve_checkpoint_reference(
-        os.environ.get("STAGE5_SAME_READER_CHECKPOINT", source_checkpoint(source_payload)),
+        checkpoint_ref,
         run_dir / "restored" / "source_checkpoint.pt",
         label="same_reader_source",
     )
-    data_jsonl = os.environ.get("STAGE5_SAME_READER_DATA_JSONL", source_data_jsonl(source_payload))
-    max_loops = int(os.environ.get("STAGE5_SAME_READER_MAX_LOOPS", str(max_depth_from_source(source_payload))))
+    data_jsonl = os.environ.get("STAGE5_SAME_READER_DATA_JSONL") or source_data_jsonl(source_payload)
+    max_loops = int(os.environ.get("STAGE5_SAME_READER_MAX_LOOPS") or str(max_depth_from_source(source_payload)))
     dtype = os.environ.get("STAGE5_SAME_READER_DTYPE", "bfloat16")
     value_prefix = os.environ.get("STAGE5_SAME_READER_VALUE_PREFIX", "letter:")
     rows_path = run_dir / "eval" / "same_reader_final_rows.jsonl"

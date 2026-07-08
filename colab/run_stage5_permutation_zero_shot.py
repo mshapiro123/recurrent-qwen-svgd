@@ -196,8 +196,9 @@ def main() -> int:
         seed=os.environ.get("STAGE5_PERM_SEED", "20260708"),
         value_prefix=value_prefix,
     )
+    checkpoint_ref = os.environ.get("STAGE5_PERM_CHECKPOINT") or checkpoint_reference(source_payload)
     checkpoint, checkpoint_meta = resolve_checkpoint_reference(
-        os.environ.get("STAGE5_PERM_CHECKPOINT", checkpoint_reference(source_payload)),
+        checkpoint_ref,
         run_dir / "restored" / "n24_checkpoint.pt",
         label="permutation_n24",
     )
