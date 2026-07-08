@@ -1,0 +1,15 @@
+
+Generating train split:   0%|          | 0/2251 [00:00<?, ? examples/s]
+Generating train split: 100%|██████████| 2251/2251 [00:00<00:00, 59557.66 examples/s]
+
+Generating test split:   0%|          | 0/2376 [00:00<?, ? examples/s]
+Generating test split: 100%|██████████| 2376/2376 [00:00<00:00, 407393.77 examples/s]
+
+Generating validation split:   0%|          | 0/570 [00:00<?, ? examples/s]
+Generating validation split: 100%|██████████| 570/570 [00:00<00:00, 182208.16 examples/s]
+dataset_id=allenai/ai2_arc
+config=ARC-Easy
+split=all
+offset=0
+rows=5197
+output_jsonl=/content/recurrent-qwen-svgd/data/stage5_benchmark_suite/stage5_lineage_regression_battery_current_1_stage5_reentry_recovery_20260625_154210/arc_easy_all_full.jsonl
