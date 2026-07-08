@@ -1,0 +1,178 @@
+{
+  "kind": "stage5_support6_seed26_plateau_test",
+  "run_id": "stage5_support6_seed26_plateau_20260708_130654",
+  "status": "seed26_unified",
+  "source_summary": "outputs/stage5/stage5_support6_dosed_seed_resolution_20260708_004504_seed_20260726_dose2000/summary.json",
+  "source_score": {
+    "run_id": "stage5_support6_dosed_seed_resolution_20260708_004504_seed_20260726_dose2000",
+    "summary": null,
+    "status": "finished_with_frozen_eval",
+    "overall_pass": true,
+    "canonical_frontier": 7.771764705882354,
+    "canonical_frontier_pass": false,
+    "deepest_passing_selection_frontier": 10,
+    "active_diagonal": {
+      "1": 1.0,
+      "2": 1.0,
+      "3": 0.96875,
+      "4": 0.953125,
+      "5": 0.921875,
+      "6": 0.859375,
+      "7": 0.8125,
+      "8": 0.6796875,
+      "9": 0.4375,
+      "10": 0.3046875
+    },
+    "diagonal_counts": {
+      "1": {
+        "correct": 128,
+        "total": 128,
+        "accuracy": 1.0
+      },
+      "2": {
+        "correct": 128,
+        "total": 128,
+        "accuracy": 1.0
+      },
+      "3": {
+        "correct": 124,
+        "total": 128,
+        "accuracy": 0.96875
+      },
+      "4": {
+        "correct": 122,
+        "total": 128,
+        "accuracy": 0.953125
+      },
+      "5": {
+        "correct": 118,
+        "total": 128,
+        "accuracy": 0.921875
+      },
+      "6": {
+        "correct": 110,
+        "total": 128,
+        "accuracy": 0.859375
+      },
+      "7": {
+        "correct": 104,
+        "total": 128,
+        "accuracy": 0.8125
+      },
+      "8": {
+        "correct": 87,
+        "total": 128,
+        "accuracy": 0.6796875
+      },
+      "9": {
+        "correct": 56,
+        "total": 128,
+        "accuracy": 0.4375
+      },
+      "10": {
+        "correct": 39,
+        "total": 128,
+        "accuracy": 0.3046875
+      }
+    },
+    "selected_correct": {
+      "7": 104,
+      "8": 87,
+      "9": 56,
+      "10": 39
+    }
+  },
+  "extra_steps": 2000,
+  "seed": "20260726",
+  "child_run_id": "stage5_support6_seed26_plateau_20260708_130654_dose2000",
+  "child_summary": "outputs/stage5/stage5_support6_seed26_plateau_20260708_130654_dose2000/summary.json",
+  "post_score": {
+    "run_id": "stage5_support6_seed26_plateau_20260708_130654_dose2000",
+    "summary": null,
+    "status": "finished_with_frozen_eval",
+    "overall_pass": true,
+    "canonical_frontier": 10.0,
+    "canonical_frontier_pass": true,
+    "deepest_passing_selection_frontier": 10,
+    "active_diagonal": {
+      "1": 1.0,
+      "2": 0.984375,
+      "3": 0.9921875,
+      "4": 1.0,
+      "5": 0.9921875,
+      "6": 0.9921875,
+      "7": 0.9765625,
+      "8": 0.921875,
+      "9": 0.90625,
+      "10": 0.8828125
+    },
+    "diagonal_counts": {
+      "1": {
+        "correct": 128,
+        "total": 128,
+        "accuracy": 1.0
+      },
+      "2": {
+        "correct": 126,
+        "total": 128,
+        "accuracy": 0.984375
+      },
+      "3": {
+        "correct": 127,
+        "total": 128,
+        "accuracy": 0.9921875
+      },
+      "4": {
+        "correct": 128,
+        "total": 128,
+        "accuracy": 1.0
+      },
+      "5": {
+        "correct": 127,
+        "total": 128,
+        "accuracy": 0.9921875
+      },
+      "6": {
+        "correct": 127,
+        "total": 128,
+        "accuracy": 0.9921875
+      },
+      "7": {
+        "correct": 125,
+        "total": 128,
+        "accuracy": 0.9765625
+      },
+      "8": {
+        "correct": 118,
+        "total": 128,
+        "accuracy": 0.921875
+      },
+      "9": {
+        "correct": 116,
+        "total": 128,
+        "accuracy": 0.90625
+      },
+      "10": {
+        "correct": 113,
+        "total": 128,
+        "accuracy": 0.8828125
+      }
+    },
+    "selected_correct": {
+      "7": 125,
+      "8": 118,
+      "9": 116,
+      "10": 113
+    }
+  },
+  "plateau_outcome": {
+    "unified_frontier": 8.0,
+    "plateau_min_gain": 0.3,
+    "pre_frontier": 7.771764705882354,
+    "post_frontier": 10.0,
+    "gain": 2.2282352941176464,
+    "status": "seed26_unified",
+    "decision": "UNIFIED: seed 26 cleared the canonical frontier after the final fixed dose."
+  },
+  "decision": "UNIFIED: seed 26 cleared the canonical frontier after the final fixed dose."
+}
