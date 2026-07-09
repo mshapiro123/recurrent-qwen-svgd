@@ -1,6 +1,6 @@
 # Natural-Surface Checkpoint Curve - stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008
 
-- Status: `evaluated_step_2000`
+- Status: `evaluated_step_4000`
 - Source run: `stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812`
 - Source summary: `outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.json`
 - Steps: `[2000, 4000, 6000]`
@@ -20,6 +20,13 @@
 - Synthetic rehearsal diagonal: `{'1': 1.0, '2': 1.0, '3': 1.0, '4': 1.0, '5': 1.0, '6': 1.0, '7': 1.0, '8': 0.98828125}`
 - Decision read: `{'relay_train_depth_min': 0.8046875, 'relay_extrap_depth_min': 0.546875, 'pointer_train_depth_min': 0.78125, 'pointer_extrap_depth_min': 0.546875, 'synthetic_rehearsal_min': 0.98828125, 'synthetic_rehearsal_delta_by_depth': {'1': 0.0, '2': 0.0, '3': 0.00390625, '4': 0.01171875, '5': 0.00390625, '6': 0.00390625, '7': 0.0, '8': 0.00390625}, 'synthetic_rehearsal_min_delta': 0.0, 'status': 'verbal_rung_zero_finished', 'step': 2000}`
 
+### Step 4000
+
+- Relay diagonal: `{'1': 0.9921875, '2': 0.9453125, '3': 0.90625, '4': 0.9453125, '5': 0.9765625, '6': 0.8828125, '7': 0.859375, '8': 0.859375, '9': 0.8046875, '10': 0.8046875, '11': 0.7109375, '12': 0.625}`
+- Pointer diagonal: `{'1': 1.0, '2': 0.953125, '3': 0.921875, '4': 0.875, '5': 0.90625, '6': 0.859375, '7': 0.8203125, '8': 0.75, '9': 0.6484375, '10': 0.5859375, '11': 0.4609375, '12': 0.3828125}`
+- Synthetic rehearsal diagonal: `{'1': 1.0, '2': 0.99609375, '3': 1.0, '4': 1.0, '5': 0.99609375, '6': 0.9921875, '7': 1.0, '8': 0.9921875}`
+- Decision read: `{'relay_train_depth_min': 0.859375, 'relay_extrap_depth_min': 0.625, 'pointer_train_depth_min': 0.75, 'pointer_extrap_depth_min': 0.3828125, 'synthetic_rehearsal_min': 0.9921875, 'synthetic_rehearsal_delta_by_depth': {'1': 0.0, '2': -0.00390625, '3': 0.00390625, '4': 0.01171875, '5': 0.0, '6': -0.00390625, '7': 0.0, '8': 0.0078125}, 'synthetic_rehearsal_min_delta': -0.00390625, 'status': 'verbal_rung_zero_finished', 'step': 4000}`
+
 ## Best By Metric
 
-`{'relay_train_depth_min': {'step': 2000, 'value': 0.8046875}, 'relay_extrap_depth_min': {'step': 2000, 'value': 0.546875}, 'pointer_train_depth_min': {'step': 2000, 'value': 0.78125}, 'pointer_extrap_depth_min': {'step': 2000, 'value': 0.546875}, 'synthetic_rehearsal_min': {'step': 2000, 'value': 0.98828125}, 'synthetic_rehearsal_min_delta': {'step': 2000, 'value': 0.0}}`
+`{'relay_train_depth_min': {'step': 4000, 'value': 0.859375}, 'relay_extrap_depth_min': {'step': 4000, 'value': 0.625}, 'pointer_train_depth_min': {'step': 2000, 'value': 0.78125}, 'pointer_extrap_depth_min': {'step': 2000, 'value': 0.546875}, 'synthetic_rehearsal_min': {'step': 4000, 'value': 0.9921875}, 'synthetic_rehearsal_min_delta': {'step': 2000, 'value': 0.0}}`
