@@ -1,0 +1,386 @@
+{
+  "kind": "stage5_natural_surface_checkpoint_curve",
+  "run_id": "stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008",
+  "status": "evaluated_step_2000",
+  "source_run_id": "stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812",
+  "source_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.json",
+  "data_summary": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/summary.json",
+  "steps": [
+    2000,
+    4000,
+    6000
+  ],
+  "dtype": "bfloat16",
+  "train_depth_max": 8,
+  "eval_depth_max": 12,
+  "frozen_baseline": {
+    "n24": {
+      "artifact_check": {
+        "kind": "synthetic_depth_extrapolation_artifact_check",
+        "checkpoint": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/restored/n24_support12_step6000.pt",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/relay_test_chain_mcq.jsonl",
+        "sample_id": "test_relay_d01_00000",
+        "requested_max_loops": 12,
+        "loop_logits_shape": [
+          1,
+          1,
+          12,
+          185,
+          151936
+        ],
+        "loop_states_observed": 12,
+        "bridge_forward_calls": 11,
+        "expected_bridge_forward_calls": 11,
+        "forced_loop_count_honored": true,
+        "bridge_fires_on_reentry": true,
+        "source_static_checks": {
+          "learned_loop_control_optional": true,
+          "learned_loop_control_default_false": true,
+          "halting_loop_embedding_present": true,
+          "halting_target_loop_router_present": true,
+          "max_loop_embedding_capacity_64": false,
+          "no_literal_four_loop_cap_in_wrapper": true
+        },
+        "pass": true
+      },
+      "relay": {
+        "name": "frozen_n24_relay",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/relay_test_chain_mcq.jsonl",
+        "checkpoint": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/restored/n24_support12_step6000.pt",
+        "active_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_relay_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_relay_active_eval.log",
+        "row_manifest": {
+          "status": "sampled_and_deleted_full",
+          "full_rows_path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_relay_active_rows.jsonl",
+          "full_rows_count": 18432,
+          "sample_path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_relay_active_rows_sample.jsonl",
+          "sample_rows": 256
+        },
+        "loop_counts": "1,2,3,4,5,6,7,8,9,10,11,12",
+        "value_prefix": "name:",
+        "active_diagonal": {
+          "1": 0.921875,
+          "2": 0.2109375,
+          "3": 0.09375,
+          "4": 0.09375,
+          "5": 0.1015625,
+          "6": 0.15625,
+          "7": 0.1015625,
+          "8": 0.09375,
+          "9": 0.078125,
+          "10": 0.09375,
+          "11": 0.0859375,
+          "12": 0.0546875
+        },
+        "active_diagonal_min": 0.0546875,
+        "active_total": {
+          "correct": 2264,
+          "total": 9984,
+          "accuracy": 0.2267628205128205
+        },
+        "above_diagonal": {
+          "iterate": 897,
+          "hold": 671,
+          "other": 6880,
+          "unknown_iterate_target": 0,
+          "n": 8448,
+          "rates": {
+            "iterate": 0.10617897727272728,
+            "hold": 0.07942708333333333,
+            "other": 0.8143939393939394,
+            "unknown_iterate_target": 0.0
+          }
+        }
+      },
+      "pointer": {
+        "name": "frozen_n24_pointer",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/pointer_test_chain_mcq.jsonl",
+        "checkpoint": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/restored/n24_support12_step6000.pt",
+        "active_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_pointer_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_pointer_active_eval.log",
+        "row_manifest": {
+          "status": "sampled_and_deleted_full",
+          "full_rows_path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_pointer_active_rows.jsonl",
+          "full_rows_count": 18432,
+          "sample_path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_pointer_active_rows_sample.jsonl",
+          "sample_rows": 256
+        },
+        "loop_counts": "1,2,3,4,5,6,7,8,9,10,11,12",
+        "value_prefix": "name:",
+        "active_diagonal": {
+          "1": 0.9609375,
+          "2": 0.5390625,
+          "3": 0.15625,
+          "4": 0.109375,
+          "5": 0.15625,
+          "6": 0.0859375,
+          "7": 0.078125,
+          "8": 0.0546875,
+          "9": 0.0703125,
+          "10": 0.0625,
+          "11": 0.078125,
+          "12": 0.078125
+        },
+        "active_diagonal_min": 0.0546875,
+        "active_total": {
+          "correct": 2737,
+          "total": 9984,
+          "accuracy": 0.2741386217948718
+        },
+        "above_diagonal": {
+          "iterate": 932,
+          "hold": 560,
+          "other": 6956,
+          "unknown_iterate_target": 0,
+          "n": 8448,
+          "rates": {
+            "iterate": 0.1103219696969697,
+            "hold": 0.06628787878787878,
+            "other": 0.8233901515151515,
+            "unknown_iterate_target": 0.0
+          }
+        }
+      },
+      "synthetic_rehearsal": {
+        "name": "frozen_n24_synthetic_rehearsal",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/synthetic_rehearsal_chain_symbol_sft.jsonl",
+        "checkpoint": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/restored/n24_support12_step6000.pt",
+        "active_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_synthetic_rehearsal_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_synthetic_rehearsal_active_eval.log",
+        "row_manifest": {
+          "status": "sampled_and_deleted_full",
+          "full_rows_path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_synthetic_rehearsal_active_rows.jsonl",
+          "full_rows_count": 16384,
+          "sample_path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_synthetic_rehearsal_active_rows_sample.jsonl",
+          "sample_rows": 256
+        },
+        "loop_counts": "1,2,3,4,5,6,7,8",
+        "value_prefix": "letter:",
+        "active_diagonal": {
+          "1": 1.0,
+          "2": 1.0,
+          "3": 0.99609375,
+          "4": 0.98828125,
+          "5": 0.99609375,
+          "6": 0.99609375,
+          "7": 1.0,
+          "8": 0.984375
+        },
+        "active_diagonal_min": 0.984375,
+        "active_total": {
+          "correct": 9178,
+          "total": 9216,
+          "accuracy": 0.9958767361111112
+        },
+        "above_diagonal": {
+          "iterate": 7078,
+          "hold": 10,
+          "other": 80,
+          "unknown_iterate_target": 0,
+          "n": 7168,
+          "rates": {
+            "iterate": 0.9874441964285714,
+            "hold": 0.0013950892857142857,
+            "other": 0.011160714285714286,
+            "unknown_iterate_target": 0.0
+          }
+        }
+      }
+    }
+  },
+  "checkpoint_evals": [
+    {
+      "step": 2000,
+      "checkpoint": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/train/verbal_rung_zero/unfrozen_recurrent_step_2000.pt",
+      "relay": {
+        "name": "step2000_relay",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/relay_test_chain_mcq.jsonl",
+        "checkpoint": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/train/verbal_rung_zero/unfrozen_recurrent_step_2000.pt",
+        "active_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_relay_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_relay_active_eval.log",
+        "row_manifest": {
+          "status": "sampled_and_deleted_full",
+          "full_rows_path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_relay_active_rows.jsonl",
+          "full_rows_count": 18432,
+          "sample_path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_relay_active_rows_sample.jsonl",
+          "sample_rows": 256
+        },
+        "loop_counts": "1,2,3,4,5,6,7,8,9,10,11,12",
+        "value_prefix": "name:",
+        "active_diagonal": {
+          "1": 0.9921875,
+          "2": 0.9609375,
+          "3": 0.96875,
+          "4": 0.9296875,
+          "5": 0.890625,
+          "6": 0.890625,
+          "7": 0.890625,
+          "8": 0.8046875,
+          "9": 0.8203125,
+          "10": 0.765625,
+          "11": 0.6640625,
+          "12": 0.546875
+        },
+        "active_diagonal_min": 0.546875,
+        "active_total": {
+          "correct": 8998,
+          "total": 9984,
+          "accuracy": 0.9012419871794872
+        },
+        "above_diagonal": {
+          "iterate": 6833,
+          "hold": 174,
+          "other": 1441,
+          "unknown_iterate_target": 0,
+          "n": 8448,
+          "rates": {
+            "iterate": 0.8088304924242424,
+            "hold": 0.020596590909090908,
+            "other": 0.17057291666666666,
+            "unknown_iterate_target": 0.0
+          }
+        }
+      },
+      "pointer": {
+        "name": "step2000_pointer",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/pointer_test_chain_mcq.jsonl",
+        "checkpoint": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/train/verbal_rung_zero/unfrozen_recurrent_step_2000.pt",
+        "active_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_pointer_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_pointer_active_eval.log",
+        "row_manifest": {
+          "status": "sampled_and_deleted_full",
+          "full_rows_path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_pointer_active_rows.jsonl",
+          "full_rows_count": 18432,
+          "sample_path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_pointer_active_rows_sample.jsonl",
+          "sample_rows": 256
+        },
+        "loop_counts": "1,2,3,4,5,6,7,8,9,10,11,12",
+        "value_prefix": "name:",
+        "active_diagonal": {
+          "1": 0.96875,
+          "2": 0.9140625,
+          "3": 0.96875,
+          "4": 0.90625,
+          "5": 0.8515625,
+          "6": 0.8515625,
+          "7": 0.7890625,
+          "8": 0.78125,
+          "9": 0.7578125,
+          "10": 0.6484375,
+          "11": 0.5625,
+          "12": 0.546875
+        },
+        "active_diagonal_min": 0.546875,
+        "active_total": {
+          "correct": 8639,
+          "total": 9984,
+          "accuracy": 0.8652844551282052
+        },
+        "above_diagonal": {
+          "iterate": 6398,
+          "hold": 242,
+          "other": 1808,
+          "unknown_iterate_target": 0,
+          "n": 8448,
+          "rates": {
+            "iterate": 0.7573390151515151,
+            "hold": 0.028645833333333332,
+            "other": 0.21401515151515152,
+            "unknown_iterate_target": 0.0
+          }
+        }
+      },
+      "synthetic_rehearsal": {
+        "name": "step2000_synthetic_rehearsal",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/synthetic_rehearsal_chain_symbol_sft.jsonl",
+        "checkpoint": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/train/verbal_rung_zero/unfrozen_recurrent_step_2000.pt",
+        "active_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_synthetic_rehearsal_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_synthetic_rehearsal_active_eval.log",
+        "row_manifest": {
+          "status": "sampled_and_deleted_full",
+          "full_rows_path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_synthetic_rehearsal_active_rows.jsonl",
+          "full_rows_count": 16384,
+          "sample_path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_synthetic_rehearsal_active_rows_sample.jsonl",
+          "sample_rows": 256
+        },
+        "loop_counts": "1,2,3,4,5,6,7,8",
+        "value_prefix": "letter:",
+        "active_diagonal": {
+          "1": 1.0,
+          "2": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "6": 1.0,
+          "7": 1.0,
+          "8": 0.98828125
+        },
+        "active_diagonal_min": 0.98828125,
+        "active_total": {
+          "correct": 9197,
+          "total": 9216,
+          "accuracy": 0.9979383680555556
+        },
+        "above_diagonal": {
+          "iterate": 7068,
+          "hold": 9,
+          "other": 91,
+          "unknown_iterate_target": 0,
+          "n": 7168,
+          "rates": {
+            "iterate": 0.9860491071428571,
+            "hold": 0.0012555803571428572,
+            "other": 0.0126953125,
+            "unknown_iterate_target": 0.0
+          }
+        }
+      },
+      "decision_read": {
+        "relay_train_depth_min": 0.8046875,
+        "relay_extrap_depth_min": 0.546875,
+        "pointer_train_depth_min": 0.78125,
+        "pointer_extrap_depth_min": 0.546875,
+        "synthetic_rehearsal_min": 0.98828125,
+        "synthetic_rehearsal_delta_by_depth": {
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.00390625,
+          "4": 0.01171875,
+          "5": 0.00390625,
+          "6": 0.00390625,
+          "7": 0.0,
+          "8": 0.00390625
+        },
+        "synthetic_rehearsal_min_delta": 0.0,
+        "status": "verbal_rung_zero_finished",
+        "step": 2000
+      }
+    }
+  ],
+  "best_by_metric": {
+    "relay_train_depth_min": {
+      "step": 2000,
+      "value": 0.8046875
+    },
+    "relay_extrap_depth_min": {
+      "step": 2000,
+      "value": 0.546875
+    },
+    "pointer_train_depth_min": {
+      "step": 2000,
+      "value": 0.78125
+    },
+    "pointer_extrap_depth_min": {
+      "step": 2000,
+      "value": 0.546875
+    },
+    "synthetic_rehearsal_min": {
+      "step": 2000,
+      "value": 0.98828125
+    },
+    "synthetic_rehearsal_min_delta": {
+      "step": 2000,
+      "value": 0.0
+    }
+  }
+}
