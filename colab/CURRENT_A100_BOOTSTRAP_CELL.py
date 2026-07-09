@@ -2412,6 +2412,7 @@ TARGETS = {
             "Experiment 1",
             "colab/run_stage5_natural_surface_transfer.py",
             "training/train_unfrozen_recurrent.py",
+            "tests/test_causal_dataset_loop_targets.py",
             "eval/eval_synthetic_depth_active_labels.py",
             "relay_test_chain_mcq",
             "pointer_test_chain_mcq",
