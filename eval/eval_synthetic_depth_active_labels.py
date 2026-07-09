@@ -108,7 +108,10 @@ def apply_mapping(mapping: dict[int, int], start: int, loop: int) -> int:
 
 
 def prompt_for_row(row: dict[str, Any], *, prediction_space: str, prompt_style: str) -> str:
-    question = str(row["question"]).rstrip()
+    question_source = row.get("question", row.get("prompt"))
+    if question_source is None:
+        raise KeyError("Expected row to contain either 'question' or 'prompt'")
+    question = str(question_source).rstrip()
     if prompt_style == "with_options" and prediction_space == "choice_labels":
         choices = row.get("choices") or {}
         rendered = "\n".join(f"{label}. {text}" for label, text in choices.items())

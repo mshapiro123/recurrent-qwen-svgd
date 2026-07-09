@@ -62,6 +62,20 @@ def test_prompt_and_candidates_match_prediction_space() -> None:
     assert len(candidates_for_row(row, prediction_space="full_symbols", value_prefix="")) == 10
 
 
+def test_prompt_for_row_accepts_synthetic_rehearsal_prompt_schema() -> None:
+    row = {
+        "prompt": "Function table:\nA -> B\n\nStart value: A\nAnswer:",
+        "target": "B",
+        "depth": 1,
+        "start": "A",
+        "orbit": ["A", "B"],
+        "mapping": {"A": "B", "B": "B"},
+        "n_symbols": 2,
+    }
+
+    assert prompt_for_row(row, prediction_space="full_symbols", prompt_style="question_only").endswith("Answer:")
+
+
 def test_single_token_candidate_ids_detects_prompt_suffix_tokens() -> None:
     class FakeTokenizer:
         vocab = {"Question\nAnswer:": [10, 11], " A": [101], " B": [102], " multi": [201, 202]}
