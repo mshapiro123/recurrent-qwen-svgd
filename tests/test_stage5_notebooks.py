@@ -102,10 +102,13 @@ def test_current_bootstrap_exposes_natural_surface_transfer_target() -> None:
     assert "stage5_n24_support12_rung_20260707_140139" in text
     assert '"STAGE5_NATURAL_TRANSFER_RUN_TRAIN": "1"' in text
     assert '"STAGE5_NATURAL_TRANSFER_TRAIN_STEPS": "8000"' in text
+    assert '"STAGE5_NATURAL_TRANSFER_EXPECTED_INIT_RUN_ID": "stage5_n24_support12_rung_20260707_140139"' in text
+    assert '"STAGE5_NATURAL_TRANSFER_EXPECTED_INIT_STEP": "6000"' in text
     assert '"STAGE5_NATURAL_TRANSFER_REUSE_EXISTING": "1"' in text
     assert "frozen_natural_surface_baseline" in cell
     assert "verbal_rung_zero" in cell
     assert "STAGE5_NATURAL_TRANSFER_REUSE_EXISTING" in cell
+    assert "STAGE5_NATURAL_TRANSFER_EXPECTED_INIT_SHA256" in cell
     assert "colab/run_stage5_natural_surface_transfer.py" in cell
     assert "training/train_unfrozen_recurrent.py" in runner
     assert "eval/eval_synthetic_depth_active_labels.py" in runner

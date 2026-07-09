@@ -7,6 +7,7 @@ from colab.run_stage5_natural_surface_transfer import (
     checkpoint_candidates_from_summary,
     existing_row_manifest,
     score_experiment,
+    verify_expected_init_checkpoint,
     write_jsonl,
 )
 
@@ -70,3 +71,30 @@ def test_existing_row_manifest_reuses_compacted_sample(tmp_path) -> None:
 
     assert manifest["status"] == "reused_sample"
     assert manifest["sample_rows"] == 2
+
+
+def test_verify_expected_init_checkpoint_accepts_n24_step6000(monkeypatch) -> None:
+    monkeypatch.setenv("STAGE5_NATURAL_TRANSFER_EXPECTED_INIT_RUN_ID", "stage5_n24_support12_rung_20260707_140139")
+    monkeypatch.setenv("STAGE5_NATURAL_TRANSFER_EXPECTED_INIT_STEP", "6000")
+
+    verify_expected_init_checkpoint(
+        {
+            "source_run_id": "stage5_n24_support12_rung_20260707_140139",
+            "preferred_step": 6000,
+            "selected_checkpoint_sha256": "abc123",
+        }
+    )
+
+
+def test_verify_expected_init_checkpoint_rejects_wrong_pointer(monkeypatch) -> None:
+    monkeypatch.setenv("STAGE5_NATURAL_TRANSFER_EXPECTED_INIT_RUN_ID", "stage5_n24_support12_rung_20260707_140139")
+    monkeypatch.setenv("STAGE5_NATURAL_TRANSFER_EXPECTED_INIT_STEP", "6000")
+
+    with pytest.raises(RuntimeError, match="Wrong natural-transfer init run_id"):
+        verify_expected_init_checkpoint(
+            {
+                "source_run_id": "stage5_support6_seed26_plateau_20260708_130654_dose2000",
+                "preferred_step": 6000,
+                "selected_checkpoint_sha256": "abc123",
+            }
+        )

@@ -26,6 +26,9 @@ STAGE5_NATURAL_SURFACE_TRANSFER_CELL_VERSION = "natural_surface_transfer_rung0_v
 # Safety marker: stage5_n24_support12_rung_20260707_140139
 # Safety marker: STAGE5_NATURAL_TRANSFER_RUN_TRAIN
 # Safety marker: STAGE5_NATURAL_TRANSFER_INIT_SOURCE_SUMMARY
+# Safety marker: STAGE5_NATURAL_TRANSFER_EXPECTED_INIT_RUN_ID
+# Safety marker: STAGE5_NATURAL_TRANSFER_EXPECTED_INIT_STEP
+# Safety marker: STAGE5_NATURAL_TRANSFER_EXPECTED_INIT_SHA256
 # Safety marker: STAGE5_NATURAL_TRANSFER_DATA_SUMMARY
 # Safety marker: STAGE5_NATURAL_TRANSFER_TRAIN_STEPS
 # Safety marker: STAGE5_NATURAL_TRANSFER_REUSE_EXISTING
@@ -133,6 +136,8 @@ def main() -> None:
     env = os.environ.copy()
     env.setdefault("STAGE5_NATURAL_TRANSFER_DATA_SUMMARY", "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/summary.json")
     env.setdefault("STAGE5_NATURAL_TRANSFER_INIT_SOURCE_SUMMARY", "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json")
+    env.setdefault("STAGE5_NATURAL_TRANSFER_EXPECTED_INIT_RUN_ID", "stage5_n24_support12_rung_20260707_140139")
+    env.setdefault("STAGE5_NATURAL_TRANSFER_EXPECTED_INIT_STEP", "6000")
     env.setdefault("STAGE5_NATURAL_TRANSFER_RUN_TRAIN", "1")
     env.setdefault("STAGE5_NATURAL_TRANSFER_TRAIN_STEPS", "8000")
     env.setdefault("STAGE5_NATURAL_TRANSFER_EVAL_MAX_DEPTH", "12")

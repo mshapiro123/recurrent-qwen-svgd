@@ -12,6 +12,7 @@ summaries and sampled rows are published to GitHub.
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import shutil
 import subprocess
@@ -125,15 +126,35 @@ def existing_path(raw: str | Path | None) -> Path | None:
     return None
 
 
-def restore_checkpoint(candidates: list[str | Path | None], dest: Path, *, label: str) -> Path:
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def restore_checkpoint(candidates: list[str | Path | None], dest: Path, *, label: str) -> tuple[Path, dict[str, Any]]:
     for raw in candidates:
         source = existing_path(raw)
         if source is None:
             continue
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, dest)
+        source_sha256 = sha256_file(source)
+        restored_sha256 = sha256_file(dest)
+        if source_sha256 != restored_sha256:
+            raise RuntimeError(
+                f"Restored checkpoint hash mismatch for {label}: source={source_sha256} restored={restored_sha256}"
+            )
         print(f"restored_{label}={dest}", flush=True)
-        return dest
+        print(f"restored_{label}_source={source}", flush=True)
+        print(f"restored_{label}_sha256={restored_sha256}", flush=True)
+        return dest, {
+            "selected_checkpoint_reference": str(raw),
+            "selected_checkpoint_source": str(source),
+            "selected_checkpoint_sha256": restored_sha256,
+        }
     tried = ", ".join(str(item) for item in candidates if item)
     raise FileNotFoundError(f"Could not restore {label}; tried: {tried}")
 
@@ -180,7 +201,7 @@ def restore_summary_checkpoint(
 ) -> tuple[Path, dict[str, Any]]:
     summary_path = root_path(source_summary)
     summary = read_json(summary_path)
-    checkpoint = restore_checkpoint(
+    checkpoint, restore_metadata = restore_checkpoint(
         checkpoint_candidates_from_summary(summary, preferred_step=preferred_step),
         dest,
         label=label,
@@ -193,7 +214,46 @@ def restore_summary_checkpoint(
         "restored_checkpoint": path_for_cli(checkpoint),
         "drive_checkpoint_root": str(DRIVE_CHECKPOINT_ROOT),
     }
+    metadata.update(restore_metadata)
     return checkpoint, metadata
+
+
+def verify_expected_init_checkpoint(metadata: dict[str, Any]) -> None:
+    expected_run_id = os.environ.get(
+        "STAGE5_NATURAL_TRANSFER_EXPECTED_INIT_RUN_ID",
+        "stage5_n24_support12_rung_20260707_140139",
+    )
+    expected_step = int(os.environ.get("STAGE5_NATURAL_TRANSFER_EXPECTED_INIT_STEP", "6000"))
+    expected_sha256 = os.environ.get("STAGE5_NATURAL_TRANSFER_EXPECTED_INIT_SHA256", "").strip()
+    actual_run_id = metadata.get("source_run_id")
+    actual_step = metadata.get("preferred_step")
+    actual_sha256 = str(metadata.get("selected_checkpoint_sha256") or "")
+    if actual_run_id != expected_run_id:
+        raise RuntimeError(f"Wrong natural-transfer init run_id: got {actual_run_id!r}, expected {expected_run_id!r}")
+    if int(actual_step or -1) != expected_step:
+        raise RuntimeError(f"Wrong natural-transfer init step: got {actual_step!r}, expected {expected_step!r}")
+    if expected_sha256 and actual_sha256 != expected_sha256:
+        raise RuntimeError(
+            "Wrong natural-transfer init checkpoint hash: "
+            f"got {actual_sha256}, expected {expected_sha256}"
+        )
+    print(
+        json.dumps(
+            {
+                "kind": "natural_transfer_init_checkpoint_verified",
+                "expected_run_id": expected_run_id,
+                "actual_run_id": actual_run_id,
+                "expected_step": expected_step,
+                "actual_step": actual_step,
+                "selected_checkpoint_reference": metadata.get("selected_checkpoint_reference"),
+                "selected_checkpoint_source": metadata.get("selected_checkpoint_source"),
+                "selected_checkpoint_sha256": actual_sha256,
+                "pinned_sha256_enforced": bool(expected_sha256),
+            },
+            indent=2,
+        ),
+        flush=True,
+    )
 
 
 def data_paths(data_summary_path: str | Path) -> dict[str, Path]:
@@ -717,6 +777,7 @@ def main() -> int:
         label="n24_support12_step6000",
         preferred_step=int(os.environ.get("STAGE5_NATURAL_TRANSFER_INIT_STEP", "6000")),
     )
+    verify_expected_init_checkpoint(n24_meta)
 
     payload: dict[str, Any] = {
         "kind": "stage5_natural_surface_transfer_rung0",
