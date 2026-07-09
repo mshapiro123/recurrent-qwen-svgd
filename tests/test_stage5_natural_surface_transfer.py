@@ -10,6 +10,11 @@ from colab.run_stage5_natural_surface_transfer import (
     verify_expected_init_checkpoint,
     write_jsonl,
 )
+from colab.run_stage5_natural_surface_checkpoint_curve import (
+    best_by_metric,
+    checkpoint_path_for_step,
+    parse_steps,
+)
 
 
 def eval_payload(*values: float) -> dict:
@@ -98,3 +103,24 @@ def test_verify_expected_init_checkpoint_rejects_wrong_pointer(monkeypatch) -> N
                 "selected_checkpoint_sha256": "abc123",
             }
         )
+
+
+def test_checkpoint_curve_step_parser_sorts_and_deduplicates() -> None:
+    assert parse_steps("6000,2000,4000,2000") == [2000, 4000, 6000]
+
+
+def test_checkpoint_curve_requires_local_training_checkpoint(tmp_path) -> None:
+    with pytest.raises(FileNotFoundError, match="same Colab runtime"):
+        checkpoint_path_for_step(tmp_path / "source_run", 2000)
+
+
+def test_checkpoint_curve_best_by_metric_picks_best_step() -> None:
+    rows = [
+        {"step": 2000, "decision_read": {"relay_train_depth_min": 0.4, "synthetic_rehearsal_min": 0.99}},
+        {"step": 4000, "decision_read": {"relay_train_depth_min": 0.7, "synthetic_rehearsal_min": 0.95}},
+    ]
+
+    best = best_by_metric(rows)
+
+    assert best["relay_train_depth_min"] == {"step": 4000, "value": 0.7}
+    assert best["synthetic_rehearsal_min"] == {"step": 2000, "value": 0.99}
