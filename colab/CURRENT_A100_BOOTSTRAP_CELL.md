@@ -98,6 +98,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
 #   "model_viability_queue" - queued no-training Qwen 3B/7B probes with VRAM-aware skipping.
 #   "natural_surface_prepare_cpu" - CPU-only verbal relay/pointer transfer dataset prep and manifest receipt.
+#   "natural_surface_transfer_rung0" - GPU frozen natural-surface baseline, then verbal rung-zero SFT.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 PREFER_LOCAL_HEAD = os.environ.get("STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD", "0").strip().lower() in {
@@ -2399,6 +2400,44 @@ TARGETS = {
         ],
         "env": {
             "STAGE5_NATURAL_VERIFY_TOKENIZER": "1",
+        },
+    },
+    "natural_surface_transfer_rung0": {
+        "path": "colab/STAGE5_NATURAL_SURFACE_TRANSFER_CELL.py",
+        "markers": [
+            "STAGE5_NATURAL_SURFACE_TRANSFER_CELL_VERSION",
+            "natural_surface_transfer_rung0",
+            "frozen_natural_surface_baseline",
+            "verbal_rung_zero",
+            "Experiment 0",
+            "Experiment 1",
+            "colab/run_stage5_natural_surface_transfer.py",
+            "training/train_unfrozen_recurrent.py",
+            "eval/eval_synthetic_depth_active_labels.py",
+            "relay_test_chain_mcq",
+            "pointer_test_chain_mcq",
+            "synthetic_rehearsal_chain_symbol_sft",
+            "rung0_train_mix_chain_symbol_sft",
+            "stage5_natural_surface_transfer_20260708_230229",
+            "stage5_n24_support12_rung_20260707_140139",
+            "STAGE5_NATURAL_TRANSFER_RUN_TRAIN",
+            "STAGE5_NATURAL_TRANSFER_INIT_SOURCE_SUMMARY",
+            "STAGE5_NATURAL_TRANSFER_DATA_SUMMARY",
+            "STAGE5_NATURAL_TRANSFER_TRAIN_STEPS",
+            "value_prefix=name:",
+            "value_prefix=letter:",
+        ],
+        "env": {
+            "STAGE5_NATURAL_TRANSFER_DATA_SUMMARY": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/summary.json",
+            "STAGE5_NATURAL_TRANSFER_INIT_SOURCE_SUMMARY": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json",
+            "STAGE5_NATURAL_TRANSFER_RUN_TRAIN": "1",
+            "STAGE5_NATURAL_TRANSFER_TRAIN_STEPS": "8000",
+            "STAGE5_NATURAL_TRANSFER_EVAL_MAX_DEPTH": "12",
+            "STAGE5_NATURAL_TRANSFER_TRAIN_MAX_DEPTH": "8",
+            "STAGE5_NATURAL_TRANSFER_DTYPE": "bfloat16",
+            "STAGE5_NATURAL_TRANSFER_KEEP_FULL_ACTIVE_ROWS": "0",
+            "STAGE5_NATURAL_TRANSFER_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
+            "STAGE5_NATURAL_TRANSFER_DISCONNECT": "0",
         },
     },
     "splice_injection_diagnostic": {

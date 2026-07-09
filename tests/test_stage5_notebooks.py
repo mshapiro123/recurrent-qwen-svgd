@@ -91,6 +91,28 @@ def test_current_bootstrap_exposes_regression_battery_target() -> None:
     assert '"STAGE5_REGRESSION_BATTERY_RUN_ID": "stage5_regression_battery_loop1_current"' in text
 
 
+def test_current_bootstrap_exposes_natural_surface_transfer_target() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_NATURAL_SURFACE_TRANSFER_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_natural_surface_transfer.py").read_text(encoding="utf-8")
+
+    assert "natural_surface_transfer_rung0" in text
+    assert "colab/STAGE5_NATURAL_SURFACE_TRANSFER_CELL.py" in text
+    assert "stage5_natural_surface_transfer_20260708_230229" in text
+    assert "stage5_n24_support12_rung_20260707_140139" in text
+    assert '"STAGE5_NATURAL_TRANSFER_RUN_TRAIN": "1"' in text
+    assert '"STAGE5_NATURAL_TRANSFER_TRAIN_STEPS": "8000"' in text
+    assert "frozen_natural_surface_baseline" in cell
+    assert "verbal_rung_zero" in cell
+    assert "colab/run_stage5_natural_surface_transfer.py" in cell
+    assert "training/train_unfrozen_recurrent.py" in runner
+    assert "eval/eval_synthetic_depth_active_labels.py" in runner
+    assert "relay_test_chain_mcq" in runner
+    assert "pointer_test_chain_mcq" in runner
+    assert "rung0_train_mix_chain_symbol_sft" in runner
+    assert "value_prefix=\"name:\"" in runner or 'value_prefix="name:"' in runner
+
+
 def test_single_a100_runbook_uses_current_bootstrap_target_queue() -> None:
     payload = notebook_payload("colab/00_single_a100_runbook.ipynb")
     text = "\n".join(str(cell.get("source", "")) for cell in payload.get("cells", []))
