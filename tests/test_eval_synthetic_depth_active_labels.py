@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import inspect
+
 import pytest
 
 from eval.eval_synthetic_depth_active_labels import (
@@ -8,9 +10,11 @@ from eval.eval_synthetic_depth_active_labels import (
     continued_symbol_for_loop,
     parse_int_symbol,
     prompt_for_row,
+    row_symbol_names,
     single_token_candidate_ids,
     symbol,
     summarize_active_rows,
+    evaluate,
 )
 
 
@@ -128,6 +132,36 @@ def test_name_value_prefix_maps_full_symbol_space() -> None:
     assert candidates["Jon"] == " Jon"
     assert active_target_for_loop(row, 2, prediction_space="full_symbols", value_prefix="name:") == "Lee"
     assert continued_symbol_for_loop(row, 3, value_prefix="name:") == "Ana"
+
+
+def test_row_level_name_symbol_space_for_unseen_names() -> None:
+    row = sample_row() | {
+        "symbol_names": ["Kai", "Mia", "Nia"],
+        "start": "Kai",
+        "orbit": ["Kai", "Mia", "Nia"],
+        "mapping": {"Kai": "Mia", "Mia": "Nia", "Nia": "Kai"},
+        "target": "Nia",
+        "n_symbols": 3,
+    }
+
+    assert row_symbol_names(row) == ("Kai", "Mia", "Nia")
+    assert symbol(1, prefix="name:", row_symbols=row_symbol_names(row)) == "Mia"
+    assert parse_int_symbol("Nia", prefix="name:", row_symbols=row_symbol_names(row)) == 2
+    assert candidates_for_row(row, prediction_space="full_symbols", value_prefix="name:") == {
+        "Kai": " Kai",
+        "Mia": " Mia",
+        "Nia": " Nia",
+    }
+    assert active_target_for_loop(row, 2, prediction_space="full_symbols", value_prefix="name:") == "Nia"
+    assert continued_symbol_for_loop(row, 2, value_prefix="name:") == "Nia"
+
+
+def test_active_eval_rows_preserve_diagnostic_group_metadata() -> None:
+    source = inspect.getsource(evaluate)
+
+    assert "paired_instance_id" in source
+    assert "symbol_names" in source
+    assert "verbal_surface_family" in source
 
 
 def test_continued_symbol_uses_serialized_mapping_for_above_diagonal_behavior() -> None:

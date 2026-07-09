@@ -30,6 +30,7 @@ from eval.eval_synthetic_depth_active_labels import (  # noqa: E402
     candidates_for_row,
     prompt_for_row,
     read_jsonl,
+    row_symbol_names,
     score_candidates_all_loops,
     symbol,
 )
@@ -64,7 +65,7 @@ def evaluate(args: argparse.Namespace) -> list[dict[str, Any]]:
         )
         scores = scores_by_loop[depth]
         prediction = max(scores.items(), key=lambda item: item[1])[0]
-        target = symbol(row["target"], prefix=args.value_prefix)
+        target = symbol(row["target"], prefix=args.value_prefix, row_symbols=row_symbol_names(row))
         mapped_label = choice_label_for_symbol(row, prediction)
         answer_label = str(row.get("answer", "")).strip() or None
         output_rows.append(

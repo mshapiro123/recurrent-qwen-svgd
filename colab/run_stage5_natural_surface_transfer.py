@@ -503,6 +503,11 @@ def write_training_config(
         "max_grad_norm": float(os.environ.get("STAGE5_NATURAL_TRANSFER_MAX_GRAD_NORM", "0.5")),
         "max_steps": int(max_steps),
         "save_every": int(os.environ.get("STAGE5_NATURAL_TRANSFER_SAVE_EVERY", "2000")),
+        "save_steps": [
+            int(item)
+            for item in os.environ.get("STAGE5_NATURAL_TRANSFER_SAVE_STEPS", "").split(",")
+            if item.strip()
+        ],
         "log_every": int(os.environ.get("STAGE5_NATURAL_TRANSFER_LOG_EVERY", "100")),
         "bridge_projection_mode": "split",
         "bridge_prelude_lr_multiplier": float(

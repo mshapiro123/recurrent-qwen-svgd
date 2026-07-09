@@ -23,12 +23,35 @@ from training.synthetic_depth_task import (
     SyntheticDepthInstance,
     build_dataset,
     build_instance,
-    serialized_mapping,
-    symbol,
 )
 
 
-Family = Literal["relay", "pointer"]
+Family = Literal["relay", "pointer", "baton"]
+TemplateVariant = Literal["default", "passive", "fronted"]
+
+DEFAULT_NAME_SYMBOLS = NAME_SYMBOLS
+HELDOUT_NAME_SYMBOLS = (
+    "Kai",
+    "Mia",
+    "Nia",
+    "Eli",
+    "Ivy",
+    "Gus",
+    "Leo",
+    "Zoe",
+    "Ava",
+    "Noa",
+    "Rex",
+    "Bea",
+    "Lia",
+    "Moe",
+    "Pam",
+    "Sid",
+    "Vic",
+    "Wes",
+    "Zed",
+    "Ned",
+)
 
 
 @dataclass(frozen=True)
@@ -45,7 +68,7 @@ class NaturalSurfaceConfig:
 
 
 def _rng_for(*, seed: int, family: str, split: str, depth: int, row_index: int) -> random.Random:
-    family_offsets = {"relay": 0, "pointer": 10_000_000}
+    family_offsets = {"relay": 0, "pointer": 10_000_000, "baton": 20_000_000}
     split_offsets = {"train": 0, "val": 1_000_000, "test": 2_000_000}
     return random.Random(
         int(seed)
@@ -60,20 +83,69 @@ def _instance_seed(*, seed: int, family: str, split: str, depth: int, row_index:
     return _rng_for(seed=seed, family=family, split=split, depth=depth, row_index=row_index).randrange(2**31)
 
 
-def verbalize_relay(instance: SyntheticDepthInstance, rng: random.Random) -> dict[str, Any]:
+def name_symbol(value: int, *, symbol_names: tuple[str, ...] = DEFAULT_NAME_SYMBOLS) -> str:
+    idx = int(value)
+    if idx < 0 or idx >= len(symbol_names):
+        raise ValueError(f"name symbol index {idx} outside symbol set of size {len(symbol_names)}")
+    return symbol_names[idx]
+
+
+def serialized_name_mapping(
+    instance: SyntheticDepthInstance,
+    *,
+    symbol_names: tuple[str, ...] = DEFAULT_NAME_SYMBOLS,
+) -> dict[str, str]:
+    return {
+        name_symbol(left, symbol_names=symbol_names): name_symbol(right, symbol_names=symbol_names)
+        for left, right in instance.mapping.items()
+    }
+
+
+def verbalize_relay(
+    instance: SyntheticDepthInstance,
+    rng: random.Random,
+    *,
+    symbol_names: tuple[str, ...] = DEFAULT_NAME_SYMBOLS,
+    template_variant: TemplateVariant = "default",
+) -> dict[str, Any]:
     """Temporal counter surface: one key pass per day."""
 
-    name = lambda idx: symbol(idx, prefix="name:")
-    premises = [
-        f"{name(idx)} always passes the key to {name(instance.mapping[idx])}."
-        for idx in range(instance.n_symbols)
-    ]
+    name = lambda idx: name_symbol(idx, symbol_names=symbol_names)
+    if template_variant == "passive":
+        premises = [
+            f"The key is always passed from {name(idx)} to {name(instance.mapping[idx])}."
+            for idx in range(instance.n_symbols)
+        ]
+    elif template_variant == "fronted":
+        premises = [
+            f"Whenever {name(idx)} has the key, next it goes to {name(instance.mapping[idx])}."
+            for idx in range(instance.n_symbols)
+        ]
+    else:
+        premises = [
+            f"{name(idx)} always passes the key to {name(instance.mapping[idx])}."
+            for idx in range(instance.n_symbols)
+        ]
     rng.shuffle(premises)
+    if template_variant == "passive":
+        query = (
+            f"The key begins with {name(instance.start)}. It is passed once per day. "
+            f"After {instance.depth} days, who has the key?"
+        )
+    elif template_variant == "fronted":
+        query = (
+            f"Starting with {name(instance.start)}, pass the key forward once each day. "
+            f"Who has it after exactly {instance.depth} days?"
+        )
+    else:
+        query = (
+            f"{name(instance.start)} starts with the key. Each day it is passed once. "
+            f"After {instance.depth} days, who has the key?"
+        )
     question = (
         "\n".join(premises)
         + "\n\n"
-        + f"{name(instance.start)} starts with the key. Each day it is passed once. "
-        + f"After {instance.depth} days, who has the key?"
+        + query
     )
     steps = [
         f"After day {loop_idx}, {name(target)} has the key."
@@ -89,20 +161,51 @@ def verbalize_relay(instance: SyntheticDepthInstance, rng: random.Random) -> dic
     }
 
 
-def verbalize_pointer(instance: SyntheticDepthInstance, rng: random.Random) -> dict[str, Any]:
+def verbalize_pointer(
+    instance: SyntheticDepthInstance,
+    rng: random.Random,
+    *,
+    symbol_names: tuple[str, ...] = DEFAULT_NAME_SYMBOLS,
+    template_variant: TemplateVariant = "default",
+) -> dict[str, Any]:
     """Spatial counter surface: one note reference per hop."""
 
-    name = lambda idx: symbol(idx, prefix="name:")
-    premises = [
-        f"{name(idx)}'s note points to {name(instance.mapping[idx])}."
-        for idx in range(instance.n_symbols)
-    ]
+    name = lambda idx: name_symbol(idx, symbol_names=symbol_names)
+    if template_variant == "passive":
+        premises = [
+            f"On {name(idx)}'s note, {name(instance.mapping[idx])} is named as the next stop."
+            for idx in range(instance.n_symbols)
+        ]
+    elif template_variant == "fronted":
+        premises = [
+            f"From {name(idx)}, the note sends you onward to {name(instance.mapping[idx])}."
+            for idx in range(instance.n_symbols)
+        ]
+    else:
+        premises = [
+            f"{name(idx)}'s note points to {name(instance.mapping[idx])}."
+            for idx in range(instance.n_symbols)
+        ]
     rng.shuffle(premises)
+    if template_variant == "passive":
+        query = (
+            f"Beginning at {name(instance.start)}, exactly {instance.depth} note links are followed. "
+            "Where do you end up?"
+        )
+    elif template_variant == "fronted":
+        query = (
+            f"From {name(instance.start)}, follow the note chain for exactly {instance.depth} hops. "
+            "Which name is reached?"
+        )
+    else:
+        query = (
+            f"Start at {name(instance.start)} and follow the notes exactly {instance.depth} times. "
+            "Where do you end up?"
+        )
     question = (
         "\n".join(premises)
         + "\n\n"
-        + f"Start at {name(instance.start)} and follow the notes exactly {instance.depth} times. "
-        + "Where do you end up?"
+        + query
     )
     steps = [
         f"After hop {loop_idx}, you are at {name(target)}."
@@ -118,11 +221,76 @@ def verbalize_pointer(instance: SyntheticDepthInstance, rng: random.Random) -> d
     }
 
 
-def verbalize(instance: SyntheticDepthInstance, *, family: Family, rng: random.Random) -> dict[str, Any]:
+def verbalize_baton(
+    instance: SyntheticDepthInstance,
+    rng: random.Random,
+    *,
+    symbol_names: tuple[str, ...] = DEFAULT_NAME_SYMBOLS,
+    template_variant: TemplateVariant = "default",
+) -> dict[str, Any]:
+    """Baton-race surface: one handoff per leg."""
+
+    name = lambda idx: name_symbol(idx, symbol_names=symbol_names)
+    if template_variant == "passive":
+        premises = [
+            f"The baton is handed from {name(idx)} to {name(instance.mapping[idx])}."
+            for idx in range(instance.n_symbols)
+        ]
+    elif template_variant == "fronted":
+        premises = [
+            f"After {name(idx)} finishes a leg, {name(instance.mapping[idx])} receives the baton."
+            for idx in range(instance.n_symbols)
+        ]
+    else:
+        premises = [
+            f"{name(idx)} hands the baton to {name(instance.mapping[idx])}."
+            for idx in range(instance.n_symbols)
+        ]
+    rng.shuffle(premises)
+    if template_variant == "passive":
+        query = (
+            f"The baton starts with {name(instance.start)}. After exactly {instance.depth} handoffs, "
+            "who is holding it?"
+        )
+    elif template_variant == "fronted":
+        query = (
+            f"Begin with {name(instance.start)} holding the baton and advance exactly {instance.depth} legs. "
+            "Who receives the baton at that point?"
+        )
+    else:
+        query = (
+            f"{name(instance.start)} begins with the baton. It is handed off once per leg. "
+            f"After {instance.depth} handoffs, who has the baton?"
+        )
+    question = "\n".join(premises) + "\n\n" + query
+    steps = [
+        f"After handoff {loop_idx}, {name(target)} has the baton."
+        for loop_idx, target in enumerate(instance.orbit[1:], start=1)
+    ]
+    return {
+        "premises": premises,
+        "question": question,
+        "step_sentences": steps,
+        "answer_text": name(instance.target),
+        "k_star": instance.depth,
+        "latent_targets": [name(target) for target in instance.orbit[1:]],
+    }
+
+
+def verbalize(
+    instance: SyntheticDepthInstance,
+    *,
+    family: Family,
+    rng: random.Random,
+    symbol_names: tuple[str, ...] = DEFAULT_NAME_SYMBOLS,
+    template_variant: TemplateVariant = "default",
+) -> dict[str, Any]:
     if family == "relay":
-        return verbalize_relay(instance, rng)
+        return verbalize_relay(instance, rng, symbol_names=symbol_names, template_variant=template_variant)
     if family == "pointer":
-        return verbalize_pointer(instance, rng)
+        return verbalize_pointer(instance, rng, symbol_names=symbol_names, template_variant=template_variant)
+    if family == "baton":
+        return verbalize_baton(instance, rng, symbol_names=symbol_names, template_variant=template_variant)
     raise ValueError(f"unknown verbal family: {family!r}")
 
 
@@ -133,20 +301,29 @@ def build_verbal_chain_row(
     split: str,
     rng: random.Random,
     max_target_loops: int,
+    symbol_names: tuple[str, ...] = DEFAULT_NAME_SYMBOLS,
+    template_variant: TemplateVariant = "default",
 ) -> dict[str, Any]:
-    rendered = verbalize(instance, family=family, rng=rng)
+    rendered = verbalize(
+        instance,
+        family=family,
+        rng=rng,
+        symbol_names=symbol_names,
+        template_variant=template_variant,
+    )
     max_active = min(int(max_target_loops), int(instance.depth))
-    name_orbit = [symbol(value, prefix="name:") for value in instance.orbit]
+    name_orbit = [name_symbol(value, symbol_names=symbol_names) for value in instance.orbit]
     return {
         "id": instance.instance_id,
         "instance_id": instance.instance_id,
         "question": rendered["question"],
-        "target": symbol(instance.target, prefix="name:"),
+        "target": name_symbol(instance.target, symbol_names=symbol_names),
         "depth": int(instance.depth),
         "synthetic_depth": int(instance.depth),
-        "start": symbol(instance.start, prefix="name:"),
-        "mapping": serialized_mapping(instance, value_prefix="name:"),
+        "start": name_symbol(instance.start, symbol_names=symbol_names),
+        "mapping": serialized_name_mapping(instance, symbol_names=symbol_names),
         "orbit": name_orbit,
+        "symbol_names": list(symbol_names[: instance.n_symbols]),
         "n_symbols": int(instance.n_symbols),
         "score_target": "full_symbols",
         "prompt_style": "question_only",
@@ -164,6 +341,7 @@ def build_verbal_chain_row(
         "target_loop_count": max_active,
         "synthetic_task": "natural_surface_iterated_function",
         "verbal_surface_family": family,
+        "template_variant": template_variant,
         "split": split,
         "k_star": int(rendered["k_star"]),
         "answer_text": rendered["answer_text"],
@@ -181,6 +359,8 @@ def build_verbal_rows(
     rows_per_depth: int,
     seed: int,
     max_target_loops: int,
+    symbol_names: tuple[str, ...] = DEFAULT_NAME_SYMBOLS,
+    template_variant: TemplateVariant = "default",
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for depth in range(1, max_depth + 1):
@@ -207,8 +387,56 @@ def build_verbal_rows(
                     split=split,
                     rng=_rng_for(seed=seed, family=family, split=split, depth=depth, row_index=row_index),
                     max_target_loops=max_target_loops,
+                    symbol_names=symbol_names,
+                    template_variant=template_variant,
                 )
             )
+    return rows
+
+
+def build_paired_verbal_rows(
+    *,
+    families: tuple[Family, ...] = ("relay", "pointer"),
+    split: str,
+    n_symbols: int,
+    max_depth: int,
+    rows_per_depth: int,
+    seed: int,
+    max_target_loops: int,
+    symbol_names: tuple[str, ...] = DEFAULT_NAME_SYMBOLS,
+    template_variant: TemplateVariant = "default",
+) -> dict[str, list[dict[str, Any]]]:
+    rows = {family: [] for family in families}
+    for depth in range(1, max_depth + 1):
+        for row_index in range(rows_per_depth):
+            instance_id = f"{split}_paired_d{depth:02d}_{row_index:05d}"
+            instance = build_instance(
+                instance_id=instance_id,
+                n_symbols=n_symbols,
+                depth=depth,
+                seed=_instance_seed(
+                    seed=seed,
+                    family="paired",
+                    split=split,
+                    depth=depth,
+                    row_index=row_index,
+                ),
+                split=split,
+                num_choices=4,
+            )
+            for family in families:
+                row = build_verbal_chain_row(
+                    instance,
+                    family=family,
+                    split=split,
+                    rng=_rng_for(seed=seed, family=family, split=split, depth=depth, row_index=row_index),
+                    max_target_loops=max_target_loops,
+                    symbol_names=symbol_names,
+                    template_variant=template_variant,
+                )
+                row["id"] = f"{split}_paired_{family}_d{depth:02d}_{row_index:05d}"
+                row["paired_instance_id"] = instance_id
+                rows[family].append(row)
     return rows
 
 

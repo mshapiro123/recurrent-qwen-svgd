@@ -611,6 +611,11 @@ def main() -> int:
     }
     max_steps = cfg_int(cfg, "max_steps", 25)
     save_every = cfg_int(cfg, "save_every", 0) if cfg.get("save_every", 0) else 0
+    save_steps = {
+        int(item)
+        for item in (cfg.get("save_steps") or [])
+        if int(item) > 0
+    }
     prelude_grad_multiplier = cfg_float(cfg, "bridge_prelude_grad_multiplier", 1.0)
     loop_loss_mode = str(cfg.get("loop_loss_mode", "halting_weighted"))
     chain_anneal_hold_frac = cfg_float(cfg, "chain_anneal_hold_frac", 0.5)
@@ -705,7 +710,8 @@ def main() -> int:
                 )
             step += 1
             if output_dir := cfg.get("output_dir"):
-                if save_every and step % save_every == 0 and step < max_steps:
+                should_save_interval = (save_every and step % save_every == 0) or step in save_steps
+                if should_save_interval and step < max_steps:
                     checkpoint_path = save_trainable_checkpoint(wrapper, output_dir, "unfrozen_recurrent", step, cfg)
                     print(f"saved_checkpoint={checkpoint_path}")
                     summary["interval_checkpoints"].append(str(checkpoint_path))

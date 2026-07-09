@@ -8,6 +8,7 @@ from colab.run_stage5_natural_surface_transfer import (
     existing_row_manifest,
     score_experiment,
     verify_expected_init_checkpoint,
+    write_training_config,
     write_jsonl,
 )
 from colab.run_stage5_natural_surface_checkpoint_curve import (
@@ -124,3 +125,22 @@ def test_checkpoint_curve_best_by_metric_picks_best_step() -> None:
 
     assert best["relay_train_depth_min"] == {"step": 4000, "value": 0.7}
     assert best["synthetic_rehearsal_min"] == {"step": 2000, "value": 0.99}
+
+
+def test_natural_transfer_training_config_accepts_explicit_save_steps(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("STAGE5_NATURAL_TRANSFER_SAVE_STEPS", "1000,1500,2000")
+
+    config_path = write_training_config(
+        tmp_path,
+        train_jsonl=tmp_path / "train.jsonl",
+        resume_from=tmp_path / "resume.pt",
+        max_steps=8000,
+        max_loops=8,
+        dtype="bfloat16",
+    )
+
+    text = config_path.read_text(encoding="utf-8")
+    assert "save_steps:" in text
+    assert "- 1000" in text
+    assert "- 1500" in text
+    assert "- 2000" in text

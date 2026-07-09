@@ -4,9 +4,11 @@ import json
 from pathlib import Path
 
 from training.natural_surface_transfer import (
+    HELDOUT_NAME_SYMBOLS,
     NAME_SYMBOLS,
     NaturalSurfaceConfig,
     assert_verbal_row_invariants,
+    build_paired_verbal_rows,
     build_verbal_rows,
     manifest_for_rows,
     verify_single_token_names,
@@ -55,6 +57,64 @@ def test_pointer_rows_are_heldout_template_with_hop_counter() -> None:
     assert row["latent_targets"] == row["orbit"][1:4]
     assert row["verbal_surface_family"] == "pointer"
     assert_verbal_row_invariants(row)
+
+
+def test_baton_third_family_uses_handoff_surface() -> None:
+    rows = build_verbal_rows(
+        family="baton",
+        split="test",
+        n_symbols=20,
+        max_depth=2,
+        rows_per_depth=1,
+        seed=457,
+        max_target_loops=2,
+    )
+
+    row = rows[-1]
+    assert "baton" in row["question"]
+    assert "handoff" in row["question"] or "handed" in row["question"]
+    assert row["verbal_surface_family"] == "baton"
+    assert_verbal_row_invariants(row)
+
+
+def test_unseen_name_rows_carry_row_level_symbol_names() -> None:
+    rows = build_verbal_rows(
+        family="relay",
+        split="test",
+        n_symbols=20,
+        max_depth=2,
+        rows_per_depth=1,
+        seed=458,
+        max_target_loops=2,
+        symbol_names=HELDOUT_NAME_SYMBOLS,
+    )
+
+    row = rows[-1]
+    assert row["symbol_names"] == list(HELDOUT_NAME_SYMBOLS)
+    assert set(row["orbit"]).issubset(set(HELDOUT_NAME_SYMBOLS))
+    assert not set(row["orbit"]) & set(NAME_SYMBOLS)
+    assert_verbal_row_invariants(row)
+
+
+def test_paired_rows_share_instance_and_answer_across_surfaces() -> None:
+    paired = build_paired_verbal_rows(
+        families=("relay", "pointer"),
+        split="test",
+        n_symbols=20,
+        max_depth=3,
+        rows_per_depth=2,
+        seed=459,
+        max_target_loops=3,
+    )
+
+    relay = paired["relay"][-1]
+    pointer = paired["pointer"][-1]
+    assert relay["paired_instance_id"] == pointer["paired_instance_id"]
+    assert relay["orbit"] == pointer["orbit"]
+    assert relay["target"] == pointer["target"]
+    assert relay["question"] != pointer["question"]
+    assert relay["verbal_surface_family"] == "relay"
+    assert pointer["verbal_surface_family"] == "pointer"
 
 
 def test_natural_surface_generation_is_deterministic_and_manifested(tmp_path: Path) -> None:

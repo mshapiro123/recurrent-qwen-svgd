@@ -52,7 +52,15 @@ def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in Path(path).read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
-def symbol(value: int | str, *, prefix: str = "") -> str:
+def row_symbol_names(row: dict[str, Any] | None = None) -> tuple[str, ...]:
+    if row is not None and isinstance(row.get("symbol_names"), list):
+        names = tuple(str(item) for item in row["symbol_names"])
+        if names:
+            return names
+    return NAME_SYMBOLS
+
+
+def symbol(value: int | str, *, prefix: str = "", row_symbols: tuple[str, ...] | None = None) -> str:
     if prefix == "letter:":
         text = str(value)
         if text in LETTER_SYMBOLS:
@@ -62,28 +70,33 @@ def symbol(value: int | str, *, prefix: str = "") -> str:
             raise ValueError(f"letter: value_prefix supports values 0-{len(LETTER_SYMBOLS) - 1}; got {value}")
         return LETTER_SYMBOLS[idx]
     if prefix == "name:":
+        names = row_symbols or NAME_SYMBOLS
         text = str(value)
-        if text in NAME_SYMBOLS:
+        if text in names:
             return text
-        idx = int(text)
-        if idx < 0 or idx >= len(NAME_SYMBOLS):
-            raise ValueError(f"name: value_prefix supports values 0-{len(NAME_SYMBOLS) - 1}; got {value}")
-        return NAME_SYMBOLS[idx]
+        try:
+            idx = int(text)
+        except ValueError:
+            return text
+        if idx < 0 or idx >= len(names):
+            raise ValueError(f"name: value_prefix supports values 0-{len(names) - 1}; got {value}")
+        return names[idx]
     text = str(value)
     if prefix and not text.startswith(prefix):
         return f"{prefix}{text}"
     return text
 
 
-def parse_int_symbol(value: Any, *, prefix: str = "") -> int:
+def parse_int_symbol(value: Any, *, prefix: str = "", row_symbols: tuple[str, ...] | None = None) -> int:
     text = str(value)
     if prefix == "letter:":
         if text in LETTER_SYMBOLS:
             return LETTER_SYMBOLS.index(text)
         return int(text)
     if prefix == "name:":
-        if text in NAME_SYMBOLS:
-            return NAME_SYMBOLS.index(text)
+        names = row_symbols or NAME_SYMBOLS
+        if text in names:
+            return names.index(text)
         return int(text)
     if prefix and text.startswith(prefix):
         text = text[len(prefix) :]
@@ -95,8 +108,13 @@ def row_mapping(row: dict[str, Any], *, value_prefix: str = "") -> dict[int, int
     if not isinstance(raw, dict):
         return None
     mapping: dict[int, int] = {}
+    symbols = row_symbol_names(row)
     for key, value in raw.items():
-        mapping[parse_int_symbol(key, prefix=value_prefix)] = parse_int_symbol(value, prefix=value_prefix)
+        mapping[parse_int_symbol(key, prefix=value_prefix, row_symbols=symbols)] = parse_int_symbol(
+            value,
+            prefix=value_prefix,
+            row_symbols=symbols,
+        )
     return mapping
 
 
@@ -124,7 +142,11 @@ def candidates_for_row(row: dict[str, Any], *, prediction_space: str, value_pref
         return {str(label): f" {label}" for label in (row.get("choices") or {}).keys()}
     if prediction_space == "full_symbols":
         n_symbols = int(row["n_symbols"])
-        return {symbol(idx, prefix=value_prefix): f" {symbol(idx, prefix=value_prefix)}" for idx in range(n_symbols)}
+        symbols = row_symbol_names(row)
+        return {
+            symbol(idx, prefix=value_prefix, row_symbols=symbols): f" {symbol(idx, prefix=value_prefix, row_symbols=symbols)}"
+            for idx in range(n_symbols)
+        }
     raise ValueError("prediction_space must be one of: choice_labels, full_symbols")
 
 
@@ -164,15 +186,16 @@ def active_target_for_loop(
     orbit = list(row.get("orbit") or [])
     if len(orbit) <= loop:
         return None
-    return symbol(orbit[loop], prefix=value_prefix)
+    return symbol(orbit[loop], prefix=value_prefix, row_symbols=row_symbol_names(row))
 
 
 def continued_symbol_for_loop(row: dict[str, Any], loop: int, *, value_prefix: str) -> str | None:
     mapping = row_mapping(row, value_prefix=value_prefix)
     if mapping is None:
         return None
-    start = parse_int_symbol(row["start"], prefix=value_prefix)
-    return symbol(apply_mapping(mapping, start, loop), prefix=value_prefix)
+    symbols = row_symbol_names(row)
+    start = parse_int_symbol(row["start"], prefix=value_prefix, row_symbols=symbols)
+    return symbol(apply_mapping(mapping, start, loop), prefix=value_prefix, row_symbols=symbols)
 
 
 def score_candidates_all_loops(
@@ -320,7 +343,7 @@ def evaluate(args: argparse.Namespace) -> list[dict[str, Any]]:
             loop_counts=loop_counts,
         )
         depth = int(row["depth"])
-        final_symbol = symbol(row["target"], prefix=args.value_prefix)
+        final_symbol = symbol(row["target"], prefix=args.value_prefix, row_symbols=row_symbol_names(row))
         final_label = str(row.get("answer", "")).strip()
         for loop in loop_counts:
             scores = scores_by_loop[loop]
@@ -368,6 +391,15 @@ def evaluate(args: argparse.Namespace) -> list[dict[str, Any]]:
                 "prediction_space": args.prediction_space,
                 "above_diagonal_behavior": behavior,
             }
+            for passthrough_key in (
+                "instance_id",
+                "paired_instance_id",
+                "verbal_surface_family",
+                "template_variant",
+                "symbol_names",
+            ):
+                if passthrough_key in row:
+                    out[passthrough_key] = row[passthrough_key]
             output_rows.append(out)
     return output_rows
 

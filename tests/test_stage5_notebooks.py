@@ -118,6 +118,41 @@ def test_current_bootstrap_exposes_natural_surface_transfer_target() -> None:
     assert "value_prefix=\"name:\"" in runner or 'value_prefix="name:"' in runner
 
 
+def test_current_bootstrap_exposes_natural_surface_receipts_target() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    plain = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_NATURAL_SURFACE_RECEIPTS_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_natural_surface_receipts.py").read_text(encoding="utf-8")
+
+    for source in (text, plain):
+        assert "natural_surface_receipts" in source
+        assert "STAGE5_NATURAL_SURFACE_RECEIPTS_CELL.py" in source
+        assert "robust_baton_default_d1_12" in source
+        assert "paired_relay_pointer_mcnemar" in source
+    assert "STAGE5_NATURAL_SURFACE_RECEIPTS_CELL_VERSION" in cell
+    assert "colab/run_stage5_natural_surface_receipts.py" in cell
+    assert "pointer_holdout" in runner
+    assert "untouched_relay_d13_16" in runner
+
+
+def test_current_bootstrap_exposes_natural_surface_replication_dose_target() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    plain = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_NATURAL_SURFACE_REPLICATION_DOSE_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_natural_surface_replication_dose.py").read_text(encoding="utf-8")
+
+    for source in (text, plain):
+        assert "natural_surface_replication_dose" in source
+        assert "STAGE5_NATURAL_SURFACE_REPLICATION_DOSE_CELL.py" in source
+        assert "1000,1500,2000,2500,3000,4000,6000" in source
+        assert "tail_peaks_before_final" in source
+    assert "STAGE5_NATURAL_SURFACE_REPLICATION_DOSE_CELL_VERSION" in cell
+    assert "colab/run_stage5_natural_surface_replication_dose.py" in cell
+    assert "original landed frozen relay/pointer/synthetic rows" in cell
+    assert "train_seed" in runner
+    assert "curve_shape" in runner
+
+
 def test_single_a100_runbook_uses_current_bootstrap_target_queue() -> None:
     payload = notebook_payload("colab/00_single_a100_runbook.ipynb")
     text = "\n".join(str(cell.get("source", "")) for cell in payload.get("cells", []))
