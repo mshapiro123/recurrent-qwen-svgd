@@ -1,0 +1,220 @@
+{
+  "kind": "stage5_natural_surface_transfer_rung0",
+  "run_id": "stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_124245",
+  "status": "experiment_0_frozen_baseline_finished",
+  "data_summary": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/summary.json",
+  "init_source_summary": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json",
+  "init_checkpoint_metadata": {
+    "source_summary": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json",
+    "source_run_id": "stage5_n24_support12_rung_20260707_140139",
+    "source_kind": "stage5_n24_support12_rung",
+    "preferred_step": 6000,
+    "restored_checkpoint": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_124245/restored/n24_support12_step6000.pt",
+    "drive_checkpoint_root": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints",
+    "selected_checkpoint_reference": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_n24_support12_rung_20260707_140139/anneal_to_outcome_final/unfrozen_recurrent_step_6000.pt",
+    "selected_checkpoint_source": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_n24_support12_rung_20260707_140139/anneal_to_outcome_final/unfrozen_recurrent_step_6000.pt",
+    "selected_checkpoint_sha256": "898a259db2ab344ece4545e2910b051840e8408dbe4927f799e7cdb3cdd8c7dc"
+  },
+  "support6_source_summary": "outputs/stage5/stage5_support6_seed26_plateau_20260708_130654_dose2000/summary.json",
+  "train_steps": 8000,
+  "train_depth_max": 8,
+  "eval_depth_max": 12,
+  "train_max_loops": 8,
+  "dtype": "bfloat16",
+  "threshold": 0.71,
+  "run_train": true,
+  "data_paths": {
+    "rung0_train_mix_chain_symbol_sft": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/rung0_train_mix_chain_symbol_sft.jsonl",
+    "relay_test_chain_mcq": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/relay_test_chain_mcq.jsonl",
+    "pointer_test_chain_mcq": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/pointer_test_chain_mcq.jsonl",
+    "synthetic_rehearsal_chain_symbol_sft": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/synthetic_rehearsal_chain_symbol_sft.jsonl",
+    "data_summary": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/summary.json"
+  },
+  "frozen_baseline": {
+    "n24": {
+      "artifact_check": {
+        "kind": "synthetic_depth_extrapolation_artifact_check",
+        "checkpoint": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_124245/restored/n24_support12_step6000.pt",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/relay_test_chain_mcq.jsonl",
+        "sample_id": "test_relay_d01_00000",
+        "requested_max_loops": 12,
+        "loop_logits_shape": [
+          1,
+          1,
+          12,
+          185,
+          151936
+        ],
+        "loop_states_observed": 12,
+        "bridge_forward_calls": 11,
+        "expected_bridge_forward_calls": 11,
+        "forced_loop_count_honored": true,
+        "bridge_fires_on_reentry": true,
+        "source_static_checks": {
+          "learned_loop_control_optional": true,
+          "learned_loop_control_default_false": true,
+          "halting_loop_embedding_present": true,
+          "halting_target_loop_router_present": true,
+          "max_loop_embedding_capacity_64": false,
+          "no_literal_four_loop_cap_in_wrapper": true
+        },
+        "pass": true
+      },
+      "relay": {
+        "name": "frozen_n24_relay",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/relay_test_chain_mcq.jsonl",
+        "checkpoint": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_124245/restored/n24_support12_step6000.pt",
+        "active_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_124245/eval/frozen_n24_relay_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_124245/eval/frozen_n24_relay_active_eval.log",
+        "row_manifest": {
+          "status": "sampled_and_deleted_full",
+          "full_rows_path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_124245/eval/frozen_n24_relay_active_rows.jsonl",
+          "full_rows_count": 18432,
+          "sample_path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_124245/eval/frozen_n24_relay_active_rows_sample.jsonl",
+          "sample_rows": 256
+        },
+        "loop_counts": "1,2,3,4,5,6,7,8,9,10,11,12",
+        "value_prefix": "name:",
+        "active_diagonal": {
+          "1": 0.921875,
+          "2": 0.2109375,
+          "3": 0.09375,
+          "4": 0.09375,
+          "5": 0.1015625,
+          "6": 0.15625,
+          "7": 0.1015625,
+          "8": 0.09375,
+          "9": 0.078125,
+          "10": 0.09375,
+          "11": 0.0859375,
+          "12": 0.0546875
+        },
+        "active_diagonal_min": 0.0546875,
+        "active_total": {
+          "correct": 2264,
+          "total": 9984,
+          "accuracy": 0.2267628205128205
+        },
+        "above_diagonal": {
+          "iterate": 897,
+          "hold": 671,
+          "other": 6880,
+          "unknown_iterate_target": 0,
+          "n": 8448,
+          "rates": {
+            "iterate": 0.10617897727272728,
+            "hold": 0.07942708333333333,
+            "other": 0.8143939393939394,
+            "unknown_iterate_target": 0.0
+          }
+        }
+      },
+      "pointer": {
+        "name": "frozen_n24_pointer",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/pointer_test_chain_mcq.jsonl",
+        "checkpoint": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_124245/restored/n24_support12_step6000.pt",
+        "active_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_124245/eval/frozen_n24_pointer_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_124245/eval/frozen_n24_pointer_active_eval.log",
+        "row_manifest": {
+          "status": "sampled_and_deleted_full",
+          "full_rows_path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_124245/eval/frozen_n24_pointer_active_rows.jsonl",
+          "full_rows_count": 18432,
+          "sample_path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_124245/eval/frozen_n24_pointer_active_rows_sample.jsonl",
+          "sample_rows": 256
+        },
+        "loop_counts": "1,2,3,4,5,6,7,8,9,10,11,12",
+        "value_prefix": "name:",
+        "active_diagonal": {
+          "1": 0.9609375,
+          "2": 0.5390625,
+          "3": 0.15625,
+          "4": 0.109375,
+          "5": 0.15625,
+          "6": 0.0859375,
+          "7": 0.078125,
+          "8": 0.0546875,
+          "9": 0.0703125,
+          "10": 0.0625,
+          "11": 0.078125,
+          "12": 0.078125
+        },
+        "active_diagonal_min": 0.0546875,
+        "active_total": {
+          "correct": 2737,
+          "total": 9984,
+          "accuracy": 0.2741386217948718
+        },
+        "above_diagonal": {
+          "iterate": 932,
+          "hold": 560,
+          "other": 6956,
+          "unknown_iterate_target": 0,
+          "n": 8448,
+          "rates": {
+            "iterate": 0.1103219696969697,
+            "hold": 0.06628787878787878,
+            "other": 0.8233901515151515,
+            "unknown_iterate_target": 0.0
+          }
+        }
+      },
+      "synthetic_rehearsal": {
+        "name": "frozen_n24_synthetic_rehearsal",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/synthetic_rehearsal_chain_symbol_sft.jsonl",
+        "checkpoint": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_124245/restored/n24_support12_step6000.pt",
+        "active_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_124245/eval/frozen_n24_synthetic_rehearsal_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_124245/eval/frozen_n24_synthetic_rehearsal_active_eval.log",
+        "row_manifest": {
+          "status": "sampled_and_deleted_full",
+          "full_rows_path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_124245/eval/frozen_n24_synthetic_rehearsal_active_rows.jsonl",
+          "full_rows_count": 16384,
+          "sample_path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_124245/eval/frozen_n24_synthetic_rehearsal_active_rows_sample.jsonl",
+          "sample_rows": 256
+        },
+        "loop_counts": "1,2,3,4,5,6,7,8",
+        "value_prefix": "letter:",
+        "active_diagonal": {
+          "1": 1.0,
+          "2": 1.0,
+          "3": 0.99609375,
+          "4": 0.98828125,
+          "5": 0.99609375,
+          "6": 0.99609375,
+          "7": 1.0,
+          "8": 0.984375
+        },
+        "active_diagonal_min": 0.984375,
+        "active_total": {
+          "correct": 9178,
+          "total": 9216,
+          "accuracy": 0.9958767361111112
+        },
+        "above_diagonal": {
+          "iterate": 7078,
+          "hold": 10,
+          "other": 80,
+          "unknown_iterate_target": 0,
+          "n": 7168,
+          "rates": {
+            "iterate": 0.9874441964285714,
+            "hold": 0.0013950892857142857,
+            "other": 0.011160714285714286,
+            "unknown_iterate_target": 0.0
+          }
+        }
+      }
+    }
+  },
+  "train_stage": null,
+  "post_train_evals": null,
+  "decision_read": {
+    "experiment_0": {
+      "relay_depth_1_to_8_min": 0.09375,
+      "relay_depth_9_to_12_min": 0.0546875,
+      "pointer_depth_1_to_8_min": 0.0546875,
+      "pointer_depth_9_to_12_min": 0.0625,
+      "status": "frozen_baseline_finished"
+    },
+    "experiment_1": null
+  }
+}
