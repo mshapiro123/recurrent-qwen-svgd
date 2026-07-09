@@ -1,0 +1,95 @@
+{
+  "kind": "stage5_natural_surface_receipts",
+  "run_id": "stage5_natural_surface_receipts_20260709_210151",
+  "status": "started",
+  "source_run_id": "stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812",
+  "curve_run_id": "stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008",
+  "source_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.json",
+  "curve_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/summary.json",
+  "backup_manifest": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/drive_backup_manifest.json",
+  "receipts": {
+    "pointer_holdout": {
+      "pointer_rows_in_training": 0,
+      "training_family_counts": {
+        "relay": 2048,
+        "synthetic_rehearsal": 2048
+      },
+      "verdict": "pointer_held_out"
+    },
+    "init_checkpoint": {
+      "source_summary": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json",
+      "source_run_id": "stage5_n24_support12_rung_20260707_140139",
+      "source_kind": "stage5_n24_support12_rung",
+      "preferred_step": 6000,
+      "restored_checkpoint": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/restored/n24_support12_step6000.pt",
+      "drive_checkpoint_root": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints",
+      "selected_checkpoint_reference": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_n24_support12_rung_20260707_140139/anneal_to_outcome_final/unfrozen_recurrent_step_6000.pt",
+      "selected_checkpoint_source": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_n24_support12_rung_20260707_140139/anneal_to_outcome_final/unfrozen_recurrent_step_6000.pt",
+      "selected_checkpoint_sha256": "898a259db2ab344ece4545e2910b051840e8408dbe4927f799e7cdb3cdd8c7dc"
+    },
+    "corrected_prompt_pipeline": {
+      "source_run_id": "stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812",
+      "fixed_prompt_run": true,
+      "artifact_check_pass": true,
+      "causal_prompt_masking_commit": "087fe65 Mask full rendered prompt in causal dataset"
+    },
+    "curve_best_by_metric": {
+      "relay_train_depth_min": {
+        "step": 6000,
+        "value": 0.90625
+      },
+      "relay_extrap_depth_min": {
+        "step": 4000,
+        "value": 0.625
+      },
+      "pointer_train_depth_min": {
+        "step": 6000,
+        "value": 0.8515625
+      },
+      "pointer_extrap_depth_min": {
+        "step": 2000,
+        "value": 0.546875
+      },
+      "synthetic_rehearsal_min": {
+        "step": 6000,
+        "value": 0.99609375
+      },
+      "synthetic_rehearsal_min_delta": {
+        "step": 6000,
+        "value": 0.0
+      }
+    },
+    "drive_checkpoint_backup": {
+      "backup_id": "natural_surface_backup_20260709_180835",
+      "checkpoint_files": [
+        {
+          "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/train/verbal_rung_zero/unfrozen_recurrent_step_2000.pt",
+          "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/checkpoints/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/unfrozen_recurrent_step_2000.pt",
+          "bytes": 370811845,
+          "sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+          "step": 2000
+        },
+        {
+          "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/train/verbal_rung_zero/unfrozen_recurrent_step_4000.pt",
+          "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/checkpoints/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/unfrozen_recurrent_step_4000.pt",
+          "bytes": 370811845,
+          "sha256": "597f281a379948369c653672a97b296b84b907d15051ecfcf8a02c975586fca0",
+          "step": 4000
+        },
+        {
+          "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/train/verbal_rung_zero/unfrozen_recurrent_step_6000.pt",
+          "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/checkpoints/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/unfrozen_recurrent_step_6000.pt",
+          "bytes": 370811845,
+          "sha256": "dea084c28710b9fe5c9975d4fbb031782e3e85dab21325938e5a1985cf5318ef",
+          "step": 6000
+        }
+      ]
+    },
+    "canary_trace": {
+      "status": "not_in_github_artifacts",
+      "note": "Training log/summary was not published in the landed source run; checkpoint curve and eval artifacts are present."
+    }
+  },
+  "generated_data": {},
+  "evals": {}
+}
