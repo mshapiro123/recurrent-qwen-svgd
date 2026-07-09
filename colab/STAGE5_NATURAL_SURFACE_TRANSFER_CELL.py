@@ -127,6 +127,7 @@ def main() -> None:
             "-m",
             "pytest",
             "-q",
+            "tests/test_causal_dataset_loop_targets.py",
             "tests/test_stage5_natural_surface_transfer.py",
             "tests/test_natural_surface_transfer.py",
             "tests/test_eval_synthetic_depth_active_labels.py::test_name_value_prefix_maps_full_symbol_space",
