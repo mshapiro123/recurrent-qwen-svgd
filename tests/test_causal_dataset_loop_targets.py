@@ -104,6 +104,7 @@ def test_jsonl_dataset_builds_and_collates_loop_labels(tmp_path) -> None:
     item = dataset[0]
     assert item["loop_labels"].shape == (4, item["input_ids"].numel())
     active_count = item["labels"].ne(-100).sum()
+    assert active_count == 1
     assert item["loop_labels"][0].ne(-100).sum() == active_count
     assert item["loop_labels"][1].ne(-100).sum() == active_count
     assert item["loop_labels"][2].eq(-100).all()
@@ -160,10 +161,10 @@ def test_jsonl_dataset_renders_question_rows_like_active_label_eval(tmp_path) ->
     item = dataset[0]
 
     rendered_prompt = "Who has the key?\nAnswer:"
-    assert (rendered_prompt, False) in tokenizer.seen
+    assert (rendered_prompt, True) in tokenizer.seen
     assert (rendered_prompt + " Kim", True) in tokenizer.seen
     assert (rendered_prompt + " Jon", True) in tokenizer.seen
     active_count = item["labels"].ne(-100).sum()
-    assert active_count > 0
+    assert active_count == 1
     assert item["loop_labels"][0].ne(-100).sum() == active_count
     assert item["loop_labels"][1].ne(-100).sum() == active_count

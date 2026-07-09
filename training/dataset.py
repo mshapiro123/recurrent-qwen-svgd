@@ -72,7 +72,7 @@ class JsonlCausalDataset(Dataset):
             prompt_len = len(
                 self.tokenizer(
                     prompt,
-                    add_special_tokens=False,
+                    add_special_tokens=True,
                     truncation=True,
                     max_length=self.max_length,
                 )["input_ids"]
