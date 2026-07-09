@@ -5,7 +5,9 @@ import pytest
 from colab.run_stage5_natural_surface_transfer import (
     active_diag_min,
     checkpoint_candidates_from_summary,
+    existing_row_manifest,
     score_experiment,
+    write_jsonl,
 )
 
 
@@ -57,3 +59,14 @@ def test_score_experiment_keeps_frozen_and_post_train_reads_separate() -> None:
     assert scored["experiment_1"]["relay_train_depth_min"] == 1.0
     assert scored["experiment_1"]["relay_extrap_depth_min"] == 0.8
     assert scored["experiment_1"]["synthetic_rehearsal_min_delta"] == pytest.approx(-0.1)
+
+
+def test_existing_row_manifest_reuses_compacted_sample(tmp_path) -> None:
+    rows_path = tmp_path / "rows.jsonl"
+    sample_path = tmp_path / "rows_sample.jsonl"
+    write_jsonl(sample_path, [{"id": "a"}, {"id": "b"}])
+
+    manifest = existing_row_manifest(rows_path)
+
+    assert manifest["status"] == "reused_sample"
+    assert manifest["sample_rows"] == 2

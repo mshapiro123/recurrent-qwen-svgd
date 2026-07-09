@@ -238,6 +238,27 @@ def compact_rows(rows_path: Path, *, sample_rows: int) -> dict[str, Any]:
     }
 
 
+def existing_row_manifest(rows_path: Path) -> dict[str, Any]:
+    sample_path = rows_path.with_name(rows_path.stem + "_sample.jsonl")
+    if sample_path.exists():
+        return {
+            "status": "reused_sample",
+            "full_rows_path": path_for_cli(rows_path),
+            "sample_path": path_for_cli(sample_path),
+            "sample_rows": len(read_jsonl(sample_path)),
+        }
+    if rows_path.exists():
+        return compact_rows(
+            rows_path,
+            sample_rows=int(os.environ.get("STAGE5_NATURAL_TRANSFER_SAMPLE_ACTIVE_ROWS", "256")),
+        )
+    return {
+        "status": "summary_only_reused",
+        "full_rows_path": path_for_cli(rows_path),
+        "sample_path": path_for_cli(sample_path),
+    }
+
+
 def active_diag(summary: dict[str, Any]) -> dict[str, float]:
     return {str(depth): float(value) for depth, value in (summary.get("active_diagonal") or {}).items()}
 
@@ -263,6 +284,23 @@ def eval_active_checkpoint(
 ) -> dict[str, Any]:
     rows_path = run_dir / "eval" / f"{name}_active_rows.jsonl"
     summary_path = run_dir / "eval" / f"{name}_active_summary.json"
+    if env_flag("STAGE5_NATURAL_TRANSFER_REUSE_EXISTING", "1") and summary_path.exists():
+        print(f"reusing_active_eval={summary_path}", flush=True)
+        summary = read_json(summary_path)
+        return {
+            "name": name,
+            "data_jsonl": path_for_cli(data_jsonl),
+            "checkpoint": path_for_cli(checkpoint),
+            "active_summary": path_for_cli(summary_path),
+            "eval_log": path_for_cli(run_dir / "eval" / f"{name}_active_eval.log"),
+            "row_manifest": existing_row_manifest(rows_path),
+            "loop_counts": loop_counts,
+            "value_prefix": value_prefix,
+            "active_diagonal": active_diag(summary),
+            "active_diagonal_min": active_diag_min(summary),
+            "active_total": summary.get("active_total", {}),
+            "above_diagonal": summary.get("above_diagonal", {}),
+        }
     proc = run(
         [
             sys.executable,
@@ -336,6 +374,9 @@ def run_artifact_check(
     dtype: str,
 ) -> dict[str, Any]:
     out = run_dir / "eval" / f"{name}_artifact_check.json"
+    if env_flag("STAGE5_NATURAL_TRANSFER_REUSE_EXISTING", "1") and out.exists():
+        print(f"reusing_artifact_check={out}", flush=True)
+        return read_json(out)
     run(
         [
             sys.executable,
@@ -448,6 +489,25 @@ def train_verbal_rung_zero(
     max_loops: int,
     dtype: str,
 ) -> dict[str, Any]:
+    output_dir = run_dir / "train" / "verbal_rung_zero"
+    summary_path = output_dir / "train_unfrozen_recurrent_summary.json"
+    if env_flag("STAGE5_NATURAL_TRANSFER_REUSE_EXISTING", "1") and summary_path.exists():
+        checkpoint = latest_checkpoint(output_dir)
+        training_summary = read_json(summary_path)
+        print(f"reusing_verbal_rung_zero_checkpoint={checkpoint}", flush=True)
+        return {
+            "stage_name": "verbal_rung_zero",
+            "train_jsonl": path_for_cli(train_jsonl),
+            "train_config": path_for_cli(run_dir / "verbal_rung_zero_train_config.yaml"),
+            "train_log": path_for_cli(run_dir / "train" / "verbal_rung_zero_train.log"),
+            "training_summary": path_for_cli(summary_path),
+            "checkpoint": path_for_cli(checkpoint),
+            "checkpoint_drive_backup": None,
+            "optimizer_setup": training_summary.get("optimizer_setup", {}),
+            "bridge_prelude_weight_stats": training_summary.get("bridge_prelude_weight_stats", {}),
+            "interval_checkpoints": training_summary.get("interval_checkpoints", []),
+            "reused_existing": True,
+        }
     config_path = write_training_config(
         run_dir,
         train_jsonl=train_jsonl,
@@ -471,7 +531,6 @@ def train_verbal_rung_zero(
     log_path = run_dir / "train" / "verbal_rung_zero_train.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     log_path.write_text(proc.stdout or "", encoding="utf-8")
-    output_dir = run_dir / "train" / "verbal_rung_zero"
     checkpoint = latest_checkpoint(output_dir)
     training_summary = read_json(output_dir / "train_unfrozen_recurrent_summary.json")
     drive_backup = backup_checkpoint_to_drive(

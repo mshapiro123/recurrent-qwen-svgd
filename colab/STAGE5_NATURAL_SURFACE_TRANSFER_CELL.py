@@ -28,6 +28,7 @@ STAGE5_NATURAL_SURFACE_TRANSFER_CELL_VERSION = "natural_surface_transfer_rung0_v
 # Safety marker: STAGE5_NATURAL_TRANSFER_INIT_SOURCE_SUMMARY
 # Safety marker: STAGE5_NATURAL_TRANSFER_DATA_SUMMARY
 # Safety marker: STAGE5_NATURAL_TRANSFER_TRAIN_STEPS
+# Safety marker: STAGE5_NATURAL_TRANSFER_REUSE_EXISTING
 # Safety marker: STAGE5_NATURAL_TRANSFER_KEEP_FULL_ACTIVE_ROWS
 # Safety marker: eval/eval_synthetic_depth_active_labels.py
 # Safety marker: training/train_unfrozen_recurrent.py
@@ -138,6 +139,7 @@ def main() -> None:
     env.setdefault("STAGE5_NATURAL_TRANSFER_TRAIN_MAX_DEPTH", "8")
     env.setdefault("STAGE5_NATURAL_TRANSFER_DTYPE", "bfloat16")
     env.setdefault("STAGE5_NATURAL_TRANSFER_KEEP_FULL_ACTIVE_ROWS", "0")
+    env.setdefault("STAGE5_NATURAL_TRANSFER_REUSE_EXISTING", "1")
     env.setdefault("STAGE5_NATURAL_TRANSFER_BACKUP_CHECKPOINTS_TO_DRIVE", "1")
     run([sys.executable, "colab/run_stage5_natural_surface_transfer.py"], env=env)
     if os.environ.get("STAGE5_NATURAL_TRANSFER_DISCONNECT", "0").strip().lower() in {"1", "true", "yes", "y"}:
