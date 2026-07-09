@@ -1,6 +1,6 @@
 # Natural-Surface Checkpoint Curve - stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008
 
-- Status: `evaluated_step_6000`
+- Status: `finished`
 - Source run: `stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812`
 - Source summary: `outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.json`
 - Steps: `[2000, 4000, 6000]`
