@@ -1,0 +1,289 @@
+{
+  "backup_id": "natural_surface_backup_20260709_180835",
+  "created_at_unix": 1783620515.769773,
+  "source_run_id": "stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812",
+  "curve_run_id": "stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008",
+  "checkpoint_steps": [
+    2000,
+    4000,
+    6000
+  ],
+  "checkpoint_files": [
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/train/verbal_rung_zero/unfrozen_recurrent_step_2000.pt",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/checkpoints/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/unfrozen_recurrent_step_2000.pt",
+      "bytes": 370811845,
+      "sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+      "step": 2000
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/train/verbal_rung_zero/unfrozen_recurrent_step_4000.pt",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/checkpoints/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/unfrozen_recurrent_step_4000.pt",
+      "bytes": 370811845,
+      "sha256": "597f281a379948369c653672a97b296b84b907d15051ecfcf8a02c975586fca0",
+      "step": 4000
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/train/verbal_rung_zero/unfrozen_recurrent_step_6000.pt",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/checkpoints/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/unfrozen_recurrent_step_6000.pt",
+      "bytes": 370811845,
+      "sha256": "dea084c28710b9fe5c9975d4fbb031782e3e85dab21325938e5a1985cf5318ef",
+      "step": 6000
+    }
+  ],
+  "artifact_files": [
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.md",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.md",
+      "bytes": 1193,
+      "sha256": "aab6d25d934ecbeaf0a1d16cb47fdf26d7bca6afac080d285a515a73ec380a96"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/verbal_rung_zero_train_config.yaml",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/verbal_rung_zero_train_config.yaml",
+      "bytes": 1313,
+      "sha256": "7b1697cca8256abf789298651a1a4d1030ae62252cabe4458dff7372faef44fe"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.json",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.json",
+      "bytes": 10022,
+      "sha256": "8cf8e9697e04c6c601874de5539c114cc593135bed1db965d3f48ba5a06bd812"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_relay_active_summary.json",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_relay_active_summary.json",
+      "bytes": 14877,
+      "sha256": "e41caff3cb64c66d7a3114b49c60dc3ed9cdef14c2f5cf576bed74eb4d306930"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_relay_active_eval.log",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_relay_active_eval.log",
+      "bytes": 16292,
+      "sha256": "e03a52430b9df57f3767ae9e4443c96d59977239baebeea28fcd5edbf936e3d1"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_relay_artifact_check.json",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_relay_artifact_check.json",
+      "bytes": 946,
+      "sha256": "903267d22b5ef40b849e6d3e11e887d09b4d57f672eb44720d275b4f4f81a92e"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_synthetic_rehearsal_active_summary.json",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_synthetic_rehearsal_active_summary.json",
+      "bytes": 7248,
+      "sha256": "a29905428ead16daac6a881a6b63389f97acfb230f3b93940650ad16a86d979f"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_synthetic_rehearsal_active_eval.log",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_synthetic_rehearsal_active_eval.log",
+      "bytes": 9001,
+      "sha256": "5eaddc16a6f512c9bcc1279cb492d8229773b03ae853ff6ad80d6541ea792211"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_pointer_active_eval.log",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_pointer_active_eval.log",
+      "bytes": 16277,
+      "sha256": "c271dec7b3712ba65191003d5b056a0d2bd1fcad6d4cce878e26765c39254c32"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_relay_active_rows_sample.jsonl",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_relay_active_rows_sample.jsonl",
+      "bytes": 54262,
+      "sha256": "fd63a876da7526fe1f29f6f61ed21f9a8adc3d264b273485b6fee7d6f43eea9d"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_pointer_active_rows_sample.jsonl",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_pointer_active_rows_sample.jsonl",
+      "bytes": 54840,
+      "sha256": "26f0d53d890e1586327714ce4423b69310559b388113a9101606ba3688041450"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_pointer_active_summary.json",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_pointer_active_summary.json",
+      "bytes": 14862,
+      "sha256": "8202b79461f851c862b707e35a75076ccce5e4f1b3b1fba68ef587c7dc618e30"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_synthetic_rehearsal_active_rows_sample.jsonl",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/eval/frozen_n24_synthetic_rehearsal_active_rows_sample.jsonl",
+      "bytes": 52734,
+      "sha256": "fe29da4d91b7ea951661966895921e9049218ee1a410914e3b87e894adf28df2"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/summary.md",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/summary.md",
+      "bytes": 4383,
+      "sha256": "c85ec859f7c2d50a3fc8abce67cbbe9ff7fdfa0ff8a59a8f2fa757d8f6a55f2d"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/summary.json",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/summary.json",
+      "bytes": 30996,
+      "sha256": "7480540e5491249700477691868578b69ce8ba2ec60bbd38ec8db6e1c7a016ab"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_synthetic_rehearsal_active_summary.json",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_synthetic_rehearsal_active_summary.json",
+      "bytes": 7183,
+      "sha256": "92314667697bd42a17c14b505827fa1a083823ff381d08b3b4b9ecec4bea17b9"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_relay_active_rows_sample.jsonl",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_relay_active_rows_sample.jsonl",
+      "bytes": 54684,
+      "sha256": "edae97145e808029e9a2e7b5e1af137e2967a54c3a3c830ea7cc5f80eb48c16e"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_relay_active_summary.json",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_relay_active_summary.json",
+      "bytes": 14958,
+      "sha256": "93f063c940536c95ec9542dedf84cc5c3f3e977fba8e3bda7cf36d703207fca8"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_synthetic_rehearsal_active_rows_sample.jsonl",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_synthetic_rehearsal_active_rows_sample.jsonl",
+      "bytes": 52736,
+      "sha256": "ec12bdf9f191836d10ff345fb9f98efc6df8441d1e785a480c29c396de9b9a60"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_synthetic_rehearsal_active_eval.log",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_synthetic_rehearsal_active_eval.log",
+      "bytes": 8956,
+      "sha256": "e17072dc6adeb4ee55b01970116fafaff6c7c6ebbbcb62bff9cf6e8eb1f0f4d7"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_relay_active_eval.log",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_relay_active_eval.log",
+      "bytes": 16393,
+      "sha256": "d5f8c469db5b97949c8ffc88669d50d6690664028ad25f2a01b99d4fe684aac7"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_pointer_active_eval.log",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_pointer_active_eval.log",
+      "bytes": 16403,
+      "sha256": "03938554b9218f3525bdabdfad3532406a79972259723f8d93f036dafcbea32f"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_pointer_active_rows_sample.jsonl",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_pointer_active_rows_sample.jsonl",
+      "bytes": 55149,
+      "sha256": "6bffc58dea2c4f95479b0daed9d5ca540193b085036384b7d6861b5a3ddfa3d8"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_pointer_active_summary.json",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_2000/eval/step2000_pointer_active_summary.json",
+      "bytes": 14968,
+      "sha256": "a605b038f3422f623d9e83a5caeb9578851d82803ee39c5db93811b2a38192e8"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_6000/eval/step6000_synthetic_rehearsal_active_eval.log",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_6000/eval/step6000_synthetic_rehearsal_active_eval.log",
+      "bytes": 8975,
+      "sha256": "e21ad346d25c215ae803b80de6018c415dee3fd2b21d09be9ce2c9e08f3af517"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_6000/eval/step6000_pointer_active_eval.log",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_6000/eval/step6000_pointer_active_eval.log",
+      "bytes": 16419,
+      "sha256": "7ee40b775f56cd9ff6b4a4e4c20471296b6f933f113bd9dbc332c6e34f8aec85"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_6000/eval/step6000_relay_active_rows_sample.jsonl",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_6000/eval/step6000_relay_active_rows_sample.jsonl",
+      "bytes": 54638,
+      "sha256": "475daa612ddc5a8cd9e9442dc2a017d7cf8333e0343c966dda43d83fb20006c3"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_6000/eval/step6000_pointer_active_rows_sample.jsonl",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_6000/eval/step6000_pointer_active_rows_sample.jsonl",
+      "bytes": 55145,
+      "sha256": "8d2bd2c5ef21f3e670101a8565823e45f2d71134fd863874f58b7f72d609fcc6"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_6000/eval/step6000_synthetic_rehearsal_active_rows_sample.jsonl",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_6000/eval/step6000_synthetic_rehearsal_active_rows_sample.jsonl",
+      "bytes": 52732,
+      "sha256": "dbaa8e4849733038ce2f7bbbdb6d95da4ebeaa14e72eb40a64e40aa0a1b3934d"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_6000/eval/step6000_relay_active_summary.json",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_6000/eval/step6000_relay_active_summary.json",
+      "bytes": 14924,
+      "sha256": "0a8e88916c7f9b877581bde16cbdfffa831264ce421ca49b7abed336eea39f95"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_6000/eval/step6000_pointer_active_summary.json",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_6000/eval/step6000_pointer_active_summary.json",
+      "bytes": 14984,
+      "sha256": "c1397b48e1112882630fcb789f48915a4c501c4e36f4fef9650a4a2066ae78ef"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_6000/eval/step6000_relay_active_eval.log",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_6000/eval/step6000_relay_active_eval.log",
+      "bytes": 16359,
+      "sha256": "6d2c7e58dad8dd9ab43f1f9e1c34a8a5d13eab5fa39294fc10323a1d49b11f53"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_6000/eval/step6000_synthetic_rehearsal_active_summary.json",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_6000/eval/step6000_synthetic_rehearsal_active_summary.json",
+      "bytes": 7202,
+      "sha256": "49524997323d4e2f1a02be92429d3c084e17968610e52511ef60f574644f10a4"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_4000/eval/step4000_pointer_active_eval.log",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_4000/eval/step4000_pointer_active_eval.log",
+      "bytes": 16387,
+      "sha256": "708b40eeef74072e8e36e6aa749c796ef276b813ece86495d0c2a2a390369ec9"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_4000/eval/step4000_relay_active_eval.log",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_4000/eval/step4000_relay_active_eval.log",
+      "bytes": 16398,
+      "sha256": "861649a6a2c217804ec86a368c3007352a277cafe2b78ede757bd371ea0616d4"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_4000/eval/step4000_synthetic_rehearsal_active_summary.json",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_4000/eval/step4000_synthetic_rehearsal_active_summary.json",
+      "bytes": 7225,
+      "sha256": "7bd4e1f4e3cc9da451fa61c07dca04fcb3215588a667e2070e51937e1284849d"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_4000/eval/step4000_pointer_active_rows_sample.jsonl",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_4000/eval/step4000_pointer_active_rows_sample.jsonl",
+      "bytes": 55151,
+      "sha256": "26d5845eb1a293585929f0ce8a5a78f3b65d2cfce5767fb43f03085463674401"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_4000/eval/step4000_relay_active_summary.json",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_4000/eval/step4000_relay_active_summary.json",
+      "bytes": 14963,
+      "sha256": "c9c81be617961a8696f38b53058bba412c3d533f1195890ba74b403a0d99a95d"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_4000/eval/step4000_pointer_active_summary.json",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_4000/eval/step4000_pointer_active_summary.json",
+      "bytes": 14952,
+      "sha256": "39844b1d6a6fdb1e49c253e505bf4691688f1244976c2606a83276f9492df5da"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_4000/eval/step4000_synthetic_rehearsal_active_rows_sample.jsonl",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_4000/eval/step4000_synthetic_rehearsal_active_rows_sample.jsonl",
+      "bytes": 52736,
+      "sha256": "ec12bdf9f191836d10ff345fb9f98efc6df8441d1e785a480c29c396de9b9a60"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_4000/eval/step4000_relay_active_rows_sample.jsonl",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_4000/eval/step4000_relay_active_rows_sample.jsonl",
+      "bytes": 54674,
+      "sha256": "7cd4ec0ce4ad0b6889758519dfdf49f504ead8484d366465cfa761fdbd93ac77"
+    },
+    {
+      "source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_4000/eval/step4000_synthetic_rehearsal_active_eval.log",
+      "dest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/artifacts/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/step_4000/eval/step4000_synthetic_rehearsal_active_eval.log",
+      "bytes": 8998,
+      "sha256": "7164c362992455f5507b03fcf6498bd0a21df501552fc9ad525fabcc38d7ae76"
+    }
+  ],
+  "drive_manifest": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/backup_manifest.json"
+}
