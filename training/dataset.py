@@ -12,8 +12,26 @@ from torch.utils.data import Dataset
 from models.halting import target_loop_counts
 
 
+def causal_prompt_for_row(row: dict[str, Any]) -> str:
+    """Return the train-time prompt for prompt/completion causal rows."""
+
+    prompt = row.get("prompt")
+    if prompt is not None:
+        return str(prompt)
+    question = row.get("question")
+    if question is None:
+        return ""
+    prompt_style = str(row.get("prompt_style") or "question_only")
+    question_text = str(question).rstrip()
+    if prompt_style == "with_options":
+        choices = row.get("choices") or {}
+        rendered = "\n".join(f"{label}. {text}" for label, text in choices.items())
+        return f"{question_text}\n{rendered}\nAnswer:"
+    return f"{question_text}\nAnswer:"
+
+
 class JsonlCausalDataset(Dataset):
-    """Reads JSONL rows with either ``text`` or ``prompt`` + ``completion``.
+    """Reads JSONL rows with either ``text`` or prompt/question + ``completion``.
 
     Optional fields:
         cot: String chain-of-thought/reference reasoning trace for loop target.
@@ -43,12 +61,13 @@ class JsonlCausalDataset(Dataset):
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         row = self.rows[index]
-        prompt = row.get("prompt", "")
         completion = row.get("completion")
+        prompt = ""
         if completion is None:
             text = row["text"]
             prompt_len = 0
         else:
+            prompt = causal_prompt_for_row(row)
             text = prompt + completion
             prompt_len = len(
                 self.tokenizer(

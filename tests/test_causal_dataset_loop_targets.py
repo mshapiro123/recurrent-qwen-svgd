@@ -111,3 +111,59 @@ def test_jsonl_dataset_builds_and_collates_loop_labels(tmp_path) -> None:
     batch = collate_causal_batch([item], pad_token_id=0)
     assert batch["loop_labels"].shape == (1, 4, item["input_ids"].numel())
     assert torch.equal(batch["target_loop_counts"], torch.tensor([2]))
+
+
+def test_jsonl_dataset_renders_question_rows_like_active_label_eval(tmp_path) -> None:
+    path = tmp_path / "train.jsonl"
+    path.write_text(
+        json.dumps(
+            {
+                "question": "Who has the key?",
+                "prompt_style": "question_only",
+                "completion": " Kim",
+                "loop_completions": [" Jon", " Kim"],
+                "target_loop_count": 2,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    class LoggingTokenizer(TinyTokenizer):
+        def __init__(self) -> None:
+            self.seen: list[tuple[str, bool]] = []
+
+        def __call__(
+            self,
+            text: str,
+            add_special_tokens: bool = True,
+            truncation: bool = False,
+            max_length: int | None = None,
+        ) -> dict[str, list[int]]:
+            self.seen.append((text, add_special_tokens))
+            return super().__call__(
+                text,
+                add_special_tokens=add_special_tokens,
+                truncation=truncation,
+                max_length=max_length,
+            )
+
+    tokenizer = LoggingTokenizer()
+    dataset = JsonlCausalDataset(
+        path,
+        tokenizer=tokenizer,
+        max_length=32,
+        max_train_loops=4,
+        train_on_prompt=False,
+    )
+
+    item = dataset[0]
+
+    rendered_prompt = "Who has the key?\nAnswer:"
+    assert (rendered_prompt, False) in tokenizer.seen
+    assert (rendered_prompt + " Kim", True) in tokenizer.seen
+    assert (rendered_prompt + " Jon", True) in tokenizer.seen
+    active_count = item["labels"].ne(-100).sum()
+    assert active_count > 0
+    assert item["loop_labels"][0].ne(-100).sum() == active_count
+    assert item["loop_labels"][1].ne(-100).sum() == active_count
