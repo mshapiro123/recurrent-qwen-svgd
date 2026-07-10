@@ -2472,6 +2472,26 @@ TARGETS = {
             "STAGE5_NATURAL_RECEIPTS_DISCONNECT": "0",
         },
     },
+    "natural_surface_receipts_resume": {
+        "path": "colab/STAGE5_NATURAL_SURFACE_RECEIPTS_RESUME_CELL.py",
+        "markers": [
+            "STAGE5_NATURAL_SURFACE_RECEIPTS_RESUME_CELL_VERSION",
+            "natural_surface_receipts_resume",
+            "STAGE5_NATURAL_RECEIPTS_RESUME_RUN_ID",
+            "stage5_natural_surface_receipts_20260709_210151",
+            "resume_skip_active",
+            "colab/run_stage5_natural_surface_receipts_resume.py",
+            "tests/test_stage5_natural_surface_receipts_resume.py",
+        ],
+        "env": {
+            "STAGE5_NATURAL_RECEIPTS_RESUME_RUN_ID": "stage5_natural_surface_receipts_20260709_210151",
+            "STAGE5_NATURAL_RECEIPTS_RUN_FULL_SYNTHETIC": "1",
+            "STAGE5_NATURAL_RECEIPTS_RUN_SAME_READER": "1",
+            "STAGE5_NATURAL_RECEIPTS_DTYPE": "bfloat16",
+            "STAGE5_NATURAL_RECEIPTS_CHECKPOINTS": "frozen_n24,step_2000,step_4000,step_6000",
+            "STAGE5_NATURAL_RECEIPTS_DISCONNECT": "0",
+        },
+    },
     "natural_surface_replication_dose": {
         "path": "colab/STAGE5_NATURAL_SURFACE_REPLICATION_DOSE_CELL.py",
         "markers": [
