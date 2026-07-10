@@ -1,7 +1,7 @@
 {
   "kind": "stage5_natural_surface_receipts",
   "run_id": "stage5_natural_surface_receipts_20260709_210151",
-  "status": "evaluated_step_6000_robust_relay_unseen_names_d1_12",
+  "status": "resume_started",
   "source_run_id": "stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812",
   "curve_run_id": "stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008",
   "source_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.json",
@@ -36477,5 +36477,67 @@
         "paired_hits": {}
       }
     }
-  }
+  },
+  "resume_history": [
+    {
+      "resumed_at_unix": 1783723039.5919902,
+      "previous_status": "evaluated_step_6000_robust_relay_unseen_names_d1_12",
+      "plan": {
+        "active_skipped": 26,
+        "active_pending": [
+          {
+            "checkpoint": "step_6000",
+            "variant": "robust_pointer_unseen_names_d1_12"
+          },
+          {
+            "checkpoint": "step_6000",
+            "variant": "robust_relay_passive_d1_12"
+          },
+          {
+            "checkpoint": "step_6000",
+            "variant": "robust_pointer_passive_d1_12"
+          },
+          {
+            "checkpoint": "step_6000",
+            "variant": "paired_relay_d1_12"
+          },
+          {
+            "checkpoint": "step_6000",
+            "variant": "paired_pointer_d1_12"
+          },
+          {
+            "checkpoint": "step_6000",
+            "variant": "synthetic_frozen_v3_d1_12"
+          }
+        ],
+        "same_reader_skipped": 0,
+        "same_reader_pending": [
+          {
+            "checkpoint": "step_2000",
+            "family": "relay_original"
+          },
+          {
+            "checkpoint": "step_2000",
+            "family": "pointer_original"
+          },
+          {
+            "checkpoint": "step_4000",
+            "family": "relay_original"
+          },
+          {
+            "checkpoint": "step_4000",
+            "family": "pointer_original"
+          },
+          {
+            "checkpoint": "step_6000",
+            "family": "relay_original"
+          },
+          {
+            "checkpoint": "step_6000",
+            "family": "pointer_original"
+          }
+        ]
+      }
+    }
+  ]
 }
