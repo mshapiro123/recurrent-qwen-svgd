@@ -1,7 +1,7 @@
 {
   "kind": "stage5_natural_surface_followups_2_3",
   "run_id": "stage5_natural_surface_followups_2_3_20260710",
-  "status": "active_frozen_n24_corrected_relay_unseen_single_token_d1_12",
+  "status": "active_frozen_n24_corrected_pointer_unseen_single_token_d1_12",
   "source_receipt_run_id": "stage5_natural_surface_receipts_20260709_210151",
   "active_evals": {
     "frozen_n24": {
@@ -48,6 +48,61 @@
             "iterate": 0.11955492424242424,
             "hold": 0.08285984848484848,
             "other": 0.7975852272727273,
+            "unknown_iterate_target": 0.0
+          }
+        },
+        "compact": {
+          "by_depth": {},
+          "active_diagonal": {},
+          "active_min_1_8": 0.0,
+          "active_min_9_12": 0.0,
+          "failure_profile": {}
+        },
+        "paired_hits": {}
+      },
+      "corrected_pointer_unseen_single_token_d1_12": {
+        "status": "finished",
+        "label": "frozen_n24_corrected_pointer_unseen_single_token_d1_12",
+        "checkpoint": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_n24_support12_rung_20260707_140139/anneal_to_outcome_final/unfrozen_recurrent_step_6000.pt",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/data/corrected_pointer_unseen_single_token_d1_12.jsonl",
+        "active_summary": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/active/frozen_n24/frozen_n24_corrected_pointer_unseen_single_token_d1_12_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/active/frozen_n24/frozen_n24_corrected_pointer_unseen_single_token_d1_12_active_eval.log",
+        "row_manifest": {
+          "status": "sampled_and_deleted_full",
+          "full_rows_path": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/active/frozen_n24/frozen_n24_corrected_pointer_unseen_single_token_d1_12_active_rows.jsonl",
+          "full_rows_count": 18432,
+          "sample_path": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/active/frozen_n24/frozen_n24_corrected_pointer_unseen_single_token_d1_12_active_rows_sample.jsonl",
+          "sample_rows": 128
+        },
+        "active_diagonal": {
+          "1": 0.953125,
+          "2": 0.5,
+          "3": 0.1484375,
+          "4": 0.09375,
+          "5": 0.0703125,
+          "6": 0.0625,
+          "7": 0.078125,
+          "8": 0.1171875,
+          "9": 0.09375,
+          "10": 0.0859375,
+          "11": 0.0625,
+          "12": 0.09375
+        },
+        "active_total": {
+          "correct": 2658,
+          "total": 9984,
+          "accuracy": 0.26622596153846156
+        },
+        "above_diagonal": {
+          "iterate": 982,
+          "hold": 675,
+          "other": 6791,
+          "unknown_iterate_target": 0,
+          "n": 8448,
+          "rates": {
+            "iterate": 0.1162405303030303,
+            "hold": 0.07990056818181818,
+            "other": 0.8038589015151515,
             "unknown_iterate_target": 0.0
           }
         },
