@@ -1,6 +1,6 @@
 # Natural-Surface Replication Dose - stage5_natural_surface_replication_dose_seed931337_20260710
 
-- Status: `evaluated_step_1500`
+- Status: `evaluated_step_2000`
 - Source eval rows: `outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.json`
 - Train seed: `931337`
 - Save steps: `[1000, 1500, 2000, 2500, 3000, 4000, 6000]`
@@ -10,7 +10,8 @@
 
 - Step `1000`: `{'relay_train_depth_min': 0.5078125, 'relay_extrap_depth_min': 0.3125, 'pointer_train_depth_min': 0.4375, 'pointer_extrap_depth_min': 0.1953125, 'synthetic_rehearsal_min': 0.98046875, 'synthetic_rehearsal_delta_by_depth': {'1': 0.0, '2': -0.01171875, '3': 0.0, '4': 0.0, '5': 0.00390625, '6': 0.0, '7': -0.01953125, '8': 0.01171875}, 'synthetic_rehearsal_min_delta': -0.01953125, 'status': 'verbal_rung_zero_finished', 'synthetic_full_width_min_1_12': 0.921875, 'synthetic_full_width_delta_vs_frozen': -0.046875, 'synthetic_full_width_nonregression_pass': False}`
 - Step `1500`: `{'relay_train_depth_min': 0.703125, 'relay_extrap_depth_min': 0.203125, 'pointer_train_depth_min': 0.640625, 'pointer_extrap_depth_min': 0.234375, 'synthetic_rehearsal_min': 0.9921875, 'synthetic_rehearsal_delta_by_depth': {'1': 0.0, '2': -0.00390625, '3': 0.00390625, '4': 0.0078125, '5': 0.00390625, '6': -0.00390625, '7': -0.0078125, '8': 0.01171875}, 'synthetic_rehearsal_min_delta': -0.0078125, 'status': 'verbal_rung_zero_finished', 'synthetic_full_width_min_1_12': 0.9375, 'synthetic_full_width_delta_vs_frozen': -0.03125, 'synthetic_full_width_nonregression_pass': False}`
+- Step `2000`: `{'relay_train_depth_min': 0.875, 'relay_extrap_depth_min': 0.34375, 'pointer_train_depth_min': 0.7734375, 'pointer_extrap_depth_min': 0.3203125, 'synthetic_rehearsal_min': 0.9296875, 'synthetic_rehearsal_delta_by_depth': {'1': 0.0, '2': 0.0, '3': 0.00390625, '4': 0.00390625, '5': -0.01171875, '6': -0.00390625, '7': -0.015625, '8': -0.0546875}, 'synthetic_rehearsal_min_delta': -0.0546875, 'status': 'verbal_rung_zero_finished', 'synthetic_full_width_min_1_12': 0.390625, 'synthetic_full_width_delta_vs_frozen': -0.578125, 'synthetic_full_width_nonregression_pass': False}`
 
 ## Curve Shape
 
-`{'values': [{'step': 1000, 'pooled_tail_min': 0.1953125}, {'step': 1500, 'pooled_tail_min': 0.203125}], 'best': {'step': 1500, 'pooled_tail_min': 0.203125}, 'final': {'step': 1500, 'pooled_tail_min': 0.203125}, 'tail_peaks_before_final': False}`
+`{'values': [{'step': 1000, 'pooled_tail_min': 0.1953125}, {'step': 1500, 'pooled_tail_min': 0.203125}, {'step': 2000, 'pooled_tail_min': 0.3203125}], 'best': {'step': 2000, 'pooled_tail_min': 0.3203125}, 'final': {'step': 2000, 'pooled_tail_min': 0.3203125}, 'tail_peaks_before_final': False}`
