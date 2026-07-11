@@ -1,7 +1,7 @@
 {
   "kind": "stage5_natural_surface_followups_2_3",
   "run_id": "stage5_natural_surface_followups_2_3_20260710",
-  "status": "active_frozen_n24_robust_baton_fronted_d1_12",
+  "status": "active_frozen_n24_robust_baton_passive_d1_12",
   "source_receipt_run_id": "stage5_natural_surface_receipts_20260709_210151",
   "active_evals": {
     "frozen_n24": {
@@ -268,6 +268,61 @@
             "iterate": 0.08214962121212122,
             "hold": 0.07102272727272728,
             "other": 0.8468276515151515,
+            "unknown_iterate_target": 0.0
+          }
+        },
+        "compact": {
+          "by_depth": {},
+          "active_diagonal": {},
+          "active_min_1_8": 0.0,
+          "active_min_9_12": 0.0,
+          "failure_profile": {}
+        },
+        "paired_hits": {}
+      },
+      "robust_baton_passive_d1_12": {
+        "status": "finished",
+        "label": "frozen_n24_robust_baton_passive_d1_12",
+        "checkpoint": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_n24_support12_rung_20260707_140139/anneal_to_outcome_final/unfrozen_recurrent_step_6000.pt",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/data/robust_baton_passive_d1_12.jsonl",
+        "active_summary": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/active/frozen_n24/frozen_n24_robust_baton_passive_d1_12_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/active/frozen_n24/frozen_n24_robust_baton_passive_d1_12_active_eval.log",
+        "row_manifest": {
+          "status": "sampled_and_deleted_full",
+          "full_rows_path": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/active/frozen_n24/frozen_n24_robust_baton_passive_d1_12_active_rows.jsonl",
+          "full_rows_count": 9216,
+          "sample_path": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/active/frozen_n24/frozen_n24_robust_baton_passive_d1_12_active_rows_sample.jsonl",
+          "sample_rows": 128
+        },
+        "active_diagonal": {
+          "1": 0.9375,
+          "2": 0.265625,
+          "3": 0.15625,
+          "4": 0.09375,
+          "5": 0.09375,
+          "6": 0.140625,
+          "7": 0.0625,
+          "8": 0.0625,
+          "9": 0.09375,
+          "10": 0.078125,
+          "11": 0.078125,
+          "12": 0.0625
+        },
+        "active_total": {
+          "correct": 1230,
+          "total": 4992,
+          "accuracy": 0.24639423076923078
+        },
+        "above_diagonal": {
+          "iterate": 416,
+          "hold": 322,
+          "other": 3486,
+          "unknown_iterate_target": 0,
+          "n": 4224,
+          "rates": {
+            "iterate": 0.09848484848484848,
+            "hold": 0.07623106060606061,
+            "other": 0.8252840909090909,
             "unknown_iterate_target": 0.0
           }
         },
