@@ -1,7 +1,7 @@
 {
   "kind": "stage5_natural_surface_replication_dose",
   "run_id": "stage5_natural_surface_replication_dose_seed931337_20260710",
-  "status": "started",
+  "status": "training_finished",
   "source_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.json",
   "train_seed": 931337,
   "save_steps": [
@@ -84,5 +84,33 @@
   },
   "checkpoint_evals": [],
   "checkpoint_backups": {},
-  "frozen_full_width_min_1_12": 0.96875
+  "frozen_full_width_min_1_12": 0.96875,
+  "train_stage": {
+    "stage_name": "verbal_rung_zero",
+    "train_jsonl": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/data/rung0_train_mix_chain_symbol_sft.jsonl",
+    "train_config": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/verbal_rung_zero_train_config.yaml",
+    "train_log": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/train/verbal_rung_zero_train.log",
+    "training_summary": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/train/verbal_rung_zero/train_unfrozen_recurrent_summary.json",
+    "checkpoint": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/train/verbal_rung_zero/unfrozen_recurrent_step_6000.pt",
+    "checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_natural_surface_replication_dose_seed931337_20260710/verbal_rung_zero/unfrozen_recurrent_step_6000.pt",
+    "optimizer_setup": {
+      "bridge_prelude_optimizer_group_ok": true,
+      "bridge_prelude_optimizer_group_lr": 0.0001,
+      "bridge_prelude_optimizer_group_weight_decay": 0.0,
+      "bridge_prelude_optimizer_group_num_tensors": 1
+    },
+    "bridge_prelude_weight_stats": {
+      "bridge_prelude_weight_rms": 0.008369711227715015,
+      "bridge_prelude_weight_max_abs": 0.07063192129135132,
+      "bridge_state_identity_max_abs_diff": 0.007808566093444824
+    },
+    "interval_checkpoints": [
+      "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/train/verbal_rung_zero/unfrozen_recurrent_step_1000.pt",
+      "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/train/verbal_rung_zero/unfrozen_recurrent_step_1500.pt",
+      "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/train/verbal_rung_zero/unfrozen_recurrent_step_2000.pt",
+      "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/train/verbal_rung_zero/unfrozen_recurrent_step_2500.pt",
+      "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/train/verbal_rung_zero/unfrozen_recurrent_step_3000.pt",
+      "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/train/verbal_rung_zero/unfrozen_recurrent_step_4000.pt"
+    ]
+  }
 }
