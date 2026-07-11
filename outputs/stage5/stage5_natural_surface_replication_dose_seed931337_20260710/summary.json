@@ -1,7 +1,7 @@
 {
   "kind": "stage5_natural_surface_replication_dose",
   "run_id": "stage5_natural_surface_replication_dose_seed931337_20260710",
-  "status": "training_finished",
+  "status": "checkpoints_backed_up",
   "source_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.json",
   "train_seed": 931337,
   "save_steps": [
@@ -83,7 +83,15 @@
     "selected_checkpoint_sha256": "898a259db2ab344ece4545e2910b051840e8408dbe4927f799e7cdb3cdd8c7dc"
   },
   "checkpoint_evals": [],
-  "checkpoint_backups": {},
+  "checkpoint_backups": {
+    "1000": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_natural_surface_replication_dose_seed931337_20260710/verbal_rung_zero/unfrozen_recurrent_step_1000.pt",
+    "1500": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_natural_surface_replication_dose_seed931337_20260710/verbal_rung_zero/unfrozen_recurrent_step_1500.pt",
+    "2000": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_natural_surface_replication_dose_seed931337_20260710/verbal_rung_zero/unfrozen_recurrent_step_2000.pt",
+    "2500": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_natural_surface_replication_dose_seed931337_20260710/verbal_rung_zero/unfrozen_recurrent_step_2500.pt",
+    "3000": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_natural_surface_replication_dose_seed931337_20260710/verbal_rung_zero/unfrozen_recurrent_step_3000.pt",
+    "4000": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_natural_surface_replication_dose_seed931337_20260710/verbal_rung_zero/unfrozen_recurrent_step_4000.pt",
+    "6000": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_natural_surface_replication_dose_seed931337_20260710/verbal_rung_zero/unfrozen_recurrent_step_6000.pt"
+  },
   "frozen_full_width_min_1_12": 0.96875,
   "train_stage": {
     "stage_name": "verbal_rung_zero",

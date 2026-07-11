@@ -1,6 +1,6 @@
 # Natural-Surface Replication Dose - stage5_natural_surface_replication_dose_seed931337_20260710
 
-- Status: `training_finished`
+- Status: `checkpoints_backed_up`
 - Source eval rows: `outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.json`
 - Train seed: `931337`
 - Save steps: `[1000, 1500, 2000, 2500, 3000, 4000, 6000]`
