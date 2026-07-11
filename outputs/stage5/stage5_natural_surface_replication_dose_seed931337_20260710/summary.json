@@ -1,7 +1,7 @@
 {
   "kind": "stage5_natural_surface_replication_dose",
   "run_id": "stage5_natural_surface_replication_dose_seed931337_20260710",
-  "status": "checkpoints_backed_up",
+  "status": "evaluated_step_1000",
   "source_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.json",
   "train_seed": 931337,
   "save_steps": [
@@ -82,7 +82,237 @@
     "selected_checkpoint_source": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_n24_support12_rung_20260707_140139/anneal_to_outcome_final/unfrozen_recurrent_step_6000.pt",
     "selected_checkpoint_sha256": "898a259db2ab344ece4545e2910b051840e8408dbe4927f799e7cdb3cdd8c7dc"
   },
-  "checkpoint_evals": [],
+  "checkpoint_evals": [
+    {
+      "step": 1000,
+      "checkpoint": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/train/verbal_rung_zero/unfrozen_recurrent_step_1000.pt",
+      "relay": {
+        "name": "step1000_relay",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/relay_test_chain_mcq.jsonl",
+        "checkpoint": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/train/verbal_rung_zero/unfrozen_recurrent_step_1000.pt",
+        "active_summary": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/eval_step_1000/eval/step1000_relay_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/eval_step_1000/eval/step1000_relay_active_eval.log",
+        "row_manifest": {
+          "status": "sampled_and_deleted_full",
+          "full_rows_path": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/eval_step_1000/eval/step1000_relay_active_rows.jsonl",
+          "full_rows_count": 18432,
+          "sample_path": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/eval_step_1000/eval/step1000_relay_active_rows_sample.jsonl",
+          "sample_rows": 256
+        },
+        "loop_counts": "1,2,3,4,5,6,7,8,9,10,11,12",
+        "value_prefix": "name:",
+        "active_diagonal": {
+          "1": 1.0,
+          "2": 0.8828125,
+          "3": 0.7578125,
+          "4": 0.703125,
+          "5": 0.7109375,
+          "6": 0.59375,
+          "7": 0.5390625,
+          "8": 0.5078125,
+          "9": 0.390625,
+          "10": 0.4140625,
+          "11": 0.3671875,
+          "12": 0.3125
+        },
+        "active_diagonal_min": 0.3125,
+        "active_total": {
+          "correct": 6998,
+          "total": 9984,
+          "accuracy": 0.7009214743589743
+        },
+        "above_diagonal": {
+          "iterate": 4458,
+          "hold": 519,
+          "other": 3471,
+          "unknown_iterate_target": 0,
+          "n": 8448,
+          "rates": {
+            "iterate": 0.5276988636363636,
+            "hold": 0.06143465909090909,
+            "other": 0.4108664772727273,
+            "unknown_iterate_target": 0.0
+          }
+        }
+      },
+      "pointer": {
+        "name": "step1000_pointer",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/pointer_test_chain_mcq.jsonl",
+        "checkpoint": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/train/verbal_rung_zero/unfrozen_recurrent_step_1000.pt",
+        "active_summary": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/eval_step_1000/eval/step1000_pointer_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/eval_step_1000/eval/step1000_pointer_active_eval.log",
+        "row_manifest": {
+          "status": "sampled_and_deleted_full",
+          "full_rows_path": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/eval_step_1000/eval/step1000_pointer_active_rows.jsonl",
+          "full_rows_count": 18432,
+          "sample_path": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/eval_step_1000/eval/step1000_pointer_active_rows_sample.jsonl",
+          "sample_rows": 256
+        },
+        "loop_counts": "1,2,3,4,5,6,7,8,9,10,11,12",
+        "value_prefix": "name:",
+        "active_diagonal": {
+          "1": 0.9921875,
+          "2": 0.8984375,
+          "3": 0.8046875,
+          "4": 0.640625,
+          "5": 0.5859375,
+          "6": 0.5,
+          "7": 0.484375,
+          "8": 0.4375,
+          "9": 0.296875,
+          "10": 0.28125,
+          "11": 0.1953125,
+          "12": 0.203125
+        },
+        "active_diagonal_min": 0.1953125,
+        "active_total": {
+          "correct": 6188,
+          "total": 9984,
+          "accuracy": 0.6197916666666666
+        },
+        "above_diagonal": {
+          "iterate": 3939,
+          "hold": 534,
+          "other": 3975,
+          "unknown_iterate_target": 0,
+          "n": 8448,
+          "rates": {
+            "iterate": 0.46626420454545453,
+            "hold": 0.06321022727272728,
+            "other": 0.4705255681818182,
+            "unknown_iterate_target": 0.0
+          }
+        }
+      },
+      "synthetic_rehearsal": {
+        "name": "step1000_synthetic_rehearsal",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/synthetic_rehearsal_chain_symbol_sft.jsonl",
+        "checkpoint": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/train/verbal_rung_zero/unfrozen_recurrent_step_1000.pt",
+        "active_summary": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/eval_step_1000/eval/step1000_synthetic_rehearsal_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/eval_step_1000/eval/step1000_synthetic_rehearsal_active_eval.log",
+        "row_manifest": {
+          "status": "sampled_and_deleted_full",
+          "full_rows_path": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/eval_step_1000/eval/step1000_synthetic_rehearsal_active_rows.jsonl",
+          "full_rows_count": 16384,
+          "sample_path": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/eval_step_1000/eval/step1000_synthetic_rehearsal_active_rows_sample.jsonl",
+          "sample_rows": 256
+        },
+        "loop_counts": "1,2,3,4,5,6,7,8",
+        "value_prefix": "letter:",
+        "active_diagonal": {
+          "1": 1.0,
+          "2": 0.98828125,
+          "3": 0.99609375,
+          "4": 0.98828125,
+          "5": 1.0,
+          "6": 0.99609375,
+          "7": 0.98046875,
+          "8": 0.99609375
+        },
+        "active_diagonal_min": 0.98046875,
+        "active_total": {
+          "correct": 9167,
+          "total": 9216,
+          "accuracy": 0.9946831597222222
+        },
+        "above_diagonal": {
+          "iterate": 7011,
+          "hold": 12,
+          "other": 145,
+          "unknown_iterate_target": 0,
+          "n": 7168,
+          "rates": {
+            "iterate": 0.9780970982142857,
+            "hold": 0.0016741071428571428,
+            "other": 0.020228794642857144,
+            "unknown_iterate_target": 0.0
+          }
+        }
+      },
+      "synthetic_full_width": {
+        "name": "step1000_synthetic_full_width",
+        "data_jsonl": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v3_depth22_n24/data/test_chain_mcq.jsonl",
+        "checkpoint": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/train/verbal_rung_zero/unfrozen_recurrent_step_1000.pt",
+        "active_summary": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/eval_step_1000/eval/step1000_synthetic_full_width_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/eval_step_1000/eval/step1000_synthetic_full_width_active_eval.log",
+        "row_manifest": {
+          "status": "sampled_and_deleted_full",
+          "full_rows_path": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/eval_step_1000/eval/step1000_synthetic_full_width_active_rows.jsonl",
+          "full_rows_count": 33792,
+          "sample_path": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/eval_step_1000/eval/step1000_synthetic_full_width_active_rows_sample.jsonl",
+          "sample_rows": 256
+        },
+        "loop_counts": "1,2,3,4,5,6,7,8,9,10,11,12",
+        "value_prefix": "letter:",
+        "active_diagonal": {
+          "1": 1.0,
+          "2": 0.9921875,
+          "3": 0.9921875,
+          "4": 0.9921875,
+          "5": 0.9921875,
+          "6": 0.9921875,
+          "7": 0.984375,
+          "8": 0.96875,
+          "9": 0.9765625,
+          "10": 0.96875,
+          "11": 0.9609375,
+          "12": 0.921875,
+          "13": 0.0,
+          "14": 0.0,
+          "15": 0.0,
+          "16": 0.0,
+          "17": 0.0,
+          "18": 0.0,
+          "19": 0.0,
+          "20": 0.0,
+          "21": 0.0,
+          "22": 0.0
+        },
+        "active_diagonal_min": 0.0,
+        "active_total": {
+          "correct": 24753,
+          "total": 25344,
+          "accuracy": 0.9766808712121212
+        },
+        "above_diagonal": {
+          "iterate": 8029,
+          "hold": 47,
+          "other": 372,
+          "unknown_iterate_target": 0,
+          "n": 8448,
+          "rates": {
+            "iterate": 0.9504024621212122,
+            "hold": 0.00556344696969697,
+            "other": 0.04403409090909091,
+            "unknown_iterate_target": 0.0
+          }
+        }
+      },
+      "decision_read": {
+        "relay_train_depth_min": 0.5078125,
+        "relay_extrap_depth_min": 0.3125,
+        "pointer_train_depth_min": 0.4375,
+        "pointer_extrap_depth_min": 0.1953125,
+        "synthetic_rehearsal_min": 0.98046875,
+        "synthetic_rehearsal_delta_by_depth": {
+          "1": 0.0,
+          "2": -0.01171875,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.00390625,
+          "6": 0.0,
+          "7": -0.01953125,
+          "8": 0.01171875
+        },
+        "synthetic_rehearsal_min_delta": -0.01953125,
+        "status": "verbal_rung_zero_finished",
+        "synthetic_full_width_min_1_12": 0.921875,
+        "synthetic_full_width_delta_vs_frozen": -0.046875,
+        "synthetic_full_width_nonregression_pass": false
+      },
+      "checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_natural_surface_replication_dose_seed931337_20260710/verbal_rung_zero/unfrozen_recurrent_step_1000.pt"
+    }
+  ],
   "checkpoint_backups": {
     "1000": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_natural_surface_replication_dose_seed931337_20260710/verbal_rung_zero/unfrozen_recurrent_step_1000.pt",
     "1500": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_natural_surface_replication_dose_seed931337_20260710/verbal_rung_zero/unfrozen_recurrent_step_1500.pt",
@@ -120,5 +350,22 @@
       "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/train/verbal_rung_zero/unfrozen_recurrent_step_3000.pt",
       "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/train/verbal_rung_zero/unfrozen_recurrent_step_4000.pt"
     ]
+  },
+  "curve_shape": {
+    "values": [
+      {
+        "step": 1000,
+        "pooled_tail_min": 0.1953125
+      }
+    ],
+    "best": {
+      "step": 1000,
+      "pooled_tail_min": 0.1953125
+    },
+    "final": {
+      "step": 1000,
+      "pooled_tail_min": 0.1953125
+    },
+    "tail_peaks_before_final": false
   }
 }
