@@ -1,7 +1,7 @@
 {
   "kind": "stage5_natural_surface_followups_2_3",
   "run_id": "stage5_natural_surface_followups_2_3_20260710",
-  "status": "active_step_2000_robust_baton_passive_d1_12",
+  "status": "active_step_4000_corrected_relay_unseen_single_token_d1_12",
   "source_receipt_run_id": "stage5_natural_surface_receipts_20260709_210151",
   "active_evals": {
     "frozen_n24": {
@@ -655,6 +655,63 @@
             "iterate": 0.6673768939393939,
             "hold": 0.040482954545454544,
             "other": 0.2921401515151515,
+            "unknown_iterate_target": 0.0
+          }
+        },
+        "compact": {
+          "by_depth": {},
+          "active_diagonal": {},
+          "active_min_1_8": 0.0,
+          "active_min_9_12": 0.0,
+          "failure_profile": {}
+        },
+        "paired_hits": {}
+      }
+    },
+    "step_4000": {
+      "corrected_relay_unseen_single_token_d1_12": {
+        "status": "finished",
+        "label": "step_4000_corrected_relay_unseen_single_token_d1_12",
+        "checkpoint": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/checkpoints/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/unfrozen_recurrent_step_4000.pt",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/data/corrected_relay_unseen_single_token_d1_12.jsonl",
+        "active_summary": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/active/step_4000/step_4000_corrected_relay_unseen_single_token_d1_12_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/active/step_4000/step_4000_corrected_relay_unseen_single_token_d1_12_active_eval.log",
+        "row_manifest": {
+          "status": "sampled_and_deleted_full",
+          "full_rows_path": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/active/step_4000/step_4000_corrected_relay_unseen_single_token_d1_12_active_rows.jsonl",
+          "full_rows_count": 18432,
+          "sample_path": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/active/step_4000/step_4000_corrected_relay_unseen_single_token_d1_12_active_rows_sample.jsonl",
+          "sample_rows": 128
+        },
+        "active_diagonal": {
+          "1": 1.0,
+          "2": 0.921875,
+          "3": 0.875,
+          "4": 0.828125,
+          "5": 0.8203125,
+          "6": 0.734375,
+          "7": 0.6796875,
+          "8": 0.6328125,
+          "9": 0.578125,
+          "10": 0.484375,
+          "11": 0.421875,
+          "12": 0.3125
+        },
+        "active_total": {
+          "correct": 7610,
+          "total": 9984,
+          "accuracy": 0.7622195512820513
+        },
+        "above_diagonal": {
+          "iterate": 5237,
+          "hold": 418,
+          "other": 2793,
+          "unknown_iterate_target": 0,
+          "n": 8448,
+          "rates": {
+            "iterate": 0.6199100378787878,
+            "hold": 0.049479166666666664,
+            "other": 0.33061079545454547,
             "unknown_iterate_target": 0.0
           }
         },
