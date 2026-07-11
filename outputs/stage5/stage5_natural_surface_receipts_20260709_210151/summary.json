@@ -1,7 +1,7 @@
 {
   "kind": "stage5_natural_surface_receipts",
   "run_id": "stage5_natural_surface_receipts_20260709_210151",
-  "status": "same_reader_step_6000_pointer_original",
+  "status": "finished",
   "source_run_id": "stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812",
   "curve_run_id": "stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008",
   "source_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.json",
@@ -48878,5 +48878,6 @@
         "all_depths_clear_threshold": false
       }
     }
-  }
+  },
+  "resume_completed_at_unix": 1783737248.7556565
 }

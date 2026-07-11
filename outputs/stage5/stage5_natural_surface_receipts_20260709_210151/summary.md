@@ -1,6 +1,6 @@
 # Natural-Surface Receipts - stage5_natural_surface_receipts_20260709_210151
 
-- Status: `same_reader_step_6000_pointer_original`
+- Status: `finished`
 - Source run: `stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812`
 - Curve run: `stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008`
 - Pointer holdout: `{'pointer_rows_in_training': 0, 'training_family_counts': {'relay': 2048, 'synthetic_rehearsal': 2048}, 'verdict': 'pointer_held_out'}`
