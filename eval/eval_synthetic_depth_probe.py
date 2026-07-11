@@ -23,6 +23,7 @@ from eval.eval_synthetic_depth_active_labels import (
     parse_int_symbol,
     prompt_for_row,
     read_jsonl,
+    row_symbol_names,
 )
 from models.halting import masked_mean
 
@@ -475,7 +476,7 @@ def target_for_step(row: dict[str, Any], step: int, *, value_prefix: str) -> int
     text = continued_symbol_for_loop(row, step, value_prefix=value_prefix)
     if text is None:
         raise ValueError(f"Could not compute f^{step}(x) for row {row.get('id')}")
-    return parse_int_symbol(text, prefix=value_prefix)
+    return parse_int_symbol(text, prefix=value_prefix, row_symbols=row_symbol_names(row))
 
 
 def collect_state_rows(args: argparse.Namespace) -> tuple[list[dict[str, Any]], int, dict[str, Any]]:

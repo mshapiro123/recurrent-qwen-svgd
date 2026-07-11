@@ -26,6 +26,19 @@ def test_target_for_step_continues_serialized_mapping() -> None:
     assert target_for_step(row, 3, value_prefix="letter:") == 3
 
 
+def test_target_for_step_supports_row_level_name_symbols() -> None:
+    row = {
+        "id": "names",
+        "start": "Leo",
+        "mapping": {"Leo": "Sid", "Sid": "Ian", "Ian": "Leo"},
+        "symbol_names": ["Leo", "Sid", "Ian"],
+    }
+
+    assert target_for_step(row, 0, value_prefix="name:") == 0
+    assert target_for_step(row, 1, value_prefix="name:") == 1
+    assert target_for_step(row, 2, value_prefix="name:") == 2
+
+
 def test_ridge_multiclass_accuracy_decodes_planted_signal() -> None:
     train_x = torch.tensor(
         [

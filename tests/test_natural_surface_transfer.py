@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from training.natural_surface_transfer import (
+    CORRECTED_HELDOUT_SINGLE_TOKEN_NAMES,
     HELDOUT_NAME_SYMBOLS,
     NAME_SYMBOLS,
     NaturalSurfaceConfig,
@@ -163,3 +164,20 @@ def test_single_token_name_verifier_accepts_fake_qwen_like_tokenizer() -> None:
     assert len(verdict["rows"]) == 20
     assert all(row["bare_token_count"] == 1 for row in verdict["rows"])
     assert all(row["space_prefixed_token_count"] == 1 for row in verdict["rows"])
+
+
+def test_corrected_heldout_names_are_disjoint_and_explicitly_verified() -> None:
+    class FakeTokenizer:
+        def __call__(self, text: str, *, add_special_tokens: bool = False):
+            token = text.strip()
+            assert token in CORRECTED_HELDOUT_SINGLE_TOKEN_NAMES
+            return {"input_ids": [CORRECTED_HELDOUT_SINGLE_TOKEN_NAMES.index(token) + 200]}
+
+    verdict = verify_single_token_names(
+        FakeTokenizer(),
+        symbol_names=CORRECTED_HELDOUT_SINGLE_TOKEN_NAMES,
+    )
+
+    assert len(CORRECTED_HELDOUT_SINGLE_TOKEN_NAMES) == 20
+    assert not set(CORRECTED_HELDOUT_SINGLE_TOKEN_NAMES) & set(NAME_SYMBOLS)
+    assert verdict["all_single_token"] is True

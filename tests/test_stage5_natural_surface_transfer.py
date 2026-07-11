@@ -16,6 +16,11 @@ from colab.run_stage5_natural_surface_checkpoint_curve import (
     checkpoint_path_for_step,
     parse_steps,
 )
+from colab.run_stage5_natural_surface_receipts import summarize_active_rows
+from colab.run_stage5_natural_surface_replication_dose import (
+    checkpoint_eval_finished,
+    frozen_full_width_min_from_receipt,
+)
 
 
 def eval_payload(*values: float) -> dict:
@@ -144,3 +149,47 @@ def test_natural_transfer_training_config_accepts_explicit_save_steps(tmp_path, 
     assert "- 1000" in text
     assert "- 1500" in text
     assert "- 2000" in text
+
+
+def test_receipt_compact_diagonal_excludes_non_diagonal_active_cells() -> None:
+    rows = [
+        {"active_cell": True, "loop": 1, "depth": 2, "hit": False, "prediction": "A", "target": "B"},
+        {"active_cell": True, "loop": 2, "depth": 2, "hit": True, "prediction": "B", "target": "B"},
+    ]
+
+    compact = summarize_active_rows(rows)
+
+    assert compact["active_diagonal"] == {"2": 1.0}
+    assert compact["by_depth"]["2"]["total"] == 1
+
+
+def test_replication_full_width_baseline_requires_all_twelve_depths() -> None:
+    receipt = {
+        "evals": {
+            "frozen_n24": {
+                "synthetic_frozen_v3_d1_12": {
+                    "active_diagonal": {str(depth): 1.0 - depth / 100 for depth in range(1, 13)}
+                }
+            }
+        }
+    }
+
+    assert frozen_full_width_min_from_receipt(receipt) == pytest.approx(0.88)
+
+    del receipt["evals"]["frozen_n24"]["synthetic_frozen_v3_d1_12"]["active_diagonal"]["12"]
+    with pytest.raises(RuntimeError, match="incomplete"):
+        frozen_full_width_min_from_receipt(receipt)
+
+
+def test_replication_resume_requires_every_eval_summary(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("STAGE5_ROOT", str(tmp_path))
+    names = ["relay", "pointer", "synthetic_rehearsal", "synthetic_full_width"]
+    row = {}
+    for name in names:
+        path = tmp_path / f"{name}.json"
+        path.write_text("{}", encoding="utf-8")
+        row[name] = {"active_summary": str(path)}
+
+    assert checkpoint_eval_finished(row) is True
+    row["synthetic_full_width"] = {}
+    assert checkpoint_eval_finished(row) is False

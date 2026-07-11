@@ -235,6 +235,8 @@ def summarize_active_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     for row in rows:
         if not row.get("active_cell"):
             continue
+        if int(row.get("loop", -1)) != int(row["depth"]):
+            continue
         depth = str(int(row["depth"]))
         bucket = by_depth.setdefault(depth, {"correct": 0, "total": 0})
         hit = bool(row.get("hit"))

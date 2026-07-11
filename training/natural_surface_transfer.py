@@ -53,6 +53,33 @@ HELDOUT_NAME_SYMBOLS = (
     "Ned",
 )
 
+# Tokenizer-verified against Qwen/Qwen2.5-0.5B-Instruct in both bare and
+# space-prefixed completion form. Keep the original held-out list above for
+# lineage with the first exploratory battery; this list is the corrected,
+# preregistration-valid single-token battery.
+CORRECTED_HELDOUT_SINGLE_TOKEN_NAMES = (
+    "Leo",
+    "Sid",
+    "Ian",
+    "Roy",
+    "May",
+    "Jay",
+    "Rob",
+    "Jim",
+    "Ali",
+    "Meg",
+    "Lou",
+    "Hal",
+    "Cal",
+    "Ken",
+    "Ron",
+    "Don",
+    "Guy",
+    "Joy",
+    "Pat",
+    "Ace",
+)
+
 
 @dataclass(frozen=True)
 class NaturalSurfaceConfig:
@@ -605,10 +632,18 @@ def write_natural_surface_dataset(*, output_dir: str | Path, config: NaturalSurf
     return summary
 
 
-def verify_single_token_names(tokenizer: Any, *, n_symbols: int) -> dict[str, Any]:
+def verify_single_token_names(
+    tokenizer: Any,
+    *,
+    n_symbols: int | None = None,
+    symbol_names: tuple[str, ...] | None = None,
+) -> dict[str, Any]:
+    names = tuple(symbol_names or NAME_SYMBOLS)
+    if n_symbols is not None:
+        names = names[: int(n_symbols)]
     rows = []
     all_pass = True
-    for name in NAME_SYMBOLS[:n_symbols]:
+    for name in names:
         bare = tokenizer(name, add_special_tokens=False)["input_ids"]
         spaced = tokenizer(" " + name, add_special_tokens=False)["input_ids"]
         row = {
@@ -619,7 +654,7 @@ def verify_single_token_names(tokenizer: Any, *, n_symbols: int) -> dict[str, An
         }
         rows.append(row)
         all_pass = all_pass and bool(row["pass"])
-    return {"all_single_token": all_pass, "rows": rows}
+    return {"all_single_token": all_pass, "symbol_names": list(names), "rows": rows}
 
 
 def main() -> int:

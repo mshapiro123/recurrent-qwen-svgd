@@ -2491,6 +2491,33 @@ TARGETS = {
             "STAGE5_NATURAL_RECEIPTS_DISCONNECT": "0",
         },
     },
+    "natural_surface_followups_2_4": {
+        "path": "colab/STAGE5_NATURAL_SURFACE_FOLLOWUPS_CELL.py",
+        "markers": [
+            "STAGE5_NATURAL_SURFACE_FOLLOWUPS_CELL_VERSION",
+            "natural_surface_followups_2_4",
+            "CORRECTED_HELDOUT_SINGLE_TOKEN_NAMES",
+            "robust_relay_fronted_d1_12",
+            "eval/eval_synthetic_depth_probe.py",
+            "colab/run_stage5_natural_surface_followups.py",
+            "colab/run_stage5_natural_surface_replication_dose.py",
+            "1000,1500,2000,2500,3000,4000,6000",
+            "untouched_depth_13_16_opened",
+        ],
+        "env": {
+            "STAGE5_NATURAL_FOLLOWUP_RUN_ID": "stage5_natural_surface_followups_2_3_20260710",
+            "STAGE5_NATURAL_FOLLOWUP_CHECKPOINTS": "frozen_n24,step_2000,step_4000,step_6000",
+            "STAGE5_NATURAL_FOLLOWUP_DTYPE": "bfloat16",
+            "STAGE5_NATURAL_FOLLOWUP_PROBE_PERMUTATIONS": "20",
+            "STAGE5_NATURAL_REPLICATION_RUN_ID": "stage5_natural_surface_replication_dose_seed931337_20260710",
+            "STAGE5_NATURAL_REPLICATION_SEED": "931337",
+            "STAGE5_NATURAL_REPLICATION_SAVE_STEPS": "1000,1500,2000,2500,3000,4000,6000",
+            "STAGE5_NATURAL_REPLICATION_TRAIN_STEPS": "6000",
+            "STAGE5_NATURAL_REPLICATION_DTYPE": "bfloat16",
+            "STAGE5_NATURAL_REPLICATION_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
+            "STAGE5_NATURAL_FOLLOWUP_DISCONNECT": "0",
+        },
+    },
     "natural_surface_replication_dose": {
         "path": "colab/STAGE5_NATURAL_SURFACE_REPLICATION_DOSE_CELL.py",
         "markers": [
