@@ -1,7 +1,7 @@
 {
   "kind": "stage5_natural_surface_receipts",
   "run_id": "stage5_natural_surface_receipts_20260709_210151",
-  "status": "evaluated_step_6000_synthetic_frozen_v3_d1_12",
+  "status": "same_reader_step_2000_relay_original",
   "source_run_id": "stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812",
   "curve_run_id": "stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008",
   "source_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.json",
@@ -48210,5 +48210,119 @@
         ]
       }
     }
-  ]
+  ],
+  "same_reader": {
+    "step_2000": {
+      "relay_original": {
+        "label": "step_2000_relay_original",
+        "checkpoint": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/checkpoints/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/unfrozen_recurrent_step_2000.pt",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_transfer_20260708_230229/data/relay_test_chain_mcq.jsonl",
+        "same_reader_summary": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/same_reader/step_2000/step_2000_relay_original_same_reader_summary.json",
+        "same_reader_total": {
+          "correct": 1296,
+          "total": 1536,
+          "accuracy": 0.84375
+        },
+        "by_depth": {
+          "1": {
+            "total": 128,
+            "same_reader_correct": 127,
+            "same_reader_accuracy": 0.9921875,
+            "mapped_final_correct": 0,
+            "mapped_final_accuracy": 0.0,
+            "same_reader_clears_threshold": true
+          },
+          "2": {
+            "total": 128,
+            "same_reader_correct": 123,
+            "same_reader_accuracy": 0.9609375,
+            "mapped_final_correct": 0,
+            "mapped_final_accuracy": 0.0,
+            "same_reader_clears_threshold": true
+          },
+          "3": {
+            "total": 128,
+            "same_reader_correct": 124,
+            "same_reader_accuracy": 0.96875,
+            "mapped_final_correct": 0,
+            "mapped_final_accuracy": 0.0,
+            "same_reader_clears_threshold": true
+          },
+          "4": {
+            "total": 128,
+            "same_reader_correct": 119,
+            "same_reader_accuracy": 0.9296875,
+            "mapped_final_correct": 0,
+            "mapped_final_accuracy": 0.0,
+            "same_reader_clears_threshold": true
+          },
+          "5": {
+            "total": 128,
+            "same_reader_correct": 114,
+            "same_reader_accuracy": 0.890625,
+            "mapped_final_correct": 0,
+            "mapped_final_accuracy": 0.0,
+            "same_reader_clears_threshold": true
+          },
+          "6": {
+            "total": 128,
+            "same_reader_correct": 114,
+            "same_reader_accuracy": 0.890625,
+            "mapped_final_correct": 0,
+            "mapped_final_accuracy": 0.0,
+            "same_reader_clears_threshold": true
+          },
+          "7": {
+            "total": 128,
+            "same_reader_correct": 114,
+            "same_reader_accuracy": 0.890625,
+            "mapped_final_correct": 0,
+            "mapped_final_accuracy": 0.0,
+            "same_reader_clears_threshold": true
+          },
+          "8": {
+            "total": 128,
+            "same_reader_correct": 103,
+            "same_reader_accuracy": 0.8046875,
+            "mapped_final_correct": 0,
+            "mapped_final_accuracy": 0.0,
+            "same_reader_clears_threshold": true
+          },
+          "9": {
+            "total": 128,
+            "same_reader_correct": 105,
+            "same_reader_accuracy": 0.8203125,
+            "mapped_final_correct": 0,
+            "mapped_final_accuracy": 0.0,
+            "same_reader_clears_threshold": true
+          },
+          "10": {
+            "total": 128,
+            "same_reader_correct": 98,
+            "same_reader_accuracy": 0.765625,
+            "mapped_final_correct": 0,
+            "mapped_final_accuracy": 0.0,
+            "same_reader_clears_threshold": true
+          },
+          "11": {
+            "total": 128,
+            "same_reader_correct": 85,
+            "same_reader_accuracy": 0.6640625,
+            "mapped_final_correct": 0,
+            "mapped_final_accuracy": 0.0,
+            "same_reader_clears_threshold": false
+          },
+          "12": {
+            "total": 128,
+            "same_reader_correct": 70,
+            "same_reader_accuracy": 0.546875,
+            "mapped_final_correct": 0,
+            "mapped_final_accuracy": 0.0,
+            "same_reader_clears_threshold": false
+          }
+        },
+        "all_depths_clear_threshold": false
+      }
+    }
+  }
 }
