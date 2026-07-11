@@ -1,7 +1,7 @@
 {
   "kind": "stage5_natural_surface_followups_2_3",
   "run_id": "stage5_natural_surface_followups_2_3_20260710",
-  "status": "active_step_4000_corrected_pointer_unseen_single_token_d1_12",
+  "status": "active_step_4000_robust_relay_fronted_d1_12",
   "source_receipt_run_id": "stage5_natural_surface_receipts_20260709_210151",
   "active_evals": {
     "frozen_n24": {
@@ -767,6 +767,61 @@
             "iterate": 0.6113873106060606,
             "hold": 0.040364583333333336,
             "other": 0.3482481060606061,
+            "unknown_iterate_target": 0.0
+          }
+        },
+        "compact": {
+          "by_depth": {},
+          "active_diagonal": {},
+          "active_min_1_8": 0.0,
+          "active_min_9_12": 0.0,
+          "failure_profile": {}
+        },
+        "paired_hits": {}
+      },
+      "robust_relay_fronted_d1_12": {
+        "status": "finished",
+        "label": "step_4000_robust_relay_fronted_d1_12",
+        "checkpoint": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/checkpoints/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/unfrozen_recurrent_step_4000.pt",
+        "data_jsonl": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/data/robust_relay_fronted_d1_12.jsonl",
+        "active_summary": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/active/step_4000/step_4000_robust_relay_fronted_d1_12_active_summary.json",
+        "eval_log": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/active/step_4000/step_4000_robust_relay_fronted_d1_12_active_eval.log",
+        "row_manifest": {
+          "status": "sampled_and_deleted_full",
+          "full_rows_path": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/active/step_4000/step_4000_robust_relay_fronted_d1_12_active_rows.jsonl",
+          "full_rows_count": 9216,
+          "sample_path": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/active/step_4000/step_4000_robust_relay_fronted_d1_12_active_rows_sample.jsonl",
+          "sample_rows": 128
+        },
+        "active_diagonal": {
+          "1": 1.0,
+          "2": 0.796875,
+          "3": 0.890625,
+          "4": 0.78125,
+          "5": 0.734375,
+          "6": 0.578125,
+          "7": 0.46875,
+          "8": 0.28125,
+          "9": 0.265625,
+          "10": 0.15625,
+          "11": 0.171875,
+          "12": 0.109375
+        },
+        "active_total": {
+          "correct": 3428,
+          "total": 4992,
+          "accuracy": 0.686698717948718
+        },
+        "above_diagonal": {
+          "iterate": 1686,
+          "hold": 268,
+          "other": 2270,
+          "unknown_iterate_target": 0,
+          "n": 4224,
+          "rates": {
+            "iterate": 0.3991477272727273,
+            "hold": 0.0634469696969697,
+            "other": 0.537405303030303,
             "unknown_iterate_target": 0.0
           }
         },
