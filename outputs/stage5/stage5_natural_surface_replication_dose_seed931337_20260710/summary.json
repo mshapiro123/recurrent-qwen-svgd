@@ -1,0 +1,88 @@
+{
+  "kind": "stage5_natural_surface_replication_dose",
+  "run_id": "stage5_natural_surface_replication_dose_seed931337_20260710",
+  "status": "started",
+  "source_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.json",
+  "train_seed": 931337,
+  "save_steps": [
+    1000,
+    1500,
+    2000,
+    2500,
+    3000,
+    4000,
+    6000
+  ],
+  "train_steps": 6000,
+  "dtype": "bfloat16",
+  "train_data": {
+    "seed": 931337,
+    "files": {
+      "train_relay_chain_symbol_sft": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/data/train_relay_chain_symbol_sft.jsonl",
+      "synthetic_rehearsal_chain_symbol_sft": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/data/synthetic_rehearsal_chain_symbol_sft.jsonl",
+      "rung0_train_mix_chain_symbol_sft": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/data/rung0_train_mix_chain_symbol_sft.jsonl"
+    },
+    "manifests": {
+      "train_relay_chain_symbol_sft": {
+        "rows": 2048,
+        "depth_counts": {
+          "1": 256,
+          "2": 256,
+          "3": 256,
+          "4": 256,
+          "5": 256,
+          "6": 256,
+          "7": 256,
+          "8": 256
+        },
+        "row_id_sha256": "cf8620d963297681b5f92b4a307f6d6a2e43706fb3171d2b4a1f0bc9c5647720",
+        "row_sha256": "15a1f315613c8550aab8934935313465372352dffdba032ad7e587eaa347c871"
+      },
+      "synthetic_rehearsal_chain_symbol_sft": {
+        "rows": 2048,
+        "depth_counts": {
+          "1": 256,
+          "2": 256,
+          "3": 256,
+          "4": 256,
+          "5": 256,
+          "6": 256,
+          "7": 256,
+          "8": 256
+        },
+        "row_id_sha256": "115a798b5a836dd07dfb412b2ed0db54db7e5f9c3f3de966cf8043926b9982d9",
+        "row_sha256": "6b17a315624a762cb8b9476bf5329a6d2d11ab126144cf94d4e153c8fa41027c"
+      },
+      "rung0_train_mix_chain_symbol_sft": {
+        "rows": 4096,
+        "depth_counts": {
+          "1": 512,
+          "2": 512,
+          "3": 512,
+          "4": 512,
+          "5": 512,
+          "6": 512,
+          "7": 512,
+          "8": 512
+        },
+        "row_id_sha256": "6329ff647c65629f9ed33a979aad31ee0f37a0dc0fed623d40b4b170e05b7922",
+        "row_sha256": "25fdbff059c52915f3d90e2410b39ebf93042c31f84fd508cd5e180b625a6fee"
+      }
+    },
+    "eval_policy": "All checkpoint evals use the original landed frozen relay/pointer/synthetic rows."
+  },
+  "init_checkpoint_metadata": {
+    "source_summary": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json",
+    "source_run_id": "stage5_n24_support12_rung_20260707_140139",
+    "source_kind": "stage5_n24_support12_rung",
+    "preferred_step": 6000,
+    "restored_checkpoint": "outputs/stage5/stage5_natural_surface_replication_dose_seed931337_20260710/restored/n24_support12_step6000.pt",
+    "drive_checkpoint_root": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints",
+    "selected_checkpoint_reference": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_n24_support12_rung_20260707_140139/anneal_to_outcome_final/unfrozen_recurrent_step_6000.pt",
+    "selected_checkpoint_source": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_n24_support12_rung_20260707_140139/anneal_to_outcome_final/unfrozen_recurrent_step_6000.pt",
+    "selected_checkpoint_sha256": "898a259db2ab344ece4545e2910b051840e8408dbe4927f799e7cdb3cdd8c7dc"
+  },
+  "checkpoint_evals": [],
+  "checkpoint_backups": {},
+  "frozen_full_width_min_1_12": 0.96875
+}
