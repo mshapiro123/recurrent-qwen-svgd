@@ -1,8 +1,277 @@
 {
   "kind": "stage5_natural_surface_followups_2_3",
   "run_id": "stage5_natural_surface_followups_2_3_20260710",
-  "status": "started",
+  "status": "data_verified",
   "source_receipt_run_id": "stage5_natural_surface_receipts_20260709_210151",
   "active_evals": {},
-  "probes": {}
+  "probes": {},
+  "data": {
+    "files": {
+      "untouched_relay_d13_16": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/data/untouched_relay_d13_16.jsonl",
+      "untouched_pointer_d13_16": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/data/untouched_pointer_d13_16.jsonl",
+      "robust_baton_default_d1_12": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/data/robust_baton_default_d1_12.jsonl",
+      "robust_baton_passive_d1_12": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/data/robust_baton_passive_d1_12.jsonl",
+      "robust_baton_fronted_d1_12": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/data/robust_baton_fronted_d1_12.jsonl",
+      "robust_relay_passive_d1_12": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/data/robust_relay_passive_d1_12.jsonl",
+      "robust_relay_fronted_d1_12": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/data/robust_relay_fronted_d1_12.jsonl",
+      "robust_pointer_passive_d1_12": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/data/robust_pointer_passive_d1_12.jsonl",
+      "robust_pointer_fronted_d1_12": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/data/robust_pointer_fronted_d1_12.jsonl",
+      "robust_relay_unseen_names_d1_12": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/data/robust_relay_unseen_names_d1_12.jsonl",
+      "robust_pointer_unseen_names_d1_12": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/data/robust_pointer_unseen_names_d1_12.jsonl",
+      "paired_relay_d1_12": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/data/paired_relay_d1_12.jsonl",
+      "paired_pointer_d1_12": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/data/paired_pointer_d1_12.jsonl",
+      "corrected_relay_unseen_single_token_d1_12": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/data/corrected_relay_unseen_single_token_d1_12.jsonl",
+      "corrected_pointer_unseen_single_token_d1_12": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/data/corrected_pointer_unseen_single_token_d1_12.jsonl"
+    },
+    "probe_files": {
+      "paired_relay": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/data/probe_paired_relay_d9_12_n128.jsonl",
+      "paired_pointer": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/data/probe_paired_pointer_d9_12_n128.jsonl",
+      "baton_default": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/data/probe_baton_default_d9_12_n128.jsonl"
+    },
+    "manifests": {
+      "corrected_relay_unseen_single_token_d1_12": {
+        "rows": 1536,
+        "depth_counts": {
+          "1": 128,
+          "2": 128,
+          "3": 128,
+          "4": 128,
+          "5": 128,
+          "6": 128,
+          "7": 128,
+          "8": 128,
+          "9": 128,
+          "10": 128,
+          "11": 128,
+          "12": 128
+        },
+        "row_id_sha256": "76b39b50c133c8b49c22015f86ab868edb6c8bc38c071cc012bb9107d2cab3dd",
+        "row_sha256": "7e6cf99311a3cc971aaca945e11d6ab8686dcfcd2ac384da73bbb22b5f18a15b"
+      },
+      "corrected_pointer_unseen_single_token_d1_12": {
+        "rows": 1536,
+        "depth_counts": {
+          "1": 128,
+          "2": 128,
+          "3": 128,
+          "4": 128,
+          "5": 128,
+          "6": 128,
+          "7": 128,
+          "8": 128,
+          "9": 128,
+          "10": 128,
+          "11": 128,
+          "12": 128
+        },
+        "row_id_sha256": "97830dcb311d042b803c12e15cfd83ea95220059829380d5300baf4c67d4d904",
+        "row_sha256": "bc85d40ea337614360fd5a2edeed384f243ad1cbc11bd7289ab7f15b13ae58e7"
+      },
+      "probe_paired_relay_d9_12_n128": {
+        "rows": 128,
+        "depth_counts": {
+          "9": 32,
+          "10": 32,
+          "11": 32,
+          "12": 32
+        },
+        "row_id_sha256": "50f0bf09c4231ec289c3c0ab349571456d719176c81794e69f2f91a91ec04ef7",
+        "row_sha256": "5a81a865c19afc7c8f82260e263f09403be7dcb06f385bdd122c5df1622b350c"
+      },
+      "probe_paired_pointer_d9_12_n128": {
+        "rows": 128,
+        "depth_counts": {
+          "9": 32,
+          "10": 32,
+          "11": 32,
+          "12": 32
+        },
+        "row_id_sha256": "e1c52fa99f430eb84149e95e6826a0e0fc24684ffad729d49b66bc34159fa83e",
+        "row_sha256": "ea787d8b1ca446c715d6032ec06effe00b5039cbddfef3c945a25cb69a4eab76"
+      },
+      "probe_baton_default_d9_12_n128": {
+        "rows": 128,
+        "depth_counts": {
+          "9": 32,
+          "10": 32,
+          "11": 32,
+          "12": 32
+        },
+        "row_id_sha256": "c69a8e79cc2d6e43a88047a451cf50c14b83fa299102439f7a9ea8112a47686b",
+        "row_sha256": "c31cdff856b0c59564286047dda93615e23ffe85489c6ea85110938042406077"
+      }
+    },
+    "corrected_name_tokenizer_receipt": {
+      "all_single_token": true,
+      "symbol_names": [
+        "Leo",
+        "Sid",
+        "Ian",
+        "Roy",
+        "May",
+        "Jay",
+        "Rob",
+        "Jim",
+        "Ali",
+        "Meg",
+        "Lou",
+        "Hal",
+        "Cal",
+        "Ken",
+        "Ron",
+        "Don",
+        "Guy",
+        "Joy",
+        "Pat",
+        "Ace"
+      ],
+      "rows": [
+        {
+          "symbol": "Leo",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "Sid",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "Ian",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "Roy",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "May",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "Jay",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "Rob",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "Jim",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "Ali",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "Meg",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "Lou",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "Hal",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "Cal",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "Ken",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "Ron",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "Don",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "Guy",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "Joy",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "Pat",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        },
+        {
+          "symbol": "Ace",
+          "bare_token_count": 1,
+          "space_prefixed_token_count": 1,
+          "pass": true
+        }
+      ],
+      "disjoint_from_training_names": true,
+      "prompt_suffix_fast_path": true,
+      "suffix_token_ids": {
+        "Leo": 36748,
+        "Sid": 33889,
+        "Ian": 28235,
+        "Roy": 11038,
+        "May": 3217,
+        "Jay": 18919,
+        "Rob": 4892,
+        "Jim": 11387,
+        "Ali": 14583,
+        "Meg": 27343,
+        "Lou": 9729,
+        "Hal": 19851,
+        "Cal": 3319,
+        "Ken": 14259,
+        "Ron": 14325,
+        "Don": 4320,
+        "Guy": 25273,
+        "Joy": 27138,
+        "Pat": 7135,
+        "Ace": 37707
+      }
+    },
+    "untouched_depth_13_16_opened": false
+  }
 }
