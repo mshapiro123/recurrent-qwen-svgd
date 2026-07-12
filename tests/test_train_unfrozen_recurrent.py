@@ -7,6 +7,8 @@ from models.bridge import IdentityGatedBridge
 from models.recurrent_wrapper import LayerSplit
 from training.train_unfrozen_recurrent import (
     apply_bridge_prelude_grad_multiplier,
+    assert_active_supervision,
+    assert_nonzero_trainable_gradient,
     bridge_prelude_optimizer_parameters,
     bridge_prelude_optimizer_setup,
     bridge_prelude_grad_stats,
@@ -77,6 +79,36 @@ def test_seed_training_rng_reproduces_torch_and_loader_streams() -> None:
 
     assert torch.equal(first_global, second_global)
     assert torch.equal(first_order, second_order)
+
+
+def test_active_supervision_rejects_fully_masked_loop_labels() -> None:
+    item = {
+        "labels": torch.tensor([-100, 4]),
+        "loop_labels": torch.full((2, 2), -100),
+    }
+
+    try:
+        assert_active_supervision(item, loop_loss_mode="per_loop_labels")
+    except RuntimeError as exc:
+        assert "zero active loop-label tokens" in str(exc)
+    else:
+        raise AssertionError("Expected fully masked loop labels to be rejected")
+
+
+def test_nonzero_gradient_assertion_rejects_noop_backward() -> None:
+    module = nn.Linear(2, 2)
+    module.weight.grad = torch.zeros_like(module.weight)
+    module.bias.grad = torch.zeros_like(module.bias)
+
+    try:
+        assert_nonzero_trainable_gradient(module)
+    except RuntimeError as exc:
+        assert "zero trainable gradients" in str(exc)
+    else:
+        raise AssertionError("Expected zero gradients to be rejected")
+
+    module.weight.grad[0, 0] = 1e-12
+    assert_nonzero_trainable_gradient(module)
 
 
 def test_resolve_resume_lora_config_reads_checkpoint_config(tmp_path) -> None:

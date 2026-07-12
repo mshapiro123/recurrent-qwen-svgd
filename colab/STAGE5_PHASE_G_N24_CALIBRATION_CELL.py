@@ -1,4 +1,4 @@
-"""Colab cell: run the deterministic Phase G Experiment 1 gates."""
+"""Colab cell: evaluate the deterministic Phase G keeper on N=24 calibration."""
 
 from __future__ import annotations
 
@@ -10,13 +10,12 @@ from pathlib import Path
 from google.colab import drive, runtime, userdata
 
 
-STAGE5_PHASE_G_EXPERIMENT1_CELL_VERSION = "phase_g_experiment1_v1"
-# Safety marker: phase_g_experiment1
-# Safety marker: colab/run_stage5_phase_g_experiment1.py
+STAGE5_PHASE_G_N24_CALIBRATION_CELL_VERSION = "phase_g_n24_calibration_v1"
+# Safety marker: phase_g_n24_calibration_gate
+# Safety marker: data/phase_g_alpha/calibration_n24.jsonl
+# Safety marker: test_split_opened
 # Safety marker: eval/eval_abductive_coverage.py
-# Safety marker: eval/eval_synthetic_diagonal_guardrail.py
-# Safety marker: STAGE5_PHASE_G_EXP1_MAX_STEPS
-# Safety marker: deterministic controls; latent, learned halting, LPRM, and SVGD disabled
+# Safety marker: run_one_bounded_deterministic_arbitrary_table_continuation
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
@@ -53,15 +52,10 @@ def redact(text: str) -> str:
     return safe
 
 
-def run(
-    cmd: list[str | os.PathLike[str]],
-    *,
-    cwd: Path = ROOT,
-    env: dict[str, str] | None = None,
-) -> None:
-    print("$", redact(" ".join(map(str, cmd))), flush=True)
+def run(cmd: list[str], *, cwd: Path = ROOT, env: dict[str, str] | None = None) -> None:
+    print("$", redact(" ".join(cmd)), flush=True)
     process = subprocess.Popen(
-        list(map(str, cmd)),
+        cmd,
         cwd=str(cwd),
         env=env,
         text=True,
@@ -78,13 +72,13 @@ def run(
         tail = tail[-200:]
     returncode = process.wait()
     if returncode:
-        print("FAILED_COMMAND_TAIL_START", flush=True)
-        print("".join(tail), flush=True)
-        print("FAILED_COMMAND_TAIL_END", flush=True)
+        print("FAILED_COMMAND_TAIL_START\n" + "".join(tail) + "FAILED_COMMAND_TAIL_END", flush=True)
         raise subprocess.CalledProcessError(returncode, cmd)
 
 
-def sync_repo() -> None:
+def main() -> None:
+    run(["nvidia-smi"], cwd=Path("/content"))
+    drive.mount("/content/drive", force_remount=False)
     clone_url = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
     if ROOT.exists():
         run(["git", "remote", "set-url", "origin", clone_url])
@@ -92,16 +86,9 @@ def sync_repo() -> None:
         run(["git", "checkout", "main"])
         run(["git", "reset", "--hard", "origin/main"])
     else:
-        run(["git", "clone", clone_url, ROOT], cwd=Path("/content"))
+        run(["git", "clone", clone_url, str(ROOT)], cwd=Path("/content"))
     run(["git", "config", "user.email", "colab-runner@local"])
     run(["git", "config", "user.name", "Colab Runner"])
-    run(["git", "log", "--oneline", "-5"])
-
-
-def main() -> None:
-    run(["nvidia-smi"], cwd=Path("/content"))
-    drive.mount("/content/drive", force_remount=False)
-    sync_repo()
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"])
     run(
         [
@@ -109,38 +96,23 @@ def main() -> None:
             "-m",
             "pytest",
             "-q",
-            "tests/test_abductive_injective_task.py",
-            "tests/test_eval_abductive_coverage.py",
-            "tests/test_eval_synthetic_diagonal_guardrail.py",
-            "tests/test_stage5_phase_g_gate_prepare.py",
-            "tests/test_stage5_phase_g_experiment1.py",
-            "tests/test_train_unfrozen_recurrent.py",
+            "tests/test_phase_g_coverage.py",
+            "tests/test_stage5_phase_g_n24_calibration_gate.py",
         ]
     )
     env = os.environ.copy()
-    env.setdefault(
-        "STAGE5_PHASE_G_EXP1_RUN_ID",
-        "stage5_phase_g_experiment1_fixed_boundary_20260712",
-    )
-    env.setdefault("STAGE5_PHASE_G_EXP1_MAX_STEPS", "1000")
-    env.setdefault("STAGE5_PHASE_G_EXP1_DATA_SEED", "1104729")
-    env.setdefault("STAGE5_PHASE_G_EXP1_DTYPE", "bfloat16")
+    env.setdefault("STAGE5_PHASE_G_N24_GATE_RUN_ID", "stage5_phase_g_n24_calibration_20260712")
+    env.setdefault("STAGE5_PHASE_G_N24_GATE_DTYPE", "bfloat16")
     env.setdefault("DEVICE", "cuda")
-    run([sys.executable, "colab/run_stage5_phase_g_experiment1.py"], env=env)
-    if os.environ.get("STAGE5_PHASE_G_EXP1_DISCONNECT", "0").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "y",
-    }:
-        print("Disconnecting Colab runtime after Phase G Experiment 1.", flush=True)
+    run([sys.executable, "colab/run_stage5_phase_g_n24_calibration_gate.py"], env=env)
+    if os.environ.get("STAGE5_PHASE_G_N24_GATE_DISCONNECT", "0").lower() in {"1", "true", "yes"}:
         runtime.unassign()
     else:
-        print("Leaving Colab runtime connected after Phase G Experiment 1.", flush=True)
+        print("Leaving runtime connected after Phase G N24 calibration.", flush=True)
 
 
 try:
     main()
 except Exception:
-    print("Phase G Experiment 1 errored; leaving runtime connected.", flush=True)
+    print("Phase G N24 calibration errored; leaving runtime connected.", flush=True)
     raise

@@ -64,6 +64,46 @@ def seed_training_rng(seed: int) -> torch.Generator:
     return torch.Generator(device="cpu").manual_seed(seed)
 
 
+def supervision_counts(item: dict[str, torch.Tensor]) -> dict[str, int]:
+    loop_labels = item.get("loop_labels")
+    return {
+        "outcome_tokens": int(item["labels"].ne(-100).sum().item()),
+        "loop_tokens": int(loop_labels.ne(-100).sum().item()) if loop_labels is not None else 0,
+        "active_loops": (
+            int(loop_labels.ne(-100).any(dim=-1).sum().item()) if loop_labels is not None else 0
+        ),
+    }
+
+
+def assert_active_supervision(
+    item: dict[str, torch.Tensor],
+    *,
+    loop_loss_mode: str,
+) -> dict[str, int]:
+    counts = supervision_counts(item)
+    if counts["outcome_tokens"] <= 0:
+        raise RuntimeError(
+            "Training row has zero active outcome tokens. Check prompt/completion tokenization boundary."
+        )
+    if loop_loss_mode in {"per_loop_labels", "annealed_chain_to_outcome"}:
+        if counts["loop_tokens"] <= 0 or counts["active_loops"] <= 0:
+            raise RuntimeError(
+                "Training row has zero active loop-label tokens. Check prompt/completion tokenization boundary."
+            )
+    return counts
+
+
+def assert_nonzero_trainable_gradient(module: torch.nn.Module) -> None:
+    nonzero = 0
+    for parameter in module.parameters():
+        if parameter.requires_grad and parameter.grad is not None:
+            nonzero += int(parameter.grad.detach().count_nonzero().item())
+    if nonzero <= 0:
+        raise RuntimeError(
+            "Backward produced zero trainable gradients despite active supervision; refusing no-op training."
+        )
+
+
 def scheduled_loop_count(
     step: int,
     max_steps: int,
@@ -586,6 +626,10 @@ def main() -> int:
         max_train_loops=max_loops,
         train_on_prompt=bool(cfg.get("train_on_prompt", False)),
     )
+    loop_loss_mode = str(cfg.get("loop_loss_mode", "halting_weighted"))
+    if bool(cfg.get("require_active_supervision", False)):
+        preflight_counts = assert_active_supervision(dataset[0], loop_loss_mode=loop_loss_mode)
+        print(f"[assert-ok] active_supervision={preflight_counts}")
     loader = DataLoader(
         dataset,
         batch_size=cfg_int(cfg, "batch_size", 1),
@@ -634,7 +678,6 @@ def main() -> int:
         if int(item) > 0
     }
     prelude_grad_multiplier = cfg_float(cfg, "bridge_prelude_grad_multiplier", 1.0)
-    loop_loss_mode = str(cfg.get("loop_loss_mode", "halting_weighted"))
     chain_anneal_hold_frac = cfg_float(cfg, "chain_anneal_hold_frac", 0.5)
     chain_outcome_loss_weight = cfg_float(cfg, "chain_outcome_loss_weight", 1.0)
     if prelude_grad_multiplier != 1.0 and bridge_uses_split_projection(wrapper):
@@ -685,6 +728,8 @@ def main() -> int:
             assert_finite_training_state(wrapper, output.loss, output.metrics, step)
             output.loss.backward()
             assert_finite_trainable_gradients(wrapper, step)
+            if bool(cfg.get("require_nonzero_train_gradient", False)):
+                assert_nonzero_trainable_gradient(wrapper)
             prelude_grad_cosine_prev, previous_prelude_grad = cosine_with_previous(
                 bridge_prelude_grad_vector(wrapper),
                 previous_prelude_grad,

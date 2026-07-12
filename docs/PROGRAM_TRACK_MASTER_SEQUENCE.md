@@ -1,5 +1,7 @@
 # Program Track: Master Sequence
 
+> **Current amendment:** Phase G reunifies the deterministic substrate and guided stochastic-width tracks. The abductive-injective gate now directly precedes frozen-block G-alpha; LPRM, adaptive halting, and SVGD remain downstream of a coverage win. See [PHASE_G_TRACK_REUNIFICATION_AMENDMENT.md](PHASE_G_TRACK_REUNIFICATION_AMENDMENT.md).
+
 ## 0. Purpose
 
 This is the umbrella document for the recurrent-Qwen program. It updates the earlier program-track summary by ordering the whole effort into four phases by dependency, marking the current step at the head of the chain, and writing the gates between phases explicitly so the long-term arc and the place of the present re-entry work within it are visible on one page. Each phase is governed by its own handoff; this document is the sequence and the index, not a replacement for them. The map from phases to handoffs is in the last section.

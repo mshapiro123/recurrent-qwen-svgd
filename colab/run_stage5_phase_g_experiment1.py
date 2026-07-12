@@ -136,6 +136,8 @@ def write_arm_config(
         "bridge_prelude_grad_multiplier": 1.0,
         "train_on_prompt": False,
         "gradient_checkpointing": True,
+        "require_active_supervision": True,
+        "require_nonzero_train_gradient": True,
         "output_dir": path_for_cli(output_dir),
         "resume_from": path_for_cli(keeper),
         "resume_lora": {"enabled": False},

@@ -2,12 +2,17 @@ from __future__ import annotations
 
 from training.abductive_injective_task import (
     AbductiveInjectiveConfig,
+    PhaseGFrozenEvalConfig,
     build_injective_abduction_instance,
     build_multimodal_abduction_instance,
+    build_phase_g_frozen_rows,
     build_row,
     build_rows,
+    build_stratified_random_abduction_instance,
     exact_depth_preimages,
+    preimage_stratum,
     row_manifest,
+    validate_phase_g_frozen_rows,
     validate_rows,
 )
 
@@ -47,9 +52,12 @@ def test_training_row_supervises_one_valid_reverse_chain_but_keeps_full_set() ->
     )
     row = build_row(instance)
 
-    assert row["completion"] in row["valid_starts"]
+    assert row["completion"].strip() in row["valid_starts"]
     assert row["coverage_denominator"] == 3
     assert row["loop_completions"][-1] == row["completion"]
+    assert not row["prompt"].endswith(" ")
+    assert row["completion"].startswith(" ")
+    assert all(completion.startswith(" ") for completion in row["loop_completions"])
     assert len(row["loop_completions"]) == row["depth"]
     assert set(row["valid_orbits"]) == set(row["valid_starts"])
 
@@ -81,3 +89,36 @@ def test_validation_rejects_corrupted_solution_set() -> None:
     assert validation["status"] == "failed"
     assert any("exact preimages" in error for error in validation["errors"])
 
+
+def test_arbitrary_random_mapping_hits_each_locked_preimage_stratum() -> None:
+    for index, stratum in enumerate(("unique", "small", "large")):
+        instance = build_stratified_random_abduction_instance(
+            instance_id=stratum,
+            n_symbols=24,
+            depth=3,
+            seed=100 + index,
+            stratum=stratum,
+        )
+
+        exact = exact_depth_preimages(instance.mapping, instance.target, instance.depth)
+        assert preimage_stratum(len(exact)) == stratum
+        assert len(set(instance.mapping.values())) < 24
+        assert instance.selected_start in exact
+        assert instance.generator_kind == "arbitrary_random_mapping_conditioned_on_preimage_stratum"
+
+
+def test_phase_g_frozen_rows_are_balanced_exact_and_split_disjoint() -> None:
+    config = PhaseGFrozenEvalConfig(
+        n_symbols=24,
+        depths=(1, 2, 3, 4),
+        rows_per_stratum=8,
+        seed=7194203,
+    )
+    calibration = build_phase_g_frozen_rows(config, split="calibration")
+    test = build_phase_g_frozen_rows(config, split="test")
+
+    validation = validate_phase_g_frozen_rows(calibration, rows_per_stratum=8)
+    assert validation["status"] == "passed"
+    assert validation["stratum_counts"] == {"unique": 8, "small": 8, "large": 8}
+    assert {row["id"] for row in calibration}.isdisjoint({row["id"] for row in test})
+    assert all(row["posterior_chain_sampling"] == "uniform_over_exact_valid_preimages" for row in calibration)

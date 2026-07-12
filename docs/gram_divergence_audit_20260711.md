@@ -1,5 +1,7 @@
 # GRAM Divergence Audit
 
+> **Queue amendment, July 12, 2026:** The return to guided stochastic width is no longer a separate future track. The abductive-injective deterministic gate is its substrate prerequisite, followed immediately by Phase G-alpha. See [PHASE_G_TRACK_REUNIFICATION_AMENDMENT.md](PHASE_G_TRACK_REUNIFICATION_AMENDMENT.md).
+
 ## From stochastic recurrent Qwen to a validated deterministic recurrent substrate
 
 **Date:** July 11, 2026  

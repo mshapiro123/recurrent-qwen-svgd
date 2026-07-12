@@ -100,6 +100,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "natural_surface_prepare_cpu" - CPU-only verbal relay/pointer transfer dataset prep and manifest receipt.
 #   "natural_surface_transfer_rung0" - GPU frozen natural-surface baseline, then verbal rung-zero SFT.
 #   "phase_g_experiment1" - deterministic injective/abductive gates plus matched-K answer sampling.
+#   "phase_g_n24_calibration_gate" - arbitrary-function deterministic substrate gate before G-alpha.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 PREFER_LOCAL_HEAD = os.environ.get("STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD", "0").strip().lower() in {
@@ -2553,11 +2554,28 @@ TARGETS = {
             "deterministic controls; latent, learned halting, LPRM, and SVGD disabled",
         ],
         "env": {
-            "STAGE5_PHASE_G_EXP1_RUN_ID": "stage5_phase_g_experiment1_20260712",
+            "STAGE5_PHASE_G_EXP1_RUN_ID": "stage5_phase_g_experiment1_fixed_boundary_20260712",
             "STAGE5_PHASE_G_EXP1_MAX_STEPS": "1000",
             "STAGE5_PHASE_G_EXP1_DATA_SEED": "1104729",
             "STAGE5_PHASE_G_EXP1_DTYPE": "bfloat16",
             "STAGE5_PHASE_G_EXP1_DISCONNECT": "0",
+        },
+    },
+    "phase_g_n24_calibration_gate": {
+        "path": "colab/STAGE5_PHASE_G_N24_CALIBRATION_CELL.py",
+        "markers": [
+            "STAGE5_PHASE_G_N24_CALIBRATION_CELL_VERSION",
+            "phase_g_n24_calibration_gate",
+            "data/phase_g_alpha/calibration_n24.jsonl",
+            "test_split_opened",
+            "eval/eval_abductive_coverage.py",
+            "run_one_bounded_deterministic_arbitrary_table_continuation",
+        ],
+        "env": {
+            "STAGE5_PHASE_G_N24_GATE_RUN_ID": "stage5_phase_g_n24_calibration_20260712",
+            "STAGE5_PHASE_G_N24_GATE_SOURCE": "outputs/stage5/stage5_phase_g_experiment1_fixed_boundary_20260712/summary.json",
+            "STAGE5_PHASE_G_N24_GATE_DTYPE": "bfloat16",
+            "STAGE5_PHASE_G_N24_GATE_DISCONNECT": "0",
         },
     },
     "splice_injection_diagnostic": {

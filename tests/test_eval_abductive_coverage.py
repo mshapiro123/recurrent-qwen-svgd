@@ -4,6 +4,7 @@ import torch
 
 from eval.eval_abductive_coverage import (
     parse_sample_counts,
+    read_target_entropies,
     sample_names,
     score_sample_prefix,
     summarize_rows,
@@ -80,3 +81,12 @@ def test_summary_reports_validity_coverage_and_duplicates() -> None:
     assert summary["overall"]["sampling"]["2"]["mean_coverage"] == 0.75
     assert summary["overall"]["sampling"]["2"]["duplicate_rate"] == 0.25
 
+
+def test_target_entropy_reader_uses_explicit_candidate_entropy(tmp_path) -> None:
+    path = tmp_path / "entropies.jsonl"
+    path.write_text(
+        '{"id":"row-1","latent_candidate_entropy":1.25}\n',
+        encoding="utf-8",
+    )
+
+    assert read_target_entropies(path.as_posix(), field="latent_candidate_entropy") == {"row-1": 1.25}

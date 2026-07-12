@@ -1009,3 +1009,27 @@ Colab/Drive backups for selected runs.
   if rank 64 shows rescued/oracle/depth movement; otherwise the meaningful next
   escalation is the unfreeze+Muon recurrence-curriculum bundle, not more
   inference-time geometry.
+- 2026-07-12 Phase G track reunification: the verified GRAM audit removes the
+  old split between the deterministic queue and an eventual stochastic-width
+  return. The abductive-injective gate is now both the next deterministic rung
+  and G-alpha's substrate gate. The final frozen evaluation is N=24 arbitrary
+  non-bijective mappings with disjoint calibration/test splits and 128 rows in
+  each exact-preimage stratum (1, 2-4, >=5). Exact coverage is recomputed from
+  the forward orbit. The answer-head comparator is entropy-matched per row;
+  fixed-temperature output is provisional. G-alpha freezes the entire
+  deterministic block and trains only prior/posterior heads and injection
+  scale, with exact zero-gradient assertions. Numeric gate margins remain the
+  sole preregistration blank pending the calibration-split power calculation.
+  The current N=20 constructive-fan run is retained as a screening gate; a
+  deterministic N=24 arbitrary-table calibration pass is additionally required
+  before the substrate is frozen, so stochastic guidance cannot be credited
+  with repairing a task-distribution competence gap.
+- 2026-07-12 invalid Phase G Experiment 1 attempt: run
+  `stage5_phase_g_experiment1_20260712` is a no-op receipt, not a negative model
+  result. Its prompt ended in a trailing space while completions lacked a
+  leading space. Separate tokenization made every outcome and loop label
+  inactive: training logged loss `0`, active loop labels `0`, and gradients
+  `0` for all 1,000 steps. The 9/128 injective smoke score is therefore an
+  untrained baseline. The corrected run uses ID
+  `stage5_phase_g_experiment1_fixed_boundary_20260712`, canonical `Answer:` +
+  `" Name"` boundaries, and hard failures on zero supervision or zero gradient.

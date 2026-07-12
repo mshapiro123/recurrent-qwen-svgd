@@ -10,6 +10,7 @@ from colab.run_stage5_phase_g_experiment1 import (
     subset_by_depth,
     write_arm_config,
 )
+from training.abductive_injective_task import AbductiveInjectiveConfig, build_rows, row_manifest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -61,6 +62,8 @@ def test_arm_config_locks_seed_and_disables_stochastic_modules(tmp_path) -> None
     assert config["train_auxiliary"]["latent"] is False
     assert config["train_auxiliary"]["halting"] is False
     assert config["recurrence_curriculum"]["enabled"] is False
+    assert config["require_active_supervision"] is True
+    assert config["require_nonzero_train_gradient"] is True
 
 
 def test_restore_stage_checkpoint_rejects_wrong_sha(tmp_path, monkeypatch) -> None:
@@ -90,3 +93,27 @@ def test_bootstrap_exposes_phase_g_experiment1_target() -> None:
     assert '"phase_g_experiment1"' in text
     assert "STAGE5_PHASE_G_EXPERIMENT1_CELL_VERSION" in text
     assert "colab/run_stage5_phase_g_experiment1.py" in text
+
+
+def test_experiment1_dataset_hashes_remain_resume_compatible() -> None:
+    expected = {
+        "train_injective": "4ab6377a15d64cf5e07c8855ed05f432feed75e512e196cbd53f648dc9fcb4a5",
+        "train_abductive": "22bfc8258a7ae6f0433b199dff6531b82afaa9577704ddfdca339d7f5c203a6a",
+        "test_injective": "4dd29d9fb7b4170390234646c7c1773377eea56145f6ae659e38f3ae443f2068",
+        "test_abductive": "db80c1c0a07264b0cd99aef5db302dd8184d5181f01e03edc2f722f34e356965",
+    }
+    for split, rows_per_depth in (("train", 256), ("test", 128)):
+        for mode in ("injective", "abductive"):
+            rows = build_rows(
+                AbductiveInjectiveConfig(
+                    n_symbols=20,
+                    max_depth=8,
+                    rows_per_depth=rows_per_depth,
+                    seed=1_104_729,
+                    min_solutions=2,
+                    max_solutions=4,
+                ),
+                split=split,
+                mode=mode,
+            )
+            assert row_manifest(rows)["row_sha256"] == expected[f"{split}_{mode}"]

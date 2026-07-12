@@ -1,5 +1,7 @@
 # Phase G Next Experiments
 
+> **Amendment of record, July 12, 2026:** The deterministic and stochastic tracks are now one dependency chain. See [PHASE_G_TRACK_REUNIFICATION_AMENDMENT.md](PHASE_G_TRACK_REUNIFICATION_AMENDMENT.md). Where this document specifies a fixed-temperature answer-head comparator or the earlier N=20 fan set, the amendment controls: the final G-alpha claim uses entropy matching and the frozen stratified N=24 arbitrary-function sets.
+
 ## Landed-result review, deterministic keeper lock, and G-alpha preregistration
 
 **Date:** July 12, 2026  
@@ -294,4 +296,3 @@ If Experiment 2 does not win, do not proceed to selector, halting, or SVGD. Diag
 5. Implement the posterior/prior transition only if Experiment 1 passes.
 
 This sequence follows the amended gate. It does not spend GPU on selectors, halting, or particle geometry before the model demonstrates a learnable multimodal task and a coverage opportunity.
-

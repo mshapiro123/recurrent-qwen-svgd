@@ -1,0 +1,105 @@
+{
+  "architecture": {
+    "block_gradient_assertion": "identically_zero_after_every_backward",
+    "deterministic_update": "u_t_untouched",
+    "frozen": "entire_deterministic_recurrent_qwen_substrate",
+    "injection_scale_initial": 0.001,
+    "latent_dimension": 64,
+    "latent_location": "high_level_reentry_state_only",
+    "latent_projection": "fixed_seeded_orthonormal_buffer",
+    "posterior_conditioning": "current_reentry_state_plus_frozen_embedding_of_gold_next_symbolic_state; multimodal rows use the uniformly sampled valid chain stored in the row",
+    "reentry": "h_t = u_t + softplus(injection_scale) * fixed_projection(z_t)",
+    "trainable": [
+      "phase_g_prior_head.",
+      "phase_g_posterior_head.",
+      "phase_g_injection_scale"
+    ]
+  },
+  "deferred_until_G_alpha_win": [
+    "LPRM",
+    "per_trajectory_halting",
+    "SVGD"
+  ],
+  "failure_interpretations": {
+    "no_win_vs_temperature_K": "guided latent width adds nothing beyond output sampling on this substrate",
+    "win_vs_both": "open_G_beta",
+    "win_vs_temperature_but_loss_vs_iso_compute": "trajectory width is real but uneconomical relative to deterministic depth"
+  },
+  "frozen_evaluation": {
+    "depths": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "n_symbols": 24,
+    "oracle": "independent_forward_orbit_enumeration",
+    "preimage_strata": {
+      "large": ">=5",
+      "small": "2-4",
+      "unique": "1"
+    },
+    "rows_per_preimage_stratum": 128,
+    "splits": [
+      "calibration",
+      "test"
+    ]
+  },
+  "kind": "phase_g_alpha_preregistration",
+  "objective": {
+    "dose_levers": [
+      "kl_coefficient",
+      "training_steps"
+    ],
+    "ema": {
+      "decay": 0.999,
+      "required": true
+    },
+    "kl": "per_loop_KL_q_p",
+    "kl_balance": 0.8,
+    "kl_coefficient_sweep": [
+      0.0001,
+      0.001,
+      0.01
+    ],
+    "task_loss": "per_loop_chain_CE_plus_final_valid_answer_CE"
+  },
+  "power_calculation_todo": {
+    "lock_before_test_split_or_latent_run_is_scored": true,
+    "only_remaining_preregistration_blank": true,
+    "paired_n": 384,
+    "stratify_by": "preimage_stratum",
+    "use_split": "calibration"
+  },
+  "primary_gate_form": {
+    "alpha": 0.05,
+    "comparator_1": "deterministic_keeper_answer_head_sampling_at_matched_K_and_entropy",
+    "comparator_2": "one_deterministic_trajectory_at_K_times_T_loops",
+    "metric": "paired_per_instance_exact_oracle_coverage_at_K",
+    "numeric_margin": "TODO_POWER_CALCULATION_LAST_BLANK_BEFORE_LAUNCH",
+    "sample_counts": [
+      1,
+      2,
+      4,
+      8,
+      20
+    ]
+  },
+  "secondary_metrics": [
+    "valid_sample_rate",
+    "unique_valid_count",
+    "full_coverage_rate",
+    "duplicate_rate",
+    "coverage_by_preimage_stratum",
+    "coverage_by_depth",
+    "posterior_prior_KL_by_loop",
+    "posterior_collapse_fraction"
+  ],
+  "status": "forms_locked_numeric_margins_pending_power_calculation",
+  "substrate_gate": {
+    "checkpoint": "post_arbitrary_family_deterministic_keeper",
+    "checkpoint_sha256_rule": "resolve_from_the_final_green_deterministic_receipt_and_assert_exact_match_at_launch",
+    "distribution_seam": "the running N20 constructive fan is a screening gate; it cannot alone unlock stochastic training on arbitrary N24 functions",
+    "required": "constructive_abductive_injective_pass_plus_arbitrary_N24_calibration_competence_plus_green_guardrail"
+  }
+}

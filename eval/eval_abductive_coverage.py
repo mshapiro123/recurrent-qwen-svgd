@@ -22,6 +22,12 @@ from eval.eval_synthetic_depth_active_labels import (
     read_jsonl,
     score_candidates_all_loops,
 )
+from eval.phase_g_coverage import (
+    categorical_entropy,
+    exact_coverage,
+    exact_valid_preimages,
+    temperature_for_target_entropy,
+)
 
 
 def parse_sample_counts(text: str) -> list[int]:
@@ -71,6 +77,13 @@ def summarize_rows(rows: list[dict[str, Any]], sample_counts: list[int]) -> dict
         }
         result["greedy_valid_rate"] = result["greedy_valid"] / total if total else 0.0
         result["sampling"] = {}
+        temperatures = [float(row.get("sampling_temperature", 0.7)) for row in subset]
+        entropy_errors = [float(row.get("entropy_match_absolute_error", 0.0)) for row in subset]
+        result["mean_sampling_temperature"] = sum(temperatures) / total if total else None
+        result["mean_entropy_match_absolute_error"] = sum(entropy_errors) / total if total else None
+        result["entropy_match_clamp_rate"] = (
+            sum(int(row.get("entropy_match_clamped", False)) for row in subset) / total if total else None
+        )
         for count in sample_counts:
             key = str(count)
             values = [row["sampling"][key] for row in subset]
@@ -103,13 +116,31 @@ def summarize_rows(rows: list[dict[str, Any]], sample_counts: list[int]) -> dict
         str(count): aggregate([row for row in rows if int(row["coverage_denominator"]) == count])
         for count in sorted({int(row["coverage_denominator"]) for row in rows})
     }
+    by_preimage_stratum = {
+        str(stratum): aggregate([row for row in rows if str(row.get("preimage_stratum")) == stratum])
+        for stratum in sorted({str(row.get("preimage_stratum")) for row in rows})
+    }
     return {
         "kind": "abductive_exact_coverage",
         "rows": len(rows),
         "overall": aggregate(rows),
         "by_depth": by_depth,
         "by_solution_count": by_solution_count,
+        "by_preimage_stratum": by_preimage_stratum,
     }
+
+
+def read_target_entropies(path: str | None, *, field: str) -> dict[str, float]:
+    if not path:
+        return {}
+    rows = read_jsonl(path)
+    values: dict[str, float] = {}
+    for row in rows:
+        row_id = str(row.get("id") or row.get("instance_id"))
+        if field not in row:
+            raise KeyError(f"Entropy row {row_id} is missing field {field!r}")
+        values[row_id] = float(row[field])
+    return values
 
 
 def evaluate(args: argparse.Namespace) -> list[dict[str, Any]]:
@@ -118,6 +149,10 @@ def evaluate(args: argparse.Namespace) -> list[dict[str, Any]]:
     wrapper = load_recurrent_wrapper(args, args.checkpoint)
     sample_counts = parse_sample_counts(args.sample_counts)
     max_samples = max(sample_counts)
+    target_entropies = read_target_entropies(
+        getattr(args, "target_entropy_jsonl", None),
+        field=getattr(args, "target_entropy_field", "latent_candidate_entropy"),
+    )
     output_rows: list[dict[str, Any]] = []
     for row_index, row in enumerate(rows):
         if args.progress_every and (row_index == 0 or (row_index + 1) % args.progress_every == 0):
@@ -134,26 +169,53 @@ def evaluate(args: argparse.Namespace) -> list[dict[str, Any]]:
             loop_counts=[depth],
         )[depth]
         greedy = max(scores.items(), key=lambda item: item[1])[0]
+        row_id = str(row.get("id") or row.get("instance_id"))
+        exact_starts = exact_valid_preimages(row)
+        if target_entropies:
+            if row_id not in target_entropies:
+                raise KeyError(f"No target entropy for row {row_id}")
+            entropy_match = temperature_for_target_entropy(
+                scores,
+                target_entropies[row_id],
+                minimum=args.temperature_min,
+                maximum=args.temperature_max,
+                tolerance=args.entropy_tolerance,
+            )
+            sampling_temperature = float(entropy_match["temperature"])
+        else:
+            sampling_temperature = float(args.temperature)
+            achieved_entropy = categorical_entropy(scores, sampling_temperature)
+            entropy_match = {
+                "achieved_entropy": achieved_entropy,
+                "target_entropy": achieved_entropy,
+                "absolute_error": 0.0,
+                "clamped": False,
+            }
         generator = torch.Generator(device="cpu").manual_seed(int(args.seed) + row_index)
         samples = sample_names(
             scores,
             count=max_samples,
-            temperature=args.temperature,
+            temperature=sampling_temperature,
             generator=generator,
         )
-        valid_starts = {str(value) for value in row["valid_starts"]}
         output_rows.append(
             {
-                "id": row.get("id") or row.get("instance_id"),
+                "id": row_id,
                 "depth": depth,
                 "task_mode": row.get("task_mode"),
-                "valid_starts": sorted(valid_starts),
-                "coverage_denominator": len(valid_starts),
+                "preimage_stratum": row.get("preimage_stratum"),
+                "valid_starts": exact_starts,
+                "coverage_denominator": len(exact_starts),
                 "greedy_prediction": greedy,
-                "greedy_valid": greedy in valid_starts,
+                "greedy_valid": greedy in set(exact_starts),
                 "scores": scores if args.include_scores else None,
+                "sampling_temperature": sampling_temperature,
+                "answer_head_entropy": float(entropy_match["achieved_entropy"]),
+                "target_entropy": float(entropy_match["target_entropy"]),
+                "entropy_match_absolute_error": float(entropy_match["absolute_error"]),
+                "entropy_match_clamped": bool(entropy_match["clamped"]),
                 "sampling": {
-                    str(count): score_sample_prefix(samples[:count], valid_starts)
+                    str(count): exact_coverage(samples[:count], row)
                     for count in sample_counts
                 },
             }
@@ -170,6 +232,11 @@ def main() -> int:
     parser.add_argument("--output_summary", required=True)
     parser.add_argument("--sample_counts", default="1,2,4,8,20")
     parser.add_argument("--temperature", type=float, default=0.7)
+    parser.add_argument("--target_entropy_jsonl")
+    parser.add_argument("--target_entropy_field", default="latent_candidate_entropy")
+    parser.add_argument("--temperature_min", type=float, default=1e-3)
+    parser.add_argument("--temperature_max", type=float, default=100.0)
+    parser.add_argument("--entropy_tolerance", type=float, default=1e-6)
     parser.add_argument("--seed", type=int, default=2_718_281)
     parser.add_argument("--include_scores", action="store_true")
     parser.add_argument("--normalize_candidate_score", action=argparse.BooleanOptionalAction, default=True)
@@ -200,7 +267,12 @@ def main() -> int:
             "temperature": args.temperature,
             "sample_counts": sample_counts,
             "seed": args.seed,
-            "sampling_mode": "answer_head_temperature",
+            "sampling_mode": (
+                "answer_head_entropy_matched"
+                if args.target_entropy_jsonl
+                else "answer_head_fixed_temperature_provisional"
+            ),
+            "target_entropy_jsonl": args.target_entropy_jsonl,
         }
     )
     summary_path = Path(args.output_summary)
@@ -212,4 +284,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

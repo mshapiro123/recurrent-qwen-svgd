@@ -1,0 +1,24 @@
+{
+  "calibration_test_id_overlap": 0,
+  "comparators": [
+    "entropy_matched_answer_head_sampling_at_matched_K",
+    "deterministic_depth_at_matched_recurrent_transition_count"
+  ],
+  "deferred": [
+    "LPRM",
+    "per_trajectory_halting",
+    "SVGD"
+  ],
+  "frozen_manifest": "data/phase_g_alpha/manifest.json",
+  "gate_forms_locked": true,
+  "kind": "stage5_phase_g_alpha_prepare",
+  "only_remaining_blank": "numeric_margin_from_calibration_split_power_calculation",
+  "phase_g_alpha_preparation_complete": true,
+  "preregistration": "data/phase_g_alpha/preregistration.json",
+  "split_statuses": {
+    "calibration": "passed",
+    "test": "passed"
+  },
+  "status": "passed",
+  "substrate_gate": "constructive_experiment1_then_arbitrary_N24_calibration_competence_and_green_guardrail"
+}

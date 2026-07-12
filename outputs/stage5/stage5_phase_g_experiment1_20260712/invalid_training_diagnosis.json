@@ -1,0 +1,23 @@
+{
+  "kind": "stage5_phase_g_experiment1_invalid_training_diagnosis",
+  "run_id": "stage5_phase_g_experiment1_20260712",
+  "status": "invalid_no_active_supervision",
+  "evidence": {
+    "steps": 1000,
+    "loss_at_every_logged_step": 0.0,
+    "per_loop_label_active_at_every_logged_step": 0.0,
+    "trainable_gradient_rms_at_every_logged_step": 0.0,
+    "parameter_movement": "none",
+    "injective_smoke_correct": 9,
+    "injective_smoke_total": 128
+  },
+  "root_cause": "The prompt ended with a trailing space while completion and loop-completion strings lacked a leading space. Qwen boundary tokenization made prompt_len equal the full sequence length, masking every supervised token with -100.",
+  "interpretation": "The injective smoke result is an untrained-baseline readout and is not evidence against deterministic abduction or Phase G.",
+  "repair": {
+    "prompt_boundary": "Answer:",
+    "completion_boundary": " Name",
+    "require_active_supervision": true,
+    "require_nonzero_train_gradient": true,
+    "replacement_run_id": "stage5_phase_g_experiment1_fixed_boundary_20260712"
+  }
+}
