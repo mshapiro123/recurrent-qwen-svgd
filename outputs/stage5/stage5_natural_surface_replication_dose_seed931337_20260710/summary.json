@@ -1,7 +1,7 @@
 {
   "kind": "stage5_natural_surface_replication_dose",
   "run_id": "stage5_natural_surface_replication_dose_seed931337_20260710",
-  "status": "evaluated_step_6000",
+  "status": "finished",
   "source_summary": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.json",
   "train_seed": 931337,
   "save_steps": [
