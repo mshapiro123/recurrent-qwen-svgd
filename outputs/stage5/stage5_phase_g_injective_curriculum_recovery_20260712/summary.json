@@ -105,6 +105,16 @@
       "status": "passed"
     }
   },
+  "injective_train": {
+    "arm": "injective_control",
+    "checkpoint": "outputs/stage5/stage5_phase_g_injective_curriculum_recovery_20260712/train/injective_control/unfrozen_recurrent_step_2000.pt",
+    "checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_injective_curriculum_recovery_20260712/injective_control/unfrozen_recurrent_step_2000.pt",
+    "checkpoint_sha256": "fc98feb5d5bd450f7ecc4f6d43ce36fd436418d7ad2cd69df38a089d5ec453d1",
+    "config": "outputs/stage5/stage5_phase_g_injective_curriculum_recovery_20260712/configs/injective_control.yaml",
+    "max_steps": 2000,
+    "seed": 81001,
+    "train_jsonl": "outputs/stage5/stage5_phase_g_injective_curriculum_recovery_20260712/data/train_injective.jsonl"
+  },
   "keeper_gate": {
     "checkpoint": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/checkpoints/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/unfrozen_recurrent_step_2000.pt",
     "checkpoint_bytes": 370811845,
@@ -124,7 +134,7 @@
   },
   "kind": "stage5_phase_g_experiment1",
   "run_id": "stage5_phase_g_injective_curriculum_recovery_20260712",
-  "status": "data_ready",
+  "status": "injective_trained",
   "training_initialization": {
     "checkpoint": "outputs/stage5/stage5_phase_g_injective_curriculum_recovery_20260712/restored/explicit_training_init.pt",
     "checkpoint_sha256": "0d6cf119bd66290a2c85686bf58fdc6f9363109c8fdae0ea625f32d13409a1a6",
