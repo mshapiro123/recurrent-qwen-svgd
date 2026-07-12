@@ -19,6 +19,7 @@ from training.train_unfrozen_recurrent import (
     curriculum_target_counts,
     resolve_resume_lora_config,
     scheduled_loop_count,
+    seed_training_rng,
     trainable_parameter_norm_stats,
     trainable_parameter_summary,
 )
@@ -63,6 +64,19 @@ def test_chain_label_weight_ramps_then_holds_zero() -> None:
     assert chain_label_weight(5, 10, hold_frac=0.5) == 0.0
     assert chain_label_weight(9, 10, hold_frac=0.5) == 0.0
     assert chain_label_weight(0, 10, hold_frac=1.0) == 0.0
+
+
+def test_seed_training_rng_reproduces_torch_and_loader_streams() -> None:
+    first_loader = seed_training_rng(931337)
+    first_global = torch.rand(4)
+    first_order = torch.randperm(12, generator=first_loader)
+
+    second_loader = seed_training_rng(931337)
+    second_global = torch.rand(4)
+    second_order = torch.randperm(12, generator=second_loader)
+
+    assert torch.equal(first_global, second_global)
+    assert torch.equal(first_order, second_order)
 
 
 def test_resolve_resume_lora_config_reads_checkpoint_config(tmp_path) -> None:

@@ -134,6 +134,7 @@ def test_checkpoint_curve_best_by_metric_picks_best_step() -> None:
 
 def test_natural_transfer_training_config_accepts_explicit_save_steps(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("STAGE5_NATURAL_TRANSFER_SAVE_STEPS", "1000,1500,2000")
+    monkeypatch.setenv("STAGE5_NATURAL_TRANSFER_TRAIN_SEED", "931337")
 
     config_path = write_training_config(
         tmp_path,
@@ -149,6 +150,7 @@ def test_natural_transfer_training_config_accepts_explicit_save_steps(tmp_path, 
     assert "- 1000" in text
     assert "- 1500" in text
     assert "- 2000" in text
+    assert "seed: 931337" in text
 
 
 def test_receipt_compact_diagonal_excludes_non_diagonal_active_cells() -> None:

@@ -496,6 +496,7 @@ def write_training_config(
         "halt_target_nll_weight": 0.0,
         "loop_control_ce_weight": 0.0,
         "batch_size": int(os.environ.get("STAGE5_NATURAL_TRANSFER_BATCH_SIZE", "1")),
+        "seed": int(os.environ.get("STAGE5_NATURAL_TRANSFER_TRAIN_SEED", "0")),
         "optimizer": "adamw",
         "learning_rate": lr,
         "adamw_lr": lr,

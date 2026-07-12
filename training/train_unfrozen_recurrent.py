@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import random
 import sys
 from functools import partial
 from pathlib import Path
@@ -50,6 +51,17 @@ def cfg_float(cfg: dict[str, Any], key: str, default: float) -> float:
 def cfg_int(cfg: dict[str, Any], key: str, default: int) -> int:
     value = cfg.get(key, default)
     return default if value is None else int(value)
+
+
+def seed_training_rng(seed: int) -> torch.Generator:
+    """Seed model stochasticity and return a seeded CPU DataLoader generator."""
+
+    seed = int(seed)
+    random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    return torch.Generator(device="cpu").manual_seed(seed)
 
 
 def scheduled_loop_count(
@@ -549,6 +561,9 @@ def main() -> int:
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
     cfg = load_config(args.config)
+    training_seed = cfg_int(cfg, "seed", 0)
+    loader_generator = seed_training_rng(training_seed)
+    print(f"training_seed={training_seed}")
 
     tokenizer = AutoTokenizer.from_pretrained(cfg["model_name"])
     if tokenizer.pad_token_id is None:
@@ -575,6 +590,7 @@ def main() -> int:
         dataset,
         batch_size=cfg_int(cfg, "batch_size", 1),
         shuffle=True,
+        generator=loader_generator,
         collate_fn=partial(collate_causal_batch, pad_token_id=tokenizer.pad_token_id),
     )
     optimizer = build_optimizer(wrapper, cfg)
@@ -606,6 +622,7 @@ def main() -> int:
     summary = {
         "setup": setup,
         "optimizer_setup": optimizer_setup,
+        "training_seed": training_seed,
         "curriculum_trace": [],
         "interval_checkpoints": [],
     }

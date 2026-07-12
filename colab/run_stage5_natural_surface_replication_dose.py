@@ -302,6 +302,7 @@ def main() -> int:
 
     os.environ["STAGE5_NATURAL_TRANSFER_SAVE_STEPS"] = ",".join(str(step) for step in save_steps)
     os.environ["STAGE5_NATURAL_TRANSFER_SAVE_EVERY"] = "0"
+    os.environ["STAGE5_NATURAL_TRANSFER_TRAIN_SEED"] = str(train_seed)
     output_dir = out_dir / "train" / "verbal_rung_zero"
     backup_enabled = env_flag("STAGE5_NATURAL_REPLICATION_BACKUP_CHECKPOINTS_TO_DRIVE", "1")
     backups = payload.setdefault("checkpoint_backups", {})
