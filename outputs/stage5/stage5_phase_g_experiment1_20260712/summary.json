@@ -105,6 +105,16 @@
       "status": "passed"
     }
   },
+  "injective_train": {
+    "arm": "injective_control",
+    "checkpoint": "outputs/stage5/stage5_phase_g_experiment1_20260712/train/injective_control/unfrozen_recurrent_step_1000.pt",
+    "checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_experiment1_20260712/injective_control/unfrozen_recurrent_step_1000.pt",
+    "checkpoint_sha256": "63b1b2e5afedf34379974c528fd79fb959241011d8616f455e4632854420c34a",
+    "config": "outputs/stage5/stage5_phase_g_experiment1_20260712/configs/injective_control.yaml",
+    "max_steps": 1000,
+    "seed": 81001,
+    "train_jsonl": "outputs/stage5/stage5_phase_g_experiment1_20260712/data/train_injective.jsonl"
+  },
   "keeper_gate": {
     "checkpoint": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/checkpoints/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/unfrozen_recurrent_step_2000.pt",
     "checkpoint_bytes": 370811845,
@@ -124,5 +134,5 @@
   },
   "kind": "stage5_phase_g_experiment1",
   "run_id": "stage5_phase_g_experiment1_20260712",
-  "status": "data_ready"
+  "status": "injective_trained"
 }
