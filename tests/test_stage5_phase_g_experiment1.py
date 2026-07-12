@@ -45,7 +45,14 @@ def test_task_gate_requires_pooled_and_every_depth() -> None:
     assert result["min_depth_greedy_valid_rate"] == 0.79
 
 
-def test_arm_config_locks_seed_and_disables_stochastic_modules(tmp_path) -> None:
+def test_arm_config_locks_seed_and_disables_stochastic_modules(tmp_path, monkeypatch) -> None:
+    for name in (
+        "STAGE5_PHASE_G_EXP1_CURRICULUM_ENABLED",
+        "STAGE5_PHASE_G_EXP1_CURRICULUM_START",
+        "STAGE5_PHASE_G_EXP1_CURRICULUM_END",
+        "STAGE5_PHASE_G_EXP1_CURRICULUM_RAMP_COMPUTE",
+    ):
+        monkeypatch.delenv(name, raising=False)
     keeper = tmp_path / "keeper.pt"
     keeper.write_bytes(b"checkpoint")
     config_path = write_arm_config(
