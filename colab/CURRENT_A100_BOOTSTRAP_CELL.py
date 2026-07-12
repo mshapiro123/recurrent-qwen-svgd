@@ -98,6 +98,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "model_viability_queue" - queued no-training Qwen 3B/7B probes with VRAM-aware skipping.
 #   "natural_surface_prepare_cpu" - CPU-only verbal relay/pointer transfer dataset prep and manifest receipt.
 #   "natural_surface_transfer_rung0" - GPU frozen natural-surface baseline, then verbal rung-zero SFT.
+#   "phase_g_experiment1" - deterministic injective/abductive gates plus matched-K answer sampling.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 PREFER_LOCAL_HEAD = os.environ.get("STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD", "0").strip().lower() in {
@@ -2537,6 +2538,25 @@ TARGETS = {
             "STAGE5_NATURAL_REPLICATION_DTYPE": "bfloat16",
             "STAGE5_NATURAL_REPLICATION_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
             "STAGE5_NATURAL_REPLICATION_DISCONNECT": "0",
+        },
+    },
+    "phase_g_experiment1": {
+        "path": "colab/STAGE5_PHASE_G_EXPERIMENT1_CELL.py",
+        "markers": [
+            "STAGE5_PHASE_G_EXPERIMENT1_CELL_VERSION",
+            "phase_g_experiment1",
+            "colab/run_stage5_phase_g_experiment1.py",
+            "eval/eval_abductive_coverage.py",
+            "eval/eval_synthetic_diagonal_guardrail.py",
+            "STAGE5_PHASE_G_EXP1_MAX_STEPS",
+            "deterministic controls; latent, learned halting, LPRM, and SVGD disabled",
+        ],
+        "env": {
+            "STAGE5_PHASE_G_EXP1_RUN_ID": "stage5_phase_g_experiment1_20260712",
+            "STAGE5_PHASE_G_EXP1_MAX_STEPS": "1000",
+            "STAGE5_PHASE_G_EXP1_DATA_SEED": "1104729",
+            "STAGE5_PHASE_G_EXP1_DTYPE": "bfloat16",
+            "STAGE5_PHASE_G_EXP1_DISCONNECT": "0",
         },
     },
     "splice_injection_diagnostic": {
