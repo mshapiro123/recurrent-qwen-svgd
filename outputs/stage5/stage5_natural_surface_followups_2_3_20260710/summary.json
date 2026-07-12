@@ -1,7 +1,7 @@
 {
   "kind": "stage5_natural_surface_followups_2_3",
   "run_id": "stage5_natural_surface_followups_2_3_20260710",
-  "status": "running",
+  "status": "finished",
   "source_receipt_run_id": "stage5_natural_surface_receipts_20260709_210151",
   "active_evals": {
     "frozen_n24": {
