@@ -1033,3 +1033,20 @@ Colab/Drive backups for selected runs.
   untrained baseline. The corrected run uses ID
   `stage5_phase_g_experiment1_fixed_boundary_20260712`, canonical `Answer:` +
   `" Name"` boundaries, and hard failures on zero supervision or zero gradient.
+- 2026-07-12 valid Phase G deterministic injective screen: the corrected run
+  restored active supervision and nonzero gradients, trained 1,000 updates, and
+  produced a sharp one-step/composition split. Depth 1 was 16/16, while depths
+  2-8 were 6/112 (5.36%), essentially the N=20 chance rate of 5%; pooled smoke
+  was 22/128 (17.19%) against the locked 50% smoke floor. The runner therefore
+  recorded `blocked_injective_smoke` and intentionally returned exit code 2.
+  This blocks abductive and G-alpha work but is not yet a final substrate
+  negative because the run used less than one pass-equivalent of updates and
+  disabled the recurrence curriculum.
+- 2026-07-12 Phase G injective curriculum recovery: commit `d705ba8` adds one
+  bounded continuation from the exact corrected step-1000 checkpoint, verified
+  by SHA `0d6cf119...a1a6`. It changes only dose and recurrent curriculum: 2,000
+  additional updates, a linear 2-to-8 loop/compute ramp, frozen row hashes, and
+  deterministic K=1 competence gates. Latent heads, learned halting, LPRM, and
+  SVGD remain disabled. If the same depth-1-only pattern survives, the next
+  decision is a short train-versus-held-out/micro-overfit autopsy versus one
+  clean curriculum-from-keeper restart, not stochastic-head construction.
