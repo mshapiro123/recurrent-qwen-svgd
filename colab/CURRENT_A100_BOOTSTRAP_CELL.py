@@ -99,6 +99,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "natural_surface_prepare_cpu" - CPU-only verbal relay/pointer transfer dataset prep and manifest receipt.
 #   "natural_surface_transfer_rung0" - GPU frozen natural-surface baseline, then verbal rung-zero SFT.
 #   "phase_g_experiment1" - deterministic injective/abductive gates plus matched-K answer sampling.
+#   "phase_g_injective_curriculum_recovery" - continue the fixed-boundary injective checkpoint with a 2-to-8 loop curriculum.
 #   "phase_g_n24_calibration_gate" - arbitrary-function deterministic substrate gate before G-alpha.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
@@ -2557,6 +2558,31 @@ TARGETS = {
             "STAGE5_PHASE_G_EXP1_MAX_STEPS": "1000",
             "STAGE5_PHASE_G_EXP1_DATA_SEED": "1104729",
             "STAGE5_PHASE_G_EXP1_DTYPE": "bfloat16",
+            "STAGE5_PHASE_G_EXP1_DISCONNECT": "0",
+        },
+    },
+    "phase_g_injective_curriculum_recovery": {
+        "path": "colab/STAGE5_PHASE_G_EXPERIMENT1_CELL.py",
+        "markers": [
+            "STAGE5_PHASE_G_EXPERIMENT1_CELL_VERSION",
+            "phase_g_experiment1",
+            "colab/run_stage5_phase_g_experiment1.py",
+            "eval/eval_abductive_coverage.py",
+            "STAGE5_PHASE_G_EXP1_MAX_STEPS",
+            "deterministic controls; latent, learned halting, LPRM, and SVGD disabled",
+        ],
+        "env": {
+            "STAGE5_PHASE_G_EXP1_RUN_ID": "stage5_phase_g_injective_curriculum_recovery_20260712",
+            "STAGE5_PHASE_G_EXP1_MAX_STEPS": "2000",
+            "STAGE5_PHASE_G_EXP1_DATA_SEED": "1104729",
+            "STAGE5_PHASE_G_EXP1_DTYPE": "bfloat16",
+            "STAGE5_PHASE_G_EXP1_INIT_CHECKPOINT": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_experiment1_fixed_boundary_20260712/injective_control/unfrozen_recurrent_step_1000.pt",
+            "STAGE5_PHASE_G_EXP1_INIT_SHA256": "0d6cf119bd66290a2c85686bf58fdc6f9363109c8fdae0ea625f32d13409a1a6",
+            "STAGE5_PHASE_G_EXP1_CURRICULUM_ENABLED": "1",
+            "STAGE5_PHASE_G_EXP1_CURRICULUM_START": "2",
+            "STAGE5_PHASE_G_EXP1_CURRICULUM_END": "8",
+            "STAGE5_PHASE_G_EXP1_CURRICULUM_RAMP_COMPUTE": "1",
+            "STAGE5_PHASE_G_EXP1_GATE_SAMPLE_COUNTS": "1",
             "STAGE5_PHASE_G_EXP1_DISCONNECT": "0",
         },
     },

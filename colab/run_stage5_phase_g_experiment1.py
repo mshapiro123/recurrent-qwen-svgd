@@ -64,6 +64,7 @@ def write_summary(run_dir: Path, payload: dict[str, Any]) -> None:
         f"- Status: `{payload['status']}`",
         f"- Keeper: `{payload['keeper_gate']['checkpoint']}`",
         f"- Keeper SHA256: `{payload['keeper_gate']['checkpoint_sha256']}`",
+        f"- Training initialization: `{payload.get('training_initialization')}`",
         f"- Injective gate: `{payload.get('injective_gate')}`",
         f"- Abductive gate: `{payload.get('abductive_gate')}`",
         f"- Synthetic guardrail: `{payload.get('synthetic_guardrail')}`",
@@ -72,6 +73,47 @@ def write_summary(run_dir: Path, payload: dict[str, Any]) -> None:
     ]
     (run_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print((run_dir / "summary.md").read_text(encoding="utf-8"), flush=True)
+
+
+def env_flag(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return bool(default)
+    return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def resolve_training_initialization(
+    run_dir: Path,
+    *,
+    default_checkpoint: Path,
+) -> tuple[Path, dict[str, Any]]:
+    override = os.environ.get("STAGE5_PHASE_G_EXP1_INIT_CHECKPOINT", "").strip()
+    if not override:
+        return default_checkpoint, {
+            "kind": "locked_keeper",
+            "checkpoint": path_for_cli(default_checkpoint),
+            "checkpoint_sha256": sha256_file(default_checkpoint),
+        }
+
+    checkpoint, metadata = restore_checkpoint(
+        [override],
+        run_dir / "restored" / "explicit_training_init.pt",
+        label="phase_g_explicit_training_init",
+    )
+    expected_sha = os.environ.get("STAGE5_PHASE_G_EXP1_INIT_SHA256", "").strip()
+    actual_sha = metadata["selected_checkpoint_sha256"]
+    if not expected_sha:
+        raise RuntimeError("Explicit Phase G training initialization requires INIT_SHA256")
+    if actual_sha != expected_sha:
+        raise RuntimeError(
+            f"Explicit Phase G training initialization SHA mismatch: {actual_sha} != {expected_sha}"
+        )
+    return checkpoint, {
+        "kind": "explicit_continuation",
+        "checkpoint": path_for_cli(checkpoint),
+        "checkpoint_source": metadata["selected_checkpoint_source"],
+        "checkpoint_sha256": actual_sha,
+    }
 
 
 def publish_lightweight(run_dir: Path, *, message: str) -> None:
@@ -105,6 +147,18 @@ def write_arm_config(
     seed: int,
 ) -> Path:
     output_dir = run_dir / "train" / arm
+    curriculum_enabled = env_flag("STAGE5_PHASE_G_EXP1_CURRICULUM_ENABLED", False)
+    curriculum_start = int(os.environ.get("STAGE5_PHASE_G_EXP1_CURRICULUM_START", "8"))
+    curriculum_end = int(os.environ.get("STAGE5_PHASE_G_EXP1_CURRICULUM_END", "8"))
+    curriculum_ramp_compute = env_flag(
+        "STAGE5_PHASE_G_EXP1_CURRICULUM_RAMP_COMPUTE",
+        False,
+    )
+    if not 1 <= curriculum_start <= curriculum_end <= 8:
+        raise ValueError(
+            "Phase G recurrence curriculum requires 1 <= start <= end <= 8; "
+            f"got {curriculum_start}..{curriculum_end}"
+        )
     cfg = {
         "model_name": os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-0.5B-Instruct"),
         "dtype": os.environ.get("STAGE5_PHASE_G_EXP1_DTYPE", "bfloat16"),
@@ -150,12 +204,12 @@ def write_arm_config(
             "latent": False,
         },
         "recurrence_curriculum": {
-            "enabled": False,
-            "start_loop": 8,
-            "end_loop": 8,
+            "enabled": curriculum_enabled,
+            "start_loop": curriculum_start,
+            "end_loop": curriculum_end,
             "schedule": "linear",
             "target_source": "row_capped",
-            "ramp_compute": False,
+            "ramp_compute": curriculum_ramp_compute,
         },
         "synthetic_phase": "phase_g_deterministic_gate",
         "synthetic_stage": arm,
@@ -264,7 +318,7 @@ def run_coverage_eval(
             "--output_summary",
             path_for_cli(summary_path),
             "--sample_counts",
-            "1,2,4,8,20",
+            os.environ.get("STAGE5_PHASE_G_EXP1_GATE_SAMPLE_COUNTS", "1,2,4,8,20"),
             "--temperature",
             "0.7",
             "--seed",
@@ -359,6 +413,11 @@ def main() -> int:
     if keeper_restore["selected_checkpoint_sha256"] != keeper_gate["checkpoint_sha256"]:
         raise RuntimeError("Locked keeper SHA does not match the preregistered receipt")
     payload["keeper_gate"] = keeper_gate
+    training_init, training_init_receipt = resolve_training_initialization(
+        run_dir,
+        default_checkpoint=keeper,
+    )
+    payload["training_initialization"] = training_init_receipt
 
     datasets = generate_gate_data(run_dir, seed=int(os.environ.get("STAGE5_PHASE_G_EXP1_DATA_SEED", "1104729")))
     payload["datasets"] = datasets
@@ -377,7 +436,7 @@ def main() -> int:
             run_dir,
             arm="injective_control",
             train_jsonl=data_dir / "train_injective.jsonl",
-            keeper=keeper,
+            keeper=training_init,
             max_steps=max_steps,
             seed=81_001,
         )

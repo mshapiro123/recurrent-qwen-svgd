@@ -6,6 +6,7 @@ import yaml
 
 from colab.run_stage5_phase_g_experiment1 import (
     assess_task,
+    resolve_training_initialization,
     restore_stage_checkpoint,
     subset_by_depth,
     write_arm_config,
@@ -66,6 +67,49 @@ def test_arm_config_locks_seed_and_disables_stochastic_modules(tmp_path) -> None
     assert config["require_nonzero_train_gradient"] is True
 
 
+def test_arm_config_supports_explicit_recurrence_curriculum(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("STAGE5_PHASE_G_EXP1_CURRICULUM_ENABLED", "1")
+    monkeypatch.setenv("STAGE5_PHASE_G_EXP1_CURRICULUM_START", "2")
+    monkeypatch.setenv("STAGE5_PHASE_G_EXP1_CURRICULUM_END", "8")
+    monkeypatch.setenv("STAGE5_PHASE_G_EXP1_CURRICULUM_RAMP_COMPUTE", "1")
+
+    path = write_arm_config(
+        tmp_path,
+        arm="injective_curriculum_recovery",
+        keeper=tmp_path / "parent.pt",
+        max_steps=2000,
+        seed=81001,
+    )
+    config = yaml.safe_load(path.read_text(encoding="utf-8"))
+
+    assert config["resume_from"].endswith("parent.pt")
+    assert config["recurrence_curriculum"] == {
+        "enabled": True,
+        "start_loop": 2,
+        "end_loop": 8,
+        "schedule": "linear",
+        "target_source": "row_capped",
+        "ramp_compute": True,
+    }
+
+
+def test_training_initialization_requires_matching_override_sha(tmp_path, monkeypatch) -> None:
+    checkpoint = tmp_path / "parent.pt"
+    checkpoint.write_bytes(b"parent-checkpoint")
+    expected_sha = __import__("hashlib").sha256(checkpoint.read_bytes()).hexdigest()
+    monkeypatch.setenv("STAGE5_PHASE_G_EXP1_INIT_CHECKPOINT", str(checkpoint))
+    monkeypatch.setenv("STAGE5_PHASE_G_EXP1_INIT_SHA256", expected_sha)
+
+    resolved, receipt = resolve_training_initialization(
+        tmp_path / "run",
+        default_checkpoint=tmp_path / "keeper.pt",
+    )
+
+    assert resolved.read_bytes() == checkpoint.read_bytes()
+    assert receipt["kind"] == "explicit_continuation"
+    assert receipt["checkpoint_sha256"] == expected_sha
+
+
 def test_restore_stage_checkpoint_rejects_wrong_sha(tmp_path, monkeypatch) -> None:
     restored = tmp_path / "restored.pt"
     restored.write_bytes(b"restored")
@@ -91,8 +135,12 @@ def test_bootstrap_exposes_phase_g_experiment1_target() -> None:
     text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
 
     assert '"phase_g_experiment1"' in text
+    assert '"phase_g_injective_curriculum_recovery"' in text
     assert "STAGE5_PHASE_G_EXPERIMENT1_CELL_VERSION" in text
     assert "colab/run_stage5_phase_g_experiment1.py" in text
+    assert '"STAGE5_PHASE_G_EXP1_CURRICULUM_START": "2"' in text
+    assert '"STAGE5_PHASE_G_EXP1_CURRICULUM_END": "8"' in text
+    assert '"STAGE5_PHASE_G_EXP1_GATE_SAMPLE_COUNTS": "1"' in text
 
 
 def test_experiment1_dataset_hashes_remain_resume_compatible() -> None:
