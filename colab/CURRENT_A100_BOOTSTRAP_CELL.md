@@ -3,7 +3,7 @@ import base64, json, os, subprocess, time, urllib.request
 from google.colab import userdata
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
-REF = "main"
+REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main").strip() or "main"
 BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 
 # Safe default: verify Drive/checkpoint visibility on a CPU/cheap runtime.
@@ -2853,10 +2853,17 @@ def github_json(url):
         return json.loads(response.read().decode("utf-8"))
 
 
-ref_payload = github_json(
-    f"https://api.github.com/repos/{REPO}/git/ref/heads/{REF}?cache_bust={int(time.time())}"
-)
-RESOLVED_REF = ((ref_payload.get("object") or {}).get("sha") or REF).strip()
+def is_commit_sha(value):
+    return len(value) == 40 and all(character in "0123456789abcdefABCDEF" for character in value)
+
+
+if is_commit_sha(REF):
+    RESOLVED_REF = REF.lower()
+else:
+    ref_payload = github_json(
+        f"https://api.github.com/repos/{REPO}/git/ref/heads/{REF}?cache_bust={int(time.time())}"
+    )
+    RESOLVED_REF = ((ref_payload.get("object") or {}).get("sha") or REF).strip()
 if PREFER_LOCAL_HEAD:
     try:
         local_head = subprocess.check_output(

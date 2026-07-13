@@ -24,8 +24,8 @@ from colab.stage5_chain_consolidation_utils import path_for_cli  # noqa: E402
 
 TRAIN_SOURCE = ROOT / "outputs/stage5/stage5_depth_support_ladder8_20260705_204923/data/train_chain_symbol_sft.jsonl"
 EVAL_SOURCE = ROOT / "outputs/stage5/stage5_synthetic_depth_frozen_eval_v2_depth14/data/test_chain_mcq.jsonl"
-TRAIN_SHA256 = "260d5c11c0b6e97d1f09c9356b1eaedbde86cceac4053cc6bf561e53d0176bde"
-EVAL_SHA256 = "aaa71c3d4cc500f68fac7ee6f5f0e31d9e11570bdff90adb805c769c12c66cd3"
+TRAIN_SHA256 = "cf61c14c2629f2caa7e1b6bd100adb122a468d5285b74970aaa4aebfbb56fd12"
+EVAL_SHA256 = "3de844669aba303063e6932f5852914ee0993e531c8e65c2a4c4b18e219b3fc8"
 MODEL_REVISIONS = {
     "Qwen/Qwen2.5-0.5B-Instruct": "7ae557604adf67be50417f59c2c2f167def9a775",
     "Qwen/Qwen2.5-1.5B-Instruct": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
@@ -33,12 +33,10 @@ MODEL_REVISIONS = {
 ALLOWED_ARMS = ("B", "C", "D")
 
 
-def sha256_file(path: str | Path) -> str:
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as handle:
-        for block in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
+def sha256_jsonl_content(path: str | Path) -> str:
+    """Hash JSONL content independently of checkout newline convention."""
+    content = Path(path).read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return hashlib.sha256(content).hexdigest()
 
 
 def read_json(path: str | Path) -> dict[str, Any]:
@@ -202,9 +200,9 @@ def main() -> int:
     )
     run_dir = ROOT / "outputs/stage5" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
-    if sha256_file(TRAIN_SOURCE) != TRAIN_SHA256:
+    if sha256_jsonl_content(TRAIN_SOURCE) != TRAIN_SHA256:
         raise RuntimeError("Phase A train rows do not match the locked SHA256")
-    if sha256_file(EVAL_SOURCE) != EVAL_SHA256:
+    if sha256_jsonl_content(EVAL_SOURCE) != EVAL_SHA256:
         raise RuntimeError("Phase A frozen eval rows do not match the locked SHA256")
     gpu = _gpu_preflight(arms)
     source_rows = read_jsonl(TRAIN_SOURCE)
@@ -217,6 +215,7 @@ def main() -> int:
         "optimizer_contract": "full_model_adamw_fp32_parameters_and_moments_bf16_compute",
         "steps": 4000,
         "data": {
+            "hash_semantics": "sha256_newline_normalized_jsonl_bytes",
             "train_source": path_for_cli(TRAIN_SOURCE),
             "train_sha256": TRAIN_SHA256,
             "train_rows": len(source_rows),

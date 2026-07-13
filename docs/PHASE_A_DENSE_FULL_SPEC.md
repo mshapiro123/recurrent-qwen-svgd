@@ -7,9 +7,12 @@ parameters and AdamW moments, BF16 forward/backward compute, effective batch 8,
 2e-6 learning rate, and 4,000 optimizer steps.
 
 The locked training source has SHA256
-`260d5c11c0b6e97d1f09c9356b1eaedbde86cceac4053cc6bf561e53d0176bde`.
+`cf61c14c2629f2caa7e1b6bd100adb122a468d5285b74970aaa4aebfbb56fd12`.
 The locked depth-1..14 evaluation source has SHA256
-`aaa71c3d4cc500f68fac7ee6f5f0e31d9e11570bdff90adb805c769c12c66cd3`.
+`3de844669aba303063e6932f5852914ee0993e531c8e65c2a4c4b18e219b3fc8`.
+
+These are SHA256 hashes of the JSONL bytes after normalizing CRLF/CR to LF, so
+the same Git rows have identical receipts on Windows and Linux/Colab.
 
 - B trains direct final symbols.
 - C trains serialized orbit steps followed by the same final symbol.

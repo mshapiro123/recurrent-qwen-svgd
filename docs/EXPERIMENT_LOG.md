@@ -1123,3 +1123,12 @@ Colab/Drive backups for selected runs.
   locked train/eval hashes. B is direct, C is serialized scratchpad, and D is
   the 1.5B direct exchange-rate arm. Checkpoints are backed up to Drive and
   lightweight receipts publish per arm so the lanes can run concurrently.
+- 2026-07-13 Phase A dense preflight correction: both dense lanes stopped
+  before model load because their dataset locks used byte hashes generated
+  from a Windows CRLF checkout, while Colab checked out identical JSONL rows
+  with LF endings. The lock now hashes newline-normalized JSONL bytes and is
+  regression-tested against both conventions. The same logs exposed that the
+  outer launcher SHA did not pin the nested target fetch; `STAGE5_BOOTSTRAP_REF`
+  now accepts an immutable 40-character commit SHA so concurrent result pushes
+  cannot change the code executed by another lane. No dense training occurred
+  before either correction.

@@ -4,10 +4,13 @@ from pathlib import Path
 
 from colab.run_stage5_phase_a_dense_full import (
     EVAL_SHA256,
+    EVAL_SOURCE,
     TRAIN_SHA256,
+    TRAIN_SOURCE,
     arm_spec,
     build_arm_rows,
     parse_arms,
+    sha256_jsonl_content,
 )
 from eval.eval_synthetic_depth_dense import extract_final_symbol, summarize_rows
 
@@ -75,7 +78,21 @@ def test_dense_summary_is_depth_stratified() -> None:
 
 
 def test_phase_a_hashes_and_bootstrap_target_are_locked() -> None:
-    assert TRAIN_SHA256 == "260d5c11c0b6e97d1f09c9356b1eaedbde86cceac4053cc6bf561e53d0176bde"
-    assert EVAL_SHA256 == "aaa71c3d4cc500f68fac7ee6f5f0e31d9e11570bdff90adb805c769c12c66cd3"
+    assert TRAIN_SHA256 == "cf61c14c2629f2caa7e1b6bd100adb122a468d5285b74970aaa4aebfbb56fd12"
+    assert EVAL_SHA256 == "3de844669aba303063e6932f5852914ee0993e531c8e65c2a4c4b18e219b3fc8"
+    assert sha256_jsonl_content(TRAIN_SOURCE) == TRAIN_SHA256
+    assert sha256_jsonl_content(EVAL_SOURCE) == EVAL_SHA256
     bootstrap = Path("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     assert '"phase_a_dense_full"' in bootstrap
+    assert 'os.environ.get("STAGE5_BOOTSTRAP_REF", "main")' in bootstrap
+    assert "if is_commit_sha(REF):" in bootstrap
+
+
+def test_jsonl_content_hash_is_newline_invariant(tmp_path: Path) -> None:
+    lf = tmp_path / "lf.jsonl"
+    crlf = tmp_path / "crlf.jsonl"
+    content = b'{"id":1}\n{"id":2}\n'
+    lf.write_bytes(content)
+    crlf.write_bytes(content.replace(b"\n", b"\r\n"))
+
+    assert sha256_jsonl_content(lf) == sha256_jsonl_content(crlf)
