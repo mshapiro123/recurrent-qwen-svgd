@@ -1895,6 +1895,6 @@
     }
   },
   "run_id": "stage5_phase_a_dense_full_bc_20260713",
-  "status": "arm_C_finished",
+  "status": "finished",
   "steps": 4000
 }
