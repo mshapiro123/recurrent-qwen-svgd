@@ -72,6 +72,12 @@ The preregistered readings are:
 3. Both arms expensive or stalled: composition itself is difficult in this format.
 4. F advances while C stalls: instrumentation alarm.
 
+Post-run reporting clarification: when C reaches the bar and F stalls at the
+same bounded dose, the receipt is `experiment_stalled_at_matched_dose`. That
+result establishes a directional representation/operation asymmetry at the
+matched dose, but it is not relabeled as the preregistered >=5x cost unless
+both doses-to-bar are actually observed and their ratio clears 5x.
+
 Muon is not part of this causal test. It may be evaluated later as a separately
 preregistered optimizer ablation if the connected, dose-balanced AdamW job
 stalls.

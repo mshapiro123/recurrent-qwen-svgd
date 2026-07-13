@@ -1102,3 +1102,24 @@ Colab/Drive backups for selected runs.
   target decodability, and stratified Phase-1 CKA are the diagnostic receipts.
   Muon is excluded from this matched causal test and remains a later optimizer
   ablation only. Full spec: `docs/INVERSE_COMPOSITION_STAIRCASE_SPEC.md`.
+- 2026-07-13 inverse-composition staircase result: the run stopped validly at
+  cap 2. The inverse-table/forward-lookup control reached 62/64 at 1,598.4
+  newest-loop weighted labels and preserved the synthetic guardrail at a
+  0.9375 minimum. The forward-table/reverse-search arm reached only 3/64 at
+  1,603.2 weighted labels and reduced the guardrail minimum to 0.21875. Its
+  first inverse transition still reached 55/64 on depth-2 rows, but the second
+  transition reached only 3/64, localizing the failure to repeated inverse
+  composition. The receipt label was corrected post-run from the overstrong
+  `non_native_position_cost` to `experiment_stalled_at_matched_dose`: the run
+  did not observe the preregistered five-fold dose ratio. Phase G-alpha remains
+  closed.
+- 2026-07-13 inverse-table rebase and parallel Phase A implementation: target
+  `inverse_table_rebase_caps3_4` starts from exact C cap-2 SHA
+  `bc1de1cd...5b01`, runs only caps 3 and 4, retains the 46/64 and 0.93 gates,
+  and adds a final natural-surface canary before pausing. Independent target
+  `phase_a_dense_full` implements dense arms B/C on an L4 and D on an A100.
+  All dense arms now use full-model AdamW with FP32 parameters/moments, BF16
+  compute, effective batch 8, 2e-6 LR, 4,000 steps, pinned Qwen revisions, and
+  locked train/eval hashes. B is direct, C is serialized scratchpad, and D is
+  the 1.5B direct exchange-rate arm. Checkpoints are backed up to Drive and
+  lightweight receipts publish per arm so the lanes can run concurrently.

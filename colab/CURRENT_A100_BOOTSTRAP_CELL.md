@@ -93,6 +93,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "synthetic_release_receipts" - CPU-only dashboard of synthetic-line release receipts and missing guardrails.
 #   "n24_support12_rung" - final N-24 support-12 synthetic rung with locked gates and canary policy.
 #   "phase_a_surpass_prereg" - publish the same-reader Phase-A surpass comparison preregistration.
+#   "phase_a_dense_full" - full-model AdamW dense B/C or D controls on locked synthetic rows.
 #   "splice_injection_diagnostic" - inference-only hidden-state splice test for state-driven iteration vs shortcut.
 #   "gradient_path_audit" - read-only per-loop gradient matrix plus finite-difference bridge check.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
@@ -103,6 +104,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "phase_g_injective_curriculum_recovery" - continue the fixed-boundary injective checkpoint with a 2-to-8 loop curriculum.
 #   "phase_g_curriculum_autopsy" - read-only train/held-out loop matrix and curriculum-construction audit.
 #   "inverse_composition_staircase" - matched forward/inverse-table staircase with weighted loop-dose gates.
+#   "inverse_table_rebase_caps3_4" - continue the green inverse-table control through caps 3 and 4.
 #   "phase_g_n24_calibration_gate" - arbitrary-function deterministic substrate gate before G-alpha.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
@@ -2564,6 +2566,25 @@ TARGETS = {
             "STAGE5_PHASE_G_EXP1_DISCONNECT": "0",
         },
     },
+    "phase_a_dense_full": {
+        "path": "colab/STAGE5_PHASE_A_DENSE_FULL_CELL.py",
+        "markers": [
+            "STAGE5_PHASE_A_DENSE_FULL_CELL_VERSION",
+            "phase_a_dense_full",
+            "adamw_full_fp32_state",
+            "STAGE5_PHASE_A_DENSE_ARMS",
+            "tests/test_stage5_phase_a_dense_full.py",
+            "tests/test_train_dense_full.py",
+            "eval/eval_synthetic_depth_dense.py",
+        ],
+        "env": {
+            "STAGE5_PHASE_A_DENSE_ARMS": "B,C",
+            "STAGE5_PHASE_A_DENSE_RUN_ID": "stage5_phase_a_dense_full_bc_20260713",
+            "STAGE5_PHASE_A_DENSE_LR": "2e-6",
+            "STAGE5_PHASE_A_DENSE_SEED": "931337",
+            "STAGE5_PHASE_A_DENSE_DISCONNECT": "0",
+        },
+    },
     "phase_g_injective_curriculum_recovery": {
         "path": "colab/STAGE5_PHASE_G_EXPERIMENT1_CELL.py",
         "markers": [
@@ -2624,6 +2645,23 @@ TARGETS = {
             "STAGE5_STAIRCASE_DTYPE": "bfloat16",
             "STAGE5_STAIRCASE_PROBE_PERMUTATIONS": "100",
             "STAGE5_STAIRCASE_DISCONNECT": "0",
+        },
+    },
+    "inverse_table_rebase_caps3_4": {
+        "path": "colab/STAGE5_INVERSE_TABLE_REBASE_CELL.py",
+        "markers": [
+            "STAGE5_INVERSE_TABLE_REBASE_CELL_VERSION",
+            "inverse_table_rebase_caps3_4",
+            "SOURCE_CAP2_SHA256",
+            "tests/test_stage5_inverse_table_rebase.py",
+            "rebase_caps3_4_green_pending_review",
+            "accepted_returncodes={0, 2}",
+        ],
+        "env": {
+            "STAGE5_REBASE_RUN_ID": "stage5_inverse_table_rebase_caps3_4_20260713",
+            "STAGE5_REBASE_SOURCE_SUMMARY": "outputs/stage5/stage5_inverse_composition_staircase_20260713/summary.json",
+            "STAGE5_STAIRCASE_DTYPE": "bfloat16",
+            "STAGE5_REBASE_DISCONNECT": "0",
         },
     },
     "phase_g_n24_calibration_gate": {

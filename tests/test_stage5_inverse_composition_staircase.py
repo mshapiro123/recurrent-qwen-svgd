@@ -52,6 +52,10 @@ def test_matched_arm_reading_uses_preregistered_ratio_quadrants() -> None:
     assert classify_matched_arms(experiment_dose=100.0, control_dose=100.0) == "exposure_starvation"
     assert classify_matched_arms(experiment_dose=1400.0, control_dose=1300.0) == "composition_hard_both"
     assert classify_matched_arms(experiment_dose=None, control_dose=None) == "composition_hard_both"
+    assert (
+        classify_matched_arms(experiment_dose=None, control_dose=1600.0)
+        == "experiment_stalled_at_matched_dose"
+    )
     assert classify_matched_arms(experiment_dose=50.0, control_dose=None) == "instrumentation_alarm"
 
 

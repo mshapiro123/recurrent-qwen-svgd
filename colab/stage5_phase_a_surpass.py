@@ -108,9 +108,9 @@ def phase_a_preregistration() -> dict[str, Any]:
         "kind": "stage5_phase_a_surpass_preregistration",
         "arms": {
             "A_looped": "support-8 dose-arm checkpoint, same-reader final-symbol metric",
-            "B_dense_direct": "dense Qwen2.5-0.5B LoRA direct final-symbol SFT, 4000 steps",
-            "C_dense_scratchpad": "dense Qwen2.5-0.5B LoRA serialized-orbit scratchpad SFT, 4000 steps",
-            "D_dense_1p5b_direct_optional": "dense Qwen2.5-1.5B direct-answer exchange-rate arm",
+            "B_dense_direct": "full-model Qwen2.5-0.5B AdamW direct final-symbol SFT, 4000 steps",
+            "C_dense_scratchpad": "full-model Qwen2.5-0.5B AdamW serialized-orbit scratchpad SFT, 4000 steps",
+            "D_dense_1p5b_direct_optional": "full-model Qwen2.5-1.5B AdamW direct-answer exchange-rate arm",
         },
         "train_distribution": {
             "n_symbols": 16,
@@ -129,5 +129,6 @@ def phase_a_preregistration() -> dict[str, Any]:
             "looped_arm_context_growth": "zero text context growth across latent loops",
             "scratchpad_arm_context_growth": "linear serialized-orbit context growth",
             "flop_claim_policy": "do not claim raw FLOP advantage; report one parallel pass per latent step and sequence/context tradeoff",
+            "optimizer_protocol": "all dense arms use full-model AdamW with FP32 parameters/moments and BF16 compute",
         },
     }

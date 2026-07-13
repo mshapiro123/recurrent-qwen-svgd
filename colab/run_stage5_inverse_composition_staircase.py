@@ -225,7 +225,9 @@ def classify_matched_arms(
     if experiment_dose is None and control_dose is None:
         return "composition_hard_both"
     if experiment_dose is None:
-        return "non_native_position_cost"
+        # A stalled experiment at the matched dose establishes a directional
+        # asymmetry, but it does not measure the preregistered >=5x ratio.
+        return "experiment_stalled_at_matched_dose"
     assert control_dose is not None
     if control_dose <= 0.0:
         return "instrumentation_alarm"

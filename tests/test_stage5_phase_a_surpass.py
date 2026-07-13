@@ -33,4 +33,6 @@ def test_phase_a_preregistration_names_same_reader_metric_and_compute_policy() -
 
     assert payload["kind"] == "stage5_phase_a_surpass_preregistration"
     assert "same-reader final-symbol metric" in payload["arms"]["A_looped"]
+    assert "full-model" in payload["arms"]["B_dense_direct"]
+    assert "FP32 parameters/moments" in payload["compute_ledger"]["optimizer_protocol"]
     assert "do not claim raw FLOP advantage" in payload["compute_ledger"]["flop_claim_policy"]

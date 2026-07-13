@@ -59,9 +59,9 @@ def main() -> int:
         "preregistration": phase_a_preregistration(),
         "implementation_status": {
             "A_looped": "available from support-8 dose arm",
-            "B_dense_direct": "pending dense synthetic direct SFT runner",
-            "C_dense_scratchpad": "pending dense serialized-orbit scratchpad SFT runner",
-            "D_dense_1p5b_direct_optional": "pending optional larger dense exchange-rate arm",
+            "B_dense_direct": "implemented by phase_a_dense_full",
+            "C_dense_scratchpad": "implemented by phase_a_dense_full",
+            "D_dense_1p5b_direct_optional": "implemented by phase_a_dense_full with A100-class memory gate",
         },
     }
     write_json(run_dir / "summary.json", payload)
