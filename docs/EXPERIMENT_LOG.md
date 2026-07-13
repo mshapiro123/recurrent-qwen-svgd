@@ -1132,3 +1132,15 @@ Colab/Drive backups for selected runs.
   now accepts an immutable 40-character commit SHA so concurrent result pushes
   cannot change the code executed by another lane. No dense training occurred
   before either correction.
+- 2026-07-13 inverse-table rebase and dense Phase A results: the rebase reached
+  63/64 at cap 3, including 63/64 conditional third-transition success, but
+  reduced the locked synthetic guardrail minimum to 0.8125 against the 0.93
+  floor; cap 4 did not run and G-alpha remains closed. Dense direct arm B
+  reached 470/1792 (26.23%), dense 1.5B direct arm D reached 320/1792
+  (17.86%), and dense 0.5B serialized-scratchpad arm C reached 952/1792
+  (53.12%). C held 70.0% through depths 1-10 despite training through depth 8,
+  then fell to 10.94% on depths 11-14. Its training loss saturated almost
+  immediately. Eval-only target `phase_a_checkpoint_comparison` now compares
+  all B/C/D step-2000 and step-4000 backups on the same frozen rows, retains
+  full compressed continuations and paired predictions, diagnoses C depth-2
+  errors, and requires exact reproduction of the landed step-4000 summaries.

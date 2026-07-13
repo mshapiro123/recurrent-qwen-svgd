@@ -94,6 +94,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "n24_support12_rung" - final N-24 support-12 synthetic rung with locked gates and canary policy.
 #   "phase_a_surpass_prereg" - publish the same-reader Phase-A surpass comparison preregistration.
 #   "phase_a_dense_full" - full-model AdamW dense B/C or D controls on locked synthetic rows.
+#   "phase_a_checkpoint_comparison" - eval-only 2k-vs-4k comparison for dense B/C/D checkpoints.
 #   "splice_injection_diagnostic" - inference-only hidden-state splice test for state-driven iteration vs shortcut.
 #   "gradient_path_audit" - read-only per-loop gradient matrix plus finite-difference bridge check.
 #   "model_viability_probe" - no-training Qwen model scale probe; defaults to 1.5B and is env-configurable for 3B+.
@@ -2583,6 +2584,20 @@ TARGETS = {
             "STAGE5_PHASE_A_DENSE_LR": "2e-6",
             "STAGE5_PHASE_A_DENSE_SEED": "931337",
             "STAGE5_PHASE_A_DENSE_DISCONNECT": "0",
+        },
+    },
+    "phase_a_checkpoint_comparison": {
+        "path": "colab/STAGE5_PHASE_A_CHECKPOINT_COMPARISON_CELL.py",
+        "markers": [
+            "STAGE5_PHASE_A_CHECKPOINT_COMPARISON_CELL_VERSION",
+            "phase_a_checkpoint_comparison",
+            "tests/test_stage5_phase_a_checkpoint_comparison.py",
+            "STAGE5_PHASE_A_COMPARISON_RUN_ID",
+            "paired_rows.jsonl",
+        ],
+        "env": {
+            "STAGE5_PHASE_A_COMPARISON_RUN_ID": "stage5_phase_a_checkpoint_comparison_20260713",
+            "STAGE5_PHASE_A_COMPARISON_DISCONNECT": "0",
         },
     },
     "phase_g_injective_curriculum_recovery": {
