@@ -2,7 +2,147 @@
   "arms": {
     "C": {
       "role": "inverse_table_forward_lookup_control",
-      "stages": []
+      "stages": [
+        {
+          "cap": 2,
+          "checkpoint": "outputs/stage5/stage5_inverse_composition_staircase_20260713/train/C/cap_2/unfrozen_recurrent_step_250.pt",
+          "checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_inverse_composition_staircase_20260713/C_cap_2_selected/unfrozen_recurrent_step_250.pt",
+          "checkpoint_evals": [
+            {
+              "checkpoint": "outputs/stage5/stage5_inverse_composition_staircase_20260713/train/C/cap_2/unfrozen_recurrent_step_250.pt",
+              "dose": {
+                "equalization_ratios": [
+                  1.000500250125052,
+                  0.9994997498749482
+                ],
+                "newest_raw_active_labels": 999,
+                "newest_weighted_active_labels": 1598.3999999999776,
+                "raw_active_labels": [
+                  2000,
+                  999
+                ],
+                "step": 250,
+                "weighted_active_labels": [
+                  799.9999999999717,
+                  1598.3999999999776
+                ]
+              },
+              "gate": {
+                "accuracy": 0.96875,
+                "cap": 2,
+                "correct": 62,
+                "passed": true,
+                "required_correct": 46,
+                "required_total": 64,
+                "total": 64
+              },
+              "step": 250,
+              "summary": "outputs/stage5/stage5_inverse_composition_staircase_20260713/eval/C_cap2_step250_gate/summary.json"
+            }
+          ],
+          "checkpoint_sha256": "bc1de1cd7d2a7acf30b9217c8d7054d805888c341b942ff0dab7691b4f995b01",
+          "conditional_transition_success": {
+            "2": {
+              "accuracy": 0.96875,
+              "correct": 62,
+              "total": 64
+            }
+          },
+          "diagnostic_summary": "outputs/stage5/stage5_inverse_composition_staircase_20260713/eval/C_cap2_selected_diagnostic/summary.json",
+          "dose_to_bar": {
+            "equalization_ratios": [
+              1.000500250125052,
+              0.9994997498749482
+            ],
+            "newest_raw_active_labels": 999,
+            "newest_weighted_active_labels": 1598.3999999999776,
+            "raw_active_labels": [
+              2000,
+              999
+            ],
+            "step": 250,
+            "weighted_active_labels": [
+              799.9999999999717,
+              1598.3999999999776
+            ]
+          },
+          "final_dose": {
+            "equalization_ratios": [
+              1.000500250125052,
+              0.9994997498749482
+            ],
+            "newest_raw_active_labels": 999,
+            "newest_weighted_active_labels": 1598.3999999999776,
+            "raw_active_labels": [
+              2000,
+              999
+            ],
+            "step": 250,
+            "weighted_active_labels": [
+              799.9999999999717,
+              1598.3999999999776
+            ]
+          },
+          "gate": {
+            "accuracy": 0.96875,
+            "cap": 2,
+            "correct": 62,
+            "passed": true,
+            "required_correct": 46,
+            "required_total": 64,
+            "total": 64
+          },
+          "optimizer_state_policy": "preserved_within_stage_restarted_identically_at_stage_boundary",
+          "optimizer_steps_spent": 250,
+          "plan": {
+            "cap": 2,
+            "dose_limited_optimizer_steps": 250,
+            "effective_batch_size": 8,
+            "eval_every": 250,
+            "expected_newest_weighted_labels": 1600.0,
+            "exposure_fractions": [
+              1.0,
+              0.5
+            ],
+            "loop_label_weights": [
+              0.4,
+              1.6
+            ],
+            "newest_multiplier": 2.0,
+            "optimizer_steps": 250,
+            "phase_envelope_limited": false,
+            "weighted_label_budget": 1500.0
+          },
+          "selected_step": 250,
+          "status": "advanced",
+          "stratified_loop2_cka": null,
+          "synthetic_guardrail": {
+            "active_diagonal_min": 0.9375,
+            "floor": 0.93,
+            "passed": true,
+            "summary": "outputs/stage5/stage5_inverse_composition_staircase_20260713/guardrails/C_cap2_synthetic/summary.json"
+          },
+          "target_decodability": {
+            "1": {
+              "accuracy": 0.890625,
+              "lift_over_p95": 0.78125,
+              "permutation_p95": 0.109375,
+              "status": "completed",
+              "test_rows": 64,
+              "train_rows": 64
+            },
+            "2": {
+              "accuracy": 0.46875,
+              "lift_over_p95": 0.3125,
+              "permutation_p95": 0.15625,
+              "status": "completed",
+              "test_rows": 32,
+              "train_rows": 32
+            }
+          }
+        }
+      ],
+      "tier1_canaries": []
     },
     "F": {
       "role": "forward_table_inverse_composition_experiment",
@@ -261,10 +401,17 @@
     "synthetic_guardrail_pass": true
   },
   "kind": "stage5_inverse_composition_staircase",
-  "matched_arm_reading": {},
+  "matched_arm_reading": {
+    "2": {
+      "control_weighted_labels_to_bar": 1598.3999999999776,
+      "experiment_weighted_labels_to_bar": null,
+      "ratio": null,
+      "reading": "non_native_position_cost"
+    }
+  },
   "phase_g_alpha_status": "closed",
   "run_id": "stage5_inverse_composition_staircase_20260713",
-  "status": "phase1_F_cap2_blocked_synthetic_guardrail",
+  "status": "phase1_C_cap2_advanced",
   "tier1_canary_baseline": {
     "accuracy": 0.88671875,
     "active_diagonal_min": 0.8125,
