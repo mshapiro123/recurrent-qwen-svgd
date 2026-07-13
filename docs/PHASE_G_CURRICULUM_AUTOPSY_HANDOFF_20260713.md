@@ -1,7 +1,7 @@
 # Handoff: Phase G Curriculum Autopsy and the Hidden Composition Gain
 
-**Date:** July 13, 2026  
-**Run:** `stage5_phase_g_curriculum_autopsy_20260712`  
+**Date:** July 13, 2026
+**Run:** `stage5_phase_g_curriculum_autopsy_20260712`
 **Status:** Read-only autopsy complete; Phase G-alpha remains closed; curriculum redesign is now the highest-value next step.
 
 ## 1. Executive conclusion
