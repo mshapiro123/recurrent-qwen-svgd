@@ -1,0 +1,149 @@
+{
+  "checkpoint": "outputs/stage5/stage5_inverse_composition_staircase_20260713/train/F/cap_2/unfrozen_recurrent_step_250.pt",
+  "conditional_transition_success": {
+    "2": {
+      "accuracy": 0.05454545454545454,
+      "correct": 3,
+      "total": 55
+    }
+  },
+  "kind": "abductive_staircase_diagnostic",
+  "max_loops": 2,
+  "rows_per_depth": 64,
+  "target_decodability": {
+    "1": {
+      "accuracy": 0.078125,
+      "lift_over_p95": -0.015625,
+      "permutation_p95": 0.09375,
+      "status": "completed",
+      "test_rows": 64,
+      "train_rows": 64
+    },
+    "2": {
+      "accuracy": 0.09375,
+      "lift_over_p95": -0.0625,
+      "permutation_p95": 0.15625,
+      "status": "completed",
+      "test_rows": 32,
+      "train_rows": 32
+    }
+  },
+  "test": {
+    "above_diagonal": {
+      "hold": 6,
+      "iterate": 4,
+      "other": 54
+    },
+    "active_matrix": {
+      "1": {
+        "1": {
+          "accuracy": 0.890625,
+          "correct": 57,
+          "total": 64
+        }
+      },
+      "2": {
+        "1": {
+          "accuracy": 0.859375,
+          "correct": 55,
+          "total": 64
+        },
+        "2": {
+          "accuracy": 0.046875,
+          "correct": 3,
+          "total": 64
+        }
+      }
+    },
+    "diagonal_by_depth": {
+      "1": {
+        "accuracy": 0.890625,
+        "correct": 57,
+        "total": 64
+      },
+      "2": {
+        "accuracy": 0.046875,
+        "correct": 3,
+        "total": 64
+      }
+    },
+    "diagonal_confusion": {
+      "correct_start": 60,
+      "one_step_preimage": 6,
+      "other_valid_name": 62
+    },
+    "loop1_by_depth": {
+      "1": {
+        "accuracy": 0.890625,
+        "correct": 57,
+        "total": 64
+      },
+      "2": {
+        "accuracy": 0.859375,
+        "correct": 55,
+        "total": 64
+      }
+    },
+    "source_rows": 128,
+    "split": "test"
+  },
+  "train": {
+    "above_diagonal": {
+      "hold": 6,
+      "iterate": 5,
+      "other": 53
+    },
+    "active_matrix": {
+      "1": {
+        "1": {
+          "accuracy": 1.0,
+          "correct": 64,
+          "total": 64
+        }
+      },
+      "2": {
+        "1": {
+          "accuracy": 0.984375,
+          "correct": 63,
+          "total": 64
+        },
+        "2": {
+          "accuracy": 0.265625,
+          "correct": 17,
+          "total": 64
+        }
+      }
+    },
+    "diagonal_by_depth": {
+      "1": {
+        "accuracy": 1.0,
+        "correct": 64,
+        "total": 64
+      },
+      "2": {
+        "accuracy": 0.265625,
+        "correct": 17,
+        "total": 64
+      }
+    },
+    "diagonal_confusion": {
+      "correct_start": 81,
+      "one_step_preimage": 4,
+      "other_valid_name": 43
+    },
+    "loop1_by_depth": {
+      "1": {
+        "accuracy": 1.0,
+        "correct": 64,
+        "total": 64
+      },
+      "2": {
+        "accuracy": 0.984375,
+        "correct": 63,
+        "total": 64
+      }
+    },
+    "source_rows": 128,
+    "split": "train"
+  }
+}

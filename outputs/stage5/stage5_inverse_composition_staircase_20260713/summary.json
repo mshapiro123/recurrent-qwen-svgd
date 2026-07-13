@@ -6,7 +6,131 @@
     },
     "F": {
       "role": "forward_table_inverse_composition_experiment",
-      "stages": []
+      "stages": [
+        {
+          "cap": 2,
+          "checkpoint": "outputs/stage5/stage5_inverse_composition_staircase_20260713/train/F/cap_2/unfrozen_recurrent_step_250.pt",
+          "checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_inverse_composition_staircase_20260713/F_cap_2_selected/unfrozen_recurrent_step_250.pt",
+          "checkpoint_evals": [
+            {
+              "checkpoint": "outputs/stage5/stage5_inverse_composition_staircase_20260713/train/F/cap_2/unfrozen_recurrent_step_250.pt",
+              "dose": {
+                "equalization_ratios": [
+                  0.9990009990009884,
+                  1.0009990009990115
+                ],
+                "newest_raw_active_labels": 1002,
+                "newest_weighted_active_labels": 1603.1999999999773,
+                "raw_active_labels": [
+                  2000,
+                  1002
+                ],
+                "step": 250,
+                "weighted_active_labels": [
+                  799.9999999999717,
+                  1603.1999999999773
+                ]
+              },
+              "gate": {
+                "accuracy": 0.046875,
+                "cap": 2,
+                "correct": 3,
+                "passed": false,
+                "required_correct": 46,
+                "required_total": 64,
+                "total": 64
+              },
+              "step": 250,
+              "summary": "outputs/stage5/stage5_inverse_composition_staircase_20260713/eval/F_cap2_step250_gate/summary.json"
+            }
+          ],
+          "checkpoint_sha256": "e382f12eb8e8dbb9755379e5dbb981af6065d52590cb0bb0db0e34a9a39e6216",
+          "conditional_transition_success": {
+            "2": {
+              "accuracy": 0.05454545454545454,
+              "correct": 3,
+              "total": 55
+            }
+          },
+          "diagnostic_summary": "outputs/stage5/stage5_inverse_composition_staircase_20260713/eval/F_cap2_selected_diagnostic/summary.json",
+          "dose_to_bar": null,
+          "final_dose": {
+            "equalization_ratios": [
+              0.9990009990009884,
+              1.0009990009990115
+            ],
+            "newest_raw_active_labels": 1002,
+            "newest_weighted_active_labels": 1603.1999999999773,
+            "raw_active_labels": [
+              2000,
+              1002
+            ],
+            "step": 250,
+            "weighted_active_labels": [
+              799.9999999999717,
+              1603.1999999999773
+            ]
+          },
+          "gate": {
+            "accuracy": 0.046875,
+            "cap": 2,
+            "correct": 3,
+            "passed": false,
+            "required_correct": 46,
+            "required_total": 64,
+            "total": 64
+          },
+          "optimizer_state_policy": "preserved_within_stage_restarted_identically_at_stage_boundary",
+          "optimizer_steps_spent": 250,
+          "plan": {
+            "cap": 2,
+            "dose_limited_optimizer_steps": 250,
+            "effective_batch_size": 8,
+            "eval_every": 250,
+            "expected_newest_weighted_labels": 1600.0,
+            "exposure_fractions": [
+              1.0,
+              0.5
+            ],
+            "loop_label_weights": [
+              0.4,
+              1.6
+            ],
+            "newest_multiplier": 2.0,
+            "optimizer_steps": 250,
+            "phase_envelope_limited": false,
+            "weighted_label_budget": 1500.0
+          },
+          "selected_step": 250,
+          "status": "blocked_synthetic_guardrail",
+          "stratified_loop2_cka": null,
+          "synthetic_guardrail": {
+            "active_diagonal_min": 0.21875,
+            "floor": 0.93,
+            "passed": false,
+            "summary": "outputs/stage5/stage5_inverse_composition_staircase_20260713/guardrails/F_cap2_synthetic/summary.json"
+          },
+          "target_decodability": {
+            "1": {
+              "accuracy": 0.078125,
+              "lift_over_p95": -0.015625,
+              "permutation_p95": 0.09375,
+              "status": "completed",
+              "test_rows": 64,
+              "train_rows": 64
+            },
+            "2": {
+              "accuracy": 0.09375,
+              "lift_over_p95": -0.0625,
+              "permutation_p95": 0.15625,
+              "status": "completed",
+              "test_rows": 32,
+              "train_rows": 32
+            }
+          }
+        }
+      ],
+      "tier1_canaries": []
     }
   },
   "datasets": {
@@ -137,7 +261,13 @@
     "synthetic_guardrail_pass": true
   },
   "kind": "stage5_inverse_composition_staircase",
+  "matched_arm_reading": {},
   "phase_g_alpha_status": "closed",
   "run_id": "stage5_inverse_composition_staircase_20260713",
-  "status": "data_ready"
+  "status": "phase1_F_cap2_blocked_synthetic_guardrail",
+  "tier1_canary_baseline": {
+    "accuracy": 0.88671875,
+    "active_diagonal_min": 0.8125,
+    "summary": "outputs/stage5/stage5_inverse_composition_staircase_20260713/guardrails/tier1_natural_surface_keeper/summary.json"
+  }
 }
