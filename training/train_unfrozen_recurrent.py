@@ -32,6 +32,7 @@ from models.recurrent_wrapper import RecurrentQwenForCausalLM
 from training.checkpointing import load_trainable_checkpoint, save_trainable_checkpoint
 from training.dataset import JsonlCausalDataset, collate_causal_batch
 from training.muon import Muon, OptimizerBundle, split_muon_and_adamw_params
+from training.staircase_curriculum import LoopDoseLedger, assert_mass_equalized, exposure_fractions
 from training.stability import (
     assert_finite_trainable_gradients,
     assert_finite_trainable_parameters,
@@ -85,7 +86,11 @@ def assert_active_supervision(
         raise RuntimeError(
             "Training row has zero active outcome tokens. Check prompt/completion tokenization boundary."
         )
-    if loop_loss_mode in {"per_loop_labels", "annealed_chain_to_outcome"}:
+    if loop_loss_mode in {
+        "per_loop_labels",
+        "weighted_per_loop_labels",
+        "annealed_chain_to_outcome",
+    }:
         if counts["loop_tokens"] <= 0 or counts["active_loops"] <= 0:
             raise RuntimeError(
                 "Training row has zero active loop-label tokens. Check prompt/completion tokenization boundary."
@@ -630,9 +635,21 @@ def main() -> int:
     if bool(cfg.get("require_active_supervision", False)):
         preflight_counts = assert_active_supervision(dataset[0], loop_loss_mode=loop_loss_mode)
         print(f"[assert-ok] active_supervision={preflight_counts}")
+    batch_size = cfg_int(cfg, "batch_size", 1)
+    gradient_accumulation_steps = cfg_int(cfg, "gradient_accumulation_steps", 1)
+    if gradient_accumulation_steps < 1:
+        raise ValueError("gradient_accumulation_steps must be positive")
+    effective_batch_size = batch_size * gradient_accumulation_steps
+    minimum_effective_batch_size = cfg_int(cfg, "minimum_effective_batch_size", 1)
+    if effective_batch_size < minimum_effective_batch_size:
+        raise RuntimeError(
+            "Effective batch is below the configured floor: "
+            f"batch_size={batch_size}, gradient_accumulation_steps={gradient_accumulation_steps}, "
+            f"effective_batch_size={effective_batch_size}, floor={minimum_effective_batch_size}"
+        )
     loader = DataLoader(
         dataset,
-        batch_size=cfg_int(cfg, "batch_size", 1),
+        batch_size=batch_size,
         shuffle=True,
         generator=loader_generator,
         collate_fn=partial(collate_causal_batch, pad_token_id=tokenizer.pad_token_id),
@@ -663,12 +680,54 @@ def main() -> int:
     target_source = str(curriculum.get("target_source", "schedule"))
     ramp_compute = bool(curriculum.get("ramp_compute", True))
 
+    loop_label_weights: torch.Tensor | None = None
+    dose_ledger: LoopDoseLedger | None = None
+    dose_assert_every = cfg_int(cfg, "dose_assert_every", 200)
+    dose_ratio_min = cfg_float(cfg, "dose_ratio_min", 0.8)
+    dose_ratio_max = cfg_float(cfg, "dose_ratio_max", 1.25)
+    newest_loop_multiplier = cfg_float(cfg, "newest_loop_multiplier", 2.0)
+    if loop_loss_mode == "weighted_per_loop_labels":
+        configured_weights = [float(value) for value in (cfg.get("loop_label_weights") or [])]
+        if len(configured_weights) != max_loops:
+            raise ValueError(
+                "weighted_per_loop_labels requires one loop_label_weights entry per max_loops; "
+                f"got {len(configured_weights)} for max_loops={max_loops}"
+            )
+        loop_label_weights = torch.tensor(configured_weights, device=args.device, dtype=torch.float32)
+        dose_ledger = LoopDoseLedger(
+            weights=configured_weights,
+            newest_loop=max_loops,
+            newest_multiplier=newest_loop_multiplier,
+        )
+        theoretical_exposure = exposure_fractions(dataset.rows, cap=max_loops)
+        theoretical_mass = [
+            theoretical_exposure[index] * configured_weights[index]
+            for index in range(max_loops)
+        ]
+        theoretical_receipt = assert_mass_equalized(
+            theoretical_mass,
+            newest_loop=max_loops,
+            newest_multiplier=newest_loop_multiplier,
+            min_ratio=dose_ratio_min,
+            max_ratio=dose_ratio_max,
+        )
+        print(
+            "[assert-ok] weighted_loop_mass_startup "
+            f"exposure={theoretical_exposure} weights={configured_weights} "
+            f"receipt={theoretical_receipt}",
+            flush=True,
+        )
+
     summary = {
         "setup": setup,
         "optimizer_setup": optimizer_setup,
         "training_seed": training_seed,
+        "batch_size": batch_size,
+        "gradient_accumulation_steps": gradient_accumulation_steps,
+        "effective_batch_size": effective_batch_size,
         "curriculum_trace": [],
         "interval_checkpoints": [],
+        "dose_trace": [],
     }
     max_steps = cfg_int(cfg, "max_steps", 25)
     save_every = cfg_int(cfg, "save_every", 0) if cfg.get("save_every", 0) else 0
@@ -686,6 +745,8 @@ def main() -> int:
             "Set bridge_prelude_grad_multiplier=1.0."
         )
     step = 0
+    micro_step = 0
+    accumulated_microbatches = 0
     previous_prelude_grad: torch.Tensor | None = None
     while step < max_steps:
         for batch in loader:
@@ -707,6 +768,7 @@ def main() -> int:
                 beta=cfg_float(cfg, "beta", 0.08),
                 halt_target_nll_weight=cfg_float(cfg, "halt_target_nll_weight", 0.0),
                 loop_loss_mode=loop_loss_mode,
+                loop_label_weights=loop_label_weights,
                 loop_label_loss_weight=(
                     chain_label_weight(step, max_steps, hold_frac=chain_anneal_hold_frac)
                     if loop_loss_mode == "annealed_chain_to_outcome"
@@ -726,8 +788,14 @@ def main() -> int:
             )
             assert output.loss is not None
             assert_finite_training_state(wrapper, output.loss, output.metrics, step)
-            output.loss.backward()
+            (output.loss / gradient_accumulation_steps).backward()
             assert_finite_trainable_gradients(wrapper, step)
+            if dose_ledger is not None:
+                dose_ledger.update(batch["loop_labels"])
+            micro_step += 1
+            accumulated_microbatches += 1
+            if accumulated_microbatches < gradient_accumulation_steps:
+                continue
             if bool(cfg.get("require_nonzero_train_gradient", False)):
                 assert_nonzero_trainable_gradient(wrapper)
             prelude_grad_cosine_prev, previous_prelude_grad = cosine_with_previous(
@@ -750,7 +818,15 @@ def main() -> int:
             optimizer.zero_grad(set_to_none=True)
             assert_finite_trainable_parameters(wrapper, step + 1)
 
-            if step % cfg_int(cfg, "log_every", 5) == 0:
+            accumulated_microbatches = 0
+            completed_step = step + 1
+            if dose_ledger is not None and dose_assert_every and completed_step % dose_assert_every == 0:
+                dose_ledger.assert_equalized(min_ratio=dose_ratio_min, max_ratio=dose_ratio_max)
+                receipt = {"step": completed_step, **dose_ledger.as_dict()}
+                summary["dose_trace"].append(receipt)
+                print(f"[assert-ok] weighted_loop_mass step={completed_step} receipt={receipt}", flush=True)
+
+            if completed_step == 1 or completed_step % cfg_int(cfg, "log_every", 5) == 0:
                 bridge_weight = bridge_prelude_weight_stats(wrapper)
                 parameter_norms = trainable_parameter_norm_stats(wrapper)
                 metric_values = {
@@ -761,22 +837,30 @@ def main() -> int:
                     **parameter_norms,
                 }
                 metrics = " ".join(f"{key}={float(value):.4f}" for key, value in metric_values.items())
-                print(f"step={step} scheduled_loops={scheduled} forward_loops={forward_loops} {metrics}")
+                print(
+                    f"step={completed_step} micro_step={micro_step} scheduled_loops={scheduled} "
+                    f"forward_loops={forward_loops} {metrics}"
+                )
                 summary["curriculum_trace"].append(
                     {
-                        "step": step,
+                        "step": completed_step,
+                        "micro_step": micro_step,
                         "scheduled_loops": scheduled,
                         "forward_loops": forward_loops,
                         "metrics": metric_values,
                     }
                 )
-            step += 1
+            step = completed_step
             if output_dir := cfg.get("output_dir"):
                 should_save_interval = (save_every and step % save_every == 0) or step in save_steps
                 if should_save_interval and step < max_steps:
                     checkpoint_path = save_trainable_checkpoint(wrapper, output_dir, "unfrozen_recurrent", step, cfg)
                     print(f"saved_checkpoint={checkpoint_path}")
                     summary["interval_checkpoints"].append(str(checkpoint_path))
+                    if dose_ledger is not None:
+                        summary["dose_trace"].append(
+                            {"step": step, "checkpoint": str(checkpoint_path), **dose_ledger.as_dict()}
+                        )
             if step >= max_steps:
                 break
 
@@ -785,11 +869,18 @@ def main() -> int:
         checkpoint_path = save_trainable_checkpoint(wrapper, output_dir, "unfrozen_recurrent", step, cfg)
         print(f"saved_checkpoint={checkpoint_path}")
         summary["checkpoint"] = str(checkpoint_path)
+        if dose_ledger is not None:
+            summary["dose_trace"].append(
+                {"step": step, "checkpoint": str(checkpoint_path), **dose_ledger.as_dict()}
+            )
     summary["final_step"] = step
     summary["trainable_parameters"] = trainable_parameter_summary(wrapper)
     summary["bridge_prelude_weight_stats"] = bridge_prelude_weight_stats(wrapper)
     summary["parameter_norm_stats"] = trainable_parameter_norm_stats(wrapper)
     summary["bridge_prelude_grad_multiplier"] = prelude_grad_multiplier
+    summary["micro_steps"] = micro_step
+    if dose_ledger is not None:
+        summary["dose_ledger"] = dose_ledger.as_dict()
     if output_dir:
         summary_path = Path(output_dir) / "train_unfrozen_recurrent_summary.json"
         summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")

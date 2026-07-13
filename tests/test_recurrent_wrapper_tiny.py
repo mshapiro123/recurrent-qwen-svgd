@@ -262,6 +262,38 @@ def test_per_loop_label_loss_mode_uses_active_intermediate_labels_on_tiny_model(
     assert output.metrics["per_loop_label_active"].item() == 2
 
 
+def test_weighted_per_loop_loss_uses_fixed_batch_normalization() -> None:
+    torch.manual_seed(0)
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2, 3, 4], [1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+    labels = torch.full_like(input_ids, -100)
+    labels[:, -1] = input_ids[:, -1]
+    loop_labels = torch.full((2, 3, input_ids.shape[1]), -100, dtype=torch.long)
+    loop_labels[:, 0, -1] = 5
+    loop_labels[0, 1, -1] = 6
+
+    output = wrapper(
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        labels=labels,
+        loop_labels=loop_labels,
+        max_loops=3,
+        loop_loss_mode="weighted_per_loop_labels",
+        loop_label_weights=torch.tensor([0.5, 1.5, 0.0]),
+        use_cache=False,
+        return_dict=True,
+    )
+
+    expected = sum(output.metrics[f"per_loop_label_weighted_ce_{loop}"] for loop in range(1, 4))
+    assert output.loss is not None
+    assert torch.allclose(output.loss.detach(), expected)
+    assert output.metrics["per_loop_label_weighted_active"].item() == 2.5
+    assert output.metrics["per_loop_label_weight_1"].item() == 0.5
+    assert output.metrics["per_loop_label_weight_2"].item() == 1.5
+
+
 def test_annealed_chain_to_outcome_loss_mixes_chain_and_target_ce_on_tiny_model():
     torch.manual_seed(0)
     model = TinyCausalLM().eval()

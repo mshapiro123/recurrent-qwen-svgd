@@ -102,6 +102,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "phase_g_experiment1" - deterministic injective/abductive gates plus matched-K answer sampling.
 #   "phase_g_injective_curriculum_recovery" - continue the fixed-boundary injective checkpoint with a 2-to-8 loop curriculum.
 #   "phase_g_curriculum_autopsy" - read-only train/held-out loop matrix and curriculum-construction audit.
+#   "inverse_composition_staircase" - matched forward/inverse-table staircase with weighted loop-dose gates.
 #   "phase_g_n24_calibration_gate" - arbitrary-function deterministic substrate gate before G-alpha.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
@@ -2604,6 +2605,25 @@ TARGETS = {
             "STAGE5_PHASE_G_AUTOPSY_STATE_QUERY_EXAMPLES": "8",
             "STAGE5_PHASE_G_AUTOPSY_DTYPE": "bfloat16",
             "STAGE5_PHASE_G_AUTOPSY_DISCONNECT": "0",
+        },
+    },
+    "inverse_composition_staircase": {
+        "path": "colab/STAGE5_INVERSE_COMPOSITION_STAIRCASE_CELL.py",
+        "markers": [
+            "STAGE5_INVERSE_COMPOSITION_STAIRCASE_CELL_VERSION",
+            "inverse_composition_staircase",
+            "weighted_per_loop_labels",
+            "gradient_accumulation_steps",
+            "active_weighted_labels_per_loop",
+            "tests/test_stage5_inverse_composition_staircase.py",
+            "eval/eval_abductive_staircase.py",
+            "phase_g_alpha_remains_closed",
+        ],
+        "env": {
+            "STAGE5_STAIRCASE_RUN_ID": "stage5_inverse_composition_staircase_20260713",
+            "STAGE5_STAIRCASE_DTYPE": "bfloat16",
+            "STAGE5_STAIRCASE_PROBE_PERMUTATIONS": "100",
+            "STAGE5_STAIRCASE_DISCONNECT": "0",
         },
     },
     "phase_g_n24_calibration_gate": {

@@ -254,6 +254,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         use_learned_loop_control: bool = False,
         loop_control_ce_weight: float = 0.0,
         loop_loss_mode: str = "halting_weighted",
+        loop_label_weights: Optional[torch.Tensor] = None,
         loop_label_loss_weight: float = 1.0,
         outcome_label_loss_weight: float = 1.0,
         use_reentry_adapter: bool = False,
@@ -658,6 +659,37 @@ class RecurrentQwenForCausalLM(nn.Module):
                 loss = (ce_tensor * active).sum() / active.sum().clamp_min(1.0)
                 metrics["per_loop_label_ce"] = loss.detach()
                 metrics["per_loop_label_active"] = active.sum().detach()
+            elif loop_loss_mode == "weighted_per_loop_labels":
+                if loop_labels_flat is None:
+                    raise ValueError("loop_loss_mode='weighted_per_loop_labels' requires loop_labels")
+                if loop_label_weights is None:
+                    raise ValueError("loop_loss_mode='weighted_per_loop_labels' requires loop_label_weights")
+                weights = torch.as_tensor(
+                    loop_label_weights,
+                    device=ce_tensor.device,
+                    dtype=ce_tensor.dtype,
+                ).flatten()
+                if weights.numel() < max_loops:
+                    raise ValueError(
+                        f"loop_label_weights has {weights.numel()} entries but max_loops={max_loops}"
+                    )
+                weights = weights[:max_loops]
+                if bool((weights < 0).any()) or not bool(torch.isfinite(weights).all()):
+                    raise ValueError("loop_label_weights must be finite and nonnegative")
+                active = torch.stack(per_loop_label_active, dim=-1).to(dtype=ce_tensor.dtype)
+                weighted_active = active * weights.view(1, -1)
+                # This is a fixed batch mean. It deliberately does not divide by
+                # each row's active-loop count, which would starve later labels.
+                loss = (ce_tensor * weighted_active).sum() / ce_tensor.shape[0]
+                metrics["per_loop_label_ce"] = loss.detach()
+                metrics["per_loop_label_active"] = active.sum().detach()
+                metrics["per_loop_label_weighted_active"] = weighted_active.sum().detach()
+                for loop_idx, weight in enumerate(weights, start=1):
+                    metrics[f"per_loop_label_weight_{loop_idx}"] = weight.detach()
+                    metrics[f"per_loop_label_active_{loop_idx}"] = active[:, loop_idx - 1].sum().detach()
+                    metrics[f"per_loop_label_weighted_ce_{loop_idx}"] = (
+                        ce_tensor[:, loop_idx - 1] * weighted_active[:, loop_idx - 1]
+                    ).sum().detach() / ce_tensor.shape[0]
             elif loop_loss_mode == "annealed_chain_to_outcome":
                 if loop_labels_flat is None:
                     raise ValueError("loop_loss_mode='annealed_chain_to_outcome' requires loop_labels")
@@ -684,7 +716,7 @@ class RecurrentQwenForCausalLM(nn.Module):
             else:
                 raise ValueError(
                     "loop_loss_mode must be one of: halting_weighted, last, target, uniform, "
-                    "per_loop_labels, annealed_chain_to_outcome"
+                    "per_loop_labels, weighted_per_loop_labels, annealed_chain_to_outcome"
                 )
             metrics["expected_ce"] = loss.detach()
 

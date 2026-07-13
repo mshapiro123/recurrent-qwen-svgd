@@ -1088,3 +1088,17 @@ Colab/Drive backups for selected runs.
   stagewise depth-1-to-4 restart, not another nominal-step extension under the
   same linear 2-to-8 ramp. Full handoff:
   `docs/PHASE_G_CURRICULUM_AUTOPSY_HANDOFF_20260713.md`.
+- 2026-07-13 inverse-composition staircase preregistration: the next GPU job is
+  one matched two-arm AdamW staircase from the locked natural-surface step-2000
+  keeper. Arm F retains the forward table and reverse-search transition; Arm C
+  rerenders the identical rows as inverse tables so each recurrent transition
+  is a forward lookup. The trainer now supports fixed-batch weighted per-loop
+  loss and true gradient accumulation to effective batch 8. Loop weights
+  inverse exposure, double the newest loop, and are logged as raw and weighted
+  active labels; adjusted realized mass must remain within 0.8x-1.25x every
+  200 optimizer steps. Stages 2-4 gate at 46/64 and approximately 1,500 newest-
+  loop weighted labels; stages 5-8 open only after both Phase-1 arms and the
+  0.93 guardrail pass. The active matrix, conditional transition success,
+  target decodability, and stratified Phase-1 CKA are the diagnostic receipts.
+  Muon is excluded from this matched causal test and remains a later optimizer
+  ablation only. Full spec: `docs/INVERSE_COMPOSITION_STAIRCASE_SPEC.md`.
