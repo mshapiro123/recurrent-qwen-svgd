@@ -1,0 +1,96 @@
+{
+  "accuracy": 0.5189732142857143,
+  "by_depth": {
+    "1": {
+      "accuracy": 0.9375,
+      "correct": 120,
+      "parse_failures": 0,
+      "total": 128
+    },
+    "10": {
+      "accuracy": 0.7109375,
+      "correct": 91,
+      "parse_failures": 0,
+      "total": 128
+    },
+    "11": {
+      "accuracy": 0.1328125,
+      "correct": 17,
+      "parse_failures": 0,
+      "total": 128
+    },
+    "12": {
+      "accuracy": 0.078125,
+      "correct": 10,
+      "parse_failures": 0,
+      "total": 128
+    },
+    "13": {
+      "accuracy": 0.125,
+      "correct": 16,
+      "parse_failures": 0,
+      "total": 128
+    },
+    "14": {
+      "accuracy": 0.0546875,
+      "correct": 7,
+      "parse_failures": 0,
+      "total": 128
+    },
+    "2": {
+      "accuracy": 0.4296875,
+      "correct": 55,
+      "parse_failures": 0,
+      "total": 128
+    },
+    "3": {
+      "accuracy": 0.6640625,
+      "correct": 85,
+      "parse_failures": 0,
+      "total": 128
+    },
+    "4": {
+      "accuracy": 0.7578125,
+      "correct": 97,
+      "parse_failures": 0,
+      "total": 128
+    },
+    "5": {
+      "accuracy": 0.6328125,
+      "correct": 81,
+      "parse_failures": 0,
+      "total": 128
+    },
+    "6": {
+      "accuracy": 0.7265625,
+      "correct": 93,
+      "parse_failures": 0,
+      "total": 128
+    },
+    "7": {
+      "accuracy": 0.5859375,
+      "correct": 75,
+      "parse_failures": 0,
+      "total": 128
+    },
+    "8": {
+      "accuracy": 0.7421875,
+      "correct": 95,
+      "parse_failures": 0,
+      "total": 128
+    },
+    "9": {
+      "accuracy": 0.6875,
+      "correct": 88,
+      "parse_failures": 0,
+      "total": 128
+    }
+  },
+  "checkpoint": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_a_dense_full_bc_20260713/C/dense_full_step_2000",
+  "correct": 930,
+  "data_jsonl": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v2_depth14/data/test_chain_mcq.jsonl",
+  "kind": "stage5_synthetic_depth_dense_eval",
+  "max_new_tokens": 96,
+  "reader": "answer_marker_else_first_valid_full_symbol",
+  "total": 1792
+}
