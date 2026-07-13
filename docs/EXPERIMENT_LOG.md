@@ -1050,3 +1050,11 @@ Colab/Drive backups for selected runs.
   SVGD remain disabled. If the same depth-1-only pattern survives, the next
   decision is a short train-versus-held-out/micro-overfit autopsy versus one
   clean curriculum-from-keeper restart, not stochastic-head construction.
+- 2026-07-12 Phase G injective curriculum recovery result: training completed
+  all 2,000 additional updates and backed up checkpoint SHA `fc98feb5...53d1`.
+  Smoke improved nominally from 22/128 to 26/128, but paired rows were 10
+  helped, 6 hurt, and 112 tied (exact two-sided sign p=0.4545). Depth 1 stayed
+  16/16; depths 2-8 totaled 10/112 (8.93%) with a non-monotonic pattern and
+  zero greedy hits at depths 4, 5, and 7. The runner correctly recorded
+  `blocked_injective_smoke` and returned 2 after training. This does not open
+  abductive or G-alpha work and does not justify another automatic dose run.

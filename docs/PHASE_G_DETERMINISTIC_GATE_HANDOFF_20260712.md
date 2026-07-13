@@ -1,9 +1,9 @@
 # Handoff: Phase G Return, Deterministic Abduction Gate, and Curriculum Recovery
 
 **Date:** July 12, 2026  
-**Status:** Deterministic Phase G substrate gate blocked after a valid first run; one bounded curriculum/dose recovery is implemented but has not yet reported results.  
-**Current repository commit:** `d705ba8cbc18bc991c79aecf592b6826468868ee`  
-**Next Colab target:** `phase_g_injective_curriculum_recovery`
+**Status:** Deterministic Phase G substrate gate remains blocked after both the valid first run and the bounded curriculum/dose recovery.  
+**Recovery artifact commit:** `2c04b3c`  
+**Next action:** No automatic training continuation. Run a cheap intermediate-checkpoint/train-split autopsy or preregister one clean curriculum-from-keeper restart after strategy review.
 
 ---
 
@@ -17,9 +17,9 @@ The first deterministic abduction run, however, exposed a new and specific bottl
 
 > The model can learn one application of the inverse relation, but the first mixed-depth recipe did not teach it to compose that inverse operation recurrently.
 
-This is not a stochastic-width result. Phase G-alpha remains closed. It is also not yet a defensible negative on recurrent abduction, because the valid run used only 1,000 updates over 2,048 training rows, disabled the recurrence curriculum, and began immediately at eight-loop compute. A bounded continuation has therefore been implemented from the exact step-1000 checkpoint: 2,000 additional updates with a `2 -> 8` loop curriculum, active-compute ramping, identical frozen rows, exact SHA checks, and deterministic `K=1` gates. No stochastic modules are enabled.
+This is not a stochastic-width result. Phase G-alpha remains closed. Because the valid run used only 1,000 updates over 2,048 training rows, disabled the recurrence curriculum, and began immediately at eight-loop compute, a bounded continuation was run from the exact step-1000 checkpoint: 2,000 additional updates with a `2 -> 8` loop curriculum, active-compute ramping, identical frozen rows, exact SHA checks, and deterministic `K=1` gates. It completed training but remained blocked at `26/128 = 20.31%`. The paired change against the first valid run was 10 helped, 6 hurt, and 112 tied (`p=0.4545`), so the apparent four-row gain is not reliable evidence of compositional learning.
 
-The next decision is whether that one curriculum/dose correction establishes compositional inverse competence. If it does, the queue proceeds through mixed abductive competence, the synthetic guardrail, arbitrary N=24 calibration, and then frozen-block G-alpha. If it does not, the strategy agent should decide whether one clean curriculum restart from the locked keeper is warranted or whether to close this task family after a short train-versus-held-out mechanism autopsy.
+The curriculum/dose correction did not establish compositional inverse competence. The strategy agent should now decide whether one clean curriculum restart from the locked keeper is warranted or whether to close this task family after a short train-versus-held-out and intermediate-checkpoint mechanism autopsy.
 
 ---
 
@@ -362,7 +362,7 @@ The most economical explanation is therefore underdeveloped compositional recurr
 
 ---
 
-## 7. Implemented recovery experiment
+## 7. Completed recovery experiment
 
 ### 7.1 Purpose
 
@@ -397,6 +397,30 @@ The parent checkpoint is restored from Drive and must match SHA `0d6cf119...a1a6
 Continuation conserves GPU and retains a useful learned primitive: perfect depth-1 inversion. The curriculum then tests whether the same parameters can organize that primitive into a repeated transition.
 
 The causal limitation is that a failed continuation would not prove a clean curriculum-from-keeper restart also fails. That is a strategy decision, not something to run automatically.
+
+### 7.5 Landed result
+
+Training completed all 2,000 additional updates and backed up the final checkpoint before evaluation. The final checkpoint SHA256 is:
+
+```text
+fc98feb5d5bd450f7ecc4f6d43ce36fd436418d7ad2cd69df38a089d5ec453d1
+```
+
+| Depth | First valid run | Curriculum recovery | Delta correct / 16 |
+|---:|---:|---:|---:|
+| 1 | 16/16 | 16/16 | 0 |
+| 2 | 1/16 | 4/16 | +3 |
+| 3 | 0/16 | 2/16 | +2 |
+| 4 | 1/16 | 0/16 | -1 |
+| 5 | 1/16 | 0/16 | -1 |
+| 6 | 0/16 | 1/16 | +1 |
+| 7 | 3/16 | 0/16 | -3 |
+| 8 | 0/16 | 3/16 | +3 |
+| **Overall** | **22/128 (17.19%)** | **26/128 (20.31%)** | **+4** |
+
+On identical rows, the recovery helped 10, hurt 6, and tied 112. The exact two-sided sign-test p-value is `0.4545`. Across depths 2-8, recovery achieved `10/112 = 8.93%`; against an idealized independent N=20 chance rate of 5%, the one-sided binomial tail is approximately `0.054` before any correction. The depth pattern is non-monotonic and includes complete losses at depths 4, 5, and 7. This is best read as redistributed uncertainty, not a learned repeated inverse operator.
+
+The notebook's final `CalledProcessError` again wrapped the runner's intentional exit code `2` after it wrote `blocked_injective_smoke`. It did not interrupt training.
 
 ---
 
@@ -546,4 +570,3 @@ If the recovery establishes deterministic inverse composition, proceed directly 
 | Boundary/data/evaluator repair | `bcd3028` |
 | Valid run artifacts | `a0e42fc`, `e14c4a8`, `57f377c` |
 | Curriculum recovery implementation | `d705ba8` |
-
