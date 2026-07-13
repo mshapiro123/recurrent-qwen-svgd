@@ -1,0 +1,46 @@
+{
+  "checkpoints": {
+    "B_step2000": {
+      "checkpoint": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_a_dense_full_bc_20260713/B/dense_full_step_2000",
+      "checks": {
+        "model_name": true,
+        "revision": true,
+        "step": true,
+        "surface": true
+      },
+      "metadata": {
+        "config": {
+          "attn_implementation": "default",
+          "backup_root": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_a_dense_full_bc_20260713/B",
+          "batch_size": 1,
+          "compute_dtype": "bfloat16",
+          "eval_sha256": "3de844669aba303063e6932f5852914ee0993e531c8e65c2a4c4b18e219b3fc8",
+          "gradient_accumulation_steps": 8,
+          "gradient_checkpointing": true,
+          "learning_rate": 2e-06,
+          "log_every": 25,
+          "max_grad_norm": 1.0,
+          "max_length": 512,
+          "max_steps": 4000,
+          "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+          "optimizer": "adamw",
+          "output_dir": "outputs/stage5/stage5_phase_a_dense_full_bc_20260713/train/B",
+          "parameter_dtype": "float32",
+          "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+          "save_every": 2000,
+          "seed": 931337,
+          "train_sha256": "cf61c14c2629f2caa7e1b6bd100adb122a468d5285b74970aaa4aebfbb56fd12",
+          "training_surface": "direct",
+          "weight_decay": 0.0
+        },
+        "step": 2000,
+        "train_jsonl": "outputs/stage5/stage5_phase_a_dense_full_bc_20260713/data/arm_B.jsonl"
+      }
+    }
+  },
+  "eval_sha256": "3de844669aba303063e6932f5852914ee0993e531c8e65c2a4c4b18e219b3fc8",
+  "eval_source": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v2_depth14/data/test_chain_mcq.jsonl",
+  "kind": "stage5_phase_a_checkpoint_comparison_run",
+  "run_id": "stage5_phase_a_checkpoint_comparison_20260713",
+  "status": "evaluating_B_step2000"
+}
