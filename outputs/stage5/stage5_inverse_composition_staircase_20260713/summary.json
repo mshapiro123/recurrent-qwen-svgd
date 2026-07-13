@@ -409,9 +409,9 @@
       "reading": "non_native_position_cost"
     }
   },
-  "phase_g_alpha_status": "closed",
+  "phase_g_alpha_status": "closed_pending_deterministic_gate",
   "run_id": "stage5_inverse_composition_staircase_20260713",
-  "status": "phase1_C_cap2_advanced",
+  "status": "blocked_at_cap_2",
   "tier1_canary_baseline": {
     "accuracy": 0.88671875,
     "active_diagonal_min": 0.8125,
