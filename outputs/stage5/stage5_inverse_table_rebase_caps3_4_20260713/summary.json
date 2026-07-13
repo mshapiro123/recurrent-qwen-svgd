@@ -115,6 +115,9 @@
     "synthetic": "outputs/stage5/stage5_inverse_table_rebase_caps3_4_20260713/guardrail_data/synthetic_frozen_32_per_depth_d1_12.jsonl"
   },
   "kind": "stage5_inverse_table_rebase",
+  "natural_canary": {
+    "status": "not_run_stage_gate_failed"
+  },
   "optimizer": "adamw",
   "phase_g_alpha_status": "closed_pending_rebased_deterministic_gate",
   "run_id": "stage5_inverse_table_rebase_caps3_4_20260713",
@@ -301,5 +304,5 @@
       }
     }
   ],
-  "status": "cap3_blocked_synthetic_guardrail"
+  "status": "rebase_incomplete"
 }
