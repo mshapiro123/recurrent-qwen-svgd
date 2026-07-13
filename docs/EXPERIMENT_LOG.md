@@ -1073,3 +1073,18 @@ Colab/Drive backups for selected runs.
   does not train the inverse-table control. The K=20 N=20 uniform baseline is
   `1-(19/20)^20 = 0.6415`, above the prior observed `0.5703`; future coverage
   summaries report this baseline and raw per-sample validity explicitly.
+- 2026-07-13 Phase G curriculum autopsy result: the read-only two-checkpoint
+  matrix materially revises the final-diagonal interpretation. On rows from
+  the exact training-order prefix seen by both checkpoints, recovery moved
+  loop 2 from 10/112 to 51/112; on held-out rows it moved from 5/112 to
+  42/112, with 40 paired improvements and 3 regressions (two-sided sign
+  p=3.02e-9). Held-out loop 3 moved from 1/96 to 10/96 (10 helped, 1 hurt,
+  p=0.0117). Loop 1 remained 125/128 and loops 4-8 remained unsupported. The
+  final diagonal hid these gains because later rows require every later loop.
+  Exact recovery exposure explains the staircase: raw active labels by loop
+  were 2000, 1749, 1377, 950, 594, 310, 114, and 19; after per-row active-loss
+  averaging, loop-8 weight was only about 2.4 full-row equivalents. The next
+  causal test is therefore inverse-table direction control plus a loop-balanced
+  stagewise depth-1-to-4 restart, not another nominal-step extension under the
+  same linear 2-to-8 ramp. Full handoff:
+  `docs/PHASE_G_CURRICULUM_AUTOPSY_HANDOFF_20260713.md`.
