@@ -1,0 +1,131 @@
+{
+  "checkpoint": "outputs/stage5/stage5_inverse_table_rebase_caps3_4_20260713/train/C_rebase/cap_3/unfrozen_recurrent_step_250.pt",
+  "conditional_transition_success": {
+    "2": {
+      "accuracy": 1.0,
+      "correct": 128,
+      "total": 128
+    },
+    "3": {
+      "accuracy": 0.984375,
+      "correct": 63,
+      "total": 64
+    }
+  },
+  "kind": "abductive_staircase_diagnostic",
+  "max_loops": 3,
+  "rows_per_depth": 64,
+  "target_decodability": {
+    "1": {
+      "accuracy": 0.9895833134651184,
+      "lift_over_p95": 0.8958333134651184,
+      "permutation_p95": 0.09375,
+      "status": "completed",
+      "test_rows": 96,
+      "train_rows": 96
+    },
+    "2": {
+      "accuracy": 0.78125,
+      "lift_over_p95": 0.6875,
+      "permutation_p95": 0.09375,
+      "status": "completed",
+      "test_rows": 64,
+      "train_rows": 64
+    },
+    "3": {
+      "accuracy": 0.375,
+      "lift_over_p95": 0.28125,
+      "permutation_p95": 0.09375,
+      "status": "completed",
+      "test_rows": 32,
+      "train_rows": 32
+    }
+  },
+  "test": {
+    "above_diagonal": {
+      "iterate": 185,
+      "other": 7
+    },
+    "active_matrix": {
+      "1": {
+        "1": {
+          "accuracy": 1.0,
+          "correct": 64,
+          "total": 64
+        }
+      },
+      "2": {
+        "1": {
+          "accuracy": 1.0,
+          "correct": 64,
+          "total": 64
+        },
+        "2": {
+          "accuracy": 1.0,
+          "correct": 64,
+          "total": 64
+        }
+      },
+      "3": {
+        "1": {
+          "accuracy": 1.0,
+          "correct": 64,
+          "total": 64
+        },
+        "2": {
+          "accuracy": 1.0,
+          "correct": 64,
+          "total": 64
+        },
+        "3": {
+          "accuracy": 0.984375,
+          "correct": 63,
+          "total": 64
+        }
+      }
+    },
+    "diagonal_by_depth": {
+      "1": {
+        "accuracy": 1.0,
+        "correct": 64,
+        "total": 64
+      },
+      "2": {
+        "accuracy": 1.0,
+        "correct": 64,
+        "total": 64
+      },
+      "3": {
+        "accuracy": 0.984375,
+        "correct": 63,
+        "total": 64
+      }
+    },
+    "diagonal_confusion": {
+      "correct_start": 191,
+      "other_valid_name": 1
+    },
+    "loop1_by_depth": {
+      "1": {
+        "accuracy": 1.0,
+        "correct": 64,
+        "total": 64
+      },
+      "2": {
+        "accuracy": 1.0,
+        "correct": 64,
+        "total": 64
+      },
+      "3": {
+        "accuracy": 1.0,
+        "correct": 64,
+        "total": 64
+      }
+    },
+    "source_rows": 192,
+    "split": "test"
+  },
+  "train": {
+    "status": "skipped"
+  }
+}

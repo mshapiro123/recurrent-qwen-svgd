@@ -109,6 +109,7 @@
       }
     }
   },
+  "decision": "rebase_incomplete",
   "guardrail_data": {
     "natural": "outputs/stage5/stage5_inverse_table_rebase_caps3_4_20260713/guardrail_data/natural_surface_relay_pointer_16_each_d1_8.jsonl",
     "synthetic": "outputs/stage5/stage5_inverse_table_rebase_caps3_4_20260713/guardrail_data/synthetic_frozen_32_per_depth_d1_12.jsonl"
@@ -136,6 +137,169 @@
     }
   },
   "source_summary": "outputs/stage5/stage5_inverse_composition_staircase_20260713/summary.json",
-  "stages": [],
-  "status": "data_ready"
+  "stages": [
+    {
+      "cap": 3,
+      "checkpoint": "outputs/stage5/stage5_inverse_table_rebase_caps3_4_20260713/train/C_rebase/cap_3/unfrozen_recurrent_step_250.pt",
+      "checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_inverse_table_rebase_caps3_4_20260713/C_rebase_cap_3_selected/unfrozen_recurrent_step_250.pt",
+      "checkpoint_evals": [
+        {
+          "checkpoint": "outputs/stage5/stage5_inverse_table_rebase_caps3_4_20260713/train/C_rebase/cap_3/unfrozen_recurrent_step_250.pt",
+          "dose": {
+            "equalization_ratios": [
+              1.003176726299986,
+              1.0036783146630717,
+              0.993144959036942
+            ],
+            "newest_raw_active_labels": 660,
+            "newest_weighted_active_labels": 1397.6470588235136,
+            "raw_active_labels": [
+              2000,
+              1334,
+              660
+            ],
+            "step": 250,
+            "weighted_active_labels": [
+              705.8823529411999,
+              706.2352941176251,
+              1397.6470588235136
+            ]
+          },
+          "gate": {
+            "accuracy": 0.984375,
+            "cap": 3,
+            "correct": 63,
+            "passed": false,
+            "required_correct": 46,
+            "required_total": 64,
+            "total": 64
+          },
+          "step": 250,
+          "summary": "outputs/stage5/stage5_inverse_table_rebase_caps3_4_20260713/eval/C_rebase_cap3_step250_gate/summary.json"
+        }
+      ],
+      "checkpoint_sha256": "83767ebff2c2a13a2f15fe8266f605fb8485985c3289c1f1720cd70c122a9ac5",
+      "conditional_transition_success": {
+        "2": {
+          "accuracy": 1.0,
+          "correct": 128,
+          "total": 128
+        },
+        "3": {
+          "accuracy": 0.984375,
+          "correct": 63,
+          "total": 64
+        }
+      },
+      "diagnostic_summary": "outputs/stage5/stage5_inverse_table_rebase_caps3_4_20260713/eval/C_rebase_cap3_selected_diagnostic/summary.json",
+      "dose_to_bar": {
+        "equalization_ratios": [
+          1.003176726299986,
+          1.0036783146630717,
+          0.993144959036942
+        ],
+        "newest_raw_active_labels": 660,
+        "newest_weighted_active_labels": 1397.6470588235136,
+        "raw_active_labels": [
+          2000,
+          1334,
+          660
+        ],
+        "step": 250,
+        "weighted_active_labels": [
+          705.8823529411999,
+          706.2352941176251,
+          1397.6470588235136
+        ]
+      },
+      "final_dose": {
+        "equalization_ratios": [
+          1.003176726299986,
+          1.0036783146630717,
+          0.993144959036942
+        ],
+        "newest_raw_active_labels": 660,
+        "newest_weighted_active_labels": 1397.6470588235136,
+        "raw_active_labels": [
+          2000,
+          1334,
+          660
+        ],
+        "step": 250,
+        "weighted_active_labels": [
+          705.8823529411999,
+          706.2352941176251,
+          1397.6470588235136
+        ]
+      },
+      "gate": {
+        "accuracy": 0.984375,
+        "cap": 3,
+        "correct": 63,
+        "passed": false,
+        "required_correct": 46,
+        "required_total": 64,
+        "total": 64
+      },
+      "optimizer_state_policy": "preserved_within_stage_restarted_identically_at_stage_boundary",
+      "optimizer_steps_spent": 250,
+      "plan": {
+        "cap": 3,
+        "dose_limited_optimizer_steps": 250,
+        "effective_batch_size": 8,
+        "eval_every": 250,
+        "expected_newest_weighted_labels": 1411.764705882353,
+        "exposure_fractions": [
+          1.0,
+          0.6666666666666666,
+          0.3333333333333333
+        ],
+        "loop_label_weights": [
+          0.35294117647058826,
+          0.5294117647058824,
+          2.1176470588235294
+        ],
+        "newest_multiplier": 2.0,
+        "optimizer_steps": 250,
+        "phase_envelope_limited": false,
+        "weighted_label_budget": 1500.0
+      },
+      "selected_step": 250,
+      "status": "blocked_synthetic_guardrail",
+      "stratified_loop2_cka": null,
+      "synthetic_guardrail": {
+        "active_diagonal_min": 0.8125,
+        "floor": 0.93,
+        "passed": false,
+        "summary": "outputs/stage5/stage5_inverse_table_rebase_caps3_4_20260713/guardrails/C_rebase_cap3_synthetic/summary.json"
+      },
+      "target_decodability": {
+        "1": {
+          "accuracy": 0.9895833134651184,
+          "lift_over_p95": 0.8958333134651184,
+          "permutation_p95": 0.09375,
+          "status": "completed",
+          "test_rows": 96,
+          "train_rows": 96
+        },
+        "2": {
+          "accuracy": 0.78125,
+          "lift_over_p95": 0.6875,
+          "permutation_p95": 0.09375,
+          "status": "completed",
+          "test_rows": 64,
+          "train_rows": 64
+        },
+        "3": {
+          "accuracy": 0.375,
+          "lift_over_p95": 0.28125,
+          "permutation_p95": 0.09375,
+          "status": "completed",
+          "test_rows": 32,
+          "train_rows": 32
+        }
+      }
+    }
+  ],
+  "status": "cap3_blocked_synthetic_guardrail"
 }

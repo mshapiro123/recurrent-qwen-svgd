@@ -1,0 +1,61 @@
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+dtype: bfloat16
+adapter_dtype: float32
+attn_implementation: default
+layer_split: 6,18
+max_length: 640
+max_loops: 3
+loop_loss_mode: weighted_per_loop_labels
+loop_label_weights:
+- 0.35294117647058826
+- 0.5294117647058824
+- 2.1176470588235294
+newest_loop_multiplier: 2.0
+dose_assert_every: 200
+dose_ratio_min: 0.8
+dose_ratio_max: 1.25
+initial_halt_prob: 0.15
+beta: 0.0
+halt_target_nll_weight: 0.0
+loop_control_ce_weight: 0.0
+batch_size: 1
+gradient_accumulation_steps: 8
+minimum_effective_batch_size: 8
+seed: 81302
+optimizer: adamw
+learning_rate: 1.0e-05
+adamw_lr: 1.0e-05
+weight_decay: 0.0
+max_grad_norm: 0.5
+max_steps: 250
+save_every: 250
+log_every: 25
+bridge_projection_mode: split
+bridge_prelude_lr_multiplier: 10.0
+bridge_prelude_weight_decay: 0.0
+bridge_prelude_lr_include_norm: false
+bridge_prelude_grad_multiplier: 1.0
+train_on_prompt: false
+gradient_checkpointing: true
+require_active_supervision: true
+require_nonzero_train_gradient: true
+output_dir: outputs/stage5/stage5_inverse_table_rebase_caps3_4_20260713/train/C_rebase/cap_3
+resume_from: outputs/stage5/stage5_inverse_table_rebase_caps3_4_20260713/restored/locked_inverse_table_cap2.pt
+resume_lora:
+  enabled: false
+merge_lora_before_unfreeze: false
+require_lora_loaded_before_merge: false
+train_auxiliary:
+  bridge: true
+  halting: false
+  reentry_adapter: false
+  latent: false
+recurrence_curriculum:
+  enabled: false
+  start_loop: 3
+  end_loop: 3
+  schedule: linear
+  target_source: row_capped
+  ramp_compute: false
+synthetic_phase: inverse_composition_staircase
+synthetic_stage: cap_3

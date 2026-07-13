@@ -1,0 +1,87 @@
+{
+  "accuracy": 0.9713541666666666,
+  "active_diagonal": {
+    "1": 1.0,
+    "10": 0.96875,
+    "11": 0.90625,
+    "12": 0.8125,
+    "2": 1.0,
+    "3": 1.0,
+    "4": 1.0,
+    "5": 1.0,
+    "6": 1.0,
+    "7": 1.0,
+    "8": 0.96875,
+    "9": 1.0
+  },
+  "active_diagonal_min": 0.8125,
+  "by_depth": {
+    "1": {
+      "accuracy": 1.0,
+      "correct": 32,
+      "total": 32
+    },
+    "10": {
+      "accuracy": 0.96875,
+      "correct": 31,
+      "total": 32
+    },
+    "11": {
+      "accuracy": 0.90625,
+      "correct": 29,
+      "total": 32
+    },
+    "12": {
+      "accuracy": 0.8125,
+      "correct": 26,
+      "total": 32
+    },
+    "2": {
+      "accuracy": 1.0,
+      "correct": 32,
+      "total": 32
+    },
+    "3": {
+      "accuracy": 1.0,
+      "correct": 32,
+      "total": 32
+    },
+    "4": {
+      "accuracy": 1.0,
+      "correct": 32,
+      "total": 32
+    },
+    "5": {
+      "accuracy": 1.0,
+      "correct": 32,
+      "total": 32
+    },
+    "6": {
+      "accuracy": 1.0,
+      "correct": 32,
+      "total": 32
+    },
+    "7": {
+      "accuracy": 1.0,
+      "correct": 32,
+      "total": 32
+    },
+    "8": {
+      "accuracy": 0.96875,
+      "correct": 31,
+      "total": 32
+    },
+    "9": {
+      "accuracy": 1.0,
+      "correct": 32,
+      "total": 32
+    }
+  },
+  "checkpoint": "outputs/stage5/stage5_inverse_table_rebase_caps3_4_20260713/restored/C_rebase_cap3.pt",
+  "correct": 373,
+  "data_jsonl": "outputs/stage5/stage5_inverse_table_rebase_caps3_4_20260713/guardrail_data/synthetic_frozen_32_per_depth_d1_12.jsonl",
+  "kind": "synthetic_diagonal_guardrail",
+  "max_depth": 12,
+  "rows": 384,
+  "value_prefix": "letter:"
+}
