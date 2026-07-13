@@ -570,3 +570,36 @@ If the recovery establishes deterministic inverse composition, proceed directly 
 | Boundary/data/evaluator repair | `bcd3028` |
 | Valid run artifacts | `a0e42fc`, `e14c4a8`, `57f377c` |
 | Curriculum recovery implementation | `d705ba8` |
+
+---
+
+## 13. Curriculum-construction audit amendment
+
+The post-recovery strategy review identified a necessary eval-only autopsy before any clean restart. Static code verification corrected one proposed explanation:
+
+- the first arm did execute eight recurrent loops for every row;
+- `per_loop_labels` averaged only loops with active labels, and labels after row depth were `-100`;
+- the injective evaluator requested `loop_counts=[depth]` and therefore read loop `d`, not loop 8;
+- the recovery enabled the planned active-compute ramp.
+
+Therefore the experiment did **not** train a hold objective after depth and did **not** suffer a train/eval end-reader mismatch. Fixed-eight compute was still wasteful and may have favored the easiest depth-one shortcut, but the stronger claim is falsified.
+
+A confusion audit of the already landed diagonal predictions also rejects the narrower `invert once, then hold` account. The fixed-boundary run produced 22 correct starts, 4 one-step preimages, 19 other orbit intermediates, and 83 other legal names. Recovery produced 26 correct starts, 6 one-step preimages, 14 other orbit intermediates, and 82 other legal names. Errors mostly scatter over the legal symbol vocabulary.
+
+The next run is consequently read-only and pauses for review. Target `phase_g_curriculum_autopsy` evaluates both exact checkpoints on identical regenerated rows whose payload hashes must match the prior manifests. It records:
+
+1. full loop 1-8 reverse-chain matrices on held-out rows and on 16 rows per depth reconstructed from the exact seeded DataLoader prefix seen by both checkpoints;
+2. loop-one accuracy by row depth;
+3. diagonal confusion and above-diagonal iterate/hold/other behavior;
+4. an exploratory paired state-query rank probe at depth two;
+5. answer-head coverage against the mandatory uniform baseline `1 - (1 - 1/N)^K`;
+6. a prepared, untrained inverse-table control dataset that preserves chains and outcomes while converting each inverse search into forward-style lookup.
+
+At N=20, uniform K=20 coverage is approximately `0.6415`; the prior observed `0.5703` is below it. This comparison is now emitted by the coverage evaluator for every K, together with the uniform valid-sample-rate baseline.
+
+No restart, inverse-table training, latent head, or stochastic-width work is authorized by this amendment. The autopsy determines the next branch:
+
+- train and held-out composition both fail: fixed-table micro-overfit, then inverse-table or two-loops-per-step isolation;
+- train fits but held-out fails: increase table diversity and formatting randomization;
+- loop one is depth-general but loop two fails: target the prompt-anchored to state-carried re-entry transition;
+- inverse-table control composes while forward-table abduction fails: reverse search, not recurrence, is the bottleneck.

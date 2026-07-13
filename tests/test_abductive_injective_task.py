@@ -14,6 +14,7 @@ from training.abductive_injective_task import (
     row_manifest,
     validate_phase_g_frozen_rows,
     validate_rows,
+    with_inverse_table_prompt,
 )
 
 
@@ -122,3 +123,24 @@ def test_phase_g_frozen_rows_are_balanced_exact_and_split_disjoint() -> None:
     assert validation["stratum_counts"] == {"unique": 8, "small": 8, "large": 8}
     assert {row["id"] for row in calibration}.isdisjoint({row["id"] for row in test})
     assert all(row["posterior_chain_sampling"] == "uniform_over_exact_valid_preimages" for row in calibration)
+
+
+def test_inverse_table_prompt_preserves_targets_and_makes_each_step_forward_lookup() -> None:
+    config = AbductiveInjectiveConfig(n_symbols=8, max_depth=3, rows_per_depth=1, seed=71)
+    row = next(item for item in build_rows(config, split="train", mode="injective") if item["depth"] == 3)
+
+    inverse_row = with_inverse_table_prompt(row)
+
+    assert inverse_row["table_direction"] == "inverse_given"
+    assert inverse_row["completion"] == row["completion"]
+    assert inverse_row["loop_completions"] == row["loop_completions"]
+    assert "Starting with" in inverse_row["question"]
+    assert "reverse handoffs" in inverse_row["question"]
+
+    inverse_mapping = inverse_row["display_mapping"]
+    current = row["observed_target"]
+    observed_chain = []
+    for _ in range(row["depth"]):
+        current = inverse_mapping[current]
+        observed_chain.append(current)
+    assert observed_chain == [value.strip() for value in row["loop_completions"]]

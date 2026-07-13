@@ -1058,3 +1058,18 @@ Colab/Drive backups for selected runs.
   zero greedy hits at depths 4, 5, and 7. The runner correctly recorded
   `blocked_injective_smoke` and returned 2 after training. This does not open
   abductive or G-alpha work and does not justify another automatic dose run.
+- 2026-07-12 invalidator B10 and curriculum-autopsy amendment: the original
+  Phase G attempt with zero active labels remains invalid under B10, with
+  active-supervision preflight and nonzero-gradient abort now standing
+  countermeasures. Static verification of the later valid runs found no second
+  construction invalidator: fixed-eight compute was used initially, but
+  labels after row depth were masked and evaluation read loop `d`, so no hold
+  objective or end-reader mismatch existed. Saved diagonal predictions also
+  falsify an invert-once-then-hold policy (one-step-preimage counts 4/128 and
+  6/128); most errors were other legal names. Target
+  `phase_g_curriculum_autopsy` now runs the missing train/held-out loop matrix,
+  deep-row loop-one, above-diagonal, state-query, and corrected uniform-
+  coverage diagnostics on both exact checkpoint hashes. It also prepares but
+  does not train the inverse-table control. The K=20 N=20 uniform baseline is
+  `1-(19/20)^20 = 0.6415`, above the prior observed `0.5703`; future coverage
+  summaries report this baseline and raw per-sample validity explicitly.

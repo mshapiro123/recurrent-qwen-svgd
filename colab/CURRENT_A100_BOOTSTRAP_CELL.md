@@ -101,6 +101,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "natural_surface_transfer_rung0" - GPU frozen natural-surface baseline, then verbal rung-zero SFT.
 #   "phase_g_experiment1" - deterministic injective/abductive gates plus matched-K answer sampling.
 #   "phase_g_injective_curriculum_recovery" - continue the fixed-boundary injective checkpoint with a 2-to-8 loop curriculum.
+#   "phase_g_curriculum_autopsy" - read-only train/held-out loop matrix and curriculum-construction audit.
 #   "phase_g_n24_calibration_gate" - arbitrary-function deterministic substrate gate before G-alpha.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
@@ -2585,6 +2586,24 @@ TARGETS = {
             "STAGE5_PHASE_G_EXP1_CURRICULUM_RAMP_COMPUTE": "1",
             "STAGE5_PHASE_G_EXP1_GATE_SAMPLE_COUNTS": "1",
             "STAGE5_PHASE_G_EXP1_DISCONNECT": "0",
+        },
+    },
+    "phase_g_curriculum_autopsy": {
+        "path": "colab/STAGE5_PHASE_G_CURRICULUM_AUTOPSY_CELL.py",
+        "markers": [
+            "STAGE5_PHASE_G_CURRICULUM_AUTOPSY_CELL_VERSION",
+            "phase_g_curriculum_autopsy",
+            "eval/eval_abductive_curriculum_autopsy.py",
+            "uniform_expected_coverage",
+            "inverse_table_control_prepared_not_trained",
+            "next_training_disabled_pending_strategy_review",
+        ],
+        "env": {
+            "STAGE5_PHASE_G_AUTOPSY_RUN_ID": "stage5_phase_g_curriculum_autopsy_20260712",
+            "STAGE5_PHASE_G_AUTOPSY_ROWS_PER_DEPTH": "16",
+            "STAGE5_PHASE_G_AUTOPSY_STATE_QUERY_EXAMPLES": "8",
+            "STAGE5_PHASE_G_AUTOPSY_DTYPE": "bfloat16",
+            "STAGE5_PHASE_G_AUTOPSY_DISCONNECT": "0",
         },
     },
     "phase_g_n24_calibration_gate": {

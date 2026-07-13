@@ -336,6 +336,44 @@ def build_row(instance: AbductiveInstance) -> dict[str, Any]:
     return row
 
 
+def with_inverse_table_prompt(row: dict[str, Any]) -> dict[str, Any]:
+    """Render an injective row as forward lookup over the displayed inverse table.
+
+    Targets, selected chains, and answers are unchanged. Only the information
+    presentation changes, isolating reverse search from recurrent composition.
+    """
+
+    mapping = {str(left): str(right) for left, right in row["mapping"].items()}
+    if len(set(mapping.values())) != len(mapping):
+        raise ValueError("inverse-table control requires an injective mapping")
+    inverse = {right: left for left, right in mapping.items()}
+    table_lines = str(row["question"]).split("\n\n", 1)[0].splitlines()
+    forward_keys = [line.split(" always passes the key to ", 1)[0] for line in table_lines]
+    if set(forward_keys) != set(mapping):
+        raise ValueError("could not recover the original displayed table order")
+    inverse_sources = [mapping[key] for key in forward_keys]
+    table = "\n".join(
+        f"{source} always passes the key to {inverse[source]}."
+        for source in inverse_sources
+    )
+    question = (
+        f"{table}\n\n"
+        f"Starting with {row['observed_target']}, after exactly {int(row['depth'])} "
+        "reverse handoffs, who has the key? Answer with one valid name."
+    )
+    transformed = dict(row)
+    transformed.update(
+        {
+            "question": question,
+            "prompt": f"{question}\nAnswer:",
+            "table_direction": "inverse_given",
+            "display_mapping": inverse,
+            "control_role": "reverse_search_removed_composition_preserved",
+        }
+    )
+    return transformed
+
+
 def _seed_for(seed: int, split: str, mode: TaskMode, depth: int, row_index: int) -> int:
     split_offset = {"train": 0, "val": 1_000_000, "test": 2_000_000}.get(split, 3_000_000)
     mode_offset = 0 if mode == "injective" else 10_000_000

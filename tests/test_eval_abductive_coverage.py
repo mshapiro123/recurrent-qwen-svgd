@@ -8,6 +8,7 @@ from eval.eval_abductive_coverage import (
     sample_names,
     score_sample_prefix,
     summarize_rows,
+    uniform_expected_coverage,
 )
 
 
@@ -90,3 +91,34 @@ def test_target_entropy_reader_uses_explicit_candidate_entropy(tmp_path) -> None
     )
 
     assert read_target_entropies(path.as_posix(), field="latent_candidate_entropy") == {"row-1": 1.25}
+
+
+def test_uniform_expected_coverage_matches_unique_answer_formula() -> None:
+    assert uniform_expected_coverage(n_symbols=20, samples=1) == 0.05
+    assert abs(uniform_expected_coverage(n_symbols=20, samples=20) - 0.6415140775914581) < 1e-12
+
+
+def test_summary_reports_uniform_sampling_baselines() -> None:
+    rows = [
+        {
+            "depth": 2,
+            "n_symbols": 20,
+            "coverage_denominator": 1,
+            "greedy_valid": False,
+            "sampling": {
+                "20": {
+                    "valid_samples": 10,
+                    "unique_samples": 10,
+                    "unique_valid_count": 1,
+                    "coverage": 1.0,
+                    "full_coverage": True,
+                }
+            },
+        }
+    ]
+
+    summary = summarize_rows(rows, [20])["overall"]["sampling"]["20"]
+
+    assert abs(summary["uniform_expected_coverage"] - 0.6415140775914581) < 1e-12
+    assert summary["uniform_expected_valid_sample_rate"] == 0.05
+    assert summary["coverage_minus_uniform"] == 1.0 - summary["uniform_expected_coverage"]

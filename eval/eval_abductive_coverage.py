@@ -37,6 +37,22 @@ def parse_sample_counts(text: str) -> list[int]:
     return counts
 
 
+def uniform_expected_coverage(*, n_symbols: int, samples: int) -> float:
+    """Expected fraction of an exact preimage set found by uniform name sampling.
+
+    Each valid name has the same probability of appearing at least once, so the
+    expected fraction is independent of the number of valid preimages.
+    """
+
+    if int(n_symbols) < 1:
+        raise ValueError("n_symbols must be positive")
+    if int(samples) < 1:
+        raise ValueError("samples must be positive")
+    if int(samples) == 1:
+        return 1.0 / int(n_symbols)
+    return 1.0 - (1.0 - 1.0 / int(n_symbols)) ** int(samples)
+
+
 def sample_names(
     scores: dict[str, float],
     *,
@@ -89,13 +105,38 @@ def summarize_rows(rows: list[dict[str, Any]], sample_counts: list[int]) -> dict
             values = [row["sampling"][key] for row in subset]
             samples_total = total * count
             valid_samples = sum(int(value["valid_samples"]) for value in values)
+            mean_coverage = sum(float(value["coverage"]) for value in values) / total if total else 0.0
+            has_uniform_baseline = bool(subset) and all("n_symbols" in row for row in subset)
+            uniform_coverages = (
+                [
+                    uniform_expected_coverage(n_symbols=int(row["n_symbols"]), samples=count)
+                    for row in subset
+                ]
+                if has_uniform_baseline
+                else []
+            )
+            uniform_valid_rates = (
+                [
+                    int(row["coverage_denominator"]) / int(row["n_symbols"])
+                    for row in subset
+                ]
+                if has_uniform_baseline
+                else []
+            )
+            uniform_coverage = sum(uniform_coverages) / total if uniform_coverages else None
+            uniform_valid_rate = sum(uniform_valid_rates) / total if uniform_valid_rates else None
             result["sampling"][key] = {
                 "K": count,
                 "valid_sample_rate": valid_samples / samples_total if samples_total else 0.0,
                 "mean_unique_valid": (
                     sum(int(value["unique_valid_count"]) for value in values) / total if total else 0.0
                 ),
-                "mean_coverage": sum(float(value["coverage"]) for value in values) / total if total else 0.0,
+                "mean_coverage": mean_coverage,
+                "uniform_expected_coverage": uniform_coverage,
+                "coverage_minus_uniform": (
+                    mean_coverage - uniform_coverage if uniform_coverage is not None else None
+                ),
+                "uniform_expected_valid_sample_rate": uniform_valid_rate,
                 "full_coverage_rate": (
                     sum(int(value["full_coverage"]) for value in values) / total if total else 0.0
                 ),
