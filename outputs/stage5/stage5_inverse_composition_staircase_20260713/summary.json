@@ -1,0 +1,143 @@
+{
+  "arms": {
+    "C": {
+      "role": "inverse_table_forward_lookup_control",
+      "stages": []
+    },
+    "F": {
+      "role": "forward_table_inverse_composition_experiment",
+      "stages": []
+    }
+  },
+  "datasets": {
+    "canonical": {
+      "test": {
+        "depth_counts": {
+          "1": 128,
+          "2": 128,
+          "3": 128,
+          "4": 128,
+          "5": 128,
+          "6": 128,
+          "7": 128,
+          "8": 128
+        },
+        "row_id_sha256": "418532a1e52b320054f9ffb202d3f335cf39579dab1727a6f82c20bd16ee01ff",
+        "row_sha256": "4dd29d9fb7b4170390234646c7c1773377eea56145f6ae659e38f3ae443f2068",
+        "rows": 1024,
+        "solution_counts": {
+          "1": 1024
+        }
+      },
+      "train": {
+        "depth_counts": {
+          "1": 256,
+          "2": 256,
+          "3": 256,
+          "4": 256,
+          "5": 256,
+          "6": 256,
+          "7": 256,
+          "8": 256
+        },
+        "row_id_sha256": "3dd6158e18daa301f589af9524dc44711209e9c1880e4b4207ab295ee49d6e0e",
+        "row_sha256": "4ab6377a15d64cf5e07c8855ed05f432feed75e512e196cbd53f648dc9fcb4a5",
+        "rows": 2048,
+        "solution_counts": {
+          "1": 2048
+        }
+      }
+    },
+    "control": {
+      "test": {
+        "depth_counts": {
+          "1": 128,
+          "2": 128,
+          "3": 128,
+          "4": 128,
+          "5": 128,
+          "6": 128,
+          "7": 128,
+          "8": 128
+        },
+        "row_id_sha256": "418532a1e52b320054f9ffb202d3f335cf39579dab1727a6f82c20bd16ee01ff",
+        "row_sha256": "e5fd645d446fcccc3e869d6bde95760b1ba3d3465471bc1234e5b66c86208eda",
+        "rows": 1024,
+        "solution_counts": {
+          "1": 1024
+        }
+      },
+      "train": {
+        "depth_counts": {
+          "1": 256,
+          "2": 256,
+          "3": 256,
+          "4": 256,
+          "5": 256,
+          "6": 256,
+          "7": 256,
+          "8": 256
+        },
+        "row_id_sha256": "3dd6158e18daa301f589af9524dc44711209e9c1880e4b4207ab295ee49d6e0e",
+        "row_sha256": "a034a733b320a3699feed371dd765dc6456112e6f77d73ff18351fb92ef87b0e",
+        "rows": 2048,
+        "solution_counts": {
+          "1": 2048
+        }
+      }
+    },
+    "matched_identity": {
+      "non_rendering_mismatches": [],
+      "status": "passed",
+      "test": {
+        "allowed_rendering_keys": [
+          "control_role",
+          "display_mapping",
+          "prompt",
+          "question",
+          "table_direction"
+        ],
+        "non_rendering_mismatches": [],
+        "rows": 1024,
+        "status": "passed"
+      },
+      "train": {
+        "allowed_rendering_keys": [
+          "control_role",
+          "display_mapping",
+          "prompt",
+          "question",
+          "table_direction"
+        ],
+        "non_rendering_mismatches": [],
+        "rows": 2048,
+        "status": "passed"
+      }
+    }
+  },
+  "guardrail_data": {
+    "natural": "outputs/stage5/stage5_inverse_composition_staircase_20260713/guardrail_data/natural_surface_relay_pointer_16_each_d1_8.jsonl",
+    "synthetic": "outputs/stage5/stage5_inverse_composition_staircase_20260713/guardrail_data/synthetic_frozen_32_per_depth_d1_12.jsonl"
+  },
+  "keeper": {
+    "checkpoint": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/checkpoints/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/unfrozen_recurrent_step_2000.pt",
+    "checkpoint_bytes": 370811845,
+    "checkpoint_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+    "pointer_min_1_8": 0.8125,
+    "pointer_min_9_12": 0.53125,
+    "pointer_total_accuracy": 0.8715945512820513,
+    "relay_min_1_8": 0.828125,
+    "relay_min_9_12": 0.59375,
+    "relay_total_accuracy": 0.8916266025641025,
+    "source_run_id": "stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812",
+    "status": "green",
+    "step": 2000,
+    "synthetic_full_width_min_1_12": 0.953125,
+    "synthetic_guardrail_floor": 0.93,
+    "synthetic_guardrail_pass": true
+  },
+  "kind": "stage5_inverse_composition_staircase",
+  "phase_g_alpha_status": "closed",
+  "run_id": "stage5_inverse_composition_staircase_20260713",
+  "status": "data_ready"
+}
