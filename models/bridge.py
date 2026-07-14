@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import torch
+import torch.nn.functional as F
 from torch import nn
 
 
@@ -82,6 +83,7 @@ class IdentityGatedBridge(nn.Module):
         self,
         hidden_states: torch.Tensor,
         prelude_hidden: torch.Tensor | None = None,
+        prelude_ablation_basis: torch.Tensor | None = None,
     ) -> torch.Tensor:
         input_dtype = hidden_states.dtype
         work = hidden_states.to(dtype=self.proj.weight.dtype)
@@ -95,9 +97,37 @@ class IdentityGatedBridge(nn.Module):
                     f"got prelude_hidden={tuple(prelude.shape)}, hidden_states={tuple(work.shape)}"
                 )
             prelude = self.prelude_norm(prelude)
-        if self.split_projection:
-            translated = self.prelude_proj(prelude) + self.state_proj(work)
+        if prelude_ablation_basis is None:
+            # Preserve the production operation order exactly when the eval-only
+            # intervention is disabled.
+            if self.split_projection:
+                translated = self.prelude_proj(prelude) + self.state_proj(work)
+            else:
+                translated = self.proj(torch.cat([prelude, work], dim=-1))
         else:
-            translated = self.proj(torch.cat([prelude, work], dim=-1))
+            basis = prelude_ablation_basis.to(device=work.device, dtype=work.dtype)
+            if basis.ndim != 2 or basis.shape[0] != self.hidden_size:
+                raise ValueError(
+                    "prelude_ablation_basis must have shape [hidden_size, rank]; "
+                    f"got {tuple(basis.shape)} for hidden_size={self.hidden_size}"
+                )
+            if self.split_projection:
+                prelude_contribution = self.prelude_proj(prelude)
+                state_contribution = self.state_proj(work)
+            else:
+                prelude_contribution = F.linear(
+                    prelude,
+                    self.proj.weight[:, : self.hidden_size],
+                    bias=None,
+                )
+                state_contribution = F.linear(
+                    work,
+                    self.proj.weight[:, self.hidden_size :],
+                    bias=self.proj.bias,
+                )
+            prelude_contribution = prelude_contribution - (
+                (prelude_contribution @ basis) @ basis.transpose(0, 1)
+            )
+            translated = prelude_contribution + state_contribution
         gate = self.bridge_gate.to(device=hidden_states.device, dtype=work.dtype)
         return (work + gate * (translated - work)).to(dtype=input_dtype)

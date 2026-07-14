@@ -144,6 +144,55 @@ def test_recurrent_loop1_does_not_call_reentry_bridge():
     assert bridge.calls == []
 
 
+def test_bridge_prelude_ablation_flag_off_is_exact_through_wrapper():
+    torch.manual_seed(0)
+    wrapper = RecurrentQwenForCausalLM(TinyCausalLM().eval(), layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+    kwargs = dict(
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        max_loops=3,
+        use_cache=False,
+        return_dict=True,
+        return_loop_logits=True,
+    )
+
+    with torch.no_grad():
+        baseline = wrapper(**kwargs).loop_logits
+        explicit_off = wrapper(**kwargs, bridge_prelude_ablation_basis=None).loop_logits
+
+    assert baseline is not None
+    assert torch.equal(baseline, explicit_off)
+
+
+def test_bridge_prelude_ablation_changes_only_reentry_loops_through_wrapper():
+    torch.manual_seed(0)
+    wrapper = RecurrentQwenForCausalLM(TinyCausalLM().eval(), layer_split=LayerSplit(1, 3)).eval()
+    wrapper.bridge.convert_to_split_projection()
+    with torch.no_grad():
+        wrapper.bridge.prelude_proj.weight.copy_(torch.eye(8))
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+    basis = torch.eye(8)[:, :1]
+    kwargs = dict(
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        max_loops=3,
+        use_cache=False,
+        return_dict=True,
+        return_loop_logits=True,
+    )
+
+    with torch.no_grad():
+        baseline = wrapper(**kwargs).loop_logits
+        ablated = wrapper(**kwargs, bridge_prelude_ablation_basis=basis).loop_logits
+
+    assert baseline is not None and ablated is not None
+    assert torch.equal(baseline[:, :, 0], ablated[:, :, 0])
+    assert not torch.equal(baseline[:, :, 1:], ablated[:, :, 1:])
+
+
 def test_reentry_rescale_mode_preserves_loop1_identity_on_tiny_model():
     torch.manual_seed(0)
     model = TinyCausalLM().eval()

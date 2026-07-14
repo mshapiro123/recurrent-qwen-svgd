@@ -1153,3 +1153,17 @@ Colab/Drive backups for selected runs.
   envelope repeatability (4 total correct, 3 per depth, 1 parse failure), keeps
   structural checks exact, and reuses completed raw rows after interruption
   instead of rerunning D step-4000.
+- 2026-07-13 F9 multi-channel bridge precursor: the architecture remains
+  banked while an eval-only battery tests its necessary premise. The locked
+  channel basis is the 14 query-head write subspaces from final-recurrent-layer
+  `o_proj` column blocks, not residual-coordinate or 2-KV-head slices. M1
+  measures loop-1-envelope drift concentration, M2 measures answer-query table
+  attention with layer-head identity stability, and M3 removes only the
+  selected subspace of the prelude contribution behind a bit-exact-off flag.
+  All three use at least 20 dimension-matched random controls. M1/M2 require
+  replication on N24 step 6000 and backward recovery; M3 uses N24 active-label
+  damage. Activation still requires at least two positive measurements **and**
+  staircase reading one. The landed staircase is
+  `experiment_stalled_at_matched_dose`, so this battery cannot presently move
+  F9 out of BANKED status. Full spec:
+  `docs/MULTICHANNEL_BRIDGE_PRECURSOR_SPEC.md`.

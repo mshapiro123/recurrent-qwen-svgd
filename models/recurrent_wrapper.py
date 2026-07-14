@@ -267,6 +267,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         reentry_tail_damper_strength: float = 0.0,
         recurrent_state_overrides: Optional[dict[int, torch.Tensor]] = None,
         return_loop_recurrent_states: bool = False,
+        bridge_prelude_ablation_basis: Optional[torch.Tensor] = None,
         logits_to_keep: int | torch.Tensor = 0,
         **_: Any,
     ) -> RecurrentQwenOutput | tuple[Any, ...]:
@@ -465,7 +466,14 @@ class RecurrentQwenForCausalLM(nn.Module):
                     recurrent_state = override
             loop_input = recurrent_state
             if loop_idx > 0:
-                loop_input = self.bridge(loop_input, prelude_hidden=prelude_hidden_states)
+                if bridge_prelude_ablation_basis is None:
+                    loop_input = self.bridge(loop_input, prelude_hidden=prelude_hidden_states)
+                else:
+                    loop_input = self.bridge(
+                        loop_input,
+                        prelude_hidden=prelude_hidden_states,
+                        prelude_ablation_basis=bridge_prelude_ablation_basis,
+                    )
                 if reentry_reference_rms is not None:
                     loop_input = self._rescale_to_sequence_rms(
                         loop_input,

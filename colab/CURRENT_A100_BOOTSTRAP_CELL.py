@@ -106,6 +106,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
 #   "inverse_composition_staircase" - matched forward/inverse-table staircase with weighted loop-dose gates.
 #   "inverse_table_rebase_caps3_4" - continue the green inverse-table control through caps 3 and 4.
 #   "phase_g_n24_calibration_gate" - arbitrary-function deterministic substrate gate before G-alpha.
+#   "multichannel_bridge_precursor" - eval-only M1/M2/M3 query-head-subspace bridge precursor battery.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 PREFER_LOCAL_HEAD = os.environ.get("STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD", "0").strip().lower() in {
@@ -2693,6 +2694,25 @@ TARGETS = {
             "STAGE5_PHASE_G_N24_GATE_SOURCE": "outputs/stage5/stage5_phase_g_experiment1_fixed_boundary_20260712/summary.json",
             "STAGE5_PHASE_G_N24_GATE_DTYPE": "bfloat16",
             "STAGE5_PHASE_G_N24_GATE_DISCONNECT": "0",
+        },
+    },
+    "multichannel_bridge_precursor": {
+        "path": "colab/STAGE5_MULTICHANNEL_BRIDGE_PRECURSOR_CELL.py",
+        "markers": [
+            "STAGE5_MULTICHANNEL_BRIDGE_PRECURSOR_CELL_VERSION",
+            "eval/eval_multichannel_bridge_precursor.py",
+            "tests/test_multichannel_bridge_precursor.py",
+            "prelude_ablation_basis",
+            "random_orthogonal_partitions",
+        ],
+        "env": {
+            "STAGE5_MULTICHANNEL_RUN_ID": "stage5_multichannel_bridge_precursor_20260713",
+            "STAGE5_MULTICHANNEL_CONDITIONS": "n24_step6000,natural_surface_keeper,backward_fixed_boundary,backward_recovery",
+            "STAGE5_MULTICHANNEL_ROWS_PER_DEPTH": "64",
+            "STAGE5_MULTICHANNEL_RANDOM_DRAWS": "20",
+            "STAGE5_MULTICHANNEL_M3_BATCH_SIZE": "8",
+            "STAGE5_MULTICHANNEL_DTYPE": "bfloat16",
+            "STAGE5_MULTICHANNEL_DISCONNECT": "0",
         },
     },
     "splice_injection_diagnostic": {

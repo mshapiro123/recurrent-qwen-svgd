@@ -1,3 +1,4 @@
+import pytest
 import torch
 from torch import nn
 
@@ -44,6 +45,46 @@ def test_identity_gated_bridge_prelude_path_is_functional_when_trained():
     out = bridge(hidden, prelude_hidden=prelude)
 
     assert not torch.allclose(out, hidden)
+
+
+def test_bridge_injection_ablation_flag_off_is_exact_for_concat_and_split() -> None:
+    torch.manual_seed(41)
+    hidden = torch.randn(2, 3, 4)
+    prelude = torch.randn_like(hidden)
+    for mode in ("concat", "split"):
+        bridge = IdentityGatedBridge(hidden_size=4, projection_mode=mode)
+        with torch.no_grad():
+            if mode == "split":
+                bridge.prelude_proj.weight.copy_(torch.eye(4))
+            else:
+                bridge.proj.weight[:, :4].copy_(torch.eye(4))
+        baseline = bridge(hidden, prelude_hidden=prelude)
+        explicit_off = bridge(hidden, prelude_hidden=prelude, prelude_ablation_basis=None)
+        assert torch.equal(baseline, explicit_off)
+
+
+def test_bridge_injection_ablation_removes_only_selected_prelude_subspace() -> None:
+    bridge = IdentityGatedBridge(hidden_size=4, projection_mode="split")
+    hidden = torch.tensor([[[2.0, 3.0, 5.0, 7.0]]])
+    prelude = torch.tensor([[[11.0, 13.0, 17.0, 19.0]]])
+    with torch.no_grad():
+        bridge.prelude_norm = nn.Identity()
+        bridge.prelude_proj.weight.copy_(torch.eye(4))
+        bridge.state_proj.weight.copy_(torch.eye(4))
+        bridge.state_proj.bias.zero_()
+        bridge.bridge_gate.fill_(1.0)
+    basis = torch.tensor([[1.0], [0.0], [0.0], [0.0]])
+
+    output = bridge(hidden, prelude_hidden=prelude, prelude_ablation_basis=basis)
+
+    assert torch.equal(output, hidden + torch.tensor([[[0.0, 13.0, 17.0, 19.0]]]))
+
+
+def test_bridge_injection_ablation_rejects_wrong_basis_shape() -> None:
+    bridge = IdentityGatedBridge(hidden_size=4)
+    hidden = torch.randn(1, 2, 4)
+    with pytest.raises(ValueError, match="prelude_ablation_basis"):
+        bridge(hidden, prelude_hidden=hidden, prelude_ablation_basis=torch.randn(3, 1))
 
 
 def test_split_identity_gated_bridge_matches_concat_projection():
