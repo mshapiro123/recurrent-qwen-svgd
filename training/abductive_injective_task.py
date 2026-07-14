@@ -374,6 +374,50 @@ def with_inverse_table_prompt(row: dict[str, Any]) -> dict[str, Any]:
     return transformed
 
 
+def with_inverse_relation_prompt(row: dict[str, Any]) -> dict[str, Any]:
+    """Render an arbitrary function as its explicit multivalued inverse relation.
+
+    Unlike :func:`with_inverse_table_prompt`, this transform accepts
+    non-injective mappings. Each reverse step is a lookup from the current
+    state to one or more valid predecessors. The sampled gold chain and exact
+    valid-start set are preserved.
+    """
+
+    names = tuple(str(item) for item in (row.get("symbol_names") or NAME_SYMBOLS))
+    names = names[: int(row["n_symbols"])]
+    mapping = {str(left): str(right) for left, right in row["mapping"].items()}
+    if set(mapping) != set(names):
+        raise ValueError("mapping keys do not match the row symbol universe")
+    predecessors = {name_value: [] for name_value in names}
+    for source in names:
+        destination = mapping[source]
+        if destination not in predecessors:
+            raise ValueError(f"mapping destination {destination!r} is outside the symbol universe")
+        predecessors[destination].append(source)
+    table = "\n".join(
+        f"{destination} can have received the key from: "
+        f"{', '.join(predecessors[destination]) if predecessors[destination] else 'nobody'}."
+        for destination in names
+    )
+    question = (
+        f"{table}\n\n"
+        f"Starting with {row['observed_target']}, follow exactly {int(row['depth'])} "
+        "reverse handoffs. Who could have held the key before them? "
+        "Answer with one valid name."
+    )
+    transformed = dict(row)
+    transformed.update(
+        {
+            "question": question,
+            "prompt": f"{question}\nAnswer:",
+            "table_direction": "inverse_relation_given",
+            "display_predecessors": predecessors,
+            "control_role": "explicit_multivalued_inverse_relation",
+        }
+    )
+    return transformed
+
+
 def _seed_for(seed: int, split: str, mode: TaskMode, depth: int, row_index: int) -> int:
     split_offset = {"train": 0, "val": 1_000_000, "test": 2_000_000}.get(split, 3_000_000)
     mode_offset = 0 if mode == "injective" else 10_000_000
@@ -573,4 +617,55 @@ def validate_phase_g_frozen_rows(
         "errors": errors,
         "stratum_counts": counts,
         "manifest": row_manifest(rows),
+    }
+
+
+def validate_inverse_relation_rows(
+    rows: list[dict[str, Any]],
+    *,
+    rows_per_stratum: int,
+) -> dict[str, Any]:
+    """Validate the frozen-set contract and every rendered reverse-chain edge."""
+
+    base = validate_phase_g_frozen_rows(rows, rows_per_stratum=rows_per_stratum)
+    errors = list(base["errors"])
+    for row in rows:
+        row_id = str(row.get("id"))
+        if row.get("table_direction") != "inverse_relation_given":
+            errors.append(f"{row_id}: inverse relation rendering marker missing")
+            continue
+        predecessors = {
+            str(destination): [str(source) for source in sources]
+            for destination, sources in (row.get("display_predecessors") or {}).items()
+        }
+        mapping = {str(left): str(right) for left, right in row["mapping"].items()}
+        symbol_order = tuple(str(item) for item in (row.get("symbol_names") or predecessors))
+        expected = {name_value: [] for name_value in symbol_order}
+        for source in symbol_order:
+            destination = mapping.get(source)
+            if destination is None:
+                errors.append(f"{row_id}: mapping omits source {source!r}")
+                continue
+            if destination not in expected:
+                errors.append(f"{row_id}: rendered relation omits destination {destination!r}")
+                continue
+            expected[destination].append(source)
+        if predecessors != expected:
+            errors.append(f"{row_id}: displayed predecessor relation does not invert the mapping")
+        current = str(row["observed_target"])
+        for completion in row.get("loop_completions") or []:
+            predecessor = str(completion).strip()
+            if predecessor not in predecessors.get(current, []):
+                errors.append(
+                    f"{row_id}: sampled chain edge {predecessor!r} -> {current!r} is not displayed"
+                )
+                break
+            current = predecessor
+        if current != str(row.get("selected_start")):
+            errors.append(f"{row_id}: rendered chain does not terminate at selected_start")
+    return {
+        **base,
+        "status": "passed" if not errors else "failed",
+        "errors": errors,
+        "rendering": "inverse_relation_given",
     }

@@ -5,11 +5,32 @@ import torch
 from eval.eval_abductive_coverage import (
     parse_sample_counts,
     read_target_entropies,
+    reverse_chain_validity,
     sample_names,
     score_sample_prefix,
     summarize_rows,
     uniform_expected_coverage,
 )
+
+
+def test_reverse_chain_validity_requires_every_displayed_edge() -> None:
+    row = {
+        "depth": 2,
+        "n_symbols": 4,
+        "observed_target": "C",
+        "mapping": {"A": "B", "B": "C", "C": "D", "D": "D"},
+        "mapping_values": {"0": 1, "1": 2, "2": 3, "3": 3},
+        "symbol_names": ["A", "B", "C", "D"],
+        "valid_starts": ["A"],
+        "coverage_denominator": 1,
+    }
+
+    valid = reverse_chain_validity(row, ["B", "A"])
+    invalid = reverse_chain_validity(row, ["A", "A"])
+
+    assert valid["chain_valid"] is True
+    assert valid["valid_edges"] == 2
+    assert invalid["chain_valid"] is False
 
 
 def test_sample_count_parser_sorts_and_deduplicates() -> None:

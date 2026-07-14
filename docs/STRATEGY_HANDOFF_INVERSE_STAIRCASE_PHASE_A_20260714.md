@@ -1,5 +1,7 @@
 # Strategy Handoff: Inverse Composition Staircase, Rebase, and Phase A Controls
 
+> **Superseded for forward planning:** This result synthesis remains the source record, but the current queue, Phase A claim boundary, and Phase G re-base are controlled by [TWO_LANE_SURPASS_REBASE_AMENDMENT_20260714.md](TWO_LANE_SURPASS_REBASE_AMENDMENT_20260714.md).
+
 **Date:** 2026-07-14
 
 **Status:** Prior experiment block complete; F9 multi-channel precursor battery running independently

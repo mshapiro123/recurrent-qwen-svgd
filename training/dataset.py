@@ -109,6 +109,10 @@ class JsonlCausalDataset(Dataset):
             "labels": labels,
             "target_loop_counts": target_loops,
         }
+        if "forward_loop_count" in row:
+            item["forward_loop_counts"] = torch.tensor(
+                int(row["forward_loop_count"]), dtype=torch.long
+            ).clamp(1, self.max_train_loops)
         if "loop_completions" in row:
             loop_labels = torch.full(
                 (self.max_train_loops, input_ids.numel()),
@@ -136,6 +140,18 @@ class JsonlCausalDataset(Dataset):
                 loop_labels[loop_idx, : min(prompt_len, loop_labels.shape[1])] = -100
                 loop_labels[loop_idx, prompt_len:] = loop_tensor[prompt_len:]
             item["loop_labels"] = loop_labels
+        if "loop_label_weights" in row:
+            weights = [float(value) for value in row["loop_label_weights"]]
+            if len(weights) != self.max_train_loops:
+                raise ValueError(
+                    "loop_label_weights must contain one value per max_train_loops "
+                    f"for row {row.get('id') or row.get('instance_id') or '<unknown>'}; "
+                    f"got {len(weights)} vs {self.max_train_loops}"
+                )
+            weight_tensor = torch.tensor(weights, dtype=torch.float32)
+            if not bool(torch.isfinite(weight_tensor).all()) or bool((weight_tensor < 0).any()):
+                raise ValueError("loop_label_weights must be finite and nonnegative")
+            item["loop_label_weights"] = weight_tensor
         return item
 
 
@@ -149,7 +165,11 @@ def collate_causal_batch(
     attention_mask = []
     target_counts = []
     has_loop_labels = any("loop_labels" in example for example in examples)
+    has_loop_label_weights = any("loop_label_weights" in example for example in examples)
+    has_forward_loop_counts = any("forward_loop_counts" in example for example in examples)
     loop_labels = []
+    loop_label_weights = []
+    forward_loop_counts = []
     for example in examples:
         length = example["input_ids"].numel()
         pad_len = max_len - length
@@ -161,6 +181,14 @@ def collate_causal_batch(
             if "loop_labels" not in example:
                 raise ValueError("Cannot mix examples with and without loop_labels in one batch")
             loop_labels.append(torch.nn.functional.pad(example["loop_labels"], (0, pad_len), value=-100))
+        if has_loop_label_weights:
+            if "loop_label_weights" not in example:
+                raise ValueError("Cannot mix examples with and without loop_label_weights in one batch")
+            loop_label_weights.append(example["loop_label_weights"])
+        if has_forward_loop_counts:
+            if "forward_loop_counts" not in example:
+                raise ValueError("Cannot mix examples with and without forward_loop_count in one batch")
+            forward_loop_counts.append(example["forward_loop_counts"])
 
     batch = {
         "input_ids": torch.stack(input_ids),
@@ -170,4 +198,8 @@ def collate_causal_batch(
     }
     if has_loop_labels:
         batch["loop_labels"] = torch.stack(loop_labels)
+    if has_loop_label_weights:
+        batch["loop_label_weights"] = torch.stack(loop_label_weights)
+    if has_forward_loop_counts:
+        batch["forward_loop_counts"] = torch.stack(forward_loop_counts).view(-1)
     return batch

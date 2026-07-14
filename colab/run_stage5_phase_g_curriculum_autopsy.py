@@ -97,7 +97,10 @@ def construction_audit() -> dict[str, Any]:
         "per_loop_labels_mask_active_only": 'loss = (ce_tensor * active).sum()' in wrapper_source,
         "labels_beyond_available_loops_masked": "labels_for_loop = torch.full_like(labels_flat, -100)" in wrapper_source,
         "training_max_loops_was_eight": '"max_loops": 8' in runner_source,
-        "evaluation_requests_row_depth": "loop_counts=[depth]" in evaluator_source,
+        "evaluation_requests_row_depth": (
+            "loop_counts = list(range(1, depth + 1))" in evaluator_source
+            and "scores = scores_by_loop[depth]" in evaluator_source
+        ),
         "recovery_ramped_compute": (
             '"STAGE5_PHASE_G_EXP1_CURRICULUM_RAMP_COMPUTE": "1"' in bootstrap_source
         ),

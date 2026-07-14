@@ -676,24 +676,43 @@ class RecurrentQwenForCausalLM(nn.Module):
                     loop_label_weights,
                     device=ce_tensor.device,
                     dtype=ce_tensor.dtype,
-                ).flatten()
-                if weights.numel() < max_loops:
-                    raise ValueError(
-                        f"loop_label_weights has {weights.numel()} entries but max_loops={max_loops}"
-                    )
-                weights = weights[:max_loops]
+                )
+                metric_weights = weights
+                if weights.ndim == 1:
+                    if weights.numel() < max_loops:
+                        raise ValueError(
+                            f"loop_label_weights has {weights.numel()} entries but max_loops={max_loops}"
+                        )
+                    weights = weights[:max_loops].view(1, -1).expand(ce_tensor.shape[0], -1)
+                    metric_weights = metric_weights[:max_loops]
+                elif weights.ndim == 2:
+                    if weights.shape[0] != ce_tensor.shape[0] or weights.shape[1] < max_loops:
+                        raise ValueError(
+                            "row-specific loop_label_weights must be [batch, loops] with at least max_loops "
+                            f"columns; got {tuple(weights.shape)} for batch={ce_tensor.shape[0]}, "
+                            f"max_loops={max_loops}"
+                        )
+                    weights = weights[:, :max_loops]
+                    metric_weights = weights
+                else:
+                    raise ValueError("loop_label_weights must be one- or two-dimensional")
                 if bool((weights < 0).any()) or not bool(torch.isfinite(weights).all()):
                     raise ValueError("loop_label_weights must be finite and nonnegative")
                 active = torch.stack(per_loop_label_active, dim=-1).to(dtype=ce_tensor.dtype)
-                weighted_active = active * weights.view(1, -1)
+                weighted_active = active * weights
                 # This is a fixed batch mean. It deliberately does not divide by
                 # each row's active-loop count, which would starve later labels.
                 loss = (ce_tensor * weighted_active).sum() / ce_tensor.shape[0]
                 metrics["per_loop_label_ce"] = loss.detach()
                 metrics["per_loop_label_active"] = active.sum().detach()
                 metrics["per_loop_label_weighted_active"] = weighted_active.sum().detach()
-                for loop_idx, weight in enumerate(weights, start=1):
-                    metrics[f"per_loop_label_weight_{loop_idx}"] = weight.detach()
+                for loop_idx in range(1, max_loops + 1):
+                    metric_weight = (
+                        metric_weights[loop_idx - 1]
+                        if metric_weights.ndim == 1
+                        else metric_weights[:, loop_idx - 1].mean()
+                    )
+                    metrics[f"per_loop_label_weight_{loop_idx}"] = metric_weight.detach()
                     metrics[f"per_loop_label_active_{loop_idx}"] = active[:, loop_idx - 1].sum().detach()
                     metrics[f"per_loop_label_weighted_ce_{loop_idx}"] = (
                         ce_tensor[:, loop_idx - 1] * weighted_active[:, loop_idx - 1]

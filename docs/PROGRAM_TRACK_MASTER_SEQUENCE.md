@@ -1,6 +1,6 @@
 # Program Track: Master Sequence
 
-> **Current amendment:** Phase G reunifies the deterministic substrate and guided stochastic-width tracks. The abductive-injective gate now directly precedes frozen-block G-alpha; LPRM, adaptive halting, and SVGD remain downstream of a coverage win. See [PHASE_G_TRACK_REUNIFICATION_AMENDMENT.md](PHASE_G_TRACK_REUNIFICATION_AMENDMENT.md).
+> **Current amendment:** The program now runs as a two-lane width and curriculum-science sequence. The Phase A synthetic comparison is formalized first, G-alpha's deterministic prerequisite is re-based to inverse-rendered non-injective validity, and canonical forward-table abduction remains a separate curriculum target. See [TWO_LANE_SURPASS_REBASE_AMENDMENT_20260714.md](TWO_LANE_SURPASS_REBASE_AMENDMENT_20260714.md). The earlier reunification decision remains the parent amendment in [PHASE_G_TRACK_REUNIFICATION_AMENDMENT.md](PHASE_G_TRACK_REUNIFICATION_AMENDMENT.md).
 
 ## 0. Purpose
 

@@ -3,6 +3,8 @@
 **Date:** July 12, 2026  
 **Status:** Amendment of record for the master sequence, GRAM divergence audit, and Phase G plan
 
+> **July 14 amendment:** The deterministic G-alpha prerequisite is now re-based to an inverse-rendered non-injective validity assay, while canonical forward-table abduction continues in a separate curriculum-science lane. The current queue and claim boundaries are controlled by [TWO_LANE_SURPASS_REBASE_AMENDMENT_20260714.md](TWO_LANE_SURPASS_REBASE_AMENDMENT_20260714.md).
+
 ## Decision
 
 The deterministic substrate program and the original stochastic-width program are one dependency chain. Width is not measured on single-valued tasks. The abductive-injective gate therefore serves two roles: it is the next deterministic block-training rung and the substrate gate for the first attributable GRAM-style width experiment.

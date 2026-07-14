@@ -84,6 +84,37 @@ def score_sample_prefix(samples: list[str], valid_starts: set[str]) -> dict[str,
     }
 
 
+def reverse_chain_validity(row: dict[str, Any], predictions: list[str]) -> dict[str, Any]:
+    depth = int(row["depth"])
+    mapping = {str(source): str(destination) for source, destination in row["mapping"].items()}
+    current = str(row["observed_target"])
+    edge_receipts = []
+    for loop_index, predecessor in enumerate(predictions, start=1):
+        predecessor = str(predecessor)
+        valid = mapping.get(predecessor) == current
+        edge_receipts.append(
+            {
+                "loop": loop_index,
+                "predecessor": predecessor,
+                "destination": current,
+                "valid": valid,
+            }
+        )
+        current = predecessor
+    exact_starts = set(exact_valid_preimages(row))
+    final_valid = len(predictions) == depth and current in exact_starts
+    return {
+        "predictions": [str(value) for value in predictions],
+        "edges": edge_receipts,
+        "valid_edges": sum(int(item["valid"]) for item in edge_receipts),
+        "total_edges": depth,
+        "final_valid": final_valid,
+        "chain_valid": len(edge_receipts) == depth
+        and all(bool(item["valid"]) for item in edge_receipts)
+        and final_valid,
+    }
+
+
 def summarize_rows(rows: list[dict[str, Any]], sample_counts: list[int]) -> dict[str, Any]:
     def aggregate(subset: list[dict[str, Any]]) -> dict[str, Any]:
         total = len(subset)
@@ -92,6 +123,12 @@ def summarize_rows(rows: list[dict[str, Any]], sample_counts: list[int]) -> dict
             "greedy_valid": sum(int(row["greedy_valid"]) for row in subset),
         }
         result["greedy_valid_rate"] = result["greedy_valid"] / total if total else 0.0
+        if subset and all("greedy_chain_valid" in row for row in subset):
+            result["greedy_chain_valid"] = sum(int(row["greedy_chain_valid"]) for row in subset)
+            result["greedy_chain_valid_rate"] = result["greedy_chain_valid"] / total
+            valid_edges = sum(int(row["greedy_chain_valid_edges"]) for row in subset)
+            total_edges = sum(int(row["greedy_chain_total_edges"]) for row in subset)
+            result["greedy_chain_edge_valid_rate"] = valid_edges / total_edges if total_edges else 0.0
         result["sampling"] = {}
         temperatures = [float(row.get("sampling_temperature", 0.7)) for row in subset]
         entropy_errors = [float(row.get("entropy_match_absolute_error", 0.0)) for row in subset]
@@ -201,14 +238,21 @@ def evaluate(args: argparse.Namespace) -> list[dict[str, Any]]:
         prompt = prompt_for_row(row, prediction_space="full_symbols", prompt_style="question_only")
         candidates = candidates_for_row(row, prediction_space="full_symbols", value_prefix="name:")
         depth = int(row["depth"])
-        scores = score_candidates_all_loops(
+        loop_counts = list(range(1, depth + 1))
+        scores_by_loop = score_candidates_all_loops(
             wrapper,
             tokenizer,
             prompt,
             candidates,
             args,
-            loop_counts=[depth],
-        )[depth]
+            loop_counts=loop_counts,
+        )
+        scores = scores_by_loop[depth]
+        greedy_chain = [
+            max(scores_by_loop[loop_count].items(), key=lambda item: item[1])[0]
+            for loop_count in loop_counts
+        ]
+        chain_receipt = reverse_chain_validity(row, greedy_chain)
         greedy = max(scores.items(), key=lambda item: item[1])[0]
         row_id = str(row.get("id") or row.get("instance_id"))
         exact_starts = exact_valid_preimages(row)
@@ -249,6 +293,11 @@ def evaluate(args: argparse.Namespace) -> list[dict[str, Any]]:
                 "coverage_denominator": len(exact_starts),
                 "greedy_prediction": greedy,
                 "greedy_valid": greedy in set(exact_starts),
+                "greedy_chain_predictions": greedy_chain,
+                "greedy_chain_valid": chain_receipt["chain_valid"],
+                "greedy_chain_valid_edges": chain_receipt["valid_edges"],
+                "greedy_chain_total_edges": chain_receipt["total_edges"],
+                "greedy_chain_edge_receipts": chain_receipt["edges"],
                 "scores": scores if args.include_scores else None,
                 "sampling_temperature": sampling_temperature,
                 "answer_head_entropy": float(entropy_match["achieved_entropy"]),

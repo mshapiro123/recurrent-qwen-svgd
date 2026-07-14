@@ -3,6 +3,8 @@
 **Date:** July 12, 2026  
 **Implementation status:** Architecture contract and evaluation harness prepared; model implementation remains gated on the deterministic abductive-injective pass
 
+> **July 14 substrate amendment:** G-alpha remains gated, but its first deterministic validity assay is now inverse-rendered non-injective abduction on a demonstrated forward-lookup substrate. This preserves exact multimodal coverage while narrowing the claim: it tests guided branching over an explicitly rendered inverse relation, not canonical backward inference from a forward table. Frozen-set construction, validity gates, and the two-lane dependency order are defined in [TWO_LANE_SURPASS_REBASE_AMENDMENT_20260714.md](TWO_LANE_SURPASS_REBASE_AMENDMENT_20260714.md). The frozen-block architecture and comparator rules below remain unchanged.
+
 ## Objective
 
 Test whether a learned conditional distribution over recurrent transitions discovers more distinct valid solutions than output-head sampling or additional deterministic depth. This is a transplantation test of GRAM's guided stochastic-width principle onto a repaired pretrained recurrent-Qwen substrate, not a reproduction of GRAM.

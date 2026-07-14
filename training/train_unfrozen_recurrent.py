@@ -682,41 +682,65 @@ def main() -> int:
 
     loop_label_weights: torch.Tensor | None = None
     dose_ledger: LoopDoseLedger | None = None
+    row_specific_loop_weights = bool(dataset.rows) and all(
+        "loop_label_weights" in row for row in dataset.rows
+    )
+    if any("loop_label_weights" in row for row in dataset.rows) and not row_specific_loop_weights:
+        raise ValueError("Every row must provide loop_label_weights when row-specific weighting is enabled")
+    row_specific_forward_loops = bool(cfg.get("row_specific_forward_loops", False))
+    if row_specific_forward_loops and not all("forward_loop_count" in row for row in dataset.rows):
+        raise ValueError("row_specific_forward_loops requires forward_loop_count on every row")
     dose_assert_every = cfg_int(cfg, "dose_assert_every", 200)
     dose_ratio_min = cfg_float(cfg, "dose_ratio_min", 0.8)
     dose_ratio_max = cfg_float(cfg, "dose_ratio_max", 1.25)
     newest_loop_multiplier = cfg_float(cfg, "newest_loop_multiplier", 2.0)
     if loop_loss_mode == "weighted_per_loop_labels":
-        configured_weights = [float(value) for value in (cfg.get("loop_label_weights") or [])]
-        if len(configured_weights) != max_loops:
-            raise ValueError(
-                "weighted_per_loop_labels requires one loop_label_weights entry per max_loops; "
-                f"got {len(configured_weights)} for max_loops={max_loops}"
+        if row_specific_loop_weights:
+            for row in dataset.rows:
+                configured = [float(value) for value in row["loop_label_weights"]]
+                if len(configured) != max_loops:
+                    raise ValueError(
+                        "row-specific loop_label_weights requires one entry per max_loops; "
+                        f"row={row.get('id')}, got {len(configured)} vs {max_loops}"
+                    )
+                if any(not math.isfinite(value) or value < 0.0 for value in configured):
+                    raise ValueError(f"row {row.get('id')} has invalid loop_label_weights")
+            print(
+                "[assert-ok] row_specific_loop_label_weights "
+                f"rows={len(dataset.rows)} max_loops={max_loops}",
+                flush=True,
             )
-        loop_label_weights = torch.tensor(configured_weights, device=args.device, dtype=torch.float32)
-        dose_ledger = LoopDoseLedger(
-            weights=configured_weights,
-            newest_loop=max_loops,
-            newest_multiplier=newest_loop_multiplier,
-        )
-        theoretical_exposure = exposure_fractions(dataset.rows, cap=max_loops)
-        theoretical_mass = [
-            theoretical_exposure[index] * configured_weights[index]
-            for index in range(max_loops)
-        ]
-        theoretical_receipt = assert_mass_equalized(
-            theoretical_mass,
-            newest_loop=max_loops,
-            newest_multiplier=newest_loop_multiplier,
-            min_ratio=dose_ratio_min,
-            max_ratio=dose_ratio_max,
-        )
-        print(
-            "[assert-ok] weighted_loop_mass_startup "
-            f"exposure={theoretical_exposure} weights={configured_weights} "
-            f"receipt={theoretical_receipt}",
-            flush=True,
-        )
+        else:
+            configured_weights = [float(value) for value in (cfg.get("loop_label_weights") or [])]
+            if len(configured_weights) != max_loops:
+                raise ValueError(
+                    "weighted_per_loop_labels requires one loop_label_weights entry per max_loops; "
+                    f"got {len(configured_weights)} for max_loops={max_loops}"
+                )
+            loop_label_weights = torch.tensor(configured_weights, device=args.device, dtype=torch.float32)
+            dose_ledger = LoopDoseLedger(
+                weights=configured_weights,
+                newest_loop=max_loops,
+                newest_multiplier=newest_loop_multiplier,
+            )
+            theoretical_exposure = exposure_fractions(dataset.rows, cap=max_loops)
+            theoretical_mass = [
+                theoretical_exposure[index] * configured_weights[index]
+                for index in range(max_loops)
+            ]
+            theoretical_receipt = assert_mass_equalized(
+                theoretical_mass,
+                newest_loop=max_loops,
+                newest_multiplier=newest_loop_multiplier,
+                min_ratio=dose_ratio_min,
+                max_ratio=dose_ratio_max,
+            )
+            print(
+                "[assert-ok] weighted_loop_mass_startup "
+                f"exposure={theoretical_exposure} weights={configured_weights} "
+                f"receipt={theoretical_receipt}",
+                flush=True,
+            )
 
     summary = {
         "setup": setup,
@@ -751,12 +775,20 @@ def main() -> int:
     while step < max_steps:
         for batch in loader:
             batch = {key: value.to(args.device) for key, value in batch.items()}
+            batch_loop_label_weights = batch.pop("loop_label_weights", None)
+            batch_forward_loop_counts = batch.pop("forward_loop_counts", None)
             scheduled = (
                 scheduled_loop_count(step, max_steps, start=start_loop, end=end_loop, schedule=schedule)
                 if curriculum_enabled
                 else max_loops
             )
             forward_loops = scheduled if ramp_compute else max_loops
+            if row_specific_forward_loops:
+                if batch_forward_loop_counts is None:
+                    raise RuntimeError("forward_loop_counts missing from a row-specific compute batch")
+                forward_loops = int(batch_forward_loop_counts.max().item())
+                if not 1 <= forward_loops <= max_loops:
+                    raise RuntimeError(f"Invalid row-specific forward loop count: {forward_loops}")
             batch["target_loop_counts"] = curriculum_target_counts(
                 batch["target_loop_counts"],
                 scheduled,
@@ -768,7 +800,11 @@ def main() -> int:
                 beta=cfg_float(cfg, "beta", 0.08),
                 halt_target_nll_weight=cfg_float(cfg, "halt_target_nll_weight", 0.0),
                 loop_loss_mode=loop_loss_mode,
-                loop_label_weights=loop_label_weights,
+                loop_label_weights=(
+                    batch_loop_label_weights
+                    if batch_loop_label_weights is not None
+                    else loop_label_weights
+                ),
                 loop_label_loss_weight=(
                     chain_label_weight(step, max_steps, hold_frac=chain_anneal_hold_frac)
                     if loop_loss_mode == "annealed_chain_to_outcome"

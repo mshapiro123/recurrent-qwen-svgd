@@ -13,7 +13,9 @@ from training.abductive_injective_task import (
     preimage_stratum,
     row_manifest,
     validate_phase_g_frozen_rows,
+    validate_inverse_relation_rows,
     validate_rows,
+    with_inverse_relation_prompt,
     with_inverse_table_prompt,
 )
 
@@ -144,3 +146,34 @@ def test_inverse_table_prompt_preserves_targets_and_makes_each_step_forward_look
         current = inverse_mapping[current]
         observed_chain.append(current)
     assert observed_chain == [value.strip() for value in row["loop_completions"]]
+
+
+def test_inverse_relation_prompt_supports_noninjective_tables_and_preserves_valid_chains() -> None:
+    config = PhaseGFrozenEvalConfig(rows_per_stratum=4, seed=7194203)
+    rows = build_phase_g_frozen_rows(config, split="calibration")
+    transformed = [with_inverse_relation_prompt(row) for row in rows]
+
+    validation = validate_inverse_relation_rows(transformed, rows_per_stratum=4)
+    assert validation["status"] == "passed"
+    assert all(row["table_direction"] == "inverse_relation_given" for row in transformed)
+    assert any(len(values) > 1 for row in transformed for values in row["display_predecessors"].values())
+
+    row = next(item for item in transformed if item["preimage_stratum"] == "large")
+    current = row["observed_target"]
+    for completion in row["loop_completions"]:
+        predecessor = completion.strip()
+        assert predecessor in row["display_predecessors"][current]
+        current = predecessor
+    assert current == row["selected_start"]
+
+
+def test_inverse_relation_validation_uses_frozen_symbol_order_not_json_key_order() -> None:
+    config = PhaseGFrozenEvalConfig(rows_per_stratum=1, seed=7194203)
+    rows = build_phase_g_frozen_rows(config, split="calibration")
+    for row in rows:
+        row["mapping"] = dict(sorted(row["mapping"].items(), reverse=True))
+    transformed = [with_inverse_relation_prompt(row) for row in rows]
+
+    validation = validate_inverse_relation_rows(transformed, rows_per_stratum=1)
+
+    assert validation["status"] == "passed"

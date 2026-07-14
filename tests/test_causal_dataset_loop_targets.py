@@ -114,6 +114,44 @@ def test_jsonl_dataset_builds_and_collates_loop_labels(tmp_path) -> None:
     assert torch.equal(batch["target_loop_counts"], torch.tensor([2]))
 
 
+def test_jsonl_dataset_collates_optional_row_specific_loop_weights(tmp_path) -> None:
+    path = tmp_path / "train.jsonl"
+    rows = [
+        {
+            "prompt": "Question:",
+            "completion": " A",
+            "loop_completions": [" A", " B"],
+            "target_loop_count": 2,
+            "loop_label_weights": [0.5, 1.5, 0.0],
+            "forward_loop_count": 2,
+        },
+        {
+            "prompt": "Question:",
+            "completion": " B",
+            "loop_completions": [" B", " C", " D"],
+            "target_loop_count": 3,
+            "loop_label_weights": [0.25, 0.25, 2.5],
+            "forward_loop_count": 3,
+        },
+    ]
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+    dataset = JsonlCausalDataset(
+        path,
+        tokenizer=TinyTokenizer(),
+        max_length=32,
+        max_train_loops=3,
+        train_on_prompt=False,
+    )
+
+    batch = collate_causal_batch([dataset[0], dataset[1]], pad_token_id=0)
+
+    assert torch.equal(
+        batch["loop_label_weights"],
+        torch.tensor([[0.5, 1.5, 0.0], [0.25, 0.25, 2.5]], dtype=torch.float32),
+    )
+    assert torch.equal(batch["forward_loop_counts"], torch.tensor([2, 3]))
+
+
 def test_jsonl_dataset_renders_question_rows_like_active_label_eval(tmp_path) -> None:
     path = tmp_path / "train.jsonl"
     path.write_text(

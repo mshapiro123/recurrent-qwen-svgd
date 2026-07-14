@@ -1177,3 +1177,20 @@ Colab/Drive backups for selected runs.
   exactly; D's independently reloaded run differed by two total rows and stayed
   inside the locked GPU repeatability envelope. Full synthesis and decision
   questions: `docs/STRATEGY_HANDOFF_INVERSE_STAIRCASE_PHASE_A_20260714.md`.
+- 2026-07-14 two-lane surpass and width re-base amendment: arm A's same-reader
+  recurrent result is 1,506/1,792 on the same frozen depth-1-through-14 rows,
+  versus 470 for dense direct B and 952 for dense serialized-scratchpad C at
+  their preregistered step-4,000 checkpoints. A retains 272/512 at depths
+  11-14 versus C's 56/512. The original primary gate is A over B, which A
+  clears at all 14 depths under the registered one-sided Fisher form; A over C
+  is a labeled extension and also clears at all depths. Final receipts must add
+  paired row-level tests and must not call Fisher paired. C step 2,000 remains
+  an efficiency secondary, not a post hoc replacement for step 4,000. The
+  claim is limited to the evaluated synthetic family and recipes; training
+  lineage and FLOPs are not matched. G-alpha's deterministic prerequisite is
+  re-based to inverse-rendered non-injective validity, while canonical
+  forward-table abduction moves to a separate curriculum-science lane. The
+  historical 42/112 recovery versus arm-F 3/64 contrast verifies a performance
+  gap but not a unique cause; primitive-first and rehearsal are now explicit
+  causal tests. F9 remains diagnostic-only and BANKED. Amendment of record:
+  `docs/TWO_LANE_SURPASS_REBASE_AMENDMENT_20260714.md`.
