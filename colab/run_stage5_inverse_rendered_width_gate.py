@@ -10,6 +10,10 @@ import time
 from pathlib import Path
 from typing import Any
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 from colab.run_stage5_natural_surface_transfer import restore_checkpoint, run
 from colab.run_stage5_inverse_composition_staircase import _publish
 from colab.stage5_chain_consolidation_utils import path_for_cli

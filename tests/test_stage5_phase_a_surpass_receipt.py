@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 from colab.run_stage5_phase_a_surpass_receipt import (
@@ -63,10 +66,30 @@ def test_score_phase_a_rows_joins_identical_ids_and_separates_primary_from_exten
 def test_phase_a_receipt_target_is_wired() -> None:
     bootstrap = Path("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     cell = Path("colab/STAGE5_PHASE_A_SURPASS_RECEIPT_CELL.py").read_text(encoding="utf-8")
+    runner = Path("colab/run_stage5_phase_a_surpass_receipt.py").read_text(encoding="utf-8")
 
     assert '"phase_a_surpass_receipt"' in bootstrap
     assert "STAGE5_PHASE_A_SURPASS_RECEIPT_CELL_VERSION" in cell
     assert "accepted_returncodes={0, 2}" in cell
+    assert 'os.environ.get("STAGE5_BOOTSTRAP_REF", "main")' in cell
+    assert "Pinned checkout verified" in cell
+    assert runner.index("sys.path.insert(0, str(REPO_ROOT))") < runner.index("from colab.")
+
+
+def test_phase_a_receipt_runner_resolves_repo_packages_when_run_by_path(tmp_path: Path) -> None:
+    env = {**os.environ, "STAGE5_ROOT": str(tmp_path)}
+    result = subprocess.run(
+        [sys.executable, "colab/run_stage5_phase_a_surpass_receipt.py"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        env=env,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert "ModuleNotFoundError" not in result.stdout
+    assert "FileNotFoundError" in result.stdout
 
 
 class _WhitespaceTokenizer:

@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 from colab.run_stage5_inverse_table_rehearsal import (
@@ -49,11 +52,31 @@ def test_rehearsal_weight_profiles_preserve_task_weights_and_bound_rehearsal_sca
 def test_inverse_table_rehearsal_target_is_wired() -> None:
     bootstrap = Path("colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     cell = Path("colab/STAGE5_INVERSE_TABLE_REHEARSAL_CELL.py").read_text(encoding="utf-8")
+    runner = Path("colab/run_stage5_inverse_table_rehearsal.py").read_text(encoding="utf-8")
 
     assert '"inverse_table_cap3_rehearsal"' in bootstrap
     assert "STAGE5_INVERSE_TABLE_REHEARSAL_CELL_VERSION" in cell
     assert "row_specific_forward_loops" in cell
     assert "accepted_returncodes={0, 2}" in cell
+    assert 'os.environ.get("STAGE5_BOOTSTRAP_REF", "main")' in cell
+    assert "Pinned checkout verified" in cell
+    assert runner.index("sys.path.insert(0, str(REPO_ROOT))") < runner.index("from colab.")
+
+
+def test_inverse_table_rehearsal_runner_resolves_repo_packages_when_run_by_path(tmp_path: Path) -> None:
+    env = {**os.environ, "STAGE5_ROOT": str(tmp_path)}
+    result = subprocess.run(
+        [sys.executable, "colab/run_stage5_inverse_table_rehearsal.py"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        env=env,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert "ModuleNotFoundError" not in result.stdout
+    assert "FileNotFoundError" in result.stdout
 
 
 def test_fixed_schedule_dose_reports_source_by_loop() -> None:

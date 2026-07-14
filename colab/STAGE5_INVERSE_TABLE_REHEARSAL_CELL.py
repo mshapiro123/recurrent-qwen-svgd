@@ -19,6 +19,7 @@ STAGE5_INVERSE_TABLE_REHEARSAL_CELL_VERSION = "inverse_table_cap3_rehearsal_v1"
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
+PINNED_REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main").strip() or "main"
 
 
 def secret(*names: str) -> str | None:
@@ -73,17 +74,27 @@ def run(cmd: list[str], *, cwd: Path = ROOT, env=None, accepted_returncodes={0})
     return returncode
 
 
+def sync_repo(clone_url: str) -> None:
+    if ROOT.exists():
+        run(["git", "remote", "set-url", "origin", clone_url])
+    else:
+        run(["git", "clone", clone_url, str(ROOT)], cwd=Path("/content"))
+    run(["git", "fetch", "origin", "main"])
+    run(["git", "checkout", "main"])
+    is_sha = len(PINNED_REF) == 40 and all(char in "0123456789abcdefABCDEF" for char in PINNED_REF)
+    resolved_target = PINNED_REF if is_sha else "origin/main"
+    run(["git", "reset", "--hard", resolved_target])
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    expected = subprocess.check_output(["git", "rev-parse", resolved_target], cwd=ROOT, text=True).strip()
+    assert head == expected, f"Pinned checkout mismatch: HEAD={head}, expected={expected}"
+    print(f"Pinned checkout verified: {head}", flush=True)
+
+
 def main() -> None:
     run(["nvidia-smi"], cwd=Path("/content"))
     drive.mount("/content/drive", force_remount=False)
     clone_url = f"https://x-access-token:{GH_TOKEN}@github.com/{REPO}.git"
-    if ROOT.exists():
-        run(["git", "remote", "set-url", "origin", clone_url])
-        run(["git", "fetch", "origin", "main"])
-        run(["git", "checkout", "main"])
-        run(["git", "reset", "--hard", "origin/main"])
-    else:
-        run(["git", "clone", clone_url, str(ROOT)], cwd=Path("/content"))
+    sync_repo(clone_url)
     run(["git", "config", "user.email", "colab-runner@local"])
     run(["git", "config", "user.name", "Colab Runner"])
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"])
