@@ -158,7 +158,35 @@ def test_master_decision_does_not_count_single_task_m1_m2() -> None:
     result = aggregate_battery(conditions, reading_one=True)
 
     assert result["measurement_votes"] == {"m1": False, "m2": False, "m3": True}
+    assert result["measurement_status"] == {
+        "m1": "pending_replication",
+        "m2": "pending_replication",
+        "m3": "confirmed",
+    }
     assert result["battery_specialization_confirmed"] is False
+
+
+def test_master_decision_distinguishes_negative_from_pending_replication() -> None:
+    conditions = {
+        "n24_step6000": {
+            "measurements": {
+                "m1": {"classification": {"confirmed": False}},
+                "m2": {"classification": {"confirmed": True}},
+            }
+        }
+    }
+
+    result = aggregate_battery(conditions, reading_one=False)
+
+    assert result["measurement_evidence"]["m1"] == {
+        "n24_step6000": False,
+        "backward_recovery": None,
+    }
+    assert result["measurement_status"] == {
+        "m1": "not_confirmed",
+        "m2": "pending_replication",
+        "m3": "not_run",
+    }
 
 
 def test_staircase_reading_resolves_nested_cap_schema_and_post_run_correction() -> None:

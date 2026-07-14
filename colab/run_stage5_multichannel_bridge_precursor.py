@@ -201,23 +201,51 @@ def staircase_reading() -> dict[str, Any]:
 
 
 def aggregate_battery(condition_summaries: dict[str, dict[str, Any]], *, reading_one: bool) -> dict[str, Any]:
-    def confirmed(condition: str, measurement: str) -> bool:
-        return bool(
+    def observed(condition: str, measurement: str) -> bool | None:
+        payload = (
             condition_summaries.get(condition, {})
             .get("measurements", {})
             .get(measurement, {})
-            .get("classification", {})
-            .get("confirmed", False)
+            .get("classification")
         )
+        if payload is None:
+            return None
+        return bool(payload.get("confirmed", False))
+
+    evidence = {
+        "m1": {
+            "n24_step6000": observed("n24_step6000", "m1"),
+            "backward_recovery": observed("backward_recovery", "m1"),
+        },
+        "m2": {
+            "n24_step6000": observed("n24_step6000", "m2"),
+            "backward_recovery": observed("backward_recovery", "m2"),
+        },
+        "m3": {"n24_step6000": observed("n24_step6000", "m3")},
+    }
+
+    def status(required: tuple[str, ...], measurement: str) -> str:
+        readings = [evidence[measurement][condition] for condition in required]
+        if all(reading is True for reading in readings):
+            return "confirmed"
+        if any(reading is False for reading in readings):
+            return "not_confirmed"
+        return "pending_replication" if any(reading is True for reading in readings) else "not_run"
+
+    measurement_status = {
+        "m1": status(("n24_step6000", "backward_recovery"), "m1"),
+        "m2": status(("n24_step6000", "backward_recovery"), "m2"),
+        "m3": status(("n24_step6000",), "m3"),
+    }
 
     measurement_votes = {
-        "m1": confirmed("n24_step6000", "m1") and confirmed("backward_recovery", "m1"),
-        "m2": confirmed("n24_step6000", "m2") and confirmed("backward_recovery", "m2"),
-        "m3": confirmed("n24_step6000", "m3"),
+        measurement: state == "confirmed" for measurement, state in measurement_status.items()
     }
     count = sum(measurement_votes.values())
     specialization = count >= 2
     return {
+        "measurement_evidence": evidence,
+        "measurement_status": measurement_status,
         "measurement_votes": measurement_votes,
         "confirmed_measurements": count,
         "battery_specialization_confirmed": specialization,
@@ -240,6 +268,8 @@ def write_master_markdown(run_dir: Path, payload: dict[str, Any]) -> None:
         f"- Status: `{payload['status']}`",
         f"- Completed conditions: `{payload.get('completed_conditions', [])}`",
         f"- Staircase reading: `{payload.get('staircase', {}).get('reading')}`",
+        f"- Measurement evidence: `{decision.get('measurement_evidence')}`",
+        f"- Measurement status: `{decision.get('measurement_status')}`",
         f"- Measurement votes: `{decision.get('measurement_votes')}`",
         f"- Battery specialization confirmed: `{decision.get('battery_specialization_confirmed')}`",
         f"- Architecture activation eligible: `{decision.get('architecture_activation_eligible')}`",
