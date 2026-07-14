@@ -81,6 +81,12 @@ If an idle L4 slot exists and the strategy group wants to preserve the M2 observ
 
 Do **not** launch the 64-row four-checkpoint full battery, run M3 merely to search for a second positive vote, weaken M1's `2.0x` bar after observing `1.37x-1.42x`, or claim per-head carry specialization from retrieval-head evidence.
 
+## Strategy Amendment
+
+One bounded `backward_recovery` replication is authorized as a descriptive, paper-serving receipt. It runs M1/M2 only on one frozen row per depth with 20 random rotations, a fresh run ID, and an explicit checkpoint-SHA receipt. Its aggregate summary imports the N24 pilot only after validating the source-summary and checkpoint SHA; the raw pilot remains unchanged.
+
+The replication cannot activate a multi-channel bridge. F9 remains banked unless the replicated battery is positive **and** a separately corrected design establishes a priced reading-one. Bridge-SVD and intervention-derived bases are predeclared for a later decision, not added to this run. If the corrected design removes the per-position installation cost, the bridge intervention closes rather than expanding.
+
 ## Questions for Strategy Review
 
 1. Is the bounded `backward_recovery` M1/M2 replication worth an idle L4 slot as a descriptive result, despite being unable to open the bridge arm while the staircase gate is negative?

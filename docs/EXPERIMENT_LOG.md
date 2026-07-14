@@ -1213,3 +1213,12 @@ Colab/Drive backups for selected runs.
   from changing checkpoint lineage or experiment scope. W3's result controls
   whether one bounded deterministic tune may be designed; C1's task,
   retention, and natural-canary verdict controls cap-4 authorization.
+- 2026-07-14 F9 amendment: authorize exactly one descriptive
+  `backward_recovery` M1/M2 replication with one frozen row per depth, 20
+  matched random rotations, the same locked query-head basis and thresholds,
+  and an immutable N24 pilot receipt imported only after summary and checkpoint
+  SHA validation. This replication cannot activate a bridge intervention:
+  F9 remains BANKED unless a replicated battery and an independently priced
+  corrected-design reading-one both exist. Bridge-SVD and intervention-derived
+  bases are predeclared but not run; F9 closes if a corrected design removes
+  the installation-cost problem.

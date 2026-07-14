@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import torch
@@ -18,6 +19,7 @@ from eval.eval_multichannel_bridge_precursor import (
 from colab.run_stage5_multichannel_bridge_precursor import (
     aggregate_battery,
     resolve_staircase_reading,
+    seed_condition_summaries,
 )
 
 
@@ -189,6 +191,67 @@ def test_master_decision_distinguishes_negative_from_pending_replication() -> No
     }
 
 
+def test_seeded_n24_receipt_requires_the_locked_checkpoint_and_measurements(tmp_path: Path) -> None:
+    summary = tmp_path / "pilot_summary.json"
+    condition = {
+        "status": "finished",
+        "checkpoint_sha256": "898a259db2ab344ece4545e2910b051840e8408dbe4927f799e7cdb3cdd8c7dc",
+        "checkpoint_restore_receipt": {
+            "selected_checkpoint_sha256": "898a259db2ab344ece4545e2910b051840e8408dbe4927f799e7cdb3cdd8c7dc"
+        },
+        "measurements": {
+            "m1": {"classification": {"confirmed": False}},
+            "m2": {"classification": {"confirmed": True}},
+        },
+    }
+    summary.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_multichannel_bridge_precursor_battery",
+                "run_id": "locked_pilot",
+                "condition_summaries": {"n24_step6000": condition},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    seeded, receipt = seed_condition_summaries(summary)
+
+    assert seeded == {"n24_step6000": condition}
+    assert receipt["source_run_id"] == "locked_pilot"
+    assert receipt["source_summary_sha256"]
+
+
+def test_seeded_n24_receipt_rejects_checkpoint_mismatch(tmp_path: Path) -> None:
+    summary = tmp_path / "bad_pilot_summary.json"
+    summary.write_text(
+        json.dumps(
+            {
+                "kind": "stage5_multichannel_bridge_precursor_battery",
+                "condition_summaries": {
+                    "n24_step6000": {
+                        "status": "finished",
+                        "checkpoint_sha256": "not-the-locked-checkpoint",
+                        "checkpoint_restore_receipt": {"selected_checkpoint_sha256": "not-the-locked-checkpoint"},
+                        "measurements": {
+                            "m1": {"classification": {"confirmed": False}},
+                            "m2": {"classification": {"confirmed": True}},
+                        },
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    try:
+        seed_condition_summaries(summary)
+    except RuntimeError as error:
+        assert "checkpoint SHA mismatch" in str(error)
+    else:
+        raise AssertionError("Expected mismatched seed checkpoint to fail")
+
+
 def test_staircase_reading_resolves_nested_cap_schema_and_post_run_correction() -> None:
     result = resolve_staircase_reading(
         {
@@ -245,10 +308,12 @@ def test_colab_target_is_wired_with_eval_only_safety_markers() -> None:
     cell = (ROOT / "colab/STAGE5_MULTICHANNEL_BRIDGE_PRECURSOR_CELL.py").read_text(encoding="utf-8")
 
     assert '"multichannel_bridge_precursor"' in bootstrap
+    assert '"multichannel_bridge_precursor_replication"' in bootstrap
     assert '"multichannel_bridge_precursor_full"' in bootstrap
     assert '"STAGE5_MULTICHANNEL_MODE": "pilot"' in bootstrap
     assert "STAGE5_MULTICHANNEL_BRIDGE_PRECURSOR_CELL_VERSION" in bootstrap
     assert "eval/eval_multichannel_bridge_precursor.py" in bootstrap
     assert "tests/test_multichannel_bridge_precursor.py" in cell
     assert "run_stage5_multichannel_bridge_precursor.py" in cell
+    assert "STAGE5_MULTICHANNEL_SEED_SUMMARY" in cell
     assert "train" not in (ROOT / "eval/eval_multichannel_bridge_precursor.py").read_text(encoding="utf-8").lower().splitlines()[0]

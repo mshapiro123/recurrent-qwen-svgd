@@ -110,6 +110,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "inverse_rendered_width_gate" - test deterministic validity on the exact multimodal inverse rendering.
 #   "phase_g_n24_calibration_gate" - arbitrary-function deterministic substrate gate before G-alpha.
 #   "multichannel_bridge_precursor" - bounded eval-only M1/M2 pilot for the query-head bridge battery.
+#   "multichannel_bridge_precursor_replication" - one bounded backward-recovery M1/M2 replication using the locked N24 pilot receipt.
 #   "multichannel_bridge_precursor_full" - explicit full M1/M2/M3 battery after pilot review.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
@@ -2763,6 +2764,32 @@ TARGETS = {
             "STAGE5_MULTICHANNEL_RUN_ID": "stage5_multichannel_bridge_precursor_pilot_20260714",
             "STAGE5_MULTICHANNEL_MODE": "pilot",
             "STAGE5_MULTICHANNEL_CONDITIONS": "n24_step6000",
+            "STAGE5_MULTICHANNEL_ROWS_PER_DEPTH": "1",
+            "STAGE5_MULTICHANNEL_RANDOM_DRAWS": "20",
+            "STAGE5_MULTICHANNEL_M3_BATCH_SIZE": "8",
+            "STAGE5_MULTICHANNEL_DYNAMICS_ROW_TIMEOUT_SECONDS": "600",
+            "STAGE5_MULTICHANNEL_M3_PASS_TIMEOUT_SECONDS": "1800",
+            "STAGE5_MULTICHANNEL_LIVENESS_TIMEOUT_SECONDS": "900",
+            "STAGE5_MULTICHANNEL_DTYPE": "bfloat16",
+            "STAGE5_MULTICHANNEL_DISCONNECT": "0",
+        },
+    },
+    "multichannel_bridge_precursor_replication": {
+        "force_env": True,
+        "path": "colab/STAGE5_MULTICHANNEL_BRIDGE_PRECURSOR_CELL.py",
+        "markers": [
+            "STAGE5_MULTICHANNEL_BRIDGE_PRECURSOR_CELL_VERSION",
+            "eval/eval_multichannel_bridge_precursor.py",
+            "tests/test_multichannel_bridge_precursor.py",
+            "prelude_ablation_basis",
+            "random_orthogonal_partitions",
+            "STAGE5_MULTICHANNEL_SEED_SUMMARY",
+        ],
+        "env": {
+            "STAGE5_MULTICHANNEL_RUN_ID": "stage5_multichannel_bridge_precursor_replication_20260714",
+            "STAGE5_MULTICHANNEL_MODE": "pilot",
+            "STAGE5_MULTICHANNEL_CONDITIONS": "backward_recovery",
+            "STAGE5_MULTICHANNEL_SEED_SUMMARY": "outputs/stage5/stage5_multichannel_bridge_precursor_pilot_20260714/summary.json",
             "STAGE5_MULTICHANNEL_ROWS_PER_DEPTH": "1",
             "STAGE5_MULTICHANNEL_RANDOM_DRAWS": "20",
             "STAGE5_MULTICHANNEL_M3_BATCH_SIZE": "8",

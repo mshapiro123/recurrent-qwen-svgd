@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import queue
@@ -101,6 +102,58 @@ def path_for_cli(path: Path) -> str:
         return path.relative_to(ROOT).as_posix()
     except ValueError:
         return str(path)
+
+
+def sha256_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def seed_condition_summaries(seed_summary: str | Path) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+    """Import the immutable N24 pilot receipt for a bounded cross-task replication.
+
+    The replication may reuse the prior N24 observation for aggregation, but it
+    must prove that it is the locked pilot evidence rather than a similarly
+    named result from a different checkpoint or battery configuration.
+    """
+
+    source_path = Path(seed_summary)
+    if not source_path.is_absolute():
+        source_path = ROOT / source_path
+    if not source_path.exists():
+        raise FileNotFoundError(f"Missing multichannel seed summary: {source_path}")
+
+    source = read_json(source_path)
+    if source.get("kind") != "stage5_multichannel_bridge_precursor_battery":
+        raise RuntimeError(f"Seed summary has unexpected kind: {source.get('kind')!r}")
+    source_condition = source.get("condition_summaries", {}).get("n24_step6000")
+    if not isinstance(source_condition, dict) or source_condition.get("status") != "finished":
+        raise RuntimeError("Seed summary must contain a finished n24_step6000 condition")
+
+    expected_sha = str(CONDITION_SPECS["n24_step6000"]["sha256"])
+    observed_sha = source_condition.get("checkpoint_sha256")
+    receipt_sha = source_condition.get("checkpoint_restore_receipt", {}).get("selected_checkpoint_sha256")
+    if observed_sha != expected_sha or receipt_sha != expected_sha:
+        raise RuntimeError(
+            "Seed N24 checkpoint SHA mismatch: "
+            f"condition={observed_sha!r} receipt={receipt_sha!r} expected={expected_sha!r}"
+        )
+
+    for measurement in ("m1", "m2"):
+        classification = source_condition.get("measurements", {}).get(measurement, {}).get("classification")
+        if not isinstance(classification, dict) or "confirmed" not in classification:
+            raise RuntimeError(f"Seed N24 condition is missing a classified {measurement} receipt")
+
+    # JSON round-trip prevents downstream mutation of the source receipt.
+    seeded_condition = json.loads(json.dumps(source_condition))
+    receipt = {
+        "source_summary": path_for_cli(source_path),
+        "source_summary_sha256": sha256_file(source_path),
+        "source_run_id": source.get("run_id"),
+        "source_condition": "n24_step6000",
+        "source_condition_checkpoint_sha256": observed_sha,
+        "expected_checkpoint_sha256": expected_sha,
+    }
+    return {"n24_step6000": seeded_condition}, receipt
 
 
 def publish(run_dir: Path, message: str) -> None:
@@ -384,6 +437,19 @@ def main() -> int:
     summary_path = run_dir / "summary.json"
     existing = read_json(summary_path) if summary_path.exists() else {}
     condition_summaries: dict[str, dict[str, Any]] = dict(existing.get("condition_summaries") or {})
+    seed_summary = os.environ.get("STAGE5_MULTICHANNEL_SEED_SUMMARY", "").strip()
+    seeded_condition_summaries: dict[str, dict[str, Any]] = {}
+    seed_receipt: dict[str, Any] | None = None
+    if seed_summary:
+        seeded_condition_summaries, seed_receipt = seed_condition_summaries(seed_summary)
+        for condition, source_condition in seeded_condition_summaries.items():
+            existing_condition = condition_summaries.get(condition)
+            if existing_condition is not None and existing_condition != source_condition:
+                raise RuntimeError(
+                    f"Existing {condition} receipt conflicts with the locked seed summary; "
+                    "start the bounded replication with a new run ID."
+                )
+            condition_summaries.setdefault(condition, source_condition)
     staircase = staircase_reading()
     payload: dict[str, Any] = {
         "kind": "stage5_multichannel_bridge_precursor_battery",
@@ -399,6 +465,7 @@ def main() -> int:
         "liveness_timeout_seconds": liveness_timeout_seconds,
         "staircase": staircase,
         "condition_summaries": condition_summaries,
+        "seeded_condition_receipt": seed_receipt,
         "queue_effect": "none",
     }
     write_json(summary_path, payload)

@@ -86,6 +86,15 @@ def test_multichannel_pilot_forces_bounded_env_and_uses_fresh_run_id() -> None:
     assert pilot["env"]["STAGE5_MULTICHANNEL_ROWS_PER_DEPTH"] == "1"
     assert pilot["env"]["STAGE5_MULTICHANNEL_RUN_ID"] == "stage5_multichannel_bridge_precursor_pilot_20260714"
 
+    replication = targets["multichannel_bridge_precursor_replication"]
+    assert replication["force_env"] is True
+    assert replication["env"]["STAGE5_MULTICHANNEL_CONDITIONS"] == "backward_recovery"
+    assert replication["env"]["STAGE5_MULTICHANNEL_ROWS_PER_DEPTH"] == "1"
+    assert replication["env"]["STAGE5_MULTICHANNEL_RANDOM_DRAWS"] == "20"
+    assert replication["env"]["STAGE5_MULTICHANNEL_SEED_SUMMARY"].endswith(
+        "stage5_multichannel_bridge_precursor_pilot_20260714/summary.json"
+    )
+
 
 def test_active_w3_and_c1_targets_force_their_locked_environments() -> None:
     tree = ast.parse((ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8"))
