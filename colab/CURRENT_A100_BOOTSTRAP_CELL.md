@@ -2700,6 +2700,7 @@ TARGETS = {
         },
     },
     "inverse_table_cap3_rehearsal": {
+        "force_env": True,
         "path": "colab/STAGE5_INVERSE_TABLE_REHEARSAL_CELL.py",
         "markers": [
             "STAGE5_INVERSE_TABLE_REHEARSAL_CELL_VERSION",
@@ -2716,6 +2717,7 @@ TARGETS = {
         },
     },
     "inverse_rendered_width_gate": {
+        "force_env": True,
         "path": "colab/STAGE5_INVERSE_RENDERED_WIDTH_GATE_CELL.py",
         "markers": [
             "STAGE5_INVERSE_RENDERED_WIDTH_GATE_CELL_VERSION",

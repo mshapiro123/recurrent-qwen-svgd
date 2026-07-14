@@ -87,6 +87,25 @@ def test_multichannel_pilot_forces_bounded_env_and_uses_fresh_run_id() -> None:
     assert pilot["env"]["STAGE5_MULTICHANNEL_RUN_ID"] == "stage5_multichannel_bridge_precursor_pilot_20260714"
 
 
+def test_active_w3_and_c1_targets_force_their_locked_environments() -> None:
+    tree = ast.parse((ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8"))
+    targets = None
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "TARGETS":
+                    targets = ast.literal_eval(node.value)
+                    break
+    assert isinstance(targets, dict)
+
+    width_gate = targets["inverse_rendered_width_gate"]
+    rehearsal = targets["inverse_table_cap3_rehearsal"]
+    assert width_gate["force_env"] is True
+    assert width_gate["env"]["STAGE5_INVERSE_RENDERED_RUN_ID"] == "stage5_inverse_rendered_width_gate_20260714"
+    assert rehearsal["force_env"] is True
+    assert rehearsal["env"]["STAGE5_REHEARSAL_RUN_ID"] == "stage5_inverse_table_cap3_rehearsal_20260714"
+
+
 def test_current_bootstrap_exposes_capacity_localization_rank64_target() -> None:
     text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
 

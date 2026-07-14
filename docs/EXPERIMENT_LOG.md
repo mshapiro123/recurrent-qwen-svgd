@@ -1194,3 +1194,22 @@ Colab/Drive backups for selected runs.
   gap but not a unique cause; primitive-first and rehearsal are now explicit
   causal tests. F9 remains diagnostic-only and BANKED. Amendment of record:
   `docs/TWO_LANE_SURPASS_REBASE_AMENDMENT_20260714.md`.
+- 2026-07-14 multi-channel precursor pilot: the corrected bounded M1/M2
+  evaluation completed on the exact N24 step-6000 checkpoint, using 14 frozen
+  rows, loops 1-14, and 20 matched random rotations. M1 was beyond the random
+  p95 at all nine eligible late loops but reached only 1.370x-1.419x versus
+  its locked 2.0x concentration bar, so it is recorded as `smeared`. M2 found
+  37 stable layer-head retrieval positions and beat the aggregate random null
+  (0.7404 versus 0.5229 p95), a local positive pending its required
+  backward-recovery replication. The architecture remains BANKED: M3 did not
+  run, the two-positive-measurement rule is unmet, and the staircase reading
+  remains `experiment_stalled_at_matched_dose`. Full handoff:
+  `docs/stage5_multichannel_bridge_precursor_pilot_20260714_handoff.md`.
+- 2026-07-14 active execution queue: F9 is frozen as diagnostic-only. The
+  stable-checkpoint path is W3, zero-shot inverse-rendered non-injective
+  validity of exact C cap-3 SHA `83767ebf...9ac5`, followed by C1, one
+  predeclared 25% forward-rehearsal cap-3 replay. Both launchers force their
+  locked run IDs and environment settings to prevent stale Colab variables
+  from changing checkpoint lineage or experiment scope. W3's result controls
+  whether one bounded deterministic tune may be designed; C1's task,
+  retention, and natural-canary verdict controls cap-4 authorization.
