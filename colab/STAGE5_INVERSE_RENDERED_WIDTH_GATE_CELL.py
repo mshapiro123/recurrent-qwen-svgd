@@ -10,7 +10,7 @@ from pathlib import Path
 from google.colab import drive, runtime, userdata
 
 
-STAGE5_INVERSE_RENDERED_WIDTH_GATE_CELL_VERSION = "inverse_rendered_width_gate_v1"
+STAGE5_INVERSE_RENDERED_WIDTH_GATE_CELL_VERSION = "inverse_rendered_width_gate_v2_resumable"
 # Safety marker: inverse_rendered_width_gate
 # Safety marker: colab/run_stage5_inverse_rendered_width_gate.py
 # Safety marker: tests/test_stage5_inverse_rendered_width_gate.py

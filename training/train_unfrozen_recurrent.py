@@ -12,6 +12,7 @@ import argparse
 import json
 import math
 import random
+import shutil
 import sys
 from functools import partial
 from pathlib import Path
@@ -42,6 +43,25 @@ from training.stability import (
 
 def load_config(path: str | Path) -> dict[str, Any]:
     return yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+
+
+def write_training_progress(path: str | Path, payload: dict[str, Any]) -> None:
+    """Atomically persist a compact liveness receipt for long Colab training jobs."""
+
+    destination = Path(path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = destination.with_suffix(destination.suffix + ".tmp")
+    temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    temporary.replace(destination)
+
+
+def backup_checkpoint(checkpoint: Path, backup_dir: str | Path | None) -> Path | None:
+    if not backup_dir:
+        return None
+    destination = Path(backup_dir) / checkpoint.name
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(checkpoint, destination)
+    return destination
 
 
 def cfg_float(cfg: dict[str, Any], key: str, default: float) -> float:
@@ -755,6 +775,39 @@ def main() -> int:
     }
     max_steps = cfg_int(cfg, "max_steps", 25)
     save_every = cfg_int(cfg, "save_every", 0) if cfg.get("save_every", 0) else 0
+    checkpoint_backup_every = (
+        cfg_int(cfg, "checkpoint_backup_every", 0) if cfg.get("checkpoint_backup_every", 0) else 0
+    )
+    checkpoint_backup_dir = cfg.get("checkpoint_backup_dir")
+    progress_backup_path = cfg.get("progress_backup_path")
+    output_dir_config = cfg.get("output_dir")
+    progress_path = Path(output_dir_config) / "train_unfrozen_recurrent_progress.json" if output_dir_config else None
+
+    def persist_progress(
+        *,
+        status: str,
+        completed_step: int,
+        metrics: dict[str, float] | None = None,
+        checkpoint: Path | None = None,
+        checkpoint_backup: Path | None = None,
+    ) -> None:
+        if progress_path is None:
+            return
+        payload: dict[str, Any] = {
+            "kind": "train_unfrozen_recurrent_progress",
+            "status": status,
+            "completed_step": int(completed_step),
+            "max_steps": int(max_steps),
+            "micro_step": int(micro_step),
+            "checkpoint": str(checkpoint) if checkpoint else None,
+            "checkpoint_backup": str(checkpoint_backup) if checkpoint_backup else None,
+            "metrics": metrics or {},
+        }
+        write_training_progress(progress_path, payload)
+        if progress_backup_path:
+            backup_destination = Path(progress_backup_path)
+            backup_destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(progress_path, backup_destination)
     save_steps = {
         int(item)
         for item in (cfg.get("save_steps") or [])
@@ -772,6 +825,7 @@ def main() -> int:
     micro_step = 0
     accumulated_microbatches = 0
     previous_prelude_grad: torch.Tensor | None = None
+    persist_progress(status="started", completed_step=step)
     while step < max_steps:
         for batch in loader:
             batch = {key: value.to(args.device) for key, value in batch.items()}
@@ -886,6 +940,7 @@ def main() -> int:
                         "metrics": metric_values,
                     }
                 )
+                persist_progress(status="training", completed_step=completed_step, metrics=metric_values)
             step = completed_step
             if output_dir := cfg.get("output_dir"):
                 should_save_interval = (save_every and step % save_every == 0) or step in save_steps
@@ -893,6 +948,17 @@ def main() -> int:
                     checkpoint_path = save_trainable_checkpoint(wrapper, output_dir, "unfrozen_recurrent", step, cfg)
                     print(f"saved_checkpoint={checkpoint_path}")
                     summary["interval_checkpoints"].append(str(checkpoint_path))
+                    checkpoint_backup = None
+                    if checkpoint_backup_every and step % checkpoint_backup_every == 0:
+                        checkpoint_backup = backup_checkpoint(checkpoint_path, checkpoint_backup_dir)
+                        if checkpoint_backup is not None:
+                            print(f"backed_up_checkpoint={checkpoint_backup}")
+                    persist_progress(
+                        status="checkpoint_saved",
+                        completed_step=step,
+                        checkpoint=checkpoint_path,
+                        checkpoint_backup=checkpoint_backup,
+                    )
                     if dose_ledger is not None:
                         summary["dose_trace"].append(
                             {"step": step, "checkpoint": str(checkpoint_path), **dose_ledger.as_dict()}
@@ -904,6 +970,9 @@ def main() -> int:
     if output_dir:
         checkpoint_path = save_trainable_checkpoint(wrapper, output_dir, "unfrozen_recurrent", step, cfg)
         print(f"saved_checkpoint={checkpoint_path}")
+        checkpoint_backup = backup_checkpoint(checkpoint_path, checkpoint_backup_dir)
+        if checkpoint_backup is not None:
+            print(f"backed_up_checkpoint={checkpoint_backup}")
         summary["checkpoint"] = str(checkpoint_path)
         if dose_ledger is not None:
             summary["dose_trace"].append(
@@ -921,6 +990,12 @@ def main() -> int:
         summary_path = Path(output_dir) / "train_unfrozen_recurrent_summary.json"
         summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
         print(f"training_summary={summary_path}")
+    persist_progress(
+        status="finished",
+        completed_step=step,
+        checkpoint=Path(summary["checkpoint"]) if summary.get("checkpoint") else None,
+        checkpoint_backup=checkpoint_backup if output_dir else None,
+    )
     return 0
 
 

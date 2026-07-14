@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import shutil
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import torch
 from transformers import AutoTokenizer
@@ -221,7 +223,44 @@ def read_target_entropies(path: str | None, *, field: str) -> dict[str, float]:
     return values
 
 
-def evaluate(args: argparse.Namespace) -> list[dict[str, Any]]:
+def row_identifier(row: dict[str, Any]) -> str:
+    return str(row.get("id") or row.get("instance_id"))
+
+
+def load_resume_rows(path: str | Path, *, expected_ids: set[str]) -> dict[str, dict[str, Any]]:
+    """Load a durable JSONL prefix and reject mismatched or duplicate rows."""
+
+    source = Path(path)
+    if not source.exists():
+        return {}
+    completed: dict[str, dict[str, Any]] = {}
+    for line_number, line in enumerate(source.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        payload = json.loads(line)
+        row_id = row_identifier(payload)
+        if row_id not in expected_ids:
+            raise ValueError(f"Resume row {row_id!r} at {source}:{line_number} is not in the frozen input")
+        if row_id in completed:
+            raise ValueError(f"Duplicate resume row {row_id!r} at {source}:{line_number}")
+        completed[row_id] = payload
+    return completed
+
+
+def write_progress(path: str | Path, payload: dict[str, Any]) -> None:
+    destination = Path(path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = destination.with_suffix(destination.suffix + ".tmp")
+    temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    temporary.replace(destination)
+
+
+def evaluate(
+    args: argparse.Namespace,
+    *,
+    completed_rows: dict[str, dict[str, Any]] | None = None,
+    on_row_complete: Callable[[dict[str, Any], int, int], None] | None = None,
+) -> list[dict[str, Any]]:
     rows = read_jsonl(args.data_jsonl)
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     wrapper = load_recurrent_wrapper(args, args.checkpoint)
@@ -231,8 +270,11 @@ def evaluate(args: argparse.Namespace) -> list[dict[str, Any]]:
         getattr(args, "target_entropy_jsonl", None),
         field=getattr(args, "target_entropy_field", "latent_candidate_entropy"),
     )
-    output_rows: list[dict[str, Any]] = []
+    completed = dict(completed_rows or {})
     for row_index, row in enumerate(rows):
+        row_id = row_identifier(row)
+        if row_id in completed:
+            continue
         if args.progress_every and (row_index == 0 or (row_index + 1) % args.progress_every == 0):
             print(f"abductive_eval_progress row={row_index + 1}/{len(rows)}", flush=True)
         prompt = prompt_for_row(row, prediction_space="full_symbols", prompt_style="question_only")
@@ -254,7 +296,6 @@ def evaluate(args: argparse.Namespace) -> list[dict[str, Any]]:
         ]
         chain_receipt = reverse_chain_validity(row, greedy_chain)
         greedy = max(scores.items(), key=lambda item: item[1])[0]
-        row_id = str(row.get("id") or row.get("instance_id"))
         exact_starts = exact_valid_preimages(row)
         if target_entropies:
             if row_id not in target_entropies:
@@ -283,8 +324,7 @@ def evaluate(args: argparse.Namespace) -> list[dict[str, Any]]:
             temperature=sampling_temperature,
             generator=generator,
         )
-        output_rows.append(
-            {
+        result = {
                 "id": row_id,
                 "depth": depth,
                 "task_mode": row.get("task_mode"),
@@ -308,9 +348,11 @@ def evaluate(args: argparse.Namespace) -> list[dict[str, Any]]:
                     str(count): exact_coverage(samples[:count], row)
                     for count in sample_counts
                 },
-            }
-        )
-    return output_rows
+        }
+        completed[row_id] = result
+        if on_row_complete is not None:
+            on_row_complete(result, len(completed), len(rows))
+    return [completed[row_identifier(row)] for row in rows]
 
 
 def main() -> int:
@@ -340,15 +382,76 @@ def main() -> int:
     parser.add_argument("--lora_alpha", type=int, default=16)
     parser.add_argument("--adapter_dtype", default="float32")
     parser.add_argument("--progress_every", type=int, default=25)
+    parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--progress_path", default="")
+    parser.add_argument("--resume_source_jsonl", default="")
+    parser.add_argument("--backup_output_jsonl", default="")
+    parser.add_argument("--backup_progress_path", default="")
+    parser.add_argument("--backup_summary", default="")
     args = parser.parse_args()
 
-    output_rows = evaluate(args)
     sample_counts = parse_sample_counts(args.sample_counts)
     output_path = Path(args.output_jsonl)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(
-        "".join(json.dumps(row, sort_keys=True) + "\n" for row in output_rows), encoding="utf-8"
+    resume_source = Path(args.resume_source_jsonl) if args.resume_source_jsonl else None
+    if args.resume and not output_path.exists() and resume_source is not None and resume_source.exists():
+        shutil.copy2(resume_source, output_path)
+    source_rows = read_jsonl(args.data_jsonl)
+    expected_ids = {row_identifier(row) for row in source_rows}
+    if len(expected_ids) != len(source_rows):
+        raise ValueError("Frozen input contains duplicate row identifiers")
+    if args.resume:
+        completed = load_resume_rows(output_path, expected_ids=expected_ids)
+    else:
+        completed = {}
+        output_path.write_text("", encoding="utf-8")
+    progress_path = Path(args.progress_path) if args.progress_path else Path(str(args.output_summary) + ".progress.json")
+    backup_progress_path = Path(args.backup_progress_path) if args.backup_progress_path else None
+    backup_output_path = Path(args.backup_output_jsonl) if args.backup_output_jsonl else None
+
+    def persist_progress(payload: dict[str, Any]) -> None:
+        write_progress(progress_path, payload)
+        if backup_progress_path is not None and backup_progress_path != progress_path:
+            backup_progress_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(progress_path, backup_progress_path)
+
+    persist_progress(
+        {
+            "kind": "abductive_coverage_progress",
+            "status": "running",
+            "data_jsonl": args.data_jsonl,
+            "checkpoint": args.checkpoint,
+            "completed_rows": len(completed),
+            "total_rows": len(source_rows),
+            "resumed": bool(args.resume),
+        },
     )
+
+    def persist_row(result: dict[str, Any], completed_count: int, total_rows: int) -> None:
+        with output_path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(result, sort_keys=True) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        if backup_output_path is not None and backup_output_path != output_path:
+            backup_output_path.parent.mkdir(parents=True, exist_ok=True)
+            with backup_output_path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(result, sort_keys=True) + "\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+        persist_progress(
+            {
+                "kind": "abductive_coverage_progress",
+                "status": "running",
+                "data_jsonl": args.data_jsonl,
+                "checkpoint": args.checkpoint,
+                "completed_rows": int(completed_count),
+                "total_rows": int(total_rows),
+                "last_row_id": row_identifier(result),
+                "resumed": bool(args.resume),
+            },
+        )
+
+    output_rows = evaluate(args, completed_rows=completed, on_row_complete=persist_row)
     summary = summarize_rows(output_rows, sample_counts)
     summary.update(
         {
@@ -368,6 +471,21 @@ def main() -> int:
     summary_path = Path(args.output_summary)
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    if args.backup_summary:
+        backup_summary = Path(args.backup_summary)
+        backup_summary.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(summary_path, backup_summary)
+    persist_progress(
+        {
+            "kind": "abductive_coverage_progress",
+            "status": "finished",
+            "data_jsonl": args.data_jsonl,
+            "checkpoint": args.checkpoint,
+            "completed_rows": len(output_rows),
+            "total_rows": len(source_rows),
+            "resumed": bool(args.resume),
+        },
+    )
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0
 

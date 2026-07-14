@@ -60,6 +60,8 @@ def test_inverse_rendered_width_target_is_wired() -> None:
     assert 'os.environ.get("STAGE5_BOOTSTRAP_REF", "main")' in cell
     assert "Pinned checkout verified" in cell
     assert runner.index("sys.path.insert(0, str(REPO_ROOT))") < runner.index("from colab.")
+    assert "--backup_output_jsonl" in runner
+    assert "--resume_source_jsonl" in runner
 
 
 def test_inverse_rendered_runner_resolves_repo_packages_when_run_by_path(tmp_path: Path) -> None:

@@ -10,6 +10,7 @@ from eval.eval_multichannel_bridge_precursor import (
     classify_subspace_drift,
     output_projection_head_subspaces,
     random_orthogonal_partitions,
+    select_rows_by_depth,
     table_character_span,
 )
 from colab.run_stage5_multichannel_bridge_precursor import (
@@ -40,6 +41,18 @@ def test_random_partitions_are_orthonormal_and_reproducible() -> None:
     for draw in left:
         full = torch.cat([draw[index] for index in range(2)], dim=1)
         assert torch.allclose(full.T @ full, torch.eye(8), atol=1e-5)
+
+
+def test_dynamics_pilot_orders_the_deepest_frozen_row_first() -> None:
+    rows = [
+        {"id": "d1", "depth": 1},
+        {"id": "d2", "depth": 2},
+        {"id": "d3", "depth": 3},
+    ]
+
+    selected = select_rows_by_depth(rows, max_depth=3, rows_per_depth=1, deepest_first=True)
+
+    assert [row["id"] for row in selected] == ["d3", "d2", "d1"]
 
 
 def test_m1_requires_consistent_two_x_advantage() -> None:
@@ -169,6 +182,8 @@ def test_colab_target_is_wired_with_eval_only_safety_markers() -> None:
     cell = (ROOT / "colab/STAGE5_MULTICHANNEL_BRIDGE_PRECURSOR_CELL.py").read_text(encoding="utf-8")
 
     assert '"multichannel_bridge_precursor"' in bootstrap
+    assert '"multichannel_bridge_precursor_full"' in bootstrap
+    assert '"STAGE5_MULTICHANNEL_MODE": "pilot"' in bootstrap
     assert "STAGE5_MULTICHANNEL_BRIDGE_PRECURSOR_CELL_VERSION" in bootstrap
     assert "eval/eval_multichannel_bridge_precursor.py" in bootstrap
     assert "tests/test_multichannel_bridge_precursor.py" in cell

@@ -11,8 +11,9 @@ import argparse
 import json
 import math
 import sys
+import time
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any, Callable, Iterable, Sequence
 
 import torch
 
@@ -237,7 +238,13 @@ def table_token_mask(tokenizer: Any, prompt: str, *, max_length: int) -> tuple[d
     return encoded, mask
 
 
-def select_rows_by_depth(rows: Sequence[dict[str, Any]], *, max_depth: int, rows_per_depth: int) -> list[dict[str, Any]]:
+def select_rows_by_depth(
+    rows: Sequence[dict[str, Any]],
+    *,
+    max_depth: int,
+    rows_per_depth: int,
+    deepest_first: bool = False,
+) -> list[dict[str, Any]]:
     selected: list[dict[str, Any]] = []
     counts: dict[int, int] = {}
     for row in rows:
@@ -249,6 +256,10 @@ def select_rows_by_depth(rows: Sequence[dict[str, Any]], *, max_depth: int, rows
     missing = {depth: rows_per_depth - counts.get(depth, 0) for depth in range(1, max_depth + 1) if counts.get(depth, 0) < rows_per_depth}
     if missing:
         raise ValueError(f"Frozen data lacks requested rows by depth: {missing}")
+    if deepest_first:
+        # A pilot must exercise its expensive depth-14 path before spending time
+        # on shallow rows. The chosen rows and analysis population stay unchanged.
+        selected.sort(key=lambda row: (-int(row["depth"]), str(row.get("id") or row.get("instance_id"))))
     return selected
 
 
@@ -316,6 +327,8 @@ def collect_row_dynamics(
     *,
     max_loops: int,
     max_length: int,
+    on_loop_complete: Callable[[int, float], None] | None = None,
+    max_seconds: float = 0.0,
 ) -> dict[str, Any]:
     """Collect pooled carried states and recurrent-layer table attention."""
 
@@ -325,6 +338,7 @@ def collect_row_dynamics(
     input_ids = encoded["input_ids"].to(model_device)
     attention_mask = encoded.get("attention_mask", torch.ones_like(input_ids)).to(model_device)
     table_mask = rendered_table_mask.to(model_device)
+    started = time.monotonic()
     with torch.no_grad():
         entry, causal_mask, position_ids, cache_position, position_embeddings = _prepare_with_attentions(
             wrapper,
@@ -366,6 +380,14 @@ def collect_row_dynamics(
                 mass = attention[0, :, answer_position, :][:, table_mask].float().sum(dim=-1)
                 layer_mass.append(mass.detach().cpu())
             table_mass_by_loop.append(torch.stack(layer_mass, dim=0))
+            elapsed = time.monotonic() - started
+            if on_loop_complete is not None:
+                on_loop_complete(loop_index + 1, elapsed)
+            if max_seconds > 0.0 and elapsed > max_seconds:
+                raise TimeoutError(
+                    f"Dynamics collection exceeded {max_seconds:.1f}s for row "
+                    f"{row.get('id') or row.get('instance_id')} after loop {loop_index + 1}"
+                )
     return {
         "id": str(row.get("id") or row.get("instance_id")),
         "depth": int(row["depth"]),
@@ -385,6 +407,8 @@ def collect_dynamics(
     max_length: int,
     cache_path: Path,
     progress_every: int,
+    status_path: Path,
+    max_seconds_per_row: float,
 ) -> list[dict[str, Any]]:
     signature = {
         "row_ids": [str(row.get("id") or row.get("instance_id")) for row in rows],
@@ -402,20 +426,100 @@ def collect_dynamics(
         row_id = str(row.get("id") or row.get("instance_id"))
         if row_id in completed:
             continue
-        records.append(
-            collect_row_dynamics(
+        row_started = time.monotonic()
+        write_json(
+            status_path,
+            {
+                "kind": "multichannel_dynamics_progress",
+                "status": "collecting_row",
+                "row_index": index,
+                "total_rows": len(rows),
+                "completed_rows": len(records),
+                "row_id": row_id,
+                "depth": int(row["depth"]),
+                "loop_complete": 0,
+                "max_loops": int(max_loops),
+                "max_seconds_per_row": float(max_seconds_per_row),
+            },
+        )
+
+        def on_loop_complete(loop_index: int, elapsed: float) -> None:
+            write_json(
+                status_path,
+                {
+                    "kind": "multichannel_dynamics_progress",
+                    "status": "collecting_row",
+                    "row_index": index,
+                    "total_rows": len(rows),
+                    "completed_rows": len(records),
+                    "row_id": row_id,
+                    "depth": int(row["depth"]),
+                    "loop_complete": int(loop_index),
+                    "max_loops": int(max_loops),
+                    "elapsed_seconds": round(float(elapsed), 3),
+                    "max_seconds_per_row": float(max_seconds_per_row),
+                },
+            )
+            print(
+                f"multichannel_dynamics_loop row={index}/{len(rows)} depth={row['depth']} "
+                f"loop={loop_index}/{max_loops} elapsed_s={elapsed:.1f}",
+                flush=True,
+            )
+
+        try:
+            record = collect_row_dynamics(
                 wrapper,
                 tokenizer,
                 row,
                 max_loops=max_loops,
                 max_length=max_length,
+                on_loop_complete=on_loop_complete,
+                max_seconds=max_seconds_per_row,
             )
+        except Exception as exc:
+            write_json(
+                status_path,
+                {
+                    "kind": "multichannel_dynamics_progress",
+                    "status": "failed",
+                    "row_index": index,
+                    "total_rows": len(rows),
+                    "completed_rows": len(records),
+                    "row_id": row_id,
+                    "depth": int(row["depth"]),
+                    "elapsed_seconds": round(time.monotonic() - row_started, 3),
+                    "error": f"{type(exc).__name__}: {exc}",
+                },
+            )
+            raise
+        records.append(record)
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        # Persist every row. A CUDA/runtime interruption must cost at most one row.
+        torch.save({"signature": signature, "records": records}, cache_path)
+        write_json(
+            status_path,
+            {
+                "kind": "multichannel_dynamics_progress",
+                "status": "collecting",
+                "row_index": index,
+                "total_rows": len(rows),
+                "completed_rows": len(records),
+                "last_row_id": row_id,
+                "last_row_elapsed_seconds": round(time.monotonic() - row_started, 3),
+            },
         )
         if index == 1 or index % progress_every == 0 or index == len(rows):
-            cache_path.parent.mkdir(parents=True, exist_ok=True)
-            torch.save({"signature": signature, "records": records}, cache_path)
             print(f"multichannel_dynamics_progress row={index}/{len(rows)} cached={len(records)}", flush=True)
     torch.save({"signature": signature, "records": records}, cache_path)
+    write_json(
+        status_path,
+        {
+            "kind": "multichannel_dynamics_progress",
+            "status": "finished",
+            "total_rows": len(rows),
+            "completed_rows": len(records),
+        },
+    )
     return records
 
 
@@ -578,12 +682,15 @@ def score_active_labels_batched(
     device: str,
     value_prefix: str,
     ablation_basis: torch.Tensor | None,
+    on_batch_complete: Callable[[int, int, float], None] | None = None,
+    max_seconds: float = 0.0,
 ) -> dict[str, Any]:
     correct_by_loop = {loop: 0 for loop in range(1, max_loops + 1)}
     total_by_loop = {loop: 0 for loop in range(1, max_loops + 1)}
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "left"
+    started = time.monotonic()
     for start in range(0, len(rows), batch_size):
         chunk = list(rows[start : start + batch_size])
         prompts = [prompt_for_row(row, prediction_space="full_symbols", prompt_style="question_only") for row in chunk]
@@ -627,6 +734,14 @@ def score_active_labels_batched(
             f"ablation={'none' if ablation_basis is None else 'active'}",
             flush=True,
         )
+        elapsed = time.monotonic() - started
+        if on_batch_complete is not None:
+            on_batch_complete(min(start + batch_size, len(rows)), len(rows), elapsed)
+        if max_seconds > 0.0 and elapsed > max_seconds:
+            raise TimeoutError(
+                f"M3 ablation pass exceeded {max_seconds:.1f}s after "
+                f"{min(start + batch_size, len(rows))}/{len(rows)} rows"
+            )
     total = sum(total_by_loop.values())
     correct = sum(correct_by_loop.values())
     return {
@@ -657,6 +772,7 @@ def run_m3(
     value_prefix: str,
     progress_path: Path,
     cache_signature: dict[str, Any],
+    max_seconds_per_pass: float,
 ) -> dict[str, Any]:
     flag_off = assert_flag_off_equivalence(wrapper, tokenizer, rows[0], max_loops=max_loops, device=device)
     progress: dict[str, Any] = {"signature": cache_signature, "head": {}, "random": {}}
@@ -664,22 +780,20 @@ def run_m3(
         progress = json.loads(progress_path.read_text(encoding="utf-8"))
         if progress.get("signature") != cache_signature:
             raise RuntimeError(f"M3 resume cache signature mismatch: {progress_path}")
-    if "baseline" not in progress:
-        progress["baseline"] = score_active_labels_batched(
-            wrapper,
-            tokenizer,
-            rows,
-            max_loops=max_loops,
-            batch_size=batch_size,
-            device=device,
-            value_prefix=value_prefix,
-            ablation_basis=None,
-        )
+    def score_pass(label: str, basis: torch.Tensor | None) -> dict[str, Any]:
+        progress["active_pass"] = {"label": label, "completed_batches": 0, "total_rows": len(rows)}
         write_json(progress_path, progress)
-    baseline_accuracy = float(progress["baseline"]["accuracy"])
-    for index, basis in enumerate(head_bases):
-        key = str(index)
-        if key not in progress["head"]:
+
+        def on_batch_complete(done: int, total: int, elapsed: float) -> None:
+            progress["active_pass"] = {
+                "label": label,
+                "completed_rows": int(done),
+                "total_rows": int(total),
+                "elapsed_seconds": round(float(elapsed), 3),
+            }
+            write_json(progress_path, progress)
+
+        try:
             score = score_active_labels_batched(
                 wrapper,
                 tokenizer,
@@ -689,23 +803,31 @@ def run_m3(
                 device=device,
                 value_prefix=value_prefix,
                 ablation_basis=basis,
+                on_batch_complete=on_batch_complete,
+                max_seconds=max_seconds_per_pass,
             )
+        except Exception as exc:
+            progress["active_pass"] = {"label": label, "status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+            write_json(progress_path, progress)
+            raise
+        progress.pop("active_pass", None)
+        return score
+
+    if "baseline" not in progress:
+        progress["baseline"] = score_pass("baseline", None)
+        write_json(progress_path, progress)
+    baseline_accuracy = float(progress["baseline"]["accuracy"])
+    for index, basis in enumerate(head_bases):
+        key = str(index)
+        if key not in progress["head"]:
+            score = score_pass(f"head:{key}", basis)
             score["damage"] = baseline_accuracy - float(score["accuracy"])
             progress["head"][key] = score
             write_json(progress_path, progress)
     for index, partition in enumerate(random_partitions):
         key = str(index)
         if key not in progress["random"]:
-            score = score_active_labels_batched(
-                wrapper,
-                tokenizer,
-                rows,
-                max_loops=max_loops,
-                batch_size=batch_size,
-                device=device,
-                value_prefix=value_prefix,
-                ablation_basis=partition[0],
-            )
+            score = score_pass(f"random:{key}", partition[0])
             score["damage"] = baseline_accuracy - float(score["accuracy"])
             progress["random"][key] = score
             write_json(progress_path, progress)
@@ -728,7 +850,9 @@ def run_m3(
 def write_json(path: str | Path, payload: dict[str, Any]) -> None:
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    temporary = destination.with_suffix(destination.suffix + ".tmp")
+    temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    temporary.replace(destination)
 
 
 def write_markdown(path: str | Path, payload: dict[str, Any]) -> None:
@@ -797,6 +921,9 @@ def main(argv: Iterable[str] | None = None) -> int:
     parser.add_argument("--m3_batch_size", type=int, default=8)
     parser.add_argument("--value_prefix", default="letter:")
     parser.add_argument("--progress_every", type=int, default=8)
+    parser.add_argument("--dynamics_row_timeout_seconds", type=float, default=600.0)
+    parser.add_argument("--m3_pass_timeout_seconds", type=float, default=1800.0)
+    parser.add_argument("--dynamics_deepest_first", action="store_true")
     parser.add_argument("--split", default="6,18")
     parser.add_argument("--bridge_projection_mode", choices=("concat", "split"), default="split")
     parser.add_argument("--dtype", default="bfloat16")
@@ -846,10 +973,23 @@ def main(argv: Iterable[str] | None = None) -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
     resume_cache_dir = Path(args.resume_cache_dir) if args.resume_cache_dir else output_dir
     resume_cache_dir.mkdir(parents=True, exist_ok=True)
+    write_json(
+        resume_cache_dir / "dynamics_status.json",
+        {
+            "kind": "multichannel_dynamics_progress",
+            "status": "starting",
+            "condition": args.condition,
+            "checkpoint": args.checkpoint,
+            "max_depth": args.max_depth,
+            "max_loops": args.max_loops,
+            "rows_per_depth": args.rows_per_depth,
+        },
+    )
     rows = select_rows_by_depth(
         read_jsonl(args.data_jsonl),
         max_depth=args.max_depth,
         rows_per_depth=args.rows_per_depth,
+        deepest_first=args.dynamics_deepest_first,
     )
     if "m3" in requested and any("orbit" not in row for row in rows):
         raise ValueError("M3 active-label scoring currently requires forward rows with an orbit field")
@@ -872,6 +1012,8 @@ def main(argv: Iterable[str] | None = None) -> int:
             max_length=args.max_length,
             cache_path=resume_cache_dir / "dynamics_cache.pt",
             progress_every=args.progress_every,
+            status_path=resume_cache_dir / "dynamics_status.json",
+            max_seconds_per_row=args.dynamics_row_timeout_seconds,
         )
         if "m1" in requested:
             results["m1"] = analyze_m1(
@@ -904,6 +1046,7 @@ def main(argv: Iterable[str] | None = None) -> int:
                 "random_seed": args.random_seed,
                 "basis": "final_recurrent_o_proj_query_head_blocks",
             },
+            max_seconds_per_pass=args.m3_pass_timeout_seconds,
         )
         write_json(output_dir / "m3_injection_sensitivity.json", results["m3"])
 

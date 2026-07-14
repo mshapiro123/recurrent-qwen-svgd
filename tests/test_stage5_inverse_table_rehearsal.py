@@ -5,12 +5,35 @@ import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 from colab.run_stage5_inverse_table_rehearsal import (
+    _write_config,
     build_rehearsal_mix,
     fixed_schedule_dose,
     rehearsal_optimizer_steps,
     rehearsal_weight_profiles,
 )
+
+
+def test_rehearsal_config_uses_interval_checkpoints_and_drive_receipts(tmp_path: Path) -> None:
+    config_path = tmp_path / "config.yaml"
+    _write_config(
+        config_path,
+        checkpoint=tmp_path / "init.pt",
+        output_dir=tmp_path / "train",
+        max_steps=334,
+        seed=17,
+        checkpoint_backup_dir=tmp_path / "drive" / "checkpoints",
+        progress_backup_path=tmp_path / "drive" / "progress.json",
+    )
+
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+
+    assert config["save_every"] == 25
+    assert config["checkpoint_backup_every"] == 100
+    assert Path(config["checkpoint_backup_dir"]) == tmp_path / "drive" / "checkpoints"
+    assert Path(config["progress_backup_path"]) == tmp_path / "drive" / "progress.json"
 
 
 def test_rehearsal_mix_adds_rows_without_reducing_original_task_dose() -> None:

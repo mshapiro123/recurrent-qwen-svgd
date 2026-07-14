@@ -172,6 +172,8 @@ def _write_config(
     output_dir: Path,
     max_steps: int,
     seed: int,
+    checkpoint_backup_dir: Path,
+    progress_backup_path: Path,
 ) -> None:
     cfg = {
         "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
@@ -193,7 +195,12 @@ def _write_config(
         "weight_decay": 0.0,
         "max_grad_norm": 0.5,
         "max_steps": int(max_steps),
-        "save_every": int(max_steps),
+        # Local snapshots limit loss on a notebook interruption; selected snapshots
+        # and the live receipt are copied to Drive by the trainer.
+        "save_every": int(os.environ.get("STAGE5_REHEARSAL_SAVE_EVERY", "25")),
+        "checkpoint_backup_every": int(os.environ.get("STAGE5_REHEARSAL_CHECKPOINT_BACKUP_EVERY", "100")),
+        "checkpoint_backup_dir": str(checkpoint_backup_dir),
+        "progress_backup_path": str(progress_backup_path),
         "log_every": 25,
         "bridge_projection_mode": "split",
         "bridge_prelude_lr_multiplier": 10.0,
@@ -289,7 +296,21 @@ def main() -> int:
     write_jsonl(train_path, mixed)
     config_path = run_dir / "config" / "cap3_rehearsal.yaml"
     train_dir = run_dir / "train" / "cap3_rehearsal"
-    _write_config(config_path, checkpoint=checkpoint, output_dir=train_dir, max_steps=max_steps, seed=81_903)
+    drive_train_root = Path(
+        os.environ.get(
+            "STAGE5_REHEARSAL_DRIVE_ROOT",
+            f"/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/{run_id}/train",
+        )
+    )
+    _write_config(
+        config_path,
+        checkpoint=checkpoint,
+        output_dir=train_dir,
+        max_steps=max_steps,
+        seed=81_903,
+        checkpoint_backup_dir=drive_train_root / "checkpoints",
+        progress_backup_path=drive_train_root / "train_progress.json",
+    )
     run(
         [
             sys.executable,

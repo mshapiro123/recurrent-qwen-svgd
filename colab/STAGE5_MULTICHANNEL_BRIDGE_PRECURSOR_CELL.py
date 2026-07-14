@@ -10,10 +10,10 @@ from pathlib import Path
 from google.colab import drive, runtime, userdata
 
 
-STAGE5_MULTICHANNEL_BRIDGE_PRECURSOR_CELL_VERSION = "multichannel_bridge_precursor_v1"
+STAGE5_MULTICHANNEL_BRIDGE_PRECURSOR_CELL_VERSION = "multichannel_bridge_precursor_v2_bounded_pilot"
 # Safety markers: eval/eval_multichannel_bridge_precursor.py
 # Safety markers: tests/test_multichannel_bridge_precursor.py
-# Safety markers: prelude_ablation_basis random_orthogonal_partitions
+# Safety markers: prelude_ablation_basis random_orthogonal_partitions STAGE5_MULTICHANNEL_MODE
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")

@@ -24,7 +24,17 @@ from training.train_unfrozen_recurrent import (
     seed_training_rng,
     trainable_parameter_norm_stats,
     trainable_parameter_summary,
+    write_training_progress,
 )
+
+
+def test_training_progress_receipt_is_atomically_replaced(tmp_path) -> None:
+    destination = tmp_path / "progress.json"
+    write_training_progress(destination, {"status": "started", "step": 0})
+    write_training_progress(destination, {"status": "training", "step": 1})
+
+    assert destination.read_text(encoding="utf-8") == '{\n  "status": "training",\n  "step": 1\n}\n'
+    assert not destination.with_suffix(".json.tmp").exists()
 
 
 class TinyWrapper(nn.Module):

@@ -10,7 +10,7 @@ from pathlib import Path
 from google.colab import drive, runtime, userdata
 
 
-STAGE5_INVERSE_TABLE_REHEARSAL_CELL_VERSION = "inverse_table_cap3_rehearsal_v1"
+STAGE5_INVERSE_TABLE_REHEARSAL_CELL_VERSION = "inverse_table_cap3_rehearsal_v2_checkpointed"
 # Safety marker: inverse_table_cap3_rehearsal
 # Safety marker: colab/run_stage5_inverse_table_rehearsal.py
 # Safety marker: tests/test_stage5_inverse_table_rehearsal.py

@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import json
 import os
+import queue
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -14,7 +16,7 @@ ROOT = Path(os.environ.get("STAGE5_ROOT", Path(__file__).resolve().parents[1]))
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from colab.run_stage5_natural_surface_transfer import restore_checkpoint, run  # noqa: E402
+from colab.run_stage5_natural_surface_transfer import restore_checkpoint  # noqa: E402
 from colab.stage5_publish_utils import publishable_artifact_paths  # noqa: E402
 from training.abductive_injective_task import (  # noqa: E402
     AbductiveInjectiveConfig,
@@ -250,6 +252,71 @@ def write_master_markdown(run_dir: Path, payload: dict[str, Any]) -> None:
     (run_dir / "summary.md").write_text("\n".join(lines), encoding="utf-8")
 
 
+def run_with_liveness(
+    command: list[str],
+    *,
+    status_paths: list[Path],
+    max_idle_seconds: float,
+) -> None:
+    """Stream a child process and terminate it if it stops emitting receipts.
+
+    This is deliberately parent-side: an attention capture can stall inside a
+    single CUDA call, where a child-side elapsed-time check cannot execute.
+    """
+
+    print("$", " ".join(command), flush=True)
+    process = subprocess.Popen(
+        command,
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    lines: queue.Queue[str | None] = queue.Queue()
+
+    def drain_stdout() -> None:
+        for line in process.stdout:
+            lines.put(line)
+        lines.put(None)
+
+    threading.Thread(target=drain_stdout, daemon=True).start()
+    latest_mtime = {path: path.stat().st_mtime if path.exists() else 0.0 for path in status_paths}
+    last_activity = time.monotonic()
+    output: list[str] = []
+    while True:
+        try:
+            line = lines.get(timeout=10.0)
+        except queue.Empty:
+            line = ""
+        if line is None and process.poll() is not None:
+            break
+        if line:
+            print(line, end="", flush=True)
+            output.append(line)
+            last_activity = time.monotonic()
+        for path in status_paths:
+            mtime = path.stat().st_mtime if path.exists() else 0.0
+            if mtime > latest_mtime[path]:
+                latest_mtime[path] = mtime
+                last_activity = time.monotonic()
+        if time.monotonic() - last_activity > max_idle_seconds:
+            process.terminate()
+            try:
+                process.wait(timeout=20)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=20)
+            raise TimeoutError(
+                f"Multichannel evaluator produced no stdout or status update for {max_idle_seconds:.0f}s; "
+                f"terminated command. status_paths={[str(path) for path in status_paths]}"
+            )
+    returncode = process.wait()
+    if returncode:
+        raise subprocess.CalledProcessError(returncode, command, output="".join(output))
+
+
 def main() -> int:
     run_id = os.environ.get("STAGE5_MULTICHANNEL_RUN_ID") or time.strftime(
         "stage5_multichannel_bridge_precursor_%Y%m%d_%H%M%S"
@@ -260,22 +327,28 @@ def main() -> int:
     if not N24_DATA.exists():
         raise FileNotFoundError(f"Missing locked N24 data: {N24_DATA}")
 
+    mode = os.environ.get("STAGE5_MULTICHANNEL_MODE", "full").strip().lower()
+    if mode not in {"pilot", "full"}:
+        raise ValueError("STAGE5_MULTICHANNEL_MODE must be 'pilot' or 'full'")
     requested = [
         item.strip()
         for item in os.environ.get(
             "STAGE5_MULTICHANNEL_CONDITIONS",
-            "n24_step6000,natural_surface_keeper,backward_fixed_boundary,backward_recovery",
+            "n24_step6000" if mode == "pilot" else "n24_step6000,natural_surface_keeper,backward_fixed_boundary,backward_recovery",
         ).split(",")
         if item.strip()
     ]
     unknown = set(requested) - set(CONDITION_SPECS)
     if unknown:
         raise ValueError(f"Unknown multichannel conditions: {sorted(unknown)}")
-    rows_per_depth = int(os.environ.get("STAGE5_MULTICHANNEL_ROWS_PER_DEPTH", "64"))
+    rows_per_depth = int(os.environ.get("STAGE5_MULTICHANNEL_ROWS_PER_DEPTH", "1" if mode == "pilot" else "64"))
     random_draws = int(os.environ.get("STAGE5_MULTICHANNEL_RANDOM_DRAWS", "20"))
     if random_draws < 20:
         raise ValueError("The preregistered battery requires at least 20 random draws")
     m3_batch_size = int(os.environ.get("STAGE5_MULTICHANNEL_M3_BATCH_SIZE", "8"))
+    dynamics_row_timeout_seconds = float(os.environ.get("STAGE5_MULTICHANNEL_DYNAMICS_ROW_TIMEOUT_SECONDS", "600"))
+    m3_pass_timeout_seconds = float(os.environ.get("STAGE5_MULTICHANNEL_M3_PASS_TIMEOUT_SECONDS", "1800"))
+    liveness_timeout_seconds = float(os.environ.get("STAGE5_MULTICHANNEL_LIVENESS_TIMEOUT_SECONDS", "900"))
     dtype = os.environ.get("STAGE5_MULTICHANNEL_DTYPE", "bfloat16")
     resume_root = Path(os.environ.get("STAGE5_MULTICHANNEL_RESUME_ROOT", str(DRIVE_RESUME_ROOT))) / run_id
     summary_path = run_dir / "summary.json"
@@ -286,10 +359,14 @@ def main() -> int:
         "kind": "stage5_multichannel_bridge_precursor_battery",
         "run_id": run_id,
         "status": "running",
+        "mode": mode,
         "requested_conditions": requested,
         "completed_conditions": sorted(condition_summaries),
         "rows_per_depth": rows_per_depth,
         "random_draws": random_draws,
+        "dynamics_row_timeout_seconds": dynamics_row_timeout_seconds,
+        "m3_pass_timeout_seconds": m3_pass_timeout_seconds,
+        "liveness_timeout_seconds": liveness_timeout_seconds,
         "staircase": staircase,
         "condition_summaries": condition_summaries,
         "queue_effect": "none",
@@ -302,6 +379,7 @@ def main() -> int:
             print(f"multichannel_condition_already_finished={condition}", flush=True)
             continue
         spec = CONDITION_SPECS[condition]
+        measurements = "m1,m2" if mode == "pilot" else str(spec["measurements"])
         checkpoint, receipt = restore_checkpoint(
             list(spec["candidates"]),
             run_dir / "restored" / f"{condition}.pt",
@@ -329,7 +407,7 @@ def main() -> int:
             "--condition",
             condition,
             "--measurements",
-            str(spec["measurements"]),
+            measurements,
             "--max_depth",
             str(spec["max_depth"]),
             "--max_loops",
@@ -340,6 +418,10 @@ def main() -> int:
             str(random_draws),
             "--m3_batch_size",
             str(m3_batch_size),
+            "--dynamics_row_timeout_seconds",
+            str(dynamics_row_timeout_seconds),
+            "--m3_pass_timeout_seconds",
+            str(m3_pass_timeout_seconds),
             "--value_prefix",
             str(spec["value_prefix"]),
             "--attn_implementation",
@@ -353,7 +435,14 @@ def main() -> int:
             "--device",
             os.environ.get("DEVICE", "cuda"),
         ]
-        run(command)
+        if mode == "pilot":
+            command.append("--dynamics_deepest_first")
+        condition_resume_dir = resume_root / condition
+        run_with_liveness(
+            command,
+            status_paths=[condition_resume_dir / "dynamics_status.json", condition_resume_dir / "m3_progress.json"],
+            max_idle_seconds=liveness_timeout_seconds,
+        )
         condition_payload = read_json(condition_dir / "summary.json")
         condition_payload["checkpoint_restore_receipt"] = receipt
         write_json(condition_dir / "summary.json", condition_payload)

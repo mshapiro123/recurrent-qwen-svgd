@@ -134,6 +134,12 @@ def _source_cap3(source: dict[str, Any]) -> dict[str, Any]:
 def _run_eval(run_dir: Path, *, label: str, checkpoint: Path, data_path: Path) -> dict[str, Any]:
     eval_dir = run_dir / "eval" / label
     eval_dir.mkdir(parents=True, exist_ok=True)
+    drive_eval_dir = Path(
+        os.environ.get(
+            "STAGE5_INVERSE_RENDERED_DRIVE_ROOT",
+            f"/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/{run_dir.name}/inverse_rendered",
+        )
+    ) / label
     run(
         [
             sys.executable,
@@ -159,7 +165,18 @@ def _run_eval(run_dir: Path, *, label: str, checkpoint: Path, data_path: Path) -
             "--device",
             os.environ.get("DEVICE", "cuda"),
             "--progress_every",
-            "25",
+            "1",
+            "--resume",
+            "--progress_path",
+            path_for_cli(eval_dir / "progress.json"),
+            "--resume_source_jsonl",
+            path_for_cli(drive_eval_dir / "rows.jsonl"),
+            "--backup_output_jsonl",
+            path_for_cli(drive_eval_dir / "rows.jsonl"),
+            "--backup_progress_path",
+            path_for_cli(drive_eval_dir / "progress.json"),
+            "--backup_summary",
+            path_for_cli(drive_eval_dir / "summary.json"),
         ],
         cwd=ROOT,
     )
@@ -172,6 +189,15 @@ def main() -> int:
     )
     run_dir = ROOT / "outputs/stage5" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
+    run_progress_path = run_dir / "progress.json"
+    write_json(
+        run_progress_path,
+        {
+            "kind": "stage5_inverse_rendered_width_gate_progress",
+            "run_id": run_id,
+            "status": "starting",
+        },
+    )
     config = PhaseGFrozenEvalConfig(rows_per_stratum=128, seed=7_194_203)
     canonical_manifest = read_json(CANONICAL_DATA_ROOT / "manifest.json")
     data_receipts: dict[str, Any] = {}
@@ -214,6 +240,17 @@ def main() -> int:
     )
     if restore_receipt["selected_checkpoint_sha256"] != SOURCE_CAP3_SHA256:
         raise RuntimeError("Restored C cap-3 checkpoint SHA mismatch")
+    write_json(
+        run_progress_path,
+        {
+            "kind": "stage5_inverse_rendered_width_gate_progress",
+            "run_id": run_id,
+            "status": "calibration_running",
+            "checkpoint": path_for_cli(checkpoint),
+            "checkpoint_sha256": SOURCE_CAP3_SHA256,
+            "calibration_progress": path_for_cli(run_dir / "eval" / "calibration" / "progress.json"),
+        },
+    )
 
     calibration_summary = _run_eval(
         run_dir,
@@ -233,6 +270,17 @@ def main() -> int:
     test_summary = None
     test_gate = None
     if calibration_gate["pass"] and retention_gate["passed"]:
+        write_json(
+            run_progress_path,
+            {
+                "kind": "stage5_inverse_rendered_width_gate_progress",
+                "run_id": run_id,
+                "status": "test_running",
+                "checkpoint": path_for_cli(checkpoint),
+                "calibration_gate": calibration_gate,
+                "test_progress": path_for_cli(run_dir / "eval" / "test" / "progress.json"),
+            },
+        )
         test_summary = _run_eval(
             run_dir,
             label="test",
@@ -264,6 +312,16 @@ def main() -> int:
         "claim_scope": "guided branching over an explicitly rendered inverse relation",
     }
     write_json(run_dir / "summary.json", payload)
+    write_json(
+        run_progress_path,
+        {
+            "kind": "stage5_inverse_rendered_width_gate_progress",
+            "run_id": run_id,
+            "status": "finished",
+            "final_status": status,
+            "summary": path_for_cli(run_dir / "summary.json"),
+        },
+    )
     (run_dir / "summary.md").write_text(
         "\n".join(
             [

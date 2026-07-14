@@ -3,6 +3,7 @@ from __future__ import annotations
 import torch
 
 from eval.eval_abductive_coverage import (
+    load_resume_rows,
     parse_sample_counts,
     read_target_entropies,
     reverse_chain_validity,
@@ -11,6 +12,22 @@ from eval.eval_abductive_coverage import (
     summarize_rows,
     uniform_expected_coverage,
 )
+
+
+def test_resume_rows_reject_duplicates_and_preserves_valid_prefix(tmp_path) -> None:
+    path = tmp_path / "rows.jsonl"
+    path.write_text('{"id":"a"}\n{"id":"b"}\n', encoding="utf-8")
+
+    resumed = load_resume_rows(path, expected_ids={"a", "b", "c"})
+
+    assert set(resumed) == {"a", "b"}
+    path.write_text('{"id":"a"}\n{"id":"a"}\n', encoding="utf-8")
+    try:
+        load_resume_rows(path, expected_ids={"a", "b", "c"})
+    except ValueError as exc:
+        assert "Duplicate resume row" in str(exc)
+    else:
+        raise AssertionError("Expected duplicate resume rows to be rejected")
 
 
 def test_reverse_chain_validity_requires_every_displayed_edge() -> None:
