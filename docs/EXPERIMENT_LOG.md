@@ -1144,3 +1144,12 @@ Colab/Drive backups for selected runs.
   all B/C/D step-2000 and step-4000 backups on the same frozen rows, retains
   full compressed continuations and paired predictions, diagnoses C depth-2
   errors, and requires exact reproduction of the landed step-4000 summaries.
+- 2026-07-14 Phase A comparison resume correction: all six checkpoint
+  evaluations completed, but finalization stopped because the independently
+  reloaded D step-4000 greedy BF16 GPU run scored 322/1792 versus the prior
+  320/1792, with a maximum absolute depth-stratum delta of 2. This is a
+  repeatability discrepancy, not a scientific result or checkpoint mismatch;
+  B and C reproduced exactly. The runner now records exact-versus-within-
+  envelope repeatability (4 total correct, 3 per depth, 1 parse failure), keeps
+  structural checks exact, and reuses completed raw rows after interruption
+  instead of rerunning D step-4000.

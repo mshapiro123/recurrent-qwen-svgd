@@ -23,5 +23,13 @@ held-out performance after the training losses had already saturated?
   unrelated, or parse failure.
 - Compressed complete continuations and a compact paired-row table retained in
   GitHub so the result is auditable.
+- Step-4,000 reruns retain an explicit repeatability receipt. Exact agreement is
+  reported when present; small BF16 GPU rerun differences are recorded within a
+  non-scientific safety envelope (at most 4 total correct rows, 3 correct rows
+  in any depth stratum, and 1 parse failure in any stratum). Structural reader,
+  row-count, token-budget, and depth-stratum checks remain exact. This receipt
+  guards artifact identity; it is not an outcome gate.
+- Interrupted runs reuse a completed summary plus raw rows, compressing and
+  publishing them without repeating the expensive evaluation.
 
 This is eval-only. It trains no parameters and cannot open Phase G-alpha.

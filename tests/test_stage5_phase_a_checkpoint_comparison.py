@@ -4,6 +4,8 @@ from pathlib import Path
 
 from colab.run_stage5_phase_a_checkpoint_comparison import (
     CHECKPOINT_SPECS,
+    _compress_completed_rows,
+    build_repeatability_receipt,
     build_comparison,
 )
 
@@ -66,3 +68,65 @@ def test_bootstrap_exposes_checkpoint_comparison_target() -> None:
     assert '"phase_a_checkpoint_comparison"' in bootstrap
     assert "STAGE5_PHASE_A_CHECKPOINT_COMPARISON_CELL_VERSION" in bootstrap
     assert "tests/test_stage5_phase_a_checkpoint_comparison.py" in bootstrap
+
+
+def test_repeatability_receipt_accepts_small_nonexact_gpu_rerun_delta() -> None:
+    reference = {
+        "reader": "answer_marker_else_first_valid_full_symbol",
+        "correct": 320,
+        "total": 1792,
+        "accuracy": 320 / 1792,
+        "max_new_tokens": 32,
+        "by_depth": {
+            "1": {"correct": 15, "total": 128, "parse_failures": 0, "accuracy": 15 / 128},
+            "2": {"correct": 17, "total": 128, "parse_failures": 0, "accuracy": 17 / 128},
+        },
+    }
+    current = {
+        **reference,
+        "correct": 322,
+        "accuracy": 322 / 1792,
+        "by_depth": {
+            "1": {"correct": 13, "total": 128, "parse_failures": 0, "accuracy": 13 / 128},
+            "2": {"correct": 16, "total": 128, "parse_failures": 0, "accuracy": 16 / 128},
+        },
+    }
+
+    receipt = build_repeatability_receipt(current, reference)
+
+    assert receipt["status"] == "within_gpu_repeatability_envelope"
+    assert receipt["exact"] is False
+    assert receipt["correct_delta"] == 2
+    assert receipt["max_abs_depth_correct_delta"] == 2
+    assert receipt["structural_checks_pass"] is True
+
+
+def test_repeatability_receipt_rejects_material_delta() -> None:
+    reference = {
+        "reader": "reader",
+        "correct": 100,
+        "total": 128,
+        "accuracy": 100 / 128,
+        "max_new_tokens": 32,
+        "by_depth": {"1": {"correct": 100, "total": 128, "parse_failures": 0, "accuracy": 100 / 128}},
+    }
+    current = {
+        **reference,
+        "correct": 90,
+        "accuracy": 90 / 128,
+        "by_depth": {"1": {"correct": 90, "total": 128, "parse_failures": 0, "accuracy": 90 / 128}},
+    }
+
+    assert build_repeatability_receipt(current, reference)["status"] == "outside_gpu_repeatability_envelope"
+
+
+def test_resume_compresses_completed_raw_rows_without_reevaluation(tmp_path: Path) -> None:
+    eval_dir = tmp_path / "eval" / "D_step4000"
+    eval_dir.mkdir(parents=True)
+    raw = eval_dir / "rows.jsonl"
+    raw.write_text('{"id":"row-1","correct":true}\n', encoding="utf-8")
+    (eval_dir / "summary.json").write_text("{}\n", encoding="utf-8")
+
+    assert _compress_completed_rows(eval_dir) is True
+    assert not raw.exists()
+    assert (eval_dir / "rows.jsonl.gz").exists()
