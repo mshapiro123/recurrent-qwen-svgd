@@ -12,7 +12,10 @@ from eval.eval_multichannel_bridge_precursor import (
     random_orthogonal_partitions,
     table_character_span,
 )
-from colab.run_stage5_multichannel_bridge_precursor import aggregate_battery
+from colab.run_stage5_multichannel_bridge_precursor import (
+    aggregate_battery,
+    resolve_staircase_reading,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -108,6 +111,57 @@ def test_master_decision_does_not_count_single_task_m1_m2() -> None:
 
     assert result["measurement_votes"] == {"m1": False, "m2": False, "m3": True}
     assert result["battery_specialization_confirmed"] is False
+
+
+def test_staircase_reading_resolves_nested_cap_schema_and_post_run_correction() -> None:
+    result = resolve_staircase_reading(
+        {
+            "matched_arm_reading": {
+                "2": {
+                    "experiment_weighted_labels_to_bar": None,
+                    "control_weighted_labels_to_bar": 1598.4,
+                    "ratio": None,
+                    "reading": "non_native_position_cost",
+                }
+            }
+        }
+    )
+
+    assert result["cap"] == "2"
+    assert result["reported_reading"] == "non_native_position_cost"
+    assert result["reading"] == "experiment_stalled_at_matched_dose"
+    assert result["correction"] == "post_run_clarification_no_experiment_dose_to_bar"
+    assert result["reading_one"] is False
+
+
+def test_staircase_reading_accepts_scalar_and_direct_entry_schemas() -> None:
+    scalar = resolve_staircase_reading({"matched_arm_reading": "reading_one"})
+    direct = resolve_staircase_reading(
+        {"matched_arm_reading": {"reading": "per_position_install_cost_confirmed"}}
+    )
+
+    assert scalar["reading"] == "reading_one"
+    assert scalar["reading_one"] is True
+    assert direct["reading"] == "per_position_install_cost_confirmed"
+    assert direct["reading_one"] is True
+
+
+def test_staircase_reading_uses_highest_numeric_cap_and_handles_missing_data() -> None:
+    nested = resolve_staircase_reading(
+        {
+            "matched_arm_reading": {
+                "2": {"reading": "composition_hard_both"},
+                "10": {"reading": "reading_one"},
+                "not_a_cap": {"reading": "ignored"},
+            }
+        }
+    )
+    missing = resolve_staircase_reading({"matched_arm_reading": {"2": {"reading": None}}})
+
+    assert nested["cap"] == "10"
+    assert nested["reading"] == "reading_one"
+    assert missing["reading"] is None
+    assert missing["reading_one"] is False
 
 
 def test_colab_target_is_wired_with_eval_only_safety_markers() -> None:

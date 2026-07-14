@@ -33,6 +33,7 @@ BACKWARD_RECOVERY_SHA = "fc98feb5d5bd450f7ecc4f6d43ce36fd436418d7ad2cd69df38a089
 N24_DATA = ROOT / "outputs/stage5/stage5_synthetic_depth_frozen_eval_v3_depth22_n24/data/test_chain_mcq.jsonl"
 STAIRCASE_SUMMARY = ROOT / "outputs/stage5/stage5_inverse_composition_staircase_20260713/summary.json"
 DRIVE_RESUME_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5")
+STAIRCASE_READING_ONE_LABELS = frozenset({"reading_one", "per_position_install_cost_confirmed"})
 
 
 CONDITION_SPECS: dict[str, dict[str, Any]] = {
@@ -134,16 +135,67 @@ def prepare_backward_data(run_dir: Path) -> Path:
     return path
 
 
-def staircase_reading() -> dict[str, Any]:
-    if not STAIRCASE_SUMMARY.exists():
-        return {"summary": path_for_cli(STAIRCASE_SUMMARY), "reading": None, "reading_one": False}
-    payload = read_json(STAIRCASE_SUMMARY)
-    reading = payload.get("matched_arm_reading")
+def resolve_staircase_reading(payload: dict[str, Any]) -> dict[str, Any]:
+    """Normalize historical scalar, direct-entry, and per-cap staircase receipts."""
+
+    raw = payload.get("matched_arm_reading")
+    cap: str | None = None
+    entry: dict[str, Any] = {}
+    source_schema = "missing"
+
+    if isinstance(raw, str):
+        reported_reading: str | None = raw
+        source_schema = "scalar"
+    elif isinstance(raw, dict) and isinstance(raw.get("reading"), str):
+        entry = raw
+        reported_reading = raw["reading"]
+        source_schema = "direct_entry"
+    elif isinstance(raw, dict):
+        numeric_entries: list[tuple[int, str, dict[str, Any]]] = []
+        fallback_entries: list[tuple[str, dict[str, Any]]] = []
+        for key, value in raw.items():
+            if not isinstance(value, dict) or not isinstance(value.get("reading"), str):
+                continue
+            key_text = str(key)
+            fallback_entries.append((key_text, value))
+            try:
+                numeric_entries.append((int(key_text), key_text, value))
+            except ValueError:
+                continue
+        if numeric_entries:
+            _, cap, entry = max(numeric_entries, key=lambda item: item[0])
+        elif fallback_entries:
+            cap, entry = sorted(fallback_entries, key=lambda item: item[0])[-1]
+        reported_reading = entry.get("reading")
+        source_schema = "per_cap" if entry else "missing"
+    else:
+        reported_reading = None
+
+    reading = reported_reading
+    correction: str | None = None
+    if (
+        reading == "non_native_position_cost"
+        and entry.get("experiment_weighted_labels_to_bar") is None
+        and entry.get("control_weighted_labels_to_bar") is not None
+    ):
+        reading = "experiment_stalled_at_matched_dose"
+        correction = "post_run_clarification_no_experiment_dose_to_bar"
+
     return {
-        "summary": path_for_cli(STAIRCASE_SUMMARY),
+        "cap": cap,
+        "source_schema": source_schema,
+        "reported_reading": reported_reading,
         "reading": reading,
-        "reading_one": reading in {"reading_one", "per_position_install_cost_confirmed"},
+        "correction": correction,
+        "reading_one": reading in STAIRCASE_READING_ONE_LABELS,
     }
+
+
+def staircase_reading() -> dict[str, Any]:
+    summary = path_for_cli(STAIRCASE_SUMMARY)
+    if not STAIRCASE_SUMMARY.exists():
+        return {"summary": summary, **resolve_staircase_reading({})}
+    return {"summary": summary, **resolve_staircase_reading(read_json(STAIRCASE_SUMMARY))}
 
 
 def aggregate_battery(condition_summaries: dict[str, dict[str, Any]], *, reading_one: bool) -> dict[str, Any]:
