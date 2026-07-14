@@ -1,7 +1,9 @@
 # Strategy Handoff: Inverse Composition Staircase, Rebase, and Phase A Controls
 
-**Date:** 2026-07-14  
-**Status:** Prior experiment block complete; F9 multi-channel precursor battery running independently  
+**Date:** 2026-07-14
+
+**Status:** Prior experiment block complete; F9 multi-channel precursor battery running independently
+
 **Decision state:** Phase G-alpha remains closed
 
 ## 0. Executive read
