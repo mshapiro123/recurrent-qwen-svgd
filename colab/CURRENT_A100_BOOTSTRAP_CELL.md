@@ -4,7 +4,7 @@ from google.colab import userdata
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main").strip() or "main"
-BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3"
+BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 
 # Safe default: verify Drive/checkpoint visibility on a CPU/cheap runtime.
 # Other options:
@@ -2971,8 +2971,19 @@ def is_commit_sha(value):
     return len(value) == 40 and all(character in "0123456789abcdefABCDEF" for character in value)
 
 
+def is_abbreviated_commit_sha(value):
+    return 7 <= len(value) < 40 and all(character in "0123456789abcdefABCDEF" for character in value)
+
+
 if is_commit_sha(REF):
     RESOLVED_REF = REF.lower()
+elif is_abbreviated_commit_sha(REF):
+    # GitHub's branch-ref endpoint treats a short SHA as a branch name and
+    # returns 404. Resolve abbreviated commits through the commits endpoint.
+    commit_payload = github_json(
+        f"https://api.github.com/repos/{REPO}/commits/{REF}?cache_bust={int(time.time())}"
+    )
+    RESOLVED_REF = (commit_payload.get("sha") or REF).strip().lower()
 else:
     ref_payload = github_json(
         f"https://api.github.com/repos/{REPO}/git/ref/heads/{REF}?cache_bust={int(time.time())}"

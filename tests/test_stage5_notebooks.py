@@ -958,6 +958,13 @@ def test_current_a100_bootstrap_plain_cell_matches_markdown_code() -> None:
     assert plain_cell == markdown_cell
 
 
+def test_current_a100_bootstrap_resolves_abbreviated_commit_shas() -> None:
+    text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+
+    assert "is_abbreviated_commit_sha" in text
+    assert "api.github.com/repos/{REPO}/commits/{REF}" in text
+
+
 def test_master_sequence_status_cell_matches_markdown_code() -> None:
     text = (ROOT / "colab/STAGE5_MASTER_SEQUENCE_STATUS_CELL.md").read_text(encoding="utf-8")
     plain = (ROOT / "colab/STAGE5_MASTER_SEQUENCE_STATUS_CELL.py").read_text(encoding="utf-8")
