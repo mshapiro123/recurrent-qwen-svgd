@@ -3823,5 +3823,5 @@
     "source_schema": "per_cap",
     "summary": "outputs/stage5/stage5_inverse_composition_staircase_20260713/summary.json"
   },
-  "status": "running"
+  "status": "finished"
 }

@@ -1,6 +1,6 @@
 # Multi-Channel Bridge Precursor Battery - stage5_multichannel_bridge_precursor_pilot_20260714
 
-- Status: `running`
+- Status: `finished`
 - Completed conditions: `['n24_step6000']`
 - Staircase reading: `experiment_stalled_at_matched_dose`
 - Measurement votes: `{'m1': False, 'm2': False, 'm3': False}`
