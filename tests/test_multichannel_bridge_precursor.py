@@ -3,12 +3,14 @@ from __future__ import annotations
 from pathlib import Path
 
 import torch
+from transformers import Qwen2Config, Qwen2ForCausalLM
 
 from eval.eval_multichannel_bridge_precursor import (
     classify_injection_heterogeneity,
     classify_retrieval_heads,
     classify_subspace_drift,
     output_projection_head_subspaces,
+    attention_weights_from_module_output,
     random_orthogonal_partitions,
     select_rows_by_depth,
     table_character_span,
@@ -30,6 +32,39 @@ def test_output_projection_identity_yields_axis_aligned_head_subspaces() -> None
     assert torch.allclose(bases[0].T @ bases[0], torch.eye(4), atol=1e-6)
     assert torch.allclose(bases[1].T @ bases[1], torch.eye(4), atol=1e-6)
     assert torch.allclose(bases[0][4:], torch.zeros(4, 4), atol=1e-6)
+
+
+def test_attention_hook_extracts_transformers_v5_self_attention_weights() -> None:
+    weights = torch.ones(1, 2, 3, 3)
+
+    assert attention_weights_from_module_output((torch.zeros(1), weights)) is weights
+    assert attention_weights_from_module_output(torch.zeros(1)) is None
+
+
+def test_transformers_qwen_self_attention_hook_exposes_eager_weights() -> None:
+    config = Qwen2Config(
+        vocab_size=32,
+        hidden_size=32,
+        intermediate_size=64,
+        num_hidden_layers=4,
+        num_attention_heads=4,
+        num_key_value_heads=2,
+        max_position_embeddings=64,
+    )
+    config._attn_implementation = "eager"
+    model = Qwen2ForCausalLM(config).eval()
+    captured: list[torch.Tensor | None] = []
+    handle = model.model.layers[1].self_attn.register_forward_hook(
+        lambda _module, _inputs, output: captured.append(attention_weights_from_module_output(output))
+    )
+    try:
+        model(input_ids=torch.tensor([[1, 2, 3, 4]]), attention_mask=torch.ones(1, 4), use_cache=False)
+    finally:
+        handle.remove()
+
+    assert len(captured) == 1
+    assert captured[0] is not None
+    assert tuple(captured[0].shape) == (1, 4, 4, 4)
 
 
 def test_random_partitions_are_orthonormal_and_reproducible() -> None:

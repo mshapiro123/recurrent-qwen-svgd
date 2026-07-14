@@ -300,7 +300,7 @@ def _prepare_with_attentions(
         inputs_embeds,
         cache_position,
         past_key_values=None,
-        output_attentions=True,
+        output_attentions=False,
     )
     position_embeddings = wrapper._rotary_embeddings(inputs_embeds, position_ids)  # noqa: SLF001
     hidden, _ = wrapper._run_layer_range(  # noqa: SLF001
@@ -318,6 +318,19 @@ def _prepare_with_attentions(
         hidden_history=None,
     )
     return hidden, causal_mask, position_ids, cache_position, position_embeddings
+
+
+def attention_weights_from_module_output(output: Any) -> torch.Tensor | None:
+    """Extract attention weights from a self-attention module return value.
+
+    Transformers 5 Qwen decoder layers discard attention weights while their
+    ``self_attn`` modules still return ``(attn_output, attn_weights)``. Hooks
+    on ``self_attn`` therefore remain stable across the decoder API change.
+    """
+
+    if isinstance(output, tuple) and len(output) > 1 and torch.is_tensor(output[1]):
+        return output[1]
+    return None
 
 
 def collect_row_dynamics(
@@ -349,45 +362,60 @@ def collect_row_dynamics(
         pooled_states: list[torch.Tensor] = []
         table_mass_by_loop: list[torch.Tensor] = []
         answer_position = int(attention_mask[0].long().sum().item()) - 1
-        for loop_index in range(max_loops):
-            loop_input = recurrent_state
-            if loop_index > 0:
-                loop_input = wrapper.bridge(loop_input, prelude_hidden=entry)
-            recurrent_state, attentions = wrapper._run_layer_range(  # noqa: SLF001
-                start=wrapper.layer_split.prelude_end,
-                end=wrapper.layer_split.recurrent_end,
-                hidden_states=loop_input,
-                causal_mask=causal_mask,
-                position_ids=position_ids,
-                past_key_values=None,
-                use_cache=False,
-                output_attentions=True,
-                cache_position=cache_position,
-                position_embeddings=position_embeddings,
-                collect_hidden=False,
-                hidden_history=None,
-            )
-            if len(attentions) != wrapper.layer_split.recurrent_end - wrapper.layer_split.prelude_end:
-                raise RuntimeError(
-                    "Attention capture did not return one tensor per recurrent layer; "
-                    "use --attn_implementation eager"
+        recurrent_layers = list(wrapper.qwen.layers[wrapper.layer_split.prelude_end : wrapper.layer_split.recurrent_end])
+        captured_attentions: list[torch.Tensor | None] = [None] * len(recurrent_layers)
+        handles = []
+        for layer_index, layer in enumerate(recurrent_layers):
+            def capture_attention(_module: Any, _inputs: tuple[Any, ...], output: Any, *, index: int = layer_index) -> None:
+                captured_attentions[index] = attention_weights_from_module_output(output)
+
+            handles.append(layer.self_attn.register_forward_hook(capture_attention))
+        try:
+            for loop_index in range(max_loops):
+                captured_attentions[:] = [None] * len(recurrent_layers)
+                loop_input = recurrent_state
+                if loop_index > 0:
+                    loop_input = wrapper.bridge(loop_input, prelude_hidden=entry)
+                recurrent_state, _ = wrapper._run_layer_range(  # noqa: SLF001
+                    start=wrapper.layer_split.prelude_end,
+                    end=wrapper.layer_split.recurrent_end,
+                    hidden_states=loop_input,
+                    causal_mask=causal_mask,
+                    position_ids=position_ids,
+                    past_key_values=None,
+                    use_cache=False,
+                    output_attentions=False,
+                    cache_position=cache_position,
+                    position_embeddings=position_embeddings,
+                    collect_hidden=False,
+                    hidden_history=None,
                 )
-            pooled_states.append(masked_mean(recurrent_state, attention_mask)[0].detach().float().cpu())
-            layer_mass = []
-            for attention in attentions:
-                if attention.ndim != 4:
-                    raise RuntimeError(f"Unexpected attention shape: {tuple(attention.shape)}")
-                mass = attention[0, :, answer_position, :][:, table_mask].float().sum(dim=-1)
-                layer_mass.append(mass.detach().cpu())
-            table_mass_by_loop.append(torch.stack(layer_mass, dim=0))
-            elapsed = time.monotonic() - started
-            if on_loop_complete is not None:
-                on_loop_complete(loop_index + 1, elapsed)
-            if max_seconds > 0.0 and elapsed > max_seconds:
-                raise TimeoutError(
-                    f"Dynamics collection exceeded {max_seconds:.1f}s for row "
-                    f"{row.get('id') or row.get('instance_id')} after loop {loop_index + 1}"
-                )
+                if any(attention is None for attention in captured_attentions):
+                    implementation = getattr(getattr(wrapper.qwen, "config", None), "_attn_implementation", "unknown")
+                    raise RuntimeError(
+                        "Self-attention hooks did not receive eager attention weights. "
+                        f"resolved_attn_implementation={implementation!r}; use --attn_implementation eager"
+                    )
+                pooled_states.append(masked_mean(recurrent_state, attention_mask)[0].detach().float().cpu())
+                layer_mass = []
+                for attention in captured_attentions:
+                    assert attention is not None
+                    if attention.ndim != 4:
+                        raise RuntimeError(f"Unexpected attention shape: {tuple(attention.shape)}")
+                    mass = attention[0, :, answer_position, :][:, table_mask].float().sum(dim=-1)
+                    layer_mass.append(mass.detach().cpu())
+                table_mass_by_loop.append(torch.stack(layer_mass, dim=0))
+                elapsed = time.monotonic() - started
+                if on_loop_complete is not None:
+                    on_loop_complete(loop_index + 1, elapsed)
+                if max_seconds > 0.0 and elapsed > max_seconds:
+                    raise TimeoutError(
+                        f"Dynamics collection exceeded {max_seconds:.1f}s for row "
+                        f"{row.get('id') or row.get('instance_id')} after loop {loop_index + 1}"
+                    )
+        finally:
+            for handle in handles:
+                handle.remove()
     return {
         "id": str(row.get("id") or row.get("instance_id")),
         "depth": int(row["depth"]),

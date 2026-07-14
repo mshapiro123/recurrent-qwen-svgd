@@ -2748,6 +2748,7 @@ TARGETS = {
         },
     },
     "multichannel_bridge_precursor": {
+        "force_env": True,
         "path": "colab/STAGE5_MULTICHANNEL_BRIDGE_PRECURSOR_CELL.py",
         "markers": [
             "STAGE5_MULTICHANNEL_BRIDGE_PRECURSOR_CELL_VERSION",
@@ -2757,7 +2758,7 @@ TARGETS = {
             "random_orthogonal_partitions",
         ],
         "env": {
-            "STAGE5_MULTICHANNEL_RUN_ID": "stage5_multichannel_bridge_precursor_20260713",
+            "STAGE5_MULTICHANNEL_RUN_ID": "stage5_multichannel_bridge_precursor_pilot_20260714",
             "STAGE5_MULTICHANNEL_MODE": "pilot",
             "STAGE5_MULTICHANNEL_CONDITIONS": "n24_step6000",
             "STAGE5_MULTICHANNEL_ROWS_PER_DEPTH": "1",
@@ -2771,6 +2772,7 @@ TARGETS = {
         },
     },
     "multichannel_bridge_precursor_full": {
+        "force_env": True,
         "path": "colab/STAGE5_MULTICHANNEL_BRIDGE_PRECURSOR_CELL.py",
         "markers": [
             "STAGE5_MULTICHANNEL_BRIDGE_PRECURSOR_CELL_VERSION",
@@ -3047,9 +3049,13 @@ else:
     os.environ.pop("STAGE5_REENTRY_TAIL_SOURCE_SUMMARY", None)
     os.environ.pop("STAGE5_TAIL_DAMPER_SOURCE_SUMMARY", None)
 for key, value in selected["env"].items():
-    # Target configs are defaults. Planner/user-supplied env must win so chained
-    # actions can pass repaired checkpoints, benchmark summaries, and run IDs.
-    os.environ.setdefault(key, value)
+    # Most target configs are defaults so a planner can deliberately override
+    # them. A bounded pilot is different: stale settings from a previous full
+    # battery would silently turn it back into the expensive job it replaces.
+    if selected.get("force_env", False):
+        os.environ[key] = value
+    else:
+        os.environ.setdefault(key, value)
 if TARGET == "depth_sweep_heldout":
     if os.environ.get("STAGE5_DEPTH_SWEEP_RUN_ID_LOCKED", "0").strip().lower() not in {
         "1",

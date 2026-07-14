@@ -65,8 +65,26 @@ def test_current_bootstrap_preserves_planner_supplied_target_env() -> None:
     text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
 
     assert 'os.environ.setdefault(key, value)' in text
-    assert 'os.environ[key] = value' not in text
-    assert "Planner/user-supplied env must win" in text
+    assert 'if selected.get("force_env", False):' in text
+    assert 'os.environ[key] = value' in text
+    assert "Most target configs are defaults" in text
+
+
+def test_multichannel_pilot_forces_bounded_env_and_uses_fresh_run_id() -> None:
+    tree = ast.parse((ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8"))
+    targets = None
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "TARGETS":
+                    targets = ast.literal_eval(node.value)
+                    break
+    assert isinstance(targets, dict)
+
+    pilot = targets["multichannel_bridge_precursor"]
+    assert pilot["force_env"] is True
+    assert pilot["env"]["STAGE5_MULTICHANNEL_ROWS_PER_DEPTH"] == "1"
+    assert pilot["env"]["STAGE5_MULTICHANNEL_RUN_ID"] == "stage5_multichannel_bridge_precursor_pilot_20260714"
 
 
 def test_current_bootstrap_exposes_capacity_localization_rank64_target() -> None:
