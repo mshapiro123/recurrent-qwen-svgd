@@ -1167,3 +1167,13 @@ Colab/Drive backups for selected runs.
   `experiment_stalled_at_matched_dose`, so this battery cannot presently move
   F9 out of BANKED status. Full spec:
   `docs/MULTICHANNEL_BRIDGE_PRECURSOR_SPEC.md`.
+- 2026-07-14 Phase A checkpoint comparison finalized: on the same 1,792 frozen
+  rows, direct 0.5B scored 464 at step 2,000 and 470 at step 4,000; serialized-
+  scratchpad 0.5B scored 930 and 952; direct 1.5B scored 350 and 322. From
+  step 2,000 to 4,000, paired net changes were +6 for B (`p=0.771`), +22 for C
+  (`p=0.00319`), and -28 for D (`p=0.161`). At step 4,000, C beat B by 482
+  paired rows and D by 630; D trailed B by 148. C held 896/1,280 (70.0%) over
+  depths 1-10 but fell to 56/512 (10.94%) at depths 11-14. B and C reproduced
+  exactly; D's independently reloaded run differed by two total rows and stayed
+  inside the locked GPU repeatability envelope. Full synthesis and decision
+  questions: `docs/STRATEGY_HANDOFF_INVERSE_STAIRCASE_PHASE_A_20260714.md`.
