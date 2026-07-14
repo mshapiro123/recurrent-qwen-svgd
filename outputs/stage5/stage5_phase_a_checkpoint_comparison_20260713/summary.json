@@ -223,6 +223,1063 @@
       }
     }
   },
+  "comparison": {
+    "depth2_error_classes": {
+      "C_step2000": {
+        "correct": 55,
+        "earlier_orbit": 0,
+        "one_step_early": 19,
+        "other": 54,
+        "parse_failure": 0
+      },
+      "C_step4000": {
+        "correct": 57,
+        "earlier_orbit": 0,
+        "one_step_early": 17,
+        "other": 54,
+        "parse_failure": 0
+      }
+    },
+    "kind": "stage5_phase_a_checkpoint_comparison",
+    "settings": {
+      "B_step2000": {
+        "accuracy": 0.25892857142857145,
+        "by_depth": {
+          "1": {
+            "accuracy": 1.0,
+            "correct": 128,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "10": {
+            "accuracy": 0.1328125,
+            "correct": 17,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "11": {
+            "accuracy": 0.1640625,
+            "correct": 21,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "12": {
+            "accuracy": 0.1171875,
+            "correct": 15,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "13": {
+            "accuracy": 0.09375,
+            "correct": 12,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "14": {
+            "accuracy": 0.1171875,
+            "correct": 15,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "2": {
+            "accuracy": 0.625,
+            "correct": 80,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "3": {
+            "accuracy": 0.296875,
+            "correct": 38,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "4": {
+            "accuracy": 0.1328125,
+            "correct": 17,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "5": {
+            "accuracy": 0.2265625,
+            "correct": 29,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "6": {
+            "accuracy": 0.171875,
+            "correct": 22,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "7": {
+            "accuracy": 0.1953125,
+            "correct": 25,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "8": {
+            "accuracy": 0.15625,
+            "correct": 20,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "9": {
+            "accuracy": 0.1953125,
+            "correct": 25,
+            "parse_failures": 1,
+            "total": 128
+          }
+        },
+        "correct": 464,
+        "kind": "stage5_synthetic_depth_dense_eval",
+        "reader": "answer_marker_else_first_valid_full_symbol",
+        "total": 1792
+      },
+      "B_step4000": {
+        "accuracy": 0.2622767857142857,
+        "by_depth": {
+          "1": {
+            "accuracy": 0.9296875,
+            "correct": 119,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "10": {
+            "accuracy": 0.1484375,
+            "correct": 19,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "11": {
+            "accuracy": 0.1328125,
+            "correct": 17,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "12": {
+            "accuracy": 0.125,
+            "correct": 16,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "13": {
+            "accuracy": 0.1171875,
+            "correct": 15,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "14": {
+            "accuracy": 0.09375,
+            "correct": 12,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "2": {
+            "accuracy": 0.65625,
+            "correct": 84,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "3": {
+            "accuracy": 0.328125,
+            "correct": 42,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "4": {
+            "accuracy": 0.21875,
+            "correct": 28,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "5": {
+            "accuracy": 0.21875,
+            "correct": 28,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "6": {
+            "accuracy": 0.203125,
+            "correct": 26,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "7": {
+            "accuracy": 0.1640625,
+            "correct": 21,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "8": {
+            "accuracy": 0.140625,
+            "correct": 18,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "9": {
+            "accuracy": 0.1953125,
+            "correct": 25,
+            "parse_failures": 0,
+            "total": 128
+          }
+        },
+        "correct": 470,
+        "kind": "stage5_synthetic_depth_dense_eval",
+        "reader": "answer_marker_else_first_valid_full_symbol",
+        "total": 1792
+      },
+      "C_step2000": {
+        "accuracy": 0.5189732142857143,
+        "by_depth": {
+          "1": {
+            "accuracy": 0.9375,
+            "correct": 120,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "10": {
+            "accuracy": 0.7109375,
+            "correct": 91,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "11": {
+            "accuracy": 0.1328125,
+            "correct": 17,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "12": {
+            "accuracy": 0.078125,
+            "correct": 10,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "13": {
+            "accuracy": 0.125,
+            "correct": 16,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "14": {
+            "accuracy": 0.0546875,
+            "correct": 7,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "2": {
+            "accuracy": 0.4296875,
+            "correct": 55,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "3": {
+            "accuracy": 0.6640625,
+            "correct": 85,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "4": {
+            "accuracy": 0.7578125,
+            "correct": 97,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "5": {
+            "accuracy": 0.6328125,
+            "correct": 81,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "6": {
+            "accuracy": 0.7265625,
+            "correct": 93,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "7": {
+            "accuracy": 0.5859375,
+            "correct": 75,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "8": {
+            "accuracy": 0.7421875,
+            "correct": 95,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "9": {
+            "accuracy": 0.6875,
+            "correct": 88,
+            "parse_failures": 0,
+            "total": 128
+          }
+        },
+        "correct": 930,
+        "kind": "stage5_synthetic_depth_dense_eval",
+        "reader": "answer_marker_else_first_valid_full_symbol",
+        "total": 1792
+      },
+      "C_step4000": {
+        "accuracy": 0.53125,
+        "by_depth": {
+          "1": {
+            "accuracy": 0.9375,
+            "correct": 120,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "10": {
+            "accuracy": 0.71875,
+            "correct": 92,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "11": {
+            "accuracy": 0.140625,
+            "correct": 18,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "12": {
+            "accuracy": 0.1015625,
+            "correct": 13,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "13": {
+            "accuracy": 0.1484375,
+            "correct": 19,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "14": {
+            "accuracy": 0.046875,
+            "correct": 6,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "2": {
+            "accuracy": 0.4453125,
+            "correct": 57,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "3": {
+            "accuracy": 0.671875,
+            "correct": 86,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "4": {
+            "accuracy": 0.78125,
+            "correct": 100,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "5": {
+            "accuracy": 0.6484375,
+            "correct": 83,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "6": {
+            "accuracy": 0.7421875,
+            "correct": 95,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "7": {
+            "accuracy": 0.609375,
+            "correct": 78,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "8": {
+            "accuracy": 0.75,
+            "correct": 96,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "9": {
+            "accuracy": 0.6953125,
+            "correct": 89,
+            "parse_failures": 0,
+            "total": 128
+          }
+        },
+        "correct": 952,
+        "kind": "stage5_synthetic_depth_dense_eval",
+        "reader": "answer_marker_else_first_valid_full_symbol",
+        "total": 1792
+      },
+      "D_step2000": {
+        "accuracy": 0.1953125,
+        "by_depth": {
+          "1": {
+            "accuracy": 0.1015625,
+            "correct": 13,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "10": {
+            "accuracy": 0.1484375,
+            "correct": 19,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "11": {
+            "accuracy": 0.1484375,
+            "correct": 19,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "12": {
+            "accuracy": 0.1484375,
+            "correct": 19,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "13": {
+            "accuracy": 0.078125,
+            "correct": 10,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "14": {
+            "accuracy": 0.1015625,
+            "correct": 13,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "2": {
+            "accuracy": 0.046875,
+            "correct": 6,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "3": {
+            "accuracy": 0.125,
+            "correct": 16,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "4": {
+            "accuracy": 0.5,
+            "correct": 64,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "5": {
+            "accuracy": 0.328125,
+            "correct": 42,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "6": {
+            "accuracy": 0.28125,
+            "correct": 36,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "7": {
+            "accuracy": 0.25,
+            "correct": 32,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "8": {
+            "accuracy": 0.265625,
+            "correct": 34,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "9": {
+            "accuracy": 0.2109375,
+            "correct": 27,
+            "parse_failures": 0,
+            "total": 128
+          }
+        },
+        "correct": 350,
+        "kind": "stage5_synthetic_depth_dense_eval",
+        "reader": "answer_marker_else_first_valid_full_symbol",
+        "total": 1792
+      },
+      "D_step4000": {
+        "accuracy": 0.1796875,
+        "by_depth": {
+          "1": {
+            "accuracy": 0.1015625,
+            "correct": 13,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "10": {
+            "accuracy": 0.0390625,
+            "correct": 5,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "11": {
+            "accuracy": 0.125,
+            "correct": 16,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "12": {
+            "accuracy": 0.1171875,
+            "correct": 15,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "13": {
+            "accuracy": 0.109375,
+            "correct": 14,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "14": {
+            "accuracy": 0.1015625,
+            "correct": 13,
+            "parse_failures": 1,
+            "total": 128
+          },
+          "2": {
+            "accuracy": 0.125,
+            "correct": 16,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "3": {
+            "accuracy": 0.1640625,
+            "correct": 21,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "4": {
+            "accuracy": 0.1640625,
+            "correct": 21,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "5": {
+            "accuracy": 0.3515625,
+            "correct": 45,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "6": {
+            "accuracy": 0.3046875,
+            "correct": 39,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "7": {
+            "accuracy": 0.2734375,
+            "correct": 35,
+            "parse_failures": 1,
+            "total": 128
+          },
+          "8": {
+            "accuracy": 0.296875,
+            "correct": 38,
+            "parse_failures": 0,
+            "total": 128
+          },
+          "9": {
+            "accuracy": 0.2421875,
+            "correct": 31,
+            "parse_failures": 0,
+            "total": 128
+          }
+        },
+        "correct": 322,
+        "kind": "stage5_synthetic_depth_dense_eval",
+        "reader": "answer_marker_else_first_valid_full_symbol",
+        "total": 1792
+      }
+    },
+    "step4000_pairwise": {
+      "C_minus_B": {
+        "by_depth": {
+          "1": {
+            "helped": 8,
+            "hurt": 7,
+            "tied": 113
+          },
+          "10": {
+            "helped": 77,
+            "hurt": 4,
+            "tied": 47
+          },
+          "11": {
+            "helped": 15,
+            "hurt": 14,
+            "tied": 99
+          },
+          "12": {
+            "helped": 10,
+            "hurt": 13,
+            "tied": 105
+          },
+          "13": {
+            "helped": 15,
+            "hurt": 11,
+            "tied": 102
+          },
+          "14": {
+            "helped": 6,
+            "hurt": 12,
+            "tied": 110
+          },
+          "2": {
+            "helped": 20,
+            "hurt": 47,
+            "tied": 61
+          },
+          "3": {
+            "helped": 55,
+            "hurt": 11,
+            "tied": 62
+          },
+          "4": {
+            "helped": 77,
+            "hurt": 5,
+            "tied": 46
+          },
+          "5": {
+            "helped": 61,
+            "hurt": 6,
+            "tied": 61
+          },
+          "6": {
+            "helped": 76,
+            "hurt": 7,
+            "tied": 45
+          },
+          "7": {
+            "helped": 67,
+            "hurt": 10,
+            "tied": 51
+          },
+          "8": {
+            "helped": 80,
+            "hurt": 2,
+            "tied": 46
+          },
+          "9": {
+            "helped": 72,
+            "hurt": 8,
+            "tied": 48
+          }
+        },
+        "helped": 639,
+        "hurt": 157,
+        "net_correct": 482,
+        "tied": 996,
+        "two_sided_sign_p": 1.0208422219963716e-69
+      },
+      "C_minus_D": {
+        "by_depth": {
+          "1": {
+            "helped": 108,
+            "hurt": 1,
+            "tied": 19
+          },
+          "10": {
+            "helped": 89,
+            "hurt": 2,
+            "tied": 37
+          },
+          "11": {
+            "helped": 13,
+            "hurt": 11,
+            "tied": 104
+          },
+          "12": {
+            "helped": 10,
+            "hurt": 12,
+            "tied": 106
+          },
+          "13": {
+            "helped": 14,
+            "hurt": 9,
+            "tied": 105
+          },
+          "14": {
+            "helped": 5,
+            "hurt": 12,
+            "tied": 111
+          },
+          "2": {
+            "helped": 44,
+            "hurt": 3,
+            "tied": 81
+          },
+          "3": {
+            "helped": 70,
+            "hurt": 5,
+            "tied": 53
+          },
+          "4": {
+            "helped": 83,
+            "hurt": 4,
+            "tied": 41
+          },
+          "5": {
+            "helped": 54,
+            "hurt": 16,
+            "tied": 58
+          },
+          "6": {
+            "helped": 65,
+            "hurt": 9,
+            "tied": 54
+          },
+          "7": {
+            "helped": 56,
+            "hurt": 13,
+            "tied": 59
+          },
+          "8": {
+            "helped": 63,
+            "hurt": 5,
+            "tied": 60
+          },
+          "9": {
+            "helped": 69,
+            "hurt": 11,
+            "tied": 48
+          }
+        },
+        "helped": 743,
+        "hurt": 113,
+        "net_correct": 630,
+        "tied": 936,
+        "two_sided_sign_p": 2.2414684660229374e-114
+      },
+      "D_minus_B": {
+        "by_depth": {
+          "1": {
+            "helped": 1,
+            "hurt": 107,
+            "tied": 20
+          },
+          "10": {
+            "helped": 4,
+            "hurt": 18,
+            "tied": 106
+          },
+          "11": {
+            "helped": 13,
+            "hurt": 14,
+            "tied": 101
+          },
+          "12": {
+            "helped": 13,
+            "hurt": 14,
+            "tied": 101
+          },
+          "13": {
+            "helped": 13,
+            "hurt": 14,
+            "tied": 101
+          },
+          "14": {
+            "helped": 10,
+            "hurt": 9,
+            "tied": 109
+          },
+          "2": {
+            "helped": 5,
+            "hurt": 73,
+            "tied": 50
+          },
+          "3": {
+            "helped": 14,
+            "hurt": 35,
+            "tied": 79
+          },
+          "4": {
+            "helped": 16,
+            "hurt": 23,
+            "tied": 89
+          },
+          "5": {
+            "helped": 34,
+            "hurt": 17,
+            "tied": 77
+          },
+          "6": {
+            "helped": 28,
+            "hurt": 15,
+            "tied": 85
+          },
+          "7": {
+            "helped": 28,
+            "hurt": 14,
+            "tied": 86
+          },
+          "8": {
+            "helped": 33,
+            "hurt": 13,
+            "tied": 82
+          },
+          "9": {
+            "helped": 19,
+            "hurt": 13,
+            "tied": 96
+          }
+        },
+        "helped": 231,
+        "hurt": 379,
+        "net_correct": -148,
+        "tied": 1182,
+        "two_sided_sign_p": 2.2252051775005336e-09
+      }
+    },
+    "within_arm": {
+      "B": {
+        "by_depth": {
+          "1": {
+            "helped": 0,
+            "hurt": 9,
+            "tied": 119
+          },
+          "10": {
+            "helped": 9,
+            "hurt": 7,
+            "tied": 112
+          },
+          "11": {
+            "helped": 8,
+            "hurt": 12,
+            "tied": 108
+          },
+          "12": {
+            "helped": 7,
+            "hurt": 6,
+            "tied": 115
+          },
+          "13": {
+            "helped": 8,
+            "hurt": 5,
+            "tied": 115
+          },
+          "14": {
+            "helped": 6,
+            "hurt": 9,
+            "tied": 113
+          },
+          "2": {
+            "helped": 26,
+            "hurt": 22,
+            "tied": 80
+          },
+          "3": {
+            "helped": 17,
+            "hurt": 13,
+            "tied": 98
+          },
+          "4": {
+            "helped": 14,
+            "hurt": 3,
+            "tied": 111
+          },
+          "5": {
+            "helped": 10,
+            "hurt": 11,
+            "tied": 107
+          },
+          "6": {
+            "helped": 13,
+            "hurt": 9,
+            "tied": 106
+          },
+          "7": {
+            "helped": 10,
+            "hurt": 14,
+            "tied": 104
+          },
+          "8": {
+            "helped": 10,
+            "hurt": 12,
+            "tied": 106
+          },
+          "9": {
+            "helped": 12,
+            "hurt": 12,
+            "tied": 104
+          }
+        },
+        "helped": 150,
+        "hurt": 144,
+        "net_correct": 6,
+        "tied": 1498,
+        "two_sided_sign_p": 0.7706460868062105
+      },
+      "C": {
+        "by_depth": {
+          "1": {
+            "helped": 1,
+            "hurt": 1,
+            "tied": 126
+          },
+          "10": {
+            "helped": 2,
+            "hurt": 1,
+            "tied": 125
+          },
+          "11": {
+            "helped": 1,
+            "hurt": 0,
+            "tied": 127
+          },
+          "12": {
+            "helped": 3,
+            "hurt": 0,
+            "tied": 125
+          },
+          "13": {
+            "helped": 5,
+            "hurt": 2,
+            "tied": 121
+          },
+          "14": {
+            "helped": 1,
+            "hurt": 2,
+            "tied": 125
+          },
+          "2": {
+            "helped": 3,
+            "hurt": 1,
+            "tied": 124
+          },
+          "3": {
+            "helped": 2,
+            "hurt": 1,
+            "tied": 125
+          },
+          "4": {
+            "helped": 5,
+            "hurt": 2,
+            "tied": 121
+          },
+          "5": {
+            "helped": 4,
+            "hurt": 2,
+            "tied": 122
+          },
+          "6": {
+            "helped": 3,
+            "hurt": 1,
+            "tied": 124
+          },
+          "7": {
+            "helped": 3,
+            "hurt": 0,
+            "tied": 125
+          },
+          "8": {
+            "helped": 2,
+            "hurt": 1,
+            "tied": 125
+          },
+          "9": {
+            "helped": 2,
+            "hurt": 1,
+            "tied": 125
+          }
+        },
+        "helped": 37,
+        "hurt": 15,
+        "net_correct": 22,
+        "tied": 1740,
+        "two_sided_sign_p": 0.003185253447776759
+      },
+      "D": {
+        "by_depth": {
+          "1": {
+            "helped": 10,
+            "hurt": 10,
+            "tied": 108
+          },
+          "10": {
+            "helped": 1,
+            "hurt": 15,
+            "tied": 112
+          },
+          "11": {
+            "helped": 8,
+            "hurt": 11,
+            "tied": 109
+          },
+          "12": {
+            "helped": 6,
+            "hurt": 10,
+            "tied": 112
+          },
+          "13": {
+            "helped": 11,
+            "hurt": 7,
+            "tied": 110
+          },
+          "14": {
+            "helped": 12,
+            "hurt": 12,
+            "tied": 104
+          },
+          "2": {
+            "helped": 12,
+            "hurt": 2,
+            "tied": 114
+          },
+          "3": {
+            "helped": 15,
+            "hurt": 10,
+            "tied": 103
+          },
+          "4": {
+            "helped": 10,
+            "hurt": 53,
+            "tied": 65
+          },
+          "5": {
+            "helped": 18,
+            "hurt": 15,
+            "tied": 95
+          },
+          "6": {
+            "helped": 19,
+            "hurt": 16,
+            "tied": 93
+          },
+          "7": {
+            "helped": 19,
+            "hurt": 16,
+            "tied": 93
+          },
+          "8": {
+            "helped": 12,
+            "hurt": 8,
+            "tied": 108
+          },
+          "9": {
+            "helped": 19,
+            "hurt": 15,
+            "tied": 94
+          }
+        },
+        "helped": 172,
+        "hurt": 200,
+        "net_correct": -28,
+        "tied": 1420,
+        "two_sided_sign_p": 0.16145783453266355
+      }
+    }
+  },
   "eval_sha256": "3de844669aba303063e6932f5852914ee0993e531c8e65c2a4c4b18e219b3fc8",
   "eval_source": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v2_depth14/data/test_chain_mcq.jsonl",
   "kind": "stage5_phase_a_checkpoint_comparison_run",
@@ -388,5 +1445,5 @@
     }
   },
   "run_id": "stage5_phase_a_checkpoint_comparison_20260713",
-  "status": "evaluating_D_step4000"
+  "status": "finished"
 }
