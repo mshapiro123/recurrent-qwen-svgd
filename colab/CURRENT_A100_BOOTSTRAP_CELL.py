@@ -2716,6 +2716,22 @@ TARGETS = {
             "STAGE5_REHEARSAL_DISCONNECT": "0",
         },
     },
+    "inverse_rehearsal_checkpoint_pareto": {
+        "force_env": True,
+        "path": "colab/STAGE5_INVERSE_REHEARSAL_CHECKPOINT_PARETO_CELL.py",
+        "markers": [
+            "STAGE5_INVERSE_REHEARSAL_CHECKPOINT_PARETO_CELL_VERSION",
+            "inverse_rehearsal_checkpoint_pareto",
+            "colab/run_stage5_inverse_rehearsal_checkpoint_pareto.py",
+            "tests/test_stage5_inverse_rehearsal_checkpoint_pareto.py",
+            "candidate_requires_fresh_confirmation",
+        ],
+        "env": {
+            "STAGE5_REHEARSAL_PARETO_STEPS": "100,200,300,334",
+            "STAGE5_STAIRCASE_DTYPE": "bfloat16",
+            "STAGE5_REHEARSAL_PARETO_DISCONNECT": "1",
+        },
+    },
     "inverse_rendered_width_gate": {
         "force_env": True,
         "path": "colab/STAGE5_INVERSE_RENDERED_WIDTH_GATE_CELL.py",
