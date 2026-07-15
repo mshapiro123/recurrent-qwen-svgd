@@ -1,0 +1,109 @@
+{
+  "checkpoint": "outputs/stage5/stage5_inverse_table_cap3_rehearsal_20260714/checkpoint_pareto/restored/step_200.pt",
+  "conditional_transition_success": {
+    "2": {
+      "accuracy": 0.9921875,
+      "correct": 127,
+      "total": 128
+    },
+    "3": {
+      "accuracy": 0.9841269841269841,
+      "correct": 62,
+      "total": 63
+    }
+  },
+  "kind": "abductive_staircase_diagnostic",
+  "max_loops": 3,
+  "rows_per_depth": 64,
+  "target_decodability": {
+    "status": "skipped_for_checkpoint_gate"
+  },
+  "test": {
+    "above_diagonal": {
+      "hold": 3,
+      "iterate": 184,
+      "other": 5
+    },
+    "active_matrix": {
+      "1": {
+        "1": {
+          "accuracy": 1.0,
+          "correct": 64,
+          "total": 64
+        }
+      },
+      "2": {
+        "1": {
+          "accuracy": 1.0,
+          "correct": 64,
+          "total": 64
+        },
+        "2": {
+          "accuracy": 1.0,
+          "correct": 64,
+          "total": 64
+        }
+      },
+      "3": {
+        "1": {
+          "accuracy": 1.0,
+          "correct": 64,
+          "total": 64
+        },
+        "2": {
+          "accuracy": 0.984375,
+          "correct": 63,
+          "total": 64
+        },
+        "3": {
+          "accuracy": 0.96875,
+          "correct": 62,
+          "total": 64
+        }
+      }
+    },
+    "diagonal_by_depth": {
+      "1": {
+        "accuracy": 1.0,
+        "correct": 64,
+        "total": 64
+      },
+      "2": {
+        "accuracy": 1.0,
+        "correct": 64,
+        "total": 64
+      },
+      "3": {
+        "accuracy": 0.96875,
+        "correct": 62,
+        "total": 64
+      }
+    },
+    "diagonal_confusion": {
+      "correct_start": 190,
+      "other_valid_name": 2
+    },
+    "loop1_by_depth": {
+      "1": {
+        "accuracy": 1.0,
+        "correct": 64,
+        "total": 64
+      },
+      "2": {
+        "accuracy": 1.0,
+        "correct": 64,
+        "total": 64
+      },
+      "3": {
+        "accuracy": 1.0,
+        "correct": 64,
+        "total": 64
+      }
+    },
+    "source_rows": 192,
+    "split": "test"
+  },
+  "train": {
+    "status": "skipped"
+  }
+}

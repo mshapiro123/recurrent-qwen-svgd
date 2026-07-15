@@ -1,0 +1,63 @@
+{
+  "accuracy": 0.890625,
+  "active_diagonal": {
+    "1": 0.96875,
+    "2": 0.96875,
+    "3": 0.90625,
+    "4": 0.96875,
+    "5": 0.9375,
+    "6": 0.78125,
+    "7": 0.8125,
+    "8": 0.78125
+  },
+  "active_diagonal_min": 0.78125,
+  "by_depth": {
+    "1": {
+      "accuracy": 0.96875,
+      "correct": 31,
+      "total": 32
+    },
+    "2": {
+      "accuracy": 0.96875,
+      "correct": 31,
+      "total": 32
+    },
+    "3": {
+      "accuracy": 0.90625,
+      "correct": 29,
+      "total": 32
+    },
+    "4": {
+      "accuracy": 0.96875,
+      "correct": 31,
+      "total": 32
+    },
+    "5": {
+      "accuracy": 0.9375,
+      "correct": 30,
+      "total": 32
+    },
+    "6": {
+      "accuracy": 0.78125,
+      "correct": 25,
+      "total": 32
+    },
+    "7": {
+      "accuracy": 0.8125,
+      "correct": 26,
+      "total": 32
+    },
+    "8": {
+      "accuracy": 0.78125,
+      "correct": 25,
+      "total": 32
+    }
+  },
+  "checkpoint": "outputs/stage5/stage5_inverse_table_cap3_rehearsal_20260714/checkpoint_pareto/restored/step_100.pt",
+  "correct": 228,
+  "data_jsonl": "outputs/stage5/stage5_inverse_table_cap3_rehearsal_20260714/checkpoint_pareto/guardrail_data/natural_surface_relay_pointer_16_each_d1_8.jsonl",
+  "kind": "synthetic_diagonal_guardrail",
+  "max_depth": 8,
+  "rows": 256,
+  "value_prefix": "name:"
+}

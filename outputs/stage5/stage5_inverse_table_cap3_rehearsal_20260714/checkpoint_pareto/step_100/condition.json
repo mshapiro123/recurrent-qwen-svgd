@@ -1,0 +1,41 @@
+{
+  "assessment": {
+    "all_current_gates_passed": false,
+    "natural": {
+      "accuracy_delta": 0.00390625,
+      "baseline_accuracy": 0.88671875,
+      "candidate_accuracy": 0.890625,
+      "passed": true,
+      "verdict": {
+        "accuracy_delta": 0.00390625,
+        "accuracy_hard_stop_margin": -0.03,
+        "ppl_hard_stop_relative": 0.05,
+        "ppl_relative_delta": null,
+        "status": "green_continue"
+      }
+    },
+    "selection_status": "not_a_joint_gate_candidate",
+    "synthetic": {
+      "active_diagonal_min": 0.90625,
+      "floor": 0.93,
+      "passed": false
+    },
+    "task": {
+      "correct": 61,
+      "passed": true,
+      "required_correct": 46,
+      "total": 64
+    }
+  },
+  "checkpoint": "outputs/stage5/stage5_inverse_table_cap3_rehearsal_20260714/checkpoint_pareto/restored/step_100.pt",
+  "checkpoint_sha256": "2755a1480f133df2b9f20e1e99d6cb45f186588d9bce9a58bc4d3b05126b6429",
+  "natural_summary": "outputs/stage5/stage5_inverse_table_cap3_rehearsal_20260714/checkpoint_pareto/step_100/guardrails/natural/summary.json",
+  "restore_receipt": {
+    "selected_checkpoint_reference": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_inverse_table_cap3_rehearsal_20260714/train/checkpoints/unfrozen_recurrent_step_100.pt",
+    "selected_checkpoint_sha256": "2755a1480f133df2b9f20e1e99d6cb45f186588d9bce9a58bc4d3b05126b6429",
+    "selected_checkpoint_source": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_inverse_table_cap3_rehearsal_20260714/train/checkpoints/unfrozen_recurrent_step_100.pt"
+  },
+  "step": 100,
+  "synthetic_summary": "outputs/stage5/stage5_inverse_table_cap3_rehearsal_20260714/checkpoint_pareto/step_100/guardrails/synthetic/summary.json",
+  "task_summary": "outputs/stage5/stage5_inverse_table_cap3_rehearsal_20260714/checkpoint_pareto/step_100/eval/task/summary.json"
+}
