@@ -109,6 +109,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "inverse_table_rebase_caps3_4" - continue the green inverse-table control through caps 3 and 4.
 #   "inverse_table_cap3_rehearsal" - repair cap-3 retention with exact-epoch forward rehearsal.
 #   "inverse_rendered_width_gate" - test deterministic validity on the exact multimodal inverse rendering.
+#   "inverse_rendered_n24_continuation" - one bounded deterministic tune for the inverse-rendered N24 validity gate.
 #   "phase_g_n24_calibration_gate" - arbitrary-function deterministic substrate gate before G-alpha.
 #   "multichannel_bridge_precursor" - bounded eval-only M1/M2 pilot for the query-head bridge battery.
 #   "multichannel_bridge_precursor_replication" - one bounded backward-recovery M1/M2 replication using the locked N24 pilot receipt.
@@ -2766,6 +2767,23 @@ TARGETS = {
             "STAGE5_INVERSE_RENDERED_SOURCE_SUMMARY": "outputs/stage5/stage5_inverse_table_cap3_rehearsal_20260714/summary.json",
             "STAGE5_INVERSE_RENDERED_DTYPE": "bfloat16",
             "STAGE5_INVERSE_RENDERED_DISCONNECT": "0",
+        },
+    },
+    "inverse_rendered_n24_continuation": {
+        "force_env": True,
+        "path": "colab/STAGE5_INVERSE_RENDERED_CONTINUATION_CELL.py",
+        "markers": [
+            "STAGE5_INVERSE_RENDERED_CONTINUATION_CELL_VERSION",
+            "inverse_rendered_n24_continuation",
+            "colab/run_stage5_inverse_rendered_continuation.py",
+            "tests/test_stage5_inverse_rendered_continuation.py",
+            "forward_rehearsal_fraction",
+            "bounded_tune_review_required",
+        ],
+        "env": {
+            "STAGE5_INVERSE_RENDERED_CONTINUATION_RUN_ID": "stage5_inverse_rendered_n24_continuation_20260715",
+            "STAGE5_INVERSE_RENDERED_CONTINUATION_DTYPE": "bfloat16",
+            "STAGE5_INVERSE_RENDERED_CONTINUATION_DISCONNECT": "1",
         },
     },
     "phase_g_n24_calibration_gate": {
