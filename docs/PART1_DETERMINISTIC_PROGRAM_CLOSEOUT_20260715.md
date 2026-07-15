@@ -150,12 +150,17 @@ G-beta, learned selection, per-trajectory halting, and SVGD remain closed unless
 - [x] Close F9 by its unsatisfiable activation gate.
 - [x] Record the two standing lineage rules in code and methods.
 - [x] Re-scope early stochastic negatives as pre-repair, unguided evidence only.
-- [ ] Fold final Phase A paired receipts and all-depth profile into the Results module.
-- [ ] Add the four-point scaling/seed figure and same-reader identity result.
-- [ ] Add natural transfer, tail inversion, and training-history specificity.
-- [ ] Add the inverse-task Pareto and W3/W4 boundary figures.
-- [ ] Resolve remaining historical `PENDING` markers against the closeout ledger.
-- [ ] Run the literature pass before hardening any novelty sentence.
+- [x] Fold final Phase A paired receipts and all-depth profile into the Results module.
+- [x] Add the support-depth scaling profile and same-reader identity result.
+- [x] Add natural transfer, tail inversion, and training-history specificity.
+- [x] Add the inverse-task Pareto and W3/W4 boundary tables.
+- [x] Replace the stale project-status manuscript with a canonical closeout index.
+- [x] Run the primary-literature pass and bound the novelty language.
+
+The resulting manuscript is
+[PAPER_ONE_DETERMINISTIC_RECURRENT_QWEN_20260715.md](PAPER_ONE_DETERMINISTIC_RECURRENT_QWEN_20260715.md),
+and its machine-readable audit trail is
+[part1_claim_evidence_ledger.json](part1_claim_evidence_ledger.json).
 
 Paper one does not wait for the loop-position measurement, branching screen, or G-alpha.
 

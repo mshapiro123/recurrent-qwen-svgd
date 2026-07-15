@@ -1,737 +1,148 @@
-# GRAM-Inspired Recurrent-Particle Qwen
+# Recurrent-Depth Qwen
 
-> **July 15, 2026 closeout:** Part 1, the deterministic recurrent-mechanism
-> program, is complete. It established identity-preserving model surgery, a
-> persistent iterative transition, a four-point synthetic scaling result, and
-> an all-depth surpass result against the registered dense controls. It also
-> established a retention boundary for non-native inverse operations and
-> closed the F9 multi-channel intervention. The keeper is now frozen; the next
-> gate is an exact-validity screen on multi-valued forward relations before
-> guided stochastic width. See
-> [the Part 1 closeout](docs/PART1_DETERMINISTIC_PROGRAM_CLOSEOUT_20260715.md).
+This repository studies whether a pretrained dense Qwen model can be converted into a recurrent-depth latent-computation system, and whether guided stochastic trajectories can later add useful reasoning width.
 
-This repository studies whether a pretrained dense Qwen model can be surgically
-converted into a recurrent latent-reasoning model, recovered with a small
-trainable parameter budget, and then extended with multiple particle-like latent
-reasoning trajectories. The current base is
-`Qwen/Qwen2.5-0.5B-Instruct`; the project deliberately stays small until the
-identity, recurrence, recovery, and particle-selection gates are reproducible.
+**Current status, July 15, 2026:** Part 1, the deterministic mechanism program, is closed. Part 2, guided stochastic width, is gated on a multi-valued forward-relation substrate screen.
 
-The work is organized like a model-surgery paper rather than a conventional SFT
-run. The central question is:
+- [Part 1 paper draft](docs/PAPER_ONE_DETERMINISTIC_RECURRENT_QWEN_20260715.md)
+- [Part 1 decision record](docs/PART1_DETERMINISTIC_PROGRAM_CLOSEOUT_20260715.md)
+- [Claim-to-evidence ledger](docs/part1_claim_evidence_ledger.json)
+- [Current status index](docs/PROJECT_STATUS_PAPER.md)
+- [Phase G-alpha specification](docs/PHASE_G_ALPHA_GUIDED_STOCHASTIC_TRANSITION_SPEC.md)
 
-> Can we preserve most of a trained model's competence after converting it into
-> a recurrent-depth architecture, then use learned depth and latent particles to
-> surpass the original model on hard reasoning?
+## Research Program
 
-## Research Contribution Snapshot
+The project began with a deterministic recurrent-depth architecture:
 
-This repository is the working artifact for a compact model-surgery study. The
-scientific contribution under test is not a larger data run; it is a controlled
-conversion of a trained dense transformer into a recurrent latent-computation
-system:
-
-1. **Surgery with identity preservation.** Qwen is split into Prelude,
-   Recurrent Block, and Coda. The wrapper passes the strict one-pass identity
-   gate, so the recurrent architecture can exactly represent the original model
-   before training changes behavior.
-2. **Learned recurrent depth.** A sequence-level PonderNet-style halting head
-   learns a non-collapsed loop distribution while only a small adapter,
-   bridge, and controller budget is trained.
-3. **Latent particle trajectories.** Stochastic latent injection and SVGD-style
-   particle updates create multiple recurrent hidden-state trajectories, giving
-   a route to candidate diversity in latent space rather than only in decoded
-   text.
-4. **Credit-aware empirical gates.** The project treats paid A100 time as a
-   scarce experimental reagent. Every GPU run must answer a specific blocker
-   and emit planner-readable artifacts before another run is justified.
-
-The current evidence supports identity-preserving surgery and a trainable,
-persistent deterministic recurrent mechanism. On the registered frozen
-synthetic family, the recurrent arm surpasses the registered dense controls.
-It does **not** yet support a general natural-benchmark claim or a guided-width
-claim. Early particle/SVGD runs predated the final loop repair and omitted the
-target-conditioned posterior central to GRAM, so they are not evidence for or
-against the current Phase G hypothesis.
-
-## Active Next GPU Action
-
-Use an L4 for `part1_closeout_pivot_session`. The target runs the disposable
-loop-position measurement and the two frozen branching screens in one shared
-session. It publishes intermediate receipts after data preparation and after
-the micro-test, then publishes the final branching decision. No A100 is needed.
-
-The cell is provided in the Part 1 closeout and by the current bootstrap target.
-Phase G-alpha, adapter touch-up, larger-scale work, and new deterministic
-continuations remain gated on the resulting exact-validity profiles.
-
-## Historical A100 Answer (Superseded July 15, 2026)
-
-The section below records an earlier recovery phase and no longer controls the
-queue. The Part 1 closeout and active GPU action above are authoritative.
-
-We should treat the A100 as a gated measurement instrument, not as the default
-workbench. Recent work moved in the right direction: dataset audits, planner
-repairs, README/paper writing, and unit tests now run locally or on CPU; A100
-jobs are bounded and expected to emit `summary.json` artifacts that decide the
-next action. The remaining waste risk is leaving Colab attached while fixing
-auth, notebook state, GitHub, or Drive problems. Those are stop conditions.
-
-The current answer to "are we using A100 judiciously?" is: mostly yes now, but
-only because the workflow has been narrowed. The project should not use A100 for
-open-ended training, notebook debugging, Hugging Face dataset discovery, or
-SVGD/kernel exploration while deterministic recurrent recovery is still below
-the release bar. Paid GPU is reserved for one bounded proxy or confirmation job
-at a time, followed by review.
-
-The latest workflow change makes this stricter: MCQ benchmark claims must
-separate content competence from option-label/position bias, and training spend
-must now respect the master sequence: loop-closure re-entry first,
-deterministic depth recovery second, same-curriculum dense control third, and
-particles/SVGD only after correct-bearing breadth is measurable. The ARC-Easy
-debias diagnostic at
-`outputs/stage5/stage5_mcq_debias_direct_20260622_194346/summary.json` reported
-`selection_bias_likely`: the loop-4 recurrent checkpoint looked worse under
-bare `A/B/C/D` scoring, but matched or slightly exceeded base after cyclic
-option-permutation aggregation. See
-[docs/MCQ_DEBIAS_STATUS.md](docs/MCQ_DEBIAS_STATUS.md).
-
-The re-entry repair chain has now passed its immediate gates. Stage 3 made the
-bridge and re-entry adapter trainable/live while preserving loop-1 behavior;
-Stage 4 recovery then published a checkpoint with sane post-recovery re-entry
-health. The current front-of-queue action is no longer re-entry repair. It is
-`traced_sft_competence_preserving_pipeline`: a bounded competence-preserving
-deterministic recovery run designed to recover ARC-Challenge without giving
-back the ARC-Easy gains.
-
-| Stage | Runtime | Purpose |
-|---|---|---|
-| `traced_sft_competence_preserving_pipeline` | L4/T4, A100 only if already attached | Run ARC-mixed deterministic recovery with stronger base-logit/response preservation from the repaired recurrent checkpoint. |
-| `review_stage5_competence_pipeline.py` | CPU | Summarize the competence pipeline status and planner-selected next action after the GPU job lands. |
-| `debiased_benchmark_suite` or recovery full assessment | L4/T4 | Confirm base-vs-recurrent ARC-Easy and ARC-Challenge behavior under content and cyclic scoring. |
-| `dense_mcq_trace_sft_control` | L4/T4 | Train/evaluate standard dense Qwen LoRA on the same curriculum only after recurrent recovery clears the base-comparison gate. |
-
-Do not spend A100 credits on GPQA Diamond, Phase 2/SVGD scaling, 1.5B/3B
-models, or more kernel geometry until the repaired deterministic recurrent path
-clears the balanced recurrent-vs-base gate and the same-curriculum dense
-control seam is ready. The current blocker is deterministic competence
-preservation, not particle geometry.
-Auth, Drive, GitHub, notebook-state, source-pointer, and dataset-prep failures
-are CPU/local repair tasks, not GPU tasks.
-
-The detailed hypothesis-driven experiment queue is maintained in
-[docs/SEQUENCED_EXPERIMENT_PLAN.md](docs/SEQUENCED_EXPERIMENT_PLAN.md). Use it
-as the handoff for strategy/deep-research review and as the default ordering
-for deciding whether the next Colab job should be CPU, L4/T4, A100, or deferred.
-
-## Manuscript Claim Status
-
-The controlling July 15 claim ledger is in the Part 1 closeout. In particular,
-the synthetic same-reader surpass result is now supported, while natural
-benchmark superiority and guided stochastic width remain open. The early
-particle-diversity observations are diagnostics, not an established GRAM-style
-method claim.
-
-The repository is now written as the skeleton of a model-surgery paper. The
-defensible current claim is:
-
-> A pretrained dense Qwen model can be surgically converted into a recurrent
-> latent-depth architecture with exact one-pass identity preservation, stable
-> learned halting, recoverable reasoning competence under a small trainable
-> adapter/controller budget, and measurable particle-trajectory diversity.
-
-The stronger claim is not yet established:
-
-> The recurrent or SVGD recurrent-particle model surpasses the unmodified base
-> Qwen 0.5B model on held-out reasoning benchmarks.
-
-That stronger claim requires additional training and assessment: deterministic
-recurrent recovery must first become at least base-competitive under debiased
-content and cyclic/permutation MCQ scoring; then a same-curriculum dense-Qwen
-control must separate architecture lift from data-recipe lift; finally Phase
-2/SVGD or selector-converted particles must beat the recovered deterministic
-recurrent baseline. Until that lands, the paper should present the surpass-base
-result as the next experimental gate, not as a conclusion.
-
-In paper language, the current manuscript is a methods-and-recovery paper with
-a pending benchmark-superiority claim. The additional training required to make
-the stronger claim is still being measured: the re-entry repair/recovery path
-now has a healthy recurrent checkpoint, but the latest debiased benchmark was
-mixed rather than passed. The next hypothesis is that stronger competence and
-answer-calibration preservation is required before recurrence can beat base
-robustly.
-
-The implementation has three stages:
-
-1. **Identity-preserving surgery.** Split Qwen into Prelude, Recurrent Block,
-   and Coda. With one recurrent pass, the wrapper must reproduce the original
-   logits exactly under strict float32/eager settings.
-2. **Deterministic recurrent recovery.** Train only LoRA adapters in the
-   recurrent block, a gated identity bridge, and a sequence-level PonderNet
-   halting head. The frozen base remains low precision; trainable controllers
-   stay fp32 for stability.
-3. **Recurrent particles.** Add stochastic latent trajectories and SVGD-style
-   particle updates over recurrent hidden states, then test whether a selector
-   can convert candidate diversity into accuracy.
-
-For the current manuscript-style status, evidence, negative results, and next
-gates, see [docs/PROJECT_STATUS_PAPER.md](docs/PROJECT_STATUS_PAPER.md). The
-program-level dependency sequence is tracked in
-[docs/PROGRAM_TRACK_MASTER_SEQUENCE.md](docs/PROGRAM_TRACK_MASTER_SEQUENCE.md);
-the older strategy note remains at [docs/PROGRAM_TRACK.md](docs/PROGRAM_TRACK.md).
-The MCQ scoring-confound note is in
-[docs/MCQ_DEBIAS_STATUS.md](docs/MCQ_DEBIAS_STATUS.md). The current
-deep-research handoff, including the direct-route preservation questions that
-remain relevant if debiased scoring still shows a gap, is
-[docs/DEEP_RESEARCH_HANDOFF_2026_06_22.md](docs/DEEP_RESEARCH_HANDOFF_2026_06_22.md).
-The current master-sequence strategy packet is
-[docs/DEEP_RESEARCH_HANDOFF_2026_06_25_MASTER_SEQUENCE.md](docs/DEEP_RESEARCH_HANDOFF_2026_06_25_MASTER_SEQUENCE.md).
-The no-GPU reasoning-trace data plan is in
-[docs/REASONING_TRACE_DATASETS.md](docs/REASONING_TRACE_DATASETS.md). The
-wide/deep curriculum data contract is in
-[docs/CURRICULUM_DATA_PIPELINE.md](docs/CURRICULUM_DATA_PIPELINE.md).
-
-## Historical June Result (Superseded July 15, 2026)
-
-The project has not yet shown a release-grade recurrent/SVGD win over base
-Qwen. It has shown a more useful intermediate result: a trained dense Qwen 0.5B
-model can be converted into a recurrent-depth architecture with exact one-pass
-identity preservation, stable learned halting, and recoverable benchmark
-competence under small-parameter adapter/controller training.
-
-The latest architecture-health result is positive: Stage 3 re-entry repair made
-the bridge/re-entry path gradient-live, and Stage 4 recovery kept the repaired
-loop closure healthy after SFT. The latest base-comparison result is mixed:
-`stage5_debiased_benchmark_assessment_20260625_121302` showed recurrent
-positive on ARC-Easy cyclic aggregate (`99/128` vs base `96/128`) and slightly
-negative on ARC-Challenge cyclic aggregate (`67/128` vs base `68/128`). GPQA
-did not run because the dataset is gated for the active HF account. The current
-front-of-queue run is therefore a competence-preserving deterministic recovery
-pipeline, not Phase 2/SVGD.
-
-The CE8 balanced ARC depth curve remains the best mechanism readout. It uses
-balanced 256-example ARC-Easy and ARC-Challenge slices and compares fixed
-recurrent depths 1-4 under both cyclic option-permutation scoring and
-content-question-only scoring. The key result is conditional:
-
-| Slice | Best fixed depth | Base Qwen | Recurrent | Delta |
-|---|---:|---:|---:|---:|
-| ARC-Easy, cyclic | `1` | `202/256` | `206/256` | `+4` |
-| ARC-Easy, content-only | `1` | `146/256` | `131/256` | `-15` |
-| ARC-Challenge, cyclic | `2-4` | `154/256` | `153/256` | `-1` |
-| ARC-Challenge, content-only | `3-4` | `87/256` | `92/256` | `+5` |
-
-This is not a clean benchmark win, but it is the sharpest mechanism result so
-far. Shallow recurrence preserves easy/cyclic behavior best, while deeper
-recurrence improves the harder ARC-Challenge content readout. At the same time,
-ARC-Easy content-only scoring remains badly behind base at every fixed depth,
-so answer calibration and direct-route preservation are now the main blockers.
-
-Detailed artifact:
-[docs/STAGE5_CE8_DEPTH_CURVE_2026_06_23.md](docs/STAGE5_CE8_DEPTH_CURVE_2026_06_23.md).
-
-## Credit-Saving Research Rule
-
-Treat A100 time as the scarce experimental reagent. The default answer to
-"should we use the A100?" is **no** unless the job satisfies all of these:
-
-1. it answers the next blocker in the paper-level claim;
-2. it has a fixed step/eval limit and known checkpoint source;
-3. it emits `summary.json`/`summary.md` artifacts that the planner can read;
-4. it has an automatic stop/disconnect path or is short enough to supervise;
-5. it is not a dataset audit, unit test, notebook repair, README edit, or
-   exploratory script-debugging task.
-
-Right now the plausible GPU job is **depth-conditional preservation/routing
-training**, not Phase 2/SVGD or GPQA. The depth curve shows that harder
-ARC-Challenge content can benefit from depth 3-4, but easy/content behavior
-needs a stronger depth-1 preservation objective. GPQA, Phase 2/SVGD,
-wide-particle training, and scale-up remain premature until this deterministic
-depth spine is cleaner.
-Dataset inspection, Hugging Face trace triage, planner repairs, documentation,
-and diagnosis should stay local or on a free CPU runtime.
-The maintained next-action wrapper refuses long CPU/data-only dataset actions
-on an attached GPU runtime by default, so an A100 session does not sit idle
-while a Hugging Face audit runs.
-
-Before attaching or keeping an A100, run the no-GPU spend check:
-
-```bash
-python colab/check_stage5_a100_go_no_go.py \
-  --source-summary outputs/stage5/stage5_routing_diagnostic_20260622_041706/summary.json
+```text
+input -> recurrent loop -> learned halting depth -> one latent trajectory -> one answer
 ```
 
-Proceed only when it reports an explicit `go_*` status that matches the planned
-spend, such as the bounded MCQ debias diagnostic or a later proven recovery
-action. Treat `no_go`, `calibration_warning_no_go`, and inspection actions as
-stop signs.
-The go/no-go check also verifies that the selected checkpoint is present
-locally or visible in the configured Drive artifact backup before it allows a
-paid GPU action. A missing checkpoint is a local/Drive repair task, not an
-A100 debugging task.
+The longer-term GRAM-inspired target adds learned stochastic width:
 
-The Colab next-action wrapper enforces the same policy before executing guarded
-paid-GPU runners. A copied command can still be run manually, but the maintained
-path (`python colab/run_stage5_next_action.py` with execution enabled) records
-an `a100_guard` decision, includes checkpoint preflight status, and refuses
-unsafe full-assessment or benchmark spends.
-It also blocks long CPU/data-only actions such as reasoning dataset audits when
-a GPU runtime is attached, unless
-`STAGE5_ARC_AGI_NEXT_ACTION_ALLOW_LOCAL_ONLY_ON_GPU=1` is set deliberately.
-For the lowest-friction Colab path, use
-[`colab/STAGE5_SAFE_CONTINUE_CELL.md`](colab/STAGE5_SAFE_CONTINUE_CELL.md). It
-pulls latest GitHub, runs go/no-go, and defaults to dry-run unless
-`RUN_A100_ACTION = True` is set deliberately. The same flow is available as
-[`colab/08_stage5_safe_continue.ipynb`](colab/08_stage5_safe_continue.ipynb).
+```text
+input -> target-conditioned latent prior -> K recurrent trajectories
+      -> exact candidate coverage -> optional learned selection
+```
 
-## What Has Been Achieved
+The implementation is not a reproduction of GRAM. It combines a pretrained Qwen backbone, a Prelude/Recurrent-Block/Coda split, corrected input re-injection, probabilistic halting, and a proposed prior/posterior latent head. Early Gaussian and SVGD experiments predated the repaired loop closure and lacked target-conditioned variational guidance, so they do not answer the current width hypothesis.
 
-- **Exact identity gate passed.** The manually wrapped Qwen path can reproduce
-  the base model with `max_abs_diff=0.0` under the strict identity setting.
-- **Stable learned depth.** Sequence-level halting remains non-collapsed after
-  adapter/controller stabilization, with expected loop depth around 2.9 on the
-  current recurrent checkpoints.
-- **Recoverable competence.** The recurrent model has recovered to near-base
-  performance on balanced ARC. The latest CE8 depth curve shows a positive
-  hard-slice content signal at depth 3-4 (`+5/256` on ARC-Challenge
-  content-only) while exposing a serious ARC-Easy content regression. The
-  blocker is now conditional depth allocation plus direct-route calibration.
-- **Particle mechanism signal.** SVGD and within-group particle geometry improve
-  candidate density on controlled exact-task suites, but have not yet beaten the
-  strongest deterministic recurrent checkpoint on non-toy benchmarks.
-- **Automation and gates.** Colab runners now emit planner-readable summaries so
-  GPU jobs can be bounded, resumed, assessed, and stopped instead of becoming
-  open-ended notebook sweeps.
+## Deterministic Architecture
 
-## Historical Benchmark Plan (Superseded July 15, 2026)
+`Qwen/Qwen2.5-0.5B-Instruct` is partitioned into:
 
-The next scientific result must come from deterministic recurrent recovery, not
-more particle geometry. The active recipe is:
+1. **Prelude:** computes an input-grounded representation.
+2. **Recurrent Block:** a shared middle transformer region applied repeatedly.
+3. **Coda:** maps the final recurrent state through the remaining pretrained layers and LM head.
 
-1. Preserve depth-1 behavior on easy/direct/base-correct rows.
-2. Train or select depth 2-3 behavior for ambiguous and harder rows.
-3. Keep cyclic option-permutation scoring and content-only scoring side by
-   side.
-4. Treat ARC-Easy content regression as a hard guardrail.
-5. Re-run particles/SVGD only after selected deterministic depth beats the best
-   fixed-depth recurrent baseline.
+The one-loop route preserves the base computation when recurrent additions are inactive. On later loops, a split bridge combines the persistent state with the re-injected Prelude representation. Exact per-loop labels can supervise the latent transition, while a sequence-level PonderNet-style controller can model loop depth.
 
-Only after the recurrent model is base-competitive should Phase 2/SVGD, GPQA
-Diamond, 1.5B/3B scaling, or Hugging Face release work consume serious A100
-time.
+The final deterministic capacity experiments unfroze the 12-layer recurrent block. The resulting trainable budget is 182,163,457 parameters; Part 1 is therefore an architecture-conversion and mechanism study, not a parameter-efficient recovery claim.
 
-## Historical A100 Action (Superseded July 15, 2026)
+## Main Part 1 Result
 
-Credits are tight, so GPU work remains gate-based. The current front-of-queue
-job is `traced_sft_competence_preserving_pipeline`, which resumes from the
-repaired Stage 4 recurrent checkpoint and tries to recover ARC-Challenge while
-preserving ARC-Easy. The previous competence attempt failed before training
-because Drive was not mounted in the top-level Colab process and the selected
-checkpoint could not be restored. Current `main` contains the Drive/checkpoint
-preflight fix and stale-failure resume routing.
+On one frozen synthetic composition family with 128 rows at each depth from 1 through 14:
 
-Use this single fresh-runtime cell. It fetches the tracked launcher from
-GitHub, clones or hard-resets the repo, mounts Drive, verifies the current
-bootstrap markers, and launches the current Stage 5 target:
+| Arm | Correct / 1,792 | Accuracy | Depths 11-14 |
+|---|---:|---:|---:|
+| Recurrent Qwen2.5-0.5B | `1,506` | `84.04%` | `272/512` |
+| Dense 0.5B direct | `470` | `26.23%` | `60/512` |
+| Dense 0.5B scratchpad | `952` | `53.13%` | `56/512` |
+| Dense 1.5B direct | `322` | `17.97%` | `58/512` |
+
+Against the strongest dense scratchpad control, the paired comparison was 607 helped, 53 hurt, and 1,132 tied, with two-sided exact `p=3.42e-120`.
+
+This is a bounded synthetic-family system comparison. Training lineage, tokens, FLOPs, latency, and inference compute were not matched. It is not a broad natural-reasoning or external-benchmark claim.
+
+## Other Established Findings
+
+- The corrected architecture passes the tested one-loop identity contract.
+- Intermediate-state supervision installed a persistent loop-indexed transition: after outcome-only annealing, the active diagonal remained `625/640` and `357/384` above-diagonal states continued the update.
+- Support-depth scaling moved the N24 frozen frontier to `91.4%` at depth 14 and `70.3%` at depth 18, with a measured ceiling by depth 22.
+- Controlled verbal relay and pointer surfaces reached `86.0%` and `79.0%` at the final checkpoint, with clear tail degradation.
+- Inverse operations were learnable in isolation, but the tested full-block continuations did not preserve them together with the consolidated mechanism.
+- The preregistered F9 multi-channel bridge precursor gate did not authorize an architecture change.
+
+## Current Claim Boundary
+
+Supported:
+
+- identity-preserving recurrent model surgery on the tested Qwen split;
+- trainable and persistent loop-indexed latent computation;
+- a recurrent-system advantage over registered dense recipes on the frozen synthetic family;
+- a bounded acquisition-retention failure under the tested inverse-task continuations.
+
+Open:
+
+- broad natural-benchmark superiority;
+- reliable learned depth selection;
+- matched-compute architectural causality;
+- guided stochastic width and exact multi-solution coverage;
+- any beneficial role for SVGD beyond a future ablation.
+
+## Next GPU Gate
+
+Use an L4 for the shared target `part1_closeout_pivot_session`. It runs:
+
+1. a non-promotable loop-position transfer micro-test;
+2. the N20 verbal branching-relations screen;
+3. the N24 symbolic branching-relations screen.
+
+The branching gate is pooled exact validity `>=0.70` with every depth `>=0.55` on at least one keeper. No block unfreeze is allowed. Phase G-alpha launches only after a green screen and a powered coverage margin is locked.
 
 ```python
-import base64, json, time, urllib.request
-from google.colab import userdata
+import base64
+import os
+import requests
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
-PATH = "colab/CURRENT_STAGE5_FRESH_LAUNCHER_CELL.py"
+REF = "29a8b57dcac6f1c3e273c6c126305a528e791afa"
+PATH = "colab/CURRENT_A100_BOOTSTRAP_CELL.py"
 
-GH_TOKEN = userdata.get("GH_TOKEN") or userdata.get("GITHUB_TOKEN")
-assert GH_TOKEN, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
+token = None
+try:
+    from google.colab import userdata
+    token = userdata.get("GH_TOKEN")
+except Exception:
+    pass
 
-req = urllib.request.Request(
-    f"https://api.github.com/repos/{REPO}/contents/{PATH}?ref=main&cache_bust={int(time.time())}",
-    headers={
-        "Authorization": f"Bearer {GH_TOKEN}",
-        "Accept": "application/vnd.github+json",
-        "Cache-Control": "no-cache",
-    },
-)
+headers = {"Accept": "application/vnd.github+json"}
+if token:
+    headers["Authorization"] = f"Bearer {token}"
 
-with urllib.request.urlopen(req) as response:
-    payload = json.load(response)
+url = f"https://api.github.com/repos/{REPO}/contents/{PATH}?ref={REF}"
+response = requests.get(url, headers=headers, timeout=30)
+response.raise_for_status()
+code = base64.b64decode(response.json()["content"]).decode("utf-8")
 
-code = base64.b64decode(payload["content"]).decode("utf-8")
-print("Fetched", PATH, "sha=", payload.get("sha"))
+os.environ["STAGE5_CURRENT_A100_TARGET"] = "part1_closeout_pivot_session"
+os.environ["STAGE5_BOOTSTRAP_REF"] = REF
 exec(compile(code, PATH, "exec"))
 ```
 
-Expected early output:
+## Local Setup
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+The training/evaluation entry points are under `training/`, `eval/`, and `colab/`. Durable experiment receipts are under `outputs/stage5/`. The current dependency order is maintained in [PROGRAM_TRACK_MASTER_SEQUENCE.md](docs/PROGRAM_TRACK_MASTER_SEQUENCE.md), and the chronological record is [EXPERIMENT_LOG.md](docs/EXPERIMENT_LOG.md).
+
+## Phase G-alpha Contract
+
+If the branching substrate passes, the deterministic keeper remains frozen. Only these groups may train:
 
 ```text
-launcher_version: fresh_launcher_v1
-5d0c12d ... or newer
-checkpoint_restore_preflight=ok ...
+phase_g_prior_head.*
+phase_g_posterior_head.*
+phase_g_injection_scale
 ```
 
-After the run lands, review it locally or in Colab:
+The primary test is paired exact oracle coverage at K against:
 
-```bash
-python colab/review_stage5_competence_pipeline.py \
-  --source-summary outputs/stage5/stage5_competence_recovery_from_reentry_benchmark/summary.json
-```
+1. entropy-matched answer-head sampling at the same K;
+2. one deterministic trajectory at matched `K*T` transition compute.
 
-Minimum current run contract:
-
-- keep Phase 2/SVGD and inference-time particle noise off;
-- require the selected Stage 4 checkpoint to restore before training starts;
-- require finite ARC-mix training/eval summaries;
-- run the recovery full assessment only if the ARC-mix proxy passes;
-- do not run dense control, particles, GPQA, or larger Qwen scales until the
-  recurrent deterministic gate has a clean review artifact.
-
-The concise run card is maintained here:
-[`colab/CURRENT_A100_ACTION.md`](colab/CURRENT_A100_ACTION.md).
-
-The longer-term data plan is captured in
-[`docs/CURRICULUM_DATA_PIPELINE.md`](docs/CURRICULUM_DATA_PIPELINE.md): strong
-non-Qwen models generate and judge candidate traces, but verified answers and
-programmatic checks control labels. Positive SFT loaders may consume only
-`positive_*` roles; rationalizations and slips are reserved for verifier or
-contrastive training.
-
-When that generated curriculum pipeline completes and its SFT gate reports
-`go=true`, the guarded GPU handoff is:
-
-```bash
-STAGE5_CURRICULUM_WORK_DIR=data/curriculum/programmatic_direct_deep_001 \
-STAGE5_CURRICULUM_MIN_POSITIVE_ROWS=2000 \
-STAGE5_CURRICULUM_MIN_MODE_ROWS=direct=1000,deep_narrow=1000 \
-python colab/run_stage5_curriculum_sft.py
-```
-
-This runner refuses unsafe or tiny shards, requires Drive backup by default,
-trains only deterministic Phase 1 recurrence from `positive_sft.jsonl`, and
-validates on a held-out curriculum split before any particle/SVGD work.
-The go/no-go guard also requires this explicit mode-coverage gate before paid
-GPU SFT. Keep the direct/deep default for the current 2000-row programmatic
-calibration phase; change it deliberately, for example to `wide=64`, only for a
-later width/particle curriculum.
-
-Do not run GPQA, Phase 2/SVGD, or scale-up jobs before this deterministic
-recurrent recovery question is resolved.
-
-## A100 Credit Discipline
-
-Use GPU time only for bounded training/evaluation actions that emit summaries,
-checkpoints, and planner-readable next steps. The maintained Colab continuation
-entrypoint is:
-
-```bash
-python colab/run_stage5_colab_continue.py
-```
-
-By default it now runs in `credit_saver` mode: one allowlisted planner action,
-post-run summaries, safe text-artifact commit, then stop. Set
-`STAGE5_ARC_AGI_COLAB_CONTINUE_PROFILE=gate` or `throughput` only when you
-intentionally want a three-action loop. Set `same_recipe` or `claim` only after
-the preceding evidence gate has landed and the extra A100 spend is deliberate.
-
-## Phase 0 Identity Gate
-
-```bash
-python eval/eval_identity.py \
-  --model_name Qwen/Qwen2.5-0.5B-Instruct \
-  --split 6,18 \
-  --dtype float32 \
-  --attn_implementation eager \
-  --threshold 1e-3
-```
-
-The wrapper path is manual, so a pass means:
-
-```text
-embed -> prelude -> recurrent block once -> coda -> norm -> lm_head
-```
-
-matches the original model logits with dropout disabled.
-
-## Phase 1 Halting Telemetry
-
-Do not run Phase 1 training until the Phase 0 identity gate passes.
-
-```bash
-python eval/eval_halting.py --max_loops 4 --split 6,18
-```
-
-For training on JSONL rows with `prompt` + `completion` or `text`:
-
-```bash
-python training/train_phase1_ponder.py \
-  --config config/qwen_0_5b_phase1.yaml \
-  --train_jsonl data/train.jsonl
-```
-
-## Hugging Face Reasoning Data
-
-Convert common Opus/Qwen reasoning datasets to this project's JSONL format:
-
-```bash
-python training/prepare_hf_reasoning_jsonl.py \
-  --dataset_id lordx64/reasoning-distill-opus-4-7-max-sft \
-  --tokenizer_name Qwen/Qwen2.5-0.5B-Instruct \
-  --output_jsonl data/opus47_train.jsonl \
-  --val_jsonl data/opus47_val.jsonl \
-  --limit 1000 \
-  --max_total_tokens 2048
-```
-
-The converter supports datasets with `text`, `messages`, or
-`thinking`/`response`-style fields, TraceInversion-style
-`inverted_reasoning` rows, explicit Hugging Face JSONL files, and
-Complete-FABLE-style `row_json` wrappers. It writes `prompt`, `completion`, and
-`cot_tokens`.
-
-For the Jackrong Opus TraceInversion rows, use the dedicated adapter so the
-inverted reasoning trace is preserved instead of falling back to answer-only
-chat messages:
-
-```bash
-python training/prepare_hf_reasoning_jsonl.py \
-  --dataset_id Jackrong/Claude-opus-4.7-TraceInversion-5000x \
-  --adapter trace_inversion \
-  --output_jsonl data/trace_inversion_train.jsonl \
-  --val_jsonl data/trace_inversion_val.jsonl \
-  --limit 1000 \
-  --max_total_tokens 2048
-```
-
-For Fable's flat merged trace file, address the file explicitly:
-
-```bash
-python training/prepare_hf_reasoning_jsonl.py \
-  --dataset_id Glint-Research/Fable-5-traces \
-  --hf_file fable5_cot_merged.jsonl \
-  --adapter fable_flat \
-  --output_jsonl data/fable5_flat_train.jsonl \
-  --val_jsonl data/fable5_flat_val.jsonl \
-  --limit 1000 \
-  --max_total_tokens 4096
-```
-
-Audit unfamiliar trace datasets before mixing them into training:
-
-```bash
-python training/inspect_hf_reasoning_dataset.py \
-  --dataset_id Glint-Research/Fable-5-traces \
-  --hf_file fable5_cot_merged.jsonl \
-  --adapter fable_flat \
-  --limit 1000 \
-  --output_json outputs/dataset_audits/fable5_flat.json
-```
-
-The audit now writes a `curriculum_signal` block. Treat it as a routing
-recommendation, not permission to train blindly:
-
-- `direct_recovery_candidate`: short reasoning traces likely useful for
-  restoring depth-1 competence.
-- `deep_narrow_candidate`: longer reasoning traces that can supervise learned
-  recurrence/depth.
-- `hold_for_wide_or_agentic_filter`: Fable/tool/agent traces that may help
-  trajectory diversity later, but should not be mixed into ARC/GPQA recovery
-  without a domain filter.
-- `fit_rates_total_tokens`: quick context-budget sanity check for 512/1024/2048
-  token runs.
-
-Known candidate trace sources and their intended roles are tracked in
-`config/reasoning_dataset_registry.yaml`. Opus-style reasoning traces are the
-current fine-tuning source. Jackrong Opus TraceInversion is an immediate audit
-candidate for easy/hard recurrent curriculum work. Fable/Pi-agent traces are
-treated as later agent/tool-diversity material unless an audit and filter
-explicitly promote them into a training mix.
-
-Current dataset triage:
-
-| Dataset | Immediate role | GPU policy |
-|---|---|---|
-| [`lordx64/reasoning-distill-opus-4-7-max-sft`](https://huggingface.co/datasets/lordx64/reasoning-distill-opus-4-7-max-sft) | SFT-ready Opus trace source for recurrent competence recovery. | Use filtered subsets in bounded Phase 1 mixes. |
-| [`lordx64/reasoning-distill-claude-opus-4-7-max`](https://huggingface.co/datasets/lordx64/reasoning-distill-claude-opus-4-7-max) | Raw Opus source with richer fields for curriculum filtering. | Audit/filter first; do not blindly train full rows. |
-| [`Jackrong/Claude-opus-4.7-TraceInversion-5000x`](https://huggingface.co/datasets/Jackrong/Claude-opus-4.7-TraceInversion-5000x) | Immediate audit candidate for alternative reasoning-trace supervision. | CPU audit first, then small mixed pilot only if promoted. |
-| [`Glint-Research/Fable-5-traces`](https://huggingface.co/datasets/Glint-Research/Fable-5-traces) | Agent/tool/coding trace diversity source. | Hold for filter design; no blind ARC/GPQA recovery SFT. |
-| [`Glint-Research/Complete-FABLE.5-traces-2M`](https://huggingface.co/datasets/Glint-Research/Complete-FABLE.5-traces-2M) | Large trace-mining source. | Streaming CPU audit only until a precise filter exists. |
-
-Additional Opus/Kimi/GLM/Fable/Mythos candidates are registered in
-[`config/reasoning_dataset_registry.yaml`](config/reasoning_dataset_registry.yaml)
-and summarized in
-[`docs/REASONING_TRACE_DATASETS.md`](docs/REASONING_TRACE_DATASETS.md). They
-are intentionally marked as audit or later-audit candidates, not automatic
-training data. The strong-model API workflow for converting verified problems
-into width/depth/mode-labeled curriculum records is documented in
-[`docs/CURRICULUM_DATA_PIPELINE.md`](docs/CURRICULUM_DATA_PIPELINE.md).
-
-## Phase 2 Stochastic Trajectories
-
-Do not run Phase 2 training until deterministic halting is non-collapsed.
-
-```bash
-python eval/eval_trajectories.py \
-  --max_loops 4 \
-  --num_trajectories 2 \
-  --split 6,18
-```
-
-If untrained fp16 trajectories report zero diversity, run a diagnostic-only
-amplified check:
-
-```bash
-python eval/eval_trajectories.py \
-  --max_loops 4 \
-  --num_trajectories 2 \
-  --split 6,18 \
-  --diagnostic_latent_scale 1.0 \
-  --diagnostic_adapter_std 0.02
-```
-
-```bash
-python training/train_phase2_stochastic.py \
-  --config config/qwen_0_5b_phase2.yaml \
-  --train_jsonl data/train.jsonl
-```
-
-## Phase 2 SVGD Particles
-
-SVGD mode keeps the frozen Qwen base path deterministic but treats each
-trajectory as a particle after the recurrent block. The update combines the
-ordinary recurrent transition with an RBF-kernel repulsion term across the
-trajectory axis. This is the preferred next experiment when testing whether
-particle diversity can create useful answer candidates without relying on large
-latent noise.
-
-Start with the smoke config:
-
-```bash
-python training/train_phase2_stochastic.py \
-  --config config/qwen_0_5b_phase2_svgd.yaml \
-  --train_jsonl data/opus47_train.jsonl \
-  --device cuda
-```
-
-Validate with the SVGD switches enabled:
-
-```bash
-python eval/eval_jsonl.py \
-  --data_jsonl data/opus47_val.jsonl \
-  --checkpoint outputs/qwen_0_5b_phase2_svgd_smoke25/phase2_step_25.pt \
-  --max_loops 4 \
-  --num_trajectories 4 \
-  --particle_update_mode svgd \
-  --particle_init_noise 0.02 \
-  --svgd_repulsion_scale 0.5 \
-  --svgd_repulsion_max_norm 1.0 \
-  --max_length 512 \
-  --beta 0.08 \
-  --rho 1e-3 \
-  --dtype bfloat16 \
-  --adapter_dtype float32 \
-  --device cuda
-```
-
-Compare the Phase 1 checkpoint against a Phase 2 checkpoint on small exact
-generation tasks:
-
-```bash
-python eval/eval_best_of_k_jsonl.py \
-  --phase1_checkpoint outputs/qwen_0_5b_phase1_a100_beta008_continue_150/phase1_step_150.pt \
-  --phase2_checkpoint outputs/qwen_0_5b_phase2_svgd_smoke25/phase2_step_25.pt \
-  --phase2_num_trajectories 4 \
-  --phase2_particle_update_mode svgd \
-  --particle_init_noise 0.02 \
-  --svgd_repulsion_scale 0.5 \
-  --svgd_repulsion_max_norm 1.0 \
-  --max_new_tokens 64 \
-  --dtype bfloat16 \
-  --adapter_dtype float32 \
-  --device cuda
-```
-
-To initialize Phase 2 from a Phase 1 trainable checkpoint, set `resume_from` in
-the Phase 2 config, for example:
-
-```yaml
-resume_from: outputs/qwen_0_5b_phase1/phase1_step_100.pt
-```
-
-Validate a trainable checkpoint on held-out JSONL:
-
-```bash
-python eval/eval_jsonl.py \
-  --data_jsonl data/opus47_val.jsonl \
-  --checkpoint outputs/qwen_0_5b_phase1_opus47_200/phase1_step_200.pt \
-  --max_loops 4 \
-  --max_length 1024
-```
-
-For constrained Colab GPUs such as G4, use the 50-step stability profile first:
-
-```bash
-python training/train_phase1_ponder.py \
-  --config config/qwen_0_5b_phase1_g4_stability.yaml \
-  --train_jsonl data/opus47_train.jsonl \
-  --device cuda
-```
-
-Then validate the 50-step checkpoint before any longer run:
-
-```bash
-python eval/eval_jsonl.py \
-  --data_jsonl data/opus47_val.jsonl \
-  --checkpoint outputs/qwen_0_5b_phase1_g4_stability_50/phase1_step_50.pt \
-  --max_loops 4 \
-  --max_length 512 \
-  --dtype float16 \
-  --adapter_dtype float32
-```
-
-This keeps trainable adapters/controllers in fp32 and aborts on nonfinite loss,
-metrics, gradients, or trainable parameters. Do not resume from the discarded
-NaN checkpoint at
-`outputs/qwen_0_5b_phase1_opus47_beta005_lr2e5_200/phase1_step_200.pt`.
-
-## Slow Recurrent Inference
-
-```bash
-python infer_recurrent.py \
-  --prompt "Find one valid 4-queens placement." \
-  --max_loops 4 \
-  --num_trajectories 2 \
-  --sample_latents
-```
-
-Generation is intentionally no-cache and slow because recurrent passes reuse the
-same sequence. KV cache is only valid on the single-pass identity-shaped path.
-
-## GPQA-Style Multiple Choice
-
-```bash
-python eval/eval_gpqa.py \
-  --data_jsonl data/gpqa_lite.jsonl \
-  --max_loops 4 \
-  --split 6,18
-```
-
-Rows should contain `question`, `choices` or `options`, and `answer`.
-
-## Colab
-
-Open [colab/GRAM_Recurrent_Qwen_Colab.ipynb](colab/GRAM_Recurrent_Qwen_Colab.ipynb)
-in Google Colab, set the runtime to GPU, upload this project as a zip, and run
-the notebook from top to bottom through the Phase 0 identity gate first.
-
-For Colab Pro+, use [colab/COLAB_PRO_PLUS_RUNBOOK.md](colab/COLAB_PRO_PLUS_RUNBOOK.md):
-select H100 GPU if available, turn High-RAM on, and keep `num_trajectories=2`
-until the small-model gates pass.
-
-## RunPod
-
-For a more stable GPU workbench, use [runpod/RUNPOD_HANDOFF.md](runpod/RUNPOD_HANDOFF.md).
-The short path is:
-
-```bash
-bash scripts/runpod_setup.sh
-bash scripts/run_smoke_gates.sh
-```
+Learned selection, per-trajectory halting, and SVGD remain closed until guided latent width beats both comparators.

@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "program": "part1_deterministic_recurrent_qwen",
+  "status": "closed",
+  "closed_at": "2026-07-15",
+  "canonical_manuscript": "docs/PAPER_ONE_DETERMINISTIC_RECURRENT_QWEN_20260715.md",
+  "global_prohibited_phrases": [
+    "recurrence generally surpasses base Qwen",
+    "SVGD improves reasoning",
+    "GRAM-style width was falsified",
+    "only a small fraction of weights was trained"
+  ],
+  "claims": [
+    {
+      "id": "one_loop_identity",
+      "claim": "The repaired wrapper can reproduce the base one-pass computation when recurrent additions are inactive.",
+      "status": "supported_bounded",
+      "scope": "Qwen2.5-0.5B wrapper, tested split and one-loop execution path",
+      "evidence": [
+        {
+          "path": "tests/test_recurrent_wrapper_tiny.py",
+          "locator": "one-loop identity and wrapper contract tests"
+        },
+        {
+          "path": "models/recurrent_wrapper.py",
+          "locator": "Prelude/Recurrent Block/Coda implementation"
+        }
+      ]
+    },
+    {
+      "id": "persistent_iterative_transition",
+      "claim": "Intermediate-state supervision installed a loop-indexed transition that persisted after an outcome-only annealing phase.",
+      "status": "supported_bounded",
+      "scope": "synthetic transition task, depths 1-4, registered checkpoint",
+      "metrics": {
+        "active_correct": 625,
+        "active_total": 640,
+        "above_diagonal_iterate": 357,
+        "above_diagonal_total": 384
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_chain_anneal_20260703_160250/summary.json",
+          "locator": "outcome-only anneal checkpoint and readout lineage"
+        },
+        {
+          "path": "docs/STAGE5_COMPLETE_HANDOFF_20260715.md",
+          "locator": "section 3.1"
+        }
+      ]
+    },
+    {
+      "id": "depth_extrapolation_frontier",
+      "claim": "Increasing supported transition depth moved the frozen same-reader frontier beyond the trained depth range, with a measured ceiling rather than indefinite extrapolation.",
+      "status": "supported_bounded",
+      "scope": "N24 synthetic transition family and frozen depth-1-through-22 evaluation",
+      "metrics": {
+        "step6000_depth14_accuracy": 0.9140625,
+        "step6000_depth18_accuracy": 0.703125,
+        "step6000_depth22_accuracy": 0.109375
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json",
+          "locator": "decision_read and checkpoint_evals"
+        },
+        {
+          "path": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/eval/frozen_depth22_step_6000/active_summary.json",
+          "locator": "active_diagonal"
+        }
+      ]
+    },
+    {
+      "id": "phase_a_synthetic_surpass",
+      "claim": "The trained recurrent 0.5B system outscored the registered dense recipes on one frozen synthetic composition family.",
+      "status": "supported_bounded",
+      "scope": "system-level, unmatched training lineage and compute; depths 1-14; identical frozen rows",
+      "metrics": {
+        "rows": 1792,
+        "recurrent_correct": 1506,
+        "dense_direct_correct": 470,
+        "dense_scratchpad_correct": 952,
+        "dense_1_5b_correct": 322,
+        "recurrent_vs_scratchpad_helped": 607,
+        "recurrent_vs_scratchpad_hurt": 53,
+        "recurrent_vs_scratchpad_two_sided_p": 3.418737299271259e-120
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_phase_a_surpass_receipt_20260714/summary.json",
+          "locator": "scoring, row_receipts, checkpoint_receipts"
+        }
+      ]
+    },
+    {
+      "id": "natural_surface_transfer",
+      "claim": "The installed transition transferred to controlled verbalized relay and pointer surfaces under the same-reader evaluator, with weaker tails and training-history dependence.",
+      "status": "supported_bounded",
+      "scope": "controlled generated natural surfaces, not broad natural reasoning benchmarks",
+      "metrics": {
+        "step6000_relay_correct": 1321,
+        "step6000_relay_total": 1536,
+        "step6000_pointer_correct": 1213,
+        "step6000_pointer_total": 1536
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/summary.json",
+          "locator": "same_reader"
+        }
+      ]
+    },
+    {
+      "id": "inverse_retention_boundary",
+      "claim": "The tested full-block continuations could acquire inverse operations in isolation but did not preserve both the new inverse objective and the consolidated mechanism.",
+      "status": "supported_boundary",
+      "scope": "0.5B substrate, tested inverse task families and continuation recipes",
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_inverse_table_cap3_rehearsal_20260714/summary.json",
+          "locator": "task_gate, synthetic_retention, natural_canary"
+        },
+        {
+          "path": "outputs/stage5/stage5_inverse_rendered_width_gate_20260714/summary.json",
+          "locator": "calibration and retention"
+        },
+        {
+          "path": "outputs/stage5/stage5_inverse_rendered_n24_continuation_20260715/summary.json",
+          "locator": "calibration, synthetic_retention, natural_canary"
+        }
+      ]
+    },
+    {
+      "id": "multichannel_bridge_intervention",
+      "claim": "The preregistered precursor battery did not authorize a multi-channel bridge intervention.",
+      "status": "closed_negative",
+      "scope": "tested N24 and backward-recovery checkpoints, registered M1-M3 voting rule",
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_multichannel_bridge_precursor_replication_20260714/summary.json",
+          "locator": "decision"
+        }
+      ]
+    },
+    {
+      "id": "general_natural_reasoning_superiority",
+      "claim": "The recurrent model is superior on broad natural reasoning benchmarks.",
+      "status": "not_supported",
+      "scope": "requires external benchmark evidence and matched controls",
+      "evidence": [
+        {
+          "path": "docs/PART1_DETERMINISTIC_PROGRAM_CLOSEOUT_20260715.md",
+          "locator": "Claim Ledger"
+        }
+      ]
+    },
+    {
+      "id": "guided_latent_width",
+      "claim": "Target-conditioned stochastic latent trajectories improve exact solution coverage beyond output sampling and additional deterministic depth.",
+      "status": "open",
+      "scope": "Phase G-alpha only; no result yet",
+      "evidence": [
+        {
+          "path": "docs/PHASE_G_ALPHA_GUIDED_STOCHASTIC_TRANSITION_SPEC.md",
+          "locator": "frozen-block contract and preregistered comparators"
+        },
+        {
+          "path": "docs/gram_divergence_audit_20260711.md",
+          "locator": "early-run claim boundary"
+        }
+      ]
+    }
+  ]
+}

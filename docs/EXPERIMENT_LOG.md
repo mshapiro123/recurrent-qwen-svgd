@@ -1256,3 +1256,15 @@ Colab/Drive backups for selected runs.
   or N24 symbolic keeper. A double miss does not auto-launch an adapter because
   no numeric near-miss band was preregistered. Phase G-alpha opens only after a
   green screen and powered-margin lock.
+- 2026-07-15 paper-one consolidation: replaced the stale June project-status
+  narrative and historical master queue with the closed deterministic record
+  and post-closeout dependency chain. The manuscript now includes the Phase A
+  paired receipts, N24 support-depth frontier, same-reader natural transfer,
+  inverse-task acquisition-retention boundary, and F9 closure. A machine-
+  readable claim ledger links every supported or open claim to durable local
+  artifacts and tests the Phase A arithmetic. Primary-literature review bounds
+  novelty to the pretrained-Qwen retrofit, forensic loop-closure repair, and
+  controlled mechanism study; recurrent depth, adaptive halting, equilibrium
+  depth, transformer conversion, and stochastic recursive reasoning all have
+  prior art. Canonical manuscript:
+  `docs/PAPER_ONE_DETERMINISTIC_RECURRENT_QWEN_20260715.md`.

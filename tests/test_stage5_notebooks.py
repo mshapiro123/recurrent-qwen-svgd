@@ -233,8 +233,13 @@ def test_single_a100_runbook_uses_current_bootstrap_target_queue() -> None:
 
 
 def test_current_user_facing_colab_queue_stays_in_sync() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "part1_closeout_pivot_session" in readme
+    assert "Phase G-alpha" in readme
+    assert "guided stochastic width" in readme
+
+    # These runbooks retain the completed June queue as execution history.
     paths = [
-        "README.md",
         "colab/CURRENT_A100_ACTION.md",
         "colab/NEXT_COLAB_SEQUENCE.md",
         "colab/STAGED_NOTEBOOKS.md",
@@ -2194,12 +2199,12 @@ def test_current_colab_docs_link_master_sequence_and_future_gates() -> None:
     ).read_text(encoding="utf-8")
     assert "same curriculum" in next_sequence
     assert "deferred until the deterministic Phase 1 gate passes" in staged
-    assert "Phase 0, loop-closure re-entry" in master
-    assert "Phase 1, depth" in master
-    assert "Phase 2, breadth and multistability" in master
-    assert "Phase 3, particles, SVGD, and the selector" in master
-    assert "These were never parallel workstreams" in master
-    assert "The binding uncertainty has shifted from architectural to empirical" in master
+    assert "Completed Part 1" in master
+    assert "final non-gating deterministic localization" in master
+    assert "width-substrate screen" in master
+    assert "Phase G-alpha guided latent width" in master
+    assert "G-beta selection and adaptive width" in master
+    assert "Parallelize between decisions, never through them" in master
     assert "STAGE5_CURRENT_A100_TARGET=reentry_norm_diagnostic" in runbook
     assert "STAGE5_CURRENT_A100_TARGET=reentry_repair_smoke" in runbook
     assert "STAGE5_CURRENT_A100_TARGET=reentry_recovery_training" in runbook
