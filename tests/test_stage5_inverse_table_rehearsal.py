@@ -8,11 +8,13 @@ from pathlib import Path
 import yaml
 
 from colab.run_stage5_inverse_table_rehearsal import (
+    REHEARSAL_SOURCE,
     _write_config,
     build_rehearsal_mix,
     fixed_schedule_dose,
     rehearsal_optimizer_steps,
     rehearsal_weight_profiles,
+    validate_causal_training_rows,
 )
 
 
@@ -34,6 +36,45 @@ def test_rehearsal_config_uses_interval_checkpoints_and_drive_receipts(tmp_path:
     assert config["checkpoint_backup_every"] == 100
     assert Path(config["checkpoint_backup_dir"]) == tmp_path / "drive" / "checkpoints"
     assert Path(config["progress_backup_path"]) == tmp_path / "drive" / "progress.json"
+
+
+def test_rehearsal_source_is_causal_symbol_sft_not_eval_mcq() -> None:
+    assert REHEARSAL_SOURCE.name == "train_chain_symbol_sft.jsonl"
+
+
+def test_causal_training_row_validation_rejects_eval_only_rows() -> None:
+    eval_only = {
+        "id": "eval-row",
+        "question": "Apply f once.",
+        "choices": {"A": "B", "B": "C"},
+        "answer": "A",
+        "depth": 1,
+    }
+
+    try:
+        validate_causal_training_rows([eval_only], label="forward rehearsal")
+    except ValueError as exc:
+        assert "eval-row" in str(exc)
+        assert "completion" in str(exc)
+    else:
+        raise AssertionError("Evaluation-only MCQ row unexpectedly passed causal schema validation")
+
+
+def test_causal_training_row_validation_accepts_prompt_completion_rows() -> None:
+    receipt = validate_causal_training_rows(
+        [
+            {
+                "instance_id": "train-row",
+                "prompt": "Apply f once.\nAnswer:",
+                "completion": " B",
+                "loop_completions": [" B"],
+                "depth": 1,
+            }
+        ],
+        label="forward rehearsal",
+    )
+
+    assert receipt == {"label": "forward rehearsal", "rows": 1, "status": "passed"}
 
 
 def test_rehearsal_mix_adds_rows_without_reducing_original_task_dose() -> None:

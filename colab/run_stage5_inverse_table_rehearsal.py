@@ -35,7 +35,10 @@ from training.staircase_curriculum import equalized_loop_weights, exposure_fract
 ROOT = Path(os.environ.get("STAGE5_ROOT", Path(__file__).resolve().parents[1]))
 SOURCE_SUMMARY = ROOT / "outputs/stage5/stage5_inverse_table_rebase_caps3_4_20260713/summary.json"
 STAIRCASE_SUMMARY = ROOT / "outputs/stage5/stage5_inverse_composition_staircase_20260713/summary.json"
-REHEARSAL_SOURCE = ROOT / "outputs/stage5/stage5_n24_support12_rung_20260707_140139/data/train_chain_mcq.jsonl"
+REHEARSAL_SOURCE = (
+    ROOT
+    / "outputs/stage5/stage5_n24_support12_rung_20260707_140139/data/train_chain_symbol_sft.jsonl"
+)
 SOURCE_CAP3_SHA256 = "83767ebff2c2a13a2f15fe8266f605fb8485985c3289c1f1720cd70c122a9ac5"
 BASELINE_STEPS = 250
 EFFECTIVE_BATCH_SIZE = 8
@@ -61,6 +64,36 @@ def write_jsonl(path: str | Path, rows: list[dict[str, Any]]) -> None:
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows), encoding="utf-8")
+
+
+def validate_causal_training_rows(
+    rows: list[dict[str, Any]],
+    *,
+    label: str,
+) -> dict[str, Any]:
+    """Fail before model setup when an eval-only row enters a causal SFT mix."""
+
+    if not rows:
+        raise ValueError(f"{label} contains no rows")
+    errors: list[str] = []
+    for index, row in enumerate(rows):
+        row_id = str(row.get("id") or row.get("instance_id") or f"row-{index}")
+        completion = row.get("completion")
+        text = row.get("text")
+        if completion is None and text is None:
+            errors.append(f"{row_id}: missing both completion and text")
+            continue
+        if completion is not None and row.get("prompt") is None and row.get("question") is None:
+            errors.append(f"{row_id}: completion row is missing prompt/question")
+        loop_completions = row.get("loop_completions")
+        if not isinstance(loop_completions, list) or not loop_completions:
+            errors.append(f"{row_id}: missing non-empty loop_completions")
+        elif completion is not None and str(loop_completions[-1]) != str(completion):
+            errors.append(f"{row_id}: final loop completion does not match completion")
+    if errors:
+        preview = "; ".join(errors[:5])
+        raise ValueError(f"{label} is not causal chain-SFT data ({len(errors)} invalid rows): {preview}")
+    return {"label": str(label), "rows": len(rows), "status": "passed"}
 
 
 def rehearsal_optimizer_steps(
@@ -259,6 +292,10 @@ def main() -> int:
     if not rehearsal_source.is_absolute():
         rehearsal_source = ROOT / rehearsal_source
     rehearsal_rows = read_jsonl(rehearsal_source)
+    schema_receipts = {
+        "task": validate_causal_training_rows(task_rows, label="inverse-table task"),
+        "rehearsal": validate_causal_training_rows(rehearsal_rows, label="forward rehearsal"),
+    }
     if sorted({int(row["depth"]) for row in rehearsal_rows}) != list(range(1, MAX_LOOPS + 1)):
         raise RuntimeError("Forward rehearsal source must cover depths 1-12")
     max_steps = rehearsal_optimizer_steps(
@@ -291,6 +328,8 @@ def main() -> int:
         else:
             row["loop_label_weights"] = profiles["rehearsal"]
             row["forward_loop_count"] = int(row["depth"])
+    schema_receipts["mixed"] = validate_causal_training_rows(mixed, label="mixed rehearsal schedule")
+    mix_receipt["schema"] = schema_receipts
     mix_receipt["dose"] = fixed_schedule_dose(mixed, max_loops=MAX_LOOPS)
     train_path = data_dir / "train_cap3_plus_rehearsal.jsonl"
     write_jsonl(train_path, mixed)
