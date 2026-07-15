@@ -57,7 +57,7 @@ W3 produced a near-gate zero-shot result on an explicit inverse relation. The on
 
 | Measure | Before W4 | After W4 |
 |---|---:|---:|
-| Calibration total | `288/384` | `208/384` |
+| Calibration total | `276/384` | `208/384` |
 | Synthetic retention minimum | `0.8125` source audit | `0.125` |
 | Natural canary | `227/256` reference | `171/256` |
 

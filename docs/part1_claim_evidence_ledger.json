@@ -4,6 +4,22 @@
   "status": "closed",
   "closed_at": "2026-07-15",
   "canonical_manuscript": "docs/PAPER_ONE_DETERMINISTIC_RECURRENT_QWEN_20260715.md",
+  "manuscript_v2_status": "awaiting_authoritative_draft_file",
+  "manuscript_v2_artifact_map": {
+    "resolution_packet": "docs/MANUSCRIPT_V2_RESOLUTION_PACKET_20260715.md",
+    "margin_lock_inputs": "docs/PHASE_G_ALPHA_MARGIN_LOCK_INPUTS_20260715.json",
+    "figure_1_macro_architecture": "docs/figures/figure1_macro_architecture.svg",
+    "figure_2_split_bridge": "docs/figures/figure2_split_bridge.svg",
+    "figure_3_frontier_vs_support": "docs/figures/figure3_frontier_vs_support.svg",
+    "figure_4_phase_a_depth_profile": "docs/figures/figure4_phase_a_depth_profile.svg",
+    "w3_calibration": "outputs/stage5/stage5_inverse_rendered_width_gate_20260714/summary.json",
+    "support_4_frontier": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/summary.json",
+    "support_6_frontier": "outputs/stage5/stage5_depth_support_route_20260705_124320/summary.json",
+    "support_8_frontier": "outputs/stage5/stage5_support8_dose_arm_20260706_153028/summary.json",
+    "support_6_seed_resolution": "outputs/stage5/stage5_support6_seed26_plateau_20260708_130654/summary.json",
+    "natural_surface_checkpoint_curve": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/summary.json",
+    "same_reader_phase_a": "outputs/stage5/stage5_phase_a_surpass_receipt_20260714/summary.json"
+  },
   "global_prohibited_phrases": [
     "recurrence generally surpasses base Qwen",
     "SVGD improves reasoning",
@@ -71,6 +87,46 @@
       ]
     },
     {
+      "id": "cross_support_frontier_law",
+      "claim": "Increasing supported transition depth from 4 to 6 to 8 increased the registered frozen 0.71 bar-crossing frontier, with substantial support-6 seed and dose sensitivity.",
+      "status": "supported_bounded",
+      "scope": "N24 synthetic transition family, canonical same-reader frontier; central points use the registered main-route artifacts",
+      "metrics": {
+        "support_4_frontier": 5.7458064516129035,
+        "support_6_frontier": 9.005454545454546,
+        "support_8_frontier": 11.612,
+        "support_6_raw_seed_min": 6.9511111111111115,
+        "support_6_raw_seed_max": 9.005454545454546,
+        "support_6_slow_seed_final_frontier": 10.0
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/summary.json",
+          "locator": "attribution_extrapolation.active_diagonal"
+        },
+        {
+          "path": "outputs/stage5/stage5_depth_support_route_20260705_124320/summary.json",
+          "locator": "frozen_active_eval.active_diagonal"
+        },
+        {
+          "path": "outputs/stage5/stage5_support8_dose_arm_20260706_153028/summary.json",
+          "locator": "frozen_active_eval.active_diagonal"
+        },
+        {
+          "path": "outputs/stage5/stage5_support6_replication_receipts_20260708_003055/summary.json",
+          "locator": "runs and frontier_policy"
+        },
+        {
+          "path": "outputs/stage5/stage5_support6_seed26_plateau_20260708_130654/summary.json",
+          "locator": "source_score, post_score, and plateau_outcome"
+        },
+        {
+          "path": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json",
+          "locator": "decision_read and checkpoint_evals"
+        }
+      ]
+    },
+    {
       "id": "phase_a_synthetic_surpass",
       "claim": "The trained recurrent 0.5B system outscored the registered dense recipes on one frozen synthetic composition family.",
       "status": "supported_bounded",
@@ -107,6 +163,37 @@
         {
           "path": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/summary.json",
           "locator": "same_reader"
+        },
+        {
+          "path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/summary.json",
+          "locator": "checkpoint_evals"
+        }
+      ]
+    },
+    {
+      "id": "natural_surface_tail_inversion",
+      "claim": "Longer natural-surface training improved aggregate active accuracy while degrading the deepest relay and pointer diagonals, making the step-2000 checkpoint the maximin tail-preserving keeper among the evaluated checkpoints.",
+      "status": "supported_bounded",
+      "scope": "controlled relay and pointer surfaces, checkpoints at steps 2000, 4000, and 6000, depths 1-12",
+      "metrics": {
+        "step2000_relay_active_accuracy": 0.9012419871794872,
+        "step2000_pointer_active_accuracy": 0.8652844551282052,
+        "step2000_tail_min_depth_11_12": 0.546875,
+        "step4000_relay_active_accuracy": 0.9056490384615384,
+        "step4000_pointer_active_accuracy": 0.8521634615384616,
+        "step4000_tail_min_depth_11_12": 0.3828125,
+        "step6000_relay_active_accuracy": 0.9428084935897436,
+        "step6000_pointer_active_accuracy": 0.8972355769230769,
+        "step6000_tail_min_depth_11_12": 0.1953125
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/summary.json",
+          "locator": "checkpoint_evals active_diagonal and active_total"
+        },
+        {
+          "path": "outputs/stage5/stage5_part1_closeout_pivot_20260715/branching_screen/natural_step2000_N20_verbal/summary.json",
+          "locator": "passing verbal keeper gate"
         }
       ]
     },

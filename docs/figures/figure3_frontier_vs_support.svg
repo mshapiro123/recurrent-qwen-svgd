@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="650" viewBox="0 0 1000 650" role="img" aria-labelledby="title desc">
+  <title id="title">Canonical frozen frontier versus supported transition depth</title>
+  <desc id="desc">The canonical 71-percent bar-crossing frontier rises from 5.746 at support four to 9.005 at support six and 11.612 at support eight. Support-six seed and dose outcomes show substantial path dependence.</desc>
+  <defs><style>
+    .title{font:700 28px Arial,sans-serif;fill:#1f2428}.sub{font:400 15px Arial,sans-serif;fill:#4b5963}
+    .axis{font:600 14px Arial,sans-serif;fill:#36434b}.tick{font:400 13px Arial,sans-serif;fill:#53616a}
+    .note{font:400 13px Arial,sans-serif;fill:#4b5963}.value{font:700 14px Arial,sans-serif;fill:#0c4742}
+  </style></defs>
+  <rect width="1000" height="650" fill="#fbfaf6"/>
+  <text x="60" y="52" class="title">Frozen frontier scales with trained support, but seed and dose matter</text>
+  <text x="60" y="79" class="sub">Frontier = interpolated first crossing below the registered 0.71 same-reader accuracy bar</text>
+
+  <rect x="105" y="110" width="720" height="420" fill="#fff" stroke="#d8d3c8"/>
+  <g stroke="#e5e1d8" stroke-width="1">
+    <line x1="105" y1="530" x2="825" y2="530"/><line x1="105" y1="465.4" x2="825" y2="465.4"/>
+    <line x1="105" y1="400.8" x2="825" y2="400.8"/><line x1="105" y1="336.2" x2="825" y2="336.2"/>
+    <line x1="105" y1="271.5" x2="825" y2="271.5"/><line x1="105" y1="206.9" x2="825" y2="206.9"/>
+    <line x1="105" y1="142.3" x2="825" y2="142.3"/>
+  </g>
+  <g class="tick" text-anchor="end">
+    <text x="92" y="535">0</text><text x="92" y="470">2</text><text x="92" y="406">4</text><text x="92" y="341">6</text>
+    <text x="92" y="277">8</text><text x="92" y="212">10</text><text x="92" y="147">12</text>
+  </g>
+  <text x="35" y="340" class="axis" transform="rotate(-90 35 340)">Canonical frozen frontier</text>
+  <text x="465" y="590" text-anchor="middle" class="axis">Maximum transition depth supported during training</text>
+  <g class="tick" text-anchor="middle"><text x="225" y="555">4</text><text x="465" y="555">6</text><text x="705" y="555">8</text></g>
+
+  <rect x="447" y="206.9" width="36" height="66.1" fill="#9aa8b0" opacity="0.28"/>
+  <line x1="465" y1="305.4" x2="465" y2="206.9" stroke="#697983" stroke-width="4"/>
+  <circle cx="465" cy="305.4" r="6" fill="#697983"/><circle cx="465" cy="302.3" r="6" fill="#697983"/>
+  <circle cx="465" cy="239.4" r="7" fill="#fff" stroke="#9b4827" stroke-width="3"/>
+  <circle cx="465" cy="206.9" r="7" fill="#fff" stroke="#9b4827" stroke-width="3"/>
+
+  <polyline points="225,344.4 465,239.1 705,154.8" fill="none" stroke="#14635e" stroke-width="5"/>
+  <circle cx="225" cy="344.4" r="9" fill="#14635e"/><circle cx="465" cy="239.1" r="9" fill="#14635e"/><circle cx="705" cy="154.8" r="9" fill="#14635e"/>
+  <text x="225" y="326" text-anchor="middle" class="value">5.746</text><text x="465" y="221" text-anchor="middle" class="value">9.005</text><text x="705" y="137" text-anchor="middle" class="value">11.612</text>
+
+  <rect x="845" y="128" width="125" height="235" rx="6" fill="#fff" stroke="#d8d3c8"/>
+  <text x="858" y="156" class="axis">Support 6</text>
+  <line x1="858" y1="181" x2="884" y2="181" stroke="#14635e" stroke-width="5"/><text x="892" y="186" class="note">main route</text>
+  <rect x="858" y="205" width="26" height="13" fill="#9aa8b0" opacity="0.4"/><text x="892" y="216" class="note">raw seeds</text>
+  <circle cx="871" cy="247" r="6" fill="#fff" stroke="#9b4827" stroke-width="3"/><text x="892" y="252" class="note">after dose</text>
+  <text x="858" y="286" class="note">Raw seeds:</text><text x="858" y="307" class="note">6.951-9.005</text>
+  <text x="858" y="337" class="note">Dosed seeds:</text><text x="858" y="358" class="note">9.504, 10.000</text>
+
+  <text x="105" y="620" class="note">Central points use the registered main-route artifacts. The support-6 overlay exposes observed seed sensitivity and the fixed-dose resolution.</text>
+</svg>

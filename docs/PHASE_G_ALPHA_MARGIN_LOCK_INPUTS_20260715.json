@@ -1,0 +1,1184 @@
+{
+  "schema_version": 1,
+  "kind": "manuscript_v2_margin_lock_inputs",
+  "source_rows": "outputs/stage5/stage5_part1_closeout_pivot_20260715/branching_screen/natural_step2000_N20_verbal/rows.jsonl",
+  "overall": {
+    "rows": 512,
+    "valid": 389,
+    "invalid": 123,
+    "validity": 0.759765625,
+    "mean_reachable_set_size": 3.708984375,
+    "score_entropy_nats": {
+      "mean": 0.14320250080426306,
+      "median": 0.002229515996995986,
+      "p25": 0.00011124265786867195,
+      "p75": 0.15940952250109583,
+      "min": 1.6063126591626033e-07,
+      "max": 1.7439138243444663
+    },
+    "score_entropy_normalized": {
+      "mean": 0.04780216912854318,
+      "median": 0.0007442307233786938,
+      "p25": 3.713371146370803e-05,
+      "p75": 0.05321220587979317,
+      "min": 5.3620033850920604e-08,
+      "max": 0.5821327358721452
+    },
+    "top1_softmax_probability": {
+      "mean": 0.9470822773412146,
+      "median": 0.9997860108176082,
+      "p25": 0.9667873839973327,
+      "p75": 0.9999917558740333,
+      "min": 0.39993130423949064,
+      "max": 0.9999999923859199
+    },
+    "prediction_distribution": {
+      "unique_symbols": 20,
+      "modal_symbol": "Una",
+      "modal_count": 36,
+      "modal_rate": 0.0703125,
+      "empirical_entropy_nats": 2.961281009129122,
+      "counts": {
+        "Ada": 26,
+        "Amy": 26,
+        "Ana": 23,
+        "Ann": 16,
+        "Ben": 28,
+        "Bob": 35,
+        "Dan": 23,
+        "Jan": 32,
+        "Joe": 31,
+        "Jon": 30,
+        "Kim": 13,
+        "Lee": 21,
+        "Max": 21,
+        "Ray": 15,
+        "Sam": 20,
+        "Ted": 33,
+        "Tim": 32,
+        "Tom": 29,
+        "Una": 36,
+        "Val": 22
+      }
+    }
+  },
+  "by_depth": {
+    "1": {
+      "rows": 128,
+      "valid": 127,
+      "invalid": 1,
+      "validity": 0.9921875,
+      "mean_reachable_set_size": 2,
+      "score_entropy_nats": {
+        "mean": 0.1385596597757846,
+        "median": 0.009536667406229327,
+        "p25": 0.000391611620402295,
+        "p75": 0.17471098915755148,
+        "min": 1.6063126591626033e-07,
+        "max": 0.8725747268599202
+      },
+      "score_entropy_normalized": {
+        "mean": 0.046252350718712316,
+        "median": 0.00318341778750325,
+        "p25": 0.00013072317037787429,
+        "p75": 0.05831996093238428,
+        "min": 5.3620033850920604e-08,
+        "max": 0.2912725995453326
+      },
+      "top1_softmax_probability": {
+        "mean": 0.9506032742793038,
+        "median": 0.9987859217618789,
+        "p25": 0.957898509455681,
+        "p75": 0.9999679900247106,
+        "min": 0.5306528177154775,
+        "max": 0.9999999923859199
+      },
+      "prediction_distribution": {
+        "unique_symbols": 20,
+        "modal_symbol": "Tom",
+        "modal_count": 14,
+        "modal_rate": 0.109375,
+        "empirical_entropy_nats": 2.889168259356389,
+        "counts": {
+          "Ada": 9,
+          "Amy": 7,
+          "Ana": 4,
+          "Ann": 3,
+          "Ben": 9,
+          "Bob": 8,
+          "Dan": 9,
+          "Jan": 9,
+          "Joe": 3,
+          "Jon": 7,
+          "Kim": 2,
+          "Lee": 2,
+          "Max": 5,
+          "Ray": 5,
+          "Sam": 4,
+          "Ted": 8,
+          "Tim": 6,
+          "Tom": 14,
+          "Una": 6,
+          "Val": 8
+        }
+      }
+    },
+    "2": {
+      "rows": 128,
+      "valid": 95,
+      "invalid": 33,
+      "validity": 0.7421875,
+      "mean_reachable_set_size": 2.75,
+      "score_entropy_nats": {
+        "mean": 0.14512782283442133,
+        "median": 0.0007781378449585076,
+        "p25": 5.2230958809264534e-05,
+        "p75": 0.11414687094254018,
+        "min": 4.0206481114884536e-07,
+        "max": 1.1257818225864267
+      },
+      "score_entropy_normalized": {
+        "mean": 0.0484448574111894,
+        "median": 0.00025974879391854426,
+        "p25": 1.7435122380712702e-05,
+        "p75": 0.03810316160433185,
+        "min": 1.3421253117250536e-07,
+        "max": 0.3757952045730889
+      },
+      "top1_softmax_probability": {
+        "mean": 0.942697690218937,
+        "median": 0.9999317583120031,
+        "p25": 0.9813717625965684,
+        "p75": 0.9999962845734721,
+        "min": 0.4015785815306025,
+        "max": 0.99999998004882
+      },
+      "prediction_distribution": {
+        "unique_symbols": 20,
+        "modal_symbol": "Una",
+        "modal_count": 12,
+        "modal_rate": 0.09375,
+        "empirical_entropy_nats": 2.9427638370314937,
+        "counts": {
+          "Ada": 6,
+          "Amy": 6,
+          "Ana": 5,
+          "Ann": 7,
+          "Ben": 5,
+          "Bob": 9,
+          "Dan": 8,
+          "Jan": 6,
+          "Joe": 8,
+          "Jon": 4,
+          "Kim": 4,
+          "Lee": 7,
+          "Max": 5,
+          "Ray": 5,
+          "Sam": 8,
+          "Ted": 8,
+          "Tim": 8,
+          "Tom": 4,
+          "Una": 12,
+          "Val": 3
+        }
+      }
+    },
+    "3": {
+      "rows": 128,
+      "valid": 87,
+      "invalid": 41,
+      "validity": 0.6796875,
+      "mean_reachable_set_size": 3.9609375,
+      "score_entropy_nats": {
+        "mean": 0.1588764029599617,
+        "median": 0.0017150577772861069,
+        "p25": 9.605075298109926e-05,
+        "p75": 0.180899782368623,
+        "min": 1.2465040074291392e-06,
+        "max": 1.7439138243444663
+      },
+      "score_entropy_normalized": {
+        "mean": 0.05303424620501166,
+        "median": 0.0005725003507244142,
+        "p25": 3.2062529028052734e-05,
+        "p75": 0.060385830858647564,
+        "min": 4.1609325987944427e-07,
+        "max": 0.5821327358721452
+      },
+      "top1_softmax_probability": {
+        "mean": 0.9411685923485074,
+        "median": 0.9998377766886344,
+        "p25": 0.9578541218862071,
+        "p75": 0.9999936758980362,
+        "min": 0.39993130423949064,
+        "max": 0.9999999309984441
+      },
+      "prediction_distribution": {
+        "unique_symbols": 20,
+        "modal_symbol": "Joe",
+        "modal_count": 12,
+        "modal_rate": 0.09375,
+        "empirical_entropy_nats": 2.8792293516677034,
+        "counts": {
+          "Ada": 5,
+          "Amy": 6,
+          "Ana": 6,
+          "Ann": 5,
+          "Ben": 6,
+          "Bob": 8,
+          "Dan": 3,
+          "Jan": 10,
+          "Joe": 12,
+          "Jon": 12,
+          "Kim": 4,
+          "Lee": 8,
+          "Max": 8,
+          "Ray": 1,
+          "Sam": 2,
+          "Ted": 7,
+          "Tim": 8,
+          "Tom": 3,
+          "Una": 9,
+          "Val": 5
+        }
+      }
+    },
+    "4": {
+      "rows": 128,
+      "valid": 80,
+      "invalid": 48,
+      "validity": 0.625,
+      "mean_reachable_set_size": 6.125,
+      "score_entropy_nats": {
+        "mean": 0.13024611764688465,
+        "median": 0.0020866820823476507,
+        "p25": 9.396289840503867e-05,
+        "p75": 0.10803139268080542,
+        "min": 6.173493042413353e-07,
+        "max": 1.1408577053034368
+      },
+      "score_entropy_normalized": {
+        "mean": 0.04347722217925936,
+        "median": 0.0006965515913316624,
+        "p25": 3.1365586048704433e-05,
+        "p75": 0.03606176480939074,
+        "min": 2.060762604493165e-07,
+        "max": 0.38082765785674794
+      },
+      "top1_softmax_probability": {
+        "mean": 0.9538595525181104,
+        "median": 0.999806264889169,
+        "p25": 0.9815379780437978,
+        "p75": 0.9999936108617413,
+        "min": 0.5284451136881789,
+        "max": 0.9999999673671003
+      },
+      "prediction_distribution": {
+        "unique_symbols": 20,
+        "modal_symbol": "Bob",
+        "modal_count": 10,
+        "modal_rate": 0.078125,
+        "empirical_entropy_nats": 2.9029025109286732,
+        "counts": {
+          "Ada": 6,
+          "Amy": 7,
+          "Ana": 8,
+          "Ann": 1,
+          "Ben": 8,
+          "Bob": 10,
+          "Dan": 3,
+          "Jan": 7,
+          "Joe": 8,
+          "Jon": 7,
+          "Kim": 3,
+          "Lee": 4,
+          "Max": 3,
+          "Ray": 4,
+          "Sam": 6,
+          "Ted": 10,
+          "Tim": 10,
+          "Tom": 8,
+          "Una": 9,
+          "Val": 6
+        }
+      }
+    }
+  },
+  "by_stratum": {
+    "2": {
+      "rows": 267,
+      "valid": 198,
+      "invalid": 69,
+      "validity": 0.7415730337078652,
+      "mean_reachable_set_size": 2,
+      "score_entropy_nats": {
+        "mean": 0.1540159232028795,
+        "median": 0.004525528988370684,
+        "p25": 0.00013274522414346627,
+        "p75": 0.1773362762005146,
+        "min": 1.6063126591626033e-07,
+        "max": 1.7439138243444663
+      },
+      "score_entropy_normalized": {
+        "mean": 0.051411778202783955,
+        "median": 0.0015106586888025933,
+        "p25": 4.431144442222929e-05,
+        "p75": 0.05919630327650457,
+        "min": 5.3620033850920604e-08,
+        "max": 0.5821327358721452
+      },
+      "top1_softmax_probability": {
+        "mean": 0.9432989803845572,
+        "median": 0.9994864015970053,
+        "p25": 0.9579108242680041,
+        "p75": 0.9999903893815624,
+        "min": 0.39993130423949064,
+        "max": 0.9999999923859199
+      },
+      "prediction_distribution": {
+        "unique_symbols": 20,
+        "modal_symbol": "Tom",
+        "modal_count": 20,
+        "modal_rate": 0.0749063670411985,
+        "empirical_entropy_nats": 2.9508205974835473,
+        "counts": {
+          "Ada": 18,
+          "Amy": 13,
+          "Ana": 10,
+          "Ann": 9,
+          "Ben": 13,
+          "Bob": 19,
+          "Dan": 14,
+          "Jan": 18,
+          "Joe": 11,
+          "Jon": 15,
+          "Kim": 5,
+          "Lee": 9,
+          "Max": 15,
+          "Ray": 9,
+          "Sam": 10,
+          "Ted": 18,
+          "Tim": 13,
+          "Tom": 20,
+          "Una": 13,
+          "Val": 15
+        }
+      }
+    },
+    "3-4": {
+      "rows": 139,
+      "valid": 104,
+      "invalid": 35,
+      "validity": 0.7482014388489209,
+      "mean_reachable_set_size": 3.4964028776978417,
+      "score_entropy_nats": {
+        "mean": 0.13100429396297086,
+        "median": 0.0022013629314966343,
+        "p25": 7.91038888507941e-05,
+        "p75": 0.09939382899821303,
+        "min": 4.0206481114884536e-07,
+        "max": 1.1408577053034368
+      },
+      "score_entropy_normalized": {
+        "mean": 0.04373030765114192,
+        "median": 0.0007348329992402974,
+        "p25": 2.640552680528728e-05,
+        "p75": 0.03317847521811321,
+        "min": 1.3421253117250536e-07,
+        "max": 0.38082765785674794
+      },
+      "top1_softmax_probability": {
+        "mean": 0.9503659391633908,
+        "median": 0.9997985030623479,
+        "p25": 0.9796633116259843,
+        "p75": 0.9999943910953903,
+        "min": 0.4015785815306025,
+        "max": 0.99999998004882
+      },
+      "prediction_distribution": {
+        "unique_symbols": 20,
+        "modal_symbol": "Una",
+        "modal_count": 16,
+        "modal_rate": 0.11510791366906475,
+        "empirical_entropy_nats": 2.9087727717640663,
+        "counts": {
+          "Ada": 5,
+          "Amy": 7,
+          "Ana": 9,
+          "Ann": 5,
+          "Ben": 6,
+          "Bob": 7,
+          "Dan": 7,
+          "Jan": 8,
+          "Joe": 9,
+          "Jon": 4,
+          "Kim": 5,
+          "Lee": 7,
+          "Max": 3,
+          "Ray": 3,
+          "Sam": 7,
+          "Ted": 9,
+          "Tim": 12,
+          "Tom": 6,
+          "Una": 16,
+          "Val": 4
+        }
+      }
+    },
+    "5-8": {
+      "rows": 74,
+      "valid": 57,
+      "invalid": 17,
+      "validity": 0.7702702702702703,
+      "mean_reachable_set_size": 6.472972972972973,
+      "score_entropy_nats": {
+        "mean": 0.12520653193654524,
+        "median": 0.0005576437026972249,
+        "p25": 6.430000142935214e-05,
+        "p75": 0.13798635060724115,
+        "min": 1.7454262127372639e-06,
+        "max": 0.9669188299580092
+      },
+      "score_entropy_normalized": {
+        "mean": 0.04179496714104105,
+        "median": 0.00018614604102644444,
+        "p25": 2.1463867781839446e-05,
+        "p75": 0.046060975416718684,
+        "min": 5.826375835202974e-07,
+        "max": 0.3227654348467207
+      },
+      "top1_softmax_probability": {
+        "mean": 0.9552499765339056,
+        "median": 0.9999546865157132,
+        "p25": 0.9734501778520595,
+        "p75": 0.9999955920066863,
+        "min": 0.5298114429457738,
+        "max": 0.999999900200877
+      },
+      "prediction_distribution": {
+        "unique_symbols": 19,
+        "modal_symbol": "Joe",
+        "modal_count": 11,
+        "modal_rate": 0.14864864864864866,
+        "empirical_entropy_nats": 2.735791434127414,
+        "counts": {
+          "Ada": 3,
+          "Amy": 3,
+          "Ana": 2,
+          "Ann": 2,
+          "Ben": 7,
+          "Bob": 6,
+          "Dan": 2,
+          "Jan": 2,
+          "Joe": 11,
+          "Jon": 10,
+          "Kim": 1,
+          "Lee": 3,
+          "Max": 3,
+          "Ray": 2,
+          "Sam": 2,
+          "Ted": 3,
+          "Tim": 5,
+          "Una": 5,
+          "Val": 2
+        }
+      }
+    },
+    "9-16": {
+      "rows": 32,
+      "valid": 30,
+      "invalid": 2,
+      "validity": 0.9375,
+      "mean_reachable_set_size": 12.5,
+      "score_entropy_nats": {
+        "mean": 0.14757964663926776,
+        "median": 0.0008495606921024389,
+        "p25": 0.0001302997818512008,
+        "p75": 0.025143733798657822,
+        "min": 2.3941524172873707e-06,
+        "max": 1.0418055089149294
+      },
+      "score_entropy_normalized": {
+        "mean": 0.049263296303907175,
+        "median": 0.00028359032601219783,
+        "p25": 4.349513573074388e-05,
+        "p75": 0.008393184538092424,
+        "min": 7.991877106050818e-07,
+        "max": 0.3477632224053794
+      },
+      "top1_softmax_probability": {
+        "mean": 0.9454979509001492,
+        "median": 0.9999308429401923,
+        "p25": 0.9969714112135618,
+        "p75": 0.999990233978179,
+        "min": 0.5284451136881789,
+        "max": 0.9999998657786937
+      },
+      "prediction_distribution": {
+        "unique_symbols": 15,
+        "modal_symbol": "Jan",
+        "modal_count": 4,
+        "modal_rate": 0.125,
+        "empirical_entropy_nats": 2.6205393066992198,
+        "counts": {
+          "Amy": 3,
+          "Ana": 2,
+          "Ben": 2,
+          "Bob": 3,
+          "Jan": 4,
+          "Jon": 1,
+          "Kim": 2,
+          "Lee": 2,
+          "Ray": 1,
+          "Sam": 1,
+          "Ted": 3,
+          "Tim": 2,
+          "Tom": 3,
+          "Una": 2,
+          "Val": 1
+        }
+      }
+    }
+  },
+  "by_depth_and_stratum": {
+    "depth_1__stratum_2": {
+      "rows": 128,
+      "valid": 127,
+      "invalid": 1,
+      "validity": 0.9921875,
+      "mean_reachable_set_size": 2,
+      "score_entropy_nats": {
+        "mean": 0.1385596597757846,
+        "median": 0.009536667406229327,
+        "p25": 0.000391611620402295,
+        "p75": 0.17471098915755148,
+        "min": 1.6063126591626033e-07,
+        "max": 0.8725747268599202
+      },
+      "score_entropy_normalized": {
+        "mean": 0.046252350718712316,
+        "median": 0.00318341778750325,
+        "p25": 0.00013072317037787429,
+        "p75": 0.05831996093238428,
+        "min": 5.3620033850920604e-08,
+        "max": 0.2912725995453326
+      },
+      "top1_softmax_probability": {
+        "mean": 0.9506032742793038,
+        "median": 0.9987859217618789,
+        "p25": 0.957898509455681,
+        "p75": 0.9999679900247106,
+        "min": 0.5306528177154775,
+        "max": 0.9999999923859199
+      },
+      "prediction_distribution": {
+        "unique_symbols": 20,
+        "modal_symbol": "Tom",
+        "modal_count": 14,
+        "modal_rate": 0.109375,
+        "empirical_entropy_nats": 2.889168259356389,
+        "counts": {
+          "Ada": 9,
+          "Amy": 7,
+          "Ana": 4,
+          "Ann": 3,
+          "Ben": 9,
+          "Bob": 8,
+          "Dan": 9,
+          "Jan": 9,
+          "Joe": 3,
+          "Jon": 7,
+          "Kim": 2,
+          "Lee": 2,
+          "Max": 5,
+          "Ray": 5,
+          "Sam": 4,
+          "Ted": 8,
+          "Tim": 6,
+          "Tom": 14,
+          "Una": 6,
+          "Val": 8
+        }
+      }
+    },
+    "depth_2__stratum_2": {
+      "rows": 64,
+      "valid": 41,
+      "invalid": 23,
+      "validity": 0.640625,
+      "mean_reachable_set_size": 2,
+      "score_entropy_nats": {
+        "mean": 0.1647384041443722,
+        "median": 0.0008978329978446679,
+        "p25": 4.69977567872681e-05,
+        "p75": 0.15218560005231782,
+        "min": 3.1740251313647906e-06,
+        "max": 1.1257818225864267
+      },
+      "score_entropy_normalized": {
+        "mean": 0.05499103027285365,
+        "median": 0.0002997040175354264,
+        "p25": 1.5688236629874887e-05,
+        "p75": 0.05080080132520395,
+        "min": 1.0595156180626522e-06,
+        "max": 0.3757952045730889
+      },
+      "top1_softmax_probability": {
+        "mean": 0.9375518987085053,
+        "median": 0.9999232418705246,
+        "p25": 0.9686124604347718,
+        "p75": 0.999996861959905,
+        "min": 0.5508524801153155,
+        "max": 0.9999998239199662
+      },
+      "prediction_distribution": {
+        "unique_symbols": 20,
+        "modal_symbol": "Ted",
+        "modal_count": 5,
+        "modal_rate": 0.078125,
+        "empirical_entropy_nats": 2.927217138832321,
+        "counts": {
+          "Ada": 5,
+          "Amy": 2,
+          "Ana": 2,
+          "Ann": 5,
+          "Ben": 3,
+          "Bob": 4,
+          "Dan": 3,
+          "Jan": 3,
+          "Joe": 5,
+          "Jon": 2,
+          "Kim": 1,
+          "Lee": 3,
+          "Max": 4,
+          "Ray": 2,
+          "Sam": 3,
+          "Ted": 5,
+          "Tim": 3,
+          "Tom": 3,
+          "Una": 4,
+          "Val": 2
+        }
+      }
+    },
+    "depth_2__stratum_3-4": {
+      "rows": 64,
+      "valid": 54,
+      "invalid": 10,
+      "validity": 0.84375,
+      "mean_reachable_set_size": 3.5,
+      "score_entropy_nats": {
+        "mean": 0.12551724152447044,
+        "median": 0.0007781378449585076,
+        "p25": 7.105554001756226e-05,
+        "p75": 0.019980953356566498,
+        "min": 4.0206481114884536e-07,
+        "max": 1.082552394708052
+      },
+      "score_entropy_normalized": {
+        "mean": 0.041898684549525146,
+        "median": 0.00025974879391854426,
+        "p25": 2.3718921962697764e-05,
+        "p75": 0.006669806088132858,
+        "min": 1.3421253117250536e-07,
+        "max": 0.3613648670359199
+      },
+      "top1_softmax_probability": {
+        "mean": 0.9478434817293686,
+        "median": 0.9999317583120031,
+        "p25": 0.997672542892511,
+        "p75": 0.9999949864506769,
+        "min": 0.4015785815306025,
+        "max": 0.99999998004882
+      },
+      "prediction_distribution": {
+        "unique_symbols": 20,
+        "modal_symbol": "Una",
+        "modal_count": 8,
+        "modal_rate": 0.125,
+        "empirical_entropy_nats": 2.8487494935086497,
+        "counts": {
+          "Ada": 1,
+          "Amy": 4,
+          "Ana": 3,
+          "Ann": 2,
+          "Ben": 2,
+          "Bob": 5,
+          "Dan": 5,
+          "Jan": 3,
+          "Joe": 3,
+          "Jon": 2,
+          "Kim": 3,
+          "Lee": 4,
+          "Max": 1,
+          "Ray": 3,
+          "Sam": 5,
+          "Ted": 3,
+          "Tim": 5,
+          "Tom": 1,
+          "Una": 8,
+          "Val": 1
+        }
+      }
+    },
+    "depth_3__stratum_2": {
+      "rows": 43,
+      "valid": 19,
+      "invalid": 24,
+      "validity": 0.4418604651162791,
+      "mean_reachable_set_size": 2,
+      "score_entropy_nats": {
+        "mean": 0.20665384789397007,
+        "median": 0.002257268568933248,
+        "p25": 0.00013274522414346627,
+        "p75": 0.31324094904799243,
+        "min": 2.7698648170470206e-06,
+        "max": 1.7439138243444663
+      },
+      "score_entropy_normalized": {
+        "mean": 0.0689827491322534,
+        "median": 0.0007534947594817392,
+        "p25": 4.431144442222929e-05,
+        "p75": 0.10456239758580917,
+        "min": 9.246035907477767e-07,
+        "max": 0.5821327358721452
+      },
+      "top1_softmax_probability": {
+        "mean": 0.9180359159920358,
+        "median": 0.9997895072242128,
+        "p25": 0.9235952653411249,
+        "p75": 0.9999903893815624,
+        "min": 0.39993130423949064,
+        "max": 0.99999983621914
+      },
+      "prediction_distribution": {
+        "unique_symbols": 19,
+        "modal_symbol": "Jan",
+        "modal_count": 5,
+        "modal_rate": 0.11627906976744186,
+        "empirical_entropy_nats": 2.8282836055051503,
+        "counts": {
+          "Ada": 2,
+          "Amy": 3,
+          "Ana": 2,
+          "Ann": 1,
+          "Ben": 1,
+          "Bob": 4,
+          "Dan": 1,
+          "Jan": 5,
+          "Joe": 2,
+          "Jon": 3,
+          "Kim": 2,
+          "Lee": 2,
+          "Max": 4,
+          "Sam": 1,
+          "Ted": 3,
+          "Tim": 2,
+          "Tom": 1,
+          "Una": 2,
+          "Val": 2
+        }
+      }
+    },
+    "depth_3__stratum_3-4": {
+      "rows": 43,
+      "valid": 35,
+      "invalid": 8,
+      "validity": 0.813953488372093,
+      "mean_reachable_set_size": 3.488372093023256,
+      "score_entropy_nats": {
+        "mean": 0.1436274841610247,
+        "median": 0.001182078084336935,
+        "p25": 4.05973026315323e-05,
+        "p75": 0.16099221800627697,
+        "min": 1.2465040074291392e-06,
+        "max": 1.0077148751316334
+      },
+      "score_entropy_normalized": {
+        "mean": 0.04794403205818924,
+        "median": 0.00039458735841389964,
+        "p25": 1.3551712544515747e-05,
+        "p75": 0.05374052261862628,
+        "min": 4.1609325987944427e-07,
+        "max": 0.33638348928161377
+      },
+      "top1_softmax_probability": {
+        "mean": 0.9478532037490656,
+        "median": 0.9998891923266268,
+        "p25": 0.9625408884297934,
+        "p75": 0.9999973214263697,
+        "min": 0.4530580003007031,
+        "max": 0.9999999309984441
+      },
+      "prediction_distribution": {
+        "unique_symbols": 18,
+        "modal_symbol": "Jan",
+        "modal_count": 5,
+        "modal_rate": 0.11627906976744186,
+        "empirical_entropy_nats": 2.7516362365283054,
+        "counts": {
+          "Ada": 1,
+          "Amy": 2,
+          "Ana": 3,
+          "Ann": 3,
+          "Ben": 2,
+          "Bob": 1,
+          "Dan": 1,
+          "Jan": 5,
+          "Joe": 4,
+          "Jon": 2,
+          "Kim": 1,
+          "Lee": 3,
+          "Max": 1,
+          "Ted": 3,
+          "Tim": 4,
+          "Tom": 2,
+          "Una": 4,
+          "Val": 1
+        }
+      }
+    },
+    "depth_3__stratum_5-8": {
+      "rows": 42,
+      "valid": 33,
+      "invalid": 9,
+      "validity": 0.7857142857142857,
+      "mean_reachable_set_size": 6.4523809523809526,
+      "score_entropy_nats": {
+        "mean": 0.12557338810738863,
+        "median": 0.0010712763909547117,
+        "p25": 9.40697360816839e-05,
+        "p75": 0.14588826431245164,
+        "min": 3.1985453854341312e-06,
+        "max": 0.7487875074373065
+      },
+      "score_entropy_normalized": {
+        "mean": 0.04191742673934426,
+        "median": 0.0003576008445119836,
+        "p25": 3.1401249341311846e-05,
+        "p75": 0.0486986990127048,
+        "min": 1.0677006799541311e-06,
+        "max": 0.24995141056079134
+      },
+      "top1_softmax_probability": {
+        "mean": 0.9580082778986091,
+        "median": 0.9999081263478358,
+        "p25": 0.9668693712500157,
+        "p75": 0.9999936758980362,
+        "min": 0.5563987392784211,
+        "max": 0.9999998081991167
+      },
+      "prediction_distribution": {
+        "unique_symbols": 18,
+        "modal_symbol": "Jon",
+        "modal_count": 7,
+        "modal_rate": 0.16666666666666666,
+        "empirical_entropy_nats": 2.6660030641848715,
+        "counts": {
+          "Ada": 2,
+          "Amy": 1,
+          "Ana": 1,
+          "Ann": 1,
+          "Ben": 3,
+          "Bob": 3,
+          "Dan": 1,
+          "Joe": 6,
+          "Jon": 7,
+          "Kim": 1,
+          "Lee": 3,
+          "Max": 3,
+          "Ray": 1,
+          "Sam": 1,
+          "Ted": 1,
+          "Tim": 2,
+          "Una": 3,
+          "Val": 2
+        }
+      }
+    },
+    "depth_4__stratum_2": {
+      "rows": 32,
+      "valid": 11,
+      "invalid": 21,
+      "validity": 0.34375,
+      "mean_reachable_set_size": 2,
+      "score_entropy_nats": {
+        "mean": 0.12366380372462056,
+        "median": 0.003396978354672021,
+        "p25": 9.396289840503867e-05,
+        "p75": 0.1107751788739741,
+        "min": 2.4579599094718738e-06,
+        "max": 0.7564012058661014
+      },
+      "score_entropy_normalized": {
+        "mean": 0.04127999181245654,
+        "median": 0.0011339392323740638,
+        "p25": 3.1365586048704433e-05,
+        "p75": 0.03697766314162508,
+        "min": 8.204871747620723e-07,
+        "max": 0.25249292553394426
+      },
+      "top1_softmax_probability": {
+        "mean": 0.9595232109351252,
+        "median": 0.9996289985609401,
+        "p25": 0.9815379780437978,
+        "p75": 0.9999936108617413,
+        "min": 0.5614926739722109,
+        "max": 0.9999998560678912
+      },
+      "prediction_distribution": {
+        "unique_symbols": 17,
+        "modal_symbol": "Jon",
+        "modal_count": 3,
+        "modal_rate": 0.09375,
+        "empirical_entropy_nats": 2.7668559075468515,
+        "counts": {
+          "Ada": 2,
+          "Amy": 1,
+          "Ana": 2,
+          "Bob": 3,
+          "Dan": 1,
+          "Jan": 1,
+          "Joe": 1,
+          "Jon": 3,
+          "Lee": 2,
+          "Max": 2,
+          "Ray": 2,
+          "Sam": 2,
+          "Ted": 2,
+          "Tim": 2,
+          "Tom": 2,
+          "Una": 1,
+          "Val": 3
+        }
+      }
+    },
+    "depth_4__stratum_3-4": {
+      "rows": 32,
+      "valid": 15,
+      "invalid": 17,
+      "validity": 0.46875,
+      "mean_reachable_set_size": 3.5,
+      "score_entropy_nats": {
+        "mean": 0.12501598701133693,
+        "median": 0.038363292507781255,
+        "p25": 0.0004762482788496829,
+        "p75": 0.1326797581041306,
+        "min": 6.173493042413353e-07,
+        "max": 1.1408577053034368
+      },
+      "score_entropy_normalized": {
+        "mean": 0.041731361682405634,
+        "median": 0.012805981644771251,
+        "p25": 0.00015897558104706238,
+        "p75": 0.044289591321432,
+        "min": 2.060762604493165e-07,
+        "max": 0.38082765785674794
+      },
+      "top1_softmax_probability": {
+        "mean": 0.9587873422444346,
+        "median": 0.9946917533472501,
+        "p25": 0.9740481377455348,
+        "p75": 0.9999633031645057,
+        "min": 0.5598670408482833,
+        "max": 0.9999999673671003
+      },
+      "prediction_distribution": {
+        "unique_symbols": 15,
+        "modal_symbol": "Una",
+        "modal_count": 4,
+        "modal_rate": 0.125,
+        "empirical_entropy_nats": 2.604187802206577,
+        "counts": {
+          "Ada": 3,
+          "Amy": 1,
+          "Ana": 3,
+          "Ben": 2,
+          "Bob": 1,
+          "Dan": 1,
+          "Joe": 2,
+          "Kim": 1,
+          "Max": 1,
+          "Sam": 2,
+          "Ted": 3,
+          "Tim": 3,
+          "Tom": 3,
+          "Una": 4,
+          "Val": 2
+        }
+      }
+    },
+    "depth_4__stratum_5-8": {
+      "rows": 32,
+      "valid": 24,
+      "invalid": 8,
+      "validity": 0.75,
+      "mean_reachable_set_size": 6.5,
+      "score_entropy_nats": {
+        "mean": 0.1247250332123133,
+        "median": 0.0002749606764153469,
+        "p25": 3.432528854656637e-05,
+        "p75": 0.08772820583467354,
+        "min": 1.7454262127372639e-06,
+        "max": 0.9669188299580092
+      },
+      "score_entropy_normalized": {
+        "mean": 0.04163423891826809,
+        "median": 9.178412865617892e-05,
+        "p25": 1.1458062808077477e-05,
+        "p75": 0.029284394539902284,
+        "min": 5.826375835202974e-07,
+        "max": 0.3227654348467207
+      },
+      "top1_softmax_probability": {
+        "mean": 0.9516297059927323,
+        "median": 0.9999792411252968,
+        "p25": 0.988658951542542,
+        "p75": 0.9999978345282842,
+        "min": 0.5298114429457738,
+        "max": 0.999999900200877
+      },
+      "prediction_distribution": {
+        "unique_symbols": 15,
+        "modal_symbol": "Joe",
+        "modal_count": 5,
+        "modal_rate": 0.15625,
+        "empirical_entropy_nats": 2.5587029325140196,
+        "counts": {
+          "Ada": 1,
+          "Amy": 2,
+          "Ana": 1,
+          "Ann": 1,
+          "Ben": 4,
+          "Bob": 3,
+          "Dan": 1,
+          "Jan": 2,
+          "Joe": 5,
+          "Jon": 3,
+          "Ray": 1,
+          "Sam": 1,
+          "Ted": 2,
+          "Tim": 3,
+          "Una": 2
+        }
+      }
+    },
+    "depth_4__stratum_9-16": {
+      "rows": 32,
+      "valid": 30,
+      "invalid": 2,
+      "validity": 0.9375,
+      "mean_reachable_set_size": 12.5,
+      "score_entropy_nats": {
+        "mean": 0.14757964663926776,
+        "median": 0.0008495606921024389,
+        "p25": 0.0001302997818512008,
+        "p75": 0.025143733798657822,
+        "min": 2.3941524172873707e-06,
+        "max": 1.0418055089149294
+      },
+      "score_entropy_normalized": {
+        "mean": 0.049263296303907175,
+        "median": 0.00028359032601219783,
+        "p25": 4.349513573074388e-05,
+        "p75": 0.008393184538092424,
+        "min": 7.991877106050818e-07,
+        "max": 0.3477632224053794
+      },
+      "top1_softmax_probability": {
+        "mean": 0.9454979509001492,
+        "median": 0.9999308429401923,
+        "p25": 0.9969714112135618,
+        "p75": 0.999990233978179,
+        "min": 0.5284451136881789,
+        "max": 0.9999998657786937
+      },
+      "prediction_distribution": {
+        "unique_symbols": 15,
+        "modal_symbol": "Jan",
+        "modal_count": 4,
+        "modal_rate": 0.125,
+        "empirical_entropy_nats": 2.6205393066992198,
+        "counts": {
+          "Amy": 3,
+          "Ana": 2,
+          "Ben": 2,
+          "Bob": 3,
+          "Jan": 4,
+          "Jon": 1,
+          "Kim": 2,
+          "Lee": 2,
+          "Ray": 1,
+          "Sam": 1,
+          "Ted": 3,
+          "Tim": 2,
+          "Tom": 3,
+          "Una": 2,
+          "Val": 1
+        }
+      }
+    }
+  },
+  "reachable_set_size_distribution": {
+    "2": {
+      "rows": 267,
+      "fraction": 0.521484375
+    },
+    "3": {
+      "rows": 70,
+      "fraction": 0.13671875
+    },
+    "4": {
+      "rows": 69,
+      "fraction": 0.134765625
+    },
+    "5": {
+      "rows": 19,
+      "fraction": 0.037109375
+    },
+    "6": {
+      "rows": 19,
+      "fraction": 0.037109375
+    },
+    "7": {
+      "rows": 18,
+      "fraction": 0.03515625
+    },
+    "8": {
+      "rows": 18,
+      "fraction": 0.03515625
+    },
+    "9": {
+      "rows": 4,
+      "fraction": 0.0078125
+    },
+    "10": {
+      "rows": 4,
+      "fraction": 0.0078125
+    },
+    "11": {
+      "rows": 4,
+      "fraction": 0.0078125
+    },
+    "12": {
+      "rows": 4,
+      "fraction": 0.0078125
+    },
+    "13": {
+      "rows": 4,
+      "fraction": 0.0078125
+    },
+    "14": {
+      "rows": 4,
+      "fraction": 0.0078125
+    },
+    "15": {
+      "rows": 4,
+      "fraction": 0.0078125
+    },
+    "16": {
+      "rows": 4,
+      "fraction": 0.0078125
+    }
+  }
+}

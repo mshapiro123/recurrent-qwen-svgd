@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">Split re-entry bridge in tensor detail</title>
+  <desc id="desc">The fixed Prelude state is normalized and projected separately from the prior recurrent state. Their sum is mixed with the prior state by an identity-biased scalar gate.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 Z" fill="#30424d"/></marker>
+    <style>
+      .title{font:700 30px Arial,sans-serif;fill:#1f2428}.sub{font:400 16px Arial,sans-serif;fill:#4b5963}
+      .label{font:700 18px Arial,sans-serif;fill:#1f2428}.small{font:400 14px Arial,sans-serif;fill:#4b5963}
+      .mono{font:600 15px Consolas,monospace;fill:#24313a}.arrow{stroke:#30424d;stroke-width:3;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1200" height="650" fill="#fbfaf6"/>
+  <text x="60" y="58" class="title">Split bridge: prompt anchor plus recurrent carry</text>
+  <text x="60" y="88" class="sub">All hidden tensors have width 896; the split form exposes a separate learning rate for the Prelude pathway.</text>
+
+  <rect x="70" y="155" width="180" height="86" rx="8" fill="#e8f2ef" stroke="#14635e" stroke-width="3"/>
+  <text x="160" y="190" text-anchor="middle" class="label">Prelude p</text><text x="160" y="216" text-anchor="middle" class="mono">[..., 896]</text>
+  <rect x="315" y="145" width="190" height="106" rx="8" fill="#fff" stroke="#14635e" stroke-width="2"/>
+  <text x="410" y="180" text-anchor="middle" class="label">LayerNorm</text><text x="410" y="208" text-anchor="middle" class="small">1,792 parameters</text><text x="410" y="230" text-anchor="middle" class="mono">LN(p)</text>
+  <rect x="570" y="145" width="225" height="106" rx="8" fill="#fff" stroke="#14635e" stroke-width="2"/>
+  <text x="682" y="180" text-anchor="middle" class="label">Prelude projection</text><text x="682" y="208" text-anchor="middle" class="small">896 x 896, no bias</text><text x="682" y="230" text-anchor="middle" class="mono">P_p LN(p)</text>
+  <path d="M250 198 H315" class="arrow"/><path d="M505 198 H570" class="arrow"/>
+
+  <rect x="70" y="360" width="180" height="86" rx="8" fill="#eef0f5" stroke="#3a4a55" stroke-width="3"/>
+  <text x="160" y="395" text-anchor="middle" class="label">State h(t)</text><text x="160" y="421" text-anchor="middle" class="mono">[..., 896]</text>
+  <rect x="570" y="350" width="225" height="106" rx="8" fill="#fff" stroke="#3a4a55" stroke-width="2"/>
+  <text x="682" y="385" text-anchor="middle" class="label">State projection</text><text x="682" y="413" text-anchor="middle" class="small">896 x 896 plus bias</text><text x="682" y="435" text-anchor="middle" class="mono">P_h h(t) + b</text>
+  <path d="M250 403 H570" class="arrow"/>
+
+  <circle cx="865" cy="300" r="42" fill="#fff" stroke="#6b5876" stroke-width="3"/>
+  <text x="865" y="308" text-anchor="middle" class="label">+</text>
+  <path d="M795 198 H835 V272" class="arrow"/><path d="M795 403 H835 V328" class="arrow"/>
+
+  <rect x="940" y="245" width="205" height="110" rx="8" fill="#f4eee2" stroke="#9b4827" stroke-width="3"/>
+  <text x="1042" y="280" text-anchor="middle" class="label">Identity-gated mix</text>
+  <text x="1042" y="307" text-anchor="middle" class="mono">u(t) = h(t)</text>
+  <text x="1042" y="332" text-anchor="middle" class="mono">+ g [z(t)-h(t)]</text>
+  <path d="M907 300 H940" class="arrow"/>
+
+  <rect x="290" y="520" width="620" height="85" rx="8" fill="#ffffff" stroke="#b7c0c5" stroke-width="2"/>
+  <text x="600" y="552" text-anchor="middle" class="label">Forward-active bridge parameters: 1,608,321</text>
+  <text x="600" y="580" text-anchor="middle" class="small">LayerNorm 1,792 + Prelude 802,816 + state 803,712 + scalar gate 1</text>
+
+  <text x="1042" y="405" text-anchor="middle" class="small">Initialized with g=1,</text>
+  <text x="1042" y="428" text-anchor="middle" class="small">P_p=0, P_h=I, b=0</text>
+  <text x="1042" y="463" text-anchor="middle" class="small">One-loop path bypasses bridge.</text>
+</svg>

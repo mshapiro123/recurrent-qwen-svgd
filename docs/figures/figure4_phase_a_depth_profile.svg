@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
+<rect width="100%" height="100%" fill="white"/>
+<line x1="70" y1="460.0" x2="875" y2="460.0" stroke="#dddddd"/>
+<text x="60" y="464.0" text-anchor="end" font-family="Arial" font-size="12">0%</text>
+<line x1="70" y1="375.0" x2="875" y2="375.0" stroke="#dddddd"/>
+<text x="60" y="379.0" text-anchor="end" font-family="Arial" font-size="12">20%</text>
+<line x1="70" y1="290.0" x2="875" y2="290.0" stroke="#dddddd"/>
+<text x="60" y="294.0" text-anchor="end" font-family="Arial" font-size="12">40%</text>
+<line x1="70" y1="205.0" x2="875" y2="205.0" stroke="#dddddd"/>
+<text x="60" y="209.0" text-anchor="end" font-family="Arial" font-size="12">60%</text>
+<line x1="70" y1="120.0" x2="875" y2="120.0" stroke="#dddddd"/>
+<text x="60" y="124.0" text-anchor="end" font-family="Arial" font-size="12">80%</text>
+<line x1="70" y1="35.0" x2="875" y2="35.0" stroke="#dddddd"/>
+<text x="60" y="39.0" text-anchor="end" font-family="Arial" font-size="12">100%</text>
+<text x="70.0" y="490" text-anchor="middle" font-family="Arial" font-size="12">1</text>
+<text x="131.9" y="490" text-anchor="middle" font-family="Arial" font-size="12">2</text>
+<text x="193.8" y="490" text-anchor="middle" font-family="Arial" font-size="12">3</text>
+<text x="255.8" y="490" text-anchor="middle" font-family="Arial" font-size="12">4</text>
+<text x="317.7" y="490" text-anchor="middle" font-family="Arial" font-size="12">5</text>
+<text x="379.6" y="490" text-anchor="middle" font-family="Arial" font-size="12">6</text>
+<text x="441.5" y="490" text-anchor="middle" font-family="Arial" font-size="12">7</text>
+<text x="503.5" y="490" text-anchor="middle" font-family="Arial" font-size="12">8</text>
+<text x="565.4" y="490" text-anchor="middle" font-family="Arial" font-size="12">9</text>
+<text x="627.3" y="490" text-anchor="middle" font-family="Arial" font-size="12">10</text>
+<text x="689.2" y="490" text-anchor="middle" font-family="Arial" font-size="12">11</text>
+<text x="751.2" y="490" text-anchor="middle" font-family="Arial" font-size="12">12</text>
+<text x="813.1" y="490" text-anchor="middle" font-family="Arial" font-size="12">13</text>
+<text x="875.0" y="490" text-anchor="middle" font-family="Arial" font-size="12">14</text>
+<polyline points="70.0,35.0 131.9,38.3 193.8,41.6 255.8,45.0 317.7,38.3 379.6,41.6 441.5,48.3 503.5,54.9 565.4,74.8 627.3,84.8 689.2,137.9 751.2,171.1 813.1,270.7 875.0,357.1" fill="none" stroke="#0B6E4F" stroke-width="3"/>
+<line x1="82" y1="16" x2="106" y2="16" stroke="#0B6E4F" stroke-width="3"/>
+<text x="112" y="20" font-family="Arial" font-size="12">Recurrent 0.5B</text>
+<polyline points="70.0,64.9 131.9,181.1 193.8,320.5 255.8,367.0 317.7,367.0 379.6,373.7 441.5,390.3 503.5,400.2 565.4,377.0 627.3,396.9 689.2,403.6 751.2,406.9 813.1,410.2 875.0,420.2" fill="none" stroke="#C44536" stroke-width="3"/>
+<line x1="277" y1="16" x2="301" y2="16" stroke="#C44536" stroke-width="3"/>
+<text x="307" y="20" font-family="Arial" font-size="12">Dense direct 0.5B</text>
+<polyline points="70.0,61.6 131.9,270.7 193.8,174.5 255.8,128.0 317.7,184.4 379.6,144.6 441.5,201.0 503.5,141.2 565.4,164.5 627.3,154.5 689.2,400.2 751.2,416.8 813.1,396.9 875.0,440.1" fill="none" stroke="#2667FF" stroke-width="3"/>
+<line x1="472" y1="16" x2="496" y2="16" stroke="#2667FF" stroke-width="3"/>
+<text x="502" y="20" font-family="Arial" font-size="12">Dense scratchpad 0.5B</text>
+<polyline points="70.0,416.8 131.9,406.9 193.8,390.3 255.8,390.3 317.7,310.6 379.6,330.5 441.5,343.8 503.5,333.8 565.4,357.1 627.3,443.4 689.2,406.9 751.2,410.2 813.1,413.5 875.0,416.8" fill="none" stroke="#6F4E7C" stroke-width="3"/>
+<line x1="667" y1="16" x2="691" y2="16" stroke="#6F4E7C" stroke-width="3"/>
+<text x="697" y="20" font-family="Arial" font-size="12">Dense direct 1.5B</text>
+<text x="472.5" y="514" text-anchor="middle" font-family="Arial" font-size="14">Composition depth</text>
+<text x="16" y="247.5" text-anchor="middle" transform="rotate(-90 16 247.5)" font-family="Arial" font-size="14">Accuracy</text>
+</svg>

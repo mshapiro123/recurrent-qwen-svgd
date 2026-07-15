@@ -204,11 +204,11 @@ The isolated task reached 63/64, directly demonstrating acquisition. A rehearsal
 
 ### 9.3 Inverse-rendered W3/W4
 
-W3 reached 288/384 on its nominal calibration metric, but a source audit placed synthetic retention below its required floor (`0.8125 < 0.93`). The authorized W4 continuation worsened all relevant measures:
+W3 reached 276/384 on its nominal calibration metric, below the preregistered 288/384 gate, and depth 4 also failed its per-depth gate (`38/96 < 58/96`). A source audit additionally placed synthetic retention below its required floor (`0.8125 < 0.93`). The authorized W4 continuation worsened all relevant measures:
 
 | Measure | Before | After |
 |---|---:|---:|
-| Calibration | `288/384` | `208/384` |
+| Calibration | `276/384` | `208/384` |
 | Synthetic retention minimum | `0.8125` | `0.125` |
 | Natural canary | `227/256` reference | `171/256` |
 

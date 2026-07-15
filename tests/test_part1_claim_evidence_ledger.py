@@ -19,6 +19,8 @@ def test_part1_ledger_has_closed_scope_and_open_width_claim() -> None:
     assert payload["status"] == "closed"
     claims = {claim["id"]: claim for claim in payload["claims"]}
     assert claims["phase_a_synthetic_surpass"]["status"] == "supported_bounded"
+    assert claims["cross_support_frontier_law"]["status"] == "supported_bounded"
+    assert claims["natural_surface_tail_inversion"]["status"] == "supported_bounded"
     assert claims["branching_width_substrate"]["status"] == "supported_gate_pass"
     assert claims["guided_latent_width"]["status"] == "open"
     assert claims["general_natural_reasoning_superiority"]["status"] == "not_supported"
@@ -76,3 +78,13 @@ def test_manuscript_rejects_prohibited_generalizations() -> None:
         assert phrase.lower() not in manuscript.lower()
     assert "synthetic-family" in manuscript
     assert "Guided stochastic width remains open" in manuscript
+
+
+def test_manuscript_v2_artifact_map_paths_exist() -> None:
+    payload = load_ledger()
+    missing = [
+        path
+        for path in payload["manuscript_v2_artifact_map"].values()
+        if not (ROOT / path).exists()
+    ]
+    assert missing == []
