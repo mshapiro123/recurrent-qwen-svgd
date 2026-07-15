@@ -82,43 +82,13 @@ Open:
 
 ## Next GPU Gate
 
-Use an L4 for the shared target `part1_closeout_pivot_session`. It runs:
+The shared `part1_closeout_pivot_session` has finished:
 
-1. a non-promotable loop-position transfer micro-test;
-2. the N20 verbal branching-relations screen;
-3. the N24 symbolic branching-relations screen.
+1. The loop-position micro-test was stopped by its retention guardrail before transfer positions were measured.
+2. The N20 verbal branching screen passed at `389/512 = 75.98%`, with every depth above `0.55`.
+3. The N24 symbolic screen narrowly missed at `355/512 = 69.34%`, with depth 3 below its floor.
 
-The branching gate is pooled exact validity `>=0.70` with every depth `>=0.55` on at least one keeper. No block unfreeze is allowed. Phase G-alpha launches only after a green screen and a powered coverage margin is locked.
-
-```python
-import base64
-import os
-import requests
-
-REPO = "mshapiro123/recurrent-qwen-svgd"
-REF = "29a8b57dcac6f1c3e273c6c126305a528e791afa"
-PATH = "colab/CURRENT_A100_BOOTSTRAP_CELL.py"
-
-token = None
-try:
-    from google.colab import userdata
-    token = userdata.get("GH_TOKEN")
-except Exception:
-    pass
-
-headers = {"Accept": "application/vnd.github+json"}
-if token:
-    headers["Authorization"] = f"Bearer {token}"
-
-url = f"https://api.github.com/repos/{REPO}/contents/{PATH}?ref={REF}"
-response = requests.get(url, headers=headers, timeout=30)
-response.raise_for_status()
-code = base64.b64decode(response.json()["content"]).decode("utf-8")
-
-os.environ["STAGE5_CURRENT_A100_TARGET"] = "part1_closeout_pivot_session"
-os.environ["STAGE5_BOOTSTRAP_REF"] = REF
-exec(compile(code, PATH, "exec"))
-```
+The deterministic Phase G prerequisite is satisfied by the frozen natural keeper. No adapter is needed. The next GPU action is Phase G-alpha after its exact paired coverage margin is locked by a power calculation.
 
 ## Local Setup
 

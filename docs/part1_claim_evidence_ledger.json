@@ -143,6 +143,54 @@
       ]
     },
     {
+      "id": "loop_position_transfer",
+      "claim": "The final loop-position transfer micro-test did not reach its transfer readout because the registered retention guardrail stopped training.",
+      "status": "inconclusive_guardrail_stop",
+      "scope": "disposable measurement; trained positions 1-2 only; transfer positions 3-4 unmeasured",
+      "metrics": {
+        "step500_position1_accuracy": 0.71875,
+        "step500_position2_accuracy": 1.0,
+        "step1000_guardrail_min": 0.8125,
+        "guardrail_floor": 0.93
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_part1_closeout_pivot_20260715/summary.json",
+          "locator": "loop_position_micro_test"
+        }
+      ]
+    },
+    {
+      "id": "branching_width_substrate",
+      "claim": "The frozen natural N20 keeper passed the preregistered deterministic validity gate on a multi-valued forward-relation substrate.",
+      "status": "supported_gate_pass",
+      "scope": "512 frozen generated verbal rows, depths 1-4, exact reachable-set scoring",
+      "metrics": {
+        "natural_n20_correct": 389,
+        "natural_n20_total": 512,
+        "natural_n20_pooled_accuracy": 0.759765625,
+        "natural_n20_min_depth_accuracy": 0.625,
+        "symbolic_n24_correct": 355,
+        "symbolic_n24_total": 512,
+        "symbolic_n24_pooled_accuracy": 0.693359375,
+        "symbolic_n24_min_depth_accuracy": 0.5234375
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_part1_closeout_pivot_20260715/summary.json",
+          "locator": "branching_screens and phase_g_alpha_status"
+        },
+        {
+          "path": "outputs/stage5/stage5_part1_closeout_pivot_20260715/branching_screen/natural_step2000_N20_verbal/summary.json",
+          "locator": "gate"
+        },
+        {
+          "path": "outputs/stage5/stage5_part1_closeout_pivot_20260715/branching_screen/n24_step6000_N24_symbolic/summary.json",
+          "locator": "gate"
+        }
+      ]
+    },
+    {
       "id": "general_natural_reasoning_superiority",
       "claim": "The recurrent model is superior on broad natural reasoning benchmarks.",
       "status": "not_supported",

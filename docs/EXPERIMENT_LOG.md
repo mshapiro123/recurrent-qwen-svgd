@@ -1268,3 +1268,14 @@ Colab/Drive backups for selected runs.
   depth, transformer conversion, and stochastic recursive reasoning all have
   prior art. Canonical manuscript:
   `docs/PAPER_ONE_DETERMINISTIC_RECURRENT_QWEN_20260715.md`.
+- 2026-07-15 Part 1 pivot session completed. The disposable loop-position arm
+  passed its trained-position prerequisite at step 500 (`0.71875`, `1.0`) but
+  hit the registered synthetic hard stop at step 1,000 (`0.8125 < 0.93`), so
+  transfer positions 3-4 were not measured and all disposable checkpoints were
+  deleted. The natural N20 verbal branching screen passed at `389/512 =
+  75.98%`, with depth accuracies `127/128`, `95/128`, `87/128`, and `80/128`.
+  The N24 symbolic screen narrowly missed at `355/512 = 69.34%`, with depth 3
+  at `67/128 = 52.34%`. The frozen natural keeper satisfies the deterministic
+  substrate gate; no adapter is needed. Phase G-alpha is ready for the powered
+  margin lock and then launch. Receipt:
+  `outputs/stage5/stage5_part1_closeout_pivot_20260715/summary.json`.

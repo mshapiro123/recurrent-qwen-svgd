@@ -108,7 +108,13 @@ The loop-position transfer micro-test is the final deterministic curriculum meas
 - Read `>=0.55` at both as substantially position-invariant, `<=0.15` at both as per-position installation, and intermediate results as partial transfer.
 - Run as a disposable full-block branch with effective batch at least 8 and a 1,000-step guardrail hard stop.
 
-Nothing downstream depends on this result. It sharpens the paper's boundary explanation.
+The trained-position prerequisite passed at step 500 (`0.71875` at position 1
+and `1.0` at position 2). At step 1,000, the synthetic retention minimum fell
+to `0.8125`, below the `0.93` hard-stop floor. The run stopped before transfer
+positions 3-4 were measured, and the disposable checkpoints were deleted.
+The result is therefore inconclusive: it neither establishes position
+invariance nor confirms per-position installation. Nothing downstream depends
+on it.
 
 ## Width-Substrate Screen
 
@@ -124,6 +130,13 @@ The branching-relations screen replaces inverse abduction as the deterministic p
 - Gate: pooled validity `>=0.70` and every depth `>=0.55` on either keeper, with no block unfreeze.
 
 If one keeper passes, the remaining powered coverage margin is locked and G-alpha may launch. If both miss, the exact profiles return to strategy review. One detachable attention-LoRA touch-up, rank at most 16 with 30% forward rehearsal, is authorized only after a near-miss determination. Because no numeric near-miss band was preregistered, the shared screen does not auto-launch that adaptation.
+
+The screen is now complete. The natural N20 verbal keeper passed with
+`389/512 = 75.98%` pooled validity and depth accuracies of `99.22%`, `74.22%`,
+`67.97%`, and `62.50%`. The N24 symbolic keeper narrowly missed with
+`355/512 = 69.34%`; depth 3 was `52.34%`, below the per-depth floor. The N20
+pass satisfies the deterministic Phase G-alpha prerequisite, and the adapter
+is not needed.
 
 ## Phase G-alpha Contract
 
@@ -162,7 +175,8 @@ The resulting manuscript is
 and its machine-readable audit trail is
 [part1_claim_evidence_ledger.json](part1_claim_evidence_ledger.json).
 
-Paper one does not wait for the loop-position measurement, branching screen, or G-alpha.
+The loop-position and branching receipts have now been folded into paper one.
+Paper one does not wait for G-alpha.
 
 ## Claim Ledger
 
@@ -173,15 +187,16 @@ Paper one does not wait for the loop-position measurement, branching screen, or 
 | Recurrent arm surpasses registered dense controls | Supported | Frozen synthetic depth family and registered recipes only |
 | Recurrence generally surpasses base Qwen on natural reasoning | Not supported | Requires external benchmark evidence |
 | Full-block continuation preserves arbitrary new operations | Falsified in tested regime | 0.5B inverse-task branches and tested recipes |
+| Loop-position reuse is position invariant | Inconclusive | Guardrail stopped the disposable run before transfer positions were measured |
+| Frozen multi-valued forward substrate is competent | Supported | Natural N20 verbal branching screen |
 | Early particle/SVGD negatives test GRAM-style width | Not supported | Runs lacked repaired loop closure and target-conditioned guidance |
 | Guided latent width improves exact solution coverage | Open | Phase G-alpha |
 
 ## Immediate Sequence
 
-1. Continue the paper consolidation sprint on CPU.
-2. Run the shared L4 session: loop-position micro-test and both branching screens.
-3. If a keeper passes the branching gate, lock powered margins and launch G-alpha.
-4. If both screens narrowly miss, review and explicitly authorize the one adapter attempt.
-5. If both screens clearly miss, reopen the substrate/scale decision; do not weaken the gate.
+1. Lock the powered paired coverage margin for the passed N20 substrate.
+2. Implement and run G-alpha with the natural step-2,000 keeper frozen.
+3. Compare guided latent K against entropy-matched answer-head K and matched-compute deterministic depth.
+4. Open G-beta only on a win against both comparators.
 
 The deterministic program is closed. The next model-training claim belongs to width.

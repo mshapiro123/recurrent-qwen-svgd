@@ -220,7 +220,30 @@ A preregistered precursor battery tested whether the bridge should be split into
 
 This negative avoids an unpriced architectural branch while retaining useful attention-capture instrumentation and the finding that retrieval structure is training-history specific.
 
-## 11. Discussion
+## 11. Final Localization and Width-Substrate Gate
+
+One shared post-closeout session ran the final non-promotable deterministic localization measurement and the two preregistered width-substrate screens.
+
+### 11.1 Loop-position transfer was stopped by retention
+
+At step 500, the disposable loop-position arm cleared its trained-position prerequisite: inverse position 1 scored `46/64 = 71.9%` and position 2 scored `64/64 = 100%`. At step 1,000 those trained-position scores were unchanged, but the frozen synthetic guardrail minimum fell to `0.8125`, below the registered `0.93` floor. The runner hard-stopped and deleted both disposable checkpoints. Transfer positions 3 and 4 were therefore never evaluated.
+
+The correct reading is inconclusive. The experiment neither establishes position-invariant transition reuse nor confirms per-position installation. It does demonstrate that the lineage and hard-stop policy worked: a potentially damaging full-block branch produced no successor checkpoint.
+
+### 11.2 A verbal multi-valued forward substrate passed
+
+The branching-relations task stores an exact reachable set and scores the same-reader argmax as valid when it belongs to that set. Both screens used 128 frozen rows at each depth from 1 through 4.
+
+| Keeper and surface | D1 | D2 | D3 | D4 | Pooled | Gate |
+|---|---:|---:|---:|---:|---:|---|
+| Natural step-2,000, N20 verbal | `127/128` | `95/128` | `87/128` | `80/128` | `389/512 = 75.98%` | Pass |
+| N24 step-6,000, symbolic | `128/128` | `86/128` | `67/128` | `74/128` | `355/512 = 69.34%` | Fail |
+
+The gate required pooled validity at least `0.70` and every depth at least `0.55`. The verbal keeper passed with a minimum depth accuracy of `0.625`. The symbolic keeper missed both pooled validity and the depth-3 floor (`0.5234`). Because one frozen keeper passed, no adapter touch-up is needed. The deterministic prerequisite for Phase G-alpha is satisfied; only the powered numeric margin remains to be locked before launch.
+
+This result establishes substrate competence, not useful stochastic width. No latent prior/posterior head was trained in this session.
+
+## 12. Discussion
 
 ### What the model learned
 
@@ -238,7 +261,7 @@ The inverse experiments show that a converted pretrained model is not an empty s
 
 Early stochastic noise and SVGD-style repulsion increased diversity in some settings without reliably producing new correct candidates. Those runs lacked the repaired recurrence and the target-conditioned variational guidance that distinguishes GRAM from unguided noise. Guided stochastic width remains open. Its next valid test freezes the deterministic keeper, trains only prior/posterior latent heads and an injection scale, and compares exact coverage at matched K against answer-head sampling and matched transition compute.
 
-## 12. Limitations
+## 13. Limitations
 
 - Results center on Qwen2.5-0.5B and controlled synthetic or generated surfaces.
 - Phase A does not match training tokens, optimizer history, FLOPs, latency, or inference compute.
@@ -249,7 +272,7 @@ Early stochastic noise and SVGD-style repulsion increased diversity in some sett
 - The inverse retention boundary may move with scale, adapters, routing, or a different curriculum.
 - No post-repair target-conditioned stochastic-width result exists yet.
 
-## 13. Reproducibility and Artifact Map
+## 14. Reproducibility and Artifact Map
 
 | Result | Canonical artifact |
 |---|---|
@@ -264,16 +287,17 @@ Early stochastic noise and SVGD-style repulsion increased diversity in some sett
 | Inverse-rendered W3 | `outputs/stage5/stage5_inverse_rendered_width_gate_20260714/summary.json` |
 | Inverse-rendered W4 | `outputs/stage5/stage5_inverse_rendered_n24_continuation_20260715/summary.json` |
 | Multi-channel bridge battery | `outputs/stage5/stage5_multichannel_bridge_precursor_replication_20260714/summary.json` |
+| Loop-position and branching gate | `outputs/stage5/stage5_part1_closeout_pivot_20260715/summary.json` |
 | GRAM divergence audit | `docs/gram_divergence_audit_20260711.md` |
 | Phase G preregistration | `docs/PHASE_G_ALPHA_GUIDED_STOCHASTIC_TRANSITION_SPEC.md` |
 
 The Phase A receipt records identical row-ID hashes and verified checkpoint hashes. The repository test suite validates the claim ledger, key arithmetic, wrapper contracts, continuation floors, and Phase G frozen-parameter contract.
 
-## 14. Conclusion
+## 15. Conclusion
 
 Part 1 answers the deterministic substrate question. A pretrained Qwen2.5-0.5B model can be converted into an identity-preserving recurrent-depth architecture, trained to execute a persistent loop-indexed state transition, and scaled to a depth regime where it substantially outperforms the registered dense recipes on a frozen synthetic family. The same program also found the limits of that result: general natural reasoning remains unproven, learned routing remains incomplete, and full-block continuation could not retain newly acquired inverse operations alongside the consolidated mechanism.
 
-The deterministic program is closed. The clean keeper is frozen. The next claim is not more deterministic tuning; it is whether target-conditioned stochastic latent trajectories add exact multi-solution coverage beyond output sampling and additional depth.
+The deterministic program is closed. The clean keeper is frozen, and the verbal N20 branching substrate has passed the deterministic validity gate. The next action is to lock a powered coverage margin, then test whether target-conditioned stochastic latent trajectories add exact multi-solution coverage beyond output sampling and additional depth.
 
 ## References
 

@@ -60,7 +60,7 @@ Parallelize between decisions, never through them. No job launches before a gate
 
 ## 4. Active Sequence
 
-### Step A: final non-gating deterministic localization
+### Step A: final non-gating deterministic localization. Completed, inconclusive.
 
 Run the loop-position transfer micro-test as a disposable measurement.
 
@@ -70,9 +70,12 @@ Run the loop-position transfer micro-test as a disposable measurement.
 - Interpret both `<=0.15` as per-position installation.
 - Treat intermediate results as partial transfer.
 
-Nothing downstream depends on this result. It improves the Part 1 boundary explanation.
+The trained-position prerequisite passed at step 500, but the step-1,000
+synthetic guardrail fell to `0.8125 < 0.93`. The hard stop fired before transfer
+positions 3-4 were measured, and the disposable checkpoints were deleted.
+Nothing downstream depends on this inconclusive result.
 
-### Step B: width-substrate screen
+### Step B: width-substrate screen. Completed, passed on N20 verbal.
 
 Evaluate a multi-valued forward-relation task with exact reachable sets:
 
@@ -82,11 +85,15 @@ Evaluate a multi-valued forward-relation task with exact reachable sets:
 - pooled exact validity `>=0.70`;
 - every depth exact validity `>=0.55`.
 
-If either keeper passes, perform the power calculation and lock Phase G-alpha numeric margins. If both clearly miss, reopen the substrate or scale decision. A detachable rank-16-or-less adapter may be considered only after an explicit near-miss review; there is no automatic adaptation.
+The natural N20 verbal keeper passed at `389/512 = 75.98%`, with every depth
+above the `0.55` floor. The N24 symbolic keeper missed at
+`355/512 = 69.34%`, including depth 3 at `52.34%`. One keeper is green, so no
+adapter touch-up is needed.
 
-### Step C: Phase G-alpha guided latent width
+### Step C: Phase G-alpha guided latent width. Active.
 
-Freeze the deterministic keeper and train only:
+First perform the power calculation and fill the only remaining numeric blank
+in the preregistration. Then freeze the natural step-2,000 keeper and train only:
 
 ```text
 phase_g_prior_head.*

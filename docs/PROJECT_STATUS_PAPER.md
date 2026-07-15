@@ -34,12 +34,17 @@ This page is the short status index. It replaces the earlier June recovery narra
 - A post-repair, target-conditioned stochastic-width gain.
 - A beneficial role for SVGD beyond a future ablation.
 
+## Final Part 1 Receipts
+
+The disposable loop-position test cleared its trained-position prerequisite but hit the synthetic retention hard stop (`0.8125 < 0.93`) before positions 3-4 were measured. Its result is inconclusive and its checkpoints were deleted.
+
+The natural N20 verbal branching substrate passed: `389/512 = 75.98%`, with every depth at least `62.5%`. The N24 symbolic substrate narrowly missed: `355/512 = 69.34%`, with depth 3 at `52.34%`.
+
 ## Active Queue
 
-1. Finish the non-promotable loop-position transfer measurement.
-2. Screen the N20 verbal and N24 symbolic branching-relations substrates.
-3. If either screen clears pooled validity `>=0.70` and every depth `>=0.55`, lock the powered Phase G margins.
-4. Train only the Phase G prior head, posterior head, and injection scale with the deterministic keeper frozen.
-5. Compare exact oracle coverage against entropy-matched answer-head sampling and iso-compute additional depth.
+1. Run the power calculation and lock the Phase G-alpha paired coverage margin.
+2. Train only the Phase G prior head, posterior head, and injection scale with the natural step-2,000 keeper frozen.
+3. Compare exact oracle coverage against entropy-matched answer-head sampling and iso-compute additional depth.
+4. Open G-beta only if guided latent width beats both comparators.
 
 G-beta selection, per-trajectory halting, and SVGD remain closed until G-alpha beats both comparators.

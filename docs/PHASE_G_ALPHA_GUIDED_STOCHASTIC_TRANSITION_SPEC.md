@@ -1,7 +1,15 @@
 # Phase G-alpha Guided Stochastic Transition Specification
 
-**Date:** July 12, 2026  
-**Implementation status:** Architecture contract and evaluation harness prepared; model implementation is gated on the branching-relations validity screen and green frozen-keeper guardrail
+**Date:** July 12, 2026
+**Implementation status:** Deterministic substrate gate passed; powered numeric margin remains to be locked before model implementation and launch
+
+> **July 15 gate result:** The natural step-2,000 N20 verbal keeper passed the
+> frozen branching gate at `389/512 = 75.98%`, with depth accuracies of
+> `99.22%`, `74.22%`, `67.97%`, and `62.50%`. Its verified SHA-256 is
+> `0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f`.
+> The N24 symbolic keeper narrowly missed at `355/512 = 69.34%`, including
+> depth 3 at `52.34%`. No adapter is needed. G-alpha is authorized after the
+> preregistered power calculation fills the final numeric margin blank.
 
 > **July 15 substrate amendment:** The closed inverse-task program showed that
 > backward inference confounds multimodal coverage with installation of a
