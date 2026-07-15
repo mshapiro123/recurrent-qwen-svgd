@@ -76,3 +76,5 @@ def test_continuation_target_is_wired() -> None:
     assert "forward_rehearsal_fraction" in runner
     assert "test_summary is not None" in runner
     assert "phase_g_alpha_status" in runner
+    assert "return 0 if green else 2" not in runner
+    assert "blocked gate is an expected" in runner

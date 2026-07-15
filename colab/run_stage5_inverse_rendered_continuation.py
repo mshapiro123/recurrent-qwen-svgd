@@ -320,7 +320,10 @@ def main() -> int:
     )
     _publish(run_dir, f"Finish inverse-rendered N24 continuation {run_id} [skip ci]")
     print(json.dumps(payload, indent=2, sort_keys=True))
-    return 0 if green else 2
+    # A blocked gate is an expected, fully recorded scientific outcome.  Reserve
+    # nonzero exits for infrastructure or invariant failures so Colab does not
+    # mislabel a published negative result as a crashed experiment.
+    return 0
 
 
 if __name__ == "__main__":
