@@ -2,8 +2,14 @@
 
 ## Status
 
-F9 remains **BANKED**. This is an eval-only precursor and changes no queue,
-checkpoint, training parameter, or architecture. Activation requires both:
+F9 is **CLOSED** as of July 15, 2026. M1 was smeared on both checkpoints and
+M2 failed the required backward-checkpoint replication, leaving at most one
+possible vote even if M3 were perfect. The two-of-three activation gate is
+therefore unsatisfiable. M3, alternative basis searches, and a multi-channel
+bridge implementation are not authorized. This historical spec records the
+eval-only precursor and changes no queue,
+checkpoint, training parameter, or architecture. The preregistered activation
+rule required both:
 
 1. at least two of M1, M2, and M3 confirm specialization; and
 2. the independent inverse-composition staircase returns reading one,

@@ -1234,3 +1234,25 @@ Colab/Drive backups for selected runs.
   not run M3, search alternative bases, or build a multi-channel bridge on
   these results. The active queue returns to W3 inverse-rendered validity and
   C1 cap-3 rehearsal/retention repair.
+- 2026-07-15 deterministic Part 1 closeout: the canonical forward-table
+  inverse branch, explicit inverse-table branch, and inverse-rendered W3/W4
+  branch are closed as one retention-boundary finding. The isolated operation
+  is learnable (`63/64`), but no swept checkpoint entered the joint permitted
+  region, and W4 regressed to `208/384` calibration, `0.125` synthetic
+  retention minimum, and `171/256` natural canary. F9 is closed, not banked:
+  M1 smeared on both checkpoints and M2 failed replication, so its two-of-three
+  gate is unsatisfiable. Two mechanical policies now apply: launch-time checks
+  must fail before any continuation whose resolved source is below a guardrail
+  floor, and clean keepers are frozen assets. Full-block work is legal only in
+  non-promotable, source-forbidden disposable measurement branches. Record:
+  `docs/PART1_DETERMINISTIC_PROGRAM_CLOSEOUT_20260715.md`.
+- 2026-07-15 post-closeout execution contract: one shared L4 target runs the
+  non-gating loop-position transfer micro-test and two zero-shot
+  branching-relations screens. The micro-test trains inverse positions 1-2,
+  requires `>=0.71` on 64 held-out rows each, and measures positions 3-4 on
+  128 rows each with locked `0.55`/`0.15` interpretation bands. The branching
+  gate uses exact reachable sets, 128 rows per depth 1-4, and requires pooled
+  validity `>=0.70` plus every depth `>=0.55` on either the natural N20 verbal
+  or N24 symbolic keeper. A double miss does not auto-launch an adapter because
+  no numeric near-miss band was preregistered. Phase G-alpha opens only after a
+  green screen and powered-margin lock.

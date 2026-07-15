@@ -63,17 +63,13 @@ def preregistration_payload() -> dict[str, Any]:
         "status": "forms_locked_numeric_margins_pending_power_calculation",
         "substrate_gate": {
             "required": (
-                "constructive_abductive_injective_pass_plus_arbitrary_N24_calibration_competence_"
-                "plus_green_guardrail"
+                "branching_relations_validity_pass_on_either_locked_keeper_plus_green_guardrail"
             ),
-            "checkpoint": "post_arbitrary_family_deterministic_keeper",
+            "checkpoint": "locked_frozen_keeper_with_optional_detachable_attention_adapter",
             "checkpoint_sha256_rule": (
                 "resolve_from_the_final_green_deterministic_receipt_and_assert_exact_match_at_launch"
             ),
-            "distribution_seam": (
-                "the running N20 constructive fan is a screening gate; it cannot alone unlock "
-                "stochastic training on arbitrary N24 functions"
-            ),
+            "distribution_seam": "same frozen branching rows and reader are used for all paired comparators",
         },
         "architecture": {
             "frozen": "entire_deterministic_recurrent_qwen_substrate",
@@ -99,12 +95,13 @@ def preregistration_payload() -> dict[str, Any]:
             "dose_levers": ["kl_coefficient", "training_steps"],
         },
         "frozen_evaluation": {
-            "n_symbols": 24,
+            "task_family": "multi_valued_forward_relations",
+            "keeper_surfaces": ["N20_verbal", "N24_symbolic"],
             "depths": [1, 2, 3, 4],
-            "rows_per_preimage_stratum": 128,
-            "preimage_strata": {"unique": "1", "small": "2-4", "large": ">=5"},
+            "rows_per_depth": 128,
+            "reachable_set_size_bins": ["2", "3-4", "5-8", "9-16"],
             "splits": ["calibration", "test"],
-            "oracle": "independent_forward_orbit_enumeration",
+            "oracle": "exact_enumeration_of_all_reachable_symbols",
         },
         "primary_gate_form": {
             "metric": "paired_per_instance_exact_oracle_coverage_at_K",
@@ -119,7 +116,7 @@ def preregistration_payload() -> dict[str, Any]:
             "unique_valid_count",
             "full_coverage_rate",
             "duplicate_rate",
-            "coverage_by_preimage_stratum",
+            "coverage_by_reachable_set_stratum",
             "coverage_by_depth",
             "posterior_prior_KL_by_loop",
             "posterior_collapse_fraction",
@@ -137,8 +134,8 @@ def preregistration_payload() -> dict[str, Any]:
         "power_calculation_todo": {
             "only_remaining_preregistration_blank": True,
             "use_split": "calibration",
-            "paired_n": 384,
-            "stratify_by": "preimage_stratum",
+            "paired_n": 512,
+            "stratify_by": "reachable_set_size_bin_and_depth",
             "lock_before_test_split_or_latent_run_is_scored": True,
         },
     }

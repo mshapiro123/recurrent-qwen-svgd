@@ -65,6 +65,9 @@ def test_preregistration_leaves_only_powered_margin_blank() -> None:
     payload = preregistration_payload()
 
     assert payload["status"] == "forms_locked_numeric_margins_pending_power_calculation"
+    assert "branching_relations" in payload["substrate_gate"]["required"]
+    assert payload["frozen_evaluation"]["task_family"] == "multi_valued_forward_relations"
+    assert payload["frozen_evaluation"]["reachable_set_size_bins"] == ["2", "3-4", "5-8", "9-16"]
     assert payload["primary_gate_form"]["alpha"] == 0.05
     assert payload["power_calculation_todo"]["only_remaining_preregistration_blank"] is True
     assert payload["deferred_until_G_alpha_win"] == ["LPRM", "per_trajectory_halting", "SVGD"]

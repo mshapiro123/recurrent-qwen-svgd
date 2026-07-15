@@ -1,5 +1,16 @@
 # Latent Recurrent-Particle Adaptation of a Trained Qwen Model
 
+> **Current status, July 15, 2026:** The deterministic mechanism study is
+> closed and in consolidation. The strongest registered result is the recurrent
+> arm's `1,506/1,792` on the frozen depth-1-through-14 family versus `470` for
+> dense direct and `952` for dense serialized scratchpad. The inverse-task
+> program establishes a retention boundary rather than an acquisition failure.
+> F9 is closed. Guided stochastic width remains untested under the repaired
+> architecture and target-conditioned prior/posterior design. The controlling
+> record is
+> [PART1_DETERMINISTIC_PROGRAM_CLOSEOUT_20260715.md](PART1_DETERMINISTIC_PROGRAM_CLOSEOUT_20260715.md).
+
+
 ## Abstract
 
 We study whether a pretrained dense language model can be surgically converted

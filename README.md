@@ -1,5 +1,15 @@
 # GRAM-Inspired Recurrent-Particle Qwen
 
+> **July 15, 2026 closeout:** Part 1, the deterministic recurrent-mechanism
+> program, is complete. It established identity-preserving model surgery, a
+> persistent iterative transition, a four-point synthetic scaling result, and
+> an all-depth surpass result against the registered dense controls. It also
+> established a retention boundary for non-native inverse operations and
+> closed the F9 multi-channel intervention. The keeper is now frozen; the next
+> gate is an exact-validity screen on multi-valued forward relations before
+> guided stochastic width. See
+> [the Part 1 closeout](docs/PART1_DETERMINISTIC_PROGRAM_CLOSEOUT_20260715.md).
+
 This repository studies whether a pretrained dense Qwen model can be surgically
 converted into a recurrent latent-reasoning model, recovered with a small
 trainable parameter budget, and then extended with multiple particle-like latent
@@ -36,13 +46,29 @@ system:
    scarce experimental reagent. Every GPU run must answer a specific blocker
    and emit planner-readable artifacts before another run is justified.
 
-The current evidence supports the first three method claims. It does **not**
-yet support the stronger benchmark claim that the recurrent or SVGD model
-surpasses unmodified Qwen 0.5B. The active experimental target is to recover
-deterministic recurrent competence to at least base parity on balanced ARC, then
-test whether particles and selectors add hard-tail lift.
+The current evidence supports identity-preserving surgery and a trainable,
+persistent deterministic recurrent mechanism. On the registered frozen
+synthetic family, the recurrent arm surpasses the registered dense controls.
+It does **not** yet support a general natural-benchmark claim or a guided-width
+claim. Early particle/SVGD runs predated the final loop repair and omitted the
+target-conditioned posterior central to GRAM, so they are not evidence for or
+against the current Phase G hypothesis.
 
-## Current A100 Answer
+## Active Next GPU Action
+
+Use an L4 for `part1_closeout_pivot_session`. The target runs the disposable
+loop-position measurement and the two frozen branching screens in one shared
+session. It publishes intermediate receipts after data preparation and after
+the micro-test, then publishes the final branching decision. No A100 is needed.
+
+The cell is provided in the Part 1 closeout and by the current bootstrap target.
+Phase G-alpha, adapter touch-up, larger-scale work, and new deterministic
+continuations remain gated on the resulting exact-validity profiles.
+
+## Historical A100 Answer (Superseded July 15, 2026)
+
+The section below records an earlier recovery phase and no longer controls the
+queue. The Part 1 closeout and active GPU action above are authoritative.
 
 We should treat the A100 as a gated measurement instrument, not as the default
 workbench. Recent work moved in the right direction: dataset audits, planner
@@ -99,6 +125,12 @@ as the handoff for strategy/deep-research review and as the default ordering
 for deciding whether the next Colab job should be CPU, L4/T4, A100, or deferred.
 
 ## Manuscript Claim Status
+
+The controlling July 15 claim ledger is in the Part 1 closeout. In particular,
+the synthetic same-reader surpass result is now supported, while natural
+benchmark superiority and guided stochastic width remain open. The early
+particle-diversity observations are diagnostics, not an established GRAM-style
+method claim.
 
 The repository is now written as the skeleton of a model-surgery paper. The
 defensible current claim is:
@@ -159,7 +191,7 @@ The no-GPU reasoning-trace data plan is in
 wide/deep curriculum data contract is in
 [docs/CURRICULUM_DATA_PIPELINE.md](docs/CURRICULUM_DATA_PIPELINE.md).
 
-## Current Result
+## Historical June Result (Superseded July 15, 2026)
 
 The project has not yet shown a release-grade recurrent/SVGD win over base
 Qwen. It has shown a more useful intermediate result: a trained dense Qwen 0.5B
@@ -271,7 +303,7 @@ pulls latest GitHub, runs go/no-go, and defaults to dry-run unless
   GPU jobs can be bounded, resumed, assessed, and stopped instead of becoming
   open-ended notebook sweeps.
 
-## What Is Still Required To Beat Base
+## Historical Benchmark Plan (Superseded July 15, 2026)
 
 The next scientific result must come from deterministic recurrent recovery, not
 more particle geometry. The active recipe is:
@@ -288,7 +320,7 @@ Only after the recurrent model is base-competitive should Phase 2/SVGD, GPQA
 Diamond, 1.5B/3B scaling, or Hugging Face release work consume serious A100
 time.
 
-## Active Next A100 Action
+## Historical A100 Action (Superseded July 15, 2026)
 
 Credits are tight, so GPU work remains gate-based. The current front-of-queue
 job is `traced_sft_competence_preserving_pipeline`, which resumes from the

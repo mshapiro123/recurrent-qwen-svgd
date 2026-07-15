@@ -1,7 +1,16 @@
 # Phase G-alpha Guided Stochastic Transition Specification
 
 **Date:** July 12, 2026  
-**Implementation status:** Architecture contract and evaluation harness prepared; model implementation remains gated on the deterministic abductive-injective pass
+**Implementation status:** Architecture contract and evaluation harness prepared; model implementation is gated on the branching-relations validity screen and green frozen-keeper guardrail
+
+> **July 15 substrate amendment:** The closed inverse-task program showed that
+> backward inference confounds multimodal coverage with installation of a
+> non-native operation. G-alpha now uses multi-valued forward relations: two
+> successors per state, exact reachable sets at depths 1-4, and the same-reader
+> validity gate defined in the Part 1 closeout. The deterministic block is a
+> frozen asset; only the prior head, posterior head, and injection scale train.
+> The inverse-rendered amendment below is retained as historical lineage but no
+> longer controls launch.
 
 > **July 14 substrate amendment:** G-alpha remains gated, but its first deterministic validity assay is now inverse-rendered non-injective abduction on a demonstrated forward-lookup substrate. This preserves exact multimodal coverage while narrowing the claim: it tests guided branching over an explicitly rendered inverse relation, not canonical backward inference from a forward table. Frozen-set construction, validity gates, and the two-lane dependency order are defined in [TWO_LANE_SURPASS_REBASE_AMENDMENT_20260714.md](TWO_LANE_SURPASS_REBASE_AMENDMENT_20260714.md). The frozen-block architecture and comparator rules below remain unchanged.
 
@@ -21,7 +30,12 @@ h_l = u_l + softplus(s) R z_l
 
 `R` is a fixed seeded orthonormal projection from a 64-dimensional latent into the hidden dimension. It is a buffer, not a parameter. `s` is the trainable scalar injection scale and starts at `1e-3` after transformation. Stochasticity enters only at the bridge/re-entry level; no sublayer noise is allowed.
 
-The project has gold intermediate **symbolic** states, not gold hidden activations. `e(gold_next_l)` therefore means the frozen model embedding of the next symbolic state, combined with the loop index. On a multimodal row the generator samples one valid start uniformly from the exact preimage set and stores its full chain. That sampled chain supplies transition targets for the posterior and deep supervision.
+The project has gold intermediate **symbolic** states, not gold hidden
+activations. `e(gold_next_l)` therefore means the frozen model embedding of the
+next symbolic state, combined with the loop index. On a branching row the
+generator samples one valid root-to-leaf path and stores the full chain. That
+sampled chain supplies transition targets for the posterior and deep
+supervision, while the exact reachable set supplies the coverage oracle.
 
 ## Heads
 
@@ -47,7 +61,7 @@ L_l = CE_l + beta_kl * KL_balanced(q_l || p_l)
 
 The task term is the existing per-loop symbolic-chain CE plus final valid-answer CE. KL is applied per transition, finer than GRAM's practical final-transition surrogate. KL balance starts at `0.8`. The preregistered coefficient sweep is `1e-4`, `1e-3`, and `1e-2`. Trainable weights are evaluated both raw and with EMA decay `0.999`.
 
-Mandatory diagnostics by loop, depth, and preimage stratum:
+Mandatory diagnostics by loop, depth, and reachable-set stratum:
 
 - task CE;
 - KL;
@@ -80,8 +94,19 @@ The wrapper has no literal recurrent-loop cap, but its halting loop embeddings s
 
 ## Guardrails and Lineage
 
-The launch checkpoint must be the final deterministic keeper that has cleared both the abductive-injective screen and arbitrary N=24 calibration, and it must match its explicit SHA. The deterministic synthetic guardrail and canary run before and after training. Because the substrate is frozen, any guardrail change is treated as an implementation or evaluation defect until disproven.
+The launch checkpoint must be one of the two exact frozen keepers that clears
+the branching-relations gate, and it must match its explicit SHA. The gate is
+pooled exact validity at least `0.70` and every depth at least `0.55`, with the
+emitted symbol scored against the exact reachable set. The deterministic
+synthetic guardrail and canary run before and after training. Because the
+substrate is frozen, any guardrail change is treated as an implementation or
+evaluation defect until disproven.
 
-The original deterministic screen uses a constructive N=20 fan, while this claim uses arbitrary N=24 functions. Before model implementation begins, the screened checkpoint must be evaluated greedily on the N=24 calibration split. Failure means one bounded deterministic continuation on separately generated arbitrary-table training rows, followed by the same calibration and guardrail checks. Stochastic heads cannot be used to cross this competence seam.
+The frozen screen uses N20 verbal rows on the natural keeper and N24 symbolic
+rows on the N24 keeper. Only one keeper must pass. If both narrowly miss, one
+detachable rank-at-most-16 attention adapter may be considered after explicit
+review; the base block remains frozen and the adapter-attached guardrail must
+hold `0.93` in every registered stratum. No full-block continuation may cross
+this seam.
 
 G-beta opens only after latent coverage beats both comparators. LPRM selection, per-trajectory halting, and SVGD remain absent from this implementation.

@@ -2878,6 +2878,23 @@ TARGETS = {
             "STAGE5_MULTICHANNEL_DISCONNECT": "0",
         },
     },
+    "part1_closeout_pivot_session": {
+        "force_env": True,
+        "path": "colab/STAGE5_PART1_CLOSEOUT_PIVOT_CELL.py",
+        "markers": [
+            "STAGE5_PART1_CLOSEOUT_PIVOT_CELL_VERSION",
+            "training/continuation_policy.py",
+            "disposable_measurement",
+            "training/loop_position_transfer_task.py",
+            "training/branching_relations_task.py",
+            "eval/eval_branching_relations.py",
+        ],
+        "env": {
+            "STAGE5_PART1_PIVOT_RUN_ID": "stage5_part1_closeout_pivot_20260715",
+            "STAGE5_PART1_PIVOT_DTYPE": "bfloat16",
+            "STAGE5_PART1_PIVOT_DISCONNECT": "0",
+        },
+    },
     "splice_injection_diagnostic": {
         "path": "colab/STAGE5_CHAIN_CONSOLIDATION_CELL.py",
         "markers": [

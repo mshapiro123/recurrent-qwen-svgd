@@ -1,5 +1,14 @@
 # Program Track: Master Sequence
 
+> **Part 1 closeout, July 15, 2026:** The deterministic sequence is complete.
+> Re-entry repair, mechanism installation, persistence, scaling, transfer,
+> surpass, and the inverse-task retention boundary are now measured. The
+> canonical inverse branches and F9 are closed; the clean keeper is frozen.
+> The active sequence is one non-gating loop-position localization measurement
+> plus the branching-relations substrate screen, followed by guided stochastic
+> width only on a green screen. See
+> [PART1_DETERMINISTIC_PROGRAM_CLOSEOUT_20260715.md](PART1_DETERMINISTIC_PROGRAM_CLOSEOUT_20260715.md).
+
 > **Current amendment:** The program now runs as a two-lane width and curriculum-science sequence. The Phase A synthetic comparison is formalized first, G-alpha's deterministic prerequisite is re-based to inverse-rendered non-injective validity, and canonical forward-table abduction remains a separate curriculum target. See [TWO_LANE_SURPASS_REBASE_AMENDMENT_20260714.md](TWO_LANE_SURPASS_REBASE_AMENDMENT_20260714.md). The earlier reunification decision remains the parent amendment in [PHASE_G_TRACK_REUNIFICATION_AMENDMENT.md](PHASE_G_TRACK_REUNIFICATION_AMENDMENT.md).
 
 ## 0. Purpose
