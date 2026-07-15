@@ -1,0 +1,10 @@
+{
+  "checkpoint": "outputs/stage5/stage5_inverse_rendered_n24_continuation_20260715/train/continuation/unfrozen_recurrent_step_200.pt",
+  "checkpoint_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_inverse_rendered_n24_continuation_20260715/train/checkpoints/unfrozen_recurrent_step_200.pt",
+  "completed_step": 200,
+  "kind": "train_unfrozen_recurrent_progress",
+  "max_steps": 200,
+  "metrics": {},
+  "micro_step": 1600,
+  "status": "finished"
+}
