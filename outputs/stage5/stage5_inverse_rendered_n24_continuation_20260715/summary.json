@@ -1,0 +1,190 @@
+{
+  "calibration": {
+    "by_depth": {
+      "1": {
+        "accuracy": 0.9791666666666666,
+        "correct": 94,
+        "passed": true,
+        "required_correct": 58,
+        "required_total": 96,
+        "total": 96
+      },
+      "2": {
+        "accuracy": 0.6041666666666666,
+        "correct": 58,
+        "passed": true,
+        "required_correct": 58,
+        "required_total": 96,
+        "total": 96
+      },
+      "3": {
+        "accuracy": 0.3645833333333333,
+        "correct": 35,
+        "passed": false,
+        "required_correct": 58,
+        "required_total": 96,
+        "total": 96
+      },
+      "4": {
+        "accuracy": 0.21875,
+        "correct": 21,
+        "passed": false,
+        "required_correct": 58,
+        "required_total": 96,
+        "total": 96
+      }
+    },
+    "pass": false,
+    "pooled": {
+      "accuracy": 0.5416666666666666,
+      "correct": 208,
+      "passed": false,
+      "required_correct": 288,
+      "required_total": 384,
+      "total": 384
+    }
+  },
+  "cap4_authorized": false,
+  "checkpoint": "outputs/stage5/stage5_inverse_rendered_n24_continuation_20260715/train/continuation/unfrozen_recurrent_step_200.pt",
+  "checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_inverse_rendered_n24_continuation_20260715/selected/unfrozen_recurrent_step_200.pt",
+  "checkpoint_sha256": "32d4a6a954a2db8c25f9056862da5f4dd686fbfaecb9bfd48393b2f9b5055389",
+  "do_not_claim": "This bounded deterministic tune is a G-alpha substrate gate, not evidence that stochastic width helps.",
+  "kind": "stage5_inverse_rendered_n24_continuation",
+  "natural_canary": {
+    "accuracy_delta": -0.21875,
+    "baseline_accuracy": 0.88671875,
+    "candidate_accuracy": 0.66796875,
+    "passed": false,
+    "verdict": {
+      "accuracy_delta": -0.21875,
+      "accuracy_hard_stop_margin": -0.03,
+      "ppl_hard_stop_relative": 0.05,
+      "ppl_relative_delta": null,
+      "status": "red_hard_stop"
+    }
+  },
+  "phase_g_alpha_status": "closed",
+  "restore_receipt": {
+    "selected_checkpoint_reference": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_inverse_table_rebase_caps3_4_20260713/C_rebase_cap_3_selected/unfrozen_recurrent_step_250.pt",
+    "selected_checkpoint_sha256": "83767ebff2c2a13a2f15fe8266f605fb8485985c3289c1f1720cd70c122a9ac5",
+    "selected_checkpoint_source": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_inverse_table_rebase_caps3_4_20260713/C_rebase_cap_3_selected/unfrozen_recurrent_step_250.pt"
+  },
+  "run_id": "stage5_inverse_rendered_n24_continuation_20260715",
+  "source_checkpoint_sha256": "83767ebff2c2a13a2f15fe8266f605fb8485985c3289c1f1720cd70c122a9ac5",
+  "source_summary": "outputs/stage5/stage5_inverse_table_rebase_caps3_4_20260713/summary.json",
+  "status": "bounded_tune_review_required",
+  "synthetic_retention": {
+    "active_diagonal_min": 0.125,
+    "floor": 0.93,
+    "passed": false,
+    "summary": "outputs/stage5/stage5_inverse_rendered_n24_continuation_20260715/guardrails/synthetic/summary.json"
+  },
+  "test": {
+    "gate": null,
+    "opened": false,
+    "summary": null
+  },
+  "training": {
+    "effective_batch_size": 8,
+    "forward_rehearsal_decision": "disabled_after_cap3_replay_no_joint_gate_candidate",
+    "forward_rehearsal_fraction": 0.0,
+    "frozen_eval_id_overlap": 0,
+    "loop_label_weights": [
+      0.3243243243243243,
+      0.4324324324324324,
+      0.6486486486486486,
+      2.5945945945945943
+    ],
+    "manifest": {
+      "depth_counts": {
+        "1": 192,
+        "2": 192,
+        "3": 192,
+        "4": 192
+      },
+      "generator_counts": {
+        "arbitrary_random_mapping_conditioned_on_preimage_stratum": 768
+      },
+      "row_id_sha256": "e6b7b38b7c65462e8b10ca26d26507b949a6897fdfda208d1d98f236c8861f34",
+      "row_sha256": "29f82de31f8735de020be602e13944c94e860a4a95f8736305db07acd80ed762",
+      "rows": 768,
+      "solution_counts": {
+        "1": 256,
+        "10": 6,
+        "11": 6,
+        "12": 5,
+        "13": 4,
+        "14": 2,
+        "18": 1,
+        "2": 114,
+        "21": 2,
+        "3": 85,
+        "4": 57,
+        "5": 123,
+        "6": 48,
+        "7": 40,
+        "8": 12,
+        "9": 7
+      },
+      "stratum_counts": {
+        "large": 256,
+        "small": 256,
+        "unique": 256
+      }
+    },
+    "optimizer": "adamw",
+    "path": "outputs/stage5/stage5_inverse_rendered_n24_continuation_20260715/data/train_n24_inverse_relation.jsonl",
+    "rendering": "inverse_relation_given",
+    "rows_per_stratum": 256,
+    "seed": 9217347,
+    "steps": 200,
+    "validation": {
+      "errors": [],
+      "manifest": {
+        "depth_counts": {
+          "1": 192,
+          "2": 192,
+          "3": 192,
+          "4": 192
+        },
+        "generator_counts": {
+          "arbitrary_random_mapping_conditioned_on_preimage_stratum": 768
+        },
+        "row_id_sha256": "e6b7b38b7c65462e8b10ca26d26507b949a6897fdfda208d1d98f236c8861f34",
+        "row_sha256": "29f82de31f8735de020be602e13944c94e860a4a95f8736305db07acd80ed762",
+        "rows": 768,
+        "solution_counts": {
+          "1": 256,
+          "10": 6,
+          "11": 6,
+          "12": 5,
+          "13": 4,
+          "14": 2,
+          "18": 1,
+          "2": 114,
+          "21": 2,
+          "3": 85,
+          "4": 57,
+          "5": 123,
+          "6": 48,
+          "7": 40,
+          "8": 12,
+          "9": 7
+        },
+        "stratum_counts": {
+          "large": 256,
+          "small": 256,
+          "unique": 256
+        }
+      },
+      "rendering": "inverse_relation_given",
+      "rows": 768,
+      "status": "passed",
+      "stratum_counts": {
+        "large": 256,
+        "small": 256,
+        "unique": 256
+      }
+    }
+  }
+}

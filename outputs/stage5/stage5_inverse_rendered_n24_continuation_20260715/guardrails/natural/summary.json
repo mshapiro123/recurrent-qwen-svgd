@@ -1,0 +1,63 @@
+{
+  "accuracy": 0.66796875,
+  "active_diagonal": {
+    "1": 0.9375,
+    "2": 0.875,
+    "3": 0.84375,
+    "4": 0.90625,
+    "5": 0.78125,
+    "6": 0.46875,
+    "7": 0.3125,
+    "8": 0.21875
+  },
+  "active_diagonal_min": 0.21875,
+  "by_depth": {
+    "1": {
+      "accuracy": 0.9375,
+      "correct": 30,
+      "total": 32
+    },
+    "2": {
+      "accuracy": 0.875,
+      "correct": 28,
+      "total": 32
+    },
+    "3": {
+      "accuracy": 0.84375,
+      "correct": 27,
+      "total": 32
+    },
+    "4": {
+      "accuracy": 0.90625,
+      "correct": 29,
+      "total": 32
+    },
+    "5": {
+      "accuracy": 0.78125,
+      "correct": 25,
+      "total": 32
+    },
+    "6": {
+      "accuracy": 0.46875,
+      "correct": 15,
+      "total": 32
+    },
+    "7": {
+      "accuracy": 0.3125,
+      "correct": 10,
+      "total": 32
+    },
+    "8": {
+      "accuracy": 0.21875,
+      "correct": 7,
+      "total": 32
+    }
+  },
+  "checkpoint": "outputs/stage5/stage5_inverse_rendered_n24_continuation_20260715/train/continuation/unfrozen_recurrent_step_200.pt",
+  "correct": 171,
+  "data_jsonl": "outputs/stage5/stage5_inverse_rendered_n24_continuation_20260715/guardrail_data/natural_surface_relay_pointer_16_each_d1_8.jsonl",
+  "kind": "synthetic_diagonal_guardrail",
+  "max_depth": 8,
+  "rows": 256,
+  "value_prefix": "name:"
+}

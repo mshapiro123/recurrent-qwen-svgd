@@ -1,0 +1,9 @@
+{
+  "checkpoint": "outputs/stage5/stage5_inverse_rendered_n24_continuation_20260715/train/continuation/unfrozen_recurrent_step_200.pt",
+  "completed_rows": 384,
+  "data_jsonl": "data/phase_g_alpha_inverse_rendered/calibration_n24.jsonl",
+  "kind": "abductive_coverage_progress",
+  "resumed": false,
+  "status": "finished",
+  "total_rows": 384
+}
