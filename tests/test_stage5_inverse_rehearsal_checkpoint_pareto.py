@@ -6,6 +6,7 @@ from colab.run_stage5_inverse_rehearsal_checkpoint_pareto import (
     SYNTHETIC_FLOOR,
     assess_checkpoint_pareto,
     parse_steps,
+    summarize_pareto_conditions,
 )
 
 
@@ -54,3 +55,16 @@ def test_checkpoint_pareto_target_is_wired() -> None:
     assert "STAGE5_INVERSE_REHEARSAL_CHECKPOINT_PARETO_CELL_VERSION" in cell
     assert "candidate_requires_fresh_confirmation" in cell
     assert "STAGE5_REHEARSAL_PARETO_DISCONNECT" in cell
+
+
+def test_pareto_summary_reports_an_incomplete_grid_without_crashing() -> None:
+    candidates, unavailable, status = summarize_pareto_conditions(
+        [
+            {"step": 100, "status": "checkpoint_unavailable"},
+            {"step": 200, "assessment": {"all_current_gates_passed": False}},
+        ]
+    )
+
+    assert candidates == []
+    assert unavailable == [100]
+    assert status == "incomplete_checkpoint_grid"

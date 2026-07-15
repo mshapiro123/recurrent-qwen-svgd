@@ -109,6 +109,26 @@ def checkpoint_candidates(run_dir: Path, step: int) -> list[Path]:
     return candidates
 
 
+def summarize_pareto_conditions(conditions: list[dict[str, Any]]) -> tuple[list[int], list[int], str]:
+    candidates = [
+        int(condition["step"])
+        for condition in conditions
+        if condition.get("assessment", {}).get("all_current_gates_passed")
+    ]
+    unavailable = [
+        int(condition["step"])
+        for condition in conditions
+        if condition.get("status") == "checkpoint_unavailable"
+    ]
+    if candidates:
+        status = "confirmation_required"
+    elif unavailable:
+        status = "incomplete_checkpoint_grid"
+    else:
+        status = "no_joint_gate_candidate"
+    return candidates, unavailable, status
+
+
 def main() -> int:
     run_dir = ROOT / "outputs" / "stage5" / RUN_ID
     rehearsal_summary = read_json(run_dir / "summary.json")
@@ -127,13 +147,26 @@ def main() -> int:
     )
     conditions: list[dict[str, Any]] = []
     for step in steps:
-        checkpoint, restore_receipt = restore_checkpoint(
-            checkpoint_candidates(run_dir, step),
-            run_dir / "checkpoint_pareto" / "restored" / f"step_{step}.pt",
-            label=f"rehearsal_pareto_step_{step}",
-        )
-        checkpoint_sha = sha256_file(checkpoint)
+        candidate_paths = checkpoint_candidates(run_dir, step)
         condition_dir = run_dir / "checkpoint_pareto" / f"step_{step}"
+        try:
+            checkpoint, restore_receipt = restore_checkpoint(
+                candidate_paths,
+                run_dir / "checkpoint_pareto" / "restored" / f"step_{step}.pt",
+                label=f"rehearsal_pareto_step_{step}",
+            )
+        except FileNotFoundError as exc:
+            condition = {
+                "step": int(step),
+                "status": "checkpoint_unavailable",
+                "candidates": [path_for_cli(path) for path in candidate_paths],
+                "error": str(exc),
+            }
+            write_json(condition_dir / "condition.json", condition)
+            conditions.append(condition)
+            print(json.dumps(condition, indent=2, sort_keys=True), flush=True)
+            continue
+        checkpoint_sha = sha256_file(checkpoint)
         task_eval = _run_staircase_eval(
             condition_dir,
             label="task",
@@ -177,14 +210,15 @@ def main() -> int:
         }
         write_json(condition_dir / "condition.json", condition)
         conditions.append(condition)
-    candidates = [condition for condition in conditions if condition["assessment"]["all_current_gates_passed"]]
+    candidates, unavailable_steps, status = summarize_pareto_conditions(conditions)
     payload = {
         "kind": "stage5_inverse_rehearsal_checkpoint_pareto",
         "run_id": RUN_ID,
         "steps": list(steps),
         "conditions": conditions,
-        "joint_gate_candidates": [condition["step"] for condition in candidates],
-        "status": "confirmation_required" if candidates else "no_joint_gate_candidate",
+        "joint_gate_candidates": candidates,
+        "unavailable_steps": unavailable_steps,
+        "status": status,
         "cap4_authorized": False,
         "note": "This post-training sweep is diagnostic only; any candidate requires a fresh confirmation canary.",
     }
@@ -197,6 +231,9 @@ def main() -> int:
         "|---:|---:|---:|---:|---:|---|",
     ]
     for condition in conditions:
+        if condition.get("status") == "checkpoint_unavailable":
+            lines.append(f"| {condition['step']} | unavailable | unavailable | unavailable | unavailable | unavailable |")
+            continue
         assessment = condition["assessment"]
         lines.append(
             f"| {condition['step']} | {assessment['task']['correct']}/{assessment['task']['total']} | "
