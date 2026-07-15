@@ -131,6 +131,39 @@ def _source_cap3(source: dict[str, Any]) -> dict[str, Any]:
     return stage
 
 
+def resolve_keeper_source(source: dict[str, Any]) -> dict[str, Any]:
+    """Resolve either the locked staircase keeper or a fully green rehearsal keeper."""
+
+    source_kind = str(source.get("kind") or "")
+    if source_kind == "stage5_inverse_table_cap3_rehearsal":
+        green = (
+            source.get("status") == "rehearsal_green_cap4_authorized"
+            and bool(source.get("cap4_authorized"))
+            and bool((source.get("task_gate") or {}).get("passed"))
+            and bool((source.get("synthetic_retention") or {}).get("passed"))
+            and bool((source.get("natural_canary") or {}).get("passed"))
+        )
+        if not green:
+            raise RuntimeError("Rehearsal keeper is not fully green; inverse-rendered evaluation remains gated")
+        checkpoint_sha256 = str(source.get("checkpoint_sha256") or "")
+        if len(checkpoint_sha256) != 64 or any(char not in "0123456789abcdef" for char in checkpoint_sha256.lower()):
+            raise RuntimeError("Rehearsal keeper checkpoint SHA-256 is missing or invalid")
+        return {
+            "source_kind": source_kind,
+            "checkpoint_candidates": [source.get("checkpoint_drive_backup"), source.get("checkpoint")],
+            "checkpoint_sha256": checkpoint_sha256,
+            "retention": dict(source.get("synthetic_retention") or {}),
+        }
+
+    stage = _source_cap3(source)
+    return {
+        "source_kind": source_kind or "staircase_cap3",
+        "checkpoint_candidates": [stage.get("checkpoint_drive_backup"), stage.get("checkpoint")],
+        "checkpoint_sha256": SOURCE_CAP3_SHA256,
+        "retention": dict(stage.get("synthetic_guardrail") or {}),
+    }
+
+
 def _run_eval(run_dir: Path, *, label: str, checkpoint: Path, data_path: Path) -> dict[str, Any]:
     eval_dir = run_dir / "eval" / label
     eval_dir.mkdir(parents=True, exist_ok=True)
@@ -232,13 +265,14 @@ def main() -> int:
     if not source_path.is_absolute():
         source_path = ROOT / source_path
     source = read_json(source_path)
-    stage = _source_cap3(source)
+    keeper = resolve_keeper_source(source)
     checkpoint, restore_receipt = restore_checkpoint(
-        [stage.get("checkpoint_drive_backup"), stage.get("checkpoint")],
+        keeper["checkpoint_candidates"],
         run_dir / "restored" / "C_cap3.pt",
         label="inverse_rendered_C_cap3",
     )
-    if restore_receipt["selected_checkpoint_sha256"] != SOURCE_CAP3_SHA256:
+    checkpoint_sha256 = str(keeper["checkpoint_sha256"])
+    if restore_receipt["selected_checkpoint_sha256"] != checkpoint_sha256:
         raise RuntimeError("Restored C cap-3 checkpoint SHA mismatch")
     write_json(
         run_progress_path,
@@ -247,7 +281,7 @@ def main() -> int:
             "run_id": run_id,
             "status": "calibration_running",
             "checkpoint": path_for_cli(checkpoint),
-            "checkpoint_sha256": SOURCE_CAP3_SHA256,
+            "checkpoint_sha256": checkpoint_sha256,
             "calibration_progress": path_for_cli(run_dir / "eval" / "calibration" / "progress.json"),
         },
     )
@@ -259,7 +293,7 @@ def main() -> int:
         data_path=DATA_ROOT / "calibration_n24.jsonl",
     )
     calibration_gate = assess_deterministic_validity(calibration_summary)
-    source_guardrail = stage.get("synthetic_guardrail", {})
+    source_guardrail = keeper["retention"]
     retention_gate = {
         "active_diagonal_min": float(source_guardrail.get("active_diagonal_min", 0.0)),
         "required_correct_per_32": RETENTION_REQUIRED,
@@ -303,7 +337,8 @@ def main() -> int:
         "status": status,
         "phase_g_alpha_status": "open_for_k1_parity" if status == "deterministic_gate_green" else "closed",
         "source_summary": path_for_cli(source_path),
-        "source_checkpoint_sha256": SOURCE_CAP3_SHA256,
+        "source_kind": keeper["source_kind"],
+        "source_checkpoint_sha256": checkpoint_sha256,
         "restore_receipt": restore_receipt,
         "data": data_receipts,
         "calibration": {"summary": calibration_summary, "gate": calibration_gate},

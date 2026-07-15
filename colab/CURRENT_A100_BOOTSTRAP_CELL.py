@@ -2733,6 +2733,24 @@ TARGETS = {
             "STAGE5_INVERSE_RENDERED_DISCONNECT": "0",
         },
     },
+    "inverse_rendered_width_gate_rehearsal": {
+        "force_env": True,
+        "path": "colab/STAGE5_INVERSE_RENDERED_WIDTH_GATE_CELL.py",
+        "markers": [
+            "STAGE5_INVERSE_RENDERED_WIDTH_GATE_CELL_VERSION",
+            "inverse_rendered_width_gate",
+            "colab/run_stage5_inverse_rendered_width_gate.py",
+            "tests/test_stage5_inverse_rendered_width_gate.py",
+            "data/phase_g_alpha_inverse_rendered",
+            "accepted_returncodes={0, 2}",
+        ],
+        "env": {
+            "STAGE5_INVERSE_RENDERED_RUN_ID": "stage5_inverse_rendered_width_gate_rehearsal_20260715",
+            "STAGE5_INVERSE_RENDERED_SOURCE_SUMMARY": "outputs/stage5/stage5_inverse_table_cap3_rehearsal_20260714/summary.json",
+            "STAGE5_INVERSE_RENDERED_DTYPE": "bfloat16",
+            "STAGE5_INVERSE_RENDERED_DISCONNECT": "0",
+        },
+    },
     "phase_g_n24_calibration_gate": {
         "path": "colab/STAGE5_PHASE_G_N24_CALIBRATION_CELL.py",
         "markers": [
