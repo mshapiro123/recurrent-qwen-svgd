@@ -66,6 +66,45 @@ def write_jsonl(path: str | Path, rows: list[dict[str, Any]]) -> None:
     target.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows), encoding="utf-8")
 
 
+def resolve_eval_only_checkpoint(
+    final_path: str | Path,
+    *,
+    candidates: list[str | Path],
+    expected_sha256: str,
+) -> tuple[Path, dict[str, Any]]:
+    """Restore and verify the exact trained checkpoint before skipping training."""
+    final = Path(final_path)
+    expected = str(expected_sha256).strip().lower()
+    if len(expected) != 64 or any(char not in "0123456789abcdef" for char in expected):
+        raise RuntimeError("Eval-only resume requires an explicit 64-character checkpoint SHA256")
+    if final.exists():
+        selected_source = str(final)
+    else:
+        restored, restore_receipt = restore_checkpoint(
+            candidates,
+            final,
+            label="rehearsal_eval_only_final",
+        )
+        if restored != final:
+            raise RuntimeError(f"Eval-only checkpoint restored to unexpected path: {restored}")
+        selected_source = str(restore_receipt.get("selected_checkpoint") or candidates[0])
+    actual = sha256_file(final)
+    if actual != expected:
+        raise RuntimeError(
+            "Eval-only checkpoint SHA mismatch: "
+            f"expected={expected}, actual={actual}, path={final}"
+        )
+    receipt = {
+        "status": "verified",
+        "checkpoint": str(final),
+        "checkpoint_sha256": actual,
+        "selected_source": selected_source,
+    }
+    print(f"eval_only_checkpoint_verified={final}", flush=True)
+    print(f"eval_only_checkpoint_sha256={actual}", flush=True)
+    return final, receipt
+
+
 def validate_causal_training_rows(
     rows: list[dict[str, Any]],
     *,
@@ -355,22 +394,38 @@ def main() -> int:
         checkpoint_backup_dir=drive_train_root / "checkpoints",
         progress_backup_path=drive_train_root / "train_progress.json",
     )
-    run(
-        [
-            sys.executable,
-            "training/train_unfrozen_recurrent.py",
-            "--config",
-            path_for_cli(config_path),
-            "--train_jsonl",
-            path_for_cli(train_path),
-            "--device",
-            os.environ.get("DEVICE", "cuda"),
-        ],
-        cwd=ROOT,
-    )
     trained = train_dir / f"unfrozen_recurrent_step_{max_steps}.pt"
-    if not trained.exists():
-        raise RuntimeError(f"Training did not produce {trained}")
+    eval_resume_receipt = None
+    resume_eval = os.environ.get("STAGE5_REHEARSAL_RESUME_EVAL", "0").lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+    }
+    if resume_eval:
+        resume_source = os.environ.get("STAGE5_REHEARSAL_RESUME_CHECKPOINT", "").strip()
+        resume_sha = os.environ.get("STAGE5_REHEARSAL_RESUME_SHA256", "").strip()
+        trained, eval_resume_receipt = resolve_eval_only_checkpoint(
+            trained,
+            candidates=[resume_source] if resume_source else [],
+            expected_sha256=resume_sha,
+        )
+    else:
+        run(
+            [
+                sys.executable,
+                "training/train_unfrozen_recurrent.py",
+                "--config",
+                path_for_cli(config_path),
+                "--train_jsonl",
+                path_for_cli(train_path),
+                "--device",
+                os.environ.get("DEVICE", "cuda"),
+            ],
+            cwd=ROOT,
+        )
+        if not trained.exists():
+            raise RuntimeError(f"Training did not produce {trained}")
     checkpoint_sha = sha256_file(trained)
     drive_backup = backup_checkpoint_to_drive(
         trained,
@@ -395,7 +450,7 @@ def main() -> int:
         "passed": int(task_row["total"]) == 64 and int(task_row["correct"]) >= 46,
     }
     staircase_source = read_json(STAIRCASE_SUMMARY)
-    guardrail_paths = _prepare_guardrail_data(run_dir, staircase_source)
+    guardrail_paths = _prepare_guardrail_data(run_dir)
     synthetic = _guardrail_receipt(
         run_dir,
         label="cap3_rehearsal_synthetic",
@@ -431,6 +486,7 @@ def main() -> int:
         "checkpoint": path_for_cli(trained),
         "checkpoint_sha256": checkpoint_sha,
         "checkpoint_drive_backup": drive_backup,
+        "eval_only_resume": eval_resume_receipt,
         "optimizer_steps": max_steps,
         "mix": mix_receipt,
         "weight_profiles": profiles,

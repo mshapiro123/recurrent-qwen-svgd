@@ -14,6 +14,7 @@ from colab.run_stage5_inverse_table_rehearsal import (
     fixed_schedule_dose,
     rehearsal_optimizer_steps,
     rehearsal_weight_profiles,
+    resolve_eval_only_checkpoint,
     validate_causal_training_rows,
 )
 
@@ -128,6 +129,39 @@ def test_inverse_table_rehearsal_target_is_wired() -> None:
     assert 'os.environ.get("STAGE5_BOOTSTRAP_REF", "main")' in cell
     assert "Pinned checkout verified" in cell
     assert runner.index("sys.path.insert(0, str(REPO_ROOT))") < runner.index("from colab.")
+    assert "_prepare_guardrail_data(run_dir)" in runner
+    assert "_prepare_guardrail_data(run_dir, staircase_source)" not in runner
+
+
+def test_eval_only_resume_requires_and_verifies_exact_checkpoint_hash(tmp_path: Path) -> None:
+    backup = tmp_path / "drive" / "unfrozen_recurrent_step_334.pt"
+    backup.parent.mkdir(parents=True)
+    backup.write_bytes(b"clean-final-checkpoint")
+    expected_sha = __import__("hashlib").sha256(backup.read_bytes()).hexdigest()
+    final = tmp_path / "train" / "unfrozen_recurrent_step_334.pt"
+
+    checkpoint, receipt = resolve_eval_only_checkpoint(
+        final,
+        candidates=[backup],
+        expected_sha256=expected_sha,
+    )
+
+    assert checkpoint == final
+    assert checkpoint.read_bytes() == backup.read_bytes()
+    assert receipt["checkpoint_sha256"] == expected_sha
+    assert receipt["status"] == "verified"
+
+
+def test_eval_only_resume_rejects_wrong_checkpoint_hash(tmp_path: Path) -> None:
+    final = tmp_path / "unfrozen_recurrent_step_334.pt"
+    final.write_bytes(b"wrong-checkpoint")
+
+    try:
+        resolve_eval_only_checkpoint(final, candidates=[], expected_sha256="0" * 64)
+    except RuntimeError as exc:
+        assert "SHA mismatch" in str(exc)
+    else:
+        raise AssertionError("Eval-only resume accepted a checkpoint with the wrong SHA")
 
 
 def test_inverse_table_rehearsal_runner_resolves_repo_packages_when_run_by_path(tmp_path: Path) -> None:
