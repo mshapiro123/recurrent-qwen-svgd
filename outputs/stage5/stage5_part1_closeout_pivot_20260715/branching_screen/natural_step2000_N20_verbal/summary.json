@@ -1,0 +1,58 @@
+{
+  "by_reachable_set_stratum": {
+    "2": {
+      "accuracy": 0.7415730337078652,
+      "correct": 198,
+      "total": 267
+    },
+    "3-4": {
+      "accuracy": 0.7482014388489209,
+      "correct": 104,
+      "total": 139
+    },
+    "5-8": {
+      "accuracy": 0.7702702702702703,
+      "correct": 57,
+      "total": 74
+    },
+    "9-16": {
+      "accuracy": 0.9375,
+      "correct": 30,
+      "total": 32
+    }
+  },
+  "checkpoint": "outputs/stage5/stage5_part1_closeout_pivot_20260715/restored/natural_step2000.pt",
+  "data_jsonl": "outputs/stage5/stage5_part1_closeout_pivot_20260715/data/branching_n20_verbal.jsonl",
+  "gate": {
+    "by_depth": {
+      "1": {
+        "accuracy": 0.9921875,
+        "correct": 127,
+        "total": 128
+      },
+      "2": {
+        "accuracy": 0.7421875,
+        "correct": 95,
+        "total": 128
+      },
+      "3": {
+        "accuracy": 0.6796875,
+        "correct": 87,
+        "total": 128
+      },
+      "4": {
+        "accuracy": 0.625,
+        "correct": 80,
+        "total": 128
+      }
+    },
+    "passed": true,
+    "per_depth_floor": 0.55,
+    "pooled_accuracy": 0.759765625,
+    "pooled_correct": 389,
+    "pooled_floor": 0.7,
+    "pooled_total": 512
+  },
+  "kind": "branching_relations_zero_shot_validity",
+  "rows": 512
+}
