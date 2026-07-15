@@ -1,0 +1,335 @@
+{
+  "kind": "phase_g_inverse_rendered_frozen_set",
+  "splits": {
+    "calibration": {
+      "manifest": {
+        "depth_counts": {
+          "1": 96,
+          "2": 96,
+          "3": 96,
+          "4": 96
+        },
+        "generator_counts": {
+          "arbitrary_random_mapping_conditioned_on_preimage_stratum": 384
+        },
+        "row_id_sha256": "8e004578de79b309eb39ccff49ea439f7a3c2c45aafeb779ac067b89f6da9f37",
+        "row_sha256": "e8531eac53f97d039e99f1b472867a30a5bfbaf427204ff2c36d4262bb99ae1b",
+        "rows": 384,
+        "solution_counts": {
+          "1": 128,
+          "10": 3,
+          "11": 1,
+          "12": 2,
+          "13": 1,
+          "16": 1,
+          "17": 1,
+          "2": 50,
+          "3": 40,
+          "4": 38,
+          "5": 65,
+          "6": 18,
+          "7": 17,
+          "8": 10,
+          "9": 9
+        },
+        "stratum_counts": {
+          "large": 128,
+          "small": 128,
+          "unique": 128
+        }
+      },
+      "path": "data/phase_g_alpha_inverse_rendered/calibration_n24.jsonl",
+      "rendering": "inverse_relation_given",
+      "source_manifest": {
+        "depth_counts": {
+          "1": 96,
+          "2": 96,
+          "3": 96,
+          "4": 96
+        },
+        "generator_counts": {
+          "arbitrary_random_mapping_conditioned_on_preimage_stratum": 384
+        },
+        "row_id_sha256": "8e004578de79b309eb39ccff49ea439f7a3c2c45aafeb779ac067b89f6da9f37",
+        "row_sha256": "05bf874f58bc3fb61ca603fa609abee8f1eae5b9eca64086b5d96aa20a758901",
+        "rows": 384,
+        "solution_counts": {
+          "1": 128,
+          "10": 3,
+          "11": 1,
+          "12": 2,
+          "13": 1,
+          "16": 1,
+          "17": 1,
+          "2": 50,
+          "3": 40,
+          "4": 38,
+          "5": 65,
+          "6": 18,
+          "7": 17,
+          "8": 10,
+          "9": 9
+        },
+        "stratum_counts": {
+          "large": 128,
+          "small": 128,
+          "unique": 128
+        }
+      },
+      "source_path": "data/phase_g_alpha/calibration_n24.jsonl",
+      "source_validation": {
+        "errors": [],
+        "manifest": {
+          "depth_counts": {
+            "1": 96,
+            "2": 96,
+            "3": 96,
+            "4": 96
+          },
+          "generator_counts": {
+            "arbitrary_random_mapping_conditioned_on_preimage_stratum": 384
+          },
+          "row_id_sha256": "8e004578de79b309eb39ccff49ea439f7a3c2c45aafeb779ac067b89f6da9f37",
+          "row_sha256": "05bf874f58bc3fb61ca603fa609abee8f1eae5b9eca64086b5d96aa20a758901",
+          "rows": 384,
+          "solution_counts": {
+            "1": 128,
+            "10": 3,
+            "11": 1,
+            "12": 2,
+            "13": 1,
+            "16": 1,
+            "17": 1,
+            "2": 50,
+            "3": 40,
+            "4": 38,
+            "5": 65,
+            "6": 18,
+            "7": 17,
+            "8": 10,
+            "9": 9
+          },
+          "stratum_counts": {
+            "large": 128,
+            "small": 128,
+            "unique": 128
+          }
+        },
+        "rows": 384,
+        "status": "passed",
+        "stratum_counts": {
+          "large": 128,
+          "small": 128,
+          "unique": 128
+        }
+      },
+      "split": "calibration",
+      "validation": {
+        "errors": [],
+        "manifest": {
+          "depth_counts": {
+            "1": 96,
+            "2": 96,
+            "3": 96,
+            "4": 96
+          },
+          "generator_counts": {
+            "arbitrary_random_mapping_conditioned_on_preimage_stratum": 384
+          },
+          "row_id_sha256": "8e004578de79b309eb39ccff49ea439f7a3c2c45aafeb779ac067b89f6da9f37",
+          "row_sha256": "e8531eac53f97d039e99f1b472867a30a5bfbaf427204ff2c36d4262bb99ae1b",
+          "rows": 384,
+          "solution_counts": {
+            "1": 128,
+            "10": 3,
+            "11": 1,
+            "12": 2,
+            "13": 1,
+            "16": 1,
+            "17": 1,
+            "2": 50,
+            "3": 40,
+            "4": 38,
+            "5": 65,
+            "6": 18,
+            "7": 17,
+            "8": 10,
+            "9": 9
+          },
+          "stratum_counts": {
+            "large": 128,
+            "small": 128,
+            "unique": 128
+          }
+        },
+        "rendering": "inverse_relation_given",
+        "rows": 384,
+        "status": "passed",
+        "stratum_counts": {
+          "large": 128,
+          "small": 128,
+          "unique": 128
+        }
+      }
+    },
+    "test": {
+      "manifest": {
+        "depth_counts": {
+          "1": 96,
+          "2": 96,
+          "3": 96,
+          "4": 96
+        },
+        "generator_counts": {
+          "arbitrary_random_mapping_conditioned_on_preimage_stratum": 384
+        },
+        "row_id_sha256": "19d7720f1edb70b90542e11c6bdc935a70f342852dee3835dc28812e28a5a672",
+        "row_sha256": "8f736f370a45e051a2c85646c0120a18c64a57a65a94a9458125fa17c98b88f0",
+        "rows": 384,
+        "solution_counts": {
+          "1": 128,
+          "10": 3,
+          "11": 1,
+          "13": 3,
+          "2": 52,
+          "3": 48,
+          "4": 28,
+          "5": 69,
+          "6": 28,
+          "7": 14,
+          "8": 4,
+          "9": 6
+        },
+        "stratum_counts": {
+          "large": 128,
+          "small": 128,
+          "unique": 128
+        }
+      },
+      "path": "data/phase_g_alpha_inverse_rendered/test_n24.jsonl",
+      "rendering": "inverse_relation_given",
+      "source_manifest": {
+        "depth_counts": {
+          "1": 96,
+          "2": 96,
+          "3": 96,
+          "4": 96
+        },
+        "generator_counts": {
+          "arbitrary_random_mapping_conditioned_on_preimage_stratum": 384
+        },
+        "row_id_sha256": "19d7720f1edb70b90542e11c6bdc935a70f342852dee3835dc28812e28a5a672",
+        "row_sha256": "4bc01db9d79ffb88924818979cd963cbdb7c6fd51d93ae26f09275ca59446d89",
+        "rows": 384,
+        "solution_counts": {
+          "1": 128,
+          "10": 3,
+          "11": 1,
+          "13": 3,
+          "2": 52,
+          "3": 48,
+          "4": 28,
+          "5": 69,
+          "6": 28,
+          "7": 14,
+          "8": 4,
+          "9": 6
+        },
+        "stratum_counts": {
+          "large": 128,
+          "small": 128,
+          "unique": 128
+        }
+      },
+      "source_path": "data/phase_g_alpha/test_n24.jsonl",
+      "source_validation": {
+        "errors": [],
+        "manifest": {
+          "depth_counts": {
+            "1": 96,
+            "2": 96,
+            "3": 96,
+            "4": 96
+          },
+          "generator_counts": {
+            "arbitrary_random_mapping_conditioned_on_preimage_stratum": 384
+          },
+          "row_id_sha256": "19d7720f1edb70b90542e11c6bdc935a70f342852dee3835dc28812e28a5a672",
+          "row_sha256": "4bc01db9d79ffb88924818979cd963cbdb7c6fd51d93ae26f09275ca59446d89",
+          "rows": 384,
+          "solution_counts": {
+            "1": 128,
+            "10": 3,
+            "11": 1,
+            "13": 3,
+            "2": 52,
+            "3": 48,
+            "4": 28,
+            "5": 69,
+            "6": 28,
+            "7": 14,
+            "8": 4,
+            "9": 6
+          },
+          "stratum_counts": {
+            "large": 128,
+            "small": 128,
+            "unique": 128
+          }
+        },
+        "rows": 384,
+        "status": "passed",
+        "stratum_counts": {
+          "large": 128,
+          "small": 128,
+          "unique": 128
+        }
+      },
+      "split": "test",
+      "validation": {
+        "errors": [],
+        "manifest": {
+          "depth_counts": {
+            "1": 96,
+            "2": 96,
+            "3": 96,
+            "4": 96
+          },
+          "generator_counts": {
+            "arbitrary_random_mapping_conditioned_on_preimage_stratum": 384
+          },
+          "row_id_sha256": "19d7720f1edb70b90542e11c6bdc935a70f342852dee3835dc28812e28a5a672",
+          "row_sha256": "8f736f370a45e051a2c85646c0120a18c64a57a65a94a9458125fa17c98b88f0",
+          "rows": 384,
+          "solution_counts": {
+            "1": 128,
+            "10": 3,
+            "11": 1,
+            "13": 3,
+            "2": 52,
+            "3": 48,
+            "4": 28,
+            "5": 69,
+            "6": 28,
+            "7": 14,
+            "8": 4,
+            "9": 6
+          },
+          "stratum_counts": {
+            "large": 128,
+            "small": 128,
+            "unique": 128
+          }
+        },
+        "rendering": "inverse_relation_given",
+        "rows": 384,
+        "status": "passed",
+        "stratum_counts": {
+          "large": 128,
+          "small": 128,
+          "unique": 128
+        }
+      }
+    }
+  }
+}
