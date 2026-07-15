@@ -1,6 +1,6 @@
 # Multi-Channel Bridge Precursor Battery - stage5_multichannel_bridge_precursor_replication_20260714
 
-- Status: `running`
+- Status: `finished`
 - Completed conditions: `['backward_recovery', 'n24_step6000']`
 - Staircase reading: `experiment_stalled_at_matched_dose`
 - Measurement evidence: `{'m1': {'n24_step6000': False, 'backward_recovery': False}, 'm2': {'n24_step6000': True, 'backward_recovery': False}, 'm3': {'n24_step6000': None}}`
