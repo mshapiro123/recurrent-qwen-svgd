@@ -34,6 +34,9 @@ def test_rehearsal_config_uses_interval_checkpoints_and_drive_receipts(tmp_path:
 
     assert config["save_every"] == 25
     assert config["checkpoint_backup_every"] == 100
+    assert config["beta"] == 0.0
+    assert config["halt_target_nll_weight"] == 0.0
+    assert config["loop_control_ce_weight"] == 0.0
     assert Path(config["checkpoint_backup_dir"]) == tmp_path / "drive" / "checkpoints"
     assert Path(config["progress_backup_path"]) == tmp_path / "drive" / "progress.json"
 

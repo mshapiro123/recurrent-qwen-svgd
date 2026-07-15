@@ -218,6 +218,11 @@ def _write_config(
         "max_loops": MAX_LOOPS,
         "loop_loss_mode": "weighted_per_loop_labels",
         "row_specific_forward_loops": True,
+        # Match the source staircase objective exactly. The halting head is
+        # frozen, and its KL must not add a hidden gradient to the block.
+        "beta": 0.0,
+        "halt_target_nll_weight": 0.0,
+        "loop_control_ce_weight": 0.0,
         "batch_size": 1,
         "gradient_accumulation_steps": EFFECTIVE_BATCH_SIZE,
         "minimum_effective_batch_size": EFFECTIVE_BATCH_SIZE,
