@@ -1,0 +1,10 @@
+{
+  "checkpoint": "outputs/stage5/stage5_part1_closeout_pivot_20260715/micro_test/train/stage_1/unfrozen_recurrent_step_1000.pt",
+  "checkpoint_backup": null,
+  "completed_step": 1000,
+  "kind": "train_unfrozen_recurrent_progress",
+  "max_steps": 1000,
+  "metrics": {},
+  "micro_step": 8000,
+  "status": "finished"
+}

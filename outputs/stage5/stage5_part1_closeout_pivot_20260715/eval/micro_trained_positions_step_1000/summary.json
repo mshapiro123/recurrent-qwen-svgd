@@ -1,0 +1,66 @@
+{
+  "kind": "synthetic_depth_active_label_matrix",
+  "threshold": 0.71,
+  "depths": [
+    1,
+    2
+  ],
+  "loops": [
+    1,
+    2
+  ],
+  "active_matrix": {
+    "1": {
+      "1": {
+        "correct": 46,
+        "total": 64,
+        "accuracy": 0.71875
+      },
+      "2": {
+        "correct": 0,
+        "total": 0,
+        "accuracy": 0.0
+      }
+    },
+    "2": {
+      "1": {
+        "correct": 63,
+        "total": 64,
+        "accuracy": 0.984375
+      },
+      "2": {
+        "correct": 64,
+        "total": 64,
+        "accuracy": 1.0
+      }
+    }
+  },
+  "active_diagonal": {
+    "1": 0.71875,
+    "2": 1.0
+  },
+  "active_diagonal_clears_bar": true,
+  "active_total": {
+    "correct": 173,
+    "total": 192,
+    "accuracy": 0.9010416666666666
+  },
+  "above_diagonal": {
+    "iterate": 5,
+    "hold": 0,
+    "other": 59,
+    "unknown_iterate_target": 0,
+    "n": 64,
+    "rates": {
+      "iterate": 0.078125,
+      "hold": 0.0,
+      "other": 0.921875,
+      "unknown_iterate_target": 0.0
+    }
+  },
+  "checkpoint": "outputs/stage5/stage5_part1_closeout_pivot_20260715/micro_test/train/stage_1/unfrozen_recurrent_step_1000.pt",
+  "data_jsonl": "outputs/stage5/stage5_part1_closeout_pivot_20260715/data/loop_trained_eval.jsonl",
+  "prediction_space": "full_symbols",
+  "prompt_style": "question_only",
+  "rows": 256
+}

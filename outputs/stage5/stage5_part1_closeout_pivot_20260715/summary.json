@@ -143,7 +143,47 @@
     ],
     "status": "green"
   },
+  "loop_position_micro_test": {
+    "candidates": [
+      {
+        "checkpoint": "outputs/stage5/stage5_part1_closeout_pivot_20260715/micro_test/train/stage_1/unfrozen_recurrent_step_500.pt",
+        "checkpoint_sha256": "bb06cbe146990139f042a20d04c54d0f065f0d3571c135fc9b42c5f65b814390",
+        "cumulative_step": 500,
+        "trained_position_gate": {
+          "accuracy_by_inverse_position": {
+            "1": 0.71875,
+            "2": 1.0
+          },
+          "floor": 0.71,
+          "passed": true
+        }
+      },
+      {
+        "checkpoint": "outputs/stage5/stage5_part1_closeout_pivot_20260715/micro_test/train/stage_1/unfrozen_recurrent_step_1000.pt",
+        "checkpoint_sha256": "a4fefed30fb1fbdf1c0dd5f87b6af9847f89c942f4d92c20933699f600dd652d",
+        "cumulative_step": 1000,
+        "guardrail": {
+          "active_diagonal_min": 0.8125,
+          "floor": 0.93,
+          "passed": false,
+          "summary": "outputs/stage5/stage5_part1_closeout_pivot_20260715/guardrails/micro_stage_1_step_1000/summary.json"
+        },
+        "trained_position_gate": {
+          "accuracy_by_inverse_position": {
+            "1": 0.71875,
+            "2": 1.0
+          },
+          "floor": 0.71,
+          "passed": true
+        }
+      }
+    ],
+    "disposable_checkpoints_deleted_after_measurement": true,
+    "lineage_regime": "disposable_measurement",
+    "measurement": null,
+    "status": "blocked_guardrail_hard_stop"
+  },
   "phase_g_alpha_status": "closed_pending_branching_screen",
   "run_id": "stage5_part1_closeout_pivot_20260715",
-  "status": "data_ready"
+  "status": "micro_test_complete"
 }
