@@ -1,0 +1,63 @@
+{
+  "accuracy": 0.828125,
+  "active_diagonal": {
+    "1": 0.96875,
+    "2": 0.96875,
+    "3": 0.84375,
+    "4": 0.9375,
+    "5": 0.84375,
+    "6": 0.6875,
+    "7": 0.65625,
+    "8": 0.71875
+  },
+  "active_diagonal_min": 0.65625,
+  "by_depth": {
+    "1": {
+      "accuracy": 0.96875,
+      "correct": 31,
+      "total": 32
+    },
+    "2": {
+      "accuracy": 0.96875,
+      "correct": 31,
+      "total": 32
+    },
+    "3": {
+      "accuracy": 0.84375,
+      "correct": 27,
+      "total": 32
+    },
+    "4": {
+      "accuracy": 0.9375,
+      "correct": 30,
+      "total": 32
+    },
+    "5": {
+      "accuracy": 0.84375,
+      "correct": 27,
+      "total": 32
+    },
+    "6": {
+      "accuracy": 0.6875,
+      "correct": 22,
+      "total": 32
+    },
+    "7": {
+      "accuracy": 0.65625,
+      "correct": 21,
+      "total": 32
+    },
+    "8": {
+      "accuracy": 0.71875,
+      "correct": 23,
+      "total": 32
+    }
+  },
+  "checkpoint": "outputs/stage5/stage5_inverse_table_cap3_rehearsal_20260714/train/cap3_rehearsal/unfrozen_recurrent_step_334.pt",
+  "correct": 212,
+  "data_jsonl": "outputs/stage5/stage5_inverse_table_cap3_rehearsal_20260714/guardrail_data/natural_surface_relay_pointer_16_each_d1_8.jsonl",
+  "kind": "synthetic_diagonal_guardrail",
+  "max_depth": 8,
+  "rows": 256,
+  "value_prefix": "name:"
+}

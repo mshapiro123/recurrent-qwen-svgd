@@ -1,0 +1,141 @@
+{
+  "cap4_authorized": false,
+  "checkpoint": "outputs/stage5/stage5_inverse_table_cap3_rehearsal_20260714/train/cap3_rehearsal/unfrozen_recurrent_step_334.pt",
+  "checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_inverse_table_cap3_rehearsal_20260714/cap3_rehearsal_selected/unfrozen_recurrent_step_334.pt",
+  "checkpoint_sha256": "d662829d0d3c4f3f1521aaa567728203712152d5fd81bab17d78ad63b0ce6c00",
+  "eval_only_resume": {
+    "checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_inverse_table_cap3_rehearsal_20260714/train/cap3_rehearsal/unfrozen_recurrent_step_334.pt",
+    "checkpoint_sha256": "d662829d0d3c4f3f1521aaa567728203712152d5fd81bab17d78ad63b0ce6c00",
+    "selected_source": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_inverse_table_cap3_rehearsal_20260714/train/cap3_rehearsal/unfrozen_recurrent_step_334.pt",
+    "status": "verified"
+  },
+  "kind": "stage5_inverse_table_cap3_rehearsal",
+  "mix": {
+    "dose": {
+      "forward_synthetic_rehearsal": {
+        "rows": 668,
+        "weighted_active_labels_by_loop": [
+          40.42180466949714,
+          40.42180466949645,
+          40.421804669496616,
+          40.42180466949705,
+          40.421804669496645,
+          40.421804669497114,
+          40.421804669496794,
+          40.421804669496666,
+          40.42180466949654,
+          40.42180466949673,
+          40.42180466949673,
+          80.84360933899343
+        ],
+        "weighted_active_labels_total": 525.4834607034579
+      },
+      "inverse_table_task": {
+        "rows": 2004,
+        "weighted_active_labels_by_loop": [
+          707.2941176470823,
+          702.5294117646841,
+          1431.5294117646883,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "weighted_active_labels_total": 2841.352941176455
+      }
+    },
+    "one_exact_epoch": true,
+    "realized_rehearsal_fraction": 0.25,
+    "rehearsal_rows": 668,
+    "rows": 2672,
+    "schedule_sha256": "809d596bb693cbdc4d930ca78679743577ed948db743d1ac27592aa395912fc4",
+    "schema": {
+      "mixed": {
+        "label": "mixed rehearsal schedule",
+        "rows": 2672,
+        "status": "passed"
+      },
+      "rehearsal": {
+        "label": "forward rehearsal",
+        "rows": 3072,
+        "status": "passed"
+      },
+      "task": {
+        "label": "inverse-table task",
+        "rows": 768,
+        "status": "passed"
+      }
+    },
+    "task_rows": 2004
+  },
+  "natural_canary": {
+    "accuracy_delta": -0.05859375,
+    "baseline_accuracy": 0.88671875,
+    "candidate_accuracy": 0.828125,
+    "passed": false,
+    "verdict": {
+      "accuracy_delta": -0.05859375,
+      "accuracy_hard_stop_margin": -0.03,
+      "ppl_hard_stop_relative": 0.05,
+      "ppl_relative_delta": null,
+      "status": "red_hard_stop"
+    }
+  },
+  "optimizer_steps": 334,
+  "restore_receipt": {
+    "selected_checkpoint_reference": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_inverse_table_rebase_caps3_4_20260713/C_rebase_cap_3_selected/unfrozen_recurrent_step_250.pt",
+    "selected_checkpoint_sha256": "83767ebff2c2a13a2f15fe8266f605fb8485985c3289c1f1720cd70c122a9ac5",
+    "selected_checkpoint_source": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_inverse_table_rebase_caps3_4_20260713/C_rebase_cap_3_selected/unfrozen_recurrent_step_250.pt"
+  },
+  "run_id": "stage5_inverse_table_cap3_rehearsal_20260714",
+  "source_checkpoint_sha256": "83767ebff2c2a13a2f15fe8266f605fb8485985c3289c1f1720cd70c122a9ac5",
+  "source_summary": "outputs/stage5/stage5_inverse_table_rebase_caps3_4_20260713/summary.json",
+  "status": "rehearsal_failed_review_required",
+  "synthetic_retention": {
+    "active_diagonal_min": 0.96875,
+    "floor": 0.93,
+    "passed": true,
+    "summary": "outputs/stage5/stage5_inverse_table_cap3_rehearsal_20260714/guardrails/cap3_rehearsal_synthetic/summary.json"
+  },
+  "task_gate": {
+    "correct": 64,
+    "passed": true,
+    "required_correct": 46,
+    "total": 64
+  },
+  "weight_profiles": {
+    "rehearsal": [
+      0.060511683636971174,
+      0.0657265116577183,
+      0.07179716637566029,
+      0.07972742538362278,
+      0.09002629102337803,
+      0.10055175290919588,
+      0.11750524613225799,
+      0.1423302981320308,
+      0.18542112233714103,
+      0.24647441871644357,
+      0.396292202642125,
+      1.443635881053455
+    ],
+    "task": [
+      0.35294117647058826,
+      0.5294117647058824,
+      2.1176470588235294,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  }
+}

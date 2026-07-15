@@ -1,0 +1,56 @@
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+dtype: bfloat16
+adapter_dtype: float32
+attn_implementation: default
+layer_split: 6,18
+max_length: 640
+max_loops: 12
+loop_loss_mode: weighted_per_loop_labels
+row_specific_forward_loops: true
+beta: 0.0
+halt_target_nll_weight: 0.0
+loop_control_ce_weight: 0.0
+batch_size: 1
+gradient_accumulation_steps: 8
+minimum_effective_batch_size: 8
+seed: 81903
+optimizer: adamw
+learning_rate: 1.0e-05
+adamw_lr: 1.0e-05
+weight_decay: 0.0
+max_grad_norm: 0.5
+max_steps: 334
+save_every: 25
+checkpoint_backup_every: 100
+checkpoint_backup_dir: /content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_inverse_table_cap3_rehearsal_20260714/train/checkpoints
+progress_backup_path: /content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_inverse_table_cap3_rehearsal_20260714/train/train_progress.json
+log_every: 25
+bridge_projection_mode: split
+bridge_prelude_lr_multiplier: 10.0
+bridge_prelude_weight_decay: 0.0
+bridge_prelude_lr_include_norm: false
+bridge_prelude_grad_multiplier: 1.0
+train_on_prompt: false
+gradient_checkpointing: true
+require_active_supervision: true
+require_nonzero_train_gradient: true
+output_dir: outputs/stage5/stage5_inverse_table_cap3_rehearsal_20260714/train/cap3_rehearsal
+resume_from: outputs/stage5/stage5_inverse_table_cap3_rehearsal_20260714/restored/C_cap3.pt
+resume_lora:
+  enabled: false
+merge_lora_before_unfreeze: false
+require_lora_loaded_before_merge: false
+train_auxiliary:
+  bridge: true
+  halting: false
+  reentry_adapter: false
+  latent: false
+recurrence_curriculum:
+  enabled: false
+  start_loop: 12
+  end_loop: 12
+  schedule: linear
+  target_source: row_capped
+  ramp_compute: false
+synthetic_phase: inverse_table_cap3_rehearsal
+synthetic_stage: cap_3_retention_replay
