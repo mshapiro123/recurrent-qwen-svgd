@@ -1222,3 +1222,15 @@ Colab/Drive backups for selected runs.
   corrected-design reading-one both exist. Bridge-SVD and intervention-derived
   bases are predeclared but not run; F9 closes if a corrected design removes
   the installation-cost problem.
+- 2026-07-14 F9 replication verdict: the bounded `backward_recovery`
+  replication completed with zero locked measurement votes. M1 remained
+  `smeared`: its loop-6-through-8 concentration ratios were `1.37447`,
+  `1.37352`, and `1.36925`, all below the predeclared `2.0x` bar. M2 did not
+  replicate: zero stable retrieval heads qualified, and aggregate
+  concentration `0.272197` was below the matched-random p95 `0.603922`.
+  M3 was not run. The aggregate battery therefore records
+  `battery_specialization=false`, while the independent staircase remains
+  `experiment_stalled_at_matched_dose`. F9 is closed as `remain_banked`; do
+  not run M3, search alternative bases, or build a multi-channel bridge on
+  these results. The active queue returns to W3 inverse-rendered validity and
+  C1 cap-3 rehearsal/retention repair.

@@ -100,3 +100,35 @@ The replication cannot activate a multi-channel bridge. F9 remains banked unless
 - `outputs/stage5/stage5_multichannel_bridge_precursor_pilot_20260714/conditions/n24_step6000/m2_retrieval_heads.json`
 - `colab/run_stage5_multichannel_bridge_precursor.py`
 - `eval/eval_multichannel_bridge_precursor.py`
+
+## Replication Result And Closure
+
+The authorized `backward_recovery` replication completed in
+`stage5_multichannel_bridge_precursor_replication_20260714`. It validated and
+imported the immutable N24 pilot receipt, then evaluated the second locked
+condition with the same query-head basis, thresholds, and 20 matched random
+rotations.
+
+| Measurement | Backward-recovery result | Locked reading |
+|---|---:|---|
+| M1 late-loop concentration ratios | `1.37447`, `1.37352`, `1.36925` | `smeared`; all below `2.0x` |
+| M2 qualifying retrieval heads | `0` | not confirmed |
+| M2 aggregate concentration | `0.272197` | below random p95 `0.603922` |
+| M3 | not run | no vote |
+
+The aggregate result has zero confirmed measurement votes and records
+`battery_specialization=false`. The staircase prerequisite independently
+remains false with reading `experiment_stalled_at_matched_dose`, so the final
+decision is `remain_banked`.
+
+This resolves the open strategy questions. The N24 retrieval-head observation
+is checkpoint/task-local rather than a replicated backward-inference feature.
+The modest head-basis anisotropy in M1 is a characterization, not evidence for
+changing the bridge. No M3 pass, alternative-basis search, or multi-channel
+bridge implementation is authorized. F9 is now closed and the main queue
+returns to W3 inverse-rendered validity and C1 cap-3 rehearsal/retention repair.
+
+Final artifacts:
+
+- `outputs/stage5/stage5_multichannel_bridge_precursor_replication_20260714/summary.json`
+- `outputs/stage5/stage5_multichannel_bridge_precursor_replication_20260714/conditions/backward_recovery/summary.json`
