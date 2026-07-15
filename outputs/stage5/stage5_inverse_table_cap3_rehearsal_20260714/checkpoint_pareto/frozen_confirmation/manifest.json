@@ -1,0 +1,44 @@
+{
+  "confirmation": {
+    "by_family_depth": {
+      "pointer_d1": 16,
+      "pointer_d2": 16,
+      "pointer_d3": 16,
+      "pointer_d4": 16,
+      "pointer_d5": 16,
+      "pointer_d6": 16,
+      "pointer_d7": 16,
+      "pointer_d8": 16,
+      "relay_d1": 16,
+      "relay_d2": 16,
+      "relay_d3": 16,
+      "relay_d4": 16,
+      "relay_d5": 16,
+      "relay_d6": 16,
+      "relay_d7": 16,
+      "relay_d8": 16
+    },
+    "offset_per_family_depth": 16,
+    "paired_ids_sha256": "f051dc1239cad822a7ce1a894fb68009b86841747dd60e9ad917b35799097405",
+    "row_ids_sha256": "2bf0b36ee765dc513d35b287ce340e18630e10822b515c2727232b99fb9ec388",
+    "rows": 256,
+    "rows_per_family_depth": 16
+  },
+  "kind": "natural_surface_confirmation_split",
+  "max_depth": 8,
+  "paired_overlap": [],
+  "selection": {
+    "offset_per_family_depth": 0,
+    "paired_ids_sha256": "d1b5038823b32b8abdaf1d48c0d0dfbd628eb3c68b38f8a87ca3aaf734a5c925",
+    "row_ids_sha256": "3fbd710fc85ce5761912ef5190b1be229a79db089fdc692b9c6d00746b85a05f",
+    "rows": 256,
+    "rows_per_family_depth": 16
+  },
+  "source": {
+    "pointer_jsonl": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/data/paired_pointer_d1_12.jsonl",
+    "pointer_sha256": "0a7a7b0966255977c956a032bda45f0d05ab9bdf65d2a46208a0206ca88652df",
+    "relay_jsonl": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/data/paired_relay_d1_12.jsonl",
+    "relay_sha256": "de790d0c87a0a4c190e22ae653726e352eecf416d0c8f8e99c49f272635a2983"
+  },
+  "status": "frozen_disjoint_confirmation"
+}
