@@ -1,0 +1,149 @@
+{
+  "datasets": {
+    "branching_n20_verbal": {
+      "depth_counts": {
+        "1": 128,
+        "2": 128,
+        "3": 128,
+        "4": 128
+      },
+      "errors": [],
+      "manifest": {
+        "row_id_sha256": "a75171fd3f8a22b632dfb525fd8c1b44136b095d0db6ec36433751b521c60758",
+        "row_sha256": "eb80ef24637aee511a3e35607e87ae2530842ce11c551e6fa90ecda4d4115ef8",
+        "rows": 512
+      },
+      "rows": 512,
+      "status": "passed",
+      "stratum_counts_by_depth": {
+        "1": {
+          "2": 128
+        },
+        "2": {
+          "2": 64,
+          "3-4": 64
+        },
+        "3": {
+          "2": 43,
+          "3-4": 43,
+          "5-8": 42
+        },
+        "4": {
+          "2": 32,
+          "3-4": 32,
+          "5-8": 32,
+          "9-16": 32
+        }
+      }
+    },
+    "branching_n24_symbolic": {
+      "depth_counts": {
+        "1": 128,
+        "2": 128,
+        "3": 128,
+        "4": 128
+      },
+      "errors": [],
+      "manifest": {
+        "row_id_sha256": "63213e0b531704defe9c63f796c89923fa688e51c2895d2b8fb32ed5c217e0e0",
+        "row_sha256": "aa49e8202c59bb0a1e4773a5617970b9a7d5f696f7527b98d72d4ccbc7d9500d",
+        "rows": 512
+      },
+      "rows": 512,
+      "status": "passed",
+      "stratum_counts_by_depth": {
+        "1": {
+          "2": 128
+        },
+        "2": {
+          "2": 64,
+          "3-4": 64
+        },
+        "3": {
+          "2": 43,
+          "3-4": 43,
+          "5-8": 42
+        },
+        "4": {
+          "2": 32,
+          "3-4": 32,
+          "5-8": 32,
+          "9-16": 32
+        }
+      }
+    },
+    "loop_train": {
+      "errors": [],
+      "manifest": {
+        "row_id_sha256": "8773544830cb15c058ea03e3587a02205e10844c9322993847f3b8c431df8d7b",
+        "row_sha256": "9a61b772aa330b16b4dd9b719215c62f6992cb775270c1fc342e89adfb4e74b3",
+        "rows": 640
+      },
+      "status": "passed"
+    },
+    "loop_trained_eval": {
+      "errors": [],
+      "manifest": {
+        "row_id_sha256": "0b643e5e54a062145645f61118b1cc19a15afa3314e202dac76c67143dc8b417",
+        "row_sha256": "ee1a3008f84d87edee37015bb181b8f3eb64c1ce226b6464ac63ba87fa6b2b96",
+        "rows": 128
+      },
+      "status": "passed"
+    },
+    "loop_transfer_eval": {
+      "errors": [],
+      "manifest": {
+        "row_id_sha256": "c48615407441e06d2201138201257cee26059ec06da1280805ea4bff7ddd0a22",
+        "row_sha256": "e54f50533603109d90e10484ba786c5e41f4f0094bcd7e959dabc11d2c1ff419",
+        "rows": 256
+      },
+      "status": "passed"
+    },
+    "synthetic_guardrail": {
+      "depth_counts": {
+        "1": 16,
+        "10": 16,
+        "11": 16,
+        "12": 16,
+        "2": 16,
+        "3": 16,
+        "4": 16,
+        "5": 16,
+        "6": 16,
+        "7": 16,
+        "8": 16,
+        "9": 16
+      },
+      "rows": 192
+    }
+  },
+  "keepers": {
+    "n24_step6000": {
+      "expected_sha256": "898a259db2ab344ece4545e2910b051840e8408dbe4927f799e7cdb3cdd8c7dc",
+      "selected_checkpoint_reference": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_n24_support12_rung_20260707_140139/anneal_to_outcome_final/unfrozen_recurrent_step_6000.pt",
+      "selected_checkpoint_sha256": "898a259db2ab344ece4545e2910b051840e8408dbe4927f799e7cdb3cdd8c7dc",
+      "selected_checkpoint_source": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_n24_support12_rung_20260707_140139/anneal_to_outcome_final/unfrozen_recurrent_step_6000.pt"
+    },
+    "natural_step2000": {
+      "expected_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+      "selected_checkpoint_reference": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/checkpoints/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/unfrozen_recurrent_step_2000.pt",
+      "selected_checkpoint_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+      "selected_checkpoint_source": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/checkpoints/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/unfrozen_recurrent_step_2000.pt"
+    }
+  },
+  "kind": "stage5_part1_closeout_pivot_session",
+  "launch_floor_assertion": {
+    "checks": [
+      {
+        "floor": 0.93,
+        "metric": "synthetic.min_accuracy",
+        "passed": true,
+        "value": 0.953125
+      }
+    ],
+    "status": "green"
+  },
+  "phase_g_alpha_status": "closed_pending_branching_screen",
+  "run_id": "stage5_part1_closeout_pivot_20260715",
+  "status": "data_ready"
+}
