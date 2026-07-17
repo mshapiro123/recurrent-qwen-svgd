@@ -20,6 +20,12 @@ SELECTOR_PARAMETER_NAMES = {
     "halt_predictor.loop_bias",
 }
 
+FROZEN_HASH_EXCLUDED_PREFIXES = (
+    "halt_predictor.target_loop_",
+    "latent_trajectory.",
+    "reentry_adapter.",
+)
+
 
 def configure_selector_only(wrapper: torch.nn.Module) -> set[str]:
     """Freeze the mechanism and expose only prompt-driven halt parameters.
@@ -43,11 +49,11 @@ def configure_selector_only(wrapper: torch.nn.Module) -> set[str]:
 
 
 def frozen_parameter_hash(wrapper: torch.nn.Module) -> str:
-    """Hash all parameters outside the bounded selector trainable set."""
+    """Hash the active frozen substrate, excluding absent/unused auxiliaries."""
 
     digest = hashlib.sha256()
     for name, parameter in sorted(wrapper.named_parameters(), key=lambda item: item[0]):
-        if name in SELECTOR_PARAMETER_NAMES:
+        if name in SELECTOR_PARAMETER_NAMES or name.startswith(FROZEN_HASH_EXCLUDED_PREFIXES):
             continue
         tensor = parameter.detach().cpu().contiguous()
         digest.update(name.encode("utf-8"))

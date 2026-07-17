@@ -493,6 +493,66 @@ def test_logits_to_keep_preserves_trajectory_last_token_logits_on_tiny_model():
     assert torch.allclose(full.trajectory_logits[:, :, -1:, :], last_only.trajectory_logits)
 
 
+def test_phase_g_preserves_unpooled_logits_and_seeded_trajectory_differences():
+    torch.manual_seed(0)
+    model = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(model, layer_split=LayerSplit(1, 3)).eval()
+    wrapper.enable_phase_g_guidance(
+        latent_dim=4,
+        projection_seed=7,
+        injection_scale_init=1.0,
+    )
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+
+    with torch.no_grad():
+        output = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=2,
+            num_trajectories=2,
+            phase_g_enabled=True,
+            phase_g_trajectory_seeds=[101, 202],
+            use_cache=False,
+            logits_to_keep=1,
+            return_dict=True,
+        )
+
+    assert output.logits.shape == (2, 1, 19)
+    assert output.trajectory_logits.shape == (1, 2, 1, 19)
+    assert not torch.equal(
+        output.trajectory_logits[:, 0],
+        output.trajectory_logits[:, 1],
+    )
+    assert torch.isfinite(output.metrics["phase_g_prior_variance"])
+
+
+def test_phase_g_k1_exposes_explicit_trajectory_axis():
+    torch.manual_seed(0)
+    wrapper = RecurrentQwenForCausalLM(
+        TinyCausalLM().eval(),
+        layer_split=LayerSplit(1, 3),
+    ).eval()
+    wrapper.enable_phase_g_guidance(latent_dim=4, projection_seed=7)
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+
+    with torch.no_grad():
+        output = wrapper(
+            input_ids=input_ids,
+            attention_mask=torch.ones_like(input_ids),
+            max_loops=2,
+            num_trajectories=1,
+            phase_g_enabled=True,
+            phase_g_trajectory_seeds=[101],
+            use_cache=False,
+            logits_to_keep=1,
+            return_dict=True,
+        )
+
+    assert output.trajectory_logits is not None
+    assert output.trajectory_logits.shape == (1, 1, 1, 19)
+
+
 def test_return_loop_recurrent_states_exposes_one_state_per_loop_on_tiny_model():
     torch.manual_seed(0)
     model = TinyCausalLM().eval()

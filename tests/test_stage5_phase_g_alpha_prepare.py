@@ -15,7 +15,8 @@ def test_preparation_summary_passes_only_with_disjoint_valid_frozen_splits() -> 
 
     assert summary["status"] == "passed"
     assert summary["phase_g_alpha_preparation_complete"] is True
-    assert summary["only_remaining_blank"] == "numeric_margin_from_calibration_split_power_calculation"
+    assert summary["power_rule_locked"] is True
+    assert summary["only_remaining_blank"] is None
 
 
 def test_preparation_summary_blocks_row_overlap() -> None:

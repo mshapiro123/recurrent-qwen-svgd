@@ -24,6 +24,22 @@ def test_part1_ledger_has_closed_scope_and_open_width_claim() -> None:
     assert claims["branching_width_substrate"]["status"] == "supported_gate_pass"
     assert claims["guided_latent_width"]["status"] == "open"
     assert claims["general_natural_reasoning_superiority"]["status"] == "not_supported"
+    assert claims["peft_installation_measured"]["status"] == "supported_bounded"
+    assert claims["depth_selection_bounded_negative"]["status"] == "registered_negative"
+
+
+def test_peft_and_selector_closure_use_strategy_locked_accounting() -> None:
+    claims = {claim["id"]: claim for claim in load_ledger()["claims"]}
+    peft = claims["peft_installation_measured"]
+    selector = claims["depth_selection_bounded_negative"]
+
+    assert peft["metrics"]["optimizer_marked_parameters"] == 7_613_953
+    assert peft["metrics"]["forward_active_parameters"] == 6_007_425
+    assert peft["metrics"]["bridge_legacy_concat_parameters_bypassed"] == 1_606_528
+    assert "underpowered to claim parity" in peft["metrics"]["parity_inference"]
+    assert selector["metrics"]["forced_diagonal_correct"] == 759
+    assert selector["metrics"]["s2_selection_histogram"] == {"12": 768}
+    assert "starved information path" in selector["interpretation"]
 
 
 def test_every_claim_evidence_path_exists() -> None:

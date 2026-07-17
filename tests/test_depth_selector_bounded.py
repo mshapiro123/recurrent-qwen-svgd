@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import json
+import subprocess
+import sys
+
 import torch
 import pytest
 
@@ -65,6 +69,67 @@ def test_frozen_hash_supports_scalar_parameters() -> None:
     with torch.no_grad():
         wrapper.scalar.add_(1.0)
     assert frozen_parameter_hash(wrapper) != start
+
+
+def test_frozen_hash_excludes_absent_unused_auxiliary_parameters() -> None:
+    first = TinySelectorWrapper()
+    second = TinySelectorWrapper()
+    second.load_state_dict(first.state_dict())
+    with torch.no_grad():
+        second.halt_predictor.target_loop_embedding.weight.normal_()
+        second.halt_predictor.target_loop_bias.normal_()
+        second.halt_predictor.target_loop_router.weight.normal_()
+        second.halt_predictor.target_loop_router.bias.normal_()
+
+    configure_selector_only(first)
+    configure_selector_only(second)
+
+    assert frozen_parameter_hash(first) == frozen_parameter_hash(second)
+
+
+def test_frozen_hash_is_equal_across_fresh_processes_for_same_checkpoint(tmp_path) -> None:
+    wrapper = TinySelectorWrapper()
+    checkpoint = tmp_path / "active_state.pt"
+    torch.save(
+        {
+            "backbone.weight": wrapper.backbone.weight.detach(),
+            "backbone.bias": wrapper.backbone.bias.detach(),
+        },
+        checkpoint,
+    )
+    script = """
+import json
+import sys
+import torch
+from models.halting import SequenceHaltingPredictor
+from training.depth_selector_bounded import configure_selector_only, frozen_parameter_hash
+
+class Wrapper(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.backbone = torch.nn.Linear(4, 4)
+        self.halt_predictor = SequenceHaltingPredictor(4, max_loop_embeddings=12)
+
+wrapper = Wrapper()
+state = torch.load(sys.argv[1], map_location="cpu")
+wrapper.backbone.load_state_dict({
+    "weight": state["backbone.weight"],
+    "bias": state["backbone.bias"],
+})
+configure_selector_only(wrapper)
+print(json.dumps({"hash": frozen_parameter_hash(wrapper)}))
+"""
+    hashes = []
+    for _ in range(2):
+        result = subprocess.run(
+            [sys.executable, "-c", script, str(checkpoint)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        hashes.append(json.loads(result.stdout)["hash"])
+
+    assert hashes[0] == hashes[1]
 
 
 def test_frozen_gradient_assertion_rejects_nonzero_frozen_gradient() -> None:

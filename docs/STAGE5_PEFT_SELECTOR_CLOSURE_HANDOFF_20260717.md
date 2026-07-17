@@ -13,10 +13,11 @@ Two overdue questions are now answered on the corrected recurrent architecture.
 First, a parameter-efficient recurrent-block adaptation can install the tested
 iterative transition without changing the pretrained base weights. Rank-16
 LoRA over the recurrent block, together with the repaired trainable bridge,
-trained 7,613,953 parameters and passed the registered depth-1-through-4
-synthetic gate. It first passed at 4,000 cumulative steps and finished at
-`64/64`, `64/64`, `60/64`, and `53/64`. The base-weight hash was unchanged and
-the Tier-1 arithmetic canary remained green.
+marked 7,613,953 parameters for optimization and used 6,007,425 parameters in
+the split-mode forward path. It passed the registered depth-1-through-4
+synthetic gate at 4,000 cumulative steps and finished at `64/64`, `64/64`,
+`60/64`, and `53/64`. The base-weight hash was unchanged and the Tier-1
+arithmetic canary remained green.
 
 Second, the existing bounded PonderNet controller did not learn useful depth
 selection. On a frozen mechanism that produced the correct answer at oracle
@@ -38,11 +39,13 @@ integration.
 **Bounded yes.** The R16 arm passed the registered task gate with an unchanged
 pretrained-base hash and a green capability canary.
 
-The result does not establish full-block parity. Relative to the registered
-full-block reference, R16 was tied at depth 1, one row better at depth 2, three
-rows worse at depth 3, and six rows worse at depth 4. The accurate claim is
-that a 7.61M-parameter adaptation installs a working recurrent transition on
-this synthetic family, not that it reproduces every full-block result.
+Relative to the registered full-block reference, R16 was tied at depth 1, one
+row better at depth 2, three rows worse at depth 3, and six rows worse at depth
+4. Those depth-3/4 differences were not significant at this sample size
+(`p=0.183` and `p=0.090`, one-sided Fisher tests). The accurate conclusion is:
+no significant per-depth difference was detected, and the comparison is
+underpowered to claim parity. The supported result is installation of a
+working recurrent transition on this synthetic family.
 
 ### 1.2 Does the existing Ponder controller allocate depth reliably?
 
@@ -84,14 +87,18 @@ saturation. The runner was corrected to distinguish:
 
 ### 2.2 Parameter accounting
 
-| Component | Trainable parameters |
-|---|---:|
-| Recurrent-block LoRA | 4,399,104 |
-| Repaired bridge | 3,214,849 |
-| Total | 7,613,953 |
+| Component | Optimizer-marked | Forward-active |
+|---|---:|---:|
+| Recurrent-block LoRA | 4,399,104 | 4,399,104 |
+| Repaired split bridge | 3,214,849 | 1,608,321 |
+| Total | 7,613,953 | 6,007,425 |
 
-The bridge is a meaningful part of the trainable budget. The result must not be
-described as a LoRA-only installation.
+The R16 bridge instantiated the legacy concatenation tensors
+`bridge.proj.weight` (`[896, 1792]`) and `bridge.proj.bias` (`[896]`), totaling
+1,606,528 parameters. Split-mode forward uses `bridge.prelude_proj` and
+`bridge.state_proj` instead, so the legacy tensors are optimizer-marked but
+bypassed. The bridge remains a meaningful part of the active trainable budget;
+the result must not be described as LoRA-only.
 
 ### 2.3 Dose curve
 
@@ -194,6 +201,15 @@ Results:
 - KL stabilized near `1.64621`, but at the collapsed boundary.
 
 S2 is a registered collapse, not a partial result.
+
+The two arms are also logically connected. With a frozen executor that emits
+the correct intermediate at each loop, outcome loss is minimized at the true
+depth, so the optimal halting distribution is a point mass at that depth.
+Outcome-only S2 therefore requires the same depth information that supervised
+S1 directly asks the controller to recover. Because S1 failed even when depth
+was stated in the prompt, S2's collapse is evidence of a starved information
+path, not a reason to sweep optimizer, KL, learning rate, or seed on the same
+head.
 
 ### 3.4 Frozen-contract receipt and limitation
 

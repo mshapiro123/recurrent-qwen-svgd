@@ -2,15 +2,25 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any, Iterable
+
+import torch
 
 
 ALLOWED_TRAINABLE_PREFIXES = (
     "phase_g_prior_head.",
     "phase_g_posterior_head.",
     "phase_g_injection_scale",
+)
+
+PHASE_G_LINEAGE_EXCLUDED_PREFIXES = (
+    "phase_g_",
+    "halt_predictor.",
+    "latent_trajectory.",
+    "reentry_adapter.",
 )
 
 
@@ -57,10 +67,31 @@ def assert_frozen_gradients_zero(named_parameters: Iterable[tuple[str, Any]]) ->
         )
 
 
+def phase_g_active_lineage_hash(
+    named_parameters: Iterable[tuple[str, Any]],
+) -> str:
+    """Hash only the frozen deterministic substrate used by Phase G.
+
+    Lazily constructed Phase G heads and inactive historical control modules are
+    excluded so fresh processes agree when they load the same keeper.
+    """
+
+    digest = hashlib.sha256()
+    for name, parameter in sorted(named_parameters, key=lambda item: item[0]):
+        if str(name).startswith(PHASE_G_LINEAGE_EXCLUDED_PREFIXES):
+            continue
+        tensor = parameter.detach().cpu().contiguous()
+        digest.update(str(name).encode("utf-8"))
+        digest.update(str(tensor.dtype).encode("ascii"))
+        digest.update(str(tuple(tensor.shape)).encode("ascii"))
+        digest.update(tensor.reshape(-1).view(torch.uint8).numpy().tobytes())
+    return digest.hexdigest()
+
+
 def preregistration_payload() -> dict[str, Any]:
     return {
         "kind": "phase_g_alpha_preregistration",
-        "status": "forms_locked_numeric_margins_pending_power_calculation",
+        "status": "forms_and_power_rule_locked_before_guided_training",
         "substrate_gate": {
             "required": (
                 "branching_relations_validity_pass_on_either_locked_keeper_plus_green_guardrail"
@@ -109,7 +140,10 @@ def preregistration_payload() -> dict[str, Any]:
             "alpha": 0.05,
             "comparator_1": "deterministic_keeper_answer_head_sampling_at_matched_K_and_entropy",
             "comparator_2": "one_deterministic_trajectory_at_K_times_T_loops",
-            "numeric_margin": "TODO_POWER_CALCULATION_LAST_BLANK_BEFORE_LAUNCH",
+            "numeric_margin": (
+                "max(0.05, calibration_null_empirical_MDE80_rounded_up_to_0.005); "
+                "computed and written before K1 parity or guided training"
+            ),
         },
         "secondary_metrics": [
             "valid_sample_rate",
@@ -131,11 +165,15 @@ def preregistration_payload() -> dict[str, Any]:
             "win_vs_both": "open_G_beta",
         },
         "deferred_until_G_alpha_win": ["LPRM", "per_trajectory_halting", "SVGD"],
-        "power_calculation_todo": {
-            "only_remaining_preregistration_blank": True,
+        "power_calculation": {
+            "only_remaining_preregistration_blank": False,
             "use_split": "calibration",
             "paired_n": 512,
             "stratify_by": "reachable_set_size_bin_and_depth",
+            "alpha": 0.05,
+            "power": 0.8,
+            "program_effect_floor": 0.05,
+            "null": "two independent entropy-matched answer-head K20 samples",
             "lock_before_test_split_or_latent_run_is_scored": True,
         },
     }

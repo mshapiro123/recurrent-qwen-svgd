@@ -5,6 +5,7 @@ import torch
 from training.phase_g_alpha_spec import (
     assert_frozen_gradients_zero,
     assert_frozen_parameter_contract,
+    phase_g_active_lineage_hash,
     preregistration_payload,
 )
 
@@ -61,13 +62,28 @@ def test_frozen_gradient_assertion_is_exact() -> None:
         raise AssertionError("Any nonzero frozen gradient must fail")
 
 
-def test_preregistration_leaves_only_powered_margin_blank() -> None:
+def test_preregistration_locks_power_rule_before_guided_training() -> None:
     payload = preregistration_payload()
 
-    assert payload["status"] == "forms_locked_numeric_margins_pending_power_calculation"
+    assert payload["status"] == "forms_and_power_rule_locked_before_guided_training"
     assert "branching_relations" in payload["substrate_gate"]["required"]
     assert payload["frozen_evaluation"]["task_family"] == "multi_valued_forward_relations"
     assert payload["frozen_evaluation"]["reachable_set_size_bins"] == ["2", "3-4", "5-8", "9-16"]
     assert payload["primary_gate_form"]["alpha"] == 0.05
-    assert payload["power_calculation_todo"]["only_remaining_preregistration_blank"] is True
+    assert payload["power_calculation"]["only_remaining_preregistration_blank"] is False
+    assert payload["power_calculation"]["program_effect_floor"] == 0.05
     assert payload["deferred_until_G_alpha_win"] == ["LPRM", "per_trajectory_halting", "SVGD"]
+
+
+def test_phase_g_lineage_hash_excludes_guidance_and_unused_auxiliaries() -> None:
+    module = ParameterSet()
+    first = phase_g_active_lineage_hash(module.named_parameters())
+    with torch.no_grad():
+        module.phase_g_prior_head.weight.normal_()
+        module.phase_g_posterior_head.weight.normal_()
+        module.phase_g_injection_scale.add_(3.0)
+    assert phase_g_active_lineage_hash(module.named_parameters()) == first
+
+    with torch.no_grad():
+        module.recurrent_block.weight.add_(1.0)
+    assert phase_g_active_lineage_hash(module.named_parameters()) != first

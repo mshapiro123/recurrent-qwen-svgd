@@ -22,8 +22,19 @@ def read_json(path: str | Path) -> dict[str, Any]:
 
 def preparation_summary(manifest: dict[str, Any], prereg: dict[str, Any]) -> dict[str, Any]:
     split_statuses = {name: row["status"] for name, row in manifest["splits"].items()}
-    forms_locked = prereg["status"] == "forms_locked_numeric_margins_pending_power_calculation"
-    only_blank = bool(prereg["power_calculation_todo"]["only_remaining_preregistration_blank"])
+    prereg_status = str(prereg["status"])
+    legacy_pending = prereg_status == "forms_locked_numeric_margins_pending_power_calculation"
+    powered_rule_locked = prereg_status == "forms_and_power_rule_locked_before_guided_training"
+    forms_locked = legacy_pending or powered_rule_locked
+    if legacy_pending:
+        only_blank = bool(
+            prereg["power_calculation_todo"]["only_remaining_preregistration_blank"]
+        )
+        remaining_blank = "numeric_margin_from_calibration_split_power_calculation"
+    else:
+        power = prereg.get("power_calculation") or {}
+        only_blank = not bool(power.get("only_remaining_preregistration_blank", True))
+        remaining_blank = None
     passed = (
         manifest["status"] == "passed"
         and manifest["calibration_test_id_overlap"] == 0
@@ -40,7 +51,8 @@ def preparation_summary(manifest: dict[str, Any], prereg: dict[str, Any]) -> dic
         "frozen_manifest": "data/phase_g_alpha/manifest.json",
         "preregistration": "data/phase_g_alpha/preregistration.json",
         "gate_forms_locked": forms_locked,
-        "only_remaining_blank": "numeric_margin_from_calibration_split_power_calculation",
+        "power_rule_locked": powered_rule_locked,
+        "only_remaining_blank": remaining_blank,
         "substrate_gate": (
             "constructive_experiment1_then_arbitrary_N24_calibration_competence_and_green_guardrail"
         ),
@@ -87,8 +99,13 @@ def main() -> int:
         "- Entropy-matched answer-head comparator: complete",
         "- Frozen-block architecture contract: complete",
         "- Gate forms: locked",
+        f"- Power rule: {'locked' if payload['power_rule_locked'] else 'pending calibration'}",
         "- Substrate seam: N=20 constructive pass must also clear N=24 arbitrary calibration",
-        "- Remaining preregistration blank: powered numeric margin",
+        (
+            "- Remaining preregistration blank: none"
+            if payload["only_remaining_blank"] is None
+            else f"- Remaining preregistration blank: {payload['only_remaining_blank']}"
+        ),
         "",
         "This package does not authorize G-alpha training until the deterministic "
         "checkpoint is competent on the arbitrary N=24 calibration split and its SHA receipt is green.",

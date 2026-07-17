@@ -102,6 +102,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "natural_surface_prepare_cpu" - CPU-only verbal relay/pointer transfer dataset prep and manifest receipt.
 #   "natural_surface_transfer_rung0" - GPU frozen natural-surface baseline, then verbal rung-zero SFT.
 #   "phase_g_experiment1" - deterministic injective/abductive gates plus matched-K answer sampling.
+#   "phase_g_alpha" - frozen-substrate guided stochastic transition KL sweep and exact coverage gate.
 #   "phase_g_injective_curriculum_recovery" - continue the fixed-boundary injective checkpoint with a 2-to-8 loop curriculum.
 #   "phase_g_curriculum_autopsy" - read-only train/held-out loop matrix and curriculum-construction audit.
 #   "inverse_composition_staircase" - matched forward/inverse-table staircase with weighted loop-dose gates.
@@ -2641,6 +2642,24 @@ TARGETS = {
             "STAGE5_PHASE_G_EXP1_DATA_SEED": "1104729",
             "STAGE5_PHASE_G_EXP1_DTYPE": "bfloat16",
             "STAGE5_PHASE_G_EXP1_DISCONNECT": "0",
+        },
+    },
+    "phase_g_alpha": {
+        "path": "colab/STAGE5_PHASE_G_ALPHA_CELL.py",
+        "markers": [
+            "STAGE5_PHASE_G_ALPHA_CELL_VERSION",
+            "training/train_phase_g_alpha.py",
+            "eval/eval_phase_g_alpha.py",
+            "phase_g_prior_head",
+            "phase_g_posterior_head",
+            "phase_g_injection_scale",
+            "STAGE5_PHASE_G_ALPHA_KL_SWEEP",
+            "blocked exit",
+        ],
+        "env": {
+            "STAGE5_PHASE_G_ALPHA_KL_SWEEP": "0.0001,0.001,0.01",
+            "STAGE5_PHASE_G_ALPHA_STEPS": "1000",
+            "STAGE5_PHASE_G_ALPHA_DISCONNECT": "0",
         },
     },
     "phase_a_dense_full": {

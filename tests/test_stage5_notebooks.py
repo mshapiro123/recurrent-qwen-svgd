@@ -1016,6 +1016,21 @@ def test_current_a100_bootstrap_resolves_abbreviated_commit_shas() -> None:
     assert "api.github.com/repos/{REPO}/commits/{REF}" in text
 
 
+def test_phase_g_alpha_target_is_wired_to_frozen_substrate_runner() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PHASE_G_ALPHA_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_phase_g_alpha.py").read_text(encoding="utf-8")
+
+    assert '"phase_g_alpha"' in bootstrap
+    assert "colab/STAGE5_PHASE_G_ALPHA_CELL.py" in bootstrap
+    assert "STAGE5_PHASE_G_ALPHA_CELL_VERSION" in cell
+    assert "training/train_phase_g_alpha.py" in cell
+    assert "eval/eval_phase_g_alpha.py" in cell
+    assert "KEEPER_SHA256" in runner
+    assert "locked_absolute_mean_coverage_margin" in runner
+    assert "return 2" in runner
+
+
 def test_master_sequence_status_cell_matches_markdown_code() -> None:
     text = (ROOT / "colab/STAGE5_MASTER_SEQUENCE_STATUS_CELL.md").read_text(encoding="utf-8")
     plain = (ROOT / "colab/STAGE5_MASTER_SEQUENCE_STATUS_CELL.py").read_text(encoding="utf-8")

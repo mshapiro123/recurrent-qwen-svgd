@@ -23,6 +23,14 @@ from .halting import (
 )
 from .latent_policy import LatentTrajectoryModule
 from .lora import mark_only_lora_trainable, set_lora_adapter_dtype
+from .phase_g_guidance import (
+    ConditionalGaussianHead,
+    DiagonalGaussian,
+    balanced_diagonal_gaussian_kl,
+    fixed_orthonormal_projection,
+    inverse_softplus,
+    seeded_reparameterize,
+)
 from .reentry_adapter import ReentryAffineAdapter
 from .reentry_tail_damper import apply_tail_damper, load_tail_damper
 from .svgd import svgd_particle_update
@@ -167,6 +175,123 @@ class RecurrentQwenForCausalLM(nn.Module):
         for param in self.latent_trajectory.parameters():
             param.requires_grad_(enabled)
 
+    def enable_phase_g_guidance(
+        self,
+        *,
+        latent_dim: int = 64,
+        projection_seed: int = 20260717,
+        injection_scale_init: float = 1e-3,
+    ) -> None:
+        """Lazily install the three Phase G trainable groups and fixed projection."""
+
+        if hasattr(self, "phase_g_prior_head"):
+            existing = int(self.phase_g_projection.shape[1])
+            if existing != int(latent_dim):
+                raise ValueError(
+                    f"Phase G guidance already uses latent_dim={existing}, requested {latent_dim}"
+                )
+            return
+        hidden = int(self.bridge.hidden_size)
+        base_param = next(self.base_model.parameters())
+        self.phase_g_prior_head = ConditionalGaussianHead(hidden, int(latent_dim)).to(
+            device=base_param.device,
+            dtype=torch.float32,
+        )
+        self.phase_g_posterior_head = ConditionalGaussianHead(2 * hidden, int(latent_dim)).to(
+            device=base_param.device,
+            dtype=torch.float32,
+        )
+        self.phase_g_injection_scale = nn.Parameter(
+            torch.tensor(
+                inverse_softplus(float(injection_scale_init)),
+                device=base_param.device,
+                dtype=torch.float32,
+            )
+        )
+        self.register_buffer(
+            "phase_g_projection",
+            fixed_orthonormal_projection(
+                hidden,
+                int(latent_dim),
+                seed=int(projection_seed),
+                dtype=torch.float32,
+            ).to(device=base_param.device),
+            persistent=True,
+        )
+
+    def configure_phase_g_trainable(self) -> list[str]:
+        """Freeze the substrate and expose exactly the registered Phase G groups."""
+
+        if not hasattr(self, "phase_g_prior_head"):
+            raise RuntimeError("Call enable_phase_g_guidance before configuring trainability")
+        allowed = []
+        for name, parameter in self.named_parameters():
+            trainable = name.startswith(
+                (
+                    "phase_g_prior_head.",
+                    "phase_g_posterior_head.",
+                    "phase_g_injection_scale",
+                )
+            )
+            parameter.requires_grad_(trainable)
+            if trainable:
+                allowed.append(name)
+        return allowed
+
+    def _phase_g_guidance_step(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: Optional[torch.Tensor],
+        *,
+        posterior_targets: Optional[torch.Tensor],
+        use_posterior: bool,
+        trajectory_seeds: list[int],
+    ) -> tuple[
+        torch.Tensor,
+        DiagonalGaussian,
+        DiagonalGaussian | None,
+        torch.Tensor,
+        torch.Tensor,
+    ]:
+        pooled = masked_mean(hidden_states, attention_mask)
+        prior = self.phase_g_prior_head(pooled)
+        posterior = None
+        source = prior
+        if use_posterior:
+            if posterior_targets is None:
+                raise ValueError("Phase G posterior training requires per-loop target embeddings")
+            if posterior_targets.shape != pooled.shape:
+                raise ValueError(
+                    "Phase G target embeddings must match pooled states; "
+                    f"got {tuple(posterior_targets.shape)} versus {tuple(pooled.shape)}"
+                )
+            posterior = self.phase_g_posterior_head(
+                torch.cat(
+                    [pooled, posterior_targets.to(device=pooled.device, dtype=pooled.dtype)],
+                    dim=-1,
+                )
+            )
+            source = posterior
+        samples, _ = seeded_reparameterize(source, trajectory_seeds)
+        projection = self.phase_g_projection.to(device=samples.device, dtype=samples.dtype)
+        scale = F.softplus(self.phase_g_injection_scale).to(
+            device=samples.device,
+            dtype=samples.dtype,
+        )
+        delta = (samples @ projection.transpose(0, 1)).unsqueeze(1)
+        injected_delta = scale * delta
+        injection_ratio = (
+            injected_delta.float().pow(2).mean().sqrt()
+            / hidden_states.float().pow(2).mean().sqrt().clamp_min(1e-8)
+        )
+        return (
+            hidden_states + injected_delta.to(dtype=hidden_states.dtype),
+            prior,
+            posterior,
+            scale,
+            injection_ratio,
+        )
+
     def set_trainable_modules_dtype(self, dtype: torch.dtype) -> None:
         """Keep trainable recurrent controls/adapters in a stable optimizer dtype."""
 
@@ -268,6 +393,12 @@ class RecurrentQwenForCausalLM(nn.Module):
         recurrent_state_overrides: Optional[dict[int, torch.Tensor]] = None,
         return_loop_recurrent_states: bool = False,
         bridge_prelude_ablation_basis: Optional[torch.Tensor] = None,
+        phase_g_enabled: bool = False,
+        phase_g_use_posterior: bool = False,
+        phase_g_posterior_targets: Optional[torch.Tensor] = None,
+        phase_g_trajectory_seeds: Optional[list[int]] = None,
+        phase_g_kl_balance: float = 0.8,
+        phase_g_kl_coefficient: float = 0.0,
         logits_to_keep: int | torch.Tensor = 0,
         **_: Any,
     ) -> RecurrentQwenOutput | tuple[Any, ...]:
@@ -330,6 +461,16 @@ class RecurrentQwenForCausalLM(nn.Module):
             raise ValueError("latent_injection_mode must be one of: pre, post, both")
         if particle_update_mode not in {"none", "svgd"}:
             raise ValueError("particle_update_mode must be one of: none, svgd")
+        if phase_g_enabled and not hasattr(self, "phase_g_prior_head"):
+            raise RuntimeError("Phase G guidance is not installed")
+        if phase_g_use_posterior and not self.training:
+            raise RuntimeError("The target-conditioned Phase G posterior is training-only")
+        if phase_g_posterior_targets is not None and not self.training:
+            raise RuntimeError("Phase G posterior targets are forbidden at inference")
+        if phase_g_use_posterior and phase_g_posterior_targets is None:
+            raise ValueError("phase_g_use_posterior requires phase_g_posterior_targets")
+        if not 0.0 <= float(phase_g_kl_balance) <= 1.0:
+            raise ValueError("phase_g_kl_balance must be in [0, 1]")
 
         use_cache_was_explicit = use_cache is not None
         return_dict = self._default_return_dict(return_dict)
@@ -445,6 +586,12 @@ class RecurrentQwenForCausalLM(nn.Module):
         per_loop_label_active: list[torch.Tensor] = []
         halt_probs: list[torch.Tensor] = []
         latent_kls: list[torch.Tensor] = []
+        phase_g_kls: list[torch.Tensor] = []
+        phase_g_prior_logvars: list[torch.Tensor] = []
+        phase_g_posterior_logvars: list[torch.Tensor] = []
+        phase_g_scales: list[torch.Tensor] = []
+        phase_g_mean_distances: list[torch.Tensor] = []
+        phase_g_injection_ratios: list[torch.Tensor] = []
         svgd_stats_history: list[Any] = []
         loop_recurrent_states: list[torch.Tensor] = []
         recurrent_state = hidden_states
@@ -493,6 +640,49 @@ class RecurrentQwenForCausalLM(nn.Module):
                         basis=reentry_tail_damper["basis"],
                         damper_scale=reentry_tail_damper["damper_scale"],
                         strength=reentry_tail_damper_strength,
+                    )
+            if phase_g_enabled:
+                seeds = list(phase_g_trajectory_seeds or range(num_trajectories))
+                loop_seeds = [int(seed) + 1_000_003 * loop_idx for seed in seeds]
+                targets = phase_g_posterior_targets
+                if targets is not None:
+                    if targets.dim() != 3 or targets.shape[1] < max_loops:
+                        raise ValueError(
+                            "phase_g_posterior_targets must be [batch, max_loops, hidden]"
+                        )
+                    targets = targets[:, loop_idx, :]
+                    if num_trajectories > 1 and targets.shape[0] == batch_size:
+                        targets = repeat_for_trajectories(targets, num_trajectories)
+                (
+                    loop_input,
+                    prior,
+                    posterior,
+                    phase_g_scale,
+                    phase_g_injection_ratio,
+                ) = self._phase_g_guidance_step(
+                    loop_input,
+                    flat_attention_mask,
+                    posterior_targets=targets,
+                    use_posterior=phase_g_use_posterior,
+                    trajectory_seeds=loop_seeds,
+                )
+                phase_g_prior_logvars.append(prior.logvar)
+                phase_g_scales.append(phase_g_scale)
+                phase_g_injection_ratios.append(phase_g_injection_ratio)
+                if posterior is not None:
+                    phase_g_posterior_logvars.append(posterior.logvar)
+                    phase_g_mean_distances.append(
+                        (posterior.mean.float() - prior.mean.float())
+                        .pow(2)
+                        .sum(dim=-1)
+                        .sqrt()
+                    )
+                    phase_g_kls.append(
+                        balanced_diagonal_gaussian_kl(
+                            posterior,
+                            prior,
+                            balance=float(phase_g_kl_balance),
+                        )
                     )
             if sample_latents and latent_injection_mode in {"pre", "both"}:
                 loop_input, latent_stats = self.latent_trajectory(
@@ -598,7 +788,13 @@ class RecurrentQwenForCausalLM(nn.Module):
         weighted_logits = (halting_weights[:, :, None, None] * logits_stack).sum(dim=1)
 
         trajectory_logits = unflatten_trajectories(weighted_logits, batch_size, num_trajectories)
-        output_logits = trajectory_logits.mean(dim=1) if num_trajectories > 1 else weighted_logits
+        output_logits = (
+            weighted_logits
+            if phase_g_enabled and num_trajectories > 1
+            else trajectory_logits.mean(dim=1)
+            if num_trajectories > 1
+            else weighted_logits
+        )
 
         final_hidden = unflatten_trajectories(recurrent_state, batch_size, num_trajectories)
         halting_probs_by_traj = unflatten_trajectories(halt_probs_tensor, batch_size, num_trajectories)
@@ -635,6 +831,44 @@ class RecurrentQwenForCausalLM(nn.Module):
                     "svgd_velocity_rms": torch.stack([item.velocity_rms for item in svgd_stats_history]).mean().detach(),
                 }
             )
+        if phase_g_prior_logvars:
+            metrics["phase_g_prior_variance"] = torch.cat(
+                [value.exp().reshape(-1) for value in phase_g_prior_logvars]
+            ).mean().detach()
+            metrics["phase_g_injection_scale"] = torch.stack(phase_g_scales).mean().detach()
+            metrics["phase_g_injection_rms_ratio"] = torch.stack(
+                phase_g_injection_ratios
+            ).mean().detach()
+            for loop_idx, logvar in enumerate(phase_g_prior_logvars, start=1):
+                metrics[f"phase_g_prior_variance_loop_{loop_idx}"] = (
+                    logvar.exp().mean().detach()
+                )
+        if phase_g_posterior_logvars:
+            metrics["phase_g_posterior_variance"] = torch.cat(
+                [value.exp().reshape(-1) for value in phase_g_posterior_logvars]
+            ).mean().detach()
+            metrics["phase_g_posterior_collapse_fraction"] = torch.cat(
+                [
+                    value.exp().lt(1e-4).to(dtype=torch.float32).reshape(-1)
+                    for value in phase_g_posterior_logvars
+                ]
+            ).mean().detach()
+            for loop_idx, logvar in enumerate(phase_g_posterior_logvars, start=1):
+                metrics[f"phase_g_posterior_variance_loop_{loop_idx}"] = (
+                    logvar.exp().mean().detach()
+                )
+        if phase_g_mean_distances:
+            metrics["phase_g_posterior_prior_mean_distance"] = torch.cat(
+                [value.reshape(-1) for value in phase_g_mean_distances]
+            ).mean().detach()
+        if phase_g_kls:
+            metrics["phase_g_balanced_kl"] = torch.stack(
+                [value.mean() for value in phase_g_kls]
+            ).mean().detach()
+            for loop_idx, value in enumerate(phase_g_kls, start=1):
+                metrics[f"phase_g_balanced_kl_loop_{loop_idx}"] = (
+                    value.mean().detach()
+                )
 
         loss = None
         if labels_flat is not None:
@@ -790,13 +1024,25 @@ class RecurrentQwenForCausalLM(nn.Module):
 
             if diversity is not None and rho:
                 loss = loss - float(rho) * diversity
+            if phase_g_kls and phase_g_kl_coefficient:
+                phase_g_kl = torch.stack([value.mean() for value in phase_g_kls]).mean()
+                loss = loss + float(phase_g_kl_coefficient) * phase_g_kl
+                metrics["phase_g_kl_coefficient"] = torch.tensor(
+                    float(phase_g_kl_coefficient),
+                    device=loss.device,
+                    dtype=loss.dtype,
+                )
 
             metrics["loss"] = loss.detach()
 
         output = RecurrentQwenOutput(
             loss=loss,
             logits=output_logits,
-            trajectory_logits=trajectory_logits if num_trajectories > 1 else None,
+            trajectory_logits=(
+                trajectory_logits
+                if num_trajectories > 1 or phase_g_enabled
+                else None
+            ),
             loop_logits=(
                 unflatten_trajectories(logits_stack, batch_size, num_trajectories)
                 if return_loop_logits
