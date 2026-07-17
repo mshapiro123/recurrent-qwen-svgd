@@ -28,6 +28,10 @@ from training.branching_relations_task import (  # noqa: E402
     row_manifest,
     validate_rows,
 )
+from colab.stage5_path_utils import (  # noqa: E402
+    repo_relative_text as _repo_relative_text,
+    resolve_repo_path as _resolve_repo_path,
+)
 
 
 KEEPER_SHA256 = "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f"
@@ -96,6 +100,18 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
         for line in path.read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
+
+
+def resolve_repo_path(raw: str | Path) -> Path:
+    """Resolve a checkpoint path reported as either repo-relative or absolute."""
+
+    return _resolve_repo_path(ROOT, raw)
+
+
+def repo_relative_text(raw: str | Path) -> str:
+    """Return a stable repo-relative path without assuming input path form."""
+
+    return _repo_relative_text(ROOT, raw)
 
 
 def publish(run_dir: Path, message: str) -> None:
@@ -417,11 +433,24 @@ def main() -> int:
         expected_ema = train_dir / f"phase_g_ema_step_{steps}.pt"
         drive_raw = drive_root / f"{label}_raw.pt"
         drive_ema = drive_root / f"{label}_ema.pt"
-        if (train_dir / "summary.json").exists() and drive_raw.exists() and drive_ema.exists():
+        train_summary_path = train_dir / "summary.json"
+        local_complete = (
+            train_summary_path.exists()
+            and expected_raw.exists()
+            and expected_ema.exists()
+        )
+        drive_complete = (
+            train_summary_path.exists()
+            and drive_raw.exists()
+            and drive_ema.exists()
+        )
+        if local_complete:
+            print(f"resume_completed_local_phase_g_training={label}", flush=True)
+        elif drive_complete:
             train_dir.mkdir(parents=True, exist_ok=True)
             shutil.copy2(drive_raw, expected_raw)
             shutil.copy2(drive_ema, expected_ema)
-            print(f"resume_completed_phase_g_training={label}", flush=True)
+            print(f"resume_completed_drive_phase_g_training={label}", flush=True)
         else:
             run(
                 [
@@ -447,12 +476,16 @@ def main() -> int:
                     "bfloat16",
                 ]
             )
-        train_summary = read_json(train_dir / "summary.json")
+        train_summary = read_json(train_summary_path)
         checkpoint_paths = {
-            "raw": Path(train_summary["raw_checkpoint"]),
-            "ema": Path(train_summary["ema_checkpoint"]),
+            "raw": resolve_repo_path(train_summary["raw_checkpoint"]),
+            "ema": resolve_repo_path(train_summary["ema_checkpoint"]),
         }
         for kind, checkpoint in checkpoint_paths.items():
+            if not checkpoint.exists():
+                raise FileNotFoundError(
+                    f"Completed Phase G-alpha arm is missing {kind} checkpoint: {checkpoint}"
+                )
             destination = drive_root / f"{label}_{kind}.pt"
             shutil.copy2(checkpoint, destination)
         arm = {
@@ -460,7 +493,7 @@ def main() -> int:
             "kl_coefficient": coefficient,
             "train_summary": str((train_dir / "summary.json").relative_to(ROOT)),
             "checkpoints": {
-                kind: str(path.relative_to(ROOT)) for kind, path in checkpoint_paths.items()
+                kind: repo_relative_text(path) for kind, path in checkpoint_paths.items()
             },
             "drive_checkpoints": {
                 kind: str(drive_root / f"{label}_{kind}.pt")
