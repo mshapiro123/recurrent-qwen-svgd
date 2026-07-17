@@ -73,8 +73,8 @@ def assert_frozen_gradients_zero(wrapper: torch.nn.Module) -> int:
     return observed
 
 
-def assert_active_selector_gradient(wrapper: torch.nn.Module) -> dict[str, float]:
-    """Require live gradients on both the halt projection and loop controls."""
+def selector_gradient_norms(wrapper: torch.nn.Module) -> dict[str, float]:
+    """Return gradient norms for every bounded selector parameter."""
 
     norms: dict[str, float] = {}
     for name, parameter in wrapper.named_parameters():
@@ -82,6 +82,21 @@ def assert_active_selector_gradient(wrapper: torch.nn.Module) -> dict[str, float
             continue
         grad = parameter.grad
         norms[name] = 0.0 if grad is None else float(grad.detach().float().norm().item())
+    return norms
+
+
+def selector_gradient_is_live(norms: dict[str, float]) -> bool:
+    """Check that both the state projection and loop controls receive gradients."""
+
+    proj = sum(value for name, value in norms.items() if ".proj." in name)
+    loop = sum(value for name, value in norms.items() if ".loop_" in name)
+    return bool(math.isfinite(proj) and math.isfinite(loop) and proj > 0.0 and loop > 0.0)
+
+
+def assert_active_selector_gradient(wrapper: torch.nn.Module) -> dict[str, float]:
+    """Require live gradients on both the halt projection and loop controls."""
+
+    norms = selector_gradient_norms(wrapper)
     proj = sum(value for name, value in norms.items() if ".proj." in name)
     loop = sum(value for name, value in norms.items() if ".loop_" in name)
     if not math.isfinite(proj) or not math.isfinite(loop) or proj <= 0.0 or loop <= 0.0:

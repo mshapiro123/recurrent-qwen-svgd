@@ -11,6 +11,8 @@ from training.depth_selector_bounded import (
     evaluate_s2_gate,
     frozen_parameter_hash,
     halting_weights_from_features,
+    selector_gradient_is_live,
+    selector_gradient_norms,
     spearman_correlation,
     truncated_geometric_prior,
 )
@@ -80,6 +82,19 @@ def test_frozen_gradient_assertion_rejects_nonzero_frozen_gradient() -> None:
         assert "backbone.weight" in str(exc)
     else:
         raise AssertionError("Expected a nonzero frozen gradient to fail")
+
+
+def test_selector_gradient_liveness_distinguishes_live_from_saturated() -> None:
+    wrapper = TinySelectorWrapper()
+    configure_selector_only(wrapper)
+    zero_norms = selector_gradient_norms(wrapper)
+    assert not selector_gradient_is_live(zero_norms)
+
+    for name, parameter in wrapper.named_parameters():
+        if parameter.requires_grad:
+            parameter.grad = torch.ones_like(parameter)
+    live_norms = selector_gradient_norms(wrapper)
+    assert selector_gradient_is_live(live_norms)
 
 
 def test_truncated_geometric_prior_has_locked_mean() -> None:

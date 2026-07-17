@@ -40,6 +40,8 @@ from training.depth_selector_bounded import (
     frozen_parameter_hash,
     halting_weights_from_features,
     ponder_outcome_loss,
+    selector_gradient_is_live,
+    selector_gradient_norms,
     supervised_depth_loss,
     summarize_selector_rows,
     truncated_geometric_prior,
@@ -107,6 +109,10 @@ def write_json(path: str | Path, payload: dict[str, Any]) -> None:
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def read_json(path: str | Path) -> dict[str, Any]:
+    return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
 def write_jsonl(path: str | Path, rows: list[dict[str, Any]]) -> None:
@@ -440,13 +446,10 @@ def train_selector_arm(
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
             frozen_gradient_tensors = assert_frozen_gradients_zero(wrapper)
-            grad_norms = assert_active_selector_gradient(wrapper)
-            torch.nn.utils.clip_grad_norm_(
-                [parameter for parameter in wrapper.parameters() if parameter.requires_grad],
-                1.0,
-                error_if_nonfinite=True,
-            )
-            optimizer.step()
+            grad_norms = selector_gradient_norms(wrapper)
+            gradient_live = selector_gradient_is_live(grad_norms)
+            if step == 1:
+                assert_active_selector_gradient(wrapper)
             row = {
                 "step": step,
                 **{key: float(value.detach().float().item()) for key, value in metrics.items()},
@@ -454,7 +457,20 @@ def train_selector_arm(
                 "mean_expected_depth": float(expected_loop_count(weights).mean().item()),
                 "frozen_gradient_tensors": frozen_gradient_tensors,
                 "selector_gradient_norm": sum(grad_norms.values()),
+                "selector_gradient_live": gradient_live,
             }
+            if not gradient_live:
+                row["early_stop_reason"] = "selector_gradient_saturated"
+                trace.append(row)
+                trace_file.write(json.dumps(row, ensure_ascii=True) + "\n")
+                print(f"selector_train arm={arm} {row}", flush=True)
+                break
+            torch.nn.utils.clip_grad_norm_(
+                [parameter for parameter in wrapper.parameters() if parameter.requires_grad],
+                1.0,
+                error_if_nonfinite=True,
+            )
+            optimizer.step()
             trace.append(row)
             trace_file.write(json.dumps(row, ensure_ascii=True) + "\n")
             if step == 1 or step % 100 == 0 or step == steps:
@@ -567,16 +583,35 @@ def main() -> int:
     run_dir = ROOT / "outputs/stage5" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     spec = locked_spec()
-    payload: dict[str, Any] = {
-        "kind": "stage5_depth_selector_bounded_assessment",
-        "run_id": run_id,
-        "status": "started",
-        "locked_spec": spec,
-        "S1": None,
-        "S2": None,
+    resume_s2 = os.environ.get("STAGE5_DEPTH_SELECTOR_RESUME_S2", "0").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
     }
+    summary_path = run_dir / "summary.json"
+    if resume_s2:
+        if not summary_path.exists():
+            raise RuntimeError(f"S2 resume requires the published run summary: {summary_path}")
+        payload = read_json(summary_path)
+        if payload.get("kind") != "stage5_depth_selector_bounded_assessment":
+            raise RuntimeError(f"S2 resume found the wrong summary kind: {payload.get('kind')!r}")
+        if payload.get("run_id") != run_id or not payload.get("S1"):
+            raise RuntimeError("S2 resume requires the matching run ID with a completed S1 result")
+        payload["status"] = "resuming_S2"
+        print(f"resuming_depth_selector_S2={run_id}", flush=True)
+    else:
+        payload = {
+            "kind": "stage5_depth_selector_bounded_assessment",
+            "run_id": run_id,
+            "status": "started",
+            "locked_spec": spec,
+            "S1": None,
+            "S2": None,
+        }
     write_summary(run_dir, payload)
-    publish(run_dir, f"Record bounded depth-selector preregistration {run_id} [skip ci]")
+    if not resume_s2:
+        publish(run_dir, f"Record bounded depth-selector preregistration {run_id} [skip ci]")
 
     source_checkpoint, restore_receipt = restore_checkpoint(
         [N24_KEEPER_DRIVE],
@@ -641,56 +676,63 @@ def main() -> int:
     heldout_cache = torch.load(heldout_cache_local, map_location="cpu")
     baseline_rows, baseline_eval = evaluate_selector(wrapper, heldout_cache, device=device)
     payload["untrained_selector_baseline"] = baseline_eval
-    payload["status"] = "cache_ready"
+    payload["status"] = "resuming_S2_cache_ready" if resume_s2 else "cache_ready"
     write_summary(run_dir, payload)
-    publish(run_dir, f"Record depth-selector frozen cache receipts {run_id} [skip ci]")
+    if not resume_s2:
+        publish(run_dir, f"Record depth-selector frozen cache receipts {run_id} [skip ci]")
 
     steps = int(os.environ.get("STAGE5_DEPTH_SELECTOR_STEPS", str(spec["steps_per_arm"])))
     batch_size = int(os.environ.get("STAGE5_DEPTH_SELECTOR_BATCH_SIZE", str(spec["batch_size"])))
-    _restore_selector_state(wrapper, initial_selector)
-    s1_trace = train_selector_arm(
-        wrapper,
-        train_cache,
-        arm=spec["s1_name"],
-        steps=steps,
-        batch_size=batch_size,
-        learning_rate=float(os.environ.get("STAGE5_DEPTH_SELECTOR_S1_LR", "1e-3")),
-        beta=0.0,
-        prior_mean=spec["s2_geometric_prior_mean"],
-        device=device,
-        trace_path=run_dir / "S1/training_trace.jsonl",
-    )
-    if frozen_parameter_hash(wrapper) != payload["frozen_parameter_hash"]:
-        raise RuntimeError("Frozen mechanism hash changed during S1")
-    if sha256_file(source_checkpoint) != source_sha:
-        raise RuntimeError("Source checkpoint file changed during S1")
-    s1_rows, s1_eval = evaluate_selector(wrapper, heldout_cache, device=device)
-    s1_gate = evaluate_s1_gate(
-        s1_rows,
-        min_correct_per_depth=spec["s1_min_correct_per_depth"],
-        answer_delta_floor=spec["s1_answer_delta_floor"],
-    )
-    write_jsonl(run_dir / "S1/eval_rows.jsonl", s1_rows)
-    write_json(run_dir / "S1/eval_summary.json", s1_eval)
-    write_json(run_dir / "S1/gate.json", s1_gate)
-    s1_checkpoint = _save_selector_checkpoint(
-        wrapper,
-        run_dir / f"S1/{spec['s1_name']}_step_{steps}.pt",
-        arm=spec["s1_name"],
-        steps=steps,
-        frozen_hash=payload["frozen_parameter_hash"],
-        source_checkpoint_sha256=source_sha,
-    )
-    payload["S1"] = {
-        "arm": spec["s1_name"],
-        "training_trace": path_for_cli(run_dir / "S1/training_trace.jsonl"),
-        "evaluation": s1_eval,
-        "gate": s1_gate,
-        "checkpoint": s1_checkpoint,
-    }
-    payload["status"] = f"S1_{s1_gate['status']}"
-    write_summary(run_dir, payload)
-    publish(run_dir, f"Record bounded selector S1 {run_id} [skip ci]")
+    if resume_s2:
+        s1_gate = read_json(run_dir / "S1/gate.json")
+        if s1_gate.get("status") not in {"pass", "blocked"}:
+            raise RuntimeError(f"S2 resume found an invalid S1 gate: {s1_gate.get('status')!r}")
+        print(f"reusing_published_S1_gate={run_dir / 'S1/gate.json'}", flush=True)
+    else:
+        _restore_selector_state(wrapper, initial_selector)
+        s1_trace = train_selector_arm(
+            wrapper,
+            train_cache,
+            arm=spec["s1_name"],
+            steps=steps,
+            batch_size=batch_size,
+            learning_rate=float(os.environ.get("STAGE5_DEPTH_SELECTOR_S1_LR", "1e-3")),
+            beta=0.0,
+            prior_mean=spec["s2_geometric_prior_mean"],
+            device=device,
+            trace_path=run_dir / "S1/training_trace.jsonl",
+        )
+        if frozen_parameter_hash(wrapper) != payload["frozen_parameter_hash"]:
+            raise RuntimeError("Frozen mechanism hash changed during S1")
+        if sha256_file(source_checkpoint) != source_sha:
+            raise RuntimeError("Source checkpoint file changed during S1")
+        s1_rows, s1_eval = evaluate_selector(wrapper, heldout_cache, device=device)
+        s1_gate = evaluate_s1_gate(
+            s1_rows,
+            min_correct_per_depth=spec["s1_min_correct_per_depth"],
+            answer_delta_floor=spec["s1_answer_delta_floor"],
+        )
+        write_jsonl(run_dir / "S1/eval_rows.jsonl", s1_rows)
+        write_json(run_dir / "S1/eval_summary.json", s1_eval)
+        write_json(run_dir / "S1/gate.json", s1_gate)
+        s1_checkpoint = _save_selector_checkpoint(
+            wrapper,
+            run_dir / f"S1/{spec['s1_name']}_step_{steps}.pt",
+            arm=spec["s1_name"],
+            steps=steps,
+            frozen_hash=payload["frozen_parameter_hash"],
+            source_checkpoint_sha256=source_sha,
+        )
+        payload["S1"] = {
+            "arm": spec["s1_name"],
+            "training_trace": path_for_cli(run_dir / "S1/training_trace.jsonl"),
+            "evaluation": s1_eval,
+            "gate": s1_gate,
+            "checkpoint": s1_checkpoint,
+        }
+        payload["status"] = f"S1_{s1_gate['status']}"
+        write_summary(run_dir, payload)
+        publish(run_dir, f"Record bounded selector S1 {run_id} [skip ci]")
 
     _restore_selector_state(wrapper, initial_selector)
     s2_trace = train_selector_arm(

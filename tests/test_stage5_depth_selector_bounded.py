@@ -53,3 +53,15 @@ def test_launcher_carries_frozen_contract_markers() -> None:
         "tests/test_depth_selector_bounded.py",
     ):
         assert marker in launcher
+
+
+def test_runner_supports_s2_only_resume_and_late_saturation() -> None:
+    runner = (ROOT / "colab/run_stage5_depth_selector_bounded.py").read_text(encoding="utf-8")
+    for marker in (
+        "STAGE5_DEPTH_SELECTOR_RESUME_S2",
+        "resuming_depth_selector_S2",
+        "reusing_published_S1_gate",
+        "selector_gradient_saturated",
+        "if step == 1:",
+    ):
+        assert marker in runner
