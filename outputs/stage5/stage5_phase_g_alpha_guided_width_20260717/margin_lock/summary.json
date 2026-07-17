@@ -1,0 +1,19 @@
+{
+  "alpha": 0.05,
+  "empirical_mde_80": 0.015505809757603071,
+  "kind": "phase_g_alpha_powered_margin_lock",
+  "locked_absolute_mean_coverage_margin": 0.05,
+  "null_comparator": "two independent entropy-matched answer-head K20 samples",
+  "null_paired_sd": 0.12523497351551688,
+  "paired_rows": 512,
+  "power": 0.8,
+  "program_floor": 0.05,
+  "status": "locked_before_guided_training",
+  "target_mean_entropy": 0.1432,
+  "temperature_match": {
+    "absolute_error": 2.7755575615628914e-17,
+    "achieved_mean_entropy": 0.14320000000000002,
+    "target_mean_entropy": 0.1432,
+    "temperature": 1.0410908344595404
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "data_manifests": {
+    "calibration": {
+      "row_id_sha256": "755291d493cac76515228c16e73c1478038228e678b499c2bed2fa28be1871a8",
+      "row_sha256": "71b89e00316683102fbb56a2f244121b1f8fe378a80c269059a3bb5076e9e64e",
+      "rows": 512
+    },
+    "test": {
+      "row_id_sha256": "a75171fd3f8a22b632dfb525fd8c1b44136b095d0db6ec36433751b521c60758",
+      "row_sha256": "eb80ef24637aee511a3e35607e87ae2530842ce11c551e6fa90ecda4d4115ef8",
+      "rows": 512
+    },
+    "train": {
+      "row_id_sha256": "ae02427371923269157c38aecd9f60f2372ff9b5c55389a84139489142e45b0f",
+      "row_sha256": "634c2332fd35f43f407ce0ea2604c3e40f7296a4a20cd158e752a54593fbd117",
+      "rows": 2048
+    }
+  },
+  "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+  "kind": "stage5_phase_g_alpha_session",
+  "kl_coefficients": [
+    0.0001,
+    0.001,
+    0.01
+  ],
+  "margin_lock": {
+    "alpha": 0.05,
+    "empirical_mde_80": 0.015505809757603071,
+    "kind": "phase_g_alpha_powered_margin_lock",
+    "locked_absolute_mean_coverage_margin": 0.05,
+    "null_comparator": "two independent entropy-matched answer-head K20 samples",
+    "null_paired_sd": 0.12523497351551688,
+    "paired_rows": 512,
+    "power": 0.8,
+    "program_floor": 0.05,
+    "status": "locked_before_guided_training",
+    "target_mean_entropy": 0.1432,
+    "temperature_match": {
+      "absolute_error": 2.7755575615628914e-17,
+      "achieved_mean_entropy": 0.14320000000000002,
+      "target_mean_entropy": 0.1432,
+      "temperature": 1.0410908344595404
+    }
+  },
+  "run_id": "stage5_phase_g_alpha_guided_width_20260717",
+  "status": "margin_locked",
+  "steps_per_arm": 1000
+}
