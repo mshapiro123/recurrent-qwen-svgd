@@ -23,6 +23,12 @@ class TinySelectorWrapper(torch.nn.Module):
         self.halt_predictor = SequenceHaltingPredictor(4, max_loop_embeddings=12)
 
 
+class TinySelectorWrapperWithScalar(TinySelectorWrapper):
+    def __init__(self) -> None:
+        super().__init__()
+        self.scalar = torch.nn.Parameter(torch.tensor(1.0))
+
+
 def test_configure_selector_only_excludes_oracle_target_controls() -> None:
     wrapper = TinySelectorWrapper()
     trainable = configure_selector_only(wrapper)
@@ -46,6 +52,16 @@ def test_frozen_hash_ignores_selector_but_detects_backbone_change() -> None:
     assert frozen_parameter_hash(wrapper) == start
     with torch.no_grad():
         wrapper.backbone.bias.add_(1.0)
+    assert frozen_parameter_hash(wrapper) != start
+
+
+def test_frozen_hash_supports_scalar_parameters() -> None:
+    wrapper = TinySelectorWrapperWithScalar()
+    configure_selector_only(wrapper)
+    start = frozen_parameter_hash(wrapper)
+    assert len(start) == 64
+    with torch.no_grad():
+        wrapper.scalar.add_(1.0)
     assert frozen_parameter_hash(wrapper) != start
 
 
