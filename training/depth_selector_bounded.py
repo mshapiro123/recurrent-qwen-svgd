@@ -385,9 +385,17 @@ def evaluate_s2_gate(
             "partial_spearman_floor": partial_spearman_floor,
             "status": status,
             "collapse_sentence": (
-                "Supervised routing works, but unsupervised depth discovery does not train on this family."
-                if status == "collapse"
-                else None
+                (
+                    "Supervised depth reading works, but outcome-only depth discovery does not "
+                    "train on this family."
+                )
+                if status == "collapse" and s1_gate.get("status") == "pass"
+                else (
+                    "The bounded selector failed both supervised stated-depth reading and "
+                    "outcome-only depth discovery on this family."
+                    if status == "collapse"
+                    else None
+                )
             ),
         }
     )

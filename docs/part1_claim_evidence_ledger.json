@@ -290,14 +290,53 @@
       ]
     },
     {
+      "id": "parameter_efficient_recurrent_installation",
+      "claim": "A rank-16 recurrent-block LoRA plus the repaired bridge installed a working depth-1-through-4 transition while leaving the pretrained base weights unchanged.",
+      "status": "supported_bounded",
+      "scope": "N16 synthetic forward-chain family, held-out 64 rows per depth, corrected split bridge, AdamW, 6,000 cumulative steps; not full-block parity or a broad reasoning claim",
+      "metrics": {
+        "total_trainable_parameters": 7613953,
+        "recurrent_lora_parameters": 4399104,
+        "bridge_parameters": 3214849,
+        "earliest_all_depth_gate_step": 4000,
+        "depth_1_correct": 64,
+        "depth_2_correct": 64,
+        "depth_3_correct": 60,
+        "depth_4_correct": 53,
+        "rows_per_depth": 64,
+        "canary_baseline_accuracy": 0.9375,
+        "canary_final_accuracy": 0.953125
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/summary.json",
+          "locator": "p1_results R16, interval gates, base hash, and Tier-1 canary"
+        }
+      ]
+    },
+    {
       "id": "depth_selection_control_pathway",
-      "claim": "The installed PonderNet halting pathway can be assessed as a frozen-mechanism control path under supervised depth reading and outcome-only depth discovery.",
-      "status": "preregistered_pending_result",
+      "claim": "The bounded PonderNet controller did not learn reliable depth selection on the frozen N24 mechanism under either supervised stated-depth reading or outcome-only Ponder training.",
+      "status": "closed_negative",
       "scope": "N24 step-6000 substrate, stated-depth prompts, depths 1-12; does not establish intelligent difficulty allocation or hard-reasoning halting",
+      "metrics": {
+        "heldout_rows": 768,
+        "oracle_forced_depth_answer_accuracy": 0.98828125,
+        "s1_depth_selection_accuracy": 0.09114583333333333,
+        "s1_selected_answer_accuracy": 0.09505208333333333,
+        "s2_depth_selection_accuracy": 0.08333333333333333,
+        "s2_selected_answer_accuracy": 0.22526041666666666,
+        "s2_mean_selected_depth": 12.0,
+        "s2_spearman_selected_vs_true": 0.0
+      },
       "evidence": [
         {
           "path": "docs/stage5_depth_selector_bounded_preregistration.md",
           "locator": "immutable substrate, S1 and S2 gates, scope"
+        },
+        {
+          "path": "outputs/stage5/stage5_depth_selector_bounded_20260717_204109/summary.json",
+          "locator": "S1 blocked, S2 collapse, frozen contract, and checkpoint receipts"
         }
       ]
     },

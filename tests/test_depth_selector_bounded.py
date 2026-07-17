@@ -160,3 +160,13 @@ def test_s2_gate_bands_strong_partial_and_collapse() -> None:
         s1_gate=s1,
     )
     assert collapsed["status"] == "collapse"
+    assert collapsed["collapse_sentence"].startswith("Supervised depth reading works")
+
+    blocked_s1 = evaluate_s1_gate(_selector_rows(selected_offset=1))
+    doubly_blocked = evaluate_s2_gate(
+        _selector_rows(selected_offset=1, miss_every=2),
+        training_trace=stable_trace,
+        s1_gate=blocked_s1,
+    )
+    assert doubly_blocked["status"] == "collapse"
+    assert doubly_blocked["collapse_sentence"].startswith("The bounded selector failed both")

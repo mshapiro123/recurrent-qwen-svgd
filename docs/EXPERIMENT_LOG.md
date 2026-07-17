@@ -1279,3 +1279,23 @@ Colab/Drive backups for selected runs.
   substrate gate; no adapter is needed. Phase G-alpha is ready for the powered
   margin lock and then launch. Receipt:
   `outputs/stage5/stage5_part1_closeout_pivot_20260715/summary.json`.
+- 2026-07-17 parameter-efficient closure: corrected-loop R16 LoRA plus the
+  repaired bridge trained 7,613,953 parameters and first cleared the registered
+  depth-1-through-4 gate at 4,000 cumulative steps. At step 6,000 it scored
+  `64/64`, `64/64`, `60/64`, and `53/64`; the pretrained-base hash was
+  unchanged and the arithmetic canary improved from `60/64` to `61/64`.
+  This is a bounded synthetic installation result, not full-block parity:
+  the full-block reference remained 3 rows better at depth 3 and 6 rows better
+  at depth 4. The attached controller failed, selecting loop 2 for every row
+  and scoring `191/256` versus `241/256` under forced depth. Receipt:
+  `outputs/stage5/stage5_peft_ponder_closure_20260717_182113/summary.json`.
+- 2026-07-17 bounded selector closure: the frozen N24 step-6,000 mechanism
+  retained `759/768 = 98.83%` oracle forced-depth answer accuracy, but the
+  controller failed both registered arms. S1 supervised stated-depth reading
+  selected the correct depth on `70/768 = 9.11%` and the correct final answer
+  on `73/768 = 9.51%`. S2 outcome-only Ponder training saturated at depth 12
+  for all 768 rows, with zero depth correlation and `173/768 = 22.53%`
+  selected-answer accuracy. Startup gradients were live; late zero gradients
+  were boundary saturation, not a graph cut. The line is closed as a bounded
+  negative. Receipt:
+  `outputs/stage5/stage5_depth_selector_bounded_20260717_204109/summary.json`.

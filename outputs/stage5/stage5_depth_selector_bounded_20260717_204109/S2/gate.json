@@ -123,7 +123,7 @@
       "selection_correct": 0
     }
   },
-  "collapse_sentence": "Supervised routing works, but unsupervised depth discovery does not train on this family.",
+  "collapse_sentence": "The bounded selector failed both supervised stated-depth reading and outcome-only depth discovery on this family.",
   "forced_answer_accuracy": 0.98828125,
   "kind": "bounded_depth_selector_s2_gate",
   "mean_expected_depth": 11.999931190162897,
