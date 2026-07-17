@@ -1,0 +1,90 @@
+{
+  "data": {
+    "heldout64": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/data/test_chain_mcq_heldout64.jsonl",
+    "natural_full": "outputs/stage5/stage5_peft_ponder_closure_20260717_175439/data/natural_loop1_full_16_each_d1_8.jsonl",
+    "natural_tiny": "outputs/stage5/stage5_peft_ponder_closure_20260717_175439/data/natural_tier1_tiny_2_each_d1_8.jsonl",
+    "reference_summary": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/summary.json",
+    "sha256": {
+      "heldout64": "7b71cd8763a9c6d71653bde67ab3742352c190ff136a3a3d3f6ac245d8bb76de",
+      "train_depth_le2": "56fbb7774d5716632b66b60bad3d0067c9f92f58f0db8aa7297eb637116d1b69",
+      "train_depth_le4": "829cbd3d381329470e8621094e7c5326f612552a56f38b3b09d52d873603f636"
+    },
+    "train_depth_le2": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/data/train_chain_symbol_depth_le2_sft.jsonl",
+    "train_depth_le4": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/data/train_chain_symbol_depth_le4_sft.jsonl"
+  },
+  "historical_archive": {
+    "inadmissible_runs": [
+      {
+        "date": "2026-06-27",
+        "ranks": [
+          32,
+          64,
+          128
+        ],
+        "reason": "Capacity-localization arms predated the corrected input re-injection and corrected split-bridge true-LR training path.",
+        "steps": 100,
+        "summary": "outputs/stage5/stage5_capacity_localization_20260627_210858/summary.json"
+      }
+    ],
+    "repaired_loop_peft_arm_found": false
+  },
+  "kind": "stage5_peft_ponder_closure",
+  "locked_spec": {
+    "arms": [
+      {
+        "alpha": 32,
+        "estimated_block_trainable": 4400000,
+        "full_block_fraction": 0.025,
+        "name": "R16",
+        "rank": 16
+      },
+      {
+        "alpha": 128,
+        "estimated_block_trainable": 17600000,
+        "full_block_fraction": 0.098,
+        "name": "R64",
+        "rank": 64
+      },
+      {
+        "alpha": 512,
+        "estimated_block_trainable": 70400000,
+        "full_block_fraction": 0.393,
+        "name": "R256",
+        "rank": 256
+      }
+    ],
+    "bridge_prelude_grad_multiplier": 1.0,
+    "bridge_prelude_lr_multiplier": 10.0,
+    "bridge_projection_mode": "split",
+    "full_block_reference": {
+      "1": 1.0,
+      "2": 0.984375,
+      "3": 0.984375,
+      "4": 0.921875
+    },
+    "identity_max_abs_diff": 0.001,
+    "optimizer": "adamw",
+    "p1_gate": {
+      "correct_per_depth": 46,
+      "threshold_label": 0.71,
+      "total_per_depth": 64
+    },
+    "p1_interval": 1000,
+    "p1_steps": 6000,
+    "p2_gate": {
+      "learned_accuracy_max_gap": 0.03,
+      "mean_depth_exclusive_max": 3.5,
+      "mean_depth_exclusive_min": 1.5,
+      "requires_kl_stabilization": true,
+      "requires_loss_decrease": true
+    },
+    "p2_steps": 2000,
+    "r256_rider_total_steps": 12000,
+    "task": "N16 synthetic forward chain, depths 1-4"
+  },
+  "next_action": "run_R16",
+  "p1_results": [],
+  "p2": null,
+  "run_id": "stage5_peft_ponder_closure_20260717_175439",
+  "status": "data_ready"
+}
