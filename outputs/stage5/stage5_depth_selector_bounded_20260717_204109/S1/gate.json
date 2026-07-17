@@ -1,0 +1,180 @@
+{
+  "all_answer_delta_gates_pass": false,
+  "all_depth_selection_gates_pass": false,
+  "answer_delta_floor": -0.03,
+  "answer_delta_gate_by_depth": {
+    "1": false,
+    "10": false,
+    "11": false,
+    "12": false,
+    "2": false,
+    "3": false,
+    "4": false,
+    "5": false,
+    "6": false,
+    "7": false,
+    "8": false,
+    "9": false
+  },
+  "by_depth": {
+    "1": {
+      "forced_accuracy": 1.0,
+      "forced_correct": 64,
+      "rows": 64,
+      "selected_accuracy": 0.15625,
+      "selected_correct": 10,
+      "selected_minus_forced": -0.84375,
+      "selection_accuracy": 0.125,
+      "selection_correct": 8
+    },
+    "10": {
+      "forced_accuracy": 0.953125,
+      "forced_correct": 61,
+      "rows": 64,
+      "selected_accuracy": 0.0,
+      "selected_correct": 0,
+      "selected_minus_forced": -0.953125,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    },
+    "11": {
+      "forced_accuracy": 0.96875,
+      "forced_correct": 62,
+      "rows": 64,
+      "selected_accuracy": 0.0,
+      "selected_correct": 0,
+      "selected_minus_forced": -0.96875,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    },
+    "12": {
+      "forced_accuracy": 1.0,
+      "forced_correct": 64,
+      "rows": 64,
+      "selected_accuracy": 0.0,
+      "selected_correct": 0,
+      "selected_minus_forced": -1.0,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    },
+    "2": {
+      "forced_accuracy": 1.0,
+      "forced_correct": 64,
+      "rows": 64,
+      "selected_accuracy": 0.75,
+      "selected_correct": 48,
+      "selected_minus_forced": -0.25,
+      "selection_accuracy": 0.75,
+      "selection_correct": 48
+    },
+    "3": {
+      "forced_accuracy": 1.0,
+      "forced_correct": 64,
+      "rows": 64,
+      "selected_accuracy": 0.0,
+      "selected_correct": 0,
+      "selected_minus_forced": -1.0,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    },
+    "4": {
+      "forced_accuracy": 1.0,
+      "forced_correct": 64,
+      "rows": 64,
+      "selected_accuracy": 0.0625,
+      "selected_correct": 4,
+      "selected_minus_forced": -0.9375,
+      "selection_accuracy": 0.046875,
+      "selection_correct": 3
+    },
+    "5": {
+      "forced_accuracy": 1.0,
+      "forced_correct": 64,
+      "rows": 64,
+      "selected_accuracy": 0.0,
+      "selected_correct": 0,
+      "selected_minus_forced": -1.0,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    },
+    "6": {
+      "forced_accuracy": 0.984375,
+      "forced_correct": 63,
+      "rows": 64,
+      "selected_accuracy": 0.171875,
+      "selected_correct": 11,
+      "selected_minus_forced": -0.8125,
+      "selection_accuracy": 0.171875,
+      "selection_correct": 11
+    },
+    "7": {
+      "forced_accuracy": 1.0,
+      "forced_correct": 64,
+      "rows": 64,
+      "selected_accuracy": 0.0,
+      "selected_correct": 0,
+      "selected_minus_forced": -1.0,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    },
+    "8": {
+      "forced_accuracy": 0.984375,
+      "forced_correct": 63,
+      "rows": 64,
+      "selected_accuracy": 0.0,
+      "selected_correct": 0,
+      "selected_minus_forced": -0.984375,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    },
+    "9": {
+      "forced_accuracy": 0.96875,
+      "forced_correct": 62,
+      "rows": 64,
+      "selected_accuracy": 0.0,
+      "selected_correct": 0,
+      "selected_minus_forced": -0.96875,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    }
+  },
+  "complete_depths_1_12": true,
+  "forced_answer_accuracy": 0.98828125,
+  "kind": "bounded_depth_selector_s1_gate",
+  "mean_expected_depth": 5.109581728776296,
+  "mean_selected_depth": 2.6197916666666665,
+  "min_correct_per_depth": 46,
+  "rows": 768,
+  "scope": "depth_reading_from_stated_depth_prompt_not_difficulty_inference",
+  "selected_answer_accuracy": 0.09505208333333333,
+  "selected_depth_histogram": {
+    "1": 92,
+    "10": 0,
+    "11": 0,
+    "12": 0,
+    "2": 527,
+    "3": 0,
+    "4": 14,
+    "5": 0,
+    "6": 135,
+    "7": 0,
+    "8": 0,
+    "9": 0
+  },
+  "selection_accuracy": 0.09114583333333333,
+  "selection_gate_by_depth": {
+    "1": false,
+    "10": false,
+    "11": false,
+    "12": false,
+    "2": true,
+    "3": false,
+    "4": false,
+    "5": false,
+    "6": false,
+    "7": false,
+    "8": false,
+    "9": false
+  },
+  "status": "blocked"
+}
