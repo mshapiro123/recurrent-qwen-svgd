@@ -1,0 +1,109 @@
+{
+  "kind": "synthetic_depth_active_label_matrix",
+  "threshold": 0.71,
+  "depths": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "loops": [
+    1
+  ],
+  "active_matrix": {
+    "1": {
+      "1": {
+        "correct": 26,
+        "total": 32,
+        "accuracy": 0.8125
+      }
+    },
+    "2": {
+      "1": {
+        "correct": 30,
+        "total": 32,
+        "accuracy": 0.9375
+      }
+    },
+    "3": {
+      "1": {
+        "correct": 30,
+        "total": 32,
+        "accuracy": 0.9375
+      }
+    },
+    "4": {
+      "1": {
+        "correct": 31,
+        "total": 32,
+        "accuracy": 0.96875
+      }
+    },
+    "5": {
+      "1": {
+        "correct": 28,
+        "total": 32,
+        "accuracy": 0.875
+      }
+    },
+    "6": {
+      "1": {
+        "correct": 31,
+        "total": 32,
+        "accuracy": 0.96875
+      }
+    },
+    "7": {
+      "1": {
+        "correct": 26,
+        "total": 32,
+        "accuracy": 0.8125
+      }
+    },
+    "8": {
+      "1": {
+        "correct": 31,
+        "total": 32,
+        "accuracy": 0.96875
+      }
+    }
+  },
+  "active_diagonal": {
+    "1": 0.8125,
+    "2": 0.0,
+    "3": 0.0,
+    "4": 0.0,
+    "5": 0.0,
+    "6": 0.0,
+    "7": 0.0,
+    "8": 0.0
+  },
+  "active_diagonal_clears_bar": false,
+  "active_total": {
+    "correct": 233,
+    "total": 256,
+    "accuracy": 0.91015625
+  },
+  "above_diagonal": {
+    "iterate": 0,
+    "hold": 0,
+    "other": 0,
+    "unknown_iterate_target": 0,
+    "n": 0,
+    "rates": {
+      "iterate": 0.0,
+      "hold": 0.0,
+      "other": 0.0,
+      "unknown_iterate_target": 0.0
+    }
+  },
+  "checkpoint": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/ponder_controller/unfrozen_recurrent_step_2000.pt",
+  "data_jsonl": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/data/natural_loop1_full_16_each_d1_8.jsonl",
+  "prediction_space": "full_symbols",
+  "prompt_style": "question_only",
+  "rows": 256
+}

@@ -1,0 +1,65 @@
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+dtype: bfloat16
+adapter_dtype: float32
+attn_implementation: default
+layer_split: 6,18
+max_length: 512
+max_loops: 4
+loop_loss_mode: halting_weighted
+initial_halt_prob: 0.15
+beta: 0.02
+halt_target_nll_weight: 0.1
+batch_size: 1
+gradient_accumulation_steps: 1
+minimum_effective_batch_size: 1
+seed: 20260717
+optimizer: adamw
+reject_muon: true
+learning_rate: 0.0001
+adamw_lr: 1.0e-05
+weight_decay: 0.0
+max_grad_norm: 0.5
+max_steps: 2000
+save_every: 1000
+log_every: 25
+bridge_projection_mode: split
+bridge_prelude_lr_multiplier: 1.0
+bridge_prelude_weight_decay: 0.0
+bridge_prelude_lr_include_norm: false
+bridge_prelude_grad_multiplier: 1.0
+training_mode: controller_only
+train_on_prompt: false
+gradient_checkpointing: true
+require_active_supervision: true
+require_nonzero_train_gradient: true
+require_frozen_base_hash: true
+output_dir: outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/ponder_controller
+resume_lora:
+  enabled: true
+  rank: 16
+  alpha: 32
+  dropout: 0.0
+merge_lora_before_unfreeze: false
+require_lora_loaded_before_merge: false
+train_auxiliary:
+  bridge: false
+  halting: true
+  reentry_adapter: false
+  latent: false
+recurrence_curriculum:
+  enabled: false
+  start_loop: 4
+  end_loop: 4
+  schedule: linear
+  target_source: row_capped
+  ramp_compute: false
+checkpoint_include_frozen_prefixes:
+- bridge.
+checkpoint_include_frozen_lora: true
+synthetic_phase: peft_ponder_closure
+synthetic_stage: ponder_controller
+peft_arm: R16
+resume_from: outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le4/unfrozen_recurrent_step_4000.pt
+require_all_lora_loaded: true
+require_loaded_prefixes:
+- bridge.

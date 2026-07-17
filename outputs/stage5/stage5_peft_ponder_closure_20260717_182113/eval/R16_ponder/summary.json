@@ -1,0 +1,18 @@
+{
+  "kind": "ponder_depth_evaluation",
+  "rows": 256,
+  "forced_depth_correct": 241,
+  "forced_depth_accuracy": 0.94140625,
+  "learned_depth_correct": 191,
+  "learned_depth_accuracy": 0.74609375,
+  "mean_selected_loops": 2.0,
+  "mean_expected_loops": 2.2547843595966697,
+  "selected_depth_histogram": {
+    "1": 0,
+    "2": 256,
+    "3": 0,
+    "4": 0
+  },
+  "checkpoint": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/ponder_controller/unfrozen_recurrent_step_2000.pt",
+  "data_jsonl": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/data/test_chain_mcq_heldout64.jsonl"
+}

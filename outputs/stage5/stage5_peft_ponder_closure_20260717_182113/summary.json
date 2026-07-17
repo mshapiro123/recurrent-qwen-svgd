@@ -93,7 +93,7 @@
     "r256_rider_total_steps": 12000,
     "task": "N16 synthetic forward chain, depths 1-4"
   },
-  "next_action": "run_P2_on_first_pass",
+  "next_action": "strategy_review",
   "p1_results": [
     {
       "alpha": 32,
@@ -651,7 +651,78 @@
       "total_steps": 6000
     }
   ],
-  "p2": null,
+  "p2": {
+    "arm": "R16",
+    "checkpoint_backup": {
+      "bytes": 30700389,
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_peft_ponder_closure_20260717_182113/R16_ponder/unfrozen_recurrent_step_2000.pt",
+      "sha256": "13759367da12614e420e919e9a451c6b2873878c22fee8a16fc3312994f35130"
+    },
+    "eval_summary": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/eval/R16_ponder/summary.json",
+    "final_natural_loop1_summary": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/eval/R16_ponder_final_natural_loop1/summary.json",
+    "gate": {
+      "accuracy_gap": 0.1953125,
+      "accuracy_preserved": false,
+      "depth_nontrivial": true,
+      "forced_depth_accuracy": 0.94140625,
+      "kl_stable": false,
+      "kl_tail": [
+        0.6788765788078308,
+        0.3531549870967865,
+        0.6473495960235596,
+        0.674172043800354,
+        0.35868924856185913,
+        0.2971128821372986,
+        0.7494633793830872,
+        0.7412436008453369,
+        0.3336111307144165,
+        0.7278441190719604,
+        0.3101021647453308,
+        0.055848367512226105,
+        0.06015992909669876,
+        0.6631739735603333,
+        0.294019877910614,
+        0.28833305835723877,
+        0.2901185154914856,
+        0.04894305765628815,
+        0.3044099807739258,
+        0.039312802255153656
+      ],
+      "learned_depth_accuracy": 0.74609375,
+      "loss_decreased": true,
+      "loss_first": 0.20813658833503723,
+      "loss_last": 0.06218121200799942,
+      "mean_expected_loops": 2.2547843595966697,
+      "passed": false
+    },
+    "stage": {
+      "base_hash": {
+        "end": "960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f",
+        "start": "960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f",
+        "unchanged": true
+      },
+      "canary_trace": [],
+      "checkpoint": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/ponder_controller/unfrozen_recurrent_step_2000.pt",
+      "config": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/configs/R16/ponder_controller.yaml",
+      "interval_checkpoints": [
+        "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/ponder_controller/unfrozen_recurrent_step_1000.pt",
+        "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/ponder_controller/unfrozen_recurrent_step_2000.pt"
+      ],
+      "name": "ponder_controller",
+      "output_dir": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/ponder_controller",
+      "status": "finished",
+      "train_log": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/ponder_controller/train.log",
+      "trainable_parameters": {
+        "bridge": 0,
+        "halting": 44193,
+        "latent": 0,
+        "recurrent_block": 0,
+        "reentry_adapter": 0,
+        "total": 44193
+      },
+      "training_summary": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/ponder_controller/train_unfrozen_recurrent_summary.json"
+    }
+  },
   "run_id": "stage5_peft_ponder_closure_20260717_182113",
-  "status": "R16_passed"
+  "status": "finished_p2_failed"
 }
