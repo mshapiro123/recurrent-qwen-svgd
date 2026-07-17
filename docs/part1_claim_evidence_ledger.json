@@ -290,6 +290,18 @@
       ]
     },
     {
+      "id": "depth_selection_control_pathway",
+      "claim": "The installed PonderNet halting pathway can be assessed as a frozen-mechanism control path under supervised depth reading and outcome-only depth discovery.",
+      "status": "preregistered_pending_result",
+      "scope": "N24 step-6000 substrate, stated-depth prompts, depths 1-12; does not establish intelligent difficulty allocation or hard-reasoning halting",
+      "evidence": [
+        {
+          "path": "docs/stage5_depth_selector_bounded_preregistration.md",
+          "locator": "immutable substrate, S1 and S2 gates, scope"
+        }
+      ]
+    },
+    {
       "id": "guided_latent_width",
       "claim": "Target-conditioned stochastic latent trajectories improve exact solution coverage beyond output sampling and additional deterministic depth.",
       "status": "open",

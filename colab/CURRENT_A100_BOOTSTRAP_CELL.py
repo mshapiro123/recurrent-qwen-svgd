@@ -114,6 +114,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "multichannel_bridge_precursor_replication" - one bounded backward-recovery M1/M2 replication using the locked N24 pilot receipt.
 #   "multichannel_bridge_precursor_full" - explicit full M1/M2/M3 battery after pilot review.
 #   "peft_ponder_closure" - corrected-loop frozen-LoRA ladder plus halting-only Ponder phase.
+#   "depth_selector_bounded_assessment" - frozen N24 supervised-depth and Ponder-outcome selector closure.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 PREFER_LOCAL_HEAD = os.environ.get("STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD", "0").strip().lower() in {
@@ -1935,6 +1936,31 @@ TARGETS = {
             "STAGE5_PONDER_BETA": "0.02",
             "STAGE5_PONDER_TARGET_NLL_WEIGHT": "0.1",
             "STAGE5_PEFT_PONDER_DISCONNECT": "0",
+        },
+    },
+    "depth_selector_bounded_assessment": {
+        "path": "colab/STAGE5_DEPTH_SELECTOR_CELL.py",
+        "markers": [
+            "STAGE5_DEPTH_SELECTOR_CELL_VERSION",
+            "depth_selector_bounded_v1",
+            "N24_KEEPER_SHA256",
+            "frozen_parameter_hash",
+            "S1_supervised_depth_reading",
+            "S2_ponder_outcome",
+            "canary_exemption",
+            "pinned_checkout",
+            "colab/run_stage5_depth_selector_bounded.py",
+            "tests/test_depth_selector_bounded.py",
+            "tests/test_stage5_depth_selector_bounded.py",
+        ],
+        "env": {
+            "STAGE5_DEPTH_SELECTOR_DTYPE": "bfloat16",
+            "STAGE5_DEPTH_SELECTOR_STEPS": "2000",
+            "STAGE5_DEPTH_SELECTOR_BATCH_SIZE": "8",
+            "STAGE5_DEPTH_SELECTOR_EXTRACTION_BATCH": "8",
+            "STAGE5_DEPTH_SELECTOR_S1_LR": "1e-3",
+            "STAGE5_DEPTH_SELECTOR_S2_LR": "1e-3",
+            "STAGE5_DEPTH_SELECTOR_DISCONNECT": "0",
         },
     },
     "depth_extrapolation_eval": {
