@@ -93,9 +93,565 @@
     "r256_rider_total_steps": 12000,
     "task": "N16 synthetic forward chain, depths 1-4"
   },
-  "next_action": "run_R16",
-  "p1_results": [],
+  "next_action": "run_P2_on_first_pass",
+  "p1_results": [
+    {
+      "alpha": 32,
+      "arm": "R16",
+      "base_hash_unchanged": true,
+      "checkpoint": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le4/unfrozen_recurrent_step_4000.pt",
+      "checkpoint_backup": {
+        "bytes": 30521229,
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_peft_ponder_closure_20260717_182113/R16/unfrozen_recurrent_step_4000.pt",
+        "sha256": "2d564440618e9d09b76111b35b77da0c74fc7a22a32d82ddffbdd7136c2e1f2b"
+      },
+      "final_active_summary": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/eval/R16_final_heldout64/summary.json",
+      "final_natural_loop1_summary": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/eval/R16_final_natural_loop1/summary.json",
+      "full_block_comparison": {
+        "1": {
+          "accuracy": 1.0,
+          "correct": 64,
+          "delta": 0.0,
+          "reference_accuracy": 1.0,
+          "total": 64,
+          "wilson_95": [
+            0.9433759402071946,
+            1.0
+          ]
+        },
+        "2": {
+          "accuracy": 1.0,
+          "correct": 64,
+          "delta": 0.015625,
+          "reference_accuracy": 0.984375,
+          "total": 64,
+          "wilson_95": [
+            0.9433759402071946,
+            1.0
+          ]
+        },
+        "3": {
+          "accuracy": 0.9375,
+          "correct": 60,
+          "delta": -0.046875,
+          "reference_accuracy": 0.984375,
+          "total": 64,
+          "wilson_95": [
+            0.8500251490779133,
+            0.9754287986033819
+          ]
+        },
+        "4": {
+          "accuracy": 0.828125,
+          "correct": 53,
+          "delta": -0.09375,
+          "reference_accuracy": 0.921875,
+          "total": 64,
+          "wilson_95": [
+            0.7178678837734179,
+            0.9012225769875536
+          ]
+        }
+      },
+      "gate": {
+        "counts": {
+          "1": {
+            "accuracy": 1.0,
+            "correct": 64,
+            "total": 64
+          },
+          "2": {
+            "accuracy": 1.0,
+            "correct": 64,
+            "total": 64
+          },
+          "3": {
+            "accuracy": 0.9375,
+            "correct": 60,
+            "total": 64
+          },
+          "4": {
+            "accuracy": 0.828125,
+            "correct": 53,
+            "total": 64
+          }
+        },
+        "passed": true,
+        "required_correct": 46,
+        "required_total": 64
+      },
+      "identity": {
+        "alpha": 32,
+        "bridge_projection_mode": "split",
+        "checkpoint": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/identity/R16/peft_identity_step_0.pt",
+        "kind": "peft_identity_gate",
+        "lora_modules": 84,
+        "max_abs_diff": 0.0,
+        "max_loops": 1,
+        "mean_abs_diff": 0.0,
+        "passed": true,
+        "pretrained_base_sha256": "960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f",
+        "rank": 16,
+        "summary": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/identity/R16/summary.json",
+        "threshold": 0.001
+      },
+      "intervals": [
+        {
+          "active_summary": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/eval/R16_dose_1000/summary.json",
+          "checkpoint": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le2/unfrozen_recurrent_step_1000.pt",
+          "cumulative_step": 1000,
+          "gate": {
+            "counts": {
+              "1": {
+                "accuracy": 1.0,
+                "correct": 64,
+                "total": 64
+              },
+              "2": {
+                "accuracy": 0.1875,
+                "correct": 12,
+                "total": 64
+              },
+              "3": {
+                "accuracy": 0.25,
+                "correct": 16,
+                "total": 64
+              },
+              "4": {
+                "accuracy": 0.109375,
+                "correct": 7,
+                "total": 64
+              }
+            },
+            "passed": false,
+            "required_correct": 46,
+            "required_total": 64
+          },
+          "tier1": {
+            "baseline_accuracy": 0.9375,
+            "candidate_accuracy": 0.953125,
+            "in_training_receipt": {
+              "accuracy": 0.953125,
+              "accuracy_delta": 0.015625,
+              "baseline_accuracy": 0.9375,
+              "correct": 61,
+              "hard_stop_delta": -0.03,
+              "status": "green_continue",
+              "step": 1000,
+              "total": 64
+            },
+            "verdict": {
+              "accuracy_delta": 0.015625,
+              "accuracy_hard_stop_margin": -0.03,
+              "ppl_hard_stop_relative": 0.05,
+              "ppl_relative_delta": null,
+              "status": "green_continue"
+            }
+          }
+        },
+        {
+          "active_summary": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/eval/R16_dose_2000/summary.json",
+          "checkpoint": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le2/unfrozen_recurrent_step_2000.pt",
+          "cumulative_step": 2000,
+          "gate": {
+            "counts": {
+              "1": {
+                "accuracy": 1.0,
+                "correct": 64,
+                "total": 64
+              },
+              "2": {
+                "accuracy": 0.796875,
+                "correct": 51,
+                "total": 64
+              },
+              "3": {
+                "accuracy": 0.25,
+                "correct": 16,
+                "total": 64
+              },
+              "4": {
+                "accuracy": 0.0625,
+                "correct": 4,
+                "total": 64
+              }
+            },
+            "passed": false,
+            "required_correct": 46,
+            "required_total": 64
+          },
+          "tier1": {
+            "baseline_accuracy": 0.9375,
+            "candidate_accuracy": 0.953125,
+            "in_training_receipt": {
+              "accuracy": 0.953125,
+              "accuracy_delta": 0.015625,
+              "baseline_accuracy": 0.9375,
+              "correct": 61,
+              "hard_stop_delta": -0.03,
+              "status": "green_continue",
+              "step": 2000,
+              "total": 64
+            },
+            "verdict": {
+              "accuracy_delta": 0.015625,
+              "accuracy_hard_stop_margin": -0.03,
+              "ppl_hard_stop_relative": 0.05,
+              "ppl_relative_delta": null,
+              "status": "green_continue"
+            }
+          }
+        },
+        {
+          "active_summary": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/eval/R16_dose_3000/summary.json",
+          "checkpoint": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le4/unfrozen_recurrent_step_1000.pt",
+          "cumulative_step": 3000,
+          "gate": {
+            "counts": {
+              "1": {
+                "accuracy": 0.984375,
+                "correct": 63,
+                "total": 64
+              },
+              "2": {
+                "accuracy": 0.796875,
+                "correct": 51,
+                "total": 64
+              },
+              "3": {
+                "accuracy": 0.3125,
+                "correct": 20,
+                "total": 64
+              },
+              "4": {
+                "accuracy": 0.109375,
+                "correct": 7,
+                "total": 64
+              }
+            },
+            "passed": false,
+            "required_correct": 46,
+            "required_total": 64
+          },
+          "tier1": {
+            "baseline_accuracy": 0.9375,
+            "candidate_accuracy": 0.953125,
+            "in_training_receipt": {
+              "accuracy": 0.953125,
+              "accuracy_delta": 0.015625,
+              "baseline_accuracy": 0.9375,
+              "correct": 61,
+              "hard_stop_delta": -0.03,
+              "status": "green_continue",
+              "step": 1000,
+              "total": 64
+            },
+            "verdict": {
+              "accuracy_delta": 0.015625,
+              "accuracy_hard_stop_margin": -0.03,
+              "ppl_hard_stop_relative": 0.05,
+              "ppl_relative_delta": null,
+              "status": "green_continue"
+            }
+          }
+        },
+        {
+          "active_summary": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/eval/R16_dose_4000/summary.json",
+          "checkpoint": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le4/unfrozen_recurrent_step_2000.pt",
+          "cumulative_step": 4000,
+          "gate": {
+            "counts": {
+              "1": {
+                "accuracy": 0.984375,
+                "correct": 63,
+                "total": 64
+              },
+              "2": {
+                "accuracy": 0.9375,
+                "correct": 60,
+                "total": 64
+              },
+              "3": {
+                "accuracy": 0.9375,
+                "correct": 60,
+                "total": 64
+              },
+              "4": {
+                "accuracy": 0.8125,
+                "correct": 52,
+                "total": 64
+              }
+            },
+            "passed": true,
+            "required_correct": 46,
+            "required_total": 64
+          },
+          "tier1": {
+            "baseline_accuracy": 0.9375,
+            "candidate_accuracy": 0.953125,
+            "in_training_receipt": {
+              "accuracy": 0.953125,
+              "accuracy_delta": 0.015625,
+              "baseline_accuracy": 0.9375,
+              "correct": 61,
+              "hard_stop_delta": -0.03,
+              "status": "green_continue",
+              "step": 2000,
+              "total": 64
+            },
+            "verdict": {
+              "accuracy_delta": 0.015625,
+              "accuracy_hard_stop_margin": -0.03,
+              "ppl_hard_stop_relative": 0.05,
+              "ppl_relative_delta": null,
+              "status": "green_continue"
+            }
+          }
+        },
+        {
+          "active_summary": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/eval/R16_dose_5000/summary.json",
+          "checkpoint": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le4/unfrozen_recurrent_step_3000.pt",
+          "cumulative_step": 5000,
+          "gate": {
+            "counts": {
+              "1": {
+                "accuracy": 1.0,
+                "correct": 64,
+                "total": 64
+              },
+              "2": {
+                "accuracy": 0.984375,
+                "correct": 63,
+                "total": 64
+              },
+              "3": {
+                "accuracy": 0.953125,
+                "correct": 61,
+                "total": 64
+              },
+              "4": {
+                "accuracy": 0.8125,
+                "correct": 52,
+                "total": 64
+              }
+            },
+            "passed": true,
+            "required_correct": 46,
+            "required_total": 64
+          },
+          "tier1": {
+            "baseline_accuracy": 0.9375,
+            "candidate_accuracy": 0.953125,
+            "in_training_receipt": {
+              "accuracy": 0.953125,
+              "accuracy_delta": 0.015625,
+              "baseline_accuracy": 0.9375,
+              "correct": 61,
+              "hard_stop_delta": -0.03,
+              "status": "green_continue",
+              "step": 3000,
+              "total": 64
+            },
+            "verdict": {
+              "accuracy_delta": 0.015625,
+              "accuracy_hard_stop_margin": -0.03,
+              "ppl_hard_stop_relative": 0.05,
+              "ppl_relative_delta": null,
+              "status": "green_continue"
+            }
+          }
+        },
+        {
+          "active_summary": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/eval/R16_dose_6000/summary.json",
+          "checkpoint": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le4/unfrozen_recurrent_step_4000.pt",
+          "cumulative_step": 6000,
+          "gate": {
+            "counts": {
+              "1": {
+                "accuracy": 1.0,
+                "correct": 64,
+                "total": 64
+              },
+              "2": {
+                "accuracy": 1.0,
+                "correct": 64,
+                "total": 64
+              },
+              "3": {
+                "accuracy": 0.9375,
+                "correct": 60,
+                "total": 64
+              },
+              "4": {
+                "accuracy": 0.828125,
+                "correct": 53,
+                "total": 64
+              }
+            },
+            "passed": true,
+            "required_correct": 46,
+            "required_total": 64
+          },
+          "tier1": {
+            "baseline_accuracy": 0.9375,
+            "candidate_accuracy": 0.953125,
+            "in_training_receipt": {
+              "accuracy": 0.953125,
+              "accuracy_delta": 0.015625,
+              "baseline_accuracy": 0.9375,
+              "correct": 61,
+              "hard_stop_delta": -0.03,
+              "status": "green_continue",
+              "step": 4000,
+              "total": 64
+            },
+            "verdict": {
+              "accuracy_delta": 0.015625,
+              "accuracy_hard_stop_margin": -0.03,
+              "ppl_hard_stop_relative": 0.05,
+              "ppl_relative_delta": null,
+              "status": "green_continue"
+            }
+          }
+        }
+      ],
+      "rank": 16,
+      "stages": [
+        {
+          "base_hash": {
+            "end": "960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f",
+            "start": "960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f",
+            "unchanged": true
+          },
+          "canary_trace": [
+            {
+              "accuracy": 0.953125,
+              "accuracy_delta": 0.015625,
+              "baseline_accuracy": 0.9375,
+              "correct": 61,
+              "hard_stop_delta": -0.03,
+              "status": "green_continue",
+              "step": 1000,
+              "total": 64
+            },
+            {
+              "accuracy": 0.953125,
+              "accuracy_delta": 0.015625,
+              "baseline_accuracy": 0.9375,
+              "correct": 61,
+              "hard_stop_delta": -0.03,
+              "status": "green_continue",
+              "step": 2000,
+              "total": 64
+            }
+          ],
+          "checkpoint": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le2/unfrozen_recurrent_step_2000.pt",
+          "config": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/configs/R16/depth_le2.yaml",
+          "interval_checkpoints": [
+            "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le2/unfrozen_recurrent_step_1000.pt",
+            "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le2/unfrozen_recurrent_step_2000.pt"
+          ],
+          "name": "depth_le2",
+          "output_dir": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le2",
+          "status": "finished",
+          "train_log": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le2/train.log",
+          "trainable_parameters": {
+            "bridge": 3214849,
+            "halting": 0,
+            "latent": 0,
+            "recurrent_block": 4399104,
+            "reentry_adapter": 0,
+            "total": 7613953
+          },
+          "training_summary": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le2/train_unfrozen_recurrent_summary.json"
+        },
+        {
+          "base_hash": {
+            "end": "960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f",
+            "start": "960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f",
+            "unchanged": true
+          },
+          "canary_trace": [
+            {
+              "accuracy": 0.953125,
+              "accuracy_delta": 0.015625,
+              "baseline_accuracy": 0.9375,
+              "correct": 61,
+              "hard_stop_delta": -0.03,
+              "status": "green_continue",
+              "step": 1000,
+              "total": 64
+            },
+            {
+              "accuracy": 0.953125,
+              "accuracy_delta": 0.015625,
+              "baseline_accuracy": 0.9375,
+              "correct": 61,
+              "hard_stop_delta": -0.03,
+              "status": "green_continue",
+              "step": 2000,
+              "total": 64
+            },
+            {
+              "accuracy": 0.953125,
+              "accuracy_delta": 0.015625,
+              "baseline_accuracy": 0.9375,
+              "correct": 61,
+              "hard_stop_delta": -0.03,
+              "status": "green_continue",
+              "step": 3000,
+              "total": 64
+            },
+            {
+              "accuracy": 0.953125,
+              "accuracy_delta": 0.015625,
+              "baseline_accuracy": 0.9375,
+              "correct": 61,
+              "hard_stop_delta": -0.03,
+              "status": "green_continue",
+              "step": 4000,
+              "total": 64
+            }
+          ],
+          "checkpoint": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le4/unfrozen_recurrent_step_4000.pt",
+          "config": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/configs/R16/depth_le4.yaml",
+          "interval_checkpoints": [
+            "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le4/unfrozen_recurrent_step_1000.pt",
+            "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le4/unfrozen_recurrent_step_2000.pt",
+            "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le4/unfrozen_recurrent_step_3000.pt",
+            "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le4/unfrozen_recurrent_step_4000.pt"
+          ],
+          "name": "depth_le4",
+          "output_dir": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le4",
+          "status": "finished",
+          "train_log": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le4/train.log",
+          "trainable_parameters": {
+            "bridge": 3214849,
+            "halting": 0,
+            "latent": 0,
+            "recurrent_block": 4399104,
+            "reentry_adapter": 0,
+            "total": 7613953
+          },
+          "training_summary": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le4/train_unfrozen_recurrent_summary.json"
+        }
+      ],
+      "tier1_baseline": {
+        "accuracy": 0.9375,
+        "gate": {
+          "accuracy": 0.9375,
+          "correct": 60,
+          "minimum_accuracy": 0.5,
+          "passed": true,
+          "reason": "nonvacuous_baseline_confirmed",
+          "total": 64
+        },
+        "summary": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/eval/R16_base_capability_canary_baseline/summary.json"
+      },
+      "total_steps": 6000
+    }
+  ],
   "p2": null,
   "run_id": "stage5_peft_ponder_closure_20260717_182113",
-  "status": "data_ready"
+  "status": "R16_passed"
 }

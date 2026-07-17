@@ -1,0 +1,10 @@
+{
+  "checkpoint": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le2/unfrozen_recurrent_step_2000.pt",
+  "checkpoint_backup": null,
+  "completed_step": 2000,
+  "kind": "train_unfrozen_recurrent_progress",
+  "max_steps": 2000,
+  "metrics": {},
+  "micro_step": 2000,
+  "status": "finished"
+}

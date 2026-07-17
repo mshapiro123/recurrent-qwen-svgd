@@ -1,0 +1,136 @@
+{
+  "kind": "synthetic_depth_active_label_matrix",
+  "threshold": 0.71,
+  "depths": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "loops": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "active_matrix": {
+    "1": {
+      "1": {
+        "correct": 64,
+        "total": 64,
+        "accuracy": 1.0
+      },
+      "2": {
+        "correct": 0,
+        "total": 0,
+        "accuracy": 0.0
+      },
+      "3": {
+        "correct": 0,
+        "total": 0,
+        "accuracy": 0.0
+      },
+      "4": {
+        "correct": 0,
+        "total": 0,
+        "accuracy": 0.0
+      }
+    },
+    "2": {
+      "1": {
+        "correct": 64,
+        "total": 64,
+        "accuracy": 1.0
+      },
+      "2": {
+        "correct": 12,
+        "total": 64,
+        "accuracy": 0.1875
+      },
+      "3": {
+        "correct": 0,
+        "total": 0,
+        "accuracy": 0.0
+      },
+      "4": {
+        "correct": 0,
+        "total": 0,
+        "accuracy": 0.0
+      }
+    },
+    "3": {
+      "1": {
+        "correct": 64,
+        "total": 64,
+        "accuracy": 1.0
+      },
+      "2": {
+        "correct": 13,
+        "total": 64,
+        "accuracy": 0.203125
+      },
+      "3": {
+        "correct": 16,
+        "total": 64,
+        "accuracy": 0.25
+      },
+      "4": {
+        "correct": 0,
+        "total": 0,
+        "accuracy": 0.0
+      }
+    },
+    "4": {
+      "1": {
+        "correct": 64,
+        "total": 64,
+        "accuracy": 1.0
+      },
+      "2": {
+        "correct": 17,
+        "total": 64,
+        "accuracy": 0.265625
+      },
+      "3": {
+        "correct": 13,
+        "total": 64,
+        "accuracy": 0.203125
+      },
+      "4": {
+        "correct": 7,
+        "total": 64,
+        "accuracy": 0.109375
+      }
+    }
+  },
+  "active_diagonal": {
+    "1": 1.0,
+    "2": 0.1875,
+    "3": 0.25,
+    "4": 0.109375
+  },
+  "active_diagonal_clears_bar": false,
+  "active_total": {
+    "correct": 334,
+    "total": 640,
+    "accuracy": 0.521875
+  },
+  "above_diagonal": {
+    "iterate": 87,
+    "hold": 55,
+    "other": 242,
+    "unknown_iterate_target": 0,
+    "n": 384,
+    "rates": {
+      "iterate": 0.2265625,
+      "hold": 0.14322916666666666,
+      "other": 0.6302083333333334,
+      "unknown_iterate_target": 0.0
+    }
+  },
+  "checkpoint": "outputs/stage5/stage5_peft_ponder_closure_20260717_182113/train/R16/depth_le2/unfrozen_recurrent_step_1000.pt",
+  "data_jsonl": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/data/test_chain_mcq_heldout64.jsonl",
+  "prediction_space": "full_symbols",
+  "prompt_style": "question_only",
+  "rows": 1024
+}
