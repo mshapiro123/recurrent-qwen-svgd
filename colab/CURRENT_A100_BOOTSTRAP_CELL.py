@@ -113,6 +113,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "multichannel_bridge_precursor" - bounded eval-only M1/M2 pilot for the query-head bridge battery.
 #   "multichannel_bridge_precursor_replication" - one bounded backward-recovery M1/M2 replication using the locked N24 pilot receipt.
 #   "multichannel_bridge_precursor_full" - explicit full M1/M2/M3 battery after pilot review.
+#   "peft_ponder_closure" - corrected-loop frozen-LoRA ladder plus halting-only Ponder phase.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 PREFER_LOCAL_HEAD = os.environ.get("STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD", "0").strip().lower() in {
@@ -1906,6 +1907,32 @@ TARGETS = {
             "STAGE5_CHAIN_CORRECTED_STAGE1234_STEPS": "4000",
             "STAGE5_CHAIN_CORRECTED_BACKUP_CHECKPOINTS_TO_DRIVE": "1",
             "STAGE5_CHAIN_CORRECTED_DISCONNECT": "0",
+        },
+    },
+    "peft_ponder_closure": {
+        "path": "colab/STAGE5_PEFT_PONDER_CLOSURE_CELL.py",
+        "markers": [
+            "STAGE5_PEFT_PONDER_CLOSURE_CELL_VERSION",
+            "peft_ponder_closure_v1",
+            "frozen_lora",
+            "controller_only",
+            "reject_muon",
+            "bridge_prelude_lr_multiplier",
+            "require_frozen_base_hash",
+            "pinned_checkout",
+            "eval/eval_peft_identity.py",
+            "eval/eval_ponder_depth.py",
+            "colab/run_stage5_peft_ponder_closure.py",
+            "tests/test_peft_ponder_closure.py",
+            "tests/test_stage5_peft_ponder_closure.py",
+        ],
+        "env": {
+            "STAGE5_PEFT_DTYPE": "bfloat16",
+            "STAGE5_PEFT_LR": "1e-5",
+            "STAGE5_PONDER_LR": "1e-4",
+            "STAGE5_PONDER_BETA": "0.02",
+            "STAGE5_PONDER_TARGET_NLL_WEIGHT": "0.1",
+            "STAGE5_PEFT_PONDER_DISCONNECT": "0",
         },
     },
     "depth_extrapolation_eval": {

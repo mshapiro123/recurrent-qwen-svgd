@@ -9,6 +9,7 @@ own parameters plus lightweight loop controls.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import random
@@ -16,6 +17,7 @@ import shutil
 import sys
 from functools import partial
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import torch
@@ -28,7 +30,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from eval.eval_identity import model_load_kwargs, parse_split, resolve_dtype
-from models.lora import apply_lora_to_recurrent_block, merge_lora_adapters
+from models.lora import apply_lora_to_recurrent_block, mark_only_lora_trainable, merge_lora_adapters
 from models.recurrent_wrapper import RecurrentQwenForCausalLM
 from training.checkpointing import load_trainable_checkpoint, save_trainable_checkpoint
 from training.dataset import JsonlCausalDataset, collate_causal_batch
@@ -195,17 +197,146 @@ def freeze_all_base_then_unfreeze_recurrent_block(wrapper: RecurrentQwenForCausa
             param.requires_grad_(True)
 
 
+def pretrained_base_parameter_items(
+    wrapper: RecurrentQwenForCausalLM,
+) -> list[tuple[str, torch.nn.Parameter]]:
+    """Return pretrained Qwen tensors, excluding newly attached LoRA tensors."""
+
+    return [
+        (name, parameter)
+        for name, parameter in wrapper.base_model.named_parameters()
+        if ".lora_a." not in name and ".lora_b." not in name
+    ]
+
+
+def hash_pretrained_base_parameters(wrapper: RecurrentQwenForCausalLM) -> str:
+    digest = hashlib.sha256()
+    for name, parameter in pretrained_base_parameter_items(wrapper):
+        tensor = parameter.detach().cpu().contiguous()
+        digest.update(name.encode("utf-8"))
+        digest.update(str(tuple(tensor.shape)).encode("ascii"))
+        digest.update(str(tensor.dtype).encode("ascii"))
+        digest.update(tensor.view(torch.uint8).numpy().tobytes())
+    return digest.hexdigest()
+
+
+def assert_pretrained_base_frozen(wrapper: RecurrentQwenForCausalLM) -> None:
+    trainable = [
+        name
+        for name, parameter in pretrained_base_parameter_items(wrapper)
+        if parameter.requires_grad
+    ]
+    if trainable:
+        raise RuntimeError(
+            "Pretrained base tensors must remain frozen; trainable examples="
+            f"{trainable[:8]}"
+        )
+
+
+def evaluate_loop1_canary(
+    wrapper: RecurrentQwenForCausalLM,
+    tokenizer: Any,
+    *,
+    data_jsonl: str | Path,
+    device: str,
+    value_prefix: str,
+) -> dict[str, float | int]:
+    from eval.eval_synthetic_depth_active_labels import (
+        active_target_for_loop,
+        candidates_for_row,
+        prompt_for_row,
+        read_jsonl,
+        score_candidates_all_loops,
+    )
+
+    rows = read_jsonl(data_jsonl)
+    score_args = SimpleNamespace(
+        device=device,
+        force_slow_candidate_score=False,
+        normalize_candidate_score=True,
+    )
+    correct = 0
+    wrapper.eval()
+    try:
+        for row in rows:
+            prompt = prompt_for_row(
+                row,
+                prediction_space="full_symbols",
+                prompt_style="question_only",
+            )
+            candidates = candidates_for_row(
+                row,
+                prediction_space="full_symbols",
+                value_prefix=value_prefix,
+            )
+            scores = score_candidates_all_loops(
+                wrapper,
+                tokenizer,
+                prompt,
+                candidates,
+                score_args,
+                loop_counts=[1],
+            )[1]
+            prediction = max(scores.items(), key=lambda item: item[1])[0]
+            target = active_target_for_loop(
+                row,
+                1,
+                prediction_space="full_symbols",
+                value_prefix=value_prefix,
+            )
+            correct += int(prediction == target)
+    finally:
+        wrapper.train()
+    total = len(rows)
+    return {
+        "correct": correct,
+        "total": total,
+        "accuracy": correct / total if total else 0.0,
+    }
+
+
 def configure_trainable_modules(wrapper: RecurrentQwenForCausalLM, cfg: dict[str, Any]) -> None:
-    freeze_all_base_then_unfreeze_recurrent_block(wrapper)
+    training_mode = str(cfg.get("training_mode", "full_block")).lower()
+    if training_mode == "full_block":
+        freeze_all_base_then_unfreeze_recurrent_block(wrapper)
+    elif training_mode == "frozen_lora":
+        for parameter in wrapper.parameters():
+            parameter.requires_grad_(False)
+        mark_only_lora_trainable(wrapper.base_model)
+    elif training_mode == "controller_only":
+        for parameter in wrapper.parameters():
+            parameter.requires_grad_(False)
+    else:
+        raise ValueError(
+            "training_mode must be one of: full_block, frozen_lora, controller_only"
+        )
     aux = cfg.get("train_auxiliary", {})
     for param in wrapper.bridge.parameters():
-        param.requires_grad_(bool(aux.get("bridge", True)))
+        param.requires_grad_(
+            bool(aux.get("bridge", True)) and training_mode != "controller_only"
+        )
     for param in wrapper.halt_predictor.parameters():
-        param.requires_grad_(bool(aux.get("halting", True)))
+        param.requires_grad_(
+            bool(aux.get("halting", True))
+            or training_mode == "controller_only"
+        )
     for param in wrapper.reentry_adapter.parameters():
         param.requires_grad_(bool(aux.get("reentry_adapter", False)))
     for param in wrapper.latent_trajectory.parameters():
         param.requires_grad_(bool(aux.get("latent", False)))
+    if training_mode in {"frozen_lora", "controller_only"}:
+        assert_pretrained_base_frozen(wrapper)
+    if training_mode == "controller_only":
+        unexpected = [
+            name
+            for name, parameter in wrapper.named_parameters()
+            if parameter.requires_grad and not name.startswith("halt_predictor.")
+        ]
+        if unexpected:
+            raise RuntimeError(
+                "controller_only selected non-halting parameters: "
+                f"{unexpected[:8]}"
+            )
 
 
 def trainable_parameter_summary(wrapper: RecurrentQwenForCausalLM) -> dict[str, int]:
@@ -593,6 +724,21 @@ def prepare_wrapper(
             + " ".join(f"{key}={value}" for key, value in load_counts.items())
         )
         if (
+            bool(cfg.get("require_all_lora_loaded", False))
+            and lora_wrapped
+            and load_counts["loaded_lora_keys"] < 2 * lora_wrapped
+        ):
+            raise RuntimeError(
+                "Checkpoint did not restore every LoRA A/B tensor: "
+                f"wrapped_modules={lora_wrapped}, {load_counts}"
+            )
+        loaded_keys = list(info["loaded_keys"])
+        for prefix in cfg.get("require_loaded_prefixes") or []:
+            if not any(name.startswith(str(prefix)) for name in loaded_keys):
+                raise RuntimeError(
+                    f"Checkpoint restored no tensors under required prefix {prefix!r}"
+                )
+        if (
             bool(cfg.get("require_lora_loaded_before_merge", True))
             and bool(cfg.get("merge_lora_before_unfreeze", True))
             and lora_wrapped
@@ -626,6 +772,8 @@ def main() -> int:
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
     cfg = load_config(args.config)
+    if bool(cfg.get("reject_muon", False)) and str(cfg.get("optimizer", "")).lower() != "adamw":
+        raise ValueError("This experiment rejects Muon; optimizer must be AdamW")
     training_seed = cfg_int(cfg, "seed", 0)
     loader_generator = seed_training_rng(training_seed)
     print(f"training_seed={training_seed}")
@@ -640,6 +788,11 @@ def main() -> int:
     ).to(args.device)
     maybe_enable_gradient_checkpointing(model, cfg)
     wrapper, setup = prepare_wrapper(model, cfg, device=args.device)
+    base_hash_start = None
+    if bool(cfg.get("require_frozen_base_hash", False)):
+        assert_pretrained_base_frozen(wrapper)
+        base_hash_start = hash_pretrained_base_parameters(wrapper)
+        print(f"[assert-ok] pretrained_base_sha256_start={base_hash_start}", flush=True)
     assert_finite_trainable_parameters(wrapper, step=0)
     wrapper.train()
 
@@ -772,6 +925,8 @@ def main() -> int:
         "curriculum_trace": [],
         "interval_checkpoints": [],
         "dose_trace": [],
+        "pretrained_base_sha256_start": base_hash_start,
+        "canary_trace": [],
     }
     max_steps = cfg_int(cfg, "max_steps", 25)
     save_every = cfg_int(cfg, "save_every", 0) if cfg.get("save_every", 0) else 0
@@ -814,6 +969,18 @@ def main() -> int:
         if int(item) > 0
     }
     prelude_grad_multiplier = cfg_float(cfg, "bridge_prelude_grad_multiplier", 1.0)
+    canary_every = cfg_int(cfg, "canary_every", 0) if cfg.get("canary_every", 0) else 0
+    canary_jsonl = cfg.get("canary_jsonl")
+    canary_baseline_accuracy = (
+        cfg_float(cfg, "canary_baseline_accuracy", 0.0)
+        if cfg.get("canary_baseline_accuracy") is not None
+        else None
+    )
+    canary_hard_stop_delta = cfg_float(cfg, "canary_hard_stop_delta", -0.03)
+    if canary_every and (not canary_jsonl or canary_baseline_accuracy is None):
+        raise ValueError(
+            "canary_every requires canary_jsonl and canary_baseline_accuracy"
+        )
     chain_anneal_hold_frac = cfg_float(cfg, "chain_anneal_hold_frac", 0.5)
     chain_outcome_loss_weight = cfg_float(cfg, "chain_outcome_loss_weight", 1.0)
     if prelude_grad_multiplier != 1.0 and bridge_uses_split_projection(wrapper):
@@ -825,6 +992,7 @@ def main() -> int:
     micro_step = 0
     accumulated_microbatches = 0
     previous_prelude_grad: torch.Tensor | None = None
+    hard_stop = False
     persist_progress(status="started", completed_step=step)
     while step < max_steps:
         for batch in loader:
@@ -942,9 +1110,36 @@ def main() -> int:
                 )
                 persist_progress(status="training", completed_step=completed_step, metrics=metric_values)
             step = completed_step
+            if canary_every and step % canary_every == 0:
+                assert canary_jsonl is not None
+                assert canary_baseline_accuracy is not None
+                canary = evaluate_loop1_canary(
+                    wrapper,
+                    tokenizer,
+                    data_jsonl=canary_jsonl,
+                    device=args.device,
+                    value_prefix=str(cfg.get("canary_value_prefix", "name:")),
+                )
+                accuracy_delta = float(canary["accuracy"]) - canary_baseline_accuracy
+                canary_receipt = {
+                    "step": step,
+                    **canary,
+                    "baseline_accuracy": canary_baseline_accuracy,
+                    "accuracy_delta": accuracy_delta,
+                    "hard_stop_delta": canary_hard_stop_delta,
+                    "status": (
+                        "red_hard_stop"
+                        if accuracy_delta < canary_hard_stop_delta
+                        else "green_continue"
+                    ),
+                }
+                summary["canary_trace"].append(canary_receipt)
+                print(f"[canary] {canary_receipt}", flush=True)
+                if accuracy_delta < canary_hard_stop_delta:
+                    hard_stop = True
             if output_dir := cfg.get("output_dir"):
                 should_save_interval = (save_every and step % save_every == 0) or step in save_steps
-                if should_save_interval and step < max_steps:
+                if should_save_interval and (step < max_steps or hard_stop):
                     checkpoint_path = save_trainable_checkpoint(wrapper, output_dir, "unfrozen_recurrent", step, cfg)
                     print(f"saved_checkpoint={checkpoint_path}")
                     summary["interval_checkpoints"].append(str(checkpoint_path))
@@ -963,8 +1158,12 @@ def main() -> int:
                         summary["dose_trace"].append(
                             {"step": step, "checkpoint": str(checkpoint_path), **dose_ledger.as_dict()}
                         )
+            if hard_stop:
+                break
             if step >= max_steps:
                 break
+        if hard_stop:
+            break
 
     output_dir = cfg.get("output_dir")
     if output_dir:
@@ -984,6 +1183,18 @@ def main() -> int:
     summary["parameter_norm_stats"] = trainable_parameter_norm_stats(wrapper)
     summary["bridge_prelude_grad_multiplier"] = prelude_grad_multiplier
     summary["micro_steps"] = micro_step
+    summary["status"] = "hard_stopped_canary" if hard_stop else "finished"
+    if base_hash_start is not None:
+        assert_pretrained_base_frozen(wrapper)
+        base_hash_end = hash_pretrained_base_parameters(wrapper)
+        if base_hash_end != base_hash_start:
+            raise RuntimeError(
+                "Pretrained base hash changed during frozen-base training: "
+                f"start={base_hash_start} end={base_hash_end}"
+            )
+        summary["pretrained_base_sha256_end"] = base_hash_end
+        summary["pretrained_base_hash_unchanged"] = True
+        print(f"[assert-ok] pretrained_base_sha256_end={base_hash_end}", flush=True)
     if dose_ledger is not None:
         summary["dose_ledger"] = dose_ledger.as_dict()
     if output_dir:
@@ -991,7 +1202,7 @@ def main() -> int:
         summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
         print(f"training_summary={summary_path}")
     persist_progress(
-        status="finished",
+        status="hard_stopped_canary" if hard_stop else "finished",
         completed_step=step,
         checkpoint=Path(summary["checkpoint"]) if summary.get("checkpoint") else None,
         checkpoint_backup=checkpoint_backup if output_dir else None,

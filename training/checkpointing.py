@@ -10,11 +10,23 @@ import torch
 from .stability import assert_finite_trainable_parameters
 
 
-def trainable_state_dict(module: torch.nn.Module) -> dict[str, torch.Tensor]:
+def trainable_state_dict(
+    module: torch.nn.Module,
+    *,
+    include_frozen_prefixes: tuple[str, ...] = (),
+    include_frozen_lora: bool = False,
+) -> dict[str, torch.Tensor]:
     return {
         name: param.detach().cpu()
         for name, param in module.named_parameters()
-        if param.requires_grad
+        if (
+            param.requires_grad
+            or any(name.startswith(prefix) for prefix in include_frozen_prefixes)
+            or (
+                include_frozen_lora
+                and (".lora_a." in name or ".lora_b." in name)
+            )
+        )
     }
 
 
@@ -34,7 +46,11 @@ def save_trainable_checkpoint(
             "phase": phase,
             "step": step,
             "config": config,
-            "trainable_state_dict": trainable_state_dict(wrapper),
+            "trainable_state_dict": trainable_state_dict(
+                wrapper,
+                include_frozen_prefixes=tuple(config.get("checkpoint_include_frozen_prefixes") or ()),
+                include_frozen_lora=bool(config.get("checkpoint_include_frozen_lora", False)),
+            ),
         },
         checkpoint_path,
     )
