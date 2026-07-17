@@ -1,0 +1,52 @@
+{
+  "S1": null,
+  "S2": null,
+  "kind": "stage5_depth_selector_bounded_assessment",
+  "locked_spec": {
+    "batch_size": 8,
+    "canary_exemption": "The frozen mechanism and all forced-T logits are cached before selector training. Only the halt projection, loop embedding, and loop bias are optimized; the selector chooses among immutable forced-T outputs and cannot alter computation at any fixed T.",
+    "do_not_claim": [
+      "S1 is depth reading from an explicitly stated prompt field, not intelligent difficulty allocation.",
+      "Learned halting on held-out hard reasoning is not established."
+    ],
+    "heldout_rows_per_depth": 64,
+    "kind": "bounded_depth_selector_preregistration",
+    "max_loops": 12,
+    "optimizer": "adamw",
+    "oracle_target_controls_frozen": true,
+    "s1_answer_delta_floor": -0.03,
+    "s1_min_correct_per_depth": 46,
+    "s1_name": "S1_supervised_depth_reading",
+    "s2_answer_delta_from_s1_floor": -0.05,
+    "s2_beta": 0.02,
+    "s2_geometric_prior_mean": 6.0,
+    "s2_name": "S2_ponder_outcome",
+    "s2_partial_spearman_floor": 0.3,
+    "s2_strong_spearman_floor": 0.8,
+    "source_checkpoint_sha256": "898a259db2ab344ece4545e2910b051840e8408dbe4927f799e7cdb3cdd8c7dc",
+    "steps_per_arm": 2000,
+    "substrate": "N24_step6000",
+    "train_depths": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "trainable_parameter_names": [
+      "halt_predictor.loop_bias",
+      "halt_predictor.loop_embedding.weight",
+      "halt_predictor.proj.bias",
+      "halt_predictor.proj.weight"
+    ]
+  },
+  "run_id": "stage5_depth_selector_bounded_20260717_204109",
+  "status": "started"
+}
