@@ -31,6 +31,9 @@ def test_runner_wires_identity_interval_canaries_and_p2() -> None:
         "checkpoint_include_frozen_lora",
         "base_hash_unchanged",
         "ponder_final_natural_loop1",
+        "base_capability_canary_64",
+        "canary_baseline_gate",
+        "invalidated_predecessor",
     ):
         assert marker in source
 
@@ -40,7 +43,7 @@ def test_bootstrap_exposes_guarded_peft_ponder_target() -> None:
     cell = (ROOT / "colab/STAGE5_PEFT_PONDER_CLOSURE_CELL.py").read_text(encoding="utf-8")
     assert '"peft_ponder_closure": {' in bootstrap
     for marker in (
-        "peft_ponder_closure_v1",
+        "peft_ponder_closure_v2",
         "frozen_lora",
         "controller_only",
         "reject_muon",

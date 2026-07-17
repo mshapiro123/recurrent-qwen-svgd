@@ -11,12 +11,14 @@ from pathlib import Path
 from google.colab import drive, runtime, userdata
 
 
-STAGE5_PEFT_PONDER_CLOSURE_CELL_VERSION = "peft_ponder_closure_v1"
+STAGE5_PEFT_PONDER_CLOSURE_CELL_VERSION = "peft_ponder_closure_v2"
 # Safety marker: frozen_lora
 # Safety marker: controller_only
 # Safety marker: reject_muon
 # Safety marker: bridge_prelude_lr_multiplier
 # Safety marker: require_frozen_base_hash
+# Safety marker: base_capability_canary_64
+# Safety marker: canary_baseline_gate
 # Safety marker: eval/eval_peft_identity.py
 # Safety marker: eval/eval_ponder_depth.py
 # Safety marker: tests/test_peft_ponder_closure.py

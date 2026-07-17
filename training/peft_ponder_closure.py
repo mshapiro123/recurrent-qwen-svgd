@@ -11,6 +11,8 @@ CANONICAL_CORRECT = 46
 CANONICAL_TOTAL = 64
 CANONICAL_THRESHOLD = 0.71
 FULL_BLOCK_REFERENCE = {"1": 1.0, "2": 0.984375, "3": 0.984375, "4": 0.921875}
+CANARY_ROWS = 64
+CANARY_MIN_BASELINE_ACCURACY = 0.5
 
 
 @dataclass(frozen=True)
@@ -38,6 +40,12 @@ def locked_spec() -> dict[str, Any]:
         "bridge_prelude_lr_multiplier": 10.0,
         "bridge_prelude_grad_multiplier": 1.0,
         "identity_max_abs_diff": 1e-3,
+        "canary": {
+            "kind": "frozen_base_capability_arithmetic",
+            "rows": CANARY_ROWS,
+            "minimum_baseline_accuracy": CANARY_MIN_BASELINE_ACCURACY,
+            "hard_stop_accuracy_delta": -0.03,
+        },
         "p1_steps": 6000,
         "p1_interval": 1000,
         "p1_gate": {
@@ -55,6 +63,124 @@ def locked_spec() -> dict[str, Any]:
             "requires_kl_stabilization": True,
         },
         "full_block_reference": dict(FULL_BLOCK_REFERENCE),
+    }
+
+
+def _canary_row(
+    *,
+    family: str,
+    index: int,
+    question: str,
+    answer: int,
+    target_index: int,
+) -> dict[str, Any]:
+    distractors = [answer - 2, answer - 1, answer + 1]
+    candidates = [str(value) for value in distractors]
+    candidates.insert(target_index, str(answer))
+    return {
+        "id": f"base_capability_{family}_{index:02d}",
+        "question": f"{question} Answer with only the number.",
+        "target": target_index,
+        "answer_text": str(answer),
+        "depth": 1,
+        "synthetic_depth": 1,
+        "start": 0,
+        "orbit": [0, target_index],
+        "mapping": {str(value): str(value) for value in range(4)},
+        "symbol_names": candidates,
+        "n_symbols": 4,
+        "score_target": "full_symbols",
+        "prompt_style": "question_only",
+        "intermediate_chain_supervision": True,
+        "chain_symbol_by_loop": {"1": str(answer)},
+        "chain_answer_by_loop": {"1": str(answer)},
+        "loop_completions": [f" {answer}"],
+        "completion": f" {answer}",
+        "target_loop_count": 1,
+        "synthetic_task": "base_capability_canary",
+        "canary_family": family,
+    }
+
+
+def build_base_capability_canary_rows() -> list[dict[str, Any]]:
+    """Return the frozen, base-solvable loop-1 preservation canary."""
+
+    rows: list[dict[str, Any]] = []
+    for index in range(16):
+        left = 13 + index
+        right = 7 + (3 * index) % 17
+        rows.append(
+            _canary_row(
+                family="addition",
+                index=index,
+                question=f"What is {left} + {right}?",
+                answer=left + right,
+                target_index=index % 4,
+            )
+        )
+
+        minuend = 40 + 2 * index
+        subtrahend = 5 + index % 11
+        rows.append(
+            _canary_row(
+                family="subtraction",
+                index=index,
+                question=f"What is {minuend} - {subtrahend}?",
+                answer=minuend - subtrahend,
+                target_index=(index + 1) % 4,
+            )
+        )
+
+        factor_a = 2 + index % 9
+        factor_b = 3 + (2 * index) % 8
+        rows.append(
+            _canary_row(
+                family="multiplication",
+                index=index,
+                question=f"What is {factor_a} times {factor_b}?",
+                answer=factor_a * factor_b,
+                target_index=(index + 2) % 4,
+            )
+        )
+
+        divisor = 2 + index % 7
+        quotient = 3 + (3 * index) % 11
+        dividend = divisor * quotient
+        rows.append(
+            _canary_row(
+                family="division",
+                index=index,
+                question=f"What is {dividend} divided by {divisor}?",
+                answer=quotient,
+                target_index=(index + 3) % 4,
+            )
+        )
+    if len(rows) != CANARY_ROWS:
+        raise AssertionError(f"Expected {CANARY_ROWS} canary rows, got {len(rows)}")
+    return rows
+
+
+def canary_baseline_gate(
+    active_summary: dict[str, Any],
+    *,
+    minimum_accuracy: float = CANARY_MIN_BASELINE_ACCURACY,
+) -> dict[str, Any]:
+    total_row = active_summary.get("active_total") or {}
+    correct = int(total_row.get("correct", 0))
+    total = int(total_row.get("total", 0))
+    accuracy = correct / total if total else 0.0
+    passed = total == CANARY_ROWS and accuracy >= minimum_accuracy
+    return {
+        "passed": passed,
+        "correct": correct,
+        "total": total,
+        "accuracy": accuracy,
+        "minimum_accuracy": minimum_accuracy,
+        "reason": (
+            "nonvacuous_baseline_confirmed"
+            if passed
+            else "baseline_below_nonvacuous_floor"
+        ),
     }
 
 

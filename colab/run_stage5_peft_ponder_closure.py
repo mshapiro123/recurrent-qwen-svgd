@@ -24,6 +24,8 @@ from colab.stage5_n24_rung import tier1_canary_verdict
 from colab.stage5_publish_utils import publishable_artifact_paths
 from training.peft_ponder_closure import (
     ARMS,
+    build_base_capability_canary_rows,
+    canary_baseline_gate,
     full_block_comparison,
     historical_archive_receipt,
     locked_spec,
@@ -150,13 +152,11 @@ def prepare_data(run_dir: Path) -> dict[str, Any]:
     natural = materialize_datasets(natural_dir, seed=20260709)
     relay = read_jsonl(ROOT / natural["files"]["paired_relay_d1_12"])
     pointer = read_jsonl(ROOT / natural["files"]["paired_pointer_d1_12"])
-    tiny = balanced_prefix(relay, rows_per_depth=2, max_depth=8)
-    tiny.extend(balanced_prefix(pointer, rows_per_depth=2, max_depth=8))
     full = balanced_prefix(relay, rows_per_depth=16, max_depth=8)
     full.extend(balanced_prefix(pointer, rows_per_depth=16, max_depth=8))
-    tiny_path = run_dir / "data/natural_tier1_tiny_2_each_d1_8.jsonl"
+    canary_path = run_dir / "data/base_capability_canary_64.jsonl"
     full_path = run_dir / "data/natural_loop1_full_16_each_d1_8.jsonl"
-    write_jsonl(tiny_path, tiny)
+    write_jsonl(canary_path, build_base_capability_canary_rows())
     write_jsonl(full_path, full)
     return {
         "reference_summary": path_for_cli(REFERENCE_SUMMARY),
@@ -168,7 +168,7 @@ def prepare_data(run_dir: Path) -> dict[str, Any]:
             "train_depth_le4": sha256_file(TRAIN_LE4),
             "heldout64": sha256_file(HELDOUT64),
         },
-        "natural_tiny": path_for_cli(tiny_path),
+        "base_capability_canary": path_for_cli(canary_path),
         "natural_full": path_for_cli(full_path),
     }
 
@@ -595,6 +595,7 @@ def evaluate_arm(
         "identity": identity,
         "tier1_baseline": {
             "accuracy": baseline_accuracy,
+            "gate": canary_baseline_gate(baseline["payload"]),
             "summary": baseline["summary"],
         },
         "stages": stages,
@@ -617,14 +618,20 @@ def run_p1_arm(run_dir: Path, arm: Any, data: dict[str, Any]) -> dict[str, Any]:
         raise RuntimeError(f"Identity gate failed for {arm.name}: {identity}")
     baseline = eval_active(
         run_dir,
-        label=f"{arm.name}_tier1_baseline",
+        label=f"{arm.name}_base_capability_canary_baseline",
         checkpoint=ROOT / identity["checkpoint"],
-        data_jsonl=ROOT / data["natural_tiny"],
+        data_jsonl=ROOT / data["base_capability_canary"],
         rank=arm.rank,
         alpha=arm.alpha,
         loop_counts="1",
         value_prefix="name:",
     )
+    baseline_gate = canary_baseline_gate(baseline["payload"])
+    if not baseline_gate["passed"]:
+        raise RuntimeError(
+            "Base capability canary is vacuous; refusing to train: "
+            f"{baseline_gate}"
+        )
     baseline_accuracy = float(baseline["payload"]["active_total"]["accuracy"])
     stage12 = train_stage(
         run_dir,
@@ -636,7 +643,7 @@ def run_p1_arm(run_dir: Path, arm: Any, data: dict[str, Any]) -> dict[str, Any]:
         max_loops=2,
         max_steps=2000,
         resume_from=None,
-        canary_jsonl=ROOT / data["natural_tiny"],
+        canary_jsonl=ROOT / data["base_capability_canary"],
         canary_baseline_accuracy=baseline_accuracy,
     )
     if stage12["status"] == "hard_stopped_canary":
@@ -661,7 +668,7 @@ def run_p1_arm(run_dir: Path, arm: Any, data: dict[str, Any]) -> dict[str, Any]:
         max_loops=4,
         max_steps=4000,
         resume_from=ROOT / stage12["checkpoint"],
-        canary_jsonl=ROOT / data["natural_tiny"],
+        canary_jsonl=ROOT / data["base_capability_canary"],
         canary_baseline_accuracy=baseline_accuracy,
     )
     result = evaluate_arm(
@@ -686,7 +693,7 @@ def run_p1_arm(run_dir: Path, arm: Any, data: dict[str, Any]) -> dict[str, Any]:
             max_loops=4,
             max_steps=6000,
             resume_from=ROOT / stage4["checkpoint"],
-            canary_jsonl=ROOT / data["natural_tiny"],
+            canary_jsonl=ROOT / data["base_capability_canary"],
             canary_baseline_accuracy=baseline_accuracy,
         )
         result = evaluate_arm(
@@ -795,6 +802,14 @@ def main() -> int:
         "status": "started",
         "locked_spec": locked_spec(),
         "historical_archive": historical_archive_receipt(),
+        "invalidated_predecessor": {
+            "run_id": "stage5_peft_ponder_closure_20260717_175439",
+            "status": "invalidated_before_first_checkpoint",
+            "reason": (
+                "The natural iterative-function Tier-1 baseline was 0/32, "
+                "making the -3pp preservation hard stop vacuous."
+            ),
+        },
         "data": None,
         "p1_results": [],
         "p2": None,

@@ -8,6 +8,8 @@ from models.lora import LoRALinear
 from models.recurrent_wrapper import LayerSplit
 from training.checkpointing import trainable_state_dict
 from training.peft_ponder_closure import (
+    build_base_capability_canary_rows,
+    canary_baseline_gate,
     full_block_comparison,
     historical_archive_receipt,
     locked_spec,
@@ -44,6 +46,32 @@ def test_locked_spec_matches_preregistered_optimizer_and_ladder() -> None:
     assert spec["p1_steps"] == 6000
     assert spec["r256_rider_total_steps"] == 12000
     assert spec["p2_steps"] == 2000
+    assert spec["canary"]["minimum_baseline_accuracy"] == 0.5
+    assert spec["canary"]["rows"] == 64
+
+
+def test_base_capability_canary_is_frozen_balanced_and_loop1_scored() -> None:
+    rows = build_base_capability_canary_rows()
+
+    assert len(rows) == 64
+    assert {row["canary_family"] for row in rows} == {
+        "addition",
+        "subtraction",
+        "multiplication",
+        "division",
+    }
+    assert all(row["depth"] == 1 for row in rows)
+    assert all(len(row["symbol_names"]) == 4 for row in rows)
+    assert all(row["symbol_names"][row["target"]] == row["answer_text"] for row in rows)
+    assert all(row["orbit"][1] == row["target"] for row in rows)
+    assert len({row["id"] for row in rows}) == 64
+
+
+def test_canary_baseline_gate_rejects_vacuous_accuracy() -> None:
+    assert canary_baseline_gate({"active_total": {"correct": 32, "total": 64}})["passed"] is True
+    failed = canary_baseline_gate({"active_total": {"correct": 0, "total": 64}})
+    assert failed["passed"] is False
+    assert failed["reason"] == "baseline_below_nonvacuous_floor"
 
 
 def test_p1_gate_requires_46_of_64_at_every_depth() -> None:

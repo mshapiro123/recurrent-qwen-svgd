@@ -82,9 +82,14 @@
     "r256_rider_total_steps": 12000,
     "task": "N16 synthetic forward chain, depths 1-4"
   },
-  "next_action": "run_R16",
+  "invalidation": {
+    "status": "invalidated_before_first_checkpoint",
+    "reason": "The natural iterative-function Tier-1 baseline was 0/32, making the -3pp preservation hard stop vacuous.",
+    "replacement": "Relaunch peft_ponder_closure_v2 with the frozen 64-row base-capability canary and a >=0.50 baseline floor."
+  },
+  "next_action": "relaunch_corrected_v2",
   "p1_results": [],
   "p2": null,
   "run_id": "stage5_peft_ponder_closure_20260717_175439",
-  "status": "data_ready"
+  "status": "invalidated_vacuous_tier1_baseline"
 }
