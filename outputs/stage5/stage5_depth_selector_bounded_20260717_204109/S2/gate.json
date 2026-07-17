@@ -1,0 +1,165 @@
+{
+  "accuracy_preserved": true,
+  "answer_delta_from_s1_floor": -0.05,
+  "by_depth": {
+    "1": {
+      "forced_accuracy": 1.0,
+      "forced_correct": 64,
+      "rows": 64,
+      "selected_accuracy": 0.03125,
+      "selected_correct": 2,
+      "selected_minus_forced": -0.96875,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    },
+    "10": {
+      "forced_accuracy": 0.953125,
+      "forced_correct": 61,
+      "rows": 64,
+      "selected_accuracy": 0.109375,
+      "selected_correct": 7,
+      "selected_minus_forced": -0.84375,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    },
+    "11": {
+      "forced_accuracy": 0.96875,
+      "forced_correct": 62,
+      "rows": 64,
+      "selected_accuracy": 0.015625,
+      "selected_correct": 1,
+      "selected_minus_forced": -0.953125,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    },
+    "12": {
+      "forced_accuracy": 1.0,
+      "forced_correct": 64,
+      "rows": 64,
+      "selected_accuracy": 1.0,
+      "selected_correct": 64,
+      "selected_minus_forced": 0.0,
+      "selection_accuracy": 1.0,
+      "selection_correct": 64
+    },
+    "2": {
+      "forced_accuracy": 1.0,
+      "forced_correct": 64,
+      "rows": 64,
+      "selected_accuracy": 0.171875,
+      "selected_correct": 11,
+      "selected_minus_forced": -0.828125,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    },
+    "3": {
+      "forced_accuracy": 1.0,
+      "forced_correct": 64,
+      "rows": 64,
+      "selected_accuracy": 0.140625,
+      "selected_correct": 9,
+      "selected_minus_forced": -0.859375,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    },
+    "4": {
+      "forced_accuracy": 1.0,
+      "forced_correct": 64,
+      "rows": 64,
+      "selected_accuracy": 0.234375,
+      "selected_correct": 15,
+      "selected_minus_forced": -0.765625,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    },
+    "5": {
+      "forced_accuracy": 1.0,
+      "forced_correct": 64,
+      "rows": 64,
+      "selected_accuracy": 0.140625,
+      "selected_correct": 9,
+      "selected_minus_forced": -0.859375,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    },
+    "6": {
+      "forced_accuracy": 0.984375,
+      "forced_correct": 63,
+      "rows": 64,
+      "selected_accuracy": 0.40625,
+      "selected_correct": 26,
+      "selected_minus_forced": -0.578125,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    },
+    "7": {
+      "forced_accuracy": 1.0,
+      "forced_correct": 64,
+      "rows": 64,
+      "selected_accuracy": 0.140625,
+      "selected_correct": 9,
+      "selected_minus_forced": -0.859375,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    },
+    "8": {
+      "forced_accuracy": 0.984375,
+      "forced_correct": 63,
+      "rows": 64,
+      "selected_accuracy": 0.125,
+      "selected_correct": 8,
+      "selected_minus_forced": -0.859375,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    },
+    "9": {
+      "forced_accuracy": 0.96875,
+      "forced_correct": 62,
+      "rows": 64,
+      "selected_accuracy": 0.1875,
+      "selected_correct": 12,
+      "selected_minus_forced": -0.78125,
+      "selection_accuracy": 0.0,
+      "selection_correct": 0
+    }
+  },
+  "collapse_sentence": "Supervised routing works, but unsupervised depth discovery does not train on this family.",
+  "forced_answer_accuracy": 0.98828125,
+  "kind": "bounded_depth_selector_s2_gate",
+  "mean_expected_depth": 11.999931190162897,
+  "mean_selected_depth": 12.0,
+  "mean_selected_depth_in_open_interval_1_5_11_5": false,
+  "partial_spearman_floor": 0.3,
+  "rows": 768,
+  "scope": "outcome_only_ponder_depth_discovery_on_stated_depth_random_tables",
+  "selected_answer_accuracy": 0.22526041666666666,
+  "selected_answer_minus_s1": 0.13020833333333331,
+  "selected_depth_histogram": {
+    "1": 0,
+    "10": 0,
+    "11": 0,
+    "12": 768,
+    "2": 0,
+    "3": 0,
+    "4": 0,
+    "5": 0,
+    "6": 0,
+    "7": 0,
+    "8": 0,
+    "9": 0
+  },
+  "selection_accuracy": 0.08333333333333333,
+  "spearman_selected_vs_true": 0.0,
+  "status": "collapse",
+  "strong_spearman_floor": 0.8,
+  "training_gate": {
+    "first_window_mean_loss": 13.262689383988528,
+    "kl_stable": true,
+    "last_window_mean_loss": 13.073135024493503,
+    "loss_decreased": false,
+    "loss_ratio": 0.9857076981894889,
+    "tail_kl_first_half_mean": 1.6462098015952356,
+    "tail_kl_relative_drift": 6.569553079835333e-08,
+    "tail_kl_second_half_mean": 1.6462099097438694
+  }
+}
