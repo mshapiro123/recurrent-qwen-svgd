@@ -1,8 +1,8 @@
 # Bounded Depth Selector Assessment - stage5_depth_selector_bounded_20260717_204109
 
-- Status: `started`
-- Source SHA: `None`
-- Frozen mechanism hash: `None`
+- Status: `cache_ready`
+- Source SHA: `898a259db2ab344ece4545e2910b051840e8408dbe4927f799e7cdb3cdd8c7dc`
+- Frozen mechanism hash: `eb4c19ca7871ca1563b5bc2f3229fee8ee664907048aedeb2028fa48670f2d9b`
 - Canary: `The frozen mechanism and all forced-T logits are cached before selector training. Only the halt projection, loop embedding, and loop bias are optimized; the selector chooses among immutable forced-T outputs and cannot alter computation at any fixed T.`
 
 ## Arms
