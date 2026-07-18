@@ -1,0 +1,169 @@
+$ /usr/bin/python3 training/train_oracle_interface_probe.py --train_jsonl outputs/stage5/stage5_phase_g_multitarget_control_20260718/data/train.jsonl --keeper /content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/restored/natural_step2000.pt --expected_keeper_sha256 0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f --output_dir outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive --route additive --steps 1500 --seed 20260718 --bottleneck_dim 256 --checkpoint_every 100 --progress_checkpoint /content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_progress.pt --progress_backup_path /content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_oracle_interface_probe_20260718/additive_training_progress.pt --progress_backup_dir /content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive --dtype bfloat16 --device cuda
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 3908.08it/s]
+bridge_projection_mode=split
+lora_recurrent_modules=0
+loaded_checkpoint=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/restored/natural_step2000.pt loaded_keys=152
+oracle_train route=additive step=1/1500 depth=3 loss=10.357913 residual=0
+oracle_train route=additive step=25/1500 depth=2 loss=6.436872 residual=0.0138535
+oracle_train route=additive step=50/1500 depth=4 loss=6.989548 residual=0.0371408
+oracle_train route=additive step=75/1500 depth=4 loss=3.878097 residual=0.0624359
+oracle_train route=additive step=100/1500 depth=1 loss=0.547932 residual=0.0456452
+oracle_progress_saved route=additive step=100 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_progress.pt
+oracle_train route=additive step=125/1500 depth=1 loss=0.040944 residual=0.0509965
+oracle_train route=additive step=150/1500 depth=3 loss=2.920615 residual=0.0625752
+oracle_train route=additive step=175/1500 depth=2 loss=4.529885 residual=0.0626723
+oracle_train route=additive step=200/1500 depth=3 loss=1.902767 residual=0.0751226
+oracle_progress_saved route=additive step=200 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_progress.pt
+oracle_train route=additive step=225/1500 depth=2 loss=4.999347 residual=0.0605986
+oracle_train route=additive step=250/1500 depth=3 loss=1.846608 residual=0.0772507
+oracle_train route=additive step=275/1500 depth=3 loss=1.972548 residual=0.082832
+oracle_train route=additive step=300/1500 depth=2 loss=4.724198 residual=0.0796225
+oracle_progress_saved route=additive step=300 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_progress.pt
+oracle_train route=additive step=325/1500 depth=4 loss=3.057758 residual=0.0816767
+oracle_train route=additive step=350/1500 depth=4 loss=3.011630 residual=0.0807523
+oracle_train route=additive step=375/1500 depth=3 loss=1.379888 residual=0.0762027
+oracle_train route=additive step=400/1500 depth=4 loss=3.906169 residual=0.0980252
+oracle_progress_saved route=additive step=400 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_progress.pt
+oracle_train route=additive step=425/1500 depth=1 loss=1.505894 residual=0.067925
+oracle_train route=additive step=450/1500 depth=1 loss=0.004985 residual=0.0608593
+oracle_train route=additive step=475/1500 depth=2 loss=0.957136 residual=0.091538
+oracle_train route=additive step=500/1500 depth=4 loss=1.871607 residual=0.0992112
+oracle_progress_saved route=additive step=500 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_progress.pt
+oracle_train route=additive step=525/1500 depth=1 loss=2.019253 residual=0.0629796
+oracle_train route=additive step=550/1500 depth=2 loss=0.471560 residual=0.0973485
+oracle_train route=additive step=575/1500 depth=4 loss=2.966813 residual=0.0991123
+oracle_train route=additive step=600/1500 depth=4 loss=1.633800 residual=0.109431
+oracle_progress_saved route=additive step=600 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_progress.pt
+oracle_train route=additive step=625/1500 depth=2 loss=1.347920 residual=0.0963462
+oracle_train route=additive step=650/1500 depth=4 loss=2.115324 residual=0.0970834
+oracle_train route=additive step=675/1500 depth=4 loss=2.215083 residual=0.103798
+oracle_train route=additive step=700/1500 depth=1 loss=1.605618 residual=0.0623382
+oracle_progress_saved route=additive step=700 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_progress.pt
+oracle_train route=additive step=725/1500 depth=4 loss=1.644375 residual=0.113541
+oracle_train route=additive step=750/1500 depth=2 loss=0.091188 residual=0.10407
+oracle_train route=additive step=775/1500 depth=1 loss=5.661802 residual=0.0638685
+oracle_train route=additive step=800/1500 depth=4 loss=2.549122 residual=0.119265
+oracle_progress_saved route=additive step=800 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_progress.pt
+oracle_train route=additive step=825/1500 depth=4 loss=2.192631 residual=0.11001
+oracle_train route=additive step=850/1500 depth=2 loss=0.453986 residual=0.105034
+oracle_train route=additive step=875/1500 depth=3 loss=2.875175 residual=0.112242
+oracle_train route=additive step=900/1500 depth=3 loss=2.412843 residual=0.110477
+oracle_progress_saved route=additive step=900 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_progress.pt
+oracle_train route=additive step=925/1500 depth=1 loss=0.063754 residual=0.056552
+oracle_train route=additive step=950/1500 depth=3 loss=1.172814 residual=0.108692
+oracle_train route=additive step=975/1500 depth=1 loss=0.767310 residual=0.0626448
+oracle_train route=additive step=1000/1500 depth=2 loss=0.988823 residual=0.114299
+oracle_progress_saved route=additive step=1000 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_progress.pt
+oracle_train route=additive step=1025/1500 depth=1 loss=0.861565 residual=0.0761434
+oracle_train route=additive step=1050/1500 depth=2 loss=2.202998 residual=0.111111
+oracle_train route=additive step=1075/1500 depth=4 loss=1.578264 residual=0.123053
+oracle_train route=additive step=1100/1500 depth=2 loss=7.501516 residual=0.0924688
+oracle_progress_saved route=additive step=1100 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_progress.pt
+oracle_train route=additive step=1125/1500 depth=3 loss=2.633487 residual=0.12707
+oracle_train route=additive step=1150/1500 depth=3 loss=1.863369 residual=0.114036
+oracle_train route=additive step=1175/1500 depth=4 loss=1.168270 residual=0.11468
+oracle_train route=additive step=1200/1500 depth=2 loss=2.208536 residual=0.118604
+oracle_progress_saved route=additive step=1200 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_progress.pt
+oracle_train route=additive step=1225/1500 depth=2 loss=0.705997 residual=0.116051
+oracle_train route=additive step=1250/1500 depth=3 loss=6.278500 residual=0.108983
+oracle_train route=additive step=1275/1500 depth=3 loss=0.880870 residual=0.115026
+oracle_train route=additive step=1300/1500 depth=3 loss=1.177886 residual=0.126228
+oracle_progress_saved route=additive step=1300 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_progress.pt
+oracle_train route=additive step=1325/1500 depth=3 loss=2.996223 residual=0.113205
+oracle_train route=additive step=1350/1500 depth=4 loss=1.504825 residual=0.122791
+oracle_train route=additive step=1375/1500 depth=2 loss=1.769683 residual=0.0979423
+oracle_train route=additive step=1400/1500 depth=1 loss=0.206364 residual=0.0427979
+oracle_progress_saved route=additive step=1400 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_progress.pt
+oracle_train route=additive step=1425/1500 depth=4 loss=2.741837 residual=0.136825
+oracle_train route=additive step=1450/1500 depth=1 loss=0.005843 residual=0.0400556
+oracle_train route=additive step=1475/1500 depth=2 loss=1.871147 residual=0.137283
+oracle_train route=additive step=1500/1500 depth=2 loss=0.604780 residual=0.114422
+oracle_progress_saved route=additive step=1500 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_progress.pt
+{
+  "config": {
+    "active_lineage_sha256_end": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+    "active_lineage_sha256_start": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+    "attn_implementation": "default",
+    "bottleneck_dim": 256,
+    "checkpoint_every": 100,
+    "device": "cuda",
+    "dtype": "bfloat16",
+    "ema_decay": 0.999,
+    "expected_keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+    "frozen_gradient_assertions": 1500,
+    "gradient_liveness_assertions": 1500,
+    "keeper": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/restored/natural_step2000.pt",
+    "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+    "learning_rate": 0.0001,
+    "log_every": 25,
+    "max_length": 512,
+    "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+    "output_dir": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive",
+    "progress_backup_dir": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive",
+    "progress_backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_oracle_interface_probe_20260718/additive_training_progress.pt",
+    "progress_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_progress.pt",
+    "progress_contract": {
+      "bottleneck_dim": 256,
+      "dtype": "bfloat16",
+      "ema_decay": 0.999,
+      "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+      "kind": "oracle_interface_probe_training",
+      "learning_rate": 0.0001,
+      "max_length": 512,
+      "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+      "route": "additive",
+      "seed": 20260718,
+      "split": "6,18",
+      "steps": 1500,
+      "train_jsonl_sha256": "9249cbaa9a05adce47ddd24ee707db090072503f07b8df636c310985b59e17b6",
+      "trainable_names": [
+        "oracle_reentry_conditioner.branch_a.net.0.weight",
+        "oracle_reentry_conditioner.branch_a.net.0.bias",
+        "oracle_reentry_conditioner.branch_a.net.1.weight",
+        "oracle_reentry_conditioner.branch_a.net.1.bias",
+        "oracle_reentry_conditioner.branch_a.net.3.weight",
+        "oracle_reentry_conditioner.branch_a.net.3.bias",
+        "oracle_reentry_conditioner.branch_b.net.0.weight",
+        "oracle_reentry_conditioner.branch_b.net.0.bias",
+        "oracle_reentry_conditioner.branch_b.net.1.weight",
+        "oracle_reentry_conditioner.branch_b.net.1.bias",
+        "oracle_reentry_conditioner.branch_b.net.3.weight",
+        "oracle_reentry_conditioner.branch_b.net.3.bias"
+      ],
+      "weight_decay": 0.0
+    },
+    "resumed_from_step": 0,
+    "route": "additive",
+    "sampling_policy": "base_problem_uniform",
+    "seed": 20260718,
+    "split": "6,18",
+    "step_zero_identity_exact": true,
+    "steps": 1500,
+    "train_jsonl": "outputs/stage5/stage5_phase_g_multitarget_control_20260718/data/train.jsonl",
+    "trainable_names": [
+      "oracle_reentry_conditioner.branch_a.net.0.weight",
+      "oracle_reentry_conditioner.branch_a.net.0.bias",
+      "oracle_reentry_conditioner.branch_a.net.1.weight",
+      "oracle_reentry_conditioner.branch_a.net.1.bias",
+      "oracle_reentry_conditioner.branch_a.net.3.weight",
+      "oracle_reentry_conditioner.branch_a.net.3.bias",
+      "oracle_reentry_conditioner.branch_b.net.0.weight",
+      "oracle_reentry_conditioner.branch_b.net.0.bias",
+      "oracle_reentry_conditioner.branch_b.net.1.weight",
+      "oracle_reentry_conditioner.branch_b.net.1.bias",
+      "oracle_reentry_conditioner.branch_b.net.3.weight",
+      "oracle_reentry_conditioner.branch_b.net.3.bias"
+    ],
+    "trainable_parameter_count": 1385728,
+    "weight_decay": 0.0
+  },
+  "ema_checkpoint": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/oracle_additive_ema_step_1500.pt",
+  "kind": "phase_g_oracle_interface_training",
+  "progress_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_progress.pt",
+  "raw_checkpoint": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/oracle_additive_raw_step_1500.pt",
+  "route": "additive",
+  "status": "finished",
+  "training_trace": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_trace.jsonl"
+}
