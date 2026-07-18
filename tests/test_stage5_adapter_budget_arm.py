@@ -28,6 +28,9 @@ def test_runner_uses_frozen_phase_a_rows_and_r16_only() -> None:
 
     assert "stage5_synthetic_depth_frozen_eval_v2_depth14" in runner
     assert "stage5_same_reader_final_symbol_20260707_021010" in runner
+    assert 'FINAL_SYMBOL_VALUE_PREFIX = "letter:"' in runner
+    assert '"--value_prefix",\n                FINAL_SYMBOL_VALUE_PREFIX,' in runner
+    assert "final_symbol_summary_is_current" in runner
     assert '"rank": 16' in runner
     assert '"alpha": 32' in runner
     assert "rank sweep" not in runner.lower()

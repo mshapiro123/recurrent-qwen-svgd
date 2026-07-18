@@ -168,6 +168,7 @@ def main() -> int:
             "data_jsonl": args.data_jsonl,
             "prediction_space": "full_symbols",
             "prompt_style": args.prompt_style,
+            "value_prefix": args.value_prefix,
             "rows": len(rows),
         }
     )

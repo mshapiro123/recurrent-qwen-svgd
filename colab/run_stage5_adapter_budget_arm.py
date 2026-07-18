@@ -44,6 +44,7 @@ DTYPE = os.environ.get("STAGE5_ADAPTER_BUDGET_DTYPE", "bfloat16")
 RANK = 16
 ALPHA = 32
 LOCKED_ADAPTER = {"rank": 16, "alpha": 32}
+FINAL_SYMBOL_VALUE_PREFIX = "letter:"
 EXPECTED_FORWARD_ACTIVE = 6_007_425
 EXPECTED_PRETRAINED_BASE_SHA256 = (
     "960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f"
@@ -502,7 +503,7 @@ def eval_final_symbol(
     out_dir = RUN_DIR / "eval" / label
     summary = out_dir / "summary.json"
     rows = out_dir / "rows.jsonl"
-    if not summary.exists():
+    if not final_symbol_summary_is_current(summary, rows):
         run(
             [
                 sys.executable,
@@ -524,7 +525,7 @@ def eval_final_symbol(
                 "--prompt_style",
                 "question_only",
                 "--value_prefix",
-                "",
+                FINAL_SYMBOL_VALUE_PREFIX,
                 "--split",
                 "6,18",
                 "--bridge_projection_mode",
@@ -542,6 +543,17 @@ def eval_final_symbol(
             ]
         )
     return rows, summary, read_json(summary)
+
+
+def final_symbol_summary_is_current(summary: Path, rows: Path) -> bool:
+    if not summary.exists() or not rows.exists():
+        return False
+    payload = read_json(summary)
+    return (
+        payload.get("prediction_space") == "full_symbols"
+        and payload.get("prompt_style") == "question_only"
+        and payload.get("value_prefix") == FINAL_SYMBOL_VALUE_PREFIX
+    )
 
 
 def train_stage(
