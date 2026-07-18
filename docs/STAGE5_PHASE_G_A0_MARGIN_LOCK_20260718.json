@@ -1,0 +1,44 @@
+{
+  "gate_order": [
+    "posterior_control",
+    "K1_deterministic_preservation",
+    "coverage_vs_temperature",
+    "coverage_vs_iso_compute_depth"
+  ],
+  "kind": "phase_g_multitarget_posterior_control_gate_lock",
+  "status": "locked_before_multitarget_training",
+  "surface": {
+    "base_problem_groups": 32,
+    "groups_with_multiple_targets": 32,
+    "row_manifest": {
+      "row_id_sha256": "a38304c7536852771ffdffde2354255a670f9f9daf4fd23e2354df5d1f78fd57",
+      "row_sha256": "451acbef80f6060b9cd18f63c9722f30cad3ccee55329468a2cee22f412f518c",
+      "rows": 106
+    },
+    "row_target_variant_count_histogram": {
+      "10": 10,
+      "2": 34,
+      "3": 15,
+      "4": 16,
+      "5": 10,
+      "6": 12,
+      "9": 9
+    },
+    "target_variant_count_histogram": {
+      "10": 1,
+      "2": 17,
+      "3": 5,
+      "4": 4,
+      "5": 2,
+      "6": 2,
+      "9": 1
+    }
+  },
+  "thresholds": {
+    "STAGE5_PHASE_G_MULTITARGET_MAX_TEACHER_PRIOR_TARGET_LIFT_PVALUE": 0.05,
+    "STAGE5_PHASE_G_MULTITARGET_MIN_GROUPS": 32,
+    "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_PRIOR_TARGET_LIFT": 0.15,
+    "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_SWITCHING_GROUPS": 24,
+    "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_TARGET_RATE": 0.6
+  }
+}

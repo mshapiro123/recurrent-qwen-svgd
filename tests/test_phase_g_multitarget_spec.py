@@ -56,9 +56,9 @@ def test_posterior_control_gate_lock_binds_thresholds_to_exact_rows() -> None:
     control_rows = rows(cap=None)
     thresholds = {
         "STAGE5_PHASE_G_MULTITARGET_MIN_GROUPS": 4,
-        "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_TARGET_RATE": 0.7,
-        "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_PRIOR_TARGET_LIFT": 0.2,
-        "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_PRIOR_DISTINCT_LIFT": 0.4,
+        "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_TARGET_RATE": 0.6,
+        "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_PRIOR_TARGET_LIFT": 0.15,
+        "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_SWITCHING_GROUPS": 3,
         "STAGE5_PHASE_G_MULTITARGET_MAX_TEACHER_PRIOR_TARGET_LIFT_PVALUE": 0.05,
     }
     lock = build_posterior_control_gate_lock(control_rows, thresholds)

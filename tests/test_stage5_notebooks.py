@@ -1037,6 +1037,25 @@ def test_phase_g_alpha_target_is_wired_to_frozen_substrate_runner() -> None:
     assert "return 2" in runner
 
 
+def test_phase_g_multitarget_control_target_locks_the_a0_contract() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PHASE_G_MULTITARGET_CONTROL_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_phase_g_multitarget_control.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert '"phase_g_multitarget_control"' in bootstrap
+    assert "STAGE5_PHASE_G_MULTITARGET_CONTROL_CELL.py" in bootstrap
+    assert "STAGE5_PHASE_G_MULTITARGET_CONTROL_CELL_VERSION" in cell
+    assert "docs/STAGE5_PHASE_G_A0_MARGIN_LOCK_20260718.json" in cell
+    assert "kl_0p001" in cell and "kl_0p0001_confirmation" in cell
+    assert "base_problem_uniform" in runner
+    assert "base_problem_id sets overlap" in runner
+    assert "A0 is locked to the primary KL coefficient 0.001" in runner
+
+
 def test_master_sequence_status_cell_matches_markdown_code() -> None:
     text = (ROOT / "colab/STAGE5_MASTER_SEQUENCE_STATUS_CELL.md").read_text(encoding="utf-8")
     plain = (ROOT / "colab/STAGE5_MASTER_SEQUENCE_STATUS_CELL.py").read_text(encoding="utf-8")

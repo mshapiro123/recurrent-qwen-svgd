@@ -39,7 +39,7 @@ def score_posterior_control(
     min_multi_target_groups: int,
     min_teacher_target_rate: float,
     min_teacher_prior_target_lift: float,
-    min_teacher_prior_distinct_prediction_lift: float,
+    min_teacher_switching_groups: int,
     max_teacher_prior_target_lift_p_value: float,
 ) -> dict[str, Any]:
     """Apply thresholds that were supplied before the guidance training run.
@@ -51,20 +51,12 @@ def score_posterior_control(
     """
 
     conditioning = audit["posterior_target_conditioning"]
-    teacher_target_rate = float(
-        conditioning["posterior_teacher"]["mean_group_selected_target_rate"]
-    )
-    prior_target_rate = float(
-        conditioning["prior"]["mean_group_selected_target_rate"]
-    )
+    fidelity = audit["posterior_target_fidelity"]["by_k"]["1"]
+    teacher_target_rate = float(fidelity["posterior_teacher"]["target_in_k_rate"])
+    prior_target_rate = float(fidelity["prior"]["target_in_k_rate"])
     teacher_prior_target_lift = teacher_target_rate - prior_target_rate
-    teacher_distinct = float(
-        conditioning["posterior_teacher"]["mean_distinct_first_predictions"]
-    )
-    prior_distinct = float(conditioning["prior"]["mean_distinct_first_predictions"])
-    teacher_prior_distinct_lift = teacher_distinct - prior_distinct
     multi_target_groups = int(conditioning["multi_target_groups"])
-    paired = conditioning["paired_group_selected_target_rate"]
+    paired = fidelity["paired_target_in_k"]
     target_lift_p_value = paired_sign_test(
         helped=int(paired["helped"]),
         hurt=int(paired["hurt"]),
@@ -76,17 +68,17 @@ def score_posterior_control(
             "minimum": min_multi_target_groups,
             "passed": multi_target_groups >= min_multi_target_groups,
         },
-        "teacher_mean_group_selected_target_rate": {
+        "teacher_selected_target_rate": {
             "observed": teacher_target_rate,
             "minimum": min_teacher_target_rate,
             "passed": teacher_target_rate >= min_teacher_target_rate,
         },
-        "teacher_minus_prior_mean_group_selected_target_rate": {
+        "teacher_minus_prior_selected_target_rate": {
             "observed": teacher_prior_target_lift,
             "minimum": min_teacher_prior_target_lift,
             "passed": teacher_prior_target_lift >= min_teacher_prior_target_lift,
         },
-        "teacher_minus_prior_group_selected_target_sign_test": {
+        "teacher_minus_prior_selected_target_sign_test": {
             "helped": int(paired["helped"]),
             "hurt": int(paired["hurt"]),
             "tied": int(paired["tied"]),
@@ -94,13 +86,18 @@ def score_posterior_control(
             "maximum": max_teacher_prior_target_lift_p_value,
             "passed": target_lift_p_value <= max_teacher_prior_target_lift_p_value,
         },
-        "teacher_minus_prior_distinct_first_predictions": {
-            "observed": teacher_prior_distinct_lift,
-            "minimum": min_teacher_prior_distinct_prediction_lift,
-            "passed": (
-                teacher_prior_distinct_lift
-                >= min_teacher_prior_distinct_prediction_lift
+        "teacher_switching_groups": {
+            "observed": int(
+                conditioning["posterior_teacher"][
+                    "groups_with_at_least_two_first_predictions"
+                ]
             ),
+            "minimum": min_teacher_switching_groups,
+            "passed": int(
+                conditioning["posterior_teacher"][
+                    "groups_with_at_least_two_first_predictions"
+                ]
+            ) >= min_teacher_switching_groups,
         },
     }
     passed = all(check["passed"] for check in checks.values())
@@ -110,6 +107,18 @@ def score_posterior_control(
         "gate_type": "posterior_control_before_coverage",
         "K": 1,
         "checks": checks,
+        "reported_not_gate": {
+            "teacher_minus_prior_group_selected_target_rate": float(
+                conditioning["paired_group_selected_target_rate"][
+                    "posterior_minus_prior_mean"
+                ]
+            ),
+            "K1_validity_sanity": conditioning["K1_validity_sanity"],
+            "validity_drop_exceeds_0p05": (
+                float(conditioning["K1_validity_sanity"]["posterior_minus_prior"])
+                < -0.05
+            ),
+        },
         "interpretation": (
             "posterior_target_control_present"
             if passed
@@ -136,8 +145,8 @@ def main() -> int:
         required=True,
     )
     parser.add_argument(
-        "--min_teacher_prior_distinct_prediction_lift",
-        type=float,
+        "--min_teacher_switching_groups",
+        type=int,
         required=True,
     )
     args = parser.parse_args()
@@ -146,7 +155,6 @@ def main() -> int:
     for name in (
         "min_teacher_target_rate",
         "min_teacher_prior_target_lift",
-        "min_teacher_prior_distinct_prediction_lift",
     ):
         value = float(getattr(args, name))
         if value < 0.0:
@@ -159,9 +167,7 @@ def main() -> int:
         min_multi_target_groups=args.min_multi_target_groups,
         min_teacher_target_rate=args.min_teacher_target_rate,
         min_teacher_prior_target_lift=args.min_teacher_prior_target_lift,
-        min_teacher_prior_distinct_prediction_lift=(
-            args.min_teacher_prior_distinct_prediction_lift
-        ),
+        min_teacher_switching_groups=args.min_teacher_switching_groups,
         max_teacher_prior_target_lift_p_value=(
             args.max_teacher_prior_target_lift_p_value
         ),

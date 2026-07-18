@@ -99,6 +99,7 @@ def _fidelity_row(
         str(value) for value in cache["arms"][arm][str(count)]["predictions"]
     ]
     target = str(row["target"])
+    cached_arm = cache["arms"][arm][str(count)]
     return {
         "id": str(row["id"]),
         "depth": int(row["depth"]),
@@ -110,6 +111,7 @@ def _fidelity_row(
             if predictions
             else 0.0
         ),
+        "validity": bool(cached_arm.get("valid_samples", [False])[0]),
     }
 
 
@@ -127,6 +129,7 @@ def _aggregate_fidelity(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "mean_target_sample_rate": fmean(row["target_sample_rate"] for row in rows)
         if rows
         else 0.0,
+        "validity_rate": fmean(float(row["validity"]) for row in rows) if rows else 0.0,
     }
 
 
@@ -213,6 +216,7 @@ def posterior_target_conditioning(
         distinct_predictions: list[float] = []
         all_variants_match: list[float] = []
         selected_target_rates: list[float] = []
+        switching_group_count = 0
         for members in multi_target:
             first_predictions = [
                 str(cache["arms"][arm]["1"]["predictions"][0])
@@ -222,6 +226,7 @@ def posterior_target_conditioning(
             ]
             targets = [str(row["target"]) for row, _ in members]
             distinct_predictions.append(float(len(set(first_predictions))))
+            switching_group_count += int(len(set(first_predictions)) >= 2)
             all_variants_match.append(
                 float(all(prediction == target for prediction, target in zip(first_predictions, targets)))
             )
@@ -242,6 +247,7 @@ def posterior_target_conditioning(
             "mean_group_selected_target_rate": (
                 fmean(selected_target_rates) if selected_target_rates else 0.0
             ),
+            "groups_with_at_least_two_first_predictions": switching_group_count,
         }
     teacher_rates: list[float] = []
     prior_rates: list[float] = []
@@ -266,6 +272,15 @@ def posterior_target_conditioning(
         "tied": sum(teacher == prior for teacher, prior in zip(teacher_rates, prior_rates)),
         "posterior_minus_prior_mean": (
             fmean(teacher_rates) - fmean(prior_rates) if teacher_rates else 0.0
+        ),
+    }
+    k1_fidelity = posterior_target_fidelity(rows, cache_rows)["by_k"]["1"]
+    result["K1_validity_sanity"] = {
+        "prior": k1_fidelity["prior"]["validity_rate"],
+        "posterior_teacher": k1_fidelity["posterior_teacher"]["validity_rate"],
+        "posterior_minus_prior": (
+            k1_fidelity["posterior_teacher"]["validity_rate"]
+            - k1_fidelity["prior"]["validity_rate"]
         ),
     }
     return result

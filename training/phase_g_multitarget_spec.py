@@ -19,7 +19,7 @@ def required_posterior_control_thresholds(
         ("STAGE5_PHASE_G_MULTITARGET_MIN_GROUPS", int),
         ("STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_TARGET_RATE", float),
         ("STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_PRIOR_TARGET_LIFT", float),
-        ("STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_PRIOR_DISTINCT_LIFT", float),
+        ("STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_SWITCHING_GROUPS", int),
         ("STAGE5_PHASE_G_MULTITARGET_MAX_TEACHER_PRIOR_TARGET_LIFT_PVALUE", float),
     )
     values: dict[str, float | int] = {}
@@ -35,10 +35,21 @@ def required_posterior_control_thresholds(
             "Phase G multi-target posterior-control thresholds must be locked "
             "before training. Missing: " + ", ".join(missing)
         )
-    if int(values["STAGE5_PHASE_G_MULTITARGET_MIN_GROUPS"]) < 1:
-        raise ValueError("STAGE5_PHASE_G_MULTITARGET_MIN_GROUPS must be positive")
+    for name in (
+        "STAGE5_PHASE_G_MULTITARGET_MIN_GROUPS",
+        "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_SWITCHING_GROUPS",
+    ):
+        if int(values[name]) < 1:
+            raise ValueError(f"{name} must be positive")
+    if int(values["STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_SWITCHING_GROUPS"]) > int(
+        values["STAGE5_PHASE_G_MULTITARGET_MIN_GROUPS"]
+    ):
+        raise ValueError("Teacher switching-group minimum cannot exceed total group minimum")
     for name, value in values.items():
-        if name != "STAGE5_PHASE_G_MULTITARGET_MIN_GROUPS" and float(value) < 0.0:
+        if name not in {
+            "STAGE5_PHASE_G_MULTITARGET_MIN_GROUPS",
+            "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_SWITCHING_GROUPS",
+        } and float(value) < 0.0:
             raise ValueError(f"{name} must be nonnegative")
     p_value = float(values["STAGE5_PHASE_G_MULTITARGET_MAX_TEACHER_PRIOR_TARGET_LIFT_PVALUE"])
     if not 0.0 < p_value <= 1.0:
