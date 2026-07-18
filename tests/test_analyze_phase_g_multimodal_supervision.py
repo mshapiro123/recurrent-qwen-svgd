@@ -109,3 +109,17 @@ def test_audit_measures_posterior_control_across_same_prompt_target_variants() -
         "tied": 0,
         "posterior_minus_prior_mean": 0.5,
     }
+
+
+def test_audit_uses_predictions_for_first_sample_validity_with_scalar_cache_counts() -> None:
+    train = [row("a1", question="train", target="A", reachable=["A", "B"])]
+    test = [row("t1", question="test", target="A", reachable=["A", "B"])]
+    cached = [cache("t1", prior=["Z", "Z"], teacher=["A", "A"])]
+    cached[0]["arms"]["prior"]["1"]["valid_samples"] = 0
+    cached[0]["arms"]["posterior_teacher"]["1"]["valid_samples"] = 1
+
+    summary = analyze(train, test, cached)
+    fidelity = summary["posterior_target_fidelity"]["by_k"]["1"]
+
+    assert fidelity["prior"]["validity_rate"] == 0.0
+    assert fidelity["posterior_teacher"]["validity_rate"] == 1.0

@@ -99,7 +99,7 @@ def _fidelity_row(
         str(value) for value in cache["arms"][arm][str(count)]["predictions"]
     ]
     target = str(row["target"])
-    cached_arm = cache["arms"][arm][str(count)]
+    reachable = {str(value) for value in row["reachable_symbols"]}
     return {
         "id": str(row["id"]),
         "depth": int(row["depth"]),
@@ -111,7 +111,10 @@ def _fidelity_row(
             if predictions
             else 0.0
         ),
-        "validity": bool(cached_arm.get("valid_samples", [False])[0]),
+        # ``valid_samples`` is an aggregate count in the persisted Phase G cache,
+        # not a per-sample list. Derive first-sample validity from the exact row
+        # definition instead, which remains correct for every K and cache version.
+        "validity": bool(predictions and predictions[0] in reachable),
     }
 
 
