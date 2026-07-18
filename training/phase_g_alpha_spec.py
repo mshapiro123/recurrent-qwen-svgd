@@ -18,6 +18,7 @@ ALLOWED_TRAINABLE_PREFIXES = (
 
 PHASE_G_LINEAGE_EXCLUDED_PREFIXES = (
     "phase_g_",
+    "oracle_reentry_conditioner.",
     "halt_predictor.",
     "latent_trajectory.",
     "reentry_adapter.",

@@ -32,6 +32,7 @@ from .phase_g_guidance import (
     inverse_softplus,
     seeded_reparameterize,
 )
+from .oracle_reentry_conditioner import OracleReentryConditioner
 from .reentry_adapter import ReentryAffineAdapter
 from .reentry_tail_damper import apply_tail_damper, load_tail_damper
 from .svgd import svgd_particle_update
@@ -239,6 +240,42 @@ class RecurrentQwenForCausalLM(nn.Module):
                 allowed.append(name)
         return allowed
 
+    def enable_oracle_reentry_conditioner(
+        self,
+        *,
+        bottleneck_dim: int = 256,
+    ) -> None:
+        """Install the parameter-matched oracle interface used by the terminal probe."""
+
+        if hasattr(self, "oracle_reentry_conditioner"):
+            existing = int(self.oracle_reentry_conditioner.bottleneck_dim)
+            if existing != int(bottleneck_dim):
+                raise ValueError(
+                    "Oracle re-entry conditioner already uses "
+                    f"bottleneck_dim={existing}, requested {bottleneck_dim}"
+                )
+            return
+        base_param = next(self.base_model.parameters())
+        self.oracle_reentry_conditioner = OracleReentryConditioner(
+            int(self.bridge.hidden_size),
+            int(bottleneck_dim),
+        ).to(device=base_param.device, dtype=torch.float32)
+
+    def configure_oracle_reentry_trainable(self) -> list[str]:
+        """Freeze the keeper and expose exactly the oracle conditioner tensors."""
+
+        if not hasattr(self, "oracle_reentry_conditioner"):
+            raise RuntimeError(
+                "Call enable_oracle_reentry_conditioner before configuring trainability"
+            )
+        allowed: list[str] = []
+        for name, parameter in self.named_parameters():
+            trainable = name.startswith("oracle_reentry_conditioner.")
+            parameter.requires_grad_(trainable)
+            if trainable:
+                allowed.append(name)
+        return allowed
+
     def _phase_g_guidance_step(
         self,
         hidden_states: torch.Tensor,
@@ -402,6 +439,10 @@ class RecurrentQwenForCausalLM(nn.Module):
         phase_g_injection_multiplier: float = 1.0,
         phase_g_kl_balance: float = 0.8,
         phase_g_kl_coefficient: float = 0.0,
+        oracle_reentry_enabled: bool = False,
+        oracle_reentry_mode: str = "additive",
+        oracle_reentry_targets: Optional[torch.Tensor] = None,
+        oracle_reentry_force_identity: bool = False,
         logits_to_keep: int | torch.Tensor = 0,
         **_: Any,
     ) -> RecurrentQwenOutput | tuple[Any, ...]:
@@ -466,6 +507,21 @@ class RecurrentQwenForCausalLM(nn.Module):
             raise ValueError("particle_update_mode must be one of: none, svgd")
         if phase_g_enabled and not hasattr(self, "phase_g_prior_head"):
             raise RuntimeError("Phase G guidance is not installed")
+        if oracle_reentry_enabled and not hasattr(self, "oracle_reentry_conditioner"):
+            raise RuntimeError("Oracle re-entry conditioner is not installed")
+        if oracle_reentry_enabled and phase_g_enabled:
+            raise ValueError(
+                "The terminal oracle interface probe cannot run with Phase G guidance"
+            )
+        if oracle_reentry_mode not in OracleReentryConditioner.MODES:
+            raise ValueError(
+                "oracle_reentry_mode must be one of: "
+                + ", ".join(OracleReentryConditioner.MODES)
+            )
+        if oracle_reentry_enabled and oracle_reentry_targets is None:
+            raise ValueError(
+                "oracle_reentry_enabled requires loop-indexed oracle_reentry_targets"
+            )
         if phase_g_use_posterior and not self.training:
             raise RuntimeError("The target-conditioned Phase G posterior is training-only")
         if phase_g_posterior_targets is not None and not self.training:
@@ -600,6 +656,9 @@ class RecurrentQwenForCausalLM(nn.Module):
         phase_g_scales: list[torch.Tensor] = []
         phase_g_mean_distances: list[torch.Tensor] = []
         phase_g_injection_ratios: list[torch.Tensor] = []
+        oracle_branch_a_rms: list[torch.Tensor] = []
+        oracle_branch_b_rms: list[torch.Tensor] = []
+        oracle_residual_rms_ratios: list[torch.Tensor] = []
         svgd_stats_history: list[Any] = []
         loop_recurrent_states: list[torch.Tensor] = []
         recurrent_state = hidden_states
@@ -693,6 +752,26 @@ class RecurrentQwenForCausalLM(nn.Module):
                             balance=float(phase_g_kl_balance),
                         )
                     )
+            if oracle_reentry_enabled:
+                commands = oracle_reentry_targets
+                if commands is None or commands.dim() != 3 or commands.shape[1] < max_loops:
+                    raise ValueError(
+                        "oracle_reentry_targets must be [batch, max_loops, hidden]"
+                    )
+                command = commands[:, loop_idx, :]
+                if num_trajectories > 1 and command.shape[0] == batch_size:
+                    command = repeat_for_trajectories(command, num_trajectories)
+                oracle_output = self.oracle_reentry_conditioner(
+                    loop_input,
+                    flat_attention_mask,
+                    command,
+                    mode=oracle_reentry_mode,
+                    force_identity=oracle_reentry_force_identity,
+                )
+                loop_input = oracle_output.states
+                oracle_branch_a_rms.append(oracle_output.branch_a_rms)
+                oracle_branch_b_rms.append(oracle_output.branch_b_rms)
+                oracle_residual_rms_ratios.append(oracle_output.residual_rms_ratio)
             if sample_latents and latent_injection_mode in {"pre", "both"}:
                 loop_input, latent_stats = self.latent_trajectory(
                     loop_input,
@@ -877,6 +956,23 @@ class RecurrentQwenForCausalLM(nn.Module):
             for loop_idx, value in enumerate(phase_g_kls, start=1):
                 metrics[f"phase_g_balanced_kl_loop_{loop_idx}"] = (
                     value.mean().detach()
+                )
+        if oracle_residual_rms_ratios:
+            metrics["oracle_reentry_branch_a_rms"] = torch.stack(
+                oracle_branch_a_rms
+            ).mean().detach()
+            metrics["oracle_reentry_branch_b_rms"] = torch.stack(
+                oracle_branch_b_rms
+            ).mean().detach()
+            metrics["oracle_reentry_residual_rms_ratio"] = torch.stack(
+                oracle_residual_rms_ratios
+            ).mean().detach()
+            for loop_idx, value in enumerate(
+                oracle_residual_rms_ratios,
+                start=1,
+            ):
+                metrics[f"oracle_reentry_residual_rms_ratio_loop_{loop_idx}"] = (
+                    value.detach()
                 )
 
         loss = None

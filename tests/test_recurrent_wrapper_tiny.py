@@ -596,6 +596,98 @@ def test_phase_g_wrapper_factor_one_preserves_default_output():
     assert not torch.equal(default.logits, factor_three.logits)
 
 
+def test_oracle_conditioner_installation_is_exact_through_tiny_wrapper():
+    torch.manual_seed(0)
+    wrapper = RecurrentQwenForCausalLM(
+        TinyCausalLM().eval(),
+        layer_split=LayerSplit(1, 3),
+    ).eval()
+    wrapper.enable_oracle_reentry_conditioner(bottleneck_dim=4)
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    commands = wrapper.base_model.model.embed_tokens(
+        torch.tensor([[5, 6]])
+    ).detach()
+    kwargs = {
+        "input_ids": input_ids,
+        "attention_mask": torch.ones_like(input_ids),
+        "max_loops": 2,
+        "use_cache": False,
+        "return_loop_logits": True,
+        "return_dict": True,
+    }
+
+    with torch.no_grad():
+        baseline = wrapper(**kwargs)
+        for mode in ("additive", "film"):
+            conditioned = wrapper(
+                **kwargs,
+                oracle_reentry_enabled=True,
+                oracle_reentry_mode=mode,
+                oracle_reentry_targets=commands,
+            )
+            assert torch.equal(baseline.loop_logits, conditioned.loop_logits)
+
+
+def test_oracle_force_identity_bypasses_trained_route_through_tiny_wrapper():
+    torch.manual_seed(0)
+    wrapper = RecurrentQwenForCausalLM(
+        TinyCausalLM().eval(),
+        layer_split=LayerSplit(1, 3),
+    ).eval()
+    wrapper.enable_oracle_reentry_conditioner(bottleneck_dim=4)
+    with torch.no_grad():
+        wrapper.oracle_reentry_conditioner.branch_a.net[-1].weight.normal_()
+        wrapper.oracle_reentry_conditioner.branch_b.net[-1].weight.normal_()
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    commands = wrapper.base_model.model.embed_tokens(
+        torch.tensor([[5, 6]])
+    ).detach()
+    kwargs = {
+        "input_ids": input_ids,
+        "attention_mask": torch.ones_like(input_ids),
+        "max_loops": 2,
+        "use_cache": False,
+        "return_loop_logits": True,
+        "return_dict": True,
+    }
+
+    with torch.no_grad():
+        baseline = wrapper(**kwargs)
+        active = wrapper(
+            **kwargs,
+            oracle_reentry_enabled=True,
+            oracle_reentry_mode="film",
+            oracle_reentry_targets=commands,
+        )
+        bypassed = wrapper(
+            **kwargs,
+            oracle_reentry_enabled=True,
+            oracle_reentry_mode="film",
+            oracle_reentry_targets=commands,
+            oracle_reentry_force_identity=True,
+        )
+
+    assert not torch.equal(baseline.loop_logits, active.loop_logits)
+    assert torch.equal(baseline.loop_logits, bypassed.loop_logits)
+
+
+def test_oracle_trainable_contract_freezes_tiny_keeper():
+    wrapper = RecurrentQwenForCausalLM(
+        TinyCausalLM(),
+        layer_split=LayerSplit(1, 3),
+    )
+    wrapper.enable_oracle_reentry_conditioner(bottleneck_dim=4)
+
+    names = wrapper.configure_oracle_reentry_trainable()
+
+    assert names
+    assert all(name.startswith("oracle_reentry_conditioner.") for name in names)
+    assert all(
+        parameter.requires_grad == name.startswith("oracle_reentry_conditioner.")
+        for name, parameter in wrapper.named_parameters()
+    )
+
+
 def test_phase_g_tiny_wrapper_microbatch_matches_vectorized_gradients():
     torch.manual_seed(0)
     vectorized = RecurrentQwenForCausalLM(

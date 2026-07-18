@@ -5,6 +5,7 @@ from .halting import SequenceHaltingPredictor, masked_mean, pondernet_halting_pr
 from .latent_policy import LatentPolicyHead, LatentTrajectoryModule
 from .lora import LoRALinear, apply_lora_to_qwen_layers, apply_lora_to_recurrent_block
 from .reentry_adapter import ReentryAffineAdapter
+from .oracle_reentry_conditioner import OracleReentryConditioner
 from .recurrent_wrapper import LayerSplit, RecurrentQwenForCausalLM, RecurrentQwenOutput
 
 __all__ = [

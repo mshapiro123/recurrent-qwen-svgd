@@ -1299,3 +1299,15 @@ Colab/Drive backups for selected runs.
   were boundary saturation, not a graph cut. The line is closed as a bounded
   negative. Receipt:
   `outputs/stage5/stage5_depth_selector_bounded_20260717_204109/summary.json`.
+- 2026-07-18 Phase G oracle-interface decision: the additive A0
+  `NO-CHANNEL` verdict is ratified. One terminal, frozen-keeper capacity probe
+  is authorized before any further variational work: parameter-matched
+  additive and FiLM routes receive the true next selected-chain symbol at
+  every transition and train only `oracle_reentry_conditioner.*` with
+  per-loop chain CE. The locked held-out set has 106 variants, 32 prompt
+  groups, and 305 transitions. An arm must clear non-default control `0.85`,
+  overall control `0.90`, legality `0.95`, terminal validity `0.71`, exact
+  zeroed identity, and exact frozen lineage. No KL, stochastic sampling,
+  coverage, selector, halting, particles, or SVGD is part of this probe, and
+  no outcome automatically authorizes a successor. Spec:
+  `docs/STAGE5_PHASE_G_ORACLE_INTERFACE_PROBE_SPEC_20260718.md`.

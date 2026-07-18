@@ -1081,6 +1081,32 @@ def test_phase_g_forced_injection_target_is_eval_only_and_locked() -> None:
     assert "both A0 arms" in runner
 
 
+def test_oracle_interface_probe_target_is_terminal_and_locked() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    cell = (ROOT / "colab/STAGE5_ORACLE_INTERFACE_PROBE_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_oracle_interface_probe.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert '"oracle_interface_probe"' in bootstrap
+    assert "STAGE5_ORACLE_INTERFACE_PROBE_CELL.py" in bootstrap
+    assert "STAGE5_ORACLE_INTERFACE_PROBE_CELL_VERSION" in cell
+    assert "STAGE5_ORACLE_INTERFACE_STEPS" in bootstrap
+    assert "STAGE5_ORACLE_INTERFACE_STEPS" in cell
+    assert '"STAGE5_ORACLE_INTERFACE_STEPS": "1500"' in bootstrap
+    assert "additive film parameter-matched" in cell
+    assert "nondefault_branch_control >=0.85" in cell
+    assert "106 rows 32 groups 305 transitions" in cell
+    assert "no KL no coverage no selector no particles no SVGD" in cell
+    assert "automatic_successor_authorized" in runner
+    assert "assert_matched_training" in runner
+    assert "eval/score_oracle_interface_probe.py" in runner
+
+
 def test_master_sequence_status_cell_matches_markdown_code() -> None:
     text = (ROOT / "colab/STAGE5_MASTER_SEQUENCE_STATUS_CELL.md").read_text(encoding="utf-8")
     plain = (ROOT / "colab/STAGE5_MASTER_SEQUENCE_STATUS_CELL.py").read_text(encoding="utf-8")
