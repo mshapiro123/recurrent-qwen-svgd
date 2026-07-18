@@ -106,6 +106,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "phase_g_alpha" - frozen-substrate guided stochastic transition KL sweep and exact coverage gate.
 #   "phase_g_multitarget_control" - locked repeated-prompt posterior-control A0 gate.
 #   "phase_g_forced_injection_probe" - eval-only A0 posterior-residual causal magnitude probe.
+#   "oracle_interface_probe" - terminal additive-versus-FiLM oracle re-entry capacity probe.
 #   "phase_g_injective_curriculum_recovery" - continue the fixed-boundary injective checkpoint with a 2-to-8 loop curriculum.
 #   "phase_g_curriculum_autopsy" - read-only train/held-out loop matrix and curriculum-construction audit.
 #   "inverse_composition_staircase" - matched forward/inverse-table staircase with weighted loop-dose gates.
@@ -2740,6 +2741,30 @@ TARGETS = {
             "STAGE5_PHASE_G_FORCED_INJECTION_FACTORS": "1,3,10,30,100",
             "STAGE5_PHASE_G_FORCED_INJECTION_DTYPE": "bfloat16",
             "STAGE5_PHASE_G_FORCED_INJECTION_DISCONNECT": "0",
+        },
+    },
+    "oracle_interface_probe": {
+        "path": "colab/STAGE5_ORACLE_INTERFACE_PROBE_CELL.py",
+        "markers": [
+            "STAGE5_ORACLE_INTERFACE_PROBE_CELL_VERSION",
+            "training/train_oracle_interface_probe.py",
+            "eval/eval_oracle_interface_probe.py",
+            "additive film parameter-matched",
+            "nondefault_branch_control >=0.85",
+            "overall_transition_control >=0.90",
+            "transition_legality >=0.95 terminal_validity >=0.71",
+            "zeroed_conditioning_identity frozen_keeper_lineage",
+            "106 rows 32 groups 305 transitions",
+            "no KL no coverage no selector no particles no SVGD",
+            "tests/test_oracle_reentry_conditioner.py",
+            "tests/test_oracle_interface_probe.py",
+        ],
+        "env": {
+            "STAGE5_ORACLE_INTERFACE_STEPS": "1500",
+            "STAGE5_ORACLE_INTERFACE_SEED": "20260718",
+            "STAGE5_ORACLE_INTERFACE_BOTTLENECK_DIM": "256",
+            "STAGE5_ORACLE_INTERFACE_DTYPE": "bfloat16",
+            "STAGE5_ORACLE_INTERFACE_DISCONNECT": "0",
         },
     },
     "phase_a_dense_full": {
