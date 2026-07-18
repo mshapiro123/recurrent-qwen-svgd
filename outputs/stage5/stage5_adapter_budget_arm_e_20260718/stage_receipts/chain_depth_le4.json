@@ -342,170 +342,41 @@
     {
       "by_depth": {
         "1": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
+          "mapped_final_accuracy": 1.0,
+          "mapped_final_correct": 32,
+          "same_reader_accuracy": 1.0,
+          "same_reader_clears_threshold": true,
+          "same_reader_correct": 32,
           "total": 32
         },
         "2": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
+          "mapped_final_accuracy": 1.0,
+          "mapped_final_correct": 32,
+          "same_reader_accuracy": 1.0,
+          "same_reader_clears_threshold": true,
+          "same_reader_correct": 32,
           "total": 32
         },
         "3": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
+          "mapped_final_accuracy": 0.9375,
+          "mapped_final_correct": 30,
+          "same_reader_accuracy": 0.9375,
+          "same_reader_clears_threshold": true,
+          "same_reader_correct": 30,
           "total": 32
         },
         "4": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
+          "mapped_final_accuracy": 0.875,
+          "mapped_final_correct": 28,
+          "same_reader_accuracy": 0.875,
+          "same_reader_clears_threshold": true,
+          "same_reader_correct": 28,
           "total": 32
         }
       },
       "same_reader_total": {
-        "accuracy": 0.0,
-        "correct": 0,
-        "total": 128
-      },
-      "step": 1000,
-      "summary": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le4_step_1000_smoke128/summary.json"
-    },
-    {
-      "by_depth": {
-        "1": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 32
-        },
-        "2": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 32
-        },
-        "3": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 32
-        },
-        "4": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 32
-        }
-      },
-      "same_reader_total": {
-        "accuracy": 0.0,
-        "correct": 0,
-        "total": 128
-      },
-      "step": 2000,
-      "summary": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le4_step_2000_smoke128/summary.json"
-    },
-    {
-      "by_depth": {
-        "1": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 32
-        },
-        "2": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 32
-        },
-        "3": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 32
-        },
-        "4": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 32
-        }
-      },
-      "same_reader_total": {
-        "accuracy": 0.0,
-        "correct": 0,
-        "total": 128
-      },
-      "step": 3000,
-      "summary": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le4_step_3000_smoke128/summary.json"
-    },
-    {
-      "by_depth": {
-        "1": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 32
-        },
-        "2": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 32
-        },
-        "3": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 32
-        },
-        "4": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 32
-        }
-      },
-      "same_reader_total": {
-        "accuracy": 0.0,
-        "correct": 0,
+        "accuracy": 0.953125,
+        "correct": 122,
         "total": 128
       },
       "step": 4000,

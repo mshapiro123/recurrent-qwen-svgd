@@ -10,48 +10,48 @@
   "by_depth": {
     "1": {
       "total": 32,
-      "same_reader_correct": 0,
-      "same_reader_accuracy": 0.0,
-      "mapped_final_correct": 0,
-      "mapped_final_accuracy": 0.0,
-      "same_reader_clears_threshold": false
+      "same_reader_correct": 32,
+      "same_reader_accuracy": 1.0,
+      "mapped_final_correct": 32,
+      "mapped_final_accuracy": 1.0,
+      "same_reader_clears_threshold": true
     },
     "2": {
       "total": 32,
-      "same_reader_correct": 0,
-      "same_reader_accuracy": 0.0,
-      "mapped_final_correct": 0,
-      "mapped_final_accuracy": 0.0,
-      "same_reader_clears_threshold": false
+      "same_reader_correct": 32,
+      "same_reader_accuracy": 1.0,
+      "mapped_final_correct": 32,
+      "mapped_final_accuracy": 1.0,
+      "same_reader_clears_threshold": true
     },
     "3": {
       "total": 32,
-      "same_reader_correct": 0,
-      "same_reader_accuracy": 0.0,
-      "mapped_final_correct": 0,
-      "mapped_final_accuracy": 0.0,
-      "same_reader_clears_threshold": false
+      "same_reader_correct": 30,
+      "same_reader_accuracy": 0.9375,
+      "mapped_final_correct": 30,
+      "mapped_final_accuracy": 0.9375,
+      "same_reader_clears_threshold": true
     },
     "4": {
       "total": 32,
-      "same_reader_correct": 0,
-      "same_reader_accuracy": 0.0,
-      "mapped_final_correct": 0,
-      "mapped_final_accuracy": 0.0,
-      "same_reader_clears_threshold": false
+      "same_reader_correct": 28,
+      "same_reader_accuracy": 0.875,
+      "mapped_final_correct": 28,
+      "mapped_final_accuracy": 0.875,
+      "same_reader_clears_threshold": true
     }
   },
   "same_reader_total": {
-    "correct": 0,
+    "correct": 122,
     "total": 128,
-    "accuracy": 0.0
+    "accuracy": 0.953125
   },
   "mapped_final_total": {
-    "correct": 0,
+    "correct": 122,
     "total": 128,
-    "accuracy": 0.0
+    "accuracy": 0.953125
   },
-  "all_depths_clear_threshold": false,
+  "all_depths_clear_threshold": true,
   "metric_policy": {
     "active": "full-symbol active-label diagonal",
     "raw_final": "same-reader full-symbol argmax at loop == depth",
@@ -62,5 +62,6 @@
   "data_jsonl": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/data/phase_a_smoke_128_depth_le4.jsonl",
   "prediction_space": "full_symbols",
   "prompt_style": "question_only",
+  "value_prefix": "letter:",
   "rows": 128
 }
