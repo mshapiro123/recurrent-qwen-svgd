@@ -262,6 +262,14 @@ def main() -> int:
     parser.add_argument("--k1_pooled_tolerance", type=float, default=0.03)
     parser.add_argument("--k1_cell_tolerance", type=float, default=0.08)
     parser.add_argument("--expected_k1_correct", type=int, default=389)
+    parser.add_argument(
+        "--skip_k1_parity",
+        action="store_true",
+        help=(
+            "Do not score the original frozen single-target K=1 preservation gate. "
+            "Required for a repeated-prompt posterior-control surface."
+        ),
+    )
     parser.add_argument("--include_temperature", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--include_iso_compute", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--include_posterior_teacher", action=argparse.BooleanOptionalAction, default=False)
@@ -464,43 +472,53 @@ def main() -> int:
         encoding="utf-8",
     )
 
-    baseline_cells: dict[tuple[int, str], float] = {}
-    current_cells: dict[tuple[int, str], float] = {}
-    for row in rows:
-        key = (int(row["depth"]), str(row["reachable_set_stratum"]))
-        baseline_cells.setdefault(key, 0.0)
-        current_cells.setdefault(key, 0.0)
-    for key in baseline_cells:
-        matching = [row for row in rows if (int(row["depth"]), str(row["reachable_set_stratum"])) == key]
-        baseline_cells[key] = sum(bool(deterministic[row["id"]]["valid"]) for row in matching) / len(matching)
-        prior_k1 = {row["id"]: row for row in results["prior"][1]}
-        current_cells[key] = sum(bool(prior_k1[row["id"]]["valid_samples"]) for row in matching) / len(matching)
-    k1_correct = sum(bool(row["valid_samples"]) for row in results["prior"][1])
-    k1_gate = {
-        "correct": k1_correct,
-        "total": len(rows),
-        "expected_correct": args.expected_k1_correct,
-        "pooled_absolute_delta": abs(k1_correct / len(rows) - args.expected_k1_correct / len(rows)),
-        "pooled_tolerance": args.k1_pooled_tolerance,
-        "per_cell_tolerance": args.k1_cell_tolerance,
-        "per_cell": {
-            f"d{depth}_{stratum}": {
-                "baseline": baseline_cells[(depth, stratum)],
-                "phase_g_k1": current_cells[(depth, stratum)],
-                "absolute_delta": abs(
-                    baseline_cells[(depth, stratum)] - current_cells[(depth, stratum)]
-                ),
-            }
-            for depth, stratum in sorted(baseline_cells)
-        },
-    }
-    k1_gate["passed"] = (
-        k1_gate["pooled_absolute_delta"] <= args.k1_pooled_tolerance
-        and all(
-            cell["absolute_delta"] <= args.k1_cell_tolerance
-            for cell in k1_gate["per_cell"].values()
+    if args.skip_k1_parity:
+        k1_gate = {
+            "status": "not_applicable_repeated_prompt_posterior_control",
+            "passed": None,
+            "reason": (
+                "This control surface intentionally repeats each prompt with "
+                "different selected valid targets; it is not comparable to the "
+                "frozen single-target deterministic K=1 baseline."
+            ),
+        }
+    else:
+        baseline_cells: dict[tuple[int, str], float] = {}
+        current_cells: dict[tuple[int, str], float] = {}
+        for row in rows:
+            key = (int(row["depth"]), str(row["reachable_set_stratum"]))
+            baseline_cells.setdefault(key, 0.0)
+            current_cells.setdefault(key, 0.0)
+        for key in baseline_cells:
+            matching = [row for row in rows if (int(row["depth"]), str(row["reachable_set_stratum"])) == key]
+            baseline_cells[key] = sum(bool(deterministic[row["id"]]["valid"]) for row in matching) / len(matching)
+            prior_k1 = {row["id"]: row for row in results["prior"][1]}
+            current_cells[key] = sum(bool(prior_k1[row["id"]]["valid_samples"]) for row in matching) / len(matching)
+        k1_correct = sum(bool(row["valid_samples"]) for row in results["prior"][1])
+        k1_gate = {
+            "correct": k1_correct,
+            "total": len(rows),
+            "expected_correct": args.expected_k1_correct,
+            "pooled_absolute_delta": abs(k1_correct / len(rows) - args.expected_k1_correct / len(rows)),
+            "pooled_tolerance": args.k1_pooled_tolerance,
+            "per_cell_tolerance": args.k1_cell_tolerance,
+            "per_cell": {
+                f"d{depth}_{stratum}": {
+                    "baseline": baseline_cells[(depth, stratum)],
+                    "phase_g_k1": current_cells[(depth, stratum)],
+                    "absolute_delta": abs(
+                        baseline_cells[(depth, stratum)] - current_cells[(depth, stratum)]),
+                }
+                for depth, stratum in sorted(baseline_cells)
+            },
+        }
+        k1_gate["passed"] = (
+            k1_gate["pooled_absolute_delta"] <= args.k1_pooled_tolerance
+            and all(
+                cell["absolute_delta"] <= args.k1_cell_tolerance
+                for cell in k1_gate["per_cell"].values()
+            )
         )
-    )
 
     comparisons: dict[str, Any] = {}
     k_final = max(sample_counts)

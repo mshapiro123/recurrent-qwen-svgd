@@ -2,9 +2,41 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Mapping
 
 from training.phase_g_multitarget_task import validate_multitarget_rows
+
+
+def required_posterior_control_thresholds(
+    environment: Mapping[str, str],
+) -> dict[str, float | int]:
+    """Require posterior-control thresholds before a GPU training launch."""
+
+    declarations: tuple[tuple[str, type[int] | type[float]], ...] = (
+        ("STAGE5_PHASE_G_MULTITARGET_MIN_GROUPS", int),
+        ("STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_TARGET_RATE", float),
+        ("STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_PRIOR_TARGET_LIFT", float),
+        ("STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_PRIOR_DISTINCT_LIFT", float),
+    )
+    values: dict[str, float | int] = {}
+    missing: list[str] = []
+    for name, parser in declarations:
+        raw = environment.get(name, "").strip()
+        if not raw:
+            missing.append(name)
+            continue
+        values[name] = parser(raw)
+    if missing:
+        raise RuntimeError(
+            "Phase G multi-target posterior-control thresholds must be locked "
+            "before training. Missing: " + ", ".join(missing)
+        )
+    if int(values["STAGE5_PHASE_G_MULTITARGET_MIN_GROUPS"]) < 1:
+        raise ValueError("STAGE5_PHASE_G_MULTITARGET_MIN_GROUPS must be positive")
+    for name, value in values.items():
+        if name != "STAGE5_PHASE_G_MULTITARGET_MIN_GROUPS" and float(value) < 0.0:
+            raise ValueError(f"{name} must be nonnegative")
+    return values
 
 
 def assert_multitarget_curriculum(
