@@ -8,6 +8,8 @@ import os
 import shutil
 import subprocess
 import sys
+import time
+import traceback
 from pathlib import Path
 from typing import Any
 
@@ -51,6 +53,22 @@ EXPECTED_TEST_MANIFEST = {
     "row_id_sha256": "a75171fd3f8a22b632dfb525fd8c1b44136b095d0db6ec36433751b521c60758",
     "row_sha256": "eb80ef24637aee511a3e35607e87ae2530842ce11c551e6fa90ecda4d4115ef8",
 }
+_RUNTIME_TRANSCRIPT_PATH: Path | None = None
+
+
+def configure_runtime_transcript(path: str | Path | None) -> None:
+    global _RUNTIME_TRANSCRIPT_PATH
+    _RUNTIME_TRANSCRIPT_PATH = Path(path) if path is not None else None
+    if _RUNTIME_TRANSCRIPT_PATH is not None:
+        _RUNTIME_TRANSCRIPT_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+
+def append_runtime_transcript(text: str) -> None:
+    if _RUNTIME_TRANSCRIPT_PATH is None:
+        return
+    with _RUNTIME_TRANSCRIPT_PATH.open("a", encoding="utf-8") as handle:
+        handle.write(text)
+        handle.flush()
 
 
 def run(
@@ -58,7 +76,9 @@ def run(
     *,
     allow_blocked: bool = False,
 ) -> int:
-    print("$", " ".join(map(str, command)), flush=True)
+    printable = "$ " + " ".join(map(str, command))
+    print(printable, flush=True)
+    append_runtime_transcript(printable + "\n")
     process = subprocess.Popen(
         command,
         cwd=ROOT,
@@ -71,7 +91,10 @@ def run(
     assert process.stdout is not None
     for line in process.stdout:
         print(line, end="", flush=True)
+        append_runtime_transcript(line)
     return_code = process.wait()
+    return_line = f"return_code={return_code} command={command[0]}\n"
+    append_runtime_transcript(return_line)
     if return_code and not (allow_blocked and return_code == 2):
         raise subprocess.CalledProcessError(return_code, command)
     return return_code
@@ -100,6 +123,84 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
         for line in path.read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
+
+
+def write_runtime_status(
+    run_dir: Path,
+    drive_dir: Path,
+    *,
+    stage: str,
+    status: str,
+    **details: Any,
+) -> dict[str, Any]:
+    payload = {
+        "kind": "stage5_phase_g_alpha_runtime_status",
+        "updated_at_unix": time.time(),
+        "stage": stage,
+        "status": status,
+        **details,
+    }
+    write_json(run_dir / "runtime_status.json", payload)
+    write_json(drive_dir / "runtime_status.json", payload)
+    print("phase_g_runtime_status:", json.dumps(payload, sort_keys=True), flush=True)
+    return payload
+
+
+def record_runtime_failure(
+    run_dir: Path,
+    drive_dir: Path,
+    exc: BaseException,
+) -> dict[str, Any]:
+    status_path = run_dir / "runtime_status.json"
+    prior = read_json(status_path) if status_path.exists() else {}
+    payload = {
+        **prior,
+        "kind": "stage5_phase_g_alpha_runtime_error",
+        "updated_at_unix": time.time(),
+        "status": "error",
+        "exception_type": type(exc).__name__,
+        "exception": str(exc),
+        "traceback_tail": traceback.format_exc().splitlines()[-160:],
+    }
+    write_json(run_dir / "runtime_error.json", payload)
+    write_json(drive_dir / "runtime_error.json", payload)
+    for source in run_dir.rglob("*"):
+        if not source.is_file() or source.suffix in {".pt", ".pth", ".safetensors"}:
+            continue
+        destination = drive_dir / source.relative_to(run_dir)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+    if _RUNTIME_TRANSCRIPT_PATH is not None and _RUNTIME_TRANSCRIPT_PATH.exists():
+        drive_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(_RUNTIME_TRANSCRIPT_PATH, drive_dir / "runtime.log")
+    print("phase_g_runtime_error:", json.dumps(payload, sort_keys=True), flush=True)
+    return payload
+
+
+def phase_g_arm_resume_state(
+    *,
+    summary_path: Path,
+    raw_path: Path,
+    ema_path: Path,
+    drive_raw_path: Path,
+    drive_ema_path: Path,
+) -> str:
+    if summary_path.exists() and raw_path.exists() and ema_path.exists():
+        return "local_complete"
+    if summary_path.exists() and drive_raw_path.exists() and drive_ema_path.exists():
+        return "drive_complete"
+    if any(
+        path.exists()
+        for path in (
+            summary_path,
+            raw_path,
+            ema_path,
+            drive_raw_path,
+            drive_ema_path,
+        )
+    ):
+        return "partial_requires_restart"
+    return "not_started"
 
 
 def resolve_repo_path(raw: str | Path) -> Path:
@@ -354,8 +455,8 @@ def evaluate(
     return read_json(output_dir / "summary.json")
 
 
-def main() -> int:
-    run_id = os.environ.get(
+def main(run_id: str | None = None) -> int:
+    run_id = run_id or os.environ.get(
         "STAGE5_PHASE_G_ALPHA_RUN_ID",
         "stage5_phase_g_alpha_guided_width_20260717",
     )
@@ -366,6 +467,7 @@ def main() -> int:
     if drive_artifact_dir.exists():
         shutil.copytree(drive_artifact_dir, run_dir, dirs_exist_ok=True)
     run_dir.mkdir(parents=True, exist_ok=True)
+    configure_runtime_transcript(run_dir / "runtime.log")
     steps = int(os.environ.get("STAGE5_PHASE_G_ALPHA_STEPS", "1000"))
     kl_coefficients = [
         float(value)
@@ -383,13 +485,65 @@ def main() -> int:
         "steps_per_arm": steps,
     }
     write_json(run_dir / "summary.json", summary)
+    write_runtime_status(
+        run_dir,
+        drive_artifact_dir,
+        stage="startup",
+        status="started",
+        run_id=run_id,
+        steps_per_arm=steps,
+        kl_coefficients=kl_coefficients,
+    )
 
+    write_runtime_status(
+        run_dir,
+        drive_artifact_dir,
+        stage="keeper_restore",
+        status="started",
+        expected_keeper_sha256=KEEPER_SHA256,
+        keeper_drive_path=str(KEEPER_DRIVE),
+        keeper_drive_exists=KEEPER_DRIVE.exists(),
+    )
     keeper = restore_keeper(run_dir)
+    write_runtime_status(
+        run_dir,
+        drive_artifact_dir,
+        stage="keeper_restore",
+        status="completed",
+        keeper_path=str(keeper),
+        keeper_sha256=KEEPER_SHA256,
+    )
+    write_runtime_status(
+        run_dir,
+        drive_artifact_dir,
+        stage="data_prepare",
+        status="started",
+    )
     summary["data_manifests"] = prepare_data(run_dir)
+    write_runtime_status(
+        run_dir,
+        drive_artifact_dir,
+        stage="data_prepare",
+        status="completed",
+        manifests=summary["data_manifests"],
+    )
+    write_runtime_status(
+        run_dir,
+        drive_artifact_dir,
+        stage="deterministic_calibration",
+        status="started",
+    )
     calibration_deterministic = deterministic_screen(
         run_dir=run_dir,
         keeper=keeper,
         split_name="calibration",
+    )
+    write_runtime_status(
+        run_dir,
+        drive_artifact_dir,
+        stage="deterministic_calibration",
+        status="completed",
+        rows_path=str(calibration_deterministic),
     )
     margin = lock_margin(calibration_deterministic, run_dir / "margin_lock" / "summary.json")
     summary["margin_lock"] = margin
@@ -398,6 +552,12 @@ def main() -> int:
     publish(run_dir, f"Lock Phase G-alpha margin {run_id} [skip ci]")
     sync_receipts_to_drive(run_dir, drive_artifact_dir)
 
+    write_runtime_status(
+        run_dir,
+        drive_artifact_dir,
+        stage="k1_preflight",
+        status="started",
+    )
     preflight = evaluate(
         data=run_dir / "data/test.jsonl",
         deterministic_rows=DETERMINISTIC_TEST_ROWS,
@@ -413,11 +573,25 @@ def main() -> int:
     )
     summary["k1_preflight"] = preflight["k1_parity_gate"]
     if not preflight["k1_parity_gate"]["passed"]:
+        write_runtime_status(
+            run_dir,
+            drive_artifact_dir,
+            stage="k1_preflight",
+            status="blocked",
+            gate=preflight["k1_parity_gate"],
+        )
         summary["status"] = "blocked_k1_parity"
         write_json(run_dir / "summary.json", summary)
         publish(run_dir, f"Block Phase G-alpha K1 parity {run_id} [skip ci]")
         sync_receipts_to_drive(run_dir, drive_artifact_dir)
         return 2
+    write_runtime_status(
+        run_dir,
+        drive_artifact_dir,
+        stage="k1_preflight",
+        status="completed",
+        gate=preflight["k1_parity_gate"],
+    )
     summary["status"] = "k1_parity_passed"
     write_json(run_dir / "summary.json", summary)
     publish(run_dir, f"Pass Phase G-alpha K1 parity {run_id} [skip ci]")
@@ -434,24 +608,44 @@ def main() -> int:
         drive_raw = drive_root / f"{label}_raw.pt"
         drive_ema = drive_root / f"{label}_ema.pt"
         train_summary_path = train_dir / "summary.json"
-        local_complete = (
-            train_summary_path.exists()
-            and expected_raw.exists()
-            and expected_ema.exists()
+        resume_state = phase_g_arm_resume_state(
+            summary_path=train_summary_path,
+            raw_path=expected_raw,
+            ema_path=expected_ema,
+            drive_raw_path=drive_raw,
+            drive_ema_path=drive_ema,
         )
-        drive_complete = (
-            train_summary_path.exists()
-            and drive_raw.exists()
-            and drive_ema.exists()
+        write_runtime_status(
+            run_dir,
+            drive_artifact_dir,
+            stage="training",
+            status="resume_preflight",
+            arm=label,
+            kl_coefficient=coefficient,
+            resume_state=resume_state,
+            local_summary_exists=train_summary_path.exists(),
+            local_raw_exists=expected_raw.exists(),
+            local_ema_exists=expected_ema.exists(),
+            drive_raw_exists=drive_raw.exists(),
+            drive_ema_exists=drive_ema.exists(),
         )
-        if local_complete:
+        if resume_state == "local_complete":
             print(f"resume_completed_local_phase_g_training={label}", flush=True)
-        elif drive_complete:
+        elif resume_state == "drive_complete":
             train_dir.mkdir(parents=True, exist_ok=True)
             shutil.copy2(drive_raw, expected_raw)
             shutil.copy2(drive_ema, expected_ema)
             print(f"resume_completed_drive_phase_g_training={label}", flush=True)
         else:
+            write_runtime_status(
+                run_dir,
+                drive_artifact_dir,
+                stage="training",
+                status="started",
+                arm=label,
+                kl_coefficient=coefficient,
+                restart_reason=resume_state,
+            )
             run(
                 [
                     sys.executable,
@@ -476,6 +670,14 @@ def main() -> int:
                     "bfloat16",
                 ]
             )
+        write_runtime_status(
+            run_dir,
+            drive_artifact_dir,
+            stage="training",
+            status="completed",
+            arm=label,
+            kl_coefficient=coefficient,
+        )
         train_summary = read_json(train_summary_path)
         checkpoint_paths = {
             "raw": resolve_repo_path(train_summary["raw_checkpoint"]),
@@ -502,6 +704,15 @@ def main() -> int:
             "calibration": {},
         }
         for kind, checkpoint in checkpoint_paths.items():
+            write_runtime_status(
+                run_dir,
+                drive_artifact_dir,
+                stage="calibration",
+                status="started",
+                arm=label,
+                checkpoint_kind=kind,
+                checkpoint=str(checkpoint),
+            )
             arm["calibration"][kind] = evaluate(
                 data=run_dir / "data/calibration.jsonl",
                 deterministic_rows=calibration_deterministic,
@@ -517,6 +728,14 @@ def main() -> int:
                     drive_artifact_dir / "calibration" / label / kind / "row_cache.jsonl"
                 ),
             )
+            write_runtime_status(
+                run_dir,
+                drive_artifact_dir,
+                stage="calibration",
+                status="completed",
+                arm=label,
+                checkpoint_kind=kind,
+            )
         arms.append(arm)
         summary["arms"] = arms
         summary["status"] = f"calibrated_{label}"
@@ -531,6 +750,13 @@ def main() -> int:
                 score = result["summaries"]["prior"]["20"]["overall"]["mean_coverage"]
                 candidates.append((float(score), weight_kind, arm))
     if not candidates:
+        write_runtime_status(
+            run_dir,
+            drive_artifact_dir,
+            stage="selection",
+            status="blocked",
+            reason="all_calibration_k1_parity_failed",
+        )
         summary["status"] = "blocked_all_calibration_k1_parity"
         write_json(run_dir / "summary.json", summary)
         publish(run_dir, f"Block Phase G-alpha calibration {run_id} [skip ci]")
@@ -549,6 +775,15 @@ def main() -> int:
     publish(run_dir, f"Select Phase G-alpha arm {run_id} [skip ci]")
     sync_receipts_to_drive(run_dir, drive_artifact_dir)
 
+    write_runtime_status(
+        run_dir,
+        drive_artifact_dir,
+        stage="test_evaluation",
+        status="started",
+        selected_arm=selected_arm["label"],
+        selected_weight_kind=selected_kind,
+        checkpoint=str(selected_checkpoint),
+    )
     test_result = evaluate(
         data=run_dir / "data/test.jsonl",
         deterministic_rows=DETERMINISTIC_TEST_ROWS,
@@ -571,11 +806,43 @@ def main() -> int:
     summary["test"] = test_result
     summary["status"] = "finished"
     summary["verdict"] = test_result["verdict"]
+    write_runtime_status(
+        run_dir,
+        drive_artifact_dir,
+        stage="finished",
+        status="completed",
+        verdict=test_result["verdict"],
+    )
     write_json(run_dir / "summary.json", summary)
     publish(run_dir, f"Finish Phase G-alpha {run_id} [skip ci]")
     sync_receipts_to_drive(run_dir, drive_artifact_dir)
     return 0
 
 
+def guarded_main() -> int:
+    run_id = os.environ.get(
+        "STAGE5_PHASE_G_ALPHA_RUN_ID",
+        "stage5_phase_g_alpha_guided_width_20260717",
+    )
+    run_dir = ROOT / "outputs" / "stage5" / run_id
+    drive_artifact_dir = (
+        Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5") / run_id
+    )
+    try:
+        return main(run_id)
+    except BaseException as exc:
+        try:
+            run_dir.mkdir(parents=True, exist_ok=True)
+            drive_artifact_dir.mkdir(parents=True, exist_ok=True)
+            record_runtime_failure(run_dir, drive_artifact_dir, exc)
+        except Exception as receipt_exc:
+            print(
+                "phase_g_runtime_error_receipt_failed="
+                f"{type(receipt_exc).__name__}: {receipt_exc}",
+                flush=True,
+            )
+        raise
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(guarded_main())
