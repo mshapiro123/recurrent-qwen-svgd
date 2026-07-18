@@ -1,0 +1,8 @@
+{
+  "gate_lock": "docs/STAGE5_PHASE_G_A0_MARGIN_LOCK_20260718.json",
+  "kind": "stage5_phase_g_alpha_runtime_status",
+  "run_id": "stage5_phase_g_multitarget_control_20260718",
+  "stage": "startup",
+  "status": "started",
+  "updated_at_unix": 1784398628.8143115
+}

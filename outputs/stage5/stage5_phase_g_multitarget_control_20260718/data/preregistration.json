@@ -1,0 +1,41 @@
+{
+  "coverage_form": {
+    "comparators": [
+      "entropy_matched_temperature",
+      "iso_compute_depth"
+    ],
+    "metric": "paired exact oracle coverage at K",
+    "reuse": "original_frozen_coverage_rows_and_reader"
+  },
+  "curriculum": {
+    "full_reachable_support": "required for the initial correction run",
+    "same_prompt_multiple_targets": "required",
+    "sampling_policy": "base_problem_uniform_then_target_variant_uniform",
+    "target_chain": "one valid exact-depth chain per terminal target variant"
+  },
+  "deferred": [
+    "G_beta",
+    "selector",
+    "per_trajectory_halting",
+    "SVGD"
+  ],
+  "gate_order": [
+    "posterior_exact_target_control_on_repeated_prompt_holdout",
+    "K1_deterministic_preservation",
+    "prior_coverage_vs_entropy_matched_temperature",
+    "prior_coverage_vs_iso_compute_depth"
+  ],
+  "keeper": "same_frozen_phase_g_alpha_keeper_with_exact_sha256_assertion",
+  "kind": "phase_g_multitarget_correction_preregistration",
+  "posterior_control_form": {
+    "comparison": "posterior_teacher versus prior on identical repeated-prompt rows",
+    "metric": "K1 exact selected-target rate and group-level target switching",
+    "numeric_margin": "lock_from_holdout_power_calculation_before_training"
+  },
+  "status": "forms_locked_before_multitarget_training",
+  "trainable": [
+    "phase_g_prior_head.*",
+    "phase_g_posterior_head.*",
+    "phase_g_injection_scale"
+  ]
+}

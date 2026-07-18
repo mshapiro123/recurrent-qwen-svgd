@@ -1,0 +1,80 @@
+{
+  "a1_continuity_receipts": {
+    "calibration_manifest": {
+      "row_id_sha256": "755291d493cac76515228c16e73c1478038228e678b499c2bed2fa28be1871a8",
+      "row_sha256": "71b89e00316683102fbb56a2f244121b1f8fe378a80c269059a3bb5076e9e64e",
+      "rows": 512
+    },
+    "deterministic_test_receipt": "outputs/stage5/stage5_part1_closeout_pivot_20260715/branching_screen/natural_step2000_N20_verbal/rows.jsonl",
+    "entropy_tolerance": 0.01432,
+    "target_entropy": 0.1432,
+    "test_manifest": {
+      "row_id_sha256": "a75171fd3f8a22b632dfb525fd8c1b44136b095d0db6ec36433751b521c60758",
+      "row_sha256": "eb80ef24637aee511a3e35607e87ae2530842ce11c551e6fa90ecda4d4115ef8",
+      "rows": 512
+    }
+  },
+  "contingent_confirmation_kl_coefficient": 0.0001,
+  "data": {
+    "control": {
+      "base_question_sha256": "7e1950b82be69b18c801ca544d77d44ff3342eacff972b6bbf1161216bf3de2f",
+      "manifest": {
+        "row_id_sha256": "a38304c7536852771ffdffde2354255a670f9f9daf4fd23e2354df5d1f78fd57",
+        "row_sha256": "451acbef80f6060b9cd18f63c9722f30cad3ccee55329468a2cee22f412f518c",
+        "rows": 106
+      },
+      "path": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/data/posterior_control.jsonl",
+      "rows": 106,
+      "validation": {
+        "all_reachable_targets_covered": true,
+        "base_problem_groups": 32,
+        "errors": [],
+        "groups_with_multiple_targets": 32,
+        "rows": 106,
+        "status": "passed"
+      }
+    },
+    "coverage_evaluation_reuse": {
+      "calibration": "outputs/stage5/stage5_phase_g_alpha_guided_width_20260717/data/calibration.jsonl",
+      "test": "outputs/stage5/stage5_phase_g_alpha_guided_width_20260717/data/test.jsonl"
+    },
+    "kind": "stage5_phase_g_multitarget_prepare",
+    "preregistration": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/data/preregistration.json",
+    "sampling_policy": "base_problem_uniform",
+    "status": "prepared",
+    "targets_per_prompt": null,
+    "train": {
+      "base_question_sha256": "b2f5578df25783bd157cf8c78ace5b06d4ac37140e6cbe7ed15519b6362c2edb",
+      "manifest": {
+        "row_id_sha256": "c2e6bb2d5eca699b6493ec512ef8e656e24f15acd88a3c8fcd52d11b05e592a0",
+        "row_sha256": "d57545272fc5fef8f9c5abcdaaad8035599bb274330e810d629e4e6f6e24d174",
+        "rows": 1899
+      },
+      "path": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/data/train.jsonl",
+      "rows": 1899,
+      "validation": {
+        "all_reachable_targets_covered": true,
+        "base_problem_groups": 512,
+        "errors": [],
+        "groups_with_multiple_targets": 512,
+        "rows": 1899,
+        "status": "passed"
+      }
+    }
+  },
+  "gate_lock": "docs/STAGE5_PHASE_G_A0_MARGIN_LOCK_20260718.json",
+  "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+  "kind": "stage5_phase_g_multitarget_posterior_control",
+  "locked_gate_thresholds": {
+    "STAGE5_PHASE_G_MULTITARGET_MAX_TEACHER_PRIOR_TARGET_LIFT_PVALUE": 0.05,
+    "STAGE5_PHASE_G_MULTITARGET_MIN_GROUPS": 32,
+    "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_PRIOR_TARGET_LIFT": 0.15,
+    "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_SWITCHING_GROUPS": 24,
+    "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_TARGET_RATE": 0.6
+  },
+  "primary_kl_coefficient": 0.001,
+  "run_id": "stage5_phase_g_multitarget_control_20260718",
+  "sampling_policy": "base_problem_uniform",
+  "status": "started",
+  "steps": 1000
+}

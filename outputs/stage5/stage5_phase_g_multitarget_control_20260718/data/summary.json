@@ -1,0 +1,47 @@
+{
+  "control": {
+    "base_question_sha256": "7e1950b82be69b18c801ca544d77d44ff3342eacff972b6bbf1161216bf3de2f",
+    "manifest": {
+      "row_id_sha256": "a38304c7536852771ffdffde2354255a670f9f9daf4fd23e2354df5d1f78fd57",
+      "row_sha256": "451acbef80f6060b9cd18f63c9722f30cad3ccee55329468a2cee22f412f518c",
+      "rows": 106
+    },
+    "path": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/data/posterior_control.jsonl",
+    "rows": 106,
+    "validation": {
+      "all_reachable_targets_covered": true,
+      "base_problem_groups": 32,
+      "errors": [],
+      "groups_with_multiple_targets": 32,
+      "rows": 106,
+      "status": "passed"
+    }
+  },
+  "coverage_evaluation_reuse": {
+    "calibration": "outputs/stage5/stage5_phase_g_alpha_guided_width_20260717/data/calibration.jsonl",
+    "test": "outputs/stage5/stage5_phase_g_alpha_guided_width_20260717/data/test.jsonl"
+  },
+  "kind": "stage5_phase_g_multitarget_prepare",
+  "preregistration": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/data/preregistration.json",
+  "sampling_policy": "base_problem_uniform",
+  "status": "prepared",
+  "targets_per_prompt": null,
+  "train": {
+    "base_question_sha256": "b2f5578df25783bd157cf8c78ace5b06d4ac37140e6cbe7ed15519b6362c2edb",
+    "manifest": {
+      "row_id_sha256": "c2e6bb2d5eca699b6493ec512ef8e656e24f15acd88a3c8fcd52d11b05e592a0",
+      "row_sha256": "d57545272fc5fef8f9c5abcdaaad8035599bb274330e810d629e4e6f6e24d174",
+      "rows": 1899
+    },
+    "path": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/data/train.jsonl",
+    "rows": 1899,
+    "validation": {
+      "all_reachable_targets_covered": true,
+      "base_problem_groups": 512,
+      "errors": [],
+      "groups_with_multiple_targets": 512,
+      "rows": 1899,
+      "status": "passed"
+    }
+  }
+}
