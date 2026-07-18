@@ -1,0 +1,157 @@
+{
+  "kind": "synthetic_depth_same_reader_final_symbol",
+  "threshold": 0.71,
+  "depths": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14
+  ],
+  "by_depth": {
+    "1": {
+      "total": 128,
+      "same_reader_correct": 128,
+      "same_reader_accuracy": 1.0,
+      "mapped_final_correct": 128,
+      "mapped_final_accuracy": 1.0,
+      "same_reader_clears_threshold": true
+    },
+    "2": {
+      "total": 128,
+      "same_reader_correct": 128,
+      "same_reader_accuracy": 1.0,
+      "mapped_final_correct": 128,
+      "mapped_final_accuracy": 1.0,
+      "same_reader_clears_threshold": true
+    },
+    "3": {
+      "total": 128,
+      "same_reader_correct": 127,
+      "same_reader_accuracy": 0.9921875,
+      "mapped_final_correct": 127,
+      "mapped_final_accuracy": 0.9921875,
+      "same_reader_clears_threshold": true
+    },
+    "4": {
+      "total": 128,
+      "same_reader_correct": 128,
+      "same_reader_accuracy": 1.0,
+      "mapped_final_correct": 128,
+      "mapped_final_accuracy": 1.0,
+      "same_reader_clears_threshold": true
+    },
+    "5": {
+      "total": 128,
+      "same_reader_correct": 128,
+      "same_reader_accuracy": 1.0,
+      "mapped_final_correct": 128,
+      "mapped_final_accuracy": 1.0,
+      "same_reader_clears_threshold": true
+    },
+    "6": {
+      "total": 128,
+      "same_reader_correct": 127,
+      "same_reader_accuracy": 0.9921875,
+      "mapped_final_correct": 127,
+      "mapped_final_accuracy": 0.9921875,
+      "same_reader_clears_threshold": true
+    },
+    "7": {
+      "total": 128,
+      "same_reader_correct": 128,
+      "same_reader_accuracy": 1.0,
+      "mapped_final_correct": 128,
+      "mapped_final_accuracy": 1.0,
+      "same_reader_clears_threshold": true
+    },
+    "8": {
+      "total": 128,
+      "same_reader_correct": 127,
+      "same_reader_accuracy": 0.9921875,
+      "mapped_final_correct": 127,
+      "mapped_final_accuracy": 0.9921875,
+      "same_reader_clears_threshold": true
+    },
+    "9": {
+      "total": 128,
+      "same_reader_correct": 123,
+      "same_reader_accuracy": 0.9609375,
+      "mapped_final_correct": 123,
+      "mapped_final_accuracy": 0.9609375,
+      "same_reader_clears_threshold": true
+    },
+    "10": {
+      "total": 128,
+      "same_reader_correct": 110,
+      "same_reader_accuracy": 0.859375,
+      "mapped_final_correct": 110,
+      "mapped_final_accuracy": 0.859375,
+      "same_reader_clears_threshold": true
+    },
+    "11": {
+      "total": 128,
+      "same_reader_correct": 111,
+      "same_reader_accuracy": 0.8671875,
+      "mapped_final_correct": 111,
+      "mapped_final_accuracy": 0.8671875,
+      "same_reader_clears_threshold": true
+    },
+    "12": {
+      "total": 128,
+      "same_reader_correct": 75,
+      "same_reader_accuracy": 0.5859375,
+      "mapped_final_correct": 75,
+      "mapped_final_accuracy": 0.5859375,
+      "same_reader_clears_threshold": false
+    },
+    "13": {
+      "total": 128,
+      "same_reader_correct": 43,
+      "same_reader_accuracy": 0.3359375,
+      "mapped_final_correct": 43,
+      "mapped_final_accuracy": 0.3359375,
+      "same_reader_clears_threshold": false
+    },
+    "14": {
+      "total": 128,
+      "same_reader_correct": 18,
+      "same_reader_accuracy": 0.140625,
+      "mapped_final_correct": 18,
+      "mapped_final_accuracy": 0.140625,
+      "same_reader_clears_threshold": false
+    }
+  },
+  "same_reader_total": {
+    "correct": 1501,
+    "total": 1792,
+    "accuracy": 0.8376116071428571
+  },
+  "mapped_final_total": {
+    "correct": 1501,
+    "total": 1792,
+    "accuracy": 0.8376116071428571
+  },
+  "all_depths_clear_threshold": false,
+  "metric_policy": {
+    "active": "full-symbol active-label diagonal",
+    "raw_final": "same-reader full-symbol argmax at loop == depth",
+    "mapped_final": "same-reader full-symbol argmax deterministically mapped to MCQ label",
+    "suspended_reader": "option-text/choice MCQ final-answer matrices remain diagnostic only"
+  },
+  "checkpoint": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/train/chain_depth_le8_dose/unfrozen_recurrent_step_2000.pt",
+  "data_jsonl": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v2_depth14/data/test_chain_mcq.jsonl",
+  "prediction_space": "full_symbols",
+  "prompt_style": "question_only",
+  "value_prefix": "letter:",
+  "rows": 1792
+}
