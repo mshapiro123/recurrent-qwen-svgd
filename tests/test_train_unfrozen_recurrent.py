@@ -153,6 +153,32 @@ def test_configure_trainable_modules_unfreezes_only_recurrent_block_by_default()
     assert summary["total"] >= summary["recurrent_block"]
 
 
+def test_split_bridge_keeps_legacy_concat_projection_out_of_optimizer() -> None:
+    wrapper = TinyWrapper()
+    wrapper.bridge = IdentityGatedBridge(2, projection_mode="split")
+
+    configure_trainable_modules(
+        wrapper,
+        {
+            "training_mode": "full_block",
+            "train_auxiliary": {"bridge": True, "halting": False},
+        },
+    )
+
+    assert wrapper.bridge.split_projection is True
+    assert not any(param.requires_grad for param in wrapper.bridge.proj.parameters())
+    assert all(param.requires_grad for param in wrapper.bridge.prelude_proj.parameters())
+    assert all(param.requires_grad for param in wrapper.bridge.state_proj.parameters())
+    assert wrapper.bridge.bridge_gate.requires_grad is True
+    summary = trainable_parameter_summary(wrapper)  # type: ignore[arg-type]
+    expected_active_bridge = sum(
+        param.numel()
+        for name, param in wrapper.bridge.named_parameters()
+        if not name.startswith("proj.")
+    )
+    assert summary["bridge"] == expected_active_bridge
+
+
 def test_trainable_parameter_norm_stats_groups_recurrent_and_bridge_params() -> None:
     wrapper = TinyWrapper()
     configure_trainable_modules(wrapper, {"train_auxiliary": {"bridge": True, "halting": False}})

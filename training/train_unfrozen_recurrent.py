@@ -311,10 +311,14 @@ def configure_trainable_modules(wrapper: RecurrentQwenForCausalLM, cfg: dict[str
             "training_mode must be one of: full_block, frozen_lora, controller_only"
         )
     aux = cfg.get("train_auxiliary", {})
-    for param in wrapper.bridge.parameters():
-        param.requires_grad_(
-            bool(aux.get("bridge", True)) and training_mode != "controller_only"
-        )
+    bridge_enabled = bool(aux.get("bridge", True)) and training_mode != "controller_only"
+    bridge_is_split = bool(getattr(wrapper.bridge, "split_projection", False))
+    for name, param in wrapper.bridge.named_parameters():
+        # Split mode retains the old concat projection only so historical
+        # checkpoints can load. It is not in the forward graph and must not be
+        # counted or passed to the optimizer in new runs.
+        bypassed_legacy_concat = bridge_is_split and name.startswith("proj.")
+        param.requires_grad_(bridge_enabled and not bypassed_legacy_concat)
     for param in wrapper.halt_predictor.parameters():
         param.requires_grad_(
             bool(aux.get("halting", True))
@@ -867,6 +871,7 @@ def main() -> int:
     dose_ratio_min = cfg_float(cfg, "dose_ratio_min", 0.8)
     dose_ratio_max = cfg_float(cfg, "dose_ratio_max", 1.25)
     newest_loop_multiplier = cfg_float(cfg, "newest_loop_multiplier", 2.0)
+    dose_requires_equalization = False
     if loop_loss_mode == "weighted_per_loop_labels":
         if row_specific_loop_weights:
             for row in dataset.rows:
@@ -896,6 +901,7 @@ def main() -> int:
                 newest_loop=max_loops,
                 newest_multiplier=newest_loop_multiplier,
             )
+            dose_requires_equalization = True
             theoretical_exposure = exposure_fractions(dataset.rows, cap=max_loops)
             theoretical_mass = [
                 theoretical_exposure[index] * configured_weights[index]
@@ -914,6 +920,19 @@ def main() -> int:
                 f"receipt={theoretical_receipt}",
                 flush=True,
             )
+    elif loop_loss_mode == "per_loop_labels" and bool(cfg.get("track_loop_dose", False)):
+        # Arm-comparison curricula need an auditable count of supervised labels
+        # at every loop, but equal mass is not expected when row depths vary.
+        dose_ledger = LoopDoseLedger(
+            weights=[1.0] * max_loops,
+            newest_loop=max_loops,
+            newest_multiplier=1.0,
+        )
+        print(
+            "[assert-ok] per_loop_label_dose_tracking "
+            f"max_loops={max_loops} equalization_required=0",
+            flush=True,
+        )
 
     summary = {
         "setup": setup,
@@ -1079,10 +1098,12 @@ def main() -> int:
             accumulated_microbatches = 0
             completed_step = step + 1
             if dose_ledger is not None and dose_assert_every and completed_step % dose_assert_every == 0:
-                dose_ledger.assert_equalized(min_ratio=dose_ratio_min, max_ratio=dose_ratio_max)
+                if dose_requires_equalization:
+                    dose_ledger.assert_equalized(min_ratio=dose_ratio_min, max_ratio=dose_ratio_max)
                 receipt = {"step": completed_step, **dose_ledger.as_dict()}
                 summary["dose_trace"].append(receipt)
-                print(f"[assert-ok] weighted_loop_mass step={completed_step} receipt={receipt}", flush=True)
+                label = "weighted_loop_mass" if dose_requires_equalization else "per_loop_label_dose"
+                print(f"[assert-ok] {label} step={completed_step} receipt={receipt}", flush=True)
 
             if completed_step == 1 or completed_step % cfg_int(cfg, "log_every", 5) == 0:
                 bridge_weight = bridge_prelude_weight_stats(wrapper)

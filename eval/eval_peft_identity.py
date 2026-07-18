@@ -81,7 +81,11 @@ def main() -> int:
         for parameter in wrapper.parameters():
             parameter.requires_grad_(False)
         for name, parameter in wrapper.named_parameters():
-            if ".lora_a." in name or ".lora_b." in name or name.startswith("bridge."):
+            active_bridge_parameter = (
+                name.startswith("bridge.")
+                and not name.startswith("bridge.proj.")
+            )
+            if ".lora_a." in name or ".lora_b." in name or active_bridge_parameter:
                 parameter.requires_grad_(True)
         checkpoint = save_trainable_checkpoint(
             wrapper,

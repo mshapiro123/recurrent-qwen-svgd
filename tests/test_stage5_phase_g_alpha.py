@@ -58,3 +58,31 @@ def test_phase_g_resume_cache_discards_only_torn_final_record(tmp_path) -> None:
 
     assert rows == [{"id": "complete"}]
     assert cache.read_text(encoding="utf-8") == '{"id": "complete"}\n'
+
+
+def test_phase_g_k2_receipt_preserves_two_seeded_unpooled_candidates(tmp_path) -> None:
+    """The persisted receipt must retain K separate candidates and seed identities."""
+
+    cache = tmp_path / "row_cache.jsonl"
+    payload = {
+        "id": "test_d01_00000",
+        "rng": {
+            "id": "test_d01_00000",
+            "seed_base": 101,
+            "trajectory_seeds": [101, 202],
+            "temperature_seed": 101,
+        },
+        "arms": {
+            "prior": {
+                "1": {"predictions": ["A"]},
+                "2": {"predictions": ["A", "B"]},
+            }
+        },
+    }
+    cache.write_text(json.dumps(payload) + "\n", encoding="utf-8")
+
+    restored = read_resume_cache(cache)[0]
+
+    assert restored["rng"]["trajectory_seeds"] == [101, 202]
+    assert restored["arms"]["prior"]["2"]["predictions"] == ["A", "B"]
+    assert len(restored["arms"]["prior"]["2"]["predictions"]) == 2
