@@ -1,0 +1,45 @@
+{
+  "arms": [
+    "additive",
+    "film"
+  ],
+  "conditioning": "frozen true-next-symbol embedding plus pooled current loop-input state",
+  "deferred": [
+    "variational_successor",
+    "coverage",
+    "selection",
+    "per_trajectory_halting",
+    "particles",
+    "SVGD"
+  ],
+  "gates": {
+    "frozen_keeper_lineage": "exact",
+    "nondefault_branch_control": 0.85,
+    "overall_transition_control": 0.9,
+    "terminal_validity": 0.71,
+    "transition_legality": 0.95,
+    "zeroed_conditioning_identity": "exact"
+  },
+  "heldout": {
+    "groups": 32,
+    "rows": 106,
+    "transitions": 305
+  },
+  "keeper": {
+    "frozen": true,
+    "sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f"
+  },
+  "kind": "phase_g_oracle_interface_probe_preregistration",
+  "matched_arm_contract": {
+    "only_variable": "combination_rule_additive_vs_featurewise_affine",
+    "same_conditioner_parameter_count": true,
+    "same_optimizer": "AdamW",
+    "same_steps": 1500,
+    "same_training_rows": 1899,
+    "same_training_seed": 20260718
+  },
+  "objective": "per-loop commanded-chain cross entropy; no KL or stochastic latent",
+  "source_verdict": "NO-CHANNEL additive A0 ratified",
+  "status": "locked_before_training",
+  "terminal_probe": true
+}
