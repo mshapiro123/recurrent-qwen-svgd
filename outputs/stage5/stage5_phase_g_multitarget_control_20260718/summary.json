@@ -14,6 +14,114 @@
       "rows": 512
     }
   },
+  "arms": [
+    {
+      "ema_checkpoint": "outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p001/phase_g_ema_step_1000.pt",
+      "gate": {
+        "K": 1,
+        "checks": {
+          "repeated_prompt_groups": {
+            "minimum": 32,
+            "observed": 32,
+            "passed": true
+          },
+          "teacher_minus_prior_selected_target_rate": {
+            "minimum": 0.15,
+            "observed": -0.009433962264150941,
+            "passed": false
+          },
+          "teacher_minus_prior_selected_target_sign_test": {
+            "helped": 1,
+            "hurt": 2,
+            "maximum": 0.05,
+            "one_sided_p": 0.875,
+            "passed": false,
+            "tied": 103
+          },
+          "teacher_selected_target_rate": {
+            "minimum": 0.6,
+            "observed": 0.22641509433962265,
+            "passed": false
+          },
+          "teacher_switching_groups": {
+            "minimum": 24,
+            "observed": 4,
+            "passed": false
+          }
+        },
+        "gate_type": "posterior_control_before_coverage",
+        "interpretation": "posterior_target_control_not_established",
+        "kind": "phase_g_multitarget_posterior_control_gate",
+        "next_step": "close_guided_width_correction_without_coverage_rerun",
+        "reported_not_gate": {
+          "K1_validity_sanity": {
+            "posterior_minus_prior": -0.037735849056603876,
+            "posterior_teacher": 0.7452830188679245,
+            "prior": 0.7830188679245284
+          },
+          "teacher_minus_prior_group_selected_target_rate": -0.01302083333333337,
+          "validity_drop_exceeds_0p05": false
+        },
+        "status": "blocked"
+      },
+      "kl_coefficient": 0.001,
+      "label": "kl_0p001",
+      "training_summary": "outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p001/summary.json"
+    },
+    {
+      "ema_checkpoint": "outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/phase_g_ema_step_1000.pt",
+      "gate": {
+        "K": 1,
+        "checks": {
+          "repeated_prompt_groups": {
+            "minimum": 32,
+            "observed": 32,
+            "passed": true
+          },
+          "teacher_minus_prior_selected_target_rate": {
+            "minimum": 0.15,
+            "observed": 0.018867924528301883,
+            "passed": false
+          },
+          "teacher_minus_prior_selected_target_sign_test": {
+            "helped": 2,
+            "hurt": 0,
+            "maximum": 0.05,
+            "one_sided_p": 0.25,
+            "passed": false,
+            "tied": 104
+          },
+          "teacher_selected_target_rate": {
+            "minimum": 0.6,
+            "observed": 0.2358490566037736,
+            "passed": false
+          },
+          "teacher_switching_groups": {
+            "minimum": 24,
+            "observed": 4,
+            "passed": false
+          }
+        },
+        "gate_type": "posterior_control_before_coverage",
+        "interpretation": "posterior_target_control_not_established",
+        "kind": "phase_g_multitarget_posterior_control_gate",
+        "next_step": "close_guided_width_correction_without_coverage_rerun",
+        "reported_not_gate": {
+          "K1_validity_sanity": {
+            "posterior_minus_prior": 0.018867924528301883,
+            "posterior_teacher": 0.7924528301886793,
+            "prior": 0.7735849056603774
+          },
+          "teacher_minus_prior_group_selected_target_rate": 0.02604166666666663,
+          "validity_drop_exceeds_0p05": false
+        },
+        "status": "blocked"
+      },
+      "kl_coefficient": 0.0001,
+      "label": "kl_0p0001_confirmation",
+      "training_summary": "outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/summary.json"
+    }
+  ],
   "contingent_confirmation_kl_coefficient": 0.0001,
   "data": {
     "control": {
@@ -72,9 +180,57 @@
     "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_SWITCHING_GROUPS": 24,
     "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_TARGET_RATE": 0.6
   },
+  "posterior_control_gate": {
+    "K": 1,
+    "checks": {
+      "repeated_prompt_groups": {
+        "minimum": 32,
+        "observed": 32,
+        "passed": true
+      },
+      "teacher_minus_prior_selected_target_rate": {
+        "minimum": 0.15,
+        "observed": 0.018867924528301883,
+        "passed": false
+      },
+      "teacher_minus_prior_selected_target_sign_test": {
+        "helped": 2,
+        "hurt": 0,
+        "maximum": 0.05,
+        "one_sided_p": 0.25,
+        "passed": false,
+        "tied": 104
+      },
+      "teacher_selected_target_rate": {
+        "minimum": 0.6,
+        "observed": 0.2358490566037736,
+        "passed": false
+      },
+      "teacher_switching_groups": {
+        "minimum": 24,
+        "observed": 4,
+        "passed": false
+      }
+    },
+    "gate_type": "posterior_control_before_coverage",
+    "interpretation": "posterior_target_control_not_established",
+    "kind": "phase_g_multitarget_posterior_control_gate",
+    "next_step": "close_guided_width_correction_without_coverage_rerun",
+    "reported_not_gate": {
+      "K1_validity_sanity": {
+        "posterior_minus_prior": 0.018867924528301883,
+        "posterior_teacher": 0.7924528301886793,
+        "prior": 0.7735849056603774
+      },
+      "teacher_minus_prior_group_selected_target_rate": 0.02604166666666663,
+      "validity_drop_exceeds_0p05": false
+    },
+    "status": "blocked"
+  },
   "primary_kl_coefficient": 0.001,
   "run_id": "stage5_phase_g_multitarget_control_20260718",
   "sampling_policy": "base_problem_uniform",
-  "status": "started",
+  "selected_arm": null,
+  "status": "blocked_posterior_control_after_confirmation",
   "steps": 1000
 }

@@ -1,5 +1,4 @@
 {
-  "arm": "kl_0p0001_confirmation",
   "gate": {
     "K": 1,
     "checks": {
@@ -48,8 +47,7 @@
     "status": "blocked"
   },
   "kind": "stage5_phase_g_alpha_runtime_status",
-  "kl_coefficient": 0.0001,
   "stage": "posterior_control",
-  "status": "blocked",
-  "updated_at_unix": 1784400969.0613136
+  "status": "blocked_posterior_control_after_confirmation",
+  "updated_at_unix": 1784400971.7723823
 }
