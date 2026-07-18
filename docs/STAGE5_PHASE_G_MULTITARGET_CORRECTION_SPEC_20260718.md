@@ -88,3 +88,24 @@ The future GPU runner must assert the keeper checkpoint hash, require
 `--sampling_policy base_problem_uniform`, reject a curriculum without multiple
 targets per prompt, and record the posterior-control readout before interpreting
 coverage.
+
+## Gate-Lock Receipt
+
+The A0 runner does not accept posterior-control thresholds directly from the
+environment. First prepare the frozen repeated-prompt rows, then use:
+
+```powershell
+python eval/lock_phase_g_posterior_control_gate.py `
+  --control_jsonl <prepared-data>/posterior_control.jsonl `
+  --output_json <committed-gate-lock>.json `
+  --min_multi_target_groups <locked-value> `
+  --min_teacher_target_rate <locked-value> `
+  --min_teacher_prior_target_lift <locked-value> `
+  --min_teacher_prior_distinct_lift <locked-value> `
+  --max_teacher_prior_target_lift_p_value <locked-value>
+```
+
+The gate lock stores the complete control-row manifest, prompt-group and target
+cardinality structure, and all thresholds. The GPU runner requires
+`STAGE5_PHASE_G_MULTITARGET_GATE_LOCK` to point to that file, regenerates the
+control rows, and fails before training if their manifest differs.

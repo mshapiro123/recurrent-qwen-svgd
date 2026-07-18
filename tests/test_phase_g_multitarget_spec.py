@@ -4,8 +4,11 @@ import pytest
 
 from training.branching_relations_task import BranchingRelationsConfig
 from training.phase_g_multitarget_spec import (
+    assert_posterior_control_gate_lock,
     assert_multitarget_curriculum,
+    build_posterior_control_gate_lock,
     preregistration_payload,
+    required_posterior_control_thresholds,
 )
 from training.phase_g_multitarget_task import build_multitarget_rows
 
@@ -46,3 +49,25 @@ def test_multitarget_preregistration_defers_unearned_mechanisms() -> None:
     )
     assert payload["gate_order"][0] == "posterior_exact_target_control_on_repeated_prompt_holdout"
     assert "SVGD" in payload["deferred"]
+
+
+def test_posterior_control_gate_lock_binds_thresholds_to_exact_rows() -> None:
+    control_rows = rows(cap=None)
+    thresholds = {
+        "STAGE5_PHASE_G_MULTITARGET_MIN_GROUPS": 4,
+        "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_TARGET_RATE": 0.7,
+        "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_PRIOR_TARGET_LIFT": 0.2,
+        "STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_PRIOR_DISTINCT_LIFT": 0.4,
+        "STAGE5_PHASE_G_MULTITARGET_MAX_TEACHER_PRIOR_TARGET_LIFT_PVALUE": 0.05,
+    }
+    lock = build_posterior_control_gate_lock(control_rows, thresholds)
+
+    restored = assert_posterior_control_gate_lock(lock, control_rows)
+
+    assert restored == required_posterior_control_thresholds(
+        {name: str(value) for name, value in thresholds.items()}
+    )
+    changed = [dict(row) for row in control_rows]
+    changed[0]["target"] = changed[1]["target"]
+    with pytest.raises(AssertionError):
+        assert_posterior_control_gate_lock(lock, changed)

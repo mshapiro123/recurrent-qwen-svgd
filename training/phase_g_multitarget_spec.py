@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import Any, Mapping
 
+from training.branching_relations_task import row_manifest
 from training.phase_g_multitarget_task import validate_multitarget_rows
 
 
@@ -44,6 +46,76 @@ def required_posterior_control_thresholds(
             "must be in (0, 1]"
         )
     return values
+
+
+def posterior_control_surface_manifest(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Describe the exact held-out repeated-prompt surface used by the gate."""
+
+    validation = assert_multitarget_curriculum(
+        rows,
+        require_all_reachable_targets=True,
+    )
+    target_counts = Counter(int(row["target_variant_count"]) for row in rows)
+    by_problem: dict[str, int] = {}
+    for row in rows:
+        base_problem_id = str(row["base_problem_id"])
+        by_problem[base_problem_id] = by_problem.get(base_problem_id, 0) + 1
+    return {
+        "row_manifest": row_manifest(rows),
+        "base_problem_groups": validation["base_problem_groups"],
+        "groups_with_multiple_targets": validation["groups_with_multiple_targets"],
+        "target_variant_count_histogram": {
+            str(count): frequency
+            for count, frequency in sorted(Counter(by_problem.values()).items())
+        },
+        "row_target_variant_count_histogram": {
+            str(count): frequency for count, frequency in sorted(target_counts.items())
+        },
+    }
+
+
+def build_posterior_control_gate_lock(
+    rows: list[dict[str, Any]],
+    thresholds: Mapping[str, float | int],
+) -> dict[str, Any]:
+    """Create a reviewable threshold lock bound to exact frozen control rows."""
+
+    locked_thresholds = required_posterior_control_thresholds(
+        {name: str(value) for name, value in thresholds.items()}
+    )
+    return {
+        "kind": "phase_g_multitarget_posterior_control_gate_lock",
+        "status": "locked_before_multitarget_training",
+        "surface": posterior_control_surface_manifest(rows),
+        "thresholds": locked_thresholds,
+        "gate_order": [
+            "posterior_control",
+            "K1_deterministic_preservation",
+            "coverage_vs_temperature",
+            "coverage_vs_iso_compute_depth",
+        ],
+    }
+
+
+def assert_posterior_control_gate_lock(
+    gate_lock: Mapping[str, Any],
+    rows: list[dict[str, Any]],
+) -> dict[str, float | int]:
+    """Reject a gate lock that was made for a different or invalid control set."""
+
+    if gate_lock.get("kind") != "phase_g_multitarget_posterior_control_gate_lock":
+        raise AssertionError("Unexpected Phase G posterior-control gate-lock kind")
+    if gate_lock.get("status") != "locked_before_multitarget_training":
+        raise AssertionError("Phase G posterior-control gate lock is not marked pre-training")
+    actual_surface = posterior_control_surface_manifest(rows)
+    if gate_lock.get("surface") != actual_surface:
+        raise AssertionError("Phase G posterior-control rows do not match the locked surface")
+    thresholds = gate_lock.get("thresholds")
+    if not isinstance(thresholds, Mapping):
+        raise AssertionError("Phase G posterior-control gate lock lacks thresholds")
+    return required_posterior_control_thresholds(
+        {name: str(value) for name, value in thresholds.items()}
+    )
 
 
 def assert_multitarget_curriculum(

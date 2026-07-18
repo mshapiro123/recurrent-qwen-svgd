@@ -204,6 +204,9 @@ Mandatory launch assertions:
 6. Train and posterior-control base-prompt manifests differ.
 7. Existing frozen coverage/calibration rows are present with their expected
    manifests before any final coverage calculation.
+8. A committed posterior-control gate-lock receipt matches the regenerated
+   repeated-prompt control-row manifest exactly; raw environment thresholds are
+   not accepted.
 
 ### Gate A0
 

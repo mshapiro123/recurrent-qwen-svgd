@@ -22,12 +22,27 @@ if str(ROOT) not in sys.path:
 from colab import run_stage5_phase_g_alpha as alpha  # noqa: E402
 from colab.run_stage5_phase_g_multitarget_prepare import prepare_data  # noqa: E402
 from training.phase_g_multitarget_spec import (  # noqa: E402
-    required_posterior_control_thresholds,
+    assert_posterior_control_gate_lock,
 )
 
 
 def read_json(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def required_gate_lock_path(environment: dict[str, str]) -> Path:
+    raw = environment.get("STAGE5_PHASE_G_MULTITARGET_GATE_LOCK", "").strip()
+    if not raw:
+        raise RuntimeError(
+            "STAGE5_PHASE_G_MULTITARGET_GATE_LOCK must identify a committed "
+            "pre-training posterior-control gate-lock JSON"
+        )
+    path = Path(raw)
+    if not path.is_absolute():
+        path = ROOT / path
+    if not path.exists():
+        raise FileNotFoundError(f"Missing Phase G posterior-control gate lock: {path}")
+    return path
 
 
 def run(command: list[str], *, allow_blocked: bool = False) -> int:
@@ -113,7 +128,7 @@ def deterministic_control_screen(*, run_dir: Path, keeper: Path) -> Path:
 
 
 def main(run_id: str | None = None) -> int:
-    thresholds = required_posterior_control_thresholds(os.environ)
+    gate_lock_path = required_gate_lock_path(os.environ)
     run_id = run_id or os.environ.get(
         "STAGE5_PHASE_G_MULTITARGET_RUN_ID",
         "stage5_phase_g_multitarget_control_20260718",
@@ -141,7 +156,7 @@ def main(run_id: str | None = None) -> int:
         "steps": steps,
         "kl_coefficient": coefficient,
         "sampling_policy": "base_problem_uniform",
-        "locked_gate_thresholds": thresholds,
+        "gate_lock": alpha.repo_relative_text(gate_lock_path),
     }
     alpha.write_json(run_dir / "summary.json", summary)
     alpha.write_runtime_status(
@@ -150,7 +165,7 @@ def main(run_id: str | None = None) -> int:
         stage="startup",
         status="started",
         run_id=run_id,
-        locked_gate_thresholds=thresholds,
+        gate_lock=alpha.repo_relative_text(gate_lock_path),
     )
 
     keeper = alpha.restore_keeper(run_dir)
@@ -159,7 +174,18 @@ def main(run_id: str | None = None) -> int:
         raise AssertionError("Multi-target train rows do not expose multiple targets for every prompt")
     if prepared["train"]["base_question_sha256"] == prepared["control"]["base_question_sha256"]:
         raise AssertionError("Train and posterior-control prompt manifests overlap")
+    thresholds = assert_posterior_control_gate_lock(
+        read_json(gate_lock_path),
+        [
+            json.loads(line)
+            for line in (run_dir / "data" / "posterior_control.jsonl").read_text(
+                encoding="utf-8"
+            ).splitlines()
+            if line.strip()
+        ],
+    )
     summary["data"] = prepared
+    summary["locked_gate_thresholds"] = thresholds
     alpha.write_json(run_dir / "summary.json", summary)
     alpha.sync_receipts_to_drive(run_dir, drive_artifacts)
     publish_receipts(run_dir, f"Prepare Phase G multi-target control {run_id} [skip ci]")
