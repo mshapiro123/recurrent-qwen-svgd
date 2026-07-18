@@ -212,6 +212,7 @@ def posterior_target_conditioning(
     for arm in ("prior", "posterior_teacher"):
         distinct_predictions: list[float] = []
         all_variants_match: list[float] = []
+        selected_target_rates: list[float] = []
         for members in multi_target:
             first_predictions = [
                 str(cache["arms"][arm]["1"]["predictions"][0])
@@ -224,6 +225,13 @@ def posterior_target_conditioning(
             all_variants_match.append(
                 float(all(prediction == target for prediction, target in zip(first_predictions, targets)))
             )
+            selected_target_rates.append(
+                sum(
+                    prediction == target
+                    for prediction, target in zip(first_predictions, targets)
+                )
+                / len(targets)
+            )
         result[arm] = {
             "mean_distinct_first_predictions": (
                 fmean(distinct_predictions) if distinct_predictions else 0.0
@@ -231,7 +239,35 @@ def posterior_target_conditioning(
             "all_variants_match_target_rate": (
                 fmean(all_variants_match) if all_variants_match else 0.0
             ),
+            "mean_group_selected_target_rate": (
+                fmean(selected_target_rates) if selected_target_rates else 0.0
+            ),
         }
+    teacher_rates: list[float] = []
+    prior_rates: list[float] = []
+    for members in multi_target:
+        group_rates: dict[str, float] = {}
+        for arm in ("prior", "posterior_teacher"):
+            predictions = [
+                str(cache["arms"][arm]["1"]["predictions"][0])
+                if cache["arms"][arm]["1"]["predictions"]
+                else ""
+                for _, cache in members
+            ]
+            targets = [str(row["target"]) for row, _ in members]
+            group_rates[arm] = sum(
+                prediction == target for prediction, target in zip(predictions, targets)
+            ) / len(targets)
+        teacher_rates.append(group_rates["posterior_teacher"])
+        prior_rates.append(group_rates["prior"])
+    result["paired_group_selected_target_rate"] = {
+        "helped": sum(teacher > prior for teacher, prior in zip(teacher_rates, prior_rates)),
+        "hurt": sum(teacher < prior for teacher, prior in zip(teacher_rates, prior_rates)),
+        "tied": sum(teacher == prior for teacher, prior in zip(teacher_rates, prior_rates)),
+        "posterior_minus_prior_mean": (
+            fmean(teacher_rates) - fmean(prior_rates) if teacher_rates else 0.0
+        ),
+    }
     return result
 
 

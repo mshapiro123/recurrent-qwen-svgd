@@ -193,6 +193,12 @@ and target-group switching, plus a one-sided paired sign-test threshold for
 teacher-minus-prior selected-target lift. None can be selected after viewing
 the run.
 
+The independent unit for both the effect-size comparison and the paired sign
+test is the base prompt, not the target-row variant: variants sharing a table
+and prompt are correlated by construction. The scorer therefore averages
+selected-target fidelity within each prompt group before comparing posterior
+and prior.
+
 Mandatory launch assertions:
 
 1. Exact keeper checkpoint SHA-256 matches the frozen original keeper.

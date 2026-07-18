@@ -109,3 +109,7 @@ The gate lock stores the complete control-row manifest, prompt-group and target
 cardinality structure, and all thresholds. The GPU runner requires
 `STAGE5_PHASE_G_MULTITARGET_GATE_LOCK` to point to that file, regenerates the
 control rows, and fails before training if their manifest differs.
+
+The prompt group, not each target variant, is the independent statistical unit.
+The gate scorer averages selected-target fidelity within prompt group before
+calculating posterior-minus-prior effect size and its paired sign test.

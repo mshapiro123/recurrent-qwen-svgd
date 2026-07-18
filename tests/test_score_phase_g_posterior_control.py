@@ -13,21 +13,22 @@ def audit(
     hurt: int = 4,
 ) -> dict:
     return {
-        "posterior_target_fidelity": {
-            "by_k": {
-                "1": {
-                    "posterior_teacher": {"target_in_k_rate": teacher_rate},
-                    "prior": {"target_in_k_rate": prior_rate},
-                    "paired_target_in_k": {"helped": helped, "hurt": hurt, "tied": 28},
-                }
-            }
-        },
         "posterior_target_conditioning": {
             "multi_target_groups": 64,
             "posterior_teacher": {
                 "mean_distinct_first_predictions": teacher_distinct,
+                "mean_group_selected_target_rate": teacher_rate,
             },
-            "prior": {"mean_distinct_first_predictions": prior_distinct},
+            "prior": {
+                "mean_distinct_first_predictions": prior_distinct,
+                "mean_group_selected_target_rate": prior_rate,
+            },
+            "paired_group_selected_target_rate": {
+                "helped": helped,
+                "hurt": hurt,
+                "tied": 28,
+                "posterior_minus_prior_mean": teacher_rate - prior_rate,
+            },
         },
     }
 
@@ -70,4 +71,4 @@ def test_posterior_control_gate_blocks_when_lift_lacks_paired_support() -> None:
     )
 
     assert result["status"] == "blocked"
-    assert result["checks"]["teacher_minus_prior_selected_target_sign_test"]["passed"] is False
+    assert result["checks"]["teacher_minus_prior_group_selected_target_sign_test"]["passed"] is False

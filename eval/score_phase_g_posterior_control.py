@@ -51,9 +51,12 @@ def score_posterior_control(
     """
 
     conditioning = audit["posterior_target_conditioning"]
-    fidelity = audit["posterior_target_fidelity"]["by_k"]["1"]
-    teacher_target_rate = float(fidelity["posterior_teacher"]["target_in_k_rate"])
-    prior_target_rate = float(fidelity["prior"]["target_in_k_rate"])
+    teacher_target_rate = float(
+        conditioning["posterior_teacher"]["mean_group_selected_target_rate"]
+    )
+    prior_target_rate = float(
+        conditioning["prior"]["mean_group_selected_target_rate"]
+    )
     teacher_prior_target_lift = teacher_target_rate - prior_target_rate
     teacher_distinct = float(
         conditioning["posterior_teacher"]["mean_distinct_first_predictions"]
@@ -61,7 +64,7 @@ def score_posterior_control(
     prior_distinct = float(conditioning["prior"]["mean_distinct_first_predictions"])
     teacher_prior_distinct_lift = teacher_distinct - prior_distinct
     multi_target_groups = int(conditioning["multi_target_groups"])
-    paired = fidelity["paired_target_in_k"]
+    paired = conditioning["paired_group_selected_target_rate"]
     target_lift_p_value = paired_sign_test(
         helped=int(paired["helped"]),
         hurt=int(paired["hurt"]),
@@ -73,17 +76,17 @@ def score_posterior_control(
             "minimum": min_multi_target_groups,
             "passed": multi_target_groups >= min_multi_target_groups,
         },
-        "teacher_selected_target_rate": {
+        "teacher_mean_group_selected_target_rate": {
             "observed": teacher_target_rate,
             "minimum": min_teacher_target_rate,
             "passed": teacher_target_rate >= min_teacher_target_rate,
         },
-        "teacher_minus_prior_selected_target_rate": {
+        "teacher_minus_prior_mean_group_selected_target_rate": {
             "observed": teacher_prior_target_lift,
             "minimum": min_teacher_prior_target_lift,
             "passed": teacher_prior_target_lift >= min_teacher_prior_target_lift,
         },
-        "teacher_minus_prior_selected_target_sign_test": {
+        "teacher_minus_prior_group_selected_target_sign_test": {
             "helped": int(paired["helped"]),
             "hurt": int(paired["hurt"]),
             "tied": int(paired["tied"]),

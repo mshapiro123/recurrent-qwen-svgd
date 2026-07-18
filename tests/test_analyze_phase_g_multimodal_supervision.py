@@ -101,3 +101,11 @@ def test_audit_measures_posterior_control_across_same_prompt_target_variants() -
     assert control["posterior_teacher"]["mean_distinct_first_predictions"] == 2.0
     assert control["prior"]["all_variants_match_target_rate"] == 0.0
     assert control["posterior_teacher"]["all_variants_match_target_rate"] == 1.0
+    assert control["prior"]["mean_group_selected_target_rate"] == 0.5
+    assert control["posterior_teacher"]["mean_group_selected_target_rate"] == 1.0
+    assert control["paired_group_selected_target_rate"] == {
+        "helped": 1,
+        "hurt": 0,
+        "tied": 0,
+        "posterior_minus_prior_mean": 0.5,
+    }
