@@ -260,148 +260,73 @@
     {
       "by_depth": {
         "1": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
+          "mapped_final_accuracy": 1.0,
+          "mapped_final_correct": 16,
+          "same_reader_accuracy": 1.0,
+          "same_reader_clears_threshold": true,
+          "same_reader_correct": 16,
           "total": 16
         },
         "2": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
+          "mapped_final_accuracy": 1.0,
+          "mapped_final_correct": 16,
+          "same_reader_accuracy": 1.0,
+          "same_reader_clears_threshold": true,
+          "same_reader_correct": 16,
           "total": 16
         },
         "3": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
+          "mapped_final_accuracy": 0.9375,
+          "mapped_final_correct": 15,
+          "same_reader_accuracy": 0.9375,
+          "same_reader_clears_threshold": true,
+          "same_reader_correct": 15,
           "total": 16
         },
         "4": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
+          "mapped_final_accuracy": 1.0,
+          "mapped_final_correct": 16,
+          "same_reader_accuracy": 1.0,
+          "same_reader_clears_threshold": true,
+          "same_reader_correct": 16,
           "total": 16
         },
         "5": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
+          "mapped_final_accuracy": 0.9375,
+          "mapped_final_correct": 15,
+          "same_reader_accuracy": 0.9375,
+          "same_reader_clears_threshold": true,
+          "same_reader_correct": 15,
           "total": 16
         },
         "6": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
+          "mapped_final_accuracy": 0.875,
+          "mapped_final_correct": 14,
+          "same_reader_accuracy": 0.875,
+          "same_reader_clears_threshold": true,
+          "same_reader_correct": 14,
           "total": 16
         },
         "7": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
+          "mapped_final_accuracy": 0.9375,
+          "mapped_final_correct": 15,
+          "same_reader_accuracy": 0.9375,
+          "same_reader_clears_threshold": true,
+          "same_reader_correct": 15,
           "total": 16
         },
         "8": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
+          "mapped_final_accuracy": 0.5,
+          "mapped_final_correct": 8,
+          "same_reader_accuracy": 0.5,
           "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
+          "same_reader_correct": 8,
           "total": 16
         }
       },
       "same_reader_total": {
-        "accuracy": 0.0,
-        "correct": 0,
-        "total": 128
-      },
-      "step": 1000,
-      "summary": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le8_step_1000_smoke128/summary.json"
-    },
-    {
-      "by_depth": {
-        "1": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 16
-        },
-        "2": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 16
-        },
-        "3": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 16
-        },
-        "4": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 16
-        },
-        "5": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 16
-        },
-        "6": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 16
-        },
-        "7": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 16
-        },
-        "8": {
-          "mapped_final_accuracy": 0.0,
-          "mapped_final_correct": 0,
-          "same_reader_accuracy": 0.0,
-          "same_reader_clears_threshold": false,
-          "same_reader_correct": 0,
-          "total": 16
-        }
-      },
-      "same_reader_total": {
-        "accuracy": 0.0,
-        "correct": 0,
+        "accuracy": 0.8984375,
+        "correct": 115,
         "total": 128
       },
       "step": 2000,
