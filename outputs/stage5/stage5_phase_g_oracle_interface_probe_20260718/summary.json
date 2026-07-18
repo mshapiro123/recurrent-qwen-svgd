@@ -1,5 +1,12 @@
 {
-  "arms": [],
+  "arms": [
+    {
+      "checkpoint_sha256": "4d5f2cb78f8bab14c6449b4cea8d971f59ad76a661a995ae7e62e883e125235c",
+      "eval_summary": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/eval/additive/summary.json",
+      "route": "additive",
+      "training_summary": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/summary.json"
+    }
+  ],
   "automatic_successor_authorized": false,
   "bottleneck_dim": 256,
   "coverage_performed": false,
