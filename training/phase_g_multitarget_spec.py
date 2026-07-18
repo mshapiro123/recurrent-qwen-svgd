@@ -60,6 +60,20 @@ def required_posterior_control_thresholds(
     return values
 
 
+def frozen_gradient_assertion_count(training_summary: Mapping[str, Any]) -> int:
+    """Read the training-owned frozen-gradient receipt from its canonical field."""
+
+    config = training_summary.get("config")
+    if not isinstance(config, Mapping):
+        raise AssertionError("Phase G training summary lacks its config receipt")
+    value = config.get("frozen_gradient_assertions")
+    if not isinstance(value, int) or value < 0:
+        raise AssertionError(
+            "Phase G training config lacks a nonnegative frozen_gradient_assertions receipt"
+        )
+    return value
+
+
 def resolve_posterior_control_gate_lock_path(
     root: str | Path,
     raw_path: str | Path | None,

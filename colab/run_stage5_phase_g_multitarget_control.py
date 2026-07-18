@@ -29,6 +29,7 @@ from training.branching_relations_task import (  # noqa: E402
 )
 from training.phase_g_multitarget_spec import (  # noqa: E402
     assert_posterior_control_gate_lock,
+    frozen_gradient_assertion_count,
     resolve_posterior_control_gate_lock_path,
 )
 
@@ -273,7 +274,7 @@ def run_guidance_arm(
     train_summary = read_json(train_dir / "summary.json")
     if train_summary.get("config", {}).get("sampling_policy") != "base_problem_uniform":
         raise AssertionError("Phase G A0 training did not use base-problem-uniform sampling")
-    if int(train_summary.get("frozen_gradient_assertions", 0)) != steps:
+    if frozen_gradient_assertion_count(train_summary) != steps:
         raise AssertionError("Phase G A0 did not assert frozen gradients after every step")
     selected_checkpoint = alpha.resolve_repo_path(train_summary["ema_checkpoint"])
     if not selected_checkpoint.exists():

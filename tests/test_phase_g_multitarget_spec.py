@@ -7,6 +7,7 @@ from training.phase_g_multitarget_spec import (
     assert_posterior_control_gate_lock,
     assert_multitarget_curriculum,
     build_posterior_control_gate_lock,
+    frozen_gradient_assertion_count,
     preregistration_payload,
     required_posterior_control_thresholds,
     resolve_posterior_control_gate_lock_path,
@@ -83,3 +84,11 @@ def test_posterior_control_gate_lock_path_fails_before_gpu_setup(tmp_path) -> No
     lock = tmp_path / "gate.json"
     lock.write_text("{}", encoding="utf-8")
     assert resolve_posterior_control_gate_lock_path(tmp_path, "gate.json") == lock
+
+
+def test_frozen_gradient_receipt_is_read_from_the_training_config() -> None:
+    summary = {"config": {"frozen_gradient_assertions": 1000}}
+
+    assert frozen_gradient_assertion_count(summary) == 1000
+    with pytest.raises(AssertionError, match="config receipt"):
+        frozen_gradient_assertion_count({"frozen_gradient_assertions": 1000})
