@@ -5,6 +5,12 @@
       "kl_coefficient": 0.001,
       "label": "kl_0p001",
       "summary": "outputs/stage5/stage5_phase_g_forced_injection_probe_20260718/arms/kl_0p001/summary.json"
+    },
+    {
+      "guidance_checkpoint_sha256": "405cc76f972522d091d10edb77b10d278c12b63b20f6ee05fa8fd29fd6f33b1e",
+      "kl_coefficient": 0.0001,
+      "label": "kl_0p0001_confirmation",
+      "summary": "outputs/stage5/stage5_phase_g_forced_injection_probe_20260718/arms/kl_0p0001_confirmation/summary.json"
     }
   ],
   "coverage_performed": false,
