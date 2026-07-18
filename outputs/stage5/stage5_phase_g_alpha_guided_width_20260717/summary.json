@@ -16,67 +16,6 @@
       "rows": 2048
     }
   },
-  "k1_preflight": {
-    "correct": 387,
-    "expected_correct": 389,
-    "passed": true,
-    "per_cell": {
-      "d1_2": {
-        "absolute_delta": 0.0,
-        "baseline": 0.9921875,
-        "phase_g_k1": 0.9921875
-      },
-      "d2_2": {
-        "absolute_delta": 0.03125,
-        "baseline": 0.640625,
-        "phase_g_k1": 0.671875
-      },
-      "d2_3-4": {
-        "absolute_delta": 0.0,
-        "baseline": 0.84375,
-        "phase_g_k1": 0.84375
-      },
-      "d3_2": {
-        "absolute_delta": 0.0,
-        "baseline": 0.4418604651162791,
-        "phase_g_k1": 0.4418604651162791
-      },
-      "d3_3-4": {
-        "absolute_delta": 0.046511627906976716,
-        "baseline": 0.813953488372093,
-        "phase_g_k1": 0.7674418604651163
-      },
-      "d3_5-8": {
-        "absolute_delta": 0.0,
-        "baseline": 0.7857142857142857,
-        "phase_g_k1": 0.7857142857142857
-      },
-      "d4_2": {
-        "absolute_delta": 0.0,
-        "baseline": 0.34375,
-        "phase_g_k1": 0.34375
-      },
-      "d4_3-4": {
-        "absolute_delta": 0.03125,
-        "baseline": 0.46875,
-        "phase_g_k1": 0.4375
-      },
-      "d4_5-8": {
-        "absolute_delta": 0.0625,
-        "baseline": 0.75,
-        "phase_g_k1": 0.6875
-      },
-      "d4_9-16": {
-        "absolute_delta": 0.03125,
-        "baseline": 0.9375,
-        "phase_g_k1": 0.96875
-      }
-    },
-    "per_cell_tolerance": 0.08,
-    "pooled_absolute_delta": 0.00390625,
-    "pooled_tolerance": 0.03,
-    "total": 512
-  },
   "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
   "kind": "stage5_phase_g_alpha_session",
   "kl_coefficients": [
@@ -104,6 +43,7 @@
     }
   },
   "run_id": "stage5_phase_g_alpha_guided_width_20260717",
-  "status": "k1_parity_passed",
-  "steps_per_arm": 1000
+  "status": "margin_locked",
+  "steps_per_arm": 1000,
+  "trajectory_microbatch_size": 0
 }
