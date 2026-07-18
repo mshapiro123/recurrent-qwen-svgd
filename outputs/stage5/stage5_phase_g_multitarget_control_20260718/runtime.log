@@ -229,3 +229,219 @@ phase_g_progress_saved step=1000 path=/content/recurrent-qwen-svgd/outputs/stage
   "status": "finished",
   "training_trace": "outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p001/training_trace.jsonl"
 }
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 4861.50it/s]
+bridge_projection_mode=split
+lora_recurrent_modules=0
+loaded_checkpoint=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/restored/natural_step2000.pt loaded_keys=152
+phase_g_eval_progress row=1/106 depth=1
+phase_g_eval_progress row=16/106 depth=1
+phase_g_eval_progress row=32/106 depth=2
+phase_g_eval_progress row=48/106 depth=3
+phase_g_eval_progress row=64/106 depth=3
+phase_g_eval_progress row=80/106 depth=4
+phase_g_eval_progress row=96/106 depth=4
+phase_g_eval_progress row=106/106 depth=4
+{
+  "active_lineage_sha256": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+  "amortization_gap": {
+    "K": 1,
+    "posterior_minus_prior_mean_coverage": -0.012578616352201257
+  },
+  "comparisons": {},
+  "guidance_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p001/phase_g_ema_step_1000.pt",
+  "k1_parity_gate": {
+    "passed": null,
+    "reason": "This control surface intentionally repeats each prompt with different selected valid targets; it is not comparable to the frozen single-target deterministic K=1 baseline.",
+    "status": "not_applicable_repeated_prompt_posterior_control"
+  },
+  "keeper": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/restored/natural_step2000.pt",
+  "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+  "kind": "phase_g_alpha_coverage",
+  "locked_coverage_margin": 0.05,
+  "sample_counts": [
+    1
+  ],
+  "status": "finished",
+  "summaries": {
+    "posterior_teacher": {
+      "1": {
+        "by_depth": {
+          "1": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.5,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 1.0,
+            "rows": 16,
+            "valid_sample_rate": 1.0
+          },
+          "2": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.25757575757575757,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.7727272727272727,
+            "rows": 22,
+            "valid_sample_rate": 0.7727272727272727
+          },
+          "3": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.20987654320987656,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.8148148148148148,
+            "rows": 27,
+            "valid_sample_rate": 0.8148148148148148
+          },
+          "4": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.0975609756097561,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.5853658536585366,
+            "rows": 41,
+            "valid_sample_rate": 0.5853658536585366
+          }
+        },
+        "by_reachable_set_stratum": {
+          "2": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.35294117647058826,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.7058823529411765,
+            "rows": 34,
+            "valid_sample_rate": 0.7058823529411765
+          },
+          "3-4": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.23655913978494622,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.8064516129032258,
+            "rows": 31,
+            "valid_sample_rate": 0.8064516129032258
+          },
+          "5-8": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.09090909090909091,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.5,
+            "rows": 22,
+            "valid_sample_rate": 0.5
+          },
+          "9-16": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.10526315789473684,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 1.0,
+            "rows": 19,
+            "valid_sample_rate": 1.0
+          }
+        },
+        "overall": {
+          "full_coverage_rate": 0.0,
+          "mean_coverage": 0.220125786163522,
+          "mean_duplicate_rate": 0.0,
+          "mean_unique_valid": 0.7452830188679245,
+          "rows": 106,
+          "valid_sample_rate": 0.7452830188679245
+        }
+      }
+    },
+    "prior": {
+      "1": {
+        "by_depth": {
+          "1": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.5,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 1.0,
+            "rows": 16,
+            "valid_sample_rate": 1.0
+          },
+          "2": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.28030303030303033,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.8181818181818182,
+            "rows": 22,
+            "valid_sample_rate": 0.8181818181818182
+          },
+          "3": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.2222222222222222,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.8518518518518519,
+            "rows": 27,
+            "valid_sample_rate": 0.8518518518518519
+          },
+          "4": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.10975609756097561,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.6341463414634146,
+            "rows": 41,
+            "valid_sample_rate": 0.6341463414634146
+          }
+        },
+        "by_reachable_set_stratum": {
+          "2": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.36764705882352944,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.7352941176470589,
+            "rows": 34,
+            "valid_sample_rate": 0.7352941176470589
+          },
+          "3-4": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.26344086021505375,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.9032258064516129,
+            "rows": 31,
+            "valid_sample_rate": 0.9032258064516129
+          },
+          "5-8": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.09090909090909091,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.5,
+            "rows": 22,
+            "valid_sample_rate": 0.5
+          },
+          "9-16": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.10526315789473684,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 1.0,
+            "rows": 19,
+            "valid_sample_rate": 1.0
+          }
+        },
+        "overall": {
+          "full_coverage_rate": 0.0,
+          "mean_coverage": 0.23270440251572327,
+          "mean_duplicate_rate": 0.0,
+          "mean_unique_valid": 0.7830188679245284,
+          "rows": 106,
+          "valid_sample_rate": 0.7830188679245284
+        }
+      }
+    }
+  },
+  "temperature_match": null,
+  "verdict": "partial_readout_no_final_verdict"
+}
+Traceback (most recent call last):
+  File "/content/recurrent-qwen-svgd/eval/analyze_phase_g_multimodal_supervision.py", line 385, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/content/recurrent-qwen-svgd/eval/analyze_phase_g_multimodal_supervision.py", line 366, in main
+    summary = analyze(
+              ^^^^^^^^
+  File "/content/recurrent-qwen-svgd/eval/analyze_phase_g_multimodal_supervision.py", line 295, in analyze
+    fidelity = posterior_target_fidelity(test_rows, cache_rows)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/recurrent-qwen-svgd/eval/analyze_phase_g_multimodal_supervision.py", line 163, in posterior_target_fidelity
+    _fidelity_row(row, cache, arm=arm, count=count)
+  File "/content/recurrent-qwen-svgd/eval/analyze_phase_g_multimodal_supervision.py", line 114, in _fidelity_row
+    "validity": bool(cached_arm.get("valid_samples", [False])[0]),
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
+TypeError: 'int' object is not subscriptable

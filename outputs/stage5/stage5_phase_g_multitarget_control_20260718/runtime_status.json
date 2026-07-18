@@ -1,9 +1,8 @@
 {
-  "arm": "kl_0p001",
+  "gate_lock": "docs/STAGE5_PHASE_G_A0_MARGIN_LOCK_20260718.json",
   "kind": "stage5_phase_g_alpha_runtime_status",
-  "kl_coefficient": 0.001,
-  "resume_state": "local_complete",
-  "stage": "training",
-  "status": "resume_preflight",
-  "updated_at_unix": 1784399713.8667169
+  "run_id": "stage5_phase_g_multitarget_control_20260718",
+  "stage": "startup",
+  "status": "started",
+  "updated_at_unix": 1784400562.6174672
 }
