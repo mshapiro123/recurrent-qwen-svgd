@@ -9,6 +9,7 @@ from training.phase_g_multitarget_spec import (
     build_posterior_control_gate_lock,
     preregistration_payload,
     required_posterior_control_thresholds,
+    resolve_posterior_control_gate_lock_path,
 )
 from training.phase_g_multitarget_task import build_multitarget_rows
 
@@ -71,3 +72,14 @@ def test_posterior_control_gate_lock_binds_thresholds_to_exact_rows() -> None:
     changed[0]["target"] = changed[1]["target"]
     with pytest.raises(AssertionError):
         assert_posterior_control_gate_lock(lock, changed)
+
+
+def test_posterior_control_gate_lock_path_fails_before_gpu_setup(tmp_path) -> None:
+    with pytest.raises(RuntimeError, match="GATE_LOCK"):
+        resolve_posterior_control_gate_lock_path(tmp_path, None)
+    with pytest.raises(FileNotFoundError, match="Missing Phase G"):
+        resolve_posterior_control_gate_lock_path(tmp_path, "missing.json")
+
+    lock = tmp_path / "gate.json"
+    lock.write_text("{}", encoding="utf-8")
+    assert resolve_posterior_control_gate_lock_path(tmp_path, "gate.json") == lock

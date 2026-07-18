@@ -23,26 +23,12 @@ from colab import run_stage5_phase_g_alpha as alpha  # noqa: E402
 from colab.run_stage5_phase_g_multitarget_prepare import prepare_data  # noqa: E402
 from training.phase_g_multitarget_spec import (  # noqa: E402
     assert_posterior_control_gate_lock,
+    resolve_posterior_control_gate_lock_path,
 )
 
 
 def read_json(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
-
-
-def required_gate_lock_path(environment: dict[str, str]) -> Path:
-    raw = environment.get("STAGE5_PHASE_G_MULTITARGET_GATE_LOCK", "").strip()
-    if not raw:
-        raise RuntimeError(
-            "STAGE5_PHASE_G_MULTITARGET_GATE_LOCK must identify a committed "
-            "pre-training posterior-control gate-lock JSON"
-        )
-    path = Path(raw)
-    if not path.is_absolute():
-        path = ROOT / path
-    if not path.exists():
-        raise FileNotFoundError(f"Missing Phase G posterior-control gate lock: {path}")
-    return path
 
 
 def run(command: list[str], *, allow_blocked: bool = False) -> int:
@@ -128,7 +114,10 @@ def deterministic_control_screen(*, run_dir: Path, keeper: Path) -> Path:
 
 
 def main(run_id: str | None = None) -> int:
-    gate_lock_path = required_gate_lock_path(os.environ)
+    gate_lock_path = resolve_posterior_control_gate_lock_path(
+        ROOT,
+        os.environ.get("STAGE5_PHASE_G_MULTITARGET_GATE_LOCK"),
+    )
     run_id = run_id or os.environ.get(
         "STAGE5_PHASE_G_MULTITARGET_RUN_ID",
         "stage5_phase_g_multitarget_control_20260718",

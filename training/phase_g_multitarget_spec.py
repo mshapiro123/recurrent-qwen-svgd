@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from pathlib import Path
 from typing import Any, Mapping
 
 from training.branching_relations_task import row_manifest
@@ -46,6 +47,26 @@ def required_posterior_control_thresholds(
             "must be in (0, 1]"
         )
     return values
+
+
+def resolve_posterior_control_gate_lock_path(
+    root: str | Path,
+    raw_path: str | Path | None,
+) -> Path:
+    """Resolve the required gate-lock receipt before any GPU setup begins."""
+
+    if raw_path is None or not str(raw_path).strip():
+        raise RuntimeError(
+            "STAGE5_PHASE_G_MULTITARGET_GATE_LOCK must identify a committed "
+            "pre-training posterior-control gate-lock JSON"
+        )
+    root = Path(root)
+    path = Path(raw_path)
+    if not path.is_absolute():
+        path = root / path
+    if not path.exists():
+        raise FileNotFoundError(f"Missing Phase G posterior-control gate lock: {path}")
+    return path
 
 
 def posterior_control_surface_manifest(rows: list[dict[str, Any]]) -> dict[str, Any]:
