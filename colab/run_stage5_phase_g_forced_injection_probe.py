@@ -265,6 +265,10 @@ def main() -> int:
             str(gate_path.relative_to(ROOT)),
             "--output_md",
             str(gate_md.relative_to(ROOT)),
+            "--run_summary",
+            str((run_dir / "summary.json").relative_to(ROOT)),
+            "--runtime_status_json",
+            str((run_dir / "runtime_status.json").relative_to(ROOT)),
         ],
         allow_blocked=True,
     )
@@ -308,4 +312,3 @@ def guarded_main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(guarded_main())
-

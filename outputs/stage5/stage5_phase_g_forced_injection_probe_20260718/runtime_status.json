@@ -1,7 +1,7 @@
 {
-  "kind": "stage5_phase_g_alpha_runtime_status",
-  "run_id": "stage5_phase_g_forced_injection_probe_20260718",
-  "stage": "startup",
-  "status": "started",
-  "updated_at_unix": 1784405070.843998
+  "authorization": "closed",
+  "kind": "stage5_phase_g_forced_injection_runtime_status",
+  "measured_verdict": "NO-CHANNEL",
+  "stage": "forced_injection_gate",
+  "status": "blocked_no_authorized_successor"
 }

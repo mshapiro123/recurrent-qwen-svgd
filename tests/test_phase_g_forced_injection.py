@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from training.phase_g_forced_injection_spec import (
     LOCKED_INJECTION_FACTORS,
     score_forced_injection_probe,
@@ -70,6 +72,22 @@ def test_intermediate_outcome_is_ambiguous_and_closed_by_default() -> None:
 
     assert result["measured_verdict"] == "AMBIGUOUS"
     assert result["authorization"] == "closed_by_default"
+
+
+def test_scoring_is_independent_of_json_key_sort_order() -> None:
+    quiet = [(4, 0.75)] * 5
+    arms = [
+        arm("kl_0p001", quiet),
+        arm("kl_0p0001_confirmation", quiet),
+    ]
+    round_tripped = json.loads(json.dumps(arms, sort_keys=True))
+
+    result = score_forced_injection_probe(round_tripped)
+
+    assert result["measured_verdict"] == "NO-CHANNEL"
+    assert [point["factor"] for point in result["points"][:5]] == list(
+        LOCKED_INJECTION_FACTORS
+    )
 
 
 def test_factor_summary_counts_switching_fidelity_and_validity() -> None:

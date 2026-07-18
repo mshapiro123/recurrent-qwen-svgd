@@ -1,0 +1,105 @@
+{
+  "arm_summaries": [
+    "outputs/stage5/stage5_phase_g_forced_injection_probe_20260718/arms/kl_0p001/summary.json",
+    "outputs/stage5/stage5_phase_g_forced_injection_probe_20260718/arms/kl_0p0001_confirmation/summary.json"
+  ],
+  "authorization": "closed",
+  "channel_qualifying_points": [],
+  "high_switching_points": [
+    {
+      "K1_validity": 0.4339622641509434,
+      "arm": "kl_0p001",
+      "factor": 100.0,
+      "selected_target_fidelity": 0.1320754716981132,
+      "switching_groups": 22
+    }
+  ],
+  "kind": "phase_g_forced_injection_causal_probe_gate",
+  "locked_rule": {
+    "ambiguous": "all intermediate outcomes; closed by default",
+    "channel_exists": "switching_groups >= 16 at any factor and K1_validity > 0.50",
+    "factors": [
+      1.0,
+      3.0,
+      10.0,
+      30.0,
+      100.0
+    ],
+    "no_channel": "switching_groups < 8 at every factor, or switching reaches 16 only while K1_validity < 0.50"
+  },
+  "measured_verdict": "NO-CHANNEL",
+  "next_step": "additive_reentry_injection_closed; any_successor_must_change_conditioning_route",
+  "points": [
+    {
+      "K1_validity": 0.7452830188679245,
+      "arm": "kl_0p001",
+      "factor": 1.0,
+      "selected_target_fidelity": 0.22641509433962265,
+      "switching_groups": 4
+    },
+    {
+      "K1_validity": 0.7547169811320755,
+      "arm": "kl_0p001",
+      "factor": 3.0,
+      "selected_target_fidelity": 0.22641509433962265,
+      "switching_groups": 3
+    },
+    {
+      "K1_validity": 0.7075471698113207,
+      "arm": "kl_0p001",
+      "factor": 10.0,
+      "selected_target_fidelity": 0.20754716981132076,
+      "switching_groups": 5
+    },
+    {
+      "K1_validity": 0.6320754716981132,
+      "arm": "kl_0p001",
+      "factor": 30.0,
+      "selected_target_fidelity": 0.1792452830188679,
+      "switching_groups": 15
+    },
+    {
+      "K1_validity": 0.4339622641509434,
+      "arm": "kl_0p001",
+      "factor": 100.0,
+      "selected_target_fidelity": 0.1320754716981132,
+      "switching_groups": 22
+    },
+    {
+      "K1_validity": 0.7924528301886793,
+      "arm": "kl_0p0001_confirmation",
+      "factor": 1.0,
+      "selected_target_fidelity": 0.2358490566037736,
+      "switching_groups": 4
+    },
+    {
+      "K1_validity": 0.7358490566037735,
+      "arm": "kl_0p0001_confirmation",
+      "factor": 3.0,
+      "selected_target_fidelity": 0.2358490566037736,
+      "switching_groups": 4
+    },
+    {
+      "K1_validity": 0.7169811320754716,
+      "arm": "kl_0p0001_confirmation",
+      "factor": 10.0,
+      "selected_target_fidelity": 0.2169811320754717,
+      "switching_groups": 4
+    },
+    {
+      "K1_validity": 0.6320754716981132,
+      "arm": "kl_0p0001_confirmation",
+      "factor": 30.0,
+      "selected_target_fidelity": 0.16037735849056603,
+      "switching_groups": 9
+    },
+    {
+      "K1_validity": 0.46226415094339623,
+      "arm": "kl_0p0001_confirmation",
+      "factor": 100.0,
+      "selected_target_fidelity": 0.10377358490566038,
+      "switching_groups": 13
+    }
+  ],
+  "status": "blocked_no_authorized_successor"
+}

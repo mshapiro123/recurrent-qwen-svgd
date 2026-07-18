@@ -68,14 +68,16 @@ def _factor_points(arms: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
     points: list[dict[str, Any]] = []
     for arm in arms:
         label = str(arm["label"])
-        factors = dict(arm["factors"])
-        if tuple(float(value) for value in factors) != LOCKED_INJECTION_FACTORS:
-            raise AssertionError("Every arm must contain the locked factors in order")
-        for factor, metrics in factors.items():
+        raw_factors = dict(arm["factors"])
+        factors = {float(value): metrics for value, metrics in raw_factors.items()}
+        if set(factors) != set(LOCKED_INJECTION_FACTORS):
+            raise AssertionError("Every arm must contain exactly the locked factors")
+        for factor in LOCKED_INJECTION_FACTORS:
+            metrics = factors[factor]
             points.append(
                 {
                     "arm": label,
-                    "factor": float(factor),
+                    "factor": factor,
                     "switching_groups": int(metrics["switching_groups"]),
                     "K1_validity": float(metrics["K1_validity"]),
                     "selected_target_fidelity": float(

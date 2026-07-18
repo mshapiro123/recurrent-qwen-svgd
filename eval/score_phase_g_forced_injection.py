@@ -24,6 +24,8 @@ def main() -> int:
     parser.add_argument("--arm_summaries", nargs=2, required=True)
     parser.add_argument("--output_json", required=True)
     parser.add_argument("--output_md", required=True)
+    parser.add_argument("--run_summary")
+    parser.add_argument("--runtime_status_json")
     args = parser.parse_args()
 
     arms = [read_json(path) for path in args.arm_summaries]
@@ -34,7 +36,7 @@ def main() -> int:
     if any(not arm.get("frozen_lineage_unchanged") for arm in arms):
         raise AssertionError("Both arms must preserve the frozen keeper lineage")
     result = score_forced_injection_probe(arms)
-    result["arms"] = arms
+    result["arm_summaries"] = list(args.arm_summaries)
 
     output_json = Path(args.output_json)
     output_json.parent.mkdir(parents=True, exist_ok=True)
@@ -69,6 +71,30 @@ def main() -> int:
         ]
     )
     Path(args.output_md).write_text("\n".join(lines), encoding="utf-8")
+    if args.run_summary:
+        run_summary = read_json(args.run_summary)
+        run_summary["gate"] = result
+        run_summary["status"] = result["status"]
+        run_summary["training_performed"] = False
+        run_summary["coverage_performed"] = False
+        Path(args.run_summary).write_text(
+            json.dumps(run_summary, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+    if args.runtime_status_json:
+        runtime_status = {
+            "kind": "stage5_phase_g_forced_injection_runtime_status",
+            "stage": "forced_injection_gate",
+            "status": result["status"],
+            "measured_verdict": result["measured_verdict"],
+            "authorization": result["authorization"],
+        }
+        runtime_path = Path(args.runtime_status_json)
+        runtime_path.parent.mkdir(parents=True, exist_ok=True)
+        runtime_path.write_text(
+            json.dumps(runtime_status, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
     print(json.dumps(result, indent=2, sort_keys=True), flush=True)
     return 0 if result["measured_verdict"] == "CHANNEL-EXISTS" else 2
 
