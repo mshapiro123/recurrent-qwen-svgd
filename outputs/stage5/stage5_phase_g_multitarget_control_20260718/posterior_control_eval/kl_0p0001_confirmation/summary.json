@@ -1,0 +1,186 @@
+{
+  "active_lineage_sha256": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+  "amortization_gap": {
+    "K": 1,
+    "posterior_minus_prior_mean_coverage": 0.007861635220125786
+  },
+  "comparisons": {},
+  "guidance_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/phase_g_ema_step_1000.pt",
+  "k1_parity_gate": {
+    "passed": null,
+    "reason": "This control surface intentionally repeats each prompt with different selected valid targets; it is not comparable to the frozen single-target deterministic K=1 baseline.",
+    "status": "not_applicable_repeated_prompt_posterior_control"
+  },
+  "keeper": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/restored/natural_step2000.pt",
+  "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+  "kind": "phase_g_alpha_coverage",
+  "locked_coverage_margin": 0.05,
+  "sample_counts": [
+    1
+  ],
+  "status": "finished",
+  "summaries": {
+    "posterior_teacher": {
+      "1": {
+        "by_depth": {
+          "1": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.5,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 1.0,
+            "rows": 16,
+            "valid_sample_rate": 1.0
+          },
+          "2": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.29545454545454547,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.8636363636363636,
+            "rows": 22,
+            "valid_sample_rate": 0.8636363636363636
+          },
+          "3": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.2222222222222222,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.8518518518518519,
+            "rows": 27,
+            "valid_sample_rate": 0.8518518518518519
+          },
+          "4": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.10772357723577236,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.6341463414634146,
+            "rows": 41,
+            "valid_sample_rate": 0.6341463414634146
+          }
+        },
+        "by_reachable_set_stratum": {
+          "2": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.36764705882352944,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.7352941176470589,
+            "rows": 34,
+            "valid_sample_rate": 0.7352941176470589
+          },
+          "3-4": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.2661290322580645,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.9032258064516129,
+            "rows": 31,
+            "valid_sample_rate": 0.9032258064516129
+          },
+          "5-8": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.09848484848484848,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.5454545454545454,
+            "rows": 22,
+            "valid_sample_rate": 0.5454545454545454
+          },
+          "9-16": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.10526315789473684,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 1.0,
+            "rows": 19,
+            "valid_sample_rate": 1.0
+          }
+        },
+        "overall": {
+          "full_coverage_rate": 0.0,
+          "mean_coverage": 0.235062893081761,
+          "mean_duplicate_rate": 0.0,
+          "mean_unique_valid": 0.7924528301886793,
+          "rows": 106,
+          "valid_sample_rate": 0.7924528301886793
+        }
+      }
+    },
+    "prior": {
+      "1": {
+        "by_depth": {
+          "1": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.5,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 1.0,
+            "rows": 16,
+            "valid_sample_rate": 1.0
+          },
+          "2": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.2727272727272727,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.8181818181818182,
+            "rows": 22,
+            "valid_sample_rate": 0.8181818181818182
+          },
+          "3": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.20987654320987656,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.8148148148148148,
+            "rows": 27,
+            "valid_sample_rate": 0.8148148148148148
+          },
+          "4": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.10772357723577236,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.6341463414634146,
+            "rows": 41,
+            "valid_sample_rate": 0.6341463414634146
+          }
+        },
+        "by_reachable_set_stratum": {
+          "2": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.35294117647058826,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.7058823529411765,
+            "rows": 34,
+            "valid_sample_rate": 0.7058823529411765
+          },
+          "3-4": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.2553763440860215,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.8709677419354839,
+            "rows": 31,
+            "valid_sample_rate": 0.8709677419354839
+          },
+          "5-8": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.09848484848484848,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 0.5454545454545454,
+            "rows": 22,
+            "valid_sample_rate": 0.5454545454545454
+          },
+          "9-16": {
+            "full_coverage_rate": 0.0,
+            "mean_coverage": 0.10526315789473684,
+            "mean_duplicate_rate": 0.0,
+            "mean_unique_valid": 1.0,
+            "rows": 19,
+            "valid_sample_rate": 1.0
+          }
+        },
+        "overall": {
+          "full_coverage_rate": 0.0,
+          "mean_coverage": 0.2272012578616352,
+          "mean_duplicate_rate": 0.0,
+          "mean_unique_valid": 0.7735849056603774,
+          "rows": 106,
+          "valid_sample_rate": 0.7735849056603774
+        }
+      }
+    }
+  },
+  "temperature_match": null,
+  "verdict": "partial_readout_no_final_verdict"
+}

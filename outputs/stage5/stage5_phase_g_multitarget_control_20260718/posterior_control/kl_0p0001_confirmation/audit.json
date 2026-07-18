@@ -1,0 +1,73 @@
+{
+  "curriculum_exposure": {
+    "groups_with_multiple_targets": 512,
+    "groups_with_repeated_prompt": 512,
+    "max_distinct_targets_per_problem": 16,
+    "mean_target_support_fraction": 1.0,
+    "multi_target_row_fraction": 1.0,
+    "problem_groups": 512,
+    "repeated_prompt_row_fraction": 1.0,
+    "rows": 1899,
+    "rows_in_multi_target_groups": 1899,
+    "rows_in_repeated_prompt_groups": 1899
+  },
+  "interpretation": "posterior_not_materially_target_selective",
+  "kind": "phase_g_multimodal_supervision_audit",
+  "posterior_target_conditioning": {
+    "K1_validity_sanity": {
+      "posterior_minus_prior": 0.018867924528301883,
+      "posterior_teacher": 0.7924528301886793,
+      "prior": 0.7735849056603774
+    },
+    "multi_target_groups": 32,
+    "paired_group_selected_target_rate": {
+      "helped": 2,
+      "hurt": 0,
+      "posterior_minus_prior_mean": 0.02604166666666663,
+      "tied": 30
+    },
+    "posterior_teacher": {
+      "all_variants_match_target_rate": 0.0,
+      "groups_with_at_least_two_first_predictions": 4,
+      "mean_distinct_first_predictions": 1.15625,
+      "mean_group_selected_target_rate": 0.29670138888888886
+    },
+    "prior": {
+      "all_variants_match_target_rate": 0.0,
+      "groups_with_at_least_two_first_predictions": 4,
+      "mean_distinct_first_predictions": 1.15625,
+      "mean_group_selected_target_rate": 0.27065972222222223
+    },
+    "status": "measured"
+  },
+  "posterior_target_fidelity": {
+    "by_k": {
+      "1": {
+        "paired_target_in_k": {
+          "helped": 2,
+          "hurt": 0,
+          "tied": 104
+        },
+        "posterior_minus_prior_target_in_k": 0.018867924528301883,
+        "posterior_teacher": {
+          "first_target_rate": 0.2358490566037736,
+          "mean_target_sample_rate": 0.2358490566037736,
+          "rows": 106,
+          "target_in_k_rate": 0.2358490566037736,
+          "validity_rate": 0.7924528301886793
+        },
+        "prior": {
+          "first_target_rate": 0.2169811320754717,
+          "mean_target_sample_rate": 0.2169811320754717,
+          "rows": 106,
+          "target_in_k_rate": 0.2169811320754717,
+          "validity_rate": 0.7735849056603774
+        }
+      }
+    },
+    "sample_counts": [
+      1
+    ]
+  },
+  "status": "finished"
+}
