@@ -105,6 +105,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "phase_g_experiment1" - deterministic injective/abductive gates plus matched-K answer sampling.
 #   "phase_g_alpha" - frozen-substrate guided stochastic transition KL sweep and exact coverage gate.
 #   "phase_g_multitarget_control" - locked repeated-prompt posterior-control A0 gate.
+#   "phase_g_forced_injection_probe" - eval-only A0 posterior-residual causal magnitude probe.
 #   "phase_g_injective_curriculum_recovery" - continue the fixed-boundary injective checkpoint with a 2-to-8 loop curriculum.
 #   "phase_g_curriculum_autopsy" - read-only train/held-out loop matrix and curriculum-construction audit.
 #   "inverse_composition_staircase" - matched forward/inverse-table staircase with weighted loop-dose gates.
@@ -2721,6 +2722,24 @@ TARGETS = {
             "STAGE5_PHASE_G_MULTITARGET_SEED": "20260718",
             "STAGE5_PHASE_G_MULTITARGET_CHECKPOINT_EVERY": "100",
             "STAGE5_PHASE_G_MULTITARGET_DISCONNECT": "0",
+        },
+    },
+    "phase_g_forced_injection_probe": {
+        "path": "colab/STAGE5_PHASE_G_FORCED_INJECTION_PROBE_CELL.py",
+        "markers": [
+            "STAGE5_PHASE_G_FORCED_INJECTION_PROBE_CELL_VERSION",
+            "eval/eval_phase_g_forced_injection.py",
+            "STAGE5_PHASE_G_FORCED_INJECTION_FACTORS=1,3,10,30,100",
+            "CHANNEL-EXISTS switching >=16/32 K1 validity >0.50",
+            "NO-CHANNEL switching <8/32",
+            "factor_1_exact_equivalence",
+            "frozen_lineage_unchanged",
+            "tests/test_phase_g_forced_injection.py",
+        ],
+        "env": {
+            "STAGE5_PHASE_G_FORCED_INJECTION_FACTORS": "1,3,10,30,100",
+            "STAGE5_PHASE_G_FORCED_INJECTION_DTYPE": "bfloat16",
+            "STAGE5_PHASE_G_FORCED_INJECTION_DISCONNECT": "0",
         },
     },
     "phase_a_dense_full": {

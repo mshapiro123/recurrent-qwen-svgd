@@ -24,6 +24,51 @@ def test_guidance_uses_only_prior_at_inference_and_distinct_seed_streams() -> No
     assert not torch.equal(first.latent_samples[0], first.latent_samples[1])
 
 
+def test_guidance_factor_one_is_identity_and_multiplier_scales_only_residual() -> None:
+    guidance = PhaseGGuidance(
+        hidden_dim=8,
+        latent_dim=3,
+        projection_seed=19,
+        injection_scale_init=0.1,
+    ).eval()
+    states = torch.randn(2, 4, 8)
+    mask = torch.ones(2, 4, dtype=torch.long)
+
+    default = guidance(states, mask, trajectory_seeds=[101, 202])
+    factor_one = guidance(
+        states,
+        mask,
+        trajectory_seeds=[101, 202],
+        injection_multiplier=1.0,
+    )
+    factor_three = guidance(
+        states,
+        mask,
+        trajectory_seeds=[101, 202],
+        injection_multiplier=3.0,
+    )
+
+    assert torch.equal(default.injected_states, factor_one.injected_states)
+    assert torch.equal(default.latent_samples, factor_three.latent_samples)
+    assert torch.allclose(factor_three.injection_scale, 3.0 * default.injection_scale)
+    assert torch.allclose(
+        factor_three.injected_states - states,
+        3.0 * (default.injected_states - states),
+        atol=1e-6,
+    )
+
+
+@pytest.mark.parametrize("multiplier", [0.0, -1.0, float("inf"), float("nan")])
+def test_guidance_refuses_invalid_injection_multiplier(multiplier: float) -> None:
+    guidance = PhaseGGuidance(hidden_dim=8, latent_dim=3).eval()
+    with pytest.raises(ValueError, match="finite and positive"):
+        guidance(
+            torch.randn(1, 2, 8),
+            None,
+            injection_multiplier=multiplier,
+        )
+
+
 def test_posterior_conditioning_is_structurally_unreachable_at_inference() -> None:
     guidance = PhaseGGuidance(hidden_dim=8, latent_dim=3).eval()
     states = torch.randn(1, 4, 8)

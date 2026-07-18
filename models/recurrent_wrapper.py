@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import inspect
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
@@ -246,6 +247,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         posterior_targets: Optional[torch.Tensor],
         use_posterior: bool,
         trajectory_seeds: list[int],
+        injection_multiplier: float = 1.0,
     ) -> tuple[
         torch.Tensor,
         DiagonalGaussian,
@@ -277,7 +279,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         scale = F.softplus(self.phase_g_injection_scale).to(
             device=samples.device,
             dtype=samples.dtype,
-        )
+        ) * float(injection_multiplier)
         delta = (samples @ projection.transpose(0, 1)).unsqueeze(1)
         injected_delta = scale * delta
         injection_ratio = (
@@ -397,6 +399,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         phase_g_use_posterior: bool = False,
         phase_g_posterior_targets: Optional[torch.Tensor] = None,
         phase_g_trajectory_seeds: Optional[list[int]] = None,
+        phase_g_injection_multiplier: float = 1.0,
         phase_g_kl_balance: float = 0.8,
         phase_g_kl_coefficient: float = 0.0,
         logits_to_keep: int | torch.Tensor = 0,
@@ -469,6 +472,11 @@ class RecurrentQwenForCausalLM(nn.Module):
             raise RuntimeError("Phase G posterior targets are forbidden at inference")
         if phase_g_use_posterior and phase_g_posterior_targets is None:
             raise ValueError("phase_g_use_posterior requires phase_g_posterior_targets")
+        if (
+            not math.isfinite(float(phase_g_injection_multiplier))
+            or float(phase_g_injection_multiplier) <= 0.0
+        ):
+            raise ValueError("phase_g_injection_multiplier must be finite and positive")
         if not 0.0 <= float(phase_g_kl_balance) <= 1.0:
             raise ValueError("phase_g_kl_balance must be in [0, 1]")
 
@@ -665,6 +673,7 @@ class RecurrentQwenForCausalLM(nn.Module):
                     posterior_targets=targets,
                     use_posterior=phase_g_use_posterior,
                     trajectory_seeds=loop_seeds,
+                    injection_multiplier=phase_g_injection_multiplier,
                 )
                 phase_g_prior_logvars.append(prior.logvar)
                 phase_g_scales.append(phase_g_scale)

@@ -128,6 +128,7 @@ def phase_g_predictions(
     seed_base: int,
     posterior_teacher: bool,
     device: str,
+    injection_multiplier: float = 1.0,
 ) -> tuple[list[str], dict[str, float]]:
     prompt = prompt_for_row(row, prediction_space="full_symbols", prompt_style="question_only")
     candidates = candidates_for_row(row, prediction_space="full_symbols", value_prefix="name:")
@@ -160,6 +161,7 @@ def phase_g_predictions(
             phase_g_use_posterior=posterior_teacher,
             phase_g_posterior_targets=posterior_targets,
             phase_g_trajectory_seeds=seeds,
+            phase_g_injection_multiplier=injection_multiplier,
         )
     if output.loop_logits is None or output.loop_logits.dim() != 5:
         raise RuntimeError("Phase G evaluation requires [batch,K,loop,seq,vocab] loop logits")

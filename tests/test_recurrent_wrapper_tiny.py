@@ -558,6 +558,44 @@ def test_phase_g_k1_exposes_explicit_trajectory_axis():
     assert output.trajectory_logits.shape == (1, 1, 1, 19)
 
 
+def test_phase_g_wrapper_factor_one_preserves_default_output():
+    torch.manual_seed(0)
+    wrapper = RecurrentQwenForCausalLM(
+        TinyCausalLM().eval(),
+        layer_split=LayerSplit(1, 3),
+    ).eval()
+    wrapper.enable_phase_g_guidance(
+        latent_dim=4,
+        projection_seed=7,
+        injection_scale_init=0.5,
+    )
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    kwargs = {
+        "input_ids": input_ids,
+        "attention_mask": torch.ones_like(input_ids),
+        "max_loops": 2,
+        "num_trajectories": 1,
+        "phase_g_enabled": True,
+        "phase_g_trajectory_seeds": [101],
+        "use_cache": False,
+        "logits_to_keep": 1,
+        "return_dict": True,
+    }
+
+    with torch.no_grad():
+        default = wrapper(**kwargs)
+        factor_one = wrapper(**kwargs, phase_g_injection_multiplier=1.0)
+        factor_three = wrapper(**kwargs, phase_g_injection_multiplier=3.0)
+
+    assert torch.equal(default.logits, factor_one.logits)
+    assert torch.equal(default.trajectory_logits, factor_one.trajectory_logits)
+    assert torch.allclose(
+        factor_three.metrics["phase_g_injection_scale"],
+        3.0 * default.metrics["phase_g_injection_scale"],
+    )
+    assert not torch.equal(default.logits, factor_three.logits)
+
+
 def test_phase_g_tiny_wrapper_microbatch_matches_vectorized_gradients():
     torch.manual_seed(0)
     vectorized = RecurrentQwenForCausalLM(

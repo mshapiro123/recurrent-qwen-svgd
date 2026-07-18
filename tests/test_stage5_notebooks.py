@@ -1056,6 +1056,31 @@ def test_phase_g_multitarget_control_target_locks_the_a0_contract() -> None:
     assert "A0 is locked to the primary KL coefficient 0.001" in runner
 
 
+def test_phase_g_forced_injection_target_is_eval_only_and_locked() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    cell = (
+        ROOT / "colab/STAGE5_PHASE_G_FORCED_INJECTION_PROBE_CELL.py"
+    ).read_text(encoding="utf-8")
+    runner = (
+        ROOT / "colab/run_stage5_phase_g_forced_injection_probe.py"
+    ).read_text(encoding="utf-8")
+
+    assert '"phase_g_forced_injection_probe"' in bootstrap
+    assert "STAGE5_PHASE_G_FORCED_INJECTION_PROBE_CELL.py" in bootstrap
+    assert "STAGE5_PHASE_G_FORCED_INJECTION_PROBE_CELL_VERSION" in cell
+    assert "1,3,10,30,100" in cell
+    assert "factor_1_exact_equivalence" in cell
+    assert "training_performed" in runner
+    assert '"training_performed": False' in runner
+    assert '"coverage_performed": False' in runner
+    assert "training/train_phase_g_alpha.py" not in runner
+    assert "eval/eval_phase_g_alpha.py" not in runner
+    assert "phase_g_ema" in runner
+    assert "both A0 arms" in runner
+
+
 def test_master_sequence_status_cell_matches_markdown_code() -> None:
     text = (ROOT / "colab/STAGE5_MASTER_SEQUENCE_STATUS_CELL.md").read_text(encoding="utf-8")
     plain = (ROOT / "colab/STAGE5_MASTER_SEQUENCE_STATUS_CELL.py").read_text(encoding="utf-8")

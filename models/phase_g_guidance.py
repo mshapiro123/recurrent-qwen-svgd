@@ -185,11 +185,14 @@ class PhaseGGuidance(nn.Module):
         posterior_targets: torch.Tensor | None = None,
         use_posterior: bool = False,
         trajectory_seeds: Sequence[int] = (0,),
+        injection_multiplier: float = 1.0,
     ) -> PhaseGGuidanceOutput:
         if use_posterior and not self.training:
             raise RuntimeError("The target-conditioned posterior is training-only")
         if posterior_targets is not None and not self.training:
             raise RuntimeError("Posterior targets are training-only and forbidden at inference")
+        if not math.isfinite(float(injection_multiplier)) or float(injection_multiplier) <= 0.0:
+            raise ValueError("injection_multiplier must be finite and positive")
 
         pooled = masked_mean(hidden_states, attention_mask)
         prior = self.phase_g_prior_head(pooled)
@@ -215,7 +218,7 @@ class PhaseGGuidance(nn.Module):
         scale = F.softplus(self.phase_g_injection_scale).to(
             device=samples.device,
             dtype=samples.dtype,
-        )
+        ) * float(injection_multiplier)
         delta = (samples @ projection.transpose(0, 1)).unsqueeze(1)
         return PhaseGGuidanceOutput(
             injected_states=hidden_states + (scale * delta).to(dtype=hidden_states.dtype),
