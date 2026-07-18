@@ -102,6 +102,17 @@ def test_arm_resume_state_distinguishes_partial_and_drive_complete(tmp_path: Pat
         drive_ema_path=drive_ema,
     ) == "partial_requires_restart"
 
+    progress = drive_dir / "progress.pt"
+    progress.write_bytes(b"progress")
+    assert runner.phase_g_arm_resume_state(
+        summary_path=summary,
+        raw_path=raw,
+        ema_path=ema,
+        drive_raw_path=drive_raw,
+        drive_ema_path=drive_ema,
+        drive_progress_path=progress,
+    ) == "in_progress_resumable"
+
     drive_raw.write_bytes(b"raw")
     drive_ema.write_bytes(b"ema")
     assert runner.phase_g_arm_resume_state(

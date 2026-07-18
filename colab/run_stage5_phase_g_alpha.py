@@ -205,11 +205,19 @@ def phase_g_arm_resume_state(
     ema_path: Path,
     drive_raw_path: Path,
     drive_ema_path: Path,
+    progress_path: Path | None = None,
+    drive_progress_path: Path | None = None,
 ) -> str:
     if summary_path.exists() and raw_path.exists() and ema_path.exists():
         return "local_complete"
     if summary_path.exists() and drive_raw_path.exists() and drive_ema_path.exists():
         return "drive_complete"
+    if (
+        progress_path is not None and progress_path.exists()
+    ) or (
+        drive_progress_path is not None and drive_progress_path.exists()
+    ):
+        return "in_progress_resumable"
     if any(
         path.exists()
         for path in (
@@ -637,6 +645,9 @@ def main(run_id: str | None = None) -> int:
         expected_ema = train_dir / f"phase_g_ema_step_{steps}.pt"
         drive_raw = drive_root / f"{label}_raw.pt"
         drive_ema = drive_root / f"{label}_ema.pt"
+        local_progress = train_dir / "training_progress.pt"
+        drive_progress = drive_root / f"{label}_progress.pt"
+        drive_progress_receipts = drive_artifact_dir / "train" / label
         train_summary_path = train_dir / "summary.json"
         resume_state = phase_g_arm_resume_state(
             summary_path=train_summary_path,
@@ -644,6 +655,8 @@ def main(run_id: str | None = None) -> int:
             ema_path=expected_ema,
             drive_raw_path=drive_raw,
             drive_ema_path=drive_ema,
+            progress_path=local_progress,
+            drive_progress_path=drive_progress,
         )
         write_runtime_status(
             run_dir,
@@ -658,6 +671,8 @@ def main(run_id: str | None = None) -> int:
             local_ema_exists=expected_ema.exists(),
             drive_raw_exists=drive_raw.exists(),
             drive_ema_exists=drive_ema.exists(),
+            local_progress_exists=local_progress.exists(),
+            drive_progress_exists=drive_progress.exists(),
         )
         if resume_state == "local_complete":
             print(f"resume_completed_local_phase_g_training={label}", flush=True)
@@ -694,6 +709,17 @@ def main(run_id: str | None = None) -> int:
                     str(coefficient),
                     "--trajectory_microbatch_size",
                     str(trajectory_microbatch_size),
+                    "--checkpoint_every",
+                    os.environ.get(
+                        "STAGE5_PHASE_G_ALPHA_CHECKPOINT_EVERY",
+                        "100",
+                    ),
+                    "--progress_checkpoint",
+                    str(local_progress),
+                    "--progress_backup_path",
+                    str(drive_progress),
+                    "--progress_backup_dir",
+                    str(drive_progress_receipts),
                     "--seed",
                     str(20260717 + arm_index * 1000),
                     "--device",

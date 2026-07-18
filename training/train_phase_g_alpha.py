@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import random
+import shutil
 import sys
 from functools import partial
 from pathlib import Path
@@ -30,7 +31,9 @@ from training.phase_g_alpha_spec import (  # noqa: E402
 from training.phase_g_training import (  # noqa: E402
     PhaseGEMA,
     backward_phase_g_trajectories,
+    load_phase_g_training_progress,
     posterior_target_embeddings,
+    save_phase_g_training_progress,
 )
 
 
@@ -55,6 +58,61 @@ def loader_args(args: argparse.Namespace) -> SimpleNamespace:
         lora_alpha=16,
         adapter_dtype="float32",
         base_lora_layer_range="all",
+    )
+
+
+def progress_contract(
+    args: argparse.Namespace,
+    *,
+    keeper_sha256: str,
+    train_jsonl_sha256: str,
+    trainable_names: list[str],
+) -> dict[str, Any]:
+    # Trajectory microbatching is execution-only and has a tested identical
+    # mean objective, so a memory fallback may resume the same optimizer state.
+    return {
+        "model_name": args.model_name,
+        "keeper_sha256": keeper_sha256,
+        "train_jsonl_sha256": train_jsonl_sha256,
+        "steps": args.steps,
+        "learning_rate": args.learning_rate,
+        "weight_decay": args.weight_decay,
+        "kl_coefficient": args.kl_coefficient,
+        "kl_balance": args.kl_balance,
+        "ema_decay": args.ema_decay,
+        "num_trajectories": args.num_trajectories,
+        "latent_dim": args.latent_dim,
+        "projection_seed": args.projection_seed,
+        "injection_scale_init": args.injection_scale_init,
+        "seed": args.seed,
+        "max_length": args.max_length,
+        "split": args.split,
+        "dtype": args.dtype,
+        "attn_implementation": args.attn_implementation,
+        "trainable_names": sorted(trainable_names),
+    }
+
+
+def atomic_copy(source: Path, destination: Path) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = destination.with_name(destination.name + ".tmp")
+    shutil.copy2(source, temporary)
+    temporary.replace(destination)
+
+
+def truncate_jsonl_after_step(path: Path, step: int) -> None:
+    if not path.exists():
+        return
+    retained: list[str] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if int(row.get("step", 0)) <= int(step):
+            retained.append(json.dumps(row, sort_keys=True))
+    path.write_text(
+        "".join(line + "\n" for line in retained),
+        encoding="utf-8",
     )
 
 
@@ -91,16 +149,22 @@ def main() -> int:
     parser.add_argument("--attn_implementation", default="default")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--log_every", type=int, default=25)
+    parser.add_argument("--checkpoint_every", type=int, default=100)
+    parser.add_argument("--progress_checkpoint")
+    parser.add_argument("--progress_backup_path")
+    parser.add_argument("--progress_backup_dir")
     args = parser.parse_args()
 
     if (
         args.steps < 1
         or args.num_trajectories < 1
         or args.trajectory_microbatch_size < 0
+        or args.checkpoint_every < 1
     ):
         raise ValueError(
             "steps and num_trajectories must be positive; "
-            "trajectory_microbatch_size must be nonnegative"
+            "trajectory_microbatch_size must be nonnegative; "
+            "checkpoint_every must be positive"
         )
     keeper_sha = sha256_file(args.keeper)
     if keeper_sha != args.expected_keeper_sha256:
@@ -151,12 +215,98 @@ def main() -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
     trace_path = output_dir / "training_trace.jsonl"
     seed_manifest_path = output_dir / "rng_manifest.jsonl"
-    trace_handle = trace_path.open("w", encoding="utf-8")
-    seed_handle = seed_manifest_path.open("w", encoding="utf-8")
-    frozen_assertions = 0
+    progress_path = (
+        Path(args.progress_checkpoint)
+        if args.progress_checkpoint
+        else output_dir / "training_progress.pt"
+    )
+    progress_backup_path = (
+        Path(args.progress_backup_path)
+        if args.progress_backup_path
+        else None
+    )
+    progress_backup_dir = (
+        Path(args.progress_backup_dir)
+        if args.progress_backup_dir
+        else None
+    )
+    if (
+        not progress_path.exists()
+        and progress_backup_path is not None
+        and progress_backup_path.exists()
+    ):
+        atomic_copy(progress_backup_path, progress_path)
+        print(
+            f"phase_g_progress_restored_from_backup={progress_backup_path}",
+            flush=True,
+        )
+    if progress_backup_dir is not None:
+        for local_path in (trace_path, seed_manifest_path):
+            backup = progress_backup_dir / local_path.name
+            if not local_path.exists() and backup.exists():
+                atomic_copy(backup, local_path)
+
+    contract = progress_contract(
+        args,
+        keeper_sha256=keeper_sha,
+        train_jsonl_sha256=sha256_file(args.train_jsonl),
+        trainable_names=trainable_names,
+    )
+    restored_step = 0
+    if progress_path.exists():
+        restored_step = load_phase_g_training_progress(
+            progress_path,
+            module=wrapper,
+            optimizer=optimizer,
+            ema=ema,
+            sampler=sampler,
+            expected_contract=contract,
+        )
+        if restored_step < 0 or restored_step > args.steps:
+            raise RuntimeError(
+                f"Invalid Phase G restored step {restored_step} for total {args.steps}"
+            )
+        truncate_jsonl_after_step(trace_path, restored_step)
+        truncate_jsonl_after_step(seed_manifest_path, restored_step)
+        print(
+            f"phase_g_training_resume_step={restored_step} "
+            f"progress_checkpoint={progress_path}",
+            flush=True,
+        )
+    trace_mode = "a" if restored_step > 0 else "w"
+    trace_handle = trace_path.open(trace_mode, encoding="utf-8")
+    seed_handle = seed_manifest_path.open(trace_mode, encoding="utf-8")
+    frozen_assertions = restored_step
+    last_completed_step = restored_step
+
+    def persist_progress(step: int) -> None:
+        trace_handle.flush()
+        seed_handle.flush()
+        save_phase_g_training_progress(
+            progress_path,
+            module=wrapper,
+            optimizer=optimizer,
+            ema=ema,
+            sampler=sampler,
+            step=step,
+            contract=contract,
+        )
+        if progress_backup_path is not None:
+            atomic_copy(progress_path, progress_backup_path)
+        if progress_backup_dir is not None:
+            atomic_copy(trace_path, progress_backup_dir / trace_path.name)
+            atomic_copy(
+                seed_manifest_path,
+                progress_backup_dir / seed_manifest_path.name,
+            )
+        print(
+            f"phase_g_progress_saved step={step} path={progress_path} "
+            f"backup={progress_backup_path}",
+            flush=True,
+        )
 
     try:
-        for step in range(1, args.steps + 1):
+        for step in range(restored_step + 1, args.steps + 1):
             row_index = sampler.randrange(len(dataset))
             row = dataset.rows[row_index]
             depth = int(row["depth"])
@@ -203,6 +353,7 @@ def main() -> int:
                 raise FloatingPointError(f"Nonfinite Phase G gradient at step {step}")
             optimizer.step()
             ema.update(wrapper.named_parameters())
+            last_completed_step = step
 
             trace = {
                 "step": step,
@@ -240,6 +391,20 @@ def main() -> int:
                     f"scale={trace.get('phase_g_injection_scale', 0.0):.6g}",
                     flush=True,
                 )
+            if step % args.checkpoint_every == 0 or step == args.steps:
+                persist_progress(step)
+    except BaseException:
+        if last_completed_step > restored_step:
+            optimizer.zero_grad(set_to_none=True)
+            try:
+                persist_progress(last_completed_step)
+            except Exception as progress_exc:
+                print(
+                    "phase_g_emergency_progress_save_failed="
+                    f"{type(progress_exc).__name__}: {progress_exc}",
+                    flush=True,
+                )
+        raise
     finally:
         trace_handle.close()
         seed_handle.close()
@@ -251,6 +416,8 @@ def main() -> int:
     config: dict[str, Any] = {
         **vars(args),
         "keeper_sha256": keeper_sha,
+        "progress_contract": contract,
+        "resumed_from_step": restored_step,
         "active_lineage_sha256_start": lineage_start,
         "active_lineage_sha256_end": lineage_end,
         "trainable_names": trainable_names,
@@ -282,6 +449,12 @@ def main() -> int:
         "ema_checkpoint": str(ema_path),
         "training_trace": str(trace_path),
         "rng_manifest": str(seed_manifest_path),
+        "progress_checkpoint": str(progress_path),
+        "progress_backup_path": (
+            str(progress_backup_path)
+            if progress_backup_path is not None
+            else None
+        ),
     }
     (output_dir / "summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n",

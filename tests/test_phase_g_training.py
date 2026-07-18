@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 from types import SimpleNamespace
 
 import torch
@@ -8,7 +9,9 @@ from training.phase_g_training import (
     PhaseGEMA,
     backward_phase_g_trajectories,
     first_active_loop_token_ids,
+    load_phase_g_training_progress,
     posterior_target_embeddings,
+    save_phase_g_training_progress,
 )
 
 
@@ -124,3 +127,92 @@ def test_trajectory_microbatching_preserves_loss_gradient_and_additive_metrics()
     assert vectorized_result.metrics["per_loop_label_active"] == 4.0
     assert microbatched_result.metrics["per_loop_label_active"] == 4.0
     assert microbatched_result.microbatch_count == 4
+
+
+def test_phase_g_progress_roundtrip_restores_model_optimizer_ema_and_rng(tmp_path) -> None:
+    torch.manual_seed(101)
+    module = torch.nn.Linear(2, 1)
+    optimizer = torch.optim.AdamW(module.parameters(), lr=1e-2)
+    ema = PhaseGEMA(module.named_parameters(), decay=0.9)
+    sampler = random.Random(303)
+
+    loss = module(torch.tensor([[1.0, -2.0]])).square().mean()
+    loss.backward()
+    optimizer.step()
+    ema.update(module.named_parameters())
+    sampler.random()
+    expected_parameters = {
+        name: parameter.detach().clone()
+        for name, parameter in module.named_parameters()
+    }
+    expected_ema = {
+        name: value.clone()
+        for name, value in ema.shadow.items()
+    }
+    path = tmp_path / "phase_g_progress.pt"
+    contract = {"seed": 303, "kl_coefficient": 1e-3}
+    save_phase_g_training_progress(
+        path,
+        module=module,
+        optimizer=optimizer,
+        ema=ema,
+        sampler=sampler,
+        step=37,
+        contract=contract,
+    )
+    expected_sampler_next = sampler.random()
+    expected_torch_next = torch.rand(4)
+
+    with torch.no_grad():
+        for parameter in module.parameters():
+            parameter.add_(100.0)
+    sampler.seed(999)
+    torch.manual_seed(999)
+
+    restored_step = load_phase_g_training_progress(
+        path,
+        module=module,
+        optimizer=optimizer,
+        ema=ema,
+        sampler=sampler,
+        expected_contract=contract,
+    )
+
+    assert restored_step == 37
+    for name, parameter in module.named_parameters():
+        assert torch.equal(parameter, expected_parameters[name])
+        assert torch.equal(ema.shadow[name], expected_ema[name])
+    assert sampler.random() == expected_sampler_next
+    assert torch.equal(torch.rand(4), expected_torch_next)
+    assert optimizer.state
+
+
+def test_phase_g_progress_rejects_contract_mismatch(tmp_path) -> None:
+    module = torch.nn.Linear(2, 1)
+    optimizer = torch.optim.AdamW(module.parameters(), lr=1e-2)
+    ema = PhaseGEMA(module.named_parameters(), decay=0.9)
+    sampler = random.Random(1)
+    path = tmp_path / "phase_g_progress.pt"
+    save_phase_g_training_progress(
+        path,
+        module=module,
+        optimizer=optimizer,
+        ema=ema,
+        sampler=sampler,
+        step=1,
+        contract={"seed": 1},
+    )
+
+    try:
+        load_phase_g_training_progress(
+            path,
+            module=module,
+            optimizer=optimizer,
+            ema=ema,
+            sampler=sampler,
+            expected_contract={"seed": 2},
+        )
+    except RuntimeError as exc:
+        assert "contract mismatch" in str(exc)
+    else:
+        raise AssertionError("A mismatched Phase G progress checkpoint must fail")

@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import os
+import random
 from collections.abc import Iterable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import torch
@@ -109,6 +112,101 @@ def backward_phase_g_trajectories(
     )
 
 
+def save_phase_g_training_progress(
+    path: str | Path,
+    *,
+    module: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    ema: "PhaseGEMA",
+    sampler: random.Random,
+    step: int,
+    contract: dict[str, Any],
+) -> Path:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    trainable = {
+        name: parameter.detach().cpu().clone()
+        for name, parameter in module.named_parameters()
+        if parameter.requires_grad
+    }
+    payload = {
+        "kind": "phase_g_alpha_training_progress",
+        "step": int(step),
+        "contract": dict(contract),
+        "trainable_state_dict": trainable,
+        "optimizer_state_dict": optimizer.state_dict(),
+        "ema_state_dict": ema.state_dict(),
+        "sampler_state": sampler.getstate(),
+        "torch_rng_state": torch.get_rng_state(),
+        "cuda_rng_state_all": (
+            torch.cuda.get_rng_state_all()
+            if torch.cuda.is_available()
+            else None
+        ),
+    }
+    temporary = path.with_name(path.name + ".tmp")
+    torch.save(payload, temporary)
+    os.replace(temporary, path)
+    return path
+
+
+def _move_optimizer_state_to_parameter_devices(
+    optimizer: torch.optim.Optimizer,
+) -> None:
+    for parameter, state in optimizer.state.items():
+        for name, value in list(state.items()):
+            if isinstance(value, torch.Tensor):
+                state[name] = value.to(device=parameter.device)
+
+
+def load_phase_g_training_progress(
+    path: str | Path,
+    *,
+    module: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    ema: "PhaseGEMA",
+    sampler: random.Random,
+    expected_contract: dict[str, Any],
+) -> int:
+    payload = torch.load(path, map_location="cpu", weights_only=False)
+    if payload.get("kind") != "phase_g_alpha_training_progress":
+        raise RuntimeError(f"Not a Phase G training-progress checkpoint: {path}")
+    if payload.get("contract") != expected_contract:
+        raise RuntimeError(
+            "Phase G training-progress contract mismatch: "
+            f"expected={expected_contract}, observed={payload.get('contract')}"
+        )
+    current = {
+        name: parameter
+        for name, parameter in module.named_parameters()
+        if parameter.requires_grad
+    }
+    restored = payload["trainable_state_dict"]
+    if set(restored) != set(current):
+        raise RuntimeError(
+            "Phase G trainable parameter set changed while resuming: "
+            f"expected={sorted(current)}, observed={sorted(restored)}"
+        )
+    with torch.no_grad():
+        for name, value in restored.items():
+            parameter = current[name]
+            if value.shape != parameter.shape:
+                raise RuntimeError(
+                    f"Phase G progress shape mismatch for {name}: "
+                    f"{tuple(value.shape)} != {tuple(parameter.shape)}"
+                )
+            parameter.copy_(value.to(device=parameter.device, dtype=parameter.dtype))
+    optimizer.load_state_dict(payload["optimizer_state_dict"])
+    _move_optimizer_state_to_parameter_devices(optimizer)
+    ema.load_state_dict(payload["ema_state_dict"])
+    sampler.setstate(payload["sampler_state"])
+    torch.set_rng_state(payload["torch_rng_state"])
+    cuda_state = payload.get("cuda_rng_state_all")
+    if torch.cuda.is_available() and cuda_state is not None:
+        torch.cuda.set_rng_state_all(cuda_state)
+    return int(payload["step"])
+
+
 class PhaseGEMA:
     """EMA over exactly the three registered Phase G parameter groups."""
 
@@ -165,4 +263,20 @@ class PhaseGEMA:
         return {
             "decay": self.decay,
             "shadow": {name: value.clone() for name, value in self.shadow.items()},
+        }
+
+    def load_state_dict(self, state: dict[str, Any]) -> None:
+        decay = float(state["decay"])
+        shadow = state["shadow"]
+        if set(shadow) != set(self.shadow):
+            raise RuntimeError(
+                "EMA parameter set changed while resuming Phase G training"
+            )
+        if decay != self.decay:
+            raise RuntimeError(
+                f"EMA decay changed while resuming: {decay} != {self.decay}"
+            )
+        self.shadow = {
+            name: value.detach().float().cpu().clone()
+            for name, value in shadow.items()
         }
