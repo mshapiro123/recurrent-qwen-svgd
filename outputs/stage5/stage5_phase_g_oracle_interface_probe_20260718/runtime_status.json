@@ -1,7 +1,8 @@
 {
+  "automatic_successor_authorized": false,
   "kind": "stage5_phase_g_alpha_runtime_status",
-  "run_id": "stage5_phase_g_oracle_interface_probe_20260718",
-  "stage": "startup",
-  "status": "started",
-  "updated_at_unix": 1784411523.44043
+  "measured_reading": "BOTH_FAIL",
+  "stage": "terminal_gate",
+  "status": "finished_terminal_probe",
+  "updated_at_unix": 1784413451.9283836
 }
