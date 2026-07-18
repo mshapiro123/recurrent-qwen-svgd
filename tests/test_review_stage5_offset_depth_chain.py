@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from colab import review_stage5_offset_depth_chain as module
@@ -123,8 +124,8 @@ def test_latest_summary_selects_newest_chain_summary(tmp_path, monkeypatch) -> N
     monkeypatch.setattr(module, "ROOT", tmp_path)
     old = write_json(tmp_path / "outputs" / "stage5" / "old" / "summary.json", chain_payload(run_id="old"))
     new = write_json(tmp_path / "outputs" / "stage5" / "new" / "summary.json", chain_payload(run_id="new"))
-    old.touch()
-    new.touch()
+    os.utime(old, ns=(1_000_000_000, 1_000_000_000))
+    os.utime(new, ns=(2_000_000_000, 2_000_000_000))
 
     assert module.latest_summary() == new
 

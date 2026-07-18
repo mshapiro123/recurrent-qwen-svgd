@@ -13,7 +13,8 @@ def test_phase_g_runner_has_drive_backed_stable_resume_contract() -> None:
     assert "stage5_phase_g_alpha_guided_width_20260717" in source
     assert "sync_receipts_to_drive" in source
     assert "resume_cache_path" in source
-    assert "resume_completed_phase_g_training" in source
+    assert "resume_completed_local_phase_g_training" in source
+    assert "resume_completed_drive_phase_g_training" in source
 
 
 def test_phase_g_runner_regenerates_exact_frozen_test_rows(tmp_path) -> None:

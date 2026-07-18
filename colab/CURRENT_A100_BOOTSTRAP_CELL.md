@@ -116,6 +116,8 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "multichannel_bridge_precursor_replication" - one bounded backward-recovery M1/M2 replication using the locked N24 pilot receipt.
 #   "multichannel_bridge_precursor_full" - explicit full M1/M2/M3 battery after pilot review.
 #   "peft_ponder_closure" - corrected-loop frozen-LoRA ladder plus halting-only Ponder phase.
+#   "adapter_budget_arm_e" - matched Arm-A R16 LoRA plus repaired-bridge depth profile.
+#   "paper1_closure_receipts" - CPU-safe Paper 1 evidence compiler and Drive backup.
 #   "depth_selector_bounded_assessment" - frozen N24 supervised-depth and Ponder-outcome selector closure.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
@@ -1939,6 +1941,37 @@ TARGETS = {
             "STAGE5_PONDER_TARGET_NLL_WEIGHT": "0.1",
             "STAGE5_PEFT_PONDER_DISCONNECT": "0",
         },
+    },
+    "adapter_budget_arm_e": {
+        "path": "colab/STAGE5_ADAPTER_BUDGET_ARM_CELL.py",
+        "markers": [
+            "STAGE5_ADAPTER_BUDGET_ARM_CELL_VERSION",
+            "adapter_budget_arm_e_v1",
+            "fresh_base_qwen_surgery",
+            "same_reader_final_rows.jsonl",
+            "pretrained_base_hash_unchanged",
+            "track_loop_dose",
+            "adapter_budget_depth_profile",
+            "tests/test_adapter_budget_arm.py",
+            "colab/run_stage5_adapter_budget_arm.py",
+        ],
+        "env": {
+            "STAGE5_ADAPTER_BUDGET_DTYPE": "bfloat16",
+            "STAGE5_ADAPTER_BUDGET_DISCONNECT": "0",
+        },
+    },
+    "paper1_closure_receipts": {
+        "path": "colab/STAGE5_PAPER1_CLOSURE_RECEIPTS_CELL.py",
+        "markers": [
+            "STAGE5_PAPER1_CLOSURE_RECEIPTS_CELL_VERSION",
+            "paper1_closure_receipts_v1",
+            "PAPER1_EXPERIMENTAL_CLOSURE_RECEIPTS_20260718",
+            "tests/test_paper1_closure_receipts.py",
+            "Bonferroni",
+            "manuscript prose was not edited",
+            "colab/build_paper1_closure_receipts.py",
+        ],
+        "env": {},
     },
     "depth_selector_bounded_assessment": {
         "path": "colab/STAGE5_DEPTH_SELECTOR_CELL.py",
