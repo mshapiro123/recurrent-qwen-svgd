@@ -1,0 +1,66 @@
+{
+  "kind": "synthetic_depth_same_reader_final_symbol",
+  "threshold": 0.71,
+  "depths": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "by_depth": {
+    "1": {
+      "total": 32,
+      "same_reader_correct": 0,
+      "same_reader_accuracy": 0.0,
+      "mapped_final_correct": 0,
+      "mapped_final_accuracy": 0.0,
+      "same_reader_clears_threshold": false
+    },
+    "2": {
+      "total": 32,
+      "same_reader_correct": 0,
+      "same_reader_accuracy": 0.0,
+      "mapped_final_correct": 0,
+      "mapped_final_accuracy": 0.0,
+      "same_reader_clears_threshold": false
+    },
+    "3": {
+      "total": 32,
+      "same_reader_correct": 0,
+      "same_reader_accuracy": 0.0,
+      "mapped_final_correct": 0,
+      "mapped_final_accuracy": 0.0,
+      "same_reader_clears_threshold": false
+    },
+    "4": {
+      "total": 32,
+      "same_reader_correct": 0,
+      "same_reader_accuracy": 0.0,
+      "mapped_final_correct": 0,
+      "mapped_final_accuracy": 0.0,
+      "same_reader_clears_threshold": false
+    }
+  },
+  "same_reader_total": {
+    "correct": 0,
+    "total": 128,
+    "accuracy": 0.0
+  },
+  "mapped_final_total": {
+    "correct": 0,
+    "total": 128,
+    "accuracy": 0.0
+  },
+  "all_depths_clear_threshold": false,
+  "metric_policy": {
+    "active": "full-symbol active-label diagonal",
+    "raw_final": "same-reader full-symbol argmax at loop == depth",
+    "mapped_final": "same-reader full-symbol argmax deterministically mapped to MCQ label",
+    "suspended_reader": "option-text/choice MCQ final-answer matrices remain diagnostic only"
+  },
+  "checkpoint": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/train/chain_depth_le4/unfrozen_recurrent_step_1000.pt",
+  "data_jsonl": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/data/phase_a_smoke_128_depth_le4.jsonl",
+  "prediction_space": "full_symbols",
+  "prompt_style": "question_only",
+  "rows": 128
+}
