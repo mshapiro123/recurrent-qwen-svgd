@@ -1,8 +1,8 @@
 # Phase G-A0: Guided Stochastic Width Handoff
 
-**Date:** 2026-07-18  
-**Status:** completed and preregistered blocked  
-**Audience:** strategy and deep-research review  
+**Date:** 2026-07-18
+**Status:** completed and preregistered blocked
+**Audience:** strategy and deep-research review
 **Primary receipt:** \`outputs/stage5/stage5_phase_g_multitarget_control_20260718/summary.json\`
 
 ## Executive Decision
@@ -301,4 +301,3 @@ well-instrumented, and more informative than an unrestricted coverage sweep
 would have been. It closes the present guided-width correction without
 conflating it with the deterministic recurrence contribution or GRAM's
 task-specific demonstrations.
-
