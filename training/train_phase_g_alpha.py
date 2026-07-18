@@ -103,11 +103,19 @@ def atomic_copy(source: Path, destination: Path) -> None:
 def truncate_jsonl_after_step(path: Path, step: int) -> None:
     if not path.exists():
         return
+    lines = [
+        line
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
     retained: list[str] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        row = json.loads(line)
+    for index, line in enumerate(lines):
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            if index == len(lines) - 1:
+                break
+            raise
         if int(row.get("step", 0)) <= int(step):
             retained.append(json.dumps(row, sort_keys=True))
     path.write_text(
