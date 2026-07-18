@@ -757,3 +757,164 @@ loaded_checkpoint=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_mul
   },
   "status": "blocked"
 }
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 4461.16it/s]
+bridge_projection_mode=split
+lora_recurrent_modules=0
+loaded_checkpoint=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/restored/natural_step2000.pt loaded_keys=152
+phase_g_train step=1/1000 depth=3 loss=10.321197 kl=3.127283 scale=0.001
+phase_g_train step=25/1000 depth=2 loss=10.109503 kl=0.888403 scale=0.000999721
+phase_g_train step=50/1000 depth=4 loss=16.582510 kl=0.799957 scale=0.000999732
+phase_g_train step=75/1000 depth=4 loss=9.341496 kl=0.576770 scale=0.00100125
+phase_g_train step=100/1000 depth=1 loss=0.001214 kl=0.782211 scale=0.00100148
+phase_g_progress_saved step=100 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/training_progress.pt backup=/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_multitarget_control_20260718/kl_0p0001_confirmation_progress.pt
+phase_g_train step=125/1000 depth=1 loss=0.000395 kl=0.552179 scale=0.00100177
+phase_g_train step=150/1000 depth=3 loss=0.686784 kl=0.405707 scale=0.00100234
+phase_g_train step=175/1000 depth=2 loss=20.691492 kl=0.329952 scale=0.00100349
+phase_g_train step=200/1000 depth=3 loss=8.326924 kl=0.525520 scale=0.00100464
+phase_g_progress_saved step=200 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/training_progress.pt backup=/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_multitarget_control_20260718/kl_0p0001_confirmation_progress.pt
+phase_g_train step=225/1000 depth=2 loss=17.679924 kl=0.718934 scale=0.00100597
+phase_g_train step=250/1000 depth=3 loss=13.881400 kl=0.625820 scale=0.00100706
+phase_g_train step=275/1000 depth=3 loss=2.526131 kl=0.928018 scale=0.00100742
+phase_g_train step=300/1000 depth=2 loss=0.624550 kl=2.408667 scale=0.00100858
+phase_g_progress_saved step=300 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/training_progress.pt backup=/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_multitarget_control_20260718/kl_0p0001_confirmation_progress.pt
+phase_g_train step=325/1000 depth=4 loss=15.022739 kl=1.532269 scale=0.00101058
+phase_g_train step=350/1000 depth=4 loss=12.632576 kl=1.981786 scale=0.00101236
+phase_g_train step=375/1000 depth=3 loss=8.792956 kl=2.952833 scale=0.00101417
+phase_g_train step=400/1000 depth=4 loss=9.251815 kl=2.335416 scale=0.00101523
+phase_g_progress_saved step=400 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/training_progress.pt backup=/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_multitarget_control_20260718/kl_0p0001_confirmation_progress.pt
+phase_g_train step=425/1000 depth=1 loss=0.001171 kl=7.326359 scale=0.00101665
+phase_g_train step=450/1000 depth=1 loss=0.115389 kl=8.965713 scale=0.00101752
+phase_g_train step=475/1000 depth=2 loss=20.024038 kl=5.568718 scale=0.00101799
+phase_g_train step=500/1000 depth=4 loss=8.752933 kl=8.153526 scale=0.00101879
+phase_g_progress_saved step=500 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/training_progress.pt backup=/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_multitarget_control_20260718/kl_0p0001_confirmation_progress.pt
+phase_g_train step=525/1000 depth=1 loss=0.469024 kl=17.130981 scale=0.00102017
+phase_g_train step=550/1000 depth=2 loss=6.060933 kl=9.584455 scale=0.00102196
+phase_g_train step=575/1000 depth=4 loss=6.247954 kl=6.936140 scale=0.0010233
+phase_g_train step=600/1000 depth=4 loss=3.155965 kl=6.743192 scale=0.00102393
+phase_g_progress_saved step=600 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/training_progress.pt backup=/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_multitarget_control_20260718/kl_0p0001_confirmation_progress.pt
+phase_g_train step=625/1000 depth=2 loss=3.538435 kl=21.069170 scale=0.0010244
+phase_g_train step=650/1000 depth=4 loss=7.041973 kl=9.048700 scale=0.00102551
+phase_g_train step=675/1000 depth=4 loss=11.199353 kl=7.772387 scale=0.00102693
+phase_g_train step=700/1000 depth=1 loss=0.928362 kl=21.991041 scale=0.0010278
+phase_g_progress_saved step=700 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/training_progress.pt backup=/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_multitarget_control_20260718/kl_0p0001_confirmation_progress.pt
+phase_g_train step=725/1000 depth=4 loss=15.152117 kl=17.302170 scale=0.0010295
+phase_g_train step=750/1000 depth=2 loss=2.639818 kl=25.212322 scale=0.00103124
+phase_g_train step=775/1000 depth=1 loss=0.009052 kl=44.038872 scale=0.00103433
+phase_g_train step=800/1000 depth=4 loss=16.576674 kl=29.184212 scale=0.00103608
+phase_g_progress_saved step=800 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/training_progress.pt backup=/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_multitarget_control_20260718/kl_0p0001_confirmation_progress.pt
+phase_g_train step=825/1000 depth=4 loss=7.018830 kl=20.736816 scale=0.00103674
+phase_g_train step=850/1000 depth=2 loss=12.370177 kl=29.550873 scale=0.00103783
+phase_g_train step=875/1000 depth=3 loss=11.003409 kl=33.714073 scale=0.00104005
+phase_g_train step=900/1000 depth=3 loss=11.644447 kl=37.088196 scale=0.00104235
+phase_g_progress_saved step=900 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/training_progress.pt backup=/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_multitarget_control_20260718/kl_0p0001_confirmation_progress.pt
+phase_g_train step=925/1000 depth=1 loss=0.601726 kl=56.225037 scale=0.00104368
+phase_g_train step=950/1000 depth=3 loss=8.139785 kl=41.535393 scale=0.00104526
+phase_g_train step=975/1000 depth=1 loss=1.990785 kl=72.196907 scale=0.00104738
+phase_g_train step=1000/1000 depth=2 loss=5.027081 kl=69.930008 scale=0.00104863
+phase_g_progress_saved step=1000 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/training_progress.pt backup=/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_multitarget_control_20260718/kl_0p0001_confirmation_progress.pt
+{
+  "config": {
+    "active_lineage_sha256_end": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+    "active_lineage_sha256_start": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+    "attn_implementation": "default",
+    "checkpoint_every": 100,
+    "device": "cuda",
+    "dtype": "bfloat16",
+    "ema_decay": 0.999,
+    "expected_keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+    "frozen_gradient_assertions": 1000,
+    "injection_scale_init": 0.001,
+    "keeper": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/restored/natural_step2000.pt",
+    "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+    "kl_balance": 0.8,
+    "kl_coefficient": 0.0001,
+    "latent_dim": 64,
+    "learning_rate": 0.0001,
+    "log_every": 25,
+    "max_length": 512,
+    "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+    "num_trajectories": 4,
+    "output_dir": "outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation",
+    "progress_backup_dir": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation",
+    "progress_backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_multitarget_control_20260718/kl_0p0001_confirmation_progress.pt",
+    "progress_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/training_progress.pt",
+    "progress_contract": {
+      "attn_implementation": "default",
+      "dtype": "bfloat16",
+      "ema_decay": 0.999,
+      "injection_scale_init": 0.001,
+      "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+      "kl_balance": 0.8,
+      "kl_coefficient": 0.0001,
+      "latent_dim": 64,
+      "learning_rate": 0.0001,
+      "max_length": 512,
+      "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+      "num_trajectories": 4,
+      "projection_seed": 20260717,
+      "sampling_policy": "base_problem_uniform",
+      "seed": 20260718,
+      "split": "6,18",
+      "steps": 1000,
+      "train_jsonl_sha256": "9249cbaa9a05adce47ddd24ee707db090072503f07b8df636c310985b59e17b6",
+      "trainable_names": [
+        "phase_g_injection_scale",
+        "phase_g_posterior_head.logvar.bias",
+        "phase_g_posterior_head.logvar.weight",
+        "phase_g_posterior_head.mean.bias",
+        "phase_g_posterior_head.mean.weight",
+        "phase_g_posterior_head.net.0.bias",
+        "phase_g_posterior_head.net.0.weight",
+        "phase_g_posterior_head.norm.bias",
+        "phase_g_posterior_head.norm.weight",
+        "phase_g_prior_head.logvar.bias",
+        "phase_g_prior_head.logvar.weight",
+        "phase_g_prior_head.mean.bias",
+        "phase_g_prior_head.mean.weight",
+        "phase_g_prior_head.net.0.bias",
+        "phase_g_prior_head.net.0.weight",
+        "phase_g_prior_head.norm.bias",
+        "phase_g_prior_head.norm.weight"
+      ],
+      "weight_decay": 0.0
+    },
+    "projection_seed": 20260717,
+    "resumed_from_step": 0,
+    "sampling_policy": "base_problem_uniform",
+    "seed": 20260718,
+    "split": "6,18",
+    "steps": 1000,
+    "train_jsonl": "outputs/stage5/stage5_phase_g_multitarget_control_20260718/data/train.jsonl",
+    "trainable_names": [
+      "phase_g_injection_scale",
+      "phase_g_prior_head.norm.weight",
+      "phase_g_prior_head.norm.bias",
+      "phase_g_prior_head.net.0.weight",
+      "phase_g_prior_head.net.0.bias",
+      "phase_g_prior_head.mean.weight",
+      "phase_g_prior_head.mean.bias",
+      "phase_g_prior_head.logvar.weight",
+      "phase_g_prior_head.logvar.bias",
+      "phase_g_posterior_head.norm.weight",
+      "phase_g_posterior_head.norm.bias",
+      "phase_g_posterior_head.net.0.weight",
+      "phase_g_posterior_head.net.0.bias",
+      "phase_g_posterior_head.mean.weight",
+      "phase_g_posterior_head.mean.bias",
+      "phase_g_posterior_head.logvar.weight",
+      "phase_g_posterior_head.logvar.bias"
+    ],
+    "trajectory_microbatch_size": 0,
+    "weight_decay": 0.0
+  },
+  "ema_checkpoint": "outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/phase_g_ema_step_1000.pt",
+  "kind": "phase_g_alpha_training",
+  "progress_backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_multitarget_control_20260718/kl_0p0001_confirmation_progress.pt",
+  "progress_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/training_progress.pt",
+  "raw_checkpoint": "outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/phase_g_raw_step_1000.pt",
+  "rng_manifest": "outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/rng_manifest.jsonl",
+  "status": "finished",
+  "training_trace": "outputs/stage5/stage5_phase_g_multitarget_control_20260718/train/kl_0p0001_confirmation/training_trace.jsonl"
+}
