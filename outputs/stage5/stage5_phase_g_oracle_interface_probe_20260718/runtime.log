@@ -167,3 +167,172 @@ oracle_progress_saved route=additive step=1500 path=/content/recurrent-qwen-svgd
   "status": "finished",
   "training_trace": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_trace.jsonl"
 }
+$ /usr/bin/python3 training/train_oracle_interface_probe.py --train_jsonl outputs/stage5/stage5_phase_g_multitarget_control_20260718/data/train.jsonl --keeper /content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/restored/natural_step2000.pt --expected_keeper_sha256 0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f --output_dir outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film --route film --steps 1500 --seed 20260718 --bottleneck_dim 256 --checkpoint_every 100 --progress_checkpoint /content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_progress.pt --progress_backup_path /content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_oracle_interface_probe_20260718/film_training_progress.pt --progress_backup_dir /content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film --dtype bfloat16 --device cuda
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5633.80it/s]
+bridge_projection_mode=split
+lora_recurrent_modules=0
+loaded_checkpoint=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/restored/natural_step2000.pt loaded_keys=152
+oracle_train route=film step=1/1500 depth=3 loss=10.357913 residual=0
+oracle_train route=film step=25/1500 depth=2 loss=9.066537 residual=0.0180075
+oracle_train route=film step=50/1500 depth=4 loss=4.297915 residual=0.143322
+oracle_train route=film step=75/1500 depth=4 loss=3.308318 residual=0.121118
+oracle_train route=film step=100/1500 depth=1 loss=0.730849 residual=0.235823
+oracle_progress_saved route=film step=100 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_progress.pt
+oracle_train route=film step=125/1500 depth=1 loss=0.919490 residual=0.242808
+oracle_train route=film step=150/1500 depth=3 loss=2.875087 residual=0.146903
+oracle_train route=film step=175/1500 depth=2 loss=6.017197 residual=0.196641
+oracle_train route=film step=200/1500 depth=3 loss=2.145754 residual=0.240114
+oracle_progress_saved route=film step=200 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_progress.pt
+oracle_train route=film step=225/1500 depth=2 loss=5.357351 residual=0.150611
+oracle_train route=film step=250/1500 depth=3 loss=1.453708 residual=0.187103
+oracle_train route=film step=275/1500 depth=3 loss=1.461310 residual=0.193503
+oracle_train route=film step=300/1500 depth=2 loss=3.171747 residual=0.201299
+oracle_progress_saved route=film step=300 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_progress.pt
+oracle_train route=film step=325/1500 depth=4 loss=3.579607 residual=0.135578
+oracle_train route=film step=350/1500 depth=4 loss=2.937647 residual=0.224156
+oracle_train route=film step=375/1500 depth=3 loss=3.315790 residual=0.178366
+oracle_train route=film step=400/1500 depth=4 loss=4.161342 residual=0.163324
+oracle_progress_saved route=film step=400 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_progress.pt
+oracle_train route=film step=425/1500 depth=1 loss=1.828001 residual=0.228802
+oracle_train route=film step=450/1500 depth=1 loss=0.051241 residual=0.260144
+oracle_train route=film step=475/1500 depth=2 loss=0.945585 residual=0.128328
+oracle_train route=film step=500/1500 depth=4 loss=2.014360 residual=0.118386
+oracle_progress_saved route=film step=500 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_progress.pt
+oracle_train route=film step=525/1500 depth=1 loss=1.601182 residual=0.160128
+oracle_train route=film step=550/1500 depth=2 loss=0.168246 residual=0.189472
+oracle_train route=film step=575/1500 depth=4 loss=1.623613 residual=0.149273
+oracle_train route=film step=600/1500 depth=4 loss=1.636268 residual=0.177997
+oracle_progress_saved route=film step=600 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_progress.pt
+oracle_train route=film step=625/1500 depth=2 loss=1.393711 residual=0.14689
+oracle_train route=film step=650/1500 depth=4 loss=2.288844 residual=0.158499
+oracle_train route=film step=675/1500 depth=4 loss=2.363190 residual=0.190887
+oracle_train route=film step=700/1500 depth=1 loss=2.358094 residual=0.193335
+oracle_progress_saved route=film step=700 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_progress.pt
+oracle_train route=film step=725/1500 depth=4 loss=2.202197 residual=0.179243
+oracle_train route=film step=750/1500 depth=2 loss=0.024949 residual=0.138406
+oracle_train route=film step=775/1500 depth=1 loss=6.018287 residual=0.0784233
+oracle_train route=film step=800/1500 depth=4 loss=2.672895 residual=0.112471
+oracle_progress_saved route=film step=800 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_progress.pt
+oracle_train route=film step=825/1500 depth=4 loss=2.564950 residual=0.0925773
+oracle_train route=film step=850/1500 depth=2 loss=2.425097 residual=0.101349
+oracle_train route=film step=875/1500 depth=3 loss=2.329763 residual=0.119055
+oracle_train route=film step=900/1500 depth=3 loss=1.893533 residual=0.100223
+oracle_progress_saved route=film step=900 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_progress.pt
+oracle_train route=film step=925/1500 depth=1 loss=0.128283 residual=0.0526568
+oracle_train route=film step=950/1500 depth=3 loss=1.422123 residual=0.106879
+oracle_train route=film step=975/1500 depth=1 loss=0.699460 residual=0.0641816
+oracle_train route=film step=1000/1500 depth=2 loss=0.365372 residual=0.115402
+oracle_progress_saved route=film step=1000 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_progress.pt
+oracle_train route=film step=1025/1500 depth=1 loss=0.481921 residual=0.072621
+oracle_train route=film step=1050/1500 depth=2 loss=4.136230 residual=0.105081
+oracle_train route=film step=1075/1500 depth=4 loss=0.954102 residual=0.116284
+oracle_train route=film step=1100/1500 depth=2 loss=5.108349 residual=0.0945616
+oracle_progress_saved route=film step=1100 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_progress.pt
+oracle_train route=film step=1125/1500 depth=3 loss=2.472331 residual=0.112535
+oracle_train route=film step=1150/1500 depth=3 loss=2.128423 residual=0.0967545
+oracle_train route=film step=1175/1500 depth=4 loss=2.310390 residual=0.102939
+oracle_train route=film step=1200/1500 depth=2 loss=1.139727 residual=0.104688
+oracle_progress_saved route=film step=1200 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_progress.pt
+oracle_train route=film step=1225/1500 depth=2 loss=0.621847 residual=0.096486
+oracle_train route=film step=1250/1500 depth=3 loss=1.758597 residual=0.133438
+oracle_train route=film step=1275/1500 depth=3 loss=1.368273 residual=0.132268
+oracle_train route=film step=1300/1500 depth=3 loss=0.731802 residual=0.118074
+oracle_progress_saved route=film step=1300 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_progress.pt
+oracle_train route=film step=1325/1500 depth=3 loss=3.056554 residual=0.126732
+oracle_train route=film step=1350/1500 depth=4 loss=1.866914 residual=0.172078
+oracle_train route=film step=1375/1500 depth=2 loss=0.219188 residual=0.112641
+oracle_train route=film step=1400/1500 depth=1 loss=0.226003 residual=0.05195
+oracle_progress_saved route=film step=1400 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_progress.pt
+oracle_train route=film step=1425/1500 depth=4 loss=3.195436 residual=0.171296
+oracle_train route=film step=1450/1500 depth=1 loss=0.009269 residual=0.0827552
+oracle_train route=film step=1475/1500 depth=2 loss=1.046479 residual=0.145935
+oracle_train route=film step=1500/1500 depth=2 loss=1.039921 residual=0.0995676
+oracle_progress_saved route=film step=1500 path=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_progress.pt
+{
+  "config": {
+    "active_lineage_sha256_end": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+    "active_lineage_sha256_start": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+    "attn_implementation": "default",
+    "bottleneck_dim": 256,
+    "checkpoint_every": 100,
+    "device": "cuda",
+    "dtype": "bfloat16",
+    "ema_decay": 0.999,
+    "expected_keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+    "frozen_gradient_assertions": 1500,
+    "gradient_liveness_assertions": 1500,
+    "keeper": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/restored/natural_step2000.pt",
+    "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+    "learning_rate": 0.0001,
+    "log_every": 25,
+    "max_length": 512,
+    "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+    "output_dir": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film",
+    "progress_backup_dir": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film",
+    "progress_backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_oracle_interface_probe_20260718/film_training_progress.pt",
+    "progress_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_progress.pt",
+    "progress_contract": {
+      "bottleneck_dim": 256,
+      "dtype": "bfloat16",
+      "ema_decay": 0.999,
+      "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+      "kind": "oracle_interface_probe_training",
+      "learning_rate": 0.0001,
+      "max_length": 512,
+      "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+      "route": "film",
+      "seed": 20260718,
+      "split": "6,18",
+      "steps": 1500,
+      "train_jsonl_sha256": "9249cbaa9a05adce47ddd24ee707db090072503f07b8df636c310985b59e17b6",
+      "trainable_names": [
+        "oracle_reentry_conditioner.branch_a.net.0.weight",
+        "oracle_reentry_conditioner.branch_a.net.0.bias",
+        "oracle_reentry_conditioner.branch_a.net.1.weight",
+        "oracle_reentry_conditioner.branch_a.net.1.bias",
+        "oracle_reentry_conditioner.branch_a.net.3.weight",
+        "oracle_reentry_conditioner.branch_a.net.3.bias",
+        "oracle_reentry_conditioner.branch_b.net.0.weight",
+        "oracle_reentry_conditioner.branch_b.net.0.bias",
+        "oracle_reentry_conditioner.branch_b.net.1.weight",
+        "oracle_reentry_conditioner.branch_b.net.1.bias",
+        "oracle_reentry_conditioner.branch_b.net.3.weight",
+        "oracle_reentry_conditioner.branch_b.net.3.bias"
+      ],
+      "weight_decay": 0.0
+    },
+    "resumed_from_step": 0,
+    "route": "film",
+    "sampling_policy": "base_problem_uniform",
+    "seed": 20260718,
+    "split": "6,18",
+    "step_zero_identity_exact": true,
+    "steps": 1500,
+    "train_jsonl": "outputs/stage5/stage5_phase_g_multitarget_control_20260718/data/train.jsonl",
+    "trainable_names": [
+      "oracle_reentry_conditioner.branch_a.net.0.weight",
+      "oracle_reentry_conditioner.branch_a.net.0.bias",
+      "oracle_reentry_conditioner.branch_a.net.1.weight",
+      "oracle_reentry_conditioner.branch_a.net.1.bias",
+      "oracle_reentry_conditioner.branch_a.net.3.weight",
+      "oracle_reentry_conditioner.branch_a.net.3.bias",
+      "oracle_reentry_conditioner.branch_b.net.0.weight",
+      "oracle_reentry_conditioner.branch_b.net.0.bias",
+      "oracle_reentry_conditioner.branch_b.net.1.weight",
+      "oracle_reentry_conditioner.branch_b.net.1.bias",
+      "oracle_reentry_conditioner.branch_b.net.3.weight",
+      "oracle_reentry_conditioner.branch_b.net.3.bias"
+    ],
+    "trainable_parameter_count": 1385728,
+    "weight_decay": 0.0
+  },
+  "ema_checkpoint": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/oracle_film_ema_step_1500.pt",
+  "kind": "phase_g_oracle_interface_training",
+  "progress_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_progress.pt",
+  "raw_checkpoint": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/oracle_film_raw_step_1500.pt",
+  "route": "film",
+  "status": "finished",
+  "training_trace": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_trace.jsonl"
+}
