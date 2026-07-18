@@ -77,3 +77,27 @@ def test_audit_names_single_target_per_problem_curriculum() -> None:
     assert summary["curriculum_exposure"]["groups_with_repeated_prompt"] == 0
     assert summary["curriculum_exposure"]["groups_with_multiple_targets"] == 0
     assert summary["interpretation"] == "single_target_per_problem_curriculum"
+
+
+def test_audit_measures_posterior_control_across_same_prompt_target_variants() -> None:
+    train = [
+        row("a1", question="same", target="A", reachable=["A", "B"]),
+        row("a2", question="same", target="B", reachable=["A", "B"]),
+    ]
+    test = [
+        row("t1", question="shared", target="A", reachable=["A", "B"]),
+        row("t2", question="shared", target="B", reachable=["A", "B"]),
+    ]
+    cached = [
+        cache("t1", prior=["A", "A"], teacher=["A", "A"]),
+        cache("t2", prior=["A", "A"], teacher=["B", "B"]),
+    ]
+
+    summary = analyze(train, test, cached)
+
+    control = summary["posterior_target_conditioning"]
+    assert control["multi_target_groups"] == 1
+    assert control["prior"]["mean_distinct_first_predictions"] == 1.0
+    assert control["posterior_teacher"]["mean_distinct_first_predictions"] == 2.0
+    assert control["prior"]["all_variants_match_target_rate"] == 0.0
+    assert control["posterior_teacher"]["all_variants_match_target_rate"] == 1.0

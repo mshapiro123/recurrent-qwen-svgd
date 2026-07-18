@@ -185,6 +185,56 @@ def posterior_target_fidelity(
     return fidelity
 
 
+def posterior_target_conditioning(
+    rows: list[dict[str, Any]],
+    cache_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Measure whether posterior K=1 predictions change with a selected target.
+
+    This is meaningful only on a repeated-prompt test set where the same
+    problem is paired with more than one valid target chain.
+    """
+
+    grouped: dict[str, list[tuple[dict[str, Any], dict[str, Any]]]] = defaultdict(list)
+    for row, cache in zip(rows, cache_rows):
+        grouped[problem_signature(row)].append((row, cache))
+    multi_target = [
+        members
+        for members in grouped.values()
+        if len(members) > 1 and len({str(row["target"]) for row, _ in members}) > 1
+    ]
+    result: dict[str, Any] = {
+        "multi_target_groups": len(multi_target),
+        "status": (
+            "measured" if multi_target else "not_applicable_no_repeated_test_prompts"
+        ),
+    }
+    for arm in ("prior", "posterior_teacher"):
+        distinct_predictions: list[float] = []
+        all_variants_match: list[float] = []
+        for members in multi_target:
+            first_predictions = [
+                str(cache["arms"][arm]["1"]["predictions"][0])
+                if cache["arms"][arm]["1"]["predictions"]
+                else ""
+                for _, cache in members
+            ]
+            targets = [str(row["target"]) for row, _ in members]
+            distinct_predictions.append(float(len(set(first_predictions))))
+            all_variants_match.append(
+                float(all(prediction == target for prediction, target in zip(first_predictions, targets)))
+            )
+        result[arm] = {
+            "mean_distinct_first_predictions": (
+                fmean(distinct_predictions) if distinct_predictions else 0.0
+            ),
+            "all_variants_match_target_rate": (
+                fmean(all_variants_match) if all_variants_match else 0.0
+            ),
+        }
+    return result
+
+
 def analyze(
     train_rows: list[dict[str, Any]],
     test_rows: list[dict[str, Any]],
@@ -207,6 +257,10 @@ def analyze(
         "status": "finished",
         "curriculum_exposure": exposure,
         "posterior_target_fidelity": fidelity,
+        "posterior_target_conditioning": posterior_target_conditioning(
+            test_rows,
+            cache_rows,
+        ),
         "interpretation": interpretation,
     }
 
@@ -217,6 +271,7 @@ def markdown(summary: dict[str, Any]) -> str:
     max_k = str(max(fidelity["sample_counts"]))
     k1 = fidelity["by_k"]["1"]
     kmax = fidelity["by_k"][max_k]
+    conditioning = summary["posterior_target_conditioning"]
     return "\n".join(
         [
             "# Phase G Multimodal Supervision Audit",
@@ -238,6 +293,11 @@ def markdown(summary: dict[str, Any]) -> str:
             f"`{kmax['prior']['target_in_k_rate']:.4f}`",
             f"- K={max_k} posterior-minus-prior target lift: "
             f"`{kmax['posterior_minus_prior_target_in_k']:.4f}`",
+            f"- Repeated-prompt target-conditioning groups: "
+            f"`{conditioning['multi_target_groups']}`",
+            f"- Posterior/prior distinct first predictions per target group: "
+            f"`{conditioning['posterior_teacher']['mean_distinct_first_predictions']:.4f}` / "
+            f"`{conditioning['prior']['mean_distinct_first_predictions']:.4f}`",
             "",
         ]
     )

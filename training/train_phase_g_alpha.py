@@ -35,6 +35,10 @@ from training.phase_g_training import (  # noqa: E402
     posterior_target_embeddings,
     save_phase_g_training_progress,
 )
+from training.phase_g_sampling import (  # noqa: E402
+    build_base_problem_groups,
+    sample_phase_g_row_index,
+)
 
 
 def sha256_file(path: str | Path) -> str:
@@ -70,7 +74,7 @@ def progress_contract(
 ) -> dict[str, Any]:
     # Trajectory microbatching is execution-only and has a tested identical
     # mean objective, so a memory fallback may resume the same optimizer state.
-    return {
+    contract = {
         "model_name": args.model_name,
         "keeper_sha256": keeper_sha256,
         "train_jsonl_sha256": train_jsonl_sha256,
@@ -91,6 +95,12 @@ def progress_contract(
         "attn_implementation": args.attn_implementation,
         "trainable_names": sorted(trainable_names),
     }
+    # Preserve exact resume compatibility for completed/paused original
+    # row-uniform arms. Multi-target arms carry their distinct policy in the
+    # resume contract because its sampler changes the optimization sequence.
+    if args.sampling_policy != "row_uniform":
+        contract["sampling_policy"] = args.sampling_policy
+    return contract
 
 
 def atomic_copy(source: Path, destination: Path) -> None:
@@ -138,6 +148,16 @@ def main() -> int:
     parser.add_argument("--kl_balance", type=float, default=0.8)
     parser.add_argument("--ema_decay", type=float, default=0.999)
     parser.add_argument("--num_trajectories", type=int, default=4)
+    parser.add_argument(
+        "--sampling_policy",
+        choices=("row_uniform", "base_problem_uniform"),
+        default="row_uniform",
+        help=(
+            "row_uniform preserves the original Phase G-alpha recipe. "
+            "base_problem_uniform samples a shared prompt uniformly, then one "
+            "of its target-chain variants uniformly."
+        ),
+    )
     parser.add_argument(
         "--trajectory_microbatch_size",
         type=int,
@@ -211,6 +231,11 @@ def main() -> int:
     if not dataset.rows or not all("loop_completions" in row for row in dataset.rows):
         raise RuntimeError("Phase G training requires gold loop_completions on every row")
     sampler = random.Random(args.seed)
+    sampling_groups = (
+        build_base_problem_groups(dataset.rows)
+        if args.sampling_policy == "base_problem_uniform"
+        else None
+    )
 
     trainable = [parameter for parameter in wrapper.parameters() if parameter.requires_grad]
     optimizer = torch.optim.AdamW(
@@ -315,7 +340,12 @@ def main() -> int:
 
     try:
         for step in range(restored_step + 1, args.steps + 1):
-            row_index = sampler.randrange(len(dataset))
+            row_index = sample_phase_g_row_index(
+                sampler,
+                rows=dataset.rows,
+                policy=args.sampling_policy,
+                groups=sampling_groups,
+            )
             row = dataset.rows[row_index]
             depth = int(row["depth"])
             item = dataset[row_index]
@@ -368,6 +398,10 @@ def main() -> int:
                 "row_id": row["id"],
                 "depth": depth,
                 "reachable_set_stratum": row["reachable_set_stratum"],
+                "sampling_policy": args.sampling_policy,
+                "base_problem_id": row.get("base_problem_id"),
+                "target_variant_index": row.get("target_variant_index"),
+                "target_variant_count": row.get("target_variant_count"),
                 "loss": backward_result.loss,
                 "gradient_norm": float(grad_norm.detach().float().cpu().item()),
                 "trajectory_seeds": trajectory_seeds,
