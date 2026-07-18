@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,20 @@ def write_json(path: str | Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def paired_sign_test(*, helped: int, hurt: int) -> float:
+    """One-sided exact sign test for posterior improving selected-target fidelity."""
+
+    if helped < 0 or hurt < 0:
+        raise ValueError("paired sign-test counts must be nonnegative")
+    n = helped + hurt
+    if n == 0:
+        return 1.0
+    return min(
+        1.0,
+        sum(math.comb(n, count) for count in range(helped, n + 1)) / (2**n),
+    )
+
+
 def score_posterior_control(
     audit: dict[str, Any],
     *,
@@ -25,6 +40,7 @@ def score_posterior_control(
     min_teacher_target_rate: float,
     min_teacher_prior_target_lift: float,
     min_teacher_prior_distinct_prediction_lift: float,
+    max_teacher_prior_target_lift_p_value: float,
 ) -> dict[str, Any]:
     """Apply thresholds that were supplied before the guidance training run.
 
@@ -45,6 +61,11 @@ def score_posterior_control(
     prior_distinct = float(conditioning["prior"]["mean_distinct_first_predictions"])
     teacher_prior_distinct_lift = teacher_distinct - prior_distinct
     multi_target_groups = int(conditioning["multi_target_groups"])
+    paired = fidelity["paired_target_in_k"]
+    target_lift_p_value = paired_sign_test(
+        helped=int(paired["helped"]),
+        hurt=int(paired["hurt"]),
+    )
 
     checks = {
         "repeated_prompt_groups": {
@@ -61,6 +82,14 @@ def score_posterior_control(
             "observed": teacher_prior_target_lift,
             "minimum": min_teacher_prior_target_lift,
             "passed": teacher_prior_target_lift >= min_teacher_prior_target_lift,
+        },
+        "teacher_minus_prior_selected_target_sign_test": {
+            "helped": int(paired["helped"]),
+            "hurt": int(paired["hurt"]),
+            "tied": int(paired["tied"]),
+            "one_sided_p": target_lift_p_value,
+            "maximum": max_teacher_prior_target_lift_p_value,
+            "passed": target_lift_p_value <= max_teacher_prior_target_lift_p_value,
         },
         "teacher_minus_prior_distinct_first_predictions": {
             "observed": teacher_prior_distinct_lift,
@@ -99,6 +128,11 @@ def main() -> int:
     parser.add_argument("--min_teacher_target_rate", type=float, required=True)
     parser.add_argument("--min_teacher_prior_target_lift", type=float, required=True)
     parser.add_argument(
+        "--max_teacher_prior_target_lift_p_value",
+        type=float,
+        required=True,
+    )
+    parser.add_argument(
         "--min_teacher_prior_distinct_prediction_lift",
         type=float,
         required=True,
@@ -114,6 +148,8 @@ def main() -> int:
         value = float(getattr(args, name))
         if value < 0.0:
             raise ValueError(f"{name} must be nonnegative")
+    if not 0.0 < args.max_teacher_prior_target_lift_p_value <= 1.0:
+        raise ValueError("max_teacher_prior_target_lift_p_value must be in (0, 1]")
 
     result = score_posterior_control(
         read_json(args.audit_json),
@@ -122,6 +158,9 @@ def main() -> int:
         min_teacher_prior_target_lift=args.min_teacher_prior_target_lift,
         min_teacher_prior_distinct_prediction_lift=(
             args.min_teacher_prior_distinct_prediction_lift
+        ),
+        max_teacher_prior_target_lift_p_value=(
+            args.max_teacher_prior_target_lift_p_value
         ),
     )
     write_json(args.output_json, result)

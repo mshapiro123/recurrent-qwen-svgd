@@ -17,6 +17,7 @@ def required_posterior_control_thresholds(
         ("STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_TARGET_RATE", float),
         ("STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_PRIOR_TARGET_LIFT", float),
         ("STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_PRIOR_DISTINCT_LIFT", float),
+        ("STAGE5_PHASE_G_MULTITARGET_MAX_TEACHER_PRIOR_TARGET_LIFT_PVALUE", float),
     )
     values: dict[str, float | int] = {}
     missing: list[str] = []
@@ -36,6 +37,12 @@ def required_posterior_control_thresholds(
     for name, value in values.items():
         if name != "STAGE5_PHASE_G_MULTITARGET_MIN_GROUPS" and float(value) < 0.0:
             raise ValueError(f"{name} must be nonnegative")
+    p_value = float(values["STAGE5_PHASE_G_MULTITARGET_MAX_TEACHER_PRIOR_TARGET_LIFT_PVALUE"])
+    if not 0.0 < p_value <= 1.0:
+        raise ValueError(
+            "STAGE5_PHASE_G_MULTITARGET_MAX_TEACHER_PRIOR_TARGET_LIFT_PVALUE "
+            "must be in (0, 1]"
+        )
     return values
 
 

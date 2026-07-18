@@ -187,9 +187,11 @@ repeated-prompt multi-target train data
 ```
 
 It must evaluate both the posterior teacher and the prior on held-out
-repeated-prompt control rows at K=1. Before launch, lock a powered threshold
-for the teacher's selected-target fidelity and group-level target switching.
-The threshold cannot be selected after viewing the run.
+repeated-prompt control rows at K=1. Before launch, lock powered effect-size
+thresholds for teacher selected-target fidelity, teacher-minus-prior fidelity,
+and target-group switching, plus a one-sided paired sign-test threshold for
+teacher-minus-prior selected-target lift. None can be selected after viewing
+the run.
 
 Mandatory launch assertions:
 

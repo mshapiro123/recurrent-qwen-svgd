@@ -308,6 +308,8 @@ def main(run_id: str | None = None) -> int:
             str(thresholds["STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_TARGET_RATE"]),
             "--min_teacher_prior_target_lift",
             str(thresholds["STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_PRIOR_TARGET_LIFT"]),
+            "--max_teacher_prior_target_lift_p_value",
+            str(thresholds["STAGE5_PHASE_G_MULTITARGET_MAX_TEACHER_PRIOR_TARGET_LIFT_PVALUE"]),
             "--min_teacher_prior_distinct_prediction_lift",
             str(thresholds["STAGE5_PHASE_G_MULTITARGET_MIN_TEACHER_PRIOR_DISTINCT_LIFT"]),
         ],

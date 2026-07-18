@@ -57,8 +57,9 @@ The correction has two distinct held-out surfaces:
    coverage comparison so the corrected run remains comparable to the prior
    entropy-matched-temperature and iso-compute-depth measurements.
 
-The posterior-control threshold must be locked from a held-out power
-calculation before training. The order of gates is fixed:
+Posterior-control effect-size thresholds and the one-sided paired sign-test
+threshold for teacher-minus-prior selected-target lift must be locked from a
+held-out power calculation before training. The order of gates is fixed:
 
 ```text
 posterior target control -> K=1 preservation -> coverage versus temperature
