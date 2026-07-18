@@ -53,6 +53,8 @@
 - Historical R16 optimizer-marked parameters: `7,613,953`.
 - Historical R16 forward-active parameters: `6,007,425`.
 - Prospective Arm E excludes the bypassed legacy concat tensors.
+- Arm E locks immutable JSONL inputs with UTF-8 LF-normalized SHA256, so the
+  frozen content hash is invariant to Windows versus Colab checkout line endings.
 
 ## Literature Claim Fit
 

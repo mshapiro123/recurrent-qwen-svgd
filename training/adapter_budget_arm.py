@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import math
+import hashlib
+from pathlib import Path
 from typing import Any, Iterable
 
 
@@ -28,6 +30,14 @@ ARM_A_POOLED_ACCURACY = sum(ARM_A_COUNTS.values()) / TOTAL_ROWS
 ARM_C_POOLED_ACCURACY = 0.531
 PARITY_POOLED_MARGIN = 0.03
 PARITY_MAX_DEPTH_DEFICIT = 8
+
+
+def normalized_text_sha256(path: str | Path) -> str:
+    """Hash JSONL content independently of checkout line-ending policy."""
+
+    raw = Path(path).read_bytes()
+    normalized = raw.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return hashlib.sha256(normalized).hexdigest()
 
 
 def locked_spec() -> dict[str, Any]:

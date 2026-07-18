@@ -19,7 +19,11 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from colab.stage5_publish_utils import publishable_artifact_paths
-from training.adapter_budget_arm import locked_spec, score_adapter_budget_arm
+from training.adapter_budget_arm import (
+    locked_spec,
+    normalized_text_sha256,
+    score_adapter_budget_arm,
+)
 from training.peft_ponder_closure import build_base_capability_canary_rows, canary_baseline_gate
 
 
@@ -45,13 +49,14 @@ EXPECTED_PRETRAINED_BASE_SHA256 = (
     "960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f"
 )
 EXPECTED_IMMUTABLE_SHA256 = {
-    "chain_depth_le2": "e0e9d6ea6e90cf066054a8997293bbfe78129eb1ed80cb7487750e334acd82af",
-    "chain_depth_le4": "2d919d66d62378f6d4fd4ab56d59a9fd4cdcd1a45b3f071c74ff13aed04e5df1",
-    "chain_depth_le8": "260d5c11c0b6e97d1f09c9356b1eaedbde86cceac4053cc6bf561e53d0176bde",
-    "chain_depth_le8_dose": "260d5c11c0b6e97d1f09c9356b1eaedbde86cceac4053cc6bf561e53d0176bde",
-    "frozen_eval": "aaa71c3d4cc500f68fac7ee6f5f0e31d9e11570bdff90adb805c769c12c66cd3",
-    "arm_a_rows": "e032e29c49fec7eedef70a2f10330e4f9fb2bfa0da2df37203af3ba1c19e7b58",
+    "chain_depth_le2": "56fbb7774d5716632b66b60bad3d0067c9f92f58f0db8aa7297eb637116d1b69",
+    "chain_depth_le4": "829cbd3d381329470e8621094e7c5326f612552a56f38b3b09d52d873603f636",
+    "chain_depth_le8": "cf61c14c2629f2caa7e1b6bd100adb122a468d5285b74970aaa4aebfbb56fd12",
+    "chain_depth_le8_dose": "cf61c14c2629f2caa7e1b6bd100adb122a468d5285b74970aaa4aebfbb56fd12",
+    "frozen_eval": "3de844669aba303063e6932f5852914ee0993e531c8e65c2a4c4b18e219b3fc8",
+    "arm_a_rows": "0b582b9e49a59eff4a9b739e0df6520328de77f0d48abe8892ff0fea78817e65",
 }
+IMMUTABLE_DATASET_HASH_MODE = "utf8_lf_normalized"
 
 CHAIN_ROOT = ROOT / "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827"
 DEPTH8_ROOT = ROOT / "outputs/stage5/stage5_depth_support_ladder8_20260705_204923"
@@ -267,7 +272,9 @@ def generate_locked_data() -> dict[str, Any]:
         "arm_a_rows": ARM_A_ROWS,
         "canary": canary,
     }
-    observed_sha256 = {name: sha256_file(path) for name, path in files.items()}
+    observed_sha256 = {
+        name: normalized_text_sha256(path) for name, path in files.items()
+    }
     for name, expected_sha in EXPECTED_IMMUTABLE_SHA256.items():
         if observed_sha256[name] != expected_sha:
             raise RuntimeError(
@@ -277,6 +284,7 @@ def generate_locked_data() -> dict[str, Any]:
     return {
         "files": {name: path_for_cli(path) for name, path in files.items()},
         "sha256": observed_sha256,
+        "sha256_mode": IMMUTABLE_DATASET_HASH_MODE,
         "smoke_paths": smoke_paths,
         "primitive_summary": path_for_cli(primitive_summary),
     }

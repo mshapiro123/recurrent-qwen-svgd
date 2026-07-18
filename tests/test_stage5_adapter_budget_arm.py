@@ -19,6 +19,8 @@ def test_adapter_budget_target_is_wired_with_safety_markers() -> None:
     assert "adapter_budget_depth_profile" in runner
     assert "EXPECTED_PRETRAINED_BASE_SHA256" in runner
     assert "EXPECTED_IMMUTABLE_SHA256" in runner
+    assert "IMMUTABLE_DATASET_HASH_MODE" in runner
+    assert "normalized_text_sha256" in runner
 
 
 def test_runner_uses_frozen_phase_a_rows_and_r16_only() -> None:

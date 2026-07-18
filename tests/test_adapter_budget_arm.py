@@ -5,8 +5,18 @@ from training.adapter_budget_arm import (
     ARM_A_POOLED_ACCURACY,
     ARM_C_POOLED_ACCURACY,
     locked_spec,
+    normalized_text_sha256,
     score_adapter_budget_arm,
 )
+
+
+def test_immutable_dataset_hash_is_independent_of_checkout_line_endings(tmp_path) -> None:
+    lf = tmp_path / "lf.jsonl"
+    crlf = tmp_path / "crlf.jsonl"
+    lf.write_bytes(b'{"id":"a"}\n{"id":"b"}\n')
+    crlf.write_bytes(b'{"id":"a"}\r\n{"id":"b"}\r\n')
+
+    assert normalized_text_sha256(lf) == normalized_text_sha256(crlf)
 
 
 def _rows(counts: dict[int, int], *, field: str) -> list[dict[str, object]]:
