@@ -1,4 +1,2577 @@
 {
+  "arms": [
+    {
+      "calibration": {
+        "ema": {
+          "active_lineage_sha256": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+          "amortization_gap": {
+            "K": 20,
+            "posterior_minus_prior_mean_coverage": 7.123410443722947e-05
+          },
+          "comparisons": {
+            "temperature": {
+              "K": 20,
+              "mean_delta": -0.0449901498241342,
+              "sign_test": {
+                "helped": 15,
+                "hurt": 64,
+                "one_sided_p": 0.9999999974025293,
+                "tied": 433
+              }
+            }
+          },
+          "guidance_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_alpha_guided_width_20260717/train/kl_0p0001/phase_g_ema_step_1000.pt",
+          "k1_parity_gate": {
+            "correct": 389,
+            "expected_correct": 389,
+            "passed": true,
+            "per_cell": {
+              "d1_2": {
+                "absolute_delta": 0.015625,
+                "baseline": 0.9609375,
+                "phase_g_k1": 0.9765625
+              },
+              "d2_2": {
+                "absolute_delta": 0.015625,
+                "baseline": 0.703125,
+                "phase_g_k1": 0.6875
+              },
+              "d2_3-4": {
+                "absolute_delta": 0.015625,
+                "baseline": 0.890625,
+                "phase_g_k1": 0.90625
+              },
+              "d3_2": {
+                "absolute_delta": 0.0,
+                "baseline": 0.5348837209302325,
+                "phase_g_k1": 0.5348837209302325
+              },
+              "d3_3-4": {
+                "absolute_delta": 0.0,
+                "baseline": 0.6744186046511628,
+                "phase_g_k1": 0.6744186046511628
+              },
+              "d3_5-8": {
+                "absolute_delta": 0.023809523809523725,
+                "baseline": 0.9523809523809523,
+                "phase_g_k1": 0.9285714285714286
+              },
+              "d4_2": {
+                "absolute_delta": 0.0,
+                "baseline": 0.375,
+                "phase_g_k1": 0.375
+              },
+              "d4_3-4": {
+                "absolute_delta": 0.0,
+                "baseline": 0.375,
+                "phase_g_k1": 0.375
+              },
+              "d4_5-8": {
+                "absolute_delta": 0.0625,
+                "baseline": 0.65625,
+                "phase_g_k1": 0.59375
+              },
+              "d4_9-16": {
+                "absolute_delta": 0.0,
+                "baseline": 0.875,
+                "phase_g_k1": 0.875
+              }
+            },
+            "per_cell_tolerance": 0.08,
+            "pooled_absolute_delta": 0.0,
+            "pooled_tolerance": 0.03,
+            "total": 512
+          },
+          "keeper": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_alpha_guided_width_20260717/restored/natural_step2000.pt",
+          "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+          "kind": "phase_g_alpha_coverage",
+          "locked_coverage_margin": 0.05,
+          "sample_counts": [
+            1,
+            2,
+            4,
+            8,
+            20
+          ],
+          "status": "finished",
+          "summaries": {
+            "posterior_teacher": {
+              "1": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.484375,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.96875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.96875
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.2955729166666667,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.78125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.78125
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.2037295386904762,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7109375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7109375
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.11439701791264291,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.5625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.5625
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.37640449438202245,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7528089887640449,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7528089887640449
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.20443645083932852,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7050359712230215,
+                    "rows": 139,
+                    "valid_sample_rate": 0.7050359712230215
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.12546653796653798,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7972972972972973,
+                    "rows": 74,
+                    "valid_sample_rate": 0.7972972972972973
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.0735106906981907,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.90625,
+                    "rows": 32,
+                    "valid_sample_rate": 0.90625
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.0,
+                  "mean_coverage": 0.27451861831744645,
+                  "mean_duplicate_rate": 0.0,
+                  "mean_unique_valid": 0.755859375,
+                  "rows": 512,
+                  "valid_sample_rate": 0.755859375
+                }
+              },
+              "2": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.4921875,
+                    "mean_duplicate_rate": 0.4921875,
+                    "mean_unique_valid": 0.984375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.97265625
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.3059895833333333,
+                    "mean_duplicate_rate": 0.484375,
+                    "mean_unique_valid": 0.8046875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.78515625
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.2086123511904762,
+                    "mean_duplicate_rate": 0.48046875,
+                    "mean_unique_valid": 0.7265625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.70703125
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.11927983041264291,
+                    "mean_duplicate_rate": 0.47265625,
+                    "mean_unique_valid": 0.578125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.55078125
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.003745318352059925,
+                    "mean_coverage": 0.38764044943820225,
+                    "mean_duplicate_rate": 0.4794007490636704,
+                    "mean_unique_valid": 0.7752808988764045,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7546816479400749
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.2068345323741007,
+                    "mean_duplicate_rate": 0.49280575539568344,
+                    "mean_unique_valid": 0.7122302158273381,
+                    "rows": 139,
+                    "valid_sample_rate": 0.7050359712230215
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.12884491634491635,
+                    "mean_duplicate_rate": 0.47297297297297297,
+                    "mean_unique_valid": 0.8243243243243243,
+                    "rows": 74,
+                    "valid_sample_rate": 0.7837837837837838
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.0735106906981907,
+                    "mean_duplicate_rate": 0.484375,
+                    "mean_unique_valid": 0.90625,
+                    "rows": 32,
+                    "valid_sample_rate": 0.890625
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.001953125,
+                  "mean_coverage": 0.2815173162341131,
+                  "mean_duplicate_rate": 0.482421875,
+                  "mean_unique_valid": 0.7734375,
+                  "rows": 512,
+                  "valid_sample_rate": 0.75390625
+                }
+              },
+              "20": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.0234375,
+                    "mean_coverage": 0.50390625,
+                    "mean_duplicate_rate": 0.94765625,
+                    "mean_unique_valid": 1.0078125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.975
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.3255208333333333,
+                    "mean_duplicate_rate": 0.9429687499999999,
+                    "mean_unique_valid": 0.8515625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.775390625
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.22726004464285715,
+                    "mean_duplicate_rate": 0.94140625,
+                    "mean_unique_valid": 0.8046875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.707421875
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.15299321988775114,
+                    "mean_duplicate_rate": 0.93125,
+                    "mean_unique_valid": 0.7421875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.553125
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.0149812734082397,
+                    "mean_coverage": 0.4044943820224719,
+                    "mean_duplicate_rate": 0.943071161048689,
+                    "mean_unique_valid": 0.8089887640449438,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7554307116104869
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.2326139088729017,
+                    "mean_duplicate_rate": 0.9410071942446042,
+                    "mean_unique_valid": 0.7985611510791367,
+                    "rows": 139,
+                    "valid_sample_rate": 0.6989208633093525
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.16103603603603603,
+                    "mean_duplicate_rate": 0.9324324324324325,
+                    "mean_unique_valid": 1.0405405405405406,
+                    "rows": 74,
+                    "valid_sample_rate": 0.7898648648648648
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.08090889145576645,
+                    "mean_duplicate_rate": 0.9406249999999999,
+                    "mean_unique_valid": 1.0,
+                    "rows": 32,
+                    "valid_sample_rate": 0.878125
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.0078125,
+                  "mean_coverage": 0.3024200869659854,
+                  "mean_duplicate_rate": 0.9408203125,
+                  "mean_unique_valid": 0.8515625,
+                  "rows": 512,
+                  "valid_sample_rate": 0.752734375
+                }
+              },
+              "4": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.015625,
+                    "mean_coverage": 0.49609375,
+                    "mean_duplicate_rate": 0.744140625,
+                    "mean_unique_valid": 0.9921875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.974609375
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.3157552083333333,
+                    "mean_duplicate_rate": 0.73046875,
+                    "mean_unique_valid": 0.828125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.78125
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.21512276785714285,
+                    "mean_duplicate_rate": 0.734375,
+                    "mean_unique_valid": 0.7421875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.708984375
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.12865018011502385,
+                    "mean_duplicate_rate": 0.712890625,
+                    "mean_unique_valid": 0.6328125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.55859375
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.011235955056179775,
+                    "mean_coverage": 0.3970037453183521,
+                    "mean_duplicate_rate": 0.7312734082397003,
+                    "mean_unique_valid": 0.7940074906367042,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7574906367041199
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.21103117505995203,
+                    "mean_duplicate_rate": 0.7356115107913669,
+                    "mean_unique_valid": 0.7266187050359713,
+                    "rows": 139,
+                    "valid_sample_rate": 0.7014388489208633
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.13632561132561133,
+                    "mean_duplicate_rate": 0.722972972972973,
+                    "mean_unique_valid": 0.8783783783783784,
+                    "rows": 74,
+                    "valid_sample_rate": 0.793918918918919
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.07806798236485736,
+                    "mean_duplicate_rate": 0.71875,
+                    "mean_unique_valid": 0.96875,
+                    "rows": 32,
+                    "valid_sample_rate": 0.890625
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.005859375,
+                  "mean_coverage": 0.288905476576375,
+                  "mean_duplicate_rate": 0.73046875,
+                  "mean_unique_valid": 0.798828125,
+                  "rows": 512,
+                  "valid_sample_rate": 0.755859375
+                }
+              },
+              "8": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.0234375,
+                    "mean_coverage": 0.5,
+                    "mean_duplicate_rate": 0.87109375,
+                    "mean_unique_valid": 1.0,
+                    "rows": 128,
+                    "valid_sample_rate": 0.9755859375
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.3216145833333333,
+                    "mean_duplicate_rate": 0.859375,
+                    "mean_unique_valid": 0.84375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7744140625
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.21819196428571427,
+                    "mean_duplicate_rate": 0.865234375,
+                    "mean_unique_valid": 0.7578125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7119140625
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.14557134488775114,
+                    "mean_duplicate_rate": 0.837890625,
+                    "mean_unique_valid": 0.703125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.5595703125
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.0149812734082397,
+                    "mean_coverage": 0.40074906367041196,
+                    "mean_duplicate_rate": 0.8609550561797753,
+                    "mean_unique_valid": 0.8014981273408239,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7570224719101124
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.22601918465227816,
+                    "mean_duplicate_rate": 0.8570143884892086,
+                    "mean_unique_valid": 0.7769784172661871,
+                    "rows": 139,
+                    "valid_sample_rate": 0.7005395683453237
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.14490025740025742,
+                    "mean_duplicate_rate": 0.8530405405405406,
+                    "mean_unique_valid": 0.9324324324324325,
+                    "rows": 74,
+                    "valid_sample_rate": 0.7972972972972973
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.08090889145576645,
+                    "mean_duplicate_rate": 0.85546875,
+                    "mean_unique_valid": 1.0,
+                    "rows": 32,
+                    "valid_sample_rate": 0.8828125
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.0078125,
+                  "mean_coverage": 0.2963444731266997,
+                  "mean_duplicate_rate": 0.8583984375,
+                  "mean_unique_valid": 0.826171875,
+                  "rows": 512,
+                  "valid_sample_rate": 0.75537109375
+                }
+              }
+            },
+            "prior": {
+              "1": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.48828125,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.9765625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.9765625
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.3040364583333333,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.796875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.796875
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.2037295386904762,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7109375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7109375
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.11498887397324897,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.5546875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.5546875
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.38202247191011235,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7640449438202247,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7640449438202247
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.20743405275779375,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7122302158273381,
+                    "rows": 139,
+                    "valid_sample_rate": 0.7122302158273381
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.1232142857142857,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7837837837837838,
+                    "rows": 74,
+                    "valid_sample_rate": 0.7837837837837838
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.0706697816072816,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.875,
+                    "rows": 32,
+                    "valid_sample_rate": 0.875
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.0,
+                  "mean_coverage": 0.2777590302492646,
+                  "mean_duplicate_rate": 0.0,
+                  "mean_unique_valid": 0.759765625,
+                  "rows": 512,
+                  "valid_sample_rate": 0.759765625
+                }
+              },
+              "2": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.4921875,
+                    "mean_duplicate_rate": 0.49609375,
+                    "mean_unique_valid": 0.984375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.9765625
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.3138020833333333,
+                    "mean_duplicate_rate": 0.46484375,
+                    "mean_unique_valid": 0.8203125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7890625
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.20875186011904762,
+                    "mean_duplicate_rate": 0.4921875,
+                    "mean_unique_valid": 0.7265625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.71484375
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.1320322147470585,
+                    "mean_duplicate_rate": 0.43359375,
+                    "mean_unique_valid": 0.6328125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.55859375
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.003745318352059925,
+                    "mean_coverage": 0.39325842696629215,
+                    "mean_duplicate_rate": 0.47191011235955055,
+                    "mean_unique_valid": 0.7865168539325843,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7640449438202247
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.21163069544364507,
+                    "mean_duplicate_rate": 0.4856115107913669,
+                    "mean_unique_valid": 0.7266187050359713,
+                    "rows": 139,
+                    "valid_sample_rate": 0.7122302158273381
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.13463642213642216,
+                    "mean_duplicate_rate": 0.44594594594594594,
+                    "mean_unique_valid": 0.8648648648648649,
+                    "rows": 74,
+                    "valid_sample_rate": 0.7837837837837838
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.07522707327394827,
+                    "mean_duplicate_rate": 0.46875,
+                    "mean_unique_valid": 0.9375,
+                    "rows": 32,
+                    "valid_sample_rate": 0.875
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.001953125,
+                  "mean_coverage": 0.28669341454985986,
+                  "mean_duplicate_rate": 0.4716796875,
+                  "mean_unique_valid": 0.791015625,
+                  "rows": 512,
+                  "valid_sample_rate": 0.759765625
+                }
+              },
+              "20": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.03125,
+                    "mean_coverage": 0.50390625,
+                    "mean_duplicate_rate": 0.947265625,
+                    "mean_unique_valid": 1.0078125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.9734375
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.3268229166666667,
+                    "mean_duplicate_rate": 0.9425781249999999,
+                    "mean_unique_valid": 0.859375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.778125
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.2212611607142857,
+                    "mean_duplicate_rate": 0.9425781249999999,
+                    "mean_unique_valid": 0.7890625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.704296875
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.1574050840652403,
+                    "mean_duplicate_rate": 0.93203125,
+                    "mean_unique_valid": 0.75,
+                    "rows": 128,
+                    "valid_sample_rate": 0.552734375
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.018726591760299626,
+                    "mean_coverage": 0.40262172284644193,
+                    "mean_duplicate_rate": 0.943071161048689,
+                    "mean_unique_valid": 0.8052434456928839,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7539325842696629
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.23741007194244604,
+                    "mean_duplicate_rate": 0.941726618705036,
+                    "mean_unique_valid": 0.8129496402877698,
+                    "rows": 139,
+                    "valid_sample_rate": 0.7007194244604317
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.15706241956241956,
+                    "mean_duplicate_rate": 0.9331081081081081,
+                    "mean_unique_valid": 1.0135135135135136,
+                    "rows": 74,
+                    "valid_sample_rate": 0.7885135135135135
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.08374980054667555,
+                    "mean_duplicate_rate": 0.9406249999999999,
+                    "mean_unique_valid": 1.03125,
+                    "rows": 32,
+                    "valid_sample_rate": 0.8765625
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.009765625,
+                  "mean_coverage": 0.30234885286154817,
+                  "mean_duplicate_rate": 0.9411132812499999,
+                  "mean_unique_valid": 0.8515625,
+                  "rows": 512,
+                  "valid_sample_rate": 0.7521484375
+                }
+              },
+              "4": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.0234375,
+                    "mean_coverage": 0.5,
+                    "mean_duplicate_rate": 0.7421875,
+                    "mean_unique_valid": 1.0,
+                    "rows": 128,
+                    "valid_sample_rate": 0.974609375
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.3177083333333333,
+                    "mean_duplicate_rate": 0.7265625,
+                    "mean_unique_valid": 0.828125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.78515625
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.21233258928571427,
+                    "mean_duplicate_rate": 0.736328125,
+                    "mean_unique_valid": 0.7421875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.712890625
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.13430494201978577,
+                    "mean_duplicate_rate": 0.703125,
+                    "mean_unique_valid": 0.6484375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.552734375
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.0149812734082397,
+                    "mean_coverage": 0.398876404494382,
+                    "mean_duplicate_rate": 0.7275280898876404,
+                    "mean_unique_valid": 0.797752808988764,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7593632958801498
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.21402877697841727,
+                    "mean_duplicate_rate": 0.7356115107913669,
+                    "mean_unique_valid": 0.7338129496402878,
+                    "rows": 139,
+                    "valid_sample_rate": 0.7050359712230215
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.13902831402831403,
+                    "mean_duplicate_rate": 0.7128378378378378,
+                    "mean_unique_valid": 0.8918918918918919,
+                    "rows": 74,
+                    "valid_sample_rate": 0.7905405405405406
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.07806798236485736,
+                    "mean_duplicate_rate": 0.71875,
+                    "mean_unique_valid": 0.96875,
+                    "rows": 32,
+                    "valid_sample_rate": 0.875
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.0078125,
+                  "mean_coverage": 0.29108646615970835,
+                  "mean_duplicate_rate": 0.72705078125,
+                  "mean_unique_valid": 0.8046875,
+                  "rows": 512,
+                  "valid_sample_rate": 0.75634765625
+                }
+              },
+              "8": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.03125,
+                    "mean_coverage": 0.50390625,
+                    "mean_duplicate_rate": 0.869140625,
+                    "mean_unique_valid": 1.0078125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.97265625
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.3196614583333333,
+                    "mean_duplicate_rate": 0.8603515625,
+                    "mean_unique_valid": 0.8359375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.77734375
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.21605282738095238,
+                    "mean_duplicate_rate": 0.8642578125,
+                    "mean_unique_valid": 0.7578125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7109375
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.14477487573190698,
+                    "mean_duplicate_rate": 0.83984375,
+                    "mean_unique_valid": 0.6953125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.552734375
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.018726591760299626,
+                    "mean_coverage": 0.40262172284644193,
+                    "mean_duplicate_rate": 0.8604868913857678,
+                    "mean_unique_valid": 0.8052434456928839,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7560861423220974
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.22062350119904076,
+                    "mean_duplicate_rate": 0.862410071942446,
+                    "mean_unique_valid": 0.7553956834532374,
+                    "rows": 139,
+                    "valid_sample_rate": 0.6996402877697842
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.14535070785070786,
+                    "mean_duplicate_rate": 0.8462837837837838,
+                    "mean_unique_valid": 0.9324324324324325,
+                    "rows": 74,
+                    "valid_sample_rate": 0.7905405405405406
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.08374980054667555,
+                    "mean_duplicate_rate": 0.8515625,
+                    "mean_unique_valid": 1.03125,
+                    "rows": 32,
+                    "valid_sample_rate": 0.87890625
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.009765625,
+                  "mean_coverage": 0.2960988528615482,
+                  "mean_duplicate_rate": 0.8583984375,
+                  "mean_unique_valid": 0.82421875,
+                  "rows": 512,
+                  "valid_sample_rate": 0.75341796875
+                }
+              }
+            },
+            "temperature": {
+              "1": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.484375,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.96875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.96875
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.294921875,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7734375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7734375
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.21121651785714285,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.734375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.734375
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.11289624004467755,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.5390625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.5390625
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.3801498127340824,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7602996254681648,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7602996254681648
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.20503597122302158,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7050359712230215,
+                    "rows": 139,
+                    "valid_sample_rate": 0.7050359712230215
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.12128378378378378,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7702702702702703,
+                    "rows": 74,
+                    "valid_sample_rate": 0.7702702702702703
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.0706697816072816,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.875,
+                    "rows": 32,
+                    "valid_sample_rate": 0.875
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.0,
+                  "mean_coverage": 0.2758524082254551,
+                  "mean_duplicate_rate": 0.0,
+                  "mean_unique_valid": 0.75390625,
+                  "rows": 512,
+                  "valid_sample_rate": 0.75390625
+                }
+              },
+              "2": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.0546875,
+                    "mean_coverage": 0.51953125,
+                    "mean_duplicate_rate": 0.45703125,
+                    "mean_unique_valid": 1.0390625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.96875
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.3118489583333333,
+                    "mean_duplicate_rate": 0.45703125,
+                    "mean_unique_valid": 0.8125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7734375
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.22144717261904762,
+                    "mean_duplicate_rate": 0.46484375,
+                    "mean_unique_valid": 0.765625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.73046875
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.1195229141518204,
+                    "mean_duplicate_rate": 0.45703125,
+                    "mean_unique_valid": 0.59375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.546875
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.026217228464419477,
+                    "mean_coverage": 0.40636704119850187,
+                    "mean_duplicate_rate": 0.449438202247191,
+                    "mean_unique_valid": 0.8127340823970037,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7602996254681648
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.20983213429256592,
+                    "mean_duplicate_rate": 0.4784172661870504,
+                    "mean_unique_valid": 0.7194244604316546,
+                    "rows": 139,
+                    "valid_sample_rate": 0.697841726618705
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.13608429858429857,
+                    "mean_duplicate_rate": 0.44594594594594594,
+                    "mean_unique_valid": 0.8783783783783784,
+                    "rows": 74,
+                    "valid_sample_rate": 0.7905405405405406
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.0726229066072816,
+                    "mean_duplicate_rate": 0.484375,
+                    "mean_unique_valid": 0.90625,
+                    "rows": 32,
+                    "valid_sample_rate": 0.875
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.013671875,
+                  "mean_coverage": 0.2930875737760503,
+                  "mean_duplicate_rate": 0.458984375,
+                  "mean_unique_valid": 0.802734375,
+                  "rows": 512,
+                  "valid_sample_rate": 0.7548828125
+                }
+              },
+              "20": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.2421875,
+                    "mean_coverage": 0.6171875,
+                    "mean_duplicate_rate": 0.9328124999999999,
+                    "mean_unique_valid": 1.234375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.965625
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.015625,
+                    "mean_coverage": 0.3697916666666667,
+                    "mean_duplicate_rate": 0.93046875,
+                    "mean_unique_valid": 0.96875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7828125
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.25585007440476193,
+                    "mean_duplicate_rate": 0.932421875,
+                    "mean_unique_valid": 0.921875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.71796875
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.14652676967130093,
+                    "mean_duplicate_rate": 0.93203125,
+                    "mean_unique_valid": 0.7265625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.561328125
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.12359550561797752,
+                    "mean_coverage": 0.4756554307116105,
+                    "mean_duplicate_rate": 0.9322097378277153,
+                    "mean_unique_valid": 0.951310861423221,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7601123595505618
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.2511990407673861,
+                    "mean_duplicate_rate": 0.9348920863309351,
+                    "mean_unique_valid": 0.8633093525179856,
+                    "rows": 139,
+                    "valid_sample_rate": 0.6989208633093525
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.17713963963963963,
+                    "mean_duplicate_rate": 0.9236486486486486,
+                    "mean_unique_valid": 1.135135135135135,
+                    "rows": 74,
+                    "valid_sample_rate": 0.8013513513513514
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.08789279297091797,
+                    "mean_duplicate_rate": 0.9359375,
+                    "mean_unique_valid": 1.09375,
+                    "rows": 32,
+                    "valid_sample_rate": 0.8796875
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.064453125,
+                  "mean_coverage": 0.34733900268568235,
+                  "mean_duplicate_rate": 0.93193359375,
+                  "mean_unique_valid": 0.962890625,
+                  "rows": 512,
+                  "valid_sample_rate": 0.75693359375
+                }
+              },
+              "4": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.1015625,
+                    "mean_coverage": 0.546875,
+                    "mean_duplicate_rate": 0.71484375,
+                    "mean_unique_valid": 1.09375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.970703125
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.33203125,
+                    "mean_duplicate_rate": 0.70703125,
+                    "mean_unique_valid": 0.8671875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.77734375
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.2230096726190476,
+                    "mean_duplicate_rate": 0.720703125,
+                    "mean_unique_valid": 0.7734375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.72265625
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.12623202535311911,
+                    "mean_duplicate_rate": 0.712890625,
+                    "mean_unique_valid": 0.625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.55078125
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.052434456928838954,
+                    "mean_coverage": 0.4250936329588015,
+                    "mean_duplicate_rate": 0.7078651685393258,
+                    "mean_unique_valid": 0.850187265917603,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7612359550561798
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.22122302158273383,
+                    "mean_duplicate_rate": 0.7248201438848921,
+                    "mean_unique_valid": 0.7553956834532374,
+                    "rows": 139,
+                    "valid_sample_rate": 0.6942446043165468
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.1424066924066924,
+                    "mean_duplicate_rate": 0.706081081081081,
+                    "mean_unique_valid": 0.918918918918919,
+                    "rows": 74,
+                    "valid_sample_rate": 0.793918918918919
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.0754638156981907,
+                    "mean_duplicate_rate": 0.734375,
+                    "mean_unique_valid": 0.9375,
+                    "rows": 32,
+                    "valid_sample_rate": 0.8828125
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.02734375,
+                  "mean_coverage": 0.30703698699304166,
+                  "mean_duplicate_rate": 0.7138671875,
+                  "mean_unique_valid": 0.83984375,
+                  "rows": 512,
+                  "valid_sample_rate": 0.75537109375
+                }
+              },
+              "8": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.1484375,
+                    "mean_coverage": 0.5703125,
+                    "mean_duplicate_rate": 0.849609375,
+                    "mean_unique_valid": 1.140625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.9716796875
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.34765625,
+                    "mean_duplicate_rate": 0.84375,
+                    "mean_unique_valid": 0.90625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7783203125
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.23038504464285714,
+                    "mean_duplicate_rate": 0.8505859375,
+                    "mean_unique_valid": 0.8203125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7177734375
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.13039869201978577,
+                    "mean_duplicate_rate": 0.849609375,
+                    "mean_unique_valid": 0.6484375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.5537109375
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.0749063670411985,
+                    "mean_coverage": 0.4419475655430712,
+                    "mean_duplicate_rate": 0.8469101123595506,
+                    "mean_unique_valid": 0.8838951310861424,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7617041198501873
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.22482014388489208,
+                    "mean_duplicate_rate": 0.8561151079136691,
+                    "mean_unique_valid": 0.7697841726618705,
+                    "rows": 139,
+                    "valid_sample_rate": 0.6942446043165468
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.1623712998712999,
+                    "mean_duplicate_rate": 0.831081081081081,
+                    "mean_unique_valid": 1.0405405405405406,
+                    "rows": 74,
+                    "valid_sample_rate": 0.793918918918919
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.0754638156981907,
+                    "mean_duplicate_rate": 0.8671875,
+                    "mean_unique_valid": 0.9375,
+                    "rows": 32,
+                    "valid_sample_rate": 0.87890625
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.0390625,
+                  "mean_coverage": 0.31968812166566074,
+                  "mean_duplicate_rate": 0.848388671875,
+                  "mean_unique_valid": 0.87890625,
+                  "rows": 512,
+                  "valid_sample_rate": 0.75537109375
+                }
+              }
+            }
+          },
+          "temperature_match": {
+            "absolute_error": 2.7755575615628914e-17,
+            "achieved_mean_entropy": 0.14320000000000002,
+            "target_mean_entropy": 0.1432,
+            "temperature": 1.0410908344595404
+          },
+          "verdict": "partial_readout_no_final_verdict"
+        },
+        "raw": {
+          "active_lineage_sha256": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+          "amortization_gap": {
+            "K": 20,
+            "posterior_minus_prior_mean_coverage": -0.0005580357142857143
+          },
+          "comparisons": {
+            "temperature": {
+              "K": 20,
+              "mean_delta": -0.025222902639894827,
+              "sign_test": {
+                "helped": 43,
+                "hurt": 61,
+                "one_sided_p": 0.9690368100606863,
+                "tied": 408
+              }
+            }
+          },
+          "guidance_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_alpha_guided_width_20260717/train/kl_0p0001/phase_g_raw_step_1000.pt",
+          "k1_parity_gate": {
+            "correct": 387,
+            "expected_correct": 389,
+            "passed": false,
+            "per_cell": {
+              "d1_2": {
+                "absolute_delta": 0.0078125,
+                "baseline": 0.9609375,
+                "phase_g_k1": 0.96875
+              },
+              "d2_2": {
+                "absolute_delta": 0.0625,
+                "baseline": 0.703125,
+                "phase_g_k1": 0.640625
+              },
+              "d2_3-4": {
+                "absolute_delta": 0.03125,
+                "baseline": 0.890625,
+                "phase_g_k1": 0.859375
+              },
+              "d3_2": {
+                "absolute_delta": 0.023255813953488302,
+                "baseline": 0.5348837209302325,
+                "phase_g_k1": 0.5116279069767442
+              },
+              "d3_3-4": {
+                "absolute_delta": 0.023255813953488302,
+                "baseline": 0.6744186046511628,
+                "phase_g_k1": 0.6511627906976745
+              },
+              "d3_5-8": {
+                "absolute_delta": 0.0,
+                "baseline": 0.9523809523809523,
+                "phase_g_k1": 0.9523809523809523
+              },
+              "d4_2": {
+                "absolute_delta": 0.03125,
+                "baseline": 0.375,
+                "phase_g_k1": 0.34375
+              },
+              "d4_3-4": {
+                "absolute_delta": 0.09375,
+                "baseline": 0.375,
+                "phase_g_k1": 0.46875
+              },
+              "d4_5-8": {
+                "absolute_delta": 0.03125,
+                "baseline": 0.65625,
+                "phase_g_k1": 0.625
+              },
+              "d4_9-16": {
+                "absolute_delta": 0.09375,
+                "baseline": 0.875,
+                "phase_g_k1": 0.96875
+              }
+            },
+            "per_cell_tolerance": 0.08,
+            "pooled_absolute_delta": 0.00390625,
+            "pooled_tolerance": 0.03,
+            "total": 512
+          },
+          "keeper": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_alpha_guided_width_20260717/restored/natural_step2000.pt",
+          "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+          "kind": "phase_g_alpha_coverage",
+          "locked_coverage_margin": 0.05,
+          "sample_counts": [
+            1,
+            2,
+            4,
+            8,
+            20
+          ],
+          "status": "finished",
+          "summaries": {
+            "posterior_teacher": {
+              "1": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.48828125,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.9765625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.9765625
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.2799479166666667,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.734375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.734375
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.1998232886904762,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.6953125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.6953125
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.11806689404345654,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.5703125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.5703125
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.37640449438202245,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7528089887640449,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7528089887640449
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.1936450839328537,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.6618705035971223,
+                    "rows": 139,
+                    "valid_sample_rate": 0.6618705035971223
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.12374517374517374,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7837837837837838,
+                    "rows": 74,
+                    "valid_sample_rate": 0.7837837837837838
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.07654584998334998,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.9375,
+                    "rows": 32,
+                    "valid_sample_rate": 0.9375
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.0,
+                  "mean_coverage": 0.27152983735014985,
+                  "mean_duplicate_rate": 0.0,
+                  "mean_unique_valid": 0.744140625,
+                  "rows": 512,
+                  "valid_sample_rate": 0.744140625
+                }
+              },
+              "2": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.03125,
+                    "mean_coverage": 0.50390625,
+                    "mean_duplicate_rate": 0.48046875,
+                    "mean_unique_valid": 1.0078125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.97265625
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.2877604166666667,
+                    "mean_duplicate_rate": 0.4765625,
+                    "mean_unique_valid": 0.75,
+                    "rows": 128,
+                    "valid_sample_rate": 0.734375
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.20972842261904762,
+                    "mean_duplicate_rate": 0.4609375,
+                    "mean_unique_valid": 0.734375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.703125
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.14174155922202797,
+                    "mean_duplicate_rate": 0.43359375,
+                    "mean_unique_valid": 0.65625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.578125
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.026217228464419477,
+                    "mean_coverage": 0.3951310861423221,
+                    "mean_duplicate_rate": 0.46254681647940077,
+                    "mean_unique_valid": 0.7902621722846442,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7471910112359551
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.20203836930455635,
+                    "mean_duplicate_rate": 0.4748201438848921,
+                    "mean_unique_valid": 0.6906474820143885,
+                    "rows": 139,
+                    "valid_sample_rate": 0.6762589928057554
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.13819176319176318,
+                    "mean_duplicate_rate": 0.43243243243243246,
+                    "mean_unique_valid": 0.8783783783783784,
+                    "rows": 74,
+                    "valid_sample_rate": 0.7972972972972973
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.07849897498334998,
+                    "mean_duplicate_rate": 0.484375,
+                    "mean_unique_valid": 0.96875,
+                    "rows": 32,
+                    "valid_sample_rate": 0.9375
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.013671875,
+                  "mean_coverage": 0.2857841621269356,
+                  "mean_duplicate_rate": 0.462890625,
+                  "mean_unique_valid": 0.787109375,
+                  "rows": 512,
+                  "valid_sample_rate": 0.7470703125
+                }
+              },
+              "20": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.0859375,
+                    "mean_coverage": 0.53515625,
+                    "mean_duplicate_rate": 0.9449218749999999,
+                    "mean_unique_valid": 1.0703125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.97578125
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0390625,
+                    "mean_coverage": 0.333984375,
+                    "mean_duplicate_rate": 0.93984375,
+                    "mean_unique_valid": 0.859375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.746484375
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.22740885416666667,
+                    "mean_duplicate_rate": 0.933984375,
+                    "mean_unique_valid": 0.8359375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.692578125
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0234375,
+                    "mean_coverage": 0.18968277815934065,
+                    "mean_duplicate_rate": 0.91796875,
+                    "mean_unique_valid": 0.9375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.577734375
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.0749063670411985,
+                    "mean_coverage": 0.43258426966292135,
+                    "mean_duplicate_rate": 0.9383895131086142,
+                    "mean_unique_valid": 0.8651685393258427,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7473782771535581
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.2302158273381295,
+                    "mean_duplicate_rate": 0.935251798561151,
+                    "mean_unique_valid": 0.7913669064748201,
+                    "rows": 139,
+                    "valid_sample_rate": 0.6794964028776979
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.17807271557271556,
+                    "mean_duplicate_rate": 0.9222972972972973,
+                    "mean_unique_valid": 1.1486486486486487,
+                    "rows": 74,
+                    "valid_sample_rate": 0.7959459459459459
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.12376087454212455,
+                    "mean_duplicate_rate": 0.921875,
+                    "mean_unique_valid": 1.5,
+                    "rows": 32,
+                    "valid_sample_rate": 0.9421875
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.0390625,
+                  "mean_coverage": 0.3215580643315018,
+                  "mean_duplicate_rate": 0.9341796875,
+                  "mean_unique_valid": 0.92578125,
+                  "rows": 512,
+                  "valid_sample_rate": 0.74814453125
+                }
+              },
+              "4": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.0703125,
+                    "mean_coverage": 0.52734375,
+                    "mean_duplicate_rate": 0.728515625,
+                    "mean_unique_valid": 1.0546875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.9765625
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0234375,
+                    "mean_coverage": 0.3072916666666667,
+                    "mean_duplicate_rate": 0.724609375,
+                    "mean_unique_valid": 0.796875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7421875
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.2160063244047619,
+                    "mean_duplicate_rate": 0.7109375,
+                    "mean_unique_valid": 0.7734375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.69921875
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.15435762154512153,
+                    "mean_duplicate_rate": 0.671875,
+                    "mean_unique_valid": 0.734375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.572265625
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.052434456928838954,
+                    "mean_coverage": 0.41385767790262173,
+                    "mean_duplicate_rate": 0.7144194756554307,
+                    "mean_unique_valid": 0.8277153558052435,
+                    "rows": 267,
+                    "valid_sample_rate": 0.74812734082397
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.2134292565947242,
+                    "mean_duplicate_rate": 0.7140287769784173,
+                    "mean_unique_valid": 0.7338129496402878,
+                    "rows": 139,
+                    "valid_sample_rate": 0.6780575539568345
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.151994851994852,
+                    "mean_duplicate_rate": 0.6790540540540541,
+                    "mean_unique_valid": 0.972972972972973,
+                    "rows": 74,
+                    "valid_sample_rate": 0.793918918918919
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.08830102189477189,
+                    "mean_duplicate_rate": 0.7109375,
+                    "mean_unique_valid": 1.09375,
+                    "rows": 32,
+                    "valid_sample_rate": 0.9375
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.02734375,
+                  "mean_coverage": 0.3012498406541375,
+                  "mean_duplicate_rate": 0.708984375,
+                  "mean_unique_valid": 0.83984375,
+                  "rows": 512,
+                  "valid_sample_rate": 0.74755859375
+                }
+              },
+              "8": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.0703125,
+                    "mean_coverage": 0.52734375,
+                    "mean_duplicate_rate": 0.8642578125,
+                    "mean_unique_valid": 1.0546875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.9775390625
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0234375,
+                    "mean_coverage": 0.3157552083333333,
+                    "mean_duplicate_rate": 0.8564453125,
+                    "mean_unique_valid": 0.8203125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.74609375
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.22415364583333333,
+                    "mean_duplicate_rate": 0.845703125,
+                    "mean_unique_valid": 0.8125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.6943359375
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.17185880525724276,
+                    "mean_duplicate_rate": 0.81640625,
+                    "mean_unique_valid": 0.828125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.5693359375
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.052434456928838954,
+                    "mean_coverage": 0.41760299625468167,
+                    "mean_duplicate_rate": 0.852996254681648,
+                    "mean_unique_valid": 0.8352059925093633,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7476591760299626
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.22781774580335729,
+                    "mean_duplicate_rate": 0.8453237410071942,
+                    "mean_unique_valid": 0.7841726618705036,
+                    "rows": 139,
+                    "valid_sample_rate": 0.6789568345323741
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.16327220077220078,
+                    "mean_duplicate_rate": 0.8260135135135135,
+                    "mean_unique_valid": 1.0405405405405406,
+                    "rows": 74,
+                    "valid_sample_rate": 0.7871621621621622
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.10492034007659007,
+                    "mean_duplicate_rate": 0.83203125,
+                    "mean_unique_valid": 1.28125,
+                    "rows": 32,
+                    "valid_sample_rate": 0.94140625
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.02734375,
+                  "mean_coverage": 0.3097778523559774,
+                  "mean_duplicate_rate": 0.845703125,
+                  "mean_unique_valid": 0.87890625,
+                  "rows": 512,
+                  "valid_sample_rate": 0.746826171875
+                }
+              }
+            },
+            "prior": {
+              "1": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.484375,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.96875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.96875
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.28515625,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.75,
+                    "rows": 128,
+                    "valid_sample_rate": 0.75
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.1988467261904762,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.703125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.703125
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.12235785048285049,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.6015625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.6015625
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.3707865168539326,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7415730337078652,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7415730337078652
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.20563549160671463,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7050359712230215,
+                    "rows": 139,
+                    "valid_sample_rate": 0.7050359712230215
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.12824967824967826,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.8108108108108109,
+                    "rows": 74,
+                    "valid_sample_rate": 0.8108108108108109
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.07938675907425907,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.96875,
+                    "rows": 32,
+                    "valid_sample_rate": 0.96875
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.0,
+                  "mean_coverage": 0.2726839566683317,
+                  "mean_duplicate_rate": 0.0,
+                  "mean_unique_valid": 0.755859375,
+                  "rows": 512,
+                  "valid_sample_rate": 0.755859375
+                }
+              },
+              "2": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.48828125,
+                    "mean_duplicate_rate": 0.49609375,
+                    "mean_unique_valid": 0.9765625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.96875
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.2936197916666667,
+                    "mean_duplicate_rate": 0.48046875,
+                    "mean_unique_valid": 0.7734375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.75390625
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.22054501488095238,
+                    "mean_duplicate_rate": 0.44140625,
+                    "mean_unique_valid": 0.78125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7109375
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.1380128660402098,
+                    "mean_duplicate_rate": 0.4140625,
+                    "mean_unique_valid": 0.6875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.58984375
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.003745318352059925,
+                    "mean_coverage": 0.38202247191011235,
+                    "mean_duplicate_rate": 0.4737827715355805,
+                    "mean_unique_valid": 0.7640449438202247,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7453183520599251
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.21762589928057555,
+                    "mean_duplicate_rate": 0.4568345323741007,
+                    "mean_unique_valid": 0.7482014388489209,
+                    "rows": 139,
+                    "valid_sample_rate": 0.7050359712230215
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.14676640926640927,
+                    "mean_duplicate_rate": 0.4189189189189189,
+                    "mean_unique_valid": 0.9324324324324325,
+                    "rows": 74,
+                    "valid_sample_rate": 0.8040540540540541
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.08962586892274392,
+                    "mean_duplicate_rate": 0.421875,
+                    "mean_unique_valid": 1.09375,
+                    "rows": 32,
+                    "valid_sample_rate": 0.953125
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.001953125,
+                  "mean_coverage": 0.2851147306469572,
+                  "mean_duplicate_rate": 0.4580078125,
+                  "mean_unique_valid": 0.8046875,
+                  "rows": 512,
+                  "valid_sample_rate": 0.755859375
+                }
+              },
+              "20": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.078125,
+                    "mean_coverage": 0.53125,
+                    "mean_duplicate_rate": 0.9453125,
+                    "mean_unique_valid": 1.0625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.971875
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.015625,
+                    "mean_coverage": 0.3333333333333333,
+                    "mean_duplicate_rate": 0.93984375,
+                    "mean_unique_valid": 0.8671875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.754296875
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.2461030505952381,
+                    "mean_duplicate_rate": 0.93125,
+                    "mean_unique_valid": 0.8984375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.698828125
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.17777801625457876,
+                    "mean_duplicate_rate": 0.917578125,
+                    "mean_unique_valid": 0.921875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.578515625
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.04868913857677903,
+                    "mean_coverage": 0.42696629213483145,
+                    "mean_duplicate_rate": 0.9380149812734082,
+                    "mean_unique_valid": 0.8539325842696629,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7451310861423222
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.23741007194244604,
+                    "mean_duplicate_rate": 0.9348920863309351,
+                    "mean_unique_valid": 0.8201438848920863,
+                    "rows": 139,
+                    "valid_sample_rate": 0.6928057553956835
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.1898166023166023,
+                    "mean_duplicate_rate": 0.9202702702702702,
+                    "mean_unique_valid": 1.2297297297297298,
+                    "rows": 74,
+                    "valid_sample_rate": 0.8006756756756757
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.12115670787545788,
+                    "mean_duplicate_rate": 0.9203125,
+                    "mean_unique_valid": 1.46875,
+                    "rows": 32,
+                    "valid_sample_rate": 0.9359375
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.025390625,
+                  "mean_coverage": 0.32211610004578756,
+                  "mean_duplicate_rate": 0.93349609375,
+                  "mean_unique_valid": 0.9375,
+                  "rows": 512,
+                  "valid_sample_rate": 0.75087890625
+                }
+              },
+              "4": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.0390625,
+                    "mean_coverage": 0.5078125,
+                    "mean_duplicate_rate": 0.73828125,
+                    "mean_unique_valid": 1.015625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.970703125
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.3033854166666667,
+                    "mean_duplicate_rate": 0.728515625,
+                    "mean_unique_valid": 0.796875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.75390625
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.22621837797619046,
+                    "mean_duplicate_rate": 0.697265625,
+                    "mean_unique_valid": 0.8046875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.703125
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.14523689201423576,
+                    "mean_duplicate_rate": 0.669921875,
+                    "mean_unique_valid": 0.75,
+                    "rows": 128,
+                    "valid_sample_rate": 0.583984375
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.018726591760299626,
+                    "mean_coverage": 0.3951310861423221,
+                    "mean_duplicate_rate": 0.7219101123595506,
+                    "mean_unique_valid": 0.7902621722846442,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7443820224719101
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.223621103117506,
+                    "mean_duplicate_rate": 0.7050359712230215,
+                    "mean_unique_valid": 0.7697841726618705,
+                    "rows": 139,
+                    "valid_sample_rate": 0.697841726618705
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.15738416988416987,
+                    "mean_duplicate_rate": 0.6824324324324325,
+                    "mean_unique_valid": 1.0135135135135136,
+                    "rows": 74,
+                    "valid_sample_rate": 0.8074324324324325
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.0984326871045621,
+                    "mean_duplicate_rate": 0.671875,
+                    "mean_unique_valid": 1.1875,
+                    "rows": 32,
+                    "valid_sample_rate": 0.9375
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.009765625,
+                  "mean_coverage": 0.2956632966642732,
+                  "mean_duplicate_rate": 0.70849609375,
+                  "mean_unique_valid": 0.841796875,
+                  "rows": 512,
+                  "valid_sample_rate": 0.7529296875
+                }
+              },
+              "8": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.046875,
+                    "mean_coverage": 0.515625,
+                    "mean_duplicate_rate": 0.8671875,
+                    "mean_unique_valid": 1.03125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.97265625
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.3118489583333333,
+                    "mean_duplicate_rate": 0.8603515625,
+                    "mean_unique_valid": 0.8203125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7548828125
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.23540736607142856,
+                    "mean_duplicate_rate": 0.83984375,
+                    "mean_unique_valid": 0.84375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.703125
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.15311556932650683,
+                    "mean_duplicate_rate": 0.8212890625,
+                    "mean_unique_valid": 0.796875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.57421875
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.02247191011235955,
+                    "mean_coverage": 0.40262172284644193,
+                    "mean_duplicate_rate": 0.8567415730337079,
+                    "mean_unique_valid": 0.8052434456928839,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7443820224719101
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.23381294964028776,
+                    "mean_duplicate_rate": 0.8435251798561151,
+                    "mean_unique_valid": 0.8057553956834532,
+                    "rows": 139,
+                    "valid_sample_rate": 0.6960431654676259
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.16587837837837838,
+                    "mean_duplicate_rate": 0.8293918918918919,
+                    "mean_unique_valid": 1.0675675675675675,
+                    "rows": 74,
+                    "valid_sample_rate": 0.7989864864864865
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.10539382492507493,
+                    "mean_duplicate_rate": 0.82421875,
+                    "mean_unique_valid": 1.28125,
+                    "rows": 32,
+                    "valid_sample_rate": 0.9375
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.01171875,
+                  "mean_coverage": 0.30399922343281716,
+                  "mean_duplicate_rate": 0.84716796875,
+                  "mean_unique_valid": 0.873046875,
+                  "rows": 512,
+                  "valid_sample_rate": 0.751220703125
+                }
+              }
+            },
+            "temperature": {
+              "1": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.484375,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.96875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.96875
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.294921875,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7734375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7734375
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.21121651785714285,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.734375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.734375
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.11289624004467755,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.5390625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.5390625
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.3801498127340824,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7602996254681648,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7602996254681648
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.20503597122302158,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7050359712230215,
+                    "rows": 139,
+                    "valid_sample_rate": 0.7050359712230215
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.12128378378378378,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.7702702702702703,
+                    "rows": 74,
+                    "valid_sample_rate": 0.7702702702702703
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.0706697816072816,
+                    "mean_duplicate_rate": 0.0,
+                    "mean_unique_valid": 0.875,
+                    "rows": 32,
+                    "valid_sample_rate": 0.875
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.0,
+                  "mean_coverage": 0.2758524082254551,
+                  "mean_duplicate_rate": 0.0,
+                  "mean_unique_valid": 0.75390625,
+                  "rows": 512,
+                  "valid_sample_rate": 0.75390625
+                }
+              },
+              "2": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.0546875,
+                    "mean_coverage": 0.51953125,
+                    "mean_duplicate_rate": 0.45703125,
+                    "mean_unique_valid": 1.0390625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.96875
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.3118489583333333,
+                    "mean_duplicate_rate": 0.45703125,
+                    "mean_unique_valid": 0.8125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7734375
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.22144717261904762,
+                    "mean_duplicate_rate": 0.46484375,
+                    "mean_unique_valid": 0.765625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.73046875
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.1195229141518204,
+                    "mean_duplicate_rate": 0.45703125,
+                    "mean_unique_valid": 0.59375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.546875
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.026217228464419477,
+                    "mean_coverage": 0.40636704119850187,
+                    "mean_duplicate_rate": 0.449438202247191,
+                    "mean_unique_valid": 0.8127340823970037,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7602996254681648
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.20983213429256592,
+                    "mean_duplicate_rate": 0.4784172661870504,
+                    "mean_unique_valid": 0.7194244604316546,
+                    "rows": 139,
+                    "valid_sample_rate": 0.697841726618705
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.13608429858429857,
+                    "mean_duplicate_rate": 0.44594594594594594,
+                    "mean_unique_valid": 0.8783783783783784,
+                    "rows": 74,
+                    "valid_sample_rate": 0.7905405405405406
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.0726229066072816,
+                    "mean_duplicate_rate": 0.484375,
+                    "mean_unique_valid": 0.90625,
+                    "rows": 32,
+                    "valid_sample_rate": 0.875
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.013671875,
+                  "mean_coverage": 0.2930875737760503,
+                  "mean_duplicate_rate": 0.458984375,
+                  "mean_unique_valid": 0.802734375,
+                  "rows": 512,
+                  "valid_sample_rate": 0.7548828125
+                }
+              },
+              "20": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.2421875,
+                    "mean_coverage": 0.6171875,
+                    "mean_duplicate_rate": 0.9328124999999999,
+                    "mean_unique_valid": 1.234375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.965625
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.015625,
+                    "mean_coverage": 0.3697916666666667,
+                    "mean_duplicate_rate": 0.93046875,
+                    "mean_unique_valid": 0.96875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7828125
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.25585007440476193,
+                    "mean_duplicate_rate": 0.932421875,
+                    "mean_unique_valid": 0.921875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.71796875
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.14652676967130093,
+                    "mean_duplicate_rate": 0.93203125,
+                    "mean_unique_valid": 0.7265625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.561328125
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.12359550561797752,
+                    "mean_coverage": 0.4756554307116105,
+                    "mean_duplicate_rate": 0.9322097378277153,
+                    "mean_unique_valid": 0.951310861423221,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7601123595505618
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.2511990407673861,
+                    "mean_duplicate_rate": 0.9348920863309351,
+                    "mean_unique_valid": 0.8633093525179856,
+                    "rows": 139,
+                    "valid_sample_rate": 0.6989208633093525
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.17713963963963963,
+                    "mean_duplicate_rate": 0.9236486486486486,
+                    "mean_unique_valid": 1.135135135135135,
+                    "rows": 74,
+                    "valid_sample_rate": 0.8013513513513514
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.08789279297091797,
+                    "mean_duplicate_rate": 0.9359375,
+                    "mean_unique_valid": 1.09375,
+                    "rows": 32,
+                    "valid_sample_rate": 0.8796875
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.064453125,
+                  "mean_coverage": 0.34733900268568235,
+                  "mean_duplicate_rate": 0.93193359375,
+                  "mean_unique_valid": 0.962890625,
+                  "rows": 512,
+                  "valid_sample_rate": 0.75693359375
+                }
+              },
+              "4": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.1015625,
+                    "mean_coverage": 0.546875,
+                    "mean_duplicate_rate": 0.71484375,
+                    "mean_unique_valid": 1.09375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.970703125
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.33203125,
+                    "mean_duplicate_rate": 0.70703125,
+                    "mean_unique_valid": 0.8671875,
+                    "rows": 128,
+                    "valid_sample_rate": 0.77734375
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.2230096726190476,
+                    "mean_duplicate_rate": 0.720703125,
+                    "mean_unique_valid": 0.7734375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.72265625
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.12623202535311911,
+                    "mean_duplicate_rate": 0.712890625,
+                    "mean_unique_valid": 0.625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.55078125
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.052434456928838954,
+                    "mean_coverage": 0.4250936329588015,
+                    "mean_duplicate_rate": 0.7078651685393258,
+                    "mean_unique_valid": 0.850187265917603,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7612359550561798
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.22122302158273383,
+                    "mean_duplicate_rate": 0.7248201438848921,
+                    "mean_unique_valid": 0.7553956834532374,
+                    "rows": 139,
+                    "valid_sample_rate": 0.6942446043165468
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.1424066924066924,
+                    "mean_duplicate_rate": 0.706081081081081,
+                    "mean_unique_valid": 0.918918918918919,
+                    "rows": 74,
+                    "valid_sample_rate": 0.793918918918919
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.0754638156981907,
+                    "mean_duplicate_rate": 0.734375,
+                    "mean_unique_valid": 0.9375,
+                    "rows": 32,
+                    "valid_sample_rate": 0.8828125
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.02734375,
+                  "mean_coverage": 0.30703698699304166,
+                  "mean_duplicate_rate": 0.7138671875,
+                  "mean_unique_valid": 0.83984375,
+                  "rows": 512,
+                  "valid_sample_rate": 0.75537109375
+                }
+              },
+              "8": {
+                "by_depth": {
+                  "1": {
+                    "full_coverage_rate": 0.1484375,
+                    "mean_coverage": 0.5703125,
+                    "mean_duplicate_rate": 0.849609375,
+                    "mean_unique_valid": 1.140625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.9716796875
+                  },
+                  "2": {
+                    "full_coverage_rate": 0.0078125,
+                    "mean_coverage": 0.34765625,
+                    "mean_duplicate_rate": 0.84375,
+                    "mean_unique_valid": 0.90625,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7783203125
+                  },
+                  "3": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.23038504464285714,
+                    "mean_duplicate_rate": 0.8505859375,
+                    "mean_unique_valid": 0.8203125,
+                    "rows": 128,
+                    "valid_sample_rate": 0.7177734375
+                  },
+                  "4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.13039869201978577,
+                    "mean_duplicate_rate": 0.849609375,
+                    "mean_unique_valid": 0.6484375,
+                    "rows": 128,
+                    "valid_sample_rate": 0.5537109375
+                  }
+                },
+                "by_reachable_set_stratum": {
+                  "2": {
+                    "full_coverage_rate": 0.0749063670411985,
+                    "mean_coverage": 0.4419475655430712,
+                    "mean_duplicate_rate": 0.8469101123595506,
+                    "mean_unique_valid": 0.8838951310861424,
+                    "rows": 267,
+                    "valid_sample_rate": 0.7617041198501873
+                  },
+                  "3-4": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.22482014388489208,
+                    "mean_duplicate_rate": 0.8561151079136691,
+                    "mean_unique_valid": 0.7697841726618705,
+                    "rows": 139,
+                    "valid_sample_rate": 0.6942446043165468
+                  },
+                  "5-8": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.1623712998712999,
+                    "mean_duplicate_rate": 0.831081081081081,
+                    "mean_unique_valid": 1.0405405405405406,
+                    "rows": 74,
+                    "valid_sample_rate": 0.793918918918919
+                  },
+                  "9-16": {
+                    "full_coverage_rate": 0.0,
+                    "mean_coverage": 0.0754638156981907,
+                    "mean_duplicate_rate": 0.8671875,
+                    "mean_unique_valid": 0.9375,
+                    "rows": 32,
+                    "valid_sample_rate": 0.87890625
+                  }
+                },
+                "overall": {
+                  "full_coverage_rate": 0.0390625,
+                  "mean_coverage": 0.31968812166566074,
+                  "mean_duplicate_rate": 0.848388671875,
+                  "mean_unique_valid": 0.87890625,
+                  "rows": 512,
+                  "valid_sample_rate": 0.75537109375
+                }
+              }
+            }
+          },
+          "temperature_match": {
+            "absolute_error": 2.7755575615628914e-17,
+            "achieved_mean_entropy": 0.14320000000000002,
+            "target_mean_entropy": 0.1432,
+            "temperature": 1.0410908344595404
+          },
+          "verdict": "partial_readout_no_final_verdict"
+        }
+      },
+      "checkpoints": {
+        "ema": "outputs/stage5/stage5_phase_g_alpha_guided_width_20260717/train/kl_0p0001/phase_g_ema_step_1000.pt",
+        "raw": "outputs/stage5/stage5_phase_g_alpha_guided_width_20260717/train/kl_0p0001/phase_g_raw_step_1000.pt"
+      },
+      "drive_checkpoints": {
+        "ema": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_alpha_guided_width_20260717/kl_0p0001_ema.pt",
+        "raw": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_phase_g_alpha_guided_width_20260717/kl_0p0001_raw.pt"
+      },
+      "kl_coefficient": 0.0001,
+      "label": "kl_0p0001",
+      "train_summary": "outputs/stage5/stage5_phase_g_alpha_guided_width_20260717/train/kl_0p0001/summary.json"
+    }
+  ],
   "data_manifests": {
     "calibration": {
       "row_id_sha256": "755291d493cac76515228c16e73c1478038228e678b499c2bed2fa28be1871a8",
@@ -104,7 +2677,7 @@
     }
   },
   "run_id": "stage5_phase_g_alpha_guided_width_20260717",
-  "status": "k1_parity_passed",
+  "status": "calibrated_kl_0p0001",
   "steps_per_arm": 1000,
   "trajectory_microbatch_size": 0
 }
