@@ -7819,7 +7819,13 @@
     }
   },
   "run_id": "stage5_phase_g_alpha_guided_width_20260717",
-  "status": "calibrated_kl_0p01",
+  "selected_arm": {
+    "checkpoint": "outputs/stage5/stage5_phase_g_alpha_guided_width_20260717/train/kl_0p001/phase_g_ema_step_1000.pt",
+    "label": "kl_0p001",
+    "selection_rule": "highest calibration K20 prior mean coverage among K1-parity arms",
+    "weight_kind": "ema"
+  },
+  "status": "test_evaluation_started",
   "steps_per_arm": 1000,
   "trajectory_microbatch_size": 0
 }
