@@ -1,0 +1,68 @@
+{
+  "curriculum_exposure": {
+    "groups_with_multiple_targets": 0,
+    "groups_with_repeated_prompt": 0,
+    "max_distinct_targets_per_problem": 1,
+    "mean_target_support_fraction": 0.36784377189650624,
+    "multi_target_row_fraction": 0.0,
+    "problem_groups": 2048,
+    "repeated_prompt_row_fraction": 0.0,
+    "rows": 2048,
+    "rows_in_multi_target_groups": 0,
+    "rows_in_repeated_prompt_groups": 0
+  },
+  "interpretation": "single_target_per_problem_curriculum",
+  "kind": "phase_g_multimodal_supervision_audit",
+  "posterior_target_fidelity": {
+    "by_k": {
+      "1": {
+        "paired_target_in_k": {
+          "helped": 2,
+          "hurt": 7,
+          "tied": 503
+        },
+        "posterior_minus_prior_target_in_k": -0.009765625,
+        "posterior_teacher": {
+          "first_target_rate": 0.28515625,
+          "mean_target_sample_rate": 0.28515625,
+          "rows": 512,
+          "target_in_k_rate": 0.28515625
+        },
+        "prior": {
+          "first_target_rate": 0.294921875,
+          "mean_target_sample_rate": 0.294921875,
+          "rows": 512,
+          "target_in_k_rate": 0.294921875
+        }
+      },
+      "20": {
+        "paired_target_in_k": {
+          "helped": 4,
+          "hurt": 5,
+          "tied": 503
+        },
+        "posterior_minus_prior_target_in_k": -0.001953125,
+        "posterior_teacher": {
+          "first_target_rate": 0.28515625,
+          "mean_target_sample_rate": 0.29033203125,
+          "rows": 512,
+          "target_in_k_rate": 0.326171875
+        },
+        "prior": {
+          "first_target_rate": 0.294921875,
+          "mean_target_sample_rate": 0.2900390625,
+          "rows": 512,
+          "target_in_k_rate": 0.328125
+        }
+      }
+    },
+    "sample_counts": [
+      1,
+      2,
+      4,
+      8,
+      20
+    ]
+  },
+  "status": "finished"
+}
