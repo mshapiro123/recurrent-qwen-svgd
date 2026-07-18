@@ -141,7 +141,14 @@ def write_runtime_status(
         **details,
     }
     write_json(run_dir / "runtime_status.json", payload)
-    write_json(drive_dir / "runtime_status.json", payload)
+    try:
+        write_json(drive_dir / "runtime_status.json", payload)
+    except OSError as exc:
+        print(
+            "phase_g_runtime_status_drive_mirror_failed="
+            f"{type(exc).__name__}: {exc}",
+            flush=True,
+        )
     print("phase_g_runtime_status:", json.dumps(payload, sort_keys=True), flush=True)
     return payload
 
@@ -153,6 +160,12 @@ def record_runtime_failure(
 ) -> dict[str, Any]:
     status_path = run_dir / "runtime_status.json"
     prior = read_json(status_path) if status_path.exists() else {}
+    transcript_tail: list[str] = []
+    if _RUNTIME_TRANSCRIPT_PATH is not None and _RUNTIME_TRANSCRIPT_PATH.exists():
+        transcript_tail = _RUNTIME_TRANSCRIPT_PATH.read_text(
+            encoding="utf-8",
+            errors="replace",
+        ).splitlines()[-200:]
     payload = {
         **prior,
         "kind": "stage5_phase_g_alpha_runtime_error",
@@ -161,18 +174,26 @@ def record_runtime_failure(
         "exception_type": type(exc).__name__,
         "exception": str(exc),
         "traceback_tail": traceback.format_exc().splitlines()[-160:],
+        "child_log_tail": transcript_tail,
     }
     write_json(run_dir / "runtime_error.json", payload)
-    write_json(drive_dir / "runtime_error.json", payload)
-    for source in run_dir.rglob("*"):
-        if not source.is_file() or source.suffix in {".pt", ".pth", ".safetensors"}:
-            continue
-        destination = drive_dir / source.relative_to(run_dir)
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source, destination)
-    if _RUNTIME_TRANSCRIPT_PATH is not None and _RUNTIME_TRANSCRIPT_PATH.exists():
-        drive_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(_RUNTIME_TRANSCRIPT_PATH, drive_dir / "runtime.log")
+    try:
+        write_json(drive_dir / "runtime_error.json", payload)
+        for source in run_dir.rglob("*"):
+            if not source.is_file() or source.suffix in {".pt", ".pth", ".safetensors"}:
+                continue
+            destination = drive_dir / source.relative_to(run_dir)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+        if _RUNTIME_TRANSCRIPT_PATH is not None and _RUNTIME_TRANSCRIPT_PATH.exists():
+            drive_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(_RUNTIME_TRANSCRIPT_PATH, drive_dir / "runtime.log")
+    except OSError as mirror_exc:
+        print(
+            "phase_g_runtime_error_drive_mirror_failed="
+            f"{type(mirror_exc).__name__}: {mirror_exc}",
+            flush=True,
+        )
     print("phase_g_runtime_error:", json.dumps(payload, sort_keys=True), flush=True)
     return payload
 

@@ -34,6 +34,9 @@ def test_runtime_status_is_mirrored_to_drive(tmp_path: Path) -> None:
 def test_runtime_failure_preserves_stage_and_traceback(tmp_path: Path) -> None:
     run_dir = tmp_path / "local"
     drive_dir = tmp_path / "drive"
+    transcript = run_dir / "runtime.log"
+    runner.configure_runtime_transcript(transcript)
+    runner.append_runtime_transcript("important child failure detail\n")
     runner.write_runtime_status(
         run_dir,
         drive_dir,
@@ -53,7 +56,9 @@ def test_runtime_failure_preserves_stage_and_traceback(tmp_path: Path) -> None:
     assert payload["exception_type"] == "RuntimeError"
     assert payload["exception"] == "deliberate phase-g failure"
     assert any("deliberate phase-g failure" in line for line in payload["traceback_tail"])
+    assert payload["child_log_tail"] == ["important child failure detail"]
     assert read_json(drive_dir / "runtime_error.json") == payload
+    runner.configure_runtime_transcript(None)
 
 
 def test_child_output_is_written_to_durable_transcript(tmp_path: Path) -> None:
