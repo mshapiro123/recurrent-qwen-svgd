@@ -1,11 +1,11 @@
 # Handoff: Phase G-alpha Result and Multimodal-Curriculum Autopsy
 
-**Date:** 2026-07-18  
-**Program:** Recurrent Qwen, deterministic depth, and guided latent width  
-**Status:** Phase G-alpha complete; G-beta remains closed  
-**Primary run:** `stage5_phase_g_alpha_guided_width_20260717`  
-**Final run commit:** `38cad711`  
-**Audit implementation:** `47634046`  
+**Date:** 2026-07-18
+**Program:** Recurrent Qwen, deterministic depth, and guided latent width
+**Status:** Phase G-alpha complete; G-beta remains closed
+**Primary run:** `stage5_phase_g_alpha_guided_width_20260717`
+**Final run commit:** `38cad711`
+**Audit implementation:** `47634046`
 **Audit receipts:** `048b0210`
 
 ## 0. Executive decision
