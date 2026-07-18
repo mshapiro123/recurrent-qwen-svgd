@@ -1,0 +1,420 @@
+{
+  "base_hash_end": "960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f",
+  "base_hash_start": "960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f",
+  "canary_trace": [
+    {
+      "accuracy": 0.9375,
+      "accuracy_delta": 0.0,
+      "baseline_accuracy": 0.9375,
+      "correct": 60,
+      "hard_stop_delta": -0.03,
+      "status": "green_continue",
+      "step": 1000,
+      "total": 64
+    },
+    {
+      "accuracy": 0.921875,
+      "accuracy_delta": -0.015625,
+      "baseline_accuracy": 0.9375,
+      "correct": 59,
+      "hard_stop_delta": -0.03,
+      "status": "green_continue",
+      "step": 2000,
+      "total": 64
+    }
+  ],
+  "checkpoint": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/train/chain_depth_le8/unfrozen_recurrent_step_2000.pt",
+  "checkpoint_sha256": "cd4b6a02793c4bd9b3ce9ee7bf3001b8dd7ed41f0fe3344e6b11864dda1068d9",
+  "dose_trace": [
+    {
+      "equalization_mass_excluding_newest_multiplier": [
+        1000.0,
+        873.0,
+        754.0,
+        635.0,
+        502.0,
+        369.0,
+        248.0,
+        132.0
+      ],
+      "equalization_ratios": [
+        1.772656769333038,
+        1.5475293596277422,
+        1.3365832040771106,
+        1.125637048526479,
+        0.889873698205185,
+        0.654110347883891,
+        0.4396188787945934,
+        0.233990693551961
+      ],
+      "newest_loop": 8,
+      "newest_multiplier": 1.0,
+      "raw_active_labels": [
+        1000,
+        873,
+        754,
+        635,
+        502,
+        369,
+        248,
+        132
+      ],
+      "step": 1000,
+      "weighted_active_labels": [
+        1000.0,
+        873.0,
+        754.0,
+        635.0,
+        502.0,
+        369.0,
+        248.0,
+        132.0
+      ],
+      "weights": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "checkpoint": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/train/chain_depth_le8/unfrozen_recurrent_step_1000.pt",
+      "equalization_mass_excluding_newest_multiplier": [
+        1000.0,
+        873.0,
+        754.0,
+        635.0,
+        502.0,
+        369.0,
+        248.0,
+        132.0
+      ],
+      "equalization_ratios": [
+        1.772656769333038,
+        1.5475293596277422,
+        1.3365832040771106,
+        1.125637048526479,
+        0.889873698205185,
+        0.654110347883891,
+        0.4396188787945934,
+        0.233990693551961
+      ],
+      "newest_loop": 8,
+      "newest_multiplier": 1.0,
+      "raw_active_labels": [
+        1000,
+        873,
+        754,
+        635,
+        502,
+        369,
+        248,
+        132
+      ],
+      "step": 1000,
+      "weighted_active_labels": [
+        1000.0,
+        873.0,
+        754.0,
+        635.0,
+        502.0,
+        369.0,
+        248.0,
+        132.0
+      ],
+      "weights": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "equalization_mass_excluding_newest_multiplier": [
+        2000.0,
+        1752.0,
+        1503.0,
+        1253.0,
+        1003.0,
+        753.0,
+        501.0,
+        251.0
+      ],
+      "equalization_ratios": [
+        1.774622892635315,
+        1.5545696539485359,
+        1.3336291038154393,
+        1.1118012422360248,
+        0.8899733806566105,
+        0.6681455190771961,
+        0.4445430346051464,
+        0.22271517302573204
+      ],
+      "newest_loop": 8,
+      "newest_multiplier": 1.0,
+      "raw_active_labels": [
+        2000,
+        1752,
+        1503,
+        1253,
+        1003,
+        753,
+        501,
+        251
+      ],
+      "step": 2000,
+      "weighted_active_labels": [
+        2000.0,
+        1752.0,
+        1503.0,
+        1253.0,
+        1003.0,
+        753.0,
+        501.0,
+        251.0
+      ],
+      "weights": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "checkpoint": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/train/chain_depth_le8/unfrozen_recurrent_step_2000.pt",
+      "equalization_mass_excluding_newest_multiplier": [
+        2000.0,
+        1752.0,
+        1503.0,
+        1253.0,
+        1003.0,
+        753.0,
+        501.0,
+        251.0
+      ],
+      "equalization_ratios": [
+        1.774622892635315,
+        1.5545696539485359,
+        1.3336291038154393,
+        1.1118012422360248,
+        0.8899733806566105,
+        0.6681455190771961,
+        0.4445430346051464,
+        0.22271517302573204
+      ],
+      "newest_loop": 8,
+      "newest_multiplier": 1.0,
+      "raw_active_labels": [
+        2000,
+        1752,
+        1503,
+        1253,
+        1003,
+        753,
+        501,
+        251
+      ],
+      "step": 2000,
+      "weighted_active_labels": [
+        2000.0,
+        1752.0,
+        1503.0,
+        1253.0,
+        1003.0,
+        753.0,
+        501.0,
+        251.0
+      ],
+      "weights": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  ],
+  "drive_backup": {
+    "bytes": 24094887,
+    "path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_adapter_budget_arm_e_20260718/chain_depth_le8/unfrozen_recurrent_step_2000.pt",
+    "sha256": "cd4b6a02793c4bd9b3ce9ee7bf3001b8dd7ed41f0fe3344e6b11864dda1068d9"
+  },
+  "name": "chain_depth_le8",
+  "pretrained_base_hash_unchanged": true,
+  "smoke_receipts": [
+    {
+      "by_depth": {
+        "1": {
+          "mapped_final_accuracy": 0.0,
+          "mapped_final_correct": 0,
+          "same_reader_accuracy": 0.0,
+          "same_reader_clears_threshold": false,
+          "same_reader_correct": 0,
+          "total": 16
+        },
+        "2": {
+          "mapped_final_accuracy": 0.0,
+          "mapped_final_correct": 0,
+          "same_reader_accuracy": 0.0,
+          "same_reader_clears_threshold": false,
+          "same_reader_correct": 0,
+          "total": 16
+        },
+        "3": {
+          "mapped_final_accuracy": 0.0,
+          "mapped_final_correct": 0,
+          "same_reader_accuracy": 0.0,
+          "same_reader_clears_threshold": false,
+          "same_reader_correct": 0,
+          "total": 16
+        },
+        "4": {
+          "mapped_final_accuracy": 0.0,
+          "mapped_final_correct": 0,
+          "same_reader_accuracy": 0.0,
+          "same_reader_clears_threshold": false,
+          "same_reader_correct": 0,
+          "total": 16
+        },
+        "5": {
+          "mapped_final_accuracy": 0.0,
+          "mapped_final_correct": 0,
+          "same_reader_accuracy": 0.0,
+          "same_reader_clears_threshold": false,
+          "same_reader_correct": 0,
+          "total": 16
+        },
+        "6": {
+          "mapped_final_accuracy": 0.0,
+          "mapped_final_correct": 0,
+          "same_reader_accuracy": 0.0,
+          "same_reader_clears_threshold": false,
+          "same_reader_correct": 0,
+          "total": 16
+        },
+        "7": {
+          "mapped_final_accuracy": 0.0,
+          "mapped_final_correct": 0,
+          "same_reader_accuracy": 0.0,
+          "same_reader_clears_threshold": false,
+          "same_reader_correct": 0,
+          "total": 16
+        },
+        "8": {
+          "mapped_final_accuracy": 0.0,
+          "mapped_final_correct": 0,
+          "same_reader_accuracy": 0.0,
+          "same_reader_clears_threshold": false,
+          "same_reader_correct": 0,
+          "total": 16
+        }
+      },
+      "same_reader_total": {
+        "accuracy": 0.0,
+        "correct": 0,
+        "total": 128
+      },
+      "step": 1000,
+      "summary": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le8_step_1000_smoke128/summary.json"
+    },
+    {
+      "by_depth": {
+        "1": {
+          "mapped_final_accuracy": 0.0,
+          "mapped_final_correct": 0,
+          "same_reader_accuracy": 0.0,
+          "same_reader_clears_threshold": false,
+          "same_reader_correct": 0,
+          "total": 16
+        },
+        "2": {
+          "mapped_final_accuracy": 0.0,
+          "mapped_final_correct": 0,
+          "same_reader_accuracy": 0.0,
+          "same_reader_clears_threshold": false,
+          "same_reader_correct": 0,
+          "total": 16
+        },
+        "3": {
+          "mapped_final_accuracy": 0.0,
+          "mapped_final_correct": 0,
+          "same_reader_accuracy": 0.0,
+          "same_reader_clears_threshold": false,
+          "same_reader_correct": 0,
+          "total": 16
+        },
+        "4": {
+          "mapped_final_accuracy": 0.0,
+          "mapped_final_correct": 0,
+          "same_reader_accuracy": 0.0,
+          "same_reader_clears_threshold": false,
+          "same_reader_correct": 0,
+          "total": 16
+        },
+        "5": {
+          "mapped_final_accuracy": 0.0,
+          "mapped_final_correct": 0,
+          "same_reader_accuracy": 0.0,
+          "same_reader_clears_threshold": false,
+          "same_reader_correct": 0,
+          "total": 16
+        },
+        "6": {
+          "mapped_final_accuracy": 0.0,
+          "mapped_final_correct": 0,
+          "same_reader_accuracy": 0.0,
+          "same_reader_clears_threshold": false,
+          "same_reader_correct": 0,
+          "total": 16
+        },
+        "7": {
+          "mapped_final_accuracy": 0.0,
+          "mapped_final_correct": 0,
+          "same_reader_accuracy": 0.0,
+          "same_reader_clears_threshold": false,
+          "same_reader_correct": 0,
+          "total": 16
+        },
+        "8": {
+          "mapped_final_accuracy": 0.0,
+          "mapped_final_correct": 0,
+          "same_reader_accuracy": 0.0,
+          "same_reader_clears_threshold": false,
+          "same_reader_correct": 0,
+          "total": 16
+        }
+      },
+      "same_reader_total": {
+        "accuracy": 0.0,
+        "correct": 0,
+        "total": 128
+      },
+      "step": 2000,
+      "summary": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le8_step_2000_smoke128/summary.json"
+    }
+  ],
+  "trainable_parameters": {
+    "bridge": 1608321,
+    "halting": 0,
+    "latent": 0,
+    "recurrent_block": 4399104,
+    "reentry_adapter": 0,
+    "total": 6007425
+  },
+  "training_summary": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/train/chain_depth_le8/train_unfrozen_recurrent_summary.json"
+}
