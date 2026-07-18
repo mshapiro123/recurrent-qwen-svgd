@@ -1,0 +1,29 @@
+{
+  "files": {
+    "arm_a_rows": "outputs/stage5/stage5_same_reader_final_symbol_20260707_021010/eval/same_reader_final_rows.jsonl",
+    "canary": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/data/base_capability_canary_64.jsonl",
+    "chain_depth_le2": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/data/train_chain_symbol_depth_le2_sft.jsonl",
+    "chain_depth_le4": "outputs/stage5/stage5_chain_scaled_corrected_20260702_182827/data/train_chain_symbol_depth_le4_sft.jsonl",
+    "chain_depth_le8": "outputs/stage5/stage5_depth_support_ladder8_20260705_204923/data/train_chain_symbol_sft.jsonl",
+    "chain_depth_le8_dose": "outputs/stage5/stage5_depth_support_ladder8_20260705_204923/data/train_chain_symbol_sft.jsonl",
+    "frozen_eval": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v2_depth14/data/test_chain_mcq.jsonl",
+    "primitive_depth1": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/data/primitive_depth1_seed20260701/train_mcq_option_text_sft.jsonl"
+  },
+  "primitive_summary": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/data/primitive_depth1_seed20260701/summary.json",
+  "sha256": {
+    "arm_a_rows": "0b582b9e49a59eff4a9b739e0df6520328de77f0d48abe8892ff0fea78817e65",
+    "canary": "22b1d809b176a8fa4b4544b6761106483e04d4ed2982511a2cf4bb881cb6fcf0",
+    "chain_depth_le2": "56fbb7774d5716632b66b60bad3d0067c9f92f58f0db8aa7297eb637116d1b69",
+    "chain_depth_le4": "829cbd3d381329470e8621094e7c5326f612552a56f38b3b09d52d873603f636",
+    "chain_depth_le8": "cf61c14c2629f2caa7e1b6bd100adb122a468d5285b74970aaa4aebfbb56fd12",
+    "chain_depth_le8_dose": "cf61c14c2629f2caa7e1b6bd100adb122a468d5285b74970aaa4aebfbb56fd12",
+    "frozen_eval": "3de844669aba303063e6932f5852914ee0993e531c8e65c2a4c4b18e219b3fc8",
+    "primitive_depth1": "8c66563778dcfbd075560bb57e52bca73157f3977ae50843b0d29b3182e27719"
+  },
+  "sha256_mode": "utf8_lf_normalized",
+  "smoke_paths": {
+    "2": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/data/phase_a_smoke_128_depth_le2.jsonl",
+    "4": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/data/phase_a_smoke_128_depth_le4.jsonl",
+    "8": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/data/phase_a_smoke_128_depth_le8.jsonl"
+  }
+}

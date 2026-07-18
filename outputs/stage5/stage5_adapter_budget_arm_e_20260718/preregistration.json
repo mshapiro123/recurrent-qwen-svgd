@@ -1,0 +1,159 @@
+{
+  "arm": {
+    "alpha": 32,
+    "name": "E",
+    "rank": 16
+  },
+  "bridge_projection_mode": "split",
+  "claim_boundaries": [
+    "no_budget_independent_claim_without_parity",
+    "no_capacity_limited_claim_without_paired_depth_evidence",
+    "no_rank_sweep",
+    "not_a_keeper_lineage_run"
+  ],
+  "compute_policy": "fixed_stage_loop_cap_with_row_capped_targets_matching_historical_Arm_A; row_specific_forward_compute_would_introduce_a_second_variable",
+  "final_eval": {
+    "depths": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "reader": "same_reader_full_symbol_at_loop_equal_depth",
+    "rows": 1792,
+    "rows_per_depth": 128
+  },
+  "frozen_set": "all_pretrained_qwen_parameters",
+  "gates": {
+    "catastrophic_pooled_floor": 0.531,
+    "paired_test": "exact_paired_sign_mcnemar",
+    "parity_max_depth_correct_deficit": 8,
+    "parity_pooled_absolute_margin": 0.03
+  },
+  "initialization": "fresh_base_qwen_surgery",
+  "interval": {
+    "checkpoint_every": 1000,
+    "phase_a_smoke_rows": 128,
+    "tier1_canary_every": 1000
+  },
+  "kind": "adapter_budget_arm_e_preregistration",
+  "layer_split": "6,18",
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "optimizer": "adamw",
+  "reference": {
+    "arm_a_accuracy": 0.8404017857142857,
+    "arm_a_by_depth": {
+      "1": 128,
+      "2": 127,
+      "3": 126,
+      "4": 125,
+      "5": 127,
+      "6": 126,
+      "7": 124,
+      "8": 122,
+      "9": 116,
+      "10": 113,
+      "11": 97,
+      "12": 87,
+      "13": 57,
+      "14": 31
+    },
+    "arm_a_correct": 1506,
+    "arm_a_tail_correct_depth11_14": 272,
+    "arm_a_total": 1792
+  },
+  "stages": [
+    {
+      "batch_size": 1,
+      "bridge_prelude_lr_multiplier": 1.0,
+      "dataset_seed": 20260701,
+      "gradient_accumulation_steps": 1,
+      "learning_rate": 2e-05,
+      "max_grad_norm": 0.5,
+      "max_loops": 1,
+      "max_steps": 500,
+      "name": "primitive_depth1",
+      "optimizer": "adamw",
+      "rows_per_depth": 256,
+      "supervision": "mcq_option_text",
+      "training_seed": 0,
+      "weight_decay": 0.0
+    },
+    {
+      "batch_size": 1,
+      "bridge_prelude_lr_multiplier": 10.0,
+      "dataset_seed": 20260702,
+      "gradient_accumulation_steps": 1,
+      "learning_rate": 1e-05,
+      "max_grad_norm": 0.5,
+      "max_loops": 2,
+      "max_steps": 2000,
+      "name": "chain_depth_le2",
+      "optimizer": "adamw",
+      "rows_per_depth": 256,
+      "supervision": "per_loop_labels",
+      "training_seed": 0,
+      "weight_decay": 0.0
+    },
+    {
+      "batch_size": 1,
+      "bridge_prelude_lr_multiplier": 10.0,
+      "dataset_seed": 20260702,
+      "gradient_accumulation_steps": 1,
+      "learning_rate": 1e-05,
+      "max_grad_norm": 0.5,
+      "max_loops": 4,
+      "max_steps": 4000,
+      "name": "chain_depth_le4",
+      "optimizer": "adamw",
+      "rows_per_depth": 256,
+      "supervision": "per_loop_labels",
+      "training_seed": 0,
+      "weight_decay": 0.0
+    },
+    {
+      "batch_size": 1,
+      "bridge_prelude_lr_multiplier": 10.0,
+      "dataset_seed": 20260704,
+      "gradient_accumulation_steps": 1,
+      "learning_rate": 1e-05,
+      "max_grad_norm": 0.5,
+      "max_loops": 8,
+      "max_steps": 2000,
+      "name": "chain_depth_le8",
+      "optimizer": "adamw",
+      "rows_per_depth": 256,
+      "supervision": "per_loop_labels",
+      "training_seed": 0,
+      "weight_decay": 0.0
+    },
+    {
+      "batch_size": 1,
+      "bridge_prelude_lr_multiplier": 10.0,
+      "dataset_seed": 20260704,
+      "gradient_accumulation_steps": 1,
+      "learning_rate": 1e-05,
+      "max_grad_norm": 0.5,
+      "max_loops": 8,
+      "max_steps": 2000,
+      "name": "chain_depth_le8_dose",
+      "optimizer": "adamw",
+      "rows_per_depth": 256,
+      "supervision": "per_loop_labels",
+      "training_seed": 0,
+      "weight_decay": 0.0
+    }
+  ],
+  "total_optimizer_steps": 10500,
+  "trainable_set": "rank16_lora_all_recurrent_projections_plus_repaired_bridge"
+}

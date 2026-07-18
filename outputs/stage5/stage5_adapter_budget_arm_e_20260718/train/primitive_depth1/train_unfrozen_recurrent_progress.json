@@ -1,0 +1,10 @@
+{
+  "checkpoint": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/train/primitive_depth1/unfrozen_recurrent_step_500.pt",
+  "checkpoint_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_adapter_budget_arm_e_20260718/primitive_depth1/unfrozen_recurrent_step_500.pt",
+  "completed_step": 500,
+  "kind": "train_unfrozen_recurrent_progress",
+  "max_steps": 500,
+  "metrics": {},
+  "micro_step": 500,
+  "status": "finished"
+}

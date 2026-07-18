@@ -1,0 +1,14 @@
+{
+  "kind": "peft_identity_gate",
+  "rank": 16,
+  "alpha": 32,
+  "lora_modules": 84,
+  "bridge_projection_mode": "split",
+  "max_loops": 1,
+  "max_abs_diff": 0.0,
+  "mean_abs_diff": 0.0,
+  "threshold": 0.001,
+  "passed": true,
+  "pretrained_base_sha256": "960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f",
+  "checkpoint": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/identity/peft_identity_step_0.pt"
+}

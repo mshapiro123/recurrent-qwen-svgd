@@ -1,0 +1,46 @@
+{
+  "kind": "synthetic_depth_active_label_matrix",
+  "threshold": 0.71,
+  "depths": [
+    1
+  ],
+  "loops": [
+    1
+  ],
+  "active_matrix": {
+    "1": {
+      "1": {
+        "correct": 60,
+        "total": 64,
+        "accuracy": 0.9375
+      }
+    }
+  },
+  "active_diagonal": {
+    "1": 0.9375
+  },
+  "active_diagonal_clears_bar": true,
+  "active_total": {
+    "correct": 60,
+    "total": 64,
+    "accuracy": 0.9375
+  },
+  "above_diagonal": {
+    "iterate": 0,
+    "hold": 0,
+    "other": 0,
+    "unknown_iterate_target": 0,
+    "n": 0,
+    "rates": {
+      "iterate": 0.0,
+      "hold": 0.0,
+      "other": 0.0,
+      "unknown_iterate_target": 0.0
+    }
+  },
+  "checkpoint": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/identity/peft_identity_step_0.pt",
+  "data_jsonl": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/data/base_capability_canary_64.jsonl",
+  "prediction_space": "full_symbols",
+  "prompt_style": "question_only",
+  "rows": 64
+}

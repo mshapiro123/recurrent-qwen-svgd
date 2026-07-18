@@ -1,0 +1,25 @@
+{
+  "base_hash_end": "960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f",
+  "base_hash_start": "960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f",
+  "canary_trace": [],
+  "checkpoint": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/train/primitive_depth1/unfrozen_recurrent_step_500.pt",
+  "checkpoint_sha256": "24cd7b8f13081433e465030e2a73d272a450b49b4956139ccf4994450ee82942",
+  "dose_trace": [],
+  "drive_backup": {
+    "bytes": 24094707,
+    "path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_adapter_budget_arm_e_20260718/primitive_depth1/unfrozen_recurrent_step_500.pt",
+    "sha256": "24cd7b8f13081433e465030e2a73d272a450b49b4956139ccf4994450ee82942"
+  },
+  "name": "primitive_depth1",
+  "pretrained_base_hash_unchanged": true,
+  "smoke_receipts": [],
+  "trainable_parameters": {
+    "bridge": 1608321,
+    "halting": 0,
+    "latent": 0,
+    "recurrent_block": 4399104,
+    "reentry_adapter": 0,
+    "total": 6007425
+  },
+  "training_summary": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/train/primitive_depth1/train_unfrozen_recurrent_summary.json"
+}
