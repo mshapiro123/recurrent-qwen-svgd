@@ -15,6 +15,7 @@ STAGE5_PHASE_G_ALPHA_CELL_VERSION = "phase_g_alpha_v1"
 # Safety markers: training/train_phase_g_alpha.py eval/eval_phase_g_alpha.py
 # Safety markers: phase_g_prior_head phase_g_posterior_head phase_g_injection_scale
 # Safety markers: STAGE5_PHASE_G_ALPHA_KL_SWEEP blocked exit
+# Safety marker: STAGE5_PHASE_G_ALPHA_TRAJECTORY_MICROBATCH_SIZE
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 DISCONNECT = os.environ.get("STAGE5_PHASE_G_ALPHA_DISCONNECT", "0").lower() in {

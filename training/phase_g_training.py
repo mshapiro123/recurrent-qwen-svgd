@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import Any
 
 import torch
@@ -33,6 +34,79 @@ def posterior_target_embeddings(
     with torch.no_grad():
         targets = embedding(token_ids)
     return targets.detach()
+
+
+@dataclass(frozen=True)
+class PhaseGBackwardResult:
+    loss: float
+    metrics: dict[str, float]
+    microbatch_count: int
+
+
+def _is_additive_metric(name: str) -> bool:
+    return (
+        name == "per_loop_label_active"
+        or name == "per_loop_label_weighted_active"
+        or name.startswith("per_loop_label_active_")
+    )
+
+
+def backward_phase_g_trajectories(
+    module: torch.nn.Module,
+    *,
+    forward_kwargs: dict[str, Any],
+    trajectory_seeds: list[int],
+    microbatch_size: int,
+) -> PhaseGBackwardResult:
+    """Backpropagate the exact mean objective over independent trajectories.
+
+    Phase G-alpha has no training-time cross-trajectory interaction. Splitting
+    the seeded trajectories therefore changes only peak activation memory, not
+    the objective or optimizer-step cadence.
+    """
+
+    if not trajectory_seeds:
+        raise ValueError("trajectory_seeds cannot be empty")
+    if "num_trajectories" in forward_kwargs or "phase_g_trajectory_seeds" in forward_kwargs:
+        raise ValueError(
+            "forward_kwargs must not override num_trajectories or phase_g_trajectory_seeds"
+        )
+    total_trajectories = len(trajectory_seeds)
+    chunk_size = (
+        total_trajectories
+        if int(microbatch_size) <= 0
+        else min(int(microbatch_size), total_trajectories)
+    )
+    weighted_loss = 0.0
+    metrics: dict[str, float] = {}
+    microbatch_count = 0
+    for start in range(0, total_trajectories, chunk_size):
+        seeds = trajectory_seeds[start : start + chunk_size]
+        weight = len(seeds) / total_trajectories
+        output = module(
+            **forward_kwargs,
+            num_trajectories=len(seeds),
+            phase_g_trajectory_seeds=seeds,
+        )
+        if output.loss is None or not bool(torch.isfinite(output.loss)):
+            raise FloatingPointError(
+                f"Nonfinite Phase G loss for trajectory seeds {seeds}"
+            )
+        (output.loss * weight).backward()
+        weighted_loss += float(output.loss.detach().float().cpu().item()) * weight
+        for name, value in output.metrics.items():
+            if not isinstance(value, torch.Tensor) or value.numel() != 1:
+                continue
+            scalar = float(value.detach().float().cpu().item())
+            metrics[name] = metrics.get(name, 0.0) + (
+                scalar if _is_additive_metric(name) else scalar * weight
+            )
+        microbatch_count += 1
+    return PhaseGBackwardResult(
+        loss=weighted_loss,
+        metrics=metrics,
+        microbatch_count=microbatch_count,
+    )
 
 
 class PhaseGEMA:

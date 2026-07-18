@@ -1026,6 +1026,9 @@ def test_phase_g_alpha_target_is_wired_to_frozen_substrate_runner() -> None:
     assert "STAGE5_PHASE_G_ALPHA_CELL_VERSION" in cell
     assert "training/train_phase_g_alpha.py" in cell
     assert "eval/eval_phase_g_alpha.py" in cell
+    assert "STAGE5_PHASE_G_ALPHA_TRAJECTORY_MICROBATCH_SIZE" in bootstrap
+    assert "STAGE5_PHASE_G_ALPHA_TRAJECTORY_MICROBATCH_SIZE" in cell
+    assert '"STAGE5_PHASE_G_ALPHA_TRAJECTORY_MICROBATCH_SIZE": "0"' in bootstrap
     assert "KEEPER_SHA256" in runner
     assert "locked_absolute_mean_coverage_margin" in runner
     assert "return 2" in runner

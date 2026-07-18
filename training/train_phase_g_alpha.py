@@ -27,7 +27,11 @@ from training.phase_g_alpha_spec import (  # noqa: E402
     assert_frozen_parameter_contract,
     phase_g_active_lineage_hash,
 )
-from training.phase_g_training import PhaseGEMA, posterior_target_embeddings  # noqa: E402
+from training.phase_g_training import (  # noqa: E402
+    PhaseGEMA,
+    backward_phase_g_trajectories,
+    posterior_target_embeddings,
+)
 
 
 def sha256_file(path: str | Path) -> str:
@@ -36,14 +40,6 @@ def sha256_file(path: str | Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
-
-
-def jsonable_metrics(metrics: dict[str, torch.Tensor]) -> dict[str, float]:
-    return {
-        name: float(value.detach().float().cpu().item())
-        for name, value in metrics.items()
-        if value.numel() == 1
-    }
 
 
 def loader_args(args: argparse.Namespace) -> SimpleNamespace:
@@ -76,6 +72,15 @@ def main() -> int:
     parser.add_argument("--kl_balance", type=float, default=0.8)
     parser.add_argument("--ema_decay", type=float, default=0.999)
     parser.add_argument("--num_trajectories", type=int, default=4)
+    parser.add_argument(
+        "--trajectory_microbatch_size",
+        type=int,
+        default=0,
+        help=(
+            "Trajectories per forward/backward pass. Zero keeps the fully "
+            "vectorized objective; one minimizes peak activation memory."
+        ),
+    )
     parser.add_argument("--latent_dim", type=int, default=64)
     parser.add_argument("--projection_seed", type=int, default=20260717)
     parser.add_argument("--injection_scale_init", type=float, default=1e-3)
@@ -88,8 +93,15 @@ def main() -> int:
     parser.add_argument("--log_every", type=int, default=25)
     args = parser.parse_args()
 
-    if args.steps < 1 or args.num_trajectories < 1:
-        raise ValueError("steps and num_trajectories must be positive")
+    if (
+        args.steps < 1
+        or args.num_trajectories < 1
+        or args.trajectory_microbatch_size < 0
+    ):
+        raise ValueError(
+            "steps and num_trajectories must be positive; "
+            "trajectory_microbatch_size must be nonnegative"
+        )
     keeper_sha = sha256_file(args.keeper)
     if keeper_sha != args.expected_keeper_sha256:
         raise RuntimeError(
@@ -162,28 +174,28 @@ def main() -> int:
             ]
 
             optimizer.zero_grad(set_to_none=True)
-            output = wrapper(
-                input_ids=batch["input_ids"],
-                attention_mask=batch["attention_mask"],
-                labels=batch["labels"],
-                loop_labels=loop_labels,
-                target_loop_counts=batch["target_loop_counts"].clamp_max(depth),
-                max_loops=depth,
-                num_trajectories=args.num_trajectories,
-                loop_loss_mode="per_loop_labels",
-                particle_update_mode="none",
-                use_cache=False,
-                return_dict=True,
-                phase_g_enabled=True,
-                phase_g_use_posterior=True,
-                phase_g_posterior_targets=posterior_targets,
-                phase_g_trajectory_seeds=trajectory_seeds,
-                phase_g_kl_balance=args.kl_balance,
-                phase_g_kl_coefficient=args.kl_coefficient,
+            backward_result = backward_phase_g_trajectories(
+                wrapper,
+                forward_kwargs={
+                    "input_ids": batch["input_ids"],
+                    "attention_mask": batch["attention_mask"],
+                    "labels": batch["labels"],
+                    "loop_labels": loop_labels,
+                    "target_loop_counts": batch["target_loop_counts"].clamp_max(depth),
+                    "max_loops": depth,
+                    "loop_loss_mode": "per_loop_labels",
+                    "particle_update_mode": "none",
+                    "use_cache": False,
+                    "return_dict": True,
+                    "phase_g_enabled": True,
+                    "phase_g_use_posterior": True,
+                    "phase_g_posterior_targets": posterior_targets,
+                    "phase_g_kl_balance": args.kl_balance,
+                    "phase_g_kl_coefficient": args.kl_coefficient,
+                },
+                trajectory_seeds=trajectory_seeds,
+                microbatch_size=args.trajectory_microbatch_size,
             )
-            if output.loss is None or not bool(torch.isfinite(output.loss)):
-                raise FloatingPointError(f"Nonfinite Phase G loss at step {step}")
-            output.loss.backward()
             assert_frozen_gradients_zero(wrapper.named_parameters())
             frozen_assertions += 1
             grad_norm = torch.nn.utils.clip_grad_norm_(trainable, max_norm=1.0)
@@ -197,10 +209,14 @@ def main() -> int:
                 "row_id": row["id"],
                 "depth": depth,
                 "reachable_set_stratum": row["reachable_set_stratum"],
-                "loss": float(output.loss.detach().float().cpu().item()),
+                "loss": backward_result.loss,
                 "gradient_norm": float(grad_norm.detach().float().cpu().item()),
                 "trajectory_seeds": trajectory_seeds,
-                **jsonable_metrics(output.metrics),
+                "trajectory_microbatch_size": (
+                    args.trajectory_microbatch_size or args.num_trajectories
+                ),
+                "trajectory_microbatch_count": backward_result.microbatch_count,
+                **backward_result.metrics,
             }
             trace_handle.write(json.dumps(trace, sort_keys=True) + "\n")
             seed_handle.write(

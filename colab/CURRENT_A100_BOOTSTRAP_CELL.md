@@ -2688,11 +2688,13 @@ TARGETS = {
             "phase_g_posterior_head",
             "phase_g_injection_scale",
             "STAGE5_PHASE_G_ALPHA_KL_SWEEP",
+            "STAGE5_PHASE_G_ALPHA_TRAJECTORY_MICROBATCH_SIZE",
             "blocked exit",
         ],
         "env": {
             "STAGE5_PHASE_G_ALPHA_KL_SWEEP": "0.0001,0.001,0.01",
             "STAGE5_PHASE_G_ALPHA_STEPS": "1000",
+            "STAGE5_PHASE_G_ALPHA_TRAJECTORY_MICROBATCH_SIZE": "0",
             "STAGE5_PHASE_G_ALPHA_DISCONNECT": "0",
         },
     },

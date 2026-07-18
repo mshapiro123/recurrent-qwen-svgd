@@ -1,7 +1,12 @@
+import copy
+
 import torch
 from torch import nn
 
 from models.recurrent_wrapper import LayerSplit, RecurrentQwenForCausalLM
+from training.phase_g_training import (
+    backward_phase_g_trajectories,
+)
 from training.train_phase1_ponder import optimizer_parameters
 
 
@@ -551,6 +556,81 @@ def test_phase_g_k1_exposes_explicit_trajectory_axis():
 
     assert output.trajectory_logits is not None
     assert output.trajectory_logits.shape == (1, 1, 1, 19)
+
+
+def test_phase_g_tiny_wrapper_microbatch_matches_vectorized_gradients():
+    torch.manual_seed(0)
+    vectorized = RecurrentQwenForCausalLM(
+        TinyCausalLM(),
+        layer_split=LayerSplit(1, 3),
+    )
+    vectorized.enable_phase_g_guidance(
+        latent_dim=4,
+        projection_seed=7,
+        injection_scale_init=0.1,
+    )
+    microbatched = copy.deepcopy(vectorized)
+    vectorized.configure_phase_g_trainable()
+    microbatched.configure_phase_g_trainable()
+    vectorized.train()
+    microbatched.train()
+
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+    labels = torch.full_like(input_ids, -100)
+    labels[:, -1] = 7
+    loop_labels = torch.full((1, 2, 4), -100, dtype=torch.long)
+    loop_labels[:, 0, -1] = 5
+    loop_labels[:, 1, -1] = 6
+    with torch.no_grad():
+        posterior_targets = vectorized.base_model.model.embed_tokens(
+            torch.tensor([[5, 6]])
+        ).detach()
+    forward_kwargs = {
+        "input_ids": input_ids,
+        "attention_mask": attention_mask,
+        "labels": labels,
+        "loop_labels": loop_labels,
+        "target_loop_counts": torch.tensor([2]),
+        "max_loops": 2,
+        "loop_loss_mode": "per_loop_labels",
+        "particle_update_mode": "none",
+        "use_cache": False,
+        "return_dict": True,
+        "phase_g_enabled": True,
+        "phase_g_use_posterior": True,
+        "phase_g_posterior_targets": posterior_targets,
+        "phase_g_kl_balance": 0.8,
+        "phase_g_kl_coefficient": 1e-3,
+    }
+
+    vectorized_result = backward_phase_g_trajectories(
+        vectorized,
+        forward_kwargs=forward_kwargs,
+        trajectory_seeds=[101, 202],
+        microbatch_size=2,
+    )
+    microbatched_result = backward_phase_g_trajectories(
+        microbatched,
+        forward_kwargs=forward_kwargs,
+        trajectory_seeds=[101, 202],
+        microbatch_size=1,
+    )
+
+    assert abs(vectorized_result.loss - microbatched_result.loss) < 1e-6
+    vectorized_parameters = dict(vectorized.named_parameters())
+    microbatched_parameters = dict(microbatched.named_parameters())
+    for name, parameter in vectorized_parameters.items():
+        if not parameter.requires_grad:
+            continue
+        assert parameter.grad is not None
+        assert microbatched_parameters[name].grad is not None
+        assert torch.allclose(
+            parameter.grad,
+            microbatched_parameters[name].grad,
+            atol=2e-6,
+            rtol=2e-5,
+        ), name
 
 
 def test_return_loop_recurrent_states_exposes_one_state_per_loop_on_tiny_model():

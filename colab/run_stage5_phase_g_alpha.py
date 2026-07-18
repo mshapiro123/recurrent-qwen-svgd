@@ -490,6 +490,13 @@ def main(run_id: str | None = None) -> int:
     run_dir.mkdir(parents=True, exist_ok=True)
     configure_runtime_transcript(run_dir / "runtime.log")
     steps = int(os.environ.get("STAGE5_PHASE_G_ALPHA_STEPS", "1000"))
+    trajectory_microbatch_size = int(
+        os.environ.get("STAGE5_PHASE_G_ALPHA_TRAJECTORY_MICROBATCH_SIZE", "0")
+    )
+    if trajectory_microbatch_size < 0:
+        raise ValueError(
+            "STAGE5_PHASE_G_ALPHA_TRAJECTORY_MICROBATCH_SIZE must be nonnegative"
+        )
     kl_coefficients = [
         float(value)
         for value in os.environ.get(
@@ -504,6 +511,7 @@ def main(run_id: str | None = None) -> int:
         "keeper_sha256": KEEPER_SHA256,
         "kl_coefficients": kl_coefficients,
         "steps_per_arm": steps,
+        "trajectory_microbatch_size": trajectory_microbatch_size,
     }
     write_json(run_dir / "summary.json", summary)
     write_runtime_status(
@@ -514,6 +522,7 @@ def main(run_id: str | None = None) -> int:
         run_id=run_id,
         steps_per_arm=steps,
         kl_coefficients=kl_coefficients,
+        trajectory_microbatch_size=trajectory_microbatch_size,
     )
 
     write_runtime_status(
@@ -683,6 +692,8 @@ def main(run_id: str | None = None) -> int:
                     str(steps),
                     "--kl_coefficient",
                     str(coefficient),
+                    "--trajectory_microbatch_size",
+                    str(trajectory_microbatch_size),
                     "--seed",
                     str(20260717 + arm_index * 1000),
                     "--device",
