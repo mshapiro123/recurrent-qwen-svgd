@@ -1,0 +1,10 @@
+{
+  "checkpoint": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/train/chain_depth_le8_dose/unfrozen_recurrent_step_2000.pt",
+  "checkpoint_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_adapter_budget_arm_e_20260718/chain_depth_le8_dose/unfrozen_recurrent_step_2000.pt",
+  "completed_step": 2000,
+  "kind": "train_unfrozen_recurrent_progress",
+  "max_steps": 2000,
+  "metrics": {},
+  "micro_step": 2000,
+  "status": "finished"
+}

@@ -1,0 +1,103 @@
+{
+  "kind": "synthetic_depth_same_reader_final_symbol",
+  "threshold": 0.71,
+  "depths": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "by_depth": {
+    "1": {
+      "total": 16,
+      "same_reader_correct": 16,
+      "same_reader_accuracy": 1.0,
+      "mapped_final_correct": 16,
+      "mapped_final_accuracy": 1.0,
+      "same_reader_clears_threshold": true
+    },
+    "2": {
+      "total": 16,
+      "same_reader_correct": 16,
+      "same_reader_accuracy": 1.0,
+      "mapped_final_correct": 16,
+      "mapped_final_accuracy": 1.0,
+      "same_reader_clears_threshold": true
+    },
+    "3": {
+      "total": 16,
+      "same_reader_correct": 15,
+      "same_reader_accuracy": 0.9375,
+      "mapped_final_correct": 15,
+      "mapped_final_accuracy": 0.9375,
+      "same_reader_clears_threshold": true
+    },
+    "4": {
+      "total": 16,
+      "same_reader_correct": 16,
+      "same_reader_accuracy": 1.0,
+      "mapped_final_correct": 16,
+      "mapped_final_accuracy": 1.0,
+      "same_reader_clears_threshold": true
+    },
+    "5": {
+      "total": 16,
+      "same_reader_correct": 16,
+      "same_reader_accuracy": 1.0,
+      "mapped_final_correct": 16,
+      "mapped_final_accuracy": 1.0,
+      "same_reader_clears_threshold": true
+    },
+    "6": {
+      "total": 16,
+      "same_reader_correct": 16,
+      "same_reader_accuracy": 1.0,
+      "mapped_final_correct": 16,
+      "mapped_final_accuracy": 1.0,
+      "same_reader_clears_threshold": true
+    },
+    "7": {
+      "total": 16,
+      "same_reader_correct": 16,
+      "same_reader_accuracy": 1.0,
+      "mapped_final_correct": 16,
+      "mapped_final_accuracy": 1.0,
+      "same_reader_clears_threshold": true
+    },
+    "8": {
+      "total": 16,
+      "same_reader_correct": 16,
+      "same_reader_accuracy": 1.0,
+      "mapped_final_correct": 16,
+      "mapped_final_accuracy": 1.0,
+      "same_reader_clears_threshold": true
+    }
+  },
+  "same_reader_total": {
+    "correct": 127,
+    "total": 128,
+    "accuracy": 0.9921875
+  },
+  "mapped_final_total": {
+    "correct": 127,
+    "total": 128,
+    "accuracy": 0.9921875
+  },
+  "all_depths_clear_threshold": true,
+  "metric_policy": {
+    "active": "full-symbol active-label diagonal",
+    "raw_final": "same-reader full-symbol argmax at loop == depth",
+    "mapped_final": "same-reader full-symbol argmax deterministically mapped to MCQ label",
+    "suspended_reader": "option-text/choice MCQ final-answer matrices remain diagnostic only"
+  },
+  "checkpoint": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/train/chain_depth_le8_dose/unfrozen_recurrent_step_2000.pt",
+  "data_jsonl": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/data/phase_a_smoke_128_depth_le8.jsonl",
+  "prediction_space": "full_symbols",
+  "prompt_style": "question_only",
+  "value_prefix": "letter:",
+  "rows": 128
+}
