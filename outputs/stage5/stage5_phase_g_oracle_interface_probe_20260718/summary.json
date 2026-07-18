@@ -5,6 +5,12 @@
       "eval_summary": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/eval/additive/summary.json",
       "route": "additive",
       "training_summary": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/summary.json"
+    },
+    {
+      "checkpoint_sha256": "d551f1136cf1582e9a6e95be43be952a5f4da1ed5649c45ed29ecd4115e051de",
+      "eval_summary": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/eval/film/summary.json",
+      "route": "film",
+      "training_summary": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/summary.json"
     }
   ],
   "automatic_successor_authorized": false,
