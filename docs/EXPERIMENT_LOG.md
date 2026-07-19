@@ -1339,3 +1339,18 @@ Colab/Drive backups for selected runs.
   remains unrun and unauthorized as a separate natural-training question, not
   an Arm E closure requirement. Consolidated handoff:
   `docs/ARM_E_ADAPTER_PARITY_CLOSURE_HANDOFF_20260719.md`.
+- 2026-07-19 Paper One finishing receipts closed without new experiments.
+  The loop-1 ARC guardrail battery is recorded as bounded noninferiority across
+  four promoted keeper checkpoints with a `-0.03` margin and Bonferroni
+  correction over eight primary comparisons. Early-era configuration,
+  aggregate halting archaeology, the zero-gradient bridge failure, and the
+  retired PC-tail damper are traced to their source artifacts. Primary-source
+  checks verified HRM and TRM metadata, retained hedged procedural-knowledge
+  wording, rejected mathematical equivalence between the retired damper and
+  Parcae, and narrowed the LoRA novelty language in light of McLeish et al.'s
+  cited prior adapter retrofit. Canonical Arm E artifacts supersede provisional
+  handoff values: persistence `636/640` with `380/384` continuation; zero-shot
+  relay/pointer `249/1536` and `264/1536`; E4 `wall_holds`, not a joint pass.
+  Figure 4 now has five curves, trained-support shading, and the Arm A/E
+  depth-11-to-12 crossover. Receipt:
+  `docs/PAPER_ONE_FINISHING_RECEIPTS_20260719.md`.

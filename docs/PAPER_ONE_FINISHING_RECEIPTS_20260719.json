@@ -1,0 +1,141 @@
+{
+  "kind": "paper_one_finishing_receipts",
+  "date": "2026-07-19",
+  "experiments_run": 0,
+  "authoritative_manuscript_present": false,
+  "marker_resolution": {
+    "resolve_guardrail": {
+      "count": 3,
+      "status": "receipt_complete"
+    },
+    "resolve_early": {
+      "count": 4,
+      "status": "receipt_complete"
+    },
+    "resolve_ref": {
+      "count": 5,
+      "status": "receipt_complete"
+    },
+    "total": 12,
+    "literal_manuscript_integration": "pending_authoritative_v2_file"
+  },
+  "guardrail": {
+    "arc_easy_rows": 5197,
+    "arc_challenge_rows": 2590,
+    "promoted_checkpoints": 4,
+    "primary_comparisons": 8,
+    "noninferiority_margin": -0.03,
+    "multiplicity_correction": "Bonferroni",
+    "all_primary_noninferior": true,
+    "arc_easy_most_adverse_delta_rows": -14,
+    "arc_easy_most_adverse_raw_p": 0.03847730828420026,
+    "arc_easy_most_adverse_corrected_p": 0.3078184662736021,
+    "permutation_zero_shot_status": "permutation_zero_shot_parity_pass",
+    "permutation_max_abs_depth_delta": 0.03125
+  },
+  "early_era": {
+    "lora_rank": 8,
+    "lora_alpha": 16,
+    "lora_recurrent_modules": 84,
+    "max_loops": 4,
+    "initial_halt_probability": 0.15,
+    "phase1_halt_kl_weight": 0.08,
+    "bridge_gate": 0.0,
+    "bridge_delta_rms": 0.0,
+    "bridge_weight_grad_rms": 0.0,
+    "damper_status": "retired",
+    "parcae_relationship": "stability_analogy_not_equivalence"
+  },
+  "literature": {
+    "hrm": {
+      "arxiv": "2506.21734",
+      "verified": true
+    },
+    "trm": {
+      "arxiv": "2510.04871",
+      "verified": true
+    },
+    "procedural_knowledge": {
+      "arxiv": "2411.12580",
+      "claim_fit": "supports_hedged_procedural_position_not_dichotomy"
+    },
+    "mcleish": {
+      "arxiv": "2511.07384",
+      "own_recipe_uses_lora": false,
+      "own_architecture_has_full_linear_reentry_adapter": true,
+      "cites_prior_low_rank_adapter_recurrent_retrofit": true,
+      "broad_depth_recurrent_lora_novelty_supported": false
+    },
+    "parcae": {
+      "arxiv": "2604.12946",
+      "equivalent_to_pc_tail_damper": false
+    }
+  },
+  "ledger_claims": {
+    "general_capability_preservation": {
+      "status": "supported_bounded",
+      "scope": "loop-1, evaluated battery, keeper-lineage promoted checkpoints"
+    },
+    "adapter_persistence": {
+      "status": "supported",
+      "active_correct": 636,
+      "active_total": 640,
+      "continue": 380,
+      "continue_total": 384,
+      "hold": 0
+    },
+    "adapter_zero_shot_transfer_minimal": {
+      "status": "supported_bounded",
+      "relay_correct": 249,
+      "relay_total": 1536,
+      "pointer_correct": 264,
+      "pointer_total": 1536
+    },
+    "adapter_retention_joint_pass": {
+      "status": "not_supported",
+      "verdict": "wall_holds",
+      "inverse_correct": 2,
+      "inverse_total": 64,
+      "synthetic_min_accuracy": 0.09375,
+      "natural_baseline_correct": 60,
+      "natural_step100_correct": 49,
+      "natural_total": 256,
+      "tier1_step100_correct": 59,
+      "tier1_total": 64,
+      "scope": "one additional operation, single seed, this substrate"
+    },
+    "adapter_budget_depth_profile": {
+      "status": "supported_bounded",
+      "arm_a_correct": 1506,
+      "arm_e_correct": 1501,
+      "total": 1792,
+      "paired_two_sided_p": 0.8127546875127164,
+      "frontier": 11.56,
+      "frontier_to_support": 1.44,
+      "profile_verdict": "tail_concentrated_deficit"
+    }
+  },
+  "figure_4": {
+    "path": "docs/figures/figure4_phase_a_depth_profile.svg",
+    "series": 5,
+    "trained_support_depths": "1-8",
+    "arm_a_arm_e_curve_crossover": 11.538461538461538,
+    "arm_e_threshold_frontier": 11.56
+  },
+  "canonical_evidence": [
+    "outputs/stage5/stage5_lineage_regression_battery_current/summary.json",
+    "outputs/stage5/stage5_permutation_zero_shot_20260708_125755/summary.json",
+    "outputs/stage5/stage5_reentry_drift_20260625_011444/summary.json",
+    "outputs/stage5/stage5_reentry_tail_damper_sweep_arc_challenge_train_offset0_20260626_233857/summary.json",
+    "outputs/stage5/stage5_adapter_budget_arm_e_20260718/summary.json",
+    "outputs/stage5/stage5_adapter_parity_e2_20260719/summary.json",
+    "outputs/stage5/stage5_adapter_parity_e3a_20260719/summary.json",
+    "outputs/stage5/stage5_adapter_parity_e4_20260719/summary.json"
+  ],
+  "superseded_provisional_values": {
+    "adapter_persistence": "622/640, 349/384, 2/384",
+    "adapter_zero_shot_transfer": "13.9% relay, 12.4% pointer",
+    "adapter_retention_joint_pass": "58/64 inverse, 0.9453 synthetic min, 201 to 199 natural",
+    "reason": "do not match canonical landed summaries"
+  }
+}

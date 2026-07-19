@@ -26,6 +26,10 @@ def test_part1_ledger_has_closed_scope_and_open_width_claim() -> None:
     assert claims["general_natural_reasoning_superiority"]["status"] == "not_supported"
     assert claims["peft_installation_measured"]["status"] == "supported_bounded"
     assert claims["depth_selection_bounded_negative"]["status"] == "registered_negative"
+    assert claims["general_capability_preservation"]["status"] == "supported_bounded"
+    assert claims["adapter_persistence"]["status"] == "supported"
+    assert claims["adapter_zero_shot_transfer_minimal"]["status"] == "supported_bounded"
+    assert claims["adapter_retention_joint_pass"]["status"] == "not_supported"
 
 
 def test_peft_and_selector_closure_use_strategy_locked_accounting() -> None:
@@ -104,3 +108,32 @@ def test_manuscript_v2_artifact_map_paths_exist() -> None:
         if not (ROOT / path).exists()
     ]
     assert missing == []
+
+
+def test_adapter_closure_claims_match_canonical_summaries() -> None:
+    claims = {claim["id"]: claim for claim in load_ledger()["claims"]}
+    persistence = claims["adapter_persistence"]
+    transfer = claims["adapter_zero_shot_transfer_minimal"]
+    retention = claims["adapter_retention_joint_pass"]
+
+    assert persistence["metrics"]["active_correct"] == 636
+    assert persistence["metrics"]["above_diagonal_continue"] == 380
+    assert transfer["metrics"]["relay_correct"] == 249
+    assert transfer["metrics"]["pointer_correct"] == 264
+    assert retention["metrics"]["inverse_correct"] == 2
+    assert retention["metrics"]["synthetic_min_accuracy"] == 0.09375
+    assert retention["metrics"]["natural_baseline_correct"] == 60
+    assert retention["metrics"]["natural_step100_correct"] == 49
+    assert retention["metrics"]["tier1_step100_correct"] == 59
+
+
+def test_figure4_contains_five_series_and_support_annotations() -> None:
+    figure = (
+        ROOT / load_ledger()["manuscript_v2_artifact_map"]["figure_4_phase_a_depth_profile"]
+    ).read_text(encoding="utf-8")
+
+    assert figure.count("<polyline") == 5
+    assert "Arm A: full block, 180.6M trainable" in figure
+    assert "Arm E: R16 + bridge, 6.0M trainable" in figure
+    assert "trained support (depths 1-8)" in figure
+    assert "Arm A/E crossover: d11.54" in figure

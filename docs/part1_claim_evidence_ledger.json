@@ -7,11 +7,14 @@
   "manuscript_v2_status": "awaiting_authoritative_draft_file",
   "manuscript_v2_artifact_map": {
     "resolution_packet": "docs/MANUSCRIPT_V2_RESOLUTION_PACKET_20260715.md",
+    "finishing_receipts": "docs/PAPER_ONE_FINISHING_RECEIPTS_20260719.md",
+    "finishing_receipts_json": "docs/PAPER_ONE_FINISHING_RECEIPTS_20260719.json",
     "margin_lock_inputs": "docs/PHASE_G_ALPHA_MARGIN_LOCK_INPUTS_20260715.json",
     "figure_1_macro_architecture": "docs/figures/figure1_macro_architecture.svg",
     "figure_2_split_bridge": "docs/figures/figure2_split_bridge.svg",
     "figure_3_frontier_vs_support": "docs/figures/figure3_frontier_vs_support.svg",
     "figure_4_phase_a_depth_profile": "docs/figures/figure4_phase_a_depth_profile.svg",
+    "figure_4_regenerator": "eval/build_paper_one_figure4.py",
     "w3_calibration": "outputs/stage5/stage5_inverse_rendered_width_gate_20260714/summary.json",
     "support_4_frontier": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/summary.json",
     "support_6_frontier": "outputs/stage5/stage5_depth_support_route_20260705_124320/summary.json",
@@ -358,10 +361,10 @@
         "arm_a_ladder_official_frontier": 11.61
       },
       "interpretation": "The pooled three-point band passed, but the preregistered every-depth deficit gate failed at depths 12-14; the result supports a capacity-depth interaction rather than a budget-independent claim.",
-      "pending_adapter_characterizations": [
-        "E3a zero-shot verbal transfer",
-        "E2 outcome-only persistence",
-        "E4 inverse-task retention"
+      "completed_adapter_characterizations": [
+        "E3a zero-shot verbal transfer: minimal",
+        "E2 outcome-only persistence: strong",
+        "E4 inverse-task retention: wall_holds"
       ],
       "evidence": [
         {
@@ -371,6 +374,110 @@
         {
           "path": "docs/ARM_E_ADAPTER_PARITY_BATTERY_SPEC_20260719.md",
           "locator": "Adapter Frontier Receipt and E2-E4 preregistration"
+        }
+      ]
+    },
+    {
+      "id": "general_capability_preservation",
+      "claim": "Promoted keeper-lineage checkpoints remained noninferior to the base model at the preregistered minus-three-point margin on the evaluated loop-1 ARC battery.",
+      "status": "supported_bounded",
+      "scope": "loop-1, evaluated battery, keeper-lineage promoted checkpoints",
+      "metrics": {
+        "arc_easy_rows": 5197,
+        "arc_challenge_rows": 2590,
+        "checkpoint_count": 4,
+        "primary_family_size": 8,
+        "noninferiority_margin": -0.03,
+        "multiplicity_method": "Bonferroni",
+        "all_primary_comparisons_noninferior": true,
+        "most_adverse_correct_delta": -14,
+        "most_adverse_raw_p": 0.03847730828420026,
+        "most_adverse_corrected_p": 0.3078184662736021
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_lineage_regression_battery_current/summary.json",
+          "locator": "primary cyclic-label family and secondary content-reader diagnostics"
+        },
+        {
+          "path": "outputs/stage5/stage5_permutation_zero_shot_20260708_125755/summary.json",
+          "locator": "zero-shot permutation control"
+        }
+      ]
+    },
+    {
+      "id": "adapter_persistence",
+      "claim": "The rank-16 adapter-budget mechanism persisted after 1,000 outcome-only steps.",
+      "status": "supported",
+      "scope": "Arm E checkpoint, frozen synthetic active-label battery at depths 1-4",
+      "metrics": {
+        "active_correct": 636,
+        "active_total": 640,
+        "active_accuracy": 0.99375,
+        "above_diagonal_continue": 380,
+        "above_diagonal_total": 384,
+        "above_diagonal_hold": 0,
+        "full_block_reference_active_correct": 625,
+        "full_block_reference_continue": 357,
+        "full_block_reference_hold": 1
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_adapter_parity_e2_20260719/summary.json",
+          "locator": "decision, evaluation, and protocol"
+        }
+      ]
+    },
+    {
+      "id": "adapter_zero_shot_transfer_minimal",
+      "claim": "Arm E showed minimal zero-shot transfer to controlled verbal relay and pointer surfaces.",
+      "status": "supported_bounded",
+      "scope": "same-reader forced-depth evaluation, 1,536 frozen rows per surface, no adapter-budget verbal training",
+      "metrics": {
+        "relay_correct": 249,
+        "relay_total": 1536,
+        "relay_accuracy": 0.162109375,
+        "pointer_correct": 264,
+        "pointer_total": 1536,
+        "pointer_accuracy": 0.171875,
+        "reporting_band": "minimal",
+        "full_block_relay_correct": 1321,
+        "full_block_pointer_correct": 1213
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_adapter_parity_e3a_20260719/summary.json",
+          "locator": "results and full_block_reference"
+        }
+      ]
+    },
+    {
+      "id": "adapter_retention_joint_pass",
+      "claim": "Arm E jointly acquired the inverse task while retaining the synthetic mechanism and natural canary.",
+      "status": "not_supported",
+      "scope": "one additional operation, single seed, this substrate",
+      "metrics": {
+        "verdict": "wall_holds",
+        "hard_stop_step": 100,
+        "inverse_correct": 2,
+        "inverse_total": 64,
+        "inverse_required": 46,
+        "synthetic_min_accuracy": 0.09375,
+        "synthetic_floor": 0.93,
+        "natural_baseline_correct": 60,
+        "natural_baseline_total": 256,
+        "natural_step100_correct": 49,
+        "natural_step100_total": 256,
+        "natural_accuracy_delta": -0.04296875,
+        "tier1_step100_correct": 59,
+        "tier1_step100_total": 64,
+        "joint_pass_any_checkpoint": false
+      },
+      "interpretation": "The registered adapter-budget retention probe reproduced the joint-failure boundary and hard-stopped before inverse acquisition.",
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_adapter_parity_e4_20260719/summary.json",
+          "locator": "decision, checkpoint_readouts, natural_baseline, and Tier-1 gate"
         }
       ]
     },
