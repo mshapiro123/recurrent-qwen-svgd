@@ -124,6 +124,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "adapter_parity_e4" - E2-gated Arm E inverse retention.
 #   "paper1_closure_receipts" - CPU-safe Paper 1 evidence compiler and Drive backup.
 #   "depth_selector_bounded_assessment" - frozen N24 supervised-depth and Ponder-outcome selector closure.
+#   "wall_clock_latency_descriptive" - eval-only five-arm Paper One batch-1 latency receipt.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 PREFER_LOCAL_HEAD = os.environ.get("STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD", "0").strip().lower() in {
@@ -147,6 +148,18 @@ if TARGET == "traced_sft_scale64_benchmark" and os.environ.get(
     TARGET = "traced_sft_direct_preservation_probe"
 
 TARGETS = {
+    "wall_clock_latency_descriptive": {
+        "path": "colab/STAGE5_WALL_CLOCK_LATENCY_CELL.py",
+        "markers": [
+            "STAGE5_WALL_CLOCK_LATENCY_CELL_VERSION",
+            "wall_clock_latency_descriptive",
+            "tests/test_wall_clock_latency.py",
+            "colab/run_stage5_wall_clock_latency.py",
+            "single hardware configuration, batch size 1, registered evaluation paths",
+            "drive.mount",
+        ],
+        "env": {},
+    },
     "preflight": {
         "path": "colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.py",
         "markers": [
