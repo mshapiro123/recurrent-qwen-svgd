@@ -113,6 +113,33 @@ def validate_e4_source(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def validate_e4_tier1_launch(*, correct: int, total: int) -> dict[str, Any]:
+    if int(total) != E4_TIER1_TOTAL:
+        raise RuntimeError(
+            f"Arm E Tier-1 launch readout must contain {E4_TIER1_TOTAL} rows, "
+            f"observed {int(total)}"
+        )
+    accuracy = _accuracy(correct, total)
+    reference_accuracy = E4_TIER1_BASELINE_CORRECT / E4_TIER1_TOTAL
+    floor = reference_accuracy - E4_NATURAL_MAX_DROP
+    if accuracy < floor:
+        raise RuntimeError(
+            "Arm E Tier-1 launch readout is below the preregistered retention floor: "
+            f"{int(correct)}/{int(total)}={accuracy:.6f} < {floor:.6f}"
+        )
+    return {
+        "correct": int(correct),
+        "total": int(total),
+        "accuracy": accuracy,
+        "reference_correct": E4_TIER1_BASELINE_CORRECT,
+        "reference_total": E4_TIER1_TOTAL,
+        "reference_accuracy": reference_accuracy,
+        "max_drop": E4_NATURAL_MAX_DROP,
+        "floor": floor,
+        "passed": True,
+    }
+
+
 def score_e4_retention(
     *,
     inverse_correct: int,

@@ -40,7 +40,11 @@ from colab.run_stage5_inverse_table_rehearsal import (
     write_jsonl,
 )
 from colab.stage5_chain_consolidation_utils import backup_checkpoint_to_drive, publish_run
-from training.adapter_parity_battery import score_e4_checkpoint_series, validate_e4_source
+from training.adapter_parity_battery import (
+    score_e4_checkpoint_series,
+    validate_e4_source,
+    validate_e4_tier1_launch,
+)
 
 
 E2_SUMMARY_DEFAULT = ROOT / "outputs/stage5/stage5_adapter_parity_e2_20260719/summary.json"
@@ -275,8 +279,7 @@ def main() -> int:
         "correct": int(tier1_baseline.get("correct", -1)),
         "total": int(tier1_baseline.get("rows", -1)),
     }
-    if tier1_total != {"correct": 60, "total": 64}:
-        raise RuntimeError(f"Arm E Tier-1 baseline must be 60/64, observed {tier1_total}")
+    tier1_launch_gate = validate_e4_tier1_launch(**tier1_total)
 
     data_dir = run_dir / "data"
     matched = build_matched_data(data_dir)
@@ -335,6 +338,7 @@ def main() -> int:
         "mix": mix,
         "natural_baseline": natural_baseline,
         "tier1_baseline": tier1_baseline,
+        "tier1_launch_gate": tier1_launch_gate,
     }
     write_json(run_dir / "summary.json", started)
     publish_run(run_dir, message=f"Record Arm E E4 baselines {run_id} [skip ci]")

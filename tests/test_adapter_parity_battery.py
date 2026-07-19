@@ -12,6 +12,7 @@ from training.adapter_parity_battery import (
     score_e4_retention,
     score_e4_checkpoint_series,
     validate_e4_source,
+    validate_e4_tier1_launch,
 )
 from colab.run_stage5_adapter_parity_e2 import canonical_text_sha256
 
@@ -128,6 +129,20 @@ def test_e4_readings_distinguish_hold_move_and_vanish() -> None:
         ]
     )
     assert series["verdict"] == "wall_moves"
+
+
+def test_e4_tier1_launch_uses_locked_drop_floor_not_exact_baseline() -> None:
+    receipt = validate_e4_tier1_launch(correct=59, total=64)
+    assert receipt["passed"] is True
+    assert receipt["reference_correct"] == 60
+    assert receipt["accuracy"] == pytest.approx(59 / 64)
+    assert receipt["floor"] == pytest.approx((60 / 64) - 0.03)
+
+    with pytest.raises(RuntimeError, match="below the preregistered retention floor"):
+        validate_e4_tier1_launch(correct=58, total=64)
+
+    with pytest.raises(RuntimeError, match="must contain 64 rows"):
+        validate_e4_tier1_launch(correct=59, total=63)
 
 
 def test_e4_checkpoint_series_requires_tier1_retention_for_joint_pass() -> None:
