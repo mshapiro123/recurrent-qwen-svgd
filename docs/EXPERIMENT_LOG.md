@@ -1325,3 +1325,17 @@ Colab/Drive backups for selected runs.
   successor, coverage, selection, halting, particles, or SVGD run is
   authorized automatically. Receipt:
   `outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/summary.json`.
+- 2026-07-19 Arm E adapter-parity battery closed. The R16-plus-bridge arm had
+  already matched Arm A in pooled frozen depth accuracy (`1501/1792` versus
+  `1506/1792`, paired `p=0.813`) while failing registered profile parity only
+  in the far tail, with frontier `11.56` or `1.44x` trained support. E3a found
+  minimal zero-shot verbal transfer: relay `249/1536 = 16.21%`, pointer
+  `264/1536 = 17.19%`. E2 was a strong persistence positive after 1,000
+  outcome-only steps: active diagonal `636/640 = 99.38%`, continuation
+  `380/384 = 98.96%`, and zero holds. E4 hard-stopped at step 100: Tier-1
+  remained green at `59/64`, but the own-baseline natural canary fell from
+  `60/256` to `49/256`, the synthetic minimum was `0.09375`, and inverse
+  acquisition was only `2/64`; the registered verdict is `wall_holds`. E3b
+  remains unrun and unauthorized as a separate natural-training question, not
+  an Arm E closure requirement. Consolidated handoff:
+  `docs/ARM_E_ADAPTER_PARITY_CLOSURE_HANDOFF_20260719.md`.

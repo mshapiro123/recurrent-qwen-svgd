@@ -59,7 +59,9 @@ and `1/384` hold.
 - Rehearsal: additive 25% forward rehearsal, preserving the original inverse
   dose; 334 optimizer steps at effective batch size 8.
 - Optimization: AdamW, `1e-5`, R16 LoRA plus split bridge only.
-- Online Tier-1 hard stop: Arm E baseline `60/64`, hard stop below `57/64`.
+- Online Tier-1 hard stop: locked reference `60/64`, with a maximum absolute
+  drop of `0.03`. The resulting accuracy floor is `0.9075`, so `59/64` is
+  green and `58/64` is red.
 - Natural guardrail: establish Arm E's own pre-training relay/pointer baseline;
   every saved checkpoint must remain within 3 absolute points.
 - Synthetic guardrail: every depth stratum at every saved checkpoint must
