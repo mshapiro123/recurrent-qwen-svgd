@@ -1,0 +1,87 @@
+{
+  "data_sha256": {
+    "heldout": "994ab7e4cb8b15a6ee3c3db8c950674a60af41f95a1f4e7f4a5e3b094aa9c500",
+    "train": "935780fe07592653c2065d6bd05bdec1edc8b9f837c7319e881bc85248d68c65"
+  },
+  "decision": {
+    "above_diagonal": {
+      "continue": 380,
+      "continue_accuracy": 0.9895833333333334,
+      "hold": 0,
+      "hold_accuracy": 0.0,
+      "partial_continue_floor": 0.5,
+      "strong_continue_floor": 0.85,
+      "total": 384
+    },
+    "active_diagonal": {
+      "accuracy": 0.99375,
+      "correct": 636,
+      "floor": 0.93,
+      "total": 640
+    },
+    "e4_authorized": true,
+    "verdict": "strong"
+  },
+  "evaluation": {
+    "above_diagonal": {
+      "hold": 0,
+      "iterate": 380,
+      "n": 384,
+      "other": 4,
+      "rates": {
+        "hold": 0.0,
+        "iterate": 0.9895833333333334,
+        "other": 0.010416666666666666,
+        "unknown_iterate_target": 0.0
+      },
+      "unknown_iterate_target": 0
+    },
+    "active_diagonal": {
+      "1": 1.0,
+      "2": 1.0,
+      "3": 0.984375,
+      "4": 1.0
+    },
+    "active_total": {
+      "accuracy": 0.99375,
+      "correct": 636,
+      "total": 640
+    }
+  },
+  "evaluation_summary": "outputs/stage5/stage5_adapter_parity_e2_20260719/eval/active_summary.json",
+  "final_checkpoint": "outputs/stage5/stage5_adapter_parity_e2_20260719/train/outcome_only/unfrozen_recurrent_step_1000.pt",
+  "final_checkpoint_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_adapter_parity_e2_20260719/outcome_only_final/unfrozen_recurrent_step_1000.pt",
+  "final_checkpoint_sha256": "e69200aa40e17f3fb7bc741a4efad63f77da88c10cf7e30140b5e25ba3253e5a",
+  "full_block_reference": {
+    "above_diagonal": {
+      "continue": 357,
+      "hold": 1,
+      "total": 384
+    },
+    "active_total": {
+      "accuracy": 0.9765625,
+      "correct": 625,
+      "total": 640
+    }
+  },
+  "kind": "stage5_adapter_parity_e2",
+  "protocol": {
+    "bridge_prelude_lr_multiplier": 10.0,
+    "learning_rate": 1e-05,
+    "optimizer": "adamw",
+    "reader": "active_full_symbols",
+    "steps": 1000,
+    "supervision": "outcome_only_chain_label_weight_zero"
+  },
+  "restore_receipt": {
+    "selected_checkpoint_sha256": "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
+    "source_checkpoint": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/train/chain_depth_le8_dose/unfrozen_recurrent_step_2000.pt",
+    "source_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_adapter_budget_arm_e_20260718/chain_depth_le8_dose/unfrozen_recurrent_step_2000.pt",
+    "source_summary": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/summary.json"
+  },
+  "run_id": "stage5_adapter_parity_e2_20260719",
+  "source_checkpoint_sha256": "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
+  "status": "finished",
+  "train_config": "outputs/stage5/stage5_adapter_parity_e2_20260719/config/outcome_only.yaml",
+  "training_summary": "outputs/stage5/stage5_adapter_parity_e2_20260719/train/outcome_only/train_unfrozen_recurrent_summary.json"
+}

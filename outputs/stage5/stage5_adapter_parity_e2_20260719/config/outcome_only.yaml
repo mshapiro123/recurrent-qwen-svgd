@@ -1,0 +1,69 @@
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+dtype: bfloat16
+adapter_dtype: float32
+attn_implementation: default
+layer_split: 6,18
+max_length: 512
+max_loops: 4
+loop_loss_mode: annealed_chain_to_outcome
+chain_anneal_hold_frac: 1.0
+chain_outcome_loss_weight: 1.0
+initial_halt_prob: 0.15
+beta: 0.0
+halt_target_nll_weight: 0.0
+loop_control_ce_weight: 0.0
+batch_size: 1
+gradient_accumulation_steps: 1
+minimum_effective_batch_size: 1
+seed: 0
+optimizer: adamw
+reject_muon: true
+learning_rate: 1.0e-05
+adamw_lr: 1.0e-05
+weight_decay: 0.0
+max_grad_norm: 0.5
+max_steps: 1000
+save_every: 500
+log_every: 100
+bridge_projection_mode: split
+bridge_prelude_lr_multiplier: 10.0
+bridge_prelude_weight_decay: 0.0
+bridge_prelude_lr_include_norm: false
+bridge_prelude_grad_multiplier: 1.0
+train_on_prompt: false
+gradient_checkpointing: true
+require_active_supervision: true
+require_nonzero_train_gradient: true
+output_dir: outputs/stage5/stage5_adapter_parity_e2_20260719/train/outcome_only
+resume_from: outputs/stage5/stage5_adapter_parity_e2_20260719/restored/arm_e_final.pt
+recurrence_curriculum:
+  enabled: false
+  start_loop: 4
+  end_loop: 4
+  schedule: linear
+  target_source: row_capped
+  ramp_compute: false
+canary_every: 500
+canary_jsonl: outputs/stage5/stage5_adapter_budget_arm_e_20260718/data/base_capability_canary_64.jsonl
+canary_value_prefix: 'name:'
+canary_baseline_accuracy: 0.9375
+canary_hard_stop_delta: -0.03
+synthetic_phase: adapter_parity_e2
+synthetic_stage: outcome_only_1000
+training_mode: frozen_lora
+resume_lora:
+  enabled: true
+  rank: 16
+  alpha: 32
+  dropout: 0.0
+require_all_lora_loaded: true
+require_loaded_prefixes:
+- bridge.
+merge_lora_before_unfreeze: false
+require_lora_loaded_before_merge: false
+require_frozen_base_hash: true
+train_auxiliary:
+  bridge: true
+  halting: false
+  reentry_adapter: false
+  latent: false

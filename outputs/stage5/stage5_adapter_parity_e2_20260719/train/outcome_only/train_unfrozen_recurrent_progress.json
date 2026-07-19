@@ -1,0 +1,10 @@
+{
+  "checkpoint": "outputs/stage5/stage5_adapter_parity_e2_20260719/train/outcome_only/unfrozen_recurrent_step_1000.pt",
+  "checkpoint_backup": null,
+  "completed_step": 1000,
+  "kind": "train_unfrozen_recurrent_progress",
+  "max_steps": 1000,
+  "metrics": {},
+  "micro_step": 1000,
+  "status": "finished"
+}
