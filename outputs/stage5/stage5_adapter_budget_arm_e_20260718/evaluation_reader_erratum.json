@@ -1,0 +1,33 @@
+{
+  "kind": "adapter_budget_arm_e_evaluation_reader_erratum",
+  "status": "resolved_before_final_interpretation",
+  "issue": "The initial Arm E smoke evaluator used numeric candidates 0-15 while the frozen task rows used letter symbols A-P.",
+  "effect": "Affected summaries reported artificial zero accuracy and are invalid. Training, checkpoints, canary results, and immutable data were unaffected.",
+  "fix_commit": "b5440d161d340c0bedf271f82fa62da6d076fb20",
+  "canonical_contract": {
+    "prediction_space": "full_symbols",
+    "prompt_style": "question_only",
+    "value_prefix": "letter:"
+  },
+  "invalid_preserved_artifacts": [
+    "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le2_step_1000_smoke128/summary.json",
+    "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le2_step_1000_smoke128/rows.jsonl",
+    "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le4_step_1000_smoke128/summary.json",
+    "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le4_step_1000_smoke128/rows.jsonl",
+    "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le4_step_2000_smoke128/summary.json",
+    "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le4_step_2000_smoke128/rows.jsonl",
+    "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le4_step_3000_smoke128/summary.json",
+    "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le4_step_3000_smoke128/rows.jsonl",
+    "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le8_step_1000_smoke128/summary.json",
+    "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le8_step_1000_smoke128/rows.jsonl"
+  ],
+  "canonical_stage_end_summaries": [
+    "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le2_step_2000_smoke128/summary.json",
+    "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le4_step_4000_smoke128/summary.json",
+    "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le8_step_2000_smoke128/summary.json",
+    "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le8_dose_step_1000_smoke128/summary.json",
+    "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/chain_depth_le8_dose_step_2000_smoke128/summary.json",
+    "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/final_phase_a_1792/summary.json"
+  ],
+  "publication_rule": "Do not cite or aggregate an Arm E final-symbol summary unless value_prefix equals letter:."
+}
