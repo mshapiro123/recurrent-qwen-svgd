@@ -1,0 +1,10 @@
+{
+  "checkpoint": "outputs/stage5/stage5_adapter_parity_e4_20260719/train/inverse_rehearsal/unfrozen_recurrent_step_100.pt",
+  "checkpoint_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_adapter_parity_e4_20260719/inverse_rehearsal/unfrozen_recurrent_step_100.pt",
+  "completed_step": 100,
+  "kind": "train_unfrozen_recurrent_progress",
+  "max_steps": 334,
+  "metrics": {},
+  "micro_step": 800,
+  "status": "hard_stopped_canary"
+}

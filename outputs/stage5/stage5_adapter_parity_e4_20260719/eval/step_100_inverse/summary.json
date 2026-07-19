@@ -1,0 +1,112 @@
+{
+  "checkpoint": "outputs/stage5/stage5_adapter_parity_e4_20260719/train/inverse_rehearsal/unfrozen_recurrent_step_100.pt",
+  "conditional_transition_success": {
+    "2": {
+      "accuracy": 0.14173228346456693,
+      "correct": 18,
+      "total": 127
+    },
+    "3": {
+      "accuracy": 0.0,
+      "correct": 0,
+      "total": 7
+    }
+  },
+  "kind": "abductive_staircase_diagnostic",
+  "max_loops": 3,
+  "rows_per_depth": 64,
+  "target_decodability": {
+    "status": "skipped_for_checkpoint_gate"
+  },
+  "test": {
+    "above_diagonal": {
+      "hold": 21,
+      "iterate": 14,
+      "other": 157
+    },
+    "active_matrix": {
+      "1": {
+        "1": {
+          "accuracy": 0.984375,
+          "correct": 63,
+          "total": 64
+        }
+      },
+      "2": {
+        "1": {
+          "accuracy": 1.0,
+          "correct": 64,
+          "total": 64
+        },
+        "2": {
+          "accuracy": 0.171875,
+          "correct": 11,
+          "total": 64
+        }
+      },
+      "3": {
+        "1": {
+          "accuracy": 0.984375,
+          "correct": 63,
+          "total": 64
+        },
+        "2": {
+          "accuracy": 0.109375,
+          "correct": 7,
+          "total": 64
+        },
+        "3": {
+          "accuracy": 0.03125,
+          "correct": 2,
+          "total": 64
+        }
+      }
+    },
+    "diagonal_by_depth": {
+      "1": {
+        "accuracy": 0.984375,
+        "correct": 63,
+        "total": 64
+      },
+      "2": {
+        "accuracy": 0.171875,
+        "correct": 11,
+        "total": 64
+      },
+      "3": {
+        "accuracy": 0.03125,
+        "correct": 2,
+        "total": 64
+      }
+    },
+    "diagonal_confusion": {
+      "correct_start": 76,
+      "observed_target": 1,
+      "one_step_preimage": 7,
+      "other_orbit_intermediate": 5,
+      "other_valid_name": 103
+    },
+    "loop1_by_depth": {
+      "1": {
+        "accuracy": 0.984375,
+        "correct": 63,
+        "total": 64
+      },
+      "2": {
+        "accuracy": 1.0,
+        "correct": 64,
+        "total": 64
+      },
+      "3": {
+        "accuracy": 0.984375,
+        "correct": 63,
+        "total": 64
+      }
+    },
+    "source_rows": 192,
+    "split": "test"
+  },
+  "train": {
+    "status": "skipped"
+  }
+}

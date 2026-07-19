@@ -1,4 +1,18 @@
 {
+  "checkpoint_readouts": [
+    {
+      "checkpoint": "outputs/stage5/stage5_adapter_parity_e4_20260719/train/inverse_rehearsal/unfrozen_recurrent_step_100.pt",
+      "checkpoint_sha256": "b559a58386d466ee9e95f7703f2e1aa1bc6bac43458cc8b3ea94ac58dd62b925",
+      "inverse_correct": 2,
+      "inverse_total": 64,
+      "natural_accuracy": 0.19140625,
+      "natural_baseline": 0.234375,
+      "step": 100,
+      "synthetic_min": 0.09375,
+      "tier1_correct": 59,
+      "tier1_total": 64
+    }
+  ],
   "e2_authorization": {
     "arm_e_source_sha256": "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
     "post_e2_checkpoint_sha256": "e69200aa40e17f3fb7bc741a4efad63f77da88c10cf7e30140b5e25ba3253e5a",
@@ -229,7 +243,7 @@
   },
   "run_id": "stage5_adapter_parity_e4_20260719",
   "source_checkpoint_sha256": "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
-  "status": "baselines_ready",
+  "status": "evaluated_step_100",
   "tier1_baseline": {
     "accuracy": 0.921875,
     "active_diagonal": {
