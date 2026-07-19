@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import sys
 import time
@@ -36,13 +37,24 @@ SOURCE_DATA = ROOT / "outputs/stage5/stage5_chain_anneal_20260703_160250/data"
 TRAIN_DATA = SOURCE_DATA / "train_chain_symbol_sft.jsonl"
 HELDOUT_DATA = SOURCE_DATA / "test_chain_mcq_heldout64.jsonl"
 EXPECTED_DATA_SHA256 = {
-    "train": "f1b73ddebb7700c525cbc786f6c0e65ce335f8544c69083ef7103433273d6aa0",
-    "heldout": "a83cb23621eee33b8f8e70c0d02802a5e4436e19e9dbb4f61da494e745ffaab6",
+    "train": "935780fe07592653c2065d6bd05bdec1edc8b9f837c7319e881bc85248d68c65",
+    "heldout": "994ab7e4cb8b15a6ee3c3db8c950674a60af41f95a1f4e7f4a5e3b094aa9c500",
 }
 
 
+def canonical_text_sha256(path: str | Path) -> str:
+    """Hash text with platform-independent LF newlines."""
+
+    raw = Path(path).read_bytes()
+    normalized = raw.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return hashlib.sha256(normalized).hexdigest()
+
+
 def _assert_data() -> dict[str, str]:
-    observed = {"train": sha256_file(TRAIN_DATA), "heldout": sha256_file(HELDOUT_DATA)}
+    observed = {
+        "train": canonical_text_sha256(TRAIN_DATA),
+        "heldout": canonical_text_sha256(HELDOUT_DATA),
+    }
     if observed != EXPECTED_DATA_SHA256:
         raise RuntimeError(f"E2 standard held-out data changed: {observed}")
     return observed

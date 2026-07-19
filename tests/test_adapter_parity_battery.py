@@ -13,12 +13,22 @@ from training.adapter_parity_battery import (
     score_e4_checkpoint_series,
     validate_e4_source,
 )
+from colab.run_stage5_adapter_parity_e2 import canonical_text_sha256
 
 
 def test_e3a_reporting_bands_are_locked() -> None:
     assert score_e3a_transfer(correct=70, total=100)["band"] == "strong"
     assert score_e3a_transfer(correct=40, total=100)["band"] == "partial"
     assert score_e3a_transfer(correct=39, total=100)["band"] == "minimal"
+
+
+def test_e2_data_hash_is_platform_newline_independent(tmp_path) -> None:
+    lf = tmp_path / "lf.jsonl"
+    crlf = tmp_path / "crlf.jsonl"
+    lf.write_bytes(b'{"row":1}\n{"row":2}\n')
+    crlf.write_bytes(b'{"row":1}\r\n{"row":2}\r\n')
+
+    assert canonical_text_sha256(lf) == canonical_text_sha256(crlf)
 
 
 def test_e2_strong_partial_and_failed_readings() -> None:
