@@ -1311,3 +1311,17 @@ Colab/Drive backups for selected runs.
   coverage, selector, halting, particles, or SVGD is part of this probe, and
   no outcome automatically authorizes a successor. Spec:
   `docs/STAGE5_PHASE_G_ORACLE_INTERFACE_PROBE_SPEC_20260718.md`.
+- 2026-07-18 Phase G oracle-interface result: both parameter-matched routes
+  failed the locked held-out gate, producing the terminal reading `BOTH_FAIL`
+  and interpretation `reentry_conditioning_closed_on_frozen_substrate`.
+  Additive controlled `31/216 = 14.35%` of non-default transitions and
+  `94/305 = 30.82%` overall; FiLM controlled `34/216 = 15.74%` non-default
+  and `87/305 = 28.52%` overall. Transition legality was `54.10%` and
+  `56.39%`, respectively, versus the locked `95%` floor. FiLM alone retained
+  terminal validity above the `71%` floor (`79/106 = 74.53%`), but neither
+  route approached the command-control thresholds. Both preserved exact
+  zero-conditioning identity and exact frozen-keeper lineage, with 1,500
+  gradient-liveness and frozen-gradient assertions per arm. No variational
+  successor, coverage, selection, halting, particles, or SVGD run is
+  authorized automatically. Receipt:
+  `outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/summary.json`.

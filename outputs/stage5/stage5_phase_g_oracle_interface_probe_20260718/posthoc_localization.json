@@ -1,0 +1,134 @@
+{
+  "kind": "phase_g_oracle_interface_posthoc_localization",
+  "analysis_status": "post_hoc_localization_not_preregistered_gate",
+  "registered_reading": "BOTH_FAIL",
+  "registered_interpretation": "reentry_conditioning_closed_on_frozen_substrate",
+  "automatic_successor_authorized": false,
+  "routes": {
+    "additive": {
+      "route": "additive",
+      "registered_gate_status": "blocked",
+      "registered_passed": false,
+      "heldout": {
+        "overall_transition_control": {
+          "control_rate": 0.3081967213114754,
+          "correct": 94,
+          "legal": 165,
+          "legality_rate": 0.5409836065573771,
+          "mean_target_margin": -1.5592213114754099,
+          "total": 305
+        },
+        "default_transition_control": {
+          "control_rate": 0.7078651685393258,
+          "correct": 63,
+          "legal": 73,
+          "legality_rate": 0.8202247191011236,
+          "mean_target_margin": 1.702247191011236,
+          "total": 89
+        },
+        "nondefault_transition_control": {
+          "control_rate": 0.14351851851851852,
+          "correct": 31,
+          "legal": 92,
+          "legality_rate": 0.42592592592592593,
+          "mean_target_margin": -2.9030671296296298,
+          "total": 216
+        },
+        "default_minus_nondefault_control_rate": 0.5643466500208073,
+        "loop_1_transition_control": {
+          "control_rate": 0.5849056603773585,
+          "correct": 62,
+          "legal": 103,
+          "legality_rate": 0.9716981132075472,
+          "mean_target_margin": 0.23113207547169812,
+          "total": 106
+        },
+        "loop_4_transition_control": {
+          "control_rate": 0.07317073170731707,
+          "correct": 3,
+          "legal": 7,
+          "legality_rate": 0.17073170731707318,
+          "mean_target_margin": -2.1326219512195124,
+          "total": 41
+        },
+        "loop_1_minus_loop_4_control_rate": 0.5117349286700414,
+        "loop_1_minus_loop_4_legality_rate": 0.800966405890474
+      },
+      "training_liveness": {
+        "steps": 1500,
+        "window": 100,
+        "first_window_mean_loss": 4.477490988291829,
+        "last_window_mean_loss": 1.9300257910671643,
+        "loss_change": -2.547465197224665,
+        "first_window_mean_gradient_norm": 89.45510521616787,
+        "last_window_mean_gradient_norm": 22.275733459293843,
+        "last_window_mean_residual_rms_ratio": 0.11032100956887007
+      }
+    },
+    "film": {
+      "route": "film",
+      "registered_gate_status": "blocked",
+      "registered_passed": false,
+      "heldout": {
+        "overall_transition_control": {
+          "control_rate": 0.28524590163934427,
+          "correct": 87,
+          "legal": 172,
+          "legality_rate": 0.5639344262295082,
+          "mean_target_margin": -1.6471311475409836,
+          "total": 305
+        },
+        "default_transition_control": {
+          "control_rate": 0.5955056179775281,
+          "correct": 53,
+          "legal": 72,
+          "legality_rate": 0.8089887640449438,
+          "mean_target_margin": 0.6376404494382022,
+          "total": 89
+        },
+        "nondefault_transition_control": {
+          "control_rate": 0.1574074074074074,
+          "correct": 34,
+          "legal": 100,
+          "legality_rate": 0.46296296296296297,
+          "mean_target_margin": -2.5885416666666665,
+          "total": 216
+        },
+        "default_minus_nondefault_control_rate": 0.43809821057012066,
+        "loop_1_transition_control": {
+          "control_rate": 0.49056603773584906,
+          "correct": 52,
+          "legal": 103,
+          "legality_rate": 0.9716981132075472,
+          "mean_target_margin": -0.05011792452830189,
+          "total": 106
+        },
+        "loop_4_transition_control": {
+          "control_rate": 0.12195121951219512,
+          "correct": 5,
+          "legal": 10,
+          "legality_rate": 0.24390243902439024,
+          "mean_target_margin": -2.2804878048780486,
+          "total": 41
+        },
+        "loop_1_minus_loop_4_control_rate": 0.36861481822365394,
+        "loop_1_minus_loop_4_legality_rate": 0.7277956741831569
+      },
+      "training_liveness": {
+        "steps": 1500,
+        "window": 100,
+        "first_window_mean_loss": 4.575885447076144,
+        "last_window_mean_loss": 1.671230951505713,
+        "loss_change": -2.9046544955704308,
+        "first_window_mean_gradient_norm": 81.46823347270023,
+        "last_window_mean_gradient_norm": 28.79648369502276,
+        "last_window_mean_residual_rms_ratio": 0.12696198329329492
+      }
+    }
+  },
+  "sources": {
+    "gate_json": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/gate.json",
+    "additive_trace": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/additive/training_trace.jsonl",
+    "film_trace": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/train/film/training_trace.jsonl"
+  }
+}
