@@ -152,7 +152,10 @@ def _write_config(
     checkpoint: Path,
     train_jsonl: Path,
     max_steps: int,
-    tier1_baseline: float,
+    natural_canary: Path,
+    natural_baseline_accuracy: float,
+    tier1_canary: Path,
+    tier1_baseline_accuracy: float,
 ) -> Path:
     cfg: dict[str, Any] = {
         "model_name": MODEL_NAME,
@@ -199,12 +202,28 @@ def _write_config(
             "target_source": "row_capped",
             "ramp_compute": False,
         },
-        # The online hard stop uses the Arm E Tier-1 baseline, 60/64.
+        # Both registered retention guardrails are enforced on the live trajectory.
         "canary_every": 100,
-        "canary_jsonl": path_for_cli(ARM_E_CANARY),
-        "canary_value_prefix": "name:",
-        "canary_baseline_accuracy": tier1_baseline,
-        "canary_hard_stop_delta": -0.03,
+        "canary_specs": [
+            {
+                "name": "natural_surface",
+                "data_jsonl": path_for_cli(natural_canary),
+                "baseline_accuracy": float(natural_baseline_accuracy),
+                "hard_stop_delta": -0.03,
+                "value_prefix": "name:",
+                "mode": "diagonal",
+                "max_depth": 8,
+            },
+            {
+                "name": "tier1_arithmetic",
+                "data_jsonl": path_for_cli(tier1_canary),
+                "baseline_accuracy": float(tier1_baseline_accuracy),
+                "hard_stop_delta": -0.03,
+                "value_prefix": "name:",
+                "mode": "loop1",
+                "max_depth": 1,
+            },
+        ],
         "checkpoint_backup_every": 100,
         "checkpoint_backup_dir": str(
             Path("/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints")
@@ -325,7 +344,10 @@ def main() -> int:
         checkpoint=checkpoint,
         train_jsonl=train_jsonl,
         max_steps=max_steps,
-        tier1_baseline=60 / 64,
+        natural_canary=guardrails["natural"],
+        natural_baseline_accuracy=float(natural_baseline["accuracy"]),
+        tier1_canary=ARM_E_CANARY,
+        tier1_baseline_accuracy=60 / 64,
     )
     result = run(
         [
@@ -391,6 +413,14 @@ def main() -> int:
             max_depth=8,
             value_prefix="name:",
         )
+        tier1 = _diagonal(
+            run_dir,
+            label=f"step_{step}_tier1",
+            checkpoint=candidate,
+            data_jsonl=ARM_E_CANARY,
+            max_depth=1,
+            value_prefix="name:",
+        )
         checkpoint_rows.append(
             {
                 "step": step,
@@ -401,6 +431,8 @@ def main() -> int:
                 "synthetic_min": float(synthetic["active_diagonal_min"]),
                 "natural_baseline": baseline_natural_accuracy,
                 "natural_accuracy": float(natural["accuracy"]),
+                "tier1_correct": int(tier1["correct"]),
+                "tier1_total": int(tier1["rows"]),
             }
         )
         started["status"] = f"evaluated_step_{step}"

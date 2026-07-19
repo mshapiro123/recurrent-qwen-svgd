@@ -19,6 +19,7 @@ from training.train_unfrozen_recurrent import (
     configure_trainable_modules,
     cosine_with_previous,
     curriculum_target_counts,
+    resolve_canary_specs,
     resolve_resume_lora_config,
     scheduled_loop_count,
     seed_training_rng,
@@ -76,6 +77,81 @@ def test_chain_label_weight_ramps_then_holds_zero() -> None:
     assert chain_label_weight(5, 10, hold_frac=0.5) == 0.0
     assert chain_label_weight(9, 10, hold_frac=0.5) == 0.0
     assert chain_label_weight(0, 10, hold_frac=1.0) == 0.0
+
+
+def test_resolve_canary_specs_preserves_legacy_and_accepts_named_dual_canaries() -> None:
+    legacy = resolve_canary_specs(
+        {
+            "canary_jsonl": "legacy.jsonl",
+            "canary_baseline_accuracy": 0.9,
+            "canary_hard_stop_delta": -0.03,
+            "canary_value_prefix": "name:",
+        }
+    )
+    assert legacy == [
+        {
+            "name": "legacy",
+            "data_jsonl": "legacy.jsonl",
+            "baseline_accuracy": 0.9,
+            "hard_stop_delta": -0.03,
+            "value_prefix": "name:",
+            "mode": "loop1",
+            "max_depth": 1,
+        }
+    ]
+
+    dual = resolve_canary_specs(
+        {
+            "canary_specs": [
+                {
+                    "name": "natural",
+                    "data_jsonl": "natural.jsonl",
+                    "baseline_accuracy": 0.88,
+                    "mode": "diagonal",
+                    "max_depth": 8,
+                },
+                {
+                    "name": "tier1",
+                    "data_jsonl": "tier1.jsonl",
+                    "baseline_accuracy": 60 / 64,
+                    "mode": "loop1",
+                },
+            ]
+        }
+    )
+    assert [item["name"] for item in dual] == ["natural", "tier1"]
+    assert dual[0]["mode"] == "diagonal"
+    assert dual[0]["max_depth"] == 8
+    assert dual[1]["hard_stop_delta"] == -0.03
+
+
+def test_resolve_canary_specs_rejects_duplicate_names_and_unknown_modes() -> None:
+    for specs, match in (
+        (
+            [
+                {"name": "same", "data_jsonl": "a", "baseline_accuracy": 1.0},
+                {"name": "same", "data_jsonl": "b", "baseline_accuracy": 1.0},
+            ],
+            "unique",
+        ),
+        (
+            [
+                {
+                    "name": "bad",
+                    "data_jsonl": "a",
+                    "baseline_accuracy": 1.0,
+                    "mode": "matrix",
+                }
+            ],
+            "mode",
+        ),
+    ):
+        try:
+            resolve_canary_specs({"canary_specs": specs})
+        except ValueError as exc:
+            assert match in str(exc)
+        else:
+            raise AssertionError("Expected invalid canary specifications to fail")
 
 
 def test_seed_training_rng_reproduces_torch_and_loader_streams() -> None:

@@ -76,6 +76,66 @@ def cfg_int(cfg: dict[str, Any], key: str, default: int) -> int:
     return default if value is None else int(value)
 
 
+def resolve_canary_specs(cfg: dict[str, Any]) -> list[dict[str, Any]]:
+    """Normalize legacy or named canary configuration into one validated list."""
+
+    raw_specs = cfg.get("canary_specs")
+    if raw_specs is None:
+        data_jsonl = cfg.get("canary_jsonl")
+        if not data_jsonl:
+            return []
+        if cfg.get("canary_baseline_accuracy") is None:
+            raise ValueError("canary_jsonl requires canary_baseline_accuracy")
+        raw_specs = [
+            {
+                "name": "legacy",
+                "data_jsonl": data_jsonl,
+                "baseline_accuracy": cfg["canary_baseline_accuracy"],
+                "hard_stop_delta": cfg.get("canary_hard_stop_delta", -0.03),
+                "value_prefix": cfg.get("canary_value_prefix", "name:"),
+                "mode": "loop1",
+                "max_depth": 1,
+            }
+        ]
+    if not isinstance(raw_specs, list) or not raw_specs:
+        raise ValueError("canary_specs must be a non-empty list")
+
+    normalized: list[dict[str, Any]] = []
+    names: set[str] = set()
+    for index, raw in enumerate(raw_specs):
+        if not isinstance(raw, dict):
+            raise ValueError(f"canary_specs[{index}] must be a mapping")
+        name = str(raw.get("name") or "").strip()
+        if not name:
+            raise ValueError(f"canary_specs[{index}] requires a name")
+        if name in names:
+            raise ValueError("canary_specs names must be unique")
+        names.add(name)
+        data_jsonl = str(raw.get("data_jsonl") or "").strip()
+        if not data_jsonl:
+            raise ValueError(f"canary_specs[{index}] requires data_jsonl")
+        if raw.get("baseline_accuracy") is None:
+            raise ValueError(f"canary_specs[{index}] requires baseline_accuracy")
+        mode = str(raw.get("mode", "loop1")).lower()
+        if mode not in {"loop1", "diagonal"}:
+            raise ValueError("canary mode must be one of: loop1, diagonal")
+        max_depth = int(raw.get("max_depth", 1))
+        if max_depth < 1:
+            raise ValueError("canary max_depth must be positive")
+        normalized.append(
+            {
+                "name": name,
+                "data_jsonl": data_jsonl,
+                "baseline_accuracy": float(raw["baseline_accuracy"]),
+                "hard_stop_delta": float(raw.get("hard_stop_delta", -0.03)),
+                "value_prefix": str(raw.get("value_prefix", "name:")),
+                "mode": mode,
+                "max_depth": max_depth,
+            }
+        )
+    return normalized
+
+
 def seed_training_rng(seed: int) -> torch.Generator:
     """Seed model stochasticity and return a seeded CPU DataLoader generator."""
 
@@ -293,6 +353,96 @@ def evaluate_loop1_canary(
         "total": total,
         "accuracy": correct / total if total else 0.0,
     }
+
+
+def evaluate_diagonal_canary(
+    wrapper: RecurrentQwenForCausalLM,
+    tokenizer: Any,
+    *,
+    data_jsonl: str | Path,
+    device: str,
+    value_prefix: str,
+    max_depth: int,
+) -> dict[str, float | int]:
+    from eval.eval_synthetic_depth_active_labels import (
+        active_target_for_loop,
+        candidates_for_row,
+        prompt_for_row,
+        read_jsonl,
+        score_candidates_all_loops,
+    )
+
+    rows = read_jsonl(data_jsonl)
+    score_args = SimpleNamespace(
+        device=device,
+        force_slow_candidate_score=False,
+        normalize_candidate_score=True,
+    )
+    correct = 0
+    wrapper.eval()
+    try:
+        for row in rows:
+            depth = int(row["depth"])
+            if not 1 <= depth <= int(max_depth):
+                raise ValueError(
+                    f"Diagonal canary row depth {depth} is outside [1, {max_depth}]"
+                )
+            prompt = prompt_for_row(
+                row,
+                prediction_space="full_symbols",
+                prompt_style="question_only",
+            )
+            candidates = candidates_for_row(
+                row,
+                prediction_space="full_symbols",
+                value_prefix=value_prefix,
+            )
+            scores = score_candidates_all_loops(
+                wrapper,
+                tokenizer,
+                prompt,
+                candidates,
+                score_args,
+                loop_counts=[depth],
+            )[depth]
+            prediction = max(scores.items(), key=lambda item: item[1])[0]
+            target = active_target_for_loop(
+                row,
+                depth,
+                prediction_space="full_symbols",
+                value_prefix=value_prefix,
+            )
+            correct += int(prediction == target)
+    finally:
+        wrapper.train()
+    total = len(rows)
+    return {
+        "correct": correct,
+        "total": total,
+        "accuracy": correct / total if total else 0.0,
+    }
+
+
+def evaluate_canary_spec(
+    wrapper: RecurrentQwenForCausalLM,
+    tokenizer: Any,
+    *,
+    spec: dict[str, Any],
+    device: str,
+) -> dict[str, float | int]:
+    common = {
+        "data_jsonl": spec["data_jsonl"],
+        "device": device,
+        "value_prefix": spec["value_prefix"],
+    }
+    if spec["mode"] == "diagonal":
+        return evaluate_diagonal_canary(
+            wrapper,
+            tokenizer,
+            **common,
+            max_depth=int(spec["max_depth"]),
+        )
+    return evaluate_loop1_canary(wrapper, tokenizer, **common)
 
 
 def configure_trainable_modules(wrapper: RecurrentQwenForCausalLM, cfg: dict[str, Any]) -> None:
@@ -946,6 +1096,7 @@ def main() -> int:
         "dose_trace": [],
         "pretrained_base_sha256_start": base_hash_start,
         "canary_trace": [],
+        "canary_traces": {},
     }
     max_steps = cfg_int(cfg, "max_steps", 25)
     save_every = cfg_int(cfg, "save_every", 0) if cfg.get("save_every", 0) else 0
@@ -989,17 +1140,12 @@ def main() -> int:
     }
     prelude_grad_multiplier = cfg_float(cfg, "bridge_prelude_grad_multiplier", 1.0)
     canary_every = cfg_int(cfg, "canary_every", 0) if cfg.get("canary_every", 0) else 0
-    canary_jsonl = cfg.get("canary_jsonl")
-    canary_baseline_accuracy = (
-        cfg_float(cfg, "canary_baseline_accuracy", 0.0)
-        if cfg.get("canary_baseline_accuracy") is not None
-        else None
-    )
-    canary_hard_stop_delta = cfg_float(cfg, "canary_hard_stop_delta", -0.03)
-    if canary_every and (not canary_jsonl or canary_baseline_accuracy is None):
-        raise ValueError(
-            "canary_every requires canary_jsonl and canary_baseline_accuracy"
-        )
+    canary_specs = resolve_canary_specs(cfg)
+    if canary_every and not canary_specs:
+        raise ValueError("canary_every requires canary_jsonl or canary_specs")
+    if canary_specs and not canary_every:
+        raise ValueError("configured canaries require a positive canary_every")
+    summary["canary_traces"] = {spec["name"]: [] for spec in canary_specs}
     chain_anneal_hold_frac = cfg_float(cfg, "chain_anneal_hold_frac", 0.5)
     chain_outcome_loss_weight = cfg_float(cfg, "chain_outcome_loss_weight", 1.0)
     if prelude_grad_multiplier != 1.0 and bridge_uses_split_projection(wrapper):
@@ -1132,32 +1278,36 @@ def main() -> int:
                 persist_progress(status="training", completed_step=completed_step, metrics=metric_values)
             step = completed_step
             if canary_every and step % canary_every == 0:
-                assert canary_jsonl is not None
-                assert canary_baseline_accuracy is not None
-                canary = evaluate_loop1_canary(
-                    wrapper,
-                    tokenizer,
-                    data_jsonl=canary_jsonl,
-                    device=args.device,
-                    value_prefix=str(cfg.get("canary_value_prefix", "name:")),
-                )
-                accuracy_delta = float(canary["accuracy"]) - canary_baseline_accuracy
-                canary_receipt = {
-                    "step": step,
-                    **canary,
-                    "baseline_accuracy": canary_baseline_accuracy,
-                    "accuracy_delta": accuracy_delta,
-                    "hard_stop_delta": canary_hard_stop_delta,
-                    "status": (
-                        "red_hard_stop"
-                        if accuracy_delta < canary_hard_stop_delta
-                        else "green_continue"
-                    ),
-                }
-                summary["canary_trace"].append(canary_receipt)
-                print(f"[canary] {canary_receipt}", flush=True)
-                if accuracy_delta < canary_hard_stop_delta:
-                    hard_stop = True
+                canary_hard_stop = False
+                for spec in canary_specs:
+                    canary = evaluate_canary_spec(
+                        wrapper,
+                        tokenizer,
+                        spec=spec,
+                        device=args.device,
+                    )
+                    baseline_accuracy = float(spec["baseline_accuracy"])
+                    hard_stop_delta = float(spec["hard_stop_delta"])
+                    accuracy_delta = float(canary["accuracy"]) - baseline_accuracy
+                    canary_receipt = {
+                        "name": spec["name"],
+                        "mode": spec["mode"],
+                        "step": step,
+                        **canary,
+                        "baseline_accuracy": baseline_accuracy,
+                        "accuracy_delta": accuracy_delta,
+                        "hard_stop_delta": hard_stop_delta,
+                        "status": (
+                            "red_hard_stop"
+                            if accuracy_delta < hard_stop_delta
+                            else "green_continue"
+                        ),
+                    }
+                    summary["canary_trace"].append(canary_receipt)
+                    summary["canary_traces"][spec["name"]].append(canary_receipt)
+                    print(f"[canary] {canary_receipt}", flush=True)
+                    canary_hard_stop = canary_hard_stop or accuracy_delta < hard_stop_delta
+                hard_stop = hard_stop or canary_hard_stop
             if output_dir := cfg.get("output_dir"):
                 should_save_interval = (save_every and step % save_every == 0) or step in save_steps
                 if should_save_interval and (step < max_steps or hard_stop):

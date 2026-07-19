@@ -1966,6 +1966,39 @@ TARGETS = {
             "STAGE5_ADAPTER_BUDGET_DISCONNECT": "0",
         },
     },
+    "adapter_parity_e3a": {
+        "path": "colab/STAGE5_ADAPTER_PARITY_BATTERY_CELL.py",
+        "markers": [
+            "STAGE5_ADAPTER_PARITY_BATTERY_CELL_VERSION",
+            "adapter_parity_battery_v1",
+            "stage5_adapter_parity_e3a",
+            "tests/test_adapter_parity_battery.py",
+            "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
+        ],
+        "env": {"STAGE5_ADAPTER_PARITY_DISCONNECT": "0"},
+    },
+    "adapter_parity_e2": {
+        "path": "colab/STAGE5_ADAPTER_PARITY_BATTERY_CELL.py",
+        "markers": [
+            "STAGE5_ADAPTER_PARITY_BATTERY_CELL_VERSION",
+            "adapter_parity_battery_v1",
+            "stage5_adapter_parity_e2",
+            "tests/test_adapter_parity_battery.py",
+            "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
+        ],
+        "env": {"STAGE5_ADAPTER_PARITY_DISCONNECT": "0"},
+    },
+    "adapter_parity_e4": {
+        "path": "colab/STAGE5_ADAPTER_PARITY_BATTERY_CELL.py",
+        "markers": [
+            "STAGE5_ADAPTER_PARITY_BATTERY_CELL_VERSION",
+            "adapter_parity_battery_v1",
+            "stage5_adapter_parity_e4",
+            "tests/test_adapter_parity_battery.py",
+            "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
+        ],
+        "env": {"STAGE5_ADAPTER_PARITY_DISCONNECT": "0"},
+    },
     "paper1_closure_receipts": {
         "path": "colab/STAGE5_PAPER1_CLOSURE_RECEIPTS_CELL.py",
         "markers": [
@@ -2745,39 +2778,6 @@ TARGETS = {
             "STAGE5_PHASE_G_FORCED_INJECTION_DTYPE": "bfloat16",
             "STAGE5_PHASE_G_FORCED_INJECTION_DISCONNECT": "0",
         },
-    },
-    "adapter_parity_e3a": {
-        "path": "colab/STAGE5_ADAPTER_PARITY_BATTERY_CELL.py",
-        "markers": [
-            "STAGE5_ADAPTER_PARITY_BATTERY_CELL_VERSION",
-            "adapter_parity_battery_v1",
-            "stage5_adapter_parity_e3a",
-            "tests/test_adapter_parity_battery.py",
-            "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
-        ],
-        "env": {"STAGE5_ADAPTER_PARITY_DISCONNECT": "0"},
-    },
-    "adapter_parity_e2": {
-        "path": "colab/STAGE5_ADAPTER_PARITY_BATTERY_CELL.py",
-        "markers": [
-            "STAGE5_ADAPTER_PARITY_BATTERY_CELL_VERSION",
-            "adapter_parity_battery_v1",
-            "stage5_adapter_parity_e2",
-            "tests/test_adapter_parity_battery.py",
-            "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
-        ],
-        "env": {"STAGE5_ADAPTER_PARITY_DISCONNECT": "0"},
-    },
-    "adapter_parity_e4": {
-        "path": "colab/STAGE5_ADAPTER_PARITY_BATTERY_CELL.py",
-        "markers": [
-            "STAGE5_ADAPTER_PARITY_BATTERY_CELL_VERSION",
-            "adapter_parity_battery_v1",
-            "stage5_adapter_parity_e4",
-            "tests/test_adapter_parity_battery.py",
-            "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
-        ],
-        "env": {"STAGE5_ADAPTER_PARITY_DISCONNECT": "0"},
     },
     "oracle_interface_probe": {
         "path": "colab/STAGE5_ORACLE_INTERFACE_PROBE_CELL.py",

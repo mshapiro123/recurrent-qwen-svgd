@@ -102,6 +102,8 @@ def test_e4_readings_distinguish_hold_move_and_vanish() -> None:
                 "synthetic_min": 0.94,
                 "natural_baseline": 0.90,
                 "natural_accuracy": 0.89,
+                "tier1_correct": 60,
+                "tier1_total": 64,
             },
             {
                 "step": 200,
@@ -110,10 +112,33 @@ def test_e4_readings_distinguish_hold_move_and_vanish() -> None:
                 "synthetic_min": 0.92,
                 "natural_baseline": 0.90,
                 "natural_accuracy": 0.89,
+                "tier1_correct": 60,
+                "tier1_total": 64,
             },
         ]
     )
     assert series["verdict"] == "wall_moves"
+
+
+def test_e4_checkpoint_series_requires_tier1_retention_for_joint_pass() -> None:
+    series = score_e4_checkpoint_series(
+        [
+            {
+                "step": 100,
+                "inverse_correct": 50,
+                "inverse_total": 64,
+                "synthetic_min": 0.94,
+                "natural_baseline": 0.90,
+                "natural_accuracy": 0.89,
+                "tier1_correct": 58,
+                "tier1_total": 64,
+            }
+        ]
+    )
+    row = series["checkpoints"][0]
+    assert row["tier1_pass"] is False
+    assert row["joint_pass"] is False
+    assert series["verdict"] == "wall_holds"
 
 
 def test_frontier_derivation_records_interpolation() -> None:
@@ -150,3 +175,6 @@ def test_adapter_continuations_keep_lora_live_and_muon_rejected() -> None:
     assert '"reject_muon": True' in e4
     assert "validate_e4_source(e2)" in e4
     assert "restore_arm_e_checkpoint" in e4
+    assert '"canary_specs"' in e4
+    assert '"natural_surface"' in e4
+    assert '"tier1_arithmetic"' in e4

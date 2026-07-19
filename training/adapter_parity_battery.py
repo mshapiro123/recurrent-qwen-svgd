@@ -24,6 +24,8 @@ E4_INVERSE_REQUIRED_CORRECT = 46
 E4_INVERSE_TOTAL = 64
 E4_SYNTHETIC_FLOOR = 0.93
 E4_NATURAL_MAX_DROP = 0.03
+E4_TIER1_BASELINE_CORRECT = 60
+E4_TIER1_TOTAL = 64
 
 
 def _accuracy(correct: int, total: int) -> float:
@@ -172,9 +174,28 @@ def score_e4_checkpoint_series(checkpoints: Iterable[dict[str, Any]]) -> dict[st
         row["synthetic_pass"] = float(row["synthetic_min"]) >= E4_SYNTHETIC_FLOOR
         row["natural_floor"] = float(row["natural_baseline"]) - E4_NATURAL_MAX_DROP
         row["natural_pass"] = float(row["natural_accuracy"]) >= row["natural_floor"]
-        row["joint_pass"] = row["inverse_pass"] and row["synthetic_pass"] and row["natural_pass"]
+        row["tier1_accuracy"] = _accuracy(
+            int(row["tier1_correct"]),
+            int(row["tier1_total"]),
+        )
+        row["tier1_floor"] = (
+            E4_TIER1_BASELINE_CORRECT / E4_TIER1_TOTAL
+        ) - E4_NATURAL_MAX_DROP
+        row["tier1_pass"] = (
+            int(row["tier1_total"]) == E4_TIER1_TOTAL
+            and row["tier1_accuracy"] >= row["tier1_floor"]
+        )
+        row["joint_pass"] = (
+            row["inverse_pass"]
+            and row["synthetic_pass"]
+            and row["natural_pass"]
+            and row["tier1_pass"]
+        )
     final = rows[-1]
-    all_retention_green = all(row["synthetic_pass"] and row["natural_pass"] for row in rows)
+    all_retention_green = all(
+        row["synthetic_pass"] and row["natural_pass"] and row["tier1_pass"]
+        for row in rows
+    )
     if final["joint_pass"] and all_retention_green:
         verdict = "wall_vanishes"
     elif any(row["joint_pass"] for row in rows):
