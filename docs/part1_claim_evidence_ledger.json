@@ -335,6 +335,46 @@
       ]
     },
     {
+      "id": "adapter_budget_depth_profile",
+      "claim": "At the rank-16 adapter budget, the installed recurrent mechanism fell within the preregistered pooled band around the full-block arm while showing a measured tail-concentrated depth deficit.",
+      "status": "supported_bounded_deficit",
+      "scope": "Frozen 1,792-row Phase A family, same-reader forced-depth evaluation, R16 LoRA plus repaired split bridge.",
+      "metrics": {
+        "arm_e_correct": 1501,
+        "arm_e_total": 1792,
+        "arm_e_accuracy": 0.8376116071428571,
+        "arm_a_correct": 1506,
+        "arm_a_total": 1792,
+        "arm_a_accuracy": 0.8404017857142857,
+        "paired_helped": 140,
+        "paired_hurt": 145,
+        "paired_tied": 1507,
+        "paired_two_sided_p": 0.8127546875127164,
+        "frontier_threshold": 0.71,
+        "frontier": 11.56,
+        "trained_support": 8,
+        "frontier_to_support_ratio": 1.44,
+        "frontier_derivation": "Linear interpolation between depth 11 at 111/128 and depth 12 at 75/128.",
+        "arm_a_ladder_official_frontier": 11.61
+      },
+      "interpretation": "The pooled three-point band passed, but the preregistered every-depth deficit gate failed at depths 12-14; the result supports a capacity-depth interaction rather than a budget-independent claim.",
+      "pending_adapter_characterizations": [
+        "E3a zero-shot verbal transfer",
+        "E2 outcome-only persistence",
+        "E4 inverse-task retention"
+      ],
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/summary.json",
+          "locator": "adapter_budget_depth_profile and final_eval"
+        },
+        {
+          "path": "docs/ARM_E_ADAPTER_PARITY_BATTERY_SPEC_20260719.md",
+          "locator": "Adapter Frontier Receipt and E2-E4 preregistration"
+        }
+      ]
+    },
+    {
       "id": "depth_selection_bounded_negative",
       "claim": "The registered bounded PonderNet controller did not learn reliable depth selection on the frozen N24 mechanism under either supervised stated-depth reading or outcome-only Ponder training.",
       "status": "registered_negative",

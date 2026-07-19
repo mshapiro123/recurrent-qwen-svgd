@@ -119,6 +119,9 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "multichannel_bridge_precursor_full" - explicit full M1/M2/M3 battery after pilot review.
 #   "peft_ponder_closure" - corrected-loop frozen-LoRA ladder plus halting-only Ponder phase.
 #   "adapter_budget_arm_e" - matched Arm-A R16 LoRA plus repaired-bridge depth profile.
+#   "adapter_parity_e3a" - Arm E zero-shot relay/pointer transfer.
+#   "adapter_parity_e2" - Arm E outcome-only persistence.
+#   "adapter_parity_e4" - E2-gated Arm E inverse retention.
 #   "paper1_closure_receipts" - CPU-safe Paper 1 evidence compiler and Drive backup.
 #   "depth_selector_bounded_assessment" - frozen N24 supervised-depth and Ponder-outcome selector closure.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
@@ -1961,6 +1964,39 @@ TARGETS = {
             "STAGE5_ADAPTER_BUDGET_DTYPE": "bfloat16",
             "STAGE5_ADAPTER_BUDGET_DISCONNECT": "0",
         },
+    },
+    "adapter_parity_e3a": {
+        "path": "colab/STAGE5_ADAPTER_PARITY_BATTERY_CELL.py",
+        "markers": [
+            "STAGE5_ADAPTER_PARITY_BATTERY_CELL_VERSION",
+            "adapter_parity_battery_v1",
+            "stage5_adapter_parity_e3a",
+            "tests/test_adapter_parity_battery.py",
+            "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
+        ],
+        "env": {"STAGE5_ADAPTER_PARITY_DISCONNECT": "0"},
+    },
+    "adapter_parity_e2": {
+        "path": "colab/STAGE5_ADAPTER_PARITY_BATTERY_CELL.py",
+        "markers": [
+            "STAGE5_ADAPTER_PARITY_BATTERY_CELL_VERSION",
+            "adapter_parity_battery_v1",
+            "stage5_adapter_parity_e2",
+            "tests/test_adapter_parity_battery.py",
+            "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
+        ],
+        "env": {"STAGE5_ADAPTER_PARITY_DISCONNECT": "0"},
+    },
+    "adapter_parity_e4": {
+        "path": "colab/STAGE5_ADAPTER_PARITY_BATTERY_CELL.py",
+        "markers": [
+            "STAGE5_ADAPTER_PARITY_BATTERY_CELL_VERSION",
+            "adapter_parity_battery_v1",
+            "stage5_adapter_parity_e4",
+            "tests/test_adapter_parity_battery.py",
+            "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
+        ],
+        "env": {"STAGE5_ADAPTER_PARITY_DISCONNECT": "0"},
     },
     "paper1_closure_receipts": {
         "path": "colab/STAGE5_PAPER1_CLOSURE_RECEIPTS_CELL.py",
