@@ -1,0 +1,10 @@
+{
+  "kind": "stage5_wall_clock_latency_arm_status",
+  "arm": "E",
+  "status": "finished",
+  "total_observations": 2080,
+  "completed_observations": 2080,
+  "checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_wall_clock_latency_20260719/restored/arm_E.pt",
+  "checkpoint_sha256": "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
+  "updated_at_unix": 1784507650.0794315
+}

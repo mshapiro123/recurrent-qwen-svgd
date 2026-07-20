@@ -1,0 +1,23 @@
+{
+  "kind": "stage5_wall_clock_latency_conditions",
+  "run_id": "stage5_wall_clock_latency_20260719",
+  "started_at_unix": 1784553208.3458219,
+  "batch_size": 1,
+  "decoding": "greedy",
+  "precision": "bfloat16",
+  "data_jsonl": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v2_depth14/data/test_chain_mcq.jsonl",
+  "rows": 1792,
+  "arms": [
+    "A",
+    "E",
+    "C",
+    "B",
+    "D"
+  ],
+  "force_arms": [
+    "B",
+    "C",
+    "D"
+  ],
+  "scope": "single hardware configuration, batch size 1, registered evaluation paths"
+}

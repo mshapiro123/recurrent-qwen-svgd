@@ -554,6 +554,18 @@
           "locator": "early-run claim boundary"
         }
       ]
+    },
+    {
+      "id": "wall_clock_latency_descriptive",
+      "claim": "Batch-1 wall-clock latency was measured for recurrent and token-space systems on their registered evaluation paths.",
+      "status": "descriptive",
+      "scope": "single hardware configuration, batch size 1, registered evaluation paths",
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_wall_clock_latency_20260719/summary.json",
+          "locator": "per-arm and per-depth latency receipt"
+        }
+      ]
     }
   ]
 }
