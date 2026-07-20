@@ -274,8 +274,8 @@ def main() -> int:
                 "and decode-side is the nonnegative difference."
             ),
             "dense_timing_note": (
-                "For Arms B/C/D, a launch-time equivalence assertion matched the manual cached greedy tokens to "
-                "Transformers generate; the first forward is prefill and later cached forwards are decode."
+                "For Arms B/C/D, total time is the registered Transformers greedy generate path; "
+                "prefill is a synchronized one-token generate reference and decode-side time is the nonnegative difference."
             ),
         }
     )

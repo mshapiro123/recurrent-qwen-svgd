@@ -1,10 +1,10 @@
 """Measure batch-1 wall-clock latency on the registered Phase A evaluation paths.
 
-The recurrent prefill/decode split is a subtraction decomposition: a synchronized
-one-loop reference call estimates prompt processing, while the actual forced-depth
-call supplies total model latency.  The difference is reported as decode-side
-recurrent work.  Dense arms use synchronized cached greedy decoding, with the
-first forward counted as prefill and later cached forwards counted as decode.
+The recurrent and dense prefill/decode splits are subtraction decompositions. A
+synchronized one-step registered evaluation call estimates prompt processing,
+while the actual registered path supplies total model latency. The nonnegative
+difference is reported as decode-side work. This deliberately avoids replacing
+the registered dense ``generate`` path with a hand-written cache loop.
 """
 
 from __future__ import annotations
@@ -267,51 +267,18 @@ def _sync(device: str) -> None:
         torch.cuda.synchronize()
 
 
-def _timed_dense_greedy(model: Any, encoded: dict[str, Any], *, max_new_tokens: int, eos_token_id: int | None, device: str):
+def _timed_registered_dense_generate(
+    model: Any,
+    tokenizer: Any,
+    encoded: dict[str, Any],
+    *,
+    max_new_tokens: int,
+    device: str,
+) -> tuple[list[int], float]:
     import torch
 
-    input_ids = encoded["input_ids"]
-    model_kwargs = {key: value for key, value in encoded.items() if key != "input_ids"}
-    model_kwargs["use_cache"] = True
-    generated: list[int] = []
-    prefill_ms = 0.0
-    decode_ms = 0.0
-    with torch.inference_mode():
-        for step in range(int(max_new_tokens)):
-            _sync(device)
-            started = time.perf_counter_ns()
-            model_inputs = model.prepare_inputs_for_generation(input_ids, **model_kwargs)
-            outputs = model(**model_inputs, return_dict=True)
-            next_token = outputs.logits[:, -1, :].argmax(dim=-1)
-            model_kwargs = model._update_model_kwargs_for_generation(
-                outputs,
-                model_kwargs,
-                is_encoder_decoder=False,
-            )
-            input_ids = torch.cat([input_ids, next_token[:, None]], dim=-1)
-            _sync(device)
-            elapsed = (time.perf_counter_ns() - started) / 1_000_000.0
-            if step == 0:
-                prefill_ms += elapsed
-            else:
-                decode_ms += elapsed
-            token = int(next_token.item())
-            generated.append(token)
-            if eos_token_id is not None and token == int(eos_token_id):
-                break
-    return generated, prefill_ms, decode_ms
-
-
-def _assert_dense_equivalence(model: Any, tokenizer: Any, encoded: dict[str, Any], *, max_new_tokens: int, device: str):
-    import torch
-
-    manual, _, _ = _timed_dense_greedy(
-        model,
-        {key: value.clone() for key, value in encoded.items()},
-        max_new_tokens=max_new_tokens,
-        eos_token_id=tokenizer.eos_token_id,
-        device=device,
-    )
+    _sync(device)
+    started = time.perf_counter_ns()
     with torch.inference_mode():
         standard = model.generate(
             **encoded,
@@ -321,9 +288,10 @@ def _assert_dense_equivalence(model: Any, tokenizer: Any, encoded: dict[str, Any
             eos_token_id=tokenizer.eos_token_id,
             use_cache=True,
         )
-    expected = standard[0, encoded["input_ids"].shape[1] :].tolist()
-    if manual != expected:
-        raise RuntimeError(f"Manual cached greedy path differs from registered generate path: {manual[:16]} != {expected[:16]}")
+    _sync(device)
+    elapsed_ms = (time.perf_counter_ns() - started) / 1_000_000.0
+    generated = standard[0, encoded["input_ids"].shape[1] :].tolist()
+    return [int(token) for token in generated], elapsed_ms
 
 
 def _measure_dense(model: Any, tokenizer: Any, row: dict[str, Any], *, max_new_tokens: int, device: str) -> dict[str, Any]:
@@ -334,16 +302,27 @@ def _measure_dense(model: Any, tokenizer: Any, row: dict[str, Any], *, max_new_t
     encoded = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=512)
     encoded = {key: value.to(device) for key, value in encoded.items()}
     tokenization_ms = (time.perf_counter_ns() - started) / 1_000_000.0
-    generated, prefill_ms, decode_ms = _timed_dense_greedy(
+    # Keep dense timing on the arm's registered Transformers generate path. The
+    # one-token call includes its first prompt forward, so it is a compatible
+    # prefill reference for the full greedy generation call.
+    _, reference_ms = _timed_registered_dense_generate(
         model,
+        tokenizer,
         encoded,
-        max_new_tokens=max_new_tokens,
-        eos_token_id=tokenizer.eos_token_id,
+        max_new_tokens=1,
         device=device,
     )
+    generated, model_total = _timed_registered_dense_generate(
+        model,
+        tokenizer,
+        encoded,
+        max_new_tokens=max_new_tokens,
+        device=device,
+    )
+    prefill_ms = min(reference_ms, model_total)
+    decode_ms = max(model_total - prefill_ms, 0.0)
     continuation = tokenizer.decode(generated, skip_special_tokens=True)
     prediction = extract_final_symbol(continuation, candidates_for_row(row))
-    model_total = prefill_ms + decode_ms
     return {
         "tokenization_ms": tokenization_ms,
         "prefill_ms": prefill_ms,
@@ -545,7 +524,7 @@ def evaluate_arm(args: argparse.Namespace) -> dict[str, Any]:
             "timing_decomposition": (
                 "forced-depth total minus synchronized one-loop reference"
                 if args.arm in {"A", "E"}
-                else "first cached greedy forward prefill; subsequent cached forwards decode"
+                else "registered greedy generate total minus synchronized one-token generate reference"
             ),
         }
     )

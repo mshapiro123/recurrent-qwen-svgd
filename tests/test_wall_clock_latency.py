@@ -76,3 +76,13 @@ def test_bootstrap_exposes_wall_clock_latency_target():
     assert '"wall_clock_latency_descriptive"' in bootstrap
     assert "STAGE5_WALL_CLOCK_LATENCY_CELL_VERSION" in bootstrap
     assert "tests/test_wall_clock_latency.py" in bootstrap
+
+
+def test_dense_latency_uses_registered_generate_not_a_manual_cache_loop():
+    root = Path(__file__).resolve().parents[1]
+    source = (root / "eval/eval_wall_clock_latency.py").read_text(encoding="utf-8")
+
+    assert "_timed_registered_dense_generate" in source
+    assert "model.generate(" in source
+    assert "prepare_inputs_for_generation" not in source
+    assert "_update_model_kwargs_for_generation" not in source

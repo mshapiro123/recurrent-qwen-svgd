@@ -22,9 +22,11 @@ All GPU phases use `time.perf_counter_ns()` around synchronized CUDA work. Model
 loading and the excluded warmup observation are not timed. Tokenization is recorded
 separately. Total row latency is tokenization plus actual model-path latency.
 
-For dense arms, a manual cached greedy loop is checked token-for-token against the
-registered Transformers `generate` call before measurement. The first full-prompt
-forward is prefill; subsequent cached forwards are decode.
+For dense arms, the registered Transformers `generate` call is timed directly. A
+separate synchronized one-token `generate` call on the same prompt estimates
+prefill; the nonnegative difference from the full registered generation call is
+decode-side work. This is a subtraction decomposition, not an internal
+kernel-profiler decomposition.
 
 For recurrent arms, total model latency is the actual registered forced-depth call.
 The prefill/decode split is explicitly a subtraction decomposition: a separate
