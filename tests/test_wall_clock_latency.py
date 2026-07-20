@@ -78,6 +78,17 @@ def test_bootstrap_exposes_wall_clock_latency_target():
     assert "tests/test_wall_clock_latency.py" in bootstrap
 
 
+def test_wall_clock_launcher_fetches_non_main_pin_before_reset():
+    root = Path(__file__).resolve().parents[1]
+    source = (root / "colab/STAGE5_WALL_CLOCK_LATENCY_CELL.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "STAGE5_WALL_CLOCK_FETCH_REF" in source
+    assert 'run(["git", "fetch", "origin", FETCH_REF])' in source
+    assert 'run(["git", "reset", "--hard", SYNC_REF])' in source
+
+
 def test_dense_latency_uses_registered_generate_not_a_manual_cache_loop():
     root = Path(__file__).resolve().parents[1]
     source = (root / "eval/eval_wall_clock_latency.py").read_text(encoding="utf-8")

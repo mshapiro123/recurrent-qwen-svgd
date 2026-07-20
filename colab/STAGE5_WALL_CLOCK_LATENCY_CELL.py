@@ -10,13 +10,17 @@ from pathlib import Path
 
 from google.colab import drive, runtime, userdata
 
-STAGE5_WALL_CLOCK_LATENCY_CELL_VERSION = "wall_clock_latency_v1"
+STAGE5_WALL_CLOCK_LATENCY_CELL_VERSION = "wall_clock_latency_v2"
 # Safety markers: tests/test_wall_clock_latency.py, wall_clock_latency_descriptive
 # Descriptive-only scope: single hardware configuration, batch size 1, registered evaluation paths.
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 SYNC_REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main").strip() or "main"
+FETCH_REF = (
+    os.environ.get("STAGE5_WALL_CLOCK_FETCH_REF", SYNC_REF).strip()
+    or SYNC_REF
+)
 
 
 def secret(*names: str) -> str | None:
@@ -78,10 +82,14 @@ def sync_repo() -> None:
     if ROOT.exists():
         run(["git", "remote", "set-url", "origin", clone_url])
         run(["git", "fetch", "origin", "main"])
+        if FETCH_REF != "main":
+            run(["git", "fetch", "origin", FETCH_REF])
         run(["git", "checkout", "main"])
         run(["git", "reset", "--hard", SYNC_REF])
     else:
         run(["git", "clone", clone_url, str(ROOT)], cwd=Path("/content"))
+        if FETCH_REF != "main":
+            run(["git", "fetch", "origin", FETCH_REF])
         run(["git", "reset", "--hard", SYNC_REF])
     run(["git", "config", "user.email", "colab-runner@local"])
     run(["git", "config", "user.name", "Colab Runner"])
