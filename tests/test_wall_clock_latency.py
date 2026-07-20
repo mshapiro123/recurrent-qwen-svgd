@@ -95,5 +95,6 @@ def test_dense_latency_uses_registered_generate_not_a_manual_cache_loop():
 
     assert "_timed_registered_dense_generate" in source
     assert "model.generate(" in source
+    assert "_assert_dense_equivalence" not in source
     assert "prepare_inputs_for_generation" not in source
     assert "_update_model_kwargs_for_generation" not in source

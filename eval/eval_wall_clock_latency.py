@@ -456,7 +456,7 @@ def evaluate_arm(args: argparse.Namespace) -> dict[str, Any]:
         prompt = __import__("eval.eval_synthetic_depth_dense", fromlist=["prompt_for_row"]).prompt_for_row(warmup)
         encoded = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=512)
         encoded = {key: value.to(args.device) for key, value in encoded.items()}
-        _assert_dense_equivalence(
+        _timed_registered_dense_generate(
             model,
             tokenizer,
             encoded,
