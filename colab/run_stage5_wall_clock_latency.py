@@ -20,6 +20,11 @@ from eval.eval_wall_clock_latency import build_markdown_table, read_jsonl, summa
 
 RUN_ID = os.environ.get("STAGE5_WALL_CLOCK_RUN_ID", "stage5_wall_clock_latency_20260719")
 RUN_DIR = ROOT / "outputs/stage5" / RUN_ID
+FORCE_ARMS = {
+    item.strip().upper()
+    for item in os.environ.get("STAGE5_WALL_CLOCK_FORCE_ARMS", "").split(",")
+    if item.strip()
+}
 DATA = ROOT / "outputs/stage5/stage5_synthetic_depth_frozen_eval_v2_depth14/data/test_chain_mcq.jsonl"
 DRIVE_BACKUP = Path(
     os.environ.get(
@@ -159,6 +164,43 @@ def backup_compact() -> None:
         shutil.copy2(source, destination)
 
 
+def archive_forced_arm(*, arm: str, output_dir: Path, mirror_dir: Path, archive_tag: str) -> None:
+    """Preserve incompatible timing receipts before measuring an arm again."""
+    for source, root in ((output_dir, RUN_DIR), (mirror_dir, DRIVE_BACKUP)):
+        if not source.exists():
+            continue
+        destination = root / "invalid_mixed_hardware" / archive_tag / "conditions" / arm
+        if destination.exists():
+            raise RuntimeError(f"Refusing to overwrite archived Arm {arm} receipt: {destination}")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(source), str(destination))
+        print(f"archived_forced_latency_arm={arm} path={destination}", flush=True)
+
+
+def assert_forced_cohort_matches_completed_hardware() -> None:
+    """Verify the new dense cohort can be joined to the retained recurrent arms."""
+    retained = []
+    for arm in ("A", "E"):
+        summary_path = RUN_DIR / "conditions" / arm / "summary.json"
+        if not summary_path.exists():
+            raise RuntimeError(f"Cannot repair B/C/D without retained Arm {arm}: {summary_path}")
+        retained.append(json.loads(summary_path.read_text(encoding="utf-8")))
+    expected_gpu = {str(item["hardware"]["gpu_name"]) for item in retained}
+    expected_smi = {str(item["hardware"]["nvidia_smi"]) for item in retained}
+    if len(expected_gpu) != 1 or len(expected_smi) != 1:
+        raise RuntimeError(f"Retained A/E arms do not share one hardware receipt: {expected_smi}")
+    observed_smi = subprocess.check_output(
+        ["nvidia-smi", "--query-gpu=name,driver_version,memory.total", "--format=csv,noheader"],
+        text=True,
+    ).strip()
+    if observed_smi != next(iter(expected_smi)):
+        raise RuntimeError(
+            "The allocated GPU does not match the retained A/E receipt. "
+            f"expected={next(iter(expected_smi))!r} observed={observed_smi!r}"
+        )
+    print(f"[assert-ok] forced_cohort_hardware={observed_smi}", flush=True)
+
+
 def publish() -> None:
     run(["git", "pull", "--rebase", "--autostash", "origin", "main"], accepted={0})
     publish_paths = [
@@ -188,6 +230,14 @@ def main() -> int:
     selected_arms = [item.strip().upper() for item in os.environ.get("STAGE5_WALL_CLOCK_ARMS", "A,E,C,B,D").split(",") if item.strip()]
     if len(selected_arms) != len(CHECKPOINTS) or set(selected_arms) != set(CHECKPOINTS):
         raise RuntimeError("The publication receipt requires exactly arms A,E,C,B,D in one hardware session")
+    if FORCE_ARMS and FORCE_ARMS != {"B", "C", "D"}:
+        raise RuntimeError(
+            "The controlled mixed-hardware repair may force exactly Arms B,C,D; "
+            f"received {sorted(FORCE_ARMS)}"
+        )
+    if FORCE_ARMS:
+        assert_forced_cohort_matches_completed_hardware()
+    archive_tag = time.strftime("rerun_%Y%m%d_%H%M%S", time.gmtime())
     conditions = {
         "kind": "stage5_wall_clock_latency_conditions",
         "run_id": RUN_ID,
@@ -198,6 +248,7 @@ def main() -> int:
         "data_jsonl": str(DATA.relative_to(ROOT)),
         "rows": len(read_jsonl(DATA)),
         "arms": selected_arms,
+        "force_arms": sorted(FORCE_ARMS),
         "scope": "single hardware configuration, batch size 1, registered evaluation paths",
     }
     (RUN_DIR / "conditions.json").write_text(json.dumps(conditions, indent=2) + "\n", encoding="utf-8")
@@ -205,6 +256,14 @@ def main() -> int:
         spec = CHECKPOINTS[arm]
         output_dir = RUN_DIR / "conditions" / arm
         status_path = output_dir / "status.json"
+        mirror_dir = DRIVE_BACKUP / "conditions" / arm
+        if arm in FORCE_ARMS:
+            archive_forced_arm(
+                arm=arm,
+                output_dir=output_dir,
+                mirror_dir=mirror_dir,
+                archive_tag=archive_tag,
+            )
         if status_path.exists():
             status = json.loads(status_path.read_text(encoding="utf-8"))
             if status.get("status") == "finished" and int(status.get("completed_observations", 0)) == 2080:
@@ -215,7 +274,6 @@ def main() -> int:
                 print(f"latency_arm_already_complete={arm} observations=2080", flush=True)
                 continue
         checkpoint = restore_checkpoint(arm, spec)
-        mirror_dir = DRIVE_BACKUP / "conditions" / arm
         command = [
             sys.executable,
             "eval/eval_wall_clock_latency.py",

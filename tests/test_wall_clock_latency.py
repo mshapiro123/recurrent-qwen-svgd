@@ -89,6 +89,18 @@ def test_wall_clock_launcher_fetches_non_main_pin_before_reset():
     assert 'run(["git", "reset", "--hard", SYNC_REF])' in source
 
 
+def test_wall_clock_runner_can_repair_only_the_mixed_hardware_dense_cohort():
+    root = Path(__file__).resolve().parents[1]
+    source = (root / "colab/run_stage5_wall_clock_latency.py").read_text(encoding="utf-8")
+
+    assert "STAGE5_WALL_CLOCK_FORCE_ARMS" in source
+    assert 'FORCE_ARMS != {"B", "C", "D"}' in source
+    assert "invalid_mixed_hardware" in source
+    assert "archived_forced_latency_arm" in source
+    assert "forced_cohort_hardware" in source
+    assert "--query-gpu=name,driver_version,memory.total" in source
+
+
 def test_dense_latency_uses_registered_generate_not_a_manual_cache_loop():
     root = Path(__file__).resolve().parents[1]
     source = (root / "eval/eval_wall_clock_latency.py").read_text(encoding="utf-8")

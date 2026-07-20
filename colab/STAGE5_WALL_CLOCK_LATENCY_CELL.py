@@ -10,7 +10,7 @@ from pathlib import Path
 
 from google.colab import drive, runtime, userdata
 
-STAGE5_WALL_CLOCK_LATENCY_CELL_VERSION = "wall_clock_latency_v2"
+STAGE5_WALL_CLOCK_LATENCY_CELL_VERSION = "wall_clock_latency_v3"
 # Safety markers: tests/test_wall_clock_latency.py, wall_clock_latency_descriptive
 # Descriptive-only scope: single hardware configuration, batch size 1, registered evaluation paths.
 
@@ -98,7 +98,7 @@ def sync_repo() -> None:
 
 try:
     if shutil.which("nvidia-smi") is None:
-        raise RuntimeError("Attach one A100 or larger GPU runtime for the same-session five-arm receipt.")
+        raise RuntimeError("Attach one CUDA GPU runtime for the same-hardware receipt.")
     run(["nvidia-smi"], cwd=Path("/content"))
     drive.mount("/content/drive", force_remount=False)
     sync_repo()
