@@ -1107,6 +1107,27 @@ def test_oracle_interface_probe_target_is_terminal_and_locked() -> None:
     assert "eval/score_oracle_interface_probe.py" in runner
 
 
+def test_oracle_intrablock_control_target_is_locked() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    launcher = (
+        ROOT / "colab/STAGE5_ORACLE_INTRABLOCK_CONTROL_CELL.py"
+    ).read_text(encoding="utf-8")
+    runner = (
+        ROOT / "colab/run_stage5_oracle_intrablock_control.py"
+    ).read_text(encoding="utf-8")
+
+    assert '"oracle_intrablock_control"' in bootstrap
+    assert "parameter-matched shared layerwise FiLM" in launcher
+    assert "only_variable command_access_location" in launcher
+    assert "nondefault_branch_control >=0.85" in launcher
+    assert "106 rows 32 groups 305 transitions" in launcher
+    assert "no KL no coverage no selector no particles no SVGD" in launcher
+    assert "assert_parameter_matched" in runner
+    assert "eval/score_oracle_intrablock_control.py" in runner
+
+
 def test_master_sequence_status_cell_matches_markdown_code() -> None:
     text = (ROOT / "colab/STAGE5_MASTER_SEQUENCE_STATUS_CELL.md").read_text(encoding="utf-8")
     plain = (ROOT / "colab/STAGE5_MASTER_SEQUENCE_STATUS_CELL.py").read_text(encoding="utf-8")

@@ -688,6 +688,83 @@ def test_oracle_trainable_contract_freezes_tiny_keeper():
     )
 
 
+def test_oracle_intrablock_installation_is_exact_through_tiny_wrapper():
+    torch.manual_seed(0)
+    wrapper = RecurrentQwenForCausalLM(
+        TinyCausalLM().eval(),
+        layer_split=LayerSplit(1, 3),
+    ).eval()
+    wrapper.enable_oracle_intrablock_conditioner(bottleneck_dim=4)
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    commands = wrapper.base_model.model.embed_tokens(
+        torch.tensor([[5, 6]])
+    ).detach()
+    kwargs = {
+        "input_ids": input_ids,
+        "attention_mask": torch.ones_like(input_ids),
+        "max_loops": 2,
+        "use_cache": False,
+        "return_loop_logits": True,
+        "return_dict": True,
+    }
+
+    with torch.no_grad():
+        baseline = wrapper(**kwargs)
+        conditioned = wrapper(
+            **kwargs,
+            oracle_intrablock_enabled=True,
+            oracle_intrablock_targets=commands,
+        )
+
+    assert torch.equal(baseline.loop_logits, conditioned.loop_logits)
+
+
+def test_oracle_intrablock_reuses_one_conditioner_before_every_recurrent_layer():
+    torch.manual_seed(0)
+    wrapper = RecurrentQwenForCausalLM(
+        TinyCausalLM().eval(),
+        layer_split=LayerSplit(1, 3),
+    ).eval()
+    wrapper.enable_oracle_intrablock_conditioner(bottleneck_dim=4)
+    with torch.no_grad():
+        wrapper.oracle_intrablock_conditioner.branch_a.net[-1].weight.normal_()
+        wrapper.oracle_intrablock_conditioner.branch_b.net[-1].weight.normal_()
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    commands = wrapper.base_model.model.embed_tokens(torch.tensor([[5, 6]])).detach()
+
+    with torch.no_grad():
+        output = wrapper(
+            input_ids=input_ids,
+            attention_mask=torch.ones_like(input_ids),
+            max_loops=2,
+            use_cache=False,
+            return_loop_logits=True,
+            return_dict=True,
+            oracle_intrablock_enabled=True,
+            oracle_intrablock_targets=commands,
+        )
+
+    assert output.metrics["oracle_intrablock_applications"].item() == 4
+    assert output.metrics["oracle_intrablock_residual_rms_ratio"].item() > 0
+
+
+def test_oracle_intrablock_trainable_contract_freezes_tiny_keeper():
+    wrapper = RecurrentQwenForCausalLM(
+        TinyCausalLM(),
+        layer_split=LayerSplit(1, 3),
+    )
+    wrapper.enable_oracle_intrablock_conditioner(bottleneck_dim=4)
+
+    names = wrapper.configure_oracle_intrablock_trainable()
+
+    assert names
+    assert all(name.startswith("oracle_intrablock_conditioner.") for name in names)
+    assert all(
+        parameter.requires_grad == name.startswith("oracle_intrablock_conditioner.")
+        for name, parameter in wrapper.named_parameters()
+    )
+
+
 def test_phase_g_tiny_wrapper_microbatch_matches_vectorized_gradients():
     torch.manual_seed(0)
     vectorized = RecurrentQwenForCausalLM(

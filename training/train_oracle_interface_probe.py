@@ -28,6 +28,11 @@ from training.oracle_interface_probe_spec import (  # noqa: E402
     assert_oracle_frozen_gradients_zero,
     assert_oracle_frozen_parameter_contract,
 )
+from training.oracle_intrablock_control_spec import (  # noqa: E402
+    LOCKED_ROUTE as LAYERWISE_ROUTE,
+    assert_oracle_intrablock_frozen_gradients_zero,
+    assert_oracle_intrablock_frozen_parameter_contract,
+)
 from training.phase_g_alpha_spec import phase_g_active_lineage_hash  # noqa: E402
 from training.phase_g_sampling import (  # noqa: E402
     build_base_problem_groups,
@@ -95,7 +100,11 @@ def main() -> int:
     parser.add_argument("--keeper", required=True)
     parser.add_argument("--expected_keeper_sha256", required=True)
     parser.add_argument("--output_dir", required=True)
-    parser.add_argument("--route", choices=LOCKED_ROUTES, required=True)
+    parser.add_argument(
+        "--route",
+        choices=(*LOCKED_ROUTES, LAYERWISE_ROUTE),
+        required=True,
+    )
     parser.add_argument("--steps", type=int, default=1500)
     parser.add_argument("--learning_rate", type=float, default=1e-4)
     parser.add_argument("--weight_decay", type=float, default=0.0)
@@ -128,13 +137,23 @@ def main() -> int:
 
     wrapper = load_recurrent_wrapper(loader_args(args), args.keeper)
     lineage_start = phase_g_active_lineage_hash(wrapper.named_parameters())
-    wrapper.enable_oracle_reentry_conditioner(
-        bottleneck_dim=args.bottleneck_dim,
-    )
-    trainable_names = wrapper.configure_oracle_reentry_trainable()
-    contract_receipt = assert_oracle_frozen_parameter_contract(
-        wrapper.named_parameters()
-    )
+    layerwise = args.route == LAYERWISE_ROUTE
+    if layerwise:
+        wrapper.enable_oracle_intrablock_conditioner(
+            bottleneck_dim=args.bottleneck_dim,
+        )
+        trainable_names = wrapper.configure_oracle_intrablock_trainable()
+        contract_receipt = assert_oracle_intrablock_frozen_parameter_contract(
+            wrapper.named_parameters()
+        )
+    else:
+        wrapper.enable_oracle_reentry_conditioner(
+            bottleneck_dim=args.bottleneck_dim,
+        )
+        trainable_names = wrapper.configure_oracle_reentry_trainable()
+        contract_receipt = assert_oracle_frozen_parameter_contract(
+            wrapper.named_parameters()
+        )
     if sorted(trainable_names) != contract_receipt["allowed_trainable"]:
         raise AssertionError("Oracle trainable-name enumeration disagrees with contract")
     trainable = [
@@ -182,6 +201,18 @@ def main() -> int:
             return_loop_logits=True,
             logits_to_keep=1,
         )
+        identity_kwargs = (
+            {
+                "oracle_intrablock_enabled": True,
+                "oracle_intrablock_targets": identity_commands,
+            }
+            if layerwise
+            else {
+                "oracle_reentry_enabled": True,
+                "oracle_reentry_mode": args.route,
+                "oracle_reentry_targets": identity_commands,
+            }
+        )
         identity_installed = wrapper(
             input_ids=identity_batch["input_ids"],
             attention_mask=identity_batch["attention_mask"],
@@ -190,9 +221,7 @@ def main() -> int:
             return_dict=True,
             return_loop_logits=True,
             logits_to_keep=1,
-            oracle_reentry_enabled=True,
-            oracle_reentry_mode=args.route,
-            oracle_reentry_targets=identity_commands,
+            **identity_kwargs,
         )
     if not torch.equal(
         identity_baseline.loop_logits,
@@ -317,6 +346,18 @@ def main() -> int:
             )
 
             optimizer.zero_grad(set_to_none=True)
+            oracle_kwargs = (
+                {
+                    "oracle_intrablock_enabled": True,
+                    "oracle_intrablock_targets": command_targets,
+                }
+                if layerwise
+                else {
+                    "oracle_reentry_enabled": True,
+                    "oracle_reentry_mode": args.route,
+                    "oracle_reentry_targets": command_targets,
+                }
+            )
             output = wrapper(
                 input_ids=batch["input_ids"],
                 attention_mask=batch["attention_mask"],
@@ -328,16 +369,19 @@ def main() -> int:
                 particle_update_mode="none",
                 use_cache=False,
                 return_dict=True,
-                oracle_reentry_enabled=True,
-                oracle_reentry_mode=args.route,
-                oracle_reentry_targets=command_targets,
+                **oracle_kwargs,
             )
             if output.loss is None or not bool(torch.isfinite(output.loss)):
                 raise FloatingPointError(
                     f"Nonfinite oracle interface loss at step {step}"
                 )
             output.loss.backward()
-            assert_oracle_frozen_gradients_zero(wrapper.named_parameters())
+            if layerwise:
+                assert_oracle_intrablock_frozen_gradients_zero(
+                    wrapper.named_parameters()
+                )
+            else:
+                assert_oracle_frozen_gradients_zero(wrapper.named_parameters())
             frozen_assertions += 1
             live = sum(
                 int(parameter.grad.detach().count_nonzero().item())
@@ -370,7 +414,10 @@ def main() -> int:
                 **{
                     name: float(value.detach().float().cpu().item())
                     for name, value in output.metrics.items()
-                    if name.startswith("oracle_reentry_") and value.numel() == 1
+                    if name.startswith(
+                        ("oracle_reentry_", "oracle_intrablock_")
+                    )
+                    and value.numel() == 1
                 },
             }
             trace_handle.write(json.dumps(trace, sort_keys=True) + "\n")
@@ -379,7 +426,8 @@ def main() -> int:
                 print(
                     f"oracle_train route={args.route} step={step}/{args.steps} "
                     f"depth={depth} loss={trace['loss']:.6f} "
-                    f"residual={trace.get('oracle_reentry_residual_rms_ratio', 0.0):.6g}",
+                    "residual="
+                    f"{trace.get('oracle_reentry_residual_rms_ratio', trace.get('oracle_intrablock_residual_rms_ratio', 0.0)):.6g}",
                     flush=True,
                 )
             if step % args.checkpoint_every == 0 or step == args.steps:

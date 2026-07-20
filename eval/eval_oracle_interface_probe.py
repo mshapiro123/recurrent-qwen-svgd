@@ -36,6 +36,9 @@ from training.oracle_interface_probe_spec import (  # noqa: E402
     LOCKED_ROUTES,
     summarize_oracle_arm,
 )
+from training.oracle_intrablock_control_spec import (  # noqa: E402
+    LOCKED_ROUTE as LAYERWISE_ROUTE,
+)
 from training.phase_g_alpha_spec import phase_g_active_lineage_hash  # noqa: E402
 
 
@@ -127,6 +130,21 @@ def _forward(
     force_identity: bool,
 ) -> Any:
     wrapper.eval()
+    layerwise = route == LAYERWISE_ROUTE
+    oracle_kwargs = (
+        {
+            "oracle_intrablock_enabled": enabled,
+            "oracle_intrablock_targets": commands if enabled else None,
+            "oracle_intrablock_force_identity": force_identity,
+        }
+        if layerwise
+        else {
+            "oracle_reentry_enabled": enabled,
+            "oracle_reentry_mode": route,
+            "oracle_reentry_targets": commands if enabled else None,
+            "oracle_reentry_force_identity": force_identity,
+        }
+    )
     with torch.no_grad():
         return wrapper(
             input_ids=encoded["input_ids"],
@@ -139,10 +157,7 @@ def _forward(
             return_dict=True,
             return_loop_logits=True,
             logits_to_keep=1,
-            oracle_reentry_enabled=enabled,
-            oracle_reentry_mode=route,
-            oracle_reentry_targets=commands if enabled else None,
-            oracle_reentry_force_identity=force_identity,
+            **oracle_kwargs,
         )
 
 
@@ -154,7 +169,11 @@ def main() -> int:
     parser.add_argument("--expected_keeper_sha256", required=True)
     parser.add_argument("--conditioner_checkpoint", required=True)
     parser.add_argument("--expected_conditioner_sha256", required=True)
-    parser.add_argument("--route", choices=LOCKED_ROUTES, required=True)
+    parser.add_argument(
+        "--route",
+        choices=(*LOCKED_ROUTES, LAYERWISE_ROUTE),
+        required=True,
+    )
     parser.add_argument("--output_dir", required=True)
     parser.add_argument("--resume_cache_path", required=True)
     parser.add_argument("--bottleneck_dim", type=int, default=256)
@@ -181,9 +200,17 @@ def main() -> int:
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     wrapper = load_recurrent_wrapper(loader_args(args), args.keeper)
     lineage_before = phase_g_active_lineage_hash(wrapper.named_parameters())
-    wrapper.enable_oracle_reentry_conditioner(
-        bottleneck_dim=args.bottleneck_dim,
-    )
+    layerwise = args.route == LAYERWISE_ROUTE
+    if layerwise:
+        wrapper.enable_oracle_intrablock_conditioner(
+            bottleneck_dim=args.bottleneck_dim,
+        )
+        checkpoint_prefix = "oracle_intrablock_conditioner."
+    else:
+        wrapper.enable_oracle_reentry_conditioner(
+            bottleneck_dim=args.bottleneck_dim,
+        )
+        checkpoint_prefix = "oracle_reentry_conditioner."
     load_info = load_trainable_checkpoint(
         wrapper,
         args.conditioner_checkpoint,
@@ -191,12 +218,12 @@ def main() -> int:
     loaded = [
         str(name)
         for name in load_info["loaded_keys"]
-        if str(name).startswith("oracle_reentry_conditioner.")
+        if str(name).startswith(checkpoint_prefix)
     ]
     if not loaded:
         raise AssertionError("Conditioner checkpoint restored no oracle tensors")
     if any(
-        str(name).startswith("oracle_reentry_conditioner.")
+        str(name).startswith(checkpoint_prefix)
         for name in load_info["skipped"]
     ):
         raise AssertionError("Conditioner checkpoint skipped oracle tensors")
@@ -372,7 +399,10 @@ def main() -> int:
                 "oracle_metrics": {
                     name: float(value.detach().float().cpu().item())
                     for name, value in conditioned_output.metrics.items()
-                    if name.startswith("oracle_reentry_") and value.numel() == 1
+                    if name.startswith(
+                        ("oracle_reentry_", "oracle_intrablock_")
+                    )
+                    and value.numel() == 1
                 },
             }
             cache_handle.write(json.dumps(payload, sort_keys=True) + "\n")

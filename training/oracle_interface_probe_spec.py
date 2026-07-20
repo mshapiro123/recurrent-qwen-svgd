@@ -86,7 +86,7 @@ def summarize_oracle_arm(
     identity_exact: bool,
     frozen_lineage_unchanged: bool,
 ) -> dict[str, Any]:
-    if route not in LOCKED_ROUTES:
+    if route not in (*LOCKED_ROUTES, "layerwise_film"):
         raise AssertionError(f"Unknown oracle route: {route}")
     if len(transition_rows) != LOCKED_CONTROL_TRANSITIONS:
         raise AssertionError(

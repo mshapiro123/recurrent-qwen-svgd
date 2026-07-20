@@ -106,6 +106,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "phase_g_multitarget_control" - locked repeated-prompt posterior-control A0 gate.
 #   "phase_g_forced_injection_probe" - eval-only A0 posterior-residual causal magnitude probe.
 #   "oracle_interface_probe" - terminal additive-versus-FiLM oracle re-entry capacity probe.
+#   "oracle_intrablock_control" - parameter-matched layerwise oracle-control localization.
 #   "phase_g_injective_curriculum_recovery" - continue the fixed-boundary injective checkpoint with a 2-to-8 loop curriculum.
 #   "phase_g_curriculum_autopsy" - read-only train/held-out loop matrix and curriculum-construction audit.
 #   "inverse_composition_staircase" - matched forward/inverse-table staircase with weighted loop-dose gates.
@@ -2813,6 +2814,28 @@ TARGETS = {
             "STAGE5_ORACLE_INTERFACE_BOTTLENECK_DIM": "256",
             "STAGE5_ORACLE_INTERFACE_DTYPE": "bfloat16",
             "STAGE5_ORACLE_INTERFACE_DISCONNECT": "0",
+        },
+    },
+    "oracle_intrablock_control": {
+        "path": "colab/STAGE5_ORACLE_INTRABLOCK_CONTROL_CELL.py",
+        "markers": [
+            "STAGE5_ORACLE_INTRABLOCK_CONTROL_CELL_VERSION",
+            "parameter-matched shared layerwise FiLM",
+            "only_variable command_access_location",
+            "nondefault_branch_control >=0.85",
+            "overall_transition_control >=0.90",
+            "transition_legality >=0.95 terminal_validity >=0.71",
+            "zeroed_conditioning_identity frozen_keeper_lineage",
+            "106 rows 32 groups 305 transitions",
+            "no KL no coverage no selector no particles no SVGD",
+            "tests/test_oracle_intrablock_control_spec.py",
+        ],
+        "env": {
+            "STAGE5_ORACLE_INTRABLOCK_STEPS": "1500",
+            "STAGE5_ORACLE_INTRABLOCK_SEED": "20260718",
+            "STAGE5_ORACLE_INTRABLOCK_BOTTLENECK_DIM": "256",
+            "STAGE5_ORACLE_INTRABLOCK_DTYPE": "bfloat16",
+            "STAGE5_ORACLE_INTRABLOCK_DISCONNECT": "0",
         },
     },
     "phase_a_dense_full": {

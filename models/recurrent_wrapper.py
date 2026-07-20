@@ -6,7 +6,7 @@ import inspect
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 import torch
 import torch.nn.functional as F
@@ -276,6 +276,42 @@ class RecurrentQwenForCausalLM(nn.Module):
                 allowed.append(name)
         return allowed
 
+    def enable_oracle_intrablock_conditioner(
+        self,
+        *,
+        bottleneck_dim: int = 256,
+    ) -> None:
+        """Install the shared FiLM command interface for the layerwise probe."""
+
+        if hasattr(self, "oracle_intrablock_conditioner"):
+            existing = int(self.oracle_intrablock_conditioner.bottleneck_dim)
+            if existing != int(bottleneck_dim):
+                raise ValueError(
+                    "Oracle intrablock conditioner already uses "
+                    f"bottleneck_dim={existing}, requested {bottleneck_dim}"
+                )
+            return
+        base_param = next(self.base_model.parameters())
+        self.oracle_intrablock_conditioner = OracleReentryConditioner(
+            int(self.bridge.hidden_size),
+            int(bottleneck_dim),
+        ).to(device=base_param.device, dtype=torch.float32)
+
+    def configure_oracle_intrablock_trainable(self) -> list[str]:
+        """Freeze the keeper and expose only the shared layerwise conditioner."""
+
+        if not hasattr(self, "oracle_intrablock_conditioner"):
+            raise RuntimeError(
+                "Call enable_oracle_intrablock_conditioner before configuring trainability"
+            )
+        allowed: list[str] = []
+        for name, parameter in self.named_parameters():
+            trainable = name.startswith("oracle_intrablock_conditioner.")
+            parameter.requires_grad_(trainable)
+            if trainable:
+                allowed.append(name)
+        return allowed
+
     def _phase_g_guidance_step(
         self,
         hidden_states: torch.Tensor,
@@ -443,6 +479,9 @@ class RecurrentQwenForCausalLM(nn.Module):
         oracle_reentry_mode: str = "additive",
         oracle_reentry_targets: Optional[torch.Tensor] = None,
         oracle_reentry_force_identity: bool = False,
+        oracle_intrablock_enabled: bool = False,
+        oracle_intrablock_targets: Optional[torch.Tensor] = None,
+        oracle_intrablock_force_identity: bool = False,
         logits_to_keep: int | torch.Tensor = 0,
         **_: Any,
     ) -> RecurrentQwenOutput | tuple[Any, ...]:
@@ -509,9 +548,19 @@ class RecurrentQwenForCausalLM(nn.Module):
             raise RuntimeError("Phase G guidance is not installed")
         if oracle_reentry_enabled and not hasattr(self, "oracle_reentry_conditioner"):
             raise RuntimeError("Oracle re-entry conditioner is not installed")
+        if oracle_intrablock_enabled and not hasattr(
+            self,
+            "oracle_intrablock_conditioner",
+        ):
+            raise RuntimeError("Oracle intrablock conditioner is not installed")
         if oracle_reentry_enabled and phase_g_enabled:
             raise ValueError(
                 "The terminal oracle interface probe cannot run with Phase G guidance"
+            )
+        if oracle_intrablock_enabled and (phase_g_enabled or oracle_reentry_enabled):
+            raise ValueError(
+                "The layerwise oracle probe cannot run with Phase G guidance "
+                "or the single-entry oracle conditioner"
             )
         if oracle_reentry_mode not in OracleReentryConditioner.MODES:
             raise ValueError(
@@ -521,6 +570,10 @@ class RecurrentQwenForCausalLM(nn.Module):
         if oracle_reentry_enabled and oracle_reentry_targets is None:
             raise ValueError(
                 "oracle_reentry_enabled requires loop-indexed oracle_reentry_targets"
+            )
+        if oracle_intrablock_enabled and oracle_intrablock_targets is None:
+            raise ValueError(
+                "oracle_intrablock_enabled requires loop-indexed oracle_intrablock_targets"
             )
         if phase_g_use_posterior and not self.training:
             raise RuntimeError("The target-conditioned Phase G posterior is training-only")
@@ -659,6 +712,10 @@ class RecurrentQwenForCausalLM(nn.Module):
         oracle_branch_a_rms: list[torch.Tensor] = []
         oracle_branch_b_rms: list[torch.Tensor] = []
         oracle_residual_rms_ratios: list[torch.Tensor] = []
+        oracle_intrablock_branch_a_rms: list[torch.Tensor] = []
+        oracle_intrablock_branch_b_rms: list[torch.Tensor] = []
+        oracle_intrablock_residual_rms_ratios: list[torch.Tensor] = []
+        oracle_intrablock_loop_ratios: list[list[torch.Tensor]] = []
         svgd_stats_history: list[Any] = []
         loop_recurrent_states: list[torch.Tensor] = []
         recurrent_state = hidden_states
@@ -772,6 +829,44 @@ class RecurrentQwenForCausalLM(nn.Module):
                 oracle_branch_a_rms.append(oracle_output.branch_a_rms)
                 oracle_branch_b_rms.append(oracle_output.branch_b_rms)
                 oracle_residual_rms_ratios.append(oracle_output.residual_rms_ratio)
+            intrablock_transform = None
+            if oracle_intrablock_enabled:
+                commands = oracle_intrablock_targets
+                if commands is None or commands.dim() != 3 or commands.shape[1] < max_loops:
+                    raise ValueError(
+                        "oracle_intrablock_targets must be [batch, max_loops, hidden]"
+                    )
+                command = commands[:, loop_idx, :]
+                if num_trajectories > 1 and command.shape[0] == batch_size:
+                    command = repeat_for_trajectories(command, num_trajectories)
+                loop_ratios: list[torch.Tensor] = []
+                oracle_intrablock_loop_ratios.append(loop_ratios)
+
+                def intrablock_transform(
+                    states: torch.Tensor,
+                    _layer_index: int,
+                    *,
+                    command_embedding: torch.Tensor = command,
+                    ratio_sink: list[torch.Tensor] = loop_ratios,
+                ) -> torch.Tensor:
+                    conditioned = self.oracle_intrablock_conditioner(
+                        states,
+                        flat_attention_mask,
+                        command_embedding,
+                        mode="film",
+                        force_identity=oracle_intrablock_force_identity,
+                    )
+                    oracle_intrablock_branch_a_rms.append(
+                        conditioned.branch_a_rms
+                    )
+                    oracle_intrablock_branch_b_rms.append(
+                        conditioned.branch_b_rms
+                    )
+                    oracle_intrablock_residual_rms_ratios.append(
+                        conditioned.residual_rms_ratio
+                    )
+                    ratio_sink.append(conditioned.residual_rms_ratio)
+                    return conditioned.states
             if sample_latents and latent_injection_mode in {"pre", "both"}:
                 loop_input, latent_stats = self.latent_trajectory(
                     loop_input,
@@ -793,6 +888,7 @@ class RecurrentQwenForCausalLM(nn.Module):
                 position_embeddings=flat_position_embeddings,
                 collect_hidden=output_hidden_states and num_trajectories == 1,
                 hidden_history=hidden_history if num_trajectories == 1 else None,
+                pre_layer_transform=intrablock_transform,
             )
             all_attentions.extend(attentions)
 
@@ -973,6 +1069,28 @@ class RecurrentQwenForCausalLM(nn.Module):
             ):
                 metrics[f"oracle_reentry_residual_rms_ratio_loop_{loop_idx}"] = (
                     value.detach()
+                )
+        if oracle_intrablock_residual_rms_ratios:
+            metrics["oracle_intrablock_branch_a_rms"] = torch.stack(
+                oracle_intrablock_branch_a_rms
+            ).mean().detach()
+            metrics["oracle_intrablock_branch_b_rms"] = torch.stack(
+                oracle_intrablock_branch_b_rms
+            ).mean().detach()
+            metrics["oracle_intrablock_residual_rms_ratio"] = torch.stack(
+                oracle_intrablock_residual_rms_ratios
+            ).mean().detach()
+            metrics["oracle_intrablock_applications"] = torch.tensor(
+                len(oracle_intrablock_residual_rms_ratios),
+                device=hidden_states.device,
+                dtype=torch.long,
+            )
+            for loop_idx, values in enumerate(
+                oracle_intrablock_loop_ratios,
+                start=1,
+            ):
+                metrics[f"oracle_intrablock_residual_rms_ratio_loop_{loop_idx}"] = (
+                    torch.stack(values).mean().detach()
                 )
 
         loss = None
@@ -1314,9 +1432,17 @@ class RecurrentQwenForCausalLM(nn.Module):
         position_embeddings: Optional[Any],
         collect_hidden: bool,
         hidden_history: Optional[list[torch.Tensor]],
+        pre_layer_transform: Optional[
+            Callable[[torch.Tensor, int], torch.Tensor]
+        ] = None,
     ) -> tuple[torch.Tensor, list[torch.Tensor]]:
         attentions: list[torch.Tensor] = []
-        for layer in self.qwen.layers[start:end]:
+        for layer_index, layer in enumerate(
+            self.qwen.layers[start:end],
+            start=start,
+        ):
+            if pre_layer_transform is not None:
+                hidden_states = pre_layer_transform(hidden_states, layer_index)
             layer_outputs = self._run_decoder_layer(
                 layer=layer,
                 hidden_states=hidden_states,
