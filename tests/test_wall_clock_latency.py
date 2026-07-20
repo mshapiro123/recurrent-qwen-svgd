@@ -99,6 +99,8 @@ def test_wall_clock_runner_can_repair_only_the_mixed_hardware_dense_cohort():
     assert "archived_forced_latency_arm" in source
     assert "forced_cohort_hardware" in source
     assert "--query-gpu=name,driver_version,memory.total" in source
+    assert "archived_incomplete_checkpoint_restore" in source
+    assert "source checkpoint hash mismatch" in source
 
 
 def test_dense_latency_uses_registered_generate_not_a_manual_cache_loop():

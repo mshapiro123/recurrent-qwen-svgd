@@ -140,6 +140,18 @@ def restore_checkpoint(arm: str, spec: dict[str, Any]) -> Path:
     suffix = source.suffix if source.is_file() else ""
     destination = RUN_DIR / "restored" / f"arm_{arm}{suffix}"
     destination.parent.mkdir(parents=True, exist_ok=True)
+    source_hash = sha256_path(source)
+    if source_hash != spec["sha256"]:
+        raise RuntimeError(f"Arm {arm} source checkpoint hash mismatch: {source_hash} != {spec['sha256']}")
+    if destination.exists() and sha256_path(destination) != spec["sha256"]:
+        # The staging copy is regenerable. Preserve it for diagnosis instead of
+        # mistaking a partial directory from an interrupted runtime for a checkpoint.
+        archive = RUN_DIR / "invalid_mixed_hardware" / "incomplete_checkpoint_restore" / destination.name
+        if archive.exists():
+            raise RuntimeError(f"Refusing to overwrite incomplete checkpoint archive: {archive}")
+        archive.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(destination), str(archive))
+        print(f"archived_incomplete_checkpoint_restore={archive}", flush=True)
     if not destination.exists():
         if source.is_dir():
             shutil.copytree(source, destination)
@@ -147,7 +159,7 @@ def restore_checkpoint(arm: str, spec: dict[str, Any]) -> Path:
             shutil.copy2(source, destination)
     observed = sha256_path(destination)
     if observed != spec["sha256"]:
-        raise RuntimeError(f"Arm {arm} checkpoint hash mismatch: {observed} != {spec['sha256']}")
+        raise RuntimeError(f"Arm {arm} restored checkpoint hash mismatch: {observed} != {spec['sha256']}")
     print(f"[assert-ok] arm_{arm}_checkpoint_sha256={observed}", flush=True)
     return destination
 
