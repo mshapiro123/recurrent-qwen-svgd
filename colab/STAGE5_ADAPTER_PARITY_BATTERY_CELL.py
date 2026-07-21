@@ -17,6 +17,7 @@ STAGE5_ADAPTER_PARITY_BATTERY_CELL_VERSION = "adapter_parity_battery_v1"
 # Safety marker: stage5_adapter_parity_e2
 # Safety marker: stage5_adapter_parity_e4
 # Safety marker: stage5_adapter_verbal_transference_e3b_20260720
+# Safety marker: evaluation_only_after_preregistered_guardrail_stop
 # Safety marker: tests/test_adapter_parity_battery.py
 # Safety marker: tests/test_adapter_verbal_transference.py
 
@@ -29,6 +30,7 @@ RUNNERS = {
     "adapter_parity_e2": "colab/run_stage5_adapter_parity_e2.py",
     "adapter_parity_e4": "colab/run_stage5_adapter_parity_e4.py",
     "adapter_verbal_transference_e3b": "colab/run_stage5_adapter_verbal_transference.py",
+    "adapter_verbal_transference_e3b_salvage": "colab/run_stage5_adapter_verbal_transference_salvage.py",
 }
 assert TARGET in RUNNERS, f"Unsupported adapter parity target: {TARGET}"
 

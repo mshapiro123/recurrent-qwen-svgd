@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from training.adapter_verbal_transference import (
+    guardrail_near_miss_context,
     classify_regression,
     first_threshold_crossing,
     paired_binary_test,
@@ -61,6 +62,34 @@ def test_regression_classification_uses_locked_retention_and_e4_collapse_bands()
     assert collapsed["verdict"] == "collapsed"
 
 
+def test_guardrail_near_miss_reports_discrete_resolution_and_paired_evidence() -> None:
+    result = guardrail_near_miss_context(
+        baseline_hits=[True, True, True, False],
+        observed_hits=[True, False, True, True],
+        hard_stop_delta=-0.24,
+    )
+
+    assert result["baseline"] == {"correct": 3, "total": 4, "accuracy": 0.75}
+    assert result["observed"] == {"correct": 3, "total": 4, "accuracy": 0.75}
+    assert result["item_resolution_points"] == 25.0
+    assert result["hard_stop_triggered"] is False
+    assert result["paired"]["baseline_only"] == 1
+    assert result["paired"]["observed_only"] == 1
+
+
+def test_guardrail_near_miss_preserves_strict_locked_stop() -> None:
+    result = guardrail_near_miss_context(
+        baseline_hits=[True] * 60 + [False] * 4,
+        observed_hits=[True] * 58 + [False] * 6,
+        hard_stop_delta=-0.03,
+    )
+
+    assert result["accuracy_delta"] == -0.03125
+    assert result["hard_stop_triggered"] is True
+    assert result["boundary_excess_points"] == 0.125
+    assert result["interpretation"] == "near_boundary_discrete_hard_stop"
+
+
 def test_runner_keeps_pointer_held_out_and_synthetic_floor_in_measurement_mode() -> None:
     source = (ROOT / "colab/run_stage5_adapter_verbal_transference.py").read_text(encoding="utf-8")
 
@@ -78,3 +107,21 @@ def test_bootstrap_exposes_e3b_target_with_locked_markers() -> None:
     assert '"adapter_verbal_transference_e3b"' in bootstrap
     assert "stage5_adapter_verbal_transference_e3b_20260720" in bootstrap
     assert '"adapter_verbal_transference_e3b": "colab/run_stage5_adapter_verbal_transference.py"' in launcher
+
+
+def test_bootstrap_exposes_e3b_salvage_without_training_override() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    launcher = (ROOT / "colab/STAGE5_ADAPTER_PARITY_BATTERY_CELL.py").read_text(encoding="utf-8")
+    salvage = (ROOT / "colab/run_stage5_adapter_verbal_transference_salvage.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert '"adapter_verbal_transference_e3b_salvage"' in bootstrap
+    assert (
+        '"adapter_verbal_transference_e3b_salvage": '
+        '"colab/run_stage5_adapter_verbal_transference_salvage.py"'
+    ) in launcher
+    assert "MATCHED_STEPS = (0, 1000, 2000, 3000)" in salvage
+    assert "ARM_T_STEPS = (0, 1000, 2000, 3000, 4000, 5000, 6000)" in salvage
+    assert "train_arm(" not in salvage
+    assert '"planned_endpoint_available": False' in salvage

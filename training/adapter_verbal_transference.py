@@ -13,6 +13,67 @@ SYNTHETIC_RETAINED_FLOOR = 0.93
 SYNTHETIC_COLLAPSE_CEILING = 0.10
 
 
+def guardrail_near_miss_context(
+    *,
+    baseline_hits: Iterable[bool],
+    observed_hits: Iterable[bool],
+    hard_stop_delta: float,
+) -> dict[str, Any]:
+    """Describe a finite-row hard stop without relaxing the locked decision."""
+
+    baseline = list(map(bool, baseline_hits))
+    observed = list(map(bool, observed_hits))
+    if len(baseline) != len(observed):
+        raise ValueError("Guardrail comparisons require identical rows")
+    if not baseline:
+        raise ValueError("Guardrail comparisons require at least one row")
+
+    baseline_correct = sum(baseline)
+    observed_correct = sum(observed)
+    total = len(baseline)
+    baseline_accuracy = baseline_correct / total
+    observed_accuracy = observed_correct / total
+    accuracy_delta = observed_accuracy - baseline_accuracy
+    triggered = accuracy_delta < float(hard_stop_delta)
+    paired = paired_binary_test(baseline, observed)
+
+    return {
+        "baseline": {
+            "correct": baseline_correct,
+            "total": total,
+            "accuracy": baseline_accuracy,
+        },
+        "observed": {
+            "correct": observed_correct,
+            "total": total,
+            "accuracy": observed_accuracy,
+        },
+        "accuracy_delta": accuracy_delta,
+        "accuracy_delta_points": round(100.0 * accuracy_delta, 10),
+        "hard_stop_delta": float(hard_stop_delta),
+        "hard_stop_delta_points": 100.0 * float(hard_stop_delta),
+        "hard_stop_triggered": triggered,
+        "item_resolution_points": 100.0 / total,
+        "boundary_excess_points": (
+            round(100.0 * (float(hard_stop_delta) - accuracy_delta), 10) if triggered else 0.0
+        ),
+        "paired": {
+            "baseline_only": paired["t_only"],
+            "observed_only": paired["s_only"],
+            "ties": paired["ties"],
+            "discordant": paired["discordant"],
+            "two_sided_p": paired["two_sided_p"],
+            "test": paired["test"],
+        },
+        "interpretation": (
+            "near_boundary_discrete_hard_stop"
+            if triggered and float(hard_stop_delta) - accuracy_delta < 1.0 / total
+            else "hard_stop" if triggered else "guardrail_green"
+        ),
+        "decision_note": "The preregistered stop is preserved; this context is descriptive only.",
+    }
+
+
 def summarize_archived_active_diagonal(
     diagonal: Mapping[str, float], *, rows_per_depth: int
 ) -> dict[str, int | float]:
