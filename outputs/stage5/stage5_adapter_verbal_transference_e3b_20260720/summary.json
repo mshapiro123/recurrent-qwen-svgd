@@ -174,12 +174,27 @@
         "6": 0.99609375,
         "7": 0.98046875,
         "8": 0.97265625
+      },
+      "1000": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 0.9921875,
+        "4": 0.9921875,
+        "5": 0.98046875,
+        "6": 0.96875,
+        "7": 0.98046875,
+        "8": 0.9453125
       }
     },
     "arm_t_tier1_by_step": {
       "0": {
         "accuracy": 0.921875,
         "correct": 59,
+        "total": 64
+      },
+      "1000": {
+        "accuracy": 0.9375,
+        "correct": 60,
         "total": 64
       }
     },
@@ -202,6 +217,25 @@
           "correct": 513,
           "total": 3072
         }
+      },
+      "1000": {
+        "families": {
+          "pointer": {
+            "accuracy": 0.3307291666666667,
+            "correct": 508,
+            "total": 1536
+          },
+          "relay": {
+            "accuracy": 0.328125,
+            "correct": 504,
+            "total": 1536
+          }
+        },
+        "pooled": {
+          "accuracy": 0.3294270833333333,
+          "correct": 1012,
+          "total": 3072
+        }
       }
     },
     "checkpoint_manifest": {
@@ -210,6 +244,10 @@
         "0": {
           "path": "outputs/stage5/stage5_adapter_verbal_transference_e3b_20260720/init/arm_t_e1.pt",
           "sha256": "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839"
+        },
+        "1000": {
+          "path": "outputs/stage5/stage5_adapter_verbal_transference_e3b_20260720/train/arm_t/unfrozen_recurrent_step_1000.pt",
+          "sha256": "5124d70ac2ee6e97279c4e946f8d80718d584ba27e5ef12061c7637c6f403b87"
         }
       }
     },
@@ -221,8 +259,8 @@
     ],
     "mode": "evaluation_only_after_preregistered_guardrail_stop"
   },
-  "salvage_note": "Record E3b salvage Arm T eval step 0 stage5_adapter_verbal_transference_e3b_20260720",
-  "status": "salvage_arm_t_evaluated_step_0",
+  "salvage_note": "Record E3b salvage Arm T eval step 1000 stage5_adapter_verbal_transference_e3b_20260720",
+  "status": "salvage_arm_t_evaluated_step_1000",
   "training": {
     "arm_s": {
       "final_checkpoint": null,
