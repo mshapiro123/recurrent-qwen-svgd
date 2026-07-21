@@ -1,0 +1,10 @@
+{
+  "checkpoint": "outputs/stage5/stage5_adapter_verbal_transference_e3b_20260720/train/arm_t/unfrozen_recurrent_step_6000.pt",
+  "checkpoint_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_adapter_verbal_transference_e3b_20260720/arm_t/unfrozen_recurrent_step_6000.pt",
+  "completed_step": 6000,
+  "kind": "train_unfrozen_recurrent_progress",
+  "max_steps": 6000,
+  "metrics": {},
+  "micro_step": 6000,
+  "status": "finished"
+}
