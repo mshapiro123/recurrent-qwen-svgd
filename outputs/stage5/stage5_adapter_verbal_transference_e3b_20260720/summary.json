@@ -131,7 +131,98 @@
     }
   },
   "run_id": "stage5_adapter_verbal_transference_e3b_20260720",
-  "status": "arm_s_training_blocked",
+  "salvage": {
+    "arm_s_identity": {
+      "alpha": 32,
+      "bridge_projection_mode": "split",
+      "checkpoint": "outputs/stage5/stage5_adapter_verbal_transference_e3b_20260720/init/arm_s/peft_identity_step_0.pt",
+      "checkpoint_sha256": "1a7f6ca1e9556d83630847168b019f872822883de00d35fd3851e758a4929cb9",
+      "drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_adapter_verbal_transference_e3b_20260720/arm_s_init/peft_identity_step_0.pt",
+      "kind": "peft_identity_gate",
+      "lora_modules": 84,
+      "max_abs_diff": 0.0,
+      "max_loops": 1,
+      "mean_abs_diff": 0.0,
+      "passed": true,
+      "pretrained_base_sha256": "960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f",
+      "rank": 16,
+      "seed": 0,
+      "threshold": 0.001
+    },
+    "arm_t_restore": {
+      "selected_checkpoint_sha256": "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
+      "source_checkpoint": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/train/chain_depth_le8_dose/unfrozen_recurrent_step_2000.pt",
+      "source_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_adapter_budget_arm_e_20260718/chain_depth_le8_dose/unfrozen_recurrent_step_2000.pt",
+      "source_summary": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/summary.json"
+    },
+    "arm_t_steps": [
+      0,
+      1000,
+      2000,
+      3000,
+      4000,
+      5000,
+      6000
+    ],
+    "arm_t_synthetic_by_step": {
+      "0": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 0.99609375,
+        "4": 0.98046875,
+        "5": 0.9921875,
+        "6": 0.99609375,
+        "7": 0.98046875,
+        "8": 0.97265625
+      }
+    },
+    "arm_t_tier1_by_step": {
+      "0": {
+        "accuracy": 0.921875,
+        "correct": 59,
+        "total": 64
+      }
+    },
+    "arm_t_transfer_by_step": {
+      "0": {
+        "families": {
+          "pointer": {
+            "accuracy": 0.171875,
+            "correct": 264,
+            "total": 1536
+          },
+          "relay": {
+            "accuracy": 0.162109375,
+            "correct": 249,
+            "total": 1536
+          }
+        },
+        "pooled": {
+          "accuracy": 0.1669921875,
+          "correct": 513,
+          "total": 3072
+        }
+      }
+    },
+    "checkpoint_manifest": {
+      "arm_s": {},
+      "arm_t": {
+        "0": {
+          "path": "outputs/stage5/stage5_adapter_verbal_transference_e3b_20260720/init/arm_t_e1.pt",
+          "sha256": "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839"
+        }
+      }
+    },
+    "matched_steps": [
+      0,
+      1000,
+      2000,
+      3000
+    ],
+    "mode": "evaluation_only_after_preregistered_guardrail_stop"
+  },
+  "salvage_note": "Record E3b salvage Arm T eval step 0 stage5_adapter_verbal_transference_e3b_20260720",
+  "status": "salvage_arm_t_evaluated_step_0",
   "training": {
     "arm_s": {
       "final_checkpoint": null,
