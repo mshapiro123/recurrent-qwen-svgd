@@ -1,0 +1,219 @@
+{
+  "kind": "paper_one_frontier_threshold_sensitivity",
+  "status": "completed",
+  "method": "first linear interpolation from at-or-above the bar to below it",
+  "registered_bar": 0.71,
+  "registered_bar_rationale": {
+    "four_option_chance": 0.25,
+    "composition_steps": 4,
+    "chance_root": 0.7071067811865476,
+    "rounded_design_threshold": 0.71,
+    "interpretation": "The threshold was set during synthetic-task design as the rounded per-step accuracy whose four-step product clears four-option chance; it is a design heuristic, not a confidence bound."
+  },
+  "rows": [
+    {
+      "configuration": "support4_N16",
+      "support": 4,
+      "alphabet": 16,
+      "bar": 0.6,
+      "frontier": 6.151219512195122,
+      "frontier_to_support_ratio": 1.5378048780487805,
+      "source": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/summary.json"
+    },
+    {
+      "configuration": "support4_N16",
+      "support": 4,
+      "alphabet": 16,
+      "bar": 0.71,
+      "frontier": 5.7458064516129035,
+      "frontier_to_support_ratio": 1.4364516129032259,
+      "source": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/summary.json"
+    },
+    {
+      "configuration": "support4_N16",
+      "support": 4,
+      "alphabet": 16,
+      "bar": 0.8,
+      "frontier": 5.374193548387097,
+      "frontier_to_support_ratio": 1.3435483870967742,
+      "source": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/summary.json"
+    },
+    {
+      "configuration": "support6_N16",
+      "support": 6,
+      "alphabet": 16,
+      "bar": 0.6,
+      "frontier": 9.645454545454546,
+      "frontier_to_support_ratio": 1.6075757575757577,
+      "source": "outputs/stage5/stage5_depth_support_route_20260705_124320/summary.json"
+    },
+    {
+      "configuration": "support6_N16",
+      "support": 6,
+      "alphabet": 16,
+      "bar": 0.71,
+      "frontier": 9.005454545454546,
+      "frontier_to_support_ratio": 1.500909090909091,
+      "source": "outputs/stage5/stage5_depth_support_route_20260705_124320/summary.json"
+    },
+    {
+      "configuration": "support6_N16",
+      "support": 6,
+      "alphabet": 16,
+      "bar": 0.8,
+      "frontier": 8.24,
+      "frontier_to_support_ratio": 1.3733333333333333,
+      "source": "outputs/stage5/stage5_depth_support_route_20260705_124320/summary.json"
+    },
+    {
+      "configuration": "support8_N16",
+      "support": 8,
+      "alphabet": 16,
+      "bar": 0.6,
+      "frontier": 12.34,
+      "frontier_to_support_ratio": 1.5425,
+      "source": "outputs/stage5/stage5_support8_dose_arm_20260706_153028/summary.json"
+    },
+    {
+      "configuration": "support8_N16",
+      "support": 8,
+      "alphabet": 16,
+      "bar": 0.71,
+      "frontier": 11.612,
+      "frontier_to_support_ratio": 1.4515,
+      "source": "outputs/stage5/stage5_support8_dose_arm_20260706_153028/summary.json"
+    },
+    {
+      "configuration": "support8_N16",
+      "support": 8,
+      "alphabet": 16,
+      "bar": 0.8,
+      "frontier": 10.6625,
+      "frontier_to_support_ratio": 1.3328125,
+      "source": "outputs/stage5/stage5_support8_dose_arm_20260706_153028/summary.json"
+    },
+    {
+      "configuration": "support12_N24",
+      "support": 12,
+      "alphabet": 24,
+      "bar": 0.6,
+      "frontier": 19.22608695652174,
+      "frontier_to_support_ratio": 1.6021739130434784,
+      "source": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json"
+    },
+    {
+      "configuration": "support12_N24",
+      "support": 12,
+      "alphabet": 24,
+      "bar": 0.71,
+      "frontier": 17.932307692307692,
+      "frontier_to_support_ratio": 1.4943589743589742,
+      "source": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json"
+    },
+    {
+      "configuration": "support12_N24",
+      "support": 12,
+      "alphabet": 24,
+      "bar": 0.8,
+      "frontier": 17.046153846153846,
+      "frontier_to_support_ratio": 1.4205128205128206,
+      "source": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json"
+    }
+  ],
+  "ratio_stability_by_bar": {
+    "0.60": {
+      "mean_ratio": 1.572513637167004,
+      "min_ratio": 1.5378048780487805,
+      "max_ratio": 1.6075757575757577,
+      "range": 0.06977087952697714,
+      "population_sd": 0.03245997777319764,
+      "coefficient_of_variation": 0.020642096199354185
+    },
+    "0.71": {
+      "mean_ratio": 1.4708049195428228,
+      "min_ratio": 1.4364516129032259,
+      "max_ratio": 1.500909090909091,
+      "range": 0.0644574780058651,
+      "population_sd": 0.027449427259785143,
+      "coefficient_of_variation": 0.018662860652055323
+    },
+    "0.80": {
+      "mean_ratio": 1.3675517602357319,
+      "min_ratio": 1.3328125,
+      "max_ratio": 1.4205128205128206,
+      "range": 0.08770032051282062,
+      "population_sd": 0.03398999344266733,
+      "coefficient_of_variation": 0.024854630318934548
+    }
+  },
+  "conclusion": "The near-proportional support-frontier relationship persists at bars 0.60, 0.71, and 0.80. The ratio level decreases as the bar rises, but within-bar variation remains small.",
+  "n24_rounding_audit": {
+    "exact_frontier_at_0.71": 17.932307692307692,
+    "round_to_two_decimals": 17.93,
+    "paper_value_to_replace": 17.92
+  },
+  "curves": {
+    "support4_N16": {
+      "1": 1.0,
+      "2": 0.9609375,
+      "3": 0.96875,
+      "4": 0.96875,
+      "5": 0.890625,
+      "6": 0.6484375,
+      "7": 0.328125,
+      "8": 0.09375
+    },
+    "support6_N16": {
+      "1": 1.0,
+      "2": 1.0,
+      "3": 0.9765625,
+      "4": 1.0,
+      "5": 0.9921875,
+      "6": 0.9609375,
+      "7": 0.90625,
+      "8": 0.828125,
+      "9": 0.7109375,
+      "10": 0.5390625
+    },
+    "support8_N16": {
+      "1": 1.0,
+      "2": 0.9921875,
+      "3": 0.984375,
+      "4": 0.9765625,
+      "5": 0.9921875,
+      "6": 0.984375,
+      "7": 0.96875,
+      "8": 0.953125,
+      "9": 0.90625,
+      "10": 0.8828125,
+      "11": 0.7578125,
+      "12": 0.6796875,
+      "13": 0.4453125,
+      "14": 0.2421875
+    },
+    "support12_N24": {
+      "1": 1.0,
+      "2": 0.9921875,
+      "3": 0.9921875,
+      "4": 1.0,
+      "5": 0.9921875,
+      "6": 0.9921875,
+      "7": 0.9921875,
+      "8": 0.9765625,
+      "9": 0.9765625,
+      "10": 0.9765625,
+      "11": 0.96875,
+      "12": 0.9765625,
+      "13": 0.9609375,
+      "14": 0.9140625,
+      "15": 0.8828125,
+      "16": 0.859375,
+      "17": 0.8046875,
+      "18": 0.703125,
+      "19": 0.640625,
+      "20": 0.4609375,
+      "21": 0.34375,
+      "22": 0.109375
+    }
+  }
+}

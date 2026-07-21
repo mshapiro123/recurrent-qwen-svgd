@@ -19,6 +19,7 @@
     "support_4_frontier": "outputs/stage5/stage5_chain_continuation_attribution_20260704_163056/summary.json",
     "support_6_frontier": "outputs/stage5/stage5_depth_support_route_20260705_124320/summary.json",
     "support_8_frontier": "outputs/stage5/stage5_support8_dose_arm_20260706_153028/summary.json",
+    "frontier_threshold_sensitivity": "docs/PAPER_ONE_FRONTIER_THRESHOLD_SENSITIVITY_20260721.json",
     "support_6_seed_resolution": "outputs/stage5/stage5_support6_seed26_plateau_20260708_130654/summary.json",
     "natural_surface_checkpoint_curve": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/summary.json",
     "same_reader_phase_a": "outputs/stage5/stage5_phase_a_surpass_receipt_20260714/summary.json"
@@ -91,16 +92,20 @@
     },
     {
       "id": "cross_support_frontier_law",
-      "claim": "Increasing supported transition depth from 4 to 6 to 8 increased the registered frozen 0.71 bar-crossing frontier, with substantial support-6 seed and dose sensitivity.",
+      "claim": "Increasing supported transition depth from 4 to 6 to 8 to 12 increased the frozen bar-crossing frontier; the near-proportional relationship persisted at bars of 0.60, 0.71, and 0.80, with substantial support-6 seed and dose sensitivity.",
       "status": "supported_bounded",
-      "scope": "N24 synthetic transition family, canonical same-reader frontier; central points use the registered main-route artifacts",
+      "scope": "N16 and N24 synthetic transition families, same-reader frontier; central points use the registered main-route artifacts",
       "metrics": {
         "support_4_frontier": 5.7458064516129035,
         "support_6_frontier": 9.005454545454546,
         "support_8_frontier": 11.612,
+        "support_12_frontier": 17.93230769230769,
         "support_6_raw_seed_min": 6.9511111111111115,
         "support_6_raw_seed_max": 9.005454545454546,
-        "support_6_slow_seed_final_frontier": 10.0
+        "support_6_slow_seed_final_frontier": 10.0,
+        "ratio_range_at_bar_0_60": 0.06977087952697714,
+        "ratio_range_at_bar_0_71": 0.0644574780058651,
+        "ratio_range_at_bar_0_80": 0.08770032051282062
       },
       "evidence": [
         {
@@ -126,6 +131,10 @@
         {
           "path": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/summary.json",
           "locator": "decision_read and checkpoint_evals"
+        },
+        {
+          "path": "docs/PAPER_ONE_FRONTIER_THRESHOLD_SENSITIVITY_20260721.json",
+          "locator": "rows, ratio_stability_by_bar, and registered_bar_rationale"
         }
       ]
     },
