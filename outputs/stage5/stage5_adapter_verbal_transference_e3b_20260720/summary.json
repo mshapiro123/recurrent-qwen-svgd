@@ -194,6 +194,16 @@
         "6": 0.9921875,
         "7": 1.0,
         "8": 0.98828125
+      },
+      "3000": {
+        "1": 1.0,
+        "2": 0.98828125,
+        "3": 0.9921875,
+        "4": 0.98046875,
+        "5": 0.9921875,
+        "6": 0.984375,
+        "7": 0.99609375,
+        "8": 0.9609375
       }
     },
     "arm_t_tier1_by_step": {
@@ -208,6 +218,11 @@
         "total": 64
       },
       "2000": {
+        "accuracy": 0.9375,
+        "correct": 60,
+        "total": 64
+      },
+      "3000": {
         "accuracy": 0.9375,
         "correct": 60,
         "total": 64
@@ -270,6 +285,25 @@
           "correct": 1753,
           "total": 3072
         }
+      },
+      "3000": {
+        "families": {
+          "pointer": {
+            "accuracy": 0.5970052083333334,
+            "correct": 917,
+            "total": 1536
+          },
+          "relay": {
+            "accuracy": 0.6087239583333334,
+            "correct": 935,
+            "total": 1536
+          }
+        },
+        "pooled": {
+          "accuracy": 0.6028645833333334,
+          "correct": 1852,
+          "total": 3072
+        }
       }
     },
     "checkpoint_manifest": {
@@ -286,6 +320,10 @@
         "2000": {
           "path": "outputs/stage5/stage5_adapter_verbal_transference_e3b_20260720/train/arm_t/unfrozen_recurrent_step_2000.pt",
           "sha256": "3b0e9da3ed6407c07d70a15829e3911516838d540cb5e0a2e19f179984c72893"
+        },
+        "3000": {
+          "path": "outputs/stage5/stage5_adapter_verbal_transference_e3b_20260720/train/arm_t/unfrozen_recurrent_step_3000.pt",
+          "sha256": "58381670571b846ee8dfd38753c255181ddc048783edf9c769d13c290ad6f4f3"
         }
       }
     },
@@ -297,8 +335,8 @@
     ],
     "mode": "evaluation_only_after_preregistered_guardrail_stop"
   },
-  "salvage_note": "Record E3b salvage Arm T eval step 2000 stage5_adapter_verbal_transference_e3b_20260720",
-  "status": "salvage_arm_t_evaluated_step_2000",
+  "salvage_note": "Record E3b salvage Arm T eval step 3000 stage5_adapter_verbal_transference_e3b_20260720",
+  "status": "salvage_arm_t_evaluated_step_3000",
   "training": {
     "arm_s": {
       "final_checkpoint": null,
