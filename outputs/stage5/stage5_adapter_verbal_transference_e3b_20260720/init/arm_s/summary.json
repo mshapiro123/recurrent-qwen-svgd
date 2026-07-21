@@ -1,0 +1,17 @@
+{
+  "alpha": 32,
+  "bridge_projection_mode": "split",
+  "checkpoint": "outputs/stage5/stage5_adapter_verbal_transference_e3b_20260720/init/arm_s/peft_identity_step_0.pt",
+  "checkpoint_sha256": "1a7f6ca1e9556d83630847168b019f872822883de00d35fd3851e758a4929cb9",
+  "drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_adapter_verbal_transference_e3b_20260720/arm_s_init/peft_identity_step_0.pt",
+  "kind": "peft_identity_gate",
+  "lora_modules": 84,
+  "max_abs_diff": 0.0,
+  "max_loops": 1,
+  "mean_abs_diff": 0.0,
+  "passed": true,
+  "pretrained_base_sha256": "960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f",
+  "rank": 16,
+  "seed": 0,
+  "threshold": 0.001
+}

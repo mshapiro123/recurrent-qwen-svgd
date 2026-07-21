@@ -1,0 +1,91 @@
+{
+  "arm_s": {
+    "identity": {
+      "alpha": 32,
+      "bridge_projection_mode": "split",
+      "checkpoint": "outputs/stage5/stage5_adapter_verbal_transference_e3b_20260720/init/arm_s/peft_identity_step_0.pt",
+      "checkpoint_sha256": "1a7f6ca1e9556d83630847168b019f872822883de00d35fd3851e758a4929cb9",
+      "drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_adapter_verbal_transference_e3b_20260720/arm_s_init/peft_identity_step_0.pt",
+      "kind": "peft_identity_gate",
+      "lora_modules": 84,
+      "max_abs_diff": 0.0,
+      "max_loops": 1,
+      "mean_abs_diff": 0.0,
+      "passed": true,
+      "pretrained_base_sha256": "960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f",
+      "rank": 16,
+      "seed": 0,
+      "threshold": 0.001
+    },
+    "source": "fresh_base_surgery_R16"
+  },
+  "arm_t": {
+    "checkpoint_sha256": "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
+    "restore": {
+      "selected_checkpoint_sha256": "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
+      "source_checkpoint": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/train/chain_depth_le8_dose/unfrozen_recurrent_step_2000.pt",
+      "source_drive_backup": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_adapter_budget_arm_e_20260718/chain_depth_le8_dose/unfrozen_recurrent_step_2000.pt",
+      "source_summary": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/summary.json"
+    },
+    "source": "installed_E1_R16"
+  },
+  "data_sha256": {
+    "pointer": "a3c15806ed4c089fdae125d972908c744a51c5a3ecbcf6d7b9d9d1683a481da6",
+    "relay": "bde97fdbfab213845726a56af7a6b65f96426694457d068049cbe0476598951e",
+    "synthetic": "6b054327db1ae71aef8091b49e1da96b5dc3755d057c87824977dfb17a22d308",
+    "train": "4e963fcc2d464f7bbf0746697068701e9e0361611c875563d5e47220db207f58"
+  },
+  "kind": "stage5_adapter_verbal_transference_e3b",
+  "locked_protocol": {
+    "base_weights": "frozen",
+    "checkpoints": [
+      1000,
+      2000,
+      3000,
+      4000,
+      5000,
+      6000
+    ],
+    "learning_rate": 1e-05,
+    "only_variable": "initialization_symbolic_history",
+    "optimizer": "adamw",
+    "seed": 0,
+    "steps": 6000,
+    "synthetic_regression": "measurement_only_arm_t",
+    "tier1": "hard_stop_each_arm_against_own_step0_baseline",
+    "training_mix": "2048 relay plus 2048 synthetic rehearsal; pointer held out"
+  },
+  "p1_zero_shot": {
+    "full_block": {
+      "pointer": {
+        "accuracy": 0.20247395833333334,
+        "correct": 311,
+        "total": 1536
+      },
+      "relay": {
+        "accuracy": 0.173828125,
+        "correct": 267,
+        "total": 1536
+      }
+    },
+    "lora": {
+      "pointer": {
+        "accuracy": 0.171875,
+        "correct": 264,
+        "total": 1536
+      },
+      "relay": {
+        "accuracy": 0.162109375,
+        "correct": 249,
+        "total": 1536
+      }
+    },
+    "reading": "minimal_zero_shot_transfer_both_budgets",
+    "sources": {
+      "full_block": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/summary.json",
+      "lora": "outputs/stage5/stage5_adapter_parity_e3a_20260719/summary.json"
+    }
+  },
+  "run_id": "stage5_adapter_verbal_transference_e3b_20260720",
+  "status": "initialized"
+}
