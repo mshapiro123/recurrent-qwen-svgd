@@ -123,6 +123,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "adapter_parity_e3a" - Arm E zero-shot relay/pointer transfer.
 #   "adapter_parity_e2" - Arm E outcome-only persistence.
 #   "adapter_parity_e4" - E2-gated Arm E inverse retention.
+#   "adapter_verbal_transference_e3b" - matched installed-vs-fresh R16 verbal transfer.
 #   "paper1_closure_receipts" - CPU-safe Paper 1 evidence compiler and Drive backup.
 #   "depth_selector_bounded_assessment" - frozen N24 supervised-depth and Ponder-outcome selector closure.
 #   "wall_clock_latency_descriptive" - eval-only five-arm Paper One batch-1 latency receipt.
@@ -2008,6 +2009,16 @@ TARGETS = {
             "adapter_parity_battery_v1",
             "stage5_adapter_parity_e4",
             "tests/test_adapter_parity_battery.py",
+            "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
+        ],
+        "env": {"STAGE5_ADAPTER_PARITY_DISCONNECT": "0"},
+    },
+    "adapter_verbal_transference_e3b": {
+        "path": "colab/STAGE5_ADAPTER_PARITY_BATTERY_CELL.py",
+        "markers": [
+            "STAGE5_ADAPTER_PARITY_BATTERY_CELL_VERSION",
+            "stage5_adapter_verbal_transference_e3b_20260720",
+            "tests/test_adapter_verbal_transference.py",
             "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
         ],
         "env": {"STAGE5_ADAPTER_PARITY_DISCONNECT": "0"},

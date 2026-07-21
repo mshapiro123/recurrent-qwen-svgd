@@ -26,6 +26,7 @@ def main() -> int:
     parser.add_argument("--model_name", default="Qwen/Qwen2.5-0.5B-Instruct")
     parser.add_argument("--rank", type=int, required=True)
     parser.add_argument("--alpha", type=int, required=True)
+    parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--split", default="6,18")
     parser.add_argument("--threshold", type=float, default=1e-3)
     parser.add_argument("--prompt", default="Solve: If x + 2 = 5, what is x?")
@@ -35,6 +36,10 @@ def main() -> int:
     parser.add_argument("--output_summary", required=True)
     parser.add_argument("--output_checkpoint", default="")
     args = parser.parse_args()
+
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     model = AutoModelForCausalLM.from_pretrained(
@@ -68,6 +73,7 @@ def main() -> int:
         "kind": "peft_identity_gate",
         "rank": args.rank,
         "alpha": args.alpha,
+        "seed": args.seed,
         "lora_modules": replaced,
         "bridge_projection_mode": "split",
         "max_loops": 1,

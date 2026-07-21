@@ -16,7 +16,9 @@ STAGE5_ADAPTER_PARITY_BATTERY_CELL_VERSION = "adapter_parity_battery_v1"
 # Safety marker: stage5_adapter_parity_e3a
 # Safety marker: stage5_adapter_parity_e2
 # Safety marker: stage5_adapter_parity_e4
+# Safety marker: stage5_adapter_verbal_transference_e3b_20260720
 # Safety marker: tests/test_adapter_parity_battery.py
+# Safety marker: tests/test_adapter_verbal_transference.py
 
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
@@ -26,6 +28,7 @@ RUNNERS = {
     "adapter_parity_e3a": "colab/run_stage5_adapter_parity_e3a.py",
     "adapter_parity_e2": "colab/run_stage5_adapter_parity_e2.py",
     "adapter_parity_e4": "colab/run_stage5_adapter_parity_e4.py",
+    "adapter_verbal_transference_e3b": "colab/run_stage5_adapter_verbal_transference.py",
 }
 assert TARGET in RUNNERS, f"Unsupported adapter parity target: {TARGET}"
 
@@ -123,6 +126,7 @@ try:
             "pytest",
             "-q",
             "tests/test_adapter_parity_battery.py",
+            "tests/test_adapter_verbal_transference.py",
             "tests/test_adapter_budget_arm.py",
             "tests/test_train_unfrozen_recurrent.py",
             "tests/test_stage5_inverse_table_rehearsal.py",

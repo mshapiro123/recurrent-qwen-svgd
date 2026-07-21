@@ -49,7 +49,9 @@ def evaluate(args: argparse.Namespace) -> list[dict[str, Any]]:
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     wrapper = load_recurrent_wrapper(args, args.checkpoint)
     output_rows: list[dict[str, Any]] = []
-    for row in rows:
+    for row_index, row in enumerate(rows, start=1):
+        if args.progress_every and (row_index == 1 or row_index % args.progress_every == 0):
+            print(f"final_symbol_progress row={row_index}/{len(rows)}", flush=True)
         depth = int(row["depth"])
         if depth > int(args.max_loops):
             raise ValueError(f"Row depth {depth} exceeds --max_loops={args.max_loops}: {row.get('id')}")
@@ -155,6 +157,7 @@ def main() -> int:
     parser.add_argument("--lora_rank", type=int, default=0)
     parser.add_argument("--lora_alpha", type=int, default=16)
     parser.add_argument("--adapter_dtype", default="float32")
+    parser.add_argument("--progress_every", type=int, default=0)
     args = parser.parse_args()
 
     rows = evaluate(args)
