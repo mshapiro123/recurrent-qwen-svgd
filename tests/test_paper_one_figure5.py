@@ -23,13 +23,18 @@ def test_figure5_data_contains_no_placeholders_and_valid_counts() -> None:
 def test_figure5_counts_match_canonical_phase_a_and_arm_e_receipts() -> None:
     payload = load_and_validate(DATA)
     phase_a = json.loads((ROOT / payload["sources"]["phase_a"]).read_text(encoding="utf-8"))
+    dense_audit = json.loads(
+        (ROOT / payload["sources"]["phase_a_dense_reader_audit"]).read_text(encoding="utf-8")
+    )
     arm_e = json.loads((ROOT / payload["sources"]["adapter_arm_e"]).read_text(encoding="utf-8"))
-    mapping = {"A": "A", "B": "B_step4000", "C": "C_step4000", "D": "D_step4000"}
 
-    for arm, receipt_key in mapping.items():
+    for depth in payload["depths"]:
+        assert payload["arms"]["A"]["correct"][str(depth)] == phase_a["scoring"]["counts"]["A"][str(depth)]
+        assert phase_a["scoring"]["depth_totals"][str(depth)] == 128
+    for arm, receipt_key in {"B": "B_step4000", "C": "C_step4000", "D": "D_step4000"}.items():
         for depth in payload["depths"]:
-            assert payload["arms"][arm]["correct"][str(depth)] == phase_a["scoring"]["counts"][receipt_key][str(depth)]
-            assert phase_a["scoring"]["depth_totals"][str(depth)] == 128
+            observed = dense_audit["arms"][receipt_key]["by_depth"][str(depth)]["corrected_correct"]
+            assert payload["arms"][arm]["correct"][str(depth)] == observed
     for depth in payload["depths"]:
         assert payload["arms"]["E"]["correct"][str(depth)] == arm_e["final_eval"]["by_depth"][str(depth)]["same_reader_correct"]
         assert arm_e["final_eval"]["by_depth"][str(depth)]["total"] == 128

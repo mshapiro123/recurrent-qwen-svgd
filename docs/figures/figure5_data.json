@@ -4,10 +4,12 @@
   "placeholder_data_present": false,
   "depths": [1, 2, 4, 8, 11, 14],
   "rows_per_depth": 128,
+  "accuracy_reader": "first completed response: leading symbol for direct completions; first answer marker for serialized scratchpads",
   "latency_metric": "model_total_ms_median",
   "latency_scope": "single NVIDIA A100-SXM4-80GB, bfloat16, batch size 1, greedy decoding, registered evaluation paths",
   "sources": {
     "phase_a": "outputs/stage5/stage5_phase_a_surpass_receipt_20260714/summary.json",
+    "phase_a_dense_reader_audit": "outputs/stage5/stage5_phase_a_dense_reader_audit_20260722/summary.json",
     "adapter_arm_e": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/summary.json",
     "wall_clock": "outputs/stage5/stage5_wall_clock_latency_20260719/summary.json"
   },
@@ -30,21 +32,21 @@
       "label": "Dense scratchpad 0.5B",
       "detail": "96-token registered path",
       "placeholder": false,
-      "correct": {"1": 120, "2": 57, "4": 100, "8": 96, "11": 18, "14": 6},
+      "correct": {"1": 128, "2": 128, "4": 128, "8": 128, "11": 13, "14": 0},
       "wall_clock_ms": {"1": 2287.8786535, "2": 2289.493555, "4": 2288.2411730000003, "8": 2284.0140014999997, "11": 2276.851127, "14": 2283.503928}
     },
     "B": {
       "label": "Dense direct 0.5B",
       "detail": "32-token registered path",
       "placeholder": false,
-      "correct": {"1": 119, "2": 84, "4": 28, "8": 18, "11": 17, "14": 12},
+      "correct": {"1": 128, "2": 95, "4": 29, "8": 18, "11": 17, "14": 12},
       "wall_clock_ms": {"1": 770.271727, "2": 769.6760855, "4": 771.6394235, "8": 768.781888, "11": 768.2143544999999, "14": 769.83631850000006}
     },
     "D": {
       "label": "Dense direct 1.5B",
       "detail": "32-token registered path",
       "placeholder": false,
-      "correct": {"1": 13, "2": 16, "4": 21, "8": 38, "11": 16, "14": 13},
+      "correct": {"1": 125, "2": 107, "4": 75, "8": 38, "11": 16, "14": 13},
       "wall_clock_ms": {"1": 905.0684255, "2": 906.481522, "4": 905.5276425, "8": 903.656578, "11": 905.6152235, "14": 904.244101}
     }
   }

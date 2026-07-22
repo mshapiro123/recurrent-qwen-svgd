@@ -8,6 +8,7 @@ from xml.sax.saxutils import escape
 
 ROOT = Path(__file__).resolve().parents[1]
 PHASE_A_SUMMARY = ROOT / "outputs/stage5/stage5_phase_a_surpass_receipt_20260714/summary.json"
+PHASE_A_DENSE_AUDIT = ROOT / "outputs/stage5/stage5_phase_a_dense_reader_audit_20260722/summary.json"
 ARM_E_SUMMARY = ROOT / "outputs/stage5/stage5_adapter_budget_arm_e_20260718/summary.json"
 DEFAULT_OUTPUT = ROOT / "docs/figures/figure4_phase_a_depth_profile.svg"
 
@@ -22,8 +23,14 @@ SERIES = (
 
 def load_counts() -> tuple[dict[str, dict[str, int]], dict[str, int]]:
     phase_a = json.loads(PHASE_A_SUMMARY.read_text(encoding="utf-8"))
+    dense_audit = json.loads(PHASE_A_DENSE_AUDIT.read_text(encoding="utf-8"))
     arm_e = json.loads(ARM_E_SUMMARY.read_text(encoding="utf-8"))
     counts = dict(phase_a["scoring"]["counts"])
+    for label in ("B_step4000", "C_step4000", "D_step4000"):
+        counts[label] = {
+            depth: int(values["corrected_correct"])
+            for depth, values in dense_audit["arms"][label]["by_depth"].items()
+        }
     counts["E"] = arm_e["adapter_budget_depth_profile"]["counts_by_depth"]["E"]
     totals = phase_a["scoring"]["depth_totals"]
     return counts, totals
@@ -69,7 +76,7 @@ def build_svg(counts: dict[str, dict[str, int]], totals: dict[str, int]) -> str:
         ),
         (
             '<text x="76" y="52" font-family="Arial" font-size="12" fill="#444">'
-            'Same-reader accuracy; 128 identical rows per depth</text>'
+            'First-completed-response accuracy; 128 identical rows per depth</text>'
         ),
     ]
 

@@ -1372,3 +1372,18 @@ Colab/Drive backups for selected runs.
   `outputs/stage5/stage5_adapter_verbal_transference_e3b_20260720/summary.json`.
   Handoff:
   `docs/ARM_E3B_ADAPTER_VERBAL_TRANSFERENCE_HANDOFF_20260721.md`.
+- 2026-07-22 Phase A dense-reader audit corrected a semantic boundary error in
+  the registered dense evaluator. Dense models were not trained to emit EOS
+  after their short completion, and the old reader could overwrite the first
+  completed response with the last `Answer:` marker in later untrained
+  continuation. Re-reading the archived, hash-locked continuations at the
+  first completed response changed B from `470/1792` to `496/1792`, C from
+  `952/1792` to `1292/1792`, and D from `322/1792` to `656/1792`. The two
+  flagged cells were artifacts: D depth 1 is `125/128`, not `13/128`, and C
+  depth 2 is `128/128`, not `57/128`. The corrected result strengthens the
+  crossover reading: C is perfect through depth 9 and `127/128` at depth 10,
+  then falls to `13/128` at depth 11 and zero at depths 12-14, while A retains
+  `272/512` over depths 11-14. A remains higher overall (`1506/1792` versus
+  `1292/1792`; paired A-only `262`, C-only `48`, two-sided exact
+  `p=7.81e-37`). No checkpoint or model output changed. Receipt:
+  `outputs/stage5/stage5_phase_a_dense_reader_audit_20260722/summary.json`.

@@ -53,7 +53,7 @@ def test_build_arm_rows_changes_only_completion_surface() -> None:
     assert scratchpad[0]["instance_id"] == direct[0]["instance_id"]
 
 
-def test_dense_reader_uses_last_valid_symbol_for_both_surfaces() -> None:
+def test_dense_reader_uses_first_completed_response_for_both_surfaces() -> None:
     candidates = list("ABCD")
 
     assert extract_final_symbol(" C", candidates) == "C"
@@ -61,6 +61,20 @@ def test_dense_reader_uses_last_valid_symbol_for_both_surfaces() -> None:
     assert extract_final_symbol("steps: A -> D; answer: D\n", candidates) == "D"
     assert extract_final_symbol("This is a guess: C", candidates) == "C"
     assert extract_final_symbol("C then D", candidates) == "C"
+
+    # Direct completions are a leading symbol. Later generated examples must
+    # not overwrite the response to the current prompt.
+    assert extract_final_symbol(
+        " C\n\nStart value: A\nApply f exactly 1 times.\nAnswer: D",
+        candidates,
+    ) == "C"
+
+    # Scratchpad completions end at their first answer marker. Repetition after
+    # that marker is untrained continuation, not a revised answer.
+    assert extract_final_symbol(
+        " steps: B -> C answer: C answer: D answer: A",
+        candidates,
+    ) == "C"
 
 
 def test_dense_summary_is_depth_stratified() -> None:

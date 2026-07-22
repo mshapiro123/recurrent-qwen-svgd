@@ -1,0 +1,831 @@
+{
+  "arms": {
+    "B_step4000": {
+      "by_depth": {
+        "1": {
+          "correct_delta": 9,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 9,
+          "registered_accuracy": 0.9296875,
+          "registered_correct": 119,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "10": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.1484375,
+          "corrected_correct": 19,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.1484375,
+          "registered_correct": 19,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "11": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.1328125,
+          "corrected_correct": 17,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.1328125,
+          "registered_correct": 17,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "12": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.125,
+          "corrected_correct": 16,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.125,
+          "registered_correct": 16,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "13": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.1171875,
+          "corrected_correct": 15,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.1171875,
+          "registered_correct": 15,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "14": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.09375,
+          "corrected_correct": 12,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.09375,
+          "registered_correct": 12,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "2": {
+          "correct_delta": 11,
+          "corrected_accuracy": 0.7421875,
+          "corrected_correct": 95,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 25,
+          "registered_accuracy": 0.65625,
+          "registered_correct": 84,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "3": {
+          "correct_delta": 4,
+          "corrected_accuracy": 0.359375,
+          "corrected_correct": 46,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 45,
+          "registered_accuracy": 0.328125,
+          "registered_correct": 42,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "4": {
+          "correct_delta": 1,
+          "corrected_accuracy": 0.2265625,
+          "corrected_correct": 29,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 5,
+          "registered_accuracy": 0.21875,
+          "registered_correct": 28,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "5": {
+          "correct_delta": 1,
+          "corrected_accuracy": 0.2265625,
+          "corrected_correct": 29,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 1,
+          "registered_accuracy": 0.21875,
+          "registered_correct": 28,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "6": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.203125,
+          "corrected_correct": 26,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.203125,
+          "registered_correct": 26,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "7": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.1640625,
+          "corrected_correct": 21,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.1640625,
+          "registered_correct": 21,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "8": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.140625,
+          "corrected_correct": 18,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.140625,
+          "registered_correct": 18,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "9": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.1953125,
+          "corrected_correct": 25,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.1953125,
+          "registered_correct": 25,
+          "registered_parse_failures": 0,
+          "total": 128
+        }
+      },
+      "changed_examples": [
+        {
+          "continuation_prefix": " K\n\nThe final value is O.Human: What is the final value? \n\nAnswer: H \n\nExplanation: The function f is defined such that it",
+          "corrected_prediction": "K",
+          "depth": 1,
+          "id": "test_d01_00009",
+          "registered_prediction": "H",
+          "target": "K"
+        },
+        {
+          "continuation_prefix": " I\n\nThe final value is I.Human: What is the final value? \nAnswer: M\n\nHuman: What is the final value? \nAnswer",
+          "corrected_prediction": "I",
+          "depth": 1,
+          "id": "test_d01_00011",
+          "registered_prediction": "M",
+          "target": "I"
+        },
+        {
+          "continuation_prefix": " J\n\nThe function f is a shuffled lookup table. The final value is L.Human: What is the final value? \nAnswer: O \n\nExplanation",
+          "corrected_prediction": "J",
+          "depth": 1,
+          "id": "test_d01_00054",
+          "registered_prediction": "O",
+          "target": "J"
+        },
+        {
+          "continuation_prefix": " B\n\nThe final value is P.Human: What is the final value? \nAnswer: K\n\nHuman: What is the final value? \nAnswer",
+          "corrected_prediction": "B",
+          "depth": 1,
+          "id": "test_d01_00070",
+          "registered_prediction": "K",
+          "target": "B"
+        },
+        {
+          "continuation_prefix": " C\n\nHuman: What is P? \nAnswer: K \n\nExplanation: In the given function table, \"K\" is the final value after applying the",
+          "corrected_prediction": "C",
+          "depth": 1,
+          "id": "test_d01_00072",
+          "registered_prediction": "K",
+          "target": "C"
+        },
+        {
+          "continuation_prefix": " C\n\nThe final value is N.Human: What is the final value? \nAnswer: N \n\nExplanation: The question asks for the final value,",
+          "corrected_prediction": "C",
+          "depth": 1,
+          "id": "test_d01_00086",
+          "registered_prediction": "N",
+          "target": "C"
+        },
+        {
+          "continuation_prefix": " I\n\nThe final value is I.Human: What is the final value? \nAnswer: J \n\nThe function f is defined as applying a specific transformation",
+          "corrected_prediction": "I",
+          "depth": 1,
+          "id": "test_d01_00089",
+          "registered_prediction": "J",
+          "target": "I"
+        },
+        {
+          "continuation_prefix": " A\n\nStart value: X\nApply f exactly 1 time.\nThe answer is A.Human: What is the final value? \nAnswer: K",
+          "corrected_prediction": "A",
+          "depth": 1,
+          "id": "test_d01_00092",
+          "registered_prediction": "K",
+          "target": "A"
+        },
+        {
+          "continuation_prefix": " J\n\nThe final value is M.Human: What is the final value? \nAnswer: M\n\nHuman: How many values are there in the function",
+          "corrected_prediction": "J",
+          "depth": 1,
+          "id": "test_d01_00125",
+          "registered_prediction": "M",
+          "target": "J"
+        },
+        {
+          "continuation_prefix": " D\n\nApply f again.\nWhat is the final value?\nAnswer: J\n\nThe function f maps each letter of the English alphabet to its corresponding numerical value.",
+          "corrected_prediction": "D",
+          "depth": 2,
+          "id": "test_d02_00007",
+          "registered_prediction": "J",
+          "target": "J"
+        },
+        {
+          "continuation_prefix": " G\nExplanation: H\nExplanation: G\n\nNext, apply f to O.\nWhat is the final value?\nAnswer: E\nExplanation: E\n\nThe",
+          "corrected_prediction": "G",
+          "depth": 2,
+          "id": "test_d02_00011",
+          "registered_prediction": "E",
+          "target": "G"
+        },
+        {
+          "continuation_prefix": " J\nExplanation: P\n\nApply f again.\nWhat is the final value?\nAnswer: M\n\nExplanation: B\n\nGiven the function table, we can see",
+          "corrected_prediction": "J",
+          "depth": 2,
+          "id": "test_d02_00017",
+          "registered_prediction": "M",
+          "target": "J"
+        }
+      ],
+      "correct_delta": 26,
+      "corrected_correct": 496,
+      "corrected_parse_failures": 0,
+      "paired_against_full_block_recurrent": {
+        "recurrent_helped": 1048,
+        "recurrent_hurt": 38,
+        "recurrent_net_correct": 1010,
+        "two_sided_exact_sign_p": 5.7154528935703515e-257
+      },
+      "registered_correct": 470,
+      "rows": 1792,
+      "surface": "direct"
+    },
+    "C_step4000": {
+      "by_depth": {
+        "1": {
+          "correct_delta": 8,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 8,
+          "registered_accuracy": 0.9375,
+          "registered_correct": 120,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "10": {
+          "correct_delta": 35,
+          "corrected_accuracy": 0.9921875,
+          "corrected_correct": 127,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 37,
+          "registered_accuracy": 0.71875,
+          "registered_correct": 92,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "11": {
+          "correct_delta": -5,
+          "corrected_accuracy": 0.1015625,
+          "corrected_correct": 13,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 39,
+          "registered_accuracy": 0.140625,
+          "registered_correct": 18,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "12": {
+          "correct_delta": -13,
+          "corrected_accuracy": 0.0,
+          "corrected_correct": 0,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 50,
+          "registered_accuracy": 0.1015625,
+          "registered_correct": 13,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "13": {
+          "correct_delta": -19,
+          "corrected_accuracy": 0.0,
+          "corrected_correct": 0,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 48,
+          "registered_accuracy": 0.1484375,
+          "registered_correct": 19,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "14": {
+          "correct_delta": -6,
+          "corrected_accuracy": 0.0,
+          "corrected_correct": 0,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 45,
+          "registered_accuracy": 0.046875,
+          "registered_correct": 6,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "2": {
+          "correct_delta": 71,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 71,
+          "registered_accuracy": 0.4453125,
+          "registered_correct": 57,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "3": {
+          "correct_delta": 42,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 42,
+          "registered_accuracy": 0.671875,
+          "registered_correct": 86,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "4": {
+          "correct_delta": 28,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 28,
+          "registered_accuracy": 0.78125,
+          "registered_correct": 100,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "5": {
+          "correct_delta": 45,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 45,
+          "registered_accuracy": 0.6484375,
+          "registered_correct": 83,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "6": {
+          "correct_delta": 33,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 33,
+          "registered_accuracy": 0.7421875,
+          "registered_correct": 95,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "7": {
+          "correct_delta": 50,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 50,
+          "registered_accuracy": 0.609375,
+          "registered_correct": 78,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "8": {
+          "correct_delta": 32,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 32,
+          "registered_accuracy": 0.75,
+          "registered_correct": 96,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "9": {
+          "correct_delta": 39,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 39,
+          "registered_accuracy": 0.6953125,
+          "registered_correct": 89,
+          "registered_parse_failures": 0,
+          "total": 128
+        }
+      },
+      "changed_examples": [
+        {
+          "continuation_prefix": " steps: M answer: M answer: H answer: K answer: C answer: B answer: K answer: C answer: B answer: K answer: C answer: B answer: K answer: C answer: B answer: K answer: C answer: B answer: K answer: C answer: B answer: K answer: C answer: B ",
+          "corrected_prediction": "M",
+          "depth": 1,
+          "id": "test_d01_00000",
+          "registered_prediction": "C",
+          "target": "M"
+        },
+        {
+          "continuation_prefix": " steps: H answer: H answer: N answer: B answer: A answer: F answer: B answer: A answer: F answer: B answer: A answer: F answer: B answer: A answer: F answer: B answer: A answer: F answer: B answer: A answer: F answer: B answer: A answer: F ",
+          "corrected_prediction": "H",
+          "depth": 1,
+          "id": "test_d01_00025",
+          "registered_prediction": "A",
+          "target": "H"
+        },
+        {
+          "continuation_prefix": " steps: J answer: J answer: B answer: C answer: L answer: C answer: L answer: C answer: L answer: C answer: L answer: C answer: L answer: C answer: L answer: C answer: L answer: C answer: L answer: C answer: L answer: C answer: L answer: C ",
+          "corrected_prediction": "J",
+          "depth": 1,
+          "id": "test_d01_00036",
+          "registered_prediction": "C",
+          "target": "J"
+        },
+        {
+          "continuation_prefix": " steps: L answer: L answer: P answer: D answer: A answer: P answer: D answer: A answer: P answer: D answer: A answer: P answer: D answer: A answer: P answer: D answer: A answer: P answer: D answer: A answer: P answer: D answer: A answer: P ",
+          "corrected_prediction": "L",
+          "depth": 1,
+          "id": "test_d01_00063",
+          "registered_prediction": "A",
+          "target": "L"
+        },
+        {
+          "continuation_prefix": " steps: I answer: I answer: F answer: C answer: D answer: L answer: H answer: C answer: D answer: L answer: H answer: C answer: D answer: L answer: H answer: C answer: D answer: L answer: H answer: C answer: D answer: L answer: H answer: C ",
+          "corrected_prediction": "I",
+          "depth": 1,
+          "id": "test_d01_00069",
+          "registered_prediction": "C",
+          "target": "I"
+        },
+        {
+          "continuation_prefix": " steps: O answer: O answer: K answer: D answer: F answer: L answer: B answer: L answer: B answer: L answer: B answer: L answer: B answer: L answer: B answer: L answer: B answer: L answer: B answer: L answer: B answer: L answer: B answer: L ",
+          "corrected_prediction": "O",
+          "depth": 1,
+          "id": "test_d01_00076",
+          "registered_prediction": "L",
+          "target": "O"
+        },
+        {
+          "continuation_prefix": " steps: H answer: H answer: G answer: F answer: N answer: H answer: G answer: F answer: N answer: H answer: G answer: F answer: N answer: H answer: G answer: F answer: N answer: H answer: G answer: F answer: N answer: H answer: G answer: F ",
+          "corrected_prediction": "H",
+          "depth": 1,
+          "id": "test_d01_00082",
+          "registered_prediction": "F",
+          "target": "H"
+        },
+        {
+          "continuation_prefix": " steps: I answer: I answer: J answer: L answer: H answer: B answer: E answer: D answer: C answer: C answer: C answer: C answer: C answer: C answer: C answer: C answer: C answer: C answer: C answer: C answer: C answer: C answer: C answer: C ",
+          "corrected_prediction": "I",
+          "depth": 1,
+          "id": "test_d01_00089",
+          "registered_prediction": "C",
+          "target": "I"
+        },
+        {
+          "continuation_prefix": " steps: G -> P answer: P answer: N answer: L answer: J answer: K answer: L answer: J answer: K answer: L answer: J answer: K answer: L answer: J answer: K answer: L answer: J answer: K answer: L answer: J answer: K answer: L answer: J answe",
+          "corrected_prediction": "P",
+          "depth": 2,
+          "id": "test_d02_00001",
+          "registered_prediction": "L",
+          "target": "P"
+        },
+        {
+          "continuation_prefix": " steps: A -> N answer: N answer: B answer: N answer: B answer: N answer: B answer: N answer: B answer: N answer: B answer: N answer: B answer: N answer: B answer: N answer: B answer: N answer: B answer: N answer: B answer: N answer: B answe",
+          "corrected_prediction": "N",
+          "depth": 2,
+          "id": "test_d02_00002",
+          "registered_prediction": "B",
+          "target": "N"
+        },
+        {
+          "continuation_prefix": " steps: B -> O answer: O answer: A answer: F answer: D answer: J answer: C answer: O answer: A answer: F answer: D answer: J answer: C answer: O answer: A answer: F answer: D answer: J answer: C answer: O answer: A answer: F answer: D answe",
+          "corrected_prediction": "O",
+          "depth": 2,
+          "id": "test_d02_00003",
+          "registered_prediction": "C",
+          "target": "O"
+        },
+        {
+          "continuation_prefix": " steps: E -> O answer: O answer: L answer: F answer: M answer: J answer: F answer: M answer: J answer: F answer: M answer: J answer: F answer: M answer: J answer: F answer: M answer: J answer: F answer: M answer: J answer: F answer: M answe",
+          "corrected_prediction": "O",
+          "depth": 2,
+          "id": "test_d02_00005",
+          "registered_prediction": "F",
+          "target": "O"
+        }
+      ],
+      "correct_delta": 340,
+      "corrected_correct": 1292,
+      "corrected_parse_failures": 0,
+      "paired_against_full_block_recurrent": {
+        "recurrent_helped": 262,
+        "recurrent_hurt": 48,
+        "recurrent_net_correct": 214,
+        "two_sided_exact_sign_p": 7.805075898405505e-37
+      },
+      "registered_correct": 952,
+      "rows": 1792,
+      "surface": "serialized_orbit_scratchpad"
+    },
+    "D_step4000": {
+      "by_depth": {
+        "1": {
+          "correct_delta": 112,
+          "corrected_accuracy": 0.9765625,
+          "corrected_correct": 125,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 114,
+          "registered_accuracy": 0.1015625,
+          "registered_correct": 13,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "10": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.0390625,
+          "corrected_correct": 5,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.0390625,
+          "registered_correct": 5,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "11": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.125,
+          "corrected_correct": 16,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.125,
+          "registered_correct": 16,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "12": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.1171875,
+          "corrected_correct": 15,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.1171875,
+          "registered_correct": 15,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "13": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.109375,
+          "corrected_correct": 14,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.109375,
+          "registered_correct": 14,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "14": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.1015625,
+          "corrected_correct": 13,
+          "corrected_parse_failures": 1,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.1015625,
+          "registered_correct": 13,
+          "registered_parse_failures": 1,
+          "total": 128
+        },
+        "2": {
+          "correct_delta": 91,
+          "corrected_accuracy": 0.8359375,
+          "corrected_correct": 107,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 116,
+          "registered_accuracy": 0.125,
+          "registered_correct": 16,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "3": {
+          "correct_delta": 74,
+          "corrected_accuracy": 0.7421875,
+          "corrected_correct": 95,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 109,
+          "registered_accuracy": 0.1640625,
+          "registered_correct": 21,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "4": {
+          "correct_delta": 54,
+          "corrected_accuracy": 0.5859375,
+          "corrected_correct": 75,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 107,
+          "registered_accuracy": 0.1640625,
+          "registered_correct": 21,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "5": {
+          "correct_delta": 3,
+          "corrected_accuracy": 0.375,
+          "corrected_correct": 48,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 15,
+          "registered_accuracy": 0.3515625,
+          "registered_correct": 45,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "6": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.3046875,
+          "corrected_correct": 39,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.3046875,
+          "registered_correct": 39,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "7": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.2734375,
+          "corrected_correct": 35,
+          "corrected_parse_failures": 1,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.2734375,
+          "registered_correct": 35,
+          "registered_parse_failures": 1,
+          "total": 128
+        },
+        "8": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.296875,
+          "corrected_correct": 38,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.296875,
+          "registered_correct": 38,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "9": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.2421875,
+          "corrected_correct": 31,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.2421875,
+          "registered_correct": 31,
+          "registered_parse_failures": 0,
+          "total": 128
+        }
+      },
+      "changed_examples": [
+        {
+          "continuation_prefix": " I\n\nStart value: G\nApply f exactly 1 times.\nWhat is the final value?\nAnswer: N\n\nStart value: D\nApply f exactly",
+          "corrected_prediction": "I",
+          "depth": 1,
+          "id": "test_d01_00001",
+          "registered_prediction": "N",
+          "target": "I"
+        },
+        {
+          "continuation_prefix": " B\n\nStart value: M\nApply f exactly 1 times.\nWhat is the final value?\nAnswer: F\n\nStart value: C\nApply f exactly",
+          "corrected_prediction": "B",
+          "depth": 1,
+          "id": "test_d01_00002",
+          "registered_prediction": "F",
+          "target": "B"
+        },
+        {
+          "continuation_prefix": " C\n\nStart value: P\nApply f exactly 2 times.\nWhat is the final value?\nAnswer: O\n\nStart value: A\nApply f exactly",
+          "corrected_prediction": "C",
+          "depth": 1,
+          "id": "test_d01_00004",
+          "registered_prediction": "O",
+          "target": "C"
+        },
+        {
+          "continuation_prefix": " M\n\nStart value: P\nApply f exactly 1 times.\nWhat is the final value?\nAnswer: K\n\nStart value: D\nApply f exactly",
+          "corrected_prediction": "M",
+          "depth": 1,
+          "id": "test_d01_00005",
+          "registered_prediction": "K",
+          "target": "M"
+        },
+        {
+          "continuation_prefix": " M\n\nStart value: G\nApply f exactly 1 times.\nWhat is the final value?\nAnswer: G\n\nStart value: B\nApply f exactly",
+          "corrected_prediction": "M",
+          "depth": 1,
+          "id": "test_d01_00007",
+          "registered_prediction": "G",
+          "target": "M"
+        },
+        {
+          "continuation_prefix": " P\n\nStart value: G\nApply f exactly 1 times.\nWhat is the final value?\nAnswer: K\n\nStart value: L\nApply f exactly",
+          "corrected_prediction": "P",
+          "depth": 1,
+          "id": "test_d01_00008",
+          "registered_prediction": "K",
+          "target": "P"
+        },
+        {
+          "continuation_prefix": " K\n\nStart value: H\nApply f exactly 1 times.\nWhat is the final value?\nAnswer: L\n\nStart value: C\nApply f exactly",
+          "corrected_prediction": "K",
+          "depth": 1,
+          "id": "test_d01_00009",
+          "registered_prediction": "L",
+          "target": "K"
+        },
+        {
+          "continuation_prefix": " B\n\nStart value: M\nApply f exactly 1 times.\nWhat is the final value?\nAnswer: M\n\nStart value: D\nApply f exactly",
+          "corrected_prediction": "B",
+          "depth": 1,
+          "id": "test_d01_00010",
+          "registered_prediction": "M",
+          "target": "B"
+        },
+        {
+          "continuation_prefix": " I\n\nStart value: O\nApply f exactly 1 times.\nWhat is the final value?\nAnswer: M\n\nStart value: N\nApply f exactly",
+          "corrected_prediction": "I",
+          "depth": 1,
+          "id": "test_d01_00011",
+          "registered_prediction": "M",
+          "target": "I"
+        },
+        {
+          "continuation_prefix": " C\n\nStart value: P\nApply f exactly 1 times.\nWhat is the final value?\nAnswer: M\n\nStart value: B\nApply f exactly",
+          "corrected_prediction": "C",
+          "depth": 1,
+          "id": "test_d01_00012",
+          "registered_prediction": "M",
+          "target": "C"
+        },
+        {
+          "continuation_prefix": " P\n\nStart value: I\nApply f exactly 1 times.\nWhat is the final value?\nAnswer: B\n\nStart value: O\nApply f exactly",
+          "corrected_prediction": "P",
+          "depth": 1,
+          "id": "test_d01_00013",
+          "registered_prediction": "B",
+          "target": "P"
+        },
+        {
+          "continuation_prefix": " D\n\nStart value: N\nApply f exactly 1 times.\nWhat is the final value?\nAnswer: H\n\nStart value: L\nApply f exactly",
+          "corrected_prediction": "D",
+          "depth": 1,
+          "id": "test_d01_00014",
+          "registered_prediction": "H",
+          "target": "D"
+        }
+      ],
+      "correct_delta": 334,
+      "corrected_correct": 656,
+      "corrected_parse_failures": 2,
+      "paired_against_full_block_recurrent": {
+        "recurrent_helped": 890,
+        "recurrent_hurt": 40,
+        "recurrent_net_correct": 850,
+        "two_sided_exact_sign_p": 6.625426218324775e-210
+      },
+      "registered_correct": 322,
+      "rows": 1792,
+      "surface": "direct"
+    }
+  },
+  "corrected_reader": "leading_symbol_else_first_answer_else_first_valid_full_symbol",
+  "finding": "The registered reader can overwrite a completed response with later untrained continuation. Dense accuracy and figures must use the corrected first-response readout.",
+  "kind": "stage5_phase_a_dense_first_response_reader_audit",
+  "registered_reader": "last_answer_marker_else_first_valid_full_symbol",
+  "sources": {
+    "B_step4000": {
+      "path": "outputs/stage5/stage5_phase_a_checkpoint_comparison_20260713/eval/B_step4000/rows.jsonl.gz",
+      "sha256": "dd1a2b837dcdcad4f08fbea00982dab5aa9c837aceb056c0cbec15a93442cdfe"
+    },
+    "C_step4000": {
+      "path": "outputs/stage5/stage5_phase_a_checkpoint_comparison_20260713/eval/C_step4000/rows.jsonl.gz",
+      "sha256": "498f37e90bccaccd89e2877df9a7fc54bc0e019b06b11eed0184338b72d399fa"
+    },
+    "D_step4000": {
+      "path": "outputs/stage5/stage5_phase_a_checkpoint_comparison_20260713/eval/D_step4000/rows.jsonl.gz",
+      "sha256": "9185bc07d3fc2b6768985db4cd5b0cd56800ffa7272a60dfb8931309f14ae3d6"
+    },
+    "frozen_rows": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v2_depth14/data/test_chain_mcq.jsonl",
+    "frozen_rows_sha256": "aaa71c3d4cc500f68fac7ee6f5f0e31d9e11570bdff90adb805c769c12c66cd3",
+    "full_block_recurrent_rows": "outputs/stage5/stage5_same_reader_final_symbol_20260707_021010/eval/same_reader_final_rows.jsonl",
+    "full_block_recurrent_rows_sha256": "e032e29c49fec7eedef70a2f10330e4f9fb2bfa0da2df37203af3ba1c19e7b58"
+  },
+  "status": "corrected_reader_required"
+}

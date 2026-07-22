@@ -36,6 +36,10 @@ LABEL_OFFSET_OVERRIDES = {
     ("D", 4): (7, 8, "left"),
     ("D", 11): (7, -16, "left"),
     ("D", 14): (7, 14, "left"),
+    ("C", 1): (-4, -10, "right"),
+    ("C", 2): (-4, -20, "right"),
+    ("C", 4): (5, -10, "left"),
+    ("C", 8): (5, -20, "left"),
 }
 
 
@@ -166,7 +170,7 @@ def build_figure(payload: dict[str, Any], output_base: Path) -> list[Path]:
     fig.text(
         0.07,
         0.94,
-        "Same 128 rows per depth; complete synchronized model-call latency on one A100, batch size 1",
+        "Same 128 rows per depth; first completed response; synchronized model-call latency on one A100, batch size 1",
         ha="left",
         fontsize=9,
         color="#444444",

@@ -147,23 +147,28 @@
     },
     {
       "id": "phase_a_synthetic_surpass",
-      "claim": "The trained recurrent 0.5B system outscored the registered dense recipes on one frozen synthetic composition family.",
+      "claim": "The trained recurrent 0.5B system outscored the evaluated dense recipes overall on one frozen synthetic composition family because its accuracy persisted beyond the serialized scratchpad's horizon.",
       "status": "supported_bounded",
       "scope": "system-level, unmatched training lineage and compute; depths 1-14; identical frozen rows",
       "metrics": {
         "rows": 1792,
         "recurrent_correct": 1506,
-        "dense_direct_correct": 470,
-        "dense_scratchpad_correct": 952,
-        "dense_1_5b_correct": 322,
-        "recurrent_vs_scratchpad_helped": 607,
-        "recurrent_vs_scratchpad_hurt": 53,
-        "recurrent_vs_scratchpad_two_sided_p": 3.418737299271259e-120
+        "dense_direct_correct": 496,
+        "dense_scratchpad_correct": 1292,
+        "dense_1_5b_correct": 656,
+        "recurrent_vs_scratchpad_helped": 262,
+        "recurrent_vs_scratchpad_hurt": 48,
+        "recurrent_vs_scratchpad_two_sided_p": 7.805075898405505e-37,
+        "dense_reader_correction": "first completed response; leading symbol for direct completions and first answer marker for serialized scratchpads"
       },
       "evidence": [
         {
           "path": "outputs/stage5/stage5_phase_a_surpass_receipt_20260714/summary.json",
           "locator": "scoring, row_receipts, checkpoint_receipts"
+        },
+        {
+          "path": "outputs/stage5/stage5_phase_a_dense_reader_audit_20260722/summary.json",
+          "locator": "arms, by_depth, paired_against_full_block_recurrent, changed_examples"
         }
       ]
     },

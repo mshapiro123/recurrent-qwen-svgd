@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -17,6 +16,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from eval.eval_identity import model_load_kwargs
+from eval.dense_response_reader import extract_first_completed_symbol
 
 
 def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
@@ -24,18 +24,7 @@ def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
 
 
 def extract_final_symbol(text: str, candidates: list[str]) -> str | None:
-    allowed = {str(candidate).strip().upper() for candidate in candidates}
-    raw = str(text)
-    answer_matches = re.findall(
-        r"(?i:answer)\s*[:=]?\s*([A-Z])(?![A-Za-z0-9])",
-        raw,
-    )
-    answer_valid = [match.upper() for match in answer_matches if match.upper() in allowed]
-    if answer_valid:
-        return answer_valid[-1]
-    matches = re.findall(r"(?<![A-Za-z0-9])([A-Z])(?![A-Za-z0-9])", raw)
-    valid = [match for match in matches if match in allowed]
-    return valid[0] if valid else None
+    return extract_first_completed_symbol(text, candidates)
 
 
 def prompt_for_row(row: dict[str, Any]) -> str:
@@ -71,7 +60,7 @@ def summarize_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     correct = sum(int(row["correct"]) for row in output.values())
     return {
         "kind": "stage5_synthetic_depth_dense_eval",
-        "reader": "answer_marker_else_first_valid_full_symbol",
+        "reader": "leading_symbol_else_first_answer_else_first_valid_full_symbol",
         "by_depth": output,
         "correct": correct,
         "total": total,

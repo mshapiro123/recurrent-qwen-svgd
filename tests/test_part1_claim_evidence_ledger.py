@@ -63,15 +63,18 @@ def test_phase_a_receipt_matches_ledger_arithmetic() -> None:
     payload = load_ledger()
     claims = {claim["id"]: claim for claim in payload["claims"]}
     claim = claims["phase_a_synthetic_surpass"]
-    receipt_path = ROOT / claim["evidence"][0]["path"]
-    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt = json.loads((ROOT / claim["evidence"][0]["path"]).read_text(encoding="utf-8"))
+    audit = json.loads((ROOT / claim["evidence"][1]["path"]).read_text(encoding="utf-8"))
 
     counts = receipt["scoring"]["counts"]
     expected = claim["metrics"]
     assert sum(counts["A"].values()) == expected["recurrent_correct"] == 1506
-    assert sum(counts["B_step4000"].values()) == expected["dense_direct_correct"] == 470
-    assert sum(counts["C_step4000"].values()) == expected["dense_scratchpad_correct"] == 952
-    assert sum(counts["D_step4000"].values()) == expected["dense_1_5b_correct"] == 322
+    assert audit["arms"]["B_step4000"]["corrected_correct"] == expected["dense_direct_correct"] == 496
+    assert audit["arms"]["C_step4000"]["corrected_correct"] == expected["dense_scratchpad_correct"] == 1292
+    assert audit["arms"]["D_step4000"]["corrected_correct"] == expected["dense_1_5b_correct"] == 656
+    paired = audit["arms"]["C_step4000"]["paired_against_full_block_recurrent"]
+    assert paired["recurrent_helped"] == expected["recurrent_vs_scratchpad_helped"] == 262
+    assert paired["recurrent_hurt"] == expected["recurrent_vs_scratchpad_hurt"] == 48
     assert receipt["scoring"]["rows"] == expected["rows"] == 1792
     assert receipt["scoring"]["row_ids_match"] is True
 
@@ -155,5 +158,6 @@ def test_figure4_contains_five_series_and_support_annotations() -> None:
     assert figure.count("<polyline") == 5
     assert "Arm A: full block, 180.6M trainable" in figure
     assert "Arm E: R16 + bridge, 6.0M trainable" in figure
+    assert "First-completed-response accuracy" in figure
     assert "trained support (depths 1-8)" in figure
     assert "Arm A/E crossover: d11.54" in figure
