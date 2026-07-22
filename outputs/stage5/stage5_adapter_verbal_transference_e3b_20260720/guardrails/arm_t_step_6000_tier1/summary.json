@@ -1,0 +1,21 @@
+{
+  "accuracy": 0.921875,
+  "active_diagonal": {
+    "1": 0.921875
+  },
+  "active_diagonal_min": 0.921875,
+  "by_depth": {
+    "1": {
+      "accuracy": 0.921875,
+      "correct": 59,
+      "total": 64
+    }
+  },
+  "checkpoint": "outputs/stage5/stage5_adapter_verbal_transference_e3b_20260720/train/arm_t/unfrozen_recurrent_step_6000.pt",
+  "correct": 59,
+  "data_jsonl": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/data/base_capability_canary_64.jsonl",
+  "kind": "synthetic_diagonal_guardrail",
+  "max_depth": 1,
+  "rows": 64,
+  "value_prefix": "name:"
+}
