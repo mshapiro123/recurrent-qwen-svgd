@@ -1354,3 +1354,21 @@ Colab/Drive backups for selected runs.
   Figure 4 now has five curves, trained-support shading, and the Arm A/E
   depth-11-to-12 crossover. Receipt:
   `docs/PAPER_ONE_FINISHING_RECEIPTS_20260719.md`.
+- 2026-07-21 E3b adapter-budget verbal transference completed with a
+  preregistered guardrail truncation. This entry supersedes the 2026-07-19
+  note that E3b was unrun. At the last matched checkpoint (step 3,000), the
+  installed R16-plus-bridge arm scored `1852/3072 = 60.29%` versus
+  `1282/3072 = 41.73%` for fresh R16 surgery, a `+18.55` point paired
+  advantage (763 installed-only wins, 193 control-only wins,
+  `p = 9.74e-81`). Gains were concentrated at depths 3-11 and were present on
+  pointer, which was held out from verbal training. The installed arm
+  completed 6,000 steps, first crossing 0.71 pooled at step 4,000 before a
+  nonmonotonic endpoint of 64.68%; all rehearsed synthetic strata remained at
+  or above 94.53%, and Tier-1 remained at 59-60/64. The fresh arm stopped at
+  step 3,000 after a near-boundary `60/64 -> 58/64` canary change; its paired
+  exact `p = 0.50`, so the stop is honored but not interpreted as demonstrated
+  regression. The registered 6,000-step T-versus-S endpoint is unavailable.
+  Receipt:
+  `outputs/stage5/stage5_adapter_verbal_transference_e3b_20260720/summary.json`.
+  Handoff:
+  `docs/ARM_E3B_ADAPTER_VERBAL_TRANSFERENCE_HANDOFF_20260721.md`.

@@ -22,7 +22,9 @@
     "frontier_threshold_sensitivity": "docs/PAPER_ONE_FRONTIER_THRESHOLD_SENSITIVITY_20260721.json",
     "support_6_seed_resolution": "outputs/stage5/stage5_support6_seed26_plateau_20260708_130654/summary.json",
     "natural_surface_checkpoint_curve": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812_checkpoint_curve_20260709_163008/summary.json",
-    "same_reader_phase_a": "outputs/stage5/stage5_phase_a_surpass_receipt_20260714/summary.json"
+    "same_reader_phase_a": "outputs/stage5/stage5_phase_a_surpass_receipt_20260714/summary.json",
+    "adapter_verbal_transference_e3b": "outputs/stage5/stage5_adapter_verbal_transference_e3b_20260720/summary.json",
+    "adapter_verbal_transference_e3b_handoff": "docs/ARM_E3B_ADAPTER_VERBAL_TRANSFERENCE_HANDOFF_20260721.md"
   },
   "global_prohibited_phrases": [
     "recurrence generally surpasses base Qwen",
@@ -487,6 +489,47 @@
         {
           "path": "outputs/stage5/stage5_adapter_parity_e4_20260719/summary.json",
           "locator": "decision, checkpoint_readouts, natural_baseline, and Tier-1 gate"
+        }
+      ]
+    },
+    {
+      "id": "adapter_verbal_transference",
+      "claim": "At matched adapter budget and dose through step 3,000, initialization from the installed recurrent mechanism accelerated learning of controlled verbal relay and held-out pointer tasks relative to fresh surgery, while synthetic rehearsal retained the installed operation.",
+      "status": "supported_bounded",
+      "scope": "Single seed; frozen Qwen2.5-0.5B base; R16 LoRA plus repaired split bridge; controlled generated relay and related held-out pointer surfaces; matched comparison through step 3,000 because the fresh arm triggered its preregistered Tier-1 stop; synthetic retention measured with 50 percent rehearsal.",
+      "metrics": {
+        "last_matched_step": 3000,
+        "arm_t_correct": 1852,
+        "arm_t_total": 3072,
+        "arm_t_accuracy": 0.6028645833333334,
+        "arm_s_correct": 1282,
+        "arm_s_total": 3072,
+        "arm_s_accuracy": 0.4173177083333333,
+        "matched_delta_accuracy": 0.18554687500000006,
+        "paired_t_only": 763,
+        "paired_s_only": 193,
+        "paired_ties": 2116,
+        "paired_two_sided_p": 9.735425960121583e-81,
+        "step3000_relay_delta_accuracy": 0.17578125,
+        "step3000_pointer_delta_accuracy": 0.1953125,
+        "arm_t_first_pooled_0p71_crossing": 4000,
+        "arm_t_step6000_accuracy": 0.6468098958333334,
+        "arm_t_synthetic_minimum_stratum": 0.9453125,
+        "arm_s_canary_baseline_correct": 60,
+        "arm_s_canary_stop_correct": 58,
+        "arm_s_canary_paired_two_sided_p": 0.5,
+        "planned_step6000_endpoint_available": false
+      },
+      "interpretation": "The installed history improved learning rate and the depth profile rather than producing strong zero-shot verbal competence. The effect persisted after shallow output behavior converged and appeared on the held-out pointer family. The fresh-control stop prevents an asymptotic endpoint claim, and Arm T remained below the full-block verbal references.",
+      "claim_boundary": "No claim of a positive registered 6,000-step endpoint, asymptotic superiority, general natural-language transfer, no-forgetting without rehearsal, or adapter/full-block verbal parity.",
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_adapter_verbal_transference_e3b_20260720/summary.json",
+          "locator": "p1_zero_shot, matched evaluations, Arm T checkpoint curve, synthetic regression, and guardrail truncation"
+        },
+        {
+          "path": "docs/ARM_E3B_ADAPTER_VERBAL_TRANSFERENCE_HANDOFF_20260721.md",
+          "locator": "complete design, results, interpretation, manuscript language, and claim boundaries"
         }
       ]
     },

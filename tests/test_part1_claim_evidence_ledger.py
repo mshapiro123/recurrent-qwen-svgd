@@ -30,6 +30,7 @@ def test_part1_ledger_has_closed_scope_and_open_width_claim() -> None:
     assert claims["adapter_persistence"]["status"] == "supported"
     assert claims["adapter_zero_shot_transfer_minimal"]["status"] == "supported_bounded"
     assert claims["adapter_retention_joint_pass"]["status"] == "not_supported"
+    assert claims["adapter_verbal_transference"]["status"] == "supported_bounded"
 
 
 def test_peft_and_selector_closure_use_strategy_locked_accounting() -> None:
@@ -125,6 +126,25 @@ def test_adapter_closure_claims_match_canonical_summaries() -> None:
     assert retention["metrics"]["natural_baseline_correct"] == 60
     assert retention["metrics"]["natural_step100_correct"] == 49
     assert retention["metrics"]["tier1_step100_correct"] == 59
+
+
+def test_adapter_verbal_transference_claim_matches_truncated_receipt() -> None:
+    claims = {claim["id"]: claim for claim in load_ledger()["claims"]}
+    claim = claims["adapter_verbal_transference"]
+    receipt = json.loads((ROOT / claim["evidence"][0]["path"]).read_text(encoding="utf-8"))
+
+    decision = receipt["decision"]
+    matched = decision["truncated_transference"]
+    near_miss = decision["arm_s_guardrail_near_miss"]
+    assert decision["planned_endpoint_available"] is False
+    assert decision["last_matched_step"] == claim["metrics"]["last_matched_step"] == 3000
+    assert matched["arm_t"]["correct"] == claim["metrics"]["arm_t_correct"] == 1852
+    assert matched["arm_s"]["correct"] == claim["metrics"]["arm_s_correct"] == 1282
+    assert matched["paired"]["t_only"] == claim["metrics"]["paired_t_only"] == 763
+    assert matched["paired"]["s_only"] == claim["metrics"]["paired_s_only"] == 193
+    assert matched["paired"]["two_sided_p"] == claim["metrics"]["paired_two_sided_p"]
+    assert decision["arm_t_synthetic_regression"]["verdict"] == "retained"
+    assert near_miss["paired"]["two_sided_p"] == 0.5
 
 
 def test_figure4_contains_five_series_and_support_annotations() -> None:
