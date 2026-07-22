@@ -164,6 +164,11 @@
         "accuracy": 0.921875,
         "correct": 59,
         "total": 64
+      },
+      "3000": {
+        "accuracy": 0.90625,
+        "correct": 58,
+        "total": 64
       }
     },
     "arm_t_restore": {
@@ -438,6 +443,10 @@
         "2000": {
           "path": "outputs/stage5/stage5_adapter_verbal_transference_e3b_20260720/train/arm_s/unfrozen_recurrent_step_2000.pt",
           "sha256": "a6360d03beeb9fc450082b1eff000d4e6ddd20a6c2e1cd979cfac0df64d5566c"
+        },
+        "3000": {
+          "path": "outputs/stage5/stage5_adapter_verbal_transference_e3b_20260720/train/arm_s/unfrozen_recurrent_step_3000.pt",
+          "sha256": "ff6de998b4c5a6f03fbadbc267b8fc668bf5447325099ec36365b4fbdc2b2dba"
         }
       },
       "arm_t": {
@@ -1617,6 +1626,388 @@
           "verdict": "positive"
         },
         "step": 2000
+      },
+      "3000": {
+        "by_depth": {
+          "1": {
+            "alpha": 0.05,
+            "arm_s": {
+              "accuracy": 0.99609375,
+              "correct": 255,
+              "total": 256
+            },
+            "arm_t": {
+              "accuracy": 0.984375,
+              "correct": 252,
+              "total": 256
+            },
+            "delta_accuracy": -0.01171875,
+            "paired": {
+              "discordant": 5,
+              "net_correct": -3,
+              "s_only": 4,
+              "t_only": 1,
+              "test": "exact_paired_sign_mcnemar",
+              "ties": 251,
+              "two_sided_p": 0.375
+            },
+            "positive_requires": "T>S and exact paired two-sided p<alpha at matched endpoint",
+            "verdict": "null"
+          },
+          "10": {
+            "alpha": 0.05,
+            "arm_s": {
+              "accuracy": 0.0703125,
+              "correct": 18,
+              "total": 256
+            },
+            "arm_t": {
+              "accuracy": 0.27734375,
+              "correct": 71,
+              "total": 256
+            },
+            "delta_accuracy": 0.20703125,
+            "paired": {
+              "discordant": 79,
+              "net_correct": 53,
+              "s_only": 13,
+              "t_only": 66,
+              "test": "exact_paired_sign_mcnemar",
+              "ties": 177,
+              "two_sided_p": 1.0781441177091488e-09
+            },
+            "positive_requires": "T>S and exact paired two-sided p<alpha at matched endpoint",
+            "verdict": "positive"
+          },
+          "11": {
+            "alpha": 0.05,
+            "arm_s": {
+              "accuracy": 0.0859375,
+              "correct": 22,
+              "total": 256
+            },
+            "arm_t": {
+              "accuracy": 0.16796875,
+              "correct": 43,
+              "total": 256
+            },
+            "delta_accuracy": 0.08203125,
+            "paired": {
+              "discordant": 57,
+              "net_correct": 21,
+              "s_only": 18,
+              "t_only": 39,
+              "test": "exact_paired_sign_mcnemar",
+              "ties": 199,
+              "two_sided_p": 0.007508175534150202
+            },
+            "positive_requires": "T>S and exact paired two-sided p<alpha at matched endpoint",
+            "verdict": "positive"
+          },
+          "12": {
+            "alpha": 0.05,
+            "arm_s": {
+              "accuracy": 0.109375,
+              "correct": 28,
+              "total": 256
+            },
+            "arm_t": {
+              "accuracy": 0.1015625,
+              "correct": 26,
+              "total": 256
+            },
+            "delta_accuracy": -0.0078125,
+            "paired": {
+              "discordant": 40,
+              "net_correct": -2,
+              "s_only": 21,
+              "t_only": 19,
+              "test": "exact_paired_sign_mcnemar",
+              "ties": 216,
+              "two_sided_p": 0.8746293123804207
+            },
+            "positive_requires": "T>S and exact paired two-sided p<alpha at matched endpoint",
+            "verdict": "null"
+          },
+          "2": {
+            "alpha": 0.05,
+            "arm_s": {
+              "accuracy": 0.9375,
+              "correct": 240,
+              "total": 256
+            },
+            "arm_t": {
+              "accuracy": 0.95703125,
+              "correct": 245,
+              "total": 256
+            },
+            "delta_accuracy": 0.01953125,
+            "paired": {
+              "discordant": 25,
+              "net_correct": 5,
+              "s_only": 10,
+              "t_only": 15,
+              "test": "exact_paired_sign_mcnemar",
+              "ties": 231,
+              "two_sided_p": 0.42435622215270996
+            },
+            "positive_requires": "T>S and exact paired two-sided p<alpha at matched endpoint",
+            "verdict": "null"
+          },
+          "3": {
+            "alpha": 0.05,
+            "arm_s": {
+              "accuracy": 0.8125,
+              "correct": 208,
+              "total": 256
+            },
+            "arm_t": {
+              "accuracy": 0.91015625,
+              "correct": 233,
+              "total": 256
+            },
+            "delta_accuracy": 0.09765625,
+            "paired": {
+              "discordant": 49,
+              "net_correct": 25,
+              "s_only": 12,
+              "t_only": 37,
+              "test": "exact_paired_sign_mcnemar",
+              "ties": 207,
+              "two_sided_p": 0.0004697573180081349
+            },
+            "positive_requires": "T>S and exact paired two-sided p<alpha at matched endpoint",
+            "verdict": "positive"
+          },
+          "4": {
+            "alpha": 0.05,
+            "arm_s": {
+              "accuracy": 0.7109375,
+              "correct": 182,
+              "total": 256
+            },
+            "arm_t": {
+              "accuracy": 0.87890625,
+              "correct": 225,
+              "total": 256
+            },
+            "delta_accuracy": 0.16796875,
+            "paired": {
+              "discordant": 83,
+              "net_correct": 43,
+              "s_only": 20,
+              "t_only": 63,
+              "test": "exact_paired_sign_mcnemar",
+              "ties": 173,
+              "two_sided_p": 2.4306979592052185e-06
+            },
+            "positive_requires": "T>S and exact paired two-sided p<alpha at matched endpoint",
+            "verdict": "positive"
+          },
+          "5": {
+            "alpha": 0.05,
+            "arm_s": {
+              "accuracy": 0.54296875,
+              "correct": 139,
+              "total": 256
+            },
+            "arm_t": {
+              "accuracy": 0.78125,
+              "correct": 200,
+              "total": 256
+            },
+            "delta_accuracy": 0.23828125,
+            "paired": {
+              "discordant": 115,
+              "net_correct": 61,
+              "s_only": 27,
+              "t_only": 88,
+              "test": "exact_paired_sign_mcnemar",
+              "ties": 141,
+              "two_sided_p": 9.925611878636328e-09
+            },
+            "positive_requires": "T>S and exact paired two-sided p<alpha at matched endpoint",
+            "verdict": "positive"
+          },
+          "6": {
+            "alpha": 0.05,
+            "arm_s": {
+              "accuracy": 0.328125,
+              "correct": 84,
+              "total": 256
+            },
+            "arm_t": {
+              "accuracy": 0.75390625,
+              "correct": 193,
+              "total": 256
+            },
+            "delta_accuracy": 0.42578125,
+            "paired": {
+              "discordant": 145,
+              "net_correct": 109,
+              "s_only": 18,
+              "t_only": 127,
+              "test": "exact_paired_sign_mcnemar",
+              "ties": 111,
+              "two_sided_p": 2.1735945682947113e-21
+            },
+            "positive_requires": "T>S and exact paired two-sided p<alpha at matched endpoint",
+            "verdict": "positive"
+          },
+          "7": {
+            "alpha": 0.05,
+            "arm_s": {
+              "accuracy": 0.171875,
+              "correct": 44,
+              "total": 256
+            },
+            "arm_t": {
+              "accuracy": 0.58203125,
+              "correct": 149,
+              "total": 256
+            },
+            "delta_accuracy": 0.41015625,
+            "paired": {
+              "discordant": 143,
+              "net_correct": 105,
+              "s_only": 19,
+              "t_only": 124,
+              "test": "exact_paired_sign_mcnemar",
+              "ties": 113,
+              "two_sided_p": 4.441418890367047e-20
+            },
+            "positive_requires": "T>S and exact paired two-sided p<alpha at matched endpoint",
+            "verdict": "positive"
+          },
+          "8": {
+            "alpha": 0.05,
+            "arm_s": {
+              "accuracy": 0.12109375,
+              "correct": 31,
+              "total": 256
+            },
+            "arm_t": {
+              "accuracy": 0.46484375,
+              "correct": 119,
+              "total": 256
+            },
+            "delta_accuracy": 0.34375,
+            "paired": {
+              "discordant": 120,
+              "net_correct": 88,
+              "s_only": 16,
+              "t_only": 104,
+              "test": "exact_paired_sign_mcnemar",
+              "ties": 136,
+              "two_sided_p": 5.4984416435916533e-17
+            },
+            "positive_requires": "T>S and exact paired two-sided p<alpha at matched endpoint",
+            "verdict": "positive"
+          },
+          "9": {
+            "alpha": 0.05,
+            "arm_s": {
+              "accuracy": 0.12109375,
+              "correct": 31,
+              "total": 256
+            },
+            "arm_t": {
+              "accuracy": 0.375,
+              "correct": 96,
+              "total": 256
+            },
+            "delta_accuracy": 0.25390625,
+            "paired": {
+              "discordant": 95,
+              "net_correct": 65,
+              "s_only": 15,
+              "t_only": 80,
+              "test": "exact_paired_sign_mcnemar",
+              "ties": 161,
+              "two_sided_p": 6.8127817099494966e-12
+            },
+            "positive_requires": "T>S and exact paired two-sided p<alpha at matched endpoint",
+            "verdict": "positive"
+          }
+        },
+        "families": {
+          "pointer": {
+            "alpha": 0.05,
+            "arm_s": {
+              "accuracy": 0.4016927083333333,
+              "correct": 617,
+              "total": 1536
+            },
+            "arm_t": {
+              "accuracy": 0.5970052083333334,
+              "correct": 917,
+              "total": 1536
+            },
+            "delta_accuracy": 0.19531250000000006,
+            "paired": {
+              "discordant": 474,
+              "net_correct": 300,
+              "s_only": 87,
+              "t_only": 387,
+              "test": "exact_paired_sign_mcnemar",
+              "ties": 1062,
+              "two_sided_p": 3.4193280701007427e-46
+            },
+            "positive_requires": "T>S and exact paired two-sided p<alpha at matched endpoint",
+            "verdict": "positive"
+          },
+          "relay": {
+            "alpha": 0.05,
+            "arm_s": {
+              "accuracy": 0.4329427083333333,
+              "correct": 665,
+              "total": 1536
+            },
+            "arm_t": {
+              "accuracy": 0.6087239583333334,
+              "correct": 935,
+              "total": 1536
+            },
+            "delta_accuracy": 0.17578125000000006,
+            "paired": {
+              "discordant": 482,
+              "net_correct": 270,
+              "s_only": 106,
+              "t_only": 376,
+              "test": "exact_paired_sign_mcnemar",
+              "ties": 1054,
+              "two_sided_p": 1.8390810763719798e-36
+            },
+            "positive_requires": "T>S and exact paired two-sided p<alpha at matched endpoint",
+            "verdict": "positive"
+          }
+        },
+        "pooled": {
+          "alpha": 0.05,
+          "arm_s": {
+            "accuracy": 0.4173177083333333,
+            "correct": 1282,
+            "total": 3072
+          },
+          "arm_t": {
+            "accuracy": 0.6028645833333334,
+            "correct": 1852,
+            "total": 3072
+          },
+          "delta_accuracy": 0.18554687500000006,
+          "paired": {
+            "discordant": 956,
+            "net_correct": 570,
+            "s_only": 193,
+            "t_only": 763,
+            "test": "exact_paired_sign_mcnemar",
+            "ties": 2116,
+            "two_sided_p": 9.735425960121583e-81
+          },
+          "positive_requires": "T>S and exact paired two-sided p<alpha at matched endpoint",
+          "verdict": "positive"
+        },
+        "step": 3000
       }
     },
     "matched_steps": [
@@ -1627,8 +2018,8 @@
     ],
     "mode": "evaluation_only_after_preregistered_guardrail_stop"
   },
-  "salvage_note": "Record E3b salvage matched eval step 2000 stage5_adapter_verbal_transference_e3b_20260720",
-  "status": "salvage_matched_evaluated_step_2000",
+  "salvage_note": "Record E3b salvage matched eval step 3000 stage5_adapter_verbal_transference_e3b_20260720",
+  "status": "salvage_matched_evaluated_step_3000",
   "training": {
     "arm_s": {
       "final_checkpoint": null,
