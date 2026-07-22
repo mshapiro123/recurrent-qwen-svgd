@@ -79,6 +79,110 @@
     "synthetic": "6b054327db1ae71aef8091b49e1da96b5dc3755d057c87824977dfb17a22d308",
     "train": "4e963fcc2d464f7bbf0746697068701e9e0361611c875563d5e47220db207f58"
   },
+  "decision": {
+    "arm_s_guardrail_near_miss": {
+      "accuracy_delta": -0.03125,
+      "accuracy_delta_points": -3.125,
+      "baseline": {
+        "accuracy": 0.9375,
+        "correct": 60,
+        "total": 64
+      },
+      "boundary_excess_points": 0.125,
+      "decision_note": "The preregistered stop is preserved; this context is descriptive only.",
+      "hard_stop_delta": -0.03,
+      "hard_stop_delta_points": -3.0,
+      "hard_stop_triggered": true,
+      "interpretation": "near_boundary_discrete_hard_stop",
+      "item_resolution_points": 1.5625,
+      "observed": {
+        "accuracy": 0.90625,
+        "correct": 58,
+        "total": 64
+      },
+      "paired": {
+        "baseline_only": 2,
+        "discordant": 2,
+        "observed_only": 0,
+        "test": "exact_paired_sign_mcnemar",
+        "ties": 62,
+        "two_sided_p": 0.5
+      }
+    },
+    "arm_t_full_dose_to_0p71": 4000,
+    "arm_t_step_6000_descriptive": {
+      "families": {
+        "pointer": {
+          "accuracy": 0.5807291666666666,
+          "correct": 892,
+          "total": 1536
+        },
+        "relay": {
+          "accuracy": 0.712890625,
+          "correct": 1095,
+          "total": 1536
+        }
+      },
+      "pooled": {
+        "accuracy": 0.6468098958333334,
+        "correct": 1987,
+        "total": 3072
+      }
+    },
+    "arm_t_synthetic_regression": {
+      "collapse_ceiling": 0.1,
+      "collapse_reference": "E4 near-chance minimum stratum was 0.09375",
+      "final_min_accuracy": 0.98828125,
+      "final_step": 6000,
+      "min_accuracy_by_step": {
+        "0": 0.97265625,
+        "1000": 0.9453125,
+        "2000": 0.98828125,
+        "3000": 0.9609375,
+        "4000": 0.9609375,
+        "5000": 0.98046875,
+        "6000": 0.98828125
+      },
+      "minimum_observed": 0.9453125,
+      "retained_floor": 0.93,
+      "verdict": "retained"
+    },
+    "claim_boundary": "The registered 6,000-step positive/null transference endpoint is unavailable. Matched results through step 3,000 and Arm T-only later results are descriptive.",
+    "last_matched_step": 3000,
+    "matched_dose_to_0p71": {
+      "arm_s": null,
+      "arm_t": null
+    },
+    "planned_endpoint_available": false,
+    "planned_endpoint_step": 6000,
+    "prospective_guardrail_policy": "docs/SMALL_SAMPLE_HARD_STOP_POLICY_20260721.md",
+    "status": "truncated_at_preregistered_guardrail",
+    "truncated_transference": {
+      "alpha": 0.05,
+      "arm_s": {
+        "accuracy": 0.4173177083333333,
+        "correct": 1282,
+        "total": 3072
+      },
+      "arm_t": {
+        "accuracy": 0.6028645833333334,
+        "correct": 1852,
+        "total": 3072
+      },
+      "delta_accuracy": 0.18554687500000006,
+      "paired": {
+        "discordant": 956,
+        "net_correct": 570,
+        "s_only": 193,
+        "t_only": 763,
+        "test": "exact_paired_sign_mcnemar",
+        "ties": 2116,
+        "two_sided_p": 9.735425960121583e-81
+      },
+      "positive_requires": "T>S and exact paired two-sided p<alpha at matched endpoint",
+      "verdict": "positive"
+    }
+  },
   "kind": "stage5_adapter_verbal_transference_e3b",
   "locked_protocol": {
     "base_weights": "frozen",
@@ -478,6 +582,110 @@
           "path": "outputs/stage5/stage5_adapter_verbal_transference_e3b_20260720/train/arm_t/unfrozen_recurrent_step_6000.pt",
           "sha256": "caabb5acd2464d1850abc01f7ce77d1b2e00d6bd68d32e34f74399da35379879"
         }
+      }
+    },
+    "decision": {
+      "arm_s_guardrail_near_miss": {
+        "accuracy_delta": -0.03125,
+        "accuracy_delta_points": -3.125,
+        "baseline": {
+          "accuracy": 0.9375,
+          "correct": 60,
+          "total": 64
+        },
+        "boundary_excess_points": 0.125,
+        "decision_note": "The preregistered stop is preserved; this context is descriptive only.",
+        "hard_stop_delta": -0.03,
+        "hard_stop_delta_points": -3.0,
+        "hard_stop_triggered": true,
+        "interpretation": "near_boundary_discrete_hard_stop",
+        "item_resolution_points": 1.5625,
+        "observed": {
+          "accuracy": 0.90625,
+          "correct": 58,
+          "total": 64
+        },
+        "paired": {
+          "baseline_only": 2,
+          "discordant": 2,
+          "observed_only": 0,
+          "test": "exact_paired_sign_mcnemar",
+          "ties": 62,
+          "two_sided_p": 0.5
+        }
+      },
+      "arm_t_full_dose_to_0p71": 4000,
+      "arm_t_step_6000_descriptive": {
+        "families": {
+          "pointer": {
+            "accuracy": 0.5807291666666666,
+            "correct": 892,
+            "total": 1536
+          },
+          "relay": {
+            "accuracy": 0.712890625,
+            "correct": 1095,
+            "total": 1536
+          }
+        },
+        "pooled": {
+          "accuracy": 0.6468098958333334,
+          "correct": 1987,
+          "total": 3072
+        }
+      },
+      "arm_t_synthetic_regression": {
+        "collapse_ceiling": 0.1,
+        "collapse_reference": "E4 near-chance minimum stratum was 0.09375",
+        "final_min_accuracy": 0.98828125,
+        "final_step": 6000,
+        "min_accuracy_by_step": {
+          "0": 0.97265625,
+          "1000": 0.9453125,
+          "2000": 0.98828125,
+          "3000": 0.9609375,
+          "4000": 0.9609375,
+          "5000": 0.98046875,
+          "6000": 0.98828125
+        },
+        "minimum_observed": 0.9453125,
+        "retained_floor": 0.93,
+        "verdict": "retained"
+      },
+      "claim_boundary": "The registered 6,000-step positive/null transference endpoint is unavailable. Matched results through step 3,000 and Arm T-only later results are descriptive.",
+      "last_matched_step": 3000,
+      "matched_dose_to_0p71": {
+        "arm_s": null,
+        "arm_t": null
+      },
+      "planned_endpoint_available": false,
+      "planned_endpoint_step": 6000,
+      "prospective_guardrail_policy": "docs/SMALL_SAMPLE_HARD_STOP_POLICY_20260721.md",
+      "status": "truncated_at_preregistered_guardrail",
+      "truncated_transference": {
+        "alpha": 0.05,
+        "arm_s": {
+          "accuracy": 0.4173177083333333,
+          "correct": 1282,
+          "total": 3072
+        },
+        "arm_t": {
+          "accuracy": 0.6028645833333334,
+          "correct": 1852,
+          "total": 3072
+        },
+        "delta_accuracy": 0.18554687500000006,
+        "paired": {
+          "discordant": 956,
+          "net_correct": 570,
+          "s_only": 193,
+          "t_only": 763,
+          "test": "exact_paired_sign_mcnemar",
+          "ties": 2116,
+          "two_sided_p": 9.735425960121583e-81
+        },
+        "positive_requires": "T>S and exact paired two-sided p<alpha at matched endpoint",
+        "verdict": "positive"
       }
     },
     "matched_comparisons": {
@@ -2019,7 +2227,7 @@
     "mode": "evaluation_only_after_preregistered_guardrail_stop"
   },
   "salvage_note": "Record E3b salvage matched eval step 3000 stage5_adapter_verbal_transference_e3b_20260720",
-  "status": "salvage_matched_evaluated_step_3000",
+  "status": "finished_truncated_guardrail_block",
   "training": {
     "arm_s": {
       "final_checkpoint": null,
