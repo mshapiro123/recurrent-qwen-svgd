@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "program": "paper2_causal_control_of_recurrent_computation",
+  "status": "active_pretraining",
+  "canonical_date": "2026-07-22",
+  "claims": [
+    {
+      "id": "guided_width_initial_exploratory",
+      "status": "exploratory_non_identifying",
+      "claim": "The initial latent sampler increased exact-set coverage relative to extra depth but did not establish target-guided reasoning.",
+      "scope": "single synthetic branching family, one locked seed, frozen natural step-2000 keeper",
+      "metrics": {
+        "training_prompts": 2048,
+        "repeated_prompt_groups": 0,
+        "joint_comparator_gate_passed": false
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_phase_g_alpha_guided_width_20260717/summary.json",
+          "locator": "test verdict and selected arm"
+        },
+        {
+          "path": "outputs/stage5/stage5_phase_g_alpha_guided_width_20260717/autopsy/multimodal_supervision.json",
+          "locator": "unique prompt and repeated-prompt counts"
+        }
+      ],
+      "do_not_claim": [
+        "guided stochastic reasoning",
+        "width generally beats depth",
+        "GRAM reproduction"
+      ]
+    },
+    {
+      "id": "posterior_target_control_negative",
+      "status": "registered_negative",
+      "claim": "The corrected repeated-prompt posterior did not control the selected valid target.",
+      "scope": "two preregistered KL arms on the corrected A0 curriculum",
+      "metrics": {
+        "posterior_fidelity_kl_0p001": 0.22641509433962265,
+        "posterior_fidelity_kl_0p0001": 0.2358490566037736,
+        "switching_groups_kl_0p001": 4,
+        "switching_groups_kl_0p0001": 4,
+        "required_switching_groups": 24
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_phase_g_multitarget_control_20260718/summary.json",
+          "locator": "primary and confirmation posterior-control gates"
+        }
+      ]
+    },
+    {
+      "id": "forced_injection_no_channel",
+      "status": "registered_negative",
+      "claim": "Amplifying the learned additive residual changed outputs only after target fidelity and validity degraded.",
+      "scope": "fixed corrected A0 checkpoints, multipliers 1 through 100, no parameter mutation",
+      "metrics": {
+        "registered_verdict": "NO-CHANNEL",
+        "maximum_multiplier": 100,
+        "primary_switching_groups_at_100x": 22,
+        "primary_validity_at_100x": 0.4339622641509434
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_phase_g_forced_injection_probe_20260718/gate.json",
+          "locator": "registered forced-injection verdict"
+        }
+      ]
+    },
+    {
+      "id": "terminal_oracle_reentry_both_fail",
+      "status": "registered_negative",
+      "claim": "Parameter-matched additive and FiLM conditioners supplied with the true next symbol failed held-out non-default transition-control gates through the frozen terminal re-entry interface.",
+      "scope": "106 held-out variants, 32 groups, 305 transitions, one seed, frozen natural step-2000 keeper",
+      "metrics": {
+        "registered_verdict": "BOTH_FAIL",
+        "additive_nondefault_control": 0.14351851851851852,
+        "film_nondefault_control": 0.1574074074074074,
+        "required_nondefault_control": 0.85,
+        "additive_terminal_validity": 0.6981132075471698,
+        "film_terminal_validity": 0.7452830188679245
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/gate.json",
+          "locator": "terminal oracle interface verdict"
+        },
+        {
+          "path": "outputs/stage5/stage5_phase_g_oracle_interface_probe_20260718/posthoc_localization.json",
+          "locator": "per-loop control and legality localization"
+        }
+      ],
+      "do_not_claim": [
+        "conditioners cannot fit training rows",
+        "internal conditioning would fail",
+        "a bounded adaptive substrate would fail"
+      ]
+    },
+    {
+      "id": "internal_token_halting",
+      "status": "prepared_not_run",
+      "claim": "Token-pathway halting is specified but has not been trained or evaluated.",
+      "scope": "Phase T0 preparation and Phase T1 preregistration only",
+      "evidence": [
+        {
+          "path": "docs/PAPER2_INTERNAL_THINK_TOKEN_PHASE0_SPEC_20260718.md",
+          "locator": "Phase T0 contracts and T1 gates"
+        },
+        {
+          "path": "training/internal_think_token_spec.py",
+          "locator": "machine-readable preparation policy"
+        }
+      ],
+      "do_not_claim": [
+        "learned halting succeeds",
+        "token-pathway control is causal",
+        "natural-trace depth selection"
+      ]
+    }
+  ],
+  "closed_or_prohibited": [
+    "additional_phase_g_kl_scale_seed_optimizer_duration_sweeps",
+    "coverage_from_corrected_a0_checkpoints",
+    "selector_or_lprm_on_closed_phase_g_route",
+    "particles_or_svgd_on_closed_phase_g_route",
+    "oracle_intrablock_control_before_post_t1_decision",
+    "pooled_head_halting",
+    "rank_ladders",
+    "natural_trace_training_before_t1_pass"
+  ]
+}

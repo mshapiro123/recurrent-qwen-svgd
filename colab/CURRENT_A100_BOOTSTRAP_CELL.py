@@ -2839,6 +2839,38 @@ TARGETS = {
             "STAGE5_ORACLE_INTERFACE_DISCONNECT": "0",
         },
     },
+    "oracle_train_readout": {
+        "path": "colab/STAGE5_ORACLE_TRAIN_READOUT_CELL.py",
+        "markers": [
+            "STAGE5_ORACLE_TRAIN_READOUT_CELL_VERSION",
+            "posthoc diagnostic only no training no parameter mutation",
+            "registered BOTH_FAIL verdict immutable",
+            "seed 20260722 matched 106 rows 32 groups 305 transitions",
+            "full 1899 rows 512 groups 5617 transitions",
+            "fit >=0.85 no-fit <=0.25 partial between",
+            "tests/test_oracle_train_readout_spec.py",
+        ],
+        "env": {
+            "STAGE5_ORACLE_TRAIN_READOUT_DTYPE": "bfloat16",
+            "STAGE5_ORACLE_TRAIN_READOUT_DISCONNECT": "0",
+        },
+    },
+    "paper2_phase_t0_preflight": {
+        "path": "colab/STAGE5_PAPER2_PHASE_T0_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE_T0_CELL_VERSION",
+            "tokenizer collision exactly three rows tie policy",
+            "visible generation masks all three control logits",
+            "one loop identity max abs diff below 1e-3",
+            "requested executed selected loop counts agree under forcing",
+            "no training no checkpoint written",
+            "tests/test_internal_think_token_runtime.py",
+        ],
+        "env": {
+            "STAGE5_PAPER2_T0_DTYPE": "bfloat16",
+            "STAGE5_PAPER2_T0_DISCONNECT": "0",
+        },
+    },
     "oracle_intrablock_control": {
         "path": "colab/STAGE5_ORACLE_INTRABLOCK_CONTROL_CELL.py",
         "markers": [

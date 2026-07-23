@@ -182,6 +182,18 @@ def main() -> int:
     parser.add_argument("--attn_implementation", default="default")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--progress_every", type=int, default=16)
+    parser.add_argument("--expected_rows", type=int, default=LOCKED_CONTROL_ROWS)
+    parser.add_argument("--expected_groups", type=int, default=LOCKED_CONTROL_GROUPS)
+    parser.add_argument(
+        "--expected_transitions",
+        type=int,
+        default=LOCKED_CONTROL_TRANSITIONS,
+    )
+    parser.add_argument(
+        "--evaluation_kind",
+        choices=("registered_heldout_gate", "posthoc_train_readout"),
+        default="registered_heldout_gate",
+    )
     args = parser.parse_args()
 
     if sha256_file(args.keeper) != args.expected_keeper_sha256:
@@ -190,12 +202,23 @@ def main() -> int:
     if checkpoint_sha != args.expected_conditioner_sha256:
         raise AssertionError("Oracle interface conditioner SHA mismatch")
     rows = read_jsonl(args.data_jsonl)
-    if len(rows) != LOCKED_CONTROL_ROWS:
-        raise AssertionError("Oracle interface probe requires the locked 106 rows")
-    if len({str(row["base_problem_id"]) for row in rows}) != LOCKED_CONTROL_GROUPS:
-        raise AssertionError("Oracle interface probe requires the locked 32 groups")
-    if sum(int(row["depth"]) for row in rows) != LOCKED_CONTROL_TRANSITIONS:
-        raise AssertionError("Oracle interface probe requires the locked 305 transitions")
+    observed_groups = len({str(row["base_problem_id"]) for row in rows})
+    observed_transitions = sum(int(row["depth"]) for row in rows)
+    if len(rows) != args.expected_rows:
+        raise AssertionError(
+            f"Oracle interface evaluation expected {args.expected_rows} rows, "
+            f"observed {len(rows)}"
+        )
+    if observed_groups != args.expected_groups:
+        raise AssertionError(
+            f"Oracle interface evaluation expected {args.expected_groups} groups, "
+            f"observed {observed_groups}"
+        )
+    if observed_transitions != args.expected_transitions:
+        raise AssertionError(
+            "Oracle interface evaluation expected "
+            f"{args.expected_transitions} transitions, observed {observed_transitions}"
+        )
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     wrapper = load_recurrent_wrapper(loader_args(args), args.keeper)
@@ -309,10 +332,10 @@ def main() -> int:
             "predictions": default_predictions,
             "scores": default_scores,
         }
-    if identity_groups != LOCKED_CONTROL_GROUPS:
+    if identity_groups != args.expected_groups:
         raise AssertionError(
             f"Identity receipt covered {identity_groups} groups, expected "
-            f"{LOCKED_CONTROL_GROUPS}"
+            f"{args.expected_groups}"
         )
 
     with cache_path.open("a", encoding="utf-8") as cache_handle:
@@ -432,12 +455,18 @@ def main() -> int:
         transition_rows,
         terminal_rows,
         route=args.route,
-        identity_exact=identity_groups == LOCKED_CONTROL_GROUPS,
+        identity_exact=identity_groups == args.expected_groups,
         frozen_lineage_unchanged=lineage_after == lineage_before,
+        expected_rows=args.expected_rows,
+        expected_groups=args.expected_groups,
+        expected_transitions=args.expected_transitions,
     )
     summary.update(
         {
             "status": "finished",
+            "evaluation_kind": args.evaluation_kind,
+            "posthoc_diagnostic_only": args.evaluation_kind == "posthoc_train_readout",
+            "registered_heldout_verdict_mutable": False,
             "gate_status": "passed" if summary["passed"] else "blocked",
             "keeper": args.keeper,
             "keeper_sha256": args.expected_keeper_sha256,
@@ -447,6 +476,9 @@ def main() -> int:
             "frozen_lineage_before": lineage_before,
             "frozen_lineage_after": lineage_after,
             "loaded_oracle_keys": loaded,
+            "observed_rows": len(rows),
+            "observed_groups": observed_groups,
+            "observed_transitions": observed_transitions,
         }
     )
     (output_dir / "rows.jsonl").write_text(

@@ -1391,3 +1391,15 @@ Colab/Drive backups for selected runs.
   is a `128/128` tie. Corrected 2,000-to-4,000 net changes are B `+1`, C `+1`,
   and D `+13`, with no paired two-sided result below `0.50`. Paper-One marker
   closure: `docs/PAPER_ONE_DENSE_READER_AUDIT_CLOSURE_20260722.md`.
+- 2026-07-22 Paper Two record reconciliation: the stale live Phase G queue is
+  closed on the tested frozen high-level re-entry interface. The initial
+  guided-width result is exploratory and non-identifying because 2,048 rows
+  contained zero repeated-prompt groups. The corrected posterior-control arms
+  reached only `22.6%` to `23.6%` target fidelity and `4/32` switching groups
+  against `24/32` required. Forced residual amplification retained the
+  registered `NO-CHANNEL` verdict. Parameter-matched terminal additive and
+  FiLM conditioners supplied with the true next symbol retained the registered
+  held-out `BOTH_FAIL` verdict. The active queue is now a post-hoc train-row
+  readout, executable T0 contracts, and a locked T1 preregistration. The
+  train-row readout cannot alter `BOTH_FAIL`, and the coded intra-block probe
+  remains unrun. Canonical ledger: `docs/paper2_claim_evidence_ledger.json`.

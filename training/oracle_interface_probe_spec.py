@@ -85,23 +85,26 @@ def summarize_oracle_arm(
     route: str,
     identity_exact: bool,
     frozen_lineage_unchanged: bool,
+    expected_rows: int = LOCKED_CONTROL_ROWS,
+    expected_groups: int = LOCKED_CONTROL_GROUPS,
+    expected_transitions: int = LOCKED_CONTROL_TRANSITIONS,
 ) -> dict[str, Any]:
     if route not in (*LOCKED_ROUTES, "layerwise_film"):
         raise AssertionError(f"Unknown oracle route: {route}")
-    if len(transition_rows) != LOCKED_CONTROL_TRANSITIONS:
+    if len(transition_rows) != int(expected_transitions):
         raise AssertionError(
-            f"Oracle interface probe requires {LOCKED_CONTROL_TRANSITIONS} transitions, "
+            f"Oracle interface evaluation requires {expected_transitions} transitions, "
             f"got {len(transition_rows)}"
         )
-    if len(terminal_rows) != LOCKED_CONTROL_ROWS:
+    if len(terminal_rows) != int(expected_rows):
         raise AssertionError(
-            f"Oracle interface probe requires {LOCKED_CONTROL_ROWS} terminal rows, "
+            f"Oracle interface evaluation requires {expected_rows} terminal rows, "
             f"got {len(terminal_rows)}"
         )
     groups = {str(row["base_problem_id"]) for row in terminal_rows}
-    if len(groups) != LOCKED_CONTROL_GROUPS:
+    if len(groups) != int(expected_groups):
         raise AssertionError(
-            f"Oracle interface probe requires {LOCKED_CONTROL_GROUPS} groups, got {len(groups)}"
+            f"Oracle interface evaluation requires {expected_groups} groups, got {len(groups)}"
         )
 
     default_rows = [row for row in transition_rows if bool(row["command_is_default"])]

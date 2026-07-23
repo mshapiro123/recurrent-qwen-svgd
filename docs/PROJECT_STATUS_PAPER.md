@@ -1,8 +1,8 @@
 # Project Status: Deterministic Program Closed
 
-**Canonical date:** July 15, 2026
+**Canonical date:** July 22, 2026
 **Part 1 status:** closed
-**Part 2 status:** substrate screening before guided stochastic width
+**Part 2 status:** causal-control program; Arm G closed on the tested frozen re-entry interface; Phase T preflight active
 
 This page is the short status index. It replaces the earlier June recovery narrative, which became stale after the loop-closure repair, synthetic mechanism installation, Phase A dense-control comparison, and inverse-task boundary program.
 
@@ -14,6 +14,9 @@ This page is the short status index. It replaces the earlier June recovery narra
 - [Complete Stage 5 evidence handoff](STAGE5_COMPLETE_HANDOFF_20260715.md)
 - [GRAM divergence audit](gram_divergence_audit_20260711.md)
 - [Phase G-alpha specification](PHASE_G_ALPHA_GUIDED_STOCHASTIC_TRANSITION_SPEC.md)
+- [Arm G publication handoff](ARM_G_GUIDED_STOCHASTIC_WIDTH_PUBLICATION_HANDOFF_20260718.md)
+- [Paper Two claim ledger](paper2_claim_evidence_ledger.json)
+- [Phase T0 internal-token specification](PAPER2_INTERNAL_THINK_TOKEN_PHASE0_SPEC_20260718.md)
 - [Experiment log](EXPERIMENT_LOG.md)
 
 ## Established
@@ -33,6 +36,8 @@ This page is the short status index. It replaces the earlier June recovery narra
 - Reliable learned depth selection.
 - A post-repair, target-conditioned stochastic-width gain.
 - A beneficial role for SVGD beyond a future ablation.
+- Reliable branch control through the tested frozen additive or FiLM re-entry interfaces.
+- Successful token-pathway halting; Phase T has not trained.
 
 ## Final Part 1 Receipts
 
@@ -40,11 +45,30 @@ The disposable loop-position test cleared its trained-position prerequisite but 
 
 The natural N20 verbal branching substrate passed: `389/512 = 75.98%`, with every depth at least `62.5%`. The N24 symbolic substrate narrowly missed: `355/512 = 69.34%`, with depth 3 at `52.34%`.
 
+## Part 2 Record
+
+The initial guided-width run is exploratory and non-identifying because its
+2,048 training rows contained no repeated-prompt target groups. It failed the
+joint comparator gate. The corrected repeated-prompt posterior-control run
+also failed: selected-target fidelity remained `22.6%` to `23.6%`, and only
+`4/32` groups switched against a required `24/32`. Amplifying the learned
+residual produced the registered `NO-CHANNEL` reading. Supplying the true next
+symbol through parameter-matched additive and FiLM terminal re-entry
+conditioners produced the registered `BOTH_FAIL` reading on held-out rows.
+
+These results close Phase G on the tested frozen high-level re-entry interface.
+They do not falsify stochastic width, GRAM, internal conditioning, or a bounded
+adaptive substrate.
+
 ## Active Queue
 
-1. Run the power calculation and lock the Phase G-alpha paired coverage margin.
-2. Train only the Phase G prior head, posterior head, and injection scale with the natural step-2,000 keeper frozen.
-3. Compare exact oracle coverage against entropy-matched answer-head sampling and iso-compute additional depth.
-4. Open G-beta only if guided latent width beats both comparators.
+1. Reconcile and freeze the Paper Two record.
+2. Run the read-only oracle train-row diagnostic. It cannot change `BOTH_FAIL`.
+3. Execute the Phase T0 tokenizer, resize, masking, identity, and loop-accounting contracts.
+4. Lock the Phase T1 preregistration before any training step.
+5. Train full-block and R16-plus-bridge token-pathway halting lineages only after T0 passes.
+6. Convene the post-T1 decision point before reopening width or natural-trace work.
 
-G-beta selection, per-trajectory halting, and SVGD remain closed until G-alpha beats both comparators.
+Closed pending that decision: additional Phase G sweeps, coverage, selection,
+LPRM, per-trajectory halting, particles, SVGD, the intra-block oracle probe,
+pooled-head halting, rank ladders, and natural-trace training.

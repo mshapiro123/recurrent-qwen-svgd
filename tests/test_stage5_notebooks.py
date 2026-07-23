@@ -1107,6 +1107,53 @@ def test_oracle_interface_probe_target_is_terminal_and_locked() -> None:
     assert "eval/score_oracle_interface_probe.py" in runner
 
 
+def test_paper2_wp1_oracle_train_readout_target_is_read_only() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    cell = (ROOT / "colab/STAGE5_ORACLE_TRAIN_READOUT_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (
+        ROOT / "colab/run_stage5_phase_g_oracle_train_readout.py"
+    ).read_text(encoding="utf-8")
+
+    assert '"oracle_train_readout"' in bootstrap
+    assert "STAGE5_ORACLE_TRAIN_READOUT_CELL.py" in bootstrap
+    assert "posthoc diagnostic only no training no parameter mutation" in cell
+    assert "registered BOTH_FAIL verdict immutable" in cell
+    assert "matched 106 rows 32 groups 305 transitions" in cell
+    assert "full 1899 rows 512 groups 5617 transitions" in cell
+    assert "training/train_oracle_interface_probe.py" not in runner
+    assert "eval/eval_oracle_interface_probe.py" in runner
+    assert "immutable_after != immutable_before" in runner
+    assert '"registered_heldout_verdict_changed": False' in runner
+
+
+def test_paper2_t0_target_executes_five_contracts_without_training() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE_T0_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_paper2_phase_t0_preflight.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert '"paper2_phase_t0_preflight"' in bootstrap
+    assert "STAGE5_PAPER2_PHASE_T0_CELL.py" in bootstrap
+    assert "tokenizer collision exactly three rows tie policy" in cell
+    assert "visible generation masks all three control logits" in cell
+    assert "one loop identity max abs diff below 1e-3" in cell
+    assert "requested executed selected loop counts agree under forcing" in cell
+    assert "no training no checkpoint written" in cell
+    assert "install_internal_control_tokens" in runner
+    assert "mask_internal_control_logits" in runner
+    assert '"training_performed": False' in runner
+    assert '"phase_t1_authorized_by_this_receipt": False' in runner
+
+
 def test_oracle_intrablock_control_target_is_locked() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
         encoding="utf-8"
