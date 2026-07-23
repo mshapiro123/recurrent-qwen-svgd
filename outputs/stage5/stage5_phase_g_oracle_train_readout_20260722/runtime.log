@@ -659,3 +659,298 @@ oracle_eval_progress route=additive row=1899/1899 depth=4
     }
   }
 }
+$ /usr/bin/python3 eval/eval_oracle_interface_probe.py --data_jsonl outputs/stage5/stage5_phase_g_multitarget_control_20260718/data/train.jsonl --keeper /content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/natural_step2000.pt --expected_keeper_sha256 0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f --conditioner_checkpoint /content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/oracle_film_ema_step_1500.pt --expected_conditioner_sha256 d551f1136cf1582e9a6e95be43be952a5f4da1ed5649c45ed29ecd4115e051de --route film --output_dir outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/eval/full1899/film --resume_cache_path /content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_phase_g_oracle_train_readout_20260722/eval_cache/full1899/film/rows.jsonl --expected_rows 1899 --expected_groups 512 --expected_transitions 5617 --evaluation_kind posthoc_train_readout --dtype bfloat16 --device cuda
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 4732.76it/s]
+bridge_projection_mode=split
+lora_recurrent_modules=0
+loaded_checkpoint=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/natural_step2000.pt loaded_keys=152
+oracle_eval_progress route=film row=1/1899 depth=1
+oracle_eval_progress route=film row=16/1899 depth=1
+oracle_eval_progress route=film row=32/1899 depth=1
+oracle_eval_progress route=film row=48/1899 depth=1
+oracle_eval_progress route=film row=64/1899 depth=1
+oracle_eval_progress route=film row=80/1899 depth=1
+oracle_eval_progress route=film row=96/1899 depth=1
+oracle_eval_progress route=film row=112/1899 depth=1
+oracle_eval_progress route=film row=128/1899 depth=1
+oracle_eval_progress route=film row=144/1899 depth=1
+oracle_eval_progress route=film row=160/1899 depth=1
+oracle_eval_progress route=film row=176/1899 depth=1
+oracle_eval_progress route=film row=192/1899 depth=1
+oracle_eval_progress route=film row=208/1899 depth=1
+oracle_eval_progress route=film row=224/1899 depth=1
+oracle_eval_progress route=film row=240/1899 depth=1
+oracle_eval_progress route=film row=256/1899 depth=1
+oracle_eval_progress route=film row=272/1899 depth=2
+oracle_eval_progress route=film row=288/1899 depth=2
+oracle_eval_progress route=film row=304/1899 depth=2
+oracle_eval_progress route=film row=320/1899 depth=2
+oracle_eval_progress route=film row=336/1899 depth=2
+oracle_eval_progress route=film row=352/1899 depth=2
+oracle_eval_progress route=film row=368/1899 depth=2
+oracle_eval_progress route=film row=384/1899 depth=2
+oracle_eval_progress route=film row=400/1899 depth=2
+oracle_eval_progress route=film row=416/1899 depth=2
+oracle_eval_progress route=film row=432/1899 depth=2
+oracle_eval_progress route=film row=448/1899 depth=2
+oracle_eval_progress route=film row=464/1899 depth=2
+oracle_eval_progress route=film row=480/1899 depth=2
+oracle_eval_progress route=film row=496/1899 depth=2
+oracle_eval_progress route=film row=512/1899 depth=2
+oracle_eval_progress route=film row=528/1899 depth=2
+oracle_eval_progress route=film row=544/1899 depth=2
+oracle_eval_progress route=film row=560/1899 depth=2
+oracle_eval_progress route=film row=576/1899 depth=2
+oracle_eval_progress route=film row=592/1899 depth=2
+oracle_eval_progress route=film row=608/1899 depth=2
+oracle_eval_progress route=film row=624/1899 depth=3
+oracle_eval_progress route=film row=640/1899 depth=3
+oracle_eval_progress route=film row=656/1899 depth=3
+oracle_eval_progress route=film row=672/1899 depth=3
+oracle_eval_progress route=film row=688/1899 depth=3
+oracle_eval_progress route=film row=704/1899 depth=3
+oracle_eval_progress route=film row=720/1899 depth=3
+oracle_eval_progress route=film row=736/1899 depth=3
+oracle_eval_progress route=film row=752/1899 depth=3
+oracle_eval_progress route=film row=768/1899 depth=3
+oracle_eval_progress route=film row=784/1899 depth=3
+oracle_eval_progress route=film row=800/1899 depth=3
+oracle_eval_progress route=film row=816/1899 depth=3
+oracle_eval_progress route=film row=832/1899 depth=3
+oracle_eval_progress route=film row=848/1899 depth=3
+oracle_eval_progress route=film row=864/1899 depth=3
+oracle_eval_progress route=film row=880/1899 depth=3
+oracle_eval_progress route=film row=896/1899 depth=3
+oracle_eval_progress route=film row=912/1899 depth=3
+oracle_eval_progress route=film row=928/1899 depth=3
+oracle_eval_progress route=film row=944/1899 depth=3
+oracle_eval_progress route=film row=960/1899 depth=3
+oracle_eval_progress route=film row=976/1899 depth=3
+oracle_eval_progress route=film row=992/1899 depth=3
+oracle_eval_progress route=film row=1008/1899 depth=3
+oracle_eval_progress route=film row=1024/1899 depth=3
+oracle_eval_progress route=film row=1040/1899 depth=3
+oracle_eval_progress route=film row=1056/1899 depth=3
+oracle_eval_progress route=film row=1072/1899 depth=3
+oracle_eval_progress route=film row=1088/1899 depth=3
+oracle_eval_progress route=film row=1104/1899 depth=3
+oracle_eval_progress route=film row=1120/1899 depth=4
+oracle_eval_progress route=film row=1136/1899 depth=4
+oracle_eval_progress route=film row=1152/1899 depth=4
+oracle_eval_progress route=film row=1168/1899 depth=4
+oracle_eval_progress route=film row=1184/1899 depth=4
+oracle_eval_progress route=film row=1200/1899 depth=4
+oracle_eval_progress route=film row=1216/1899 depth=4
+oracle_eval_progress route=film row=1232/1899 depth=4
+oracle_eval_progress route=film row=1248/1899 depth=4
+oracle_eval_progress route=film row=1264/1899 depth=4
+oracle_eval_progress route=film row=1280/1899 depth=4
+oracle_eval_progress route=film row=1296/1899 depth=4
+oracle_eval_progress route=film row=1312/1899 depth=4
+oracle_eval_progress route=film row=1328/1899 depth=4
+oracle_eval_progress route=film row=1344/1899 depth=4
+oracle_eval_progress route=film row=1360/1899 depth=4
+oracle_eval_progress route=film row=1376/1899 depth=4
+oracle_eval_progress route=film row=1392/1899 depth=4
+oracle_eval_progress route=film row=1408/1899 depth=4
+oracle_eval_progress route=film row=1424/1899 depth=4
+oracle_eval_progress route=film row=1440/1899 depth=4
+oracle_eval_progress route=film row=1456/1899 depth=4
+oracle_eval_progress route=film row=1472/1899 depth=4
+oracle_eval_progress route=film row=1488/1899 depth=4
+oracle_eval_progress route=film row=1504/1899 depth=4
+oracle_eval_progress route=film row=1520/1899 depth=4
+oracle_eval_progress route=film row=1536/1899 depth=4
+oracle_eval_progress route=film row=1552/1899 depth=4
+oracle_eval_progress route=film row=1568/1899 depth=4
+oracle_eval_progress route=film row=1584/1899 depth=4
+oracle_eval_progress route=film row=1600/1899 depth=4
+oracle_eval_progress route=film row=1616/1899 depth=4
+oracle_eval_progress route=film row=1632/1899 depth=4
+oracle_eval_progress route=film row=1648/1899 depth=4
+oracle_eval_progress route=film row=1664/1899 depth=4
+oracle_eval_progress route=film row=1680/1899 depth=4
+oracle_eval_progress route=film row=1696/1899 depth=4
+oracle_eval_progress route=film row=1712/1899 depth=4
+oracle_eval_progress route=film row=1728/1899 depth=4
+oracle_eval_progress route=film row=1744/1899 depth=4
+oracle_eval_progress route=film row=1760/1899 depth=4
+oracle_eval_progress route=film row=1776/1899 depth=4
+oracle_eval_progress route=film row=1792/1899 depth=4
+oracle_eval_progress route=film row=1808/1899 depth=4
+oracle_eval_progress route=film row=1824/1899 depth=4
+oracle_eval_progress route=film row=1840/1899 depth=4
+oracle_eval_progress route=film row=1856/1899 depth=4
+oracle_eval_progress route=film row=1872/1899 depth=4
+oracle_eval_progress route=film row=1888/1899 depth=4
+oracle_eval_progress route=film row=1899/1899 depth=4
+{
+  "checks": {
+    "frozen_keeper_lineage": {
+      "observed": true,
+      "passed": true,
+      "required": true
+    },
+    "nondefault_branch_control": {
+      "correct": 947,
+      "minimum": 0.85,
+      "observed": 0.2330216535433071,
+      "passed": false,
+      "total": 4064
+    },
+    "overall_transition_control": {
+      "correct": 1907,
+      "minimum": 0.9,
+      "observed": 0.3395050738828556,
+      "passed": false,
+      "total": 5617
+    },
+    "terminal_validity": {
+      "minimum": 0.71,
+      "observed": 0.8809899947340706,
+      "passed": true,
+      "total": 1899,
+      "valid": 1673
+    },
+    "transition_legality": {
+      "legal": 3421,
+      "minimum": 0.95,
+      "observed": 0.6090439736514154,
+      "passed": false,
+      "total": 5617
+    },
+    "zeroed_conditioning_identity": {
+      "observed": true,
+      "passed": true,
+      "required": true
+    }
+  },
+  "conditioner_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/oracle_film_ema_step_1500.pt",
+  "conditioner_sha256": "d551f1136cf1582e9a6e95be43be952a5f4da1ed5649c45ed29ecd4115e051de",
+  "evaluation_kind": "posthoc_train_readout",
+  "frozen_lineage_after": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+  "frozen_lineage_before": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+  "gate_status": "blocked",
+  "identity_groups_exact": 512,
+  "keeper": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/natural_step2000.pt",
+  "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+  "kind": "phase_g_oracle_interface_arm",
+  "loaded_oracle_keys": [
+    "oracle_reentry_conditioner.branch_a.net.0.bias",
+    "oracle_reentry_conditioner.branch_a.net.0.weight",
+    "oracle_reentry_conditioner.branch_a.net.1.bias",
+    "oracle_reentry_conditioner.branch_a.net.1.weight",
+    "oracle_reentry_conditioner.branch_a.net.3.bias",
+    "oracle_reentry_conditioner.branch_a.net.3.weight",
+    "oracle_reentry_conditioner.branch_b.net.0.bias",
+    "oracle_reentry_conditioner.branch_b.net.0.weight",
+    "oracle_reentry_conditioner.branch_b.net.1.bias",
+    "oracle_reentry_conditioner.branch_b.net.1.weight",
+    "oracle_reentry_conditioner.branch_b.net.3.bias",
+    "oracle_reentry_conditioner.branch_b.net.3.weight"
+  ],
+  "observed_groups": 512,
+  "observed_rows": 1899,
+  "observed_transitions": 5617,
+  "passed": false,
+  "posthoc_diagnostic_only": true,
+  "registered_heldout_verdict_mutable": false,
+  "route": "film",
+  "status": "finished",
+  "transition_control": {
+    "by_depth": {
+      "1": {
+        "control_rate": 0.51171875,
+        "correct": 131,
+        "legal": 254,
+        "legality_rate": 0.9921875,
+        "mean_target_margin": 0.07421875,
+        "total": 256
+      },
+      "2": {
+        "control_rate": 0.4659090909090909,
+        "correct": 328,
+        "legal": 602,
+        "legality_rate": 0.8551136363636364,
+        "mean_target_margin": -0.6378284801136364,
+        "total": 704
+      },
+      "3": {
+        "control_rate": 0.36817882971729127,
+        "correct": 560,
+        "legal": 987,
+        "legality_rate": 0.6489151873767258,
+        "mean_target_margin": -1.0927432610124919,
+        "total": 1521
+      },
+      "4": {
+        "control_rate": 0.28316326530612246,
+        "correct": 888,
+        "legal": 1578,
+        "legality_rate": 0.5031887755102041,
+        "mean_target_margin": -1.6060766103316326,
+        "total": 3136
+      }
+    },
+    "by_loop_index": {
+      "1": {
+        "control_rate": 0.5808320168509742,
+        "correct": 1103,
+        "legal": 1858,
+        "legality_rate": 0.9784096893101633,
+        "mean_target_margin": 0.6297722485518694,
+        "total": 1899
+      },
+      "2": {
+        "control_rate": 0.29701765063907487,
+        "correct": 488,
+        "legal": 929,
+        "legality_rate": 0.5654290931223371,
+        "mean_target_margin": -2.235544735240414,
+        "total": 1643
+      },
+      "3": {
+        "control_rate": 0.17195972114639815,
+        "correct": 222,
+        "legal": 443,
+        "legality_rate": 0.343144848954299,
+        "mean_target_margin": -2.4275755228505034,
+        "total": 1291
+      },
+      "4": {
+        "control_rate": 0.11989795918367346,
+        "correct": 94,
+        "legal": 191,
+        "legality_rate": 0.24362244897959184,
+        "mean_target_margin": -1.9358258928571428,
+        "total": 784
+      }
+    },
+    "default": {
+      "control_rate": 0.6181584030907921,
+      "correct": 960,
+      "legal": 1303,
+      "legality_rate": 0.8390212491951062,
+      "mean_target_margin": 1.1294671603348359,
+      "total": 1553
+    },
+    "nondefault": {
+      "control_rate": 0.2330216535433071,
+      "correct": 947,
+      "legal": 2118,
+      "legality_rate": 0.5211614173228346,
+      "mean_target_margin": -2.1857314222440944,
+      "total": 4064
+    },
+    "overall": {
+      "control_rate": 0.3395050738828556,
+      "correct": 1907,
+      "legal": 3421,
+      "legality_rate": 0.6090439736514154,
+      "mean_target_margin": -1.269138330069432,
+      "total": 5617
+    }
+  }
+}
