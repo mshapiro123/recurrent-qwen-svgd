@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "program": "paper2_causal_control_of_recurrent_computation",
-  "status": "active_pretraining",
-  "canonical_date": "2026-07-22",
+  "status": "t0_passed_t1_preregistration_pending",
+  "canonical_date": "2026-07-23",
   "claims": [
     {
       "id": "guided_width_initial_exploratory",
@@ -91,16 +91,51 @@
         }
       ],
       "do_not_claim": [
-        "conditioners cannot fit training rows",
+        "the terminal conditioners cannot fit any training example",
         "internal conditioning would fail",
         "a bounded adaptive substrate would fail"
       ]
     },
     {
+      "id": "terminal_oracle_train_fit_diagnostic",
+      "status": "posthoc_supported",
+      "claim": "The tested frozen terminal additive and FiLM interfaces largely failed to fit the commanded non-default transition mapping on their training variants.",
+      "scope": "post-hoc read-only evaluation; all 1,899 training variants plus a seeded matched 106-variant cohort; existing EMA checkpoints; registered held-out verdict immutable",
+      "metrics": {
+        "full_training_variants": 1899,
+        "full_training_transitions": 5617,
+        "additive_full_nondefault_control": 0.2017716535433071,
+        "film_full_nondefault_control": 0.2330216535433071,
+        "did_not_fit_upper_band": 0.25,
+        "additive_matched_nondefault_control": 0.21333333333333335,
+        "film_matched_nondefault_control": 0.26222222222222225
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/summary.json",
+          "locator": "full and matched additive/FiLM train-row readouts"
+        }
+      ],
+      "do_not_claim": [
+        "the result was preregistered as a new gate",
+        "internal conditioning cannot work",
+        "an adaptive recurrent substrate cannot learn the commands"
+      ]
+    },
+    {
       "id": "internal_token_halting",
-      "status": "prepared_not_run",
-      "claim": "Token-pathway halting is specified but has not been trained or evaluated.",
-      "scope": "Phase T0 preparation and Phase T1 preregistration only",
+      "status": "t0_passed_t1_not_run",
+      "claim": "Token-pathway halting passed all no-training interface contracts but has not been trained or evaluated for learned halting.",
+      "scope": "Phase T0 executable preflight and draft Phase T1 preregistration only",
+      "metrics": {
+        "control_tokens_added": 3,
+        "added_parameters": 2688,
+        "one_loop_max_abs_logit_diff": 0.0,
+        "identity_maximum": 0.001,
+        "forced_requested_executed_selected_loops": 4,
+        "all_five_t0_contracts_passed": true,
+        "training_performed": false
+      },
       "evidence": [
         {
           "path": "docs/PAPER2_INTERNAL_THINK_TOKEN_PHASE0_SPEC_20260718.md",
@@ -109,6 +144,10 @@
         {
           "path": "training/internal_think_token_spec.py",
           "locator": "machine-readable preparation policy"
+        },
+        {
+          "path": "outputs/stage5/stage5_paper2_internal_token_t0_preflight_20260722/summary.json",
+          "locator": "five executable Phase T0 contracts"
         }
       ],
       "do_not_claim": [

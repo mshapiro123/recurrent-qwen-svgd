@@ -1403,3 +1403,25 @@ Colab/Drive backups for selected runs.
   readout, executable T0 contracts, and a locked T1 preregistration. The
   train-row readout cannot alter `BOTH_FAIL`, and the coded intra-block probe
   remains unrun. Canonical ledger: `docs/paper2_claim_evidence_ledger.json`.
+- 2026-07-23 Paper Two WP1 oracle train-row readout: the frozen additive and
+  FiLM EMA conditioners were evaluated without mutation on both a seeded,
+  depth-stratified 106-variant cohort (`305` transitions) and all `1,899`
+  training variants (`5,617` transitions). Matched non-default transition
+  control was additive `48/225 = 21.33%` and FiLM `59/225 = 26.22%`. The full
+  readout was additive `820/4,064 = 20.18%` and FiLM `947/4,064 = 23.30%`.
+  Under the locked descriptive bands, both full-cohort results are
+  `did_not_fit_command_mapping`. The result localizes the failure to terminal
+  interface fit rather than held-out generalization; it is post-hoc and does
+  not change the registered `BOTH_FAIL` verdict. Keeper and conditioner hashes
+  were identical before and after. Receipt:
+  `outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/summary.json`.
+- 2026-07-23 Paper Two Phase T0 preflight: all five no-training contracts
+  passed on an NVIDIA L4. Qwen's tokenizer length (`151,665`) was aligned to
+  its padded model vocabulary (`151,936`) without adding model parameters;
+  the three controls then occupied genuinely new IDs `151936`-`151938`.
+  The tied input/LM-head policy and every old row were preserved, exactly
+  `2,688` parameters were added, control logits were excluded from visible
+  generation, inactive one-loop logit difference was `0.0 < 1e-3`, and
+  requested/executed/selected loops all equaled four. No training occurred and
+  no checkpoint was written. Receipt:
+  `outputs/stage5/stage5_paper2_internal_token_t0_preflight_20260722/summary.json`.

@@ -12,7 +12,7 @@ def load_ledger() -> dict:
     return json.loads(LEDGER.read_text(encoding="utf-8"))
 
 
-def test_paper2_ledger_closes_tested_phase_g_route_and_keeps_t_unrun() -> None:
+def test_paper2_ledger_closes_tested_phase_g_route_and_records_t0_without_t1() -> None:
     payload = load_ledger()
     claims = {claim["id"]: claim for claim in payload["claims"]}
 
@@ -29,7 +29,14 @@ def test_paper2_ledger_closes_tested_phase_g_route_and_keeps_t_unrun() -> None:
     assert claims["terminal_oracle_reentry_both_fail"]["metrics"][
         "registered_verdict"
     ] == "BOTH_FAIL"
-    assert claims["internal_token_halting"]["status"] == "prepared_not_run"
+    assert claims["terminal_oracle_train_fit_diagnostic"]["metrics"][
+        "film_full_nondefault_control"
+    ] < 0.25
+    assert claims["internal_token_halting"]["status"] == "t0_passed_t1_not_run"
+    assert claims["internal_token_halting"]["metrics"][
+        "all_five_t0_contracts_passed"
+    ] is True
+    assert claims["internal_token_halting"]["metrics"]["training_performed"] is False
 
 
 def test_paper2_claim_evidence_paths_exist() -> None:

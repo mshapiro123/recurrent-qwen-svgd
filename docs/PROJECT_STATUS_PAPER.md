@@ -1,8 +1,8 @@
 # Project Status: Deterministic Program Closed
 
-**Canonical date:** July 22, 2026
+**Canonical date:** July 23, 2026
 **Part 1 status:** closed
-**Part 2 status:** causal-control program; Arm G closed on the tested frozen re-entry interface; Phase T preflight active
+**Part 2 status:** causal-control program; Arm G closed on the tested frozen re-entry interface; Phase T0 passed; T1 preregistration not yet locked
 
 This page is the short status index. It replaces the earlier June recovery narrative, which became stale after the loop-closure repair, synthetic mechanism installation, Phase A dense-control comparison, and inverse-task boundary program.
 
@@ -56,18 +56,30 @@ residual produced the registered `NO-CHANNEL` reading. Supplying the true next
 symbol through parameter-matched additive and FiLM terminal re-entry
 conditioners produced the registered `BOTH_FAIL` reading on held-out rows.
 
+The post-hoc train-row readout resolved the remaining localization ambiguity.
+On all 1,899 training variants, additive and FiLM non-default transition
+control reached only `20.18%` and `23.30%`, respectively. Both are inside the
+preregistered descriptive `<=25%` did-not-fit band. The tested terminal
+interfaces therefore largely failed to fit the command mapping, rather than
+fitting it and failing only on held-out variants. This diagnostic does not
+alter the registered held-out `BOTH_FAIL` verdict.
+
+Phase T0 then passed all five preparation contracts on an L4. The three
+control tokens occupied new IDs `151936` through `151938`; tied embeddings
+were preserved; exactly `2,688` parameters were added; visible generation
+masked all three controls; forced requested, executed, and selected loop
+counts agreed at four; and the inactive one-loop maximum logit difference was
+exactly `0.0`. T0 performed no training and wrote no checkpoint.
+
 These results close Phase G on the tested frozen high-level re-entry interface.
 They do not falsify stochastic width, GRAM, internal conditioning, or a bounded
 adaptive substrate.
 
 ## Active Queue
 
-1. Reconcile and freeze the Paper Two record.
-2. Run the read-only oracle train-row diagnostic. It cannot change `BOTH_FAIL`.
-3. Execute the Phase T0 tokenizer, resize, masking, identity, and loop-accounting contracts.
-4. Lock the Phase T1 preregistration before any training step.
-5. Train full-block and R16-plus-bridge token-pathway halting lineages only after T0 passes.
-6. Convene the post-T1 decision point before reopening width or natural-trace work.
+1. Review and lock the Phase T1 preregistration before any training step.
+2. Train the fresh-base full-block and R16-plus-bridge token-pathway halting lineages under that locked protocol.
+3. Convene the post-T1 decision point before reopening width or natural-trace work.
 
 Closed pending that decision: additional Phase G sweeps, coverage, selection,
 LPRM, per-trajectory halting, particles, SVGD, the intra-block oracle probe,
