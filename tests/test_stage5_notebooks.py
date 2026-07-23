@@ -1154,6 +1154,33 @@ def test_paper2_t0_target_executes_five_contracts_without_training() -> None:
     assert '"phase_t1_authorized_by_this_receipt": False' in runner
 
 
+def test_paper2_t1_p0_target_is_pilot_only_and_resumable() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE_T1_P0_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_phase_t1_p0.py").read_text(
+        encoding="utf-8"
+    )
+    trainer = (ROOT / "training/run_internal_think_token_p0_cell.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert '"paper2_phase_t1_p0"' in bootstrap
+    assert "STAGE5_PAPER2_PHASE_T1_P0_CELL.py" in bootstrap
+    assert "P0 pilot only registered T1 remains locked" in cell
+    assert "seed 9999 1500 steps checkpoints 500 1000 1500" in cell
+    assert "exact 70 percent control 30 percent mechanism rehearsal" in cell
+    assert "STAGE5_PAPER2_T1_P0_CELLS" in runner
+    assert "pilot_disjoint_from_registered_sets" in runner
+    assert "select_pilot_cell" in runner
+    assert '"registered_t1_training": False' in trainer
+    assert "split_internal_control_token_rows" in trainer
+    assert "gather_control_examples" in trainer
+
+
 def test_oracle_intrablock_control_target_is_locked() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
         encoding="utf-8"

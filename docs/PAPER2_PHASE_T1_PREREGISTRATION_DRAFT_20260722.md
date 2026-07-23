@@ -1,76 +1,211 @@
-# Paper Two Phase T1 Preregistration Draft
+# Phase T1 Preregistration - Internal Control-Token Halting
 
-**Status:** `draft_not_locked`. No training is authorized.  
-**Purpose:** test whether an explicit internal token pathway can causally select
-recurrent depth on the controlled synthetic transition family.
+**Draft 2, 2026-07-23. Status: `draft_not_locked`.** This incorporates
+Mark's markup round 1. It becomes binding only when committed as locked with a
+matching `preregistration.json`. No registered T1 training step may run before
+that lock. The authorized, uncitable P0 pilot below runs before the lock and
+informs its loss constants.
 
-## Lineages
+This document governs over the earlier T1 design memo and T0 spec wherever
+they differ.
 
-Two fresh-base Qwen2.5-0.5B surgery lineages run independently:
+## 1. Registered Question And Scope
 
-1. Full recurrent block plus repaired split bridge and the three new control-token rows.
-2. Rank-16 recurrent-block LoRA plus repaired split bridge and the three new control-token rows, with pretrained Qwen weights frozen.
+T1 asks whether an explicit internal continue/stop token decision at each
+recurrent transition can read a stated required depth, select that depth
+accurately, preserve the installed recurrent computation, and causally change
+loop execution.
 
-No keeper checkpoint initializes either lineage.
+Depth is stated in the prompt. T1 is an information-path and actuator test,
+not a difficulty-inference test. No T1 result supports a claim about inferred
+difficulty, content-determined depth, or natural-language halting.
 
-## Explicit non-halting references
+## 2. Substrate And Lineages
 
-The chain-accuracy gate is not defined against an implicit baseline.
+Both lineages start fresh from `Qwen/Qwen2.5-0.5B-Instruct`, base SHA
+`960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f`,
+with Prelude 0-6, weight-tied Recurrent Block 6-18, Coda 18-24, the
+identity-preserving one-loop path, and repaired split re-entry bridge.
 
-- Full-block reference: Phase A Arm A on the immutable Phase A rows,
-  `1005/1024` over trained depths 1-8. Canonical receipt:
-  `outputs/stage5/stage5_phase_a_surpass_receipt_20260714/summary.json`;
-  checkpoint SHA `dc00f7b6...4f71b`.
-- Adapter reference: Arm E on the same rows, `1021/1024` over trained depths
-  1-8. Canonical receipt:
-  `outputs/stage5/stage5_adapter_budget_arm_e_20260718/summary.json`.
+1. Full block: the recurrent block trains.
+2. Adapter: recurrent R16 LoRA and bridge train; the pretrained backbone is frozen.
 
-Both use full-symbol, question-only, first-completed-response scoring and forced
-loop count equal to row depth. The T1 forced-depth and self-halted evaluations
-use the same reader and row IDs (row-ID SHA
-`14482ca4d1b539172e4ccced6d870818c8658314b7f9680d0fb6e685b0317500`).
+The T0 contracts are prerequisites: exactly three reserved symbols,
+`<|recur_continue|>`, `<|recur_stop|>`, and `<|recur_readout|>`; tied
+embedding policy preserved; controls masked from visible generation; control
+read at the private per-loop readout position; one-loop identity below `1e-3`;
+and exact loop accounting.
 
-## Targets and curriculum
+## 3. Task, Curriculum, And Training
 
-At the reserved control position after each recurrent transition, the target is
-`continue` before the row's exact depth and `stop` at that depth. The decision
-is intercepted before visible decoding. All three internal symbols remain
-masked from user-visible generation.
+- Train depths 1-8 on the controlled synthetic transition family.
+- Target `continue` before the required depth and `stop` exactly at that depth.
+- Use 30% unchanged mechanism rehearsal.
+- Train 10,500 steps: 500 at depth 1, 2,000 at support 1-2, 4,000 at support
+  1-4, and two 2,000-step stages at support 1-8.
+- Use AdamW, batch size 1, gradient accumulation 1, weight decay 0, gradient
+  cap 0.5, bfloat16 base weights, and float32 trainable adapters.
+- Use learning rate `2e-5` in the primitive stage and `1e-5` thereafter. The
+  bridge Prelude LR multiplier is 1 in the primitive stage and 10 thereafter.
+- Primary training seed is 0 for both lineages. Section 10 governs seed 1.
+- Maintain EMA 0.999. Evaluate raw and EMA, with final-step EMA primary.
 
-The training stream contains 70% control-target rows and 30% original
-per-loop mechanism rehearsal. Depths 1-8 are trained.
+Recipe receipt:
+`outputs/stage5/stage5_adapter_budget_arm_e_20260718/preregistration.json`.
 
-Proposed, not yet locked, per-lineage budget mirrors the established mechanism
-curriculum: 500 steps at depth 1, 2,000 at support 1-2, 4,000 at support 1-4,
-and two 2,000-step support-1-8 stages, for 10,500 steps. Learning rates are
-`2e-5` for the primitive stage and `1e-5` thereafter. Seed 0 is proposed, with
-the resulting single-seed limitation stated explicitly.
+## 4. Loss And Pilot P0
 
-## Four locked-form gates
+Control examples retain mechanism and answer supervision. Total loss is
+mechanism/answer CE plus lambda times class-balanced control CE.
 
-A positive reading requires all four:
+For uniform depths 1-8 there are 28 continue labels and 8 stop labels. The
+default inverse-frequency ratio is therefore 3.5 stop to 1 continue. Weights
+are normalized to mean one over realized control labels.
 
-1. Forced-depth chain accuracy is within three percentage points of the matched lineage's non-halting reference.
-2. Self-halted accuracy is within three percentage points of paired forced depth.
-3. Continue/stop selection accuracy is at least `0.90` at every trained depth.
-4. Causal override is demonstrated in both directions: forced stop at a model-continue transition terminates there, and forced continue at a model-stop transition executes at least one additional loop within the registered maximum.
+### Pilot P0 (authorized before lock, never citable)
 
-An answer change alone does not satisfy gate 4. Executed loop count must change
-as commanded. A miss on any gate is a registered negative.
+- Adapter lineage only, seed 9999, 1,500 steps per cell.
+- Ten cells: lambda in `{0.5, 1, 2}` crossed with stop-to-continue ratio in
+  `{1, 3.5, 7}`, plus a lambda-zero mechanism/answer reference.
+- Dedicated 256-row slice, 32 per depth, excluded from every registered set.
+- Readouts at steps 500, 1,000, and 1,500: control loss, stop recall, continue
+  recall, answer accuracy versus lambda zero, and gradient norms.
 
-## Integrity and boundaries
+Selection is fixed: retain cells with both recalls at least 0.60 at step 1,500,
+then choose the smallest answer-accuracy drop versus lambda zero. Break ties
+toward lambda 1 and ratio 3.5. If no cell qualifies, reassess openly before
+lock. Do not extend the grid silently.
 
-T0 must pass first. Each run retains the one-loop identity threshold of `1e-3`,
-base-hash assertions, a Tier-1 canary hard stop, visible-generation masking,
-and requested/executed/selected loop logging.
+## 5. Frozen Evaluation Sets
 
-This experiment does not test natural content-determined depth, broad adaptive
-computation, stochastic width, or multi-seed robustness. T2 and width remain
-closed until the post-T1 decision point.
+- Gated: 1,024 rows, 128 at each depth 1-8. Forced and self-halted runs are paired.
+- Extrapolation: 128 rows at each depth 9-14. Descriptive only.
+- Calibration: 512 rows, 64 at each depth 1-8, disjoint from gated rows. Used
+  only for thresholds of the descriptive baselines in Section 8.
 
-## Items requiring Mark's lock
+Self-halting uses `max_loops=12` on gated rows and 16 on extrapolation rows. A
+row that never stops is a selection failure and its answer is scored at the
+last executed loop. Exhaustion is reported by depth.
 
-1. Accept or revise the proposed 10,500-step curriculum.
-2. Accept seed 0 as a single-seed design or authorize additional seeds.
-3. Lock the exact causal-override row count and sampling seed.
-4. Change this document and the machine-readable spec to `locked_before_training`; only then may a T1 launcher exist.
+## 6. Four Gates
+
+A lineage passes only if every gate passes at the final-step checkpoint.
+
+### Gate 1 - Substrate Preservation
+
+Forced-depth answer accuracy on the gated rows must be within 3 points of the
+matched non-halting reference.
+
+- Full block: reference 1005/1024; floor 975/1024. Receipt:
+  `outputs/stage5/stage5_phase_a_surpass_receipt_20260714/summary.json`,
+  checkpoint SHA `dc00f7b694ce32427eb13b0b85d365bc15e0c0317130bd22d4bbc3568544f71b`.
+- Adapter: reference 1021/1024; floor 991/1024. Receipt:
+  `outputs/stage5/stage5_adapter_budget_arm_e_20260718/summary.json`,
+  checkpoint SHA `bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839`.
+
+### Gate 2 - Allocation Does Not Cost Competence
+
+Self-halted answer accuracy must be within 3 points of paired forced-depth
+accuracy on the same 1,024 rows.
+
+### Gate 3 - Exact Depth Selection
+
+The selected stop loop must equal the stated required depth. Both conditions
+are required:
+
+- at least 115/128 at every depth 1-8;
+- at least 922/1024 pooled.
+
+Transition micro-accuracy is never a gate or headline metric because the
+always-continue policy already gets 28/36 transitions, or 77.78%, correct.
+Balanced accuracy, stop recall, continue recall, and macro F1 are descriptive.
+
+The count gate is intentionally strict. Approximate pass probabilities are
+1.6% at true row accuracy 0.90, 59% at 0.93, and 96% at 0.95.
+
+### Gate 4 - Full Causal Override Sweep
+
+Intervene on control logits, never on `max_loops` or the loop counter.
+
+- Force stop at every loop `k` from 1 through required depth `d`; execution
+  must terminate exactly at `k`. Total: 4,608 executions.
+- Force continue at `d`; execution must reach `d+1`. Total: 1,024 executions.
+
+All 5,632 interventions must agree exactly. A miss is an implementation or
+actuator finding, not a scientific negative. Fix and rerun Gate 4 only.
+
+## 7. Descriptive Analyses
+
+- Depths 9-14 selection and answer accuracy.
+- Overshoot/undershoot confusion by depth.
+- Self-halt loop-count distributions and exhaustion.
+
+None is gated.
+
+## 8. Descriptive Baselines
+
+Fit thresholds only on the calibration set and evaluate on the gated set:
+
+1. Fixed depth `K`, for K 1-8.
+2. Answer-logit margin exit.
+3. Successive-loop output KL exit.
+4. Hidden-state update-norm exit.
+
+No superiority claim against these baselines is preregistered.
+
+## 9. Expected Readings
+
+- Both pass: explicit token control is accurate, competence-preserving, and causal.
+- Full block only: controller learning may be capacity-sensitive.
+- Adapter only: constrained adaptation may better protect the mechanism.
+- Gate 1 passes and Gate 2 fails: healthy substrate, weak allocation.
+- Gates 1 and 2 pass and Gate 3 fails: robustness masks imprecise routing.
+- Gate 1 fails: joint training damaged the mechanism; next question is staged
+  or frozen-substrate controller training, not a rerun.
+- Gate 4 fails: implementation finding; apply its repair rule.
+- Both fail with healthy forced computation: this joint controller recipe fails.
+
+## 10. Replication
+
+Seed 0 runs first. Seed 1 runs for every passing or near-threshold lineage.
+Near-threshold means Gates 1, 2, and 4 pass and pooled Gate 3 is at least 0.85,
+or Gate 1 or Gate 2 misses by no more than 1.5 points while all other gates
+pass.
+
+A positive headline requires the passing lineage to pass at seed 1. A strong
+negative boundary requires the better lineage to be confirmed at seed 1.
+
+## 11. Checkpoint Policy
+
+The final step is primary; EMA is primary and raw is reported. Intermediate
+checkpoints are diagnostic only. Do not select a keeper by intermediate peak.
+
+## 12. Stop Policy
+
+The uncertainty-aware small-sample stop policy adopted at Paper One closure
+governs any mid-run guardrail event.
+
+## 13. Do Not Claim
+
+- Inferred difficulty, content-determined depth, or natural-language halting.
+- More than description at depths 9-14.
+- Cross-lineage capacity/protection stories without seed-1 confirmation.
+- Superiority or inferiority to Section 8 baselines.
+- Transition micro-accuracy as depth-selection evidence.
+- Any intermediate-checkpoint number as a primary result.
+- That a Gate 4 failure answers the scientific question.
+
+## 14. Artifacts
+
+At lock: `preregistration.json` with gates, seeds, selected P0 weights, and set
+hashes. Per run: training traces, frozen-parameter and gradient-liveness
+assertions, evaluation summaries, `gate.json`, starting-point and checkpoint
+SHA-256 values, and final commit hashes under `outputs/stage5`.
+
+## 15. Remaining Before Lock
+
+1. Run P0 and set lambda and class-weight ratio by its fixed rule.
+2. Record the selected cell and realized class weights in this document and
+   `preregistration.json`.
+3. Commit both with status `locked_before_training`.
+4. Only then create registered T1 launchers.

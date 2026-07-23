@@ -163,6 +163,21 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_phase_t1_p0": {
+        "path": "colab/STAGE5_PAPER2_PHASE_T1_P0_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE_T1_P0_CELL_VERSION",
+            "paper2_internal_token_t1_p0_v1",
+            "P0 pilot only registered T1 remains locked",
+            "seed 9999 1500 steps checkpoints 500 1000 1500",
+            "dedicated 256 row pilot slice never enters a registered set",
+            "exact 70 percent control 30 percent mechanism rehearsal",
+            "no silent sweep extension when both recalls miss 0.60",
+            "tests/test_internal_think_token_t1.py",
+            "colab/run_stage5_paper2_phase_t1_p0.py",
+        ],
+        "env": {},
+    },
     "preflight": {
         "path": "colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.py",
         "markers": [

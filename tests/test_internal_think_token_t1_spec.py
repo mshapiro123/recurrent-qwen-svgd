@@ -26,11 +26,39 @@ def test_t1_draft_has_two_explicit_references_and_all_four_gates() -> None:
     assert spec["fresh_base_lineages"]["r16_adapter_bridge"][
         "nonhalting_reference"
     ]["trained_depths_correct"] == 1021
-    assert spec["gates"]["control_selection"]["minimum_each_depth"] == 0.90
+    selection = spec["gates"]["control_selection"]
+    assert selection["metric"] == "row_level_exact_selected_depth"
+    assert selection["minimum_correct_each_depth"] == 115
+    assert selection["rows_each_depth"] == 128
+    assert selection["minimum_correct_pooled"] == 922
+    assert selection["rows_pooled"] == 1024
+    assert selection["transition_micro_accuracy_is_gate"] is False
     assert spec["gates"]["causal_override"]["required"] is True
+    assert spec["gates"]["causal_override"]["forced_stop_executions"] == 4608
+    assert spec["gates"]["causal_override"]["forced_continue_executions"] == 1024
     assert spec["gates"]["all_four_required_for_positive"] is True
     assert spec["data"]["rehearsal_fraction"] == 0.30
-    assert spec["evaluation"]["frozen_row_id_sha256"].startswith("14482ca4")
+    assert spec["evaluation"]["gated"]["rows"] == 1024
+    assert spec["evaluation"]["calibration"]["rows"] == 512
+    assert spec["evaluation"]["extrapolation"]["depths"] == list(range(9, 15))
+    assert spec["evaluation"]["self_halt_max_loops"]["gated"] == 12
+    assert spec["evaluation"]["self_halt_max_loops"]["extrapolation"] == 16
+
+
+def test_t1_draft_encodes_p0_without_authorizing_registered_training() -> None:
+    spec = phase_t1_draft()
+    pilot = spec["pilot_p0"]
+
+    assert pilot["authorized_before_lock"] is True
+    assert pilot["registered_t1_training"] is False
+    assert pilot["lineage"] == "r16_adapter_bridge"
+    assert pilot["seed"] == 9999
+    assert pilot["steps_per_cell"] == 1500
+    assert len(pilot["cells"]) == 10
+    assert pilot["evaluation_steps"] == [500, 1000, 1500]
+    assert pilot["selection"]["minimum_stop_recall"] == 0.60
+    assert pilot["selection"]["minimum_continue_recall"] == 0.60
+    assert spec["training_authorized"] is False
 
 
 def test_draft_cannot_authorize_training() -> None:

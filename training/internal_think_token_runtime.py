@@ -6,6 +6,8 @@ from dataclasses import asdict, dataclass
 from typing import Any, Iterable
 
 import torch
+import torch.nn.functional as F
+from torch import nn
 
 from training.internal_think_token_spec import (
     INTERNAL_CONTROL_TOKENS,
@@ -34,6 +36,122 @@ class ControlTokenResizeReceipt:
         payload = asdict(self)
         payload["control_token_ids"] = list(self.control_token_ids)
         return payload
+
+
+@dataclass(frozen=True)
+class SplitControlRowsReceipt:
+    original_vocab_size: int
+    control_row_count: int
+    hidden_size: int
+    old_rows_frozen: bool
+    control_rows_shared: bool
+    control_rows_trainable: bool
+    parameter_count_before: int
+    parameter_count_after: int
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+class SplitControlEmbedding(nn.Module):
+    """Embedding with frozen old rows and a separately optimized control tail."""
+
+    def __init__(
+        self,
+        old_weight: nn.Parameter,
+        control_rows: nn.Parameter,
+        *,
+        padding_idx: int | None,
+    ) -> None:
+        super().__init__()
+        self.old_weight = old_weight
+        self.control_rows = control_rows
+        self.padding_idx = padding_idx
+        self.embedding_dim = int(old_weight.shape[1])
+        self.num_embeddings = int(old_weight.shape[0] + control_rows.shape[0])
+
+    @property
+    def weight(self) -> torch.Tensor:
+        return torch.cat([self.old_weight, self.control_rows.to(self.old_weight.dtype)], dim=0)
+
+    def forward(self, input_ids: torch.Tensor) -> torch.Tensor:
+        old_size = int(self.old_weight.shape[0])
+        is_control = input_ids.ge(old_size)
+        if bool((input_ids < 0).any()) or bool((input_ids >= self.num_embeddings).any()):
+            raise IndexError("input token ID is outside the split control vocabulary")
+        old_ids = input_ids.clamp(max=old_size - 1)
+        control_ids = (input_ids - old_size).clamp(min=0, max=self.control_rows.shape[0] - 1)
+        old_values = F.embedding(old_ids, self.old_weight, padding_idx=self.padding_idx)
+        control_values = F.embedding(control_ids, self.control_rows).to(dtype=old_values.dtype)
+        return torch.where(is_control.unsqueeze(-1), control_values, old_values)
+
+
+class SplitControlLMHead(nn.Module):
+    """Tied output projection matching :class:`SplitControlEmbedding`."""
+
+    def __init__(self, old_weight: nn.Parameter, control_rows: nn.Parameter) -> None:
+        super().__init__()
+        self.old_weight = old_weight
+        self.control_rows = control_rows
+        self.in_features = int(old_weight.shape[1])
+        self.out_features = int(old_weight.shape[0] + control_rows.shape[0])
+
+    @property
+    def weight(self) -> torch.Tensor:
+        return torch.cat([self.old_weight, self.control_rows.to(self.old_weight.dtype)], dim=0)
+
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        old_logits = F.linear(hidden_states, self.old_weight)
+        control_logits = F.linear(
+            hidden_states.to(dtype=self.control_rows.dtype),
+            self.control_rows,
+        ).to(dtype=old_logits.dtype)
+        return torch.cat([old_logits, control_logits], dim=-1)
+
+
+def split_internal_control_token_rows(
+    model: Any,
+    *,
+    original_vocab_size: int,
+) -> SplitControlRowsReceipt:
+    """Factor a tied resized vocabulary into frozen old rows and three trainable rows."""
+
+    input_embedding = model.get_input_embeddings()
+    output_embedding = model.get_output_embeddings()
+    if input_embedding.weight.data_ptr() != output_embedding.weight.data_ptr():
+        raise AssertionError("P0 split-row optimization requires Qwen's tied embedding policy")
+    full_weight = input_embedding.weight.detach()
+    original_size = int(original_vocab_size)
+    if full_weight.shape[0] != original_size + len(INTERNAL_CONTROL_TOKENS):
+        raise AssertionError("split-row conversion requires exactly three appended control rows")
+    parameter_count_before = int(full_weight.numel())
+    old_weight = nn.Parameter(full_weight[:original_size].clone(), requires_grad=False)
+    control_rows = nn.Parameter(full_weight[original_size:].float().clone(), requires_grad=True)
+    split_input = SplitControlEmbedding(
+        old_weight,
+        control_rows,
+        padding_idx=getattr(input_embedding, "padding_idx", None),
+    )
+    split_output = SplitControlLMHead(old_weight, control_rows)
+    model.set_input_embeddings(split_input)
+    model.set_output_embeddings(split_output)
+    parameter_count_after = int(old_weight.numel() + control_rows.numel())
+    if parameter_count_after != parameter_count_before:
+        raise AssertionError(
+            f"split-row parameter count changed: {parameter_count_before} -> {parameter_count_after}"
+        )
+    if split_input.control_rows is not split_output.control_rows:
+        raise AssertionError("input and output control rows are not shared")
+    return SplitControlRowsReceipt(
+        original_vocab_size=original_size,
+        control_row_count=int(control_rows.shape[0]),
+        hidden_size=int(control_rows.shape[1]),
+        old_rows_frozen=not old_weight.requires_grad,
+        control_rows_shared=True,
+        control_rows_trainable=control_rows.requires_grad,
+        parameter_count_before=parameter_count_before,
+        parameter_count_after=parameter_count_after,
+    )
 
 
 def _tied(input_embedding: Any, output_embedding: Any) -> bool:

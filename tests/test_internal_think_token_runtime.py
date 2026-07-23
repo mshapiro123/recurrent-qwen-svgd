@@ -11,6 +11,7 @@ from training.internal_think_token_runtime import (
     install_internal_control_tokens,
     mask_internal_control_logits,
     one_loop_identity_max_abs_diff,
+    split_internal_control_token_rows,
 )
 from training.internal_think_token_spec import INTERNAL_CONTROL_TOKENS
 
@@ -60,6 +61,12 @@ class TinyLM(nn.Module):
 
     def get_output_embeddings(self) -> nn.Module:
         return self.output
+
+    def set_input_embeddings(self, module: nn.Module) -> None:
+        self.input = module
+
+    def set_output_embeddings(self, module: nn.Module) -> None:
+        self.output = module
 
     def resize_token_embeddings(self, size: int, **_: object) -> None:
         old_input = self.input.weight.detach().clone()
@@ -123,6 +130,34 @@ def test_visible_generation_mask_blocks_adversarially_high_control_logits() -> N
     assert masked.argmax(dim=-1).tolist() == [3, 3]
     assert torch.all(masked[:, [5, 6, 7]] == torch.finfo(masked.dtype).min)
     assert torch.equal(logits[:, [5, 6, 7]], torch.full((2, 3), 1000.0))
+
+
+def test_split_control_rows_preserve_outputs_and_optimize_only_three_rows() -> None:
+    tokenizer = TinyTokenizer()
+    model = TinyLM(tied=True, vocab_size=8)
+    resize = install_internal_control_tokens(tokenizer, model)
+    input_ids = torch.tensor([[0, 8, 2, 10]])
+    hidden = torch.randn(1, 4, 4)
+    embedding_before = model.get_input_embeddings()(input_ids).detach()
+    logits_before = model.get_output_embeddings()(hidden).detach()
+
+    receipt = split_internal_control_token_rows(
+        model,
+        original_vocab_size=resize.original_vocab_size,
+    )
+    embedding_after = model.get_input_embeddings()(input_ids)
+    logits_after = model.get_output_embeddings()(hidden)
+
+    assert torch.equal(embedding_before, embedding_after)
+    assert torch.equal(logits_before, logits_after)
+    assert receipt.control_row_count == 3
+    assert receipt.parameter_count_before == receipt.parameter_count_after
+    assert receipt.old_rows_frozen is True
+    assert model.get_input_embeddings().control_rows is model.get_output_embeddings().control_rows
+
+    logits_after[..., -3:].sum().backward()
+    assert model.get_input_embeddings().old_weight.grad is None
+    assert model.get_input_embeddings().control_rows.grad is not None
 
 
 def test_identity_comparison_uses_original_model_vocab_not_tokenizer_length() -> None:
