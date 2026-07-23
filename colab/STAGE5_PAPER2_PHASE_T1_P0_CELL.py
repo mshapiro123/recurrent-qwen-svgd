@@ -17,6 +17,7 @@ STAGE5_PAPER2_PHASE_T1_P0_CELL_VERSION = "paper2_internal_token_t1_p0_v1"
 # Safety marker: dedicated 256 row pilot slice never enters a registered set
 # Safety marker: exact 70 percent control 30 percent mechanism rehearsal
 # Safety marker: no silent sweep extension when both recalls miss 0.60
+# Safety marker: exact shared-prefix multi-token candidate scoring
 # Safety marker: tests/test_internal_think_token_t1.py
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")

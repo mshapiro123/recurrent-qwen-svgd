@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from training.internal_think_token_t1 import (
+    build_candidate_suffix_contract,
     augment_control_row,
     build_pilot_mixture_rows,
     class_weights_from_ratio,
@@ -14,6 +15,29 @@ from training.internal_think_token_t1 import (
     score_control_predictions,
     select_pilot_cell,
 )
+
+
+class _TwoTokenSymbolTokenizer:
+    def __call__(self, text: str, *, add_special_tokens: bool = True) -> dict[str, list[int]]:
+        del add_special_tokens
+        prompt = "Question\nAnswer:"
+        if text == prompt:
+            return {"input_ids": [1, 2, 3]}
+        if text.startswith(prompt + " "):
+            value = int(text[len(prompt) + 1 :])
+            return {"input_ids": [1, 2, 3, 220, 1000 + value]}
+        raise AssertionError(text)
+
+
+def test_candidate_suffix_contract_supports_shared_prefix_plus_symbol_token() -> None:
+    contract = build_candidate_suffix_contract(
+        _TwoTokenSymbolTokenizer(),
+        prompt="Question\nAnswer:",
+        n_symbols=16,
+    )
+    assert contract.prompt_token_count == 3
+    assert contract.common_prefix_token_ids == (220,)
+    assert contract.candidate_final_token_ids == tuple(range(1000, 1016))
 
 
 def test_pilot_grid_is_locked_nine_cells_plus_reference() -> None:

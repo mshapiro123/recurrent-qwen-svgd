@@ -29,7 +29,9 @@ from training.internal_think_token_runtime import (
 )
 from training.internal_think_token_spec import INTERNAL_CONTROL_TOKENS
 from training.internal_think_token_t1 import (
+    CandidateSuffixContract,
     PILOT_STEPS,
+    build_candidate_suffix_contract,
     class_weights_from_ratio,
     gather_control_examples,
     locate_readout_positions,
@@ -136,23 +138,6 @@ def compact_checkpoint_state(wrapper: Any, embedding: torch.nn.Parameter, contro
     }
 
 
-def candidate_token_ids(tokenizer: Any, n_symbols: int = 16) -> list[int]:
-    prompt = "Probe\nAnswer:"
-    prompt_ids = tokenizer(prompt, add_special_tokens=True)["input_ids"]
-    ids: list[int] = []
-    for value in range(int(n_symbols)):
-        full = tokenizer(prompt + f" {value}", add_special_tokens=True)["input_ids"]
-        suffix = full[len(prompt_ids) :]
-        if len(suffix) != 1:
-            raise AssertionError(
-                f"P0 fast same-reader scoring requires one token for symbol {value}; got {suffix}"
-            )
-        ids.append(int(suffix[0]))
-    if len(set(ids)) != n_symbols:
-        raise AssertionError("P0 candidate symbols must map to distinct token IDs")
-    return ids
-
-
 @torch.no_grad()
 def evaluate_pilot(
     wrapper: Any,
@@ -161,7 +146,7 @@ def evaluate_pilot(
     readout_token_id: int,
     continue_token_id: int,
     stop_token_id: int,
-    candidates: list[int],
+    candidate_contract: CandidateSuffixContract,
     device: str,
     max_loops: int,
 ) -> dict[str, Any]:
@@ -169,7 +154,13 @@ def evaluate_pilot(
     control_rows: list[dict[str, Any]] = []
     answer_correct = 0
     answer_total = 0
-    candidate_tensor = torch.tensor(candidates, device=device, dtype=torch.long)
+    candidate_tensor = torch.tensor(
+        candidate_contract.candidate_final_token_ids,
+        device=device,
+        dtype=torch.long,
+    )
+    candidate_ids = set(candidate_contract.candidate_final_token_ids)
+    common_prefix = list(candidate_contract.common_prefix_token_ids)
     for batch in loader:
         batch = {key: value.to(device) for key, value in batch.items()}
         output = wrapper(
@@ -219,18 +210,27 @@ def evaluate_pilot(
             first_answer = int(active_labels[0].item())
             if first_answer < 1:
                 raise AssertionError("pilot answer cannot begin at token zero")
-            target_token = int(batch["labels"][row_index, first_answer].item())
-            if target_token not in candidates:
+            answer_token_ids = batch["labels"][row_index, active_labels].tolist()
+            if answer_token_ids[:-1] != common_prefix:
                 raise AssertionError(
-                    f"pilot target token {target_token} is not in the full-symbol candidate set"
+                    "Pilot answer tokens violate the verified candidate-prefix contract: "
+                    f"expected_prefix={common_prefix}, observed={answer_token_ids}"
                 )
+            target_token = int(answer_token_ids[-1])
+            if target_token not in candidate_ids:
+                raise AssertionError(
+                    f"pilot target token {target_token} is not a candidate final token"
+                )
+            decision_position = first_answer + len(common_prefix) - 1
             answer_logits = output.loop_logits[
                 row_index,
                 0,
                 depth - 1,
-                first_answer - 1,
+                decision_position,
             ].index_select(dim=-1, index=candidate_tensor)
-            predicted_token = candidates[int(answer_logits.float().argmax().item())]
+            predicted_token = candidate_contract.candidate_final_token_ids[
+                int(answer_logits.float().argmax().item())
+            ]
             answer_correct += int(predicted_token == target_token)
             answer_total += 1
     scored = score_control_predictions(control_rows, max_loops=max_loops)
@@ -338,7 +338,13 @@ def main() -> int:
         shuffle=False,
         collate_fn=partial(collate_pilot, pad_token_id=tokenizer.pad_token_id),
     )
-    candidates = candidate_token_ids(tokenizer)
+    if not pilot_dataset.base.rows:
+        raise AssertionError("P0 pilot dataset is empty")
+    candidate_contract = build_candidate_suffix_contract(
+        tokenizer,
+        prompt=str(pilot_dataset.base.rows[0]["prompt"]),
+        n_symbols=16,
+    )
     continue_id = int(tokenizer.convert_tokens_to_ids(INTERNAL_CONTROL_TOKENS[0]))
     stop_id = int(tokenizer.convert_tokens_to_ids(INTERNAL_CONTROL_TOKENS[1]))
     readout_id = int(tokenizer.convert_tokens_to_ids(INTERNAL_CONTROL_TOKENS[2]))
@@ -444,7 +450,7 @@ def main() -> int:
                 readout_token_id=readout_id,
                 continue_token_id=continue_id,
                 stop_token_id=stop_id,
-                candidates=candidates,
+                candidate_contract=candidate_contract,
                 device=args.device,
                 max_loops=8,
             )
@@ -478,6 +484,7 @@ def main() -> int:
         "control_token_resize": resize.to_dict(),
         "split_control_rows": split_rows.to_dict(),
         "class_weights": {"continue": class_weights[0], "stop": class_weights[1]},
+        "candidate_suffix_contract": candidate_contract.to_dict(),
         "setup": setup,
         "logical_trainable_parameters": logical_trainable_summary(wrapper, embedding, control_ids),
         "frozen_embedding_prefix_sha256_start": frozen_prefix_sha_start,

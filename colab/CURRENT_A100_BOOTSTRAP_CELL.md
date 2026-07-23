@@ -174,6 +174,7 @@ TARGETS = {
             "dedicated 256 row pilot slice never enters a registered set",
             "exact 70 percent control 30 percent mechanism rehearsal",
             "no silent sweep extension when both recalls miss 0.60",
+            "exact shared-prefix multi-token candidate scoring",
             "tests/test_internal_think_token_t1.py",
             "colab/run_stage5_paper2_phase_t1_p0.py",
         ],

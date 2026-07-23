@@ -26,6 +26,24 @@ class PilotCell:
         return asdict(self)
 
 
+@dataclass(frozen=True)
+class CandidateSuffixContract:
+    """Exact fast-scoring contract for candidates with one shared prefix."""
+
+    prompt_token_count: int
+    common_prefix_token_ids: tuple[int, ...]
+    candidate_values: tuple[int, ...]
+    candidate_final_token_ids: tuple[int, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "prompt_token_count": self.prompt_token_count,
+            "common_prefix_token_ids": list(self.common_prefix_token_ids),
+            "candidate_values": list(self.candidate_values),
+            "candidate_final_token_ids": list(self.candidate_final_token_ids),
+        }
+
+
 def _number_slug(value: float) -> str:
     return f"{float(value):g}".replace(".", "p")
 
@@ -53,6 +71,51 @@ def pilot_grid() -> list[PilotCell]:
                 )
             )
     return cells
+
+
+def build_candidate_suffix_contract(
+    tokenizer: Any,
+    *,
+    prompt: str,
+    n_symbols: int,
+) -> CandidateSuffixContract:
+    """Verify exact sequence scoring can share a teacher-forced prefix.
+
+    A candidate completion may contain multiple tokens. Fast scoring remains
+    exact when every candidate has the same nonempty-or-empty prefix and one
+    distinct final token. The shared-prefix likelihood cancels when candidates
+    are compared, and all candidate sequences have the same length.
+    """
+
+    prompt_ids = list(tokenizer(prompt, add_special_tokens=True)["input_ids"])
+    suffixes: list[tuple[int, ...]] = []
+    for value in range(int(n_symbols)):
+        full_ids = list(
+            tokenizer(prompt + f" {value}", add_special_tokens=True)["input_ids"]
+        )
+        if full_ids[: len(prompt_ids)] != prompt_ids:
+            raise AssertionError(
+                "Candidate tokenization changed the prompt prefix; exact fast scoring "
+                f"is unavailable for symbol {value}"
+            )
+        suffix = tuple(int(token_id) for token_id in full_ids[len(prompt_ids) :])
+        if not suffix:
+            raise AssertionError(f"Candidate symbol {value} has an empty token suffix")
+        suffixes.append(suffix)
+    prefix = suffixes[0][:-1]
+    if any(suffix[:-1] != prefix for suffix in suffixes):
+        raise AssertionError(
+            "P0 candidates do not share one exact token prefix before their final token"
+        )
+    final_ids = tuple(suffix[-1] for suffix in suffixes)
+    if len(set(final_ids)) != int(n_symbols):
+        raise AssertionError("P0 candidate final token IDs are not unique")
+    return CandidateSuffixContract(
+        prompt_token_count=len(prompt_ids),
+        common_prefix_token_ids=prefix,
+        candidate_values=tuple(range(int(n_symbols))),
+        candidate_final_token_ids=final_ids,
+    )
 
 
 def control_targets_for_depth(depth: int, *, max_loops: int) -> list[int]:
