@@ -26,6 +26,12 @@ vocabularies. The resize preserves the base model's global
 `tie_word_embeddings` policy; each new input/output row receives identical
 initial values and the added parameter count is recorded.
 
+Qwen2.5 pads its model vocabulary beyond `len(tokenizer)`. The executable
+preflight therefore registers inert administrative aliases for those existing
+padding IDs before adding the controls. These aliases add no model parameters;
+the three controls then occupy the three genuinely new embedding/LM-head rows.
+Both the alignment count and the three control IDs are recorded in the receipt.
+
 All three token logits are masked from visible autoregressive generation. The
 continue/stop values are read directly at a reserved per-loop control position.
 The readout token is an internal hidden-state anchor, not an answer token.

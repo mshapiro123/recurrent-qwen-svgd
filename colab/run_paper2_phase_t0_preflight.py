@@ -23,6 +23,7 @@ from training.internal_think_token_runtime import (  # noqa: E402
     forced_loop_accounting,
     install_internal_control_tokens,
     mask_internal_control_logits,
+    one_loop_identity_max_abs_diff,
 )
 from training.internal_think_token_spec import (  # noqa: E402
     INTERNAL_CONTROL_TOKENS,
@@ -107,19 +108,13 @@ def main() -> int:
     wrapper = load_recurrent_wrapper(loader_args(args), None)
     encoded = tokenizer(args.prompt, return_tensors="pt", add_special_tokens=True).to(args.device)
 
-    original_vocab_size = len(tokenizer)
     before = forward(wrapper, encoded, max_loops=1)
     resize = install_internal_control_tokens(tokenizer, wrapper.base_model)
     after = forward(wrapper, encoded, max_loops=1)
-    identity_max_abs_diff = float(
-        (
-            before.loop_logits.float()
-            - after.loop_logits[..., :original_vocab_size].float()
-        )
-        .abs()
-        .max()
-        .cpu()
-        .item()
+    identity_max_abs_diff = one_loop_identity_max_abs_diff(
+        before.loop_logits,
+        after.loop_logits,
+        original_model_vocab_size=resize.original_vocab_size,
     )
     if identity_max_abs_diff >= 1e-3:
         raise AssertionError(
@@ -180,7 +175,7 @@ def main() -> int:
                 "passed": identity_max_abs_diff < 1e-3,
                 "maximum": 1e-3,
                 "observed_max_abs_diff": identity_max_abs_diff,
-                "compared_original_vocab_rows": original_vocab_size,
+                "compared_original_vocab_rows": resize.original_vocab_size,
             },
             "loop_accounting": {"passed": True, **accounting},
         },

@@ -15,8 +15,10 @@ from training.internal_think_token_spec import (
 
 @dataclass(frozen=True)
 class ControlTokenResizeReceipt:
+    original_tokenizer_size: int
     original_vocab_size: int
     resized_vocab_size: int
+    tokenizer_alignment_token_count: int
     added_token_count: int
     control_token_ids: tuple[int, int, int]
     tie_word_embeddings_before: bool
@@ -54,7 +56,7 @@ def _unique_embedding_parameter_count(model: Any) -> int:
 
 
 def install_internal_control_tokens(tokenizer: Any, model: Any) -> ControlTokenResizeReceipt:
-    """Add exactly three internal tokens while preserving old rows and tie policy."""
+    """Add three control rows while preserving padded vocabularies and tie policy."""
 
     original_vocab = dict(tokenizer.get_vocab())
     validate_tokenizer_preflight(
@@ -66,6 +68,12 @@ def install_internal_control_tokens(tokenizer: Any, model: Any) -> ControlTokenR
     old_input = input_before.weight.detach().clone()
     old_output = output_before.weight.detach().clone()
     original_size = int(old_input.shape[0])
+    original_tokenizer_size = int(len(tokenizer))
+    if original_tokenizer_size > original_size:
+        raise AssertionError(
+            "Tokenizer is larger than the model embedding before control-token resize: "
+            f"tokenizer={original_tokenizer_size}, model={original_size}"
+        )
     policy_before = bool(getattr(model.config, "tie_word_embeddings", False))
     tied_before = _tied(input_before, output_before)
     if tied_before != policy_before:
@@ -74,6 +82,35 @@ def install_internal_control_tokens(tokenizer: Any, model: Any) -> ControlTokenR
         )
     parameters_before = _unique_embedding_parameter_count(model)
 
+    # Qwen reserves padded embedding rows beyond len(tokenizer). Fill only that
+    # ID namespace so the three controls map to the three newly allocated rows.
+    alignment_count = original_size - original_tokenizer_size
+    alignment_tokens = [
+        f"<|recur_reserved_id_{token_id}|>"
+        for token_id in range(original_tokenizer_size, original_size)
+    ]
+    collisions = sorted(set(alignment_tokens).intersection(original_vocab))
+    if collisions:
+        raise AssertionError(f"Tokenizer-alignment token collision: {collisions[:3]}")
+    if alignment_tokens:
+        if hasattr(tokenizer, "add_tokens"):
+            aligned = int(tokenizer.add_tokens(alignment_tokens, special_tokens=True))
+        else:
+            aligned = int(
+                tokenizer.add_special_tokens(
+                    {"additional_special_tokens": alignment_tokens}
+                )
+            )
+        if aligned != alignment_count:
+            raise AssertionError(
+                f"Expected {alignment_count} tokenizer-alignment tokens, observed {aligned}"
+            )
+    if len(tokenizer) != original_size:
+        raise AssertionError(
+            "Tokenizer was not aligned to the padded model vocabulary before controls: "
+            f"tokenizer={len(tokenizer)}, model={original_size}"
+        )
+
     added = int(
         tokenizer.add_special_tokens(
             {"additional_special_tokens": list(INTERNAL_CONTROL_TOKENS)}
@@ -81,10 +118,12 @@ def install_internal_control_tokens(tokenizer: Any, model: Any) -> ControlTokenR
     )
     if added != len(INTERNAL_CONTROL_TOKENS):
         raise AssertionError(f"Expected exactly three added control tokens, observed {added}")
+    if len(tokenizer) != original_size + len(INTERNAL_CONTROL_TOKENS):
+        raise AssertionError("Control tokens did not occupy the three new vocabulary IDs")
     try:
-        model.resize_token_embeddings(len(tokenizer), mean_resizing=False)
+        model.resize_token_embeddings(original_size + 3, mean_resizing=False)
     except TypeError:  # Older Transformers releases do not expose mean_resizing.
-        model.resize_token_embeddings(len(tokenizer))
+        model.resize_token_embeddings(original_size + 3)
 
     input_after = model.get_input_embeddings()
     output_after = model.get_output_embeddings()
@@ -147,8 +186,10 @@ def install_internal_control_tokens(tokenizer: Any, model: Any) -> ControlTokenR
             f"Added parameter count {added_parameters} != expected {expected_parameters}"
         )
     return ControlTokenResizeReceipt(
+        original_tokenizer_size=original_tokenizer_size,
         original_vocab_size=original_size,
         resized_vocab_size=original_size + 3,
+        tokenizer_alignment_token_count=alignment_count,
         added_token_count=added,
         control_token_ids=control_ids,
         tie_word_embeddings_before=policy_before,
@@ -174,6 +215,35 @@ def mask_internal_control_logits(
     masked = logits.clone()
     masked[..., list(token_ids)] = torch.finfo(masked.dtype).min
     return masked
+
+
+def one_loop_identity_max_abs_diff(
+    before_logits: torch.Tensor,
+    after_logits: torch.Tensor,
+    *,
+    original_model_vocab_size: int,
+) -> float:
+    """Compare all original model-vocabulary logits after a three-row resize."""
+
+    original_size = int(original_model_vocab_size)
+    if int(before_logits.shape[-1]) != original_size:
+        raise AssertionError(
+            "Before-resize logits do not match the recorded model vocabulary: "
+            f"logits={before_logits.shape[-1]}, recorded={original_size}"
+        )
+    if int(after_logits.shape[-1]) < original_size:
+        raise AssertionError(
+            "After-resize logits are smaller than the original model vocabulary"
+        )
+    return float(
+        (
+            before_logits.float()
+            - after_logits[..., :original_size].float()
+        )
+        .abs()
+        .max()
+        .item()
+    )
 
 
 def forced_loop_accounting(

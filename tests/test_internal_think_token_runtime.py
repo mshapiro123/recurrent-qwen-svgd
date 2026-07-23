@@ -10,6 +10,7 @@ from training.internal_think_token_runtime import (
     forced_loop_accounting,
     install_internal_control_tokens,
     mask_internal_control_logits,
+    one_loop_identity_max_abs_diff,
 )
 from training.internal_think_token_spec import INTERNAL_CONTROL_TOKENS
 
@@ -29,6 +30,15 @@ class TinyTokenizer:
                 added += 1
         return added
 
+    def add_tokens(self, tokens: list[str], *, special_tokens: bool = False) -> int:
+        del special_tokens
+        added = 0
+        for token in tokens:
+            if token not in self.vocab:
+                self.vocab[token] = len(self.vocab)
+                added += 1
+        return added
+
     def convert_tokens_to_ids(self, token: str) -> int:
         return self.vocab[token]
 
@@ -37,11 +47,11 @@ class TinyTokenizer:
 
 
 class TinyLM(nn.Module):
-    def __init__(self, *, tied: bool) -> None:
+    def __init__(self, *, tied: bool, vocab_size: int = 5) -> None:
         super().__init__()
-        self.config = SimpleNamespace(tie_word_embeddings=tied, vocab_size=5)
-        self.input = nn.Embedding(5, 4)
-        self.output = nn.Linear(4, 5, bias=False)
+        self.config = SimpleNamespace(tie_word_embeddings=tied, vocab_size=vocab_size)
+        self.input = nn.Embedding(vocab_size, 4)
+        self.output = nn.Linear(4, vocab_size, bias=False)
         if tied:
             self.output.weight = self.input.weight
 
@@ -86,6 +96,23 @@ def test_control_token_resize_preserves_policy_rows_and_pair_initialization(tied
     )
 
 
+@pytest.mark.parametrize("tied", [False, True])
+def test_control_tokens_follow_padded_model_vocabulary_without_shrinking(tied: bool) -> None:
+    tokenizer = TinyTokenizer()
+    model = TinyLM(tied=tied, vocab_size=8)
+
+    receipt = install_internal_control_tokens(tokenizer, model)
+
+    assert receipt.original_tokenizer_size == 5
+    assert receipt.tokenizer_alignment_token_count == 3
+    assert receipt.original_vocab_size == 8
+    assert receipt.resized_vocab_size == 11
+    assert receipt.added_token_count == 3
+    assert receipt.control_token_ids == (8, 9, 10)
+    assert model.get_input_embeddings().weight.shape[0] == 11
+    assert model.get_output_embeddings().weight.shape[0] == 11
+
+
 def test_visible_generation_mask_blocks_adversarially_high_control_logits() -> None:
     logits = torch.zeros(2, 8)
     logits[:, [5, 6, 7]] = 1000
@@ -96,6 +123,24 @@ def test_visible_generation_mask_blocks_adversarially_high_control_logits() -> N
     assert masked.argmax(dim=-1).tolist() == [3, 3]
     assert torch.all(masked[:, [5, 6, 7]] == torch.finfo(masked.dtype).min)
     assert torch.equal(logits[:, [5, 6, 7]], torch.full((2, 3), 1000.0))
+
+
+def test_identity_comparison_uses_original_model_vocab_not_tokenizer_length() -> None:
+    before = torch.arange(16, dtype=torch.float32).reshape(2, 8)
+    after = torch.cat([before.clone(), torch.ones(2, 3)], dim=-1)
+
+    assert one_loop_identity_max_abs_diff(
+        before,
+        after,
+        original_model_vocab_size=8,
+    ) == 0.0
+
+    with pytest.raises(AssertionError, match="recorded model vocabulary"):
+        one_loop_identity_max_abs_diff(
+            before,
+            after,
+            original_model_vocab_size=5,
+        )
 
 
 def test_forced_loop_accounting_requires_all_three_counts_to_agree() -> None:
