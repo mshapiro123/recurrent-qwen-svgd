@@ -1,7 +1,12 @@
-# Phase T1 Draft 2 Implementation Note
+# Phase T1 P0 Implementation Note - Draft 3 Amendment
 
 **Status:** P0 is authorized. Registered T1 remains unlocked and no registered
 T1 training launcher exists.
+
+Draft 3 descopes registered T1 to one full-block T1-lite lineage. P0 remains
+authorized on the R16 adapter lineage because Mark elected to run it, but its
+role is now limited to loss feasibility and selection of candidate constants.
+It is not matched-lineage evidence for T1-lite.
 
 ## Implemented now
 
@@ -27,10 +32,10 @@ T1 training launcher exists.
 - Compact checkpoints store LoRA, bridge, and only the three control rows.
   Checkpoints are copied to Drive at each 500-step readout. JSON and log
   receipts land in GitHub after each completed cell.
-- Selection is automatic and immutable: both class recalls must reach 0.60 at
-  step 1,500, then answer-accuracy drop versus lambda zero is minimized, with
-  ties toward lambda 1 and ratio 3.5. If no cell qualifies, the run exits
-  blocked and does not extend the grid.
+- Both class recalls must reach 0.60 at step 1,500, then answer-accuracy drop
+  versus the lambda-zero reference is minimized over all nine non-reference
+  cells, with ties toward lambda 1 and then ratio 3.5. If no cell qualifies,
+  the run exits blocked and does not extend the grid.
 
 ## Receipt reconciliation completed before lock
 
@@ -41,17 +46,18 @@ The mechanism-installation recipe is copied from
 trainable adapters float32, stage learning rates `2e-5` then `1e-5`, and bridge
 Prelude multiplier 1 then 10.
 
-The Gate 1 floors are integer-correct. The full-block reference is 1005/1024;
-subtracting 0.03 gives 974.28 rows, hence a minimum of 975. The adapter
-reference is 1021/1024; subtracting 0.03 gives 990.28, hence a minimum of 991.
-Canonical receipts and checkpoint SHAs are encoded in
+The T1-lite Gate 1 floor is integer-correct. The full-block reference is
+1005/1024; subtracting 0.03 gives 974.28 rows, hence a minimum of 975.
+The former adapter gate is no longer part of registered T1. Canonical receipts
+and checkpoint SHAs are encoded in
 `training/internal_think_token_t1_spec.py`.
 
 ## Still required before registered T1
 
 1. Run P0 and apply its selection rule.
 2. Insert the selected lambda, realized label counts, and normalized class
-   weights into Draft 2 and `preregistration.json`.
-3. Commit the final Draft 2 and machine-readable preregistration with status
+   weights into Draft 3 and `preregistration.json`, explicitly recording that
+   calibration transferred from the adapter P0 to full-block T1-lite.
+3. Commit the final Draft 3 and machine-readable preregistration with status
    `locked_before_training`.
 4. Only then add and run registered T1 training launchers.

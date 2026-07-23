@@ -18,7 +18,6 @@ CHAIN_MARGIN_POINTS = 0.03
 SELF_HALTED_MARGIN_POINTS = 0.03
 CONTROL_ACCURACY_FLOOR = 0.90
 FULL_BLOCK_GATE1_FLOOR = 975
-ADAPTER_GATE1_FLOOR = 991
 
 
 def phase_t1_draft() -> dict[str, Any]:
@@ -30,6 +29,7 @@ def phase_t1_draft() -> dict[str, Any]:
     )
     return {
         "kind": "paper2_internal_think_token_phase_t1_preregistration",
+        "program_mode": "t1_lite_full_block_actuator_qualification",
         "status": "draft_not_locked",
         "training_authorized": False,
         "fresh_base_lineages": {
@@ -47,21 +47,11 @@ def phase_t1_draft() -> dict[str, Any]:
                     "trained_depths_total": 1024,
                 },
             },
-            "r16_adapter_bridge": {
-                "trainable": [
-                    "rank16_recurrent_block_lora",
-                    "repaired_split_bridge",
-                    "three_new_control_token_rows_only",
-                ],
-                "base_qwen_parameters_frozen": True,
-                "nonhalting_reference": {
-                    "receipt": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/summary.json",
-                    "arm": "E",
-                    "checkpoint_sha256": "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
-                    "trained_depths_correct": 1021,
-                    "trained_depths_total": 1024,
-                },
-            },
+        },
+        "descoped_lineage": {
+            "lineage": "r16_adapter_bridge",
+            "reason": "T1-lite qualifies the actuator for D0, whose substrate trains the full recurrent block",
+            "capacity_contrast_forfeited": True,
         },
         "data": {
             "family": "controlled synthetic transition family",
@@ -80,6 +70,13 @@ def phase_t1_draft() -> dict[str, Any]:
             "authorized_before_lock": True,
             "registered_t1_training": False,
             "lineage": "r16_adapter_bridge",
+            "registered_t1_lineage": "full_block",
+            "role_after_draft3_pivot": "loss_feasibility_and_hyperparameter_calibration_only",
+            "matched_lineage_evidence": False,
+            "transfer_rule": (
+                "the selected lambda and ratio may be locked for T1-lite, but the "
+                "full-block run must independently clear all four gates"
+            ),
             "seed": 9999,
             "steps_per_cell": 1500,
             "evaluation_steps": list(PILOT_STEPS),
@@ -108,23 +105,27 @@ def phase_t1_draft() -> dict[str, Any]:
                 {"stage": "chain_depth_le8", "support": list(TRAINED_DEPTHS), "steps": 2000, "lr": 1e-5},
                 {"stage": "chain_depth_le8_dose", "support": list(TRAINED_DEPTHS), "steps": 2000, "lr": 1e-5},
             ],
-            "total_steps_per_lineage": 10500,
+            "lineages": ["full_block"],
+            "total_steps": 10500,
             "optimizer": "adamw",
             "batch_size": 1,
             "gradient_accumulation_steps": 1,
             "effective_batch_size": 1,
             "weight_decay": 0.0,
             "max_grad_norm": 0.5,
-            "precision": {"base": "bfloat16", "trainable_adapters": "float32"},
+            "precision": {
+                "base_and_trainable_recurrent_block": "bfloat16",
+                "bridge_and_control_rows": "float32",
+            },
             "bridge_prelude_lr_multiplier": {
                 "primitive_depth1": 1.0,
                 "all_chain_stages": 10.0,
             },
-            "recipe_receipt": (
-                "outputs/stage5/stage5_adapter_budget_arm_e_20260718/"
-                "preregistration.json"
+            "recipe_receipt": "outputs/stage5/stage5_support8_dose_arm_20260706_153028/summary.json",
+            "recipe_config": (
+                "outputs/stage5/stage5_support8_dose_arm_20260706_153028/"
+                "chain_continuation_train_config.yaml"
             ),
-            "recipe_handoff": "docs/ARM_E_ADAPTER_BUDGET_PUBLICATION_HANDOFF_20260718.md",
             "training_seeds": [0],
             "single_seed_limitation_required": True,
         },
@@ -159,7 +160,6 @@ def phase_t1_draft() -> dict[str, Any]:
                 "rule": "forced-depth chain accuracy within three points of lineage reference",
                 "absolute_margin": CHAIN_MARGIN_POINTS,
                 "full_block_minimum_correct": FULL_BLOCK_GATE1_FLOOR,
-                "adapter_minimum_correct": ADAPTER_GATE1_FLOOR,
                 "total": 1024,
             },
             "self_halted_accuracy": {
@@ -206,6 +206,8 @@ def phase_t1_draft() -> dict[str, Any]:
             "multi-seed robustness",
         ],
         "phase_t2_authorized": False,
+        "d0_status": "preregistration_drafting_only",
+        "paper_packaging": "deferred_until_post_d0_pilot",
         "width_reopened": False,
     }
 
@@ -218,9 +220,11 @@ def validate_locked_phase_t1(payload: dict[str, Any]) -> None:
     budget = payload.get("proposed_training_budget", {})
     if budget.get("status") != "locked_before_training":
         raise AssertionError("Phase T1 training budget is not locked")
-    if int(budget.get("total_steps_per_lineage", 0)) <= 0:
-        raise AssertionError("Phase T1 requires a positive per-lineage step budget")
-    for lineage in ("full_block", "r16_adapter_bridge"):
+    if int(budget.get("total_steps", 0)) <= 0:
+        raise AssertionError("Phase T1-lite requires a positive step budget")
+    if budget.get("lineages") != ["full_block"]:
+        raise AssertionError("Phase T1-lite authorizes only the full-block lineage")
+    for lineage in ("full_block",):
         reference = payload["fresh_base_lineages"][lineage]["nonhalting_reference"]
         if not reference.get("receipt"):
             raise AssertionError(f"Phase T1 {lineage} lacks a non-halting reference")

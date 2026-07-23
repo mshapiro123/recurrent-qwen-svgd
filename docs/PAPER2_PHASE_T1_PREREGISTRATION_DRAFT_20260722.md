@@ -1,7 +1,8 @@
 # Phase T1 Preregistration - Internal Control-Token Halting
 
-**Draft 2, 2026-07-23. Status: `draft_not_locked`.** This incorporates
-Mark's markup round 1. It becomes binding only when committed as locked with a
+**Draft 3, 2026-07-23. Status: `draft_not_locked`.** This incorporates
+Mark's program pivot and descopes the registered experiment to T1-lite. It
+becomes binding only when committed as locked with a
 matching `preregistration.json`. No registered T1 training step may run before
 that lock. The authorized, uncitable P0 pilot below runs before the lock and
 informs its loss constants.
@@ -20,15 +21,17 @@ Depth is stated in the prompt. T1 is an information-path and actuator test,
 not a difficulty-inference test. No T1 result supports a claim about inferred
 difficulty, content-determined depth, or natural-language halting.
 
-## 2. Substrate And Lineages
+## 2. Substrate And T1-Lite Lineage
 
-Both lineages start fresh from `Qwen/Qwen2.5-0.5B-Instruct`, base SHA
+The single registered lineage starts fresh from `Qwen/Qwen2.5-0.5B-Instruct`, base SHA
 `960f8bf265ba2850c9cdd60a388a00f8f366464babe0507521f010cb7f34971f`,
 with Prelude 0-6, weight-tied Recurrent Block 6-18, Coda 18-24, the
 identity-preserving one-loop path, and repaired split re-entry bridge.
 
-1. Full block: the recurrent block trains.
-2. Adapter: recurrent R16 LoRA and bridge train; the pretrained backbone is frozen.
+The recurrent block, repaired split bridge, and three new control-token rows
+train. The earlier R16-plus-bridge registered lineage is descoped. T1-lite is
+an actuator qualification for the D0 program, whose substrate trains the full
+recurrent block. This forfeits the proposed T1 capacity comparison.
 
 The T0 contracts are prerequisites: exactly three reserved symbols,
 `<|recur_continue|>`, `<|recur_stop|>`, and `<|recur_readout|>`; tied
@@ -44,14 +47,15 @@ and exact loop accounting.
 - Train 10,500 steps: 500 at depth 1, 2,000 at support 1-2, 4,000 at support
   1-4, and two 2,000-step stages at support 1-8.
 - Use AdamW, batch size 1, gradient accumulation 1, weight decay 0, gradient
-  cap 0.5, bfloat16 base weights, and float32 trainable adapters.
+  cap 0.5, bfloat16 recurrent-block weights, and float32 bridge and control rows.
 - Use learning rate `2e-5` in the primitive stage and `1e-5` thereafter. The
   bridge Prelude LR multiplier is 1 in the primitive stage and 10 thereafter.
-- Primary training seed is 0 for both lineages. Section 10 governs seed 1.
+- Primary training seed is 0. Section 10 governs seed 1.
 - Maintain EMA 0.999. Evaluate raw and EMA, with final-step EMA primary.
 
-Recipe receipt:
-`outputs/stage5/stage5_adapter_budget_arm_e_20260718/preregistration.json`.
+Recipe receipt and configuration:
+`outputs/stage5/stage5_support8_dose_arm_20260706_153028/summary.json` and
+`outputs/stage5/stage5_support8_dose_arm_20260706_153028/chain_continuation_train_config.yaml`.
 
 ## 4. Loss And Pilot P0
 
@@ -71,10 +75,16 @@ are normalized to mean one over realized control labels.
 - Readouts at steps 500, 1,000, and 1,500: control loss, stop recall, continue
   recall, answer accuracy versus lambda zero, and gradient norms.
 
-Selection is fixed: retain cells with both recalls at least 0.60 at step 1,500,
-then choose the smallest answer-accuracy drop versus lambda zero. Break ties
-toward lambda 1 and ratio 3.5. If no cell qualifies, reassess openly before
-lock. Do not extend the grid silently.
+Retain cells with both recalls at least 0.60 at step 1,500, then choose the
+smallest answer-accuracy drop versus lambda zero over all nine non-reference
+cells. Break ties toward lambda 1 and then ratio 3.5. If no eligible cell
+qualifies, reassess openly before lock. Do not extend the grid silently.
+
+Under the Draft 3 pivot, P0 is a loss-feasibility and hyperparameter-calibration
+pilot only. Its adapter lineage is not matched to registered full-block
+T1-lite. A selected lambda and ratio may be transferred only by locking that
+choice before T1-lite; the full-block run must independently clear all four
+gates. P0 cannot support a T1-lite efficacy or capacity claim.
 
 ## 5. Frozen Evaluation Sets
 
@@ -89,7 +99,7 @@ last executed loop. Exhaustion is reported by depth.
 
 ## 6. Four Gates
 
-A lineage passes only if every gate passes at the final-step checkpoint.
+T1-lite passes only if every gate passes at the final-step checkpoint.
 
 ### Gate 1 - Substrate Preservation
 
@@ -99,10 +109,6 @@ matched non-halting reference.
 - Full block: reference 1005/1024; floor 975/1024. Receipt:
   `outputs/stage5/stage5_phase_a_surpass_receipt_20260714/summary.json`,
   checkpoint SHA `dc00f7b694ce32427eb13b0b85d365bc15e0c0317130bd22d4bbc3568544f71b`.
-- Adapter: reference 1021/1024; floor 991/1024. Receipt:
-  `outputs/stage5/stage5_adapter_budget_arm_e_20260718/summary.json`,
-  checkpoint SHA `bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839`.
-
 ### Gate 2 - Allocation Does Not Cost Competence
 
 Self-halted answer accuracy must be within 3 points of paired forced-depth
@@ -155,25 +161,23 @@ No superiority claim against these baselines is preregistered.
 
 ## 9. Expected Readings
 
-- Both pass: explicit token control is accurate, competence-preserving, and causal.
-- Full block only: controller learning may be capacity-sensitive.
-- Adapter only: constrained adaptation may better protect the mechanism.
+- Full pass: explicit token control is accurate, competence-preserving, and causal on the tested full-block substrate.
 - Gate 1 passes and Gate 2 fails: healthy substrate, weak allocation.
 - Gates 1 and 2 pass and Gate 3 fails: robustness masks imprecise routing.
 - Gate 1 fails: joint training damaged the mechanism; next question is staged
   or frozen-substrate controller training, not a rerun.
 - Gate 4 fails: implementation finding; apply its repair rule.
-- Both fail with healthy forced computation: this joint controller recipe fails.
+- A miss with healthy forced computation: this full-block joint-controller recipe fails.
 
 ## 10. Replication
 
-Seed 0 runs first. Seed 1 runs for every passing or near-threshold lineage.
+Seed 0 runs first. Seed 1 runs for a passing or near-threshold T1-lite result.
 Near-threshold means Gates 1, 2, and 4 pass and pooled Gate 3 is at least 0.85,
 or Gate 1 or Gate 2 misses by no more than 1.5 points while all other gates
 pass.
 
-A positive headline requires the passing lineage to pass at seed 1. A strong
-negative boundary requires the better lineage to be confirmed at seed 1.
+A positive headline requires T1-lite to pass at seed 1. A strong negative
+boundary requires the result to be confirmed at seed 1.
 
 ## 11. Checkpoint Policy
 
@@ -189,7 +193,7 @@ governs any mid-run guardrail event.
 
 - Inferred difficulty, content-determined depth, or natural-language halting.
 - More than description at depths 9-14.
-- Cross-lineage capacity/protection stories without seed-1 confirmation.
+- Any cross-budget capacity or protection claim; T1-lite has one lineage.
 - Superiority or inferiority to Section 8 baselines.
 - Transition micro-accuracy as depth-selection evidence.
 - Any intermediate-checkpoint number as a primary result.

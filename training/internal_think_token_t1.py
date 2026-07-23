@@ -27,20 +27,20 @@ class PilotCell:
 
 
 @dataclass(frozen=True)
-class CandidateSuffixContract:
-    """Exact fast-scoring contract for candidates with one shared prefix."""
+class CandidateTrieContract:
+    """Exact candidate sequences and their shared teacher-forced prefixes."""
 
     prompt_token_count: int
-    common_prefix_token_ids: tuple[int, ...]
     candidate_values: tuple[int, ...]
-    candidate_final_token_ids: tuple[int, ...]
+    candidate_token_ids: tuple[tuple[int, ...], ...]
+    scoring_prefixes: tuple[tuple[int, ...], ...]
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "prompt_token_count": self.prompt_token_count,
-            "common_prefix_token_ids": list(self.common_prefix_token_ids),
             "candidate_values": list(self.candidate_values),
-            "candidate_final_token_ids": list(self.candidate_final_token_ids),
+            "candidate_token_ids": [list(tokens) for tokens in self.candidate_token_ids],
+            "scoring_prefixes": [list(tokens) for tokens in self.scoring_prefixes],
         }
 
 
@@ -73,19 +73,25 @@ def pilot_grid() -> list[PilotCell]:
     return cells
 
 
-def build_candidate_suffix_contract(
+def candidate_trie_edges(
+    contract: CandidateTrieContract,
+) -> dict[tuple[int, ...], tuple[tuple[int, int], ...]]:
+    """Map every scored prefix to ``(candidate_index, next_token_id)`` edges."""
+
+    edges: dict[tuple[int, ...], list[tuple[int, int]]] = {}
+    for candidate_index, sequence in enumerate(contract.candidate_token_ids):
+        for offset, next_token_id in enumerate(sequence):
+            edges.setdefault(sequence[:offset], []).append((candidate_index, next_token_id))
+    return {prefix: tuple(values) for prefix, values in edges.items()}
+
+
+def build_candidate_trie_contract(
     tokenizer: Any,
     *,
     prompt: str,
     n_symbols: int,
-) -> CandidateSuffixContract:
-    """Verify exact sequence scoring can share a teacher-forced prefix.
-
-    A candidate completion may contain multiple tokens. Fast scoring remains
-    exact when every candidate has the same nonempty-or-empty prefix and one
-    distinct final token. The shared-prefix likelihood cancels when candidates
-    are compared, and all candidate sequences have the same length.
-    """
+) -> CandidateTrieContract:
+    """Build a prompt-boundary-safe trie for variable-length candidates."""
 
     prompt_ids = list(tokenizer(prompt, add_special_tokens=True)["input_ids"])
     suffixes: list[tuple[int, ...]] = []
@@ -102,19 +108,17 @@ def build_candidate_suffix_contract(
         if not suffix:
             raise AssertionError(f"Candidate symbol {value} has an empty token suffix")
         suffixes.append(suffix)
-    prefix = suffixes[0][:-1]
-    if any(suffix[:-1] != prefix for suffix in suffixes):
-        raise AssertionError(
-            "P0 candidates do not share one exact token prefix before their final token"
-        )
-    final_ids = tuple(suffix[-1] for suffix in suffixes)
-    if len(set(final_ids)) != int(n_symbols):
-        raise AssertionError("P0 candidate final token IDs are not unique")
-    return CandidateSuffixContract(
+    if len(set(suffixes)) != int(n_symbols):
+        raise AssertionError("P0 candidate token sequences are not unique")
+    prefixes = sorted(
+        {suffix[:offset] for suffix in suffixes for offset in range(len(suffix))},
+        key=lambda value: (len(value), value),
+    )
+    return CandidateTrieContract(
         prompt_token_count=len(prompt_ids),
-        common_prefix_token_ids=prefix,
         candidate_values=tuple(range(int(n_symbols))),
-        candidate_final_token_ids=final_ids,
+        candidate_token_ids=tuple(suffixes),
+        scoring_prefixes=tuple(prefixes),
     )
 
 
@@ -458,16 +462,11 @@ def select_pilot_cell(results: list[dict[str, Any]]) -> dict[str, Any]:
             "qualifying_cells": [],
         }
 
-    def tie_distance(row: dict[str, Any]) -> tuple[float, float]:
-        return (
-            abs(float(row["control_loss_lambda"]) - 1.0),
-            abs(float(row["stop_to_continue_ratio"]) - 3.5),
-        )
-
     qualifying.sort(
         key=lambda row: (
             float(row["answer_accuracy_drop"]),
-            *tie_distance(row),
+            abs(float(row["control_loss_lambda"]) - 1.0),
+            abs(float(row["stop_to_continue_ratio"]) - 3.5),
             str(row["cell_id"]),
         )
     )

@@ -3,9 +3,10 @@ from __future__ import annotations
 import pytest
 
 from training.internal_think_token_t1 import (
-    build_candidate_suffix_contract,
     augment_control_row,
+    build_candidate_trie_contract,
     build_pilot_mixture_rows,
+    candidate_trie_edges,
     class_weights_from_ratio,
     control_targets_for_depth,
     gate3_verdict,
@@ -25,19 +26,86 @@ class _TwoTokenSymbolTokenizer:
             return {"input_ids": [1, 2, 3]}
         if text.startswith(prompt + " "):
             value = int(text[len(prompt) + 1 :])
-            return {"input_ids": [1, 2, 3, 220, 1000 + value]}
+            suffix = (
+                [220, 1000 + value]
+                if value < 10
+                else [220, 1010, 1000 + value - 10]
+            )
+            return {"input_ids": [1, 2, 3, *suffix]}
         raise AssertionError(text)
 
 
-def test_candidate_suffix_contract_supports_shared_prefix_plus_symbol_token() -> None:
-    contract = build_candidate_suffix_contract(
+def test_candidate_trie_contract_supports_variable_length_sequences() -> None:
+    contract = build_candidate_trie_contract(
         _TwoTokenSymbolTokenizer(),
         prompt="Question\nAnswer:",
         n_symbols=16,
     )
     assert contract.prompt_token_count == 3
-    assert contract.common_prefix_token_ids == (220,)
-    assert contract.candidate_final_token_ids == tuple(range(1000, 1016))
+    assert contract.candidate_token_ids[0] == (220, 1000)
+    assert contract.candidate_token_ids[10] == (220, 1010, 1000)
+    assert contract.scoring_prefixes == ((), (220,), (220, 1010))
+    edges = candidate_trie_edges(contract)
+    assert edges[()] == tuple((index, 220) for index in range(16))
+    assert (10, 1010) in edges[(220,)]
+    assert edges[(220, 1010)] == tuple((index, 990 + index) for index in range(10, 16))
+
+
+def test_candidate_trie_batch_scores_exact_normalized_sequences() -> None:
+    torch = pytest.importorskip("torch")
+    from training.internal_think_token_t1 import CandidateTrieContract
+    from training.run_internal_think_token_p0_cell import score_candidate_trie_batch
+
+    contract = CandidateTrieContract(
+        prompt_token_count=2,
+        candidate_values=(0, 1),
+        candidate_token_ids=((10, 20), (10, 30, 40)),
+        scoring_prefixes=((), (10,), (10, 30)),
+    )
+
+    class _Output:
+        def __init__(self, loop_logits):
+            self.loop_logits = loop_logits
+
+    class _Wrapper:
+        def __call__(self, *, input_ids, max_loops, **kwargs):
+            del kwargs
+            batch_size, sequence_length = input_ids.shape
+            logits = torch.full(
+                (batch_size, 1, max_loops, sequence_length, 64),
+                -20.0,
+            )
+            for row in range(batch_size):
+                tokens = input_ids[row].tolist()
+                if tokens[-2:] == [10, 30]:
+                    logits[row, 0, :, sequence_length - 1, 40] = 0.0
+                elif tokens[-1:] == [10]:
+                    logits[row, 0, :, sequence_length - 1, 20] = -6.0
+                    logits[row, 0, :, sequence_length - 1, 30] = 0.0
+                else:
+                    raise AssertionError(tokens)
+            return _Output(logits)
+
+    batch = {
+        "input_ids": torch.tensor([[1, 2, 10, 30, 40]]),
+        "required_depth": torch.tensor([1]),
+    }
+    root_logits = torch.full((1, 64), -20.0)
+    root_logits[0, 10] = 0.0
+    scores = score_candidate_trie_batch(
+        _Wrapper(),
+        batch,
+        root_next_logits=root_logits,
+        answer_starts=torch.tensor([2]),
+        candidate_contract=contract,
+        pad_token_id=0,
+        device="cpu",
+        max_loops=1,
+    )
+
+    assert scores.shape == (1, 2)
+    assert int(scores.argmax(dim=-1).item()) == 1
+    assert float(scores[0, 1]) > float(scores[0, 0])
 
 
 def test_pilot_grid_is_locked_nine_cells_plus_reference() -> None:
@@ -158,14 +226,14 @@ def test_pilot_selection_filters_recalls_then_minimizes_answer_drop() -> None:
             "cell_id": "lambda2_ratio7",
             "control_loss_lambda": 2.0,
             "stop_to_continue_ratio": 7.0,
-            "step_1500": {"stop_recall": 0.9, "continue_recall": 0.7, "answer_accuracy": 0.86},
+            "step_1500": {"stop_recall": 0.9, "continue_recall": 0.7, "answer_accuracy": 0.90},
         },
     ]
 
     selected = select_pilot_cell(results)
 
     assert selected["status"] == "selected"
-    assert selected["selected_cell_id"] == "lambda1_ratio3p5"
+    assert selected["selected_cell_id"] == "lambda2_ratio7"
     assert selected["reference_answer_accuracy"] == pytest.approx(0.90)
 
 

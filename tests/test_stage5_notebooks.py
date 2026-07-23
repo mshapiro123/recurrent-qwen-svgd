@@ -1173,14 +1173,16 @@ def test_paper2_t1_p0_target_is_pilot_only_and_resumable() -> None:
     assert "P0 pilot only registered T1 remains locked" in cell
     assert "seed 9999 1500 steps checkpoints 500 1000 1500" in cell
     assert "exact 70 percent control 30 percent mechanism rehearsal" in cell
-    assert "exact shared-prefix multi-token candidate scoring" in cell
+    assert "exact normalized trie multi-token candidate scoring" in cell
+    assert "complete ten-cell calibration grid before coefficient lock" in cell
     assert "STAGE5_PAPER2_T1_P0_CELLS" in runner
     assert "pilot_disjoint_from_registered_sets" in runner
     assert "select_pilot_cell" in runner
     assert '"registered_t1_training": False' in trainer
     assert "split_internal_control_token_rows" in trainer
     assert "gather_control_examples" in trainer
-    assert "build_candidate_suffix_contract" in trainer
+    assert "build_candidate_trie_contract" in trainer
+    assert "score_candidate_trie_batch" in trainer
 
 
 def test_oracle_intrablock_control_target_is_locked() -> None:

@@ -1,8 +1,15 @@
 {
   "schema_version": 1,
   "program": "paper2_causal_control_of_recurrent_computation",
-  "status": "t0_passed_t1_preregistration_pending",
+  "status": "t0_passed_p0_authorized_t1_lite_and_d0_preregistrations_pending",
   "canonical_date": "2026-07-23",
+  "active_queue": {
+    "program_goal": "useful_natural_data_model_in_qwen_series",
+    "p0": "authorized_uncitable_adapter_loss_calibration",
+    "t1": "full_block_t1_lite_actuator_qualification_not_locked",
+    "d0": "speculative_decoding_depth_recoverability_preregistration_drafting",
+    "paper_two_packaging": "deferred_until_post_d0_pilot"
+  },
   "claims": [
     {
       "id": "guided_width_initial_exploratory",
@@ -124,9 +131,9 @@
     },
     {
       "id": "internal_token_halting",
-      "status": "t0_passed_t1_not_run",
-      "claim": "Token-pathway halting passed all no-training interface contracts but has not been trained or evaluated for learned halting.",
-      "scope": "Phase T0 executable preflight and draft Phase T1 preregistration only",
+      "status": "t0_passed_p0_authorized_t1_lite_not_run",
+      "claim": "Token-pathway halting passed all no-training interface contracts; an uncitable adapter P0 calibration is authorized, while full-block T1-lite has not run.",
+      "scope": "Phase T0 executable preflight, uncitable adapter P0 calibration, and draft full-block T1-lite preregistration only",
       "metrics": {
         "control_tokens_added": 3,
         "added_parameters": 2688,
@@ -134,7 +141,10 @@
         "identity_maximum": 0.001,
         "forced_requested_executed_selected_loops": 4,
         "all_five_t0_contracts_passed": true,
-        "training_performed": false
+        "training_performed": false,
+        "registered_t1_lineages": 1,
+        "registered_t1_lineage": "full_block",
+        "p0_lineage_matches_registered_t1": false
       },
       "evidence": [
         {
@@ -154,6 +164,24 @@
         "learned halting succeeds",
         "token-pathway control is causal",
         "natural-trace depth selection"
+      ]
+    },
+    {
+      "id": "speculative_depth_d0",
+      "status": "preregistration_drafting_not_authorized",
+      "claim": "No empirical D0 claim exists; the speculative-decoding depth-recoverability pilot is being specified.",
+      "scope": "Qwen-series teacher ladder; no dataset, labels, training, or evaluation run",
+      "evidence": [
+        {
+          "path": "docs/PAPER2_D0_SPECULATIVE_DEPTH_PREREGISTRATION_DRAFT_20260723.md",
+          "locator": "required decisions before lock"
+        }
+      ],
+      "do_not_claim": [
+        "speculative disagreement recovers useful depth labels",
+        "acceptance rate improves",
+        "natural reasoning improves",
+        "D0 training is authorized"
       ]
     }
   ],

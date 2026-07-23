@@ -8,24 +8,21 @@ from training.internal_think_token_t1_spec import (
 )
 
 
-def test_t1_draft_has_two_explicit_references_and_all_four_gates() -> None:
+def test_t1_lite_draft_has_one_full_block_reference_and_all_four_gates() -> None:
     spec = phase_t1_draft()
 
     assert spec["status"] == "draft_not_locked"
     assert spec["training_authorized"] is False
-    assert set(spec["fresh_base_lineages"]) == {
-        "full_block",
-        "r16_adapter_bridge",
-    }
+    assert spec["program_mode"] == "t1_lite_full_block_actuator_qualification"
+    assert set(spec["fresh_base_lineages"]) == {"full_block"}
     assert spec["fresh_base_lineages"]["full_block"]["nonhalting_reference"][
         "trained_depths_correct"
     ] == 1005
     assert spec["fresh_base_lineages"]["full_block"]["nonhalting_reference"][
         "checkpoint_sha256"
     ].startswith("dc00f7b6")
-    assert spec["fresh_base_lineages"]["r16_adapter_bridge"][
-        "nonhalting_reference"
-    ]["trained_depths_correct"] == 1021
+    assert spec["descoped_lineage"]["lineage"] == "r16_adapter_bridge"
+    assert spec["descoped_lineage"]["capacity_contrast_forfeited"] is True
     selection = spec["gates"]["control_selection"]
     assert selection["metric"] == "row_level_exact_selected_depth"
     assert selection["minimum_correct_each_depth"] == 115
@@ -52,13 +49,18 @@ def test_t1_draft_encodes_p0_without_authorizing_registered_training() -> None:
     assert pilot["authorized_before_lock"] is True
     assert pilot["registered_t1_training"] is False
     assert pilot["lineage"] == "r16_adapter_bridge"
+    assert pilot["registered_t1_lineage"] == "full_block"
+    assert pilot["matched_lineage_evidence"] is False
     assert pilot["seed"] == 9999
     assert pilot["steps_per_cell"] == 1500
     assert len(pilot["cells"]) == 10
     assert pilot["evaluation_steps"] == [500, 1000, 1500]
     assert pilot["selection"]["minimum_stop_recall"] == 0.60
     assert pilot["selection"]["minimum_continue_recall"] == 0.60
+    assert pilot["selection"]["tie_break"] == "toward_lambda_1_then_ratio_3p5"
     assert spec["training_authorized"] is False
+    assert spec["proposed_training_budget"]["lineages"] == ["full_block"]
+    assert spec["d0_status"] == "preregistration_drafting_only"
 
 
 def test_draft_cannot_authorize_training() -> None:

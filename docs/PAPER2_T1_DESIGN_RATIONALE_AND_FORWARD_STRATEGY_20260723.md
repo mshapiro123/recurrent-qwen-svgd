@@ -1,5 +1,12 @@
 # Paper Two T1 Design, Gate Rationale, and Forward Strategy
 
+> **Draft 3 amendment, 2026-07-23:** The registered experiment is now
+> full-block-only T1-lite, an actuator qualification for D0. The two-lineage
+> capacity comparison below is historical design rationale and is not
+> authorized. The governing documents are
+> `PAPER2_EXPERIMENTAL_PLAN_DRAFT3_20260723.md` and
+> `PAPER2_PHASE_T1_PREREGISTRATION_DRAFT_20260722.md` as amended to Draft 3.
+
 **Date:** 2026-07-23  
 **Status:** design and strategy memo; it does not lock T1 or authorize training  
 **Program:** causal control of recurrent computation

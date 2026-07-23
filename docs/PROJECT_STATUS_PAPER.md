@@ -2,7 +2,7 @@
 
 **Canonical date:** July 23, 2026
 **Part 1 status:** closed
-**Part 2 status:** causal-control program; Arm G closed on the tested frozen re-entry interface; Phase T0 passed; T1 preregistration not yet locked
+**Part 2 status:** useful-model program on the Qwen series; Arm G closed on the tested frozen re-entry interface; Phase T0 passed; adapter P0 calibration authorized; full-block T1-lite and D0 preregistrations not yet locked
 
 This page is the short status index. It replaces the earlier June recovery narrative, which became stale after the loop-closure repair, synthetic mechanism installation, Phase A dense-control comparison, and inverse-task boundary program.
 
@@ -18,6 +18,8 @@ This page is the short status index. It replaces the earlier June recovery narra
 - [Paper Two claim ledger](paper2_claim_evidence_ledger.json)
 - [Phase T0 internal-token specification](PAPER2_INTERNAL_THINK_TOKEN_PHASE0_SPEC_20260718.md)
 - [Phase T1 design rationale and forward strategy](PAPER2_T1_DESIGN_RATIONALE_AND_FORWARD_STRATEGY_20260723.md)
+- [Paper Two Draft 3 pivot](PAPER2_EXPERIMENTAL_PLAN_DRAFT3_20260723.md)
+- [D0 speculative-depth preregistration scaffold](PAPER2_D0_SPECULATIVE_DEPTH_PREREGISTRATION_DRAFT_20260723.md)
 - [Experiment log](EXPERIMENT_LOG.md)
 
 ## Established
@@ -78,10 +80,12 @@ adaptive substrate.
 
 ## Active Queue
 
-1. Review and lock the Phase T1 preregistration before any training step.
-2. Train the fresh-base full-block and R16-plus-bridge token-pathway halting lineages under that locked protocol.
-3. Convene the post-T1 decision point before reopening width or natural-trace work.
+1. Finish the uncitable adapter P0 calibration. Treat its selected constants as transferable candidates only.
+2. Lock and run one fresh-base full-block T1-lite actuator qualification under the unchanged four gates.
+3. Draft and lock D0: speculative-decoding depth recoverability on the Qwen teacher ladder.
+4. Run D0 only after the T1-lite verdict and D0 lock, then decide Paper Two packaging and whether the composite natural-trace track opens.
 
 Closed pending that decision: additional Phase G sweeps, coverage, selection,
 LPRM, per-trajectory halting, particles, SVGD, the intra-block oracle probe,
-pooled-head halting, rank ladders, and natural-trace training.
+pooled-head halting, rank ladders, and natural-trace training. The former
+adapter T1 lineage is descoped; T1-lite makes no cross-budget claim.

@@ -1436,3 +1436,13 @@ Colab/Drive backups for selected runs.
   shortcut consistency, exposure-bias repair, and content-determined synthetic
   halting. Design memo:
   `docs/PAPER2_T1_DESIGN_RATIONALE_AND_FORWARD_STRATEGY_20260723.md`.
+- 2026-07-23 Paper Two Draft 3 pivot: the positive-seeking program now targets
+  useful natural-data training in the Qwen series. Registered T1 is descoped
+  to one full-block T1-lite actuator qualification. The already authorized
+  adapter P0 grid remains uncitable and may select candidate loss constants,
+  but it is not matched-lineage evidence for T1-lite. D0 speculative-decoding
+  depth recoverability is next after the T1-lite verdict and its own locked
+  preregistration. Paper Two packaging is deferred until the D0 pilot. Arm G
+  remains closed under `NO-CHANNEL` and `BOTH_FAIL`; width and natural-trace
+  training remain unauthorized. Record:
+  `docs/PAPER2_EXPERIMENTAL_PLAN_DRAFT3_20260723.md`.

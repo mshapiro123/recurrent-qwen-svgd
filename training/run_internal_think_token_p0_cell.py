@@ -29,9 +29,10 @@ from training.internal_think_token_runtime import (
 )
 from training.internal_think_token_spec import INTERNAL_CONTROL_TOKENS
 from training.internal_think_token_t1 import (
-    CandidateSuffixContract,
+    CandidateTrieContract,
     PILOT_STEPS,
-    build_candidate_suffix_contract,
+    build_candidate_trie_contract,
+    candidate_trie_edges,
     class_weights_from_ratio,
     gather_control_examples,
     locate_readout_positions,
@@ -139,6 +140,95 @@ def compact_checkpoint_state(wrapper: Any, embedding: torch.nn.Parameter, contro
 
 
 @torch.no_grad()
+def score_candidate_trie_batch(
+    wrapper: Any,
+    batch: dict[str, torch.Tensor],
+    *,
+    root_next_logits: torch.Tensor,
+    answer_starts: torch.Tensor,
+    candidate_contract: CandidateTrieContract,
+    pad_token_id: int,
+    device: str,
+    max_loops: int,
+) -> torch.Tensor:
+    """Return exact length-normalized candidate log likelihoods.
+
+    Shared trie prefixes are evaluated once per batch. The empty-prefix logits
+    reuse the control-evaluation forward pass, so numeric candidates such as
+    0-15 require only the distinct nonempty branch prefixes as extra forwards.
+    """
+
+    batch_size = int(batch["input_ids"].shape[0])
+    candidate_scores = torch.zeros(
+        (batch_size, len(candidate_contract.candidate_values)),
+        dtype=torch.float32,
+        device=device,
+    )
+    depths = batch["required_depth"].to(device=device, dtype=torch.long)
+    row_indices = torch.arange(batch_size, device=device)
+
+    for prefix, edges in candidate_trie_edges(candidate_contract).items():
+        if not prefix:
+            next_logits = root_next_logits
+        else:
+            sequences: list[torch.Tensor] = []
+            sequence_lengths: list[int] = []
+            prefix_tensor = torch.tensor(prefix, device=device, dtype=torch.long)
+            for row_index in range(batch_size):
+                prompt_end = int(answer_starts[row_index].item())
+                sequence = torch.cat(
+                    [batch["input_ids"][row_index, :prompt_end], prefix_tensor]
+                )
+                sequences.append(sequence)
+                sequence_lengths.append(int(sequence.numel()))
+            padded_length = max(sequence_lengths)
+            prefix_input_ids = torch.full(
+                (batch_size, padded_length),
+                int(pad_token_id),
+                device=device,
+                dtype=torch.long,
+            )
+            prefix_attention_mask = torch.zeros_like(prefix_input_ids)
+            for row_index, sequence in enumerate(sequences):
+                length = sequence_lengths[row_index]
+                prefix_input_ids[row_index, :length] = sequence
+                prefix_attention_mask[row_index, :length] = 1
+            prefix_output = wrapper(
+                input_ids=prefix_input_ids,
+                attention_mask=prefix_attention_mask,
+                labels=None,
+                max_loops=max_loops,
+                use_cache=False,
+                return_dict=True,
+                return_loop_logits=True,
+            )
+            if prefix_output.loop_logits is None:
+                raise AssertionError("candidate trie scoring requires loop logits")
+            decision_positions = torch.tensor(
+                [length - 1 for length in sequence_lengths],
+                device=device,
+                dtype=torch.long,
+            )
+            next_logits = prefix_output.loop_logits[
+                row_indices,
+                0,
+                depths - 1,
+                decision_positions,
+            ].detach().clone()
+            del prefix_output
+        next_logprobs = torch.log_softmax(next_logits.float(), dim=-1)
+        for candidate_index, next_token_id in edges:
+            candidate_scores[:, candidate_index] += next_logprobs[:, next_token_id]
+
+    lengths = torch.tensor(
+        [len(tokens) for tokens in candidate_contract.candidate_token_ids],
+        device=device,
+        dtype=torch.float32,
+    )
+    return candidate_scores / lengths.unsqueeze(0)
+
+
+@torch.no_grad()
 def evaluate_pilot(
     wrapper: Any,
     loader: DataLoader,
@@ -146,7 +236,8 @@ def evaluate_pilot(
     readout_token_id: int,
     continue_token_id: int,
     stop_token_id: int,
-    candidate_contract: CandidateSuffixContract,
+    candidate_contract: CandidateTrieContract,
+    pad_token_id: int,
     device: str,
     max_loops: int,
 ) -> dict[str, Any]:
@@ -154,13 +245,10 @@ def evaluate_pilot(
     control_rows: list[dict[str, Any]] = []
     answer_correct = 0
     answer_total = 0
-    candidate_tensor = torch.tensor(
-        candidate_contract.candidate_final_token_ids,
-        device=device,
-        dtype=torch.long,
-    )
-    candidate_ids = set(candidate_contract.candidate_final_token_ids)
-    common_prefix = list(candidate_contract.common_prefix_token_ids)
+    sequence_to_candidate = {
+        sequence: candidate_index
+        for candidate_index, sequence in enumerate(candidate_contract.candidate_token_ids)
+    }
     for batch in loader:
         batch = {key: value.to(device) for key, value in batch.items()}
         output = wrapper(
@@ -172,37 +260,39 @@ def evaluate_pilot(
             return_dict=True,
             return_loop_logits=True,
         )
+        if output.loop_logits is None:
+            raise AssertionError("pilot evaluation requires loop logits")
         positions = locate_readout_positions(
             batch["input_ids"],
             readout_token_id=readout_token_id,
             control_active=batch["control_active"],
         )
+        answer_starts: list[int] = []
         for row_index in range(batch["input_ids"].shape[0]):
             depth = int(batch["required_depth"][row_index].item())
             position = int(positions[row_index].item())
-            if position < 0:
-                continue
-            two_class = output.loop_logits[
-                row_index,
-                0,
-                :max_loops,
-                position,
-            ].index_select(
-                dim=-1,
-                index=torch.tensor(
-                    [continue_token_id, stop_token_id],
-                    device=device,
-                    dtype=torch.long,
-                ),
-            )
-            predictions = two_class.float().argmax(dim=-1).tolist()
-            control_rows.append(
-                {
-                    "row_id": int(batch["row_index"][row_index].item()),
-                    "depth": depth,
-                    "predictions": predictions,
-                }
-            )
+            if position >= 0:
+                two_class = output.loop_logits[
+                    row_index,
+                    0,
+                    :max_loops,
+                    position,
+                ].index_select(
+                    dim=-1,
+                    index=torch.tensor(
+                        [continue_token_id, stop_token_id],
+                        device=device,
+                        dtype=torch.long,
+                    ),
+                )
+                predictions = two_class.float().argmax(dim=-1).tolist()
+                control_rows.append(
+                    {
+                        "row_id": int(batch["row_index"][row_index].item()),
+                        "depth": depth,
+                        "predictions": predictions,
+                    }
+                )
 
             active_labels = batch["labels"][row_index].ne(-100).nonzero(as_tuple=False).view(-1)
             if active_labels.numel() == 0:
@@ -210,28 +300,41 @@ def evaluate_pilot(
             first_answer = int(active_labels[0].item())
             if first_answer < 1:
                 raise AssertionError("pilot answer cannot begin at token zero")
-            answer_token_ids = batch["labels"][row_index, active_labels].tolist()
-            if answer_token_ids[:-1] != common_prefix:
+            answer_starts.append(first_answer)
+
+        answer_start_tensor = torch.tensor(answer_starts, device=device, dtype=torch.long)
+        row_indices = torch.arange(batch["input_ids"].shape[0], device=device)
+        depths = batch["required_depth"].to(device=device, dtype=torch.long)
+        root_next_logits = output.loop_logits[
+            row_indices,
+            0,
+            depths - 1,
+            answer_start_tensor - 1,
+        ].detach().clone()
+        del output
+        candidate_scores = score_candidate_trie_batch(
+            wrapper,
+            batch,
+            root_next_logits=root_next_logits,
+            answer_starts=answer_start_tensor,
+            candidate_contract=candidate_contract,
+            pad_token_id=pad_token_id,
+            device=device,
+            max_loops=max_loops,
+        )
+        predicted_indices = candidate_scores.argmax(dim=-1).tolist()
+        for row_index, predicted_index in enumerate(predicted_indices):
+            active_labels = batch["labels"][row_index].ne(-100).nonzero(as_tuple=False).view(-1)
+            target_sequence = tuple(
+                int(value)
+                for value in batch["labels"][row_index, active_labels].tolist()
+            )
+            if target_sequence not in sequence_to_candidate:
                 raise AssertionError(
-                    "Pilot answer tokens violate the verified candidate-prefix contract: "
-                    f"expected_prefix={common_prefix}, observed={answer_token_ids}"
+                    "Pilot answer tokens are not one of the verified candidate sequences: "
+                    f"observed={list(target_sequence)}"
                 )
-            target_token = int(answer_token_ids[-1])
-            if target_token not in candidate_ids:
-                raise AssertionError(
-                    f"pilot target token {target_token} is not a candidate final token"
-                )
-            decision_position = first_answer + len(common_prefix) - 1
-            answer_logits = output.loop_logits[
-                row_index,
-                0,
-                depth - 1,
-                decision_position,
-            ].index_select(dim=-1, index=candidate_tensor)
-            predicted_token = candidate_contract.candidate_final_token_ids[
-                int(answer_logits.float().argmax().item())
-            ]
-            answer_correct += int(predicted_token == target_token)
+            answer_correct += int(predicted_index == sequence_to_candidate[target_sequence])
             answer_total += 1
     scored = score_control_predictions(control_rows, max_loops=max_loops)
     scored.update(
@@ -340,11 +443,22 @@ def main() -> int:
     )
     if not pilot_dataset.base.rows:
         raise AssertionError("P0 pilot dataset is empty")
-    candidate_contract = build_candidate_suffix_contract(
+    candidate_contract = build_candidate_trie_contract(
         tokenizer,
         prompt=str(pilot_dataset.base.rows[0]["prompt"]),
         n_symbols=16,
     )
+    for row in pilot_dataset.base.rows[1:]:
+        row_contract = build_candidate_trie_contract(
+            tokenizer,
+            prompt=str(row["prompt"]),
+            n_symbols=16,
+        )
+        if row_contract.candidate_token_ids != candidate_contract.candidate_token_ids:
+            raise AssertionError(
+                "P0 candidate tokenization differs across pilot prompts; batched exact "
+                "trie scoring cannot share one contract"
+            )
     continue_id = int(tokenizer.convert_tokens_to_ids(INTERNAL_CONTROL_TOKENS[0]))
     stop_id = int(tokenizer.convert_tokens_to_ids(INTERNAL_CONTROL_TOKENS[1]))
     readout_id = int(tokenizer.convert_tokens_to_ids(INTERNAL_CONTROL_TOKENS[2]))
@@ -451,6 +565,7 @@ def main() -> int:
                 continue_token_id=continue_id,
                 stop_token_id=stop_id,
                 candidate_contract=candidate_contract,
+                pad_token_id=tokenizer.pad_token_id,
                 device=args.device,
                 max_loops=8,
             )
@@ -484,7 +599,10 @@ def main() -> int:
         "control_token_resize": resize.to_dict(),
         "split_control_rows": split_rows.to_dict(),
         "class_weights": {"continue": class_weights[0], "stop": class_weights[1]},
-        "candidate_suffix_contract": candidate_contract.to_dict(),
+        "candidate_trie_contract": {
+            **candidate_contract.to_dict(),
+            "score": "mean_token_log_probability_exact_sequence",
+        },
         "setup": setup,
         "logical_trainable_parameters": logical_trainable_summary(wrapper, embedding, control_ids),
         "frozen_embedding_prefix_sha256_start": frozen_prefix_sha_start,

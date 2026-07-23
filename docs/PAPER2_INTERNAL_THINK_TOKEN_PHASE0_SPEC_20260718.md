@@ -1,5 +1,10 @@
 # Paper 2 Phase T0: Internal Control-Token Preparation
 
+> **Draft 3 amendment, 2026-07-23:** Phase T0 remains valid and passed. The
+> registered successor is now one full-block T1-lite lineage. Any two-lineage
+> language below is historical and is superseded by
+> `PAPER2_EXPERIMENTAL_PLAN_DRAFT3_20260723.md`.
+
 **Status:** preparation only. No Paper 2 training is authorized by this file.
 
 ## Purpose

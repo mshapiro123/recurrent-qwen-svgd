@@ -32,11 +32,20 @@ def test_paper2_ledger_closes_tested_phase_g_route_and_records_t0_without_t1() -
     assert claims["terminal_oracle_train_fit_diagnostic"]["metrics"][
         "film_full_nondefault_control"
     ] < 0.25
-    assert claims["internal_token_halting"]["status"] == "t0_passed_t1_not_run"
+    assert claims["internal_token_halting"]["status"] == (
+        "t0_passed_p0_authorized_t1_lite_not_run"
+    )
     assert claims["internal_token_halting"]["metrics"][
         "all_five_t0_contracts_passed"
     ] is True
     assert claims["internal_token_halting"]["metrics"]["training_performed"] is False
+    assert claims["internal_token_halting"]["metrics"][
+        "p0_lineage_matches_registered_t1"
+    ] is False
+    assert claims["speculative_depth_d0"]["status"] == (
+        "preregistration_drafting_not_authorized"
+    )
+    assert payload["active_queue"]["t1"].startswith("full_block_t1_lite")
 
 
 def test_paper2_claim_evidence_paths_exist() -> None:
