@@ -1,6 +1,176 @@
 {
   "automatic_successor_authorized": false,
   "kind": "phase_g_oracle_train_readout_session",
+  "matched": {
+    "additive": {
+      "checks": {
+        "frozen_keeper_lineage": {
+          "observed": true,
+          "passed": true,
+          "required": true
+        },
+        "nondefault_branch_control": {
+          "correct": 48,
+          "minimum": 0.85,
+          "observed": 0.21333333333333335,
+          "passed": false,
+          "total": 225
+        },
+        "overall_transition_control": {
+          "correct": 98,
+          "minimum": 0.9,
+          "observed": 0.32131147540983607,
+          "passed": false,
+          "total": 305
+        },
+        "terminal_validity": {
+          "minimum": 0.71,
+          "observed": 0.8490566037735849,
+          "passed": true,
+          "total": 106,
+          "valid": 90
+        },
+        "transition_legality": {
+          "legal": 177,
+          "minimum": 0.95,
+          "observed": 0.580327868852459,
+          "passed": false,
+          "total": 305
+        },
+        "zeroed_conditioning_identity": {
+          "observed": true,
+          "passed": true,
+          "required": true
+        }
+      },
+      "conditioner_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/oracle_additive_ema_step_1500.pt",
+      "conditioner_sha256": "4d5f2cb78f8bab14c6449b4cea8d971f59ad76a661a995ae7e62e883e125235c",
+      "evaluation_kind": "posthoc_train_readout",
+      "frozen_lineage_after": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+      "frozen_lineage_before": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+      "gate_status": "blocked",
+      "identity_groups_exact": 32,
+      "keeper": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/natural_step2000.pt",
+      "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+      "kind": "phase_g_oracle_interface_arm",
+      "loaded_oracle_keys": [
+        "oracle_reentry_conditioner.branch_a.net.0.bias",
+        "oracle_reentry_conditioner.branch_a.net.0.weight",
+        "oracle_reentry_conditioner.branch_a.net.1.bias",
+        "oracle_reentry_conditioner.branch_a.net.1.weight",
+        "oracle_reentry_conditioner.branch_a.net.3.bias",
+        "oracle_reentry_conditioner.branch_a.net.3.weight",
+        "oracle_reentry_conditioner.branch_b.net.0.bias",
+        "oracle_reentry_conditioner.branch_b.net.0.weight",
+        "oracle_reentry_conditioner.branch_b.net.1.bias",
+        "oracle_reentry_conditioner.branch_b.net.1.weight",
+        "oracle_reentry_conditioner.branch_b.net.3.bias",
+        "oracle_reentry_conditioner.branch_b.net.3.weight"
+      ],
+      "observed_groups": 32,
+      "observed_rows": 106,
+      "observed_transitions": 305,
+      "passed": false,
+      "posthoc_diagnostic_only": true,
+      "registered_heldout_verdict_mutable": false,
+      "route": "additive",
+      "status": "finished",
+      "transition_control": {
+        "by_depth": {
+          "1": {
+            "control_rate": 0.5,
+            "correct": 8,
+            "legal": 16,
+            "legality_rate": 1.0,
+            "mean_target_margin": 0.08984375,
+            "total": 16
+          },
+          "2": {
+            "control_rate": 0.5227272727272727,
+            "correct": 23,
+            "legal": 40,
+            "legality_rate": 0.9090909090909091,
+            "mean_target_margin": 0.046875,
+            "total": 44
+          },
+          "3": {
+            "control_rate": 0.38271604938271603,
+            "correct": 31,
+            "legal": 56,
+            "legality_rate": 0.691358024691358,
+            "mean_target_margin": -0.8356481481481481,
+            "total": 81
+          },
+          "4": {
+            "control_rate": 0.21951219512195122,
+            "correct": 36,
+            "legal": 65,
+            "legality_rate": 0.39634146341463417,
+            "mean_target_margin": -1.416158536585366,
+            "total": 164
+          }
+        },
+        "by_loop_index": {
+          "1": {
+            "control_rate": 0.5849056603773585,
+            "correct": 62,
+            "legal": 99,
+            "legality_rate": 0.9339622641509434,
+            "mean_target_margin": 0.816627358490566,
+            "total": 106
+          },
+          "2": {
+            "control_rate": 0.26666666666666666,
+            "correct": 24,
+            "legal": 49,
+            "legality_rate": 0.5444444444444444,
+            "mean_target_margin": -1.8631944444444444,
+            "total": 90
+          },
+          "3": {
+            "control_rate": 0.11764705882352941,
+            "correct": 8,
+            "legal": 18,
+            "legality_rate": 0.2647058823529412,
+            "mean_target_margin": -2.317095588235294,
+            "total": 68
+          },
+          "4": {
+            "control_rate": 0.0975609756097561,
+            "correct": 4,
+            "legal": 11,
+            "legality_rate": 0.2682926829268293,
+            "mean_target_margin": -1.4085365853658536,
+            "total": 41
+          }
+        },
+        "default": {
+          "control_rate": 0.625,
+          "correct": 50,
+          "legal": 66,
+          "legality_rate": 0.825,
+          "mean_target_margin": 1.2484375,
+          "total": 80
+        },
+        "nondefault": {
+          "control_rate": 0.21333333333333335,
+          "correct": 48,
+          "legal": 111,
+          "legality_rate": 0.49333333333333335,
+          "mean_target_margin": -1.761388888888889,
+          "total": 225
+        },
+        "overall": {
+          "control_rate": 0.32131147540983607,
+          "correct": 98,
+          "legal": 177,
+          "legality_rate": 0.580327868852459,
+          "mean_target_margin": -0.9719262295081967,
+          "total": 305
+        }
+      }
+    }
+  },
   "matched_manifest": {
     "groups": 32,
     "groups_by_depth": {
@@ -24,5 +194,5 @@
   "registered_heldout_verdict": "BOTH_FAIL",
   "registered_heldout_verdict_changed": false,
   "run_id": "stage5_phase_g_oracle_train_readout_20260722",
-  "status": "started"
+  "status": "matched_additive_complete"
 }
