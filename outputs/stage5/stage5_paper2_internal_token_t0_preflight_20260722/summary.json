@@ -1,0 +1,143 @@
+{
+  "checkpoint_written": false,
+  "contracts": {
+    "loop_accounting": {
+      "executed_loops": 4,
+      "forced_counts_agree": true,
+      "passed": true,
+      "requested_loops": 4,
+      "selected_loop": 4
+    },
+    "one_loop_identity": {
+      "compared_original_vocab_rows": 151936,
+      "maximum": 0.001,
+      "observed_max_abs_diff": 0.0,
+      "passed": true
+    },
+    "tokenizer_collision": {
+      "collisions": [],
+      "passed": true,
+      "planned_tokens": [
+        "<|recur_continue|>",
+        "<|recur_stop|>",
+        "<|recur_readout|>"
+      ]
+    },
+    "visible_generation_masking": {
+      "adversarial_control_logits": true,
+      "control_token_ids": [
+        151936,
+        151937,
+        151938
+      ],
+      "passed": true,
+      "selected_visible_text": " A",
+      "selected_visible_token_id": 362
+    },
+    "vocabulary_resize": {
+      "added_parameter_count": 2688,
+      "added_token_count": 3,
+      "control_token_ids": [
+        151936,
+        151937,
+        151938
+      ],
+      "embedding_lm_head_tied_after": true,
+      "embedding_lm_head_tied_before": true,
+      "new_row_pair_max_abs_diff": 0.0,
+      "old_input_rows_max_abs_diff": 0.0,
+      "old_output_rows_max_abs_diff": 0.0,
+      "original_tokenizer_size": 151665,
+      "original_vocab_size": 151936,
+      "passed": true,
+      "resized_vocab_size": 151939,
+      "tie_word_embeddings_after": true,
+      "tie_word_embeddings_before": true,
+      "tokenizer_alignment_token_count": 271
+    }
+  },
+  "environment": {
+    "device": "cuda",
+    "dtype": "bfloat16",
+    "gpu": "NVIDIA L4",
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "transformers": "5.13.1"
+  },
+  "kind": "paper2_internal_think_token_phase_t0_preflight",
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "phase_t1_authorized_by_this_receipt": false,
+  "policy": {
+    "dependencies": {
+      "adapter_budget_arm_e_landed": true,
+      "first_phase_g_alpha_verdict_landed": true,
+      "paper1_experimental_closure": true
+    },
+    "forbidden": [
+      "pooled_head_halting",
+      "selector_sweep",
+      "rank_ladder",
+      "phase_t3_training",
+      "averaging_control_readouts_across_trajectories"
+    ],
+    "identity_contract": {
+      "control_decision_identity_required_for_K1_width_parity": true,
+      "control_inactive_max_loops_1_max_abs_diff": 0.001,
+      "control_inactive_preserves_loop_count": true,
+      "control_tokens_never_emitted": true
+    },
+    "kind": "internal_think_token_phase0_spec",
+    "logging_contract": {
+      "executed_loops": true,
+      "forced_vs_self_halted_pair_id": true,
+      "per_loop_continue_stop_logits": true,
+      "per_trajectory_unaveraged_control_readout": true,
+      "requested_loops": true,
+      "selected_stop_loop": true
+    },
+    "phase_t1": {
+      "authorization": "only_after Paper 1 closure, Arm E, and first Phase G-alpha verdict",
+      "claim_if_green": "token-pathway halting succeeds where the tested pooled-head halting path failed",
+      "gates": {
+        "causal_override_falsification_required": true,
+        "chain_diagonal_within_reference_points": 0.03,
+        "control_selection_accuracy_each_depth": 0.9,
+        "self_halted_within_forced_points": 0.03
+      },
+      "lineages": [
+        "adapter_budget_from_fresh_base_surgery",
+        "full_block_from_fresh_base_surgery"
+      ],
+      "training_mix": {
+        "control_targets": "segmented_step_boundaries",
+        "outcome_loss": true,
+        "rehearsal_fraction": 0.3
+      }
+    },
+    "phase_t2": {
+      "budget_force": "compare expected executed transitions under self-halting against matched forced-compute references with a calibration-locked margin",
+      "natural_trace_policy": "traces provide segmented step counts and verified final answers only; they never supervise hidden latent states"
+    },
+    "phase_t3": {
+      "authorized": false,
+      "named": true
+    },
+    "status": "preparation_only_not_authorized_for_training",
+    "tokens": {
+      "base_tokenizer_collision_check": "required_at_launch",
+      "control_path": "read continue/stop logits directly at the per-loop control position; intercept the decision before text decoding",
+      "count": 3,
+      "readout_token_role": "dedicated hidden-state probe/readout anchor, never a visible answer token",
+      "resize_policy": "resize input embeddings and LM head together while preserving the base model's global tie_word_embeddings policy; initialize each new input/output row identically and record the added parameter count",
+      "values": [
+        "<|recur_continue|>",
+        "<|recur_stop|>",
+        "<|recur_readout|>"
+      ],
+      "visible_generation_policy": "mask all control-token logits from user-visible autoregressive generation"
+    }
+  },
+  "split": "6,18",
+  "status": "passed_all_five_contracts",
+  "training_performed": false
+}
