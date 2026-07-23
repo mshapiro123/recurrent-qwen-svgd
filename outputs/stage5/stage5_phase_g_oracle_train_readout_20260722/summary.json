@@ -1,0 +1,28 @@
+{
+  "automatic_successor_authorized": false,
+  "kind": "phase_g_oracle_train_readout_session",
+  "matched_manifest": {
+    "groups": 32,
+    "groups_by_depth": {
+      "1": 8,
+      "2": 8,
+      "3": 8,
+      "4": 8
+    },
+    "row_id_sha256": "535f804294775d965ddb7bf5cb372af726b0f06d0a273b6a5fec624d6d757330",
+    "rows": 106,
+    "seed": 20260722,
+    "transitions": 305,
+    "variants_by_depth": {
+      "1": 16,
+      "2": 22,
+      "3": 27,
+      "4": 41
+    }
+  },
+  "posthoc_diagnostic_only": true,
+  "registered_heldout_verdict": "BOTH_FAIL",
+  "registered_heldout_verdict_changed": false,
+  "run_id": "stage5_phase_g_oracle_train_readout_20260722",
+  "status": "started"
+}

@@ -1,0 +1,47 @@
+{
+  "full_training_readout": {
+    "groups": 512,
+    "rows": 1899,
+    "transitions": 5617
+  },
+  "interpretation_bands": {
+    "between": "partial_fit",
+    "did_not_fit_command_mapping_at_or_below": 0.25,
+    "fit_seen_command_mapping_at_or_above": 0.85
+  },
+  "kind": "phase_g_oracle_train_readout_preregistration",
+  "matched_subset": {
+    "groups": 32,
+    "groups_by_depth": {
+      "1": 8,
+      "2": 8,
+      "3": 8,
+      "4": 8
+    },
+    "rows": 106,
+    "transitions": 305,
+    "variants_by_depth": {
+      "1": 16,
+      "2": 22,
+      "3": 27,
+      "4": 41
+    }
+  },
+  "metrics": [
+    "nondefault_transition_control",
+    "overall_transition_control",
+    "transition_legality",
+    "terminal_validity",
+    "per_loop_localization"
+  ],
+  "posthoc_diagnostic_only": true,
+  "prohibitions": [
+    "training",
+    "parameter_mutation",
+    "changing_the_registered_BOTH_FAIL_verdict",
+    "automatic_successor_authorization"
+  ],
+  "registered_heldout_verdict_mutable": false,
+  "seed": 20260722,
+  "status": "locked_before_gpu_evaluation"
+}

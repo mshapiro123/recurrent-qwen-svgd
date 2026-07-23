@@ -1,0 +1,19 @@
+{
+  "groups": 32,
+  "groups_by_depth": {
+    "1": 8,
+    "2": 8,
+    "3": 8,
+    "4": 8
+  },
+  "row_id_sha256": "535f804294775d965ddb7bf5cb372af726b0f06d0a273b6a5fec624d6d757330",
+  "rows": 106,
+  "seed": 20260722,
+  "transitions": 305,
+  "variants_by_depth": {
+    "1": 16,
+    "2": 22,
+    "3": 27,
+    "4": 41
+  }
+}
