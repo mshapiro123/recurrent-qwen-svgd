@@ -50,7 +50,12 @@ if HF_TOKEN:
     print("HF token loaded", flush=True)
 
 
-def run(command: list[str], *, cwd: Path | None = None) -> None:
+def run(
+    command: list[str],
+    *,
+    cwd: Path | None = None,
+    allowed_returncodes: tuple[int, ...] = (0,),
+) -> int:
     printable = " ".join(command).replace(GH_TOKEN, "****")
     print("$", printable, flush=True)
     process = subprocess.Popen(
@@ -66,10 +71,11 @@ def run(command: list[str], *, cwd: Path | None = None) -> None:
     for line in process.stdout:
         print(line, end="", flush=True)
     code = process.wait()
-    if code not in (0, 2):
+    if code not in allowed_returncodes:
         raise subprocess.CalledProcessError(code, command)
     if code == 2:
         print("P0 reached a preregistered blocked or partial exit (code 2).", flush=True)
+    return code
 
 
 def sync_repo() -> None:
@@ -105,7 +111,10 @@ try:
     )
     os.environ.setdefault("STAGE5_PAPER2_T1_P0_DTYPE", "bfloat16")
     os.environ.setdefault("STAGE5_PAPER2_T1_P0_EVAL_BATCH_SIZE", "4")
-    run([sys.executable, "colab/run_stage5_paper2_phase_t1_p0.py"])
+    run(
+        [sys.executable, "colab/run_stage5_paper2_phase_t1_p0.py"],
+        allowed_returncodes=(0, 2),
+    )
     print("P0 pilot finished or reached its preregistered no-selection exit.", flush=True)
     print("Registered T1 training remains locked until Draft 2 and preregistration.json are committed.", flush=True)
     if DISCONNECT:
