@@ -1425,3 +1425,14 @@ Colab/Drive backups for selected runs.
   requested/executed/selected loops all equaled four. No training occurred and
   no checkpoint was written. Receipt:
   `outputs/stage5/stage5_paper2_internal_token_t0_preflight_20260722/summary.json`.
+- 2026-07-23 Paper Two T1 design review: external primary-source review and
+  gate analysis retained the four-part causal design but identified four
+  preregistration details that must be resolved before lock: exact selected
+  depth rather than micro transition accuracy for gate 3, class-balanced
+  continue/stop supervision, intervention at the control logits for gate 4,
+  and integer/statistical readings for the three-point and 90-percent gates.
+  The review also pre-writes failure-localized successor paths: frozen
+  post-hoc control, randomized-depth backbone training, convergence exits,
+  shortcut consistency, exposure-bias repair, and content-determined synthetic
+  halting. Design memo:
+  `docs/PAPER2_T1_DESIGN_RATIONALE_AND_FORWARD_STRATEGY_20260723.md`.

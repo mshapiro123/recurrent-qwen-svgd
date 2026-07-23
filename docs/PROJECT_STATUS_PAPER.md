@@ -17,6 +17,7 @@ This page is the short status index. It replaces the earlier June recovery narra
 - [Arm G publication handoff](ARM_G_GUIDED_STOCHASTIC_WIDTH_PUBLICATION_HANDOFF_20260718.md)
 - [Paper Two claim ledger](paper2_claim_evidence_ledger.json)
 - [Phase T0 internal-token specification](PAPER2_INTERNAL_THINK_TOKEN_PHASE0_SPEC_20260718.md)
+- [Phase T1 design rationale and forward strategy](PAPER2_T1_DESIGN_RATIONALE_AND_FORWARD_STRATEGY_20260723.md)
 - [Experiment log](EXPERIMENT_LOG.md)
 
 ## Established
