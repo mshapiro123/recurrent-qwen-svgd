@@ -1387,3 +1387,7 @@ Colab/Drive backups for selected runs.
   `1292/1792`; paired A-only `262`, C-only `48`, two-sided exact
   `p=7.81e-37`). No checkpoint or model output changed. Receipt:
   `outputs/stage5/stage5_phase_a_dense_reader_audit_20260722/summary.json`.
+  The corrected preregistered A-over-B gate passes over depths 2-14; depth 1
+  is a `128/128` tie. Corrected 2,000-to-4,000 net changes are B `+1`, C `+1`,
+  and D `+13`, with no paired two-sided result below `0.50`. Paper-One marker
+  closure: `docs/PAPER_ONE_DENSE_READER_AUDIT_CLOSURE_20260722.md`.

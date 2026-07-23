@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from eval.dense_response_reader import extract_first_completed_symbol  # noqa: E402
+from colab.stage5_phase_a_surpass import surpass_gate  # noqa: E402
 
 
 DEFAULT_SOURCE = ROOT / "outputs/stage5/stage5_synthetic_depth_frozen_eval_v2_depth14/data/test_chain_mcq.jsonl"
@@ -26,10 +27,11 @@ DEFAULT_RECURRENT_ROWS = (
 )
 DEFAULT_OUTPUT_DIR = ROOT / "outputs/stage5/stage5_phase_a_dense_reader_audit_20260722"
 ARM_SPECS = {
-    "B_step4000": "direct",
-    "C_step4000": "serialized_orbit_scratchpad",
-    "D_step4000": "direct",
+    f"{arm}_step{step}": "serialized_orbit_scratchpad" if arm == "C" else "direct"
+    for arm in "BCD"
+    for step in (2000, 4000)
 }
+PRIMARY_LABELS = ("B_step4000", "C_step4000", "D_step4000")
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -83,6 +85,53 @@ def paired_against_recurrent(
     }
 
 
+def paired_binary(left: dict[str, bool], right: dict[str, bool]) -> dict[str, Any]:
+    if set(left) != set(right):
+        raise RuntimeError("Paired row IDs differ")
+    left_only = sum(left[row_id] and not right[row_id] for row_id in left)
+    right_only = sum(right[row_id] and not left[row_id] for row_id in left)
+    discordant = left_only + right_only
+    one_sided = (
+        sum(math.comb(discordant, value) for value in range(left_only, discordant + 1))
+        / (2**discordant)
+        if discordant
+        else 1.0
+    )
+    return {
+        "left_only": left_only,
+        "right_only": right_only,
+        "ties": len(left) - discordant,
+        "net_correct": left_only - right_only,
+        "one_sided_p": one_sided,
+        "two_sided_p": exact_sign_test_two_sided(left_only, right_only),
+        "test": "exact_paired_sign_mcnemar",
+    }
+
+
+def corrected_hits(
+    rows: list[dict[str, Any]], source_by_id: dict[str, dict[str, Any]]
+) -> dict[str, bool]:
+    output: dict[str, bool] = {}
+    for row in rows:
+        row_id = str(row["id"])
+        prediction = extract_first_completed_symbol(
+            str(row.get("continuation") or ""),
+            candidates_for_row(source_by_id[row_id]),
+        )
+        output[row_id] = prediction == str(row["target"]).strip().upper()
+    return output
+
+
+def counts_by_depth(
+    hits: dict[str, bool], source_by_id: dict[str, dict[str, Any]]
+) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for row_id, hit in hits.items():
+        depth = str(int(source_by_id[row_id]["depth"]))
+        counts[depth] = counts.get(depth, 0) + int(hit)
+    return dict(sorted(counts.items(), key=lambda item: int(item[0])))
+
+
 def audit_arm(
     rows: list[dict[str, Any]],
     source_by_id: dict[str, dict[str, Any]],
@@ -90,7 +139,7 @@ def audit_arm(
     surface: str,
 ) -> dict[str, Any]:
     by_depth: dict[str, dict[str, int | float]] = {}
-    corrected_by_id: dict[str, bool] = {}
+    corrected_by_id = corrected_hits(rows, source_by_id)
     examples: list[dict[str, Any]] = []
     for row in rows:
         row_id = str(row["id"])
@@ -101,7 +150,6 @@ def audit_arm(
         )
         target = str(row["target"]).strip().upper()
         corrected = prediction == target
-        corrected_by_id[row_id] = corrected
         depth = str(int(row["depth"]))
         bucket = by_depth.setdefault(
             depth,
@@ -166,6 +214,7 @@ def build_audit(
     recurrent_rows = read_jsonl(recurrent_path)
     recurrent = {str(row["id"]): bool(row["same_reader_final_hit"]) for row in recurrent_rows}
     arms: dict[str, Any] = {}
+    corrected_by_label: dict[str, dict[str, bool]] = {}
     source_receipts: dict[str, Any] = {
         "frozen_rows": source_path.relative_to(ROOT).as_posix(),
         "frozen_rows_sha256": sha256_file(source_path),
@@ -178,10 +227,27 @@ def build_audit(
         if {str(row["id"]) for row in rows} != set(source_by_id):
             raise RuntimeError(f"{label} row IDs do not match the frozen source")
         arms[label] = audit_arm(rows, source_by_id, recurrent, surface)
+        corrected_by_label[label] = corrected_hits(rows, source_by_id)
         source_receipts[label] = {
             "path": rows_path.relative_to(ROOT).as_posix(),
             "sha256": sha256_file(rows_path),
         }
+    recurrent_counts = counts_by_depth(recurrent, source_by_id)
+    primary_b_counts = counts_by_depth(corrected_by_label["B_step4000"], source_by_id)
+    checkpoint_extension = {
+        arm: paired_binary(
+            corrected_by_label[f"{arm}_step4000"],
+            corrected_by_label[f"{arm}_step2000"],
+        )
+        for arm in "BCD"
+    }
+    tails = {
+        label: sum(
+            int(arms[label]["by_depth"][str(depth)]["corrected_correct"])
+            for depth in range(11, 15)
+        )
+        for label in PRIMARY_LABELS
+    }
     return {
         "kind": "stage5_phase_a_dense_first_response_reader_audit",
         "status": "corrected_reader_required",
@@ -193,6 +259,27 @@ def build_audit(
         ),
         "sources": source_receipts,
         "arms": arms,
+        "paper_one_audit": {
+            "corrected_tail_11_14": tails,
+            "a_vs_b_corrected_paired": paired_binary(
+                recurrent, corrected_by_label["B_step4000"]
+            ),
+            "a_vs_b_preregistered_count_gate": surpass_gate(
+                recurrent_counts,
+                primary_b_counts,
+            ),
+            "checkpoint_extension_step4000_vs_step2000": checkpoint_extension,
+            "dense_step4000_ordering": {
+                "D_minus_B_correct": (
+                    arms["D_step4000"]["corrected_correct"]
+                    - arms["B_step4000"]["corrected_correct"]
+                ),
+                "interpretation": (
+                    "The corrected 1.5B direct arm exceeds the corrected 0.5B direct arm, "
+                    "but its 2,000-to-4,000-step gain is not statistically resolved."
+                ),
+            },
+        },
     }
 
 
@@ -206,7 +293,8 @@ def render_markdown(payload: dict[str, Any]) -> str:
         "| Arm | Registered | Corrected | Delta | D1 | D2 | D4 |",
         "|---|---:|---:|---:|---:|---:|---:|",
     ]
-    for label, arm in payload["arms"].items():
+    for label in PRIMARY_LABELS:
+        arm = payload["arms"][label]
         by_depth = arm["by_depth"]
         lines.append(
             f"| {label} | {arm['registered_correct']} | {arm['corrected_correct']} | "
@@ -215,6 +303,15 @@ def render_markdown(payload: dict[str, Any]) -> str:
         )
     lines.extend(
         [
+            "",
+            "## Paper-One Marker Closure",
+            "",
+            f"- B tail, depths 11-14: `{payload['paper_one_audit']['corrected_tail_11_14']['B_step4000']}/512`.",
+            f"- D tail, depths 11-14: `{payload['paper_one_audit']['corrected_tail_11_14']['D_step4000']}/512`.",
+            "- A-versus-B primary gate: "
+            f"`{payload['paper_one_audit']['a_vs_b_preregistered_count_gate']['pass']}` over consecutive depths "
+            f"`{payload['paper_one_audit']['a_vs_b_preregistered_count_gate']['passing_consecutive_depths']}`.",
+            "- Depth 1 is a corrected tie (`128/128`); do not retain the old all-14-depth wording.",
             "",
             "The correction is evaluation-only. It does not alter checkpoints, frozen rows, or model outputs.",
             "",

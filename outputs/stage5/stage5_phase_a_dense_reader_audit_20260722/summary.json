@@ -1,5 +1,273 @@
 {
   "arms": {
+    "B_step2000": {
+      "by_depth": {
+        "1": {
+          "correct_delta": 0,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 1.0,
+          "registered_correct": 128,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "10": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.1328125,
+          "corrected_correct": 17,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.1328125,
+          "registered_correct": 17,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "11": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.1640625,
+          "corrected_correct": 21,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.1640625,
+          "registered_correct": 21,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "12": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.1171875,
+          "corrected_correct": 15,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.1171875,
+          "registered_correct": 15,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "13": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.09375,
+          "corrected_correct": 12,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.09375,
+          "registered_correct": 12,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "14": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.1171875,
+          "corrected_correct": 15,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.1171875,
+          "registered_correct": 15,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "2": {
+          "correct_delta": 16,
+          "corrected_accuracy": 0.75,
+          "corrected_correct": 96,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 20,
+          "registered_accuracy": 0.625,
+          "registered_correct": 80,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "3": {
+          "correct_delta": 15,
+          "corrected_accuracy": 0.4140625,
+          "corrected_correct": 53,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 55,
+          "registered_accuracy": 0.296875,
+          "registered_correct": 38,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "4": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.1328125,
+          "corrected_correct": 17,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 3,
+          "registered_accuracy": 0.1328125,
+          "registered_correct": 17,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "5": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.2265625,
+          "corrected_correct": 29,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.2265625,
+          "registered_correct": 29,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "6": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.171875,
+          "corrected_correct": 22,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.171875,
+          "registered_correct": 22,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "7": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.1953125,
+          "corrected_correct": 25,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.1953125,
+          "registered_correct": 25,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "8": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.15625,
+          "corrected_correct": 20,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.15625,
+          "registered_correct": 20,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "9": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.1953125,
+          "corrected_correct": 25,
+          "corrected_parse_failures": 1,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.1953125,
+          "registered_correct": 25,
+          "registered_parse_failures": 1,
+          "total": 128
+        }
+      },
+      "changed_examples": [
+        {
+          "continuation_prefix": " N\nThe final value after applying f to A is B.\n\nNow, apply f again starting from J.\nWhat is the final value?\nAnswer: J\n\n",
+          "corrected_prediction": "N",
+          "depth": 2,
+          "id": "test_d02_00002",
+          "registered_prediction": "J",
+          "target": "N"
+        },
+        {
+          "continuation_prefix": " O\nExplanation: J -> F\n\nApply f again.\nWhat is the final value?\nAnswer: C\nExplanation: N -> O\n\nThe function table provides",
+          "corrected_prediction": "O",
+          "depth": 2,
+          "id": "test_d02_00005",
+          "registered_prediction": "C",
+          "target": "O"
+        },
+        {
+          "continuation_prefix": " G\nExplanation: H\nThe final value is G.\n\nApply f again starting from the same initial value.\nWhat is the final value?\nAnswer: P\n",
+          "corrected_prediction": "G",
+          "depth": 2,
+          "id": "test_d02_00011",
+          "registered_prediction": "P",
+          "target": "G"
+        },
+        {
+          "continuation_prefix": " O\nExplanation: J -> E\n\nApply f again.\nWhat is the final value?\nAnswer: J -> E\nExplanation: E\nExplanation: J ->",
+          "corrected_prediction": "O",
+          "depth": 2,
+          "id": "test_d02_00016",
+          "registered_prediction": "J",
+          "target": "O"
+        },
+        {
+          "continuation_prefix": " G\nThe final value is D. \n\nApply f again to get the next value, which is B.\n\nFinal answer: B. \n\nNote: The function",
+          "corrected_prediction": "G",
+          "depth": 2,
+          "id": "test_d02_00025",
+          "registered_prediction": "B",
+          "target": "G"
+        },
+        {
+          "continuation_prefix": " N\n\nWhat is the second value?\nAnswer: L\n\nThe function table provides a mapping from each letter to its corresponding numerical value. In this case, the",
+          "corrected_prediction": "N",
+          "depth": 2,
+          "id": "test_d02_00027",
+          "registered_prediction": "L",
+          "target": "N"
+        },
+        {
+          "continuation_prefix": " F\nExplanation: J -> F\n\nApply f again.\nWhat is the final value?\nAnswer: B\nExplanation: K\n\nGiven the function table, what",
+          "corrected_prediction": "F",
+          "depth": 2,
+          "id": "test_d02_00031",
+          "registered_prediction": "B",
+          "target": "F"
+        },
+        {
+          "continuation_prefix": " P\nExplanation: K\nExplanation: D\n\nStart value: D\nApply f exactly once.\nWhat is the final value?\nAnswer: D\n\nExplanation:",
+          "corrected_prediction": "P",
+          "depth": 2,
+          "id": "test_d02_00034",
+          "registered_prediction": "D",
+          "target": "P"
+        },
+        {
+          "continuation_prefix": " K\n\nApply f again to the same input, what is the final value?\nAnswer: O\n\nThe function table provides a mapping from one input (C)",
+          "corrected_prediction": "K",
+          "depth": 2,
+          "id": "test_d02_00041",
+          "registered_prediction": "O",
+          "target": "K"
+        },
+        {
+          "continuation_prefix": " A\nWhat is the second value? D\n\nSolve for M using the function table.\nM -> B\nWhat is the final value?\nAnswer: C",
+          "corrected_prediction": "A",
+          "depth": 2,
+          "id": "test_d02_00045",
+          "registered_prediction": "C",
+          "target": "A"
+        },
+        {
+          "continuation_prefix": " H\nExplanation: B -> G\n\nApply f again.\nWhat is the final value?\nAnswer: A\nExplanation: I\n\nGiven the function table, what",
+          "corrected_prediction": "H",
+          "depth": 2,
+          "id": "test_d02_00048",
+          "registered_prediction": "A",
+          "target": "H"
+        },
+        {
+          "continuation_prefix": " E\nExplanation: C -> D\n\nApply f again.\nWhat is the final value?\nAnswer: I\nExplanation: I -> G\n\nGiven the function table",
+          "corrected_prediction": "E",
+          "depth": 2,
+          "id": "test_d02_00073",
+          "registered_prediction": "I",
+          "target": "E"
+        }
+      ],
+      "correct_delta": 31,
+      "corrected_correct": 495,
+      "corrected_parse_failures": 1,
+      "paired_against_full_block_recurrent": {
+        "recurrent_helped": 1049,
+        "recurrent_hurt": 38,
+        "recurrent_net_correct": 1011,
+        "two_sided_exact_sign_p": 2.9611417481094573e-257
+      },
+      "registered_correct": 464,
+      "rows": 1792,
+      "surface": "direct"
+    },
     "B_step4000": {
       "by_depth": {
         "1": {
@@ -268,6 +536,274 @@
       "rows": 1792,
       "surface": "direct"
     },
+    "C_step2000": {
+      "by_depth": {
+        "1": {
+          "correct_delta": 7,
+          "corrected_accuracy": 0.9921875,
+          "corrected_correct": 127,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 8,
+          "registered_accuracy": 0.9375,
+          "registered_correct": 120,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "10": {
+          "correct_delta": 36,
+          "corrected_accuracy": 0.9921875,
+          "corrected_correct": 127,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 38,
+          "registered_accuracy": 0.7109375,
+          "registered_correct": 91,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "11": {
+          "correct_delta": -4,
+          "corrected_accuracy": 0.1015625,
+          "corrected_correct": 13,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 37,
+          "registered_accuracy": 0.1328125,
+          "registered_correct": 17,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "12": {
+          "correct_delta": -10,
+          "corrected_accuracy": 0.0,
+          "corrected_correct": 0,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 48,
+          "registered_accuracy": 0.078125,
+          "registered_correct": 10,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "13": {
+          "correct_delta": -16,
+          "corrected_accuracy": 0.0,
+          "corrected_correct": 0,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 44,
+          "registered_accuracy": 0.125,
+          "registered_correct": 16,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "14": {
+          "correct_delta": -7,
+          "corrected_accuracy": 0.0,
+          "corrected_correct": 0,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 46,
+          "registered_accuracy": 0.0546875,
+          "registered_correct": 7,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "2": {
+          "correct_delta": 73,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 73,
+          "registered_accuracy": 0.4296875,
+          "registered_correct": 55,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "3": {
+          "correct_delta": 43,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 43,
+          "registered_accuracy": 0.6640625,
+          "registered_correct": 85,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "4": {
+          "correct_delta": 31,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 31,
+          "registered_accuracy": 0.7578125,
+          "registered_correct": 97,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "5": {
+          "correct_delta": 47,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 47,
+          "registered_accuracy": 0.6328125,
+          "registered_correct": 81,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "6": {
+          "correct_delta": 35,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 35,
+          "registered_accuracy": 0.7265625,
+          "registered_correct": 93,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "7": {
+          "correct_delta": 53,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 53,
+          "registered_accuracy": 0.5859375,
+          "registered_correct": 75,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "8": {
+          "correct_delta": 33,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 33,
+          "registered_accuracy": 0.7421875,
+          "registered_correct": 95,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "9": {
+          "correct_delta": 40,
+          "corrected_accuracy": 1.0,
+          "corrected_correct": 128,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 40,
+          "registered_accuracy": 0.6875,
+          "registered_correct": 88,
+          "registered_parse_failures": 0,
+          "total": 128
+        }
+      },
+      "changed_examples": [
+        {
+          "continuation_prefix": " steps: M answer: M answer: H answer: K answer: C answer: B answer: K answer: C answer: B answer: K answer: C answer: B answer: K answer: C answer: B answer: K answer: C answer: B answer: K answer: C answer: B answer: K answer: C answer: B ",
+          "corrected_prediction": "M",
+          "depth": 1,
+          "id": "test_d01_00000",
+          "registered_prediction": "C",
+          "target": "M"
+        },
+        {
+          "continuation_prefix": " steps: H answer: H answer: N answer: B answer: A answer: F answer: B answer: A answer: F answer: B answer: A answer: F answer: B answer: A answer: F answer: B answer: A answer: F answer: B answer: A answer: F answer: B answer: A answer: F ",
+          "corrected_prediction": "H",
+          "depth": 1,
+          "id": "test_d01_00025",
+          "registered_prediction": "A",
+          "target": "H"
+        },
+        {
+          "continuation_prefix": " steps: J answer: J answer: B answer: C answer: L answer: C answer: L answer: C answer: L answer: C answer: L answer: C answer: L answer: C answer: L answer: C answer: L answer: C answer: L answer: C answer: L answer: C answer: L answer: C ",
+          "corrected_prediction": "J",
+          "depth": 1,
+          "id": "test_d01_00036",
+          "registered_prediction": "C",
+          "target": "J"
+        },
+        {
+          "continuation_prefix": " steps: J answer: JHuman: I -> O answer: O answer: F answer: D answer: K answer: H answer: F answer: D answer: K answer: H answer: F answer: D answer: K answer: H answer: F answer: D answer: K answer: H answer: F answer: D answer: K answer:",
+          "corrected_prediction": "O",
+          "depth": 1,
+          "id": "test_d01_00061",
+          "registered_prediction": "K",
+          "target": "J"
+        },
+        {
+          "continuation_prefix": " steps: L answer: L answer: P answer: D answer: A answer: P answer: D answer: A answer: P answer: D answer: A answer: P answer: D answer: A answer: P answer: D answer: A answer: P answer: D answer: A answer: P answer: D answer: A answer: P ",
+          "corrected_prediction": "L",
+          "depth": 1,
+          "id": "test_d01_00063",
+          "registered_prediction": "A",
+          "target": "L"
+        },
+        {
+          "continuation_prefix": " steps: I answer: I answer: F answer: C answer: D answer: L answer: H answer: C answer: D answer: L answer: H answer: C answer: D answer: L answer: H answer: C answer: D answer: L answer: H answer: C answer: D answer: L answer: H answer: C ",
+          "corrected_prediction": "I",
+          "depth": 1,
+          "id": "test_d01_00069",
+          "registered_prediction": "C",
+          "target": "I"
+        },
+        {
+          "continuation_prefix": " steps: O answer: O answer: K answer: D answer: F answer: L answer: B answer: L answer: B answer: L answer: B answer: L answer: B answer: L answer: B answer: L answer: B answer: L answer: B answer: L answer: B answer: L answer: B answer: L ",
+          "corrected_prediction": "O",
+          "depth": 1,
+          "id": "test_d01_00076",
+          "registered_prediction": "L",
+          "target": "O"
+        },
+        {
+          "continuation_prefix": " steps: I answer: I answer: J answer: L answer: H answer: B answer: E answer: D answer: C answer: C answer: C answer: C answer: C answer: C answer: C answer: C answer: C answer: C answer: C answer: C answer: C answer: C answer: C answer: C ",
+          "corrected_prediction": "I",
+          "depth": 1,
+          "id": "test_d01_00089",
+          "registered_prediction": "C",
+          "target": "I"
+        },
+        {
+          "continuation_prefix": " steps: G -> P answer: P answer: N answer: L answer: J answer: K answer: L answer: J answer: K answer: L answer: J answer: K answer: L answer: J answer: K answer: L answer: J answer: K answer: L answer: J answer: K answer: L answer: J answe",
+          "corrected_prediction": "P",
+          "depth": 2,
+          "id": "test_d02_00001",
+          "registered_prediction": "L",
+          "target": "P"
+        },
+        {
+          "continuation_prefix": " steps: A -> N answer: N answer: B answer: N answer: B answer: N answer: B answer: N answer: B answer: N answer: B answer: N answer: B answer: N answer: B answer: N answer: B answer: N answer: B answer: N answer: B answer: N answer: B answe",
+          "corrected_prediction": "N",
+          "depth": 2,
+          "id": "test_d02_00002",
+          "registered_prediction": "B",
+          "target": "N"
+        },
+        {
+          "continuation_prefix": " steps: B -> O answer: O answer: A answer: F answer: D answer: J answer: C answer: O answer: A answer: F answer: D answer: J answer: C answer: O answer: A answer: F answer: D answer: J answer: C answer: O answer: A answer: F answer: D answe",
+          "corrected_prediction": "O",
+          "depth": 2,
+          "id": "test_d02_00003",
+          "registered_prediction": "C",
+          "target": "O"
+        },
+        {
+          "continuation_prefix": " steps: E -> O answer: O answer: L answer: F answer: M answer: J answer: F answer: M answer: J answer: F answer: M answer: J answer: F answer: M answer: J answer: F answer: M answer: J answer: F answer: M answer: J answer: F answer: M answe",
+          "corrected_prediction": "O",
+          "depth": 2,
+          "id": "test_d02_00005",
+          "registered_prediction": "F",
+          "target": "O"
+        }
+      ],
+      "correct_delta": 361,
+      "corrected_correct": 1291,
+      "corrected_parse_failures": 0,
+      "paired_against_full_block_recurrent": {
+        "recurrent_helped": 263,
+        "recurrent_hurt": 48,
+        "recurrent_net_correct": 215,
+        "two_sided_exact_sign_p": 4.610942864645599e-37
+      },
+      "registered_correct": 930,
+      "rows": 1792,
+      "surface": "serialized_orbit_scratchpad"
+    },
     "C_step4000": {
       "by_depth": {
         "1": {
@@ -535,6 +1071,274 @@
       "registered_correct": 952,
       "rows": 1792,
       "surface": "serialized_orbit_scratchpad"
+    },
+    "D_step2000": {
+      "by_depth": {
+        "1": {
+          "correct_delta": 112,
+          "corrected_accuracy": 0.9765625,
+          "corrected_correct": 125,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 115,
+          "registered_accuracy": 0.1015625,
+          "registered_correct": 13,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "10": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.1484375,
+          "corrected_correct": 19,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.1484375,
+          "registered_correct": 19,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "11": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.1484375,
+          "corrected_correct": 19,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.1484375,
+          "registered_correct": 19,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "12": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.1484375,
+          "corrected_correct": 19,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.1484375,
+          "registered_correct": 19,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "13": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.078125,
+          "corrected_correct": 10,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.078125,
+          "registered_correct": 10,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "14": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.1015625,
+          "corrected_correct": 13,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.1015625,
+          "registered_correct": 13,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "2": {
+          "correct_delta": 100,
+          "corrected_accuracy": 0.828125,
+          "corrected_correct": 106,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 120,
+          "registered_accuracy": 0.046875,
+          "registered_correct": 6,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "3": {
+          "correct_delta": 76,
+          "corrected_accuracy": 0.71875,
+          "corrected_correct": 92,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 121,
+          "registered_accuracy": 0.125,
+          "registered_correct": 16,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "4": {
+          "correct_delta": 5,
+          "corrected_accuracy": 0.5390625,
+          "corrected_correct": 69,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 11,
+          "registered_accuracy": 0.5,
+          "registered_correct": 64,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "5": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.328125,
+          "corrected_correct": 42,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.328125,
+          "registered_correct": 42,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "6": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.28125,
+          "corrected_correct": 36,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.28125,
+          "registered_correct": 36,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "7": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.25,
+          "corrected_correct": 32,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.25,
+          "registered_correct": 32,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "8": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.265625,
+          "corrected_correct": 34,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.265625,
+          "registered_correct": 34,
+          "registered_parse_failures": 0,
+          "total": 128
+        },
+        "9": {
+          "correct_delta": 0,
+          "corrected_accuracy": 0.2109375,
+          "corrected_correct": 27,
+          "corrected_parse_failures": 0,
+          "prediction_changed": 0,
+          "registered_accuracy": 0.2109375,
+          "registered_correct": 27,
+          "registered_parse_failures": 0,
+          "total": 128
+        }
+      },
+      "changed_examples": [
+        {
+          "continuation_prefix": " M\nApply f exactly 2 times.\nWhat is the final value?\nAnswer: H\nApply f exactly 3 times.\nWhat is the final value?\n",
+          "corrected_prediction": "M",
+          "depth": 1,
+          "id": "test_d01_00000",
+          "registered_prediction": "H",
+          "target": "M"
+        },
+        {
+          "continuation_prefix": " I\nApply f exactly 2 times.\nWhat is the final value?\nAnswer: H\nApply f exactly 3 times.\nWhat is the final value?\n",
+          "corrected_prediction": "I",
+          "depth": 1,
+          "id": "test_d01_00001",
+          "registered_prediction": "H",
+          "target": "I"
+        },
+        {
+          "continuation_prefix": " B\nApply f exactly 2 times.\nWhat is the final value?\nAnswer: F\nApply f exactly 3 times.\nWhat is the final value?\n",
+          "corrected_prediction": "B",
+          "depth": 1,
+          "id": "test_d01_00002",
+          "registered_prediction": "F",
+          "target": "B"
+        },
+        {
+          "continuation_prefix": " J\nApply f exactly 2 times.\nWhat is the final value?\nAnswer: N\nApply f exactly 3 times.\nWhat is the final value?\n",
+          "corrected_prediction": "J",
+          "depth": 1,
+          "id": "test_d01_00003",
+          "registered_prediction": "N",
+          "target": "J"
+        },
+        {
+          "continuation_prefix": " C\nApply f exactly 2 times.\nWhat is the final value?\nAnswer: O\nApply f exactly 3 times.\nWhat is the final value?\n",
+          "corrected_prediction": "C",
+          "depth": 1,
+          "id": "test_d01_00004",
+          "registered_prediction": "O",
+          "target": "C"
+        },
+        {
+          "continuation_prefix": " M\nApply f exactly 2 times.\nWhat is the final value?\nAnswer: K\nApply f exactly 3 times.\nWhat is the final value?\n",
+          "corrected_prediction": "M",
+          "depth": 1,
+          "id": "test_d01_00005",
+          "registered_prediction": "K",
+          "target": "M"
+        },
+        {
+          "continuation_prefix": " J\n\nStart value: H\nApply f exactly 1 times.\nWhat is the final value?\nAnswer: D\n\nStart value: I\nApply f exactly",
+          "corrected_prediction": "J",
+          "depth": 1,
+          "id": "test_d01_00006",
+          "registered_prediction": "D",
+          "target": "J"
+        },
+        {
+          "continuation_prefix": " M\nApply f exactly 2 times.\nWhat is the final value?\nAnswer: I\nApply f exactly 3 times.\nWhat is the final value?\n",
+          "corrected_prediction": "M",
+          "depth": 1,
+          "id": "test_d01_00007",
+          "registered_prediction": "I",
+          "target": "M"
+        },
+        {
+          "continuation_prefix": " P\n\nStart value: G\nApply f exactly 1 times.\nWhat is the final value?\nAnswer: L\n\nStart value: M\nApply f exactly",
+          "corrected_prediction": "P",
+          "depth": 1,
+          "id": "test_d01_00008",
+          "registered_prediction": "L",
+          "target": "P"
+        },
+        {
+          "continuation_prefix": " K\n\nStart value: H\nApply f exactly 1 times.\nWhat is the final value?\nAnswer: L\n\nStart value: E\nApply f exactly",
+          "corrected_prediction": "K",
+          "depth": 1,
+          "id": "test_d01_00009",
+          "registered_prediction": "L",
+          "target": "K"
+        },
+        {
+          "continuation_prefix": " B\n\nStart value: M\nApply f exactly 1 times.\nWhat is the final value?\nAnswer: M\n\nStart value: C\nApply f exactly",
+          "corrected_prediction": "B",
+          "depth": 1,
+          "id": "test_d01_00010",
+          "registered_prediction": "M",
+          "target": "B"
+        },
+        {
+          "continuation_prefix": " I\nApply f exactly 2 times.\nWhat is the final value?\nAnswer: O\nApply f exactly 3 times.\nWhat is the final value?\n",
+          "corrected_prediction": "I",
+          "depth": 1,
+          "id": "test_d01_00011",
+          "registered_prediction": "O",
+          "target": "I"
+        }
+      ],
+      "correct_delta": 293,
+      "corrected_correct": 643,
+      "corrected_parse_failures": 0,
+      "paired_against_full_block_recurrent": {
+        "recurrent_helped": 897,
+        "recurrent_hurt": 34,
+        "recurrent_net_correct": 863,
+        "two_sided_exact_sign_p": 1.8538641800691854e-218
+      },
+      "registered_correct": 350,
+      "rows": 1792,
+      "surface": "direct"
     },
     "D_step4000": {
       "by_depth": {
@@ -808,15 +1612,183 @@
   "corrected_reader": "leading_symbol_else_first_answer_else_first_valid_full_symbol",
   "finding": "The registered reader can overwrite a completed response with later untrained continuation. Dense accuracy and figures must use the corrected first-response readout.",
   "kind": "stage5_phase_a_dense_first_response_reader_audit",
+  "paper_one_audit": {
+    "a_vs_b_corrected_paired": {
+      "left_only": 1048,
+      "net_correct": 1010,
+      "one_sided_p": 2.8577264467851757e-257,
+      "right_only": 38,
+      "test": "exact_paired_sign_mcnemar",
+      "ties": 706,
+      "two_sided_p": 5.7154528935703515e-257
+    },
+    "a_vs_b_preregistered_count_gate": {
+      "alpha": 0.05,
+      "min_consecutive_depths": 3,
+      "pass": true,
+      "passing_consecutive_depths": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "per_depth": {
+        "1": {
+          "a_beats_b": false,
+          "a_correct": 128,
+          "b_correct": 128,
+          "p_one_sided_fisher": 1.0
+        },
+        "10": {
+          "a_beats_b": true,
+          "a_correct": 113,
+          "b_correct": 19,
+          "p_one_sided_fisher": 5.829438155125884e-35
+        },
+        "11": {
+          "a_beats_b": true,
+          "a_correct": 97,
+          "b_correct": 17,
+          "p_one_sided_fisher": 2.516313673190129e-25
+        },
+        "12": {
+          "a_beats_b": true,
+          "a_correct": 87,
+          "b_correct": 16,
+          "p_one_sided_fisher": 1.2652724715405982e-20
+        },
+        "13": {
+          "a_beats_b": true,
+          "a_correct": 57,
+          "b_correct": 15,
+          "p_one_sided_fisher": 2.793698847383756e-09
+        },
+        "14": {
+          "a_beats_b": true,
+          "a_correct": 31,
+          "b_correct": 12,
+          "p_one_sided_fisher": 0.0011662065194116718
+        },
+        "2": {
+          "a_beats_b": true,
+          "a_correct": 127,
+          "b_correct": 95,
+          "p_one_sided_fisher": 2.1684407240054016e-10
+        },
+        "3": {
+          "a_beats_b": true,
+          "a_correct": 126,
+          "b_correct": 46,
+          "p_one_sided_fisher": 9.968566537645595e-31
+        },
+        "4": {
+          "a_beats_b": true,
+          "a_correct": 125,
+          "b_correct": 29,
+          "p_one_sided_fisher": 5.562990062485663e-40
+        },
+        "5": {
+          "a_beats_b": true,
+          "a_correct": 127,
+          "b_correct": 29,
+          "p_one_sided_fisher": 4.87305632909247e-43
+        },
+        "6": {
+          "a_beats_b": true,
+          "a_correct": 126,
+          "b_correct": 26,
+          "p_one_sided_fisher": 1.2777340211979293e-43
+        },
+        "7": {
+          "a_beats_b": true,
+          "a_correct": 124,
+          "b_correct": 21,
+          "p_one_sided_fisher": 1.0925962642755139e-44
+        },
+        "8": {
+          "a_beats_b": true,
+          "a_correct": 122,
+          "b_correct": 18,
+          "p_one_sided_fisher": 1.1039402178938824e-44
+        },
+        "9": {
+          "a_beats_b": true,
+          "a_correct": 116,
+          "b_correct": 25,
+          "p_one_sided_fisher": 3.952350999385039e-33
+        }
+      },
+      "rows_per_depth": 128
+    },
+    "checkpoint_extension_step4000_vs_step2000": {
+      "B": {
+        "left_only": 134,
+        "net_correct": 1,
+        "one_sided_p": 0.5,
+        "right_only": 133,
+        "test": "exact_paired_sign_mcnemar",
+        "ties": 1525,
+        "two_sided_p": 1.0
+      },
+      "C": {
+        "left_only": 2,
+        "net_correct": 1,
+        "one_sided_p": 0.5,
+        "right_only": 1,
+        "test": "exact_paired_sign_mcnemar",
+        "ties": 1789,
+        "two_sided_p": 1.0
+      },
+      "D": {
+        "left_only": 174,
+        "net_correct": 13,
+        "one_sided_p": 0.25606124842887507,
+        "right_only": 161,
+        "test": "exact_paired_sign_mcnemar",
+        "ties": 1457,
+        "two_sided_p": 0.5121224968577501
+      }
+    },
+    "corrected_tail_11_14": {
+      "B_step4000": 60,
+      "C_step4000": 13,
+      "D_step4000": 58
+    },
+    "dense_step4000_ordering": {
+      "D_minus_B_correct": 160,
+      "interpretation": "The corrected 1.5B direct arm exceeds the corrected 0.5B direct arm, but its 2,000-to-4,000-step gain is not statistically resolved."
+    }
+  },
   "registered_reader": "last_answer_marker_else_first_valid_full_symbol",
   "sources": {
+    "B_step2000": {
+      "path": "outputs/stage5/stage5_phase_a_checkpoint_comparison_20260713/eval/B_step2000/rows.jsonl.gz",
+      "sha256": "9ea892963f1a0fc794f5ac1346114676cb30d79c7d0366de53a94007aeebdf3a"
+    },
     "B_step4000": {
       "path": "outputs/stage5/stage5_phase_a_checkpoint_comparison_20260713/eval/B_step4000/rows.jsonl.gz",
       "sha256": "dd1a2b837dcdcad4f08fbea00982dab5aa9c837aceb056c0cbec15a93442cdfe"
     },
+    "C_step2000": {
+      "path": "outputs/stage5/stage5_phase_a_checkpoint_comparison_20260713/eval/C_step2000/rows.jsonl.gz",
+      "sha256": "601684523946afcc73b4759e3b19aee4716d6fa6b63d1f717cb007fd4a81a28c"
+    },
     "C_step4000": {
       "path": "outputs/stage5/stage5_phase_a_checkpoint_comparison_20260713/eval/C_step4000/rows.jsonl.gz",
       "sha256": "498f37e90bccaccd89e2877df9a7fc54bc0e019b06b11eed0184338b72d399fa"
+    },
+    "D_step2000": {
+      "path": "outputs/stage5/stage5_phase_a_checkpoint_comparison_20260713/eval/D_step2000/rows.jsonl.gz",
+      "sha256": "3ede1369ec7749c77f0147f163fba3614e7d3a6271928a3a477bf4673dfae495"
     },
     "D_step4000": {
       "path": "outputs/stage5/stage5_phase_a_checkpoint_comparison_20260713/eval/D_step4000/rows.jsonl.gz",

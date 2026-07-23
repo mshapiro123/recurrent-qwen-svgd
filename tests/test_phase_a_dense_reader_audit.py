@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from eval.audit_phase_a_dense_reader import audit_arm
+from eval.audit_phase_a_dense_reader import audit_arm, paired_binary
 
 
 def test_audit_reports_first_response_correction() -> None:
@@ -34,3 +34,16 @@ def test_audit_reports_first_response_correction() -> None:
     assert result["correct_delta"] == 2
     assert result["by_depth"]["1"]["corrected_correct"] == 1
     assert result["by_depth"]["2"]["corrected_correct"] == 1
+
+
+def test_paired_binary_reports_checkpoint_extension_direction() -> None:
+    result = paired_binary(
+        {"a": True, "b": True, "c": False, "d": False},
+        {"a": False, "b": True, "c": True, "d": False},
+    )
+
+    assert result["left_only"] == 1
+    assert result["right_only"] == 1
+    assert result["ties"] == 2
+    assert result["net_correct"] == 0
+    assert result["two_sided_p"] == 1.0

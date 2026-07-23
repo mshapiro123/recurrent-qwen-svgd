@@ -75,6 +75,12 @@ def test_phase_a_receipt_matches_ledger_arithmetic() -> None:
     paired = audit["arms"]["C_step4000"]["paired_against_full_block_recurrent"]
     assert paired["recurrent_helped"] == expected["recurrent_vs_scratchpad_helped"] == 262
     assert paired["recurrent_hurt"] == expected["recurrent_vs_scratchpad_hurt"] == 48
+    primary = audit["paper_one_audit"]["a_vs_b_corrected_paired"]
+    gate = audit["paper_one_audit"]["a_vs_b_preregistered_count_gate"]
+    assert primary["left_only"] == expected["recurrent_vs_direct_helped"] == 1048
+    assert primary["right_only"] == expected["recurrent_vs_direct_hurt"] == 38
+    assert gate["pass"] is expected["preregistered_primary_gate_pass"] is True
+    assert gate["passing_consecutive_depths"] == list(range(2, 15))
     assert receipt["scoring"]["rows"] == expected["rows"] == 1792
     assert receipt["scoring"]["row_ids_match"] is True
 
