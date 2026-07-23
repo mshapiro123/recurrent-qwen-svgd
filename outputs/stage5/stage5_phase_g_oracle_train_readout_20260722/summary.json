@@ -1,682 +1,704 @@
 {
-  "automatic_successor_authorized": false,
-  "full": {
+  "arms": {
     "additive": {
-      "checks": {
-        "frozen_keeper_lineage": {
-          "observed": true,
-          "passed": true,
-          "required": true
+      "full_interpretation": "did_not_fit_command_mapping",
+      "full_nondefault_control": 0.2017716535433071,
+      "full_summary": {
+        "checks": {
+          "frozen_keeper_lineage": {
+            "observed": true,
+            "passed": true,
+            "required": true
+          },
+          "nondefault_branch_control": {
+            "correct": 820,
+            "minimum": 0.85,
+            "observed": 0.2017716535433071,
+            "passed": false,
+            "total": 4064
+          },
+          "overall_transition_control": {
+            "correct": 1790,
+            "minimum": 0.9,
+            "observed": 0.3186754495282179,
+            "passed": false,
+            "total": 5617
+          },
+          "terminal_validity": {
+            "minimum": 0.71,
+            "observed": 0.8499210110584519,
+            "passed": true,
+            "total": 1899,
+            "valid": 1614
+          },
+          "transition_legality": {
+            "legal": 3193,
+            "minimum": 0.95,
+            "observed": 0.5684529108064803,
+            "passed": false,
+            "total": 5617
+          },
+          "zeroed_conditioning_identity": {
+            "observed": true,
+            "passed": true,
+            "required": true
+          }
         },
-        "nondefault_branch_control": {
-          "correct": 820,
-          "minimum": 0.85,
-          "observed": 0.2017716535433071,
-          "passed": false,
-          "total": 4064
-        },
-        "overall_transition_control": {
-          "correct": 1790,
-          "minimum": 0.9,
-          "observed": 0.3186754495282179,
-          "passed": false,
-          "total": 5617
-        },
-        "terminal_validity": {
-          "minimum": 0.71,
-          "observed": 0.8499210110584519,
-          "passed": true,
-          "total": 1899,
-          "valid": 1614
-        },
-        "transition_legality": {
-          "legal": 3193,
-          "minimum": 0.95,
-          "observed": 0.5684529108064803,
-          "passed": false,
-          "total": 5617
-        },
-        "zeroed_conditioning_identity": {
-          "observed": true,
-          "passed": true,
-          "required": true
+        "conditioner_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/oracle_additive_ema_step_1500.pt",
+        "conditioner_sha256": "4d5f2cb78f8bab14c6449b4cea8d971f59ad76a661a995ae7e62e883e125235c",
+        "evaluation_kind": "posthoc_train_readout",
+        "frozen_lineage_after": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+        "frozen_lineage_before": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+        "gate_status": "blocked",
+        "identity_groups_exact": 512,
+        "keeper": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/natural_step2000.pt",
+        "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+        "kind": "phase_g_oracle_interface_arm",
+        "loaded_oracle_keys": [
+          "oracle_reentry_conditioner.branch_a.net.0.bias",
+          "oracle_reentry_conditioner.branch_a.net.0.weight",
+          "oracle_reentry_conditioner.branch_a.net.1.bias",
+          "oracle_reentry_conditioner.branch_a.net.1.weight",
+          "oracle_reentry_conditioner.branch_a.net.3.bias",
+          "oracle_reentry_conditioner.branch_a.net.3.weight",
+          "oracle_reentry_conditioner.branch_b.net.0.bias",
+          "oracle_reentry_conditioner.branch_b.net.0.weight",
+          "oracle_reentry_conditioner.branch_b.net.1.bias",
+          "oracle_reentry_conditioner.branch_b.net.1.weight",
+          "oracle_reentry_conditioner.branch_b.net.3.bias",
+          "oracle_reentry_conditioner.branch_b.net.3.weight"
+        ],
+        "observed_groups": 512,
+        "observed_rows": 1899,
+        "observed_transitions": 5617,
+        "passed": false,
+        "posthoc_diagnostic_only": true,
+        "registered_heldout_verdict_mutable": false,
+        "route": "additive",
+        "status": "finished",
+        "transition_control": {
+          "by_depth": {
+            "1": {
+              "control_rate": 0.515625,
+              "correct": 132,
+              "legal": 254,
+              "legality_rate": 0.9921875,
+              "mean_target_margin": 0.017822265625,
+              "total": 256
+            },
+            "2": {
+              "control_rate": 0.44886363636363635,
+              "correct": 316,
+              "legal": 586,
+              "legality_rate": 0.8323863636363636,
+              "mean_target_margin": -0.6524325284090909,
+              "total": 704
+            },
+            "3": {
+              "control_rate": 0.3530571992110454,
+              "correct": 537,
+              "legal": 937,
+              "legality_rate": 0.6160420775805391,
+              "mean_target_margin": -1.1534352399737016,
+              "total": 1521
+            },
+            "4": {
+              "control_rate": 0.25669642857142855,
+              "correct": 805,
+              "legal": 1416,
+              "legality_rate": 0.45153061224489793,
+              "mean_target_margin": -1.5368702168367347,
+              "total": 3136
+            }
+          },
+          "by_loop_index": {
+            "1": {
+              "control_rate": 0.5729331226961558,
+              "correct": 1088,
+              "legal": 1849,
+              "legality_rate": 0.9736703528172722,
+              "mean_target_margin": 0.4873124012638231,
+              "total": 1899
+            },
+            "2": {
+              "control_rate": 0.2598904443091905,
+              "correct": 427,
+              "legal": 799,
+              "legality_rate": 0.48630553864881315,
+              "mean_target_margin": -2.2880211503347536,
+              "total": 1643
+            },
+            "3": {
+              "control_rate": 0.1463981409759876,
+              "correct": 189,
+              "legal": 370,
+              "legality_rate": 0.2865995352439969,
+              "mean_target_margin": -2.15612896979086,
+              "total": 1291
+            },
+            "4": {
+              "control_rate": 0.1096938775510204,
+              "correct": 86,
+              "legal": 175,
+              "legality_rate": 0.22321428571428573,
+              "mean_target_margin": -1.8002232142857142,
+              "total": 784
+            }
+          },
+          "default": {
+            "control_rate": 0.6245975531229878,
+            "correct": 970,
+            "legal": 1265,
+            "legality_rate": 0.8145524790727624,
+            "mean_target_margin": 1.150756600128783,
+            "total": 1553
+          },
+          "nondefault": {
+            "control_rate": 0.2017716535433071,
+            "correct": 820,
+            "legal": 1928,
+            "legality_rate": 0.4744094488188976,
+            "mean_target_margin": -2.1692605807086616,
+            "total": 4064
+          },
+          "overall": {
+            "control_rate": 0.3186754495282179,
+            "correct": 1790,
+            "legal": 3193,
+            "legality_rate": 0.5684529108064803,
+            "mean_target_margin": -1.2513352323304254,
+            "total": 5617
+          }
         }
       },
-      "conditioner_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/oracle_additive_ema_step_1500.pt",
-      "conditioner_sha256": "4d5f2cb78f8bab14c6449b4cea8d971f59ad76a661a995ae7e62e883e125235c",
-      "evaluation_kind": "posthoc_train_readout",
-      "frozen_lineage_after": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
-      "frozen_lineage_before": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
-      "gate_status": "blocked",
-      "identity_groups_exact": 512,
-      "keeper": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/natural_step2000.pt",
-      "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
-      "kind": "phase_g_oracle_interface_arm",
-      "loaded_oracle_keys": [
-        "oracle_reentry_conditioner.branch_a.net.0.bias",
-        "oracle_reentry_conditioner.branch_a.net.0.weight",
-        "oracle_reentry_conditioner.branch_a.net.1.bias",
-        "oracle_reentry_conditioner.branch_a.net.1.weight",
-        "oracle_reentry_conditioner.branch_a.net.3.bias",
-        "oracle_reentry_conditioner.branch_a.net.3.weight",
-        "oracle_reentry_conditioner.branch_b.net.0.bias",
-        "oracle_reentry_conditioner.branch_b.net.0.weight",
-        "oracle_reentry_conditioner.branch_b.net.1.bias",
-        "oracle_reentry_conditioner.branch_b.net.1.weight",
-        "oracle_reentry_conditioner.branch_b.net.3.bias",
-        "oracle_reentry_conditioner.branch_b.net.3.weight"
-      ],
-      "observed_groups": 512,
-      "observed_rows": 1899,
-      "observed_transitions": 5617,
-      "passed": false,
-      "posthoc_diagnostic_only": true,
-      "registered_heldout_verdict_mutable": false,
-      "route": "additive",
-      "status": "finished",
-      "transition_control": {
-        "by_depth": {
-          "1": {
-            "control_rate": 0.515625,
-            "correct": 132,
-            "legal": 254,
-            "legality_rate": 0.9921875,
-            "mean_target_margin": 0.017822265625,
-            "total": 256
+      "heldout_nondefault_control": 0.14351851851851852,
+      "matched_interpretation": "did_not_fit_command_mapping",
+      "matched_nondefault_control": 0.21333333333333335,
+      "matched_summary": {
+        "checks": {
+          "frozen_keeper_lineage": {
+            "observed": true,
+            "passed": true,
+            "required": true
           },
-          "2": {
-            "control_rate": 0.44886363636363635,
-            "correct": 316,
-            "legal": 586,
-            "legality_rate": 0.8323863636363636,
-            "mean_target_margin": -0.6524325284090909,
-            "total": 704
-          },
-          "3": {
-            "control_rate": 0.3530571992110454,
-            "correct": 537,
-            "legal": 937,
-            "legality_rate": 0.6160420775805391,
-            "mean_target_margin": -1.1534352399737016,
-            "total": 1521
-          },
-          "4": {
-            "control_rate": 0.25669642857142855,
-            "correct": 805,
-            "legal": 1416,
-            "legality_rate": 0.45153061224489793,
-            "mean_target_margin": -1.5368702168367347,
-            "total": 3136
-          }
-        },
-        "by_loop_index": {
-          "1": {
-            "control_rate": 0.5729331226961558,
-            "correct": 1088,
-            "legal": 1849,
-            "legality_rate": 0.9736703528172722,
-            "mean_target_margin": 0.4873124012638231,
-            "total": 1899
-          },
-          "2": {
-            "control_rate": 0.2598904443091905,
-            "correct": 427,
-            "legal": 799,
-            "legality_rate": 0.48630553864881315,
-            "mean_target_margin": -2.2880211503347536,
-            "total": 1643
-          },
-          "3": {
-            "control_rate": 0.1463981409759876,
-            "correct": 189,
-            "legal": 370,
-            "legality_rate": 0.2865995352439969,
-            "mean_target_margin": -2.15612896979086,
-            "total": 1291
-          },
-          "4": {
-            "control_rate": 0.1096938775510204,
-            "correct": 86,
-            "legal": 175,
-            "legality_rate": 0.22321428571428573,
-            "mean_target_margin": -1.8002232142857142,
-            "total": 784
-          }
-        },
-        "default": {
-          "control_rate": 0.6245975531229878,
-          "correct": 970,
-          "legal": 1265,
-          "legality_rate": 0.8145524790727624,
-          "mean_target_margin": 1.150756600128783,
-          "total": 1553
-        },
-        "nondefault": {
-          "control_rate": 0.2017716535433071,
-          "correct": 820,
-          "legal": 1928,
-          "legality_rate": 0.4744094488188976,
-          "mean_target_margin": -2.1692605807086616,
-          "total": 4064
-        },
-        "overall": {
-          "control_rate": 0.3186754495282179,
-          "correct": 1790,
-          "legal": 3193,
-          "legality_rate": 0.5684529108064803,
-          "mean_target_margin": -1.2513352323304254,
-          "total": 5617
-        }
-      }
-    },
-    "film": {
-      "checks": {
-        "frozen_keeper_lineage": {
-          "observed": true,
-          "passed": true,
-          "required": true
-        },
-        "nondefault_branch_control": {
-          "correct": 947,
-          "minimum": 0.85,
-          "observed": 0.2330216535433071,
-          "passed": false,
-          "total": 4064
-        },
-        "overall_transition_control": {
-          "correct": 1907,
-          "minimum": 0.9,
-          "observed": 0.3395050738828556,
-          "passed": false,
-          "total": 5617
-        },
-        "terminal_validity": {
-          "minimum": 0.71,
-          "observed": 0.8809899947340706,
-          "passed": true,
-          "total": 1899,
-          "valid": 1673
-        },
-        "transition_legality": {
-          "legal": 3421,
-          "minimum": 0.95,
-          "observed": 0.6090439736514154,
-          "passed": false,
-          "total": 5617
-        },
-        "zeroed_conditioning_identity": {
-          "observed": true,
-          "passed": true,
-          "required": true
-        }
-      },
-      "conditioner_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/oracle_film_ema_step_1500.pt",
-      "conditioner_sha256": "d551f1136cf1582e9a6e95be43be952a5f4da1ed5649c45ed29ecd4115e051de",
-      "evaluation_kind": "posthoc_train_readout",
-      "frozen_lineage_after": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
-      "frozen_lineage_before": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
-      "gate_status": "blocked",
-      "identity_groups_exact": 512,
-      "keeper": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/natural_step2000.pt",
-      "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
-      "kind": "phase_g_oracle_interface_arm",
-      "loaded_oracle_keys": [
-        "oracle_reentry_conditioner.branch_a.net.0.bias",
-        "oracle_reentry_conditioner.branch_a.net.0.weight",
-        "oracle_reentry_conditioner.branch_a.net.1.bias",
-        "oracle_reentry_conditioner.branch_a.net.1.weight",
-        "oracle_reentry_conditioner.branch_a.net.3.bias",
-        "oracle_reentry_conditioner.branch_a.net.3.weight",
-        "oracle_reentry_conditioner.branch_b.net.0.bias",
-        "oracle_reentry_conditioner.branch_b.net.0.weight",
-        "oracle_reentry_conditioner.branch_b.net.1.bias",
-        "oracle_reentry_conditioner.branch_b.net.1.weight",
-        "oracle_reentry_conditioner.branch_b.net.3.bias",
-        "oracle_reentry_conditioner.branch_b.net.3.weight"
-      ],
-      "observed_groups": 512,
-      "observed_rows": 1899,
-      "observed_transitions": 5617,
-      "passed": false,
-      "posthoc_diagnostic_only": true,
-      "registered_heldout_verdict_mutable": false,
-      "route": "film",
-      "status": "finished",
-      "transition_control": {
-        "by_depth": {
-          "1": {
-            "control_rate": 0.51171875,
-            "correct": 131,
-            "legal": 254,
-            "legality_rate": 0.9921875,
-            "mean_target_margin": 0.07421875,
-            "total": 256
-          },
-          "2": {
-            "control_rate": 0.4659090909090909,
-            "correct": 328,
-            "legal": 602,
-            "legality_rate": 0.8551136363636364,
-            "mean_target_margin": -0.6378284801136364,
-            "total": 704
-          },
-          "3": {
-            "control_rate": 0.36817882971729127,
-            "correct": 560,
-            "legal": 987,
-            "legality_rate": 0.6489151873767258,
-            "mean_target_margin": -1.0927432610124919,
-            "total": 1521
-          },
-          "4": {
-            "control_rate": 0.28316326530612246,
-            "correct": 888,
-            "legal": 1578,
-            "legality_rate": 0.5031887755102041,
-            "mean_target_margin": -1.6060766103316326,
-            "total": 3136
-          }
-        },
-        "by_loop_index": {
-          "1": {
-            "control_rate": 0.5808320168509742,
-            "correct": 1103,
-            "legal": 1858,
-            "legality_rate": 0.9784096893101633,
-            "mean_target_margin": 0.6297722485518694,
-            "total": 1899
-          },
-          "2": {
-            "control_rate": 0.29701765063907487,
-            "correct": 488,
-            "legal": 929,
-            "legality_rate": 0.5654290931223371,
-            "mean_target_margin": -2.235544735240414,
-            "total": 1643
-          },
-          "3": {
-            "control_rate": 0.17195972114639815,
-            "correct": 222,
-            "legal": 443,
-            "legality_rate": 0.343144848954299,
-            "mean_target_margin": -2.4275755228505034,
-            "total": 1291
-          },
-          "4": {
-            "control_rate": 0.11989795918367346,
-            "correct": 94,
-            "legal": 191,
-            "legality_rate": 0.24362244897959184,
-            "mean_target_margin": -1.9358258928571428,
-            "total": 784
-          }
-        },
-        "default": {
-          "control_rate": 0.6181584030907921,
-          "correct": 960,
-          "legal": 1303,
-          "legality_rate": 0.8390212491951062,
-          "mean_target_margin": 1.1294671603348359,
-          "total": 1553
-        },
-        "nondefault": {
-          "control_rate": 0.2330216535433071,
-          "correct": 947,
-          "legal": 2118,
-          "legality_rate": 0.5211614173228346,
-          "mean_target_margin": -2.1857314222440944,
-          "total": 4064
-        },
-        "overall": {
-          "control_rate": 0.3395050738828556,
-          "correct": 1907,
-          "legal": 3421,
-          "legality_rate": 0.6090439736514154,
-          "mean_target_margin": -1.269138330069432,
-          "total": 5617
-        }
-      }
-    }
-  },
-  "kind": "phase_g_oracle_train_readout_session",
-  "matched": {
-    "additive": {
-      "checks": {
-        "frozen_keeper_lineage": {
-          "observed": true,
-          "passed": true,
-          "required": true
-        },
-        "nondefault_branch_control": {
-          "correct": 48,
-          "minimum": 0.85,
-          "observed": 0.21333333333333335,
-          "passed": false,
-          "total": 225
-        },
-        "overall_transition_control": {
-          "correct": 98,
-          "minimum": 0.9,
-          "observed": 0.32131147540983607,
-          "passed": false,
-          "total": 305
-        },
-        "terminal_validity": {
-          "minimum": 0.71,
-          "observed": 0.8490566037735849,
-          "passed": true,
-          "total": 106,
-          "valid": 90
-        },
-        "transition_legality": {
-          "legal": 177,
-          "minimum": 0.95,
-          "observed": 0.580327868852459,
-          "passed": false,
-          "total": 305
-        },
-        "zeroed_conditioning_identity": {
-          "observed": true,
-          "passed": true,
-          "required": true
-        }
-      },
-      "conditioner_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/oracle_additive_ema_step_1500.pt",
-      "conditioner_sha256": "4d5f2cb78f8bab14c6449b4cea8d971f59ad76a661a995ae7e62e883e125235c",
-      "evaluation_kind": "posthoc_train_readout",
-      "frozen_lineage_after": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
-      "frozen_lineage_before": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
-      "gate_status": "blocked",
-      "identity_groups_exact": 32,
-      "keeper": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/natural_step2000.pt",
-      "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
-      "kind": "phase_g_oracle_interface_arm",
-      "loaded_oracle_keys": [
-        "oracle_reentry_conditioner.branch_a.net.0.bias",
-        "oracle_reentry_conditioner.branch_a.net.0.weight",
-        "oracle_reentry_conditioner.branch_a.net.1.bias",
-        "oracle_reentry_conditioner.branch_a.net.1.weight",
-        "oracle_reentry_conditioner.branch_a.net.3.bias",
-        "oracle_reentry_conditioner.branch_a.net.3.weight",
-        "oracle_reentry_conditioner.branch_b.net.0.bias",
-        "oracle_reentry_conditioner.branch_b.net.0.weight",
-        "oracle_reentry_conditioner.branch_b.net.1.bias",
-        "oracle_reentry_conditioner.branch_b.net.1.weight",
-        "oracle_reentry_conditioner.branch_b.net.3.bias",
-        "oracle_reentry_conditioner.branch_b.net.3.weight"
-      ],
-      "observed_groups": 32,
-      "observed_rows": 106,
-      "observed_transitions": 305,
-      "passed": false,
-      "posthoc_diagnostic_only": true,
-      "registered_heldout_verdict_mutable": false,
-      "route": "additive",
-      "status": "finished",
-      "transition_control": {
-        "by_depth": {
-          "1": {
-            "control_rate": 0.5,
-            "correct": 8,
-            "legal": 16,
-            "legality_rate": 1.0,
-            "mean_target_margin": 0.08984375,
-            "total": 16
-          },
-          "2": {
-            "control_rate": 0.5227272727272727,
-            "correct": 23,
-            "legal": 40,
-            "legality_rate": 0.9090909090909091,
-            "mean_target_margin": 0.046875,
-            "total": 44
-          },
-          "3": {
-            "control_rate": 0.38271604938271603,
-            "correct": 31,
-            "legal": 56,
-            "legality_rate": 0.691358024691358,
-            "mean_target_margin": -0.8356481481481481,
-            "total": 81
-          },
-          "4": {
-            "control_rate": 0.21951219512195122,
-            "correct": 36,
-            "legal": 65,
-            "legality_rate": 0.39634146341463417,
-            "mean_target_margin": -1.416158536585366,
-            "total": 164
-          }
-        },
-        "by_loop_index": {
-          "1": {
-            "control_rate": 0.5849056603773585,
-            "correct": 62,
-            "legal": 99,
-            "legality_rate": 0.9339622641509434,
-            "mean_target_margin": 0.816627358490566,
-            "total": 106
-          },
-          "2": {
-            "control_rate": 0.26666666666666666,
-            "correct": 24,
-            "legal": 49,
-            "legality_rate": 0.5444444444444444,
-            "mean_target_margin": -1.8631944444444444,
-            "total": 90
-          },
-          "3": {
-            "control_rate": 0.11764705882352941,
-            "correct": 8,
-            "legal": 18,
-            "legality_rate": 0.2647058823529412,
-            "mean_target_margin": -2.317095588235294,
-            "total": 68
-          },
-          "4": {
-            "control_rate": 0.0975609756097561,
-            "correct": 4,
-            "legal": 11,
-            "legality_rate": 0.2682926829268293,
-            "mean_target_margin": -1.4085365853658536,
-            "total": 41
-          }
-        },
-        "default": {
-          "control_rate": 0.625,
-          "correct": 50,
-          "legal": 66,
-          "legality_rate": 0.825,
-          "mean_target_margin": 1.2484375,
-          "total": 80
-        },
-        "nondefault": {
-          "control_rate": 0.21333333333333335,
-          "correct": 48,
-          "legal": 111,
-          "legality_rate": 0.49333333333333335,
-          "mean_target_margin": -1.761388888888889,
-          "total": 225
-        },
-        "overall": {
-          "control_rate": 0.32131147540983607,
-          "correct": 98,
-          "legal": 177,
-          "legality_rate": 0.580327868852459,
-          "mean_target_margin": -0.9719262295081967,
-          "total": 305
-        }
-      }
-    },
-    "film": {
-      "checks": {
-        "frozen_keeper_lineage": {
-          "observed": true,
-          "passed": true,
-          "required": true
-        },
-        "nondefault_branch_control": {
-          "correct": 59,
-          "minimum": 0.85,
-          "observed": 0.26222222222222225,
-          "passed": false,
-          "total": 225
-        },
-        "overall_transition_control": {
-          "correct": 103,
-          "minimum": 0.9,
-          "observed": 0.3377049180327869,
-          "passed": false,
-          "total": 305
-        },
-        "terminal_validity": {
-          "minimum": 0.71,
-          "observed": 0.9056603773584906,
-          "passed": true,
-          "total": 106,
-          "valid": 96
-        },
-        "transition_legality": {
-          "legal": 190,
-          "minimum": 0.95,
-          "observed": 0.6229508196721312,
-          "passed": false,
-          "total": 305
-        },
-        "zeroed_conditioning_identity": {
-          "observed": true,
-          "passed": true,
-          "required": true
-        }
-      },
-      "conditioner_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/oracle_film_ema_step_1500.pt",
-      "conditioner_sha256": "d551f1136cf1582e9a6e95be43be952a5f4da1ed5649c45ed29ecd4115e051de",
-      "evaluation_kind": "posthoc_train_readout",
-      "frozen_lineage_after": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
-      "frozen_lineage_before": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
-      "gate_status": "blocked",
-      "identity_groups_exact": 32,
-      "keeper": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/natural_step2000.pt",
-      "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
-      "kind": "phase_g_oracle_interface_arm",
-      "loaded_oracle_keys": [
-        "oracle_reentry_conditioner.branch_a.net.0.bias",
-        "oracle_reentry_conditioner.branch_a.net.0.weight",
-        "oracle_reentry_conditioner.branch_a.net.1.bias",
-        "oracle_reentry_conditioner.branch_a.net.1.weight",
-        "oracle_reentry_conditioner.branch_a.net.3.bias",
-        "oracle_reentry_conditioner.branch_a.net.3.weight",
-        "oracle_reentry_conditioner.branch_b.net.0.bias",
-        "oracle_reentry_conditioner.branch_b.net.0.weight",
-        "oracle_reentry_conditioner.branch_b.net.1.bias",
-        "oracle_reentry_conditioner.branch_b.net.1.weight",
-        "oracle_reentry_conditioner.branch_b.net.3.bias",
-        "oracle_reentry_conditioner.branch_b.net.3.weight"
-      ],
-      "observed_groups": 32,
-      "observed_rows": 106,
-      "observed_transitions": 305,
-      "passed": false,
-      "posthoc_diagnostic_only": true,
-      "registered_heldout_verdict_mutable": false,
-      "route": "film",
-      "status": "finished",
-      "transition_control": {
-        "by_depth": {
-          "1": {
-            "control_rate": 0.5,
-            "correct": 8,
-            "legal": 16,
-            "legality_rate": 1.0,
-            "mean_target_margin": 0.1171875,
-            "total": 16
-          },
-          "2": {
-            "control_rate": 0.4772727272727273,
-            "correct": 21,
-            "legal": 39,
-            "legality_rate": 0.8863636363636364,
-            "mean_target_margin": -0.29261363636363635,
-            "total": 44
-          },
-          "3": {
-            "control_rate": 0.32098765432098764,
-            "correct": 26,
-            "legal": 57,
-            "legality_rate": 0.7037037037037037,
-            "mean_target_margin": -1.5671296296296295,
-            "total": 81
-          },
-          "4": {
-            "control_rate": 0.2926829268292683,
+          "nondefault_branch_control": {
             "correct": 48,
-            "legal": 78,
-            "legality_rate": 0.47560975609756095,
-            "mean_target_margin": -1.017530487804878,
-            "total": 164
+            "minimum": 0.85,
+            "observed": 0.21333333333333335,
+            "passed": false,
+            "total": 225
+          },
+          "overall_transition_control": {
+            "correct": 98,
+            "minimum": 0.9,
+            "observed": 0.32131147540983607,
+            "passed": false,
+            "total": 305
+          },
+          "terminal_validity": {
+            "minimum": 0.71,
+            "observed": 0.8490566037735849,
+            "passed": true,
+            "total": 106,
+            "valid": 90
+          },
+          "transition_legality": {
+            "legal": 177,
+            "minimum": 0.95,
+            "observed": 0.580327868852459,
+            "passed": false,
+            "total": 305
+          },
+          "zeroed_conditioning_identity": {
+            "observed": true,
+            "passed": true,
+            "required": true
           }
         },
-        "by_loop_index": {
-          "1": {
-            "control_rate": 0.5943396226415094,
-            "correct": 63,
-            "legal": 99,
-            "legality_rate": 0.9339622641509434,
-            "mean_target_margin": 1.1362028301886793,
-            "total": 106
+        "conditioner_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/oracle_additive_ema_step_1500.pt",
+        "conditioner_sha256": "4d5f2cb78f8bab14c6449b4cea8d971f59ad76a661a995ae7e62e883e125235c",
+        "evaluation_kind": "posthoc_train_readout",
+        "frozen_lineage_after": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+        "frozen_lineage_before": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+        "gate_status": "blocked",
+        "identity_groups_exact": 32,
+        "keeper": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/natural_step2000.pt",
+        "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+        "kind": "phase_g_oracle_interface_arm",
+        "loaded_oracle_keys": [
+          "oracle_reentry_conditioner.branch_a.net.0.bias",
+          "oracle_reentry_conditioner.branch_a.net.0.weight",
+          "oracle_reentry_conditioner.branch_a.net.1.bias",
+          "oracle_reentry_conditioner.branch_a.net.1.weight",
+          "oracle_reentry_conditioner.branch_a.net.3.bias",
+          "oracle_reentry_conditioner.branch_a.net.3.weight",
+          "oracle_reentry_conditioner.branch_b.net.0.bias",
+          "oracle_reentry_conditioner.branch_b.net.0.weight",
+          "oracle_reentry_conditioner.branch_b.net.1.bias",
+          "oracle_reentry_conditioner.branch_b.net.1.weight",
+          "oracle_reentry_conditioner.branch_b.net.3.bias",
+          "oracle_reentry_conditioner.branch_b.net.3.weight"
+        ],
+        "observed_groups": 32,
+        "observed_rows": 106,
+        "observed_transitions": 305,
+        "passed": false,
+        "posthoc_diagnostic_only": true,
+        "registered_heldout_verdict_mutable": false,
+        "route": "additive",
+        "status": "finished",
+        "transition_control": {
+          "by_depth": {
+            "1": {
+              "control_rate": 0.5,
+              "correct": 8,
+              "legal": 16,
+              "legality_rate": 1.0,
+              "mean_target_margin": 0.08984375,
+              "total": 16
+            },
+            "2": {
+              "control_rate": 0.5227272727272727,
+              "correct": 23,
+              "legal": 40,
+              "legality_rate": 0.9090909090909091,
+              "mean_target_margin": 0.046875,
+              "total": 44
+            },
+            "3": {
+              "control_rate": 0.38271604938271603,
+              "correct": 31,
+              "legal": 56,
+              "legality_rate": 0.691358024691358,
+              "mean_target_margin": -0.8356481481481481,
+              "total": 81
+            },
+            "4": {
+              "control_rate": 0.21951219512195122,
+              "correct": 36,
+              "legal": 65,
+              "legality_rate": 0.39634146341463417,
+              "mean_target_margin": -1.416158536585366,
+              "total": 164
+            }
           },
-          "2": {
-            "control_rate": 0.25555555555555554,
-            "correct": 23,
-            "legal": 55,
-            "legality_rate": 0.6111111111111112,
-            "mean_target_margin": -2.109027777777778,
-            "total": 90
+          "by_loop_index": {
+            "1": {
+              "control_rate": 0.5849056603773585,
+              "correct": 62,
+              "legal": 99,
+              "legality_rate": 0.9339622641509434,
+              "mean_target_margin": 0.816627358490566,
+              "total": 106
+            },
+            "2": {
+              "control_rate": 0.26666666666666666,
+              "correct": 24,
+              "legal": 49,
+              "legality_rate": 0.5444444444444444,
+              "mean_target_margin": -1.8631944444444444,
+              "total": 90
+            },
+            "3": {
+              "control_rate": 0.11764705882352941,
+              "correct": 8,
+              "legal": 18,
+              "legality_rate": 0.2647058823529412,
+              "mean_target_margin": -2.317095588235294,
+              "total": 68
+            },
+            "4": {
+              "control_rate": 0.0975609756097561,
+              "correct": 4,
+              "legal": 11,
+              "legality_rate": 0.2682926829268293,
+              "mean_target_margin": -1.4085365853658536,
+              "total": 41
+            }
           },
-          "3": {
-            "control_rate": 0.14705882352941177,
-            "correct": 10,
-            "legal": 21,
-            "legality_rate": 0.3088235294117647,
-            "mean_target_margin": -2.5431985294117645,
-            "total": 68
+          "default": {
+            "control_rate": 0.625,
+            "correct": 50,
+            "legal": 66,
+            "legality_rate": 0.825,
+            "mean_target_margin": 1.2484375,
+            "total": 80
           },
-          "4": {
-            "control_rate": 0.17073170731707318,
-            "correct": 7,
-            "legal": 15,
-            "legality_rate": 0.36585365853658536,
-            "mean_target_margin": -1.524390243902439,
-            "total": 41
+          "nondefault": {
+            "control_rate": 0.21333333333333335,
+            "correct": 48,
+            "legal": 111,
+            "legality_rate": 0.49333333333333335,
+            "mean_target_margin": -1.761388888888889,
+            "total": 225
+          },
+          "overall": {
+            "control_rate": 0.32131147540983607,
+            "correct": 98,
+            "legal": 177,
+            "legality_rate": 0.580327868852459,
+            "mean_target_margin": -0.9719262295081967,
+            "total": 305
+          }
+        }
+      }
+    },
+    "film": {
+      "full_interpretation": "did_not_fit_command_mapping",
+      "full_nondefault_control": 0.2330216535433071,
+      "full_summary": {
+        "checks": {
+          "frozen_keeper_lineage": {
+            "observed": true,
+            "passed": true,
+            "required": true
+          },
+          "nondefault_branch_control": {
+            "correct": 947,
+            "minimum": 0.85,
+            "observed": 0.2330216535433071,
+            "passed": false,
+            "total": 4064
+          },
+          "overall_transition_control": {
+            "correct": 1907,
+            "minimum": 0.9,
+            "observed": 0.3395050738828556,
+            "passed": false,
+            "total": 5617
+          },
+          "terminal_validity": {
+            "minimum": 0.71,
+            "observed": 0.8809899947340706,
+            "passed": true,
+            "total": 1899,
+            "valid": 1673
+          },
+          "transition_legality": {
+            "legal": 3421,
+            "minimum": 0.95,
+            "observed": 0.6090439736514154,
+            "passed": false,
+            "total": 5617
+          },
+          "zeroed_conditioning_identity": {
+            "observed": true,
+            "passed": true,
+            "required": true
           }
         },
-        "default": {
-          "control_rate": 0.55,
-          "correct": 44,
-          "legal": 68,
-          "legality_rate": 0.85,
-          "mean_target_margin": 1.3625,
-          "total": 80
+        "conditioner_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/oracle_film_ema_step_1500.pt",
+        "conditioner_sha256": "d551f1136cf1582e9a6e95be43be952a5f4da1ed5649c45ed29ecd4115e051de",
+        "evaluation_kind": "posthoc_train_readout",
+        "frozen_lineage_after": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+        "frozen_lineage_before": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+        "gate_status": "blocked",
+        "identity_groups_exact": 512,
+        "keeper": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/natural_step2000.pt",
+        "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+        "kind": "phase_g_oracle_interface_arm",
+        "loaded_oracle_keys": [
+          "oracle_reentry_conditioner.branch_a.net.0.bias",
+          "oracle_reentry_conditioner.branch_a.net.0.weight",
+          "oracle_reentry_conditioner.branch_a.net.1.bias",
+          "oracle_reentry_conditioner.branch_a.net.1.weight",
+          "oracle_reentry_conditioner.branch_a.net.3.bias",
+          "oracle_reentry_conditioner.branch_a.net.3.weight",
+          "oracle_reentry_conditioner.branch_b.net.0.bias",
+          "oracle_reentry_conditioner.branch_b.net.0.weight",
+          "oracle_reentry_conditioner.branch_b.net.1.bias",
+          "oracle_reentry_conditioner.branch_b.net.1.weight",
+          "oracle_reentry_conditioner.branch_b.net.3.bias",
+          "oracle_reentry_conditioner.branch_b.net.3.weight"
+        ],
+        "observed_groups": 512,
+        "observed_rows": 1899,
+        "observed_transitions": 5617,
+        "passed": false,
+        "posthoc_diagnostic_only": true,
+        "registered_heldout_verdict_mutable": false,
+        "route": "film",
+        "status": "finished",
+        "transition_control": {
+          "by_depth": {
+            "1": {
+              "control_rate": 0.51171875,
+              "correct": 131,
+              "legal": 254,
+              "legality_rate": 0.9921875,
+              "mean_target_margin": 0.07421875,
+              "total": 256
+            },
+            "2": {
+              "control_rate": 0.4659090909090909,
+              "correct": 328,
+              "legal": 602,
+              "legality_rate": 0.8551136363636364,
+              "mean_target_margin": -0.6378284801136364,
+              "total": 704
+            },
+            "3": {
+              "control_rate": 0.36817882971729127,
+              "correct": 560,
+              "legal": 987,
+              "legality_rate": 0.6489151873767258,
+              "mean_target_margin": -1.0927432610124919,
+              "total": 1521
+            },
+            "4": {
+              "control_rate": 0.28316326530612246,
+              "correct": 888,
+              "legal": 1578,
+              "legality_rate": 0.5031887755102041,
+              "mean_target_margin": -1.6060766103316326,
+              "total": 3136
+            }
+          },
+          "by_loop_index": {
+            "1": {
+              "control_rate": 0.5808320168509742,
+              "correct": 1103,
+              "legal": 1858,
+              "legality_rate": 0.9784096893101633,
+              "mean_target_margin": 0.6297722485518694,
+              "total": 1899
+            },
+            "2": {
+              "control_rate": 0.29701765063907487,
+              "correct": 488,
+              "legal": 929,
+              "legality_rate": 0.5654290931223371,
+              "mean_target_margin": -2.235544735240414,
+              "total": 1643
+            },
+            "3": {
+              "control_rate": 0.17195972114639815,
+              "correct": 222,
+              "legal": 443,
+              "legality_rate": 0.343144848954299,
+              "mean_target_margin": -2.4275755228505034,
+              "total": 1291
+            },
+            "4": {
+              "control_rate": 0.11989795918367346,
+              "correct": 94,
+              "legal": 191,
+              "legality_rate": 0.24362244897959184,
+              "mean_target_margin": -1.9358258928571428,
+              "total": 784
+            }
+          },
+          "default": {
+            "control_rate": 0.6181584030907921,
+            "correct": 960,
+            "legal": 1303,
+            "legality_rate": 0.8390212491951062,
+            "mean_target_margin": 1.1294671603348359,
+            "total": 1553
+          },
+          "nondefault": {
+            "control_rate": 0.2330216535433071,
+            "correct": 947,
+            "legal": 2118,
+            "legality_rate": 0.5211614173228346,
+            "mean_target_margin": -2.1857314222440944,
+            "total": 4064
+          },
+          "overall": {
+            "control_rate": 0.3395050738828556,
+            "correct": 1907,
+            "legal": 3421,
+            "legality_rate": 0.6090439736514154,
+            "mean_target_margin": -1.269138330069432,
+            "total": 5617
+          }
+        }
+      },
+      "heldout_nondefault_control": 0.1574074074074074,
+      "matched_interpretation": "partial_fit",
+      "matched_nondefault_control": 0.26222222222222225,
+      "matched_summary": {
+        "checks": {
+          "frozen_keeper_lineage": {
+            "observed": true,
+            "passed": true,
+            "required": true
+          },
+          "nondefault_branch_control": {
+            "correct": 59,
+            "minimum": 0.85,
+            "observed": 0.26222222222222225,
+            "passed": false,
+            "total": 225
+          },
+          "overall_transition_control": {
+            "correct": 103,
+            "minimum": 0.9,
+            "observed": 0.3377049180327869,
+            "passed": false,
+            "total": 305
+          },
+          "terminal_validity": {
+            "minimum": 0.71,
+            "observed": 0.9056603773584906,
+            "passed": true,
+            "total": 106,
+            "valid": 96
+          },
+          "transition_legality": {
+            "legal": 190,
+            "minimum": 0.95,
+            "observed": 0.6229508196721312,
+            "passed": false,
+            "total": 305
+          },
+          "zeroed_conditioning_identity": {
+            "observed": true,
+            "passed": true,
+            "required": true
+          }
         },
-        "nondefault": {
-          "control_rate": 0.26222222222222225,
-          "correct": 59,
-          "legal": 122,
-          "legality_rate": 0.5422222222222223,
-          "mean_target_margin": -1.8391666666666666,
-          "total": 225
-        },
-        "overall": {
-          "control_rate": 0.3377049180327869,
-          "correct": 103,
-          "legal": 190,
-          "legality_rate": 0.6229508196721312,
-          "mean_target_margin": -0.9993852459016394,
-          "total": 305
+        "conditioner_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/oracle_film_ema_step_1500.pt",
+        "conditioner_sha256": "d551f1136cf1582e9a6e95be43be952a5f4da1ed5649c45ed29ecd4115e051de",
+        "evaluation_kind": "posthoc_train_readout",
+        "frozen_lineage_after": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+        "frozen_lineage_before": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+        "gate_status": "blocked",
+        "identity_groups_exact": 32,
+        "keeper": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/natural_step2000.pt",
+        "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+        "kind": "phase_g_oracle_interface_arm",
+        "loaded_oracle_keys": [
+          "oracle_reentry_conditioner.branch_a.net.0.bias",
+          "oracle_reentry_conditioner.branch_a.net.0.weight",
+          "oracle_reentry_conditioner.branch_a.net.1.bias",
+          "oracle_reentry_conditioner.branch_a.net.1.weight",
+          "oracle_reentry_conditioner.branch_a.net.3.bias",
+          "oracle_reentry_conditioner.branch_a.net.3.weight",
+          "oracle_reentry_conditioner.branch_b.net.0.bias",
+          "oracle_reentry_conditioner.branch_b.net.0.weight",
+          "oracle_reentry_conditioner.branch_b.net.1.bias",
+          "oracle_reentry_conditioner.branch_b.net.1.weight",
+          "oracle_reentry_conditioner.branch_b.net.3.bias",
+          "oracle_reentry_conditioner.branch_b.net.3.weight"
+        ],
+        "observed_groups": 32,
+        "observed_rows": 106,
+        "observed_transitions": 305,
+        "passed": false,
+        "posthoc_diagnostic_only": true,
+        "registered_heldout_verdict_mutable": false,
+        "route": "film",
+        "status": "finished",
+        "transition_control": {
+          "by_depth": {
+            "1": {
+              "control_rate": 0.5,
+              "correct": 8,
+              "legal": 16,
+              "legality_rate": 1.0,
+              "mean_target_margin": 0.1171875,
+              "total": 16
+            },
+            "2": {
+              "control_rate": 0.4772727272727273,
+              "correct": 21,
+              "legal": 39,
+              "legality_rate": 0.8863636363636364,
+              "mean_target_margin": -0.29261363636363635,
+              "total": 44
+            },
+            "3": {
+              "control_rate": 0.32098765432098764,
+              "correct": 26,
+              "legal": 57,
+              "legality_rate": 0.7037037037037037,
+              "mean_target_margin": -1.5671296296296295,
+              "total": 81
+            },
+            "4": {
+              "control_rate": 0.2926829268292683,
+              "correct": 48,
+              "legal": 78,
+              "legality_rate": 0.47560975609756095,
+              "mean_target_margin": -1.017530487804878,
+              "total": 164
+            }
+          },
+          "by_loop_index": {
+            "1": {
+              "control_rate": 0.5943396226415094,
+              "correct": 63,
+              "legal": 99,
+              "legality_rate": 0.9339622641509434,
+              "mean_target_margin": 1.1362028301886793,
+              "total": 106
+            },
+            "2": {
+              "control_rate": 0.25555555555555554,
+              "correct": 23,
+              "legal": 55,
+              "legality_rate": 0.6111111111111112,
+              "mean_target_margin": -2.109027777777778,
+              "total": 90
+            },
+            "3": {
+              "control_rate": 0.14705882352941177,
+              "correct": 10,
+              "legal": 21,
+              "legality_rate": 0.3088235294117647,
+              "mean_target_margin": -2.5431985294117645,
+              "total": 68
+            },
+            "4": {
+              "control_rate": 0.17073170731707318,
+              "correct": 7,
+              "legal": 15,
+              "legality_rate": 0.36585365853658536,
+              "mean_target_margin": -1.524390243902439,
+              "total": 41
+            }
+          },
+          "default": {
+            "control_rate": 0.55,
+            "correct": 44,
+            "legal": 68,
+            "legality_rate": 0.85,
+            "mean_target_margin": 1.3625,
+            "total": 80
+          },
+          "nondefault": {
+            "control_rate": 0.26222222222222225,
+            "correct": 59,
+            "legal": 122,
+            "legality_rate": 0.5422222222222223,
+            "mean_target_margin": -1.8391666666666666,
+            "total": 225
+          },
+          "overall": {
+            "control_rate": 0.3377049180327869,
+            "correct": 103,
+            "legal": 190,
+            "legality_rate": 0.6229508196721312,
+            "mean_target_margin": -0.9993852459016394,
+            "total": 305
+          }
         }
       }
     }
   },
+  "automatic_successor_authorized": false,
+  "immutable_sha256_after": {
+    "additive": "4d5f2cb78f8bab14c6449b4cea8d971f59ad76a661a995ae7e62e883e125235c",
+    "film": "d551f1136cf1582e9a6e95be43be952a5f4da1ed5649c45ed29ecd4115e051de",
+    "keeper": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f"
+  },
+  "immutable_sha256_before": {
+    "additive": "4d5f2cb78f8bab14c6449b4cea8d971f59ad76a661a995ae7e62e883e125235c",
+    "film": "d551f1136cf1582e9a6e95be43be952a5f4da1ed5649c45ed29ecd4115e051de",
+    "keeper": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f"
+  },
+  "kind": "phase_g_oracle_train_readout",
   "matched_manifest": {
     "groups": 32,
     "groups_by_depth": {
@@ -696,9 +718,7 @@
       "4": 41
     }
   },
-  "posthoc_diagnostic_only": true,
   "registered_heldout_verdict": "BOTH_FAIL",
   "registered_heldout_verdict_changed": false,
-  "run_id": "stage5_phase_g_oracle_train_readout_20260722",
-  "status": "full_film_complete"
+  "status": "finished_posthoc_diagnostic"
 }
