@@ -364,3 +364,298 @@ oracle_eval_progress route=film row=106/106 depth=4
     }
   }
 }
+$ /usr/bin/python3 eval/eval_oracle_interface_probe.py --data_jsonl outputs/stage5/stage5_phase_g_multitarget_control_20260718/data/train.jsonl --keeper /content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/natural_step2000.pt --expected_keeper_sha256 0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f --conditioner_checkpoint /content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/oracle_additive_ema_step_1500.pt --expected_conditioner_sha256 4d5f2cb78f8bab14c6449b4cea8d971f59ad76a661a995ae7e62e883e125235c --route additive --output_dir outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/eval/full1899/additive --resume_cache_path /content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_phase_g_oracle_train_readout_20260722/eval_cache/full1899/additive/rows.jsonl --expected_rows 1899 --expected_groups 512 --expected_transitions 5617 --evaluation_kind posthoc_train_readout --dtype bfloat16 --device cuda
+
+Loading weights:   0%|          | 0/290 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 290/290 [00:00<00:00, 5065.63it/s]
+bridge_projection_mode=split
+lora_recurrent_modules=0
+loaded_checkpoint=/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/natural_step2000.pt loaded_keys=152
+oracle_eval_progress route=additive row=1/1899 depth=1
+oracle_eval_progress route=additive row=16/1899 depth=1
+oracle_eval_progress route=additive row=32/1899 depth=1
+oracle_eval_progress route=additive row=48/1899 depth=1
+oracle_eval_progress route=additive row=64/1899 depth=1
+oracle_eval_progress route=additive row=80/1899 depth=1
+oracle_eval_progress route=additive row=96/1899 depth=1
+oracle_eval_progress route=additive row=112/1899 depth=1
+oracle_eval_progress route=additive row=128/1899 depth=1
+oracle_eval_progress route=additive row=144/1899 depth=1
+oracle_eval_progress route=additive row=160/1899 depth=1
+oracle_eval_progress route=additive row=176/1899 depth=1
+oracle_eval_progress route=additive row=192/1899 depth=1
+oracle_eval_progress route=additive row=208/1899 depth=1
+oracle_eval_progress route=additive row=224/1899 depth=1
+oracle_eval_progress route=additive row=240/1899 depth=1
+oracle_eval_progress route=additive row=256/1899 depth=1
+oracle_eval_progress route=additive row=272/1899 depth=2
+oracle_eval_progress route=additive row=288/1899 depth=2
+oracle_eval_progress route=additive row=304/1899 depth=2
+oracle_eval_progress route=additive row=320/1899 depth=2
+oracle_eval_progress route=additive row=336/1899 depth=2
+oracle_eval_progress route=additive row=352/1899 depth=2
+oracle_eval_progress route=additive row=368/1899 depth=2
+oracle_eval_progress route=additive row=384/1899 depth=2
+oracle_eval_progress route=additive row=400/1899 depth=2
+oracle_eval_progress route=additive row=416/1899 depth=2
+oracle_eval_progress route=additive row=432/1899 depth=2
+oracle_eval_progress route=additive row=448/1899 depth=2
+oracle_eval_progress route=additive row=464/1899 depth=2
+oracle_eval_progress route=additive row=480/1899 depth=2
+oracle_eval_progress route=additive row=496/1899 depth=2
+oracle_eval_progress route=additive row=512/1899 depth=2
+oracle_eval_progress route=additive row=528/1899 depth=2
+oracle_eval_progress route=additive row=544/1899 depth=2
+oracle_eval_progress route=additive row=560/1899 depth=2
+oracle_eval_progress route=additive row=576/1899 depth=2
+oracle_eval_progress route=additive row=592/1899 depth=2
+oracle_eval_progress route=additive row=608/1899 depth=2
+oracle_eval_progress route=additive row=624/1899 depth=3
+oracle_eval_progress route=additive row=640/1899 depth=3
+oracle_eval_progress route=additive row=656/1899 depth=3
+oracle_eval_progress route=additive row=672/1899 depth=3
+oracle_eval_progress route=additive row=688/1899 depth=3
+oracle_eval_progress route=additive row=704/1899 depth=3
+oracle_eval_progress route=additive row=720/1899 depth=3
+oracle_eval_progress route=additive row=736/1899 depth=3
+oracle_eval_progress route=additive row=752/1899 depth=3
+oracle_eval_progress route=additive row=768/1899 depth=3
+oracle_eval_progress route=additive row=784/1899 depth=3
+oracle_eval_progress route=additive row=800/1899 depth=3
+oracle_eval_progress route=additive row=816/1899 depth=3
+oracle_eval_progress route=additive row=832/1899 depth=3
+oracle_eval_progress route=additive row=848/1899 depth=3
+oracle_eval_progress route=additive row=864/1899 depth=3
+oracle_eval_progress route=additive row=880/1899 depth=3
+oracle_eval_progress route=additive row=896/1899 depth=3
+oracle_eval_progress route=additive row=912/1899 depth=3
+oracle_eval_progress route=additive row=928/1899 depth=3
+oracle_eval_progress route=additive row=944/1899 depth=3
+oracle_eval_progress route=additive row=960/1899 depth=3
+oracle_eval_progress route=additive row=976/1899 depth=3
+oracle_eval_progress route=additive row=992/1899 depth=3
+oracle_eval_progress route=additive row=1008/1899 depth=3
+oracle_eval_progress route=additive row=1024/1899 depth=3
+oracle_eval_progress route=additive row=1040/1899 depth=3
+oracle_eval_progress route=additive row=1056/1899 depth=3
+oracle_eval_progress route=additive row=1072/1899 depth=3
+oracle_eval_progress route=additive row=1088/1899 depth=3
+oracle_eval_progress route=additive row=1104/1899 depth=3
+oracle_eval_progress route=additive row=1120/1899 depth=4
+oracle_eval_progress route=additive row=1136/1899 depth=4
+oracle_eval_progress route=additive row=1152/1899 depth=4
+oracle_eval_progress route=additive row=1168/1899 depth=4
+oracle_eval_progress route=additive row=1184/1899 depth=4
+oracle_eval_progress route=additive row=1200/1899 depth=4
+oracle_eval_progress route=additive row=1216/1899 depth=4
+oracle_eval_progress route=additive row=1232/1899 depth=4
+oracle_eval_progress route=additive row=1248/1899 depth=4
+oracle_eval_progress route=additive row=1264/1899 depth=4
+oracle_eval_progress route=additive row=1280/1899 depth=4
+oracle_eval_progress route=additive row=1296/1899 depth=4
+oracle_eval_progress route=additive row=1312/1899 depth=4
+oracle_eval_progress route=additive row=1328/1899 depth=4
+oracle_eval_progress route=additive row=1344/1899 depth=4
+oracle_eval_progress route=additive row=1360/1899 depth=4
+oracle_eval_progress route=additive row=1376/1899 depth=4
+oracle_eval_progress route=additive row=1392/1899 depth=4
+oracle_eval_progress route=additive row=1408/1899 depth=4
+oracle_eval_progress route=additive row=1424/1899 depth=4
+oracle_eval_progress route=additive row=1440/1899 depth=4
+oracle_eval_progress route=additive row=1456/1899 depth=4
+oracle_eval_progress route=additive row=1472/1899 depth=4
+oracle_eval_progress route=additive row=1488/1899 depth=4
+oracle_eval_progress route=additive row=1504/1899 depth=4
+oracle_eval_progress route=additive row=1520/1899 depth=4
+oracle_eval_progress route=additive row=1536/1899 depth=4
+oracle_eval_progress route=additive row=1552/1899 depth=4
+oracle_eval_progress route=additive row=1568/1899 depth=4
+oracle_eval_progress route=additive row=1584/1899 depth=4
+oracle_eval_progress route=additive row=1600/1899 depth=4
+oracle_eval_progress route=additive row=1616/1899 depth=4
+oracle_eval_progress route=additive row=1632/1899 depth=4
+oracle_eval_progress route=additive row=1648/1899 depth=4
+oracle_eval_progress route=additive row=1664/1899 depth=4
+oracle_eval_progress route=additive row=1680/1899 depth=4
+oracle_eval_progress route=additive row=1696/1899 depth=4
+oracle_eval_progress route=additive row=1712/1899 depth=4
+oracle_eval_progress route=additive row=1728/1899 depth=4
+oracle_eval_progress route=additive row=1744/1899 depth=4
+oracle_eval_progress route=additive row=1760/1899 depth=4
+oracle_eval_progress route=additive row=1776/1899 depth=4
+oracle_eval_progress route=additive row=1792/1899 depth=4
+oracle_eval_progress route=additive row=1808/1899 depth=4
+oracle_eval_progress route=additive row=1824/1899 depth=4
+oracle_eval_progress route=additive row=1840/1899 depth=4
+oracle_eval_progress route=additive row=1856/1899 depth=4
+oracle_eval_progress route=additive row=1872/1899 depth=4
+oracle_eval_progress route=additive row=1888/1899 depth=4
+oracle_eval_progress route=additive row=1899/1899 depth=4
+{
+  "checks": {
+    "frozen_keeper_lineage": {
+      "observed": true,
+      "passed": true,
+      "required": true
+    },
+    "nondefault_branch_control": {
+      "correct": 820,
+      "minimum": 0.85,
+      "observed": 0.2017716535433071,
+      "passed": false,
+      "total": 4064
+    },
+    "overall_transition_control": {
+      "correct": 1790,
+      "minimum": 0.9,
+      "observed": 0.3186754495282179,
+      "passed": false,
+      "total": 5617
+    },
+    "terminal_validity": {
+      "minimum": 0.71,
+      "observed": 0.8499210110584519,
+      "passed": true,
+      "total": 1899,
+      "valid": 1614
+    },
+    "transition_legality": {
+      "legal": 3193,
+      "minimum": 0.95,
+      "observed": 0.5684529108064803,
+      "passed": false,
+      "total": 5617
+    },
+    "zeroed_conditioning_identity": {
+      "observed": true,
+      "passed": true,
+      "required": true
+    }
+  },
+  "conditioner_checkpoint": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/oracle_additive_ema_step_1500.pt",
+  "conditioner_sha256": "4d5f2cb78f8bab14c6449b4cea8d971f59ad76a661a995ae7e62e883e125235c",
+  "evaluation_kind": "posthoc_train_readout",
+  "frozen_lineage_after": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+  "frozen_lineage_before": "b9ab5ba8630670197c3036631831949292113d60e48b6c9e7acc8dc113e37ec9",
+  "gate_status": "blocked",
+  "identity_groups_exact": 512,
+  "keeper": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_phase_g_oracle_train_readout_20260722/restored/natural_step2000.pt",
+  "keeper_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+  "kind": "phase_g_oracle_interface_arm",
+  "loaded_oracle_keys": [
+    "oracle_reentry_conditioner.branch_a.net.0.bias",
+    "oracle_reentry_conditioner.branch_a.net.0.weight",
+    "oracle_reentry_conditioner.branch_a.net.1.bias",
+    "oracle_reentry_conditioner.branch_a.net.1.weight",
+    "oracle_reentry_conditioner.branch_a.net.3.bias",
+    "oracle_reentry_conditioner.branch_a.net.3.weight",
+    "oracle_reentry_conditioner.branch_b.net.0.bias",
+    "oracle_reentry_conditioner.branch_b.net.0.weight",
+    "oracle_reentry_conditioner.branch_b.net.1.bias",
+    "oracle_reentry_conditioner.branch_b.net.1.weight",
+    "oracle_reentry_conditioner.branch_b.net.3.bias",
+    "oracle_reentry_conditioner.branch_b.net.3.weight"
+  ],
+  "observed_groups": 512,
+  "observed_rows": 1899,
+  "observed_transitions": 5617,
+  "passed": false,
+  "posthoc_diagnostic_only": true,
+  "registered_heldout_verdict_mutable": false,
+  "route": "additive",
+  "status": "finished",
+  "transition_control": {
+    "by_depth": {
+      "1": {
+        "control_rate": 0.515625,
+        "correct": 132,
+        "legal": 254,
+        "legality_rate": 0.9921875,
+        "mean_target_margin": 0.017822265625,
+        "total": 256
+      },
+      "2": {
+        "control_rate": 0.44886363636363635,
+        "correct": 316,
+        "legal": 586,
+        "legality_rate": 0.8323863636363636,
+        "mean_target_margin": -0.6524325284090909,
+        "total": 704
+      },
+      "3": {
+        "control_rate": 0.3530571992110454,
+        "correct": 537,
+        "legal": 937,
+        "legality_rate": 0.6160420775805391,
+        "mean_target_margin": -1.1534352399737016,
+        "total": 1521
+      },
+      "4": {
+        "control_rate": 0.25669642857142855,
+        "correct": 805,
+        "legal": 1416,
+        "legality_rate": 0.45153061224489793,
+        "mean_target_margin": -1.5368702168367347,
+        "total": 3136
+      }
+    },
+    "by_loop_index": {
+      "1": {
+        "control_rate": 0.5729331226961558,
+        "correct": 1088,
+        "legal": 1849,
+        "legality_rate": 0.9736703528172722,
+        "mean_target_margin": 0.4873124012638231,
+        "total": 1899
+      },
+      "2": {
+        "control_rate": 0.2598904443091905,
+        "correct": 427,
+        "legal": 799,
+        "legality_rate": 0.48630553864881315,
+        "mean_target_margin": -2.2880211503347536,
+        "total": 1643
+      },
+      "3": {
+        "control_rate": 0.1463981409759876,
+        "correct": 189,
+        "legal": 370,
+        "legality_rate": 0.2865995352439969,
+        "mean_target_margin": -2.15612896979086,
+        "total": 1291
+      },
+      "4": {
+        "control_rate": 0.1096938775510204,
+        "correct": 86,
+        "legal": 175,
+        "legality_rate": 0.22321428571428573,
+        "mean_target_margin": -1.8002232142857142,
+        "total": 784
+      }
+    },
+    "default": {
+      "control_rate": 0.6245975531229878,
+      "correct": 970,
+      "legal": 1265,
+      "legality_rate": 0.8145524790727624,
+      "mean_target_margin": 1.150756600128783,
+      "total": 1553
+    },
+    "nondefault": {
+      "control_rate": 0.2017716535433071,
+      "correct": 820,
+      "legal": 1928,
+      "legality_rate": 0.4744094488188976,
+      "mean_target_margin": -2.1692605807086616,
+      "total": 4064
+    },
+    "overall": {
+      "control_rate": 0.3186754495282179,
+      "correct": 1790,
+      "legal": 3193,
+      "legality_rate": 0.5684529108064803,
+      "mean_target_margin": -1.2513352323304254,
+      "total": 5617
+    }
+  }
+}
