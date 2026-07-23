@@ -22,6 +22,7 @@ STAGE5_PAPER2_PHASE_T1_P0_CELL_VERSION = "paper2_internal_token_t1_p0_v1"
 # Safety marker: tests/test_internal_think_token_t1.py
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
+SYNC_REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main").strip() or "main"
 DISCONNECT = os.environ.get("STAGE5_PAPER2_T1_P0_DISCONNECT", "0").lower() in {
     "1",
     "true",
@@ -86,9 +87,10 @@ def sync_repo() -> None:
         run(["git", "remote", "set-url", "origin", clone_url])
         run(["git", "fetch", "origin", "main"])
         run(["git", "checkout", "main"])
-        run(["git", "reset", "--hard", "origin/main"])
+        run(["git", "reset", "--hard", SYNC_REF])
     else:
         run(["git", "clone", clone_url, str(ROOT)], cwd=Path("/content"))
+        run(["git", "reset", "--hard", SYNC_REF])
     run(["git", "config", "user.email", "colab-runner@local"])
     run(["git", "config", "user.name", "Colab Runner"])
     run(["git", "log", "--oneline", "-5"])
@@ -118,7 +120,7 @@ try:
         allowed_returncodes=(0, 2),
     )
     print("P0 pilot finished or reached its preregistered no-selection exit.", flush=True)
-    print("Registered T1 training remains locked until Draft 2 and preregistration.json are committed.", flush=True)
+    print("Registered T1-lite remains locked until Draft 3 and preregistration.json are committed.", flush=True)
     if DISCONNECT:
         runtime.unassign()
 except Exception:

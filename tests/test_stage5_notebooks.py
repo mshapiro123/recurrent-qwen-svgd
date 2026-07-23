@@ -1183,6 +1183,8 @@ def test_paper2_t1_p0_target_is_pilot_only_and_resumable() -> None:
     assert "gather_control_examples" in trainer
     assert "build_candidate_trie_contract" in trainer
     assert "score_candidate_trie_batch" in trainer
+    assert 'SYNC_REF = os.environ.get("STAGE5_BOOTSTRAP_REF"' in cell
+    assert '["git", "reset", "--hard", SYNC_REF]' in cell
 
 
 def test_oracle_intrablock_control_target_is_locked() -> None:
