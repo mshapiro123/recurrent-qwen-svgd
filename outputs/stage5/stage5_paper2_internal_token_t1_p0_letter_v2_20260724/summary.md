@@ -9,3 +9,4 @@
 | Cell | Lambda | Stop/continue ratio | Stop recall | Continue recall | Answer accuracy |
 |---|---:|---:|---:|---:|---:|
 | lambda0_reference | 0.0 | 1.0 | 0.000 | 1.000 | 0.531 |
+| lambda0p5_ratio1 | 0.5 | 1.0 | 0.691 | 0.988 | 0.590 |
