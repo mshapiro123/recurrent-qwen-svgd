@@ -17,6 +17,9 @@ It is not matched-lineage evidence for T1-lite.
 - The dedicated pilot evaluation set contains 256 rows, 32 per depth for
   depths 1-8, generated from a separate seed and marked as excluded from all
   registered sets.
+- P0 uses the established Phase A `A-P` symbol surface. A complete tokenizer
+  alignment preflight verifies every intermediate loop target has the same
+  sequence length as its row's final target before any training step.
 - The training stream is exactly 70% control-bearing rows and 30% unchanged
   mechanism-rehearsal rows, balanced by depth.
 - A private `<|recur_readout|>` prompt position is separated from answer

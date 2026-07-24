@@ -31,7 +31,7 @@ class CandidateTrieContract:
     """Exact candidate sequences and their shared teacher-forced prefixes."""
 
     prompt_token_count: int
-    candidate_values: tuple[int, ...]
+    candidate_values: tuple[str, ...]
     candidate_token_ids: tuple[tuple[int, ...], ...]
     scoring_prefixes: tuple[tuple[int, ...], ...]
 
@@ -89,13 +89,18 @@ def build_candidate_trie_contract(
     tokenizer: Any,
     *,
     prompt: str,
-    n_symbols: int,
+    candidate_values: Iterable[str | int],
 ) -> CandidateTrieContract:
     """Build a prompt-boundary-safe trie for variable-length candidates."""
 
+    values = tuple(str(value) for value in candidate_values)
+    if not values:
+        raise ValueError("candidate_values cannot be empty")
+    if len(set(values)) != len(values):
+        raise ValueError("candidate_values must be unique")
     prompt_ids = list(tokenizer(prompt, add_special_tokens=True)["input_ids"])
     suffixes: list[tuple[int, ...]] = []
-    for value in range(int(n_symbols)):
+    for value in values:
         full_ids = list(
             tokenizer(prompt + f" {value}", add_special_tokens=True)["input_ids"]
         )
@@ -108,7 +113,7 @@ def build_candidate_trie_contract(
         if not suffix:
             raise AssertionError(f"Candidate symbol {value} has an empty token suffix")
         suffixes.append(suffix)
-    if len(set(suffixes)) != int(n_symbols):
+    if len(set(suffixes)) != len(values):
         raise AssertionError("P0 candidate token sequences are not unique")
     prefixes = sorted(
         {suffix[:offset] for suffix in suffixes for offset in range(len(suffix))},
@@ -116,7 +121,7 @@ def build_candidate_trie_contract(
     )
     return CandidateTrieContract(
         prompt_token_count=len(prompt_ids),
-        candidate_values=tuple(range(int(n_symbols))),
+        candidate_values=values,
         candidate_token_ids=tuple(suffixes),
         scoring_prefixes=tuple(prefixes),
     )

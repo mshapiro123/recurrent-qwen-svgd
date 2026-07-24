@@ -1175,7 +1175,10 @@ def test_paper2_t1_p0_target_is_pilot_only_and_resumable() -> None:
     assert "exact 70 percent control 30 percent mechanism rehearsal" in cell
     assert "exact normalized trie multi-token candidate scoring" in cell
     assert "complete ten-cell calibration grid before coefficient lock" in cell
+    assert "Phase A letter symbols and loop-target alignment preflight" in cell
     assert "STAGE5_PAPER2_T1_P0_CELLS" in runner
+    assert 'value_prefix="letter:"' in runner
+    assert "p0_phase_a_letter_symbols_v2" in runner
     assert "pilot_disjoint_from_registered_sets" in runner
     assert "select_pilot_cell" in runner
     assert '"registered_t1_training": False' in trainer
@@ -1183,6 +1186,7 @@ def test_paper2_t1_p0_target_is_pilot_only_and_resumable() -> None:
     assert "gather_control_examples" in trainer
     assert "build_candidate_trie_contract" in trainer
     assert "score_candidate_trie_batch" in trainer
+    assert "assert_loop_completion_alignment" in trainer
     assert 'SYNC_REF = os.environ.get("STAGE5_BOOTSTRAP_REF"' in cell
     assert '["git", "reset", "--hard", SYNC_REF]' in cell
 

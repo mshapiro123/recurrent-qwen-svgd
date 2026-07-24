@@ -30,7 +30,7 @@ from training.synthetic_depth_task import (
 
 RUN_ID = os.environ.get(
     "STAGE5_PAPER2_T1_P0_RUN_ID",
-    "stage5_paper2_internal_token_t1_p0_20260723",
+    "stage5_paper2_internal_token_t1_p0_letter_v2_20260724",
 )
 RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
 DRIVE_ROOT = Path(
@@ -41,6 +41,7 @@ DRIVE_ROOT = Path(
 )
 DEVICE = os.environ.get("DEVICE", "cuda")
 DTYPE = os.environ.get("STAGE5_PAPER2_T1_P0_DTYPE", "bfloat16")
+DATA_SCHEMA_VERSION = "p0_phase_a_letter_symbols_v2"
 TRAIN_DATASET_SEED = 2026072301
 PILOT_DATASET_SEED = 2026072399
 
@@ -152,7 +153,7 @@ def prepare_data() -> dict[str, Any]:
                 seed=TRAIN_DATASET_SEED,
                 num_choices=4,
                 max_target_loops=8,
-                value_prefix="",
+                value_prefix="letter:",
             ),
         )
     if not (pilot_dir / "summary.json").exists():
@@ -165,7 +166,7 @@ def prepare_data() -> dict[str, Any]:
                 seed=PILOT_DATASET_SEED,
                 num_choices=4,
                 max_target_loops=8,
-                value_prefix="",
+                value_prefix="letter:",
             ),
         )
 
@@ -198,6 +199,9 @@ def prepare_data() -> dict[str, Any]:
         "train_dataset_seed": TRAIN_DATASET_SEED,
         "pilot_dataset_seed": PILOT_DATASET_SEED,
         "pilot_disjoint_from_registered_sets": True,
+        "data_schema_version": DATA_SCHEMA_VERSION,
+        "value_prefix": "letter:",
+        "symbol_surface": "A_through_P_matching_phase_a",
     }
 
 

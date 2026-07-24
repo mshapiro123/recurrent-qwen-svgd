@@ -19,6 +19,7 @@ STAGE5_PAPER2_PHASE_T1_P0_CELL_VERSION = "paper2_internal_token_t1_p0_v1"
 # Safety marker: no silent sweep extension when both recalls miss 0.60
 # Safety marker: exact normalized trie multi-token candidate scoring
 # Safety marker: complete ten-cell calibration grid before coefficient lock
+# Safety marker: Phase A letter symbols and loop-target alignment preflight
 # Safety marker: tests/test_internal_think_token_t1.py
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")

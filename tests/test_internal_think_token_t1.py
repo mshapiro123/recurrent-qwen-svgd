@@ -39,7 +39,7 @@ def test_candidate_trie_contract_supports_variable_length_sequences() -> None:
     contract = build_candidate_trie_contract(
         _TwoTokenSymbolTokenizer(),
         prompt="Question\nAnswer:",
-        n_symbols=16,
+        candidate_values=range(16),
     )
     assert contract.prompt_token_count == 3
     assert contract.candidate_token_ids[0] == (220, 1000)
@@ -58,7 +58,7 @@ def test_candidate_trie_batch_scores_exact_normalized_sequences() -> None:
 
     contract = CandidateTrieContract(
         prompt_token_count=2,
-        candidate_values=(0, 1),
+        candidate_values=("A", "B"),
         candidate_token_ids=((10, 20), (10, 30, 40)),
         scoring_prefixes=((), (10,), (10, 30)),
     )
@@ -106,6 +106,30 @@ def test_candidate_trie_batch_scores_exact_normalized_sequences() -> None:
     assert scores.shape == (1, 2)
     assert int(scores.argmax(dim=-1).item()) == 1
     assert float(scores[0, 1]) > float(scores[0, 0])
+
+
+def test_p0_loop_target_alignment_preflight_rejects_length_drift() -> None:
+    pytest.importorskip("torch")
+    from training.run_internal_think_token_p0_cell import assert_loop_completion_alignment
+
+    class _Tokenizer:
+        def __call__(self, text: str, **kwargs):
+            del kwargs
+            extra = 1 if text.endswith(" C") else 0
+            return {"input_ids": list(range(len(text.split()) + extra))}
+
+    aligned = [{
+        "id": "aligned",
+        "prompt": "Question\nAnswer:",
+        "completion": " B",
+        "loop_completions": [" A", " B"],
+    }]
+    receipt = assert_loop_completion_alignment(aligned, _Tokenizer(), max_length=512)
+    assert receipt == {"rows": 1, "loop_targets": 2, "all_position_aligned": True}
+
+    misaligned = [{**aligned[0], "loop_completions": [" C", " B"]}]
+    with pytest.raises(AssertionError, match="not position-aligned"):
+        assert_loop_completion_alignment(misaligned, _Tokenizer(), max_length=512)
 
 
 def test_pilot_grid_is_locked_nine_cells_plus_reference() -> None:

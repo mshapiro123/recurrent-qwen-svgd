@@ -176,6 +176,7 @@ TARGETS = {
             "no silent sweep extension when both recalls miss 0.60",
             "exact normalized trie multi-token candidate scoring",
             "complete ten-cell calibration grid before coefficient lock",
+            "Phase A letter symbols and loop-target alignment preflight",
             "tests/test_internal_think_token_t1.py",
             "colab/run_stage5_paper2_phase_t1_p0.py",
         ],

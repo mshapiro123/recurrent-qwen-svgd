@@ -22,7 +22,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from eval.eval_identity import model_load_kwargs
-from training.dataset import JsonlCausalDataset, collate_causal_batch
+from training.dataset import JsonlCausalDataset, causal_prompt_for_row, collate_causal_batch
 from training.internal_think_token_runtime import (
     install_internal_control_tokens,
     split_internal_control_token_rows,
@@ -60,6 +60,63 @@ def write_json(path: str | Path, payload: dict[str, Any]) -> None:
         json.dumps(payload, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+
+
+def assert_loop_completion_alignment(
+    rows: list[dict[str, Any]],
+    tokenizer: Any,
+    *,
+    max_length: int,
+) -> dict[str, Any]:
+    """Fail before training if any per-loop target changes sequence length."""
+
+    checked_targets = 0
+    for row in rows:
+        prompt = causal_prompt_for_row(row)
+        completion = str(row.get("completion") or "")
+        expected = len(
+            tokenizer(
+                prompt + completion,
+                add_special_tokens=True,
+                truncation=True,
+                max_length=max_length,
+            )["input_ids"]
+        )
+        for loop_index, loop_completion in enumerate(row.get("loop_completions") or [], start=1):
+            observed = len(
+                tokenizer(
+                    prompt + str(loop_completion),
+                    add_special_tokens=True,
+                    truncation=True,
+                    max_length=max_length,
+                )["input_ids"]
+            )
+            if observed != expected:
+                row_id = row.get("instance_id", row.get("id", "<unknown>"))
+                raise AssertionError(
+                    "P0 loop-target tokenization is not position-aligned: "
+                    f"row={row_id}, loop={loop_index}, expected={expected}, observed={observed}"
+                )
+            checked_targets += 1
+    return {
+        "rows": len(rows),
+        "loop_targets": checked_targets,
+        "all_position_aligned": True,
+    }
+
+
+def candidate_values_from_rows(rows: list[dict[str, Any]]) -> tuple[str, ...]:
+    if not rows:
+        raise AssertionError("P0 candidate rows cannot be empty")
+    mapping = rows[0].get("mapping") or {}
+    values = tuple(sorted(str(value) for value in mapping))
+    if len(values) != 16:
+        raise AssertionError(f"P0 requires 16 candidate symbols, got {values}")
+    for row in rows[1:]:
+        row_values = tuple(sorted(str(value) for value in (row.get("mapping") or {})))
+        if row_values != values:
+            raise AssertionError("P0 candidate symbol set differs across pilot rows")
+    return values
 
 
 class PilotDataset(Dataset[dict[str, torch.Tensor]]):
@@ -387,11 +444,23 @@ def main() -> int:
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
+    train_rows = read_jsonl(args.train_jsonl)
+    pilot_rows = read_jsonl(args.pilot_jsonl)
+    raw_alignment = {
+        "train": assert_loop_completion_alignment(train_rows, tokenizer, max_length=512),
+        "pilot": assert_loop_completion_alignment(pilot_rows, tokenizer, max_length=512),
+    }
+    print(f"p0_raw_tokenizer_alignment={raw_alignment}", flush=True)
     model = AutoModelForCausalLM.from_pretrained(
         args.model_name,
         **model_load_kwargs(args.dtype, args.attn_implementation),
     ).to(args.device)
     resize = install_internal_control_tokens(tokenizer, model)
+    installed_alignment = {
+        "train": assert_loop_completion_alignment(train_rows, tokenizer, max_length=512),
+        "pilot": assert_loop_completion_alignment(pilot_rows, tokenizer, max_length=512),
+    }
+    print(f"p0_installed_tokenizer_alignment={installed_alignment}", flush=True)
     split_rows = split_internal_control_token_rows(
         model,
         original_vocab_size=resize.original_vocab_size,
@@ -443,16 +512,17 @@ def main() -> int:
     )
     if not pilot_dataset.base.rows:
         raise AssertionError("P0 pilot dataset is empty")
+    candidate_values = candidate_values_from_rows(pilot_dataset.base.rows)
     candidate_contract = build_candidate_trie_contract(
         tokenizer,
         prompt=str(pilot_dataset.base.rows[0]["prompt"]),
-        n_symbols=16,
+        candidate_values=candidate_values,
     )
     for row in pilot_dataset.base.rows[1:]:
         row_contract = build_candidate_trie_contract(
             tokenizer,
             prompt=str(row["prompt"]),
-            n_symbols=16,
+            candidate_values=candidate_values,
         )
         if row_contract.candidate_token_ids != candidate_contract.candidate_token_ids:
             raise AssertionError(
@@ -602,6 +672,10 @@ def main() -> int:
         "candidate_trie_contract": {
             **candidate_contract.to_dict(),
             "score": "mean_token_log_probability_exact_sequence",
+        },
+        "loop_target_alignment": {
+            "before_control_token_install": raw_alignment,
+            "after_control_token_install": installed_alignment,
         },
         "setup": setup,
         "logical_trainable_parameters": logical_trainable_summary(wrapper, embedding, control_ids),
