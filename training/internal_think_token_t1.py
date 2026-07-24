@@ -443,7 +443,17 @@ def score_control_predictions(
 def select_pilot_cell(results: list[dict[str, Any]]) -> dict[str, Any]:
     """Apply the P0 selection rule without permitting an implicit extension."""
 
-    references = [row for row in results if float(row["control_loss_lambda"]) == 0.0]
+    def cell_field(row: dict[str, Any], name: str) -> Any:
+        """Read both persisted nested receipts and legacy flat test fixtures."""
+
+        cell = row.get("cell")
+        if isinstance(cell, dict) and name in cell:
+            return cell[name]
+        return row[name]
+
+    references = [
+        row for row in results if float(cell_field(row, "control_loss_lambda")) == 0.0
+    ]
     if len(references) != 1:
         raise ValueError("P0 selection requires exactly one lambda-zero reference")
     reference_accuracy = float(references[0]["step_1500"]["answer_accuracy"])
@@ -470,18 +480,18 @@ def select_pilot_cell(results: list[dict[str, Any]]) -> dict[str, Any]:
     qualifying.sort(
         key=lambda row: (
             float(row["answer_accuracy_drop"]),
-            abs(float(row["control_loss_lambda"]) - 1.0),
-            abs(float(row["stop_to_continue_ratio"]) - 3.5),
-            str(row["cell_id"]),
+            abs(float(cell_field(row, "control_loss_lambda")) - 1.0),
+            abs(float(cell_field(row, "stop_to_continue_ratio")) - 3.5),
+            str(cell_field(row, "cell_id")),
         )
     )
     selected = qualifying[0]
     return {
         "status": "selected",
-        "selected_cell_id": selected["cell_id"],
-        "control_loss_lambda": float(selected["control_loss_lambda"]),
-        "stop_to_continue_ratio": float(selected["stop_to_continue_ratio"]),
+        "selected_cell_id": str(cell_field(selected, "cell_id")),
+        "control_loss_lambda": float(cell_field(selected, "control_loss_lambda")),
+        "stop_to_continue_ratio": float(cell_field(selected, "stop_to_continue_ratio")),
         "answer_accuracy_drop": float(selected["answer_accuracy_drop"]),
         "reference_answer_accuracy": reference_accuracy,
-        "qualifying_cells": [row["cell_id"] for row in qualifying],
+        "qualifying_cells": [str(cell_field(row, "cell_id")) for row in qualifying],
     }

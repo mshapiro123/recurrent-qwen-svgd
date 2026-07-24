@@ -261,6 +261,65 @@ def test_pilot_selection_filters_recalls_then_minimizes_answer_drop() -> None:
     assert selected["reference_answer_accuracy"] == pytest.approx(0.90)
 
 
+def test_pilot_selection_accepts_persisted_nested_receipts() -> None:
+    results = [
+        {
+            "cell": {
+                "cell_id": "lambda0_reference",
+                "control_loss_lambda": 0.0,
+                "stop_to_continue_ratio": 1.0,
+            },
+            "step_1500": {
+                "stop_recall": 0.0,
+                "continue_recall": 1.0,
+                "answer_accuracy": 0.75,
+            },
+        },
+        {
+            "cell": {
+                "cell_id": "lambda0p5_ratio1",
+                "control_loss_lambda": 0.5,
+                "stop_to_continue_ratio": 1.0,
+            },
+            "step_1500": {
+                "stop_recall": 0.70,
+                "continue_recall": 0.90,
+                "answer_accuracy": 0.70,
+            },
+        },
+    ]
+
+    selected = select_pilot_cell(results)
+
+    assert selected["status"] == "selected"
+    assert selected["selected_cell_id"] == "lambda0p5_ratio1"
+
+
+def test_p0_resume_restores_finished_unpublished_cell_from_drive(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    from colab import run_stage5_paper2_phase_t1_p0 as runner
+
+    run_dir = tmp_path / "run"
+    drive_root = tmp_path / "drive"
+    drive_cell = drive_root / "cells" / "lambda2_ratio7"
+    drive_cell.mkdir(parents=True)
+    runner.write_json(drive_cell / "summary.json", {"status": "finished"})
+    (drive_cell / "p0_compact_step_1500.pt").write_bytes(b"checkpoint")
+    monkeypatch.setattr(runner, "RUN_DIR", run_dir)
+    monkeypatch.setattr(runner, "DRIVE_ROOT", drive_root)
+
+    assert runner.restore_finished_cell_from_drive("lambda2_ratio7") is True
+    assert runner.read_json(
+        run_dir / "cells" / "lambda2_ratio7" / "summary.json"
+    )["status"] == "finished"
+    assert (
+        run_dir / "cells" / "lambda2_ratio7" / "p0_compact_step_1500.pt"
+    ).read_bytes() == b"checkpoint"
+    assert runner.restore_finished_cell_from_drive("lambda2_ratio7") is False
+
+
 def test_pilot_selection_refuses_silent_extension_when_no_cell_qualifies() -> None:
     results = [
         {

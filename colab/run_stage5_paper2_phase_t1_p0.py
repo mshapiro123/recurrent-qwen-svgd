@@ -238,6 +238,27 @@ def backup_cell(cell_id: str) -> dict[str, Any]:
     return {"drive_dir": str(drive_dir), "checkpoints": checkpoints}
 
 
+def restore_finished_cell_from_drive(cell_id: str) -> bool:
+    """Recover a completed cell that crashed before its Git receipt was published."""
+
+    cell_dir = RUN_DIR / "cells" / cell_id
+    local_summary = cell_dir / "summary.json"
+    if local_summary.exists() and read_json(local_summary).get("status") == "finished":
+        return False
+
+    drive_dir = DRIVE_ROOT / "cells" / cell_id
+    drive_summary = drive_dir / "summary.json"
+    if not drive_summary.exists() or read_json(drive_summary).get("status") != "finished":
+        return False
+
+    cell_dir.mkdir(parents=True, exist_ok=True)
+    for source in sorted(drive_dir.iterdir()):
+        if source.is_file():
+            shutil.copy2(source, cell_dir / source.name)
+    print(f"restored_finished_p0_cell_from_drive={cell_id}", flush=True)
+    return True
+
+
 def write_summary(data: dict[str, Any], results: list[dict[str, Any]]) -> dict[str, Any]:
     all_cell_ids = {cell.cell_id for cell in pilot_grid()}
     complete_ids = {str(row["cell"]["cell_id"]) for row in results}
@@ -302,6 +323,7 @@ def main() -> int:
     for cell in requested_cells():
         cell_dir = RUN_DIR / "cells" / cell.cell_id
         cell_summary = cell_dir / "summary.json"
+        restore_finished_cell_from_drive(cell.cell_id)
         if not cell_summary.exists() or read_json(cell_summary).get("status") != "finished":
             cell_config = RUN_DIR / "configs" / f"{cell.cell_id}.json"
             write_json(cell_config, cell.to_dict())
