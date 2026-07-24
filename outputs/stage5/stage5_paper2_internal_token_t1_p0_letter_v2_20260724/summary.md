@@ -1,10 +1,10 @@
 # Paper Two T1 P0 Pilot - stage5_paper2_internal_token_t1_p0_letter_v2_20260724
 
-- Status: `partial_cells_finished`
+- Status: `finished`
 - Registered T1 training: `False`
 - Citable: `False`
-- Selection: `incomplete_grid_no_selection`
-- Selected cell: `None`
+- Selection: `selected`
+- Selected cell: `lambda0p5_ratio1`
 
 | Cell | Lambda | Stop/continue ratio | Stop recall | Continue recall | Answer accuracy |
 |---|---:|---:|---:|---:|---:|
@@ -17,3 +17,4 @@
 | lambda1_ratio7 | 1.0 | 7.0 | 0.848 | 0.922 | 0.312 |
 | lambda2_ratio1 | 2.0 | 1.0 | 0.641 | 1.000 | 0.293 |
 | lambda2_ratio3p5 | 2.0 | 3.5 | 0.801 | 0.956 | 0.266 |
+| lambda2_ratio7 | 2.0 | 7.0 | 0.750 | 0.964 | 0.285 |
