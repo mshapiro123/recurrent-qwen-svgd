@@ -1,8 +1,8 @@
 # Project Status: Deterministic Program Closed
 
-**Canonical date:** July 23, 2026
+**Canonical date:** July 24, 2026
 **Part 1 status:** closed
-**Part 2 status:** useful-model program on the Qwen series; Arm G closed on the tested frozen re-entry interface; Phase T0 passed; adapter P0 calibration authorized; full-block T1-lite and D0 preregistrations not yet locked
+**Part 2 status:** useful-model program on the Qwen series; Arm G closed on the tested frozen re-entry interface; Phase T0 passed; adapter P0 calibration complete with lambda 0.5 and equal class weights selected; full-block T1-lite and D0 preregistrations not yet locked
 
 This page is the short status index. It replaces the earlier June recovery narrative, which became stale after the loop-closure repair, synthetic mechanism installation, Phase A dense-control comparison, and inverse-task boundary program.
 
@@ -19,6 +19,7 @@ This page is the short status index. It replaces the earlier June recovery narra
 - [Phase T0 internal-token specification](PAPER2_INTERNAL_THINK_TOKEN_PHASE0_SPEC_20260718.md)
 - [Phase T1 design rationale and forward strategy](PAPER2_T1_DESIGN_RATIONALE_AND_FORWARD_STRATEGY_20260723.md)
 - [Paper Two Draft 3 pivot](PAPER2_EXPERIMENTAL_PLAN_DRAFT3_20260723.md)
+- [T1 P0 calibration strategy handoff](PAPER2_T1_P0_CALIBRATION_STRATEGY_HANDOFF_20260724.md)
 - [D0 speculative-depth preregistration scaffold](PAPER2_D0_SPECULATIVE_DEPTH_PREREGISTRATION_DRAFT_20260723.md)
 - [Experiment log](EXPERIMENT_LOG.md)
 
@@ -74,13 +75,20 @@ masked all three controls; forced requested, executed, and selected loop
 counts agreed at four; and the inactive one-loop maximum logit difference was
 exactly `0.0`. T0 performed no training and wrote no checkpoint.
 
+The uncitable adapter P0 calibration then completed all ten fixed cells. Its
+registered selection rule chose control-loss lambda `0.5` with equal
+stop/continue weights. At step 1,500 the selected cell reached stop recall
+`0.691`, continue recall `0.988`, exact selected-depth accuracy `0.648`, and
+answer accuracy `0.590` versus `0.531` for lambda zero. This calibrates loss
+constants only; it is not matched-lineage evidence for full-block T1-lite.
+
 These results close Phase G on the tested frozen high-level re-entry interface.
 They do not falsify stochastic width, GRAM, internal conditioning, or a bounded
 adaptive substrate.
 
 ## Active Queue
 
-1. Finish the uncitable adapter P0 calibration. Treat its selected constants as transferable candidates only.
+1. Review and ratify the P0-selected lambda `0.5` and equal class weights as transferable candidates only.
 2. Lock and run one fresh-base full-block T1-lite actuator qualification under the unchanged four gates.
 3. Draft and lock D0: speculative-decoding depth recoverability on the Qwen teacher ladder.
 4. Run D0 only after the T1-lite verdict and D0 lock, then decide Paper Two packaging and whether the composite natural-trace track opens.

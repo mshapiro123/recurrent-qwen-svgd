@@ -131,9 +131,9 @@
     },
     {
       "id": "internal_token_halting",
-      "status": "t0_passed_p0_authorized_t1_lite_not_run",
-      "claim": "Token-pathway halting passed all no-training interface contracts; an uncitable adapter P0 calibration is authorized, while full-block T1-lite has not run.",
-      "scope": "Phase T0 executable preflight, uncitable adapter P0 calibration, and draft full-block T1-lite preregistration only",
+      "status": "t0_passed_p0_complete_t1_lite_not_run",
+      "claim": "Token-pathway halting passed all no-training interface contracts; the uncitable adapter P0 calibration selected lambda 0.5 with equal class weights, while full-block T1-lite has not run.",
+      "scope": "Phase T0 executable preflight, completed uncitable adapter P0 calibration, and draft full-block T1-lite preregistration only",
       "metrics": {
         "control_tokens_added": 3,
         "added_parameters": 2688,
@@ -144,7 +144,15 @@
         "training_performed": false,
         "registered_t1_lineages": 1,
         "registered_t1_lineage": "full_block",
-        "p0_lineage_matches_registered_t1": false
+        "p0_lineage_matches_registered_t1": false,
+        "p0_cells_completed": 10,
+        "p0_selected_control_loss_lambda": 0.5,
+        "p0_selected_stop_to_continue_ratio": 1.0,
+        "p0_selected_stop_recall": 0.69140625,
+        "p0_selected_continue_recall": 0.9877232142857143,
+        "p0_selected_exact_depth_accuracy": 0.6484375,
+        "p0_selected_answer_accuracy": 0.58984375,
+        "p0_lambda_zero_answer_accuracy": 0.53125
       },
       "evidence": [
         {
@@ -158,6 +166,14 @@
         {
           "path": "outputs/stage5/stage5_paper2_internal_token_t0_preflight_20260722/summary.json",
           "locator": "five executable Phase T0 contracts"
+        },
+        {
+          "path": "outputs/stage5/stage5_paper2_internal_token_t1_p0_letter_v2_20260724/summary.json",
+          "locator": "complete ten-cell uncitable P0 calibration and fixed-rule selection"
+        },
+        {
+          "path": "docs/PAPER2_T1_P0_CALIBRATION_STRATEGY_HANDOFF_20260724.md",
+          "locator": "calibration interpretation, boundaries, and decisions requested before lock"
         }
       ],
       "do_not_claim": [

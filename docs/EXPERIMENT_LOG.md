@@ -1446,3 +1446,18 @@ Colab/Drive backups for selected runs.
   remains closed under `NO-CHANNEL` and `BOTH_FAIL`; width and natural-trace
   training remain unauthorized. Record:
   `docs/PAPER2_EXPERIMENTAL_PLAN_DRAFT3_20260723.md`.
+- 2026-07-24 Paper Two T1 P0 calibration: all ten fixed adapter cells completed
+  on the dedicated 256-row pilot set. Seven of nine controlled cells cleared
+  both `0.60` recall floors. The fixed selection rule chose
+  `lambda0p5_ratio1`: stop recall `177/256 = 0.6914`, continue recall
+  `885/896 = 0.9877`, exact selected depth `166/256 = 0.6484`, and answer
+  accuracy `151/256 = 0.5898`, versus `136/256 = 0.5312` for lambda zero.
+  The selected normalized class weights are continue `1.0`, stop `1.0`.
+  Pretrained embedding rows remained hash-identical, and the A-P loop-target
+  alignment contract passed. P0 is uncitable, uses a different trainable
+  lineage from registered full-block T1-lite, and calibrates constants only.
+  Full-block T1-lite remains locked pending strategy ratification and a committed
+  `locked_before_training` preregistration. Receipt:
+  `outputs/stage5/stage5_paper2_internal_token_t1_p0_letter_v2_20260724/summary.json`.
+  Handoff:
+  `docs/PAPER2_T1_P0_CALIBRATION_STRATEGY_HANDOFF_20260724.md`.
