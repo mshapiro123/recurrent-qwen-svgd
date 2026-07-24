@@ -1,0 +1,56 @@
+{
+  "data_schema_version": "p0_phase_a_letter_symbols_v2",
+  "pilot_dataset_seed": 2026072399,
+  "pilot_disjoint_from_registered_sets": true,
+  "pilot_jsonl": "outputs/stage5/stage5_paper2_internal_token_t1_p0_letter_v2_20260724/data/p0_pilot_eval_256.jsonl",
+  "pilot_rows": 256,
+  "pilot_rows_per_depth": 32,
+  "pilot_sha256": "be34a13fdbeaf08a061c02e79a19ad7bf75973b2d8d089702aa4b6d4ddbebb1c",
+  "symbol_surface": "A_through_P_matching_phase_a",
+  "train_dataset_seed": 2026072301,
+  "train_jsonl": "outputs/stage5/stage5_paper2_internal_token_t1_p0_letter_v2_20260724/data/p0_train_mixture.jsonl",
+  "train_manifest": {
+    "by_depth": {
+      "1": {
+        "control": 175,
+        "rehearsal": 75
+      },
+      "2": {
+        "control": 175,
+        "rehearsal": 75
+      },
+      "3": {
+        "control": 175,
+        "rehearsal": 75
+      },
+      "4": {
+        "control": 175,
+        "rehearsal": 75
+      },
+      "5": {
+        "control": 175,
+        "rehearsal": 75
+      },
+      "6": {
+        "control": 175,
+        "rehearsal": 75
+      },
+      "7": {
+        "control": 175,
+        "rehearsal": 75
+      },
+      "8": {
+        "control": 175,
+        "rehearsal": 75
+      }
+    },
+    "control_fraction": 0.7,
+    "control_rows": 1400,
+    "rehearsal_fraction": 0.3,
+    "rehearsal_rows": 600,
+    "seed": 9999,
+    "total_rows": 2000
+  },
+  "train_sha256": "ad79bd7d62b09ac56200c88f8469aad10e65961788f5fc85b9fbc4b4764a10f1",
+  "value_prefix": "letter:"
+}

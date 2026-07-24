@@ -1,0 +1,42 @@
+{
+  "by_depth": {
+    "1": {
+      "control": 175,
+      "rehearsal": 75
+    },
+    "2": {
+      "control": 175,
+      "rehearsal": 75
+    },
+    "3": {
+      "control": 175,
+      "rehearsal": 75
+    },
+    "4": {
+      "control": 175,
+      "rehearsal": 75
+    },
+    "5": {
+      "control": 175,
+      "rehearsal": 75
+    },
+    "6": {
+      "control": 175,
+      "rehearsal": 75
+    },
+    "7": {
+      "control": 175,
+      "rehearsal": 75
+    },
+    "8": {
+      "control": 175,
+      "rehearsal": 75
+    }
+  },
+  "control_fraction": 0.7,
+  "control_rows": 1400,
+  "rehearsal_fraction": 0.3,
+  "rehearsal_rows": 600,
+  "seed": 9999,
+  "total_rows": 2000
+}
