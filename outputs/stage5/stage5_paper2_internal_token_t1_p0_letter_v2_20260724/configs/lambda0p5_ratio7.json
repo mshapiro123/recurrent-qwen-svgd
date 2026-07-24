@@ -1,0 +1,6 @@
+{
+  "cell_id": "lambda0p5_ratio7",
+  "control_loss_lambda": 0.5,
+  "reference": false,
+  "stop_to_continue_ratio": 7.0
+}
