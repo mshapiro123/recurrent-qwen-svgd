@@ -1213,6 +1213,28 @@ def test_paper2_t1_lite_target_is_locked_resumable_and_bounded() -> None:
     assert "required_total\": 5632" in evaluator
 
 
+def test_t1_lite_ema_audit_target_is_read_only_and_registered() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    cell = (ROOT / "colab/STAGE5_T1_LITE_EMA_AUDIT_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_t1_lite_ema_audit.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert '"t1_lite_ema_audit"' in bootstrap
+    assert "STAGE5_T1_LITE_EMA_AUDIT_CELL.py" in bootstrap
+    assert "registered_negative verdict immutable posthoc read-only" in cell
+    assert "raw EMA stage boundaries interpolation group swaps" in cell
+    assert "control rows recurrent block bridge localization" in cell
+    assert "no training no optimizer step no checkpoint mutation" in cell
+    assert "tests/test_t1_lite_ema_audit.py" in cell
+    assert 'summary.get("training_performed") is not False' in runner
+    assert 'summary.get("registered_verdict_immutable") != "registered_negative"' in runner
+
+
 def test_oracle_intrablock_control_target_is_locked() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
         encoding="utf-8"

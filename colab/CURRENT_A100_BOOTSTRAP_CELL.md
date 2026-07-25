@@ -314,6 +314,22 @@ TARGETS = {
             "STAGE5_SAFE_CONTINUE_PREFER_TRAINING_SOURCE": "1",
         },
     },
+    "t1_lite_ema_audit": {
+        "path": "colab/STAGE5_T1_LITE_EMA_AUDIT_CELL.py",
+        "markers": [
+            "STAGE5_T1_LITE_EMA_AUDIT_CELL_VERSION",
+            "registered_negative verdict immutable posthoc read-only",
+            "raw EMA stage boundaries interpolation group swaps",
+            "control rows recurrent block bridge localization",
+            "no training no optimizer step no checkpoint mutation",
+            "tests/test_t1_lite_ema_audit.py",
+        ],
+        "env": {
+            "STAGE5_T1_EMA_AUDIT_DTYPE": "bfloat16",
+            "STAGE5_T1_EMA_AUDIT_BATCH_SIZE": "8",
+            "STAGE5_T1_EMA_AUDIT_DISCONNECT": "0",
+        },
+    },
     "arc_challenge_mcq_debias_confirm": {
         "path": "colab/STAGE5_ARC_CHALLENGE_MCQ_DEBIAS_CELL.py",
         "markers": [

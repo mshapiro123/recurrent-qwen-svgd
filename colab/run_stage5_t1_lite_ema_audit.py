@@ -1,0 +1,166 @@
+"""Restore, run, and publish the read-only T1-lite EMA audit."""
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+SOURCE_RUN_ID = "stage5_paper2_t1_lite_20260724"
+RUN_ID = os.environ.get(
+    "STAGE5_T1_EMA_AUDIT_RUN_ID",
+    "stage5_paper2_t1_lite_ema_audit_20260725",
+)
+RUN_DIR = ROOT / "outputs" / "stage5" / RUN_ID
+SOURCE_DIR = ROOT / "outputs" / "stage5" / SOURCE_RUN_ID
+DRIVE_SOURCE = Path(
+    os.environ.get(
+        "STAGE5_T1_EMA_AUDIT_DRIVE_SOURCE",
+        f"/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/{SOURCE_RUN_ID}/checkpoints",
+    )
+)
+DRIVE_OUTPUT = Path(
+    os.environ.get(
+        "STAGE5_T1_EMA_AUDIT_DRIVE_OUTPUT",
+        f"/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/{RUN_ID}",
+    )
+)
+
+
+def read_json(path: str | Path) -> Any:
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def run(command: list[str]) -> None:
+    print("$", " ".join(command), flush=True)
+    subprocess.run(command, cwd=ROOT, check=True)
+
+
+def publish() -> None:
+    subprocess.run(
+        ["git", "pull", "--rebase", "--autostash", "origin", "main"],
+        cwd=ROOT,
+        check=False,
+    )
+    for path in sorted(RUN_DIR.rglob("*")):
+        if path.is_file() and path.suffix in {".json", ".md", ".log"}:
+            subprocess.run(
+                ["git", "add", "-f", path.relative_to(ROOT).as_posix()],
+                cwd=ROOT,
+                check=True,
+            )
+    if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode:
+        run(["git", "commit", "-m", f"Record T1-lite EMA audit {RUN_ID} [skip ci]"])
+        if subprocess.run(["git", "push", "origin", "main"], cwd=ROOT).returncode:
+            run(["git", "pull", "--rebase", "--autostash", "origin", "main"])
+            run(["git", "push", "origin", "main"])
+
+
+def restore_inputs() -> dict[str, Path]:
+    training = read_json(SOURCE_DIR / "train" / "training_summary.json")
+    expected = {
+        "t1_lite_raw_step_10500.pt": str(training["raw_checkpoint_sha256"]),
+        "t1_lite_ema_step_10500.pt": str(training["ema_checkpoint_sha256"]),
+        **{f"t1_progress_step_{step}.pt": "" for step in (500, 2500, 6500, 8500)},
+    }
+    restore_dir = RUN_DIR / "restored"
+    restore_dir.mkdir(parents=True, exist_ok=True)
+    restored: dict[str, Path] = {}
+    for name, expected_sha in expected.items():
+        source = DRIVE_SOURCE / name
+        if not source.exists():
+            raise FileNotFoundError(f"missing Drive audit source: {source}")
+        destination = restore_dir / name
+        if not destination.exists() or destination.stat().st_size != source.stat().st_size:
+            shutil.copy2(source, destination)
+        restored[name] = destination
+        print(
+            f"restored_audit_input={destination} bytes={destination.stat().st_size} "
+            f"expected_sha256={expected_sha or 'recorded_inside_progress_payload'}",
+            flush=True,
+        )
+    return restored
+
+
+def write_receipt(summary: dict[str, Any]) -> None:
+    lines = [
+        "# T1-lite EMA Audit Receipt",
+        "",
+        f"- Status: `{summary['status']}`",
+        f"- Registered verdict unchanged: `{summary['registered_verdict_immutable']}`",
+        f"- Training performed: `{summary['training_performed']}`",
+        "",
+        "This is a post-hoc localization audit. It does not replace the registered EMA-primary result.",
+        "",
+        "## Selected confirmations",
+        "",
+    ]
+    for label, value in summary["selected_confirmation_variants"].items():
+        metrics = summary["full_pilot_confirmations"][value]
+        lines.append(
+            f"- {label}: `{value}`; forced `{metrics['forced_correct']}/{metrics['total']}`, "
+            f"exact depth `{metrics['exact_selected_depth_correct']}/{metrics['total']}`."
+        )
+    lines.extend(["", "Interpretation is deferred until the complete receipt is reviewed.", ""])
+    (RUN_DIR / "receipt.md").write_text("\n".join(lines), encoding="utf-8")
+
+
+def main() -> int:
+    required = [
+        SOURCE_DIR / "train" / "training_summary.json",
+        SOURCE_DIR / "data" / "liveness_pilot_256.jsonl",
+        ROOT / "docs" / "PAPER2_T1_LITE_EMA_AUDIT_SPEC_20260725.md",
+    ]
+    missing = [str(path) for path in required if not path.exists()]
+    if missing:
+        raise FileNotFoundError(f"EMA audit immutable sources missing: {missing}")
+    RUN_DIR.mkdir(parents=True, exist_ok=True)
+    restored = restore_inputs()
+    training = read_json(SOURCE_DIR / "train" / "training_summary.json")
+    run(
+        [
+            sys.executable,
+            "eval/eval_t1_lite_ema_audit.py",
+            "--raw_checkpoint",
+            str(restored["t1_lite_raw_step_10500.pt"]),
+            "--ema_checkpoint",
+            str(restored["t1_lite_ema_step_10500.pt"]),
+            "--progress_dir",
+            str(RUN_DIR / "restored"),
+            "--pilot_jsonl",
+            str(SOURCE_DIR / "data" / "liveness_pilot_256.jsonl"),
+            "--output_dir",
+            str(RUN_DIR),
+            "--expected_raw_sha256",
+            str(training["raw_checkpoint_sha256"]),
+            "--expected_ema_sha256",
+            str(training["ema_checkpoint_sha256"]),
+            "--device",
+            "cuda",
+            "--dtype",
+            os.environ.get("STAGE5_T1_EMA_AUDIT_DTYPE", "bfloat16"),
+            "--batch_size",
+            os.environ.get("STAGE5_T1_EMA_AUDIT_BATCH_SIZE", "8"),
+        ]
+    )
+    summary = read_json(RUN_DIR / "summary.json")
+    if summary.get("training_performed") is not False:
+        raise AssertionError("EMA audit unexpectedly performed training")
+    if summary.get("registered_verdict_immutable") != "registered_negative":
+        raise AssertionError("EMA audit changed the registered verdict")
+    write_receipt(summary)
+    if DRIVE_OUTPUT.exists():
+        shutil.rmtree(DRIVE_OUTPUT)
+    shutil.copytree(RUN_DIR, DRIVE_OUTPUT, ignore=shutil.ignore_patterns("*.pt"))
+    publish()
+    print(f"T1-lite EMA audit finished: {RUN_DIR.relative_to(ROOT)}", flush=True)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
