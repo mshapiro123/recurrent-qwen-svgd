@@ -1,0 +1,10 @@
+{
+  "original_lock_canonical_lf_sha256": "69cc659b89f0e582641ba0d52a371723a96a8c80dafa483b11c1f4e76fc4ca09",
+  "original_lock_newline_normalization_only": true,
+  "original_lock_observed_raw_sha256": "69cc659b89f0e582641ba0d52a371723a96a8c80dafa483b11c1f4e76fc4ca09",
+  "original_lock_registered_windows_sha256": "4e55e946a8019d2c0c278bfaff2e76cd97b3efb7822b954b2cb74a539c037cba",
+  "seed0_raw_exact_selection_correct": 1024,
+  "seed0_raw_forced_correct": 967,
+  "seed0_registered_verdict": "registered_negative",
+  "strategy_authorization": "docs/PHASE_T1_LITE_R_PREREGISTRATION_20260725.md"
+}

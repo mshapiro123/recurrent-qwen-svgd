@@ -1,0 +1,135 @@
+{
+  "complete": true,
+  "hash_mismatches": [],
+  "kind": "paper2_t1_lite_r_stage_checkpoint_manifest",
+  "missing": [],
+  "receipts": [
+    {
+      "states": {
+        "continuous_ema": {
+          "backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_paper2_t1_lite_r_20260725/checkpoints/stage_states/t1_lite_r_step_500_continuous_ema.pt",
+          "backup_sha256": "3ffb3c27c3962eb0145d5fb1cd3c2af5c1d23c909ded03a38a1d35802c64e33e",
+          "local_path": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/stage_states/t1_lite_r_step_500_continuous_ema.pt",
+          "local_sha256": "3ffb3c27c3962eb0145d5fb1cd3c2af5c1d23c909ded03a38a1d35802c64e33e"
+        },
+        "raw": {
+          "backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_paper2_t1_lite_r_20260725/checkpoints/stage_states/t1_lite_r_step_500_raw.pt",
+          "backup_sha256": "6482368397d73c4f28be904f4326e6b516daf211d614be6da47b56133543031e",
+          "local_path": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/stage_states/t1_lite_r_step_500_raw.pt",
+          "local_sha256": "6482368397d73c4f28be904f4326e6b516daf211d614be6da47b56133543031e"
+        },
+        "stage_reset_ema": {
+          "backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_paper2_t1_lite_r_20260725/checkpoints/stage_states/t1_lite_r_step_500_stage_reset_ema.pt",
+          "backup_sha256": "a10a948096c9a8723980fad1956c74d74c95bf94e2783a3e39fb045961ba897c",
+          "local_path": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/stage_states/t1_lite_r_step_500_stage_reset_ema.pt",
+          "local_sha256": "a10a948096c9a8723980fad1956c74d74c95bf94e2783a3e39fb045961ba897c"
+        }
+      },
+      "step": 500
+    },
+    {
+      "states": {
+        "continuous_ema": {
+          "backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_paper2_t1_lite_r_20260725/checkpoints/stage_states/t1_lite_r_step_2500_continuous_ema.pt",
+          "backup_sha256": "cccdda3c9aa34535825c955cf79350ecae2a790aa7cd28b3e28b3d7d69a9840d",
+          "local_path": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/stage_states/t1_lite_r_step_2500_continuous_ema.pt",
+          "local_sha256": "cccdda3c9aa34535825c955cf79350ecae2a790aa7cd28b3e28b3d7d69a9840d"
+        },
+        "raw": {
+          "backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_paper2_t1_lite_r_20260725/checkpoints/stage_states/t1_lite_r_step_2500_raw.pt",
+          "backup_sha256": "9b9cee8dc2e2436a2775337de01ef68791a1e26ed2381fdbd4aff307bfaf2612",
+          "local_path": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/stage_states/t1_lite_r_step_2500_raw.pt",
+          "local_sha256": "9b9cee8dc2e2436a2775337de01ef68791a1e26ed2381fdbd4aff307bfaf2612"
+        },
+        "stage_reset_ema": {
+          "backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_paper2_t1_lite_r_20260725/checkpoints/stage_states/t1_lite_r_step_2500_stage_reset_ema.pt",
+          "backup_sha256": "ce0f89e2d5d9869b46cb1b10cd70e81ffd49e559b9b5ab6b9b6f2382b3408508",
+          "local_path": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/stage_states/t1_lite_r_step_2500_stage_reset_ema.pt",
+          "local_sha256": "ce0f89e2d5d9869b46cb1b10cd70e81ffd49e559b9b5ab6b9b6f2382b3408508"
+        }
+      },
+      "step": 2500
+    },
+    {
+      "states": {
+        "continuous_ema": {
+          "backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_paper2_t1_lite_r_20260725/checkpoints/stage_states/t1_lite_r_step_6500_continuous_ema.pt",
+          "backup_sha256": "3c4e27d3ed30f94b03729f8a6bb83d7e2cbc4528bf0abbdc5204404d6e01dcc3",
+          "local_path": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/stage_states/t1_lite_r_step_6500_continuous_ema.pt",
+          "local_sha256": "3c4e27d3ed30f94b03729f8a6bb83d7e2cbc4528bf0abbdc5204404d6e01dcc3"
+        },
+        "raw": {
+          "backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_paper2_t1_lite_r_20260725/checkpoints/stage_states/t1_lite_r_step_6500_raw.pt",
+          "backup_sha256": "869157e4abcb051a17b75de26e5ccd742aa9f8dbc4652ce6a811584db6f5b54d",
+          "local_path": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/stage_states/t1_lite_r_step_6500_raw.pt",
+          "local_sha256": "869157e4abcb051a17b75de26e5ccd742aa9f8dbc4652ce6a811584db6f5b54d"
+        },
+        "stage_reset_ema": {
+          "backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_paper2_t1_lite_r_20260725/checkpoints/stage_states/t1_lite_r_step_6500_stage_reset_ema.pt",
+          "backup_sha256": "20b2546c53d73bf4106035282c3a03ce4571b5c1a537296c14b35853d35b7b45",
+          "local_path": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/stage_states/t1_lite_r_step_6500_stage_reset_ema.pt",
+          "local_sha256": "20b2546c53d73bf4106035282c3a03ce4571b5c1a537296c14b35853d35b7b45"
+        }
+      },
+      "step": 6500
+    },
+    {
+      "states": {
+        "continuous_ema": {
+          "backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_paper2_t1_lite_r_20260725/checkpoints/stage_states/t1_lite_r_step_8500_continuous_ema.pt",
+          "backup_sha256": "7bac93f4c66001859930a0d83e1eb09611c59189cec8bcd4147e32b6bea1bf1a",
+          "local_path": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/stage_states/t1_lite_r_step_8500_continuous_ema.pt",
+          "local_sha256": "7bac93f4c66001859930a0d83e1eb09611c59189cec8bcd4147e32b6bea1bf1a"
+        },
+        "raw": {
+          "backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_paper2_t1_lite_r_20260725/checkpoints/stage_states/t1_lite_r_step_8500_raw.pt",
+          "backup_sha256": "d9835d7ced6530d1c034e7a98c0e0e5028699de14a9a2702136085b89d9cfedd",
+          "local_path": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/stage_states/t1_lite_r_step_8500_raw.pt",
+          "local_sha256": "d9835d7ced6530d1c034e7a98c0e0e5028699de14a9a2702136085b89d9cfedd"
+        },
+        "stage_reset_ema": {
+          "backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_paper2_t1_lite_r_20260725/checkpoints/stage_states/t1_lite_r_step_8500_stage_reset_ema.pt",
+          "backup_sha256": "dc511eb24a543fc79b3b81e581c960b724198141139a8883591353dd2614852e",
+          "local_path": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/stage_states/t1_lite_r_step_8500_stage_reset_ema.pt",
+          "local_sha256": "dc511eb24a543fc79b3b81e581c960b724198141139a8883591353dd2614852e"
+        }
+      },
+      "step": 8500
+    },
+    {
+      "states": {
+        "continuous_ema": {
+          "backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_paper2_t1_lite_r_20260725/checkpoints/stage_states/t1_lite_r_step_10500_continuous_ema.pt",
+          "backup_sha256": "d32719a147d728fa25c12d31eb42cc223882ce528745aacba153ab7baf2a9a3c",
+          "local_path": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/stage_states/t1_lite_r_step_10500_continuous_ema.pt",
+          "local_sha256": "d32719a147d728fa25c12d31eb42cc223882ce528745aacba153ab7baf2a9a3c"
+        },
+        "raw": {
+          "backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_paper2_t1_lite_r_20260725/checkpoints/stage_states/t1_lite_r_step_10500_raw.pt",
+          "backup_sha256": "6bc44aadded2d111cc8a6c117e23d0e40776660624e0e370f2b828e393418a62",
+          "local_path": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/stage_states/t1_lite_r_step_10500_raw.pt",
+          "local_sha256": "6bc44aadded2d111cc8a6c117e23d0e40776660624e0e370f2b828e393418a62"
+        },
+        "stage_reset_ema": {
+          "backup_path": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_paper2_t1_lite_r_20260725/checkpoints/stage_states/t1_lite_r_step_10500_stage_reset_ema.pt",
+          "backup_sha256": "390e035456e5624e565f5cce6d041dc9da30a61ea1ce9c5ea5e7c98555504e31",
+          "local_path": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/stage_states/t1_lite_r_step_10500_stage_reset_ema.pt",
+          "local_sha256": "390e035456e5624e565f5cce6d041dc9da30a61ea1ce9c5ea5e7c98555504e31"
+        }
+      },
+      "step": 10500
+    }
+  ],
+  "required_states": [
+    "raw",
+    "continuous_ema",
+    "stage_reset_ema"
+  ],
+  "required_steps": [
+    500,
+    2500,
+    6500,
+    8500,
+    10500
+  ]
+}

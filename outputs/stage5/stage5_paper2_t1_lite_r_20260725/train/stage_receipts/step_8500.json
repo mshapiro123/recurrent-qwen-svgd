@@ -1,0 +1,88 @@
+{
+  "global_step": 8500,
+  "liveness": {
+    "abort_for_diagnosis": false,
+    "control_loss_flat": true,
+    "control_loss_ols_slope": 3.821838798850277e-05,
+    "descriptive_only": true,
+    "flat_slope_floor": -1e-05,
+    "registered_attempt_consumed": true,
+    "stop_correct": 200,
+    "stop_recall": 0.78125,
+    "stop_recall_exactly_zero": false,
+    "stop_total": 256
+  },
+  "pilot": {
+    "answer_accuracy": 0.90625,
+    "answer_correct": 232,
+    "answer_total": 256,
+    "by_depth": {
+      "1": {
+        "accuracy": 1.0,
+        "correct": 32,
+        "total": 32
+      },
+      "2": {
+        "accuracy": 1.0,
+        "correct": 32,
+        "total": 32
+      },
+      "3": {
+        "accuracy": 1.0,
+        "correct": 32,
+        "total": 32
+      },
+      "4": {
+        "accuracy": 1.0,
+        "correct": 32,
+        "total": 32
+      },
+      "5": {
+        "accuracy": 0.25,
+        "correct": 8,
+        "total": 32
+      },
+      "6": {
+        "accuracy": 0.0,
+        "correct": 0,
+        "total": 32
+      },
+      "7": {
+        "accuracy": 1.0,
+        "correct": 32,
+        "total": 32
+      },
+      "8": {
+        "accuracy": 0.0,
+        "correct": 0,
+        "total": 32
+      }
+    },
+    "continue_correct": 864,
+    "continue_recall": 0.9642857142857143,
+    "continue_total": 896,
+    "exact_selected_depth_accuracy": 0.65625,
+    "exact_selected_depth_correct": 168,
+    "exact_selected_depth_total": 256,
+    "exhausted_without_stop": 0,
+    "stop_correct": 200,
+    "stop_recall": 0.78125,
+    "stop_total": 256
+  },
+  "stage": "chain_depth_le8",
+  "tier1_canary": {
+    "accuracy": 0.953125,
+    "correct": 61,
+    "total": 64
+  },
+  "trained_depths": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ]
+}

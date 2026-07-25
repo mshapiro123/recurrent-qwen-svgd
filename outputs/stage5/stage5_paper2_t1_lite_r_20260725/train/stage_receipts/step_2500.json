@@ -1,0 +1,52 @@
+{
+  "global_step": 2500,
+  "liveness": {
+    "abort_for_diagnosis": false,
+    "control_loss_flat": false,
+    "control_loss_ols_slope": -0.0006719734627356847,
+    "descriptive_only": true,
+    "flat_slope_floor": -1e-05,
+    "registered_attempt_consumed": true,
+    "stop_correct": 64,
+    "stop_recall": 1.0,
+    "stop_recall_exactly_zero": false,
+    "stop_total": 64
+  },
+  "pilot": {
+    "answer_accuracy": 0.984375,
+    "answer_correct": 63,
+    "answer_total": 64,
+    "by_depth": {
+      "1": {
+        "accuracy": 1.0,
+        "correct": 32,
+        "total": 32
+      },
+      "2": {
+        "accuracy": 1.0,
+        "correct": 32,
+        "total": 32
+      }
+    },
+    "continue_correct": 32,
+    "continue_recall": 1.0,
+    "continue_total": 32,
+    "exact_selected_depth_accuracy": 1.0,
+    "exact_selected_depth_correct": 64,
+    "exact_selected_depth_total": 64,
+    "exhausted_without_stop": 0,
+    "stop_correct": 64,
+    "stop_recall": 1.0,
+    "stop_total": 64
+  },
+  "stage": "chain_depth_le2",
+  "tier1_canary": {
+    "accuracy": 0.9375,
+    "correct": 60,
+    "total": 64
+  },
+  "trained_depths": [
+    1,
+    2
+  ]
+}
