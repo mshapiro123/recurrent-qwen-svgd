@@ -2922,6 +2922,21 @@ TARGETS = {
             "STAGE5_PAPER2_T0_DISCONNECT": "0",
         },
     },
+    "coconut_composite_preflight": {
+        "path": "colab/STAGE5_COCONUT_COMPOSITE_PREFLIGHT_CELL.py",
+        "markers": [
+            "STAGE5_COCONUT_COMPOSITE_PREFLIGHT_CELL_VERSION",
+            "no training RG-12 remains unrun",
+            "H times L feedback and H plus one times L total applications",
+            "full recompute reference sliced cache L1 only",
+            "finite difference cache checkpointing bfloat16 equivalence",
+            "frozen adapter backbone gradient transparent",
+            "tests/test_coconut_composite.py",
+        ],
+        "env": {
+            "STAGE5_COCONUT_PREFLIGHT_DISCONNECT": "0",
+        },
+    },
     "oracle_intrablock_control": {
         "path": "colab/STAGE5_ORACLE_INTRABLOCK_CONTROL_CELL.py",
         "markers": [

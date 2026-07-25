@@ -1154,6 +1154,28 @@ def test_paper2_t0_target_executes_five_contracts_without_training() -> None:
     assert '"phase_t1_authorized_by_this_receipt": False' in runner
 
 
+def test_coconut_composite_preflight_target_runs_rg1_rg11_without_training() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_COCONUT_COMPOSITE_PREFLIGHT_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_coconut_composite_preflight.py").read_text(
+        encoding="utf-8"
+    )
+    evaluator = (ROOT / "eval/eval_coconut_composite_integrity.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert '"coconut_composite_preflight"' in bootstrap
+    assert "STAGE5_COCONUT_COMPOSITE_PREFLIGHT_CELL_VERSION" in cell
+    assert "tests/test_coconut_composite.py" in cell
+    assert "accepted=(0, 2)" in cell
+    assert '"training_performed": False' in evaluator
+    assert '"run": False' in evaluator
+    assert "RG-12 is not authorized" in runner
+    assert "eval/eval_coconut_composite_integrity.py" in runner
+
+
 def test_paper2_t1_p0_target_is_pilot_only_and_resumable() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
         encoding="utf-8"

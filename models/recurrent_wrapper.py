@@ -82,6 +82,7 @@ class RecurrentQwenOutput:
     internal_control_decisions: Optional[torch.Tensor] = None
     internal_control_margins: Optional[torch.Tensor] = None
     final_recurrent_hidden: Optional[torch.Tensor] = None
+    final_post_norm_hidden: Optional[torch.Tensor] = None
     past_key_values: Optional[Any] = None
     hidden_states: Optional[tuple[torch.Tensor, ...]] = None
     attentions: Optional[tuple[torch.Tensor, ...]] = None
@@ -490,6 +491,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         internal_control_token_ids: Optional[tuple[int, int]] = None,
         internal_control_readout_positions: Optional[torch.Tensor] = None,
         internal_control_overrides: Optional[dict[int, str]] = None,
+        recurrent_application_sink: Optional[list[torch.Tensor]] = None,
         logits_to_keep: int | torch.Tensor = 0,
         **_: Any,
     ) -> RecurrentQwenOutput | tuple[Any, ...]:
@@ -688,6 +690,15 @@ class RecurrentQwenForCausalLM(nn.Module):
                 if decision not in {"continue", "stop"}:
                     raise ValueError("internal control overrides must be 'continue' or 'stop'")
         flat_attention_mask = attention_mask
+        if (
+            past_key_values is not None
+            and attention_mask is not None
+            and attention_mask.dim() == 2
+            and attention_mask.shape[1] != hidden_states.shape[1]
+        ):
+            # The causal mask needs the full cached prefix, while pooling and
+            # recurrent-state diagnostics operate only on this call's queries.
+            flat_attention_mask = attention_mask[:, -hidden_states.shape[1] :]
         flat_position_ids = position_ids
         flat_causal_mask = causal_mask
         flat_position_embeddings = position_embeddings
@@ -924,6 +935,8 @@ class RecurrentQwenForCausalLM(nn.Module):
                 pre_layer_transform=intrablock_transform,
             )
             all_attentions.extend(attentions)
+            if recurrent_application_sink is not None:
+                recurrent_application_sink.append(recurrent_state)
 
             if particle_update_mode == "svgd":
                 recurrent_state, svgd_stats = svgd_particle_update(
@@ -1365,6 +1378,11 @@ class RecurrentQwenForCausalLM(nn.Module):
                 else None
             ),
             final_recurrent_hidden=final_hidden,
+            final_post_norm_hidden=unflatten_trajectories(
+                normed,
+                batch_size,
+                num_trajectories,
+            ),
             past_key_values=past_key_values if use_cache else None,
             hidden_states=tuple(hidden_history) if output_hidden_states else None,
             attentions=tuple(all_attentions) if output_attentions else None,
@@ -1468,23 +1486,46 @@ class RecurrentQwenForCausalLM(nn.Module):
 
         if attention_mask is not None and attention_mask.dim() == 4:
             return attention_mask
-        return self._fallback_causal_mask(attention_mask, inputs_embeds)
+        return self._fallback_causal_mask(
+            attention_mask,
+            inputs_embeds,
+            cache_position=cache_position,
+        )
 
     def _fallback_causal_mask(
         self,
         attention_mask: Optional[torch.Tensor],
         inputs_embeds: torch.Tensor,
+        cache_position: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         batch_size, seq_len = inputs_embeds.shape[:2]
         min_dtype = torch.finfo(inputs_embeds.dtype).min
-        causal = torch.full(
-            (seq_len, seq_len),
-            min_dtype,
+        if attention_mask is not None and attention_mask.dim() == 2:
+            target_length = int(attention_mask.shape[-1])
+        elif cache_position is not None and cache_position.numel():
+            target_length = int(cache_position.max().item()) + 1
+        else:
+            target_length = seq_len
+        query_positions = (
+            cache_position.to(device=inputs_embeds.device, dtype=torch.long)
+            if cache_position is not None
+            else torch.arange(seq_len, device=inputs_embeds.device)
+        )
+        if query_positions.numel() != seq_len:
+            raise ValueError("cache_position must contain one position per query token")
+        key_positions = torch.arange(target_length, device=inputs_embeds.device)
+        blocked = key_positions.unsqueeze(0) > query_positions.unsqueeze(1)
+        causal = torch.zeros(
+            (seq_len, target_length),
             device=inputs_embeds.device,
             dtype=inputs_embeds.dtype,
+        ).masked_fill(blocked, min_dtype)
+        causal_mask = causal.unsqueeze(0).unsqueeze(0).expand(
+            batch_size,
+            1,
+            seq_len,
+            target_length,
         )
-        causal = torch.triu(causal, diagonal=1)
-        causal_mask = causal.unsqueeze(0).unsqueeze(0).expand(batch_size, 1, seq_len, seq_len)
         if attention_mask is not None:
             padding_mask = attention_mask[:, None, None, :].eq(0)
             causal_mask = causal_mask.masked_fill(padding_mask, min_dtype)
@@ -1558,10 +1599,16 @@ class RecurrentQwenForCausalLM(nn.Module):
         cache_position: Optional[torch.Tensor],
         position_embeddings: Optional[Any],
     ) -> tuple[Any, ...]:
+        layer_parameters = inspect.signature(layer.forward).parameters
+        cache_keyword = (
+            "past_key_values"
+            if "past_key_values" in layer_parameters
+            else "past_key_value"
+        )
         kwargs = {
             "attention_mask": causal_mask,
             "position_ids": position_ids,
-            "past_key_value": past_key_values,
+            cache_keyword: past_key_values,
             "output_attentions": output_attentions,
             "use_cache": use_cache,
             "cache_position": cache_position,
