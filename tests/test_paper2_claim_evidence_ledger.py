@@ -33,20 +33,25 @@ def test_paper2_ledger_closes_phase_g_and_records_t1_replication_state() -> None
         "film_full_nondefault_control"
     ] < 0.25
     assert claims["internal_token_halting"]["status"] == (
-        "seed0_registered_negative_raw_near_threshold_seed1_replication_locked"
+        "two_registered_negatives_replicated_exact_raw_control_bounded_preservation_cost"
     )
     assert claims["internal_token_halting"]["metrics"][
         "all_five_t0_contracts_passed"
     ] is True
     assert claims["internal_token_halting"]["metrics"]["t0_training_performed"] is False
     assert claims["internal_token_halting"]["metrics"]["t1_seed0_training_performed"] is True
+    assert claims["internal_token_halting"]["metrics"]["seed1_training_performed"] is True
+    assert claims["internal_token_halting"]["metrics"]["seed1_raw_forced_correct"] == 971
+    assert claims["internal_token_halting"]["metrics"][
+        "seed1_raw_exact_selection_correct"
+    ] == 1024
     assert claims["internal_token_halting"]["metrics"][
         "p0_lineage_matches_registered_t1"
     ] is False
     assert claims["speculative_depth_d0"]["status"] == (
         "build_complete_labeling_and_training_not_authorized"
     )
-    assert payload["active_queue"]["t1"].startswith("seed0_ema_primary_negative")
+    assert payload["active_queue"]["t1"].startswith("two_registered_negatives")
     assert claims["coconut_composite_integrity"]["status"] == (
         "engineering_preflight_bounded_fail"
     )
@@ -65,7 +70,7 @@ def test_status_and_log_no_longer_leave_phase_g_live() -> None:
     status = (ROOT / "docs" / "PROJECT_STATUS_PAPER.md").read_text(encoding="utf-8")
     log = (ROOT / "docs" / "EXPERIMENT_LOG.md").read_text(encoding="utf-8")
 
-    assert "Arm G closed on the tested frozen re-entry interface" in status
+    assert "Arm G is closed on the tested frozen re-entry interface" in status
     assert "NO-CHANNEL" in status
     assert "BOTH_FAIL" in status
     assert "Train only the Phase G prior head" not in status

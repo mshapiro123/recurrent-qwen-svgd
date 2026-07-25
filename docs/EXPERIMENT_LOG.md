@@ -1525,3 +1525,12 @@ Colab/Drive backups for selected runs.
   LF hash `69cc...` after newline normalization. No experimental factor or
   registered attempt changed. Receipt:
   `docs/PAPER2_T1_LITE_R_LAUNCH_HASH_CORRECTION_20260725.md`.
+- 2026-07-25 T1-lite-R seed-1 replication: the raw final-step primary achieved
+  `971/1024` forced and self-halted answers, `1024/1024` exact trained-depth
+  selections, and `5632/5632` exact causal overrides. It missed the locked
+  `975/1024` preservation floor by four rows, so the registered verdict is
+  negative. Continuous EMA reproduced the collapse (`216/1024` forced,
+  `89/1024` self-halted, `128/1024` exact selection). Stage-reset EMA preserved
+  `1003/1024` forced answers but selected `731/1024` depths exactly. All fifteen
+  stage states were Drive-backed with matching hashes. Receipt:
+  `docs/PAPER2_T1_LITE_R_RESULT_HANDOFF_20260725.md`.

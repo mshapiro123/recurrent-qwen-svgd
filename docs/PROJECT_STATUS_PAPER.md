@@ -2,7 +2,7 @@
 
 **Canonical date:** July 25, 2026
 **Part 1 status:** closed
-**Part 2 status:** Arm G closed on the tested frozen re-entry interface; T1-lite seed 0 is a registered EMA-primary negative with a raw near-threshold actuator result; T1-lite-R seed 1 is locked and ready; D0 is build-only with no labeling or training authorization; the COCONUT composite remains in integrity engineering
+**Part 2 status:** Arm G is closed on the tested frozen re-entry interface; both T1-lite attempts are final registered negatives, while both raw endpoints replicated exact in-support causal depth control at a small preservation cost; D0 is build-only with no labeling or training authorization; the COCONUT composite remains in integrity engineering
 
 This page is the short status index. It replaces the earlier June recovery narrative, which became stale after the loop-closure repair, synthetic mechanism installation, Phase A dense-control comparison, and inverse-task boundary program.
 
@@ -20,6 +20,7 @@ This page is the short status index. It replaces the earlier June recovery narra
 - [Phase T1 design rationale and forward strategy](PAPER2_T1_DESIGN_RATIONALE_AND_FORWARD_STRATEGY_20260723.md)
 - [Locked Phase T1-lite preregistration](PHASE_T1_LITE_PREREGISTRATION_DRAFT4_20260724.md)
 - [Locked Phase T1-lite-R replication](PHASE_T1_LITE_R_PREREGISTRATION_20260725.md)
+- [T1-lite-R result and decision handoff](PAPER2_T1_LITE_R_RESULT_HANDOFF_20260725.md)
 - [T1-lite EMA localization](PAPER2_T1_LITE_EMA_AUDIT_HANDOFF_20260725.md)
 - [Paper Two Draft 3 pivot](PAPER2_EXPERIMENTAL_PLAN_DRAFT3_20260723.md)
 - [T1 P0 calibration strategy handoff](PAPER2_T1_P0_CALIBRATION_STRATEGY_HANDOFF_20260724.md)
@@ -45,7 +46,7 @@ This page is the short status index. It replaces the earlier June recovery narra
 - A post-repair, target-conditioned stochastic-width gain.
 - A beneficial role for SVGD beyond a future ablation.
 - Reliable branch control through the tested frozen additive or FiLM re-entry interfaces.
-- Replicated token-pathway halting; seed 0's EMA primary failed and seed 1 has not run.
+- A registered all-four-gate token-pathway halting pass. Both attempts are negative on their registered primary policies.
 
 ## Final Part 1 Receipts
 
@@ -100,10 +101,15 @@ raw/EMA divergence to the recurrent block, with a sharp functional transition
 between interpolation coefficients `0.25` and `0.50`. This does not change the
 registered seed-0 negative.
 
-T1-lite-R is locked as the required seed-1 replication. Raw final-step weights
-are primary; continuous and stage-reset EMA states are passive shadows. Raw
-and both shadows must be atomically saved and hash-verified at all five stage
-boundaries before scoring.
+T1-lite-R seed 1 completed. Its raw primary selected all `1024/1024` trained
+depths exactly, matched forced and self-halted answers at `971/1024`, and
+obeyed all `5632/5632` causal overrides. It missed the preservation floor of
+`975/1024` by four rows, so the registered verdict is negative. Together with
+seed 0 raw (`967/1024`, exact selection and override), the bounded result is
+replicated exact causal depth control at a small preservation cost. Continuous
+EMA again collapsed. Stage-reset EMA preserved forced answers at `1003/1024`
+but selected only `731/1024` depths exactly. All fifteen boundary states are
+Drive-backed and hash-verified.
 
 The COCONUT no-training preflight passed eight of eleven contracts. The
 horizontal graph is connected and correctly accounted, but finite-difference
@@ -112,9 +118,9 @@ cache is retired. RG-12 remains unauthorized.
 
 ## Active Queue
 
-1. Run locked T1-lite-R seed 1 on an A100 under the unchanged four gates, raw-primary policy, passive EMA shadows, and mandatory stage manifest.
-2. Run the read-only seed-0 layer-group and per-depth interpolation extensions; they cannot change the seed-0 verdict.
-3. Keep D0 at build-only: schemas, scoring, mapping logic, and CPU fixtures are implemented, but teacher labeling and training remain unauthorized pending replication review and a complete lock.
+1. Review and approve the T1-lite-R bounded interpretation; do not run another T1 training seed without a new preregistered question.
+2. Run one read-only L4 stage-lag reconstruction from the five preserved raw and EMA triplets, plus the already-authorized seed-0 layer-group and per-depth interpolation audits if strategy still values them.
+3. Keep D0 build-only until strategy resolves the endpoint, teacher, corpus, and complete lock; no teacher labeling or training is authorized.
 4. Continue COCONUT only through the RG-4 epsilon-stability and RG-11 precision-policy diagnostic. RG-12 and all training remain unauthorized.
 
 Closed pending that decision: additional Phase G sweeps, coverage, selection,

@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "program": "paper2_causal_control_of_recurrent_computation",
-  "status": "t1_lite_seed0_negative_seed1_replication_locked_d0_build_only_coconut_engineering",
+  "status": "t1_lite_two_registered_negatives_replicated_raw_causal_control_d0_build_only_coconut_engineering",
   "canonical_date": "2026-07-25",
   "active_queue": {
     "program_goal": "useful_natural_data_model_in_qwen_series",
     "p0": "completed_uncitable_adapter_loss_calibration",
-    "t1": "seed0_ema_primary_negative_raw_near_threshold_seed1_replication_locked",
+    "t1": "two_registered_negatives_raw_endpoints_replicate_exact_in_support_causal_control_with_small_preservation_cost",
     "d0": "build_only_no_labeling_or_training_pending_replication_review_and_lock",
     "coconut": "integrity_engineering_rg4_rg11_followup_only_rg12_unauthorized",
     "paper_two_packaging": "deferred_until_t1_lite_and_any_later_authorized_d0_readout"
@@ -132,9 +132,9 @@
     },
     {
       "id": "internal_token_halting",
-      "status": "seed0_registered_negative_raw_near_threshold_seed1_replication_locked",
-      "claim": "The registered seed-0 continuous-EMA primary failed, while the raw final-step secondary selected every trained depth exactly and missed preservation by eight rows; the required seed-1 raw-primary replication is locked but has not run.",
-      "scope": "stated-depth synthetic actuator test, full-block seed 0, registered EMA-primary verdict immutable, raw secondary descriptive, seed-1 replication pending",
+      "status": "two_registered_negatives_replicated_exact_raw_control_bounded_preservation_cost",
+      "claim": "Both registered attempts are negative, but both raw final-step endpoints selected every trained depth exactly and obeyed every causal override while missing the preservation floor by eight and four rows.",
+      "scope": "stated-depth synthetic actuator test, full-block seeds 0 and 1, exact in-support causal control, no beyond-support or natural-depth claim",
       "metrics": {
         "control_tokens_added": 3,
         "added_parameters": 2688,
@@ -161,6 +161,23 @@
         "seed0_raw_forced_correct": 967,
         "seed0_raw_self_halted_correct": 967,
         "seed0_raw_exact_selection_correct": 1024,
+        "seed1_training_performed": true,
+        "seed1_raw_forced_correct": 971,
+        "seed1_raw_self_halted_correct": 971,
+        "seed1_raw_exact_selection_correct": 1024,
+        "seed1_raw_continue_correct": 3584,
+        "seed1_raw_continue_total": 3584,
+        "seed1_raw_stop_correct": 1024,
+        "seed1_raw_stop_total": 1024,
+        "seed1_continuous_ema_forced_correct": 216,
+        "seed1_continuous_ema_self_halted_correct": 89,
+        "seed1_continuous_ema_exact_selection_correct": 128,
+        "seed1_stage_reset_ema_forced_correct": 1003,
+        "seed1_stage_reset_ema_self_halted_correct": 741,
+        "seed1_stage_reset_ema_exact_selection_correct": 731,
+        "seed1_extrapolation_forced_correct": 263,
+        "seed1_extrapolation_self_halted_correct": 10,
+        "seed1_extrapolation_exact_selection_correct": 0,
         "preservation_floor_correct": 975,
         "causal_override_exact": 5632,
         "causal_override_total": 5632
@@ -205,11 +222,24 @@
         {
           "path": "outputs/stage5/stage5_paper2_t1_lite_r_preregistration_20260725/preregistration.json",
           "locator": "locked seed-1 raw-primary replication amendment"
+        },
+        {
+          "path": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/summary.json",
+          "locator": "registered seed-1 verdict and completed endpoint evaluations"
+        },
+        {
+          "path": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/stage_checkpoint_manifest.json",
+          "locator": "fifteen complete local and Drive-hashed raw and EMA stage states"
+        },
+        {
+          "path": "docs/PAPER2_T1_LITE_R_RESULT_HANDOFF_20260725.md",
+          "locator": "two-seed synthesis, bounded interpretation, limitations, and next decisions"
         }
       ],
       "do_not_claim": [
-        "learned halting succeeds",
-        "replicated token-pathway success before seed 1",
+        "the registered all-four-gate T1 experiment passed",
+        "cost-free learned halting",
+        "depth selection beyond trained support",
         "continuous EMA is mathematically incorrect",
         "natural-trace depth selection"
       ]
