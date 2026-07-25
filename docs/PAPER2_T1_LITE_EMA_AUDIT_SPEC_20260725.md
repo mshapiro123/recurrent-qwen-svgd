@@ -52,3 +52,14 @@ primary result and does not alter any gate.
 These are descriptive readings, not new thresholds. No training, optimizer
 step, checkpoint mutation, seed-1 launch, or registered verdict change is
 authorized.
+
+## Artifact-availability amendment after first launch
+
+The first audit launch on 2026-07-25 established that both endpoint
+checkpoints are present with the registered hashes, but the four historical
+stage-boundary progress checkpoints are absent from their recorded Drive
+directory. Their absence is now a reported partial-evidence condition rather
+than a fatal error. The audit preserves the archived raw boundary receipts,
+marks raw-versus-EMA stage comparisons unavailable, and completes the endpoint
+geometry, interpolation, and group-swap localization. It does not reconstruct,
+infer, or retrain the missing EMA boundary states.

@@ -61,20 +61,25 @@ def publish() -> None:
             run(["git", "push", "origin", "main"])
 
 
-def restore_inputs() -> dict[str, Path]:
+def restore_inputs() -> tuple[dict[str, Path], list[str]]:
     training = read_json(SOURCE_DIR / "train" / "training_summary.json")
-    expected = {
+    endpoints = {
         "t1_lite_raw_step_10500.pt": str(training["raw_checkpoint_sha256"]),
         "t1_lite_ema_step_10500.pt": str(training["ema_checkpoint_sha256"]),
-        **{f"t1_progress_step_{step}.pt": "" for step in (500, 2500, 6500, 8500)},
     }
+    progress = {f"t1_progress_step_{step}.pt": "" for step in (500, 2500, 6500, 8500)}
     restore_dir = RUN_DIR / "restored"
     restore_dir.mkdir(parents=True, exist_ok=True)
     restored: dict[str, Path] = {}
-    for name, expected_sha in expected.items():
+    missing_progress: list[str] = []
+    for name, expected_sha in {**endpoints, **progress}.items():
         source = DRIVE_SOURCE / name
         if not source.exists():
-            raise FileNotFoundError(f"missing Drive audit source: {source}")
+            if name in endpoints:
+                raise FileNotFoundError(f"missing required Drive endpoint: {source}")
+            missing_progress.append(name)
+            print(f"missing_optional_stage_checkpoint={source}", flush=True)
+            continue
         destination = restore_dir / name
         if not destination.exists() or destination.stat().st_size != source.stat().st_size:
             shutil.copy2(source, destination)
@@ -84,7 +89,22 @@ def restore_inputs() -> dict[str, Path]:
             f"expected_sha256={expected_sha or 'recorded_inside_progress_payload'}",
             flush=True,
         )
-    return restored
+    (RUN_DIR / "restore_manifest.json").write_text(
+        json.dumps(
+            {
+                "drive_source": str(DRIVE_SOURCE),
+                "restored": {name: str(path) for name, path in restored.items()},
+                "missing_stage_checkpoints": missing_progress,
+                "endpoint_checkpoints_required": sorted(endpoints),
+                "stage_checkpoint_absence_is_partial_evidence": True,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return restored, missing_progress
 
 
 def write_receipt(summary: dict[str, Any]) -> None:
@@ -100,6 +120,11 @@ def write_receipt(summary: dict[str, Any]) -> None:
         "## Selected confirmations",
         "",
     ]
+    lines.append(
+        f"- Stage checkpoints available: "
+        f"`{summary['stage_checkpoint_coverage']['available']}/"
+        f"{summary['stage_checkpoint_coverage']['required']}`."
+    )
     for label, value in summary["selected_confirmation_variants"].items():
         metrics = summary["full_pilot_confirmations"][value]
         lines.append(
@@ -120,7 +145,7 @@ def main() -> int:
     if missing:
         raise FileNotFoundError(f"EMA audit immutable sources missing: {missing}")
     RUN_DIR.mkdir(parents=True, exist_ok=True)
-    restored = restore_inputs()
+    restored, missing_progress = restore_inputs()
     training = read_json(SOURCE_DIR / "train" / "training_summary.json")
     run(
         [
@@ -132,6 +157,9 @@ def main() -> int:
             str(restored["t1_lite_ema_step_10500.pt"]),
             "--progress_dir",
             str(RUN_DIR / "restored"),
+            "--archived_stage_receipts_dir",
+            str(SOURCE_DIR / "train" / "stage_receipts"),
+            "--allow_missing_stage_checkpoints",
             "--pilot_jsonl",
             str(SOURCE_DIR / "data" / "liveness_pilot_256.jsonl"),
             "--output_dir",
@@ -153,6 +181,10 @@ def main() -> int:
         raise AssertionError("EMA audit unexpectedly performed training")
     if summary.get("registered_verdict_immutable") != "registered_negative":
         raise AssertionError("EMA audit changed the registered verdict")
+    if sorted(summary.get("stage_checkpoint_coverage", {}).get("missing_names", [])) != sorted(
+        missing_progress
+    ):
+        raise AssertionError("EMA audit stage-checkpoint availability receipt drifted")
     write_receipt(summary)
     if DRIVE_OUTPUT.exists():
         shutil.rmtree(DRIVE_OUTPUT)

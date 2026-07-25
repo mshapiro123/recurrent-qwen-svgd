@@ -15,6 +15,7 @@ STAGE5_T1_LITE_EMA_AUDIT_CELL_VERSION = "t1_lite_ema_posthoc_v1"
 # Safety markers: raw EMA stage boundaries interpolation group swaps
 # Safety markers: control rows recurrent block bridge localization
 # Safety markers: no training no optimizer step no checkpoint mutation
+# Safety markers: missing stage checkpoints reported as partial evidence
 # Safety markers: tests/test_t1_lite_ema_audit.py
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")

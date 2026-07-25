@@ -1252,6 +1252,7 @@ def test_t1_lite_ema_audit_target_is_read_only_and_registered() -> None:
     assert "raw EMA stage boundaries interpolation group swaps" in cell
     assert "control rows recurrent block bridge localization" in cell
     assert "no training no optimizer step no checkpoint mutation" in cell
+    assert "missing stage checkpoints reported as partial evidence" in cell
     assert "tests/test_t1_lite_ema_audit.py" in cell
     assert 'summary.get("training_performed") is not False' in runner
     assert 'summary.get("registered_verdict_immutable") != "registered_negative"' in runner

@@ -41,6 +41,20 @@ def write_json(path: str | Path, payload: Any) -> None:
     destination.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def stage_checkpoint_coverage(progress_dir: str | Path) -> dict[str, Any]:
+    root = Path(progress_dir)
+    names = [f"t1_progress_step_{step}.pt" for step in STAGE_SUPPORT]
+    available = [name for name in names if (root / name).exists()]
+    missing = [name for name in names if name not in available]
+    return {
+        "required": len(names),
+        "available": len(available),
+        "available_names": available,
+        "missing_names": missing,
+        "complete": not missing,
+    }
+
+
 def sha256_file(path: str | Path) -> str:
     digest = hashlib.sha256()
     with Path(path).open("rb") as handle:
@@ -217,6 +231,8 @@ def main() -> int:
     parser.add_argument("--raw_checkpoint", required=True)
     parser.add_argument("--ema_checkpoint", required=True)
     parser.add_argument("--progress_dir", required=True)
+    parser.add_argument("--archived_stage_receipts_dir")
+    parser.add_argument("--allow_missing_stage_checkpoints", action="store_true")
     parser.add_argument("--pilot_jsonl", required=True)
     parser.add_argument("--output_dir", required=True)
     parser.add_argument("--expected_raw_sha256", required=True)
@@ -310,12 +326,38 @@ def main() -> int:
         print(json.dumps({"variant": name, **metrics}, sort_keys=True), flush=True)
         return metrics
 
-    stage_results: dict[str, Any] = {}
     progress_dir = Path(args.progress_dir)
+    checkpoint_coverage = stage_checkpoint_coverage(progress_dir)
+    if not checkpoint_coverage["complete"] and not args.allow_missing_stage_checkpoints:
+        raise FileNotFoundError(
+            "missing stage progress checkpoints: "
+            + ", ".join(checkpoint_coverage["missing_names"])
+        )
+    stage_results: dict[str, Any] = {}
+    archived_receipts = (
+        Path(args.archived_stage_receipts_dir)
+        if args.archived_stage_receipts_dir
+        else None
+    )
     for step, support in STAGE_SUPPORT.items():
         progress_path = progress_dir / f"t1_progress_step_{step}.pt"
         if not progress_path.exists():
-            raise FileNotFoundError(f"missing stage progress checkpoint: {progress_path}")
+            receipt_path = (
+                archived_receipts / f"step_{step}.json"
+                if archived_receipts is not None
+                else None
+            )
+            stage_results[str(step)] = {
+                "trained_support": support,
+                "checkpoint_available": False,
+                "raw_ema_comparison_available": False,
+                "archived_raw_boundary_receipt": (
+                    json.loads(receipt_path.read_text(encoding="utf-8"))
+                    if receipt_path is not None and receipt_path.exists()
+                    else None
+                ),
+            }
+            continue
         payload = torch.load(progress_path, map_location="cpu")
         stage_raw = payload["trainable_state_dict"]
         stage_ema = payload["ema_state_dict"]["shadow"]
@@ -327,6 +369,8 @@ def main() -> int:
         write_jsonl(stage_path, stage_rows)
         stage_results[str(step)] = {
             "trained_support": support,
+            "checkpoint_available": True,
+            "raw_ema_comparison_available": True,
             "integrity": stage_integrity,
             "raw": evaluate_variant(f"stage_{step}_raw", stage_raw, stage_path, max_loops=support),
             "ema": evaluate_variant(f"stage_{step}_ema", stage_ema, stage_path, max_loops=support),
@@ -390,7 +434,11 @@ def main() -> int:
 
     summary = {
         "kind": "paper2_t1_lite_ema_posthoc_audit",
-        "status": "finished",
+        "status": (
+            "finished"
+            if checkpoint_coverage["complete"]
+            else "finished_partial_missing_stage_checkpoints"
+        ),
         "registered_verdict_immutable": "registered_negative",
         "training_performed": False,
         "checkpoint_mutation": False,
@@ -417,6 +465,7 @@ def main() -> int:
             "scalar_ema_recurrence": scalar_ema_integrity(),
         },
         "geometry": state_geometry(raw_state, ema_state),
+        "stage_checkpoint_coverage": checkpoint_coverage,
         "stage_boundaries": stage_results,
         "interpolation": interpolation,
         "group_swaps_screen": swaps,

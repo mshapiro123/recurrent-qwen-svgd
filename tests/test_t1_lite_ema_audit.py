@@ -7,6 +7,7 @@ from eval.eval_t1_lite_ema_audit import (
     fixed_screen_rows,
     parameter_group,
     scalar_ema_integrity,
+    stage_checkpoint_coverage,
     state_geometry,
     swap_group,
     validate_state_pair,
@@ -109,3 +110,15 @@ def test_device_ema_matches_exact_scalar_recurrence() -> None:
 
     assert receipt["passed"] is True
     assert receipt["absolute_error"] <= 1e-7
+
+
+def test_stage_checkpoint_coverage_reports_partial_without_inference(tmp_path) -> None:
+    (tmp_path / "t1_progress_step_500.pt").write_bytes(b"present")
+
+    receipt = stage_checkpoint_coverage(tmp_path)
+
+    assert receipt["required"] == 4
+    assert receipt["available"] == 1
+    assert receipt["available_names"] == ["t1_progress_step_500.pt"]
+    assert receipt["complete"] is False
+    assert "t1_progress_step_8500.pt" in receipt["missing_names"]

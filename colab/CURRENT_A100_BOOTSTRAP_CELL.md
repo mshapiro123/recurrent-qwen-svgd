@@ -322,6 +322,7 @@ TARGETS = {
             "raw EMA stage boundaries interpolation group swaps",
             "control rows recurrent block bridge localization",
             "no training no optimizer step no checkpoint mutation",
+            "missing stage checkpoints reported as partial evidence",
             "tests/test_t1_lite_ema_audit.py",
         ],
         "env": {
