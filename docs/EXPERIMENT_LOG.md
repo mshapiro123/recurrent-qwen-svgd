@@ -1517,3 +1517,11 @@ Colab/Drive backups for selected runs.
   and checkpoints. D0 remains unlocked; GPU labeling and training are not
   authorized. Receipt:
   `outputs/stage5/stage5_paper2_d0_build_only_20260725/summary.json`.
+- 2026-07-25 T1-lite-R launch preflight correction: implementation commit
+  `368bd2a0` stopped before model load or training because the locked original
+  preregistration hash had been computed over a Windows CRLF checkout while
+  Colab checked out Git's LF bytes. The registered `4e55...` hash remains
+  historical metadata; launch integrity now verifies the equivalent canonical
+  LF hash `69cc...` after newline normalization. No experimental factor or
+  registered attempt changed. Receipt:
+  `docs/PAPER2_T1_LITE_R_LAUNCH_HASH_CORRECTION_20260725.md`.

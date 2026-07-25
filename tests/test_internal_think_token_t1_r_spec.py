@@ -3,10 +3,31 @@ from __future__ import annotations
 import pytest
 
 from training.internal_think_token_t1_r_spec import (
+    ORIGINAL_T1_LOCK,
+    ORIGINAL_T1_LOCK_CANONICAL_LF_SHA256,
     ORIGINAL_T1_LOCK_SHA256,
     phase_t1_lite_r_locked,
     validate_phase_t1_lite_r_locked,
 )
+
+
+def test_original_lock_canonical_hash_is_checkout_newline_independent(tmp_path) -> None:
+    from colab.run_stage5_paper2_t1_lite_r import sha256_canonical_lf
+
+    lf = b'{\n  "locked": true\n}\n'
+    crlf = lf.replace(b"\n", b"\r\n")
+    lf_path = tmp_path / "lf.json"
+    crlf_path = tmp_path / "crlf.json"
+    lf_path.write_bytes(lf)
+    crlf_path.write_bytes(crlf)
+    assert sha256_canonical_lf(lf_path) == sha256_canonical_lf(crlf_path)
+
+
+def test_committed_original_lock_matches_canonical_hash() -> None:
+    from colab.run_stage5_paper2_t1_lite_r import ROOT, sha256_canonical_lf
+
+    path = ROOT / ORIGINAL_T1_LOCK
+    assert sha256_canonical_lf(path) == ORIGINAL_T1_LOCK_CANONICAL_LF_SHA256
 
 
 def test_t1_lite_r_changes_only_registered_replication_fields() -> None:

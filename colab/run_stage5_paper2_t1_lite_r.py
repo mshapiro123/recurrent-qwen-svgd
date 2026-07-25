@@ -28,6 +28,7 @@ from colab.run_stage5_paper2_t1_lite import (
 )
 from training.internal_think_token_t1_r_spec import (
     ORIGINAL_T1_LOCK,
+    ORIGINAL_T1_LOCK_CANONICAL_LF_SHA256,
     ORIGINAL_T1_LOCK_SHA256,
     phase_t1_lite_r_locked,
     validate_phase_t1_lite_r_locked,
@@ -44,6 +45,15 @@ DRIVE_ROOT = Path(
 )
 SEED0_SUMMARY = ROOT / "outputs/stage5/stage5_paper2_t1_lite_20260724/summary.json"
 SEED0_RAW_EVAL = ROOT / "outputs/stage5/stage5_paper2_t1_lite_20260724/eval/raw_secondary/summary.json"
+
+
+def sha256_canonical_lf(path: str | Path) -> str:
+    """Hash committed text independently of checkout newline policy."""
+
+    import hashlib
+
+    payload = Path(path).read_bytes().replace(b"\r\n", b"\n")
+    return hashlib.sha256(payload).hexdigest()
 
 
 def publish(message: str) -> None:
@@ -73,7 +83,9 @@ def copy_eval_from_drive(label: str) -> Path:
 
 def assert_replication_basis(prereg: dict[str, Any]) -> dict[str, Any]:
     original_lock = ROOT / ORIGINAL_T1_LOCK
-    if sha256_file(original_lock) != ORIGINAL_T1_LOCK_SHA256:
+    observed_raw_sha = sha256_file(original_lock)
+    observed_canonical_sha = sha256_canonical_lf(original_lock)
+    if observed_canonical_sha != ORIGINAL_T1_LOCK_CANONICAL_LF_SHA256:
         raise RuntimeError("T1-lite-R original preregistration hash mismatch")
     if not SEED0_SUMMARY.exists() or not SEED0_RAW_EVAL.exists():
         raise FileNotFoundError("T1-lite-R seed-0 basis receipts are missing")
@@ -91,6 +103,10 @@ def assert_replication_basis(prereg: dict[str, Any]) -> dict[str, Any]:
         "seed0_registered_verdict": seed0["verdict"],
         "seed0_raw_forced_correct": gated["forced_correct"],
         "seed0_raw_exact_selection_correct": control["exact_selected_depth_correct"],
+        "original_lock_registered_windows_sha256": ORIGINAL_T1_LOCK_SHA256,
+        "original_lock_observed_raw_sha256": observed_raw_sha,
+        "original_lock_canonical_lf_sha256": observed_canonical_sha,
+        "original_lock_newline_normalization_only": True,
         "strategy_authorization": prereg["governing_document"],
     }
 
@@ -229,4 +245,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

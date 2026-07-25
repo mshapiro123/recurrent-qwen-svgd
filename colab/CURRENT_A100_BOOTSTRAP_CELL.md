@@ -202,7 +202,7 @@ TARGETS = {
         "path": "colab/STAGE5_PAPER2_T1_LITE_R_CELL.py",
         "markers": [
             "STAGE5_PAPER2_T1_LITE_R_CELL_VERSION",
-            "paper2_t1_lite_r_locked_v1",
+            "paper2_t1_lite_r_locked_v2_canonical_hash",
             "locked before launcher commit ae2793ac",
             "seed 1 raw final-step primary",
             "continuous EMA and stage-reset EMA passive shadows",

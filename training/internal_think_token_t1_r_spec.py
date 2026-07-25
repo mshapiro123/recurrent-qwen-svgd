@@ -16,6 +16,12 @@ ORIGINAL_T1_LOCK = (
 ORIGINAL_T1_LOCK_SHA256 = (
     "4e55e946a8019d2c0c278bfaff2e76cd97b3efb7822b954b2cb74a539c037cba"
 )
+# The registered value above was computed from the Windows CRLF checkout. Git
+# stores this JSON with LF endings, which is what Colab receives. This second
+# value is an execution-integrity checksum only; it does not amend the lock.
+ORIGINAL_T1_LOCK_CANONICAL_LF_SHA256 = (
+    "69cc659b89f0e582641ba0d52a371723a96a8c80dafa483b11c1f4e76fc4ca09"
+)
 STAGE_CHECKPOINT_STEPS = (500, 2500, 6500, 8500, 10500)
 
 
@@ -141,4 +147,3 @@ def validate_phase_t1_lite_r_locked(payload: dict[str, Any]) -> None:
         drift.append("proposed_training_budget")
     if drift:
         raise AssertionError(f"T1-lite-R drifted from base T1-lite contract: {drift}")
-

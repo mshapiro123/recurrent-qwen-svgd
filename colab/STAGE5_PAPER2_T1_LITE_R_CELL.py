@@ -10,7 +10,7 @@ from pathlib import Path
 from google.colab import drive, runtime, userdata
 
 
-STAGE5_PAPER2_T1_LITE_R_CELL_VERSION = "paper2_t1_lite_r_locked_v1"
+STAGE5_PAPER2_T1_LITE_R_CELL_VERSION = "paper2_t1_lite_r_locked_v2_canonical_hash"
 # Safety marker: locked before launcher commit ae2793ac
 # Safety marker: seed 1 raw final-step primary
 # Safety marker: continuous EMA and stage-reset EMA passive shadows
@@ -18,6 +18,7 @@ STAGE5_PAPER2_T1_LITE_R_CELL_VERSION = "paper2_t1_lite_r_locked_v1"
 # Safety marker: gate4 exact 4608 forced stop plus 1024 forced continue
 # Safety marker: D0 build-only no labeling GPU no training
 # Safety marker: C track design-stage RG-12 unauthorized
+# Safety marker: canonical LF preregistration hash newline-only repair
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 SYNC_REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main").strip() or "main"
