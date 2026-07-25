@@ -104,5 +104,5 @@ def test_t1_lite_locked_spec_freezes_all_three_evaluation_manifests() -> None:
     assert evaluation["calibration"]["rows"] == 512
     assert evaluation["calibration"]["seed"] == 2026072401
     assert evaluation["calibration"]["row_id_sha256"] == (
-        "ebc17c1012db868fe5788241e632c463e304bbadef0117a8b6af32a4fff6d6b2"
+        "3175178e33b56406d9b7147cd4af5a76f3e47027a414b67a62d804991c7715c7"
     )

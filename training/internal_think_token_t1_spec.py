@@ -349,10 +349,10 @@ def phase_t1_locked() -> dict[str, Any]:
             "id_prefix": "t1_calibration_",
             "split": "test_chain_mcq",
             "row_id_sha256": (
-                "ebc17c1012db868fe5788241e632c463e304bbadef0117a8b6af32a4fff6d6b2"
+                "3175178e33b56406d9b7147cd4af5a76f3e47027a414b67a62d804991c7715c7"
             ),
             "row_sha256": (
-                "0aa594d7fac062ba781da2dd7770eaa073443101e6b5e72daa4de0152c80ee93"
+                "9c4e7dacd30c720ed8b2ffba2770c39482e838544426219acce4760ee96e07ab"
             ),
             "disjoint_from_gated_by_generation_seed_and_id_prefix": True,
         }
