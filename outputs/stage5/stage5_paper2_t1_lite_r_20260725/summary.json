@@ -1,0 +1,113 @@
+{
+  "all_four_passed": false,
+  "c_track_training_authorized": false,
+  "d0_training_authorized": false,
+  "data": {
+    "calibration": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/data/calibration_512.jsonl",
+    "calibration_manifest": {
+      "depth_counts": {
+        "1": 64,
+        "2": 64,
+        "3": 64,
+        "4": 64,
+        "5": 64,
+        "6": 64,
+        "7": 64,
+        "8": 64
+      },
+      "first_row_ids": [
+        "t1_calibration_test_d01_00000",
+        "t1_calibration_test_d01_00001",
+        "t1_calibration_test_d01_00002",
+        "t1_calibration_test_d01_00003",
+        "t1_calibration_test_d01_00004"
+      ],
+      "last_row_ids": [
+        "t1_calibration_test_d08_00059",
+        "t1_calibration_test_d08_00060",
+        "t1_calibration_test_d08_00061",
+        "t1_calibration_test_d08_00062",
+        "t1_calibration_test_d08_00063"
+      ],
+      "max_depth": 8,
+      "row_id_sha256": "c58b779ce7b2fc00c8f66d82fdfe414433f6f9be0fe2e26278248eff6a0e016f",
+      "row_sha256": "5df416b614c50eae8bbc44868a19eaa41d84db375563f4a166c8b968a96c1614",
+      "rows": 512
+    },
+    "calibration_sha256": "5de26ebf64e7ef5cdb460815f706e499bd9fce1d8db11883d3444b4c1a5e2742",
+    "canary": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/data/base_capability_canary_64.jsonl",
+    "frozen_eval": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v2_depth14/data/test_chain_mcq.jsonl",
+    "pilot": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/data/liveness_pilot_256.jsonl",
+    "pilot_sha256": "be34a13fdbeaf08a061c02e79a19ad7bf75973b2d8d089702aa4b6d4ddbebb1c",
+    "train": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/data/t1_lite_train_70_30.jsonl",
+    "train_manifest": {
+      "by_depth": {
+        "1": {
+          "control": 175,
+          "rehearsal": 75
+        },
+        "2": {
+          "control": 175,
+          "rehearsal": 75
+        },
+        "3": {
+          "control": 175,
+          "rehearsal": 75
+        },
+        "4": {
+          "control": 175,
+          "rehearsal": 75
+        },
+        "5": {
+          "control": 175,
+          "rehearsal": 75
+        },
+        "6": {
+          "control": 175,
+          "rehearsal": 75
+        },
+        "7": {
+          "control": 175,
+          "rehearsal": 75
+        },
+        "8": {
+          "control": 175,
+          "rehearsal": 75
+        }
+      },
+      "control_fraction": 0.7,
+      "control_rows": 1400,
+      "rehearsal_fraction": 0.3,
+      "rehearsal_rows": 600,
+      "seed": 1,
+      "total_rows": 2000
+    },
+    "train_sha256": "f851e8b2f9e2c79a348511ad3d700dd1713679a5184a6740bf53145d60df2921"
+  },
+  "evaluations": {
+    "continuous_ema_shadow": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/eval/continuous_ema_shadow/summary.json",
+    "raw_primary": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/eval/raw_primary/summary.json",
+    "stage_reset_ema_shadow": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/eval/stage_reset_ema_shadow/summary.json"
+  },
+  "kind": "stage5_paper2_t1_lite_r",
+  "passive_shadows_are_not_registered_endpoints": true,
+  "preregistration": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/preregistration.json",
+  "primary_weights": "raw_final_step",
+  "registered_attempt": 2,
+  "replication_basis": {
+    "original_lock_canonical_lf_sha256": "69cc659b89f0e582641ba0d52a371723a96a8c80dafa483b11c1f4e76fc4ca09",
+    "original_lock_newline_normalization_only": true,
+    "original_lock_observed_raw_sha256": "69cc659b89f0e582641ba0d52a371723a96a8c80dafa483b11c1f4e76fc4ca09",
+    "original_lock_registered_windows_sha256": "4e55e946a8019d2c0c278bfaff2e76cd97b3efb7822b954b2cb74a539c037cba",
+    "seed0_raw_exact_selection_correct": 1024,
+    "seed0_raw_forced_correct": 967,
+    "seed0_registered_verdict": "registered_negative",
+    "strategy_authorization": "docs/PHASE_T1_LITE_R_PREREGISTRATION_20260725.md"
+  },
+  "run_id": "stage5_paper2_t1_lite_r_20260725",
+  "seed": 1,
+  "stage_checkpoint_manifest": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/stage_checkpoint_manifest.json",
+  "status": "finished",
+  "training_summary": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/training_summary.json",
+  "verdict": "registered_negative"
+}
