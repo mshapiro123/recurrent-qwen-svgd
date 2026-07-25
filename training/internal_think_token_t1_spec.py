@@ -321,10 +321,10 @@ def phase_t1_locked() -> dict[str, Any]:
             "source": frozen_source,
             "depth_filter": [1, 8],
             "row_id_sha256": (
-                "7aa673d046803c691226dd0a9950972ca141b4aaa89fcc118cc049b7e71fdcbe"
+                "3a1cff0229ba629e6f0305b7405a6c7a1b67eeebb750b5584368fecb7a771746"
             ),
             "row_sha256": (
-                "cacaf2ba6cf39424dc29c22f91f20f9edcedeeefe6200b59471898118c216faf"
+                "529257a50af498bf01e1e74e550d2feb332e44e2cfd60cf42b4017f752df762e"
             ),
         }
     )
@@ -334,10 +334,10 @@ def phase_t1_locked() -> dict[str, Any]:
             "source": frozen_source,
             "depth_filter": [9, 14],
             "row_id_sha256": (
-                "74c56235a033cc783963bc71584e2203b0b6936ba3996cf174616da3d1414b48"
+                "6e808f8cd5d92ea7ae19309b63a3a6d9068a9379494af59ed2562c7f04f8e26c"
             ),
             "row_sha256": (
-                "82e4d687d65fb4901847b49ab7212888faea2707363251bd9789286216799575"
+                "5c5f9be773e2d494f7f94fb0d762628e5a75eb75300e8014e472aa2eec44d636"
             ),
         }
     )
@@ -349,10 +349,10 @@ def phase_t1_locked() -> dict[str, Any]:
             "id_prefix": "t1_calibration_",
             "split": "test_chain_mcq",
             "row_id_sha256": (
-                "3175178e33b56406d9b7147cd4af5a76f3e47027a414b67a62d804991c7715c7"
+                "c58b779ce7b2fc00c8f66d82fdfe414433f6f9be0fe2e26278248eff6a0e016f"
             ),
             "row_sha256": (
-                "9c4e7dacd30c720ed8b2ffba2770c39482e838544426219acce4760ee96e07ab"
+                "5df416b614c50eae8bbc44868a19eaa41d84db375563f4a166c8b968a96c1614"
             ),
             "disjoint_from_gated_by_generation_seed_and_id_prefix": True,
         }

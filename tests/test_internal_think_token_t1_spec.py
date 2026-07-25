@@ -95,14 +95,14 @@ def test_t1_lite_locked_spec_freezes_all_three_evaluation_manifests() -> None:
 
     assert evaluation["gated"]["rows"] == 1024
     assert evaluation["gated"]["row_id_sha256"] == (
-        "7aa673d046803c691226dd0a9950972ca141b4aaa89fcc118cc049b7e71fdcbe"
+        "3a1cff0229ba629e6f0305b7405a6c7a1b67eeebb750b5584368fecb7a771746"
     )
     assert evaluation["extrapolation"]["rows"] == 768
     assert evaluation["extrapolation"]["row_id_sha256"] == (
-        "74c56235a033cc783963bc71584e2203b0b6936ba3996cf174616da3d1414b48"
+        "6e808f8cd5d92ea7ae19309b63a3a6d9068a9379494af59ed2562c7f04f8e26c"
     )
     assert evaluation["calibration"]["rows"] == 512
     assert evaluation["calibration"]["seed"] == 2026072401
     assert evaluation["calibration"]["row_id_sha256"] == (
-        "3175178e33b56406d9b7147cd4af5a76f3e47027a414b67a62d804991c7715c7"
+        "c58b779ce7b2fc00c8f66d82fdfe414433f6f9be0fe2e26278248eff6a0e016f"
     )
