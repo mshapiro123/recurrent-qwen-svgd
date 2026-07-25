@@ -1,0 +1,18 @@
+{
+  "drive_source": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_paper2_t1_lite_20260724/checkpoints",
+  "endpoint_checkpoints_required": [
+    "t1_lite_ema_step_10500.pt",
+    "t1_lite_raw_step_10500.pt"
+  ],
+  "missing_stage_checkpoints": [
+    "t1_progress_step_500.pt",
+    "t1_progress_step_2500.pt",
+    "t1_progress_step_6500.pt",
+    "t1_progress_step_8500.pt"
+  ],
+  "restored": {
+    "t1_lite_ema_step_10500.pt": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_paper2_t1_lite_ema_audit_20260725/restored/t1_lite_ema_step_10500.pt",
+    "t1_lite_raw_step_10500.pt": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_paper2_t1_lite_ema_audit_20260725/restored/t1_lite_raw_step_10500.pt"
+  },
+  "stage_checkpoint_absence_is_partial_evidence": true
+}

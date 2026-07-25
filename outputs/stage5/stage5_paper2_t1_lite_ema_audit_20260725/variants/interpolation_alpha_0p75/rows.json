@@ -1,0 +1,1794 @@
+[
+  {
+    "answer_predictions": [
+      "I",
+      "K",
+      "I",
+      "I",
+      "I",
+      "I",
+      "I",
+      "I"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 1,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d01_00016",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 1
+  },
+  {
+    "answer_predictions": [
+      "D",
+      "H",
+      "J",
+      "G",
+      "B",
+      "G",
+      "B",
+      "G"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 1,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d01_00019",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 1
+  },
+  {
+    "answer_predictions": [
+      "L",
+      "N",
+      "K",
+      "M",
+      "K",
+      "O",
+      "D",
+      "M"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 1,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d01_00004",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 1
+  },
+  {
+    "answer_predictions": [
+      "D",
+      "E",
+      "H",
+      "J",
+      "E",
+      "M",
+      "J",
+      "E"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 1,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d01_00000",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 1
+  },
+  {
+    "answer_predictions": [
+      "J",
+      "M",
+      "N",
+      "M",
+      "N",
+      "M",
+      "N",
+      "M"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 1,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d01_00017",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 1
+  },
+  {
+    "answer_predictions": [
+      "D",
+      "E",
+      "C",
+      "O",
+      "A",
+      "N",
+      "H",
+      "E"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 1,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d01_00009",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 1
+  },
+  {
+    "answer_predictions": [
+      "E",
+      "B",
+      "F",
+      "G",
+      "F",
+      "G",
+      "F",
+      "G"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 1,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d01_00014",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 1
+  },
+  {
+    "answer_predictions": [
+      "A",
+      "D",
+      "D",
+      "F",
+      "F",
+      "F",
+      "F",
+      "F"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 1,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d01_00008",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 1
+  },
+  {
+    "answer_predictions": [
+      "O",
+      "E",
+      "A",
+      "A",
+      "A",
+      "A",
+      "A",
+      "A"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 2,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d02_00010",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "D",
+      "D",
+      "N",
+      "F",
+      "L",
+      "I",
+      "B",
+      "C"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 2,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d02_00004",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "E",
+      "E",
+      "A",
+      "E",
+      "A",
+      "E",
+      "A",
+      "E"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 2,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d02_00001",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "G",
+      "C",
+      "F",
+      "L",
+      "H",
+      "J",
+      "G",
+      "F"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 2,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d02_00009",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "O",
+      "M",
+      "K",
+      "K",
+      "D",
+      "K",
+      "K",
+      "K"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 2,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d02_00029",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "G",
+      "G",
+      "B",
+      "B",
+      "B",
+      "B",
+      "B",
+      "B"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 2,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d02_00021",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "E",
+      "E",
+      "N",
+      "C",
+      "M",
+      "G",
+      "E",
+      "G"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 2,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d02_00017",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "K",
+      "K",
+      "M",
+      "A",
+      "N",
+      "P",
+      "D",
+      "N"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 2,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d02_00006",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "N",
+      "N",
+      "J",
+      "E",
+      "I",
+      "G",
+      "F",
+      "P"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 3,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d03_00030",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "M",
+      "I",
+      "J",
+      "L",
+      "C",
+      "G",
+      "C",
+      "G"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 3,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d03_00007",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "J",
+      "F",
+      "K",
+      "O",
+      "C",
+      "K",
+      "F",
+      "I"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 3,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d03_00012",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "D",
+      "A",
+      "F",
+      "I",
+      "N",
+      "J",
+      "B",
+      "B"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 3,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d03_00002",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "K",
+      "K",
+      "F",
+      "D",
+      "F",
+      "D",
+      "F",
+      "D"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 3,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d03_00023",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "I",
+      "E",
+      "E",
+      "E",
+      "E",
+      "E",
+      "E",
+      "E"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 3,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d03_00008",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "K",
+      "H",
+      "E",
+      "C",
+      "L",
+      "E",
+      "C",
+      "L"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 3,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d03_00018",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "B",
+      "E",
+      "I",
+      "N",
+      "I",
+      "I",
+      "N",
+      "I"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 3,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d03_00021",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "G",
+      "G",
+      "C",
+      "O",
+      "F",
+      "G",
+      "H",
+      "C"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 4,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d04_00016",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "O",
+      "H",
+      "A",
+      "D",
+      "B",
+      "D",
+      "I",
+      "A"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 4,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d04_00013",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "H",
+      "I",
+      "P",
+      "I",
+      "P",
+      "I",
+      "P",
+      "I"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 4,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d04_00010",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "D",
+      "P",
+      "P",
+      "P",
+      "P",
+      "P",
+      "A",
+      "M"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 4,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d04_00027",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "F",
+      "F",
+      "L",
+      "G",
+      "A",
+      "D",
+      "J",
+      "I"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 4,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d04_00024",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "N",
+      "H",
+      "L",
+      "I",
+      "P",
+      "H",
+      "L",
+      "I"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 4,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d04_00000",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "M",
+      "C",
+      "I",
+      "C",
+      "M",
+      "N",
+      "C",
+      "F"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 4,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d04_00023",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "B",
+      "I",
+      "H",
+      "H",
+      "I",
+      "M",
+      "M",
+      "O"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 4,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d04_00030",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "P",
+      "E",
+      "A",
+      "O",
+      "P",
+      "L",
+      "A",
+      "O"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 5,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d05_00008",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "G",
+      "J",
+      "C",
+      "D",
+      "P",
+      "J",
+      "C",
+      "D"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 5,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d05_00031",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "N",
+      "G",
+      "M",
+      "L",
+      "K",
+      "M",
+      "K",
+      "B"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 5,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d05_00000",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "D",
+      "A",
+      "D",
+      "C",
+      "G",
+      "O",
+      "K",
+      "F"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 5,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d05_00013",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "L",
+      "I",
+      "A",
+      "C",
+      "G",
+      "D",
+      "A",
+      "C"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 5,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d05_00021",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "E",
+      "A",
+      "H",
+      "O",
+      "F",
+      "A",
+      "D",
+      "D"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 5,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d05_00020",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "O",
+      "E",
+      "M",
+      "J",
+      "P",
+      "E",
+      "M",
+      "J"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 5,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d05_00028",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "I",
+      "J",
+      "K",
+      "I",
+      "K",
+      "O",
+      "J",
+      "M"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 5,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d05_00027",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "N",
+      "I",
+      "B",
+      "E",
+      "J",
+      "M",
+      "N",
+      "I"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 6,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d06_00018",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "K",
+      "G",
+      "A",
+      "O",
+      "H",
+      "D",
+      "K",
+      "C"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 6,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d06_00004",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "D",
+      "L",
+      "C",
+      "N",
+      "B",
+      "L",
+      "H",
+      "A"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 6,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d06_00028",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "F",
+      "I",
+      "F",
+      "O",
+      "J",
+      "D",
+      "B",
+      "M"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 6,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d06_00002",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "I",
+      "J",
+      "G",
+      "F",
+      "C",
+      "F",
+      "I",
+      "C"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 6,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d06_00016",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "O",
+      "B",
+      "E",
+      "P",
+      "C",
+      "K",
+      "E",
+      "P"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 6,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d06_00030",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "B",
+      "M",
+      "N",
+      "D",
+      "E",
+      "O",
+      "N",
+      "D"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 6,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d06_00014",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "G",
+      "E",
+      "I",
+      "H",
+      "M",
+      "F",
+      "C",
+      "N"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1
+    ],
+    "depth": 6,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d06_00000",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "O",
+      "B",
+      "N",
+      "H",
+      "I",
+      "M",
+      "I",
+      "D"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1
+    ],
+    "depth": 7,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d07_00009",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "N",
+      "J",
+      "A",
+      "L",
+      "N",
+      "P",
+      "G",
+      "I"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1
+    ],
+    "depth": 7,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d07_00007",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "I",
+      "E",
+      "G",
+      "D",
+      "J",
+      "H",
+      "P",
+      "E"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1
+    ],
+    "depth": 7,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d07_00025",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "K",
+      "B",
+      "P",
+      "G",
+      "P",
+      "G",
+      "P",
+      "G"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1
+    ],
+    "depth": 7,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d07_00023",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "B",
+      "O",
+      "B",
+      "F",
+      "G",
+      "J",
+      "E",
+      "D"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1
+    ],
+    "depth": 7,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d07_00031",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "E",
+      "N",
+      "I",
+      "D",
+      "K",
+      "F",
+      "N",
+      "I"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1
+    ],
+    "depth": 7,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d07_00005",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "B",
+      "H",
+      "H",
+      "I",
+      "C",
+      "P",
+      "F",
+      "J"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1
+    ],
+    "depth": 7,
+    "exhausted": false,
+    "forced_answer_correct": 1,
+    "row_id": "test_d07_00019",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "L",
+      "H",
+      "G",
+      "F",
+      "N",
+      "C",
+      "O",
+      "H"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1
+    ],
+    "depth": 7,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d07_00016",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "O",
+      "E",
+      "J",
+      "J",
+      "E",
+      "A",
+      "J",
+      "K"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1
+    ],
+    "depth": 8,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d08_00008",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "A",
+      "B",
+      "C",
+      "G",
+      "I",
+      "L",
+      "J",
+      "H"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1
+    ],
+    "depth": 8,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d08_00001",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "G",
+      "F",
+      "O",
+      "O",
+      "A",
+      "J",
+      "N",
+      "P"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1
+    ],
+    "depth": 8,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d08_00013",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "B",
+      "F",
+      "D",
+      "A",
+      "N",
+      "C",
+      "F",
+      "D"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1
+    ],
+    "depth": 8,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d08_00022",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "I",
+      "G",
+      "D",
+      "H",
+      "L",
+      "B",
+      "O",
+      "I"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1
+    ],
+    "depth": 8,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d08_00017",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "C",
+      "M",
+      "I",
+      "L",
+      "A",
+      "C",
+      "N",
+      "O"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1
+    ],
+    "depth": 8,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d08_00023",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "O",
+      "P",
+      "G",
+      "I",
+      "J",
+      "N",
+      "L",
+      "J"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1
+    ],
+    "depth": 8,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d08_00014",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  },
+  {
+    "answer_predictions": [
+      "M",
+      "M",
+      "H",
+      "J",
+      "L",
+      "I",
+      "C",
+      "E"
+    ],
+    "control_predictions": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1
+    ],
+    "depth": 8,
+    "exhausted": false,
+    "forced_answer_correct": 0,
+    "row_id": "test_d08_00016",
+    "selected_loop": 1,
+    "self_halted_answer_correct": 0
+  }
+]

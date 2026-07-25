@@ -1,0 +1,53 @@
+{
+  "by_depth": {
+    "1": {
+      "accuracy": 1.0,
+      "correct": 32,
+      "total": 32
+    },
+    "2": {
+      "accuracy": 0.0,
+      "correct": 0,
+      "total": 32
+    },
+    "3": {
+      "accuracy": 0.0,
+      "correct": 0,
+      "total": 32
+    },
+    "4": {
+      "accuracy": 0.0,
+      "correct": 0,
+      "total": 32
+    },
+    "5": {
+      "accuracy": 0.0,
+      "correct": 0,
+      "total": 32
+    },
+    "6": {
+      "accuracy": 0.0,
+      "correct": 0,
+      "total": 32
+    },
+    "7": {
+      "accuracy": 0.0,
+      "correct": 0,
+      "total": 32
+    },
+    "8": {
+      "accuracy": 0.0,
+      "correct": 0,
+      "total": 32
+    }
+  },
+  "continue_recall": 0.5714285714285714,
+  "exact_selected_depth_accuracy": 0.125,
+  "exact_selected_depth_correct": 32,
+  "forced_accuracy": 0.171875,
+  "forced_correct": 44,
+  "self_halted_accuracy": 0.0859375,
+  "self_halted_correct": 22,
+  "stop_recall": 0.83203125,
+  "total": 256
+}
