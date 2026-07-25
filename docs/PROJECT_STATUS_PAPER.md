@@ -2,7 +2,7 @@
 
 **Canonical date:** July 24, 2026
 **Part 1 status:** closed
-**Part 2 status:** useful-model program on the Qwen series; Arm G closed on the tested frozen re-entry interface; Phase T0 passed; adapter P0 calibration complete with lambda 0.5 and equal class weights selected; full-block T1-lite and D0 preregistrations not yet locked
+**Part 2 status:** useful-model program on the Qwen series; Arm G closed on the tested frozen re-entry interface; Phase T0 passed; adapter P0 calibration complete; full-block T1-lite locked before training with lambda 0.5 and equal class weights; D0 not locked
 
 This page is the short status index. It replaces the earlier June recovery narrative, which became stale after the loop-closure repair, synthetic mechanism installation, Phase A dense-control comparison, and inverse-task boundary program.
 
@@ -18,6 +18,7 @@ This page is the short status index. It replaces the earlier June recovery narra
 - [Paper Two claim ledger](paper2_claim_evidence_ledger.json)
 - [Phase T0 internal-token specification](PAPER2_INTERNAL_THINK_TOKEN_PHASE0_SPEC_20260718.md)
 - [Phase T1 design rationale and forward strategy](PAPER2_T1_DESIGN_RATIONALE_AND_FORWARD_STRATEGY_20260723.md)
+- [Locked Phase T1-lite preregistration](PHASE_T1_LITE_PREREGISTRATION_DRAFT4_20260724.md)
 - [Paper Two Draft 3 pivot](PAPER2_EXPERIMENTAL_PLAN_DRAFT3_20260723.md)
 - [T1 P0 calibration strategy handoff](PAPER2_T1_P0_CALIBRATION_STRATEGY_HANDOFF_20260724.md)
 - [D0 speculative-depth preregistration scaffold](PAPER2_D0_SPECULATIVE_DEPTH_PREREGISTRATION_DRAFT_20260723.md)
@@ -88,8 +89,8 @@ adaptive substrate.
 
 ## Active Queue
 
-1. Review and ratify the P0-selected lambda `0.5` and equal class weights as transferable candidates only.
-2. Lock and run one fresh-base full-block T1-lite actuator qualification under the unchanged four gates.
+1. Implement and run the locked fresh-base full-block T1-lite actuator qualification under the unchanged four gates.
+2. Treat the P0-selected lambda `0.5` and equal class weights as transferred candidates only, not matched-lineage evidence.
 3. Draft and lock D0: speculative-decoding depth recoverability on the Qwen teacher ladder.
 4. Run D0 only after the T1-lite verdict and D0 lock, then decide Paper Two packaging and whether the composite natural-trace track opens.
 

@@ -4,6 +4,7 @@ import pytest
 
 from training.internal_think_token_t1_spec import (
     phase_t1_draft,
+    phase_t1_locked,
     validate_locked_phase_t1,
 )
 
@@ -66,3 +67,42 @@ def test_t1_draft_encodes_p0_without_authorizing_registered_training() -> None:
 def test_draft_cannot_authorize_training() -> None:
     with pytest.raises(AssertionError, match="not locked"):
         validate_locked_phase_t1(phase_t1_draft())
+
+
+def test_t1_lite_locked_spec_records_p0_selection_and_stage_guardrails() -> None:
+    spec = phase_t1_locked()
+
+    validate_locked_phase_t1(spec)
+    assert spec["status"] == "locked_before_training"
+    assert spec["training_authorized"] is True
+    assert spec["pilot_p0"]["status"] == "complete_uncitable_prelock_pilot"
+    assert spec["pilot_p0"]["selected_cell_id"] == "lambda0p5_ratio1"
+    assert spec["loss"]["control_loss_lambda"] == 0.5
+    assert spec["loss"]["stop_to_continue_ratio"] == 1.0
+    assert spec["loss"]["normalized_class_weights"] == {
+        "continue": 1.0,
+        "stop": 1.0,
+    }
+    guardrails = spec["stage_boundary_liveness"]
+    assert [row["step"] for row in guardrails["boundaries"]] == [500, 2500, 6500, 8500]
+    assert guardrails["abort_rule"]["all_conditions_required"] is True
+    assert guardrails["may_change_registered_constants"] is False
+
+
+def test_t1_lite_locked_spec_freezes_all_three_evaluation_manifests() -> None:
+    spec = phase_t1_locked()
+    evaluation = spec["evaluation"]
+
+    assert evaluation["gated"]["rows"] == 1024
+    assert evaluation["gated"]["row_id_sha256"] == (
+        "7aa673d046803c691226dd0a9950972ca141b4aaa89fcc118cc049b7e71fdcbe"
+    )
+    assert evaluation["extrapolation"]["rows"] == 768
+    assert evaluation["extrapolation"]["row_id_sha256"] == (
+        "74c56235a033cc783963bc71584e2203b0b6936ba3996cf174616da3d1414b48"
+    )
+    assert evaluation["calibration"]["rows"] == 512
+    assert evaluation["calibration"]["seed"] == 2026072401
+    assert evaluation["calibration"]["row_id_sha256"] == (
+        "ebc17c1012db868fe5788241e632c463e304bbadef0117a8b6af32a4fff6d6b2"
+    )

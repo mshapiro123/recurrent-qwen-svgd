@@ -1,11 +1,11 @@
-# Phase T1 Preregistration - Internal Control-Token Halting
+# Phase T1-Lite Preregistration - Internal Control-Token Halting
 
-**Draft 3, 2026-07-23. Status: `draft_not_locked`.** This incorporates
-Mark's program pivot and descopes the registered experiment to T1-lite. It
-becomes binding only when committed as locked with a
-matching `preregistration.json`. No registered T1 training step may run before
-that lock. The authorized, uncitable P0 pilot below runs before the lock and
-informs its loss constants.
+**Draft 4, 2026-07-24. Status: `locked_before_training`.** Mark ratified the
+five decisions in the P0 strategy handoff on 2026-07-24. This document and the
+matching machine-readable `preregistration.json` are binding from their lock
+commit. No gate, constant, curriculum stage, seed policy, or evaluation set may
+change after this lock. The uncitable P0 pilot is complete and informs only the
+loss constants recorded below.
 
 This document governs over the earlier T1 design memo and T0 spec wherever
 they differ.
@@ -56,6 +56,29 @@ and exact loop accounting.
 Recipe receipt and configuration:
 `outputs/stage5/stage5_support8_dose_arm_20260706_153028/summary.json` and
 `outputs/stage5/stage5_support8_dose_arm_20260706_153028/chain_continuation_train_config.yaml`.
+The chain-stage learning rate `1e-5`, AdamW settings, gradient cap, and Prelude
+multiplier are copied from that mechanism-installation receipt. The primitive
+`2e-5` rate is the registered first-stage rate from the same staged
+installation lineage.
+
+The earlier proposal for a standalone 1,500-step full-block confirmation cell
+is withdrawn. It would end inside the support-1-2 stage and would therefore be
+structurally mismatched to the question it was intended to answer.
+
+### Stage-boundary liveness readouts
+
+At steps 500, 2,500, 6,500, and 8,500, log the control-loss trajectory over
+the completed stage and measure stop and continue recall on the P0 pilot slice
+restricted to depths trained so far: 1, 1-2, 1-4, and 1-8. These readouts are
+descriptive and cannot change constants, curriculum, gates, or the final-step
+primary analysis.
+
+For an executable definition, control loss is flat when the ordinary
+least-squares slope across all logged points in the completed stage is at
+least `-1e-5` loss units per step. Abort for diagnosis only when that condition
+and stop recall exactly zero on the trained-depth pilot rows both hold. The
+aborted run writes its receipts and does not consume the registered attempt.
+There is no other boundary abort rule.
 
 ## 4. Loss And Pilot P0
 
@@ -66,7 +89,7 @@ For uniform depths 1-8 there are 28 continue labels and 8 stop labels. The
 default inverse-frequency ratio is therefore 3.5 stop to 1 continue. Weights
 are normalized to mean one over realized control labels.
 
-### Pilot P0 (authorized before lock, never citable)
+### Pilot P0 (complete before lock, never citable)
 
 - Adapter lineage only, seed 9999, 1,500 steps per cell.
 - Ten cells: lambda in `{0.5, 1, 2}` crossed with stop-to-continue ratio in
@@ -86,12 +109,30 @@ T1-lite. A selected lambda and ratio may be transferred only by locking that
 choice before T1-lite; the full-block run must independently clear all four
 gates. P0 cannot support a T1-lite efficacy or capacity claim.
 
+The fixed selection rule chose `lambda0p5_ratio1`. Registered T1-lite therefore
+uses control-loss lambda `0.5` and equal normalized class weights, continue
+`1.0` and stop `1.0`. At P0 step 1,500 the selected cell had stop recall
+`177/256 = 0.6914`, continue recall `885/896 = 0.9877`, exact selected-depth
+accuracy `166/256 = 0.6484`, and answer accuracy `151/256 = 0.5898`, compared
+with `136/256 = 0.5312` for lambda zero. The depth-structured exact-selection
+result is a risk signal. It does not change Gate 3 and does not authorize a P0
+extension.
+
 ## 5. Frozen Evaluation Sets
 
 - Gated: 1,024 rows, 128 at each depth 1-8. Forced and self-halted runs are paired.
 - Extrapolation: 128 rows at each depth 9-14. Descriptive only.
 - Calibration: 512 rows, 64 at each depth 1-8, disjoint from gated rows. Used
   only for thresholds of the descriptive baselines in Section 8.
+
+The gated and extrapolation rows are the canonical Phase A frozen rows in
+`stage5_synthetic_depth_frozen_eval_v2_depth14`. Their locked row-ID hashes are
+`7aa673d0...1fdcbe` for depths 1-8 and `74c56235...14b48` for depths 9-14.
+The prior draft's `14482ca4...` gated hash was a stale placeholder and did not
+match the canonical rows; it was corrected before this lock. The calibration
+set is generated independently with seed `2026072401`, prefixed IDs, and
+row-ID hash `ebc17c10...6d6b2`. Full row hashes and paths are in the locked
+machine-readable preregistration.
 
 Self-halting uses `max_loops=12` on gated rows and 16 on extrapolation rows. A
 row that never stops is a selection failure and its answer is scored at the
@@ -206,10 +247,11 @@ hashes. Per run: training traces, frozen-parameter and gradient-liveness
 assertions, evaluation summaries, `gate.json`, starting-point and checkpoint
 SHA-256 values, and final commit hashes under `outputs/stage5`.
 
-## 15. Remaining Before Lock
+## 15. Lock Record
 
-1. Run P0 and set lambda and class-weight ratio by its fixed rule.
-2. Record the selected cell and realized class weights in this document and
-   `preregistration.json`.
-3. Commit both with status `locked_before_training`.
-4. Only then create registered T1 launchers.
+The P0 constants, learning rates, curriculum, references, stage-boundary
+liveness rule, seeds, gates, and frozen set manifests are complete. The
+machine-readable contract is
+`outputs/stage5/stage5_paper2_t1_lite_preregistration_20260724/preregistration.json`.
+Registered launcher creation is authorized only in a commit after the commit
+that locks this document and that JSON file.

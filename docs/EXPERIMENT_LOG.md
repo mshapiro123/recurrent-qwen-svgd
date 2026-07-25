@@ -1461,3 +1461,16 @@ Colab/Drive backups for selected runs.
   `outputs/stage5/stage5_paper2_internal_token_t1_p0_letter_v2_20260724/summary.json`.
   Handoff:
   `docs/PAPER2_T1_P0_CALIBRATION_STRATEGY_HANDOFF_20260724.md`.
+- 2026-07-24 Phase T1-lite lock: strategy ratified the P0-selected control-loss
+  lambda `0.5`, equal class weights, the 10,500-step full-block curriculum,
+  the seed/replication policy, the `1005/1024` reference and checkpoint hash,
+  and all four unchanged gates. The standalone 1,500-step confirmation cell
+  was withdrawn as stage-mismatched and replaced by descriptive liveness
+  readouts at steps 500, 2,500, 6,500, and 8,500. The only boundary abort
+  requires both flat stage control loss and exactly zero stop recall on trained
+  pilot depths. A manifest audit corrected the stale gated-row placeholder to
+  the canonical Phase A hash `7aa673d0...1fdcbe`; a disjoint 512-row
+  calibration manifest was locked at seed `2026072401`. Human contract:
+  `docs/PHASE_T1_LITE_PREREGISTRATION_DRAFT4_20260724.md`. Machine contract:
+  `outputs/stage5/stage5_paper2_t1_lite_preregistration_20260724/preregistration.json`.
+  No registered training had occurred at lock.

@@ -1,0 +1,460 @@
+{
+  "d0_status": "preregistration_drafting_only",
+  "data": {
+    "control_position": "reserved per-loop readout position",
+    "family": "controlled synthetic transition family",
+    "rehearsal_definition": "original per-loop chain supervision sampled independently of the 70 percent control-target stream",
+    "rehearsal_fraction": 0.3,
+    "target_rule": "continue before exact row depth; stop at exact row depth",
+    "trained_depths": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "visible_control_tokens": false
+  },
+  "descoped_lineage": {
+    "capacity_contrast_forfeited": true,
+    "lineage": "r16_adapter_bridge",
+    "reason": "T1-lite qualifies the actuator for D0, whose substrate trains the full recurrent block"
+  },
+  "do_not_claim": [
+    "natural content-determined depth selection",
+    "general adaptive computation",
+    "efficiency improvement without measured compute",
+    "token-pathway success if any gate fails",
+    "multi-seed robustness"
+  ],
+  "evaluation": {
+    "calibration": {
+      "depths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "disjoint_from_gated_by_generation_seed_and_id_prefix": true,
+      "generator": "training.synthetic_depth_task.write_synthetic_depth_dataset",
+      "id_prefix": "t1_calibration_",
+      "n_symbols": 16,
+      "row_id_sha256": "ebc17c1012db868fe5788241e632c463e304bbadef0117a8b6af32a4fff6d6b2",
+      "row_sha256": "0aa594d7fac062ba781da2dd7770eaa073443101e6b5e72daa4de0152c80ee93",
+      "rows": 512,
+      "rows_per_depth": 64,
+      "seed": 2026072401,
+      "split": "test_chain_mcq",
+      "use": "fit_training_free_baseline_thresholds_only"
+    },
+    "exhaustion_scored_as_selection_failure": true,
+    "extrapolation": {
+      "depth_filter": [
+        9,
+        14
+      ],
+      "depths": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "gated": false,
+      "row_id_sha256": "74c56235a033cc783963bc71584e2203b0b6936ba3996cf174616da3d1414b48",
+      "row_sha256": "82e4d687d65fb4901847b49ab7212888faea2707363251bd9789286216799575",
+      "rows": 768,
+      "rows_per_depth": 128,
+      "source": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v2_depth14/data/test_chain_mcq.jsonl"
+    },
+    "forced_depth": "row depth",
+    "gated": {
+      "depth_filter": [
+        1,
+        8
+      ],
+      "depths": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "row_id_sha256": "7aa673d046803c691226dd0a9950972ca141b4aaa89fcc118cc049b7e71fdcbe",
+      "row_sha256": "cacaf2ba6cf39424dc29c22f91f20f9edcedeeefe6200b59471898118c216faf",
+      "rows": 1024,
+      "rows_per_depth": 128,
+      "source": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v2_depth14/data/test_chain_mcq.jsonl"
+    },
+    "paired_forced_and_self_halted": true,
+    "reported_by_depth": true,
+    "same_reader": "full-symbol, question-only, first completed response",
+    "self_halt_max_loops": {
+      "extrapolation": 16,
+      "gated": 12
+    }
+  },
+  "fresh_base_lineages": {
+    "full_block": {
+      "nonhalting_reference": {
+        "arm": "A",
+        "checkpoint_sha256": "dc00f7b694ce32427eb13b0b85d365bc15e0c0317130bd22d4bbc3568544f71b",
+        "receipt": "outputs/stage5/stage5_phase_a_surpass_receipt_20260714/summary.json",
+        "trained_depths_correct": 1005,
+        "trained_depths_total": 1024
+      },
+      "trainable": [
+        "recurrent_block",
+        "repaired_split_bridge",
+        "three_new_control_token_rows_only"
+      ]
+    }
+  },
+  "gates": {
+    "all_four_required_for_positive": true,
+    "causal_override": {
+      "continue_override": "force continue at required depth and execute depth plus one",
+      "forced_continue_executions": 1024,
+      "forced_stop_executions": 4608,
+      "implementation_failure_policy": "fix actuator and rerun gate4_only",
+      "intervention_level": "control_logits_not_loop_counter_or_max_loops",
+      "no_answer_only_proxy": true,
+      "required": true,
+      "required_exact_agreement": 5632,
+      "stop_override": "force stop at every k from 1 through row depth"
+    },
+    "chain_accuracy": {
+      "absolute_margin": 0.03,
+      "full_block_minimum_correct": 975,
+      "rule": "forced-depth chain accuracy within three points of lineage reference",
+      "total": 1024
+    },
+    "control_selection": {
+      "always_continue_transition_micro_accuracy": 0.7777777777777778,
+      "metric": "row_level_exact_selected_depth",
+      "minimum_correct_each_depth": 115,
+      "minimum_correct_pooled": 922,
+      "minimum_each_depth": 0.9,
+      "rows_each_depth": 128,
+      "rows_pooled": 1024,
+      "rule": "selected stop loop equals stated required depth",
+      "transition_micro_accuracy_is_gate": false
+    },
+    "self_halted_accuracy": {
+      "absolute_margin": 0.03,
+      "rule": "self-halted accuracy within three points of paired forced depth"
+    }
+  },
+  "governing_document": "docs/PHASE_T1_LITE_PREREGISTRATION_DRAFT4_20260724.md",
+  "integrity": {
+    "base_hash_assertion": true,
+    "phase_t0_receipt_required": true,
+    "requested_executed_selected_loop_logging": true,
+    "step_zero_one_loop_identity_max_abs_diff": 0.001,
+    "tier1_canary_hard_stop": true,
+    "visible_generation_mask_hard_assertion": true
+  },
+  "kind": "paper2_internal_think_token_phase_t1_preregistration",
+  "locked_date": "2026-07-24",
+  "loss": {
+    "control_loss": "two_class_continue_stop_cross_entropy",
+    "control_loss_lambda": 0.5,
+    "full_block_must_independently_clear_all_gates": true,
+    "mechanism_answer_loss": "per_loop_chain_cross_entropy",
+    "normalized_class_weights": {
+      "continue": 1.0,
+      "stop": 1.0
+    },
+    "stop_to_continue_ratio": 1.0,
+    "transferred_from_unmatched_adapter_p0": true
+  },
+  "paper_packaging": "deferred_until_post_d0_pilot",
+  "phase_t2_authorized": false,
+  "pilot_p0": {
+    "authorized_before_lock": true,
+    "cells": [
+      {
+        "cell_id": "lambda0_reference",
+        "control_loss_lambda": 0.0,
+        "reference": true,
+        "stop_to_continue_ratio": 1.0
+      },
+      {
+        "cell_id": "lambda0p5_ratio1",
+        "control_loss_lambda": 0.5,
+        "reference": false,
+        "stop_to_continue_ratio": 1.0
+      },
+      {
+        "cell_id": "lambda0p5_ratio3p5",
+        "control_loss_lambda": 0.5,
+        "reference": false,
+        "stop_to_continue_ratio": 3.5
+      },
+      {
+        "cell_id": "lambda0p5_ratio7",
+        "control_loss_lambda": 0.5,
+        "reference": false,
+        "stop_to_continue_ratio": 7.0
+      },
+      {
+        "cell_id": "lambda1_ratio1",
+        "control_loss_lambda": 1.0,
+        "reference": false,
+        "stop_to_continue_ratio": 1.0
+      },
+      {
+        "cell_id": "lambda1_ratio3p5",
+        "control_loss_lambda": 1.0,
+        "reference": false,
+        "stop_to_continue_ratio": 3.5
+      },
+      {
+        "cell_id": "lambda1_ratio7",
+        "control_loss_lambda": 1.0,
+        "reference": false,
+        "stop_to_continue_ratio": 7.0
+      },
+      {
+        "cell_id": "lambda2_ratio1",
+        "control_loss_lambda": 2.0,
+        "reference": false,
+        "stop_to_continue_ratio": 1.0
+      },
+      {
+        "cell_id": "lambda2_ratio3p5",
+        "control_loss_lambda": 2.0,
+        "reference": false,
+        "stop_to_continue_ratio": 3.5
+      },
+      {
+        "cell_id": "lambda2_ratio7",
+        "control_loss_lambda": 2.0,
+        "reference": false,
+        "stop_to_continue_ratio": 7.0
+      }
+    ],
+    "citable": false,
+    "default_label_counts_uniform_depths": {
+      "continue": 28,
+      "stop": 8,
+      "total": 36
+    },
+    "default_normalized_class_weights": {
+      "continue": 0.6428571428571429,
+      "stop": 2.25
+    },
+    "evaluation_steps": [
+      500,
+      1000,
+      1500
+    ],
+    "lineage": "r16_adapter_bridge",
+    "matched_lineage_evidence": false,
+    "pilot_rows": 256,
+    "pilot_rows_per_depth": 32,
+    "receipt": "outputs/stage5/stage5_paper2_internal_token_t1_p0_letter_v2_20260724/summary.json",
+    "registered_t1_lineage": "full_block",
+    "registered_t1_training": false,
+    "role_after_draft3_pivot": "loss_feasibility_and_hyperparameter_calibration_only",
+    "seed": 9999,
+    "selected_cell_id": "lambda0p5_ratio1",
+    "selected_control_loss_lambda": 0.5,
+    "selected_step_1500": {
+      "answer_accuracy": 0.58984375,
+      "continue_recall": 0.9877232142857143,
+      "exact_selected_depth_accuracy": 0.6484375,
+      "lambda_zero_answer_accuracy": 0.53125,
+      "stop_recall": 0.69140625
+    },
+    "selected_stop_to_continue_ratio": 1.0,
+    "selection": {
+      "minimum_continue_recall": 0.6,
+      "minimum_stop_recall": 0.6,
+      "no_qualifying_cell": "reassess_openly_before_lock_no_silent_extension",
+      "objective": "smallest_answer_accuracy_drop_against_lambda_zero",
+      "tie_break": "toward_lambda_1_then_ratio_3p5"
+    },
+    "status": "complete_uncitable_prelock_pilot",
+    "steps_per_cell": 1500,
+    "transfer_rule": "the selected lambda and ratio may be locked for T1-lite, but the full-block run must independently clear all four gates"
+  },
+  "program_mode": "t1_lite_full_block_actuator_qualification",
+  "proposed_training_budget": {
+    "batch_size": 1,
+    "bridge_prelude_lr_multiplier": {
+      "all_chain_stages": 10.0,
+      "primitive_depth1": 1.0
+    },
+    "curriculum": [
+      {
+        "lr": 2e-05,
+        "stage": "primitive_depth1",
+        "steps": 500,
+        "support": [
+          1
+        ]
+      },
+      {
+        "lr": 1e-05,
+        "stage": "chain_depth_le2",
+        "steps": 2000,
+        "support": [
+          1,
+          2
+        ]
+      },
+      {
+        "lr": 1e-05,
+        "stage": "chain_depth_le4",
+        "steps": 4000,
+        "support": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "lr": 1e-05,
+        "stage": "chain_depth_le8",
+        "steps": 2000,
+        "support": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      },
+      {
+        "lr": 1e-05,
+        "stage": "chain_depth_le8_dose",
+        "steps": 2000,
+        "support": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    ],
+    "effective_batch_size": 1,
+    "gradient_accumulation_steps": 1,
+    "learning_rate_source": {
+      "chain_stages": 1e-05,
+      "config": "outputs/stage5/stage5_support8_dose_arm_20260706_153028/chain_continuation_train_config.yaml",
+      "primitive_depth1": 2e-05,
+      "receipt": "outputs/stage5/stage5_support8_dose_arm_20260706_153028/summary.json"
+    },
+    "lineages": [
+      "full_block"
+    ],
+    "max_grad_norm": 0.5,
+    "optimizer": "adamw",
+    "precision": {
+      "base_and_trainable_recurrent_block": "bfloat16",
+      "bridge_and_control_rows": "float32"
+    },
+    "recipe_config": "outputs/stage5/stage5_support8_dose_arm_20260706_153028/chain_continuation_train_config.yaml",
+    "recipe_receipt": "outputs/stage5/stage5_support8_dose_arm_20260706_153028/summary.json",
+    "single_seed_limitation_required": true,
+    "status": "locked_before_training",
+    "total_steps": 10500,
+    "training_seeds": [
+      0
+    ],
+    "weight_decay": 0.0
+  },
+  "replication": {
+    "positive_headline_requires_seed_1_pass": true,
+    "primary_seed": 0,
+    "seed_1_runs_in_parallel_with_subsequent_authorized_phase": true,
+    "seed_1_trigger": "full_pass_or_near_threshold_as_defined_in_governing_document_or_strong_negative_boundary",
+    "strong_negative_boundary_requires_seed_1_confirmation": true
+  },
+  "stage_boundary_liveness": {
+    "abort_rule": {
+      "action": "abort_for_diagnosis_write_receipts_attempt_not_consumed",
+      "all_conditions_required": true,
+      "conditions": [
+        "control_loss_flat_over_the_completed_stage",
+        "stop_recall_exactly_zero_on_pilot_rows_at_trained_depths"
+      ]
+    },
+    "boundaries": [
+      {
+        "completed_stage": "primitive_depth1",
+        "step": 500,
+        "trained_depths": [
+          1
+        ]
+      },
+      {
+        "completed_stage": "chain_depth_le2",
+        "step": 2500,
+        "trained_depths": [
+          1,
+          2
+        ]
+      },
+      {
+        "completed_stage": "chain_depth_le4",
+        "step": 6500,
+        "trained_depths": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "completed_stage": "chain_depth_le8",
+        "step": 8500,
+        "trained_depths": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    ],
+    "descriptive_only": true,
+    "flat_control_loss_definition": {
+      "flat_if_slope_greater_than_or_equal_to": -1e-05,
+      "statistic": "ordinary_least_squares_slope_over_all_stage_log_points",
+      "units": "control_loss_per_training_step"
+    },
+    "may_change_curriculum": false,
+    "may_change_gates": false,
+    "may_change_registered_constants": false,
+    "pilot_slice": "outputs/stage5/stage5_paper2_internal_token_t1_p0_letter_v2_20260724/summary.json",
+    "restrict_recall_to_trained_depths": true
+  },
+  "status": "locked_before_training",
+  "strategy_ratification": "docs/PAPER2_T1_P0_CALIBRATION_STRATEGY_HANDOFF_20260724.md",
+  "training_authorized": true,
+  "width_reopened": false
+}

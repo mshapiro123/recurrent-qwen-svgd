@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any
 
 from training.internal_think_token_t1 import (
@@ -18,6 +19,9 @@ CHAIN_MARGIN_POINTS = 0.03
 SELF_HALTED_MARGIN_POINTS = 0.03
 CONTROL_ACCURACY_FLOOR = 0.90
 FULL_BLOCK_GATE1_FLOOR = 975
+SELECTED_CONTROL_LOSS_LAMBDA = 0.5
+SELECTED_STOP_TO_CONTINUE_RATIO = 1.0
+LOCKED_DATE = "2026-07-24"
 
 
 def phase_t1_draft() -> dict[str, Any]:
@@ -212,6 +216,160 @@ def phase_t1_draft() -> dict[str, Any]:
     }
 
 
+def phase_t1_locked() -> dict[str, Any]:
+    """Return the ratified Draft 4 contract used by registered T1-lite."""
+
+    payload = deepcopy(phase_t1_draft())
+    payload.update(
+        {
+            "status": "locked_before_training",
+            "training_authorized": True,
+            "locked_date": LOCKED_DATE,
+            "governing_document": "docs/PHASE_T1_LITE_PREREGISTRATION_DRAFT4_20260724.md",
+            "strategy_ratification": (
+                "docs/PAPER2_T1_P0_CALIBRATION_STRATEGY_HANDOFF_20260724.md"
+            ),
+        }
+    )
+    payload["pilot_p0"].update(
+        {
+            "status": "complete_uncitable_prelock_pilot",
+            "receipt": (
+                "outputs/stage5/stage5_paper2_internal_token_t1_p0_letter_v2_20260724/"
+                "summary.json"
+            ),
+            "selected_cell_id": "lambda0p5_ratio1",
+            "selected_control_loss_lambda": SELECTED_CONTROL_LOSS_LAMBDA,
+            "selected_stop_to_continue_ratio": SELECTED_STOP_TO_CONTINUE_RATIO,
+            "selected_step_1500": {
+                "stop_recall": 0.69140625,
+                "continue_recall": 0.9877232142857143,
+                "exact_selected_depth_accuracy": 0.6484375,
+                "answer_accuracy": 0.58984375,
+                "lambda_zero_answer_accuracy": 0.53125,
+            },
+            "citable": False,
+        }
+    )
+    payload["loss"] = {
+        "mechanism_answer_loss": "per_loop_chain_cross_entropy",
+        "control_loss": "two_class_continue_stop_cross_entropy",
+        "control_loss_lambda": SELECTED_CONTROL_LOSS_LAMBDA,
+        "stop_to_continue_ratio": SELECTED_STOP_TO_CONTINUE_RATIO,
+        "normalized_class_weights": {"continue": 1.0, "stop": 1.0},
+        "transferred_from_unmatched_adapter_p0": True,
+        "full_block_must_independently_clear_all_gates": True,
+    }
+    budget = payload["proposed_training_budget"]
+    budget.update(
+        {
+            "status": "locked_before_training",
+            "learning_rate_source": {
+                "receipt": (
+                    "outputs/stage5/stage5_support8_dose_arm_20260706_153028/summary.json"
+                ),
+                "config": (
+                    "outputs/stage5/stage5_support8_dose_arm_20260706_153028/"
+                    "chain_continuation_train_config.yaml"
+                ),
+                "primitive_depth1": 2e-5,
+                "chain_stages": 1e-5,
+            },
+        }
+    )
+    payload["stage_boundary_liveness"] = {
+        "descriptive_only": True,
+        "may_change_registered_constants": False,
+        "may_change_curriculum": False,
+        "may_change_gates": False,
+        "pilot_slice": payload["pilot_p0"]["receipt"],
+        "restrict_recall_to_trained_depths": True,
+        "boundaries": [
+            {"step": 500, "completed_stage": "primitive_depth1", "trained_depths": [1]},
+            {"step": 2500, "completed_stage": "chain_depth_le2", "trained_depths": [1, 2]},
+            {
+                "step": 6500,
+                "completed_stage": "chain_depth_le4",
+                "trained_depths": [1, 2, 3, 4],
+            },
+            {
+                "step": 8500,
+                "completed_stage": "chain_depth_le8",
+                "trained_depths": list(TRAINED_DEPTHS),
+            },
+        ],
+        "flat_control_loss_definition": {
+            "statistic": "ordinary_least_squares_slope_over_all_stage_log_points",
+            "flat_if_slope_greater_than_or_equal_to": -1e-5,
+            "units": "control_loss_per_training_step",
+        },
+        "abort_rule": {
+            "all_conditions_required": True,
+            "conditions": [
+                "control_loss_flat_over_the_completed_stage",
+                "stop_recall_exactly_zero_on_pilot_rows_at_trained_depths",
+            ],
+            "action": "abort_for_diagnosis_write_receipts_attempt_not_consumed",
+        },
+    }
+    frozen_source = (
+        "outputs/stage5/stage5_synthetic_depth_frozen_eval_v2_depth14/"
+        "data/test_chain_mcq.jsonl"
+    )
+    payload["evaluation"]["gated"].update(
+        {
+            "source": frozen_source,
+            "depth_filter": [1, 8],
+            "row_id_sha256": (
+                "7aa673d046803c691226dd0a9950972ca141b4aaa89fcc118cc049b7e71fdcbe"
+            ),
+            "row_sha256": (
+                "cacaf2ba6cf39424dc29c22f91f20f9edcedeeefe6200b59471898118c216faf"
+            ),
+        }
+    )
+    payload["evaluation"]["gated"].pop("frozen_row_id_sha256", None)
+    payload["evaluation"]["extrapolation"].update(
+        {
+            "source": frozen_source,
+            "depth_filter": [9, 14],
+            "row_id_sha256": (
+                "74c56235a033cc783963bc71584e2203b0b6936ba3996cf174616da3d1414b48"
+            ),
+            "row_sha256": (
+                "82e4d687d65fb4901847b49ab7212888faea2707363251bd9789286216799575"
+            ),
+        }
+    )
+    payload["evaluation"]["calibration"].update(
+        {
+            "generator": "training.synthetic_depth_task.write_synthetic_depth_dataset",
+            "seed": 2026072401,
+            "n_symbols": 16,
+            "id_prefix": "t1_calibration_",
+            "split": "test_chain_mcq",
+            "row_id_sha256": (
+                "ebc17c1012db868fe5788241e632c463e304bbadef0117a8b6af32a4fff6d6b2"
+            ),
+            "row_sha256": (
+                "0aa594d7fac062ba781da2dd7770eaa073443101e6b5e72daa4de0152c80ee93"
+            ),
+            "disjoint_from_gated_by_generation_seed_and_id_prefix": True,
+        }
+    )
+    payload["replication"] = {
+        "primary_seed": 0,
+        "seed_1_trigger": (
+            "full_pass_or_near_threshold_as_defined_in_governing_document_or_"
+            "strong_negative_boundary"
+        ),
+        "positive_headline_requires_seed_1_pass": True,
+        "strong_negative_boundary_requires_seed_1_confirmation": True,
+        "seed_1_runs_in_parallel_with_subsequent_authorized_phase": True,
+    }
+    return payload
+
+
 def validate_locked_phase_t1(payload: dict[str, Any]) -> None:
     if payload.get("status") != "locked_before_training":
         raise AssertionError("Phase T1 preregistration is not locked")
@@ -230,3 +388,17 @@ def validate_locked_phase_t1(payload: dict[str, Any]) -> None:
             raise AssertionError(f"Phase T1 {lineage} lacks a non-halting reference")
     if payload["gates"]["all_four_required_for_positive"] is not True:
         raise AssertionError("Phase T1 must require all four registered gates")
+    loss = payload.get("loss", {})
+    if float(loss.get("control_loss_lambda", -1)) != SELECTED_CONTROL_LOSS_LAMBDA:
+        raise AssertionError("Phase T1 control-loss lambda differs from the P0 lock")
+    if float(loss.get("stop_to_continue_ratio", -1)) != SELECTED_STOP_TO_CONTINUE_RATIO:
+        raise AssertionError("Phase T1 class-weight ratio differs from the P0 lock")
+    liveness = payload.get("stage_boundary_liveness", {})
+    if [row.get("step") for row in liveness.get("boundaries", [])] != [500, 2500, 6500, 8500]:
+        raise AssertionError("Phase T1 stage-boundary liveness schedule drifted")
+    if liveness.get("may_change_registered_constants") is not False:
+        raise AssertionError("Phase T1 liveness readouts cannot tune registered constants")
+    for split in ("gated", "calibration", "extrapolation"):
+        manifest = payload.get("evaluation", {}).get(split, {})
+        if not manifest.get("row_id_sha256") or not manifest.get("row_sha256"):
+            raise AssertionError(f"Phase T1 {split} manifest is not hash-locked")

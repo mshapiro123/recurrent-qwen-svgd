@@ -182,8 +182,8 @@ run and weaken the evidentiary boundary.
   `outputs/stage5/stage5_paper2_internal_token_t1_p0_letter_v2_20260724/cells/*/summary.json`
 - Drive checkpoints:
   `/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_paper2_internal_token_t1_p0_letter_v2_20260724/cells/`
-- Draft governing preregistration:
-  `docs/PAPER2_PHASE_T1_PREREGISTRATION_DRAFT_20260722.md`
+- Locked governing preregistration:
+  `docs/PHASE_T1_LITE_PREREGISTRATION_DRAFT4_20260724.md`
 - Draft 3 program amendment:
   `docs/PAPER2_EXPERIMENTAL_PLAN_DRAFT3_20260723.md`
 
