@@ -12,6 +12,7 @@ from eval.eval_t1_lite_ema_audit import (
     swap_group,
     validate_state_pair,
 )
+from colab.run_stage5_t1_lite_ema_audit import checkpoint_file_usable
 
 
 def states() -> tuple[dict[str, torch.Tensor], dict[str, torch.Tensor]]:
@@ -113,7 +114,8 @@ def test_device_ema_matches_exact_scalar_recurrence() -> None:
 
 
 def test_stage_checkpoint_coverage_reports_partial_without_inference(tmp_path) -> None:
-    (tmp_path / "t1_progress_step_500.pt").write_bytes(b"present")
+    (tmp_path / "t1_progress_step_500.pt").write_bytes(b"p" * 1024)
+    (tmp_path / "t1_progress_step_2500.pt").write_bytes(b"")
 
     receipt = stage_checkpoint_coverage(tmp_path)
 
@@ -121,4 +123,18 @@ def test_stage_checkpoint_coverage_reports_partial_without_inference(tmp_path) -
     assert receipt["available"] == 1
     assert receipt["available_names"] == ["t1_progress_step_500.pt"]
     assert receipt["complete"] is False
+    assert "t1_progress_step_2500.pt" in receipt["missing_names"]
     assert "t1_progress_step_8500.pt" in receipt["missing_names"]
+
+
+def test_checkpoint_file_usable_rejects_zero_byte_and_truncated_files(tmp_path) -> None:
+    empty = tmp_path / "empty.pt"
+    truncated = tmp_path / "truncated.pt"
+    valid_sized = tmp_path / "valid-sized.pt"
+    empty.write_bytes(b"")
+    truncated.write_bytes(b"x" * 100)
+    valid_sized.write_bytes(b"x" * 1024)
+
+    assert checkpoint_file_usable(empty) is False
+    assert checkpoint_file_usable(truncated) is False
+    assert checkpoint_file_usable(valid_sized) is True

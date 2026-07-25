@@ -30,6 +30,7 @@ DRIVE_OUTPUT = Path(
         f"/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/{RUN_ID}",
     )
 )
+MIN_CHECKPOINT_BYTES = 1024
 
 
 def read_json(path: str | Path) -> Any:
@@ -39,6 +40,11 @@ def read_json(path: str | Path) -> Any:
 def run(command: list[str]) -> None:
     print("$", " ".join(command), flush=True)
     subprocess.run(command, cwd=ROOT, check=True)
+
+
+def checkpoint_file_usable(path: str | Path) -> bool:
+    candidate = Path(path)
+    return candidate.is_file() and candidate.stat().st_size >= MIN_CHECKPOINT_BYTES
 
 
 def publish() -> None:
@@ -74,14 +80,23 @@ def restore_inputs() -> tuple[dict[str, Path], list[str]]:
     missing_progress: list[str] = []
     for name, expected_sha in {**endpoints, **progress}.items():
         source = DRIVE_SOURCE / name
-        if not source.exists():
+        if not checkpoint_file_usable(source):
             if name in endpoints:
-                raise FileNotFoundError(f"missing required Drive endpoint: {source}")
+                raise FileNotFoundError(
+                    f"missing or truncated required Drive endpoint: {source}"
+                )
             missing_progress.append(name)
-            print(f"missing_optional_stage_checkpoint={source}", flush=True)
+            destination = restore_dir / name
+            if destination.exists():
+                destination.unlink()
+            observed_bytes = source.stat().st_size if source.exists() else None
+            print(
+                f"unusable_optional_stage_checkpoint={source} bytes={observed_bytes}",
+                flush=True,
+            )
             continue
         destination = restore_dir / name
-        if not destination.exists() or destination.stat().st_size != source.stat().st_size:
+        if not checkpoint_file_usable(destination) or destination.stat().st_size != source.stat().st_size:
             shutil.copy2(source, destination)
         restored[name] = destination
         print(
@@ -181,10 +196,11 @@ def main() -> int:
         raise AssertionError("EMA audit unexpectedly performed training")
     if summary.get("registered_verdict_immutable") != "registered_negative":
         raise AssertionError("EMA audit changed the registered verdict")
-    if sorted(summary.get("stage_checkpoint_coverage", {}).get("missing_names", [])) != sorted(
-        missing_progress
-    ):
-        raise AssertionError("EMA audit stage-checkpoint availability receipt drifted")
+    summary_missing = set(
+        summary.get("stage_checkpoint_coverage", {}).get("missing_names", [])
+    )
+    if not set(missing_progress).issubset(summary_missing):
+        raise AssertionError("EMA audit dropped a known-missing stage checkpoint")
     write_receipt(summary)
     if DRIVE_OUTPUT.exists():
         shutil.rmtree(DRIVE_OUTPUT)

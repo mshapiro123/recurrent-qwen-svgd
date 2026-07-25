@@ -7,6 +7,7 @@ import gc
 import hashlib
 import json
 import math
+import pickle
 import random
 import sys
 from pathlib import Path
@@ -33,6 +34,7 @@ from training.train_unfrozen_recurrent import prepare_wrapper  # noqa: E402
 GROUPS = ("control_rows", "bridge", "recurrent_block")
 INTERPOLATION_ALPHAS = (0.0, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0)
 STAGE_SUPPORT = {500: 1, 2500: 2, 6500: 4, 8500: 8}
+MIN_CHECKPOINT_BYTES = 1024
 
 
 def write_json(path: str | Path, payload: Any) -> None:
@@ -44,7 +46,12 @@ def write_json(path: str | Path, payload: Any) -> None:
 def stage_checkpoint_coverage(progress_dir: str | Path) -> dict[str, Any]:
     root = Path(progress_dir)
     names = [f"t1_progress_step_{step}.pt" for step in STAGE_SUPPORT]
-    available = [name for name in names if (root / name).exists()]
+    available = [
+        name
+        for name in names
+        if (root / name).is_file()
+        and (root / name).stat().st_size >= MIN_CHECKPOINT_BYTES
+    ]
     missing = [name for name in names if name not in available]
     return {
         "required": len(names),
@@ -334,6 +341,7 @@ def main() -> int:
             + ", ".join(checkpoint_coverage["missing_names"])
         )
     stage_results: dict[str, Any] = {}
+    unreadable_stage_checkpoints: dict[str, str] = {}
     archived_receipts = (
         Path(args.archived_stage_receipts_dir)
         if args.archived_stage_receipts_dir
@@ -358,7 +366,35 @@ def main() -> int:
                 ),
             }
             continue
-        payload = torch.load(progress_path, map_location="cpu")
+        try:
+            payload = torch.load(progress_path, map_location="cpu")
+            if not isinstance(payload, dict):
+                raise ValueError("stage checkpoint payload is not a dictionary")
+            if "trainable_state_dict" not in payload or "ema_state_dict" not in payload:
+                raise KeyError("stage checkpoint lacks raw or EMA state")
+        except (EOFError, OSError, RuntimeError, ValueError, KeyError, pickle.UnpicklingError) as error:
+            if not args.allow_missing_stage_checkpoints:
+                raise
+            unreadable_stage_checkpoints[progress_path.name] = (
+                f"{type(error).__name__}: {error}"
+            )
+            receipt_path = (
+                archived_receipts / f"step_{step}.json"
+                if archived_receipts is not None
+                else None
+            )
+            stage_results[str(step)] = {
+                "trained_support": support,
+                "checkpoint_available": False,
+                "raw_ema_comparison_available": False,
+                "checkpoint_load_error": unreadable_stage_checkpoints[progress_path.name],
+                "archived_raw_boundary_receipt": (
+                    json.loads(receipt_path.read_text(encoding="utf-8"))
+                    if receipt_path is not None and receipt_path.exists()
+                    else None
+                ),
+            }
+            continue
         stage_raw = payload["trainable_state_dict"]
         stage_ema = payload["ema_state_dict"]["shadow"]
         stage_integrity = validate_state_pair(stage_raw, stage_ema)
@@ -377,6 +413,25 @@ def main() -> int:
         }
         del payload, stage_raw, stage_ema
         gc.collect()
+
+    if unreadable_stage_checkpoints:
+        available_names = [
+            name
+            for name in checkpoint_coverage["available_names"]
+            if name not in unreadable_stage_checkpoints
+        ]
+        missing_names = sorted(
+            set(checkpoint_coverage["missing_names"]) | set(unreadable_stage_checkpoints)
+        )
+        checkpoint_coverage.update(
+            {
+                "available": len(available_names),
+                "available_names": available_names,
+                "missing_names": missing_names,
+                "unreadable_names": unreadable_stage_checkpoints,
+                "complete": False,
+            }
+        )
 
     interpolation: dict[str, Any] = {}
     for alpha in INTERPOLATION_ALPHAS:
