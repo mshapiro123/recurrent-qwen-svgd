@@ -1,0 +1,113 @@
+{
+  "all_four_passed": false,
+  "c_track_authorized": false,
+  "d0_authorized": false,
+  "data": {
+    "calibration": "outputs/stage5/stage5_paper2_t1_lite_20260724/data/calibration_512.jsonl",
+    "calibration_manifest": {
+      "depth_counts": {
+        "1": 64,
+        "2": 64,
+        "3": 64,
+        "4": 64,
+        "5": 64,
+        "6": 64,
+        "7": 64,
+        "8": 64
+      },
+      "first_row_ids": [
+        "t1_calibration_test_d01_00000",
+        "t1_calibration_test_d01_00001",
+        "t1_calibration_test_d01_00002",
+        "t1_calibration_test_d01_00003",
+        "t1_calibration_test_d01_00004"
+      ],
+      "last_row_ids": [
+        "t1_calibration_test_d08_00059",
+        "t1_calibration_test_d08_00060",
+        "t1_calibration_test_d08_00061",
+        "t1_calibration_test_d08_00062",
+        "t1_calibration_test_d08_00063"
+      ],
+      "max_depth": 8,
+      "row_id_sha256": "c58b779ce7b2fc00c8f66d82fdfe414433f6f9be0fe2e26278248eff6a0e016f",
+      "row_sha256": "5df416b614c50eae8bbc44868a19eaa41d84db375563f4a166c8b968a96c1614",
+      "rows": 512
+    },
+    "calibration_sha256": "5de26ebf64e7ef5cdb460815f706e499bd9fce1d8db11883d3444b4c1a5e2742",
+    "canary": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/data/base_capability_canary_64.jsonl",
+    "frozen_eval": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v2_depth14/data/test_chain_mcq.jsonl",
+    "pilot": "outputs/stage5/stage5_paper2_t1_lite_20260724/data/liveness_pilot_256.jsonl",
+    "pilot_sha256": "be34a13fdbeaf08a061c02e79a19ad7bf75973b2d8d089702aa4b6d4ddbebb1c",
+    "train": "outputs/stage5/stage5_paper2_t1_lite_20260724/data/t1_lite_train_70_30.jsonl",
+    "train_manifest": {
+      "by_depth": {
+        "1": {
+          "control": 175,
+          "rehearsal": 75
+        },
+        "2": {
+          "control": 175,
+          "rehearsal": 75
+        },
+        "3": {
+          "control": 175,
+          "rehearsal": 75
+        },
+        "4": {
+          "control": 175,
+          "rehearsal": 75
+        },
+        "5": {
+          "control": 175,
+          "rehearsal": 75
+        },
+        "6": {
+          "control": 175,
+          "rehearsal": 75
+        },
+        "7": {
+          "control": 175,
+          "rehearsal": 75
+        },
+        "8": {
+          "control": 175,
+          "rehearsal": 75
+        }
+      },
+      "control_fraction": 0.7,
+      "control_rows": 1400,
+      "rehearsal_fraction": 0.3,
+      "rehearsal_rows": 600,
+      "seed": 0,
+      "total_rows": 2000
+    },
+    "train_sha256": "ae16f31f58a09f90d1671b045125fbd029e76143e32864f4ff5d50a207fdd27f"
+  },
+  "evaluations": {
+    "ema_primary": "outputs/stage5/stage5_paper2_t1_lite_20260724/eval/ema_primary/summary.json",
+    "raw_secondary": "outputs/stage5/stage5_paper2_t1_lite_20260724/eval/raw_secondary/summary.json"
+  },
+  "kind": "stage5_paper2_t1_lite",
+  "preregistration": "outputs/stage5/stage5_paper2_t1_lite_20260724/preregistration.json",
+  "pretraining_manifest_amendment": "docs/PHASE_T1_LITE_PRETRAINING_MANIFEST_AMENDMENT_20260724.md",
+  "primary_weights": "final_step_ema",
+  "registered_attempt": 1,
+  "run_id": "stage5_paper2_t1_lite_20260724",
+  "seed_1_not_launched_by_this_target": true,
+  "seed_1_trigger": {
+    "full_pass": false,
+    "gate1_accuracy": 0.197265625,
+    "gate2_accuracy": 0.1015625,
+    "gate2_deficit_from_forced": 0.095703125,
+    "near_threshold": false,
+    "pooled_gate3_accuracy": 0.125,
+    "reasons": [],
+    "strong_negative_confirmation_not_automated": true,
+    "triggered": false
+  },
+  "seed_1_triggered": false,
+  "status": "finished",
+  "training_summary": "outputs/stage5/stage5_paper2_t1_lite_20260724/train/training_summary.json",
+  "verdict": "registered_negative"
+}
