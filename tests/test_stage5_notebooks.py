@@ -1176,6 +1176,22 @@ def test_coconut_composite_preflight_target_runs_rg1_rg11_without_training() -> 
     assert "eval/eval_coconut_composite_integrity.py" in runner
 
 
+def test_coconut_numerics_target_is_read_only_and_cannot_authorize_rg12() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_COCONUT_COMPOSITE_NUMERICS_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_coconut_composite_numerics.py").read_text(encoding="utf-8")
+    evaluator = (ROOT / "eval/eval_coconut_composite_numerics.py").read_text(encoding="utf-8")
+
+    assert '"coconut_composite_numerics"' in bootstrap
+    assert "recompute only sliced cache retired" in cell
+    assert "original 10 percent derivative criterion unchanged" in cell
+    assert "no training no checkpoint RG-12 unauthorized" in cell
+    assert 'summary.get("training_performed") is not False' in runner
+    assert 'summary.get("rg12", {}).get("authorized") is not False' in runner
+    assert "adjacent_finite_difference_pass" in evaluator
+    assert "fp32_master_bf16_autocast" in evaluator
+
+
 def test_paper2_t1_p0_target_is_pilot_only_and_resumable() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
         encoding="utf-8"
@@ -1233,6 +1249,25 @@ def test_paper2_t1_lite_target_is_locked_resumable_and_bounded() -> None:
     assert "backup_dir" in trainer
     assert "causal_override_progress.jsonl" in runner
     assert "required_total\": 5632" in evaluator
+
+
+def test_paper2_t1_lite_r_target_is_locked_raw_primary_and_manifested() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_T1_LITE_R_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_t1_lite_r.py").read_text(encoding="utf-8")
+    trainer = (ROOT / "training/run_internal_think_token_t1_lite.py").read_text(encoding="utf-8")
+
+    assert '"paper2_t1_lite_r"' in bootstrap
+    assert "locked before launcher commit ae2793ac" in cell
+    assert "seed 1 raw final-step primary" in cell
+    assert '"primary_weights": "raw_final_step"' in runner
+    assert '"--registered_contract",' in runner
+    assert '"t1_lite_r",' in runner
+    assert "stage_checkpoint_manifest" in runner
+    assert "write_stage_checkpoint_bundle" in trainer
+    assert "stage_reset_ema" in trainer
+    assert "D0 build-only no labeling GPU no training" in cell
+    assert "C track design-stage RG-12 unauthorized" in cell
 
 
 def test_t1_lite_ema_audit_target_is_read_only_and_registered() -> None:

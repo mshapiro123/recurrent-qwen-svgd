@@ -12,7 +12,7 @@ def load_ledger() -> dict:
     return json.loads(LEDGER.read_text(encoding="utf-8"))
 
 
-def test_paper2_ledger_closes_phase_g_and_records_locked_t1_without_training() -> None:
+def test_paper2_ledger_closes_phase_g_and_records_t1_replication_state() -> None:
     payload = load_ledger()
     claims = {claim["id"]: claim for claim in payload["claims"]}
 
@@ -33,19 +33,23 @@ def test_paper2_ledger_closes_phase_g_and_records_locked_t1_without_training() -
         "film_full_nondefault_control"
     ] < 0.25
     assert claims["internal_token_halting"]["status"] == (
-        "t0_passed_p0_complete_t1_lite_locked_not_run"
+        "seed0_registered_negative_raw_near_threshold_seed1_replication_locked"
     )
     assert claims["internal_token_halting"]["metrics"][
         "all_five_t0_contracts_passed"
     ] is True
-    assert claims["internal_token_halting"]["metrics"]["training_performed"] is False
+    assert claims["internal_token_halting"]["metrics"]["t0_training_performed"] is False
+    assert claims["internal_token_halting"]["metrics"]["t1_seed0_training_performed"] is True
     assert claims["internal_token_halting"]["metrics"][
         "p0_lineage_matches_registered_t1"
     ] is False
     assert claims["speculative_depth_d0"]["status"] == (
-        "preregistration_drafting_not_authorized"
+        "build_complete_labeling_and_training_not_authorized"
     )
-    assert payload["active_queue"]["t1"].startswith("full_block_t1_lite")
+    assert payload["active_queue"]["t1"].startswith("seed0_ema_primary_negative")
+    assert claims["coconut_composite_integrity"]["status"] == (
+        "engineering_preflight_bounded_fail"
+    )
 
 
 def test_paper2_claim_evidence_paths_exist() -> None:

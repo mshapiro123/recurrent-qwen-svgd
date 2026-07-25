@@ -114,14 +114,14 @@ def publish(message: str) -> None:
         run(["git", "push", "origin", "main"])
 
 
-def prepare_data() -> dict[str, Any]:
+def prepare_registered_data(run_dir: Path, *, seed: int) -> dict[str, Any]:
     required = [TRAIN_SOURCE, FROZEN_EVAL, CANARY, T0_RECEIPT, REFERENCE_RECEIPT]
     missing = [str(path) for path in required if not path.exists()]
     if missing:
         raise FileNotFoundError(f"T1-lite immutable source artifacts missing: {missing}")
-    data_dir = RUN_DIR / "data"
+    data_dir = run_dir / "data"
     source_rows = read_jsonl(TRAIN_SOURCE)
-    mixture, mixture_manifest = build_pilot_mixture_rows(source_rows, seed=0)
+    mixture, mixture_manifest = build_pilot_mixture_rows(source_rows, seed=int(seed))
     train_path = data_dir / "t1_lite_train_70_30.jsonl"
     write_jsonl(train_path, mixture)
     if mixture_manifest["control_rows"] != 1400 or mixture_manifest["rehearsal_rows"] != 600:
@@ -171,6 +171,10 @@ def prepare_data() -> dict[str, Any]:
         "frozen_eval": path_for_cli(FROZEN_EVAL),
         "canary": path_for_cli(CANARY),
     }
+
+
+def prepare_data() -> dict[str, Any]:
+    return prepare_registered_data(RUN_DIR, seed=0)
 
 
 def copy_eval_from_drive(label: str) -> Path:

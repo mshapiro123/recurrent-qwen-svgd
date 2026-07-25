@@ -1,13 +1,14 @@
 {
   "schema_version": 1,
   "program": "paper2_causal_control_of_recurrent_computation",
-  "status": "t1_lite_locked_before_training_launcher_ready_d0_unauthorized",
-  "canonical_date": "2026-07-24",
+  "status": "t1_lite_seed0_negative_seed1_replication_locked_d0_build_only_coconut_engineering",
+  "canonical_date": "2026-07-25",
   "active_queue": {
     "program_goal": "useful_natural_data_model_in_qwen_series",
     "p0": "completed_uncitable_adapter_loss_calibration",
-    "t1": "full_block_t1_lite_locked_before_training_ready_to_launch",
-    "d0": "not_authorized_pending_t1_lite_verdict_and_separate_lock",
+    "t1": "seed0_ema_primary_negative_raw_near_threshold_seed1_replication_locked",
+    "d0": "build_only_no_labeling_or_training_pending_replication_review_and_lock",
+    "coconut": "integrity_engineering_rg4_rg11_followup_only_rg12_unauthorized",
     "paper_two_packaging": "deferred_until_t1_lite_and_any_later_authorized_d0_readout"
   },
   "claims": [
@@ -131,9 +132,9 @@
     },
     {
       "id": "internal_token_halting",
-      "status": "t0_passed_p0_complete_t1_lite_locked_not_run",
-      "claim": "Token-pathway halting passed all no-training interface contracts; the uncitable adapter P0 calibration selected lambda 0.5 with equal class weights; full-block T1-lite is locked before training but has not run.",
-      "scope": "Phase T0 executable preflight, completed uncitable adapter P0 calibration, and locked full-block T1-lite preregistration only",
+      "status": "seed0_registered_negative_raw_near_threshold_seed1_replication_locked",
+      "claim": "The registered seed-0 continuous-EMA primary failed, while the raw final-step secondary selected every trained depth exactly and missed preservation by eight rows; the required seed-1 raw-primary replication is locked but has not run.",
+      "scope": "stated-depth synthetic actuator test, full-block seed 0, registered EMA-primary verdict immutable, raw secondary descriptive, seed-1 replication pending",
       "metrics": {
         "control_tokens_added": 3,
         "added_parameters": 2688,
@@ -141,7 +142,8 @@
         "identity_maximum": 0.001,
         "forced_requested_executed_selected_loops": 4,
         "all_five_t0_contracts_passed": true,
-        "training_performed": false,
+        "t0_training_performed": false,
+        "t1_seed0_training_performed": true,
         "registered_t1_lineages": 1,
         "registered_t1_lineage": "full_block",
         "p0_lineage_matches_registered_t1": false,
@@ -152,7 +154,16 @@
         "p0_selected_continue_recall": 0.9877232142857143,
         "p0_selected_exact_depth_accuracy": 0.6484375,
         "p0_selected_answer_accuracy": 0.58984375,
-        "p0_lambda_zero_answer_accuracy": 0.53125
+        "p0_lambda_zero_answer_accuracy": 0.53125,
+        "seed0_ema_forced_correct": 202,
+        "seed0_ema_self_halted_correct": 104,
+        "seed0_ema_exact_selection_correct": 128,
+        "seed0_raw_forced_correct": 967,
+        "seed0_raw_self_halted_correct": 967,
+        "seed0_raw_exact_selection_correct": 1024,
+        "preservation_floor_correct": 975,
+        "causal_override_exact": 5632,
+        "causal_override_total": 5632
       },
       "evidence": [
         {
@@ -182,23 +193,71 @@
         {
           "path": "outputs/stage5/stage5_paper2_t1_lite_preregistration_20260724/preregistration.json",
           "locator": "locked constants, stages, liveness guardrails, gates, seeds, and set hashes"
+        },
+        {
+          "path": "outputs/stage5/stage5_paper2_t1_lite_20260724/summary.json",
+          "locator": "registered seed-0 verdict and endpoint policy"
+        },
+        {
+          "path": "docs/PAPER2_T1_LITE_EMA_AUDIT_HANDOFF_20260725.md",
+          "locator": "read-only recurrent-block localization and immutable-verdict boundary"
+        },
+        {
+          "path": "outputs/stage5/stage5_paper2_t1_lite_r_preregistration_20260725/preregistration.json",
+          "locator": "locked seed-1 raw-primary replication amendment"
         }
       ],
       "do_not_claim": [
         "learned halting succeeds",
-        "token-pathway control is causal",
+        "replicated token-pathway success before seed 1",
+        "continuous EMA is mathematically incorrect",
         "natural-trace depth selection"
       ]
     },
     {
+      "id": "coconut_composite_integrity",
+      "status": "engineering_preflight_bounded_fail",
+      "claim": "The tested horizontal feedback graph is identity-preserving, gradient-live, adapter-transparent, and correctly accounted, but the current finite-difference and bf16 precision contracts are not yet green.",
+      "scope": "Qwen2.5-0.5B fresh surgery, no training, one fixed derivative direction, one L4 run; RG-12 unrun",
+      "metrics": {
+        "contracts_passed": 8,
+        "contracts_total": 11,
+        "rg4_absolute_error": 0.0018306802958250046,
+        "rg4_tolerance": 0.0012874603271484375,
+        "rg5_gradient_cosine": 1.0,
+        "rg11_bf16_fp32_gradient_cosine": 0.9835835695266724,
+        "rg11_required_cosine": 0.99
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_coconut_composite_rg1_rg11_20260725/summary.json",
+          "locator": "RG-1 through RG-11 contract matrix"
+        },
+        {
+          "path": "docs/COCONUT_COMPOSITE_PREFLIGHT_HANDOFF_20260725.md",
+          "locator": "bounded interpretation and authorized numerical follow-up"
+        }
+      ],
+      "do_not_claim": [
+        "COCONUT training succeeds",
+        "the horizontal state is causally used after training",
+        "RG-12 is authorized",
+        "sliced cache is equivalent to recomputation"
+      ]
+    },
+    {
       "id": "speculative_depth_d0",
-      "status": "preregistration_drafting_not_authorized",
-      "claim": "No empirical D0 claim exists; the speculative-decoding depth-recoverability pilot is being specified.",
-      "scope": "Qwen-series teacher ladder; no dataset, labels, training, or evaluation run",
+      "status": "build_complete_labeling_and_training_not_authorized",
+      "claim": "No empirical D0 claim exists; the build-only scorer, mapping, masking, and manifest contracts are implemented and synthetic-unit tested.",
+      "scope": "Qwen-series teacher ladder design; zero model loads, teacher forwards, optimizer steps, or checkpoints",
       "evidence": [
         {
           "path": "docs/PAPER2_D0_SPECULATIVE_DEPTH_PREREGISTRATION_DRAFT_20260723.md",
-          "locator": "required decisions before lock"
+          "locator": "updated build-only design and unresolved decisions before lock"
+        },
+        {
+          "path": "outputs/stage5/stage5_paper2_d0_build_only_20260725/summary.json",
+          "locator": "CPU synthetic fixture receipt and zero-execution counters"
         }
       ],
       "do_not_claim": [

@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import random
 import shutil
 import sys
@@ -37,6 +38,11 @@ from training.internal_think_token_t1 import (
     stage_boundary_liveness_verdict,
 )
 from training.internal_think_token_t1_spec import phase_t1_locked, validate_locked_phase_t1
+from training.internal_think_token_t1_r_spec import (
+    STAGE_CHECKPOINT_STEPS,
+    phase_t1_lite_r_locked,
+    validate_phase_t1_lite_r_locked,
+)
 from training.run_internal_think_token_p0_cell import (
     PilotDataset,
     assert_loop_completion_alignment,
@@ -108,6 +114,20 @@ class DeviceEMA:
             "shadow": {name: value.detach().cpu() for name, value in self.shadow.items()},
         }
 
+    @torch.no_grad()
+    def reset_from_parameters(
+        self,
+        named_parameters: Iterable[tuple[str, torch.nn.Parameter]],
+    ) -> None:
+        current = dict(named_parameters)
+        if set(current).issuperset(self.shadow) is False:
+            missing = sorted(set(self.shadow) - set(current))
+            raise RuntimeError(f"EMA reset is missing parameters: {missing[:8]}")
+        self.shadow = {
+            name: current[name].detach().clone().to(device=value.device, dtype=value.dtype)
+            for name, value in self.shadow.items()
+        }
+
     def load_state_dict(self, state: dict[str, Any]) -> None:
         if float(state["decay"]) != self.decay or set(state["shadow"]) != set(self.shadow):
             raise RuntimeError("EMA contract changed while resuming T1-lite")
@@ -129,6 +149,125 @@ def sha256_file(path: str | Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _cpu_state(state: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
+    return {name: value.detach().cpu().clone() for name, value in state.items()}
+
+
+def _atomic_torch_save(payload: dict[str, Any], destination: Path) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = destination.with_name(destination.name + ".tmp")
+    if temporary.exists():
+        temporary.unlink()
+    torch.save(payload, temporary)
+    os.replace(temporary, destination)
+
+
+def _atomic_copy(source: Path, destination: Path) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = destination.with_name(destination.name + ".tmp")
+    if temporary.exists():
+        temporary.unlink()
+    shutil.copy2(source, temporary)
+    os.replace(temporary, destination)
+
+
+def write_stage_checkpoint_bundle(
+    *,
+    local_dir: Path,
+    backup_dir: Path | None,
+    step: int,
+    raw_state: dict[str, torch.Tensor],
+    continuous_ema_state: dict[str, torch.Tensor],
+    stage_reset_ema_state: dict[str, torch.Tensor],
+) -> dict[str, Any]:
+    """Atomically persist and hash all registered state variants at one boundary."""
+
+    states = {
+        "raw": raw_state,
+        "continuous_ema": continuous_ema_state,
+        "stage_reset_ema": stage_reset_ema_state,
+    }
+    receipt: dict[str, Any] = {"step": int(step), "states": {}}
+    for label, state in states.items():
+        filename = f"t1_lite_r_step_{int(step)}_{label}.pt"
+        local_path = local_dir / filename
+        _atomic_torch_save(
+            {
+                "kind": "paper2_t1_lite_r_stage_state",
+                "step": int(step),
+                "state": label,
+                "trainable_state_dict": _cpu_state(state),
+            },
+            local_path,
+        )
+        local_sha = sha256_file(local_path)
+        state_receipt: dict[str, Any] = {
+            "local_path": str(local_path),
+            "local_sha256": local_sha,
+        }
+        if backup_dir is not None:
+            backup_path = backup_dir / "stage_states" / filename
+            _atomic_copy(local_path, backup_path)
+            state_receipt.update(
+                {
+                    "backup_path": str(backup_path),
+                    "backup_sha256": sha256_file(backup_path),
+                }
+            )
+            if state_receipt["backup_sha256"] != local_sha:
+                raise RuntimeError(f"stage-state backup hash mismatch for {filename}")
+        receipt["states"][label] = state_receipt
+    return receipt
+
+
+def verify_stage_checkpoint_manifest(
+    *,
+    receipts: list[dict[str, Any]],
+    required_steps: Iterable[int] = STAGE_CHECKPOINT_STEPS,
+    require_backup: bool,
+) -> dict[str, Any]:
+    """Verify every raw and shadow state before the replication can be scored."""
+
+    by_step = {int(receipt["step"]): receipt for receipt in receipts}
+    missing: list[str] = []
+    mismatched: list[str] = []
+    expected_states = ("raw", "continuous_ema", "stage_reset_ema")
+    for step in (int(value) for value in required_steps):
+        receipt = by_step.get(step)
+        if receipt is None:
+            missing.append(f"step_{step}")
+            continue
+        for label in expected_states:
+            state = receipt.get("states", {}).get(label)
+            if state is None:
+                missing.append(f"step_{step}:{label}")
+                continue
+            local = Path(state["local_path"])
+            if not local.exists():
+                missing.append(str(local))
+            elif sha256_file(local) != state["local_sha256"]:
+                mismatched.append(str(local))
+            if require_backup:
+                backup_value = state.get("backup_path")
+                if not backup_value or not Path(backup_value).exists():
+                    missing.append(str(backup_value or f"step_{step}:{label}:backup"))
+                elif sha256_file(backup_value) != state.get("backup_sha256"):
+                    mismatched.append(str(backup_value))
+    complete = not missing and not mismatched
+    manifest = {
+        "kind": "paper2_t1_lite_r_stage_checkpoint_manifest",
+        "required_steps": [int(value) for value in required_steps],
+        "required_states": list(expected_states),
+        "receipts": receipts,
+        "missing": missing,
+        "hash_mismatches": mismatched,
+        "complete": complete,
+    }
+    if not complete:
+        raise RuntimeError(f"T1-lite-R stage checkpoint manifest incomplete: {manifest}")
+    return manifest
 
 
 def seed_all(seed: int) -> None:
@@ -199,23 +338,30 @@ def save_progress(
     wrapper: Any,
     optimizer: Any,
     ema: DeviceEMA,
+    stage_reset_ema: DeviceEMA | None,
     global_step: int,
     trace: list[dict[str, Any]],
     control_history: list[dict[str, Any]],
     stage_receipts: list[dict[str, Any]],
+    stage_state_receipts: list[dict[str, Any]],
     token_receipt: dict[str, Any],
+    contract_name: str,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     torch.save(
         {
-            "kind": "paper2_t1_lite_progress",
+            "kind": f"paper2_{contract_name}_progress",
             "global_step": int(global_step),
             "trainable_state_dict": compact_trainable_state(wrapper),
             "optimizer_state_dict": optimizer.state_dict(),
             "ema_state_dict": ema.state_dict(),
+            "stage_reset_ema_state_dict": (
+                stage_reset_ema.state_dict() if stage_reset_ema is not None else None
+            ),
             "trace": trace,
             "control_history": control_history,
             "stage_receipts": stage_receipts,
+            "stage_state_receipts": stage_state_receipts,
             "control_token_resize": token_receipt,
         },
         path,
@@ -279,12 +425,24 @@ def main() -> int:
     parser.add_argument("--dtype", default="bfloat16")
     parser.add_argument("--attn_implementation", default="default")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--registered_contract",
+        choices=("t1_lite", "t1_lite_r"),
+        default="t1_lite",
+    )
     args = parser.parse_args()
 
-    prereg = phase_t1_locked()
-    validate_locked_phase_t1(prereg)
+    if args.registered_contract == "t1_lite_r":
+        prereg = phase_t1_lite_r_locked()
+        validate_phase_t1_lite_r_locked(prereg)
+    else:
+        prereg = phase_t1_locked()
+        validate_locked_phase_t1(prereg)
     if int(args.seed) != int(prereg["replication"]["primary_seed"]):
-        raise ValueError("This launcher is the registered seed-0 attempt")
+        raise ValueError(
+            f"{args.registered_contract} requires registered seed "
+            f"{prereg['replication']['primary_seed']}"
+        )
     seed_all(args.seed)
     output_dir = Path(args.output_dir)
     backup_dir = Path(args.backup_dir) if args.backup_dir else None
@@ -322,6 +480,11 @@ def main() -> int:
     contract = trainable_contract(wrapper, control_rows)
     optimizer = build_optimizer(wrapper, config)
     ema = DeviceEMA(wrapper.named_parameters(), decay=0.999)
+    stage_reset_ema = (
+        DeviceEMA(wrapper.named_parameters(), decay=0.999)
+        if args.registered_contract == "t1_lite_r"
+        else None
+    )
     assert_finite_trainable_parameters(wrapper, step=0)
     identity = one_loop_identity(wrapper.eval(), tokenizer, args.device)
     if not identity["passed"]:
@@ -377,6 +540,7 @@ def main() -> int:
     trace: list[dict[str, Any]] = []
     control_history: list[dict[str, Any]] = []
     stage_receipts: list[dict[str, Any]] = []
+    stage_state_receipts: list[dict[str, Any]] = []
     global_step = 0
     progress = latest_progress(output_dir / "checkpoints", backup_dir)
     if progress is not None:
@@ -388,15 +552,25 @@ def main() -> int:
                 if torch.is_tensor(value):
                     state[key] = value.to(args.device)
         ema.load_state_dict(payload["ema_state_dict"])
+        if stage_reset_ema is not None:
+            state = payload.get("stage_reset_ema_state_dict")
+            if state is None:
+                raise RuntimeError("T1-lite-R resume lacks stage-reset EMA state")
+            stage_reset_ema.load_state_dict(state)
         global_step = int(payload["global_step"])
         trace = list(payload.get("trace") or [])
         control_history = list(payload.get("control_history") or [])
         stage_receipts = list(payload.get("stage_receipts") or [])
+        stage_state_receipts = list(payload.get("stage_state_receipts") or [])
         print(f"resumed_t1_lite_progress={progress} global_step={global_step}", flush=True)
 
     total_steps = sum(int(stage["steps"]) for stage in STAGES)
+    previous_stage_index = stage_for_step(global_step)[0] if global_step else None
     for next_step in range(global_step + 1, total_steps + 1):
         stage_index, stage, local_step, stage_start = stage_for_step(next_step)
+        if stage_reset_ema is not None and stage_index != previous_stage_index:
+            stage_reset_ema.reset_from_parameters(wrapper.named_parameters())
+        previous_stage_index = stage_index
         set_stage_learning_rates(
             optimizer,
             lr=float(stage["lr"]),
@@ -450,6 +624,8 @@ def main() -> int:
         )
         optimizer.step()
         ema.update(wrapper.named_parameters())
+        if stage_reset_ema is not None:
+            stage_reset_ema.update(wrapper.named_parameters())
         if bool(batch["control_active"].item()):
             control_history.append(
                 {
@@ -478,11 +654,14 @@ def main() -> int:
                 wrapper=wrapper,
                 optimizer=optimizer,
                 ema=ema,
+                stage_reset_ema=stage_reset_ema,
                 global_step=next_step,
                 trace=trace,
                 control_history=control_history,
                 stage_receipts=stage_receipts,
+                stage_state_receipts=stage_state_receipts,
                 token_receipt=resize.to_dict(),
+                contract_name=args.registered_contract,
             )
             if backup_dir is not None:
                 shutil.copy2(checkpoint, backup_dir / checkpoint.name)
@@ -535,6 +714,17 @@ def main() -> int:
             stage_receipts.append(receipt)
             write_json(output_dir / "stage_receipts" / f"step_{next_step}.json", receipt)
             print(json.dumps({"stage_boundary": receipt}, sort_keys=True), flush=True)
+            if stage_reset_ema is not None:
+                stage_state_receipts.append(
+                    write_stage_checkpoint_bundle(
+                        local_dir=output_dir / "stage_states",
+                        backup_dir=backup_dir,
+                        step=next_step,
+                        raw_state=compact_trainable_state(wrapper),
+                        continuous_ema_state=ema.state_dict()["shadow"],
+                        stage_reset_ema_state=stage_reset_ema.state_dict()["shadow"],
+                    )
+                )
             # Persist the completed boundary readout into the resumable state. A
             # runtime loss after evaluation must not silently discard the gate.
             checkpoint = output_dir / "checkpoints" / f"t1_progress_step_{next_step}.pt"
@@ -543,11 +733,14 @@ def main() -> int:
                 wrapper=wrapper,
                 optimizer=optimizer,
                 ema=ema,
+                stage_reset_ema=stage_reset_ema,
                 global_step=next_step,
                 trace=trace,
                 control_history=control_history,
                 stage_receipts=stage_receipts,
+                stage_state_receipts=stage_state_receipts,
                 token_receipt=resize.to_dict(),
+                contract_name=args.registered_contract,
             )
             if backup_dir is not None:
                 shutil.copy2(checkpoint, backup_dir / checkpoint.name)
@@ -561,10 +754,34 @@ def main() -> int:
                 )
                 return 2
 
-    raw_path = output_dir / "t1_lite_raw_step_10500.pt"
+    stage_manifest: dict[str, Any] | None = None
+    if stage_reset_ema is not None:
+        if not any(int(receipt["step"]) == total_steps for receipt in stage_state_receipts):
+            stage_state_receipts.append(
+                write_stage_checkpoint_bundle(
+                    local_dir=output_dir / "stage_states",
+                    backup_dir=backup_dir,
+                    step=total_steps,
+                    raw_state=compact_trainable_state(wrapper),
+                    continuous_ema_state=ema.state_dict()["shadow"],
+                    stage_reset_ema_state=stage_reset_ema.state_dict()["shadow"],
+                )
+            )
+        stage_manifest = verify_stage_checkpoint_manifest(
+            receipts=stage_state_receipts,
+            required_steps=STAGE_CHECKPOINT_STEPS,
+            require_backup=backup_dir is not None,
+        )
+        stage_manifest_path = output_dir / "stage_checkpoint_manifest.json"
+        write_json(stage_manifest_path, stage_manifest)
+        if backup_dir is not None:
+            _atomic_copy(stage_manifest_path, backup_dir / stage_manifest_path.name)
+
+    checkpoint_prefix = "t1_lite_r" if args.registered_contract == "t1_lite_r" else "t1_lite"
+    raw_path = output_dir / f"{checkpoint_prefix}_raw_step_10500.pt"
     torch.save(
         {
-            "kind": "paper2_t1_lite_final_raw",
+            "kind": f"paper2_{checkpoint_prefix}_final_raw",
             "step": total_steps,
             "trainable_state_dict": compact_trainable_state(wrapper),
             "control_token_resize": resize.to_dict(),
@@ -574,10 +791,18 @@ def main() -> int:
         raw_path,
     )
     backup = ema.copy_to(wrapper.named_parameters())
-    ema_path = output_dir / "t1_lite_ema_step_10500.pt"
+    ema_path = output_dir / (
+        "t1_lite_ema_step_10500.pt"
+        if args.registered_contract == "t1_lite"
+        else "t1_lite_r_continuous_ema_step_10500.pt"
+    )
     torch.save(
         {
-            "kind": "paper2_t1_lite_final_ema",
+            "kind": (
+                "paper2_t1_lite_final_ema"
+                if args.registered_contract == "t1_lite"
+                else "paper2_t1_lite_r_final_continuous_ema"
+            ),
             "step": total_steps,
             "trainable_state_dict": compact_trainable_state(wrapper),
             "control_token_resize": resize.to_dict(),
@@ -587,15 +812,33 @@ def main() -> int:
         ema_path,
     )
     ema.restore(wrapper.named_parameters(), backup)
+    stage_reset_ema_path: Path | None = None
+    if stage_reset_ema is not None:
+        stage_reset_backup = stage_reset_ema.copy_to(wrapper.named_parameters())
+        stage_reset_ema_path = output_dir / f"{checkpoint_prefix}_stage_reset_ema_step_10500.pt"
+        torch.save(
+            {
+                "kind": f"paper2_{checkpoint_prefix}_final_stage_reset_ema",
+                "step": total_steps,
+                "trainable_state_dict": compact_trainable_state(wrapper),
+                "control_token_resize": resize.to_dict(),
+                "split_control_rows": split.to_dict(),
+                "setup": setup,
+            },
+            stage_reset_ema_path,
+        )
+        stage_reset_ema.restore(wrapper.named_parameters(), stage_reset_backup)
     if backup_dir is not None:
         shutil.copy2(raw_path, backup_dir / raw_path.name)
         shutil.copy2(ema_path, backup_dir / ema_path.name)
+        if stage_reset_ema_path is not None:
+            shutil.copy2(stage_reset_ema_path, backup_dir / stage_reset_ema_path.name)
     frozen_hash_end = frozen_base_sha256(wrapper)
     old_embedding_hash_end = tensor_sha256(wrapper.base_model.get_input_embeddings().old_weight)
     if frozen_hash_end != frozen_hash_start or old_embedding_hash_end != old_embedding_hash_start:
         raise RuntimeError("T1-lite changed a frozen pretrained tensor")
     summary = {
-        "kind": "paper2_t1_lite_training",
+        "kind": f"paper2_{checkpoint_prefix}_training",
         "status": "training_finished",
         "seed": args.seed,
         "steps": total_steps,
@@ -613,12 +856,36 @@ def main() -> int:
         "raw_checkpoint_sha256": sha256_file(raw_path),
         "ema_checkpoint": str(ema_path),
         "ema_checkpoint_sha256": sha256_file(ema_path),
+        "continuous_ema_checkpoint": str(ema_path),
+        "continuous_ema_checkpoint_sha256": sha256_file(ema_path),
+        "stage_reset_ema_checkpoint": (
+            str(stage_reset_ema_path) if stage_reset_ema_path is not None else None
+        ),
+        "stage_reset_ema_checkpoint_sha256": (
+            sha256_file(stage_reset_ema_path) if stage_reset_ema_path is not None else None
+        ),
+        "stage_checkpoint_manifest": stage_manifest,
         "stage_receipts": stage_receipts,
         "trace": trace,
         "control_history": control_history,
     }
     write_json(output_dir / "training_summary.json", summary)
-    print(json.dumps({key: summary[key] for key in ("status", "steps", "raw_checkpoint", "ema_checkpoint")}, indent=2), flush=True)
+    print(
+        json.dumps(
+            {
+                key: summary[key]
+                for key in (
+                    "status",
+                    "steps",
+                    "raw_checkpoint",
+                    "continuous_ema_checkpoint",
+                    "stage_reset_ema_checkpoint",
+                )
+            },
+            indent=2,
+        ),
+        flush=True,
+    )
     return 0
 
 

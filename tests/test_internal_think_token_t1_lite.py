@@ -7,6 +7,13 @@ from training.internal_think_token_t1 import (
     phase_t1_seed_1_trigger,
     stage_boundary_liveness_verdict,
 )
+from training.run_internal_think_token_t1_lite import (
+    DeviceEMA,
+    verify_stage_checkpoint_manifest,
+    write_stage_checkpoint_bundle,
+)
+
+import torch
 
 
 def _selection(correct: int = 128):
@@ -106,3 +113,39 @@ def test_seed_1_trigger_covers_pass_and_locked_near_threshold_cases():
     assert trigger["triggered"] is True
     assert trigger["near_threshold"] is True
     assert "near_gate3" in trigger["reasons"]
+
+
+def test_stage_reset_ema_restarts_from_current_raw_weights() -> None:
+    parameter = torch.nn.Parameter(torch.tensor([1.0]))
+    ema = DeviceEMA([("weight", parameter)], decay=0.9)
+    with torch.no_grad():
+        parameter.fill_(3.0)
+    ema.update([("weight", parameter)])
+    assert torch.allclose(ema.shadow["weight"], torch.tensor([1.2]))
+    ema.reset_from_parameters([("weight", parameter)])
+    assert torch.equal(ema.shadow["weight"], torch.tensor([3.0]))
+
+
+def test_stage_checkpoint_bundle_is_atomic_hashed_and_complete(tmp_path) -> None:
+    local = tmp_path / "local"
+    backup = tmp_path / "backup"
+    receipt = write_stage_checkpoint_bundle(
+        local_dir=local,
+        backup_dir=backup,
+        step=500,
+        raw_state={"weight": torch.tensor([1.0])},
+        continuous_ema_state={"weight": torch.tensor([2.0])},
+        stage_reset_ema_state={"weight": torch.tensor([3.0])},
+    )
+    assert receipt["step"] == 500
+    assert set(receipt["states"]) == {"raw", "continuous_ema", "stage_reset_ema"}
+    for state in receipt["states"].values():
+        assert state["local_sha256"] == state["backup_sha256"]
+        assert not state["local_path"].endswith(".tmp")
+
+    manifest = verify_stage_checkpoint_manifest(
+        receipts=[receipt],
+        required_steps=[500],
+        require_backup=True,
+    )
+    assert manifest["complete"] is True

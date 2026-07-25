@@ -198,6 +198,23 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_t1_lite_r": {
+        "path": "colab/STAGE5_PAPER2_T1_LITE_R_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_T1_LITE_R_CELL_VERSION",
+            "paper2_t1_lite_r_locked_v1",
+            "locked before launcher commit ae2793ac",
+            "seed 1 raw final-step primary",
+            "continuous EMA and stage-reset EMA passive shadows",
+            "atomic hashed stage states 500 2500 6500 8500 10500",
+            "gate4 exact 4608 forced stop plus 1024 forced continue",
+            "D0 build-only no labeling GPU no training",
+            "C track design-stage RG-12 unauthorized",
+            "tests/test_internal_think_token_t1_r_spec.py",
+            "colab/run_stage5_paper2_t1_lite_r.py",
+        ],
+        "env": {},
+    },
     "preflight": {
         "path": "colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.py",
         "markers": [
@@ -2936,6 +2953,24 @@ TARGETS = {
         ],
         "env": {
             "STAGE5_COCONUT_PREFLIGHT_DISCONNECT": "0",
+        },
+    },
+    "coconut_composite_numerics": {
+        "path": "colab/STAGE5_COCONUT_COMPOSITE_NUMERICS_CELL.py",
+        "markers": [
+            "STAGE5_COCONUT_COMPOSITE_NUMERICS_CELL_VERSION",
+            "coconut_composite_numerics_v1",
+            "recompute only sliced cache retired",
+            "fixed-weight fixed-direction epsilon stability sweep",
+            "original 10 percent derivative criterion unchanged",
+            "fp32 full bf16 and fp32-master bf16-autocast fixed prompts",
+            "per-example gradient cosine threshold 0.99 unchanged",
+            "no training no checkpoint RG-12 unauthorized",
+            "tests/test_coconut_composite_numerics.py",
+            "colab/run_stage5_coconut_composite_numerics.py",
+        ],
+        "env": {
+            "STAGE5_COCONUT_NUMERICS_DISCONNECT": "0",
         },
     },
     "oracle_intrablock_control": {

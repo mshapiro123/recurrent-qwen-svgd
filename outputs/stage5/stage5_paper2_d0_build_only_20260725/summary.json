@@ -1,0 +1,146 @@
+{
+  "checkpoints_written": 0,
+  "contract": {
+    "allowed": [
+      "schema_and_manifest_code",
+      "exact_match_and_signal_scorers",
+      "depth_mapping_logic",
+      "teacher_added_token_masking",
+      "synthetic_unit_fixtures",
+      "cpu_dry_run_receipt"
+    ],
+    "calibration": {
+      "comparison_fits": [
+        "linear_run_length",
+        "linear_log_kl",
+        "saturating"
+      ],
+      "flat_fallback": "first_loop_matching_teacher_else_depth4",
+      "forced_depths": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "graded_if_depth4_minus_depth1_at_least": 0.02,
+      "graded_minimum_bins": 2,
+      "plateau_within_depth4": 0.01,
+      "primary_fit": "monotone_isotonic",
+      "run_length_tail_excluded_above": 8,
+      "severity_bins": "teacher_to_drafter_kl_quartiles"
+    },
+    "corpus": {
+      "default_mix": {
+        "code": 0.5,
+        "general": 0.5
+      },
+      "document_disjoint": true,
+      "full_preimage_or_answer_truth_claim": false,
+      "partitions": [
+        "label_train",
+        "calibration",
+        "evaluation"
+      ],
+      "strata": [
+        "post_cutoff_fineweb_edu",
+        "stack_v2_permissive_license"
+      ]
+    },
+    "forbidden": [
+      "teacher_forward_labeling",
+      "corpus_download_or_selection_from_probe_results",
+      "gpu_labeling",
+      "optimizer_construction",
+      "training_step",
+      "checkpoint_write"
+    ],
+    "interpretation_bands": {
+      "minimal_below": 0.02,
+      "partial_below": 0.1,
+      "partial_from": 0.02,
+      "strong_from": 0.1
+    },
+    "kind": "paper2_speculative_depth_d0_build_contract",
+    "labeling_gpu_authorized": false,
+    "labels": {
+      "context": "teacher_forced_true_prefix",
+      "primary": "drafter_greedy_token_equals_teacher_greedy_token",
+      "signals": [
+        "drafter_token_rank_under_teacher",
+        "drafter_token_probability_under_teacher",
+        "teacher_to_drafter_kl",
+        "teacher_entropy",
+        "rejection_run_length"
+      ]
+    },
+    "models": {
+      "drafter": "T1-lite raw endpoint selected only after T1-lite-R review",
+      "ema_endpoints_excluded": true,
+      "teacher": "unresolved at markup: Qwen2.5-7B, Qwen2.5-14B, or calibration-only dual teacher"
+    },
+    "preregistration_locked": false,
+    "readouts": {
+      "acceptance_rate_uplift": true,
+      "compute_per_accepted_token": true,
+      "depth_recoverable_fraction": "self_halted_match_rate_minus_loop1_match_rate_on_rejections",
+      "expected_loops_per_token": true,
+      "per_stratum": true
+    },
+    "status": "build_only_no_labeling_no_training",
+    "training_authorized": false
+  },
+  "draft_unresolved_paths": [
+    "teacher_ladder.teacher_checkpoints",
+    "teacher_ladder.checkpoint_sha256",
+    "labeling.corpus_and_license",
+    "labeling.split_and_manifest_sha256",
+    "labeling.candidate_generation",
+    "labeling.answer_verification",
+    "labeling.acceptance_rule",
+    "labeling.disagreement_to_depth_mapping",
+    "distillation.objective",
+    "distillation.trainable_parameter_set",
+    "distillation.training_budget",
+    "distillation.seeds",
+    "evaluation.depth_recoverable_fraction",
+    "evaluation.acceptance_rate_uplift",
+    "evaluation.matched_baseline",
+    "evaluation.natural_surface_non_degradation_guardrail",
+    "evaluation.frozen_sets_and_hashes",
+    "decision.success_thresholds",
+    "decision.stopping_rules",
+    "decision.failure_interpretations"
+  ],
+  "kind": "stage5_paper2_d0_build_only",
+  "labeling_authorized": false,
+  "models_loaded": 0,
+  "optimizer_steps": 0,
+  "status": "build_complete_no_labeling_no_training",
+  "synthetic_fixture_receipts": {
+    "dynamic_first_match": 2,
+    "dynamic_never_match": 4,
+    "graded_mapping": {
+      "branch": "graded_floor_curve",
+      "graded_bins": [
+        "q1",
+        "q3"
+      ],
+      "targets": {
+        "q1": 3,
+        "q2": 1,
+        "q3": 3,
+        "q4": 1
+      }
+    },
+    "recoverable_fraction": {
+      "depth_recoverable_fraction": 0.14999999999999997,
+      "loop1_match_rate": 0.2,
+      "loop1_matches": 20,
+      "rejected_positions": 100,
+      "self_halted_match_rate": 0.35,
+      "self_halted_matches": 35
+    }
+  },
+  "teacher_forwards": 0,
+  "training_authorized": false
+}

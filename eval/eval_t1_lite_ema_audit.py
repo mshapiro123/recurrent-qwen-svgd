@@ -32,6 +32,7 @@ from training.train_unfrozen_recurrent import prepare_wrapper  # noqa: E402
 
 
 GROUPS = ("control_rows", "bridge", "recurrent_block")
+RECURRENT_LAYER_GROUPS = ("early_6_9", "middle_10_13", "late_14_17")
 INTERPOLATION_ALPHAS = (0.0, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0)
 STAGE_SUPPORT = {500: 1, 2500: 2, 6500: 4, 8500: 8}
 MIN_CHECKPOINT_BYTES = 1024
@@ -78,6 +79,23 @@ def parameter_group(name: str) -> str:
     if name.startswith("base_model.model.layers."):
         return "recurrent_block"
     return "other"
+
+
+def recurrent_layer_group(name: str) -> str | None:
+    prefix = "base_model.model.layers."
+    if not name.startswith(prefix):
+        return None
+    try:
+        layer = int(name[len(prefix) :].split(".", 1)[0])
+    except (TypeError, ValueError):
+        return None
+    if 6 <= layer <= 9:
+        return "early_6_9"
+    if 10 <= layer <= 13:
+        return "middle_10_13"
+    if 14 <= layer <= 17:
+        return "late_14_17"
+    return None
 
 
 def validate_state_pair(
@@ -165,6 +183,19 @@ def swap_group(
         raise ValueError(f"unknown parameter group: {group}")
     return {
         name: (donor[name] if parameter_group(name) == group else value)
+        for name, value in base.items()
+    }
+
+
+def swap_recurrent_layer_group(
+    base: dict[str, torch.Tensor],
+    donor: dict[str, torch.Tensor],
+    group: str,
+) -> dict[str, torch.Tensor]:
+    if group not in RECURRENT_LAYER_GROUPS:
+        raise ValueError(f"unknown recurrent layer group: {group}")
+    return {
+        name: (donor[name] if recurrent_layer_group(name) == group else value)
         for name, value in base.items()
     }
 
@@ -445,6 +476,18 @@ def main() -> int:
         del state
         gc.collect()
 
+    interpolation_by_depth = {
+        alpha: {
+            depth: {
+                "exact_selected_depth_correct": int(values["correct"]),
+                "total": int(values["total"]),
+                "accuracy": float(values["accuracy"]),
+            }
+            for depth, values in metrics["by_depth"].items()
+        }
+        for alpha, metrics in interpolation.items()
+    }
+
     swaps: dict[str, Any] = {}
     for group in GROUPS:
         raw_name = f"raw_with_ema_{group}"
@@ -487,6 +530,24 @@ def main() -> int:
         ),
     }
 
+    layer_group_swaps: dict[str, Any] = {}
+    for group in RECURRENT_LAYER_GROUPS:
+        raw_name = f"raw_with_ema_{group}"
+        ema_name = f"ema_with_raw_{group}"
+        layer_group_swaps[raw_name] = evaluate_variant(
+            raw_name,
+            swap_recurrent_layer_group(raw_state, ema_state, group),
+            screen_path,
+            max_loops=8,
+        )
+        layer_group_swaps[ema_name] = evaluate_variant(
+            ema_name,
+            swap_recurrent_layer_group(ema_state, raw_state, group),
+            screen_path,
+            max_loops=8,
+        )
+        gc.collect()
+
     summary = {
         "kind": "paper2_t1_lite_ema_posthoc_audit",
         "status": (
@@ -523,7 +584,9 @@ def main() -> int:
         "stage_checkpoint_coverage": checkpoint_coverage,
         "stage_boundaries": stage_results,
         "interpolation": interpolation,
+        "interpolation_by_depth": interpolation_by_depth,
         "group_swaps_screen": swaps,
+        "recurrent_layer_group_swaps_screen": layer_group_swaps,
         "full_pilot_confirmations": confirmations,
         "selected_confirmation_variants": {
             "strongest_ema_rescue": rescue_name,

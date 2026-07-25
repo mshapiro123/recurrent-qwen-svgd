@@ -8,6 +8,8 @@ from eval.eval_t1_lite_ema_audit import (
     parameter_group,
     scalar_ema_integrity,
     stage_checkpoint_coverage,
+    recurrent_layer_group,
+    swap_recurrent_layer_group,
     state_geometry,
     swap_group,
     validate_state_pair,
@@ -138,3 +140,25 @@ def test_checkpoint_file_usable_rejects_zero_byte_and_truncated_files(tmp_path) 
     assert checkpoint_file_usable(empty) is False
     assert checkpoint_file_usable(truncated) is False
     assert checkpoint_file_usable(valid_sized) is True
+
+
+def test_recurrent_layer_groups_partition_all_twelve_looped_layers() -> None:
+    assert recurrent_layer_group("base_model.model.layers.6.self_attn.q_proj.weight") == "early_6_9"
+    assert recurrent_layer_group("base_model.model.layers.11.mlp.down_proj.weight") == "middle_10_13"
+    assert recurrent_layer_group("base_model.model.layers.17.self_attn.o_proj.weight") == "late_14_17"
+    assert recurrent_layer_group("bridge.bridge_gate") is None
+
+
+def test_layer_group_swap_changes_only_requested_recurrent_layers() -> None:
+    raw = {
+        "base_model.model.layers.6.weight": torch.tensor([1.0]),
+        "base_model.model.layers.10.weight": torch.tensor([2.0]),
+        "base_model.model.layers.14.weight": torch.tensor([3.0]),
+        "bridge.weight": torch.tensor([4.0]),
+    }
+    ema = {name: value + 10 for name, value in raw.items()}
+    swapped = swap_recurrent_layer_group(raw, ema, "middle_10_13")
+    assert torch.equal(swapped["base_model.model.layers.6.weight"], raw["base_model.model.layers.6.weight"])
+    assert torch.equal(swapped["base_model.model.layers.10.weight"], ema["base_model.model.layers.10.weight"])
+    assert torch.equal(swapped["base_model.model.layers.14.weight"], raw["base_model.model.layers.14.weight"])
+    assert torch.equal(swapped["bridge.weight"], raw["bridge.weight"])

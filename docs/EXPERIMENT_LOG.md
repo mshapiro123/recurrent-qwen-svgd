@@ -1481,3 +1481,39 @@ Colab/Drive backups for selected runs.
   transferable to a Qwen2.5 drafter as text after retokenization, but the raw
   think-token IDs and embedding rows are not compatible. Receipt:
   `outputs/stage5/stage5_paper2_s1_tokenizer_audit_20260724/summary.json`.
+- 2026-07-25 registered T1-lite result: the final-step continuous-EMA primary
+  returned a registered negative with `202/1024` forced answers, `104/1024`
+  self-halted answers, and `128/1024` exact selections. The raw final-step
+  secondary achieved `967/1024` forced and self-halted answers and exact
+  selection on `1024/1024`; it missed the `975/1024` preservation floor by
+  eight rows. The full causal override sweep was exact on `5632/5632`.
+  Receipt: `outputs/stage5/stage5_paper2_t1_lite_20260724/summary.json`.
+- 2026-07-25 T1-lite EMA localization: reciprocal group transplants localized
+  the endpoint divergence to the recurrent block. EMA plus the raw block
+  restored `256/256` exact selection, while raw plus the EMA block reduced it
+  to `32/256`. Linear interpolation remained exact through alpha `0.25` and
+  collapsed by `0.50`. The EMA scalar recurrence passed to `1.43e-8`; the
+  registered negative is unchanged. Receipt:
+  `outputs/stage5/stage5_paper2_t1_lite_ema_audit_20260725/summary.json`.
+- 2026-07-25 T1-lite-R lock: seed 1 is authorized under the standing
+  replication rule. The only amended policy factor is raw final-step primary;
+  continuous EMA and stage-reset EMA at `0.999` are passive descriptive
+  shadows. All original data, curriculum, loss, optimizer, and four gates are
+  structurally unchanged. Atomic hashed raw and shadow states are required at
+  steps `500`, `2500`, `6500`, `8500`, and `10500`. Lock commit `ae2793ac`.
+- 2026-07-25 COCONUT composite no-training preflight: eight of eleven
+  contracts passed, including exact H=0 identity, horizontal and prompt
+  gradient reachability, adapter transparency, grid accounting, anomaly
+  detection, and checkpointing. RG-4 narrowly missed its one-epsilon
+  derivative tolerance, RG-5 rejected sliced-cache strict equivalence despite
+  gradient cosine `1.0`, and RG-11 measured bf16/fp32 gradient cosine
+  `0.983584 < 0.99`. Sliced cache is retired; the bounded numerical follow-up
+  is authorized; RG-12 remains unauthorized. Receipt:
+  `outputs/stage5/stage5_coconut_composite_rg1_rg11_20260725/summary.json`.
+- 2026-07-25 D0 build-only implementation: the updated draft, exact-match and
+  signal contract, depth-calibration branch, added-token probability masking,
+  and depth-recoverable-fraction scorer are implemented and unit-tested. The
+  CPU receipt records zero models loaded, teacher forwards, optimizer steps,
+  and checkpoints. D0 remains unlocked; GPU labeling and training are not
+  authorized. Receipt:
+  `outputs/stage5/stage5_paper2_d0_build_only_20260725/summary.json`.
