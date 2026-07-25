@@ -149,6 +149,113 @@ def test_recurrent_loop1_does_not_call_reentry_bridge():
     assert bridge.calls == []
 
 
+def test_internal_control_flag_off_is_exact():
+    torch.manual_seed(17)
+    wrapper = RecurrentQwenForCausalLM(TinyCausalLM().eval(), layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+    kwargs = dict(
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        max_loops=4,
+        use_cache=False,
+        return_dict=True,
+        return_loop_logits=True,
+    )
+
+    with torch.no_grad():
+        baseline = wrapper(**kwargs)
+        explicit_off = wrapper(
+            **kwargs,
+            internal_control_enabled=False,
+            internal_control_token_ids=(17, 18),
+            internal_control_readout_positions=torch.tensor([2]),
+        )
+
+    assert torch.equal(baseline.logits, explicit_off.logits)
+    assert torch.equal(baseline.loop_logits, explicit_off.loop_logits)
+    assert explicit_off.executed_loops is None
+
+
+def test_internal_control_forced_stop_and_continue_cause_execution():
+    torch.manual_seed(19)
+    wrapper = RecurrentQwenForCausalLM(TinyCausalLM().eval(), layer_split=LayerSplit(1, 3)).eval()
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+    kwargs = dict(
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        max_loops=5,
+        use_cache=False,
+        return_dict=True,
+        return_loop_logits=True,
+        internal_control_enabled=True,
+        internal_control_token_ids=(17, 18),
+        internal_control_readout_positions=torch.tensor([2]),
+    )
+
+    with torch.no_grad():
+        stopped = wrapper(
+            **kwargs,
+            internal_control_overrides={1: "continue", 2: "continue", 3: "stop"},
+        )
+        continued = wrapper(
+            **kwargs,
+            internal_control_overrides={
+                1: "continue",
+                2: "continue",
+                3: "continue",
+                4: "continue",
+                5: "continue",
+            },
+        )
+
+    assert stopped.executed_loops.tolist() == [3]
+    assert stopped.selected_loop_counts.tolist() == [3]
+    assert stopped.internal_control_decisions.tolist() == [[0, 0, 1]]
+    assert stopped.loop_logits.shape[2] == 3
+    assert torch.equal(stopped.logits, stopped.loop_logits[:, 0, -1])
+
+    assert continued.executed_loops.tolist() == [5]
+    assert continued.selected_loop_counts.tolist() == [5]
+    assert continued.internal_control_decisions.tolist() == [[0, 0, 0, 0, 0]]
+    assert continued.loop_logits.shape[2] == 5
+
+
+def test_internal_control_requires_batch_one_and_valid_token_ids():
+    wrapper = RecurrentQwenForCausalLM(TinyCausalLM().eval(), layer_split=LayerSplit(1, 3)).eval()
+    with torch.no_grad():
+        try:
+            wrapper(
+                input_ids=torch.tensor([[1, 2], [3, 4]]),
+                attention_mask=torch.ones((2, 2), dtype=torch.long),
+                max_loops=2,
+                internal_control_enabled=True,
+                internal_control_token_ids=(17, 18),
+                internal_control_readout_positions=torch.tensor([1, 1]),
+                return_dict=True,
+            )
+        except ValueError as exc:
+            assert "batch size 1" in str(exc)
+        else:
+            raise AssertionError("internal control accepted batch size 2")
+
+        try:
+            wrapper(
+                input_ids=torch.tensor([[1, 2]]),
+                attention_mask=torch.ones((1, 2), dtype=torch.long),
+                max_loops=2,
+                internal_control_enabled=True,
+                internal_control_token_ids=(18, 18),
+                internal_control_readout_positions=torch.tensor([1]),
+                return_dict=True,
+            )
+        except ValueError as exc:
+            assert "distinct" in str(exc)
+        else:
+            raise AssertionError("internal control accepted duplicate token IDs")
+
+
 def test_bridge_prelude_ablation_flag_off_is_exact_through_wrapper():
     torch.manual_seed(0)
     wrapper = RecurrentQwenForCausalLM(TinyCausalLM().eval(), layer_split=LayerSplit(1, 3)).eval()

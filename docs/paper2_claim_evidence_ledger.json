@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
   "program": "paper2_causal_control_of_recurrent_computation",
-  "status": "t0_passed_p0_authorized_t1_lite_and_d0_preregistrations_pending",
-  "canonical_date": "2026-07-23",
+  "status": "t1_lite_locked_before_training_launcher_ready_d0_unauthorized",
+  "canonical_date": "2026-07-24",
   "active_queue": {
     "program_goal": "useful_natural_data_model_in_qwen_series",
-    "p0": "authorized_uncitable_adapter_loss_calibration",
-    "t1": "full_block_t1_lite_actuator_qualification_not_locked",
-    "d0": "speculative_decoding_depth_recoverability_preregistration_drafting",
-    "paper_two_packaging": "deferred_until_post_d0_pilot"
+    "p0": "completed_uncitable_adapter_loss_calibration",
+    "t1": "full_block_t1_lite_locked_before_training_ready_to_launch",
+    "d0": "not_authorized_pending_t1_lite_verdict_and_separate_lock",
+    "paper_two_packaging": "deferred_until_t1_lite_and_any_later_authorized_d0_readout"
   },
   "claims": [
     {

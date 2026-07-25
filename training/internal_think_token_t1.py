@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import math
 import random
 from typing import Any, Iterable
 
@@ -287,6 +288,187 @@ def gate3_verdict(by_depth: dict[str, dict[str, Any]]) -> dict[str, Any]:
         "pooled_pass": pooled_pass,
         "minimum_correct_each_depth": 115,
         "minimum_correct_pooled": 922,
+    }
+
+
+def ordinary_least_squares_slope(points: Iterable[tuple[int, float]]) -> float:
+    """Return the OLS slope of value on step for one completed stage."""
+
+    values = [(float(step), float(value)) for step, value in points]
+    if len(values) < 2:
+        raise ValueError("stage liveness requires at least two control-loss points")
+    if any(not math.isfinite(step) or not math.isfinite(value) for step, value in values):
+        raise ValueError("stage liveness points must be finite")
+    mean_x = sum(step for step, _ in values) / len(values)
+    mean_y = sum(value for _, value in values) / len(values)
+    denominator = sum((step - mean_x) ** 2 for step, _ in values)
+    if denominator == 0.0:
+        raise ValueError("stage liveness requires distinct training steps")
+    return sum(
+        (step - mean_x) * (value - mean_y) for step, value in values
+    ) / denominator
+
+
+def stage_boundary_liveness_verdict(
+    control_loss_points: Iterable[tuple[int, float]],
+    *,
+    stop_correct: int,
+    stop_total: int,
+    flat_slope_floor: float = -1e-5,
+) -> dict[str, Any]:
+    """Apply the locked descriptive guardrail without creating a tuning channel."""
+
+    if int(stop_total) <= 0 or not 0 <= int(stop_correct) <= int(stop_total):
+        raise ValueError("stage liveness requires valid stop counts")
+    slope = ordinary_least_squares_slope(control_loss_points)
+    stop_recall = int(stop_correct) / int(stop_total)
+    flat = slope >= float(flat_slope_floor)
+    zero_stop = int(stop_correct) == 0
+    return {
+        "control_loss_ols_slope": slope,
+        "flat_slope_floor": float(flat_slope_floor),
+        "control_loss_flat": flat,
+        "stop_correct": int(stop_correct),
+        "stop_total": int(stop_total),
+        "stop_recall": stop_recall,
+        "stop_recall_exactly_zero": zero_stop,
+        "abort_for_diagnosis": flat and zero_stop,
+        "registered_attempt_consumed": not (flat and zero_stop),
+        "descriptive_only": True,
+    }
+
+
+def causal_override_schedule(required_depth: int) -> dict[str, Any]:
+    """Build the exact Gate-4 interventions for one row."""
+
+    depth = int(required_depth)
+    if depth < 1:
+        raise ValueError("required depth must be positive")
+    forced_stops = []
+    for stop_loop in range(1, depth + 1):
+        forced_stops.append(
+            {
+                "expected_executed_loops": stop_loop,
+                "overrides": {
+                    loop: "continue" for loop in range(1, stop_loop)
+                }
+                | {stop_loop: "stop"},
+            }
+        )
+    forced_continue = {
+        "expected_executed_loops": depth + 1,
+        "max_loops": depth + 1,
+        "overrides": {loop: "continue" for loop in range(1, depth + 1)},
+    }
+    return {"forced_stops": forced_stops, "forced_continue": forced_continue}
+
+
+def phase_t1_gate_verdict(
+    *,
+    forced_correct: int,
+    forced_total: int,
+    self_halted_correct: int,
+    self_halted_total: int,
+    selection_by_depth: dict[str, dict[str, Any]],
+    causal_exact: int,
+    causal_total: int,
+) -> dict[str, Any]:
+    """Score the four locked T1-lite gates without changing their thresholds."""
+
+    if int(forced_total) != 1024 or int(self_halted_total) != 1024:
+        raise ValueError("T1-lite gates 1 and 2 require the frozen 1,024 rows")
+    if int(causal_total) != 5632:
+        raise ValueError("T1-lite Gate 4 requires exactly 5,632 interventions")
+    gate1 = int(forced_correct) >= 975
+    forced_accuracy = int(forced_correct) / int(forced_total)
+    self_accuracy = int(self_halted_correct) / int(self_halted_total)
+    gate2 = self_accuracy >= forced_accuracy - 0.03
+    gate3 = gate3_verdict(selection_by_depth)
+    gate4 = int(causal_exact) == int(causal_total)
+    gates = {
+        "gate1_forced_chain_accuracy": {
+            "passed": gate1,
+            "correct": int(forced_correct),
+            "total": int(forced_total),
+            "minimum_correct": 975,
+        },
+        "gate2_self_halted_accuracy": {
+            "passed": gate2,
+            "correct": int(self_halted_correct),
+            "total": int(self_halted_total),
+            "forced_accuracy": forced_accuracy,
+            "absolute_margin": 0.03,
+        },
+        "gate3_control_selection": gate3,
+        "gate4_causal_override": {
+            "passed": gate4,
+            "exact": int(causal_exact),
+            "total": int(causal_total),
+            "required_exact": 5632,
+        },
+    }
+    return {
+        "gates": gates,
+        "all_four_passed": gate1 and gate2 and bool(gate3["passed"]) and gate4,
+        "verdict": (
+            "token_pathway_halting_positive"
+            if gate1 and gate2 and bool(gate3["passed"]) and gate4
+            else "registered_negative"
+        ),
+    }
+
+
+def phase_t1_seed_1_trigger(gate_verdict: dict[str, Any]) -> dict[str, Any]:
+    """Apply the locked Section-10 pass/near-threshold replication rule."""
+
+    gates = gate_verdict["gates"]
+    gate1 = gates["gate1_forced_chain_accuracy"]
+    gate2 = gates["gate2_self_halted_accuracy"]
+    gate3 = gates["gate3_control_selection"]
+    gate4 = gates["gate4_causal_override"]
+    forced_accuracy = int(gate1["correct"]) / int(gate1["total"])
+    self_accuracy = int(gate2["correct"]) / int(gate2["total"])
+    pooled_selection = int(gate3["pooled_correct"]) / int(gate3["pooled_total"])
+    all_other_than_gate1 = bool(gate2["passed"] and gate3["passed"] and gate4["passed"])
+    all_other_than_gate2 = bool(gate1["passed"] and gate3["passed"] and gate4["passed"])
+    near_gate3 = bool(
+        gate1["passed"]
+        and gate2["passed"]
+        and gate4["passed"]
+        and pooled_selection >= 0.85
+    )
+    near_gate1 = bool(
+        not gate1["passed"]
+        and all_other_than_gate1
+        and forced_accuracy >= (975 / 1024) - 0.015
+    )
+    gate2_deficit = forced_accuracy - self_accuracy
+    near_gate2 = bool(
+        not gate2["passed"]
+        and all_other_than_gate2
+        and gate2_deficit <= 0.045
+    )
+    full_pass = bool(gate_verdict["all_four_passed"])
+    reasons = [
+        name
+        for name, active in (
+            ("full_pass", full_pass),
+            ("near_gate3", near_gate3 and not full_pass),
+            ("near_gate1", near_gate1),
+            ("near_gate2", near_gate2),
+        )
+        if active
+    ]
+    return {
+        "triggered": bool(reasons),
+        "reasons": reasons,
+        "full_pass": full_pass,
+        "near_threshold": near_gate3 or near_gate1 or near_gate2,
+        "pooled_gate3_accuracy": pooled_selection,
+        "gate1_accuracy": forced_accuracy,
+        "gate2_accuracy": self_accuracy,
+        "gate2_deficit_from_forced": gate2_deficit,
+        "strong_negative_confirmation_not_automated": True,
     }
 
 

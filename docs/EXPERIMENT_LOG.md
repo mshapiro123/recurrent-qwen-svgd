@@ -1474,3 +1474,10 @@ Colab/Drive backups for selected runs.
   `docs/PHASE_T1_LITE_PREREGISTRATION_DRAFT4_20260724.md`. Machine contract:
   `outputs/stage5/stage5_paper2_t1_lite_preregistration_20260724/preregistration.json`.
   No registered training had occurred at lock.
+- 2026-07-24 Paper Two S1 tokenizer audit: the official Qwen2.5-0.5B and
+  Qwen3-0.6B tokenizer artifacts share all 151,643 model-vocabulary entries
+  with identical IDs. Qwen3 alone adds `<think>` at 151667, `</think>` at
+  151668, and a tool-response pair. Qwen3 teacher traces are therefore
+  transferable to a Qwen2.5 drafter as text after retokenization, but the raw
+  think-token IDs and embedding rows are not compatible. Receipt:
+  `outputs/stage5/stage5_paper2_s1_tokenizer_audit_20260724/summary.json`.

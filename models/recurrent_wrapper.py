@@ -77,6 +77,10 @@ class RecurrentQwenOutput:
     halting_probs: Optional[torch.Tensor] = None
     halting_weights: Optional[torch.Tensor] = None
     expected_loops: Optional[torch.Tensor] = None
+    executed_loops: Optional[torch.Tensor] = None
+    selected_loop_counts: Optional[torch.Tensor] = None
+    internal_control_decisions: Optional[torch.Tensor] = None
+    internal_control_margins: Optional[torch.Tensor] = None
     final_recurrent_hidden: Optional[torch.Tensor] = None
     past_key_values: Optional[Any] = None
     hidden_states: Optional[tuple[torch.Tensor, ...]] = None
@@ -482,6 +486,10 @@ class RecurrentQwenForCausalLM(nn.Module):
         oracle_intrablock_enabled: bool = False,
         oracle_intrablock_targets: Optional[torch.Tensor] = None,
         oracle_intrablock_force_identity: bool = False,
+        internal_control_enabled: bool = False,
+        internal_control_token_ids: Optional[tuple[int, int]] = None,
+        internal_control_readout_positions: Optional[torch.Tensor] = None,
+        internal_control_overrides: Optional[dict[int, str]] = None,
         logits_to_keep: int | torch.Tensor = 0,
         **_: Any,
     ) -> RecurrentQwenOutput | tuple[Any, ...]:
@@ -656,6 +664,29 @@ class RecurrentQwenForCausalLM(nn.Module):
         all_attentions.extend(attentions)
 
         batch_size = trajectory_batch_size or hidden_states.shape[0]
+        if internal_control_enabled:
+            if self.training or labels is not None or loop_labels is not None:
+                raise ValueError("internal token control is evaluation-only")
+            if batch_size != 1 or num_trajectories != 1:
+                raise ValueError("internal token control currently requires batch size 1 and one trajectory")
+            if internal_control_token_ids is None or len(internal_control_token_ids) != 2:
+                raise ValueError("internal token control requires (continue_id, stop_id)")
+            if internal_control_token_ids[0] == internal_control_token_ids[1]:
+                raise ValueError("internal control token IDs must be distinct")
+            if internal_control_readout_positions is None:
+                raise ValueError("internal token control requires one readout position")
+            if tuple(internal_control_readout_positions.shape) != (1,):
+                raise ValueError("internal control readout positions must have shape [1]")
+            position = int(internal_control_readout_positions.item())
+            if position < 0 or position >= hidden_states.shape[1]:
+                raise ValueError("internal control readout position is outside the input sequence")
+            if not self._keeps_full_logits(logits_to_keep):
+                raise ValueError("internal token control requires full-sequence logits")
+            for loop_number, decision in (internal_control_overrides or {}).items():
+                if not 1 <= int(loop_number) <= max_loops:
+                    raise ValueError("internal control override loop indices are 1-based and bounded by max_loops")
+                if decision not in {"continue", "stop"}:
+                    raise ValueError("internal control overrides must be 'continue' or 'stop'")
         flat_attention_mask = attention_mask
         flat_position_ids = position_ids
         flat_causal_mask = causal_mask
@@ -718,6 +749,8 @@ class RecurrentQwenForCausalLM(nn.Module):
         oracle_intrablock_loop_ratios: list[list[torch.Tensor]] = []
         svgd_stats_history: list[Any] = []
         loop_recurrent_states: list[torch.Tensor] = []
+        internal_control_decisions: list[torch.Tensor] = []
+        internal_control_margins: list[torch.Tensor] = []
         recurrent_state = hidden_states
         reentry_reference_rms = None
         if reentry_rescale_mode == "entry_rms" and max_loops > 1:
@@ -966,10 +999,38 @@ class RecurrentQwenForCausalLM(nn.Module):
                 per_loop_outcome_ce.append(outcome_ce)
                 per_loop_label_active.append(self._sequence_has_labels(labels_for_loop))
 
+            if internal_control_enabled:
+                continue_id, stop_id = (int(value) for value in internal_control_token_ids)
+                position = int(internal_control_readout_positions.item())
+                two_class = logits[0, position].index_select(
+                    dim=-1,
+                    index=torch.tensor(
+                        [continue_id, stop_id],
+                        device=logits.device,
+                        dtype=torch.long,
+                    ),
+                ).float()
+                override = (internal_control_overrides or {}).get(loop_idx + 1)
+                natural_margin = two_class[1] - two_class[0]
+                if override is not None:
+                    forced_index = 0 if override == "continue" else 1
+                    intervention = torch.full_like(two_class, -torch.finfo(two_class.dtype).max)
+                    intervention[forced_index] = torch.finfo(two_class.dtype).max
+                    two_class = intervention
+                decision = two_class.argmax(dim=-1)
+                internal_control_decisions.append(decision.view(1))
+                internal_control_margins.append(natural_margin.view(1))
+                if int(decision.item()) == 1:
+                    break
+
         halt_probs_tensor = torch.stack(halt_probs, dim=-1)
         halting_weights = pondernet_halting_probabilities(halt_probs_tensor)
         logits_stack = torch.stack(loop_logits, dim=1)
-        weighted_logits = (halting_weights[:, :, None, None] * logits_stack).sum(dim=1)
+        weighted_logits = (
+            logits_stack[:, -1]
+            if internal_control_enabled
+            else (halting_weights[:, :, None, None] * logits_stack).sum(dim=1)
+        )
 
         trajectory_logits = unflatten_trajectories(weighted_logits, batch_size, num_trajectories)
         output_logits = (
@@ -989,6 +1050,10 @@ class RecurrentQwenForCausalLM(nn.Module):
             "mean_expected_loops": expected_loops_by_traj.mean().detach(),
             "mean_halt_entropy": self._entropy(halting_weights).mean().detach(),
         }
+        if internal_control_enabled:
+            metrics["internal_control_executed_loops"] = torch.tensor(
+                float(len(loop_logits)), device=weighted_logits.device
+            )
 
         diversity = None
         if num_trajectories > 1:
@@ -1279,6 +1344,26 @@ class RecurrentQwenForCausalLM(nn.Module):
             halting_probs=halting_probs_by_traj,
             halting_weights=halting_weights_by_traj,
             expected_loops=expected_loops_by_traj,
+            executed_loops=(
+                torch.tensor([len(loop_logits)], device=weighted_logits.device, dtype=torch.long)
+                if internal_control_enabled
+                else None
+            ),
+            selected_loop_counts=(
+                torch.tensor([len(loop_logits)], device=weighted_logits.device, dtype=torch.long)
+                if internal_control_enabled
+                else None
+            ),
+            internal_control_decisions=(
+                torch.stack(internal_control_decisions, dim=-1)
+                if internal_control_enabled
+                else None
+            ),
+            internal_control_margins=(
+                torch.stack(internal_control_margins, dim=-1)
+                if internal_control_enabled
+                else None
+            ),
             final_recurrent_hidden=final_hidden,
             past_key_values=past_key_values if use_cache else None,
             hidden_states=tuple(hidden_history) if output_hidden_states else None,

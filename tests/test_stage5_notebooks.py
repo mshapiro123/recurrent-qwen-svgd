@@ -1191,6 +1191,28 @@ def test_paper2_t1_p0_target_is_pilot_only_and_resumable() -> None:
     assert '["git", "reset", "--hard", SYNC_REF]' in cell
 
 
+def test_paper2_t1_lite_target_is_locked_resumable_and_bounded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_T1_LITE_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_t1_lite.py").read_text(encoding="utf-8")
+    trainer = (ROOT / "training/run_internal_think_token_t1_lite.py").read_text(encoding="utf-8")
+    evaluator = (ROOT / "eval/eval_internal_think_token_t1_lite.py").read_text(encoding="utf-8")
+
+    assert '"paper2_t1_lite"' in bootstrap
+    assert "STAGE5_PAPER2_T1_LITE_CELL.py" in bootstrap
+    assert "locked_before_training commit 44459f30" in cell
+    assert "pretraining manifest amendment finalized 8ea5ce64" in cell
+    assert "allowed=(0, 2)" in runner
+    assert "D0 and C track remain unauthorized" in cell
+    assert '"d0_authorized": False' in runner
+    assert '"c_track_authorized": False' in runner
+    assert '"primary_weights": "final_step_ema"' in runner
+    assert "t1_progress_step_" in trainer
+    assert "backup_dir" in trainer
+    assert "causal_override_progress.jsonl" in runner
+    assert "required_total\": 5632" in evaluator
+
+
 def test_oracle_intrablock_control_target_is_locked() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
         encoding="utf-8"

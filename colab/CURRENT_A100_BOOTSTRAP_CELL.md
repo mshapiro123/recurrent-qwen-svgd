@@ -182,6 +182,22 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_t1_lite": {
+        "path": "colab/STAGE5_PAPER2_T1_LITE_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_T1_LITE_CELL_VERSION",
+            "paper2_t1_lite_locked_v1",
+            "locked_before_training commit 44459f30",
+            "pretraining manifest amendment finalized 8ea5ce64",
+            "10500 staged steps boundaries 500 2500 6500 8500",
+            "gate4 exact 4608 forced stop plus 1024 forced continue",
+            "final-step EMA primary raw secondary",
+            "D0 and C track remain unauthorized",
+            "tests/test_internal_think_token_t1_lite.py",
+            "colab/run_stage5_paper2_t1_lite.py",
+        ],
+        "env": {},
+    },
     "preflight": {
         "path": "colab/STAGE5_DRIVE_CHECKPOINT_PREFLIGHT_CELL.py",
         "markers": [

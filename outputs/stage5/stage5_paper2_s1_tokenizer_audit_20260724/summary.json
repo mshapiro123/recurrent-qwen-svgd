@@ -1,0 +1,43 @@
+{
+  "kind": "paper2_s1_tokenizer_ladder_audit",
+  "status": "finished",
+  "run_date": "2026-07-24",
+  "sources": {
+    "qwen2_5_tokenizer_config": "https://huggingface.co/Qwen/Qwen2.5-0.5B/raw/main/tokenizer_config.json",
+    "qwen2_5_tokenizer_json": "https://huggingface.co/Qwen/Qwen2.5-0.5B/resolve/main/tokenizer.json",
+    "qwen3_tokenizer_config": "https://huggingface.co/Qwen/Qwen3-0.6B/raw/main/tokenizer_config.json",
+    "qwen3_tokenizer_json": "https://huggingface.co/Qwen/Qwen3-0.6B/resolve/main/tokenizer.json"
+  },
+  "source_sha256": {
+    "qwen2_5_tokenizer_config": "cafa84a787d48ac9d1d3c4aba1055b89d39c894a8ba0ae8646ddfffd11781d3b",
+    "qwen2_5_tokenizer_json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+    "qwen3_tokenizer_config": "cd8ac499c25d6a503ef87cc67e7ad9366bc422bc8193047e1c2a30c804c228a5",
+    "qwen3_tokenizer_json": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+  },
+  "model_vocabulary": {
+    "qwen2_5_entries": 151643,
+    "qwen3_entries": 151643,
+    "shared_entries": 151643,
+    "shared_id_mismatches": 0,
+    "only_qwen2_5": 0,
+    "only_qwen3": 0
+  },
+  "added_tokens": {
+    "qwen2_5_count": 22,
+    "qwen3_count": 26,
+    "qwen3_only": {
+      "<think>": 151667,
+      "</think>": 151668,
+      "<tool_response>": 151669,
+      "</tool_response>": 151670
+    },
+    "shared_id_mismatches": 0
+  },
+  "teacher_drafter_compatibility": {
+    "raw_model_vocabulary_ids_compatible": true,
+    "think_token_ids_compatible": false,
+    "raw_token_sequence_interchangeable": false,
+    "text_trace_transfer_possible_after_retokenization": true,
+    "reading": "Qwen3 and Qwen2.5 share the base model vocabulary and IDs, but Qwen3 adds the literal think/end-think pair that Qwen2.5 lacks. A Qwen3 teacher trace can be transferred as text and retokenized, but its raw token IDs or control-token embedding rows cannot be reused directly by the Qwen2.5 drafter."
+  }
+}
