@@ -1,0 +1,221 @@
+{
+  "calibration": {
+    "control": {
+      "by_depth": {
+        "1": {
+          "accuracy": 1.0,
+          "correct": 64,
+          "total": 64
+        },
+        "2": {
+          "accuracy": 1.0,
+          "correct": 64,
+          "total": 64
+        },
+        "3": {
+          "accuracy": 1.0,
+          "correct": 64,
+          "total": 64
+        },
+        "4": {
+          "accuracy": 1.0,
+          "correct": 64,
+          "total": 64
+        },
+        "5": {
+          "accuracy": 0.328125,
+          "correct": 21,
+          "total": 64
+        },
+        "6": {
+          "accuracy": 0.0,
+          "correct": 0,
+          "total": 64
+        },
+        "7": {
+          "accuracy": 0.5,
+          "correct": 32,
+          "total": 64
+        },
+        "8": {
+          "accuracy": 1.0,
+          "correct": 64,
+          "total": 64
+        }
+      },
+      "continue_correct": 1792,
+      "continue_recall": 1.0,
+      "continue_total": 1792,
+      "exact_selected_depth_accuracy": 0.728515625,
+      "exact_selected_depth_correct": 373,
+      "exact_selected_depth_total": 512,
+      "exhausted_without_stop": 0,
+      "stop_correct": 373,
+      "stop_recall": 0.728515625,
+      "stop_total": 512
+    },
+    "exhausted": 0,
+    "forced_correct": 502,
+    "self_halted_correct": 375,
+    "total": 512
+  },
+  "causal_override": {
+    "status": "not_requested"
+  },
+  "checkpoint": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/train/t1_lite_r_stage_reset_ema_step_10500.pt",
+  "checkpoint_kind": "paper2_t1_lite_r_final_stage_reset_ema",
+  "descriptive_baselines": {
+    "answer_logit_margin": {
+      "calibration_correct": 68,
+      "calibration_total": 512,
+      "field": "answer_margins",
+      "gated_exact_correct": 131,
+      "gated_mean_selected_loops": 1.078125,
+      "gated_total": 1024,
+      "mode": "ge",
+      "threshold": 15.4375
+    },
+    "fixed_depth": {
+      "calibration_correct": 64,
+      "calibration_total": 512,
+      "gated_exact_correct": 128,
+      "gated_mean_selected_loops": 1.0,
+      "gated_total": 1024,
+      "selected_depth": 1
+    },
+    "hidden_state_update_norm": {
+      "calibration_correct": 128,
+      "calibration_total": 512,
+      "field": "hidden_update_rms",
+      "gated_exact_correct": 255,
+      "gated_mean_selected_loops": 2.7509765625,
+      "gated_total": 1024,
+      "mode": "le",
+      "threshold": 0.9182209968566895
+    },
+    "successive_output_kl": {
+      "calibration_correct": 64,
+      "calibration_total": 512,
+      "field": "successive_output_kl",
+      "gated_exact_correct": 128,
+      "gated_mean_selected_loops": 2.0,
+      "gated_total": 1024,
+      "mode": "le",
+      "threshold": 18.42068099975586
+    }
+  },
+  "extrapolation": {
+    "control": {
+      "by_depth": {
+        "10": {
+          "accuracy": 0.0,
+          "correct": 0,
+          "total": 128
+        },
+        "11": {
+          "accuracy": 0.0,
+          "correct": 0,
+          "total": 128
+        },
+        "12": {
+          "accuracy": 0.0,
+          "correct": 0,
+          "total": 128
+        },
+        "13": {
+          "accuracy": 0.0,
+          "correct": 0,
+          "total": 128
+        },
+        "14": {
+          "accuracy": 0.0,
+          "correct": 0,
+          "total": 128
+        },
+        "9": {
+          "accuracy": 0.0,
+          "correct": 0,
+          "total": 128
+        }
+      },
+      "continue_correct": 5073,
+      "continue_recall": 0.6290922619047619,
+      "continue_total": 8064,
+      "exact_selected_depth_accuracy": 0.0,
+      "exact_selected_depth_correct": 0,
+      "exact_selected_depth_total": 768,
+      "exhausted_without_stop": 0,
+      "stop_correct": 768,
+      "stop_recall": 1.0,
+      "stop_total": 768
+    },
+    "exhausted": 0,
+    "forced_correct": 406,
+    "self_halted_correct": 9,
+    "total": 768
+  },
+  "final_step": 10500,
+  "gated": {
+    "control": {
+      "by_depth": {
+        "1": {
+          "accuracy": 1.0,
+          "correct": 128,
+          "total": 128
+        },
+        "2": {
+          "accuracy": 1.0,
+          "correct": 128,
+          "total": 128
+        },
+        "3": {
+          "accuracy": 1.0,
+          "correct": 128,
+          "total": 128
+        },
+        "4": {
+          "accuracy": 1.0,
+          "correct": 128,
+          "total": 128
+        },
+        "5": {
+          "accuracy": 0.2890625,
+          "correct": 37,
+          "total": 128
+        },
+        "6": {
+          "accuracy": 0.0,
+          "correct": 0,
+          "total": 128
+        },
+        "7": {
+          "accuracy": 0.421875,
+          "correct": 54,
+          "total": 128
+        },
+        "8": {
+          "accuracy": 1.0,
+          "correct": 128,
+          "total": 128
+        }
+      },
+      "continue_correct": 3584,
+      "continue_recall": 1.0,
+      "continue_total": 3584,
+      "exact_selected_depth_accuracy": 0.7138671875,
+      "exact_selected_depth_correct": 731,
+      "exact_selected_depth_total": 1024,
+      "exhausted_without_stop": 0,
+      "stop_correct": 731,
+      "stop_recall": 0.7138671875,
+      "stop_total": 1024
+    },
+    "exhausted": 0,
+    "forced_correct": 1003,
+    "self_halted_correct": 741,
+    "total": 1024
+  },
+  "kind": "paper2_t1_lite_evaluation",
+  "registered_gates": null,
+  "status": "finished"
+}
