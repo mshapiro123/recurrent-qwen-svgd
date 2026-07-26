@@ -1,0 +1,245 @@
+{
+  "artifacts": {
+    "calibration": {
+      "document_id_sha256": "830fe8b2efd93588a9e853c86c4ad20d2cf0956a385888cf5ba284424fb8092b",
+      "documents": 142,
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/calibration.jsonl",
+      "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/calibration.jsonl",
+      "rows": 456,
+      "sha256": "57a854f303c410004d7a592753a1bfbc8f8efe9c5502fb6d46dce733e8dadc17",
+      "tokens": 200000
+    },
+    "code_calibration": {
+      "document_id_sha256": "34014ad1465f691ad87b5d36cc3e4e1d5eef238ced9cfacfee6991b4ddcbe2b9",
+      "documents": 55,
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/code_calibration.jsonl",
+      "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/code_calibration.jsonl",
+      "rows": 218,
+      "sha256": "32ab137badac8c77156c52d49c3ab261f2c241187ec932875d67fa578d243ef7",
+      "tokens": 100000
+    },
+    "code_evaluation": {
+      "document_id_sha256": "1a9fe81320096800edfef6225af414bbc09668a08b54d2254b2004d61bf5a0fb",
+      "documents": 72,
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/code_evaluation.jsonl",
+      "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/code_evaluation.jsonl",
+      "rows": 232,
+      "sha256": "9378a3127a939591e1ed3de4d7038d43c5c1e47a87787f1d42aaf63f4c50fe74",
+      "tokens": 100000
+    },
+    "code_label_train": {
+      "document_id_sha256": "ff3eefbd73413f7a7988fcdecdcb6be167c1d6a9c3be0be53561e148d9aa6009",
+      "documents": 316,
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/code_label_train.jsonl",
+      "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/code_label_train.jsonl",
+      "rows": 1715,
+      "sha256": "430a44d722fe4a843775b75b43200074cb861dfe7d50a58a93a96722d39b3f07",
+      "tokens": 800000
+    },
+    "density_code": {
+      "document_id_sha256": "486982fa2584f836bff141438ece9cee051f15b09c3078e29850a51269b0f4a7",
+      "documents": 52,
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/density_code_100k.jsonl",
+      "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/density_code_100k.jsonl",
+      "rows": 223,
+      "sha256": "787cab75441227410fe56403d21bb5b4927912e700f7253f6cd8eea1bb39c291",
+      "tokens": 100000
+    },
+    "density_general": {
+      "document_id_sha256": "684b30ee3c7b326ab1c97d96ebe0f2134abb9edaf2cbefb17d502cdf6a5c9385",
+      "documents": 116,
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/density_general_100k.jsonl",
+      "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/density_general_100k.jsonl",
+      "rows": 250,
+      "sha256": "f3c86b7038a3e6d1085c1e3bf5242111ae7ce78fb29223c0675c9539de1e2d91",
+      "tokens": 100000
+    },
+    "evaluation": {
+      "document_id_sha256": "7e563d9b659207b2988096f7594a3d86563deff7201015d4689660f1ffbd798d",
+      "documents": 162,
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/evaluation.jsonl",
+      "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/evaluation.jsonl",
+      "rows": 471,
+      "sha256": "2e9892322485921c801287f414b4a732e48c7dc39a1707eba34936821c8a94dd",
+      "tokens": 200000
+    },
+    "general_calibration": {
+      "document_id_sha256": "5c1c42f043f746f4bcaa6b366542ea58b8f7d20565e10c38efd34857c12cf6b2",
+      "documents": 87,
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/general_calibration.jsonl",
+      "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/general_calibration.jsonl",
+      "rows": 238,
+      "sha256": "28fea31450f6acd2489ab1aaacf45f59bcbfa6276f742e352c2277f9feb7c4cb",
+      "tokens": 100000
+    },
+    "general_evaluation": {
+      "document_id_sha256": "9b52876c497b0e13022cd59563aa9179d034f4bd5c6e4ec4a20aeb4e7de50738",
+      "documents": 90,
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/general_evaluation.jsonl",
+      "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/general_evaluation.jsonl",
+      "rows": 239,
+      "sha256": "e517a72984673dce16bc9fd75c2fcf9be762ea39625a275450ad9d943a87d264",
+      "tokens": 100000
+    },
+    "general_label_train": {
+      "document_id_sha256": "150bd03151695c72824661c6386708a4408d3c7d0aee8cb03ea2e4739adf6d83",
+      "documents": 737,
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/general_label_train.jsonl",
+      "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/general_label_train.jsonl",
+      "rows": 1895,
+      "sha256": "8c5258789f356ffe7ffbfbb24a478e96a01842f13fa8204daa70d64cef254ca7",
+      "tokens": 800000
+    },
+    "in_era_contrast": {
+      "document_id_sha256": "bf6913253fb6f583625a88412dbcf2deb4aa79778a9446bf96b1346a8a245fe6",
+      "documents": 84,
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/in_era_contrast_100k.jsonl",
+      "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/in_era_contrast_100k.jsonl",
+      "rows": 232,
+      "sha256": "b98b74745a0518cb3b9114b7139705428e902c993011a11b3f2a7a6dd5f438db",
+      "tokens": 100000
+    },
+    "label_train": {
+      "document_id_sha256": "6832a639371fc3ddea17fb7991c5741858f88b8a7cb45d47ba596ac7b7b3efc5",
+      "documents": 1053,
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/label_train.jsonl",
+      "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/label_train.jsonl",
+      "rows": 3610,
+      "sha256": "5e49c232bff57f8c992492bdc226618891f264118d84c771c00fb9325798c7bf",
+      "tokens": 1600000
+    },
+    "pilot_256": {
+      "document_id_sha256": "a574514e09170880ac5dc2d764d2c3f9ec817530e1c467df7bc4ac90d4144c1c",
+      "documents": 173,
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/pilot_256.jsonl",
+      "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/pilot_256.jsonl",
+      "rows": 256,
+      "sha256": "806bfb62711bc7bfc8cf4fc0c6122ec0f59ee03f6fcafa039d7c82eacef5f926",
+      "tokens": 116617
+    }
+  },
+  "code_corpus": {
+    "content_store": "huggingface_direct_text",
+    "dataset": "bigcode/the-stack-smol",
+    "lineage": "Stack_v1",
+    "provenance_period": "in_pretraining_era",
+    "revision": "4a6938ce94446f324c6629e7de00ac591710044b",
+    "terms_contract": {
+      "latest_main_must_equal_pinned_revision_at_lock": true,
+      "per_file_license_repository_and_path_retained": true,
+      "public_git_contains_aggregate_receipts_only": true,
+      "raw_or_tokenized_rows_private_drive_only": true,
+      "raw_source_execution_forbidden": true
+    }
+  },
+  "dataset_revisions": {
+    "drafter": "7ae557604adf67be50417f59c2c2f167def9a775",
+    "fineweb": "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9",
+    "stack_smol_main": "4a6938ce94446f324c6629e7de00ac591710044b",
+    "stack_smol_pinned": "4a6938ce94446f324c6629e7de00ac591710044b",
+    "teacher_14b": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+    "teacher_7b": "a09a35458c702b33eeacc393d103063234e8bc28"
+  },
+  "density_documents_excluded_from_partitions": true,
+  "document_counts": {
+    "calibration": 142,
+    "evaluation": 162,
+    "label_train": 1053
+  },
+  "document_disjoint": true,
+  "fineweb_dump": "CC-MAIN-2025-26",
+  "kind": "paper2_d0_frozen_corpus_manifest",
+  "mix_decision": {
+    "densities_per_1000_tokens": {
+      "code": 175.78199384627717,
+      "general": 336.97243107769424
+    },
+    "minimum_to_maximum_density_ratio": 0.521650964988729,
+    "mix": {
+      "code": 0.5,
+      "general": 0.5
+    },
+    "rule": "balanced_density_and_domain_coverage"
+  },
+  "overlaps": {},
+  "private_drive_artifacts_verified": {
+    "calibration": {
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/calibration.jsonl",
+      "sha256": "57a854f303c410004d7a592753a1bfbc8f8efe9c5502fb6d46dce733e8dadc17",
+      "tokens": 200000
+    },
+    "code_calibration": {
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/code_calibration.jsonl",
+      "sha256": "32ab137badac8c77156c52d49c3ab261f2c241187ec932875d67fa578d243ef7",
+      "tokens": 100000
+    },
+    "code_evaluation": {
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/code_evaluation.jsonl",
+      "sha256": "9378a3127a939591e1ed3de4d7038d43c5c1e47a87787f1d42aaf63f4c50fe74",
+      "tokens": 100000
+    },
+    "code_label_train": {
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/code_label_train.jsonl",
+      "sha256": "430a44d722fe4a843775b75b43200074cb861dfe7d50a58a93a96722d39b3f07",
+      "tokens": 800000
+    },
+    "density_code": {
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/density_code_100k.jsonl",
+      "sha256": "787cab75441227410fe56403d21bb5b4927912e700f7253f6cd8eea1bb39c291",
+      "tokens": 100000
+    },
+    "density_general": {
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/density_general_100k.jsonl",
+      "sha256": "f3c86b7038a3e6d1085c1e3bf5242111ae7ce78fb29223c0675c9539de1e2d91",
+      "tokens": 100000
+    },
+    "evaluation": {
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/evaluation.jsonl",
+      "sha256": "2e9892322485921c801287f414b4a732e48c7dc39a1707eba34936821c8a94dd",
+      "tokens": 200000
+    },
+    "general_calibration": {
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/general_calibration.jsonl",
+      "sha256": "28fea31450f6acd2489ab1aaacf45f59bcbfa6276f742e352c2277f9feb7c4cb",
+      "tokens": 100000
+    },
+    "general_evaluation": {
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/general_evaluation.jsonl",
+      "sha256": "e517a72984673dce16bc9fd75c2fcf9be762ea39625a275450ad9d943a87d264",
+      "tokens": 100000
+    },
+    "general_label_train": {
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/general_label_train.jsonl",
+      "sha256": "8c5258789f356ffe7ffbfbb24a478e96a01842f13fa8204daa70d64cef254ca7",
+      "tokens": 800000
+    },
+    "in_era_contrast": {
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/in_era_contrast_100k.jsonl",
+      "sha256": "b98b74745a0518cb3b9114b7139705428e902c993011a11b3f2a7a6dd5f438db",
+      "tokens": 100000
+    },
+    "label_train": {
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/label_train.jsonl",
+      "sha256": "5e49c232bff57f8c992492bdc226618891f264118d84c771c00fb9325798c7bf",
+      "tokens": 1600000
+    },
+    "pilot_256": {
+      "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/pilot_256.jsonl",
+      "sha256": "806bfb62711bc7bfc8cf4fc0c6122ec0f59ee03f6fcafa039d7c82eacef5f926",
+      "tokens": 116617
+    }
+  },
+  "status": "frozen_before_labeling",
+  "token_quotas": {
+    "code": {
+      "calibration": 100000,
+      "evaluation": 100000,
+      "label_train": 800000
+    },
+    "general": {
+      "calibration": 100000,
+      "evaluation": 100000,
+      "label_train": 800000
+    }
+  }
+}

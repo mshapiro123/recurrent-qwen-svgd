@@ -1,0 +1,132 @@
+{
+  "contract": {
+    "corpus": {
+      "density_tokens_per_stratum": 100000,
+      "fineweb": {
+        "dataset": "HuggingFaceFW/fineweb-edu",
+        "dump": "CC-MAIN-2025-26",
+        "in_era_dump": "CC-MAIN-2021-49",
+        "revision": "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9"
+      },
+      "in_era_contrast_tokens": 100000,
+      "mix_rule": {
+        "balanced": {
+          "code": 0.5,
+          "general": 0.5
+        },
+        "balanced_when_minimum_density_ratio_at_least": 0.5,
+        "density_skewed": {
+          "higher_density": 0.6,
+          "lower_density": 0.4
+        },
+        "domain_floor": 0.4
+      },
+      "partition_fractions": {
+        "calibration": 0.1,
+        "evaluation": 0.1,
+        "label_train": 0.8
+      },
+      "partition_seed": 20260725,
+      "pilot_rows": 256,
+      "pilot_seed": 20260726,
+      "stack_smol": {
+        "aws_credentials_required": false,
+        "content_store": "huggingface_direct_text",
+        "dataset": "bigcode/the-stack-smol",
+        "language_directories": {
+          "c": "C",
+          "c++": "C++",
+          "c-sharp": "C#",
+          "go": "Go",
+          "java": "Java",
+          "javascript": "JavaScript",
+          "python": "Python",
+          "rust": "Rust",
+          "shell": "Shell",
+          "typescript": "TypeScript"
+        },
+        "languages": [
+          "C",
+          "C#",
+          "C++",
+          "Go",
+          "Java",
+          "JavaScript",
+          "Python",
+          "Rust",
+          "Shell",
+          "TypeScript"
+        ],
+        "license_filter": "The_Stack_permissive_source_with_nonempty_per_file_license_metadata",
+        "lineage": "Stack_v1",
+        "provenance_period": "in_pretraining_era",
+        "revision": "4a6938ce94446f324c6629e7de00ac591710044b",
+        "silent_substitution_forbidden": true,
+        "software_heritage_raw_api_forbidden": true
+      },
+      "total_labeled_tokens": 2000000
+    },
+    "density_probe_authorized": true,
+    "drafter_checkpoint_sha256": "93d2e5f9a941bbe79a0b2fc3f9bf43d582bf054990c14b1a93ff67024140062d",
+    "forbidden": [
+      "labeling_proper",
+      "fourteen_b_teacher_forward",
+      "optimizer_construction",
+      "training_step",
+      "trained_checkpoint_write"
+    ],
+    "governing_document": "docs/PHASE_D0_PREREGISTRATION_DRAFT7_20260726.md",
+    "governing_document_handoff_sha256": "c5318c23e078038cf9ef5cf63d042848391b0dfb2df717c4b748768cb26845bf",
+    "governing_document_sha256": "5606f193902b9faae88891cfb7309f8242e4704dd916fb37b8f23b7a9e9cea22",
+    "kind": "paper2_speculative_depth_d0_prelock_contract",
+    "labeling_gpu_authorized": false,
+    "status": "density_probe_and_partition_freeze_only",
+    "teachers": {
+      "calibration_secondary": {
+        "model": "Qwen/Qwen2.5-14B-Instruct",
+        "revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8"
+      },
+      "density_probe": {
+        "model": "Qwen/Qwen2.5-7B-Instruct",
+        "revision": "a09a35458c702b33eeacc393d103063234e8bc28"
+      },
+      "labeling_primary": {
+        "model": "Qwen/Qwen2.5-7B-Instruct",
+        "revision": "a09a35458c702b33eeacc393d103063234e8bc28"
+      }
+    },
+    "training_authorized": false
+  },
+  "data_jsonl": [
+    "/content/recurrent-qwen-svgd/outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/density_general_100k.jsonl",
+    "/content/recurrent-qwen-svgd/outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/density_code_100k.jsonl"
+  ],
+  "data_sha256": {
+    "/content/recurrent-qwen-svgd/outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/density_code_100k.jsonl": "787cab75441227410fe56403d21bb5b4927912e700f7253f6cd8eea1bb39c291",
+    "/content/recurrent-qwen-svgd/outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/density_general_100k.jsonl": "f3c86b7038a3e6d1085c1e3bf5242111ae7ce78fb29223c0675c9539de1e2d91"
+  },
+  "drafter_checkpoint_sha256": "93d2e5f9a941bbe79a0b2fc3f9bf43d582bf054990c14b1a93ff67024140062d",
+  "kind": "paper2_d0_prelock_density_probe",
+  "models_used_for_labeling_proper": false,
+  "optimizer_steps": 0,
+  "status": "finished_uncitable_prelock_probe",
+  "strata": {
+    "code": {
+      "disagreements": 17539,
+      "input_tokens": 100000,
+      "prediction_positions": 99777,
+      "rejection_density_per_1000_tokens": 175.78199384627717,
+      "rows": 223
+    },
+    "general": {
+      "disagreements": 33613,
+      "input_tokens": 100000,
+      "prediction_positions": 99750,
+      "rejection_density_per_1000_tokens": 336.97243107769424,
+      "rows": 250
+    }
+  },
+  "teacher_model": "Qwen/Qwen2.5-7B-Instruct",
+  "teacher_reloaded_after_labeling": false,
+  "teacher_revision": "a09a35458c702b33eeacc393d103063234e8bc28"
+}

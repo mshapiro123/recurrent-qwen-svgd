@@ -1,0 +1,25 @@
+{
+  "data_manifest": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data_manifest.json",
+  "drafter_checkpoint_sha256": "93d2e5f9a941bbe79a0b2fc3f9bf43d582bf054990c14b1a93ff67024140062d",
+  "kind": "stage5_paper2_d0_preregistration",
+  "labeling_proper_started": false,
+  "mix_decision": {
+    "densities_per_1000_tokens": {
+      "code": 175.78199384627717,
+      "general": 336.97243107769424
+    },
+    "minimum_to_maximum_density_ratio": 0.521650964988729,
+    "mix": {
+      "code": 0.5,
+      "general": 0.5
+    },
+    "rule": "balanced_density_and_domain_coverage"
+  },
+  "post_lock_launcher_exists": false,
+  "preregistration": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/preregistration.json",
+  "private_drive_artifact_count_verified": 13,
+  "publish_recovered_without_model_rerun": true,
+  "run_id": "stage5_paper2_d0_preregistration_20260726",
+  "status": "locked_before_labeling",
+  "training_started": false
+}

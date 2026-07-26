@@ -1,0 +1,27 @@
+{
+  "aws_used": false,
+  "content_characters": 981,
+  "content_sha256": "13fc0eb9ff15f8388132fcf4b3bfa6f21ee8f4d7fe16ccf7efb4de515c1cba70",
+  "dataset": "bigcode/the-stack-smol",
+  "document_id": "stacksmol:54bcf422fa2321d63f7c7f8c5499c0e3d75944a92b3b07bfd09b329758985185",
+  "metadata": {
+    "dataset": "bigcode/the-stack-smol",
+    "language": "C",
+    "language_directory": "c",
+    "licenses": [
+      "MIT"
+    ],
+    "lineage": "Stack_v1",
+    "path": "src/util/string.h",
+    "provenance_period": "in_pretraining_era",
+    "repository_name": "rebitcoin/rebitcoin",
+    "revision": "4a6938ce94446f324c6629e7de00ac591710044b",
+    "size": 981
+  },
+  "raw_source_executed": false,
+  "revision": "4a6938ce94446f324c6629e7de00ac591710044b",
+  "software_heritage_api_used": false,
+  "stack_main_equals_pinned_at_recovery": true,
+  "status": "direct_text_access_verified_before_model_load",
+  "storage_scope": "private_drive_token_ids_with_per_file_provenance"
+}

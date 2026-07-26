@@ -1,0 +1,446 @@
+{
+  "calibration": {
+    "comparison_fits": [
+      "linear_run_length",
+      "linear_log_kl",
+      "saturating"
+    ],
+    "flat_fallback": "first_loop_matching_teacher_else_depth4",
+    "forced_measurement_depths": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "graded_minimum_bins": 2,
+    "graded_minimum_gain": 0.02,
+    "plateau_tolerance": 0.01,
+    "primary_fit": "monotone_isotonic",
+    "rejection_run_length_cap": 8,
+    "severity_bins": "teacher_to_plain_drafter_kl_quartiles",
+    "training_target_cap": 4
+  },
+  "corpus": {
+    "density_tokens_per_stratum": 100000,
+    "fineweb": {
+      "dataset": "HuggingFaceFW/fineweb-edu",
+      "dump": "CC-MAIN-2025-26",
+      "in_era_dump": "CC-MAIN-2021-49",
+      "revision": "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9"
+    },
+    "in_era_contrast_tokens": 100000,
+    "mix_rule": {
+      "balanced": {
+        "code": 0.5,
+        "general": 0.5
+      },
+      "balanced_when_minimum_density_ratio_at_least": 0.5,
+      "density_skewed": {
+        "higher_density": 0.6,
+        "lower_density": 0.4
+      },
+      "domain_floor": 0.4
+    },
+    "partition_fractions": {
+      "calibration": 0.1,
+      "evaluation": 0.1,
+      "label_train": 0.8
+    },
+    "partition_seed": 20260725,
+    "pilot_rows": 256,
+    "pilot_seed": 20260726,
+    "stack_smol": {
+      "aws_credentials_required": false,
+      "content_store": "huggingface_direct_text",
+      "dataset": "bigcode/the-stack-smol",
+      "language_directories": {
+        "c": "C",
+        "c++": "C++",
+        "c-sharp": "C#",
+        "go": "Go",
+        "java": "Java",
+        "javascript": "JavaScript",
+        "python": "Python",
+        "rust": "Rust",
+        "shell": "Shell",
+        "typescript": "TypeScript"
+      },
+      "languages": [
+        "C",
+        "C#",
+        "C++",
+        "Go",
+        "Java",
+        "JavaScript",
+        "Python",
+        "Rust",
+        "Shell",
+        "TypeScript"
+      ],
+      "license_filter": "The_Stack_permissive_source_with_nonempty_per_file_license_metadata",
+      "lineage": "Stack_v1",
+      "provenance_period": "in_pretraining_era",
+      "revision": "4a6938ce94446f324c6629e7de00ac591710044b",
+      "silent_substitution_forbidden": true,
+      "software_heritage_raw_api_forbidden": true,
+      "terms_contract": {
+        "latest_main_must_equal_pinned_revision_at_lock": true,
+        "per_file_license_repository_and_path_retained": true,
+        "public_git_contains_aggregate_receipts_only": true,
+        "raw_or_tokenized_rows_private_drive_only": true,
+        "raw_source_execution_forbidden": true
+      }
+    },
+    "total_labeled_tokens": 2000000
+  },
+  "corpus_manifest": {
+    "artifacts": {
+      "calibration": {
+        "document_id_sha256": "830fe8b2efd93588a9e853c86c4ad20d2cf0956a385888cf5ba284424fb8092b",
+        "documents": 142,
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/calibration.jsonl",
+        "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/calibration.jsonl",
+        "rows": 456,
+        "sha256": "57a854f303c410004d7a592753a1bfbc8f8efe9c5502fb6d46dce733e8dadc17",
+        "tokens": 200000
+      },
+      "code_calibration": {
+        "document_id_sha256": "34014ad1465f691ad87b5d36cc3e4e1d5eef238ced9cfacfee6991b4ddcbe2b9",
+        "documents": 55,
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/code_calibration.jsonl",
+        "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/code_calibration.jsonl",
+        "rows": 218,
+        "sha256": "32ab137badac8c77156c52d49c3ab261f2c241187ec932875d67fa578d243ef7",
+        "tokens": 100000
+      },
+      "code_evaluation": {
+        "document_id_sha256": "1a9fe81320096800edfef6225af414bbc09668a08b54d2254b2004d61bf5a0fb",
+        "documents": 72,
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/code_evaluation.jsonl",
+        "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/code_evaluation.jsonl",
+        "rows": 232,
+        "sha256": "9378a3127a939591e1ed3de4d7038d43c5c1e47a87787f1d42aaf63f4c50fe74",
+        "tokens": 100000
+      },
+      "code_label_train": {
+        "document_id_sha256": "ff3eefbd73413f7a7988fcdecdcb6be167c1d6a9c3be0be53561e148d9aa6009",
+        "documents": 316,
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/code_label_train.jsonl",
+        "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/code_label_train.jsonl",
+        "rows": 1715,
+        "sha256": "430a44d722fe4a843775b75b43200074cb861dfe7d50a58a93a96722d39b3f07",
+        "tokens": 800000
+      },
+      "density_code": {
+        "document_id_sha256": "486982fa2584f836bff141438ece9cee051f15b09c3078e29850a51269b0f4a7",
+        "documents": 52,
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/density_code_100k.jsonl",
+        "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/density_code_100k.jsonl",
+        "rows": 223,
+        "sha256": "787cab75441227410fe56403d21bb5b4927912e700f7253f6cd8eea1bb39c291",
+        "tokens": 100000
+      },
+      "density_general": {
+        "document_id_sha256": "684b30ee3c7b326ab1c97d96ebe0f2134abb9edaf2cbefb17d502cdf6a5c9385",
+        "documents": 116,
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/density_general_100k.jsonl",
+        "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/density_general_100k.jsonl",
+        "rows": 250,
+        "sha256": "f3c86b7038a3e6d1085c1e3bf5242111ae7ce78fb29223c0675c9539de1e2d91",
+        "tokens": 100000
+      },
+      "evaluation": {
+        "document_id_sha256": "7e563d9b659207b2988096f7594a3d86563deff7201015d4689660f1ffbd798d",
+        "documents": 162,
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/evaluation.jsonl",
+        "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/evaluation.jsonl",
+        "rows": 471,
+        "sha256": "2e9892322485921c801287f414b4a732e48c7dc39a1707eba34936821c8a94dd",
+        "tokens": 200000
+      },
+      "general_calibration": {
+        "document_id_sha256": "5c1c42f043f746f4bcaa6b366542ea58b8f7d20565e10c38efd34857c12cf6b2",
+        "documents": 87,
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/general_calibration.jsonl",
+        "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/general_calibration.jsonl",
+        "rows": 238,
+        "sha256": "28fea31450f6acd2489ab1aaacf45f59bcbfa6276f742e352c2277f9feb7c4cb",
+        "tokens": 100000
+      },
+      "general_evaluation": {
+        "document_id_sha256": "9b52876c497b0e13022cd59563aa9179d034f4bd5c6e4ec4a20aeb4e7de50738",
+        "documents": 90,
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/general_evaluation.jsonl",
+        "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/general_evaluation.jsonl",
+        "rows": 239,
+        "sha256": "e517a72984673dce16bc9fd75c2fcf9be762ea39625a275450ad9d943a87d264",
+        "tokens": 100000
+      },
+      "general_label_train": {
+        "document_id_sha256": "150bd03151695c72824661c6386708a4408d3c7d0aee8cb03ea2e4739adf6d83",
+        "documents": 737,
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/general_label_train.jsonl",
+        "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/general_label_train.jsonl",
+        "rows": 1895,
+        "sha256": "8c5258789f356ffe7ffbfbb24a478e96a01842f13fa8204daa70d64cef254ca7",
+        "tokens": 800000
+      },
+      "in_era_contrast": {
+        "document_id_sha256": "bf6913253fb6f583625a88412dbcf2deb4aa79778a9446bf96b1346a8a245fe6",
+        "documents": 84,
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/in_era_contrast_100k.jsonl",
+        "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/in_era_contrast_100k.jsonl",
+        "rows": 232,
+        "sha256": "b98b74745a0518cb3b9114b7139705428e902c993011a11b3f2a7a6dd5f438db",
+        "tokens": 100000
+      },
+      "label_train": {
+        "document_id_sha256": "6832a639371fc3ddea17fb7991c5741858f88b8a7cb45d47ba596ac7b7b3efc5",
+        "documents": 1053,
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/label_train.jsonl",
+        "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/label_train.jsonl",
+        "rows": 3610,
+        "sha256": "5e49c232bff57f8c992492bdc226618891f264118d84c771c00fb9325798c7bf",
+        "tokens": 1600000
+      },
+      "pilot_256": {
+        "document_id_sha256": "a574514e09170880ac5dc2d764d2c3f9ec817530e1c467df7bc4ac90d4144c1c",
+        "documents": 173,
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/pilot_256.jsonl",
+        "path": "outputs/stage5/stage5_paper2_d0_preregistration_20260726/data/pilot_256.jsonl",
+        "rows": 256,
+        "sha256": "806bfb62711bc7bfc8cf4fc0c6122ec0f59ee03f6fcafa039d7c82eacef5f926",
+        "tokens": 116617
+      }
+    },
+    "code_corpus": {
+      "content_store": "huggingface_direct_text",
+      "dataset": "bigcode/the-stack-smol",
+      "lineage": "Stack_v1",
+      "provenance_period": "in_pretraining_era",
+      "revision": "4a6938ce94446f324c6629e7de00ac591710044b",
+      "terms_contract": {
+        "latest_main_must_equal_pinned_revision_at_lock": true,
+        "per_file_license_repository_and_path_retained": true,
+        "public_git_contains_aggregate_receipts_only": true,
+        "raw_or_tokenized_rows_private_drive_only": true,
+        "raw_source_execution_forbidden": true
+      }
+    },
+    "dataset_revisions": {
+      "drafter": "7ae557604adf67be50417f59c2c2f167def9a775",
+      "fineweb": "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9",
+      "stack_smol_main": "4a6938ce94446f324c6629e7de00ac591710044b",
+      "stack_smol_pinned": "4a6938ce94446f324c6629e7de00ac591710044b",
+      "teacher_14b": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+      "teacher_7b": "a09a35458c702b33eeacc393d103063234e8bc28"
+    },
+    "density_documents_excluded_from_partitions": true,
+    "document_counts": {
+      "calibration": 142,
+      "evaluation": 162,
+      "label_train": 1053
+    },
+    "document_disjoint": true,
+    "fineweb_dump": "CC-MAIN-2025-26",
+    "kind": "paper2_d0_frozen_corpus_manifest",
+    "mix_decision": {
+      "densities_per_1000_tokens": {
+        "code": 175.78199384627717,
+        "general": 336.97243107769424
+      },
+      "minimum_to_maximum_density_ratio": 0.521650964988729,
+      "mix": {
+        "code": 0.5,
+        "general": 0.5
+      },
+      "rule": "balanced_density_and_domain_coverage"
+    },
+    "overlaps": {},
+    "private_drive_artifacts_verified": {
+      "calibration": {
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/calibration.jsonl",
+        "sha256": "57a854f303c410004d7a592753a1bfbc8f8efe9c5502fb6d46dce733e8dadc17",
+        "tokens": 200000
+      },
+      "code_calibration": {
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/code_calibration.jsonl",
+        "sha256": "32ab137badac8c77156c52d49c3ab261f2c241187ec932875d67fa578d243ef7",
+        "tokens": 100000
+      },
+      "code_evaluation": {
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/code_evaluation.jsonl",
+        "sha256": "9378a3127a939591e1ed3de4d7038d43c5c1e47a87787f1d42aaf63f4c50fe74",
+        "tokens": 100000
+      },
+      "code_label_train": {
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/code_label_train.jsonl",
+        "sha256": "430a44d722fe4a843775b75b43200074cb861dfe7d50a58a93a96722d39b3f07",
+        "tokens": 800000
+      },
+      "density_code": {
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/density_code_100k.jsonl",
+        "sha256": "787cab75441227410fe56403d21bb5b4927912e700f7253f6cd8eea1bb39c291",
+        "tokens": 100000
+      },
+      "density_general": {
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/density_general_100k.jsonl",
+        "sha256": "f3c86b7038a3e6d1085c1e3bf5242111ae7ce78fb29223c0675c9539de1e2d91",
+        "tokens": 100000
+      },
+      "evaluation": {
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/evaluation.jsonl",
+        "sha256": "2e9892322485921c801287f414b4a732e48c7dc39a1707eba34936821c8a94dd",
+        "tokens": 200000
+      },
+      "general_calibration": {
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/general_calibration.jsonl",
+        "sha256": "28fea31450f6acd2489ab1aaacf45f59bcbfa6276f742e352c2277f9feb7c4cb",
+        "tokens": 100000
+      },
+      "general_evaluation": {
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/general_evaluation.jsonl",
+        "sha256": "e517a72984673dce16bc9fd75c2fcf9be762ea39625a275450ad9d943a87d264",
+        "tokens": 100000
+      },
+      "general_label_train": {
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/general_label_train.jsonl",
+        "sha256": "8c5258789f356ffe7ffbfbb24a478e96a01842f13fa8204daa70d64cef254ca7",
+        "tokens": 800000
+      },
+      "in_era_contrast": {
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/in_era_contrast_100k.jsonl",
+        "sha256": "b98b74745a0518cb3b9114b7139705428e902c993011a11b3f2a7a6dd5f438db",
+        "tokens": 100000
+      },
+      "label_train": {
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/label_train.jsonl",
+        "sha256": "5e49c232bff57f8c992492bdc226618891f264118d84c771c00fb9325798c7bf",
+        "tokens": 1600000
+      },
+      "pilot_256": {
+        "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_preregistration_20260726/data/pilot_256.jsonl",
+        "sha256": "806bfb62711bc7bfc8cf4fc0c6122ec0f59ee03f6fcafa039d7c82eacef5f926",
+        "tokens": 116617
+      }
+    },
+    "status": "frozen_before_labeling",
+    "token_quotas": {
+      "code": {
+        "calibration": 100000,
+        "evaluation": 100000,
+        "label_train": 800000
+      },
+      "general": {
+        "calibration": 100000,
+        "evaluation": 100000,
+        "label_train": 800000
+      }
+    }
+  },
+  "dependency": {
+    "automatic_launch_from_t1": false,
+    "d0_lock_required": true,
+    "t1_lite_r_receipt": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/summary.json",
+    "t1_lite_verdict_required": true
+  },
+  "do_not_claim": [
+    "recovered teacher agreement is reasoning",
+    "general efficiency from simulation-grade latency",
+    "generalization beyond the corpus or on-policy drafting",
+    "anything about GRAM or stochastic width",
+    "seed or scale robustness",
+    "unrecovered_at_depth4_means_knowledge_limited",
+    "question_answering_capability_from_arc_allocation",
+    "the_stack_v2_was_used"
+  ],
+  "evaluation": {
+    "arc_allocation_probe_descriptive_only": true,
+    "forced_teacher_shift_depths": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "gamma": [
+      2,
+      4,
+      8
+    ],
+    "hard_guardrails": {
+      "accepted_loop1_drop_max": 0.01,
+      "t1_mechanism_drop_max": 0.03
+    },
+    "interpretation_bands": {
+      "minimal_below": 0.02,
+      "partial_below": 0.1,
+      "partial_from": 0.02,
+      "strong_from": 0.1
+    },
+    "interpretation_only_no_pass_fail_gate": true
+  },
+  "governing_document": "docs/PHASE_D0_PREREGISTRATION_DRAFT7_20260726.md",
+  "governing_document_sha256": "5606f193902b9faae88891cfb7309f8242e4704dd916fb37b8f23b7a9e9cea22",
+  "kind": "paper2_speculative_decoding_depth_d0_preregistration",
+  "labeling": {
+    "context": "teacher_forced_true_prefix",
+    "fourteen_b_partitions": [
+      "calibration"
+    ],
+    "primary_rule": "drafter_greedy_equals_teacher_greedy",
+    "recorded_signals": [
+      "teacher_greedy_token_id",
+      "drafter_token_logprob_under_teacher",
+      "drafter_token_rank_under_teacher",
+      "teacher_entropy",
+      "teacher_to_plain_drafter_kl",
+      "rejection_run_length"
+    ],
+    "teacher_reload_after_cache": false
+  },
+  "labeling_gpu_authorized": true,
+  "launch_target_exists": false,
+  "locked_before_training": true,
+  "models": {
+    "drafter": {
+      "checkpoint_role": "t1_lite_r_seed1_raw_final_step",
+      "checkpoint_sha256": "93d2e5f9a941bbe79a0b2fc3f9bf43d582bf054990c14b1a93ff67024140062d",
+      "ema_excluded": true,
+      "model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "model_revision": "7ae557604adf67be50417f59c2c2f167def9a775"
+    },
+    "single_pass_cache_required": true,
+    "teacher_calibration_secondary": {
+      "model": "Qwen/Qwen2.5-14B-Instruct",
+      "revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8"
+    },
+    "teacher_dtype": "bfloat16",
+    "teacher_primary": {
+      "model": "Qwen/Qwen2.5-7B-Instruct",
+      "revision": "a09a35458c702b33eeacc393d103063234e8bc28"
+    }
+  },
+  "status": "locked_before_training",
+  "training": {
+    "batch_size": 1,
+    "control_class_weights": "equal",
+    "control_lambda": 0.5,
+    "ema_decay": 0.999,
+    "guardrail_steps": [
+      1000,
+      2000,
+      3000
+    ],
+    "liveness_abort": "flat_control_loss_and_zero_stop_recall",
+    "mechanism_rehearsal_fraction": 0.3,
+    "optimizer": "adamw_t1_lite_settings",
+    "primary_endpoint": "final_step_ema",
+    "seed": 0,
+    "steps": 4000
+  },
+  "training_authorized": true
+}
