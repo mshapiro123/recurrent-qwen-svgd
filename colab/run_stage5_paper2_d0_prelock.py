@@ -160,8 +160,7 @@ def copy_governing_document_to_drive(path: Path) -> Path:
 
 def publish_lock() -> str:
     run(["git", "pull", "--rebase", "--autostash", "origin", "main"])
-    paths = [
-        Path(GOVERNING_DOCUMENT),
+    output_paths = [
         RUN_DIR.relative_to(ROOT) / "preregistration.json",
         RUN_DIR.relative_to(ROOT) / "data_manifest.json",
         RUN_DIR.relative_to(ROOT) / "density" / "summary.json",
@@ -170,7 +169,8 @@ def publish_lock() -> str:
         RUN_DIR.relative_to(ROOT) / "summary.json",
         RUN_DIR.relative_to(ROOT) / "summary.md",
     ]
-    run(["git", "add", "--", *[path.as_posix() for path in paths]])
+    run(["git", "add", "--", Path(GOVERNING_DOCUMENT).as_posix()])
+    run(["git", "add", "-f", "--", *[path.as_posix() for path in output_paths]])
     if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode == 0:
         raise RuntimeError("D0 lock produced no staged preregistration artifacts")
     run(["git", "commit", "-m", "Lock Paper Two D0 preregistration [skip ci]"])

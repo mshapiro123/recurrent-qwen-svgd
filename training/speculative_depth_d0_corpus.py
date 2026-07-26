@@ -118,7 +118,7 @@ def chunk_document(
     max_length: int = 512,
     minimum_length: int = 32,
 ) -> Iterator[dict[str, Any]]:
-    token_ids = tokenizer(document.text, add_special_tokens=False)["input_ids"]
+    token_ids = tokenizer(document.text, add_special_tokens=False, verbose=False)["input_ids"]
     for chunk_index, start in enumerate(range(0, len(token_ids), max_length)):
         chunk = [int(value) for value in token_ids[start : start + max_length]]
         if len(chunk) < minimum_length:

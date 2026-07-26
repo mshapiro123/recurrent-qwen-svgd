@@ -1286,9 +1286,28 @@ def test_current_bootstrap_exposes_paper2_d0_prelock_target() -> None:
     assert "no labeling proper no 14B forward no optimizer no training" in cell
     assert "post-lock launcher must be created after lock commit" in cell
     assert "locked_d0_from_manifest" in runner
+    assert '["git", "add", "-f"' in runner
     assert '"teacher_14b_forwards": 0' in runner
     assert '"optimizer_steps": 0' in runner
     assert '"post_lock_launcher_exists": False' in runner
+
+
+def test_current_bootstrap_exposes_paper2_d0_publish_resume_target() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_D0_PRELOCK_PUBLISH_RESUME_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_d0_prelock_publish_resume.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert '"paper2_d0_prelock_publish_resume"' in bootstrap
+    assert "no model inference no teacher labeling no optimizer no training" in cell
+    assert "verify_private_data_backups" in runner
+    assert '["git", "add", "-f"' in runner
+    assert "locked_d0_from_manifest" in runner
+    assert '"teacher_labeling_proper_forwards": 0' in runner
+    assert '"optimizer_steps": 0' in runner
 
 
 def test_t1_lite_ema_audit_target_is_read_only_and_registered() -> None:

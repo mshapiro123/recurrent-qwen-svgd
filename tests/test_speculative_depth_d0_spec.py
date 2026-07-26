@@ -116,8 +116,15 @@ def test_d0_depth_recoverable_fraction_is_incremental_match_rate() -> None:
 
 
 class _Tokenizer:
-    def __call__(self, text: str, *, add_special_tokens: bool) -> dict[str, list[int]]:
+    def __call__(
+        self,
+        text: str,
+        *,
+        add_special_tokens: bool,
+        verbose: bool = True,
+    ) -> dict[str, list[int]]:
         assert add_special_tokens is False
+        assert verbose is False
         return {"input_ids": list(range(len(text.split())))}
 
 

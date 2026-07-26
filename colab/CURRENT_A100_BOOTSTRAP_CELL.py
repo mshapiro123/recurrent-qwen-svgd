@@ -128,6 +128,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper1_closure_receipts" - CPU-safe Paper 1 evidence compiler and Drive backup.
 #   "depth_selector_bounded_assessment" - frozen N24 supervised-depth and Ponder-outcome selector closure.
 #   "wall_clock_latency_descriptive" - eval-only five-arm Paper One batch-1 latency receipt.
+#   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
 #   "paper2_d0_prelock" - authorized density probe, corpus freeze, and preregistration lock only.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
@@ -152,6 +153,19 @@ if TARGET == "traced_sft_scale64_benchmark" and os.environ.get(
     TARGET = "traced_sft_direct_preservation_probe"
 
 TARGETS = {
+    "paper2_d0_prelock_publish_resume": {
+        "path": "colab/STAGE5_PAPER2_D0_PRELOCK_PUBLISH_RESUME_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_D0_PRELOCK_PUBLISH_RESUME_VERSION",
+            "paper2_d0_prelock_publish_resume_v1",
+            "restore completed receipts from Drive",
+            "verify every frozen private artifact hash",
+            "no model inference no teacher labeling no optimizer no training",
+            "git add force aggregate ignored receipts only",
+            "colab/run_stage5_paper2_d0_prelock_publish_resume.py",
+        ],
+        "env": {},
+    },
     "paper2_d0_prelock": {
         "path": "colab/STAGE5_PAPER2_D0_PRELOCK_CELL.py",
         "markers": [
