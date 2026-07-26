@@ -228,6 +228,13 @@ def prelock_contract() -> dict[str, Any]:
                 "aws_credentials_required": False,
                 "software_heritage_raw_api_forbidden": True,
                 "silent_substitution_forbidden": True,
+                "terms_contract": {
+                    "latest_main_must_equal_pinned_revision_at_lock": True,
+                    "raw_source_execution_forbidden": True,
+                    "raw_or_tokenized_rows_private_drive_only": True,
+                    "public_git_contains_aggregate_receipts_only": True,
+                    "per_file_license_repository_and_path_retained": True,
+                },
             },
             "partition_seed": PARTITION_SEED,
             "pilot_seed": PILOT_SEED,

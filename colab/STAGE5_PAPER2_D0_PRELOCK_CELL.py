@@ -15,6 +15,8 @@ STAGE5_PAPER2_D0_PRELOCK_CELL_VERSION = "paper2_d0_prelock_density_and_hash_v2_s
 # Safety marker: CC-MAIN-2025-26 pinned FineWeb-Edu dump
 # Safety marker: the-stack-smol direct Hugging Face content Stack v1 lineage
 # Safety marker: no AWS dependency no Software Heritage raw API
+# Safety marker: pinned Stack revision must equal current main
+# Safety marker: raw source is tokenized never executed and remains private
 # Safety marker: seed-1 raw checkpoint SHA required
 # Safety marker: density probe only before lock
 # Safety marker: no labeling proper no 14B forward no optimizer no training

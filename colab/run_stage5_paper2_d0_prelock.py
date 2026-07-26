@@ -106,14 +106,16 @@ def assert_model_and_dataset_revisions() -> dict[str, Any]:
         "teacher_7b": api.model_info(TEACHER_7B, revision=TEACHER_7B_REVISION).sha,
         "teacher_14b": api.model_info(TEACHER_14B, revision=TEACHER_14B_REVISION).sha,
         "fineweb": api.dataset_info(FINEWEB_DATASET, revision=FINEWEB_REVISION).sha,
-        "stack_smol": api.dataset_info(STACK_DATASET, revision=STACK_REVISION).sha,
+        "stack_smol_pinned": api.dataset_info(STACK_DATASET, revision=STACK_REVISION).sha,
+        "stack_smol_main": api.dataset_info(STACK_DATASET, revision="main").sha,
     }
     expected = {
         "drafter": DRAFTER_MODEL_REVISION,
         "teacher_7b": TEACHER_7B_REVISION,
         "teacher_14b": TEACHER_14B_REVISION,
         "fineweb": FINEWEB_REVISION,
-        "stack_smol": STACK_REVISION,
+        "stack_smol_pinned": STACK_REVISION,
+        "stack_smol_main": STACK_REVISION,
     }
     drift = {name: {"observed": observed[name], "expected": value} for name, value in expected.items() if observed[name] != value}
     if drift:
@@ -202,6 +204,8 @@ def verify_code_corpus_access() -> dict[str, Any]:
         "metadata": document.metadata,
         "aws_used": False,
         "software_heritage_api_used": False,
+        "raw_source_executed": False,
+        "storage_scope": "private_drive_token_ids_with_per_file_provenance",
     }
 
 
@@ -352,6 +356,7 @@ def main() -> int:
             "lineage": "Stack_v1",
             "provenance_period": "in_pretraining_era",
             "content_store": "huggingface_direct_text",
+            "terms_contract": contract["corpus"]["stack_smol"]["terms_contract"],
         },
         "mix_decision": mix,
         "token_quotas": quotas,

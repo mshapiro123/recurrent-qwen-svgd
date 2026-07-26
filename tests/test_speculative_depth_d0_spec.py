@@ -68,6 +68,13 @@ def test_d0_prelock_contract_authorizes_density_only() -> None:
     assert contract["corpus"]["stack_smol"]["lineage"] == "Stack_v1"
     assert contract["corpus"]["stack_smol"]["content_store"] == "huggingface_direct_text"
     assert contract["corpus"]["stack_smol"]["aws_credentials_required"] is False
+    assert contract["corpus"]["stack_smol"]["terms_contract"] == {
+        "latest_main_must_equal_pinned_revision_at_lock": True,
+        "raw_source_execution_forbidden": True,
+        "raw_or_tokenized_rows_private_drive_only": True,
+        "public_git_contains_aggregate_receipts_only": True,
+        "per_file_license_repository_and_path_retained": True,
+    }
     assert "stack_v2" not in contract["corpus"]
     D0ExecutionPolicy(density_probe_authorized=True).assert_allowed(
         density_probe=True, labeling=False, training=False

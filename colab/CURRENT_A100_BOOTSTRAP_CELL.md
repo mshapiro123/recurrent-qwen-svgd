@@ -162,6 +162,8 @@ TARGETS = {
             "CC-MAIN-2025-26 pinned FineWeb-Edu dump",
             "the-stack-smol direct Hugging Face content Stack v1 lineage",
             "no AWS dependency no Software Heritage raw API",
+            "pinned Stack revision must equal current main",
+            "raw source is tokenized never executed and remains private",
             "seed-1 raw checkpoint SHA required",
             "density probe only before lock",
             "no labeling proper no 14B forward no optimizer no training",
