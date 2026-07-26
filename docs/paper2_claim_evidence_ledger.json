@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "program": "paper2_causal_control_of_recurrent_computation",
-  "status": "t1_lite_two_registered_negatives_replicated_raw_causal_control_d0_build_only_coconut_engineering",
+  "status": "t1_lite_two_registered_negatives_replicated_raw_causal_control_d0_prelock_authorized_coconut_engineering",
   "canonical_date": "2026-07-25",
   "active_queue": {
     "program_goal": "useful_natural_data_model_in_qwen_series",
     "p0": "completed_uncitable_adapter_loss_calibration",
     "t1": "two_registered_negatives_raw_endpoints_replicate_exact_in_support_causal_control_with_small_preservation_cost",
-    "d0": "build_only_no_labeling_or_training_pending_replication_review_and_lock",
+    "d0": "run_density_and_corpus_lock_then_author_post_lock_launcher_no_labeling_or_training_before_lock",
     "coconut": "integrity_engineering_rg4_rg11_followup_only_rg12_unauthorized",
     "paper_two_packaging": "deferred_until_t1_lite_and_any_later_authorized_d0_readout"
   },
@@ -277,17 +277,21 @@
     },
     {
       "id": "speculative_depth_d0",
-      "status": "build_complete_labeling_and_training_not_authorized",
-      "claim": "No empirical D0 claim exists; the build-only scorer, mapping, masking, and manifest contracts are implemented and synthetic-unit tested.",
-      "scope": "Qwen-series teacher ladder design; zero model loads, teacher forwards, optimizer steps, or checkpoints",
+      "status": "preregistration_approved_prelock_pending",
+      "claim": "No empirical D0 claim exists; Draft 6 is approved and authenticated, and only the uncitable density-and-corpus-lock job is prepared.",
+      "scope": "Pre-lock density probe and deterministic corpus freeze only; labeling proper and training require the generated lock commit",
       "evidence": [
         {
-          "path": "docs/PAPER2_D0_SPECULATIVE_DEPTH_PREREGISTRATION_DRAFT_20260723.md",
-          "locator": "updated build-only design and unresolved decisions before lock"
+          "path": "docs/PHASE_D0_PREREGISTRATION_DRAFT6_20260725.md",
+          "locator": "signed-off governing design and seven-round markup log"
         },
         {
           "path": "outputs/stage5/stage5_paper2_d0_build_only_20260725/summary.json",
           "locator": "CPU synthetic fixture receipt and zero-execution counters"
+        },
+        {
+          "path": "colab/run_stage5_paper2_d0_prelock.py",
+          "locator": "density-only fail-closed corpus and preregistration lock builder"
         }
       ],
       "do_not_claim": [

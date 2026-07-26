@@ -49,7 +49,7 @@ def test_paper2_ledger_closes_phase_g_and_records_t1_replication_state() -> None
         "p0_lineage_matches_registered_t1"
     ] is False
     assert claims["speculative_depth_d0"]["status"] == (
-        "build_complete_labeling_and_training_not_authorized"
+        "preregistration_approved_prelock_pending"
     )
     assert payload["active_queue"]["t1"].startswith("two_registered_negatives")
     assert claims["coconut_composite_integrity"]["status"] == (

@@ -3,12 +3,31 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from copy import deepcopy
 from typing import Any
 
 import torch
 
 
 UNRESOLVED = "RESOLVE_BEFORE_LOCK"
+GOVERNING_DOCUMENT = "docs/PHASE_D0_PREREGISTRATION_DRAFT6_20260725.md"
+GOVERNING_DOCUMENT_SHA256 = "fc4ca7f8d72741af228c2f57085db646e44e2bd8c43a5dc2de3ef97993ff21b8"
+DRAFTER_CHECKPOINT_SHA256 = "93d2e5f9a941bbe79a0b2fc3f9bf43d582bf054990c14b1a93ff67024140062d"
+FINEWEB_DATASET = "HuggingFaceFW/fineweb-edu"
+FINEWEB_REVISION = "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9"
+FINEWEB_DUMP = "CC-MAIN-2025-26"
+FINEWEB_IN_ERA_DUMP = "CC-MAIN-2021-49"
+STACK_DATASET = "bigcode/the-stack-v2-train-smol-ids"
+STACK_REVISION = "ee71ccca83c2be079e0cb3e841a360dd2a5b6852"
+STACK_LANGUAGES = ["C", "C#", "C++", "Go", "Java", "JavaScript", "Python", "Rust", "Shell", "TypeScript"]
+PARTITION_SEED = 20260725
+PILOT_SEED = 20260726
+DRAFTER_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
+DRAFTER_MODEL_REVISION = "7ae557604adf67be50417f59c2c2f167def9a775"
+TEACHER_7B = "Qwen/Qwen2.5-7B-Instruct"
+TEACHER_7B_REVISION = "a09a35458c702b33eeacc393d103063234e8bc28"
+TEACHER_14B = "Qwen/Qwen2.5-14B-Instruct"
+TEACHER_14B_REVISION = "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8"
 
 
 def d0_draft() -> dict[str, Any]:
@@ -68,12 +87,15 @@ def d0_draft() -> dict[str, Any]:
 
 @dataclass(frozen=True)
 class D0ExecutionPolicy:
-    """Current authorization boundary: code construction only."""
+    """Authorization boundary separated at the preregistration lock."""
 
+    density_probe_authorized: bool = False
     labeling_gpu_authorized: bool = False
     training_authorized: bool = False
 
-    def assert_allowed(self, *, labeling: bool, training: bool) -> None:
+    def assert_allowed(self, *, density_probe: bool = False, labeling: bool, training: bool) -> None:
+        if density_probe and not self.density_probe_authorized:
+            raise RuntimeError("D0 pre-lock density probe is not authorized")
         if labeling and not self.labeling_gpu_authorized:
             raise RuntimeError("D0 labeling is not authorized")
         if training and not self.training_authorized:
@@ -129,7 +151,8 @@ def build_only_contract() -> dict[str, Any]:
             ],
         },
         "calibration": {
-            "forced_depths": [1, 2, 3, 4],
+            "forced_measurement_depths": [1, 2, 3, 4, 5, 6],
+            "maximum_training_target_depth": 4,
             "severity_bins": "teacher_to_drafter_kl_quartiles",
             "graded_if_depth4_minus_depth1_at_least": 0.02,
             "graded_minimum_bins": 2,
@@ -153,6 +176,190 @@ def build_only_contract() -> dict[str, Any]:
             "strong_from": 0.10,
         },
     }
+
+
+def prelock_contract() -> dict[str, Any]:
+    """Return the only GPU work authorized before the D0 lock commit."""
+
+    return {
+        "kind": "paper2_speculative_depth_d0_prelock_contract",
+        "status": "density_probe_and_partition_freeze_only",
+        "governing_document": GOVERNING_DOCUMENT,
+        "governing_document_sha256": GOVERNING_DOCUMENT_SHA256,
+        "density_probe_authorized": True,
+        "labeling_gpu_authorized": False,
+        "training_authorized": False,
+        "teachers": {
+            "density_probe": {"model": TEACHER_7B, "revision": TEACHER_7B_REVISION},
+            "labeling_primary": {"model": TEACHER_7B, "revision": TEACHER_7B_REVISION},
+            "calibration_secondary": {"model": TEACHER_14B, "revision": TEACHER_14B_REVISION},
+        },
+        "drafter_checkpoint_sha256": DRAFTER_CHECKPOINT_SHA256,
+        "corpus": {
+            "fineweb": {
+                "dataset": FINEWEB_DATASET,
+                "revision": FINEWEB_REVISION,
+                "dump": FINEWEB_DUMP,
+                "in_era_dump": FINEWEB_IN_ERA_DUMP,
+            },
+            "stack_v2": {
+                "dataset": STACK_DATASET,
+                "revision": STACK_REVISION,
+                "languages": list(STACK_LANGUAGES),
+                "license_filter": "license_type_permissive",
+                "vendor_and_generated_excluded": True,
+                "content_store": "s3://softwareheritage/content/{blob_id}",
+                "silent_substitution_forbidden": True,
+            },
+            "partition_seed": PARTITION_SEED,
+            "pilot_seed": PILOT_SEED,
+            "density_tokens_per_stratum": 100_000,
+            "total_labeled_tokens": 2_000_000,
+            "partition_fractions": {
+                "label_train": 0.8,
+                "calibration": 0.1,
+                "evaluation": 0.1,
+            },
+            "mix_rule": {
+                "balanced_when_minimum_density_ratio_at_least": 0.5,
+                "balanced": {"general": 0.5, "code": 0.5},
+                "density_skewed": {"higher_density": 0.6, "lower_density": 0.4},
+                "domain_floor": 0.4,
+            },
+            "in_era_contrast_tokens": 100_000,
+            "pilot_rows": 256,
+        },
+        "forbidden": [
+            "labeling_proper",
+            "fourteen_b_teacher_forward",
+            "optimizer_construction",
+            "training_step",
+            "trained_checkpoint_write",
+        ],
+    }
+
+
+def locked_d0_from_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
+    """Materialize Draft 6 after the pre-lock corpus job freezes its outputs."""
+
+    required_hashes = {
+        "label_train",
+        "calibration",
+        "evaluation",
+        "density_general",
+        "density_code",
+        "in_era_contrast",
+        "pilot_256",
+        "general_label_train",
+        "general_calibration",
+        "general_evaluation",
+        "code_label_train",
+        "code_calibration",
+        "code_evaluation",
+    }
+    observed = set((manifest.get("artifacts") or {}).keys())
+    missing = sorted(required_hashes - observed)
+    if missing:
+        raise ValueError(f"D0 manifest is missing locked artifacts: {missing}")
+    if manifest.get("document_disjoint") is not True:
+        raise ValueError("D0 corpus partitions are not document-disjoint")
+    contract = prelock_contract()
+    payload = {
+        "kind": "paper2_speculative_decoding_depth_d0_preregistration",
+        "status": "locked_before_training",
+        "locked_before_training": True,
+        "training_authorized": True,
+        "labeling_gpu_authorized": True,
+        "launch_target_exists": False,
+        "governing_document": GOVERNING_DOCUMENT,
+        "governing_document_sha256": GOVERNING_DOCUMENT_SHA256,
+        "dependency": {
+            "t1_lite_verdict_required": True,
+            "t1_lite_r_receipt": "outputs/stage5/stage5_paper2_t1_lite_r_20260725/summary.json",
+            "d0_lock_required": True,
+            "automatic_launch_from_t1": False,
+        },
+        "models": {
+            "drafter": {
+                "model": DRAFTER_MODEL,
+                "model_revision": DRAFTER_MODEL_REVISION,
+                "checkpoint_role": "t1_lite_r_seed1_raw_final_step",
+                "checkpoint_sha256": DRAFTER_CHECKPOINT_SHA256,
+                "ema_excluded": True,
+            },
+            "teacher_primary": {"model": TEACHER_7B, "revision": TEACHER_7B_REVISION},
+            "teacher_calibration_secondary": {"model": TEACHER_14B, "revision": TEACHER_14B_REVISION},
+            "teacher_dtype": "bfloat16",
+            "single_pass_cache_required": True,
+        },
+        "corpus": deepcopy(contract["corpus"]),
+        "corpus_manifest": manifest,
+        "labeling": {
+            "context": "teacher_forced_true_prefix",
+            "primary_rule": "drafter_greedy_equals_teacher_greedy",
+            "recorded_signals": [
+                "teacher_greedy_token_id",
+                "drafter_token_logprob_under_teacher",
+                "drafter_token_rank_under_teacher",
+                "teacher_entropy",
+                "teacher_to_plain_drafter_kl",
+                "rejection_run_length",
+            ],
+            "fourteen_b_partitions": ["calibration"],
+            "teacher_reload_after_cache": False,
+        },
+        "calibration": {
+            "forced_measurement_depths": [1, 2, 3, 4, 5, 6],
+            "training_target_cap": 4,
+            "severity_bins": "teacher_to_plain_drafter_kl_quartiles",
+            "graded_minimum_gain": 0.02,
+            "graded_minimum_bins": 2,
+            "plateau_tolerance": 0.01,
+            "flat_fallback": "first_loop_matching_teacher_else_depth4",
+            "primary_fit": "monotone_isotonic",
+            "comparison_fits": ["linear_run_length", "linear_log_kl", "saturating"],
+            "rejection_run_length_cap": 8,
+        },
+        "training": {
+            "steps": 4000,
+            "batch_size": 1,
+            "optimizer": "adamw_t1_lite_settings",
+            "seed": 0,
+            "ema_decay": 0.999,
+            "primary_endpoint": "final_step_ema",
+            "control_lambda": 0.5,
+            "control_class_weights": "equal",
+            "mechanism_rehearsal_fraction": 0.30,
+            "guardrail_steps": [1000, 2000, 3000],
+            "liveness_abort": "flat_control_loss_and_zero_stop_recall",
+        },
+        "evaluation": {
+            "interpretation_only_no_pass_fail_gate": True,
+            "gamma": [2, 4, 8],
+            "forced_teacher_shift_depths": [1, 2, 3, 4, 5, 6],
+            "arc_allocation_probe_descriptive_only": True,
+            "hard_guardrails": {
+                "accepted_loop1_drop_max": 0.01,
+                "t1_mechanism_drop_max": 0.03,
+            },
+            "interpretation_bands": {
+                "minimal_below": 0.02,
+                "partial_from": 0.02,
+                "partial_below": 0.10,
+                "strong_from": 0.10,
+            },
+        },
+        "do_not_claim": [
+            "recovered teacher agreement is reasoning",
+            "general efficiency from simulation-grade latency",
+            "generalization beyond the corpus or on-policy drafting",
+            "anything about GRAM or stochastic width",
+            "seed or scale robustness",
+            "unrecovered_at_depth4_means_knowledge_limited",
+            "question_answering_capability_from_arc_allocation",
+        ],
+    }
+    return payload
 
 
 def dynamic_depth_target(loop_matches_teacher: list[bool], *, max_depth: int = 4) -> int:
@@ -265,3 +472,14 @@ def validate_locked_d0(payload: dict[str, Any]) -> None:
         raise AssertionError("D0 lock must retain the T1-lite verdict dependency")
     if dependency.get("d0_lock_required") is not True:
         raise AssertionError("D0 lock dependency is missing")
+    if payload.get("governing_document_sha256") != GOVERNING_DOCUMENT_SHA256:
+        raise AssertionError("D0 governing document hash drifted")
+    if payload.get("models", {}).get("drafter", {}).get("checkpoint_sha256") != DRAFTER_CHECKPOINT_SHA256:
+        raise AssertionError("D0 drafter checkpoint hash drifted")
+    corpus = payload.get("corpus", {})
+    if corpus.get("fineweb", {}).get("dump") != FINEWEB_DUMP:
+        raise AssertionError("D0 FineWeb-Edu dump drifted")
+    if corpus.get("stack_v2", {}).get("revision") != STACK_REVISION:
+        raise AssertionError("D0 Stack v2 revision drifted")
+    if payload.get("corpus_manifest", {}).get("document_disjoint") is not True:
+        raise AssertionError("D0 corpus manifest is not document-disjoint")

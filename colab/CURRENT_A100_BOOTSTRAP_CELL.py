@@ -128,6 +128,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper1_closure_receipts" - CPU-safe Paper 1 evidence compiler and Drive backup.
 #   "depth_selector_bounded_assessment" - frozen N24 supervised-depth and Ponder-outcome selector closure.
 #   "wall_clock_latency_descriptive" - eval-only five-arm Paper One batch-1 latency receipt.
+#   "paper2_d0_prelock" - authorized density probe, corpus freeze, and preregistration lock only.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 PREFER_LOCAL_HEAD = os.environ.get("STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD", "0").strip().lower() in {
@@ -151,6 +152,23 @@ if TARGET == "traced_sft_scale64_benchmark" and os.environ.get(
     TARGET = "traced_sft_direct_preservation_probe"
 
 TARGETS = {
+    "paper2_d0_prelock": {
+        "path": "colab/STAGE5_PAPER2_D0_PRELOCK_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_D0_PRELOCK_CELL_VERSION",
+            "paper2_d0_prelock_density_and_hash_v1",
+            "Draft 6 authenticated Drive hash",
+            "CC-MAIN-2025-26 pinned FineWeb-Edu dump",
+            "Stack v2 gated SWH content no silent substitution",
+            "seed-1 raw checkpoint SHA required",
+            "density probe only before lock",
+            "no labeling proper no 14B forward no optimizer no training",
+            "post-lock launcher must be created after lock commit",
+            "tests/test_speculative_depth_d0_spec.py",
+            "colab/run_stage5_paper2_d0_prelock.py",
+        ],
+        "env": {},
+    },
     "wall_clock_latency_descriptive": {
         "path": "colab/STAGE5_WALL_CLOCK_LATENCY_CELL.py",
         "markers": [

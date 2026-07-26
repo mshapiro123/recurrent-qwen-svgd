@@ -1270,6 +1270,23 @@ def test_paper2_t1_lite_r_target_is_locked_raw_primary_and_manifested() -> None:
     assert "C track design-stage RG-12 unauthorized" in cell
 
 
+def test_current_bootstrap_exposes_paper2_d0_prelock_target() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_D0_PRELOCK_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_d0_prelock.py").read_text(encoding="utf-8")
+
+    assert '"paper2_d0_prelock"' in bootstrap
+    assert "CC-MAIN-2025-26 pinned FineWeb-Edu dump" in cell
+    assert "Stack v2 gated SWH content no silent substitution" in cell
+    assert "density probe only before lock" in cell
+    assert "no labeling proper no 14B forward no optimizer no training" in cell
+    assert "post-lock launcher must be created after lock commit" in cell
+    assert "locked_d0_from_manifest" in runner
+    assert '"teacher_14b_forwards": 0' in runner
+    assert '"optimizer_steps": 0' in runner
+    assert '"post_lock_launcher_exists": False' in runner
+
+
 def test_t1_lite_ema_audit_target_is_read_only_and_registered() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
         encoding="utf-8"

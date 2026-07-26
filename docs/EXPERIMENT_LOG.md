@@ -1534,3 +1534,12 @@ Colab/Drive backups for selected runs.
   `1003/1024` forced answers but selected `731/1024` depths exactly. All fifteen
   stage states were Drive-backed with matching hashes. Receipt:
   `docs/PAPER2_T1_LITE_R_RESULT_HANDOFF_20260725.md`.
+- 2026-07-26 D0 Draft 6 authorization and pre-lock implementation: the raw
+  Drive Markdown was authenticated at `22,540` checkout bytes with SHA-256
+  `fc4ca7f8d72741af228c2f57085db646e44e2bd8c43a5dc2de3ef97993ff21b8`.
+  The pre-lock target pins FineWeb-Edu `CC-MAIN-2025-26`, Stack v2 and all
+  model revisions, requires the T1-lite-R seed-1 raw checkpoint SHA, runs only
+  the authorized two-stratum density probe, freezes document-disjoint pooled
+  and per-stratum partitions, and commits the machine-readable lock. It cannot
+  run labeling proper, the 14B calibration forward, an optimizer step, or
+  training. The post-lock launcher intentionally does not yet exist.
