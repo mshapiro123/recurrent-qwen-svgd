@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -39,6 +40,7 @@ from training.speculative_depth_d0_spec import (
     FINEWEB_DUMP,
     FINEWEB_REVISION,
     GOVERNING_DOCUMENT,
+    GOVERNING_DOCUMENT_HANDOFF_SHA256,
     GOVERNING_DOCUMENT_SHA256,
     STACK_DATASET,
     STACK_REVISION,
@@ -104,14 +106,14 @@ def assert_model_and_dataset_revisions() -> dict[str, Any]:
         "teacher_7b": api.model_info(TEACHER_7B, revision=TEACHER_7B_REVISION).sha,
         "teacher_14b": api.model_info(TEACHER_14B, revision=TEACHER_14B_REVISION).sha,
         "fineweb": api.dataset_info(FINEWEB_DATASET, revision=FINEWEB_REVISION).sha,
-        "stack_v2": api.dataset_info(STACK_DATASET, revision=STACK_REVISION).sha,
+        "stack_smol": api.dataset_info(STACK_DATASET, revision=STACK_REVISION).sha,
     }
     expected = {
         "drafter": DRAFTER_MODEL_REVISION,
         "teacher_7b": TEACHER_7B_REVISION,
         "teacher_14b": TEACHER_14B_REVISION,
         "fineweb": FINEWEB_REVISION,
-        "stack_v2": STACK_REVISION,
+        "stack_smol": STACK_REVISION,
     }
     drift = {name: {"observed": observed[name], "expected": value} for name, value in expected.items() if observed[name] != value}
     if drift:
@@ -145,6 +147,15 @@ def copy_to_drive(path: Path) -> Path:
     return destination
 
 
+def copy_governing_document_to_drive(path: Path) -> Path:
+    destination = DRIVE_ROOT / "governing" / path.name
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(path, destination)
+    if sha256_file(path) != sha256_file(destination):
+        raise RuntimeError("D0 governing-document Drive backup hash mismatch")
+    return destination
+
+
 def publish_lock() -> str:
     run(["git", "pull", "--rebase", "--autostash", "origin", "main"])
     paths = [
@@ -152,6 +163,7 @@ def publish_lock() -> str:
         RUN_DIR.relative_to(ROOT) / "preregistration.json",
         RUN_DIR.relative_to(ROOT) / "data_manifest.json",
         RUN_DIR.relative_to(ROOT) / "density" / "summary.json",
+        RUN_DIR.relative_to(ROOT) / "source_access.json",
         RUN_DIR.relative_to(ROOT) / "lock_receipt.json",
         RUN_DIR.relative_to(ROOT) / "summary.json",
         RUN_DIR.relative_to(ROOT) / "summary.md",
@@ -173,6 +185,26 @@ def _merge_and_order(rows_by_stratum: dict[str, dict[str, list[dict[str, Any]]]]
     return merged
 
 
+def verify_code_corpus_access() -> dict[str, Any]:
+    document = next(iter_stack_documents(), None)
+    if document is None:
+        raise RuntimeError(
+            "Pinned bigcode/the-stack-smol produced no licensed direct-text rows. "
+            "Confirm the HF account accepted the dataset terms; do not substitute a corpus."
+        )
+    return {
+        "status": "direct_text_access_verified_before_model_load",
+        "dataset": STACK_DATASET,
+        "revision": STACK_REVISION,
+        "document_id": document.document_id,
+        "content_characters": len(document.text),
+        "content_sha256": hashlib.sha256(document.text.encode("utf-8")).hexdigest(),
+        "metadata": document.metadata,
+        "aws_used": False,
+        "software_heritage_api_used": False,
+    }
+
+
 def main() -> int:
     D0ExecutionPolicy(density_probe_authorized=True).assert_allowed(
         density_probe=True, labeling=False, training=False
@@ -180,12 +212,17 @@ def main() -> int:
     contract = prelock_contract()
     governing_path = ROOT / GOVERNING_DOCUMENT
     if sha256_file(governing_path) != GOVERNING_DOCUMENT_SHA256:
-        raise RuntimeError("D0 governing Draft 6 does not match its authenticated Drive hash")
+        raise RuntimeError("D0 governing Draft 7 does not match its authenticated hash")
     if not os.environ.get("HF_TOKEN") and not os.environ.get("HUGGINGFACE_HUB_TOKEN"):
-        raise RuntimeError("D0 pre-lock requires HF_TOKEN for the gated Stack v2 index")
+        raise RuntimeError("D0 pre-lock requires HF_TOKEN for gated bigcode/the-stack-smol")
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     DRIVE_ROOT.mkdir(parents=True, exist_ok=True)
+    governing_drive_path = copy_governing_document_to_drive(governing_path)
     revisions = assert_model_and_dataset_revisions()
+    source_access = verify_code_corpus_access()
+    source_access_path = RUN_DIR / "source_access.json"
+    write_json(source_access_path, source_access)
+    copy_to_drive(source_access_path)
     checkpoint = restore_drafter()
     tokenizer = AutoTokenizer.from_pretrained(DRAFTER_MODEL, revision=DRAFTER_MODEL_REVISION)
 
@@ -309,6 +346,13 @@ def main() -> int:
         "status": "frozen_before_labeling",
         "dataset_revisions": revisions["revisions"],
         "fineweb_dump": FINEWEB_DUMP,
+        "code_corpus": {
+            "dataset": STACK_DATASET,
+            "revision": STACK_REVISION,
+            "lineage": "Stack_v1",
+            "provenance_period": "in_pretraining_era",
+            "content_store": "huggingface_direct_text",
+        },
         "mix_decision": mix,
         "token_quotas": quotas,
         **disjoint,
@@ -324,9 +368,12 @@ def main() -> int:
         "status": "ready_to_commit_locked_before_labeling",
         "governing_document": GOVERNING_DOCUMENT,
         "governing_document_sha256": GOVERNING_DOCUMENT_SHA256,
+        "governing_document_handoff_sha256": GOVERNING_DOCUMENT_HANDOFF_SHA256,
+        "governing_document_drive_path": str(governing_drive_path),
         "drafter_checkpoint_source": str(CHECKPOINT_SOURCE),
         "drafter_checkpoint_sha256": sha256_file(checkpoint),
         "hf_revisions": revisions,
+        "source_access": source_access_path.relative_to(ROOT).as_posix(),
         "density_summary": density_path.relative_to(ROOT).as_posix(),
         "corpus_manifest": (RUN_DIR / "data_manifest.json").relative_to(ROOT).as_posix(),
         "teacher_labeling_proper_forwards": 0,
@@ -352,7 +399,8 @@ def main() -> int:
         "# Paper Two D0 Preregistration Lock\n\n"
         f"- Status: locked before labeling\n"
         f"- FineWeb-Edu dump: `{FINEWEB_DUMP}` at `{FINEWEB_REVISION}`\n"
-        f"- Stack v2 revision: `{STACK_REVISION}`\n"
+        f"- Code corpus: `{STACK_DATASET}` (Stack v1 lineage) at `{STACK_REVISION}`\n"
+        "- Code content access: direct Hugging Face text; no AWS or Software Heritage API\n"
         f"- Frozen mix: `{mix['mix']}`\n"
         f"- Drafter SHA-256: `{DRAFTER_CHECKPOINT_SHA256}`\n"
         "- Labeling proper: not started\n"
@@ -366,6 +414,7 @@ def main() -> int:
         RUN_DIR / "lock_receipt.json",
         RUN_DIR / "summary.json",
         RUN_DIR / "summary.md",
+        source_access_path,
     ):
         copy_to_drive(receipt_path)
     lock_commit = publish_lock()

@@ -10,16 +10,29 @@ import torch
 
 
 UNRESOLVED = "RESOLVE_BEFORE_LOCK"
-GOVERNING_DOCUMENT = "docs/PHASE_D0_PREREGISTRATION_DRAFT6_20260725.md"
-GOVERNING_DOCUMENT_SHA256 = "fc4ca7f8d72741af228c2f57085db646e44e2bd8c43a5dc2de3ef97993ff21b8"
+GOVERNING_DOCUMENT = "docs/PHASE_D0_PREREGISTRATION_DRAFT7_20260726.md"
+GOVERNING_DOCUMENT_SHA256 = "5606f193902b9faae88891cfb7309f8242e4704dd916fb37b8f23b7a9e9cea22"
+GOVERNING_DOCUMENT_HANDOFF_SHA256 = "c5318c23e078038cf9ef5cf63d042848391b0dfb2df717c4b748768cb26845bf"
 DRAFTER_CHECKPOINT_SHA256 = "93d2e5f9a941bbe79a0b2fc3f9bf43d582bf054990c14b1a93ff67024140062d"
 FINEWEB_DATASET = "HuggingFaceFW/fineweb-edu"
 FINEWEB_REVISION = "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9"
 FINEWEB_DUMP = "CC-MAIN-2025-26"
 FINEWEB_IN_ERA_DUMP = "CC-MAIN-2021-49"
-STACK_DATASET = "bigcode/the-stack-v2-train-smol-ids"
-STACK_REVISION = "ee71ccca83c2be079e0cb3e841a360dd2a5b6852"
-STACK_LANGUAGES = ["C", "C#", "C++", "Go", "Java", "JavaScript", "Python", "Rust", "Shell", "TypeScript"]
+STACK_DATASET = "bigcode/the-stack-smol"
+STACK_REVISION = "4a6938ce94446f324c6629e7de00ac591710044b"
+STACK_LANGUAGE_DIRECTORIES = {
+    "c": "C",
+    "c-sharp": "C#",
+    "c++": "C++",
+    "go": "Go",
+    "java": "Java",
+    "javascript": "JavaScript",
+    "python": "Python",
+    "rust": "Rust",
+    "shell": "Shell",
+    "typescript": "TypeScript",
+}
+STACK_LANGUAGES = list(STACK_LANGUAGE_DIRECTORIES.values())
 PARTITION_SEED = 20260725
 PILOT_SEED = 20260726
 DRAFTER_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
@@ -133,7 +146,7 @@ def build_only_contract() -> dict[str, Any]:
             "ema_endpoints_excluded": True,
         },
         "corpus": {
-            "strata": ["post_cutoff_fineweb_edu", "stack_v2_permissive_license"],
+            "strata": ["post_cutoff_fineweb_edu", "stack_v1_smol_permissive_license"],
             "default_mix": {"general": 0.5, "code": 0.5},
             "partitions": ["label_train", "calibration", "evaluation"],
             "document_disjoint": True,
@@ -186,6 +199,7 @@ def prelock_contract() -> dict[str, Any]:
         "status": "density_probe_and_partition_freeze_only",
         "governing_document": GOVERNING_DOCUMENT,
         "governing_document_sha256": GOVERNING_DOCUMENT_SHA256,
+        "governing_document_handoff_sha256": GOVERNING_DOCUMENT_HANDOFF_SHA256,
         "density_probe_authorized": True,
         "labeling_gpu_authorized": False,
         "training_authorized": False,
@@ -202,13 +216,17 @@ def prelock_contract() -> dict[str, Any]:
                 "dump": FINEWEB_DUMP,
                 "in_era_dump": FINEWEB_IN_ERA_DUMP,
             },
-            "stack_v2": {
+            "stack_smol": {
                 "dataset": STACK_DATASET,
                 "revision": STACK_REVISION,
                 "languages": list(STACK_LANGUAGES),
-                "license_filter": "license_type_permissive",
-                "vendor_and_generated_excluded": True,
-                "content_store": "s3://softwareheritage/content/{blob_id}",
+                "language_directories": deepcopy(STACK_LANGUAGE_DIRECTORIES),
+                "lineage": "Stack_v1",
+                "provenance_period": "in_pretraining_era",
+                "license_filter": "The_Stack_permissive_source_with_nonempty_per_file_license_metadata",
+                "content_store": "huggingface_direct_text",
+                "aws_credentials_required": False,
+                "software_heritage_raw_api_forbidden": True,
                 "silent_substitution_forbidden": True,
             },
             "partition_seed": PARTITION_SEED,
@@ -240,7 +258,7 @@ def prelock_contract() -> dict[str, Any]:
 
 
 def locked_d0_from_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
-    """Materialize Draft 6 after the pre-lock corpus job freezes its outputs."""
+    """Materialize Draft 7 after the pre-lock corpus job freezes its outputs."""
 
     required_hashes = {
         "label_train",
@@ -357,6 +375,7 @@ def locked_d0_from_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
             "seed or scale robustness",
             "unrecovered_at_depth4_means_knowledge_limited",
             "question_answering_capability_from_arc_allocation",
+            "the_stack_v2_was_used",
         ],
     }
     return payload
@@ -479,7 +498,9 @@ def validate_locked_d0(payload: dict[str, Any]) -> None:
     corpus = payload.get("corpus", {})
     if corpus.get("fineweb", {}).get("dump") != FINEWEB_DUMP:
         raise AssertionError("D0 FineWeb-Edu dump drifted")
-    if corpus.get("stack_v2", {}).get("revision") != STACK_REVISION:
-        raise AssertionError("D0 Stack v2 revision drifted")
+    if corpus.get("stack_smol", {}).get("revision") != STACK_REVISION:
+        raise AssertionError("D0 the-stack-smol revision drifted")
+    if corpus.get("stack_smol", {}).get("lineage") != "Stack_v1":
+        raise AssertionError("D0 code-corpus lineage drifted")
     if payload.get("corpus_manifest", {}).get("document_disjoint") is not True:
         raise AssertionError("D0 corpus manifest is not document-disjoint")

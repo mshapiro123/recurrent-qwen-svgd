@@ -10,10 +10,11 @@ from pathlib import Path
 from google.colab import drive, userdata
 
 
-STAGE5_PAPER2_D0_PRELOCK_CELL_VERSION = "paper2_d0_prelock_density_and_hash_v1"
-# Safety marker: Draft 6 authenticated Drive hash
+STAGE5_PAPER2_D0_PRELOCK_CELL_VERSION = "paper2_d0_prelock_density_and_hash_v2_stack_smol"
+# Safety marker: Draft 7 authenticated governing hash
 # Safety marker: CC-MAIN-2025-26 pinned FineWeb-Edu dump
-# Safety marker: Stack v2 gated SWH content no silent substitution
+# Safety marker: the-stack-smol direct Hugging Face content Stack v1 lineage
+# Safety marker: no AWS dependency no Software Heritage raw API
 # Safety marker: seed-1 raw checkpoint SHA required
 # Safety marker: density probe only before lock
 # Safety marker: no labeling proper no 14B forward no optimizer no training
@@ -40,19 +41,11 @@ def secret(*names: str) -> str | None:
 GH_TOKEN = secret("GH_TOKEN", "GITHUB_TOKEN")
 HF_TOKEN = secret("HF_TOKEN", "HUGGINGFACE_HUB_TOKEN")
 assert GH_TOKEN, "Missing GH_TOKEN in Colab secrets."
-assert HF_TOKEN, "Missing HF_TOKEN in Colab secrets; Stack v2 is gated."
+assert HF_TOKEN, "Missing HF_TOKEN in Colab secrets; bigcode/the-stack-smol is gated."
 os.environ["HF_TOKEN"] = HF_TOKEN
 os.environ["HUGGINGFACE_HUB_TOKEN"] = HF_TOKEN
 print("HF token loaded", flush=True)
-for aws_name in ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN"):
-    aws_value = secret(aws_name)
-    if aws_value:
-        os.environ[aws_name] = aws_value
-print(
-    "Software Heritage S3 mode:",
-    "signed" if os.environ.get("AWS_ACCESS_KEY_ID") else "unsigned public probe",
-    flush=True,
-)
+print("Code corpus access: direct Hugging Face text; AWS is not used", flush=True)
 
 
 def run(command: list[str], *, cwd: Path | None = None) -> None:
@@ -94,7 +87,6 @@ try:
     drive.mount("/content/drive", force_remount=False)
     sync_repo()
     run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"])
-    run([sys.executable, "-m", "pip", "install", "-q", "boto3", "smart_open[s3]"])
     run(
         [
             sys.executable,

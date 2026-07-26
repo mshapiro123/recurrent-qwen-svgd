@@ -1277,7 +1277,9 @@ def test_current_bootstrap_exposes_paper2_d0_prelock_target() -> None:
 
     assert '"paper2_d0_prelock"' in bootstrap
     assert "CC-MAIN-2025-26 pinned FineWeb-Edu dump" in cell
-    assert "Stack v2 gated SWH content no silent substitution" in cell
+    assert "the-stack-smol direct Hugging Face content Stack v1 lineage" in cell
+    assert "no AWS dependency no Software Heritage raw API" in cell
+    assert "AWS_ACCESS_KEY_ID" not in cell
     assert "density probe only before lock" in cell
     assert "no labeling proper no 14B forward no optimizer no training" in cell
     assert "post-lock launcher must be created after lock commit" in cell

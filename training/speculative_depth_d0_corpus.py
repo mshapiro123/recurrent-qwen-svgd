@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import gzip
 import hashlib
-import io
 import json
 import os
 from dataclasses import dataclass
@@ -19,8 +17,8 @@ from training.speculative_depth_d0_spec import (
     PARTITION_SEED,
     PILOT_SEED,
     STACK_DATASET,
+    STACK_LANGUAGE_DIRECTORIES,
     STACK_REVISION,
-    STACK_LANGUAGES,
 )
 
 
@@ -292,91 +290,69 @@ def iter_in_era_documents() -> Iterator[SourceDocument]:
     return iter_fineweb_documents(dump=FINEWEB_IN_ERA_DUMP)
 
 
-def _stack_files(row: dict[str, Any]) -> Iterator[dict[str, Any]]:
-    files = row.get("files")
-    if isinstance(files, list):
-        for item in files:
-            if isinstance(item, dict):
-                merged = dict(item)
-                merged.setdefault("repo_name", row.get("repo_name"))
-                yield merged
+def normalize_stack_licenses(value: Any) -> list[str]:
+    if isinstance(value, str):
+        values = [value]
+    elif isinstance(value, (list, tuple, set)):
+        values = [str(item) for item in value]
     else:
-        yield row
-
-
-def _stack_s3_client() -> Any:
-    import boto3
-    from botocore import UNSIGNED
-    from botocore.config import Config
-
-    if os.environ.get("AWS_ACCESS_KEY_ID") and os.environ.get("AWS_SECRET_ACCESS_KEY"):
-        return boto3.Session().client("s3")
-    return boto3.client("s3", config=Config(signature_version=UNSIGNED))
-
-
-def _fetch_stack_text(client: Any, item: dict[str, Any]) -> str:
-    blob_id = str(item.get("blob_id") or "")
-    if not blob_id:
-        return ""
-    try:
-        response = client.get_object(Bucket="softwareheritage", Key=f"content/{blob_id}")
-    except Exception as exc:
-        raise RuntimeError(
-            "The locked Stack v2 slice cannot access Software Heritage content. "
-            "Do not substitute another code corpus; configure the authorized S3 access and rerun."
-        ) from exc
-    payload = response["Body"].read()
-    try:
-        payload = gzip.GzipFile(fileobj=io.BytesIO(payload)).read()
-    except OSError as exc:
-        raise RuntimeError(f"Stack v2 blob {blob_id} was not a valid gzip object") from exc
-    encoding = str(item.get("src_encoding") or "utf-8")
-    return payload.decode(encoding, errors="ignore")
+        values = []
+    return sorted({item.strip() for item in values if item.strip()})
 
 
 def iter_stack_documents() -> Iterator[SourceDocument]:
     from datasets import load_dataset
 
-    dataset = load_dataset(
-        STACK_DATASET,
-        split="train",
-        streaming=True,
-        revision=STACK_REVISION,
-        token=_hf_token(),
-    )
-    client = _stack_s3_client()
-    for row in dataset:
-        for item in _stack_files(row):
-            language = str(item.get("language") or item.get("gha_language") or "")
-            if language not in STACK_LANGUAGES:
+    streams: dict[str, tuple[str, Iterator[dict[str, Any]]]] = {}
+    for language_directory, language in STACK_LANGUAGE_DIRECTORIES.items():
+        dataset = load_dataset(
+            STACK_DATASET,
+            data_dir=f"data/{language_directory}",
+            split="train",
+            streaming=True,
+            revision=STACK_REVISION,
+            token=_hf_token(),
+        )
+        streams[language_directory] = (language, iter(dataset))
+
+    while streams:
+        for language_directory in list(streams):
+            language, stream = streams[language_directory]
+            try:
+                row = next(stream)
+            except StopIteration:
+                del streams[language_directory]
                 continue
-            if item.get("is_vendor") is True or item.get("is_generated") is True:
-                continue
-            license_type = str(item.get("license_type") or "")
-            detected = [str(value) for value in (item.get("detected_licenses") or [])]
-            if license_type and license_type != "permissive":
-                continue
-            if not license_type and not detected:
-                continue
-            blob_id = str(item.get("blob_id") or "")
-            if not blob_id:
-                continue
-            text = _fetch_stack_text(client, item)
+            text = str(row.get("content") or "")
             if not text.strip():
                 continue
+            licenses = normalize_stack_licenses(row.get("licenses"))
+            if not licenses:
+                continue
+            repository_name = str(row.get("repository_name") or "")
+            path = str(row.get("path") or "")
+            identity = canonical_json(
+                {
+                    "language_directory": language_directory,
+                    "repository_name": repository_name,
+                    "path": path,
+                    "content_sha256": sha256_bytes(text.encode("utf-8")),
+                }
+            )
+            document_id = sha256_bytes(identity.encode("utf-8"))
             yield SourceDocument(
-                document_id=f"stackv2:{blob_id}",
+                document_id=f"stacksmol:{document_id}",
                 text=text,
                 metadata={
                     "dataset": STACK_DATASET,
                     "revision": STACK_REVISION,
-                    "blob_id": blob_id,
-                    "content_id": item.get("content_id"),
-                    "repo_name": item.get("repo_name"),
-                    "path": item.get("path"),
+                    "lineage": "Stack_v1",
+                    "provenance_period": "in_pretraining_era",
+                    "language_directory": language_directory,
                     "language": language,
-                    "license_type": license_type or "detected_permissive",
-                    "detected_licenses": detected,
-                    "revision_date": item.get("revision_date"),
+                    "repository_name": repository_name,
+                    "path": path,
+                    "licenses": licenses,
+                    "size": row.get("size"),
                 },
             )

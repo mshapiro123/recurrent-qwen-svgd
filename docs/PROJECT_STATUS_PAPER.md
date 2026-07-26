@@ -2,7 +2,7 @@
 
 **Canonical date:** July 25, 2026
 **Part 1 status:** closed
-**Part 2 status:** Arm G is closed on the tested frozen re-entry interface; both T1-lite attempts are final registered negatives, while both raw endpoints replicated exact in-support causal depth control at a small preservation cost; D0 Draft 6 is approved and its density-and-lock job is prepared, while labeling proper and training remain blocked until that lock commit lands; the COCONUT composite remains in integrity engineering
+**Part 2 status:** Arm G is closed on the tested frozen re-entry interface; both T1-lite attempts are final registered negatives, while both raw endpoints replicated exact in-support causal depth control at a small preservation cost; D0 Draft 7 is approved with the direct-content Stack v1 smol amendment and its density-and-lock job is prepared, while labeling proper and training remain blocked until that lock commit lands; the COCONUT composite remains in integrity engineering
 
 This page is the short status index. It replaces the earlier June recovery narrative, which became stale after the loop-closure repair, synthetic mechanism installation, Phase A dense-control comparison, and inverse-task boundary program.
 
@@ -24,7 +24,7 @@ This page is the short status index. It replaces the earlier June recovery narra
 - [T1-lite EMA localization](PAPER2_T1_LITE_EMA_AUDIT_HANDOFF_20260725.md)
 - [Paper Two Draft 3 pivot](PAPER2_EXPERIMENTAL_PLAN_DRAFT3_20260723.md)
 - [T1 P0 calibration strategy handoff](PAPER2_T1_P0_CALIBRATION_STRATEGY_HANDOFF_20260724.md)
-- [Approved D0 speculative-depth preregistration Draft 6](PHASE_D0_PREREGISTRATION_DRAFT6_20260725.md)
+- [Approved D0 speculative-depth preregistration Draft 7](PHASE_D0_PREREGISTRATION_DRAFT7_20260726.md)
 - [Superseded D0 Draft 1 scaffold](PAPER2_D0_SPECULATIVE_DEPTH_PREREGISTRATION_DRAFT_20260723.md)
 - [COCONUT integrity result](COCONUT_COMPOSITE_PREFLIGHT_HANDOFF_20260725.md)
 - [Experiment log](EXPERIMENT_LOG.md)

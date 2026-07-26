@@ -278,12 +278,12 @@
     {
       "id": "speculative_depth_d0",
       "status": "preregistration_approved_prelock_pending",
-      "claim": "No empirical D0 claim exists; Draft 6 is approved and authenticated, and only the uncitable density-and-corpus-lock job is prepared.",
+      "claim": "No empirical D0 claim exists; Draft 7 is approved with the Stack v1 smol corpus amendment, and only the uncitable density-and-corpus-lock job is prepared.",
       "scope": "Pre-lock density probe and deterministic corpus freeze only; labeling proper and training require the generated lock commit",
       "evidence": [
         {
-          "path": "docs/PHASE_D0_PREREGISTRATION_DRAFT6_20260725.md",
-          "locator": "signed-off governing design and seven-round markup log"
+          "path": "docs/PHASE_D0_PREREGISTRATION_DRAFT7_20260726.md",
+          "locator": "signed-off governing design and eight-round markup log"
         },
         {
           "path": "outputs/stage5/stage5_paper2_d0_build_only_20260725/summary.json",
@@ -298,6 +298,7 @@
         "speculative disagreement recovers useful depth labels",
         "acceptance rate improves",
         "natural reasoning improves",
+        "The Stack v2 was used",
         "D0 training is authorized"
       ]
     }

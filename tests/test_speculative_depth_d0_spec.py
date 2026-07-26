@@ -21,6 +21,8 @@ from training.speculative_depth_d0_corpus import (
     choose_stratum_mix,
     collect_partition_rows,
     collect_probe_rows,
+    iter_stack_documents,
+    normalize_stack_licenses,
     partition_for_document,
     select_pilot_rows,
     token_quotas,
@@ -63,6 +65,10 @@ def test_d0_prelock_contract_authorizes_density_only() -> None:
     assert contract["density_probe_authorized"] is True
     assert contract["labeling_gpu_authorized"] is False
     assert contract["training_authorized"] is False
+    assert contract["corpus"]["stack_smol"]["lineage"] == "Stack_v1"
+    assert contract["corpus"]["stack_smol"]["content_store"] == "huggingface_direct_text"
+    assert contract["corpus"]["stack_smol"]["aws_credentials_required"] is False
+    assert "stack_v2" not in contract["corpus"]
     D0ExecutionPolicy(density_probe_authorized=True).assert_allowed(
         density_probe=True, labeling=False, training=False
     )
@@ -158,6 +164,65 @@ def test_d0_probe_and_partitions_are_deterministic_and_document_disjoint() -> No
     assert assert_document_disjoint(partitions)["document_disjoint"] is True
     assert partition_for_document("stable") == partition_for_document("stable")
     assert len(select_pilot_rows(partitions["label_train"], count=4)) == 4
+
+
+def test_d0_stack_smol_loader_uses_direct_text_and_preserves_provenance(monkeypatch) -> None:
+    import sys
+    from types import SimpleNamespace
+
+    calls: list[dict[str, object]] = []
+
+    def fake_load_dataset(dataset: str, **kwargs):
+        calls.append({"dataset": dataset, **kwargs})
+        language_directory = str(kwargs["data_dir"]).split("/")[-1]
+        rows = [
+            {
+                "content": f"direct content for {language_directory}",
+                "licenses": ["mit", "apache-2.0", "mit"],
+                "repository_name": "example/repo",
+                "path": f"main.{language_directory}",
+                "size": 15,
+                "lang": language_directory,
+            },
+        ]
+        if language_directory == "python":
+            rows.append(
+            {
+                "content": "ignored_without_license",
+                "licenses": [],
+                "repository_name": "example/repo",
+                "path": "ignored.py",
+            }
+            )
+        return rows
+
+    monkeypatch.setitem(sys.modules, "datasets", SimpleNamespace(load_dataset=fake_load_dataset))
+    documents = list(iter_stack_documents())
+    assert len(documents) == 10
+    assert [document.metadata["language_directory"] for document in documents] == [
+        "c",
+        "c-sharp",
+        "c++",
+        "go",
+        "java",
+        "javascript",
+        "python",
+        "rust",
+        "shell",
+        "typescript",
+    ]
+    assert all(document.document_id.startswith("stacksmol:") for document in documents)
+    assert all(document.metadata["lineage"] == "Stack_v1" for document in documents)
+    assert all(document.metadata["licenses"] == ["apache-2.0", "mit"] for document in documents)
+    assert all(call["data_dir"] for call in calls)
+    assert all("s3" not in str(call).lower() for call in calls)
+
+
+def test_d0_stack_license_normalization_is_stable() -> None:
+    assert normalize_stack_licenses(["mit", " apache-2.0 ", "mit", ""]) == [
+        "apache-2.0",
+        "mit",
+    ]
 
 
 def test_d0_locked_payload_requires_all_frozen_artifacts() -> None:
