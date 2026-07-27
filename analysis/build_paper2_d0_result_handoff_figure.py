@@ -156,8 +156,13 @@ def main() -> None:
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUTPUT.with_suffix(".png"), dpi=220, bbox_inches="tight")
     fig.savefig(OUTPUT.with_suffix(".svg"), bbox_inches="tight")
+    svg_path = OUTPUT.with_suffix(".svg")
+    svg_path.write_text(
+        "\n".join(line.rstrip() for line in svg_path.read_text(encoding="utf-8").splitlines()) + "\n",
+        encoding="utf-8",
+    )
     print(OUTPUT.with_suffix(".png"))
-    print(OUTPUT.with_suffix(".svg"))
+    print(svg_path)
 
 
 if __name__ == "__main__":

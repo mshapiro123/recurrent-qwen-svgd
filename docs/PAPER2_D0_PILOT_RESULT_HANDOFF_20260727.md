@@ -1,10 +1,15 @@
 # Handoff: Paper Two D0 Adaptive-Depth Pilot Result and Strategy Decision
 
-**Date:** 2026-07-27  
-**Run:** `stage5_paper2_d0_20260726`  
-**Registered scope:** teacher-forced next-token agreement, one seed, one recurrent drafter, one primary teacher  
-**Operational status:** complete; all aggregate receipts landed; A100 may remain shut down  
-**Registered interpretation:** `not_recoverable_at_pilot_scale`  
+**Date:** 2026-07-27
+
+**Run:** `stage5_paper2_d0_20260726`
+
+**Registered scope:** teacher-forced next-token agreement, one seed, one recurrent drafter, one primary teacher
+
+**Operational status:** complete; all aggregate receipts landed; A100 may remain shut down
+
+**Registered interpretation:** `not_recoverable_at_pilot_scale`
+
 **Decision requested:** bank the D0 result and decide whether the D-axis pauses, or whether one bounded utility-targeted follow-up is warranted before the C-track becomes primary
 
 ## 0. Executive verdict
