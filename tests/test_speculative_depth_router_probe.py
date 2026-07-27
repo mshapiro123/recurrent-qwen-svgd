@@ -9,6 +9,7 @@ from eval.eval_speculative_depth_router_probe import (
     cluster_bootstrap_budget_lower_bounds,
     fit_ridge_probe,
     fixed_projection,
+    prediction_equivalence_summary,
     select_sequential_frontier,
     simulate_sequential_policy,
 )
@@ -21,6 +22,9 @@ def test_feature_extraction_uses_the_floor_equivalent_forward_path() -> None:
     assert "recurrent_application_sink=recurrent_states" in source
     assert "output_hidden_states=True" not in source
     assert "return_loop_recurrent_states=True" not in source
+    assert "router feature extraction disagrees with the frozen floor" not in source
+    assert '"runtime_matches"' in source
+    assert '"prediction_mismatch"' in source
 
 
 def test_fixed_projection_is_reproducible_and_orthonormal() -> None:
@@ -28,6 +32,46 @@ def test_fixed_projection_is_reproducible_and_orthonormal() -> None:
     second = fixed_projection(16, 4, 20260727)
     assert torch.equal(first, second)
     assert torch.allclose(first.T @ first, torch.eye(4), atol=1e-5)
+
+
+def test_prediction_equivalence_summary_reports_cross_hardware_drift() -> None:
+    summary = prediction_equivalence_summary(
+        {
+            "signature": {"runtime_hardware": "test-gpu"},
+            "metadata": [
+                {"row_index": 1, "stratum": "general"},
+                {"row_index": 1, "stratum": "general"},
+                {"row_index": 2, "stratum": "code"},
+            ],
+            "prediction_mismatch": torch.tensor(
+                [
+                    [False, True, False, False, False, False],
+                    [False, False, False, False, False, False],
+                    [True, False, False, False, False, True],
+                ]
+            ),
+            "runtime_over_reference_logit_gap": torch.tensor(
+                [
+                    [0.0, 0.01, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.02, 0.0, 0.0, 0.0, 0.0, 0.03],
+                ]
+            ),
+        }
+    )
+    assert summary["mismatch_cells"] == 3
+    assert summary["total_cells"] == 18
+    assert summary["affected_positions"] == 2
+    assert summary["affected_source_rows"] == 2
+    assert abs(summary["mismatch_runtime_over_reference_logit_gap"]["median"] - 0.02) < 1e-6
+    assert summary["per_loop_mismatch_cells"] == {
+        "1": 1,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 1,
+    }
 
 
 def test_ridge_probe_recovers_a_separable_signal() -> None:

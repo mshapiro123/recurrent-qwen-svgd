@@ -108,13 +108,20 @@ def extract_feature_cache(
     private_sha = sha256_file(private_rows_path)
     if private_sha != expected_private_sha256:
         raise RuntimeError("router probe private-floor SHA-256 mismatch")
+    runtime_hardware = (
+        torch.cuda.get_device_name(torch.device(device))
+        if str(device).startswith("cuda") and torch.cuda.is_available()
+        else str(device)
+    )
     signature = {
-        "kind": "paper2_d0_router_feature_cache_v2",
+        "kind": "paper2_d0_router_feature_cache_v3_cross_hardware_sensitivity",
         "checkpoint_sha256": checkpoint_sha,
         "private_rows_sha256": private_sha,
         "data_jsonl_sha256": sha256_file(data_jsonl),
         "projection_dim": int(projection_dim),
         "projection_seed": int(projection_seed),
+        "runtime_hardware": runtime_hardware,
+        "torch_version": str(torch.__version__),
         "forced_depths": [1, 2, 3, 4, 5, 6],
         "scalar_feature_schema": [
             "answer_top1_top2_margin",
@@ -162,6 +169,9 @@ def extract_feature_cache(
     state_chunks: list[torch.Tensor] = []
     scalar_chunks: list[torch.Tensor] = []
     match_chunks: list[torch.Tensor] = []
+    runtime_match_chunks: list[torch.Tensor] = []
+    mismatch_chunks: list[torch.Tensor] = []
+    mismatch_gap_chunks: list[torch.Tensor] = []
     row_cache_dir.mkdir(parents=True, exist_ok=True)
 
     processed_positions = 0
@@ -194,7 +204,8 @@ def extract_feature_cache(
             try:
                 # Keep this call equivalent to eval_speculative_depth_d0_floor.forced_predictions.
                 # Hooks and the recurrent-state sink observe tensors without selecting a different
-                # model output path, which is required for the exact frozen-floor prediction check.
+                # model output path. Frozen-floor predictions remain the primary labels;
+                # any cross-hardware bfloat16 argmax drift is measured separately below.
                 output = wrapper(
                     input_ids=input_ids,
                     attention_mask=attention,
@@ -284,11 +295,20 @@ def extract_feature_cache(
                 [[int(value) for value in record["predictions"]] for record in records],
                 dtype=torch.long,
             )
-            if not torch.equal(predicted, expected):
-                mismatch = int(predicted.ne(expected).sum().item())
-                raise RuntimeError(
-                    f"router feature extraction disagrees with the frozen floor on {mismatch} cells"
-                )
+            teacher_7b = torch.tensor(
+                [int(record["teacher_7b"]) for record in records],
+                dtype=torch.long,
+            )
+            prediction_mismatch = predicted.ne(expected)
+            runtime_matches = predicted.eq(teacher_7b.unsqueeze(1))
+            scores_by_position = selected_logits.transpose(0, 1).float()
+            runtime_logit = scores_by_position.gather(
+                -1, predicted.to(device=device).unsqueeze(-1)
+            ).squeeze(-1)
+            reference_logit = scores_by_position.gather(
+                -1, expected.to(device=device).unsqueeze(-1)
+            ).squeeze(-1)
+            runtime_over_reference_logit_gap = (runtime_logit - reference_logit).cpu()
             result = {
                 "signature": row_signature,
                 "metadata": [
@@ -307,6 +327,12 @@ def extract_feature_cache(
                     [[bool(value) for value in record["matches_teacher_7b"]] for record in records],
                     dtype=torch.bool,
                 ),
+                # The frozen floor remains the primary outcome source. Runtime labels are
+                # retained only for a complete cross-hardware sensitivity analysis because
+                # bfloat16 SDPA argmax is not guaranteed bit-identical across GPU classes.
+                "runtime_matches": runtime_matches,
+                "prediction_mismatch": prediction_mismatch,
+                "runtime_over_reference_logit_gap": runtime_over_reference_logit_gap,
             }
             temporary = row_cache.with_suffix(".pt.tmp")
             torch.save(result, temporary)
@@ -317,11 +343,15 @@ def extract_feature_cache(
         state_chunks.append(result["state_projection"])
         scalar_chunks.append(result["scalars"])
         match_chunks.append(result["matches"])
+        runtime_match_chunks.append(result["runtime_matches"])
+        mismatch_chunks.append(result["prediction_mismatch"])
+        mismatch_gap_chunks.append(result["runtime_over_reference_logit_gap"])
         processed_positions += len(result["metadata"])
         processed_rows += 1
         if processed_rows == 1 or processed_rows % 16 == 0 or processed_positions == len(floor_rows):
             print(
-                f"router_feature_progress source_rows={processed_rows} positions={processed_positions}/{len(floor_rows)}",
+                f"router_feature_progress source_rows={processed_rows} positions={processed_positions}/{len(floor_rows)} "
+                f"reference_mismatches={sum(int(chunk.sum().item()) for chunk in mismatch_chunks)}",
                 flush=True,
             )
 
@@ -337,6 +367,9 @@ def extract_feature_cache(
         "state_projection": torch.cat(state_chunks, dim=0),
         "scalars": torch.cat(scalar_chunks, dim=0),
         "matches": torch.cat(match_chunks, dim=0),
+        "runtime_matches": torch.cat(runtime_match_chunks, dim=0),
+        "prediction_mismatch": torch.cat(mismatch_chunks, dim=0),
+        "runtime_over_reference_logit_gap": torch.cat(mismatch_gap_chunks, dim=0),
     }
     if len(metadata) != len(floor_rows):
         raise RuntimeError("router feature cache does not cover every private floor position")
@@ -350,6 +383,44 @@ def extract_feature_cache(
         torch.cuda.empty_cache()
     print(f"router_feature_cache_saved={cache_path}", flush=True)
     return payload
+
+
+def prediction_equivalence_summary(cache: dict[str, Any]) -> dict[str, Any]:
+    mismatch = cache["prediction_mismatch"].bool()
+    logit_gap = cache["runtime_over_reference_logit_gap"].float()
+    metadata = list(cache["metadata"])
+    if mismatch.dim() != 2 or mismatch.shape[1] != 6:
+        raise ValueError("prediction mismatch matrix must be [positions, six loops]")
+    affected_positions = mismatch.any(dim=1)
+    affected_source_rows = {
+        (int(metadata[index]["row_index"]), str(metadata[index]["stratum"]))
+        for index in affected_positions.nonzero(as_tuple=False).flatten().tolist()
+    }
+    mismatches = int(mismatch.sum().item())
+    total = int(mismatch.numel())
+    mismatch_gaps = logit_gap[mismatch]
+    return {
+        "reference_label_source": "frozen_floor_receipt",
+        "runtime_label_source": "current_feature_extraction_forward",
+        "runtime_hardware": cache["signature"]["runtime_hardware"],
+        "exact_match_cells": total - mismatches,
+        "mismatch_cells": mismatches,
+        "total_cells": total,
+        "mismatch_rate": mismatches / total if total else 0.0,
+        "mismatch_runtime_over_reference_logit_gap": {
+            "median": float(mismatch_gaps.median().item()) if mismatches else 0.0,
+            "p95": float(torch.quantile(mismatch_gaps, 0.95).item()) if mismatches else 0.0,
+            "maximum": float(mismatch_gaps.max().item()) if mismatches else 0.0,
+        },
+        "affected_positions": int(affected_positions.sum().item()),
+        "total_positions": int(mismatch.shape[0]),
+        "affected_source_rows": len(affected_source_rows),
+        "per_loop_mismatch_cells": {
+            str(loop + 1): int(mismatch[:, loop].sum().item()) for loop in range(6)
+        },
+        "primary_analysis_uses_frozen_floor": True,
+        "runtime_analysis_is_sensitivity_only": True,
+    }
 
 
 def standardize_from_train(
@@ -782,6 +853,8 @@ def main() -> int:
         projection_seed=args.seed,
     )
     analysis = analyze_feature_cache(cache, seed=args.seed)
+    runtime_cache = {**cache, "matches": cache["runtime_matches"]}
+    runtime_analysis = analyze_feature_cache(runtime_cache, seed=args.seed)
     summary = {
         "kind": "paper2_d0_deployable_router_probe",
         "status": "complete",
@@ -796,6 +869,9 @@ def main() -> int:
             cache["frozen_parameter_fingerprint_before"]
             == cache["frozen_parameter_fingerprint_after"]
         ),
+        "primary_label_source": "frozen_floor_receipt",
+        "prediction_equivalence": prediction_equivalence_summary(cache),
+        "runtime_hardware_sensitivity": runtime_analysis,
         **analysis,
     }
     write_json(args.output_summary, summary)
