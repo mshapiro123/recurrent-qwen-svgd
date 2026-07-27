@@ -1,0 +1,1217 @@
+{
+  "initial_checkpoint_sha256": "93d2e5f9a941bbe79a0b2fc3f9bf43d582bf054990c14b1a93ff67024140062d",
+  "initial_loop1": {
+    "by_stratum": {
+      "code": {
+        "all": {
+          "adaptive_all": {
+            "accuracy": 0.7841592494587443,
+            "correct": 78234,
+            "total": 99768
+          },
+          "adaptive_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 21534
+          },
+          "loop1_accepted": {
+            "accuracy": 1.0,
+            "correct": 78234,
+            "total": 78234
+          },
+          "loop1_all": {
+            "accuracy": 0.7841592494587443,
+            "correct": 78234,
+            "total": 99768
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 21534
+          },
+          "loop4_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 21534
+          },
+          "plain_all": {
+            "accuracy": 0.7841592494587443,
+            "correct": 78234,
+            "total": 99768
+          }
+        },
+        "depth_recoverable_fraction_R": 0.0,
+        "q1": {
+          "adaptive_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 3444
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 3444
+          },
+          "loop4_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 3444
+          }
+        },
+        "q2": {
+          "adaptive_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 4201
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 4201
+          },
+          "loop4_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 4201
+          }
+        },
+        "q3": {
+          "adaptive_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 5789
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 5789
+          },
+          "loop4_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 5789
+          }
+        },
+        "q4": {
+          "adaptive_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 8100
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 8100
+          },
+          "loop4_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 8100
+          }
+        },
+        "unrecovered_at_depth4_by_severity": {
+          "all": 1.0,
+          "q1": 1.0,
+          "q2": 1.0,
+          "q3": 1.0,
+          "q4": 1.0
+        }
+      },
+      "general": {
+        "all": {
+          "adaptive_all": {
+            "accuracy": 0.6681769428935155,
+            "correct": 66658,
+            "total": 99761
+          },
+          "adaptive_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 33103
+          },
+          "loop1_accepted": {
+            "accuracy": 1.0,
+            "correct": 66658,
+            "total": 66658
+          },
+          "loop1_all": {
+            "accuracy": 0.6681769428935155,
+            "correct": 66658,
+            "total": 99761
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 33103
+          },
+          "loop4_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 33103
+          },
+          "plain_all": {
+            "accuracy": 0.6681769428935155,
+            "correct": 66658,
+            "total": 99761
+          }
+        },
+        "depth_recoverable_fraction_R": 0.0,
+        "q1": {
+          "adaptive_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 7766
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 7766
+          },
+          "loop4_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 7766
+          }
+        },
+        "q2": {
+          "adaptive_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 9246
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 9246
+          },
+          "loop4_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 9246
+          }
+        },
+        "q3": {
+          "adaptive_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 9288
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 9288
+          },
+          "loop4_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 9288
+          }
+        },
+        "q4": {
+          "adaptive_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 6803
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 6803
+          },
+          "loop4_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 6803
+          }
+        },
+        "unrecovered_at_depth4_by_severity": {
+          "all": 1.0,
+          "q1": 1.0,
+          "q2": 1.0,
+          "q3": 1.0,
+          "q4": 1.0
+        }
+      },
+      "pooled": {
+        "all": {
+          "adaptive_all": {
+            "accuracy": 0.7261701306576989,
+            "correct": 144892,
+            "total": 199529
+          },
+          "adaptive_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 54637
+          },
+          "loop1_accepted": {
+            "accuracy": 1.0,
+            "correct": 144892,
+            "total": 144892
+          },
+          "loop1_all": {
+            "accuracy": 0.7261701306576989,
+            "correct": 144892,
+            "total": 199529
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 54637
+          },
+          "loop4_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 54637
+          },
+          "plain_all": {
+            "accuracy": 0.7261701306576989,
+            "correct": 144892,
+            "total": 199529
+          }
+        },
+        "depth_recoverable_fraction_R": 0.0,
+        "q1": {
+          "adaptive_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 11210
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 11210
+          },
+          "loop4_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 11210
+          }
+        },
+        "q2": {
+          "adaptive_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 13447
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 13447
+          },
+          "loop4_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 13447
+          }
+        },
+        "q3": {
+          "adaptive_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 15077
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 15077
+          },
+          "loop4_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 15077
+          }
+        },
+        "q4": {
+          "adaptive_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 14903
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 14903
+          },
+          "loop4_rejected": {
+            "accuracy": 0.0,
+            "correct": 0,
+            "total": 14903
+          }
+        },
+        "unrecovered_at_depth4_by_severity": {
+          "all": 1.0,
+          "q1": 1.0,
+          "q2": 1.0,
+          "q3": 1.0,
+          "q4": 1.0
+        }
+      }
+    },
+    "elapsed_seconds": 16.00005311699897,
+    "exhausted": 152037,
+    "exhaustion_rate": 0.7619794616321437,
+    "forced_max_loops": 1,
+    "latency_ms_per_position": 0.08018911094126152,
+    "loop_usage_correlations": {
+      "spearman_kl": null,
+      "spearman_rejection_run_length": null,
+      "spearman_teacher_rank": null
+    },
+    "mean_selected_loops": 1.0,
+    "positions": 199529,
+    "positions_per_second": 12470.521100208973,
+    "tie_diagnostics": {
+      "answer_tie_cells": 6040,
+      "argmax_cells": 399058,
+      "control_tie_cells": 481,
+      "policy": "fp32 logits; exact ties choose the lowest token id",
+      "tie_rate": 0.016340983015000327
+    }
+  },
+  "initial_same_reader_equivalence": {
+    "all_mismatches_explained_by_current_fp32_ties": true,
+    "mismatches_vs_legacy_plain_cache": 0,
+    "non_tie_mismatches": 0,
+    "positions": 199529
+  },
+  "interpretation_band": "not_recoverable_at_pilot_scale",
+  "kind": "paper2_d0_final_evaluation",
+  "natural_surface_guardrail": {
+    "absolute_drop": 0.006901692294950745,
+    "maximum_drop": 0.01,
+    "passed": true,
+    "reference_loop1_match": 1.0,
+    "trained_loop1_match_on_pretraining_accepted_positions": 0.9930983077050493
+  },
+  "private_rows_sha256": "4b82296fb7539520aac3a01f0430cecb65a38cd6c081516cced3448b0cc15328",
+  "scope": "teacher-forced next-token agreement; simulation-grade latency; single seed",
+  "simulation_grade_wall_clock": {
+    "implied_adaptive_elapsed_seconds": 17.224377131624617,
+    "implied_adaptive_positions_per_second": 11584.105391750689,
+    "method": "same-session whole-chunk timing; adaptive time interpolated from trained loop-1 and forced-loop-4 calls",
+    "plain_elapsed_seconds": 16.00005311699897,
+    "trained_forced4_elapsed_seconds": 48.03642872400815,
+    "trained_loop1_elapsed_seconds": 15.50758186198982
+  },
+  "speculative_decoding_simulation": {
+    "2": {
+      "adaptive": {
+        "acceptance_rate": 0.5951183582241186,
+        "draft_tokens_accepted": 140586,
+        "draft_tokens_proposed": 236232,
+        "drafter_loop_passes_per_emitted_token": 1.0588303470016922,
+        "gamma": 2,
+        "implied_tokens_emitted": 258846,
+        "loop_cost": 274074,
+        "loops_per_accepted_draft_token": 1.9495113311425034,
+        "teacher_verifications_per_emitted_token": 0.4568739713961197,
+        "windows": 118260
+      },
+      "plain": {
+        "acceptance_rate": 0.6205623487590209,
+        "draft_tokens_accepted": 144892,
+        "draft_tokens_proposed": 233485,
+        "drafter_loop_passes_per_emitted_token": 0.8919232782100796,
+        "gamma": 2,
+        "implied_tokens_emitted": 261777,
+        "loop_cost": 233485,
+        "loops_per_accepted_draft_token": 1.6114416254865693,
+        "teacher_verifications_per_emitted_token": 0.44650599556110737,
+        "windows": 116885
+      }
+    },
+    "4": {
+      "adaptive": {
+        "acceptance_rate": 0.4378780422472918,
+        "draft_tokens_accepted": 140586,
+        "draft_tokens_proposed": 321062,
+        "drafter_loop_passes_per_emitted_token": 1.6869878624531953,
+        "gamma": 4,
+        "implied_tokens_emitted": 221132,
+        "loop_cost": 373047,
+        "loops_per_accepted_draft_token": 2.653514574708719,
+        "teacher_verifications_per_emitted_token": 0.364243980970642,
+        "windows": 80546
+      },
+      "plain": {
+        "acceptance_rate": 0.4649130125074602,
+        "draft_tokens_accepted": 144892,
+        "draft_tokens_proposed": 311654,
+        "drafter_loop_passes_per_emitted_token": 1.3970629107307757,
+        "gamma": 4,
+        "implied_tokens_emitted": 223078,
+        "loop_cost": 311654,
+        "loops_per_accepted_draft_token": 2.1509400104905723,
+        "teacher_verifications_per_emitted_token": 0.3504872735097141,
+        "windows": 78186
+      }
+    },
+    "8": {
+      "adaptive": {
+        "acceptance_rate": 0.2713428756716694,
+        "draft_tokens_accepted": 140586,
+        "draft_tokens_proposed": 518112,
+        "drafter_loop_passes_per_emitted_token": 2.9185765221361883,
+        "gamma": 8,
+        "implied_tokens_emitted": 205862,
+        "loop_cost": 600824,
+        "loops_per_accepted_draft_token": 4.273711464868479,
+        "teacher_verifications_per_emitted_token": 0.3170862033789626,
+        "windows": 65276
+      },
+      "plain": {
+        "acceptance_rate": 0.29449773067721957,
+        "draft_tokens_accepted": 144892,
+        "draft_tokens_proposed": 491997,
+        "drafter_loop_passes_per_emitted_token": 2.3782562248335934,
+        "gamma": 8,
+        "implied_tokens_emitted": 206873,
+        "loop_cost": 491997,
+        "loops_per_accepted_draft_token": 3.39561190403887,
+        "teacher_verifications_per_emitted_token": 0.2996089388175354,
+        "windows": 61981
+      }
+    }
+  },
+  "status": "complete",
+  "trained_adaptive": {
+    "by_stratum": {
+      "code": {
+        "all": {
+          "adaptive_all": {
+            "accuracy": 0.7525459065030872,
+            "correct": 75080,
+            "total": 99768
+          },
+          "adaptive_rejected": {
+            "accuracy": 0.029023869230054795,
+            "correct": 625,
+            "total": 21534
+          },
+          "loop1_accepted": {
+            "accuracy": 0.9950021729682746,
+            "correct": 77843,
+            "total": 78234
+          },
+          "loop1_all": {
+            "accuracy": 0.7842695052521851,
+            "correct": 78245,
+            "total": 99768
+          },
+          "loop1_rejected": {
+            "accuracy": 0.018668152688771245,
+            "correct": 402,
+            "total": 21534
+          },
+          "loop4_rejected": {
+            "accuracy": 0.12069285780625987,
+            "correct": 2599,
+            "total": 21534
+          },
+          "plain_all": {
+            "accuracy": 0.7841592494587443,
+            "correct": 78234,
+            "total": 99768
+          }
+        },
+        "depth_recoverable_fraction_R": 0.01035571654128355,
+        "q1": {
+          "adaptive_rejected": {
+            "accuracy": 0.050522648083623695,
+            "correct": 174,
+            "total": 3444
+          },
+          "loop1_rejected": {
+            "accuracy": 0.040940766550522645,
+            "correct": 141,
+            "total": 3444
+          },
+          "loop4_rejected": {
+            "accuracy": 0.18641114982578397,
+            "correct": 642,
+            "total": 3444
+          }
+        },
+        "q2": {
+          "adaptive_rejected": {
+            "accuracy": 0.041180671268745535,
+            "correct": 173,
+            "total": 4201
+          },
+          "loop1_rejected": {
+            "accuracy": 0.03165912877886218,
+            "correct": 133,
+            "total": 4201
+          },
+          "loop4_rejected": {
+            "accuracy": 0.14401333015948584,
+            "correct": 605,
+            "total": 4201
+          }
+        },
+        "q3": {
+          "adaptive_rejected": {
+            "accuracy": 0.03109345310070824,
+            "correct": 180,
+            "total": 5789
+          },
+          "loop1_rejected": {
+            "accuracy": 0.017274140611504576,
+            "correct": 100,
+            "total": 5789
+          },
+          "loop4_rejected": {
+            "accuracy": 0.12817412333736397,
+            "correct": 742,
+            "total": 5789
+          }
+        },
+        "q4": {
+          "adaptive_rejected": {
+            "accuracy": 0.012098765432098766,
+            "correct": 98,
+            "total": 8100
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0034567901234567903,
+            "correct": 28,
+            "total": 8100
+          },
+          "loop4_rejected": {
+            "accuracy": 0.07530864197530865,
+            "correct": 610,
+            "total": 8100
+          }
+        },
+        "unrecovered_at_depth4_by_severity": {
+          "all": 0.8793071421937402,
+          "q1": 0.813588850174216,
+          "q2": 0.8559866698405142,
+          "q3": 0.871825876662636,
+          "q4": 0.9246913580246914
+        }
+      },
+      "general": {
+        "all": {
+          "adaptive_all": {
+            "accuracy": 0.6566293441324766,
+            "correct": 65506,
+            "total": 99761
+          },
+          "adaptive_rejected": {
+            "accuracy": 0.03011811618282331,
+            "correct": 997,
+            "total": 33103
+          },
+          "loop1_accepted": {
+            "accuracy": 0.9908638122955984,
+            "correct": 66049,
+            "total": 66658
+          },
+          "loop1_all": {
+            "accuracy": 0.6688084522007598,
+            "correct": 66721,
+            "total": 99761
+          },
+          "loop1_rejected": {
+            "accuracy": 0.02030027489955593,
+            "correct": 672,
+            "total": 33103
+          },
+          "loop4_rejected": {
+            "accuracy": 0.1288704951212881,
+            "correct": 4266,
+            "total": 33103
+          },
+          "plain_all": {
+            "accuracy": 0.6681769428935155,
+            "correct": 66658,
+            "total": 99761
+          }
+        },
+        "depth_recoverable_fraction_R": 0.009817841283267379,
+        "q1": {
+          "adaptive_rejected": {
+            "accuracy": 0.05524079320113314,
+            "correct": 429,
+            "total": 7766
+          },
+          "loop1_rejected": {
+            "accuracy": 0.040818954416688126,
+            "correct": 317,
+            "total": 7766
+          },
+          "loop4_rejected": {
+            "accuracy": 0.2262425959309812,
+            "correct": 1757,
+            "total": 7766
+          }
+        },
+        "q2": {
+          "adaptive_rejected": {
+            "accuracy": 0.03666450356911097,
+            "correct": 339,
+            "total": 9246
+          },
+          "loop1_rejected": {
+            "accuracy": 0.024443002379407313,
+            "correct": 226,
+            "total": 9246
+          },
+          "loop4_rejected": {
+            "accuracy": 0.1481721825654337,
+            "correct": 1370,
+            "total": 9246
+          }
+        },
+        "q3": {
+          "adaptive_rejected": {
+            "accuracy": 0.02099483204134367,
+            "correct": 195,
+            "total": 9288
+          },
+          "loop1_rejected": {
+            "accuracy": 0.01227390180878553,
+            "correct": 114,
+            "total": 9288
+          },
+          "loop4_rejected": {
+            "accuracy": 0.09528423772609819,
+            "correct": 885,
+            "total": 9288
+          }
+        },
+        "q4": {
+          "adaptive_rejected": {
+            "accuracy": 0.004997795090401293,
+            "correct": 34,
+            "total": 6803
+          },
+          "loop1_rejected": {
+            "accuracy": 0.002204909598706453,
+            "correct": 15,
+            "total": 6803
+          },
+          "loop4_rejected": {
+            "accuracy": 0.03733646920476261,
+            "correct": 254,
+            "total": 6803
+          }
+        },
+        "unrecovered_at_depth4_by_severity": {
+          "all": 0.8711295048787119,
+          "q1": 0.7737574040690188,
+          "q2": 0.8518278174345663,
+          "q3": 0.9047157622739018,
+          "q4": 0.9626635307952374
+        }
+      },
+      "pooled": {
+        "all": {
+          "adaptive_all": {
+            "accuracy": 0.7045893078199159,
+            "correct": 140586,
+            "total": 199529
+          },
+          "adaptive_rejected": {
+            "accuracy": 0.02968684224975749,
+            "correct": 1622,
+            "total": 54637
+          },
+          "loop1_accepted": {
+            "accuracy": 0.9930983077050493,
+            "correct": 143892,
+            "total": 144892
+          },
+          "loop1_all": {
+            "accuracy": 0.7265410040645721,
+            "correct": 144966,
+            "total": 199529
+          },
+          "loop1_rejected": {
+            "accuracy": 0.019657008986584183,
+            "correct": 1074,
+            "total": 54637
+          },
+          "loop4_rejected": {
+            "accuracy": 0.12564745502132255,
+            "correct": 6865,
+            "total": 54637
+          },
+          "plain_all": {
+            "accuracy": 0.7261701306576989,
+            "correct": 144892,
+            "total": 199529
+          }
+        },
+        "depth_recoverable_fraction_R": 0.010029833263173308,
+        "q1": {
+          "adaptive_rejected": {
+            "accuracy": 0.053791257805530776,
+            "correct": 603,
+            "total": 11210
+          },
+          "loop1_rejected": {
+            "accuracy": 0.040856378233719896,
+            "correct": 458,
+            "total": 11210
+          },
+          "loop4_rejected": {
+            "accuracy": 0.21400535236396076,
+            "correct": 2399,
+            "total": 11210
+          }
+        },
+        "q2": {
+          "adaptive_rejected": {
+            "accuracy": 0.038075407154012045,
+            "correct": 512,
+            "total": 13447
+          },
+          "loop1_rejected": {
+            "accuracy": 0.02669740462556704,
+            "correct": 359,
+            "total": 13447
+          },
+          "loop4_rejected": {
+            "accuracy": 0.14687290845541756,
+            "correct": 1975,
+            "total": 13447
+          }
+        },
+        "q3": {
+          "adaptive_rejected": {
+            "accuracy": 0.02487232207998939,
+            "correct": 375,
+            "total": 15077
+          },
+          "loop1_rejected": {
+            "accuracy": 0.014193805133647278,
+            "correct": 214,
+            "total": 15077
+          },
+          "loop4_rejected": {
+            "accuracy": 0.10791271473104729,
+            "correct": 1627,
+            "total": 15077
+          }
+        },
+        "q4": {
+          "adaptive_rejected": {
+            "accuracy": 0.008857277058310407,
+            "correct": 132,
+            "total": 14903
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0028853251023283903,
+            "correct": 43,
+            "total": 14903
+          },
+          "loop4_rejected": {
+            "accuracy": 0.05797490438166812,
+            "correct": 864,
+            "total": 14903
+          }
+        },
+        "unrecovered_at_depth4_by_severity": {
+          "all": 0.8743525449786774,
+          "q1": 0.7859946476360392,
+          "q2": 0.8531270915445824,
+          "q3": 0.8920872852689528,
+          "q4": 0.9420250956183319
+        }
+      }
+    },
+    "elapsed_seconds": 48.03642872400815,
+    "exhausted": 3664,
+    "exhaustion_rate": 0.01836324544301831,
+    "forced_max_loops": 4,
+    "latency_ms_per_position": 0.24074910776883635,
+    "loop_usage_correlations": {
+      "spearman_kl": 0.1099087851450102,
+      "spearman_rejection_run_length": 0.04266393445851768,
+      "spearman_teacher_rank": 0.050931655951759726
+    },
+    "mean_selected_loops": 1.1583328739180772,
+    "positions": 199529,
+    "positions_per_second": 4153.701790497122,
+    "tie_diagnostics": {
+      "answer_tie_cells": 31989,
+      "argmax_cells": 1596232,
+      "control_tie_cells": 664,
+      "policy": "fp32 logits; exact ties choose the lowest token id",
+      "tie_rate": 0.020456299585523908
+    }
+  },
+  "trained_checkpoint_sha256": "8245cabfe7639dcd442c19e03496623b9d59eec31b39e253e08fd6f78b1086cf",
+  "trained_loop1": {
+    "by_stratum": {
+      "code": {
+        "all": {
+          "adaptive_all": {
+            "accuracy": 0.7842695052521851,
+            "correct": 78245,
+            "total": 99768
+          },
+          "adaptive_rejected": {
+            "accuracy": 0.018668152688771245,
+            "correct": 402,
+            "total": 21534
+          },
+          "loop1_accepted": {
+            "accuracy": 0.9950021729682746,
+            "correct": 77843,
+            "total": 78234
+          },
+          "loop1_all": {
+            "accuracy": 0.7842695052521851,
+            "correct": 78245,
+            "total": 99768
+          },
+          "loop1_rejected": {
+            "accuracy": 0.018668152688771245,
+            "correct": 402,
+            "total": 21534
+          },
+          "loop4_rejected": {
+            "accuracy": 0.018668152688771245,
+            "correct": 402,
+            "total": 21534
+          },
+          "plain_all": {
+            "accuracy": 0.7841592494587443,
+            "correct": 78234,
+            "total": 99768
+          }
+        },
+        "depth_recoverable_fraction_R": 0.0,
+        "q1": {
+          "adaptive_rejected": {
+            "accuracy": 0.040940766550522645,
+            "correct": 141,
+            "total": 3444
+          },
+          "loop1_rejected": {
+            "accuracy": 0.040940766550522645,
+            "correct": 141,
+            "total": 3444
+          },
+          "loop4_rejected": {
+            "accuracy": 0.040940766550522645,
+            "correct": 141,
+            "total": 3444
+          }
+        },
+        "q2": {
+          "adaptive_rejected": {
+            "accuracy": 0.03165912877886218,
+            "correct": 133,
+            "total": 4201
+          },
+          "loop1_rejected": {
+            "accuracy": 0.03165912877886218,
+            "correct": 133,
+            "total": 4201
+          },
+          "loop4_rejected": {
+            "accuracy": 0.03165912877886218,
+            "correct": 133,
+            "total": 4201
+          }
+        },
+        "q3": {
+          "adaptive_rejected": {
+            "accuracy": 0.017274140611504576,
+            "correct": 100,
+            "total": 5789
+          },
+          "loop1_rejected": {
+            "accuracy": 0.017274140611504576,
+            "correct": 100,
+            "total": 5789
+          },
+          "loop4_rejected": {
+            "accuracy": 0.017274140611504576,
+            "correct": 100,
+            "total": 5789
+          }
+        },
+        "q4": {
+          "adaptive_rejected": {
+            "accuracy": 0.0034567901234567903,
+            "correct": 28,
+            "total": 8100
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0034567901234567903,
+            "correct": 28,
+            "total": 8100
+          },
+          "loop4_rejected": {
+            "accuracy": 0.0034567901234567903,
+            "correct": 28,
+            "total": 8100
+          }
+        },
+        "unrecovered_at_depth4_by_severity": {
+          "all": 0.9813318473112288,
+          "q1": 0.9590592334494774,
+          "q2": 0.9683408712211379,
+          "q3": 0.9827258593884954,
+          "q4": 0.9965432098765432
+        }
+      },
+      "general": {
+        "all": {
+          "adaptive_all": {
+            "accuracy": 0.6688084522007598,
+            "correct": 66721,
+            "total": 99761
+          },
+          "adaptive_rejected": {
+            "accuracy": 0.02030027489955593,
+            "correct": 672,
+            "total": 33103
+          },
+          "loop1_accepted": {
+            "accuracy": 0.9908638122955984,
+            "correct": 66049,
+            "total": 66658
+          },
+          "loop1_all": {
+            "accuracy": 0.6688084522007598,
+            "correct": 66721,
+            "total": 99761
+          },
+          "loop1_rejected": {
+            "accuracy": 0.02030027489955593,
+            "correct": 672,
+            "total": 33103
+          },
+          "loop4_rejected": {
+            "accuracy": 0.02030027489955593,
+            "correct": 672,
+            "total": 33103
+          },
+          "plain_all": {
+            "accuracy": 0.6681769428935155,
+            "correct": 66658,
+            "total": 99761
+          }
+        },
+        "depth_recoverable_fraction_R": 0.0,
+        "q1": {
+          "adaptive_rejected": {
+            "accuracy": 0.040818954416688126,
+            "correct": 317,
+            "total": 7766
+          },
+          "loop1_rejected": {
+            "accuracy": 0.040818954416688126,
+            "correct": 317,
+            "total": 7766
+          },
+          "loop4_rejected": {
+            "accuracy": 0.040818954416688126,
+            "correct": 317,
+            "total": 7766
+          }
+        },
+        "q2": {
+          "adaptive_rejected": {
+            "accuracy": 0.024443002379407313,
+            "correct": 226,
+            "total": 9246
+          },
+          "loop1_rejected": {
+            "accuracy": 0.024443002379407313,
+            "correct": 226,
+            "total": 9246
+          },
+          "loop4_rejected": {
+            "accuracy": 0.024443002379407313,
+            "correct": 226,
+            "total": 9246
+          }
+        },
+        "q3": {
+          "adaptive_rejected": {
+            "accuracy": 0.01227390180878553,
+            "correct": 114,
+            "total": 9288
+          },
+          "loop1_rejected": {
+            "accuracy": 0.01227390180878553,
+            "correct": 114,
+            "total": 9288
+          },
+          "loop4_rejected": {
+            "accuracy": 0.01227390180878553,
+            "correct": 114,
+            "total": 9288
+          }
+        },
+        "q4": {
+          "adaptive_rejected": {
+            "accuracy": 0.002204909598706453,
+            "correct": 15,
+            "total": 6803
+          },
+          "loop1_rejected": {
+            "accuracy": 0.002204909598706453,
+            "correct": 15,
+            "total": 6803
+          },
+          "loop4_rejected": {
+            "accuracy": 0.002204909598706453,
+            "correct": 15,
+            "total": 6803
+          }
+        },
+        "unrecovered_at_depth4_by_severity": {
+          "all": 0.9796997251004441,
+          "q1": 0.9591810455833119,
+          "q2": 0.9755569976205927,
+          "q3": 0.9877260981912145,
+          "q4": 0.9977950904012935
+        }
+      },
+      "pooled": {
+        "all": {
+          "adaptive_all": {
+            "accuracy": 0.7265410040645721,
+            "correct": 144966,
+            "total": 199529
+          },
+          "adaptive_rejected": {
+            "accuracy": 0.019657008986584183,
+            "correct": 1074,
+            "total": 54637
+          },
+          "loop1_accepted": {
+            "accuracy": 0.9930983077050493,
+            "correct": 143892,
+            "total": 144892
+          },
+          "loop1_all": {
+            "accuracy": 0.7265410040645721,
+            "correct": 144966,
+            "total": 199529
+          },
+          "loop1_rejected": {
+            "accuracy": 0.019657008986584183,
+            "correct": 1074,
+            "total": 54637
+          },
+          "loop4_rejected": {
+            "accuracy": 0.019657008986584183,
+            "correct": 1074,
+            "total": 54637
+          },
+          "plain_all": {
+            "accuracy": 0.7261701306576989,
+            "correct": 144892,
+            "total": 199529
+          }
+        },
+        "depth_recoverable_fraction_R": 0.0,
+        "q1": {
+          "adaptive_rejected": {
+            "accuracy": 0.040856378233719896,
+            "correct": 458,
+            "total": 11210
+          },
+          "loop1_rejected": {
+            "accuracy": 0.040856378233719896,
+            "correct": 458,
+            "total": 11210
+          },
+          "loop4_rejected": {
+            "accuracy": 0.040856378233719896,
+            "correct": 458,
+            "total": 11210
+          }
+        },
+        "q2": {
+          "adaptive_rejected": {
+            "accuracy": 0.02669740462556704,
+            "correct": 359,
+            "total": 13447
+          },
+          "loop1_rejected": {
+            "accuracy": 0.02669740462556704,
+            "correct": 359,
+            "total": 13447
+          },
+          "loop4_rejected": {
+            "accuracy": 0.02669740462556704,
+            "correct": 359,
+            "total": 13447
+          }
+        },
+        "q3": {
+          "adaptive_rejected": {
+            "accuracy": 0.014193805133647278,
+            "correct": 214,
+            "total": 15077
+          },
+          "loop1_rejected": {
+            "accuracy": 0.014193805133647278,
+            "correct": 214,
+            "total": 15077
+          },
+          "loop4_rejected": {
+            "accuracy": 0.014193805133647278,
+            "correct": 214,
+            "total": 15077
+          }
+        },
+        "q4": {
+          "adaptive_rejected": {
+            "accuracy": 0.0028853251023283903,
+            "correct": 43,
+            "total": 14903
+          },
+          "loop1_rejected": {
+            "accuracy": 0.0028853251023283903,
+            "correct": 43,
+            "total": 14903
+          },
+          "loop4_rejected": {
+            "accuracy": 0.0028853251023283903,
+            "correct": 43,
+            "total": 14903
+          }
+        },
+        "unrecovered_at_depth4_by_severity": {
+          "all": 0.9803429910134158,
+          "q1": 0.9591436217662801,
+          "q2": 0.973302595374433,
+          "q3": 0.9858061948663527,
+          "q4": 0.9971146748976716
+        }
+      }
+    },
+    "elapsed_seconds": 15.50758186198982,
+    "exhausted": 16165,
+    "exhaustion_rate": 0.08101579219060888,
+    "forced_max_loops": 1,
+    "latency_ms_per_position": 0.0777209421286621,
+    "loop_usage_correlations": {
+      "spearman_kl": null,
+      "spearman_rejection_run_length": null,
+      "spearman_teacher_rank": null
+    },
+    "mean_selected_loops": 1.0,
+    "positions": 199529,
+    "positions_per_second": 12866.545008481284,
+    "tie_diagnostics": {
+      "answer_tie_cells": 5906,
+      "argmax_cells": 399058,
+      "control_tie_cells": 178,
+      "policy": "fp32 logits; exact ties choose the lowest token id",
+      "tie_rate": 0.01524590410416531
+    }
+  }
+}

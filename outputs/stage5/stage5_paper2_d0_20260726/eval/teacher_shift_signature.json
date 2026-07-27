@@ -1,0 +1,87 @@
+{
+  "amendment_timing": "specified after the pretraining floor landed and before D0 training; the trained-model result remained untouched",
+  "binary_target_caveat": "depth-2 rejected targets may compress trained demand toward depth 2 for both teachers",
+  "kind": "paper2_d0_teacher_shift_signature",
+  "population_rule": "7B demand uses 7B loop-1 rejections; 14B demand uses 14B loop-1 rejections; 14B on 7B rejections is descriptive overlap only",
+  "primary_statistic": "median first-correct depth among recoverable positions",
+  "registered_reading": "same_median_first_correct_depth_against_both_teachers",
+  "status": "complete",
+  "teacher_14b_crossover_on_7b_rejections": {
+    "aggregate_peak_depth": 2,
+    "agreement_curve": [
+      0.15579696572391832,
+      0.21550852219516764,
+      0.1786476868327402,
+      0.14669413747892865,
+      0.12045326840232254,
+      0.09968158831241805
+    ],
+    "first_correct_depth_counts": {
+      "1": 8318,
+      "2": 6805,
+      "3": 1412,
+      "4": 587,
+      "5": 335,
+      "6": 241
+    },
+    "median_first_correct_depth_recoverable": 2.0,
+    "never_correct": 35692,
+    "positions": 53390,
+    "recoverable": 17698,
+    "recoverable_rate": 0.3314852968720734
+  },
+  "teacher_14b_own_rejections": {
+    "aggregate_peak_depth": 2,
+    "agreement_curve": [
+      0.0,
+      0.14421036013121197,
+      0.13686038556668478,
+      0.1180907607837634,
+      0.10009297103864438,
+      0.08493693756907046
+    ],
+    "first_correct_depth_counts": {
+      "1": 0,
+      "2": 8221,
+      "3": 1850,
+      "4": 764,
+      "5": 438,
+      "6": 332
+    },
+    "median_first_correct_depth_recoverable": 2.0,
+    "never_correct": 45402,
+    "positions": 57007,
+    "recoverable": 11605,
+    "recoverable_rate": 0.20357149122037643
+  },
+  "teacher_7b_own_rejections": {
+    "aggregate_peak_depth": 2,
+    "agreement_curve": [
+      0.0,
+      0.1586439408128863,
+      0.14978460385840045,
+      0.1296122869451208,
+      0.10987076231504027,
+      0.09299494287319723
+    ],
+    "first_correct_depth_counts": {
+      "1": 0,
+      "2": 8470,
+      "3": 1876,
+      "4": 789,
+      "5": 443,
+      "6": 337
+    },
+    "median_first_correct_depth_recoverable": 2.0,
+    "never_correct": 41475,
+    "positions": 53390,
+    "recoverable": 11915,
+    "recoverable_rate": 0.22316913279640382
+  },
+  "teacher_overlap_on_7b_rejections": {
+    "fourteen_endorses_loop1": 8318,
+    "scope": "teacher disagreement within the agreement target; not semantic correctness",
+    "seven_rejections": 53390,
+    "share": 0.15579696572391832
+  }
+}

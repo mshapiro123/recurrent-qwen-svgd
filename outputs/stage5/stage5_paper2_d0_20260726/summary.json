@@ -1,0 +1,101 @@
+{
+  "arc_allocation_summary": "outputs/stage5/stage5_paper2_d0_20260726/eval/arc_allocation_summary.json",
+  "ema_checkpoint_sha256": "8245cabfe7639dcd442c19e03496623b9d59eec31b39e253e08fd6f78b1086cf",
+  "hard_guardrails": {
+    "natural_surface": {
+      "absolute_drop": 0.006901692294950745,
+      "maximum_drop": 0.01,
+      "passed": true,
+      "reference_loop1_match": 1.0,
+      "trained_loop1_match_on_pretraining_accepted_positions": 0.9930983077050493
+    },
+    "t1_mechanism": {
+      "absolute_drop": -0.033203125,
+      "checkpoint_sha256": "8245cabfe7639dcd442c19e03496623b9d59eec31b39e253e08fd6f78b1086cf",
+      "kind": "paper2_d0_t1_mechanism_retention",
+      "maximum_absolute_drop": 0.03,
+      "observed": {
+        "control": {
+          "by_depth": {
+            "1": {
+              "accuracy": 1.0,
+              "correct": 128,
+              "total": 128
+            },
+            "2": {
+              "accuracy": 1.0,
+              "correct": 128,
+              "total": 128
+            },
+            "3": {
+              "accuracy": 1.0,
+              "correct": 128,
+              "total": 128
+            },
+            "4": {
+              "accuracy": 1.0,
+              "correct": 128,
+              "total": 128
+            },
+            "5": {
+              "accuracy": 1.0,
+              "correct": 128,
+              "total": 128
+            },
+            "6": {
+              "accuracy": 1.0,
+              "correct": 128,
+              "total": 128
+            },
+            "7": {
+              "accuracy": 1.0,
+              "correct": 128,
+              "total": 128
+            },
+            "8": {
+              "accuracy": 1.0,
+              "correct": 128,
+              "total": 128
+            }
+          },
+          "continue_correct": 3584,
+          "continue_recall": 1.0,
+          "continue_total": 3584,
+          "exact_selected_depth_accuracy": 1.0,
+          "exact_selected_depth_correct": 1024,
+          "exact_selected_depth_total": 1024,
+          "exhausted_without_stop": 0,
+          "stop_correct": 1024,
+          "stop_recall": 1.0,
+          "stop_total": 1024
+        },
+        "exhausted": 0,
+        "forced_correct": 1005,
+        "self_halted_correct": 1005,
+        "total": 1024
+      },
+      "passed": true,
+      "reference": {
+        "accuracy": 0.9482421875,
+        "correct": 971,
+        "source": "stage5_paper2_t1_lite_r_20260725/eval/raw_primary/summary.json",
+        "total": 1024
+      },
+      "status": "complete"
+    }
+  },
+  "interpretation_band": "not_recoverable_at_pilot_scale",
+  "kind": "paper2_speculative_depth_d0",
+  "lock_commit": "90cbc48c9aa749cb2e53dfef35bb2af9a24d9ae3",
+  "natural_summary": "outputs/stage5/stage5_paper2_d0_20260726/eval/natural_summary.json",
+  "prelaunch_summary": "outputs/stage5/stage5_paper2_d0_20260726/prelaunch/summary.json",
+  "single_seed": true,
+  "status": "complete",
+  "t1_retention_summary": "outputs/stage5/stage5_paper2_d0_20260726/eval/t1_retention_summary.json",
+  "target_policy_receipt": "outputs/stage5/stage5_paper2_d0_20260726/prelaunch/target_policy_receipt.json",
+  "teacher_shift_population_rule": "each teacher is measured on its own loop-1 rejection population",
+  "teacher_shift_summary": "outputs/stage5/stage5_paper2_d0_20260726/eval/teacher_shift_signature.json",
+  "tie_policy": "fp32 logits; exact ties choose the lowest token id and are counted",
+  "training_authorized": true,
+  "training_summary": "outputs/stage5/stage5_paper2_d0_20260726/train/summary.json"
+}

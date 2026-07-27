@@ -1,0 +1,74 @@
+{
+  "absolute_drop": -0.033203125,
+  "checkpoint_sha256": "8245cabfe7639dcd442c19e03496623b9d59eec31b39e253e08fd6f78b1086cf",
+  "kind": "paper2_d0_t1_mechanism_retention",
+  "maximum_absolute_drop": 0.03,
+  "observed": {
+    "control": {
+      "by_depth": {
+        "1": {
+          "accuracy": 1.0,
+          "correct": 128,
+          "total": 128
+        },
+        "2": {
+          "accuracy": 1.0,
+          "correct": 128,
+          "total": 128
+        },
+        "3": {
+          "accuracy": 1.0,
+          "correct": 128,
+          "total": 128
+        },
+        "4": {
+          "accuracy": 1.0,
+          "correct": 128,
+          "total": 128
+        },
+        "5": {
+          "accuracy": 1.0,
+          "correct": 128,
+          "total": 128
+        },
+        "6": {
+          "accuracy": 1.0,
+          "correct": 128,
+          "total": 128
+        },
+        "7": {
+          "accuracy": 1.0,
+          "correct": 128,
+          "total": 128
+        },
+        "8": {
+          "accuracy": 1.0,
+          "correct": 128,
+          "total": 128
+        }
+      },
+      "continue_correct": 3584,
+      "continue_recall": 1.0,
+      "continue_total": 3584,
+      "exact_selected_depth_accuracy": 1.0,
+      "exact_selected_depth_correct": 1024,
+      "exact_selected_depth_total": 1024,
+      "exhausted_without_stop": 0,
+      "stop_correct": 1024,
+      "stop_recall": 1.0,
+      "stop_total": 1024
+    },
+    "exhausted": 0,
+    "forced_correct": 1005,
+    "self_halted_correct": 1005,
+    "total": 1024
+  },
+  "passed": true,
+  "reference": {
+    "accuracy": 0.9482421875,
+    "correct": 971,
+    "source": "stage5_paper2_t1_lite_r_20260725/eval/raw_primary/summary.json",
+    "total": 1024
+  },
+  "status": "complete"
+}
