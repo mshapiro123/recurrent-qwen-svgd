@@ -3,7 +3,10 @@ from __future__ import annotations
 import torch
 import pytest
 
-from eval.cache_speculative_depth_d0_teachers import completed_cache_receipt
+from eval.cache_speculative_depth_d0_teachers import (
+    completed_cache_receipt,
+    validate_teacher_drafter_tokenizer_alignment,
+)
 from colab.run_stage5_paper2_d0_teacher_cache import resolve_checkpoint_source
 from eval.eval_speculative_depth_d0 import first_stop, simulate_windows, spearman
 from training.speculative_depth_d0_postlock import (
@@ -181,6 +184,35 @@ def test_teacher_cache_checkpoint_resolver_fails_with_candidate_diagnostics(tmp_
 
     with pytest.raises(FileNotFoundError, match="No SHA-identical locked D0 drafter checkpoint"):
         resolve_checkpoint_source([tmp_path / "missing.pt", wrong], expected_sha256="0" * 64)
+
+
+def test_teacher_alignment_uses_pre_resize_vocab_and_audits_frozen_ids() -> None:
+    class _Tokenizer:
+        def get_vocab(self):
+            return {"a": 0, "b": 1, "c": 2}
+
+    receipt = validate_teacher_drafter_tokenizer_alignment(
+        teacher_tokenizer=_Tokenizer(),
+        drafter_original_vocab={"a": 0, "b": 1, "c": 2},
+        rows_by_partition={"label_train": [{"input_ids": [0, 2, 1]}]},
+    )
+
+    assert receipt["status"] == "exact_pre_resize_vocabulary_match"
+    assert receipt["vocabulary_size"] == 3
+    assert receipt["token_ids_checked"] == 3
+
+
+def test_teacher_alignment_rejects_out_of_vocabulary_frozen_ids() -> None:
+    class _Tokenizer:
+        def get_vocab(self):
+            return {"a": 0, "b": 1}
+
+    with pytest.raises(RuntimeError, match="outside the shared teacher/drafter vocabulary"):
+        validate_teacher_drafter_tokenizer_alignment(
+            teacher_tokenizer=_Tokenizer(),
+            drafter_original_vocab={"a": 0, "b": 1},
+            rows_by_partition={"evaluation": [{"input_ids": [0, 2]}]},
+        )
 
 
 def test_isotonic_mapping_is_monotone_and_depth_capped() -> None:

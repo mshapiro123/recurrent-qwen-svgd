@@ -23,7 +23,6 @@ if str(ROOT) not in sys.path:
 from eval.eval_identity import model_load_kwargs
 from eval.eval_internal_think_token_t1_lite import restore_checkpoint
 from training.internal_think_token_runtime import install_internal_control_tokens, split_internal_control_token_rows
-from training.internal_think_token_spec import INTERNAL_CONTROL_TOKENS
 from training.speculative_depth_d0_corpus import sha256_file
 from training.speculative_depth_d0_postlock import (
     D0_LOCK_COMMIT,
@@ -87,6 +86,60 @@ def prediction_positions(rows: list[dict[str, Any]]) -> int:
     return sum(max(0, len(row["input_ids"]) - 1) for row in rows)
 
 
+def validate_teacher_drafter_tokenizer_alignment(
+    *,
+    teacher_tokenizer: Any,
+    drafter_original_vocab: dict[str, int],
+    rows_by_partition: dict[str, list[dict[str, Any]]],
+) -> dict[str, Any]:
+    """Verify ID identity before runtime padding/control tokens mutate the drafter tokenizer."""
+
+    teacher_vocab = {str(token): int(token_id) for token, token_id in teacher_tokenizer.get_vocab().items()}
+    drafter_vocab = {str(token): int(token_id) for token, token_id in drafter_original_vocab.items()}
+    if teacher_vocab != drafter_vocab:
+        names = sorted(set(teacher_vocab).union(drafter_vocab))
+        differences = [
+            {
+                "token": token,
+                "teacher_id": teacher_vocab.get(token),
+                "drafter_id": drafter_vocab.get(token),
+            }
+            for token in names
+            if teacher_vocab.get(token) != drafter_vocab.get(token)
+        ]
+        raise RuntimeError(
+            "D0 pinned teacher and drafter pre-resize tokenizers are not exactly aligned: "
+            f"teacher_size={len(teacher_vocab)} drafter_size={len(drafter_vocab)} "
+            f"first_differences={differences[:12]}"
+        )
+
+    valid_ids = set(drafter_vocab.values())
+    token_ids_checked = 0
+    for partition, rows in rows_by_partition.items():
+        for row_index, row in enumerate(rows):
+            values = [int(value) for value in row["input_ids"]]
+            invalid = sorted(set(values).difference(valid_ids))
+            if invalid:
+                raise RuntimeError(
+                    "D0 frozen row contains token IDs outside the shared teacher/drafter vocabulary: "
+                    f"partition={partition} row_index={row_index} invalid_ids={invalid[:12]}"
+                )
+            token_ids_checked += len(values)
+
+    vocabulary_sha256 = hashlib.sha256(
+        json.dumps(drafter_vocab, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return {
+        "status": "exact_pre_resize_vocabulary_match",
+        "vocabulary_size": len(drafter_vocab),
+        "vocabulary_sha256": vocabulary_sha256,
+        "token_ids_checked": token_ids_checked,
+        "partitions_checked": sorted(rows_by_partition),
+        "runtime_alignment_tokens_excluded": True,
+        "internal_control_tokens_excluded": True,
+    }
+
+
 def selected_positions_by_row(
     rows: list[dict[str, Any]], selected_global_positions: set[int]
 ) -> dict[int, list[int]]:
@@ -120,8 +173,9 @@ def completed_shard(path: Path, *, teacher: str, partition: str, start: int, sto
 
 def load_drafter(
     *, checkpoint: Path, device: str, dtype: str, attn_implementation: str
-) -> tuple[Any, Any, Any]:
+) -> tuple[Any, Any, Any, dict[str, int]]:
     tokenizer = AutoTokenizer.from_pretrained(DRAFTER_MODEL, revision=DRAFTER_MODEL_REVISION)
+    original_vocab = {str(token): int(token_id) for token, token_id in tokenizer.get_vocab().items()}
     model = AutoModelForCausalLM.from_pretrained(
         DRAFTER_MODEL,
         revision=DRAFTER_MODEL_REVISION,
@@ -151,7 +205,7 @@ def load_drafter(
     wrapper.base_model.get_input_embeddings().control_rows.requires_grad_(True)
     restore_checkpoint(wrapper, checkpoint)
     wrapper.eval()
-    return tokenizer, wrapper, resize
+    return tokenizer, wrapper, resize, original_vocab
 
 
 def load_teacher(
@@ -172,22 +226,13 @@ def cache_partition(
     *,
     teacher_key: str,
     teacher_model: Any,
-    teacher_tokenizer: Any,
     drafter_wrapper: Any,
-    drafter_tokenizer: Any,
     rows: list[dict[str, Any]],
     partition: str,
     cache_root: Path,
     selected_full_logits: dict[int, list[int]],
     device: str,
 ) -> dict[str, Any]:
-    drafter_original_vocab = {
-        key: value
-        for key, value in drafter_tokenizer.get_vocab().items()
-        if key not in set(INTERNAL_CONTROL_TOKENS)
-    }
-    if teacher_tokenizer.get_vocab() != drafter_original_vocab:
-        raise RuntimeError("D0 teacher and drafter original tokenizers are not exactly aligned")
     partition_dir = cache_root / teacher_key / partition
     partition_dir.mkdir(parents=True, exist_ok=True)
     shard_receipts: list[dict[str, Any]] = []
@@ -376,9 +421,15 @@ def main() -> int:
     write_json(schedule_path, {"lock_commit": D0_LOCK_COMMIT, "schedule": schedule})
 
     completed: dict[str, Any] = {}
+    completed_alignment: dict[str, Any] = {}
     all_complete = True
     for teacher, plan in cache_plan().items():
         completed[teacher] = {}
+        alignment_path = cache_root / teacher / "tokenizer_alignment.json"
+        if alignment_path.exists():
+            completed_alignment[teacher] = read_json(alignment_path)
+        else:
+            all_complete = False
         for partition in plan["partitions"]:
             receipt = completed_cache_receipt(
                 cache_root=cache_root,
@@ -402,6 +453,7 @@ def main() -> int:
             "training_schedule_sha256": sha256_file(schedule_path),
             "cache_root": str(cache_root),
             "caches": summarize_cache(cache_root, completed),
+            "tokenizer_alignment": completed_alignment,
             "optimizer_steps": 0,
             "training_started": False,
         }
@@ -410,13 +462,14 @@ def main() -> int:
         print(json.dumps(summary, indent=2, sort_keys=True), flush=True)
         return 0
 
-    drafter_tokenizer, drafter_wrapper, _ = load_drafter(
+    drafter_tokenizer, drafter_wrapper, _, drafter_original_vocab = load_drafter(
         checkpoint=checkpoint,
         device=args.device,
         dtype=args.dtype,
         attn_implementation=args.attn_implementation,
     )
     caches: dict[str, Any] = {}
+    tokenizer_alignment: dict[str, Any] = {}
     teachers = (
         ("teacher_7b", TEACHER_7B, TEACHER_7B_REVISION),
         ("teacher_14b", TEACHER_14B, TEACHER_14B_REVISION),
@@ -429,14 +482,29 @@ def main() -> int:
             dtype=args.dtype,
             attn_implementation=args.attn_implementation,
         )
+        alignment = validate_teacher_drafter_tokenizer_alignment(
+            teacher_tokenizer=teacher_tokenizer,
+            drafter_original_vocab=drafter_original_vocab,
+            rows_by_partition={
+                partition: rows_by_partition[partition]
+                for partition in cache_plan()[teacher_key]["partitions"]
+            },
+        )
+        alignment_path = cache_root / teacher_key / "tokenizer_alignment.json"
+        write_json(alignment_path, alignment)
+        tokenizer_alignment[teacher_key] = alignment
+        print(
+            f"d0_tokenizer_alignment teacher={teacher_key} "
+            f"status={alignment['status']} vocabulary_size={alignment['vocabulary_size']} "
+            f"token_ids_checked={alignment['token_ids_checked']}",
+            flush=True,
+        )
         caches[teacher_key] = {}
         for partition in cache_plan()[teacher_key]["partitions"]:
             caches[teacher_key][partition] = cache_partition(
                 teacher_key=teacher_key,
                 teacher_model=teacher_model,
-                teacher_tokenizer=teacher_tokenizer,
                 drafter_wrapper=drafter_wrapper,
-                drafter_tokenizer=drafter_tokenizer,
                 rows=rows_by_partition[partition],
                 partition=partition,
                 cache_root=cache_root,
@@ -457,6 +525,7 @@ def main() -> int:
         "training_schedule_sha256": sha256_file(schedule_path),
         "cache_root": str(cache_root),
         "caches": summarize_cache(cache_root, caches),
+        "tokenizer_alignment": tokenizer_alignment,
         "optimizer_steps": 0,
         "training_started": False,
     }
