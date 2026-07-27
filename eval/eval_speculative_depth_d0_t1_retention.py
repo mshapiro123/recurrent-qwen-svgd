@@ -50,7 +50,7 @@ def main() -> int:
         raise RuntimeError(f"D0 T1 retention expected {REFERENCE_TOTAL} frozen rows, found {len(source)}")
     output_dir = Path(args.output_dir)
     data_path = prepare_control_rows(source, output_dir / "private" / "t1_retention_control.jsonl")
-    tokenizer, wrapper, resize = load_drafter(
+    tokenizer, wrapper, resize, _original_vocab = load_drafter(
         checkpoint=Path(args.checkpoint),
         device=args.device,
         dtype=args.dtype,

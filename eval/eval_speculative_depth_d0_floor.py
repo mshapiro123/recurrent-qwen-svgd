@@ -224,7 +224,7 @@ def main() -> int:
         [row["teacher_to_plain_drafter_kl"][~row["accepted"]] for row in cache_7b.values()]
     )
     boundaries = quartile_boundaries(rejected_kl)
-    tokenizer, wrapper, resize = load_drafter(
+    tokenizer, wrapper, resize, _original_vocab = load_drafter(
         checkpoint=Path(args.checkpoint),
         device=args.device,
         dtype=args.dtype,

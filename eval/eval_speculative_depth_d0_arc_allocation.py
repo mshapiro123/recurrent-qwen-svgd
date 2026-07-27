@@ -62,7 +62,7 @@ def main() -> int:
 
     if sha256_file(args.checkpoint) != args.checkpoint_sha256:
         raise RuntimeError("D0 ARC allocation checkpoint SHA-256 mismatch")
-    tokenizer, wrapper, resize = load_drafter(
+    tokenizer, wrapper, resize, _original_vocab = load_drafter(
         checkpoint=Path(args.checkpoint),
         device=args.device,
         dtype=args.dtype,

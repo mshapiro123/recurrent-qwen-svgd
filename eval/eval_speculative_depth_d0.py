@@ -375,7 +375,7 @@ def main() -> int:
     cache_rows = load_partition_cache(cache_summary, "teacher_7b", "evaluation")
     boundaries = list(floor["severity_quartile_boundaries"])
 
-    _, initial, initial_resize = load_drafter(
+    _, initial, initial_resize, _initial_original_vocab = load_drafter(
         checkpoint=Path(args.initial_checkpoint),
         device=args.device,
         dtype=args.dtype,
@@ -405,7 +405,7 @@ def main() -> int:
     if str(args.device).startswith("cuda"):
         torch.cuda.empty_cache()
 
-    _, trained, trained_resize = load_drafter(
+    _, trained, trained_resize, _trained_original_vocab = load_drafter(
         checkpoint=Path(args.trained_checkpoint),
         device=args.device,
         dtype=args.dtype,

@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import ast
+from pathlib import Path
+
 import torch
 import pytest
 
@@ -248,6 +251,30 @@ def test_teacher_alignment_rejects_out_of_vocabulary_frozen_ids() -> None:
             drafter_original_vocab={"a": 0, "b": 1},
             rows_by_partition={"evaluation": [{"input_ids": [0, 2]}]},
         )
+
+
+def test_all_d0_load_drafter_callers_unpack_pre_resize_vocabulary() -> None:
+    root = Path(__file__).resolve().parents[1]
+    paths = [
+        root / "eval/cache_speculative_depth_d0_teachers.py",
+        root / "eval/eval_speculative_depth_d0.py",
+        root / "eval/eval_speculative_depth_d0_floor.py",
+        root / "eval/eval_speculative_depth_d0_arc_allocation.py",
+        root / "eval/eval_speculative_depth_d0_t1_retention.py",
+    ]
+    observed = 0
+    for path in paths:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Assign) or not isinstance(node.value, ast.Call):
+                continue
+            function = node.value.func
+            if not isinstance(function, ast.Name) or function.id != "load_drafter":
+                continue
+            assert len(node.targets) == 1 and isinstance(node.targets[0], ast.Tuple)
+            assert len(node.targets[0].elts) == 4, f"stale load_drafter unpack in {path}"
+            observed += 1
+    assert observed == 6
 
 
 def test_isotonic_mapping_is_monotone_and_depth_capped() -> None:
