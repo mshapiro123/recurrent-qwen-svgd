@@ -1342,6 +1342,26 @@ def test_current_bootstrap_exposes_paper2_d0_floor_calibration_target() -> None:
     assert "teacher_14b" in evaluator
 
 
+def test_current_bootstrap_exposes_paper2_d0_oracle_router_audit_target() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_D0_ORACLE_ROUTER_AUDIT_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_d0_oracle_router_audit.py").read_text(
+        encoding="utf-8"
+    )
+    evaluator = (ROOT / "eval/eval_speculative_depth_router_feasibility.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert '"paper2_d0_oracle_router_audit"' in bootstrap
+    assert "paper2_d0_oracle_router_audit_v1" in cell
+    assert "read-only calibration receipt no checkpoint no optimizer no training" in runner
+    assert "private_rows_sha256" in runner
+    assert "oracle_compute_frontier" in evaluator
+    assert "evaluation_partition_touched" in evaluator
+
+
 def test_current_bootstrap_exposes_paper2_d0_train_eval_target() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     cell = (ROOT / "colab/STAGE5_PAPER2_D0_TRAIN_EVAL_CELL.py").read_text(encoding="utf-8")

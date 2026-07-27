@@ -129,6 +129,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper1_closure_receipts" - CPU-safe Paper 1 evidence compiler and Drive backup.
 #   "depth_selector_bounded_assessment" - frozen N24 supervised-depth and Ponder-outcome selector closure.
 #   "wall_clock_latency_descriptive" - eval-only five-arm Paper One batch-1 latency receipt.
+#   "paper2_d0_oracle_router_audit" - CPU-only exact oracle ceiling and cached-signal audit; no checkpoint load.
 #   "paper2_d0_floor_calibration" - forced-depth 1-6 floor against cached 7B/14B labels; L4-safe.
 #   "paper2_d0_teacher_cache" - registered 7B/14B single-pass teacher caches; A100/H100 only.
 #   "paper2_d0_train_eval" - registered 4,000-step D0 pilot and complete final battery; A100/H100.
@@ -157,6 +158,16 @@ if TARGET == "traced_sft_scale64_benchmark" and os.environ.get(
     TARGET = "traced_sft_direct_preservation_probe"
 
 TARGETS = {
+    "paper2_d0_oracle_router_audit": {
+        "path": "colab/STAGE5_PAPER2_D0_ORACLE_ROUTER_AUDIT_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_D0_ORACLE_ROUTER_AUDIT_VERSION",
+            "paper2_d0_oracle_router_audit_v1",
+            "read-only calibration receipt no checkpoint no optimizer no training",
+            "colab/run_stage5_paper2_d0_oracle_router_audit.py",
+        ],
+        "env": {},
+    },
     "paper2_d0_train_eval": {
         "path": "colab/STAGE5_PAPER2_D0_TRAIN_EVAL_CELL.py",
         "markers": [
