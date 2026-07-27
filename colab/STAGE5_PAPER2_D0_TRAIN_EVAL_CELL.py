@@ -11,7 +11,7 @@ from pathlib import Path
 from google.colab import drive, userdata
 
 
-STAGE5_PAPER2_D0_TRAIN_EVAL_VERSION = "paper2_d0_train_eval_v2_prelaunch_gated"
+STAGE5_PAPER2_D0_TRAIN_EVAL_VERSION = "paper2_d0_train_eval_v3_verbose_preflight"
 # Safety marker: locked 4000-step 70/30 D0 pilot
 # Safety marker: final-step EMA primary
 # Safety marker: blocked outcomes exit 2 with tables written
@@ -20,6 +20,8 @@ STAGE5_PAPER2_D0_TRAIN_EVAL_VERSION = "paper2_d0_train_eval_v2_prelaunch_gated"
 # Safety marker: deterministic fp32 argmax lowest token id ties counted
 # Safety marker: teacher shift uses each teachers own rejection population
 # Safety marker: Drive mount retry with explicit Pharma Initiatives account authorization
+# Safety marker: preflight-only pass before model or optimizer construction
+# Safety marker: evaluation partition restored only after training
 # Safety marker: minimum_vram_mib=35000
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
@@ -46,10 +48,22 @@ os.environ["HUGGINGFACE_HUB_TOKEN"] = HF_TOKEN
 
 def run(command: list[str], *, cwd: Path | None = None, allowed: tuple[int, ...] = (0,)) -> int:
     print("$", " ".join(command).replace(GH_TOKEN, "****"), flush=True)
-    process = subprocess.run(command, cwd=cwd or ROOT, env=os.environ.copy())
-    if process.returncode not in allowed:
-        raise subprocess.CalledProcessError(process.returncode, command)
-    return process.returncode
+    process = subprocess.Popen(
+        command,
+        cwd=cwd or ROOT,
+        env=os.environ.copy(),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    for line in process.stdout:
+        print(line, end="", flush=True)
+    code = process.wait()
+    if code not in allowed:
+        raise subprocess.CalledProcessError(code, command)
+    return code
 
 
 def ensure_drive() -> None:
@@ -113,5 +127,26 @@ run(
         "tests/test_stage5_notebooks.py::test_current_bootstrap_exposes_paper2_d0_train_eval_target",
     ]
 )
-code = run([sys.executable, "colab/run_stage5_paper2_d0_train_eval.py"], allowed=(0, 2))
+preflight_env = os.environ.copy()
+preflight_env["STAGE5_PAPER2_D0_PREFLIGHT_ONLY"] = "1"
+print("Running D0 preflight-only pass before model or optimizer construction.", flush=True)
+process = subprocess.Popen(
+    [sys.executable, "-u", "colab/run_stage5_paper2_d0_train_eval.py"],
+    cwd=ROOT,
+    env=preflight_env,
+    text=True,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.STDOUT,
+    bufsize=1,
+)
+assert process.stdout is not None
+for line in process.stdout:
+    print(line, end="", flush=True)
+preflight_code = process.wait()
+if preflight_code:
+    raise subprocess.CalledProcessError(
+        preflight_code,
+        [sys.executable, "-u", "colab/run_stage5_paper2_d0_train_eval.py"],
+    )
+code = run([sys.executable, "-u", "colab/run_stage5_paper2_d0_train_eval.py"], allowed=(0, 2))
 print(f"D0 train/eval finished with registered exit code {code}.", flush=True)

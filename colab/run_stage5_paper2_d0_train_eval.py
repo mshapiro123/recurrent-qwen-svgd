@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import sys
+import traceback
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,11 @@ from training.speculative_depth_d0_corpus import sha256_file
 from training.speculative_depth_d0_postlock import D0_LOCK_COMMIT, D0_RUN_ID, validate_cache_summary
 from training.speculative_depth_d0_spec import DRAFTER_CHECKPOINT_SHA256, validate_locked_d0
 from eval.eval_speculative_depth_router_feasibility import summarize_teacher_demand
+from colab.run_stage5_paper2_d0_teacher_cache import (
+    CHECKPOINT_ALIAS,
+    CHECKPOINT_STAGE_STATE,
+    resolve_checkpoint_source,
+)
 
 
 LOCK_RUN = ROOT / "outputs/stage5/stage5_paper2_d0_preregistration_20260726"
@@ -72,25 +78,49 @@ def write_json(path: Path, payload: Any) -> None:
     os.replace(temporary, path)
 
 
-def restore_inputs() -> dict[str, Path]:
+def status_event(status: str, **details: Any) -> None:
+    payload = {"kind": "paper2_d0_train_eval_status", "status": status, **details}
+    print("d0_train_eval_status:", json.dumps(payload, sort_keys=True), flush=True)
+    try:
+        write_json(DRIVE_ROOT / "receipts" / "train_eval_status.json", payload)
+    except Exception as error:
+        print(f"d0_train_eval_status_write_failed={error!r}", flush=True)
+
+
+def restore_inputs(*, include_evaluation: bool) -> dict[str, Path]:
     manifest = read_json(LOCK_RUN / "data_manifest.json")
     restored: dict[str, Path] = {}
-    for name in ("label_train", "calibration", "evaluation"):
+    names = ["label_train", "calibration"]
+    if include_evaluation:
+        names.append("evaluation")
+    for name in names:
         receipt = manifest["artifacts"][name]
         source = Path(receipt["drive_path"])
         destination = RUN_DIR / "private_inputs" / f"{name}.jsonl"
+        print(
+            f"d0_input_preflight name={name} path={source} exists={source.exists()}",
+            flush=True,
+        )
         if not source.exists() or sha256_file(source) != receipt["sha256"]:
             raise RuntimeError(f"D0 locked partition is missing or corrupt: {name}")
         destination.parent.mkdir(parents=True, exist_ok=True)
         if not destination.exists() or sha256_file(destination) != receipt["sha256"]:
             shutil.copy2(source, destination)
         restored[name] = destination
-    if not CHECKPOINT_SOURCE.exists() or sha256_file(CHECKPOINT_SOURCE) != DRAFTER_CHECKPOINT_SHA256:
-        raise RuntimeError("D0 locked drafter checkpoint is missing or corrupt")
-    checkpoint = RUN_DIR / "restored" / CHECKPOINT_SOURCE.name
+    explicit = os.environ.get("STAGE5_PAPER2_D0_DRAFTER_CHECKPOINT", "").strip()
+    candidates = ([Path(explicit)] if explicit else []) + [
+        CHECKPOINT_SOURCE,
+        CHECKPOINT_ALIAS,
+        CHECKPOINT_STAGE_STATE,
+    ]
+    source, diagnostics = resolve_checkpoint_source(
+        candidates, expected_sha256=DRAFTER_CHECKPOINT_SHA256
+    )
+    print("d0_checkpoint_resolution:", json.dumps(diagnostics, sort_keys=True), flush=True)
+    checkpoint = RUN_DIR / "restored" / "t1_lite_r_raw_step_10500.pt"
     checkpoint.parent.mkdir(parents=True, exist_ok=True)
     if not checkpoint.exists() or sha256_file(checkpoint) != DRAFTER_CHECKPOINT_SHA256:
-        shutil.copy2(CHECKPOINT_SOURCE, checkpoint)
+        shutil.copy2(source, checkpoint)
     restored["checkpoint"] = checkpoint
     return restored
 
@@ -152,6 +182,11 @@ def publish(paths: list[Path]) -> str:
 
 
 def main() -> int:
+    DRIVE_ROOT.mkdir(parents=True, exist_ok=True)
+    preflight_only = os.environ.get("STAGE5_PAPER2_D0_PREFLIGHT_ONLY", "0") == "1"
+    status_event("preflight_started", preflight_only=preflight_only, head=subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+    ).strip())
     if subprocess.run(["git", "merge-base", "--is-ancestor", D0_LOCK_COMMIT, "HEAD"], cwd=ROOT).returncode:
         raise RuntimeError("D0 lock commit is not an ancestor of the training checkout")
     prereg = read_json(LOCK_RUN / "preregistration.json")
@@ -175,8 +210,35 @@ def main() -> int:
         raise RuntimeError("D0 target-policy receipt illegally uses the descriptive mapping")
     if prelaunch.get("target_policy_receipt_sha256") != sha256_file(TARGET_POLICY_RECEIPT):
         raise RuntimeError("D0 target-policy receipt hash disagrees with the prelaunch receipt")
-    restored = restore_inputs()
-    DRIVE_ROOT.mkdir(parents=True, exist_ok=True)
+    floor_private_path = DRIVE_ROOT / "private/floor/floor_rows.json"
+    if not floor_private_path.exists():
+        raise FileNotFoundError(f"D0 floor private rows are missing: {floor_private_path}")
+    expected_floor_private_sha = floor.get("private_rows_sha256")
+    observed_floor_private_sha = sha256_file(floor_private_path)
+    print(
+        "d0_floor_private_preflight "
+        f"path={floor_private_path} observed={observed_floor_private_sha} "
+        f"expected={expected_floor_private_sha}",
+        flush=True,
+    )
+    if observed_floor_private_sha != expected_floor_private_sha:
+        raise RuntimeError("D0 floor private rows hash mismatch")
+    for path in (
+        T1_RUN / "data/t1_lite_train_70_30.jsonl",
+        T1_RUN / "data/liveness_pilot_256.jsonl",
+    ):
+        if not path.exists():
+            raise FileNotFoundError(f"D0 rehearsal dependency is missing: {path}")
+    restored = restore_inputs(include_evaluation=False)
+    status_event(
+        "preflight_complete",
+        evaluation_partition_touched=False,
+        checkpoint=str(restored["checkpoint"]),
+        checkpoint_sha256=sha256_file(restored["checkpoint"]),
+        target_depth_counts=target_policy["target_depth_counts"],
+    )
+    if preflight_only:
+        return 0
     training_dir = RUN_DIR / "train"
     training_summary = training_dir / "summary.json"
     training_code = run(
@@ -194,7 +256,7 @@ def main() -> int:
             "--floor_summary",
             str(floor_summary_path),
             "--floor_private_rows",
-            str(DRIVE_ROOT / "private/floor/floor_rows.json"),
+            str(floor_private_path),
             "--target_policy_receipt",
             str(TARGET_POLICY_RECEIPT),
             "--prelaunch_summary",
@@ -228,6 +290,11 @@ def main() -> int:
     ema = Path(training["ema_checkpoint"])
     ema_sha = str(training["ema_checkpoint_sha256"])
     eval_dir = RUN_DIR / "eval"
+    evaluation_inputs = restore_inputs(include_evaluation=True)
+    if "evaluation" not in evaluation_inputs:
+        raise RuntimeError("D0 final battery failed to restore the locked evaluation partition")
+    restored["evaluation"] = evaluation_inputs["evaluation"]
+    status_event("final_evaluation_partition_restored_after_training")
     final_summary = eval_dir / "natural_summary.json"
     natural_code = run(
         [
@@ -388,4 +455,11 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except SystemExit:
+        raise
+    except Exception as error:
+        status_event("errored", error_type=type(error).__name__, error=str(error))
+        traceback.print_exc()
+        raise

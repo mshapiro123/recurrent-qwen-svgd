@@ -1390,7 +1390,7 @@ def test_current_bootstrap_exposes_paper2_d0_train_eval_target() -> None:
     evaluator = (ROOT / "eval/eval_speculative_depth_d0.py").read_text(encoding="utf-8")
 
     assert '"paper2_d0_train_eval"' in bootstrap
-    assert "paper2_d0_train_eval_v2_prelaunch_gated" in cell
+    assert "paper2_d0_train_eval_v3_verbose_preflight" in cell
     assert "minimum_vram_mib=35000" in cell
     assert "blocked outcomes exit 2 with tables written" in cell
     assert "prelaunch receipts required before optimizer construction" in cell
@@ -1399,10 +1399,15 @@ def test_current_bootstrap_exposes_paper2_d0_train_eval_target() -> None:
     assert "Drive mount retry with explicit Pharma Initiatives account authorization" in cell
     assert "force_remount=force_remount" in cell
     assert "timeout_ms=240_000" in cell
+    assert "preflight-only pass before model or optimizer construction" in cell
+    assert "STAGE5_PAPER2_D0_PREFLIGHT_ONLY" in cell
     assert "training/run_speculative_depth_d0.py" in runner
     assert "TARGET_POLICY_RECEIPT" in runner
     assert "PRELAUNCH_SUMMARY" in runner
     assert "all_position_rows" in runner
+    assert "restore_inputs(include_evaluation=False)" in runner
+    assert "restore_inputs(include_evaluation=True)" in runner
+    assert "final_evaluation_partition_restored_after_training" in runner
     assert "eval_speculative_depth_d0_t1_retention.py" in runner
     assert "eval_speculative_depth_d0_arc_allocation.py" in runner
     assert "teacher_shift_signature" in runner
