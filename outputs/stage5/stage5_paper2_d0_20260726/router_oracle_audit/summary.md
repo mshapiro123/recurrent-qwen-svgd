@@ -3,8 +3,6 @@
 - Positions: `53389`
 - Best fixed depth: `2`
 - Best fixed accuracy: `0.144730`
-- Oracle any-depth accuracy: `0.207945`
-- Oracle uplift over best fixed: `0.063215`
+- Oracle accuracy: `0.207945`
+- Oracle uplift: `0.063215`
 - Oracle mean loops: `1.278672`
-- Evaluation partition touched: `false`
-- Training: `none`
