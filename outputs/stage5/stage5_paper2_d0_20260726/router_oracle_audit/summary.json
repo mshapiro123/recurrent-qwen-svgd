@@ -1,0 +1,564 @@
+{
+  "evaluation_partition_touched": false,
+  "floor_private_rows_sha256": "525efd031469c68ff7e7d238ead38c1c9818b9f8d25ddaf2ecc059e2db6ba11b",
+  "kind": "paper2_d0_oracle_router_audit",
+  "no_training": true,
+  "scope": "locked_calibration_7b_rejected_positions",
+  "status": "complete",
+  "teacher_14b_sensitivity": {
+    "best_fixed_accuracy": 0.19871134503362115,
+    "best_fixed_depth": 2,
+    "first_correct_depth_counts": {
+      "1": 8845,
+      "2": 5958,
+      "3": 1226,
+      "4": 470,
+      "5": 277,
+      "6": 158
+    },
+    "fixed_depth": {
+      "1": {
+        "accuracy": 0.1656708310700706,
+        "correct": 8845
+      },
+      "2": {
+        "accuracy": 0.19871134503362115,
+        "correct": 10609
+      },
+      "3": {
+        "accuracy": 0.16068853134540823,
+        "correct": 8579
+      },
+      "4": {
+        "accuracy": 0.12824739178482458,
+        "correct": 6847
+      },
+      "5": {
+        "accuracy": 0.10327970181123453,
+        "correct": 5514
+      },
+      "6": {
+        "accuracy": 0.08222667590702204,
+        "correct": 4390
+      }
+    },
+    "never_correct_by_depth6": 36455,
+    "oracle_any_depth": {
+      "accuracy": 0.31718144187004815,
+      "correct": 16934,
+      "mean_loops_first_correct_else_one": 1.2194834141864428,
+      "uplift_over_best_fixed": 0.11847009683642698
+    },
+    "oracle_compute_frontier": [
+      {
+        "accuracy": 0.1656708310700706,
+        "budget_mean_loops": 1.0,
+        "correct": 8845,
+        "realized_mean_loops": 1.0,
+        "total": 53389,
+        "upgraded_positions": 0
+      },
+      {
+        "accuracy": 0.31718144187004815,
+        "budget_mean_loops": 1.25,
+        "correct": 16934,
+        "realized_mean_loops": 1.2194834141864428,
+        "total": 53389,
+        "upgraded_positions": 8089
+      },
+      {
+        "accuracy": 0.31718144187004815,
+        "budget_mean_loops": 1.5,
+        "correct": 16934,
+        "realized_mean_loops": 1.2194834141864428,
+        "total": 53389,
+        "upgraded_positions": 8089
+      },
+      {
+        "accuracy": 0.31718144187004815,
+        "budget_mean_loops": 1.75,
+        "correct": 16934,
+        "realized_mean_loops": 1.2194834141864428,
+        "total": 53389,
+        "upgraded_positions": 8089
+      },
+      {
+        "accuracy": 0.31718144187004815,
+        "budget_mean_loops": 2.0,
+        "correct": 16934,
+        "realized_mean_loops": 1.2194834141864428,
+        "total": 53389,
+        "upgraded_positions": 8089
+      },
+      {
+        "accuracy": 0.31718144187004815,
+        "budget_mean_loops": 3.0,
+        "correct": 16934,
+        "realized_mean_loops": 1.2194834141864428,
+        "total": 53389,
+        "upgraded_positions": 8089
+      },
+      {
+        "accuracy": 0.31718144187004815,
+        "budget_mean_loops": 4.0,
+        "correct": 16934,
+        "realized_mean_loops": 1.2194834141864428,
+        "total": 53389,
+        "upgraded_positions": 8089
+      },
+      {
+        "accuracy": 0.31718144187004815,
+        "budget_mean_loops": 5.0,
+        "correct": 16934,
+        "realized_mean_loops": 1.2194834141864428,
+        "total": 53389,
+        "upgraded_positions": 8089
+      },
+      {
+        "accuracy": 0.31718144187004815,
+        "budget_mean_loops": 6.0,
+        "correct": 16934,
+        "realized_mean_loops": 1.2194834141864428,
+        "total": 53389,
+        "upgraded_positions": 8089
+      }
+    ],
+    "positions": 53389,
+    "post_loop_token_observables": {
+      "1": {
+        "currently_wrong": 44544,
+        "later_recoverable": 8089,
+        "later_recoverable_rate": 0.18159572557471265
+      },
+      "2": {
+        "currently_wrong": 42780,
+        "later_recoverable": 2348,
+        "prediction_changed": {
+          "later_recoverable": 799,
+          "rate": 0.03427860483075207,
+          "total": 23309
+        },
+        "prediction_stable": {
+          "later_recoverable": 1549,
+          "rate": 0.07955420882337835,
+          "total": 19471
+        }
+      },
+      "3": {
+        "currently_wrong": 44810,
+        "later_recoverable": 1081,
+        "prediction_changed": {
+          "later_recoverable": 200,
+          "rate": 0.01163399453202257,
+          "total": 17191
+        },
+        "prediction_stable": {
+          "later_recoverable": 881,
+          "rate": 0.03189833085919114,
+          "total": 27619
+        }
+      },
+      "4": {
+        "currently_wrong": 46542,
+        "later_recoverable": 560,
+        "prediction_changed": {
+          "later_recoverable": 93,
+          "rate": 0.006499405968271717,
+          "total": 14309
+        },
+        "prediction_stable": {
+          "later_recoverable": 467,
+          "rate": 0.014488257375981138,
+          "total": 32233
+        }
+      },
+      "5": {
+        "currently_wrong": 47875,
+        "later_recoverable": 218,
+        "prediction_changed": {
+          "later_recoverable": 24,
+          "rate": 0.0018139218502002871,
+          "total": 13231
+        },
+        "prediction_stable": {
+          "later_recoverable": 194,
+          "rate": 0.005599815263826348,
+          "total": 34644
+        }
+      }
+    },
+    "teacher": "14b",
+    "teacher_signal_predictability": {
+      "any_extra_benefit": {
+        "drafter_token_rank_under_teacher": {
+          "direction": "lower",
+          "oriented_auroc": 0.5526424719804537,
+          "raw_auroc": 0.44735752801954637
+        },
+        "negative_drafter_logprob_under_teacher": {
+          "direction": "lower",
+          "oriented_auroc": 0.5466677268915325,
+          "raw_auroc": 0.4533322731084674
+        },
+        "rejection_run_length": {
+          "direction": "lower",
+          "oriented_auroc": 0.5243035809947665,
+          "raw_auroc": 0.47569641900523346
+        },
+        "teacher_entropy": {
+          "direction": "lower",
+          "oriented_auroc": 0.5940458904074075,
+          "raw_auroc": 0.40595410959259254
+        },
+        "teacher_to_plain_drafter_kl": {
+          "direction": "lower",
+          "oriented_auroc": 0.6233492435288759,
+          "raw_auroc": 0.37665075647112406
+        }
+      },
+      "loop2_benefit": {
+        "drafter_token_rank_under_teacher": {
+          "direction": "lower",
+          "oriented_auroc": 0.5439981350906593,
+          "raw_auroc": 0.4560018649093407
+        },
+        "negative_drafter_logprob_under_teacher": {
+          "direction": "lower",
+          "oriented_auroc": 0.536321964390045,
+          "raw_auroc": 0.463678035609955
+        },
+        "rejection_run_length": {
+          "direction": "lower",
+          "oriented_auroc": 0.5264724488141637,
+          "raw_auroc": 0.4735275511858363
+        },
+        "teacher_entropy": {
+          "direction": "lower",
+          "oriented_auroc": 0.5831895634207926,
+          "raw_auroc": 0.41681043657920736
+        },
+        "teacher_to_plain_drafter_kl": {
+          "direction": "lower",
+          "oriented_auroc": 0.6294312200612343,
+          "raw_auroc": 0.3705687799387657
+        }
+      },
+      "teacher_dependent_not_deployable": true
+    },
+    "transitions_from_loop1": {
+      "1_to_2": {
+        "harm_rate": 0.07855550768884977,
+        "harmed": 4194,
+        "net": 1764,
+        "recovered": 5958,
+        "recovery_rate": 0.1115960216524003
+      },
+      "1_to_3": {
+        "harm_rate": 0.10601434752477103,
+        "harmed": 5660,
+        "net": -266,
+        "recovered": 5394,
+        "recovery_rate": 0.10103204780010863
+      },
+      "1_to_4": {
+        "harm_rate": 0.1211110902994999,
+        "harmed": 6466,
+        "net": -1998,
+        "recovered": 4468,
+        "recovery_rate": 0.08368765101425388
+      },
+      "1_to_5": {
+        "harm_rate": 0.1316188728015134,
+        "harmed": 7027,
+        "net": -3331,
+        "recovered": 3696,
+        "recovery_rate": 0.06922774354267733
+      },
+      "1_to_6": {
+        "harm_rate": 0.139223435539156,
+        "harmed": 7433,
+        "net": -4455,
+        "recovered": 2978,
+        "recovery_rate": 0.05577928037610744
+      }
+    }
+  },
+  "teacher_7b": {
+    "best_fixed_accuracy": 0.14473018786641442,
+    "best_fixed_depth": 2,
+    "first_correct_depth_counts": {
+      "1": 907,
+      "2": 7419,
+      "3": 1595,
+      "4": 635,
+      "5": 366,
+      "6": 180
+    },
+    "fixed_depth": {
+      "1": {
+        "accuracy": 0.016988518234093166,
+        "correct": 907
+      },
+      "2": {
+        "accuracy": 0.14473018786641442,
+        "correct": 7727
+      },
+      "3": {
+        "accuracy": 0.131843638202626,
+        "correct": 7039
+      },
+      "4": {
+        "accuracy": 0.11118395175036055,
+        "correct": 5936
+      },
+      "5": {
+        "accuracy": 0.0919477795051415,
+        "correct": 4909
+      },
+      "6": {
+        "accuracy": 0.07385416471557811,
+        "correct": 3943
+      }
+    },
+    "never_correct_by_depth6": 42287,
+    "oracle_any_depth": {
+      "accuracy": 0.20794545692933,
+      "correct": 11102,
+      "mean_loops_first_correct_else_one": 1.2786716364794246,
+      "uplift_over_best_fixed": 0.06321526906291558
+    },
+    "oracle_compute_frontier": [
+      {
+        "accuracy": 0.016988518234093166,
+        "budget_mean_loops": 1.0,
+        "correct": 907,
+        "realized_mean_loops": 1.0,
+        "total": 53389,
+        "upgraded_positions": 0
+      },
+      {
+        "accuracy": 0.20161456479799209,
+        "budget_mean_loops": 1.25,
+        "correct": 10764,
+        "realized_mean_loops": 1.2499765869373842,
+        "total": 53389,
+        "upgraded_positions": 9857
+      },
+      {
+        "accuracy": 0.20794545692933,
+        "budget_mean_loops": 1.5,
+        "correct": 11102,
+        "realized_mean_loops": 1.2786716364794246,
+        "total": 53389,
+        "upgraded_positions": 10195
+      },
+      {
+        "accuracy": 0.20794545692933,
+        "budget_mean_loops": 1.75,
+        "correct": 11102,
+        "realized_mean_loops": 1.2786716364794246,
+        "total": 53389,
+        "upgraded_positions": 10195
+      },
+      {
+        "accuracy": 0.20794545692933,
+        "budget_mean_loops": 2.0,
+        "correct": 11102,
+        "realized_mean_loops": 1.2786716364794246,
+        "total": 53389,
+        "upgraded_positions": 10195
+      },
+      {
+        "accuracy": 0.20794545692933,
+        "budget_mean_loops": 3.0,
+        "correct": 11102,
+        "realized_mean_loops": 1.2786716364794246,
+        "total": 53389,
+        "upgraded_positions": 10195
+      },
+      {
+        "accuracy": 0.20794545692933,
+        "budget_mean_loops": 4.0,
+        "correct": 11102,
+        "realized_mean_loops": 1.2786716364794246,
+        "total": 53389,
+        "upgraded_positions": 10195
+      },
+      {
+        "accuracy": 0.20794545692933,
+        "budget_mean_loops": 5.0,
+        "correct": 11102,
+        "realized_mean_loops": 1.2786716364794246,
+        "total": 53389,
+        "upgraded_positions": 10195
+      },
+      {
+        "accuracy": 0.20794545692933,
+        "budget_mean_loops": 6.0,
+        "correct": 11102,
+        "realized_mean_loops": 1.2786716364794246,
+        "total": 53389,
+        "upgraded_positions": 10195
+      }
+    ],
+    "positions": 53389,
+    "post_loop_token_observables": {
+      "1": {
+        "currently_wrong": 52482,
+        "later_recoverable": 10195,
+        "later_recoverable_rate": 0.19425707861743075
+      },
+      "2": {
+        "currently_wrong": 45662,
+        "later_recoverable": 2811,
+        "prediction_changed": {
+          "later_recoverable": 735,
+          "rate": 0.033641523251556206,
+          "total": 21848
+        },
+        "prediction_stable": {
+          "later_recoverable": 2076,
+          "rate": 0.0871756109851348,
+          "total": 23814
+        }
+      },
+      "3": {
+        "currently_wrong": 46350,
+        "later_recoverable": 1254,
+        "prediction_changed": {
+          "later_recoverable": 208,
+          "rate": 0.012295324230064433,
+          "total": 16917
+        },
+        "prediction_stable": {
+          "later_recoverable": 1046,
+          "rate": 0.035538341317568715,
+          "total": 29433
+        }
+      },
+      "4": {
+        "currently_wrong": 47453,
+        "later_recoverable": 610,
+        "prediction_changed": {
+          "later_recoverable": 84,
+          "rate": 0.00592091351237048,
+          "total": 14187
+        },
+        "prediction_stable": {
+          "later_recoverable": 526,
+          "rate": 0.01581194011904046,
+          "total": 33266
+        }
+      },
+      "5": {
+        "currently_wrong": 48480,
+        "later_recoverable": 216,
+        "prediction_changed": {
+          "later_recoverable": 19,
+          "rate": 0.001441578148710167,
+          "total": 13180
+        },
+        "prediction_stable": {
+          "later_recoverable": 197,
+          "rate": 0.005580736543909348,
+          "total": 35300
+        }
+      }
+    },
+    "teacher": "7b",
+    "teacher_signal_predictability": {
+      "any_extra_benefit": {
+        "drafter_token_rank_under_teacher": {
+          "direction": "lower",
+          "oriented_auroc": 0.5931142962270453,
+          "raw_auroc": 0.4068857037729547
+        },
+        "negative_drafter_logprob_under_teacher": {
+          "direction": "lower",
+          "oriented_auroc": 0.5991827773020716,
+          "raw_auroc": 0.4008172226979284
+        },
+        "rejection_run_length": {
+          "direction": "lower",
+          "oriented_auroc": 0.5314263444986944,
+          "raw_auroc": 0.4685736555013056
+        },
+        "teacher_entropy": {
+          "direction": "lower",
+          "oriented_auroc": 0.5815159058724371,
+          "raw_auroc": 0.41848409412756293
+        },
+        "teacher_to_plain_drafter_kl": {
+          "direction": "lower",
+          "oriented_auroc": 0.6521185643665701,
+          "raw_auroc": 0.3478814356334298
+        }
+      },
+      "loop2_benefit": {
+        "drafter_token_rank_under_teacher": {
+          "direction": "lower",
+          "oriented_auroc": 0.5798580378331796,
+          "raw_auroc": 0.4201419621668204
+        },
+        "negative_drafter_logprob_under_teacher": {
+          "direction": "lower",
+          "oriented_auroc": 0.5820248825814922,
+          "raw_auroc": 0.4179751174185078
+        },
+        "rejection_run_length": {
+          "direction": "lower",
+          "oriented_auroc": 0.5305434271306237,
+          "raw_auroc": 0.4694565728693763
+        },
+        "teacher_entropy": {
+          "direction": "lower",
+          "oriented_auroc": 0.566603689361455,
+          "raw_auroc": 0.43339631063854506
+        },
+        "teacher_to_plain_drafter_kl": {
+          "direction": "lower",
+          "oriented_auroc": 0.6579646008228144,
+          "raw_auroc": 0.3420353991771857
+        }
+      },
+      "teacher_dependent_not_deployable": true
+    },
+    "transitions_from_loop1": {
+      "1_to_2": {
+        "harm_rate": 0.01121953960553672,
+        "harmed": 599,
+        "net": 6820,
+        "recovered": 7419,
+        "recovery_rate": 0.13896120923785799
+      },
+      "1_to_3": {
+        "harm_rate": 0.012380827511285096,
+        "harmed": 661,
+        "net": 6132,
+        "recovered": 6793,
+        "recovery_rate": 0.12723594747981795
+      },
+      "1_to_4": {
+        "harm_rate": 0.013130045514993725,
+        "harmed": 701,
+        "net": 5029,
+        "recovered": 5730,
+        "recovery_rate": 0.10732547903126112
+      },
+      "1_to_5": {
+        "harm_rate": 0.01399164621925865,
+        "harmed": 747,
+        "net": 4002,
+        "recovered": 4749,
+        "recovery_rate": 0.08895090749030699
+      },
+      "1_to_6": {
+        "harm_rate": 0.014609751072318268,
+        "harmed": 780,
+        "net": 3036,
+        "recovered": 3816,
+        "recovery_rate": 0.07147539755380322
+      }
+    }
+  }
+}
