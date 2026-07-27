@@ -1362,6 +1362,27 @@ def test_current_bootstrap_exposes_paper2_d0_oracle_router_audit_target() -> Non
     assert "evaluation_partition_touched" in evaluator
 
 
+def test_current_bootstrap_exposes_paper2_d0_router_probe_target() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_D0_ROUTER_PROBE_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_d0_router_probe.py").read_text(
+        encoding="utf-8"
+    )
+    evaluator = (ROOT / "eval/eval_speculative_depth_router_probe.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert '"paper2_d0_router_probe"' in bootstrap
+    assert "paper2_d0_router_probe_v1" in cell
+    assert "read-only L4 feature extraction no model optimizer no model training" in runner
+    assert "return_loop_recurrent_states=True" in evaluator
+    assert "output_hidden_states=True" in evaluator
+    assert "teacher_features_used" in evaluator
+    assert "evaluation_partition_touched" in evaluator
+
+
 def test_current_bootstrap_exposes_paper2_d0_train_eval_target() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     cell = (ROOT / "colab/STAGE5_PAPER2_D0_TRAIN_EVAL_CELL.py").read_text(encoding="utf-8")
