@@ -233,7 +233,7 @@ def main() -> int:
     row_predictions = forced_predictions(
         wrapper,
         rows,
-        original_vocab_size=resize.original_vocab_size,
+        original_vocab_size=resize.original_tokenizer_size,
         device=args.device,
         batch_size=args.batch_size,
         resume_dir=Path(args.resume_dir),

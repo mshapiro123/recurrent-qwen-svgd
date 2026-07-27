@@ -100,6 +100,8 @@ def score_teacher_signals(
     teacher_logits: torch.Tensor,
     drafter_logits: torch.Tensor,
     target_token_ids: torch.Tensor,
+    *,
+    shared_vocab_size: int | None = None,
 ) -> dict[str, torch.Tensor]:
     """Compute the locked compact signals on the shared original vocabulary."""
 
@@ -107,11 +109,19 @@ def score_teacher_signals(
         raise ValueError("D0 signal logits must be [positions, vocabulary]")
     if teacher_logits.shape[0] != drafter_logits.shape[0]:
         raise ValueError("D0 teacher and drafter position counts differ")
-    original_vocab = teacher_logits.shape[-1]
-    if drafter_logits.shape[-1] < original_vocab:
-        raise ValueError("D0 drafter vocabulary is smaller than the teacher vocabulary")
-    aligned_drafter = drafter_logits[..., :original_vocab].float()
-    teacher = teacher_logits.float()
+    shared_vocab = int(shared_vocab_size or teacher_logits.shape[-1])
+    if shared_vocab <= 0:
+        raise ValueError("D0 shared tokenizer vocabulary must be positive")
+    if teacher_logits.shape[-1] < shared_vocab or drafter_logits.shape[-1] < shared_vocab:
+        raise ValueError(
+            "D0 physical model head is smaller than the locked shared tokenizer vocabulary"
+        )
+    if target_token_ids.numel() and int(target_token_ids.max().item()) >= shared_vocab:
+        raise ValueError("D0 target token IDs exceed the locked shared tokenizer vocabulary")
+    if target_token_ids.numel() and int(target_token_ids.min().item()) < 0:
+        raise ValueError("D0 target token IDs must be nonnegative")
+    aligned_drafter = drafter_logits[..., :shared_vocab].float()
+    teacher = teacher_logits[..., :shared_vocab].float()
     teacher_log_probs = torch.log_softmax(teacher, dim=-1)
     teacher_probs = teacher_log_probs.exp()
     drafter_log_probs = torch.log_softmax(aligned_drafter, dim=-1)
@@ -156,11 +166,21 @@ def validate_cache_summary(summary: dict[str, Any]) -> None:
     if summary.get("teacher_reloaded_after_completed_cache") is not False:
         raise AssertionError("D0 teacher was reloaded after its completed cache")
     observed = summary.get("caches") or {}
+    alignments = summary.get("tokenizer_alignment") or {}
+    shared_sizes: set[int] = set()
     for teacher, plan in cache_plan().items():
+        alignment = alignments.get(teacher) or {}
+        if alignment.get("status") != "exact_pre_resize_vocabulary_match":
+            raise AssertionError(f"D0 cache lacks an exact tokenizer-alignment receipt for {teacher}")
+        if alignment.get("logit_space") != "shared_pre_resize_tokenizer_vocabulary":
+            raise AssertionError(f"D0 cache uses the wrong logit space for {teacher}")
+        shared_sizes.add(int(alignment.get("vocabulary_size", 0)))
         partitions = observed.get(teacher) or {}
         for partition in plan["partitions"]:
             if (partitions.get(partition) or {}).get("status") != "complete":
                 raise AssertionError(f"D0 cache is missing {teacher}/{partition}")
+    if len(shared_sizes) != 1 or next(iter(shared_sizes), 0) <= 0:
+        raise AssertionError(f"D0 cache teacher shared-vocabulary sizes disagree: {shared_sizes}")
 
 
 def fit_isotonic(values: Sequence[float], targets: Sequence[float]) -> dict[str, Any]:

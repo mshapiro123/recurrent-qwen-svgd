@@ -64,6 +64,30 @@ def test_teacher_signal_scorer_masks_control_rows_and_reports_exact_values() -> 
     assert torch.isfinite(result["teacher_to_plain_drafter_kl"]).all()
 
 
+def test_teacher_signal_scorer_ignores_scale_specific_padded_model_rows() -> None:
+    teacher = torch.tensor([[1.0, 2.0, 3.0, 100.0, 90.0]])
+    drafter = torch.tensor([[3.0, 2.0, 1.0, 200.0]])
+    target = torch.tensor([2])
+
+    result = score_teacher_signals(
+        teacher, drafter, target, shared_vocab_size=3
+    )
+
+    assert result["teacher_greedy_token_id"].tolist() == [2]
+    assert result["drafter_greedy_token_id"].tolist() == [0]
+    assert result["accepted"].tolist() == [False]
+
+
+def test_teacher_signal_scorer_rejects_targets_outside_shared_tokenizer_space() -> None:
+    with pytest.raises(ValueError, match="target token IDs exceed"):
+        score_teacher_signals(
+            torch.zeros(1, 5),
+            torch.zeros(1, 4),
+            torch.tensor([3]),
+            shared_vocab_size=3,
+        )
+
+
 def test_calibration_verdict_uses_locked_two_bin_gain_rule() -> None:
     graded = calibration_verdict(
         {
@@ -84,6 +108,14 @@ def test_cache_summary_requires_every_locked_partition_and_no_teacher_reload() -
         "status": "complete",
         "lock_commit": D0_LOCK_COMMIT,
         "teacher_reloaded_after_completed_cache": False,
+        "tokenizer_alignment": {
+            teacher: {
+                "status": "exact_pre_resize_vocabulary_match",
+                "logit_space": "shared_pre_resize_tokenizer_vocabulary",
+                "vocabulary_size": 151665,
+            }
+            for teacher in cache_plan()
+        },
         "caches": {
             "teacher_7b": {name: {"status": "complete"} for name in cache_plan()["teacher_7b"]["partitions"]},
             "teacher_14b": {"calibration": {"status": "complete"}},
@@ -137,6 +169,8 @@ def test_completed_teacher_cache_can_resume_without_loading_teacher(tmp_path) ->
         {
             "kind": "paper2_d0_teacher_cache_shard",
             "lock_commit": D0_LOCK_COMMIT,
+            "logit_space": "shared_pre_resize_tokenizer_vocabulary",
+            "shared_vocab_size": 3,
             "teacher": "teacher_7b",
             "partition": "evaluation",
             "row_start": 0,
@@ -155,6 +189,7 @@ def test_completed_teacher_cache_can_resume_without_loading_teacher(tmp_path) ->
     assert receipt is not None
     assert receipt["full_logit_rows"] == 1
     assert receipt["full_logit_positions"] == 2
+    assert receipt["shared_vocab_size"] == 3
 
 
 def test_teacher_cache_checkpoint_resolver_accepts_only_sha_identical_fallback(tmp_path) -> None:

@@ -428,7 +428,7 @@ def main() -> int:
                 local_position=local_position,
                 floor=floor,
                 control_ids=(continue_id, stop_id),
-                original_vocab_size=resize.original_vocab_size,
+                original_vocab_size=resize.original_tokenizer_size,
                 device=args.device,
             )
         else:
@@ -475,7 +475,7 @@ def main() -> int:
                 floor=floor,
                 continue_id=continue_id,
                 stop_id=stop_id,
-                original_vocab_size=resize.original_vocab_size,
+                original_vocab_size=resize.original_tokenizer_size,
                 device=args.device,
             )
             points = [

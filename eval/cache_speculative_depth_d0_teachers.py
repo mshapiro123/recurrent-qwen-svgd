@@ -137,6 +137,7 @@ def validate_teacher_drafter_tokenizer_alignment(
         "partitions_checked": sorted(rows_by_partition),
         "runtime_alignment_tokens_excluded": True,
         "internal_control_tokens_excluded": True,
+        "logit_space": "shared_pre_resize_tokenizer_vocabulary",
     }
 
 
@@ -163,6 +164,8 @@ def completed_shard(path: Path, *, teacher: str, partition: str, start: int, sto
         return False
     return (
         payload.get("kind") == "paper2_d0_teacher_cache_shard"
+        and payload.get("logit_space") == "shared_pre_resize_tokenizer_vocabulary"
+        and int(payload.get("shared_vocab_size", 0)) > 0
         and payload.get("teacher") == teacher
         and payload.get("partition") == partition
         and int(payload.get("row_start", -1)) == start
@@ -231,6 +234,7 @@ def cache_partition(
     partition: str,
     cache_root: Path,
     selected_full_logits: dict[int, list[int]],
+    shared_vocab_size: int,
     device: str,
 ) -> dict[str, Any]:
     partition_dir = cache_root / teacher_key / partition
@@ -267,7 +271,12 @@ def cache_partition(
             ).logits[0, :-1]
             drafter_logits = draft_output.logits[0, :-1]
             targets = values[0, 1:]
-            signals = score_teacher_signals(teacher_logits, drafter_logits, targets)
+            signals = score_teacher_signals(
+                teacher_logits,
+                drafter_logits,
+                targets,
+                shared_vocab_size=shared_vocab_size,
+            )
             rejected = (~signals["accepted"]).cpu().tolist()
             local_selected = selected_full_logits.get(row_index, [])
             payload_rows.append(
@@ -295,14 +304,15 @@ def cache_partition(
                     ),
                     "full_logit_local_positions": torch.tensor(local_selected, dtype=torch.int32),
                     "full_teacher_logits_bfloat16": (
-                        teacher_logits.index_select(
+                        teacher_logits[..., :shared_vocab_size].index_select(
                             0, torch.tensor(local_selected, dtype=torch.long, device=device)
                         )
                         .to(torch.bfloat16)
                         .cpu()
                         if local_selected
-                        else torch.empty((0, teacher_logits.shape[-1]), dtype=torch.bfloat16)
+                        else torch.empty((0, shared_vocab_size), dtype=torch.bfloat16)
                     ),
+                    "shared_vocab_size": int(shared_vocab_size),
                 }
             )
             del teacher_logits, drafter_logits, draft_output, signals
@@ -312,6 +322,8 @@ def cache_partition(
                 {
                     "kind": "paper2_d0_teacher_cache_shard",
                     "lock_commit": D0_LOCK_COMMIT,
+                    "logit_space": "shared_pre_resize_tokenizer_vocabulary",
+                    "shared_vocab_size": int(shared_vocab_size),
                     "teacher": teacher_key,
                     "partition": partition,
                     "row_start": start,
@@ -333,6 +345,7 @@ def cache_partition(
         "shards": shard_receipts,
         "full_logit_rows": len(selected_full_logits),
         "full_logit_positions": sum(len(values) for values in selected_full_logits.values()),
+        "shared_vocab_size": int(shared_vocab_size),
     }
 
 
@@ -363,12 +376,14 @@ def completed_cache_receipt(
     shards: list[dict[str, Any]] = []
     full_logit_rows = 0
     full_logit_positions = 0
+    shared_vocab_sizes: set[int] = set()
     for start in range(0, expected_rows, SHARD_ROWS):
         stop = min(expected_rows, start + SHARD_ROWS)
         path = cache_root / teacher / partition / f"rows_{start:06d}_{stop:06d}.pt"
         if not completed_shard(path, teacher=teacher, partition=partition, start=start, stop=stop):
             return None
         payload = torch.load(path, map_location="cpu", weights_only=False)
+        shared_vocab_sizes.add(int(payload["shared_vocab_size"]))
         for row in payload["rows"]:
             count = int(row["full_logit_local_positions"].numel())
             full_logit_rows += int(count > 0)
@@ -381,6 +396,7 @@ def completed_cache_receipt(
         "shards": shards,
         "full_logit_rows": full_logit_rows,
         "full_logit_positions": full_logit_positions,
+        "shared_vocab_size": next(iter(shared_vocab_sizes)) if len(shared_vocab_sizes) == 1 else 0,
     }
 
 
@@ -475,6 +491,18 @@ def main() -> int:
         ("teacher_14b", TEACHER_14B, TEACHER_14B_REVISION),
     )
     for teacher_key, model_name, revision in teachers:
+        plan_partitions = cache_plan()[teacher_key]["partitions"]
+        if (
+            teacher_key in completed_alignment
+            and all(partition in completed[teacher_key] for partition in plan_partitions)
+        ):
+            tokenizer_alignment[teacher_key] = completed_alignment[teacher_key]
+            caches[teacher_key] = completed[teacher_key]
+            print(
+                f"d0_teacher_reload_skipped teacher={teacher_key} reason=complete_verified_shards",
+                flush=True,
+            )
+            continue
         teacher_tokenizer, teacher_model = load_teacher(
             model_name=model_name,
             revision=revision,
@@ -500,7 +528,15 @@ def main() -> int:
             flush=True,
         )
         caches[teacher_key] = {}
-        for partition in cache_plan()[teacher_key]["partitions"]:
+        for partition in plan_partitions:
+            if partition in completed[teacher_key]:
+                caches[teacher_key][partition] = completed[teacher_key][partition]
+                print(
+                    f"d0_partition_cache_resume teacher={teacher_key} partition={partition} "
+                    "reason=complete_verified_shards",
+                    flush=True,
+                )
+                continue
             caches[teacher_key][partition] = cache_partition(
                 teacher_key=teacher_key,
                 teacher_model=teacher_model,
@@ -511,6 +547,7 @@ def main() -> int:
                 selected_full_logits=(
                     selected_by_row if teacher_key == "teacher_7b" and partition == "label_train" else {}
                 ),
+                shared_vocab_size=len(drafter_original_vocab),
                 device=args.device,
             )
         del teacher_model
