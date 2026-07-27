@@ -49,7 +49,6 @@ from training.run_internal_think_token_t1_lite import (
 from training.speculative_depth_d0_corpus import sha256_file
 from training.speculative_depth_d0_postlock import (
     build_training_schedule,
-    predict_isotonic,
     validate_cache_summary,
 )
 from training.speculative_depth_d0_spec import (
@@ -57,7 +56,8 @@ from training.speculative_depth_d0_spec import (
     DRAFTER_CHECKPOINT_SHA256,
     DRAFTER_MODEL,
     DRAFTER_MODEL_REVISION,
-    dynamic_depth_target,
+    deterministic_argmax_fp32,
+    registered_depth_target,
     validate_locked_d0,
 )
 from training.stability import assert_finite_trainable_gradients, assert_finite_trainable_parameters
@@ -120,17 +120,19 @@ def target_depth(
     original_vocab_size: int,
 ) -> int:
     branch = floor["calibration"]["branch"]
-    if bool(row_cache["accepted"][local_position]):
-        return 1
-    if branch == "graded_floor_curve":
-        return predict_isotonic(
-            floor["calibration"]["disagreement_to_depth_mapping"]["primary_fit"],
-            float(row_cache["teacher_to_plain_drafter_kl"][local_position]),
+    matches = None
+    if branch == "flat_floor_dynamic_targets":
+        predictions, _ties = deterministic_argmax_fp32(
+            answer_logits[:, :original_vocab_size].detach(), dim=-1
         )
-    matches = (
-        answer_logits[:, :original_vocab_size].detach().argmax(dim=-1).eq(int(teacher_token_id)).tolist()
+        matches = predictions.eq(int(teacher_token_id)).tolist()
+    return registered_depth_target(
+        floor=floor,
+        accepted=bool(row_cache["accepted"][local_position]),
+        kl=float(row_cache["teacher_to_plain_drafter_kl"][local_position]),
+        loop_matches_teacher=matches,
+        max_depth=4,
     )
-    return dynamic_depth_target(matches, max_depth=4)
 
 
 def natural_loss(
@@ -252,8 +254,11 @@ def natural_stop_recall(
     stop_id: int,
     original_vocab_size: int,
     device: str,
-) -> tuple[int, int]:
+) -> tuple[int, int, int]:
     correct = 0
+    tie_cells = 0
+    if not int(continue_id) < int(stop_id):
+        raise AssertionError("D0 control IDs must be presented in ascending token-id order")
     sample = floor_rows[: min(128, len(floor_rows))]
     for receipt in sample:
         source = calibration_rows[int(receipt["row_index"])]
@@ -269,16 +274,20 @@ def natural_stop_recall(
             return_loop_logits=True,
         )
         logits = output.loop_logits[0, 0, :, -1]
-        if floor["calibration"]["branch"] == "graded_floor_curve":
-            depth = predict_isotonic(
-                floor["calibration"]["disagreement_to_depth_mapping"]["primary_fit"],
-                float(receipt["kl"]),
-            )
-        else:
-            depth = dynamic_depth_target(receipt["matches_teacher_7b"], max_depth=4)
-        decision = logits[depth - 1, [continue_id, stop_id]].argmax().item()
+        depth = registered_depth_target(
+            floor=floor,
+            accepted=False,
+            kl=float(receipt["kl"]),
+            loop_matches_teacher=list(receipt["matches_teacher_7b"]),
+            max_depth=4,
+        )
+        decision, tied = deterministic_argmax_fp32(
+            logits[depth - 1, [continue_id, stop_id]], dim=-1
+        )
+        tie_cells += int(tied.item())
+        decision = int(decision.item())
         correct += int(decision == 1)
-    return correct, len(sample)
+    return correct, len(sample), tie_cells
 
 
 def main() -> int:
@@ -289,6 +298,8 @@ def main() -> int:
     parser.add_argument("--teacher_cache_summary", required=True)
     parser.add_argument("--floor_summary", required=True)
     parser.add_argument("--floor_private_rows", required=True)
+    parser.add_argument("--target_policy_receipt", required=True)
+    parser.add_argument("--prelaunch_summary", required=True)
     parser.add_argument("--checkpoint", required=True)
     parser.add_argument("--rehearsal_jsonl", required=True)
     parser.add_argument("--rehearsal_pilot_jsonl", required=True)
@@ -312,6 +323,31 @@ def main() -> int:
     if floor.get("status") != "complete":
         raise RuntimeError("D0 training requires a landed floor branch")
     floor_private = read_json(args.floor_private_rows)
+    target_policy = read_json(args.target_policy_receipt)
+    prelaunch = read_json(args.prelaunch_summary)
+    if target_policy.get("status") != "verified_before_training":
+        raise RuntimeError("D0 training requires the verified target-policy preflight receipt")
+    if target_policy.get("registered_target_table") != floor["calibration"]["targets"]:
+        raise RuntimeError("D0 target-policy receipt disagrees with the landed floor table")
+    if target_policy.get("descriptive_mapping_used_for_targets") is not False:
+        raise RuntimeError("D0 graded targets must not use the descriptive mapping")
+    if prelaunch.get("status") != "complete" or prelaunch.get("evaluation_partition_touched") is not False:
+        raise RuntimeError("D0 prelaunch teacher-demand receipt is missing or invalid")
+    if prelaunch.get("target_policy_receipt_sha256") != sha256_file(args.target_policy_receipt):
+        raise RuntimeError("D0 target-policy receipt hash disagrees with the prelaunch receipt")
+    print(
+        json.dumps(
+            {
+                "assert_ok": "registered_d0_target_policy",
+                "floor_branch": target_policy["floor_branch"],
+                "target_table": target_policy["registered_target_table"],
+                "scheduled_target_depth_counts": target_policy["target_depth_counts"],
+                "descriptive_mapping_used_for_targets": False,
+            },
+            sort_keys=True,
+        ),
+        flush=True,
+    )
     label_rows = read_jsonl(args.label_train_jsonl)
     calibration_rows = read_jsonl(args.calibration_jsonl)
     cache_rows = load_partition_cache(cache_summary, "teacher_7b", "label_train")
@@ -468,7 +504,7 @@ def main() -> int:
                 device=args.device,
                 max_loops=8,
             )
-            stop_correct, stop_total = natural_stop_recall(
+            stop_correct, stop_total, stop_tie_cells = natural_stop_recall(
                 wrapper,
                 calibration_rows=calibration_rows,
                 floor_rows=floor_private["rows"],
@@ -486,7 +522,13 @@ def main() -> int:
             liveness = stage_boundary_liveness_verdict(
                 points, stop_correct=stop_correct, stop_total=stop_total
             )
-            guardrail = {"step": step, "mechanism": mechanism, "natural_liveness": liveness}
+            guardrail = {
+                "step": step,
+                "mechanism": mechanism,
+                "natural_liveness": liveness,
+                "control_tie_cells": stop_tie_cells,
+                "tie_policy": "fp32 logits; exact ties choose the lowest token id",
+            }
             write_json(output_dir / "guardrails" / f"step_{step}.json", guardrail)
             if liveness["abort_for_diagnosis"]:
                 write_json(output_dir / "summary.json", {"status": "aborted_liveness", **guardrail})
@@ -550,6 +592,9 @@ def main() -> int:
         "natural_steps": 2800,
         "rehearsal_steps": 1200,
         "floor_branch": floor["calibration"]["branch"],
+        "target_policy_receipt": str(args.target_policy_receipt),
+        "prelaunch_summary": str(args.prelaunch_summary),
+        "tie_policy": "fp32 logits; exact ties choose the lowest token id and are counted",
         "raw_checkpoint": str(raw_path),
         "raw_checkpoint_sha256": sha256_file(raw_path),
         "ema_checkpoint": str(ema_path),

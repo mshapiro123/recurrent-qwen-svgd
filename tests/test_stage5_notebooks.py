@@ -1390,15 +1390,37 @@ def test_current_bootstrap_exposes_paper2_d0_train_eval_target() -> None:
     evaluator = (ROOT / "eval/eval_speculative_depth_d0.py").read_text(encoding="utf-8")
 
     assert '"paper2_d0_train_eval"' in bootstrap
-    assert "paper2_d0_train_eval_v1" in cell
+    assert "paper2_d0_train_eval_v2_prelaunch_gated" in cell
     assert "minimum_vram_mib=35000" in cell
     assert "blocked outcomes exit 2 with tables written" in cell
+    assert "prelaunch receipts required before optimizer construction" in cell
+    assert "frozen q1-q4 binned target table" in cell
+    assert "deterministic fp32 argmax lowest token id ties counted" in cell
     assert "training/run_speculative_depth_d0.py" in runner
+    assert "TARGET_POLICY_RECEIPT" in runner
+    assert "PRELAUNCH_SUMMARY" in runner
+    assert "all_position_rows" in runner
     assert "eval_speculative_depth_d0_t1_retention.py" in runner
     assert "eval_speculative_depth_d0_arc_allocation.py" in runner
     assert "teacher_shift_signature" in runner
     assert "speculative_decoding_simulation" in evaluator
     assert "depth_recoverable_fraction_R" in evaluator
+
+
+def test_current_bootstrap_exposes_paper2_d0_prelaunch_target() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_D0_PRELAUNCH_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_d0_prelaunch.py").read_text(encoding="utf-8")
+    builder = (ROOT / "eval/build_speculative_depth_d0_prelaunch.py").read_text(encoding="utf-8")
+
+    assert '"paper2_d0_prelaunch"' in bootstrap
+    assert "paper2_d0_prelaunch_v1" in cell
+    assert "read-only prelaunch post-processing no model no optimizer no evaluation partition" in runner
+    assert "authenticated figure-review addendum" in cell
+    assert "binned target policy receipt before training" in cell
+    assert "teacher demand uses each teachers own rejection population" in cell
+    assert "evaluation_partition_touched" in builder
+    assert "summarize_teacher_demand" in builder
 
 
 def test_t1_lite_ema_audit_target_is_read_only_and_registered() -> None:

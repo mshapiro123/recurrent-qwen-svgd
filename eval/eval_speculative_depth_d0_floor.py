@@ -24,7 +24,11 @@ from training.speculative_depth_d0_postlock import (
     fit_depth_mapping,
     validate_cache_summary,
 )
-from training.speculative_depth_d0_spec import DRAFTER_CHECKPOINT_SHA256, validate_locked_d0
+from training.speculative_depth_d0_spec import (
+    DRAFTER_CHECKPOINT_SHA256,
+    deterministic_argmax_fp32,
+    validate_locked_d0,
+)
 
 
 def read_json(path: str | Path) -> dict[str, Any]:
@@ -78,8 +82,9 @@ def forced_predictions(
     batch_size: int,
     resume_dir: Path,
     checkpoint_sha256: str,
-) -> list[list[list[int]]]:
+) -> tuple[list[list[list[int]]], dict[str, Any]]:
     outputs: list[list[list[int]]] = []
+    tie_cells = total_argmax_cells = legacy_resume_rows = 0
     forced_depths = [1, 2, 3, 4, 5, 6]
     if batch_size != 1:
         raise ValueError("D0 six-loop full-vocabulary floor is locked to batch size 1")
@@ -95,6 +100,11 @@ def forced_predictions(
             ):
                 raise RuntimeError(f"D0 floor resume cache mismatch: {cache_path}")
             outputs.append(cached["predictions"])
+            if cached.get("tie_policy") == "fp32_lowest_token_id":
+                tie_cells += int(cached["tie_cells"])
+                total_argmax_cells += int(cached["argmax_cells"])
+            else:
+                legacy_resume_rows += 1
             print(f"d0_floor_resume rows={len(outputs)}/{len(rows)}", flush=True)
             continue
         sequences = [list(row["input_ids"]) for row in group]
@@ -118,7 +128,12 @@ def forced_predictions(
             raise RuntimeError("D0 floor requires per-loop logits")
         for index, values in enumerate(sequences):
             logits = result.loop_logits[index, 0, :, : len(values) - 1, :original_vocab_size]
-            predictions = logits.argmax(dim=-1).transpose(0, 1).cpu().tolist()
+            selected, tied = deterministic_argmax_fp32(logits, dim=-1)
+            predictions = selected.transpose(0, 1).cpu().tolist()
+            row_tie_cells = int(tied.sum().item())
+            row_argmax_cells = int(tied.numel())
+            tie_cells += row_tie_cells
+            total_argmax_cells += row_argmax_cells
             if any(len(row_predictions) != len(forced_depths) for row_predictions in predictions):
                 raise RuntimeError("D0 floor did not execute exactly six loops")
             result = [[int(value) for value in row_predictions] for row_predictions in predictions]
@@ -131,13 +146,22 @@ def forced_predictions(
                     "row_index": row_index,
                     "forced_depths": forced_depths,
                     "checkpoint_sha256": checkpoint_sha256,
+                    "tie_policy": "fp32_lowest_token_id",
+                    "tie_cells": row_tie_cells,
+                    "argmax_cells": row_argmax_cells,
                     "predictions": result,
                 },
                 temporary,
             )
             os.replace(temporary, cache_path)
         print(f"d0_floor_progress rows={len(outputs)}/{len(rows)}", flush=True)
-    return outputs
+    return outputs, {
+        "policy": "fp32 logits; exact ties choose the lowest token id",
+        "tie_cells": tie_cells,
+        "argmax_cells": total_argmax_cells,
+        "tie_rate": tie_cells / total_argmax_cells if total_argmax_cells else None,
+        "legacy_resume_rows_without_tie_counts": legacy_resume_rows,
+    }
 
 
 def aggregate(
@@ -246,7 +270,7 @@ def main() -> int:
         dtype=args.dtype,
         attn_implementation=args.attn_implementation,
     )
-    row_predictions = forced_predictions(
+    row_predictions, tie_diagnostics = forced_predictions(
         wrapper,
         rows,
         original_vocab_size=resize.original_tokenizer_size,
@@ -257,6 +281,7 @@ def main() -> int:
     )
     examples: list[dict[str, Any]] = []
     dual_teacher_union: list[dict[str, Any]] = []
+    all_positions: list[dict[str, Any]] = []
     for row_index, source in enumerate(rows):
         seven = cache_7b[row_index]
         fourteen = cache_14b[row_index]
@@ -265,8 +290,6 @@ def main() -> int:
         accepted_7b = seven["accepted"].tolist()
         accepted_14b = fourteen["accepted"].tolist()
         for local_position, accepted in enumerate(accepted_7b):
-            if accepted and accepted_14b[local_position]:
-                continue
             item = {
                 "row_index": row_index,
                 "local_position": local_position,
@@ -291,6 +314,17 @@ def main() -> int:
                 (depth for depth, matched in enumerate(matches_7b, start=1) if matched),
                 4,
             )
+            all_positions.append(
+                {
+                    "row_index": row_index,
+                    "local_position": local_position,
+                    "teacher_7b": item["teacher_7b"],
+                    "teacher_14b": item["teacher_14b"],
+                    "predictions": item["predictions"],
+                }
+            )
+            if accepted and accepted_14b[local_position]:
+                continue
             dual_teacher_union.append(item)
             if not accepted:
                 examples.append(item)
@@ -315,6 +349,7 @@ def main() -> int:
             "boundaries": boundaries,
             "rows": aggregated.pop("rows"),
             "dual_teacher_union_rows": union_aggregated.pop("rows"),
+            "all_position_rows": all_positions,
         },
     )
     summary = {
@@ -330,9 +365,11 @@ def main() -> int:
         "curves": aggregated["curves"],
         "dual_teacher_union_positions": len(union_examples),
         "dual_teacher_union_curves": union_aggregated["curves"],
+        "all_positions_recorded_for_teacher_specific_demand": len(all_positions),
         "private_rows_sha256": sha256_file(private_path),
         "optimizer_steps": 0,
         "training_started": False,
+        "tie_diagnostics": tie_diagnostics,
     }
     write_json(args.output_summary, summary)
     print(json.dumps(summary, indent=2, sort_keys=True), flush=True)

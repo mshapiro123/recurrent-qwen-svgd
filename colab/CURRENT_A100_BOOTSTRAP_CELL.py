@@ -132,6 +132,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_d0_router_probe" - read-only L4 Prelude and per-loop deployable router probes.
 #   "paper2_d0_floor_calibration" - forced-depth 1-6 floor against cached 7B/14B labels; L4-safe.
 #   "paper2_d0_teacher_cache" - registered 7B/14B single-pass teacher caches; A100/H100 only.
+#   "paper2_d0_prelaunch" - CPU-only target-policy and teacher-demand receipts; required before training.
 #   "paper2_d0_train_eval" - registered 4,000-step D0 pilot and complete final battery; A100/H100.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
 #   "paper2_d0_prelock" - authorized density probe, corpus freeze, and preregistration lock only.
@@ -178,14 +179,31 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_d0_prelaunch": {
+        "path": "colab/STAGE5_PAPER2_D0_PRELAUNCH_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_D0_PRELAUNCH_VERSION",
+            "paper2_d0_prelaunch_v1",
+            "read-only prelaunch post-processing no model no optimizer no evaluation partition",
+            "authenticated figure-review addendum",
+            "binned target policy receipt before training",
+            "teacher demand uses each teachers own rejection population",
+            "colab/run_stage5_paper2_d0_prelaunch.py",
+        ],
+        "env": {},
+    },
     "paper2_d0_train_eval": {
         "path": "colab/STAGE5_PAPER2_D0_TRAIN_EVAL_CELL.py",
         "markers": [
             "STAGE5_PAPER2_D0_TRAIN_EVAL_VERSION",
-            "paper2_d0_train_eval_v1",
+            "paper2_d0_train_eval_v2_prelaunch_gated",
             "locked 4000-step 70/30 D0 pilot",
             "final-step EMA primary",
             "blocked outcomes exit 2 with tables written",
+            "prelaunch receipts required before optimizer construction",
+            "frozen q1-q4 binned target table",
+            "deterministic fp32 argmax lowest token id ties counted",
+            "teacher shift uses each teachers own rejection population",
             "colab/run_stage5_paper2_d0_train_eval.py",
         ],
         "env": {},

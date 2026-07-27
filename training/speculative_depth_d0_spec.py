@@ -397,6 +397,100 @@ def dynamic_depth_target(loop_matches_teacher: list[bool], *, max_depth: int = 4
     return int(max_depth)
 
 
+def severity_quartile(value: float, boundaries: list[float] | tuple[float, ...]) -> str:
+    """Apply the frozen floor's right-open KL-quartile convention."""
+
+    if len(boundaries) != 3:
+        raise ValueError("D0 severity routing requires three quartile boundaries")
+    if list(boundaries) != sorted(float(boundary) for boundary in boundaries):
+        raise ValueError("D0 severity quartile boundaries must be nondecreasing")
+    return f"q{1 + sum(float(value) > float(boundary) for boundary in boundaries)}"
+
+
+def registered_depth_target(
+    *,
+    floor: dict[str, Any],
+    accepted: bool,
+    kl: float,
+    loop_matches_teacher: list[bool] | None = None,
+    max_depth: int = 4,
+) -> int:
+    """Return the locked branch target; descriptive fits never enter this path."""
+
+    if bool(accepted):
+        return 1
+    calibration = floor.get("calibration") or {}
+    branch = str(calibration.get("branch") or "")
+    if branch == "graded_floor_curve":
+        boundaries = list(floor.get("severity_quartile_boundaries") or [])
+        targets = calibration.get("targets")
+        if not isinstance(targets, dict) or set(targets) != {"q1", "q2", "q3", "q4"}:
+            raise ValueError("D0 graded branch requires frozen q1-through-q4 targets")
+        severity = severity_quartile(float(kl), boundaries)
+        depth = int(targets[severity])
+        if not 1 <= depth <= int(max_depth):
+            raise ValueError(f"D0 graded target is outside the registered budget: {depth}")
+        return depth
+    if branch == "flat_floor_dynamic_targets":
+        if loop_matches_teacher is None:
+            raise ValueError("D0 dynamic branch requires per-loop teacher matches")
+        return dynamic_depth_target(loop_matches_teacher, max_depth=max_depth)
+    raise ValueError(f"Unknown D0 floor branch: {branch!r}")
+
+
+def deterministic_argmax_fp32(
+    logits: torch.Tensor, *, dim: int = -1
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Select the lowest axis index on exact fp32 ties and return a tie mask."""
+
+    values = logits.to(dtype=torch.float32)
+    maxima = values.amax(dim=dim, keepdim=True)
+    tied = values.eq(maxima).sum(dim=dim).gt(1)
+    return values.argmax(dim=dim), tied
+
+
+def summarize_registered_target_schedule(
+    *, floor: dict[str, Any], scheduled_positions: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Prove the scheduled natural examples implement the locked target table."""
+
+    if not scheduled_positions:
+        raise ValueError("D0 target-policy receipt requires scheduled natural positions")
+    calibration = floor.get("calibration") or {}
+    if calibration.get("branch") != "graded_floor_curve":
+        raise ValueError("D0 prelaunch target receipt expects the landed graded branch")
+    target_counts: dict[str, int] = {}
+    severity_counts = {name: 0 for name in ("q1", "q2", "q3", "q4")}
+    accepted = rejected = 0
+    for position in scheduled_positions:
+        is_accepted = bool(position["accepted"])
+        kl = float(position["kl"])
+        depth = registered_depth_target(floor=floor, accepted=is_accepted, kl=kl)
+        target_counts[str(depth)] = target_counts.get(str(depth), 0) + 1
+        if is_accepted:
+            accepted += 1
+        else:
+            rejected += 1
+            severity_counts[severity_quartile(kl, floor["severity_quartile_boundaries"])] += 1
+    expected = {str(value) for value in calibration["targets"].values()} | {"1"}
+    if not set(target_counts).issubset(expected):
+        raise AssertionError("D0 schedule contains a target outside the locked binned policy")
+    return {
+        "kind": "paper2_d0_target_policy_preflight",
+        "status": "verified_before_training",
+        "floor_branch": "graded_floor_curve",
+        "severity_quartile_boundaries": list(floor["severity_quartile_boundaries"]),
+        "registered_target_table": dict(calibration["targets"]),
+        "scheduled_natural_positions": len(scheduled_positions),
+        "accepted_positions": accepted,
+        "rejected_positions": rejected,
+        "target_depth_counts": dict(sorted(target_counts.items())),
+        "rejected_severity_counts": severity_counts,
+        "descriptive_mapping_used_for_targets": False,
+        "tie_policy": "fp32 logits; exact ties choose the lowest token id and are counted",
+    }
+
+
 def calibrated_depth_targets(
     bin_curves: dict[str, list[float]],
     *,

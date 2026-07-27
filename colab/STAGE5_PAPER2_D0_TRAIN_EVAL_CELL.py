@@ -10,10 +10,14 @@ from pathlib import Path
 from google.colab import drive, userdata
 
 
-STAGE5_PAPER2_D0_TRAIN_EVAL_VERSION = "paper2_d0_train_eval_v1"
+STAGE5_PAPER2_D0_TRAIN_EVAL_VERSION = "paper2_d0_train_eval_v2_prelaunch_gated"
 # Safety marker: locked 4000-step 70/30 D0 pilot
 # Safety marker: final-step EMA primary
 # Safety marker: blocked outcomes exit 2 with tables written
+# Safety marker: prelaunch receipts required before optimizer construction
+# Safety marker: frozen q1-q4 binned target table
+# Safety marker: deterministic fp32 argmax lowest token id ties counted
+# Safety marker: teacher shift uses each teachers own rejection population
 # Safety marker: minimum_vram_mib=35000
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
@@ -74,6 +78,7 @@ run(
         "pytest",
         "-q",
         "tests/test_speculative_depth_d0_postlock.py",
+        "tests/test_speculative_depth_d0_launch_amendment.py",
         "tests/test_stage5_notebooks.py::test_current_bootstrap_exposes_paper2_d0_train_eval_target",
     ]
 )

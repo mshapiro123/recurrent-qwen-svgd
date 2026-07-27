@@ -24,7 +24,11 @@ from eval.cache_speculative_depth_d0_teachers import load_drafter, read_jsonl
 from eval.eval_speculative_depth_d0_floor import load_partition_cache, quartile
 from training.speculative_depth_d0_corpus import sha256_file
 from training.speculative_depth_d0_postlock import validate_cache_summary
-from training.speculative_depth_d0_spec import DRAFTER_CHECKPOINT_SHA256, validate_locked_d0
+from training.speculative_depth_d0_spec import (
+    DRAFTER_CHECKPOINT_SHA256,
+    deterministic_argmax_fp32,
+    validate_locked_d0,
+)
 
 
 def read_json(path: str | Path) -> dict[str, Any]:
@@ -114,6 +118,11 @@ def evaluate_partition(
     kl_values: list[float] = []
     rank_values: list[float] = []
     run_values: list[float] = []
+    answer_tie_cells = 0
+    control_tie_cells = 0
+    evaluated_argmax_cells = 0
+    if not int(control_ids[0]) < int(control_ids[1]):
+        raise AssertionError("D0 control IDs must be presented in ascending token-id order")
 
     for row_index, source in enumerate(rows):
         cache_path = resume_dir / f"row_{row_index:06d}.pt"
@@ -123,6 +132,7 @@ def evaluate_partition(
                 cached.get("row_index") != row_index
                 or cached.get("max_loops") != max_loops
                 or cached.get("checkpoint_sha256") != checkpoint_sha256
+                or cached.get("tie_policy") != "fp32_lowest_token_id"
             ):
                 raise RuntimeError(f"D0 evaluation resume cache mismatch: {cache_path}")
             loop1 = cached["loop1"].to(device)
@@ -130,6 +140,12 @@ def evaluate_partition(
             selected_answers = cached["selected_answers"].to(device)
             selected = cached["selected"].to(device)
             exhausted = cached["exhausted"].to(device)
+            selected_answer_tied = cached["selected_answer_tied"].to(device)
+            selected_control_tied = cached["selected_control_tied"].to(device)
+            loop1_answer_tied = cached["loop1_answer_tied"].to(device)
+            row_answer_tie_cells = int(cached["answer_tie_cells"])
+            row_control_tie_cells = int(cached["control_tie_cells"])
+            row_argmax_cells = int(cached["argmax_cells"])
             row_elapsed = float(cached["elapsed_seconds"])
         else:
             values = torch.tensor([source["input_ids"]], dtype=torch.long, device=device)
@@ -148,12 +164,27 @@ def evaluate_partition(
             if output.loop_logits is None:
                 raise RuntimeError("D0 evaluation requires per-loop logits")
             logits = output.loop_logits[0, 0, :, :-1]
-            answers = logits[..., :original_vocab_size].argmax(dim=-1).transpose(0, 1)
-            controls = logits[..., list(control_ids)].argmax(dim=-1).transpose(0, 1)
+            answers, answer_ties = deterministic_argmax_fp32(
+                logits[..., :original_vocab_size], dim=-1
+            )
+            controls, control_ties = deterministic_argmax_fp32(
+                logits[..., list(control_ids)], dim=-1
+            )
+            answers = answers.transpose(0, 1)
+            answer_ties = answer_ties.transpose(0, 1)
+            controls = controls.transpose(0, 1)
+            control_ties = control_ties.transpose(0, 1)
             selected, exhausted = first_stop(controls, max_loops)
-            selected_answers = answers.gather(1, (selected - 1).unsqueeze(1)).squeeze(1)
+            selected_index = (selected - 1).unsqueeze(1)
+            selected_answers = answers.gather(1, selected_index).squeeze(1)
+            selected_answer_tied = answer_ties.gather(1, selected_index).squeeze(1)
+            selected_control_tied = control_ties.gather(1, selected_index).squeeze(1)
             loop1 = answers[:, 0]
             loop4 = answers[:, -1]
+            loop1_answer_tied = answer_ties[:, 0]
+            row_answer_tie_cells = int(answer_ties.sum().item())
+            row_control_tie_cells = int(control_ties.sum().item())
+            row_argmax_cells = int(answer_ties.numel() + control_ties.numel())
             cache_path.parent.mkdir(parents=True, exist_ok=True)
             temporary = cache_path.with_suffix(".pt.tmp")
             torch.save(
@@ -162,19 +193,29 @@ def evaluate_partition(
                     "row_index": row_index,
                     "max_loops": max_loops,
                     "checkpoint_sha256": checkpoint_sha256,
+                    "tie_policy": "fp32_lowest_token_id",
                     "positions": len(source["input_ids"]) - 1,
                     "loop1": loop1.cpu(),
                     "loop4": loop4.cpu(),
                     "selected_answers": selected_answers.cpu(),
                     "selected": selected.cpu(),
                     "exhausted": exhausted.cpu(),
+                    "selected_answer_tied": selected_answer_tied.cpu(),
+                    "selected_control_tied": selected_control_tied.cpu(),
+                    "loop1_answer_tied": loop1_answer_tied.cpu(),
+                    "answer_tie_cells": row_answer_tie_cells,
+                    "control_tie_cells": row_control_tie_cells,
+                    "argmax_cells": row_argmax_cells,
                     "elapsed_seconds": row_elapsed,
                 },
                 temporary,
             )
             os.replace(temporary, cache_path)
-            del output, logits, answers, controls
+            del output, logits, answers, controls, answer_ties, control_ties
         elapsed += row_elapsed
+        answer_tie_cells += row_answer_tie_cells
+        control_tie_cells += row_control_tie_cells
+        evaluated_argmax_cells += row_argmax_cells
         row_cache = cache_rows[row_index]
         teacher = row_cache["teacher_greedy_token_id"].to(device=device, dtype=torch.long)
         plain = row_cache["drafter_greedy_token_id"].to(device=device, dtype=torch.long)
@@ -194,6 +235,9 @@ def evaluate_partition(
         loop4_list = loop4.tolist()
         adaptive_list = selected_answers.tolist()
         exhausted_list = exhausted.tolist()
+        selected_answer_tied_list = selected_answer_tied.tolist()
+        selected_control_tied_list = selected_control_tied.tolist()
+        loop1_answer_tied_list = loop1_answer_tied.tolist()
 
         for local_position in range(len(teacher_list)):
             severity = quartile(kl[local_position], boundaries)
@@ -243,6 +287,9 @@ def evaluate_partition(
                         "adaptive_token_id": int(adaptive_list[local_position]),
                         "selected_loop": int(selected_list[local_position]),
                         "exhausted": bool(exhausted_list[local_position]),
+                        "loop1_answer_tied": bool(loop1_answer_tied_list[local_position]),
+                        "selected_answer_tied": bool(selected_answer_tied_list[local_position]),
+                        "selected_control_tied": bool(selected_control_tied_list[local_position]),
                         "kl": float(kl[local_position]),
                         "rank": float(ranks[local_position]),
                         "rejection_run_length": int(runs[local_position]),
@@ -297,6 +344,17 @@ def evaluate_partition(
             "exhausted": exhausted_total,
             "exhaustion_rate": exhausted_total / positions if positions else None,
             "mean_selected_loops": statistics.fmean(loop_values),
+            "tie_diagnostics": {
+                "policy": "fp32 logits; exact ties choose the lowest token id",
+                "answer_tie_cells": answer_tie_cells,
+                "control_tie_cells": control_tie_cells,
+                "argmax_cells": evaluated_argmax_cells,
+                "tie_rate": (
+                    (answer_tie_cells + control_tie_cells) / evaluated_argmax_cells
+                    if evaluated_argmax_cells
+                    else None
+                ),
+            },
             "loop_usage_correlations": {
                 "spearman_kl": spearman(loop_values, kl_values),
                 "spearman_teacher_rank": spearman(loop_values, rank_values),
@@ -394,11 +452,19 @@ def main() -> int:
         resume_dir=Path(args.resume_dir) / "initial_loop1",
         checkpoint_sha256=DRAFTER_CHECKPOINT_SHA256,
     )
-    mismatches = sum(
-        int(row["loop1_token_id"] != row["plain_token_id"]) for row in initial_records
-    )
-    if mismatches:
-        raise RuntimeError(f"D0 initial same-reader equivalence failed at {mismatches} positions")
+    mismatches = [row for row in initial_records if row["loop1_token_id"] != row["plain_token_id"]]
+    non_tie_mismatches = [row for row in mismatches if not row["loop1_answer_tied"]]
+    if non_tie_mismatches:
+        raise RuntimeError(
+            "D0 initial same-reader equivalence failed outside explicit tied cells at "
+            f"{len(non_tie_mismatches)} positions"
+        )
+    initial_equivalence = {
+        "positions": len(initial_records),
+        "mismatches_vs_legacy_plain_cache": len(mismatches),
+        "non_tie_mismatches": len(non_tie_mismatches),
+        "all_mismatches_explained_by_current_fp32_ties": not non_tie_mismatches,
+    }
     del initial_records
     del initial
     gc.collect()
@@ -462,6 +528,7 @@ def main() -> int:
         "initial_checkpoint_sha256": DRAFTER_CHECKPOINT_SHA256,
         "trained_checkpoint_sha256": args.trained_checkpoint_sha256,
         "initial_loop1": initial_metrics,
+        "initial_same_reader_equivalence": initial_equivalence,
         "trained_loop1": trained_loop1_metrics,
         "trained_adaptive": trained_metrics,
         "simulation_grade_wall_clock": {

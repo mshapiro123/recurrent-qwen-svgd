@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import math
+import statistics
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Iterable, Sequence
@@ -34,6 +35,87 @@ def oracle_depth_profile(matches: Sequence[bool]) -> dict[str, Any]:
         "first_correct_depth": correct_depths[0] if correct_depths else None,
         "correct_depths": correct_depths,
         "selected_depth": correct_depths[0] if correct_depths else 1,
+    }
+
+
+def _teacher_demand_population(
+    rows: Sequence[dict[str, Any]], *, teacher_key: str
+) -> dict[str, Any]:
+    if not rows:
+        return {
+            "positions": 0,
+            "recoverable": 0,
+            "never_correct": 0,
+            "first_correct_depth_counts": {},
+            "median_first_correct_depth_recoverable": None,
+            "agreement_curve": [],
+            "aggregate_peak_depth": None,
+        }
+    depths = {len(row["predictions"]) for row in rows}
+    if len(depths) != 1 or next(iter(depths)) < 1:
+        raise ValueError("teacher-demand rows require a common nonempty depth axis")
+    max_depth = next(iter(depths))
+    first_depths: list[int] = []
+    agreement_counts = [0] * max_depth
+    for row in rows:
+        target = int(row[teacher_key])
+        matches = [int(token) == target for token in row["predictions"]]
+        for index, matched in enumerate(matches):
+            agreement_counts[index] += int(matched)
+        first = next((index + 1 for index, matched in enumerate(matches) if matched), None)
+        if first is not None:
+            first_depths.append(first)
+    counts = {str(depth): first_depths.count(depth) for depth in range(1, max_depth + 1)}
+    peak = max(range(max_depth), key=lambda index: agreement_counts[index]) + 1
+    return {
+        "positions": len(rows),
+        "recoverable": len(first_depths),
+        "recoverable_rate": len(first_depths) / len(rows),
+        "never_correct": len(rows) - len(first_depths),
+        "first_correct_depth_counts": counts,
+        "median_first_correct_depth_recoverable": (
+            float(statistics.median(first_depths)) if first_depths else None
+        ),
+        "agreement_curve": [count / len(rows) for count in agreement_counts],
+        "aggregate_peak_depth": peak,
+    }
+
+
+def summarize_teacher_demand(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    """Compare teachers on clean, teacher-specific loop-1 rejection populations."""
+
+    prepared = list(rows)
+    if not prepared:
+        raise ValueError("teacher-demand analysis requires rows")
+    seven_rejected = [
+        row for row in prepared if int(row["predictions"][0]) != int(row["teacher_7b"])
+    ]
+    fourteen_rejected = [
+        row for row in prepared if int(row["predictions"][0]) != int(row["teacher_14b"])
+    ]
+    fourteen_endorses = sum(
+        int(row["predictions"][0]) == int(row["teacher_14b"]) for row in seven_rejected
+    )
+    return {
+        "teacher_7b_own_rejections": _teacher_demand_population(
+            seven_rejected, teacher_key="teacher_7b"
+        ),
+        "teacher_14b_own_rejections": _teacher_demand_population(
+            fourteen_rejected, teacher_key="teacher_14b"
+        ),
+        "teacher_overlap_on_7b_rejections": {
+            "seven_rejections": len(seven_rejected),
+            "fourteen_endorses_loop1": fourteen_endorses,
+            "share": fourteen_endorses / len(seven_rejected) if seven_rejected else None,
+            "scope": "teacher disagreement within the agreement target; not semantic correctness",
+        },
+        "teacher_14b_crossover_on_7b_rejections": _teacher_demand_population(
+            seven_rejected, teacher_key="teacher_14b"
+        ),
+        "population_rule": (
+            "each primary demand curve uses that teacher's own loop-1 rejection set; "
+            "14B on 7B rejections is descriptive overlap only"
+        ),
     }
 
 

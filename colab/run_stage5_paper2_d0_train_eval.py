@@ -17,6 +17,7 @@ if str(ROOT) not in sys.path:
 from training.speculative_depth_d0_corpus import sha256_file
 from training.speculative_depth_d0_postlock import D0_LOCK_COMMIT, D0_RUN_ID, validate_cache_summary
 from training.speculative_depth_d0_spec import DRAFTER_CHECKPOINT_SHA256, validate_locked_d0
+from eval.eval_speculative_depth_router_feasibility import summarize_teacher_demand
 
 
 LOCK_RUN = ROOT / "outputs/stage5/stage5_paper2_d0_preregistration_20260726"
@@ -35,6 +36,9 @@ CHECKPOINT_SOURCE = Path(
     )
 )
 T1_RUN = ROOT / "outputs/stage5/stage5_paper2_t1_lite_r_20260725"
+PRELAUNCH_DIR = RUN_DIR / "prelaunch"
+PRELAUNCH_SUMMARY = PRELAUNCH_DIR / "summary.json"
+TARGET_POLICY_RECEIPT = PRELAUNCH_DIR / "target_policy_receipt.json"
 
 
 def run(command: list[str], *, allowed: tuple[int, ...] = (0,)) -> int:
@@ -91,50 +95,47 @@ def restore_inputs() -> dict[str, Path]:
     return restored
 
 
-def saturation(matches: list[list[bool]]) -> int | None:
-    if not matches:
-        return None
-    by_depth = [sum(row[depth] for row in matches) / len(matches) for depth in range(6)]
-    threshold = by_depth[-1] - 0.01
-    return next((depth + 1 for depth, value in enumerate(by_depth) if value >= threshold), None)
-
-
 def teacher_shift(private_rows_path: Path) -> dict[str, Any]:
-    rows = read_json(private_rows_path)["dual_teacher_union_rows"]
-    groups = {
-        "dual_teacher_union": rows,
-        "both_reject": [row for row in rows if row["rejected_7b"] and row["rejected_14b"]],
-        "teacher_14b_only": [row for row in rows if not row["rejected_7b"] and row["rejected_14b"]],
-        "teacher_7b_only": [row for row in rows if row["rejected_7b"] and not row["rejected_14b"]],
-    }
-    result: dict[str, Any] = {}
-    for name, selected in groups.items():
-        result[name] = {"positions": len(selected)}
-        for teacher in ("7b", "14b"):
-            key = f"matches_teacher_{teacher}"
-            curves = [
-                sum(int(row[key][depth]) for row in selected) / len(selected) if selected else None
-                for depth in range(6)
-            ]
-            result[name][f"teacher_{teacher}"] = {
-                "agreement_curve": curves,
-                "saturation_depth": saturation([row[key] for row in selected]),
-            }
-    seven = result["dual_teacher_union"]["teacher_7b"]["saturation_depth"]
-    fourteen = result["dual_teacher_union"]["teacher_14b"]["saturation_depth"]
-    if seven is None or fourteen is None:
-        reading = "neither_curve_saturates_by_depth_6"
-    elif fourteen > seven:
-        reading = "saturation_shifts_upward_with_teacher_depth"
-    elif fourteen == seven:
-        reading = "same_saturation_against_both_teachers"
+    payload = read_json(private_rows_path)
+    rows = payload.get("all_position_rows")
+    if not isinstance(rows, list) or not rows:
+        raise RuntimeError(
+            "D0 teacher-shift evaluation requires all calibration positions; "
+            "the legacy dual-teacher union is not an admissible substitute"
+        )
+    result = summarize_teacher_demand(rows)
+    seven = result["teacher_7b_own_rejections"]
+    fourteen = result["teacher_14b_own_rejections"]
+    seven_median = seven["median_first_correct_depth_recoverable"]
+    fourteen_median = fourteen["median_first_correct_depth_recoverable"]
+    if seven_median is None or fourteen_median is None:
+        reading = "inconclusive_one_or_both_teacher_populations_not_recoverable_by_depth_6"
+    elif fourteen_median > seven_median:
+        reading = "median_first_correct_depth_shifts_upward_with_teacher_depth"
+    elif fourteen_median == seven_median:
+        reading = "same_median_first_correct_depth_against_both_teachers"
     else:
-        reading = "deeper_teacher_saturates_earlier_unexpected"
-    result["registered_reading"] = reading
-    result["difference_set_comparison"] = {
-        "both_reject_teacher_14b_saturation": result["both_reject"]["teacher_14b"]["saturation_depth"],
-        "teacher_14b_only_saturation": result["teacher_14b_only"]["teacher_14b"]["saturation_depth"],
-    }
+        reading = "deeper_teacher_has_earlier_median_first_correct_depth_unexpected"
+    result.update(
+        {
+            "kind": "paper2_d0_teacher_shift_signature",
+            "status": "complete",
+            "registered_reading": reading,
+            "primary_statistic": "median first-correct depth among recoverable positions",
+            "population_rule": (
+                "7B demand uses 7B loop-1 rejections; 14B demand uses 14B loop-1 "
+                "rejections; 14B on 7B rejections is descriptive overlap only"
+            ),
+            "amendment_timing": (
+                "specified after the pretraining floor landed and before D0 training; "
+                "the trained-model result remained untouched"
+            ),
+            "binary_target_caveat": (
+                "depth-2 rejected targets may compress trained demand toward depth 2 "
+                "for both teachers"
+            ),
+        }
+    )
     return result
 
 
@@ -164,6 +165,16 @@ def main() -> int:
     floor = read_json(floor_summary_path)
     if floor.get("status") != "complete":
         raise RuntimeError("D0 training requires the completed floor receipt")
+    prelaunch = read_json(PRELAUNCH_SUMMARY)
+    target_policy = read_json(TARGET_POLICY_RECEIPT)
+    if prelaunch.get("status") != "complete" or prelaunch.get("evaluation_partition_touched") is not False:
+        raise RuntimeError("D0 training requires the completed read-only prelaunch receipt")
+    if target_policy.get("status") != "verified_before_training":
+        raise RuntimeError("D0 training requires the verified binned target-policy receipt")
+    if target_policy.get("descriptive_mapping_used_for_targets") is not False:
+        raise RuntimeError("D0 target-policy receipt illegally uses the descriptive mapping")
+    if prelaunch.get("target_policy_receipt_sha256") != sha256_file(TARGET_POLICY_RECEIPT):
+        raise RuntimeError("D0 target-policy receipt hash disagrees with the prelaunch receipt")
     restored = restore_inputs()
     DRIVE_ROOT.mkdir(parents=True, exist_ok=True)
     training_dir = RUN_DIR / "train"
@@ -184,6 +195,10 @@ def main() -> int:
             str(floor_summary_path),
             "--floor_private_rows",
             str(DRIVE_ROOT / "private/floor/floor_rows.json"),
+            "--target_policy_receipt",
+            str(TARGET_POLICY_RECEIPT),
+            "--prelaunch_summary",
+            str(PRELAUNCH_SUMMARY),
             "--checkpoint",
             str(restored["checkpoint"]),
             "--rehearsal_jsonl",
@@ -322,6 +337,8 @@ def main() -> int:
         "kind": "paper2_speculative_depth_d0",
         "status": "blocked_guardrail" if blocked else "complete",
         "lock_commit": D0_LOCK_COMMIT,
+        "prelaunch_summary": PRELAUNCH_SUMMARY.relative_to(ROOT).as_posix(),
+        "target_policy_receipt": TARGET_POLICY_RECEIPT.relative_to(ROOT).as_posix(),
         "training_summary": training_summary.relative_to(ROOT).as_posix(),
         "natural_summary": final_summary.relative_to(ROOT).as_posix(),
         "teacher_shift_summary": shift_summary.relative_to(ROOT).as_posix(),
@@ -335,6 +352,10 @@ def main() -> int:
         "interpretation_band": read_json(final_summary)["interpretation_band"],
         "training_authorized": True,
         "single_seed": True,
+        "tie_policy": "fp32 logits; exact ties choose the lowest token id and are counted",
+        "teacher_shift_population_rule": (
+            "each teacher is measured on its own loop-1 rejection population"
+        ),
     }
     overall_path = RUN_DIR / "summary.json"
     write_json(overall_path, overall)

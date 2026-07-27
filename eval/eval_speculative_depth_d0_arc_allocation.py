@@ -22,6 +22,7 @@ from eval.eval_mcq import MCQExample, format_prompt
 from eval.eval_speculative_depth_d0 import first_stop, spearman
 from eval.prepare_arc_mcq import row_to_mcq
 from training.speculative_depth_d0_corpus import sha256_file
+from training.speculative_depth_d0_spec import deterministic_argmax_fp32
 
 
 def write_json(path: str | Path, payload: Any) -> None:
@@ -69,7 +70,10 @@ def main() -> int:
         attn_implementation=args.attn_implementation,
     )
     control_ids = [int(value) for value in resize.control_token_ids[:2]]
+    if control_ids != sorted(control_ids):
+        raise AssertionError("D0 ARC control IDs must be in ascending token-id order")
     rows: list[dict[str, Any]] = []
+    control_tie_cells = control_argmax_cells = 0
     for difficulty, config in enumerate(("ARC-Easy", "ARC-Challenge")):
         examples = prepared_examples(config, args.limit_per_benchmark)
         for index, example in enumerate(examples):
@@ -85,7 +89,12 @@ def main() -> int:
             )
             if output.loop_logits is None:
                 raise RuntimeError("D0 ARC allocation requires loop logits")
-            controls = output.loop_logits[0, 0, :, :, control_ids].argmax(dim=-1).transpose(0, 1)
+            controls, tied = deterministic_argmax_fp32(
+                output.loop_logits[0, 0, :, :, control_ids], dim=-1
+            )
+            controls = controls.transpose(0, 1)
+            control_tie_cells += int(tied.sum().item())
+            control_argmax_cells += int(tied.numel())
             selected, exhausted = first_stop(controls, 4)
             values = selected.float().cpu().tolist()
             rows.append(
@@ -125,6 +134,12 @@ def main() -> int:
             for config in ("ARC-Easy", "ARC-Challenge")
         },
         "spearman_answer_depth_with_challenge_indicator": spearman(answer_loops, difficulty),
+        "tie_diagnostics": {
+            "policy": "fp32 logits; exact ties choose the lowest token id",
+            "control_tie_cells": control_tie_cells,
+            "control_argmax_cells": control_argmax_cells,
+            "tie_rate": control_tie_cells / control_argmax_cells if control_argmax_cells else None,
+        },
         "scope": "descriptive allocation only; no question-answering capability claim",
         "records": rows,
     }
