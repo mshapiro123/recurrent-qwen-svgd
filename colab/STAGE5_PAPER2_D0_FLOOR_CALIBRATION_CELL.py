@@ -10,7 +10,7 @@ from pathlib import Path
 from google.colab import drive, userdata
 
 
-STAGE5_PAPER2_D0_FLOOR_CALIBRATION_VERSION = "paper2_d0_floor_calibration_v1"
+STAGE5_PAPER2_D0_FLOOR_CALIBRATION_VERSION = "paper2_d0_floor_calibration_v2_diagnostic"
 # Safety marker: floor calibration only no optimizer no training
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
@@ -37,9 +37,21 @@ os.environ["HUGGINGFACE_HUB_TOKEN"] = HF_TOKEN
 
 def run(command: list[str], *, cwd: Path | None = None) -> None:
     print("$", " ".join(command).replace(GH_TOKEN, "****"), flush=True)
-    process = subprocess.run(command, cwd=cwd or ROOT, env=os.environ.copy())
-    if process.returncode:
-        raise subprocess.CalledProcessError(process.returncode, command)
+    process = subprocess.Popen(
+        command,
+        cwd=cwd or ROOT,
+        env=os.environ.copy(),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    for line in process.stdout:
+        print(line, end="", flush=True)
+    returncode = process.wait()
+    if returncode:
+        raise subprocess.CalledProcessError(returncode, command)
 
 
 drive.mount("/content/drive", force_remount=False)

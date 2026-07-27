@@ -172,7 +172,7 @@ TARGETS = {
         "path": "colab/STAGE5_PAPER2_D0_FLOOR_CALIBRATION_CELL.py",
         "markers": [
             "STAGE5_PAPER2_D0_FLOOR_CALIBRATION_VERSION",
-            "paper2_d0_floor_calibration_v1",
+            "paper2_d0_floor_calibration_v2_diagnostic",
             "floor calibration only no optimizer no training",
             "colab/run_stage5_paper2_d0_floor_calibration.py",
         ],

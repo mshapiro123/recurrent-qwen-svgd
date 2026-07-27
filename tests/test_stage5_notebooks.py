@@ -1334,7 +1334,7 @@ def test_current_bootstrap_exposes_paper2_d0_floor_calibration_target() -> None:
     evaluator = (ROOT / "eval/eval_speculative_depth_d0_floor.py").read_text(encoding="utf-8")
 
     assert '"paper2_d0_floor_calibration"' in bootstrap
-    assert "paper2_d0_floor_calibration_v1" in cell
+    assert "paper2_d0_floor_calibration_v2_diagnostic" in cell
     assert "floor calibration only no optimizer no training" in runner
     assert "validate_cache_summary" in runner
     assert "forced_depths = [1, 2, 3, 4, 5, 6]" in evaluator
