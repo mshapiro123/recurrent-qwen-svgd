@@ -1,0 +1,36 @@
+{
+  "accepted_positions": 2038,
+  "descriptive_mapping_used_for_targets": false,
+  "evaluation_partition_touched": false,
+  "floor_branch": "graded_floor_curve",
+  "floor_summary_sha256": "71a827e0f6630008311ca19a326f0c6f14496989492f18f9451d6c046443fc54",
+  "kind": "paper2_d0_target_policy_preflight",
+  "label_train_sha256": "5e49c232bff57f8c992492bdc226618891f264118d84c771c00fb9325798c7bf",
+  "optimizer_steps": 0,
+  "registered_target_table": {
+    "q1": 2,
+    "q2": 2,
+    "q3": 2,
+    "q4": 2
+  },
+  "registered_training_schedule_sha256": "e5123e827d4d4bebb794866421d33f41fa20a76883b8d2a64e6fb5a868994628",
+  "rejected_positions": 762,
+  "rejected_severity_counts": {
+    "q1": 138,
+    "q2": 219,
+    "q3": 199,
+    "q4": 206
+  },
+  "scheduled_natural_positions": 2800,
+  "severity_quartile_boundaries": [
+    0.4999246895313263,
+    0.9380053281784058,
+    1.6951451301574707
+  ],
+  "status": "verified_before_training",
+  "target_depth_counts": {
+    "1": 2038,
+    "2": 762
+  },
+  "tie_policy": "fp32 logits; exact ties choose the lowest token id and are counted"
+}

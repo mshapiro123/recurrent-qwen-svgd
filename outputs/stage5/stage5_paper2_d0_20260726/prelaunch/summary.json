@@ -1,0 +1,101 @@
+{
+  "evaluation_partition_touched": false,
+  "floor_checkpoint_sha256": "93d2e5f9a941bbe79a0b2fc3f9bf43d582bf054990c14b1a93ff67024140062d",
+  "floor_summary_sha256": "71a827e0f6630008311ca19a326f0c6f14496989492f18f9451d6c046443fc54",
+  "kind": "paper2_d0_prelaunch_receipts",
+  "measurement_amendment_timing": "clarified after the floor landed and before any D0-trained model existed; the 7B floor distribution was visible and the clean 14B own-rejection distribution had not been computed",
+  "model_loaded": false,
+  "optimizer_steps": 0,
+  "status": "complete",
+  "target_policy_receipt": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_paper2_d0_20260726/prelaunch/target_policy_receipt.json",
+  "target_policy_receipt_sha256": "e52075b8d5a1b5bd590662f85efae42b38d15a665339322968cbb93d8a6dc8a8",
+  "teacher_demand": {
+    "cached_7b_rejection_overlap": {
+      "fourteen_endorses_floor_loop1": 8845,
+      "population": "cached 7B rejection labels used by the landed floor",
+      "positions": 53389,
+      "scope": "teacher disagreement within the agreement target; not semantic correctness",
+      "share": 0.1656708310700706
+    },
+    "population_rule": "each primary demand curve uses that teacher's own loop-1 rejection set; 14B on 7B rejections is descriptive overlap only",
+    "teacher_14b_crossover_on_7b_rejections": {
+      "aggregate_peak_depth": 2,
+      "agreement_curve": [
+        0.15597722249278836,
+        0.19890982654628556,
+        0.16107219121117897,
+        0.12887273817105607,
+        0.10377252463192597,
+        0.08279324167384708
+      ],
+      "first_correct_depth_counts": {
+        "1": 8327,
+        "2": 6140,
+        "3": 1250,
+        "4": 481,
+        "5": 276,
+        "6": 162
+      },
+      "median_first_correct_depth_recoverable": 1.0,
+      "never_correct": 36750,
+      "positions": 53386,
+      "recoverable": 16636,
+      "recoverable_rate": 0.3116172779380362
+    },
+    "teacher_14b_own_rejections": {
+      "aggregate_peak_depth": 2,
+      "agreement_curve": [
+        0.0,
+        0.13267455330501632,
+        0.12249447116228455,
+        0.10274862217853759,
+        0.08491592656299364,
+        0.0686277951346228
+      ],
+      "first_correct_depth_counts": {
+        "1": 0,
+        "2": 7559,
+        "3": 1646,
+        "4": 639,
+        "5": 367,
+        "6": 218
+      },
+      "median_first_correct_depth_recoverable": 2.0,
+      "never_correct": 46545,
+      "positions": 56974,
+      "recoverable": 10429,
+      "recoverable_rate": 0.18304840804577527
+    },
+    "teacher_7b_own_rejections": {
+      "aggregate_peak_depth": 2,
+      "agreement_curve": [
+        0.0,
+        0.14486944142659125,
+        0.13209455662533248,
+        0.11134005169894728,
+        0.09214026149177687,
+        0.07421421346420409
+      ],
+      "first_correct_depth_counts": {
+        "1": 0,
+        "2": 7734,
+        "3": 1623,
+        "4": 646,
+        "5": 367,
+        "6": 187
+      },
+      "median_first_correct_depth_recoverable": 2.0,
+      "never_correct": 42829,
+      "positions": 53386,
+      "recoverable": 10557,
+      "recoverable_rate": 0.19774847338253473
+    },
+    "teacher_overlap_on_7b_rejections": {
+      "fourteen_endorses_loop1": 8327,
+      "scope": "teacher disagreement within the agreement target; not semantic correctness",
+      "seven_rejections": 53386,
+      "share": 0.15597722249278836
+    }
+  },
+  "trained_layer_caveat": "binary depth-2 targets may compress both trained teacher-demand distributions toward depth 2; the floor layer is less confounded"
+}
