@@ -109,7 +109,7 @@ def extract_feature_cache(
     if private_sha != expected_private_sha256:
         raise RuntimeError("router probe private-floor SHA-256 mismatch")
     signature = {
-        "kind": "paper2_d0_router_feature_cache_v1",
+        "kind": "paper2_d0_router_feature_cache_v2",
         "checkpoint_sha256": checkpoint_sha,
         "private_rows_sha256": private_sha,
         "data_jsonl_sha256": sha256_file(data_jsonl),
@@ -178,23 +178,41 @@ def extract_feature_cache(
             values = [int(value) for value in source["input_ids"]]
             input_ids = torch.tensor(values, dtype=torch.long, device=device).unsqueeze(0)
             attention = torch.ones_like(input_ids)
-            output = wrapper(
-                input_ids=input_ids,
-                attention_mask=attention,
-                labels=None,
-                max_loops=6,
-                use_cache=False,
-                return_dict=True,
-                return_loop_logits=True,
-                return_loop_recurrent_states=True,
-                output_hidden_states=True,
-            )
-            if output.loop_logits is None or output.loop_recurrent_states is None:
-                raise RuntimeError("router probe requires loop logits and recurrent states")
-            if output.hidden_states is None:
-                raise RuntimeError("router probe requires the Prelude output state")
-            prelude = output.hidden_states[int(wrapper.layer_split.prelude_end)][0]
-            states = output.loop_recurrent_states[0, 0]
+            prelude_captures: list[torch.Tensor] = []
+            recurrent_states: list[torch.Tensor] = []
+
+            def capture_prelude(
+                _module: Any,
+                _inputs: tuple[Any, ...],
+                layer_output: Any,
+            ) -> None:
+                state = layer_output[0] if isinstance(layer_output, (tuple, list)) else layer_output
+                prelude_captures.append(state)
+
+            prelude_layer = wrapper.qwen.layers[int(wrapper.layer_split.prelude_end) - 1]
+            hook = prelude_layer.register_forward_hook(capture_prelude)
+            try:
+                # Keep this call equivalent to eval_speculative_depth_d0_floor.forced_predictions.
+                # Hooks and the recurrent-state sink observe tensors without selecting a different
+                # model output path, which is required for the exact frozen-floor prediction check.
+                output = wrapper(
+                    input_ids=input_ids,
+                    attention_mask=attention,
+                    labels=None,
+                    max_loops=6,
+                    use_cache=False,
+                    return_dict=True,
+                    return_loop_logits=True,
+                    recurrent_application_sink=recurrent_states,
+                )
+            finally:
+                hook.remove()
+            if output.loop_logits is None or len(recurrent_states) != 6:
+                raise RuntimeError("router probe requires loop logits and six recurrent states")
+            if len(prelude_captures) != 1:
+                raise RuntimeError("router probe did not capture exactly one Prelude output")
+            prelude = prelude_captures[0][0]
+            states = torch.stack(recurrent_states, dim=1)[0]
             positions = torch.tensor(
                 [int(record["local_position"]) for record in records],
                 device=device,

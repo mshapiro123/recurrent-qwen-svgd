@@ -163,7 +163,7 @@ TARGETS = {
         "path": "colab/STAGE5_PAPER2_D0_ROUTER_PROBE_CELL.py",
         "markers": [
             "STAGE5_PAPER2_D0_ROUTER_PROBE_VERSION",
-            "paper2_d0_router_probe_v1",
+            "paper2_d0_router_probe_v2_floor_equivalent_capture",
             "read-only L4 feature extraction no model optimizer no model training",
             "colab/run_stage5_paper2_d0_router_probe.py",
         ],

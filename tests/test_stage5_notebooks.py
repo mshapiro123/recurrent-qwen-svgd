@@ -1375,10 +1375,10 @@ def test_current_bootstrap_exposes_paper2_d0_router_probe_target() -> None:
     )
 
     assert '"paper2_d0_router_probe"' in bootstrap
-    assert "paper2_d0_router_probe_v1" in cell
+    assert "paper2_d0_router_probe_v2_floor_equivalent_capture" in cell
     assert "read-only L4 feature extraction no model optimizer no model training" in runner
-    assert "return_loop_recurrent_states=True" in evaluator
-    assert "output_hidden_states=True" in evaluator
+    assert "recurrent_application_sink=recurrent_states" in evaluator
+    assert "output_hidden_states=True" not in evaluator
     assert "teacher_features_used" in evaluator
     assert "evaluation_partition_touched" in evaluator
 

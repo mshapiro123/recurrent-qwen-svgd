@@ -10,7 +10,7 @@ from pathlib import Path
 from google.colab import drive, userdata
 
 
-STAGE5_PAPER2_D0_ROUTER_PROBE_VERSION = "paper2_d0_router_probe_v1"
+STAGE5_PAPER2_D0_ROUTER_PROBE_VERSION = "paper2_d0_router_probe_v2_floor_equivalent_capture"
 # Safety marker: read-only L4 feature extraction no model optimizer no model training
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")

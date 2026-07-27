@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import inspect
+
 import torch
 
 from eval.eval_speculative_depth_router_probe import (
@@ -10,6 +12,15 @@ from eval.eval_speculative_depth_router_probe import (
     select_sequential_frontier,
     simulate_sequential_policy,
 )
+
+
+def test_feature_extraction_uses_the_floor_equivalent_forward_path() -> None:
+    from eval.eval_speculative_depth_router_probe import extract_feature_cache
+
+    source = inspect.getsource(extract_feature_cache)
+    assert "recurrent_application_sink=recurrent_states" in source
+    assert "output_hidden_states=True" not in source
+    assert "return_loop_recurrent_states=True" not in source
 
 
 def test_fixed_projection_is_reproducible_and_orthonormal() -> None:
