@@ -1419,6 +1419,9 @@ def test_current_bootstrap_exposes_paper2_d0_prelaunch_target() -> None:
     assert "authenticated figure-review addendum" in cell
     assert "binned target policy receipt before training" in cell
     assert "teacher demand uses each teachers own rejection population" in cell
+    assert "Drive mount retry with explicit Pharma Initiatives account authorization" in cell
+    assert "force_remount=force_remount" in cell
+    assert "timeout_ms=240_000" in cell
     assert "evaluation_partition_touched" in builder
     assert "summarize_teacher_demand" in builder
 

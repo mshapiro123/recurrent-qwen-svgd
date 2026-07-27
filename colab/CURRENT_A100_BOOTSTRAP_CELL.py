@@ -188,6 +188,7 @@ TARGETS = {
             "authenticated figure-review addendum",
             "binned target policy receipt before training",
             "teacher demand uses each teachers own rejection population",
+            "Drive mount retry with explicit Pharma Initiatives account authorization",
             "colab/run_stage5_paper2_d0_prelaunch.py",
         ],
         "env": {},
