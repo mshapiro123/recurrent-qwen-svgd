@@ -1390,7 +1390,7 @@ def test_current_bootstrap_exposes_paper2_d0_train_eval_target() -> None:
     evaluator = (ROOT / "eval/eval_speculative_depth_d0.py").read_text(encoding="utf-8")
 
     assert '"paper2_d0_train_eval"' in bootstrap
-    assert "paper2_d0_train_eval_v3_verbose_preflight" in cell
+    assert "paper2_d0_train_eval_v4_mixed_rehearsal" in cell
     assert "minimum_vram_mib=35000" in cell
     assert "blocked outcomes exit 2 with tables written" in cell
     assert "prelaunch receipts required before optimizer construction" in cell
@@ -1401,6 +1401,7 @@ def test_current_bootstrap_exposes_paper2_d0_train_eval_target() -> None:
     assert "timeout_ms=240_000" in cell
     assert "preflight-only pass before model or optimizer construction" in cell
     assert "STAGE5_PAPER2_D0_PREFLIGHT_ONLY" in cell
+    assert "mixed rehearsal mirrors T1 control-active and mechanism-only semantics" in cell
     assert "training/run_speculative_depth_d0.py" in runner
     assert "TARGET_POLICY_RECEIPT" in runner
     assert "PRELAUNCH_SUMMARY" in runner

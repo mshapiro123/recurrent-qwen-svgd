@@ -226,20 +226,25 @@ def rehearsal_loss(
     positions = locate_readout_positions(
         batch["input_ids"], readout_token_id=readout_id, control_active=batch["control_active"]
     )
-    control_logits, targets, _, _ = gather_control_examples(
-        output.loop_logits,
-        readout_positions=positions,
-        required_depths=batch["required_depth"],
-        control_active=batch["control_active"],
-        continue_token_id=continue_id,
-        stop_token_id=stop_id,
-    )
-    control_loss = F.cross_entropy(control_logits.float(), targets)
+    control_active = bool(batch["control_active"].any())
+    if control_active:
+        control_logits, targets, _, _ = gather_control_examples(
+            output.loop_logits,
+            readout_positions=positions,
+            required_depths=batch["required_depth"],
+            control_active=batch["control_active"],
+            continue_token_id=continue_id,
+            stop_token_id=stop_id,
+        )
+        control_loss = F.cross_entropy(control_logits.float(), targets)
+    else:
+        control_loss = output.loss.new_zeros(())
     total = output.loss + 0.5 * control_loss
     return total, {
         "kind": "rehearsal",
         "mechanism_loss": float(output.loss.detach().cpu()),
         "control_loss": float(control_loss.detach().cpu()),
+        "control_active": control_active,
     }
 
 
@@ -408,6 +413,35 @@ def main() -> int:
     )
     rehearsal_order = list(range(len(rehearsal_dataset)))
     random.Random(0).shuffle(rehearsal_order)
+    scheduled_rehearsal = [item for item in schedule if item["kind"] == "rehearsal"]
+    selected_rehearsal_indices = [
+        rehearsal_order[int(item["rehearsal_index"]) % len(rehearsal_order)]
+        for item in scheduled_rehearsal
+    ]
+    selected_rehearsal_control_active = sum(
+        bool(rehearsal_dataset.base.rows[index].get("control_active", False))
+        for index in selected_rehearsal_indices
+    )
+    rehearsal_schedule_receipt = {
+        "steps": len(scheduled_rehearsal),
+        "control_active_steps": selected_rehearsal_control_active,
+        "mechanism_only_steps": len(scheduled_rehearsal) - selected_rehearsal_control_active,
+        "source_rows": len(rehearsal_dataset),
+        "selection_seed": 0,
+        "policy": (
+            "control-active rows use mechanism plus control loss; mechanism-only rows use "
+            "mechanism loss with zero control loss"
+        ),
+    }
+    if rehearsal_schedule_receipt["steps"] != 1200:
+        raise AssertionError("D0 registered schedule must contain exactly 1,200 rehearsal steps")
+    print(
+        json.dumps(
+            {"assert_ok": "registered_d0_rehearsal_schedule", **rehearsal_schedule_receipt},
+            sort_keys=True,
+        ),
+        flush=True,
+    )
 
     output_dir = Path(args.output_dir)
     backup_dir = Path(args.backup_dir)
@@ -517,7 +551,9 @@ def main() -> int:
             points = [
                 (int(row["step"]), float(row["control_loss"]))
                 for row in trace
-                if interval_start <= int(row["step"]) <= step and "control_loss" in row
+                if interval_start <= int(row["step"]) <= step
+                and "control_loss" in row
+                and bool(row.get("control_active", True))
             ]
             liveness = stage_boundary_liveness_verdict(
                 points, stop_correct=stop_correct, stop_total=stop_total
@@ -591,6 +627,7 @@ def main() -> int:
         "bridge_prelude_lr_multiplier": 10.0,
         "natural_steps": 2800,
         "rehearsal_steps": 1200,
+        "rehearsal_schedule_receipt": rehearsal_schedule_receipt,
         "floor_branch": floor["calibration"]["branch"],
         "target_policy_receipt": str(args.target_policy_receipt),
         "prelaunch_summary": str(args.prelaunch_summary),

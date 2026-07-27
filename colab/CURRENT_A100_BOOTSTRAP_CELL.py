@@ -197,7 +197,7 @@ TARGETS = {
         "path": "colab/STAGE5_PAPER2_D0_TRAIN_EVAL_CELL.py",
         "markers": [
             "STAGE5_PAPER2_D0_TRAIN_EVAL_VERSION",
-            "paper2_d0_train_eval_v3_verbose_preflight",
+            "paper2_d0_train_eval_v4_mixed_rehearsal",
             "locked 4000-step 70/30 D0 pilot",
             "final-step EMA primary",
             "blocked outcomes exit 2 with tables written",
@@ -208,6 +208,7 @@ TARGETS = {
             "Drive mount retry with explicit Pharma Initiatives account authorization",
             "preflight-only pass before model or optimizer construction",
             "evaluation partition restored only after training",
+            "mixed rehearsal mirrors T1 control-active and mechanism-only semantics",
             "colab/run_stage5_paper2_d0_train_eval.py",
         ],
         "env": {},

@@ -11,7 +11,7 @@ from pathlib import Path
 from google.colab import drive, userdata
 
 
-STAGE5_PAPER2_D0_TRAIN_EVAL_VERSION = "paper2_d0_train_eval_v3_verbose_preflight"
+STAGE5_PAPER2_D0_TRAIN_EVAL_VERSION = "paper2_d0_train_eval_v4_mixed_rehearsal"
 # Safety marker: locked 4000-step 70/30 D0 pilot
 # Safety marker: final-step EMA primary
 # Safety marker: blocked outcomes exit 2 with tables written
@@ -22,6 +22,7 @@ STAGE5_PAPER2_D0_TRAIN_EVAL_VERSION = "paper2_d0_train_eval_v3_verbose_preflight
 # Safety marker: Drive mount retry with explicit Pharma Initiatives account authorization
 # Safety marker: preflight-only pass before model or optimizer construction
 # Safety marker: evaluation partition restored only after training
+# Safety marker: mixed rehearsal mirrors T1 control-active and mechanism-only semantics
 # Safety marker: minimum_vram_mib=35000
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")

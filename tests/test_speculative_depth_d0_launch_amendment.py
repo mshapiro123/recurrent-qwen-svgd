@@ -6,6 +6,7 @@ from pathlib import Path
 import torch
 
 from eval.eval_speculative_depth_router_feasibility import summarize_teacher_demand
+from training.run_speculative_depth_d0 import rehearsal_loss
 from training.speculative_depth_d0_spec import (
     deterministic_argmax_fp32,
     registered_depth_target,
@@ -149,3 +150,47 @@ def test_trained_floor_records_all_positions_for_teacher_specific_demand() -> No
     assert 'payload.get("all_position_rows")' in runner
     assert "legacy dual-teacher union is not an admissible substitute" in runner
     assert "summarize_teacher_demand(rows)" in runner
+
+
+def test_mechanism_only_rehearsal_preserves_step_with_zero_control_loss() -> None:
+    class Output:
+        loss = torch.tensor(2.0, requires_grad=True)
+        loop_logits = torch.zeros((1, 1, 1, 2, 32))
+
+    class Wrapper:
+        def __call__(self, **_kwargs: object) -> Output:
+            return Output()
+
+    batch = {
+        "input_ids": torch.tensor([[1, 2]]),
+        "attention_mask": torch.ones((1, 2), dtype=torch.long),
+        "labels": torch.tensor([[1, 2]]),
+        "loop_labels": torch.tensor([[[1, 2]]]),
+        "target_loop_counts": torch.tensor([1]),
+        "required_depth": torch.tensor([1]),
+        "control_active": torch.tensor([False]),
+    }
+
+    total, receipt = rehearsal_loss(
+        Wrapper(),
+        batch=batch,
+        continue_id=10,
+        stop_id=11,
+        readout_id=12,
+    )
+
+    assert float(total.detach()) == 2.0
+    assert receipt == {
+        "kind": "rehearsal",
+        "mechanism_loss": 2.0,
+        "control_loss": 0.0,
+        "control_active": False,
+    }
+
+
+def test_liveness_excludes_mechanism_only_zero_control_losses() -> None:
+    trainer = (ROOT / "training/run_speculative_depth_d0.py").read_text(encoding="utf-8")
+
+    assert 'bool(row.get("control_active", True))' in trainer
+    assert '"assert_ok": "registered_d0_rehearsal_schedule"' in trainer
+    assert '"mechanism_only_steps"' in trainer
