@@ -193,6 +193,22 @@ def aggregate(
     return {"curves": curves, "rows": rows_out}
 
 
+def split_examples_and_predictions(
+    examples: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[list[int]]]:
+    """Separate receipt metadata from predictions without mutating shared rows."""
+    clean_examples: list[dict[str, Any]] = []
+    predictions: list[list[int]] = []
+    for index, source in enumerate(examples):
+        if "predictions" not in source:
+            raise RuntimeError(f"D0 floor example {index} is missing predictions")
+        clean = dict(source)
+        predicted = clean.pop("predictions")
+        clean_examples.append(clean)
+        predictions.append([int(value) for value in predicted])
+    return clean_examples, predictions
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--preregistration", required=True)
@@ -278,10 +294,9 @@ def main() -> int:
             dual_teacher_union.append(item)
             if not accepted:
                 examples.append(item)
-    predictions = [example.pop("predictions") for example in examples]
+    examples, predictions = split_examples_and_predictions(examples)
     aggregated = aggregate(examples, predictions, boundaries)
-    union_examples = [dict(item) for item in dual_teacher_union]
-    union_predictions = [item.pop("predictions") for item in union_examples]
+    union_examples, union_predictions = split_examples_and_predictions(dual_teacher_union)
     union_aggregated = aggregate(union_examples, union_predictions, boundaries)
     bin_curves = {
         name: [

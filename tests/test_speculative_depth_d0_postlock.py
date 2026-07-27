@@ -12,6 +12,7 @@ from eval.cache_speculative_depth_d0_teachers import (
 )
 from colab.run_stage5_paper2_d0_teacher_cache import resolve_checkpoint_source
 from eval.eval_speculative_depth_d0 import first_stop, simulate_windows, spearman
+from eval.eval_speculative_depth_d0_floor import split_examples_and_predictions
 from training.speculative_depth_d0_postlock import (
     D0_LOCK_COMMIT,
     build_training_schedule,
@@ -38,6 +39,21 @@ def test_postlock_cache_plan_preserves_single_pass_teacher_contract() -> None:
     assert plan["teacher_14b"]["partitions"] == ["calibration"]
     assert plan["teacher_7b"]["full_logit_scope"] == "registered_natural_training_positions"
     assert plan["teacher_14b"]["full_logit_scope"] == "none"
+
+
+def test_floor_receipt_prediction_split_does_not_mutate_aliased_examples() -> None:
+    shared = {"row_index": 7, "predictions": [11, 12, 13, 14, 15, 16]}
+    primary = [shared]
+    union = [shared]
+
+    clean_primary, primary_predictions = split_examples_and_predictions(primary)
+    clean_union, union_predictions = split_examples_and_predictions(union)
+
+    assert primary_predictions == [[11, 12, 13, 14, 15, 16]]
+    assert union_predictions == primary_predictions
+    assert clean_primary == [{"row_index": 7}]
+    assert clean_union == clean_primary
+    assert shared["predictions"] == [11, 12, 13, 14, 15, 16]
 
 
 def test_training_schedule_is_exactly_70_30_and_deterministic() -> None:
