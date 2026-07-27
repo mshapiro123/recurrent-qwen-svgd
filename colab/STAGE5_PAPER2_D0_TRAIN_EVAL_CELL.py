@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from google.colab import drive, userdata
@@ -18,6 +19,7 @@ STAGE5_PAPER2_D0_TRAIN_EVAL_VERSION = "paper2_d0_train_eval_v2_prelaunch_gated"
 # Safety marker: frozen q1-q4 binned target table
 # Safety marker: deterministic fp32 argmax lowest token id ties counted
 # Safety marker: teacher shift uses each teachers own rejection population
+# Safety marker: Drive mount retry with explicit Pharma Initiatives account authorization
 # Safety marker: minimum_vram_mib=35000
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
@@ -50,7 +52,36 @@ def run(command: list[str], *, cwd: Path | None = None, allowed: tuple[int, ...]
     return process.returncode
 
 
-drive.mount("/content/drive", force_remount=False)
+def ensure_drive() -> None:
+    my_drive = Path("/content/drive/MyDrive")
+    if my_drive.is_dir():
+        print("Drive already mounted at /content/drive", flush=True)
+        return
+    failures: list[str] = []
+    for attempt, force_remount in enumerate((False, True), start=1):
+        try:
+            print(
+                f"Drive mount attempt {attempt}/2 force_remount={int(force_remount)}. "
+                "Authorize the Pharma Initiatives Google account when prompted.",
+                flush=True,
+            )
+            drive.mount(
+                "/content/drive",
+                force_remount=force_remount,
+                timeout_ms=240_000,
+            )
+        except (ValueError, TimeoutError) as error:
+            failures.append(f"attempt {attempt}: {type(error).__name__}: {error}")
+        if my_drive.is_dir():
+            return
+        time.sleep(3)
+    raise RuntimeError(
+        "Google Drive could not be mounted after two attempts. Authorize the Pharma Initiatives "
+        f"account in Colab and rerun. Failures: {failures}"
+    )
+
+
+ensure_drive()
 gpu_memory = subprocess.check_output(
     ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"], text=True
 )

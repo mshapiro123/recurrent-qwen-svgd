@@ -205,6 +205,7 @@ TARGETS = {
             "frozen q1-q4 binned target table",
             "deterministic fp32 argmax lowest token id ties counted",
             "teacher shift uses each teachers own rejection population",
+            "Drive mount retry with explicit Pharma Initiatives account authorization",
             "colab/run_stage5_paper2_d0_train_eval.py",
         ],
         "env": {},

@@ -1396,6 +1396,9 @@ def test_current_bootstrap_exposes_paper2_d0_train_eval_target() -> None:
     assert "prelaunch receipts required before optimizer construction" in cell
     assert "frozen q1-q4 binned target table" in cell
     assert "deterministic fp32 argmax lowest token id ties counted" in cell
+    assert "Drive mount retry with explicit Pharma Initiatives account authorization" in cell
+    assert "force_remount=force_remount" in cell
+    assert "timeout_ms=240_000" in cell
     assert "training/run_speculative_depth_d0.py" in runner
     assert "TARGET_POLICY_RECEIPT" in runner
     assert "PRELAUNCH_SUMMARY" in runner
