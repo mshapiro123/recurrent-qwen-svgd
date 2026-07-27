@@ -129,6 +129,9 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper1_closure_receipts" - CPU-safe Paper 1 evidence compiler and Drive backup.
 #   "depth_selector_bounded_assessment" - frozen N24 supervised-depth and Ponder-outcome selector closure.
 #   "wall_clock_latency_descriptive" - eval-only five-arm Paper One batch-1 latency receipt.
+#   "paper2_d0_floor_calibration" - forced-depth 1-6 floor against cached 7B/14B labels; L4-safe.
+#   "paper2_d0_teacher_cache" - registered 7B/14B single-pass teacher caches; A100/H100 only.
+#   "paper2_d0_train_eval" - registered 4,000-step D0 pilot and complete final battery; A100/H100.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
 #   "paper2_d0_prelock" - authorized density probe, corpus freeze, and preregistration lock only.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
@@ -154,6 +157,40 @@ if TARGET == "traced_sft_scale64_benchmark" and os.environ.get(
     TARGET = "traced_sft_direct_preservation_probe"
 
 TARGETS = {
+    "paper2_d0_train_eval": {
+        "path": "colab/STAGE5_PAPER2_D0_TRAIN_EVAL_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_D0_TRAIN_EVAL_VERSION",
+            "paper2_d0_train_eval_v1",
+            "locked 4000-step 70/30 D0 pilot",
+            "final-step EMA primary",
+            "blocked outcomes exit 2 with tables written",
+            "colab/run_stage5_paper2_d0_train_eval.py",
+        ],
+        "env": {},
+    },
+    "paper2_d0_floor_calibration": {
+        "path": "colab/STAGE5_PAPER2_D0_FLOOR_CALIBRATION_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_D0_FLOOR_CALIBRATION_VERSION",
+            "paper2_d0_floor_calibration_v1",
+            "floor calibration only no optimizer no training",
+            "colab/run_stage5_paper2_d0_floor_calibration.py",
+        ],
+        "env": {},
+    },
+    "paper2_d0_teacher_cache": {
+        "path": "colab/STAGE5_PAPER2_D0_TEACHER_CACHE_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_D0_TEACHER_CACHE_VERSION",
+            "paper2_d0_teacher_cache_v1",
+            "minimum_vram_mib=35000",
+            "labeling proper only no optimizer no training",
+            "tests/test_speculative_depth_d0_postlock.py",
+            "colab/run_stage5_paper2_d0_teacher_cache.py",
+        ],
+        "env": {},
+    },
     "paper2_d0_prelock_publish_resume": {
         "path": "colab/STAGE5_PAPER2_D0_PRELOCK_PUBLISH_RESUME_CELL.py",
         "markers": [

@@ -1310,6 +1310,56 @@ def test_current_bootstrap_exposes_paper2_d0_publish_resume_target() -> None:
     assert '"optimizer_steps": 0' in runner
 
 
+def test_current_bootstrap_exposes_paper2_d0_teacher_cache_target() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_D0_TEACHER_CACHE_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_d0_teacher_cache.py").read_text(encoding="utf-8")
+    evaluator = (ROOT / "eval/cache_speculative_depth_d0_teachers.py").read_text(encoding="utf-8")
+
+    assert '"paper2_d0_teacher_cache"' in bootstrap
+    assert "paper2_d0_teacher_cache_v1" in cell
+    assert "minimum_vram_mib=35000" in cell
+    assert "tests/test_speculative_depth_d0_postlock.py" in cell
+    assert "D0_LOCK_COMMIT" in runner
+    assert "labeling proper only no optimizer no training" in runner
+    assert "registered_natural_training_positions" in evaluator
+    assert "teacher_reloaded_after_completed_cache" in evaluator
+    assert "atomic_copy" in evaluator
+
+
+def test_current_bootstrap_exposes_paper2_d0_floor_calibration_target() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_D0_FLOOR_CALIBRATION_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_d0_floor_calibration.py").read_text(encoding="utf-8")
+    evaluator = (ROOT / "eval/eval_speculative_depth_d0_floor.py").read_text(encoding="utf-8")
+
+    assert '"paper2_d0_floor_calibration"' in bootstrap
+    assert "paper2_d0_floor_calibration_v1" in cell
+    assert "floor calibration only no optimizer no training" in runner
+    assert "validate_cache_summary" in runner
+    assert "forced_depths = [1, 2, 3, 4, 5, 6]" in evaluator
+    assert "calibration_verdict" in evaluator
+    assert "teacher_14b" in evaluator
+
+
+def test_current_bootstrap_exposes_paper2_d0_train_eval_target() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_D0_TRAIN_EVAL_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_d0_train_eval.py").read_text(encoding="utf-8")
+    evaluator = (ROOT / "eval/eval_speculative_depth_d0.py").read_text(encoding="utf-8")
+
+    assert '"paper2_d0_train_eval"' in bootstrap
+    assert "paper2_d0_train_eval_v1" in cell
+    assert "minimum_vram_mib=35000" in cell
+    assert "blocked outcomes exit 2 with tables written" in cell
+    assert "training/run_speculative_depth_d0.py" in runner
+    assert "eval_speculative_depth_d0_t1_retention.py" in runner
+    assert "eval_speculative_depth_d0_arc_allocation.py" in runner
+    assert "teacher_shift_signature" in runner
+    assert "speculative_decoding_simulation" in evaluator
+    assert "depth_recoverable_fraction_R" in evaluator
+
+
 def test_t1_lite_ema_audit_target_is_read_only_and_registered() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
         encoding="utf-8"
