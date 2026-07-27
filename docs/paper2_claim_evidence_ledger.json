@@ -277,29 +277,44 @@
     },
     {
       "id": "speculative_depth_d0",
-      "status": "preregistration_approved_prelock_pending",
-      "claim": "No empirical D0 claim exists; Draft 7 is approved with the Stack v1 smol corpus amendment, and only the uncitable density-and-corpus-lock job is prepared.",
-      "scope": "Pre-lock density probe and deterministic corpus freeze only; labeling proper and training require the generated lock commit",
+      "status": "not_recoverable_at_pilot_scale",
+      "claim": "Under one 4,000-step seed, binary teacher-disagreement targets did not produce deployment-useful adaptive depth; the target omitted accepted-position harm and labeled many causally unactionable rejections as continue.",
+      "scope": "Binary teacher-disagreement targets, one seed, 4,000 steps, teacher-forced natural next-token positions; D1 utility labels untrained",
+      "metrics": {
+        "depth_recoverable_fraction_R": 0.010029833263173308,
+        "trained_loop1_correct": 144966,
+        "adaptive_correct": 140586,
+        "positions": 199529,
+        "accepted_position_net_loss": 4928,
+        "t1_retention_correct": 1005,
+        "t1_retention_total": 1024,
+        "teacher_disagreement_share": 0.1656708310700706
+      },
       "evidence": [
         {
           "path": "docs/PHASE_D0_PREREGISTRATION_DRAFT7_20260726.md",
           "locator": "signed-off governing design and eight-round markup log"
         },
         {
-          "path": "outputs/stage5/stage5_paper2_d0_build_only_20260725/summary.json",
-          "locator": "CPU synthetic fixture receipt and zero-execution counters"
+          "path": "outputs/stage5/stage5_paper2_d0_20260726/summary.json",
+          "locator": "registered pilot verdict and hard guardrails"
         },
         {
-          "path": "colab/run_stage5_paper2_d0_prelock.py",
-          "locator": "density-only fail-closed corpus and preregistration lock builder"
+          "path": "docs/PAPER2_D0_PILOT_RESULT_HANDOFF_20260727.md",
+          "locator": "complete design, result, interpretation, and limitations"
+        },
+        {
+          "path": "docs/PAPER2_D0_BANKING_AMENDMENT_20260727.md",
+          "locator": "strategy-ratified label-misalignment interpretation and D1 boundary"
         }
       ],
       "do_not_claim": [
-        "speculative disagreement recovers useful depth labels",
+        "adaptive depth is generally ineffective",
         "acceptance rate improves",
-        "natural reasoning improves",
-        "The Stack v2 was used",
-        "D0 training is authorized"
+        "teacher agreement is correctness or natural reasoning",
+        "D1 utility labels have been trained",
+        "the T1 registered negative was retroactively passed",
+        "seed or scale robustness"
       ]
     }
   ],

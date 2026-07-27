@@ -48,9 +48,9 @@ def test_paper2_ledger_closes_phase_g_and_records_t1_replication_state() -> None
     assert claims["internal_token_halting"]["metrics"][
         "p0_lineage_matches_registered_t1"
     ] is False
-    assert claims["speculative_depth_d0"]["status"] == (
-        "preregistration_approved_prelock_pending"
-    )
+    assert claims["speculative_depth_d0"]["status"] == "not_recoverable_at_pilot_scale"
+    assert claims["speculative_depth_d0"]["metrics"]["accepted_position_net_loss"] == 4928
+    assert claims["speculative_depth_d0"]["metrics"]["t1_retention_correct"] == 1005
     assert payload["active_queue"]["t1"].startswith("two_registered_negatives")
     assert claims["coconut_composite_integrity"]["status"] == (
         "engineering_preflight_bounded_fail"

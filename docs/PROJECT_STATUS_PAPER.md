@@ -1,8 +1,8 @@
 # Project Status: Deterministic Program Closed
 
-**Canonical date:** July 25, 2026
+**Canonical date:** July 27, 2026
 **Part 1 status:** closed
-**Part 2 status:** Arm G is closed on the tested frozen re-entry interface; both T1-lite attempts are final registered negatives, while both raw endpoints replicated exact in-support causal depth control at a small preservation cost; D0 Draft 7 is approved with the direct-content Stack v1 smol amendment and its density-and-lock job is prepared, while labeling proper and training remain blocked until that lock commit lands; the COCONUT composite remains in integrity engineering
+**Part 2 status:** Arm G is closed on the tested frozen re-entry interface; both T1-lite attempts remain registered negatives, while D0 mixed training erased their descriptive preservation cost; D0 is banked as `not_recoverable_at_pilot_scale` for its misaligned binary disagreement target, and a read-only causal allocation audit is authorized to construct utility-aligned D1 labels; the COCONUT composite remains in integrity engineering
 
 This page is the short status index. It replaces the earlier June recovery narrative, which became stale after the loop-closure repair, synthetic mechanism installation, Phase A dense-control comparison, and inverse-task boundary program.
 
@@ -25,6 +25,9 @@ This page is the short status index. It replaces the earlier June recovery narra
 - [Paper Two Draft 3 pivot](PAPER2_EXPERIMENTAL_PLAN_DRAFT3_20260723.md)
 - [T1 P0 calibration strategy handoff](PAPER2_T1_P0_CALIBRATION_STRATEGY_HANDOFF_20260724.md)
 - [Approved D0 speculative-depth preregistration Draft 7](PHASE_D0_PREREGISTRATION_DRAFT7_20260726.md)
+- [D0 pilot result handoff](PAPER2_D0_PILOT_RESULT_HANDOFF_20260727.md)
+- [D0 banking amendment](PAPER2_D0_BANKING_AMENDMENT_20260727.md)
+- [D1 causal allocation audit specification](PAPER2_D1_CAUSAL_ALLOCATION_AUDIT_SPEC_20260727.md)
 - [Superseded D0 Draft 1 scaffold](PAPER2_D0_SPECULATIVE_DEPTH_PREREGISTRATION_DRAFT_20260723.md)
 - [COCONUT integrity result](COCONUT_COMPOSITE_PREFLIGHT_HANDOFF_20260725.md)
 - [Experiment log](EXPERIMENT_LOG.md)
@@ -112,6 +115,18 @@ EMA again collapsed. Stage-reset EMA preserved forced answers at `1003/1024`
 but selected only `731/1024` depths exactly. All fifteen boundary states are
 Drive-backed and hash-verified.
 
+D0 then completed its registered 4,000-step single-seed pilot. The final EMA
+checkpoint passed both hard weight-level guardrails, but adaptive routing did
+not improve the deployment objective. The interpretation is
+`not_recoverable_at_pilot_scale`, scoped to binary teacher-disagreement
+targets. That target was misaligned: most rejected positions were not
+next-loop recoverable, while accepted-position harm was not represented in
+the label. D0 mixed training nevertheless restored T1-family retention to
+`1005/1024`, exactly the non-halting reference, with perfect control. This
+does not retroactively pass T1. It establishes that the earlier preservation
+cost was transient under continued mixed training. The read-only D1 causal
+allocation audit is authorized; D1 training is not.
+
 The COCONUT no-training preflight passed eight of eleven contracts. The
 horizontal graph is connected and correctly accounted, but finite-difference
 stability and the bf16 precision policy require bounded follow-up. Sliced
@@ -119,10 +134,9 @@ cache is retired. RG-12 remains unauthorized.
 
 ## Active Queue
 
-1. Review and approve the T1-lite-R bounded interpretation; do not run another T1 training seed without a new preregistered question.
-2. Run one read-only L4 stage-lag reconstruction from the five preserved raw and EMA triplets, plus the already-authorized seed-0 layer-group and per-depth interpolation audits if strategy still values them.
-3. Run the bounded D0 pre-lock density job, freeze the corpus and partition hashes, and land the lock. Do not run labeling proper or training until a post-lock launcher is authored from that commit.
-4. Continue COCONUT only through the RG-4 epsilon-stability and RG-11 precision-policy diagnostic. RG-12 and all training remain unauthorized.
+1. Run the read-only A100 D0 causal allocation audit and 100,000-position D1 utility-label dry run. The same hardware class and exact banked-anchor replay check protect rare argmax transition labels from cross-hardware drift. Do not train D1.
+2. Draft D1 only after the audit lands. Its preregistration must include label-to-objective alignment, an explicit loop cost, a policy-level accepted-position guardrail, and fixed-depth/oracle comparators.
+3. Continue COCONUT only through the RG-4 epsilon-stability and RG-11 precision-policy diagnostic. RG-12 and all training remain unauthorized.
 
 Closed pending that decision: additional Phase G sweeps, coverage, selection,
 LPRM, per-trajectory halting, particles, SVGD, the intra-block oracle probe,

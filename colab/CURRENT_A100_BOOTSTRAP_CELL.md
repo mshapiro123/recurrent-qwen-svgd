@@ -135,6 +135,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_d0_teacher_cache" - registered 7B/14B single-pass teacher caches; A100/H100 only.
 #   "paper2_d0_prelaunch" - CPU-only target-policy and teacher-demand receipts; required before training.
 #   "paper2_d0_train_eval" - registered 4,000-step D0 pilot and complete final battery; A100/H100.
+#   "paper2_d1_causal_allocation_audit" - read-only A100 D0 decomposition and D1 utility-label dry run.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
 #   "paper2_d0_prelock" - authorized density probe, corpus freeze, and preregistration lock only.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
@@ -160,6 +161,21 @@ if TARGET == "traced_sft_scale64_benchmark" and os.environ.get(
     TARGET = "traced_sft_direct_preservation_probe"
 
 TARGETS = {
+    "paper2_d1_causal_allocation_audit": {
+        "path": "colab/STAGE5_PAPER2_D1_CAUSAL_ALLOCATION_AUDIT_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_D1_CAUSAL_ALLOCATION_AUDIT_VERSION",
+            "paper2_d1_causal_allocation_audit_v1",
+            "read-only A100 post-D0 audit no optimizer no backward no checkpoint writes",
+            "exact replay equivalence to banked D0 A100 anchors",
+            "source-row grouped five-fold cross-fit seed 20260727",
+            "D1 continue only when next loop helps stop on hurts or neutral",
+            "teacher top1 top2 margin unavailable no teacher reload",
+            "100000-position label-train forced-depth-4 dry run",
+            "colab/run_stage5_paper2_d1_causal_allocation_audit.py",
+        ],
+        "env": {},
+    },
     "paper2_d0_router_probe": {
         "path": "colab/STAGE5_PAPER2_D0_ROUTER_PROBE_CELL.py",
         "markers": [

@@ -1416,6 +1416,23 @@ def test_current_bootstrap_exposes_paper2_d0_train_eval_target() -> None:
     assert "depth_recoverable_fraction_R" in evaluator
 
 
+def test_current_bootstrap_exposes_paper2_d1_causal_allocation_audit_target() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_D1_CAUSAL_ALLOCATION_AUDIT_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_d1_causal_allocation_audit.py").read_text(
+        encoding="utf-8"
+    )
+    assert '"paper2_d1_causal_allocation_audit"' in bootstrap
+    assert "paper2_d1_causal_allocation_audit_v1" in cell
+    assert "read-only A100 post-D0 audit no optimizer no backward no checkpoint writes" in cell
+    assert "exact replay equivalence to banked D0 A100 anchors" in cell
+    assert "source-row grouped five-fold cross-fit seed 20260727" in cell
+    assert "100000-position label-train forced-depth-4 dry run" in cell
+    assert "eval_speculative_depth_d1_causal_allocation.py" in runner
+
+
 def test_current_bootstrap_exposes_paper2_d0_prelaunch_target() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     cell = (ROOT / "colab/STAGE5_PAPER2_D0_PRELAUNCH_CELL.py").read_text(encoding="utf-8")
