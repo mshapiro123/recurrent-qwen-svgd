@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import sys
+import traceback
 from pathlib import Path
 from typing import Any
 
@@ -28,12 +29,14 @@ DRIVE_ROOT = Path(
         f"/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/{D0_RUN_ID}",
     )
 )
-CHECKPOINT_SOURCE = Path(
-    os.environ.get(
-        "STAGE5_PAPER2_D0_DRAFTER_CHECKPOINT",
-        "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/"
-        "stage5_paper2_t1_lite_r_20260725/checkpoints/t1_lite_r_raw_step_10500.pt",
-    )
+CHECKPOINT_ALIAS = Path(
+    "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/"
+    "stage5_paper2_t1_lite_r_20260725/checkpoints/t1_lite_r_raw_step_10500.pt"
+)
+CHECKPOINT_STAGE_STATE = Path(
+    "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/"
+    "stage5_paper2_t1_lite_r_20260725/checkpoints/stage_states/"
+    "t1_lite_r_step_10500_raw.pt"
 )
 
 
@@ -66,6 +69,42 @@ def write_json(path: Path, payload: Any) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def status_event(status: str, **details: Any) -> None:
+    payload = {"kind": "paper2_d0_teacher_cache_status", "status": status, **details}
+    print("d0_teacher_cache_status:", json.dumps(payload, sort_keys=True), flush=True)
+    try:
+        write_json(DRIVE_ROOT / "receipts" / "teacher_cache_status.json", payload)
+    except Exception as error:
+        print(f"d0_teacher_cache_status_write_failed={error!r}", flush=True)
+
+
+def resolve_checkpoint_source(
+    candidates: list[Path], *, expected_sha256: str
+) -> tuple[Path, list[dict[str, Any]]]:
+    diagnostics: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        key = str(candidate)
+        if key in seen:
+            continue
+        seen.add(key)
+        if not candidate.exists():
+            diagnostics.append({"path": key, "status": "missing"})
+            continue
+        observed = sha256_file(candidate)
+        if observed != expected_sha256:
+            diagnostics.append(
+                {"path": key, "status": "sha_mismatch", "observed_sha256": observed}
+            )
+            continue
+        diagnostics.append({"path": key, "status": "matched", "sha256": observed})
+        return candidate, diagnostics
+    raise FileNotFoundError(
+        "No SHA-identical locked D0 drafter checkpoint was found. "
+        f"expected_sha256={expected_sha256} candidates={json.dumps(diagnostics, sort_keys=True)}"
+    )
+
+
 def assert_lock_is_immutable() -> tuple[dict[str, Any], dict[str, Any]]:
     if subprocess.run(
         ["git", "merge-base", "--is-ancestor", D0_LOCK_COMMIT, "HEAD"], cwd=ROOT
@@ -86,10 +125,22 @@ def restore_private_inputs(manifest: dict[str, Any]) -> dict[str, Any]:
         receipt = runtime_manifest["artifacts"][name]
         source = Path(receipt["drive_path"])
         destination = private_dir / f"{name}.jsonl"
+        print(
+            f"d0_private_input_preflight name={name} path={source} exists={source.exists()}",
+            flush=True,
+        )
         if not source.exists():
             raise FileNotFoundError(f"Locked D0 private input is missing from Drive: {source}")
-        if sha256_file(source) != receipt["sha256"]:
-            raise RuntimeError(f"Locked D0 private input hash mismatch: {name}")
+        observed = sha256_file(source)
+        print(
+            f"d0_private_input_sha name={name} observed={observed} expected={receipt['sha256']}",
+            flush=True,
+        )
+        if observed != receipt["sha256"]:
+            raise RuntimeError(
+                f"Locked D0 private input hash mismatch: {name}; "
+                f"observed={observed} expected={receipt['sha256']}"
+            )
         destination.parent.mkdir(parents=True, exist_ok=True)
         if not destination.exists() or sha256_file(destination) != receipt["sha256"]:
             shutil.copy2(source, destination)
@@ -99,16 +150,20 @@ def restore_private_inputs(manifest: dict[str, Any]) -> dict[str, Any]:
     return {"manifest": runtime_manifest, "path": runtime_path}
 
 
-def restore_checkpoint() -> Path:
-    if not CHECKPOINT_SOURCE.exists():
-        raise FileNotFoundError(f"Locked D0 drafter checkpoint is missing: {CHECKPOINT_SOURCE}")
-    if sha256_file(CHECKPOINT_SOURCE) != DRAFTER_CHECKPOINT_SHA256:
-        raise RuntimeError("Locked D0 drafter checkpoint SHA mismatch")
-    destination = RUN_DIR / "restored" / CHECKPOINT_SOURCE.name
+def restore_checkpoint() -> tuple[Path, list[dict[str, Any]]]:
+    explicit = os.environ.get("STAGE5_PAPER2_D0_DRAFTER_CHECKPOINT", "").strip()
+    candidates = ([Path(explicit)] if explicit else []) + [CHECKPOINT_ALIAS, CHECKPOINT_STAGE_STATE]
+    source, diagnostics = resolve_checkpoint_source(
+        candidates, expected_sha256=DRAFTER_CHECKPOINT_SHA256
+    )
+    print(
+        "d0_checkpoint_resolution:", json.dumps(diagnostics, sort_keys=True), flush=True
+    )
+    destination = RUN_DIR / "restored" / "t1_lite_r_raw_step_10500.pt"
     destination.parent.mkdir(parents=True, exist_ok=True)
     if not destination.exists() or sha256_file(destination) != DRAFTER_CHECKPOINT_SHA256:
-        shutil.copy2(CHECKPOINT_SOURCE, destination)
-    return destination
+        shutil.copy2(source, destination)
+    return destination, diagnostics
 
 
 def publish(paths: list[Path]) -> str:
@@ -124,14 +179,24 @@ def publish(paths: list[Path]) -> str:
 
 
 def main() -> int:
+    DRIVE_ROOT.mkdir(parents=True, exist_ok=True)
+    status_event("preflight_started", run_id=D0_RUN_ID, drive_root=str(DRIVE_ROOT))
     prereg, manifest = assert_lock_is_immutable()
+    status_event("lock_validated", lock_commit=D0_LOCK_COMMIT)
     if prereg.get("labeling_gpu_authorized") is not True:
         raise RuntimeError("D0 labeling is not authorized by the landed lock")
     RUN_DIR.mkdir(parents=True, exist_ok=True)
-    DRIVE_ROOT.mkdir(parents=True, exist_ok=True)
     restored = restore_private_inputs(manifest)
-    checkpoint = restore_checkpoint()
+    status_event("private_inputs_restored", manifest=str(restored["path"]))
+    checkpoint, checkpoint_resolution = restore_checkpoint()
+    status_event(
+        "checkpoint_restored",
+        checkpoint=str(checkpoint),
+        checkpoint_sha256=DRAFTER_CHECKPOINT_SHA256,
+        resolution=checkpoint_resolution,
+    )
     summary_path = RUN_DIR / "labeling" / "summary.json"
+    status_event("teacher_cache_started", output_summary=str(summary_path))
     run(
         [
             sys.executable,
@@ -173,9 +238,19 @@ def main() -> int:
         encoding="utf-8",
     )
     publish_commit = publish([summary_path, summary_md])
+    status_event("complete", publish_commit=publish_commit, summary=str(summary_path))
     print(json.dumps({**summary, "publish_commit": publish_commit}, indent=2, sort_keys=True), flush=True)
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except Exception as error:
+        status_event(
+            "errored",
+            error_type=type(error).__name__,
+            error=str(error),
+            traceback=traceback.format_exc(),
+        )
+        raise

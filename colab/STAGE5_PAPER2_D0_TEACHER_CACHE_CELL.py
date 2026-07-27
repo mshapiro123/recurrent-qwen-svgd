@@ -10,7 +10,7 @@ from pathlib import Path
 from google.colab import drive, userdata
 
 
-STAGE5_PAPER2_D0_TEACHER_CACHE_VERSION = "paper2_d0_teacher_cache_v1"
+STAGE5_PAPER2_D0_TEACHER_CACHE_VERSION = "paper2_d0_teacher_cache_v2_diagnostic"
 # Safety marker: minimum_vram_mib=35000
 # Safety marker: labeling proper only no optimizer no training
 # Safety marker: tests/test_speculative_depth_d0_postlock.py
@@ -40,9 +40,25 @@ os.environ["HUGGINGFACE_HUB_TOKEN"] = HF_TOKEN
 
 def run(command: list[str], *, cwd: Path | None = None) -> None:
     print("$", " ".join(command).replace(GH_TOKEN, "****"), flush=True)
-    process = subprocess.run(command, cwd=cwd or ROOT, env=os.environ.copy())
-    if process.returncode:
-        raise subprocess.CalledProcessError(process.returncode, command)
+    process = subprocess.Popen(
+        command,
+        cwd=cwd or ROOT,
+        env=os.environ.copy(),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    tail: list[str] = []
+    for line in process.stdout:
+        print(line, end="", flush=True)
+        tail.append(line.rstrip())
+        tail = tail[-240:]
+    returncode = process.wait()
+    if returncode:
+        print("\nD0 child-process tail:\n" + "\n".join(tail), flush=True)
+        raise subprocess.CalledProcessError(returncode, command)
 
 
 drive.mount("/content/drive", force_remount=False)

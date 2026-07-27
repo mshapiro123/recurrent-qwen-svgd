@@ -182,7 +182,7 @@ TARGETS = {
         "path": "colab/STAGE5_PAPER2_D0_TEACHER_CACHE_CELL.py",
         "markers": [
             "STAGE5_PAPER2_D0_TEACHER_CACHE_VERSION",
-            "paper2_d0_teacher_cache_v1",
+            "paper2_d0_teacher_cache_v2_diagnostic",
             "minimum_vram_mib=35000",
             "labeling proper only no optimizer no training",
             "tests/test_speculative_depth_d0_postlock.py",

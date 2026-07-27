@@ -4,6 +4,7 @@ import torch
 import pytest
 
 from eval.cache_speculative_depth_d0_teachers import completed_cache_receipt
+from colab.run_stage5_paper2_d0_teacher_cache import resolve_checkpoint_source
 from eval.eval_speculative_depth_d0 import first_stop, simulate_windows, spearman
 from training.speculative_depth_d0_postlock import (
     D0_LOCK_COMMIT,
@@ -151,6 +152,35 @@ def test_completed_teacher_cache_can_resume_without_loading_teacher(tmp_path) ->
     assert receipt is not None
     assert receipt["full_logit_rows"] == 1
     assert receipt["full_logit_positions"] == 2
+
+
+def test_teacher_cache_checkpoint_resolver_accepts_only_sha_identical_fallback(tmp_path) -> None:
+    missing = tmp_path / "missing.pt"
+    wrong = tmp_path / "wrong.pt"
+    right = tmp_path / "stage_states" / "raw.pt"
+    wrong.write_bytes(b"wrong")
+    right.parent.mkdir(parents=True)
+    right.write_bytes(b"locked checkpoint")
+
+    import hashlib
+
+    expected = hashlib.sha256(b"locked checkpoint").hexdigest()
+    resolved, diagnostics = resolve_checkpoint_source(
+        [missing, wrong, right], expected_sha256=expected
+    )
+
+    assert resolved == right
+    assert [row["status"] for row in diagnostics] == ["missing", "sha_mismatch", "matched"]
+
+
+def test_teacher_cache_checkpoint_resolver_fails_with_candidate_diagnostics(tmp_path) -> None:
+    wrong = tmp_path / "wrong.pt"
+    wrong.write_bytes(b"wrong")
+
+    import pytest
+
+    with pytest.raises(FileNotFoundError, match="No SHA-identical locked D0 drafter checkpoint"):
+        resolve_checkpoint_source([tmp_path / "missing.pt", wrong], expected_sha256="0" * 64)
 
 
 def test_isotonic_mapping_is_monotone_and_depth_capped() -> None:

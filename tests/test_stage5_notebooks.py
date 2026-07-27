@@ -1317,7 +1317,7 @@ def test_current_bootstrap_exposes_paper2_d0_teacher_cache_target() -> None:
     evaluator = (ROOT / "eval/cache_speculative_depth_d0_teachers.py").read_text(encoding="utf-8")
 
     assert '"paper2_d0_teacher_cache"' in bootstrap
-    assert "paper2_d0_teacher_cache_v1" in cell
+    assert "paper2_d0_teacher_cache_v2_diagnostic" in cell
     assert "minimum_vram_mib=35000" in cell
     assert "tests/test_speculative_depth_d0_postlock.py" in cell
     assert "D0_LOCK_COMMIT" in runner
