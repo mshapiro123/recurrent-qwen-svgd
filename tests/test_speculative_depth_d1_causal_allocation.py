@@ -9,6 +9,7 @@ from eval.eval_speculative_depth_d1_causal_allocation import (
     d1_label_balance,
     deployed_policy_frontier,
     deterministic_sample_rows,
+    recurrent_states_token_loop,
     oracle_frontier,
     policy_confusion,
     replay_equivalence,
@@ -18,6 +19,27 @@ from eval.eval_speculative_depth_d1_causal_allocation import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_recurrent_states_are_normalized_to_token_loop_hidden() -> None:
+    batch = 1
+    sequence = 344
+    hidden = 12
+    loops = 4
+    captured = [
+        torch.full((batch, sequence, hidden), float(loop_index))
+        for loop_index in range(loops)
+    ]
+
+    states = recurrent_states_token_loop(
+        captured,
+        expected_loops=loops,
+        expected_tokens=sequence - 1,
+    )
+
+    assert states.shape == (sequence - 1, loops, hidden)
+    for loop_index in range(loops):
+        assert torch.all(states[:, loop_index] == float(loop_index))
 
 
 def test_utility_labels_continue_only_for_causal_help() -> None:

@@ -128,6 +128,34 @@ def _row_cache_valid(path: Path, signature: dict[str, Any]) -> bool:
     return payload.get("signature") == signature
 
 
+def recurrent_states_token_loop(
+    recurrent_states: Sequence[torch.Tensor],
+    *,
+    expected_loops: int,
+    expected_tokens: int,
+) -> torch.Tensor:
+    """Normalize captured [batch, sequence, hidden] states to [token, loop, hidden]."""
+    if len(recurrent_states) != expected_loops:
+        raise RuntimeError(
+            "D1 audit recurrent-state loop mismatch: "
+            f"captured={len(recurrent_states)} expected={expected_loops}"
+        )
+    shapes = [tuple(state.shape) for state in recurrent_states]
+    if any(state.ndim != 3 for state in recurrent_states):
+        raise RuntimeError(f"D1 audit expected rank-3 recurrent states, got {shapes}")
+    if len(set(shapes)) != 1:
+        raise RuntimeError(f"D1 audit recurrent-state shapes differ across loops: {shapes}")
+    batch, sequence, _hidden = shapes[0]
+    if batch != 1:
+        raise RuntimeError(f"D1 audit feature extraction requires batch=1, got {batch}")
+    if sequence < expected_tokens:
+        raise RuntimeError(
+            "D1 audit recurrent state is shorter than the prediction sequence: "
+            f"state_sequence={sequence} expected_tokens={expected_tokens}"
+        )
+    return torch.stack(list(recurrent_states), dim=2)[0, :expected_tokens]
+
+
 @torch.inference_mode()
 def extract_partition_cache(
     *,
@@ -153,7 +181,7 @@ def extract_partition_cache(
     teacher_rows = load_partition_cache(cache_summary, "teacher_7b", partition)
     selected = list(selected_row_indices) if selected_row_indices is not None else list(range(len(sources)))
     signature = {
-        "kind": "paper2_d1_causal_allocation_feature_cache_v1",
+        "kind": "paper2_d1_causal_allocation_feature_cache_v2",
         "checkpoint_sha256": checkpoint_sha,
         "data_jsonl_sha256": sha256_file(data_jsonl),
         "teacher_cache_summary_sha256": sha256_file(cache_summary_path),
@@ -240,11 +268,13 @@ def extract_partition_cache(
             matches = predicted.eq(teacher_ids.unsqueeze(0))
             row_scalars = torch.empty((len(values) - 1, MAX_LOOPS, 0), dtype=torch.float32)
             if capture_scalars:
-                if len(recurrent_states) != MAX_LOOPS:
-                    raise RuntimeError("D1 audit did not capture four recurrent states")
                 if len(prelude_captures) != 1:
                     raise RuntimeError("D1 audit did not capture exactly one Prelude state")
-                states = torch.stack(recurrent_states, dim=1)[0].float()
+                states = recurrent_states_token_loop(
+                    recurrent_states,
+                    expected_loops=MAX_LOOPS,
+                    expected_tokens=len(values) - 1,
+                ).float()
                 previous_state = prelude_captures[0][0, : len(values) - 1].float()
                 previous_prediction: torch.Tensor | None = None
                 scalar_loops: list[torch.Tensor] = []
