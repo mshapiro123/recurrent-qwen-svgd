@@ -71,7 +71,7 @@ def test_floor_archaeology_reconstructs_matches_from_predictions() -> None:
     assert result["hurts"] == 1
 
 
-def test_curve_replay_requires_exact_counts_but_tolerates_float_roundoff() -> None:
+def test_curve_replay_accepts_only_tiny_cross_runtime_decision_drift() -> None:
     banked = [
         {
             "penalty": 0.01,
@@ -82,16 +82,42 @@ def test_curve_replay_requires_exact_counts_but_tolerates_float_roundoff() -> No
             "net_utility": 0.62375,
         }
     ]
-    reconstructed = [{**banked[0], "accuracy": 0.6250002, "mean_loops": 1.1250002}]
+    total = 200_000
+    banked[0].update(
+        {
+            "correct": 125_000,
+            "total": total,
+            "accuracy": 0.625,
+            "mean_loops": 1.125,
+            "net_utility": 0.62375,
+        }
+    )
+    reconstructed = [
+        {
+            **banked[0],
+            "correct": 125_001,
+            "accuracy": 125_001 / total,
+            "mean_loops": 1.125 + 4 / total,
+            "net_utility": 125_001 / total - 0.01 * (0.125 + 4 / total),
+        }
+    ]
     diagnostics = curve_replay_diagnostics(reconstructed, banked)
     assert diagnostics["pass"] is True
-    assert diagnostics["exact_fields_match"] is True
+    assert diagnostics["status"] == "numerically_equivalent_not_bit_exact"
+    assert diagnostics["decision_fields_bit_exact"] is False
+    assert diagnostics["maximum_correct_count_difference"] == 1
     assert diagnostics["maximum_derived_absolute_difference"] > 0
 
-    wrong_counts = [{**reconstructed[0], "correct": 9}]
+    wrong_counts = [
+        {
+            **reconstructed[0],
+            "correct": 125_003,
+            "accuracy": 125_003 / total,
+        }
+    ]
     diagnostics = curve_replay_diagnostics(wrong_counts, banked)
     assert diagnostics["pass"] is False
-    assert diagnostics["exact_fields_match"] is False
+    assert diagnostics["within_numerical_equivalence_envelope"] is False
 
 
 def test_rescore_cli_resolves_repo_imports_outside_repo_cwd(tmp_path: Path) -> None:
