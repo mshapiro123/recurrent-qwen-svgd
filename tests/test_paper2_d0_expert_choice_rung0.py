@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import subprocess
+import sys
+from pathlib import Path
+
 import torch
 
 from eval.rescore_d0_expert_choice import (
@@ -88,3 +92,14 @@ def test_curve_replay_requires_exact_counts_but_tolerates_float_roundoff() -> No
     diagnostics = curve_replay_diagnostics(wrong_counts, banked)
     assert diagnostics["pass"] is False
     assert diagnostics["exact_fields_match"] is False
+
+
+def test_rescore_cli_resolves_repo_imports_outside_repo_cwd(tmp_path: Path) -> None:
+    script = Path(__file__).resolve().parents[1] / "eval/rescore_d0_expert_choice.py"
+    result = subprocess.run(
+        [sys.executable, str(script), "--help"],
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr

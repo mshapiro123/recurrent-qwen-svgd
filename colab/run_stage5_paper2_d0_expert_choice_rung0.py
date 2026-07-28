@@ -122,7 +122,8 @@ def main() -> int:
     run(
         [
             sys.executable,
-            "eval/rescore_d0_expert_choice.py",
+            "-m",
+            "eval.rescore_d0_expert_choice",
             "--feature_cache",
             str(feature),
             "--audit_summary",

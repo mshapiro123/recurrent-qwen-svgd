@@ -61,7 +61,8 @@ def main() -> int:
         [
             sys.executable,
             "-u",
-            "eval/prepare_paper2_dc0_eval_b.py",
+            "-m",
+            "eval.prepare_paper2_dc0_eval_b",
             "--data_manifest",
             str(LOCK / "data_manifest.json"),
             "--checkpoint",

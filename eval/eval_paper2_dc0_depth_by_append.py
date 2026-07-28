@@ -8,11 +8,16 @@ import hashlib
 import json
 import math
 import os
+import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Sequence
 
 import torch
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from eval.cache_speculative_depth_d0_teachers import load_drafter, read_jsonl
 from eval.eval_speculative_depth_d0_floor import load_partition_cache

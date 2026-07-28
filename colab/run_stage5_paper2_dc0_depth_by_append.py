@@ -86,7 +86,8 @@ def main() -> int:
         [
             sys.executable,
             "-u",
-            "eval/eval_paper2_dc0_depth_by_append.py",
+            "-m",
+            "eval.eval_paper2_dc0_depth_by_append",
             "--data_jsonl",
             str(data),
             "--teacher_cache_summary",
