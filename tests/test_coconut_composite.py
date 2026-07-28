@@ -67,10 +67,11 @@ def test_depth_by_append_output_counts_transient_readout_queries() -> None:
 def test_m7_append_then_evict_is_invisible_to_later_real_tokens() -> None:
     model = tiny_composite().eval()
     inputs = torch.tensor([[2, 3, 4, 5, 6]], dtype=torch.long)
-    baseline = model.depth_by_append(
+    cached_baseline = model.depth_by_append(
         input_ids=inputs,
-        append_steps=0,
-        feedback_mode="raw",
+        append_steps=1,
+        feedback_mode="neutral",
+        neutral_token_id=LATENT_ID,
         capture_real_logits=True,
     )
     appended = model.depth_by_append(
@@ -79,10 +80,33 @@ def test_m7_append_then_evict_is_invisible_to_later_real_tokens() -> None:
         feedback_mode="raw",
         capture_real_logits=True,
     )
-    assert baseline.real_logits is not None and appended.real_logits is not None
-    torch.testing.assert_close(appended.real_logits, baseline.real_logits, atol=1e-6, rtol=1e-6)
+    assert cached_baseline.real_logits is not None and appended.real_logits is not None
+    torch.testing.assert_close(
+        appended.real_logits, cached_baseline.real_logits, atol=1e-6, rtol=1e-6
+    )
     assert appended.diagnostics["real_position_ids"] == [0, 1, 2, 3]
     assert appended.diagnostics["cache_lengths_after_eviction"] == [1, 2, 3, 4]
+
+
+def test_m7_k0_delegates_to_registered_full_sequence_path() -> None:
+    model = tiny_composite().eval()
+    inputs = torch.tensor([[2, 3, 4, 5, 6]], dtype=torch.long)
+    registered = model.recurrent(
+        input_ids=inputs,
+        attention_mask=torch.ones_like(inputs),
+        max_loops=1,
+        use_cache=False,
+        return_dict=True,
+    )
+    k0 = model.depth_by_append(
+        input_ids=inputs,
+        append_steps=0,
+        feedback_mode="raw",
+        capture_real_logits=True,
+    )
+    assert k0.real_logits is not None
+    torch.testing.assert_close(k0.real_logits, registered.logits[:, :-1].float())
+    assert k0.diagnostics["execution_mode"] == "registered_full_sequence_k0"
 
 
 def test_m7_read_at_t_query_has_causal_transient_accounting() -> None:

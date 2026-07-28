@@ -298,6 +298,43 @@ class CoconutRecurrentQwen(nn.Module):
 
         batch, sequence = input_ids.shape
         device = input_ids.device
+        if int(append_steps) == 0:
+            registered = self.recurrent(
+                input_ids=input_ids,
+                attention_mask=torch.ones_like(input_ids),
+                max_loops=1,
+                use_cache=False,
+                return_dict=True,
+            )
+            if registered.final_post_norm_hidden is None:
+                raise RuntimeError("M7 registered k=0 pass did not expose post-norm state")
+            logits = registered.logits[:, :-1, :prediction_vocab_size].float()
+            hidden = registered.final_post_norm_hidden[:, 0, :-1].float()
+            result = DepthByAppendOutput(
+                predictions=logits.argmax(dim=-1).cpu().unsqueeze(-1),
+                requested_append_steps=0,
+                executed_decision_positions=batch * (sequence - 1),
+                total_grid_applications=batch * (sequence - 1),
+                feedback_grid_applications=0,
+                evicted_slots=0,
+                eviction_assertions=batch * (sequence - 1),
+                diagnostics={
+                    "feedback_mode": feedback_mode,
+                    "read_at_t_query": False,
+                    "execution_mode": "registered_full_sequence_k0",
+                    "real_position_ids": list(range(sequence - 1)),
+                    "expected_real_position_ids": list(range(sequence - 1)),
+                    "cache_lengths_after_eviction": [],
+                    "fed_hidden_rms_mean": float(
+                        hidden.square().mean(dim=-1).sqrt().mean().cpu()
+                    ),
+                    "injected_rms_mean": None,
+                },
+                real_logits=logits.cpu() if capture_real_logits else None,
+            )
+            result.assert_accounting()
+            return result
+
         cache = DynamicCache(config=self.recurrent.config)
         predictions: list[torch.Tensor] = []
         real_logits: list[torch.Tensor] = []
@@ -431,6 +468,7 @@ class CoconutRecurrentQwen(nn.Module):
             diagnostics={
                 "feedback_mode": feedback_mode,
                 "read_at_t_query": bool(read_at_t_query),
+                "execution_mode": "incremental_cache_append",
                 "read_at_t_query_operationalization": (
                     "transient post-feedback query with original token embedding and rotary position"
                     if read_at_t_query

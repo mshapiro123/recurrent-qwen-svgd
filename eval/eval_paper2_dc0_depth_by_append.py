@@ -401,6 +401,14 @@ def main() -> int:
     k0_max_diff = float((probe_plain - probe_k0.real_logits).abs().max())
     if k0_max_diff >= 1e-3:
         raise RuntimeError(f"DC0 k=0 identity failed: max_abs_diff={k0_max_diff}")
+    probe_cached = composite.depth_by_append(
+        input_ids=probe_ids,
+        append_steps=1,
+        feedback_mode="neutral",
+        neutral_token_id=int(resize.control_token_ids[2]),
+        capture_real_logits=True,
+        prediction_vocab_size=resize.original_tokenizer_size,
+    )
     probe_append = composite.depth_by_append(
         input_ids=probe_ids,
         append_steps=2,
@@ -408,7 +416,24 @@ def main() -> int:
         capture_real_logits=True,
         prediction_vocab_size=resize.original_tokenizer_size,
     )
-    downstream_max_diff = float((probe_k0.real_logits - probe_append.real_logits).abs().max())
+    if probe_cached.real_logits is None or probe_append.real_logits is None:
+        raise RuntimeError("DC0 cached eviction probe did not preserve real logits")
+    cached_vs_registered_max_diff = float(
+        (probe_k0.real_logits - probe_cached.real_logits).abs().max()
+    )
+    cached_vs_registered_prediction_disagreements = int(
+        probe_k0.real_logits.argmax(dim=-1)
+        .ne(probe_cached.real_logits.argmax(dim=-1))
+        .sum()
+    )
+    if cached_vs_registered_prediction_disagreements:
+        raise RuntimeError(
+            "DC0 cached k=0 path changes registered predictions: "
+            f"disagreements={cached_vs_registered_prediction_disagreements}"
+        )
+    downstream_max_diff = float(
+        (probe_cached.real_logits - probe_append.real_logits).abs().max()
+    )
     if downstream_max_diff >= 1e-3:
         raise RuntimeError(
             f"DC0 append-evict downstream identity failed: max_abs_diff={downstream_max_diff}"
@@ -457,6 +482,12 @@ def main() -> int:
         "banked_composite_preflight_sha256": sha256_file(args.composite_preflight_summary),
         "k0_registered_surgery_max_abs_logit_difference": k0_max_diff,
         "k0_identity_threshold": 1e-3,
+        "cached_vs_registered_max_abs_logit_difference_descriptive": (
+            cached_vs_registered_max_diff
+        ),
+        "cached_vs_registered_prediction_disagreements": (
+            cached_vs_registered_prediction_disagreements
+        ),
         "append_evict_later_real_max_abs_logit_difference": downstream_max_diff,
         "post_eviction_real_position_ids_match": True,
         "cache_length_equals_real_tokens_after_every_eviction": True,
