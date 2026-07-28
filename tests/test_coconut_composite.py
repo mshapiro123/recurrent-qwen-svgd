@@ -8,6 +8,7 @@ from transformers import Qwen2Config, Qwen2ForCausalLM
 
 from models.coconut_composite import (
     CoconutRecurrentQwen,
+    DepthByAppendOutput,
     HorizontalIdentityBridge,
     assert_parameter_group_coverage,
     configure_composite_trainable_set,
@@ -18,6 +19,84 @@ from eval.eval_coconut_composite_integrity import optimizer_parameter_names
 
 
 LATENT_ID = 29
+
+
+def test_depth_by_append_output_rejects_failed_eviction_accounting() -> None:
+    with pytest.raises(ValueError, match="evicted-slot count"):
+        DepthByAppendOutput(
+            predictions=torch.zeros((3, 4), dtype=torch.long),
+            requested_append_steps=3,
+            executed_decision_positions=3,
+            total_grid_applications=12,
+            feedback_grid_applications=9,
+            evicted_slots=8,
+            eviction_assertions=3,
+            diagnostics={},
+        ).assert_accounting()
+
+
+def test_depth_by_append_output_accepts_exact_m7_counters() -> None:
+    output = DepthByAppendOutput(
+        predictions=torch.zeros((3, 4), dtype=torch.long),
+        requested_append_steps=3,
+        executed_decision_positions=3,
+        total_grid_applications=12,
+        feedback_grid_applications=9,
+        evicted_slots=9,
+        eviction_assertions=3,
+        diagnostics={},
+    )
+    assert output.assert_accounting()["status"] == "exact"
+
+
+def test_depth_by_append_output_counts_transient_readout_queries() -> None:
+    output = DepthByAppendOutput(
+        predictions=torch.zeros((2, 2), dtype=torch.long),
+        requested_append_steps=1,
+        executed_decision_positions=2,
+        total_grid_applications=6,
+        feedback_grid_applications=2,
+        readout_grid_applications=2,
+        evicted_slots=4,
+        eviction_assertions=2,
+        diagnostics={"read_at_t_query": True},
+    )
+    assert output.assert_accounting()["evicted_slots"] == 4
+
+
+def test_m7_append_then_evict_is_invisible_to_later_real_tokens() -> None:
+    model = tiny_composite().eval()
+    inputs = torch.tensor([[2, 3, 4, 5, 6]], dtype=torch.long)
+    baseline = model.depth_by_append(
+        input_ids=inputs,
+        append_steps=0,
+        feedback_mode="raw",
+        capture_real_logits=True,
+    )
+    appended = model.depth_by_append(
+        input_ids=inputs,
+        append_steps=2,
+        feedback_mode="raw",
+        capture_real_logits=True,
+    )
+    assert baseline.real_logits is not None and appended.real_logits is not None
+    torch.testing.assert_close(appended.real_logits, baseline.real_logits, atol=1e-6, rtol=1e-6)
+    assert appended.diagnostics["real_position_ids"] == [0, 1, 2, 3]
+    assert appended.diagnostics["cache_lengths_after_eviction"] == [1, 2, 3, 4]
+
+
+def test_m7_read_at_t_query_has_causal_transient_accounting() -> None:
+    model = tiny_composite().eval()
+    result = model.depth_by_append(
+        input_ids=torch.tensor([[2, 3, 4]], dtype=torch.long),
+        append_steps=1,
+        feedback_mode="raw",
+        read_at_t_query=True,
+    )
+    assert result.predictions.shape == (1, 2, 2)
+    assert result.feedback_grid_applications == 2
+    assert result.readout_grid_applications == 2
+    assert result.evicted_slots == 4
 
 
 def tiny_composite(*, dtype: torch.dtype = torch.float32) -> CoconutRecurrentQwen:

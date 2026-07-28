@@ -136,6 +136,9 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_d0_prelaunch" - CPU-only target-policy and teacher-demand receipts; required before training.
 #   "paper2_d0_train_eval" - registered 4,000-step D0 pilot and complete final battery; A100/H100.
 #   "paper2_d1_causal_allocation_audit" - read-only A100 D0 decomposition and D1 utility-label dry run.
+#   "paper2_d0_expert_choice_rung0" - CPU-only frozen OOF expert-choice budget re-score.
+#   "paper2_dc0_eval_b_prepare" - fresh document-disjoint EVAL-B plus one 7B cache pass.
+#   "paper2_dc0_depth_by_append" - forward-only M7 mechanism comparison on spent-once EVAL-B.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
 #   "paper2_d0_prelock" - authorized density probe, corpus freeze, and preregistration lock only.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
@@ -161,6 +164,44 @@ if TARGET == "traced_sft_scale64_benchmark" and os.environ.get(
     TARGET = "traced_sft_direct_preservation_probe"
 
 TARGETS = {
+    "paper2_d0_expert_choice_rung0": {
+        "path": "colab/STAGE5_PAPER2_D0_EXPERT_CHOICE_RUNG0_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_D0_EXPERT_CHOICE_RUNG0_VERSION",
+            "paper2_d0_expert_choice_rung0_v1",
+            "CPU-only frozen OOF score reconstruction no model no optimizer no training",
+            "budgets 0.5 1 2 5 10 20 27 percent global and causal windows 256 1024",
+            "pre-D0 floor harm asymmetry archaeology included",
+            "colab/run_stage5_paper2_d0_expert_choice_rung0.py",
+        ],
+        "env": {},
+    },
+    "paper2_dc0_eval_b_prepare": {
+        "path": "colab/STAGE5_PAPER2_DC0_EVAL_B_PREPARE_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_DC0_EVAL_B_PREPARE_VERSION",
+            "paper2_dc0_eval_b_prepare_v1",
+            "fresh 200000 token EVAL-B 50 50 sources document disjoint from all prior D0 data",
+            "one Qwen2.5 7B teacher pass only no 14B no optimizer no training",
+            "read-once EVAL-B remains unspent until DC0 scoring",
+            "colab/run_stage5_paper2_dc0_eval_b_prepare.py",
+        ],
+        "env": {},
+    },
+    "paper2_dc0_depth_by_append": {
+        "path": "colab/STAGE5_PAPER2_DC0_DEPTH_BY_APPEND_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_DC0_DEPTH_BY_APPEND_VERSION",
+            "paper2_dc0_depth_by_append_v1",
+            "forward-only DC0 no optimizer no backward no model mutation no training",
+            "raw RMS neutral append 0 through 3 and read-at-t query arm",
+            "transient eviction exact counters and post-eviction position identity assertion",
+            "append k1 matched compute comparator is in-place depth3",
+            "bridge adaptation unauthorized",
+            "colab/run_stage5_paper2_dc0_depth_by_append.py",
+        ],
+        "env": {},
+    },
     "paper2_d1_causal_allocation_audit": {
         "path": "colab/STAGE5_PAPER2_D1_CAUSAL_ALLOCATION_AUDIT_CELL.py",
         "markers": [

@@ -51,6 +51,50 @@ class CompositeCoconutOutput:
     diagnostics: dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass
+class DepthByAppendOutput:
+    """Auditable counters for one transient depth-by-append execution."""
+
+    predictions: torch.Tensor
+    requested_append_steps: int
+    executed_decision_positions: int
+    total_grid_applications: int
+    feedback_grid_applications: int
+    evicted_slots: int
+    eviction_assertions: int
+    readout_grid_applications: int = 0
+    diagnostics: dict[str, Any] = field(default_factory=dict)
+    real_logits: Optional[torch.Tensor] = None
+
+    def assert_accounting(self) -> dict[str, Any]:
+        expected_feedback = self.requested_append_steps * self.executed_decision_positions
+        expected_total = (
+            self.executed_decision_positions
+            + expected_feedback
+            + self.readout_grid_applications
+        )
+        if self.feedback_grid_applications != expected_feedback:
+            raise ValueError(
+                f"feedback-grid count {self.feedback_grid_applications} != {expected_feedback}"
+            )
+        if self.total_grid_applications != expected_total:
+            raise ValueError(f"total-grid count {self.total_grid_applications} != {expected_total}")
+        expected_evicted = expected_feedback + self.readout_grid_applications
+        if self.evicted_slots != expected_evicted:
+            raise ValueError(f"evicted-slot count {self.evicted_slots} != {expected_evicted}")
+        if self.eviction_assertions != self.executed_decision_positions:
+            raise ValueError(
+                f"eviction-assertion count {self.eviction_assertions} "
+                f"!= {self.executed_decision_positions}"
+            )
+        return {
+            "status": "exact",
+            "feedback_grid_applications": expected_feedback,
+            "total_grid_applications": expected_total,
+            "evicted_slots": expected_evicted,
+        }
+
+
 def rebuild_embedding_slot(
     embeddings: torch.Tensor,
     position: int,
@@ -215,6 +259,197 @@ class CoconutRecurrentQwen(nn.Module):
         if int(step) in additions:
             states = states + additions[int(step)].to(device=states.device, dtype=states.dtype)
         return states if raw_feedback else self.horizontal_bridge(states)
+
+    @torch.inference_mode()
+    def depth_by_append(
+        self,
+        *,
+        input_ids: torch.LongTensor,
+        append_steps: int,
+        feedback_mode: str,
+        reference_rms: float | None = None,
+        neutral_token_id: int | None = None,
+        read_at_t_query: bool = False,
+        capture_real_logits: bool = False,
+        prediction_vocab_size: int | None = None,
+    ) -> DepthByAppendOutput:
+        """Run transient per-position feedback slots with exact cache eviction.
+
+        ``read_at_t_query`` is the causal operationalization of the addendum's
+        fifth arm: after each feedback slot, a transient query carrying the
+        original token embedding and rotary position id is evaluated after the
+        slot. It is not literal backward attention to an earlier cached query.
+        """
+
+        from transformers.cache_utils import DynamicCache
+
+        if input_ids.dim() != 2 or input_ids.shape[1] < 2:
+            raise ValueError("depth-by-append requires [batch, sequence>=2] input ids")
+        if int(append_steps) < 0:
+            raise ValueError("append_steps must be nonnegative")
+        if feedback_mode not in {"raw", "rms_matched", "neutral"}:
+            raise ValueError("feedback_mode must be raw, rms_matched, or neutral")
+        if feedback_mode == "rms_matched" and (reference_rms is None or reference_rms <= 0):
+            raise ValueError("rms_matched feedback requires a positive reference_rms")
+        if feedback_mode == "neutral" and neutral_token_id is None:
+            raise ValueError("neutral feedback requires neutral_token_id")
+        if int(append_steps) == 0 and read_at_t_query:
+            raise ValueError("read_at_t_query requires at least one appended feedback slot")
+
+        batch, sequence = input_ids.shape
+        device = input_ids.device
+        cache = DynamicCache(config=self.recurrent.config)
+        predictions: list[torch.Tensor] = []
+        real_logits: list[torch.Tensor] = []
+        fed_rms: list[float] = []
+        injected_rms: list[float] = []
+        cache_lengths_after_eviction: list[int] = []
+        real_position_ids: list[int] = []
+        feedback_slots = 0
+        readout_slots = 0
+        eviction_assertions = 0
+
+        for position in range(sequence - 1):
+            expected_prefix = position
+            if _cache_length(cache) != expected_prefix:
+                raise RuntimeError(
+                    f"M7 pre-real cache length {_cache_length(cache)} != {expected_prefix}"
+                )
+            token = input_ids[:, position : position + 1]
+            token_embedding = self.recurrent.qwen.embed_tokens(token)
+            output = self.recurrent(
+                inputs_embeds=token_embedding,
+                attention_mask=torch.ones((batch, position + 1), dtype=torch.long, device=device),
+                position_ids=torch.full((batch, 1), position, dtype=torch.long, device=device),
+                cache_position=torch.tensor([position], dtype=torch.long, device=device),
+                past_key_values=cache,
+                max_loops=1,
+                use_cache=True,
+                return_dict=True,
+            )
+            if output.final_post_norm_hidden is None:
+                raise RuntimeError("M7 real-token pass did not expose final post-norm hidden state")
+            base_length = position + 1
+            if _cache_length(cache) != base_length:
+                raise RuntimeError(f"M7 real-token cache length mismatch at position {position}")
+            real_position_ids.append(position)
+            base_logits = output.logits[:, -1, :prediction_vocab_size].float()
+            if capture_real_logits:
+                real_logits.append(base_logits.cpu())
+            step_predictions = [base_logits.argmax(dim=-1).cpu()]
+            state = output.final_post_norm_hidden[:, 0, -1]
+            fed_rms.append(float(state.float().square().mean().sqrt().cpu()))
+
+            for step in range(1, int(append_steps) + 1):
+                if feedback_mode == "neutral":
+                    slot_ids = torch.full(
+                        (batch, 1), int(neutral_token_id), dtype=torch.long, device=device
+                    )
+                    slot_embedding = self.recurrent.qwen.embed_tokens(slot_ids)
+                else:
+                    slot = self.horizontal_bridge(state)
+                    if feedback_mode == "rms_matched":
+                        observed = slot.float().square().mean(dim=-1, keepdim=True).sqrt().clamp_min(1e-8)
+                        slot = slot * (float(reference_rms) / observed).to(dtype=slot.dtype)
+                    slot_embedding = slot.unsqueeze(1)
+                injected_rms.append(
+                    float(slot_embedding.float().square().mean().sqrt().cpu())
+                )
+                cache_position = base_length + step - 1
+                slot_output = self.recurrent(
+                    inputs_embeds=slot_embedding,
+                    attention_mask=torch.ones(
+                        (batch, cache_position + 1), dtype=torch.long, device=device
+                    ),
+                    position_ids=torch.full(
+                        (batch, 1), position + step, dtype=torch.long, device=device
+                    ),
+                    cache_position=torch.tensor([cache_position], dtype=torch.long, device=device),
+                    past_key_values=cache,
+                    max_loops=1,
+                    use_cache=True,
+                    return_dict=True,
+                )
+                if slot_output.final_post_norm_hidden is None:
+                    raise RuntimeError("M7 feedback pass did not expose final post-norm hidden state")
+                feedback_slots += batch
+                state = slot_output.final_post_norm_hidden[:, 0, -1]
+                if read_at_t_query:
+                    query_cache_position = cache_position + 1
+                    query_output = self.recurrent(
+                        inputs_embeds=token_embedding,
+                        attention_mask=torch.ones(
+                            (batch, query_cache_position + 1), dtype=torch.long, device=device
+                        ),
+                        position_ids=torch.full(
+                            (batch, 1), position, dtype=torch.long, device=device
+                        ),
+                        cache_position=torch.tensor(
+                            [query_cache_position], dtype=torch.long, device=device
+                        ),
+                        past_key_values=cache,
+                        max_loops=1,
+                        use_cache=True,
+                        return_dict=True,
+                    )
+                    step_predictions.append(
+                        query_output.logits[:, -1, :prediction_vocab_size]
+                        .float()
+                        .argmax(dim=-1)
+                        .cpu()
+                    )
+                    readout_slots += batch
+                    cache.crop(query_cache_position)
+                    if _cache_length(cache) != query_cache_position:
+                        raise RuntimeError("M7 readout-query eviction failed")
+                else:
+                    step_predictions.append(
+                        slot_output.logits[:, -1, :prediction_vocab_size]
+                        .float()
+                        .argmax(dim=-1)
+                        .cpu()
+                    )
+
+            cache.crop(base_length)
+            if _cache_length(cache) != base_length:
+                raise RuntimeError("M7 feedback eviction did not restore the real-token prefix")
+            cache_lengths_after_eviction.append(_cache_length(cache))
+            eviction_assertions += batch
+            predictions.append(torch.stack(step_predictions, dim=-1))
+
+        result = DepthByAppendOutput(
+            predictions=torch.stack(predictions, dim=1),
+            requested_append_steps=int(append_steps),
+            executed_decision_positions=batch * (sequence - 1),
+            total_grid_applications=(
+                batch * (sequence - 1) + feedback_slots + readout_slots
+            ),
+            feedback_grid_applications=feedback_slots,
+            readout_grid_applications=readout_slots,
+            evicted_slots=feedback_slots + readout_slots,
+            eviction_assertions=eviction_assertions,
+            diagnostics={
+                "feedback_mode": feedback_mode,
+                "read_at_t_query": bool(read_at_t_query),
+                "read_at_t_query_operationalization": (
+                    "transient post-feedback query with original token embedding and rotary position"
+                    if read_at_t_query
+                    else None
+                ),
+                "real_position_ids": real_position_ids,
+                "expected_real_position_ids": list(range(sequence - 1)),
+                "cache_lengths_after_eviction": cache_lengths_after_eviction,
+                "fed_hidden_rms_mean": sum(fed_rms) / len(fed_rms),
+                "injected_rms_mean": sum(injected_rms) / len(injected_rms)
+                if injected_rms
+                else None,
+            },
+            real_logits=torch.stack(real_logits, dim=1) if real_logits else None,
+        )
+        result.assert_accounting()
+        if result.diagnostics["real_position_ids"] != result.diagnostics["expected_real_position_ids"]:
+            raise RuntimeError("M7 post-eviction real position ids diverged from the source sequence")
+        return result
 
     def _forward_recompute(
         self,

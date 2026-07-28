@@ -1433,6 +1433,27 @@ def test_current_bootstrap_exposes_paper2_d1_causal_allocation_audit_target() ->
     assert "eval_speculative_depth_d1_causal_allocation.py" in runner
 
 
+def test_current_bootstrap_exposes_d0_expert_choice_rung0_target() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_D0_EXPERT_CHOICE_RUNG0_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_d0_expert_choice_rung0.py").read_text(encoding="utf-8")
+    assert '"paper2_d0_expert_choice_rung0"' in bootstrap
+    assert "no model no optimizer no training" in cell
+    assert "eval/rescore_d0_expert_choice.py" in runner
+
+
+def test_current_bootstrap_exposes_dc0_split_resume_targets() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    prep = (ROOT / "colab/STAGE5_PAPER2_DC0_EVAL_B_PREPARE_CELL.py").read_text(encoding="utf-8")
+    score = (ROOT / "colab/STAGE5_PAPER2_DC0_DEPTH_BY_APPEND_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_dc0_depth_by_append.py").read_text(encoding="utf-8")
+    assert '"paper2_dc0_eval_b_prepare"' in bootstrap
+    assert '"paper2_dc0_depth_by_append"' in bootstrap
+    assert "one Qwen2.5 7B teacher pass only no 14B" in prep
+    assert "bridge adaptation unauthorized" in score
+    assert "read_once_scoring_spent" in runner
+
+
 def test_current_bootstrap_exposes_paper2_d0_prelaunch_target() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     cell = (ROOT / "colab/STAGE5_PAPER2_D0_PRELAUNCH_CELL.py").read_text(encoding="utf-8")
