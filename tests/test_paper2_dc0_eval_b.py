@@ -8,6 +8,7 @@ from training.paper2_dc0 import (
     layer_application_costs,
 )
 from eval.eval_paper2_dc0_depth_by_append import (
+    anchor_registered_k0,
     cluster_bootstrap_log_ratio,
     group_batches,
     transition_counts,
@@ -67,6 +68,35 @@ def test_dc0_group_batches_never_mix_sequence_lengths() -> None:
     ]
     batches = group_batches(rows, batch_size=2)
     assert all(len({len(rows[index]["input_ids"]) for index in batch}) == 1 for batch in batches)
+
+
+def test_dc0_append_grid_anchors_registered_k0_and_receipts_cached_disagreement() -> None:
+    registered_k0 = torch.tensor([1, 2, 3, 4])
+    cached_grid = torch.tensor(
+        [
+            [1, 5, 6, 7],
+            [9, 8, 7, 6],
+            [3, 2, 1, 0],
+            [8, 4, 3, 2],
+        ]
+    )
+
+    anchored, cached_k0, diagnostics = anchor_registered_k0(
+        cached_grid,
+        registered_k0,
+    )
+
+    assert torch.equal(anchored[:, 0], registered_k0)
+    assert torch.equal(anchored[:, 1:], cached_grid[:, 1:])
+    assert torch.equal(cached_k0, cached_grid[:, 0])
+    assert diagnostics == {
+        "positions": 4,
+        "prediction_disagreements": 2,
+        "prediction_disagreement_rate": 0.5,
+        "primary_k0_source": "registered_full_sequence_depth_1",
+        "append_k_positive_source": "incremental_cache_append",
+    }
+    assert torch.equal(cached_grid[:, 0], torch.tensor([1, 9, 3, 8]))
 
 
 def test_cluster_bootstrap_reports_row_cluster_interval() -> None:

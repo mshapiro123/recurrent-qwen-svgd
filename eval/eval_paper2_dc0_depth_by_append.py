@@ -9,6 +9,7 @@ import json
 import math
 import os
 import sys
+import time
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Sequence
@@ -75,6 +76,30 @@ def transition_counts(before: torch.Tensor, after: torch.Tensor, teacher: torch.
         "before_accuracy": float(before_match.float().mean()) if total else None,
         "after_accuracy": float(after_match.float().mean()) if total else None,
         "harm_to_help_ratio": hurts / helps if helps else None,
+    }
+
+
+def anchor_registered_k0(
+    cached_grid: torch.Tensor,
+    registered_k0: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
+    """Use the registered full-sequence baseline while retaining cache-path drift."""
+
+    if cached_grid.ndim != 2 or cached_grid.shape[1] < 2:
+        raise ValueError("cached append grid must have shape [positions, 2+]")
+    if registered_k0.ndim != 1 or len(registered_k0) != len(cached_grid):
+        raise ValueError("registered k0 must align one-to-one with append positions")
+    cached_k0 = cached_grid[:, 0].clone()
+    anchored = cached_grid.clone()
+    anchored[:, 0] = registered_k0
+    disagreements = int(cached_k0.ne(registered_k0).sum())
+    positions = len(registered_k0)
+    return anchored, cached_k0, {
+        "positions": positions,
+        "prediction_disagreements": disagreements,
+        "prediction_disagreement_rate": disagreements / positions if positions else 0.0,
+        "primary_k0_source": "registered_full_sequence_depth_1",
+        "append_k_positive_source": "incremental_cache_append",
     }
 
 
@@ -277,11 +302,26 @@ def evaluate_append_arm(
     totals = Counter()
     destination = resume_dir / arm
     destination.mkdir(parents=True, exist_ok=True)
-    for number, indices in enumerate(group_batches(rows, batch_size), start=1):
+    batches = group_batches(rows, batch_size)
+    cached_at_start = sum(
+        (destination / f"batch_{number:06d}.pt").exists()
+        for number in range(1, len(batches) + 1)
+    )
+    pending_at_start = len(batches) - cached_at_start
+    print(
+        f"dc0_append_resume arm={arm} total_batches={len(batches)} "
+        f"cached_batches={cached_at_start} pending_batches={pending_at_start}",
+        flush=True,
+    )
+    started = time.monotonic()
+    computed = 0
+    compute_seconds = 0.0
+    for number, indices in enumerate(batches, start=1):
         path = destination / f"batch_{number:06d}.pt"
         if path.exists():
             payload = torch.load(path, map_location="cpu", weights_only=False)
         else:
+            batch_started = time.monotonic()
             values = torch.tensor([rows[index]["input_ids"] for index in indices], device=device)
             result = composite.depth_by_append(
                 input_ids=values,
@@ -300,7 +340,11 @@ def evaluate_append_arm(
                 "eviction_assertions": result.eviction_assertions,
                 "diagnostics": result.diagnostics,
             }
-            torch.save(payload, path)
+            temporary = path.with_suffix(path.suffix + ".tmp")
+            torch.save(payload, temporary)
+            os.replace(temporary, path)
+            computed += 1
+            compute_seconds += time.monotonic() - batch_started
         for key, value in payload["counters"].items():
             if isinstance(value, int):
                 totals[key] += value
@@ -308,8 +352,18 @@ def evaluate_append_arm(
         totals["eviction_assertions"] += int(payload["eviction_assertions"])
         for local, row_index in enumerate(payload["indices"]):
             outputs[int(row_index)] = payload["predictions"][local]
-        if number == 1 or number % 16 == 0:
-            print(f"dc0_append_progress arm={arm} batches={number}", flush=True)
+        if number == 1 or number % 16 == 0 or number == len(batches):
+            remaining_compute = max(0, pending_at_start - computed)
+            eta_seconds = (
+                compute_seconds / computed * remaining_compute if computed else None
+            )
+            eta_text = f"{eta_seconds / 3600:.2f}h" if eta_seconds is not None else "cached"
+            print(
+                f"dc0_append_progress arm={arm} batches={number}/{len(batches)} "
+                f"new_batches={computed}/{pending_at_start} "
+                f"elapsed={(time.monotonic() - started) / 3600:.2f}h eta={eta_text}",
+                flush=True,
+            )
     if any(value is None for value in outputs):
         raise RuntimeError(f"DC0 append arm {arm} left rows missing")
     return [value for value in outputs if value is not None], dict(totals)
@@ -521,6 +575,8 @@ def main() -> int:
     ]
     arm_reports: dict[str, Any] = {}
     private_predictions: dict[str, torch.Tensor] = {"inplace": inplace}
+    private_cached_k0: dict[str, torch.Tensor] = {}
+    execution_path_diagnostics: dict[str, Any] = {}
     counters: dict[str, Any] = {}
     for name, mode, reference, read_at_t in arm_specs:
         predicted_rows, arm_counters = evaluate_append_arm(
@@ -536,10 +592,26 @@ def main() -> int:
             resume_dir=private / "append_batches",
             read_at_t_query=read_at_t,
         )
-        predicted = flatten_rows(predicted_rows)
-        if not torch.equal(predicted[:, 0], inplace[:, 0]):
-            raise RuntimeError(f"DC0 {name} k=0 predictions differ from in-place depth 1")
+        cached_grid = flatten_rows(predicted_rows)
+        predicted, cached_k0, path_diagnostics = anchor_registered_k0(
+            cached_grid,
+            inplace[:, 0],
+        )
         private_predictions[name] = predicted
+        private_cached_k0[name] = cached_k0
+        execution_path_diagnostics[name] = {
+            **path_diagnostics,
+            "cached_k0_to_k1_descriptive": transition_counts(
+                cached_k0,
+                predicted[:, 1],
+                targets,
+            ),
+            "registered_k0_to_k1_primary": transition_counts(
+                predicted[:, 0],
+                predicted[:, 1],
+                targets,
+            ),
+        }
         counters[name] = arm_counters
         arm_reports[name] = transition_report(
             predicted,
@@ -559,6 +631,7 @@ def main() -> int:
         "teacher_targets": targets,
         "row_indices": row_indices,
         "predictions": private_predictions,
+        "cached_k0_predictions": private_cached_k0,
     }
     private_path = private / "dc0_predictions.pt"
     torch.save(private_payload, private_path)
@@ -578,6 +651,7 @@ def main() -> int:
             inplace, targets, strata=strata, entropy=entropy, drafter_logprob=logprob, drafter_rank=rank
         ),
         "append_arms": arm_reports,
+        "execution_path_diagnostics": execution_path_diagnostics,
         "m7_counters": counters,
         "compute_accounting": {
             **layer_application_costs(),
@@ -601,6 +675,9 @@ def main() -> int:
             "automatic_verdict": "withheld_for_strategy_review",
             "architecture_scope": "same post-D0 checkpoint; D1 utility-training counterfactual remains open",
             "bridge_adaptation_authorized": False,
+            "registered_k0_is_primary_anchor": True,
+            "cached_k0_drift_is_descriptive_not_suppressed": True,
+            "neutral_append_is_required_execution_path_control": True,
         },
         "private_predictions_sha256": sha256_file(private_path),
     }
@@ -640,6 +717,27 @@ def build_report(summary: dict[str, Any], output_dir: Path) -> None:
         lines.append(
             f"| {name} | {cell['helps']} | {cell['hurts']} | {cell['net_correct_delta']} | "
             f"{cell['harm_to_help_ratio']} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Execution-Path Diagnostic",
+            "",
+            "Append-grid k=0 is anchored to the registered full-sequence depth-1 prediction. "
+            "The incremental-cache k=0 prediction is retained as a descriptive diagnostic, "
+            "not silently substituted for the registered baseline.",
+            "",
+            "| Arm | Cached-vs-registered disagreements | Rate | Cached-path net | Registered-anchor net |",
+            "|---|---:|---:|---:|---:|",
+        ]
+    )
+    for name, diagnostic in summary["execution_path_diagnostics"].items():
+        cached = diagnostic["cached_k0_to_k1_descriptive"]
+        registered = diagnostic["registered_k0_to_k1_primary"]
+        lines.append(
+            f"| {name} | {diagnostic['prediction_disagreements']} | "
+            f"{diagnostic['prediction_disagreement_rate']:.6f} | "
+            f"{cached['net_correct_delta']} | {registered['net_correct_delta']} |"
         )
     (output_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 

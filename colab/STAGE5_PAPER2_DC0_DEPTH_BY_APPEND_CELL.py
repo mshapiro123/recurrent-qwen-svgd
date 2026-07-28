@@ -9,13 +9,14 @@ from pathlib import Path
 
 from google.colab import drive, userdata
 
-STAGE5_PAPER2_DC0_DEPTH_BY_APPEND_VERSION = "paper2_dc0_depth_by_append_v1"
+STAGE5_PAPER2_DC0_DEPTH_BY_APPEND_VERSION = "paper2_dc0_depth_by_append_v2"
 # Safety marker: forward-only DC0 no optimizer no backward no model mutation no training
 # Safety marker: in-place 1 through 4 raw RMS neutral append 0 through 3 and read-at-t query arm
 # Safety marker: transient eviction exact counters and post-eviction position identity assertion
 # Safety marker: append k1 matched compute comparator is in-place depth3
 # Safety marker: EVAL-B read once and spent after this scoring pass
 # Safety marker: bridge adaptation unauthorized
+# Safety marker: registered k0 anchor cached path drift disclosed resumable batch ETA
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main")

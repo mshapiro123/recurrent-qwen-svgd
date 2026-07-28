@@ -1455,6 +1455,11 @@ def test_current_bootstrap_exposes_dc0_split_resume_targets() -> None:
     assert '"paper2_dc0_depth_by_append"' in bootstrap
     assert "one Qwen2.5 7B teacher pass only no 14B" in prep
     assert "bridge adaptation unauthorized" in score
+    assert "paper2_dc0_depth_by_append_v2" in score
+    assert "registered k0 anchor cached path drift disclosed resumable batch ETA" in score
+    assert "execution_path_diagnostics" in (
+        ROOT / "eval/eval_paper2_dc0_depth_by_append.py"
+    ).read_text(encoding="utf-8")
     assert "read_once_scoring_spent" in runner
     assert '"eval.prepare_paper2_dc0_eval_b"' in (
         ROOT / "colab/run_stage5_paper2_dc0_eval_b_prepare.py"
