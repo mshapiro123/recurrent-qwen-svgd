@@ -9,9 +9,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from training.speculative_depth_d0_corpus import sha256_file
 
-ROOT = Path(__file__).resolve().parents[1]
 RUN_ID = "stage5_paper2_dc0_20260728"
 RUN_DIR = ROOT / "outputs/stage5" / RUN_ID
 LOCK = ROOT / "outputs/stage5/stage5_paper2_d0_preregistration_20260726"
@@ -22,7 +25,21 @@ CHECKPOINT_SHA = "8245cabfe7639dcd442c19e03496623b9d59eec31b39e253e08fd6f78b1086
 
 def run(command: list[str]) -> None:
     print("$", " ".join(command), flush=True)
-    subprocess.run(command, cwd=ROOT, check=True)
+    process = subprocess.Popen(
+        command,
+        cwd=ROOT,
+        env=os.environ.copy(),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    for line in process.stdout:
+        print(line, end="", flush=True)
+    code = process.wait()
+    if code:
+        raise subprocess.CalledProcessError(code, command)
 
 
 def restore_checkpoint() -> Path:

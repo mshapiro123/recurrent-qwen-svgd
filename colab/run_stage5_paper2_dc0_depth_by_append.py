@@ -9,9 +9,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from training.speculative_depth_d0_corpus import sha256_file
 
-ROOT = Path(__file__).resolve().parents[1]
 RUN_ID = "stage5_paper2_dc0_20260728"
 RUN_DIR = ROOT / "outputs/stage5" / RUN_ID
 D0_DRIVE = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_d0_20260726")
@@ -22,10 +25,22 @@ CHECKPOINT_SHA = "8245cabfe7639dcd442c19e03496623b9d59eec31b39e253e08fd6f78b1086
 
 def run(command: list[str], allowed: tuple[int, ...] = (0,)) -> int:
     print("$", " ".join(command), flush=True)
-    result = subprocess.run(command, cwd=ROOT)
-    if result.returncode not in allowed:
-        raise subprocess.CalledProcessError(result.returncode, command)
-    return result.returncode
+    process = subprocess.Popen(
+        command,
+        cwd=ROOT,
+        env=os.environ.copy(),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    for line in process.stdout:
+        print(line, end="", flush=True)
+    code = process.wait()
+    if code not in allowed:
+        raise subprocess.CalledProcessError(code, command)
+    return code
 
 
 def resolve_sha(candidates: list[Path], expected: str, destination: Path) -> Path:

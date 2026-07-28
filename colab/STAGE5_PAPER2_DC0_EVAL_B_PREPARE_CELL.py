@@ -26,7 +26,21 @@ os.environ["HUGGINGFACE_HUB_TOKEN"] = HF
 
 def run(command: list[str], cwd: Path | None = None) -> None:
     print("$", " ".join(command).replace(GH, "****"), flush=True)
-    subprocess.run(command, cwd=cwd or ROOT, check=True)
+    process = subprocess.Popen(
+        command,
+        cwd=cwd or ROOT,
+        env=os.environ.copy(),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    for line in process.stdout:
+        print(line, end="", flush=True)
+    code = process.wait()
+    if code:
+        raise subprocess.CalledProcessError(code, command)
 
 
 if not Path("/content/drive/MyDrive").is_dir():

@@ -1460,6 +1460,15 @@ def test_current_bootstrap_exposes_dc0_split_resume_targets() -> None:
         ROOT / "colab/run_stage5_paper2_dc0_eval_b_prepare.py"
     ).read_text(encoding="utf-8")
     assert '"eval.eval_paper2_dc0_depth_by_append"' in runner
+    prepare_runner = (
+        ROOT / "colab/run_stage5_paper2_dc0_eval_b_prepare.py"
+    ).read_text(encoding="utf-8")
+    assert prepare_runner.index("sys.path.insert") < prepare_runner.index(
+        "from training.speculative_depth_d0_corpus import sha256_file"
+    )
+    assert runner.index("sys.path.insert") < runner.index(
+        "from training.speculative_depth_d0_corpus import sha256_file"
+    )
 
 
 def test_current_bootstrap_exposes_paper2_d0_prelaunch_target() -> None:
